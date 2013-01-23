@@ -7,12 +7,10 @@ Metabolic network visualizations using d3.js.
 
 To generate a json map file from svg, run:
 ```Bash
-generate_map_json.py -f bigg ecoli.svg
+generate_map_json.py -f bigg maps/ecoli.svg
 ```
 
 Use the -f option to specify format, either 'BIGG' or 'SimPheny' [default].
-
-SVG maps are located in the 'maps' directory.
 
 ### Flux
 

@@ -21,6 +21,8 @@ function visualizeit(data, flux) {
 
     var path_color = "rgb(0, 0, 60)"
 
+    var decimal_format = d3.format('.1f');
+    var decimal_format_3 = d3.format('.3f');
     var has_flux = false;
     if (flux) {
 	has_flux = true;
@@ -29,6 +31,7 @@ function visualizeit(data, flux) {
             if (o.id in flux) {
                 o.flux = parseFloat(flux[o.id]);
             }
+			else { console.log(o.id) }
             return o;
         });
         data.reaction_labels = data.reaction_labels.map( function(o) {
@@ -36,6 +39,7 @@ function visualizeit(data, flux) {
                 // TODO: make sure text==id
                 o.flux = parseFloat(flux[o.text]);
             }
+			else { console.log(o.text) }
             return o;
         });
     }
@@ -44,6 +48,9 @@ function visualizeit(data, flux) {
     var width = $(window).width()-20;
     var height = $(window).height()-20;
     factor = Math.min(width/map_w,height/map_h);
+	console.log('map_w '+decimal_format(map_w));
+	console.log('map_h '+decimal_format(map_h));
+	console.log('scale factor '+decimal_format_3(factor));
 
     var x_scale = d3.scale.linear()
         .domain([0, map_w])
@@ -74,11 +81,11 @@ function visualizeit(data, flux) {
         .attr("width", width)
         .attr("height", height)
         .append("g")
-        .call(d3.behavior.zoom().scaleExtent([1, 8]).on("zoom", zoom))
+        .call(d3.behavior.zoom().scaleExtent([1, 15]).on("zoom", zoom))
         .append("g");
 
     svg.append("style")
-        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;} #membranes{ fill: none; stroke: orange;  stroke-linejoin: miter; stroke-miterlimit: 10;  stroke-width: 3;} .end{marker-end: url(#Triangle);} .start{marker-start: url(#triangle);");
+        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;} #misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #membranes{ fill: none; stroke: orange;  stroke-linejoin: miter; stroke-miterlimit: 10;  stroke-width: 3;} .end{marker-end: url(#Triangle);} .start{marker-start: url(#triangle);");
 
     svg.append("marker")
         .attr("id", "Triangle")
@@ -91,7 +98,8 @@ function visualizeit(data, flux) {
         .attr("viewBox", "0 0 12 12")
         .append("path")
         .attr("d", "M 0 0 L 12 6 L 0 12 z");
-    // .attr("fill", path_color)
+    // .attr("fill", path_color) 
+	// stroke inheritance not supported in SVG 1.*
     // .attr("stroke", path_color);
 
     svg.append("marker")
@@ -119,20 +127,34 @@ function visualizeit(data, flux) {
         .selectAll("rect")
         .data(data.membrane_rectangles)
         .enter().append("rect")
-        .attr("style", function(d){ return d.style })
         .attr("width", function(d){ return x_size_scale(d.width) })
         .attr("height", function(d){ return y_size_scale(d.height) })
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
-    svg.append("g")
-        .attr("id", "metabolite_circles")
-        .selectAll("circle")
-        .data(data.metabolite_circles)
-        .enter().append("circle")
-        .attr("r", function (d) { return d.radius; })
-        .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
+	if (data.hasOwnProperty("metabolite_circles")) {
+		console.log('metabolite circles');
+		svg.append("g")
+			.attr("id", "metabolite-circles")
+			.selectAll("circle")
+			.data(data.metabolite_circles)
+			.enter().append("circle")
+			.attr("r", function (d) { return scale(d.r); })
+			.attr("transform", function(d){return "translate("+x_scale(d.cx)+","+y_scale(d.cy)+")";});
+	}
+	else if (data.hasOwnProperty("metabolite_paths")) {
+		console.log('metabolite paths');
+		svg.append("g")
+			.attr("id", "metabolite-paths")
+			.selectAll("path")
+			.data(data.metabolite_paths)
+			.enter().append("path")
+			.attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
+	}
+	else { console.log('neither') }
 
-    svg.selectAll("path")
+    svg.append("g")
+		.attr("id", "reaction-paths")
+		.selectAll("path")
         .data(data.reaction_paths)
         .enter().append("path")
         .attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
@@ -155,7 +177,6 @@ function visualizeit(data, flux) {
             return s;
         });
 
-    var decimal_format = d3.format('.1f');
     svg.append("g")
         .attr("id", "reaction-labels")
         .selectAll("text")
@@ -177,8 +198,7 @@ function visualizeit(data, flux) {
         .data(data.misc_labels)
         .enter().append("text")
         .text(function(d) { return d.text; })
-        .attr("style", function(d) { return scale_decimals(d.style, scale, 0); })
-        .attr("font-size", scale(30))
+        .attr("font-size", scale(80))
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
     svg.append("g")
@@ -190,15 +210,6 @@ function visualizeit(data, flux) {
         .attr("font-size", scale(30))
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
-    svg.append("g")
-        .attr("id", "metabolite-circles")
-        .selectAll("circle")
-        .data(data.metabolite_circles)
-        .enter().append("circle")
-        .attr("r", function(d) { return scale(d.r) })
-        .attr("cx", function(d) { return x_scale(d.cx) })
-        .attr("cy", function(d) { return y_scale(d.cy) })
-
     function scale_decimals(path, scale_fn, precision) {
         var str = d3.format("."+String(precision)+"f")
         path = path.replace(/([0-9.]+)/g, function (match, p1) {
@@ -207,9 +218,13 @@ function visualizeit(data, flux) {
         return path
     }
     function scale_path(path, x_fn, y_fn) {
+		// TODO: scale arrow width
         var str = d3.format(".2f")
-        path = path.replace(/([0-9.]+),\s*([0-9.]+)/g, function (match, p1, p2) {
-            return [str(x_fn(parseFloat(p1))), str(y_fn(parseFloat(p2)))].join(', ');
+        path = path.replace(/(M|L)([0-9.]+),?\s*([0-9.]+)/g, function (match, p0, p1, p2) {
+            return p0 + [str(x_fn(parseFloat(p1))), str(y_fn(parseFloat(p2)))].join(', ');
+        });
+        path = path.replace(/C([0-9.]+),?\s*([0-9.]+)\s*([0-9.]+),?\s*([0-9.]+)\s*([0-9.]+),?\s*([0-9.]+)/g, function (match, p1, p2, p3, p4, p5, p6) {
+            return 'C'+str(x_fn(parseFloat(p1)))+','+str(y_fn(parseFloat(p2)))+' '+str(x_fn(parseFloat(p3)))+','+str(y_fn(parseFloat(p4)))+' '+ [str(x_fn(parseFloat(p5)))+','+str(y_fn(parseFloat(p6)))];
         });
         return path
     }
