@@ -16,20 +16,20 @@ map_filename = args[0]
 with open(map_filename) as file:
     map = bs(file)
 
-# name_id_dictionary = {}
-# with open('reaction_name_to_id.tsv') as file:
-#     for line in file:
-#         s = [x.strip() for x in line.split('\t')]
-#         name_id_dictionary[s[0]] = s[1]
+name_id_dictionary = {}
+with open('reaction_name_to_id.tsv', 'rU') as file:
+    for line in file.readlines():
+        s = [x.strip() for x in line.split('\t')]
+        name_id_dictionary[s[0]] = s[1]
 
 def reaction_name_to_id(name):
-#     # SimPheny attached reaction names to reaction paths, rather than
-#     # the more-sensible id's. Thus, we load a conversion table
-#     try:
-#         the_id = name_id_dictionary[name]
-#     except KeyError:
-#         the_id = name
-    return name
+    # SimPheny attached reaction names to reaction paths, rather than
+    # the more-sensible id's. Thus, we load a conversion table
+    try:
+        the_id = name_id_dictionary[name]
+    except KeyError:
+        the_id = name
+    return the_id
     
 def save_as_json(data, svg):
     max_x = 0; max_y = 0
@@ -82,27 +82,27 @@ def read_simpheny(map):
     data["reaction_paths"] = reaction_paths
     
     misc_labels = []
-    for g in svg.find(id="Layer_7").children:
-        text = g.find('text')
-        this_text = {'x': text.attrs['x'],
-                     'y': text.attrs['y'],
-                     'text': text.text}
+    for t in svg.find(id="Layer_7").find_all("text"): 
+        this_text = {"text":t.text,
+                     "x":t.attrs["x"],
+                     "y":t.attrs["y"]}
         try:
-            this_text['transform'] = text.attrs['transform'];
+            this_text['transform'] = t.attrs['transform'];
+        except KeyError:
+            pass    
+        misc_labels.append(this_text)
+    for t in svg.find(id="Layer_8").find_all("text"):  # in all-rxns, this contains misc labels
+        this_text = {"text":t.text,
+                     "x":t.attrs["x"],
+                     "y":t.attrs["y"]}
+        try:
+            this_text['transform'] = t.attrs['transform'];
         except KeyError:
             pass    
         misc_labels.append(this_text)
     data["misc_labels"] = misc_labels
 
-    reaction_labels = []
-    for t in svg.find(id="Layer_8").find_all("text"):
-        this_text = {"text":t.text,
-                     "x":t.attrs["x"],
-                     "y":t.attrs["y"]}
-        reaction_labels.append(this_text)
-    data["reaction_labels"] = reaction_labels
-
-    metabolite_paths = []
+    metabolite_paths = []; reaction_labels = []
     for g in svg.find(id="Layer_10").children:
         for h in g.find_all('path'):
             this_path = {'id': g.attrs['id'],
@@ -111,11 +111,15 @@ def read_simpheny(map):
     data["metabolite_paths"] = metabolite_paths
     
     metabolite_labels = []
-    for t in svg.find(id="Layer_13").find_all('text'):
+    for t in svg.find(id="Layer_13").find_all('text'): # in all-rxns, this also contains reaction labels
         this_label = {'text': t.text,
                       'x': t.attrs['x'],
                       'y': t.attrs['y']}
-        metabolite_labels.append(this_label)
+        if t.text in name_id_dictionary.values():
+            reaction_labels.append(this_label)
+        else:
+            metabolite_labels.append(this_label)
+    data["reaction_labels"] = reaction_labels
     data["metabolite_labels"] = metabolite_labels
 
     save_as_json(data, svg)

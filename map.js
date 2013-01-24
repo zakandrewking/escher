@@ -31,7 +31,7 @@ function visualizeit(data, flux) {
             if (o.id in flux) {
                 o.flux = parseFloat(flux[o.id]);
             }
-			else { console.log(o.id) }
+			// else { console.log(o.id) }
             return o;
         });
         data.reaction_labels = data.reaction_labels.map( function(o) {
@@ -39,7 +39,7 @@ function visualizeit(data, flux) {
                 // TODO: make sure text==id
                 o.flux = parseFloat(flux[o.text]);
             }
-			else { console.log(o.text) }
+			if(o.text=="FBA") {console.log('HEY! '+flux[o.text]);}
             return o;
         });
     }
@@ -85,7 +85,7 @@ function visualizeit(data, flux) {
         .append("g");
 
     svg.append("style")
-        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;} #misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #membranes{ fill: none; stroke: orange;  stroke-linejoin: miter; stroke-miterlimit: 10;  stroke-width: 3;} .end{marker-end: url(#Triangle);} .start{marker-start: url(#triangle);");
+        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;} #misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #membranes{ fill: none; stroke: orange;  stroke-linejoin: miter; stroke-miterlimit: 10;} .end{marker-end: url(#Triangle);} .start{marker-start: url(#triangle);");
 
     svg.append("marker")
         .attr("id", "Triangle")
@@ -129,7 +129,8 @@ function visualizeit(data, flux) {
         .enter().append("rect")
         .attr("width", function(d){ return x_size_scale(d.width) })
         .attr("height", function(d){ return y_size_scale(d.height) })
-        .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
+        .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";})
+		.attr("style", function(d) { return "stroke-width: "+scale(8)+";" });
 
 	if (data.hasOwnProperty("metabolite_circles")) {
 		console.log('metabolite circles');
@@ -160,19 +161,23 @@ function visualizeit(data, flux) {
         .attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
         .attr("class", function(d) {return d.class})
         .attr("style", function(d) {
-            var s = "fill:none;";
+            var s = "";
             if (d.flux) {
-                // simpheny adds super thick lines with paths. how to recreate this?
                 // http://lists.w3.org/Archives/Public/public-svg-wg/2011JanMar/0197.html
                 // need to generate a new marker for each color
-                s += "stroke-width:"+String(flux_scale(d.flux))+";";
+                s += "stroke-width:"+String(scale(flux_scale(d.flux)))+";";
                 s += "stroke:"+flux_color(d.flux)+";";
+                s += "fill:"+flux_color(d.flux)+";";
             }
-	    else if (has_flux) {
-                s += "stroke:rgb(190, 190, 190);"; 
-	    }
+			else if (has_flux) {
+				s += "stroke-width:"+String(scale(flux_scale(0)))+";";
+				s += "stroke:rgb(190, 190, 190);"; 
+				s += "fill:rgb(190, 190, 190);"; 
+			}
             else {
+				s += "stroke-width:"+String(scale(flux_scale(0)))+";";
                 s += "stroke:"+path_color+";";
+                s += "fill:"+path_color+";";
             }
             return s;
         });
@@ -185,7 +190,7 @@ function visualizeit(data, flux) {
         .text(function(d) {
             t = d.text;
             if (d.flux) t += " ("+decimal_format(d.flux)+")";
-	    else if (has_flux) t += " (0)";
+			else if (has_flux) t += " (0)";
             return t;
         })
         .attr("text-anchor", "start")
@@ -220,10 +225,10 @@ function visualizeit(data, flux) {
     function scale_path(path, x_fn, y_fn) {
 		// TODO: scale arrow width
         var str = d3.format(".2f")
-        path = path.replace(/(M|L)([0-9.]+),?\s*([0-9.]+)/g, function (match, p0, p1, p2) {
+        path = path.replace(/(M|L)([0-9-.]+),?\s*([0-9-.]+)/g, function (match, p0, p1, p2) {
             return p0 + [str(x_fn(parseFloat(p1))), str(y_fn(parseFloat(p2)))].join(', ');
         });
-        path = path.replace(/C([0-9.]+),?\s*([0-9.]+)\s*([0-9.]+),?\s*([0-9.]+)\s*([0-9.]+),?\s*([0-9.]+)/g, function (match, p1, p2, p3, p4, p5, p6) {
+        path = path.replace(/C([0-9-.]+),?\s*([0-9-.]+)\s*([0-9-.]+),?\s*([0-9-.]+)\s*([0-9-.]+),?\s*([0-9-.]+)/g, function (match, p1, p2, p3, p4, p5, p6) {
             return 'C'+str(x_fn(parseFloat(p1)))+','+str(y_fn(parseFloat(p2)))+' '+str(x_fn(parseFloat(p3)))+','+str(y_fn(parseFloat(p4)))+' '+ [str(x_fn(parseFloat(p5)))+','+str(y_fn(parseFloat(p6)))];
         });
         return path
