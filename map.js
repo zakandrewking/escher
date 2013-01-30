@@ -7,23 +7,29 @@ function load() {
         if (error) return console.warn(error);
         var map_data = json;
 
-        d3.json("flux-wt-pFBA.json", function(error, json) {
+        d3.json("flux-succ-optSwap-pFBA.json", function(error, json) {
             var flux;
             if (error) flux = false;
             else flux = json;
-            visualizeit(map_data, flux);
-        });
-    });
 
+            d3.json("none", function(error, json) {
+		var flux2;
+		if (error) flux2 = false;
+		else flux2 = json;
+		visualizeit(map_data, flux, flux2);
+            });
+	});
+    }); 
 }
 
-function visualizeit(data, flux) {
+function visualizeit(data, flux, flux2) {
 
     var path_color = "rgb(0, 0, 60)"
 
     var decimal_format = d3.format('.1f');
     var decimal_format_3 = d3.format('.3f');
     var has_flux = false;
+    var has_flux_comparison = false;
     if (flux) {
 	has_flux = true;
         data.reaction_paths = data.reaction_paths.map( function(o) {
@@ -39,9 +45,25 @@ function visualizeit(data, flux) {
                 // TODO: make sure text==id
                 o.flux = parseFloat(flux[o.text]);
             }
-			if(o.text=="FBA") {console.log('HEY! '+flux[o.text]);}
             return o;
         });
+	if (flux2) {
+	    has_flux_comparison = true;
+            data.reaction_paths = data.reaction_paths.map( function(o) {
+		if (o.id in flux2 && o.flux) {
+                    o.flux = (parseFloat(flux2[o.id]) - o.flux);
+		}
+		return o;
+            });
+            data.reaction_labels = data.reaction_labels.map( function(o) {
+		if (o.flux) o.flux1 = o.flux;
+		else o.flux1 = 0;
+		if (o.text in flux2) o.flux2 = parseFloat(flux2[o.text]);
+		else o.flux2 = 0; 
+                o.flux = (o.flux2 - o.flux1);
+		return o;
+            });
+	}
     }
 
     var map_w = data.max_map_w, map_h = data.max_map_h;
@@ -68,10 +90,14 @@ function visualizeit(data, flux) {
         .domain([0, 1])
         .range([0, factor]);
     var flux_scale = d3.scale.linear()
-        .domain([0, 100])
-        .range([1, 2]);
-    var flux_color = d3.scale.category10()
-        .domain([0, 100]);
+        .domain([0, 40])
+        .range([6, 12]);
+    var flux_scale_fill = d3.scale.linear()
+        .domain([0, 40])
+        .range([1, 8]);
+    var flux_color = d3.scale.linear()
+        .domain([0, 70])
+	.range(["#ccc", "red"]);
     
     d3.select("#svg-container").remove();
 
@@ -85,7 +111,7 @@ function visualizeit(data, flux) {
         .append("g");
 
     svg.append("style")
-        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;} #misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #membranes{ fill: none; stroke: orange;  stroke-linejoin: miter; stroke-miterlimit: 10;} .end{marker-end: url(#Triangle);} .start{marker-start: url(#triangle);");
+        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;} #misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #metabolite-circles {fill: gray} #membranes{ fill: none; stroke: orange;  stroke-linejoin: miter; stroke-miterlimit: 10;} .end{marker-end: url(#Triangle);} .start{marker-start: url(#triangle);");
 
     svg.append("marker")
         .attr("id", "Triangle")
@@ -161,23 +187,25 @@ function visualizeit(data, flux) {
         .attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
         .attr("class", function(d) {return d.class})
         .attr("style", function(d) {
-            var s = "";
+            var s = "", sc = flux_scale;
+	    if (d.class=="fill-arrow") sc = flux_scale_fill;
             if (d.flux) {
-                // http://lists.w3.org/Archives/Public/public-svg-wg/2011JanMar/0197.html
-                // need to generate a new marker for each color
-                s += "stroke-width:"+String(scale(flux_scale(d.flux)))+";";
-                s += "stroke:"+flux_color(d.flux)+";";
-                s += "fill:"+flux_color(d.flux)+";";
+                s += "stroke-width:"+String(scale(sc(Math.abs(d.flux))))+";";
+                s += "stroke:"+flux_color(Math.abs(d.flux))+";";
+		if (d.class=="fill-arrow") s += "fill:"+flux_color(Math.abs(d.flux))+";";
+		else s += "fill:none";
             }
-			else if (has_flux) {
-				s += "stroke-width:"+String(scale(flux_scale(0)))+";";
-				s += "stroke:rgb(190, 190, 190);"; 
-				s += "fill:rgb(190, 190, 190);"; 
-			}
+	    else if (has_flux) {
+		s += "stroke-width:"+String(scale(sc(0)))+";";
+                s += "stroke:"+flux_color(Math.abs(0))+";";
+                if (d.class=="fill-arrow") s += "fill:"+flux_color(Math.abs(0))+";";
+		else s += "fill:none";
+	    }
             else {
-				s += "stroke-width:"+String(scale(flux_scale(0)))+";";
+		s += "stroke-width:"+String(scale(sc(0)))+";";
                 s += "stroke:"+path_color+";";
-                s += "fill:"+path_color+";";
+                if (d.class=="fill-arrow") s += "fill:"+path_color+";";
+		else s += "fill:none";
             }
             return s;
         });
@@ -189,12 +217,14 @@ function visualizeit(data, flux) {
         .enter().append("text")
         .text(function(d) {
             t = d.text;
-            if (d.flux) t += " ("+decimal_format(d.flux)+")";
-			else if (has_flux) t += " (0)";
+	    if (has_flux_comparison)
+		t += " ("+decimal_format(d.flux1)+"/"+decimal_format(d.flux2)+": "+decimal_format(d.flux)+")"; 
+            else if (d.flux) t += " ("+decimal_format(d.flux)+")";
+	    else if (has_flux) t += " (0)";
             return t;
         })
         .attr("text-anchor", "start")
-        .attr("font-size", scale(40))
+        .attr("font-size", scale(20))
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
     svg.append("g")
@@ -212,7 +242,7 @@ function visualizeit(data, flux) {
         .data(data.metabolite_labels)
         .enter().append("text")
         .text(function(d) { return d.text; })
-        .attr("font-size", scale(30))
+        .attr("font-size", scale(15))
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
     function scale_decimals(path, scale_fn, precision) {

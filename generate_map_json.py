@@ -77,7 +77,8 @@ def read_simpheny(map):
         for h in g.find_all('path'):
             this_path = {'name': g.attrs['id'],
                          'id': reaction_name_to_id(g.attrs['id']),
-                         'd': h.attrs['d']}
+                         'd': h.attrs['d'],
+                         'class': 'fill-arrow'} 
             reaction_paths.append(this_path)
     data["reaction_paths"] = reaction_paths
     
@@ -154,11 +155,7 @@ def read_bigg(map):
             this_path = {"title": g.find("title").text,
                          "id": g.attrs["id"],
                          "d": h.attrs["d"],
-                         "class": h.attrs.get("class",None)}
-            try:
-                this_path["class"] = this_path["class"][0]
-            except:
-                pass
+                         "class": "line-arrow"};
             reaction_paths.append(this_path)
     data["reaction_paths"] = reaction_paths
 
