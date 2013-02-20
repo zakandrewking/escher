@@ -7,12 +7,12 @@ function load() {
         if (error) return console.warn(error);
         var map_data = json;
 
-        d3.json("flux-succ-optSwap-pFBA.json", function(error, json) {
+        d3.json("flux1.json", function(error, json) {
             var flux;
             if (error) flux = false;
             else flux = json;
 
-            d3.json("none", function(error, json) {
+            d3.json("flux2.json", function(error, json) {
 		var flux2;
 		if (error) flux2 = false;
 		else flux2 = json;
@@ -91,13 +91,13 @@ function visualizeit(data, flux, flux2) {
         .range([0, factor]);
     var flux_scale = d3.scale.linear()
         .domain([0, 40])
-        .range([6, 12]);
+        .range([6, 16]);
     var flux_scale_fill = d3.scale.linear()
-        .domain([0, 40])
-        .range([1, 8]);
+        .domain([0, 40, 200])
+        .range([1, 15, 15]);
     var flux_color = d3.scale.linear()
-        .domain([0, 70])
-	.range(["#ccc", "red"]);
+        .domain([0, 0.1, 15, 70])
+	.range(["rgb(200,200,200)", "rgb(150,150,255)", "blue", "red"]);
     
     d3.select("#svg-container").remove();
 
@@ -111,7 +111,7 @@ function visualizeit(data, flux, flux2) {
         .append("g");
 
     svg.append("style")
-        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;} #misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #metabolite-circles {fill: gray} #membranes{ fill: none; stroke: orange;  stroke-linejoin: miter; stroke-miterlimit: 10;} .end{marker-end: url(#Triangle);} .start{marker-start: url(#triangle);");
+        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;} #misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;} .end{marker-end: url(#Triangle);} .start{marker-start: url(#triangle);");
 
     svg.append("marker")
         .attr("id", "Triangle")
@@ -146,7 +146,7 @@ function visualizeit(data, flux, flux2) {
         .attr("class", "overlay")
         .attr("width", width)
         .attr("height", height)
-        .attr("style", "stroke:black");
+        .attr("style", "stroke:black;fill:none;");
 
     svg.append("g")
         .attr("id", "membranes")
@@ -156,7 +156,7 @@ function visualizeit(data, flux, flux2) {
         .attr("width", function(d){ return x_size_scale(d.width) })
         .attr("height", function(d){ return y_size_scale(d.height) })
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";})
-		.attr("style", function(d) { return "stroke-width: "+scale(8)+";" });
+		.attr("style", function(d) { return "stroke-width: "+scale(8)+";fill:none;stroke:orange;" });
 
 	if (data.hasOwnProperty("metabolite_circles")) {
 		console.log('metabolite circles');
@@ -224,7 +224,8 @@ function visualizeit(data, flux, flux2) {
             return t;
         })
         .attr("text-anchor", "start")
-        .attr("font-size", scale(20))
+        .attr("font-size", scale(60))
+	// .attr("style", function(d){ if(!d.flux) return "visibility:hidden;"; else return ""; })
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
     svg.append("g")
@@ -233,7 +234,7 @@ function visualizeit(data, flux, flux2) {
         .data(data.misc_labels)
         .enter().append("text")
         .text(function(d) { return d.text; })
-        .attr("font-size", scale(80))
+        .attr("font-size", scale(60))
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
     svg.append("g")
@@ -243,6 +244,7 @@ function visualizeit(data, flux, flux2) {
         .enter().append("text")
         .text(function(d) { return d.text; })
         .attr("font-size", scale(15))
+	.attr("style", "visibility:hidden;")
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
     function scale_decimals(path, scale_fn, precision) {
