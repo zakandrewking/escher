@@ -35,7 +35,7 @@ python set_flux_files.py <file1>
 python set_flux_files.py <file1> <file2>
 ```
 
-Replace <file1> and <file2> with either .json files, or .csv files where each
+Replace \<file1\> and \<file2\> with either .json files, or .csv files where each
 line contains the reaction id followed by a comma and a flux value. This script
 writes over the files flux1.json and flux2.json. Perform a hard reload
 (Cmd-Shift-R or Ctrl-Shift-R) in you browser to see the changes.
