@@ -33,7 +33,7 @@ function load() {
         .text('generate svg file');
     x.append('div')
         .text('Google Chrome only')
-		.attr('style','font-family:sans-serif;color:grey;font-size:8pt;text-align:center;width:100%');
+        .attr('style','font-family:sans-serif;color:grey;font-size:8pt;text-align:center;width:100%');
 }
 
 
@@ -297,7 +297,7 @@ function exportSvg() {
 
     // generate a file in Google Chrome
     // lots of help from: http://www.html5rocks.com/en/tutorials/file/filesystem/ and
-	// http://stackoverflow.com/questions/7160720/create-a-file-using-javascript-in-chrome-on-client-side
+    // http://stackoverflow.com/questions/7160720/create-a-file-using-javascript-in-chrome-on-client-side
     window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
 
     function errorHandler(e) {
@@ -327,6 +327,17 @@ function exportSvg() {
         console.log('Error: ' + msg);
     }
 
+	// delete file if it exists
+    window.requestFileSystem(window.TEMPORARY, 1024*1024, function(fs) {
+        fs.root.getFile('my_map.svg', {create: false}, function(fileEntry) {
+
+            fileEntry.remove(function() {
+                console.log('File removed.');
+            }, errorHandler);
+
+        }, errorHandler);
+    }, errorHandler);
+
     function onInitFs(fs) {
         fs.root.getFile('my_map.svg', {create: true}, function(fileEntry) {
             // error if file already exists
@@ -344,11 +355,11 @@ function exportSvg() {
 
                 // Create a new Blob and write it to log.txt.
                 var blob = new Blob([svg_xml], {type: 'text/plain'});
-				
-				fileWriter.addEventListener("writeend", function() {
-					// navigate to file, will download
-					location.href = fileEntry.toURL();
-				}, false);
+
+                fileWriter.addEventListener("writeend", function() {
+                    // navigate to file, will download
+                    location.href = fileEntry.toURL();
+                }, false);
 
                 fileWriter.write(blob);
 
