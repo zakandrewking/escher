@@ -13,14 +13,29 @@ function load() {
             else flux = json;
 
             d3.json("flux2.json", function(error, json) {
-		var flux2;
-		if (error) flux2 = false;
-		else flux2 = json;
-		visualizeit(map_data, flux, flux2);
+                var flux2;
+                if (error) flux2 = false;
+                else flux2 = json;
+                visualizeit(map_data, flux, flux2);
             });
-	});
-    }); 
+        });
+    });
+
+    // add export svg button
+    console.log('adding button');
+    x = d3.select('body')
+        .append('div')
+        .attr("style", "margin:0px;position:absolute;top:15px;left:15px;background-color:white;border-radius:15px;")
+        .attr('id', 'button-container');
+    x.append('button')
+        .attr('type', 'button')
+        .attr('onclick', 'exportSvg()')
+        .text('generate svg file');
+    x.append('div')
+        .text('Google Chrome only')
+		.attr('style','font-family:sans-serif;color:grey;font-size:8pt;text-align:center;width:100%');
 }
+
 
 function visualizeit(data, flux, flux2) {
 
@@ -31,13 +46,13 @@ function visualizeit(data, flux, flux2) {
     var has_flux = false;
     var has_flux_comparison = false;
     if (flux) {
-	has_flux = true;
+        has_flux = true;
         data.reaction_paths = data.reaction_paths.map( function(o) {
             // console.log(d3.keys(flux));
             if (o.id in flux) {
                 o.flux = parseFloat(flux[o.id]);
             }
-			// else { console.log(o.id) }
+            // else { console.log(o.id) }
             return o;
         });
         data.reaction_labels = data.reaction_labels.map( function(o) {
@@ -47,32 +62,32 @@ function visualizeit(data, flux, flux2) {
             }
             return o;
         });
-	if (flux2) {
-	    has_flux_comparison = true;
+        if (flux2) {
+            has_flux_comparison = true;
             data.reaction_paths = data.reaction_paths.map( function(o) {
-		if (o.id in flux2 && o.flux) {
+                if (o.id in flux2 && o.flux) {
                     o.flux = (parseFloat(flux2[o.id]) - o.flux);
-		}
-		return o;
+                }
+                return o;
             });
             data.reaction_labels = data.reaction_labels.map( function(o) {
-		if (o.flux) o.flux1 = o.flux;
-		else o.flux1 = 0;
-		if (o.text in flux2) o.flux2 = parseFloat(flux2[o.text]);
-		else o.flux2 = 0; 
+                if (o.flux) o.flux1 = o.flux;
+                else o.flux1 = 0;
+                if (o.text in flux2) o.flux2 = parseFloat(flux2[o.text]);
+                else o.flux2 = 0;
                 o.flux = (o.flux2 - o.flux1);
-		return o;
+                return o;
             });
-	}
+        }
     }
 
     var map_w = data.max_map_w, map_h = data.max_map_h;
     var width = $(window).width()-20;
     var height = $(window).height()-20;
     factor = Math.min(width/map_w,height/map_h);
-	console.log('map_w '+decimal_format(map_w));
-	console.log('map_h '+decimal_format(map_h));
-	console.log('scale factor '+decimal_format_3(factor));
+    console.log('map_w '+decimal_format(map_w));
+    console.log('map_h '+decimal_format(map_h));
+    console.log('scale factor '+decimal_format_3(factor));
 
     var x_scale = d3.scale.linear()
         .domain([0, map_w])
@@ -97,8 +112,8 @@ function visualizeit(data, flux, flux2) {
         .range([1, 15, 15]);
     var flux_color = d3.scale.linear()
         .domain([0, 0.1, 15, 70])
-	.range(["rgb(200,200,200)", "rgb(150,150,255)", "blue", "red"]);
-    
+        .range(["rgb(200,200,200)", "rgb(150,150,255)", "blue", "red"]);
+
     d3.select("#svg-container").remove();
 
     var svg = d3.select("body").append("div").attr("id","svg-container")
@@ -124,8 +139,8 @@ function visualizeit(data, flux, flux2) {
         .attr("viewBox", "0 0 12 12")
         .append("path")
         .attr("d", "M 0 0 L 12 6 L 0 12 z");
-    // .attr("fill", path_color) 
-	// stroke inheritance not supported in SVG 1.*
+    // .attr("fill", path_color)
+    // stroke inheritance not supported in SVG 1.*
     // .attr("stroke", path_color);
 
     svg.append("marker")
@@ -156,56 +171,56 @@ function visualizeit(data, flux, flux2) {
         .attr("width", function(d){ return x_size_scale(d.width) })
         .attr("height", function(d){ return y_size_scale(d.height) })
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";})
-		.attr("style", function(d) { return "stroke-width: "+scale(8)+";fill:none;stroke:orange;" });
+        .attr("style", function(d) { return "stroke-width: "+scale(8)+";fill:none;stroke:orange;" });
 
-	if (data.hasOwnProperty("metabolite_circles")) {
-		console.log('metabolite circles');
-		svg.append("g")
-			.attr("id", "metabolite-circles")
-			.selectAll("circle")
-			.data(data.metabolite_circles)
-			.enter().append("circle")
-			.attr("r", function (d) { return scale(d.r); })
-			.attr("transform", function(d){return "translate("+x_scale(d.cx)+","+y_scale(d.cy)+")";});
-	}
-	else if (data.hasOwnProperty("metabolite_paths")) {
-		console.log('metabolite paths');
-		svg.append("g")
-			.attr("id", "metabolite-paths")
-			.selectAll("path")
-			.data(data.metabolite_paths)
-			.enter().append("path")
-			.attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
-	}
-	else { console.log('neither') }
+    if (data.hasOwnProperty("metabolite_circles")) {
+        console.log('metabolite circles');
+        svg.append("g")
+            .attr("id", "metabolite-circles")
+            .selectAll("circle")
+            .data(data.metabolite_circles)
+            .enter().append("circle")
+            .attr("r", function (d) { return scale(d.r); })
+            .attr("transform", function(d){return "translate("+x_scale(d.cx)+","+y_scale(d.cy)+")";});
+    }
+    else if (data.hasOwnProperty("metabolite_paths")) {
+        console.log('metabolite paths');
+        svg.append("g")
+            .attr("id", "metabolite-paths")
+            .selectAll("path")
+            .data(data.metabolite_paths)
+            .enter().append("path")
+            .attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
+    }
+    else { console.log('neither') }
 
     svg.append("g")
-		.attr("id", "reaction-paths")
-		.selectAll("path")
+        .attr("id", "reaction-paths")
+        .selectAll("path")
         .data(data.reaction_paths)
         .enter().append("path")
         .attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
         .attr("class", function(d) {return d.class})
         .attr("style", function(d) {
             var s = "", sc = flux_scale;
-	    if (d.class=="fill-arrow") sc = flux_scale_fill;
+            if (d.class=="fill-arrow") sc = flux_scale_fill;
             if (d.flux) {
                 s += "stroke-width:"+String(scale(sc(Math.abs(d.flux))))+";";
                 s += "stroke:"+flux_color(Math.abs(d.flux))+";";
-		if (d.class=="fill-arrow") s += "fill:"+flux_color(Math.abs(d.flux))+";";
-		else s += "fill:none";
+                if (d.class=="fill-arrow") s += "fill:"+flux_color(Math.abs(d.flux))+";";
+                else s += "fill:none";
             }
-	    else if (has_flux) {
-		s += "stroke-width:"+String(scale(sc(0)))+";";
+            else if (has_flux) {
+                s += "stroke-width:"+String(scale(sc(0)))+";";
                 s += "stroke:"+flux_color(Math.abs(0))+";";
                 if (d.class=="fill-arrow") s += "fill:"+flux_color(Math.abs(0))+";";
-		else s += "fill:none";
-	    }
+                else s += "fill:none";
+            }
             else {
-		s += "stroke-width:"+String(scale(sc(0)))+";";
+                s += "stroke-width:"+String(scale(sc(0)))+";";
                 s += "stroke:"+path_color+";";
                 if (d.class=="fill-arrow") s += "fill:"+path_color+";";
-		else s += "fill:none";
+                else s += "fill:none";
             }
             return s;
         });
@@ -217,15 +232,15 @@ function visualizeit(data, flux, flux2) {
         .enter().append("text")
         .text(function(d) {
             t = d.text;
-	    if (has_flux_comparison)
-		t += " ("+decimal_format(d.flux1)+"/"+decimal_format(d.flux2)+": "+decimal_format(d.flux)+")"; 
+            if (has_flux_comparison)
+                t += " ("+decimal_format(d.flux1)+"/"+decimal_format(d.flux2)+": "+decimal_format(d.flux)+")";
             else if (d.flux) t += " ("+decimal_format(d.flux)+")";
-	    else if (has_flux) t += " (0)";
+            else if (has_flux) t += " (0)";
             return t;
         })
         .attr("text-anchor", "start")
         .attr("font-size", scale(60))
-	// .attr("style", function(d){ if(!d.flux) return "visibility:hidden;"; else return ""; })
+    // .attr("style", function(d){ if(!d.flux) return "visibility:hidden;"; else return ""; })
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
     svg.append("g")
@@ -244,7 +259,7 @@ function visualizeit(data, flux, flux2) {
         .enter().append("text")
         .text(function(d) { return d.text; })
         .attr("font-size", scale(15))
-	.attr("style", "visibility:hidden;")
+        .attr("style", "visibility:hidden;")
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
     function scale_decimals(path, scale_fn, precision) {
@@ -255,7 +270,7 @@ function visualizeit(data, flux, flux2) {
         return path
     }
     function scale_path(path, x_fn, y_fn) {
-		// TODO: scale arrow width
+        // TODO: scale arrow width
         var str = d3.format(".2f")
         path = path.replace(/(M|L)([0-9-.]+),?\s*([0-9-.]+)/g, function (match, p0, p1, p2) {
             return p0 + [str(x_fn(parseFloat(p1))), str(y_fn(parseFloat(p2)))].join(', ');
@@ -269,4 +284,76 @@ function visualizeit(data, flux, flux2) {
     function zoom() {
         svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
     }
+}
+
+function exportSvg() {
+    // generate and download a .svg file for the current map
+    // based on: https://github.com/agordon/d3export_demo
+    var svg = d3.select('svg').node();
+    // Extract the data as SVG text string
+    var svg_xml = (new XMLSerializer).serializeToString(svg);
+    // Optional: prettify the XML with proper indentations
+    svg_xml = vkbeautify.xml(svg_xml);
+
+    // generate a file in Google Chrome
+    // lots of help from: http://www.html5rocks.com/en/tutorials/file/filesystem/ and
+	// http://stackoverflow.com/questions/7160720/create-a-file-using-javascript-in-chrome-on-client-side
+    window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+
+    function errorHandler(e) {
+        var msg = '';
+
+        switch (e.code) {
+        case FileError.QUOTA_EXCEEDED_ERR:
+            msg = 'QUOTA_EXCEEDED_ERR';
+            break;
+        case FileError.NOT_FOUND_ERR:
+            msg = 'NOT_FOUND_ERR';
+            break;
+        case FileError.SECURITY_ERR:
+            msg = 'SECURITY_ERR';
+            break;
+        case FileError.INVALID_MODIFICATION_ERR:
+            msg = 'INVALID_MODIFICATION_ERR';
+            break;
+        case FileError.INVALID_STATE_ERR:
+            msg = 'INVALID_STATE_ERR';
+            break;
+        default:
+            msg = 'Unknown Error';
+            break;
+        };
+
+        console.log('Error: ' + msg);
+    }
+
+    function onInitFs(fs) {
+        fs.root.getFile('my_map.svg', {create: true}, function(fileEntry) {
+            // error if file already exists
+
+            // Create a FileWriter object for our FileEntry
+            fileEntry.createWriter(function(fileWriter) {
+
+                fileWriter.onwriteend = function(e) {
+                    console.log('Write completed.');
+                };
+
+                fileWriter.onerror = function(e) {
+                    console.log('Write failed: ' + e.toString());
+                };
+
+                // Create a new Blob and write it to log.txt.
+                var blob = new Blob([svg_xml], {type: 'text/plain'});
+				
+				fileWriter.addEventListener("writeend", function() {
+					// navigate to file, will download
+					location.href = fileEntry.toURL();
+				}, false);
+
+                fileWriter.write(blob);
+
+            }, errorHandler);
+        }, errorHandler);
+    }
+    window.requestFileSystem(window.TEMPORARY, 1024*1024, onInitFs, errorHandler);
 }
