@@ -115,7 +115,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
 	.range([15, 200]);
     var metabolite_color_scale = d3.scale.linear()
 	.domain([0, 6])
-        .range(["green", "red"]);
+        .range(["red", "red"]);
 
     d3.select("#svg-container").remove();
 
@@ -129,7 +129,11 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .append("g");
 
     svg.append("style")
-        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120); text-rendering: optimizelegibility;} #metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;} #misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;} .end{marker-end: url(#Triangle);} .start{marker-start: url(#triangle);");
+        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120);text-rendering: optimizelegibility;}" + 
+	      "#metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;}" +  
+	      "#misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;}" + 
+	      ".end{marker-end: url(#Triangle);}" +
+	      ".start{marker-start: url(#triangle);");
 
     svg.append("marker")
         .attr("id", "Triangle")
@@ -141,10 +145,10 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .attr("refY", 6)
         .attr("viewBox", "0 0 12 12")
         .append("path")
-        .attr("d", "M 0 0 L 12 6 L 0 12 z");
-    // .attr("fill", path_color)
+        .attr("d", "M 0 0 L 12 6 L 0 12 z")
+	.attr("fill", path_color)
     // stroke inheritance not supported in SVG 1.*
-    // .attr("stroke", path_color);
+	.attr("stroke", path_color);
 
     svg.append("marker")
         .attr("id", "triangle")
@@ -347,8 +351,9 @@ function parse_flux_2(data, flux2) {
 }
 
 function parse_metabolites_1(data, metabolites) {
+    skip_these_metabolites = ['nad','nadp','nadh','nadph','atp','adp'];
     data.metabolite_circles = data.metabolite_circles.map( function(o) {
-        if (o.id in metabolites) {
+        if (o.id in metabolites && skip_these_metabolites.indexOf(o.id)==-1) {
             o.metabolite_concentration = parseFloat(metabolites[o.id])
         }
         return o;
@@ -372,8 +377,8 @@ function append_deviation_arcs(svg, metabolite_circle_data, scale, sc, x_scale, 
 		o.hasOwnProperty('metabolite_concentration'));
     });
     var arc = d3.svg.arc()
-	.startAngle(function(d) { return -d.metabolite_deviation/100*2*Math.PI; })
-	.endAngle(function(d) { return d.metabolite_deviation/100*2*Math.PI; })
+	.startAngle(function(d) { return -d.metabolite_deviation/100/2*2*Math.PI; })
+	.endAngle(function(d) { return d.metabolite_deviation/100/2*2*Math.PI; })
 	.innerRadius(function(d) { return 0; })
 	.outerRadius(function(d) { return scale(sc(d.metabolite_concentration)); });
     svg.append("g")
