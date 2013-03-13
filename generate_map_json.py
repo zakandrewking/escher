@@ -154,8 +154,14 @@ def read_bigg(map):
         for h in g.find_all("path"):
             this_path = {"title": g.find("title").text,
                          "id": g.attrs["id"],
-                         "d": h.attrs["d"],
-                         "class": "line-arrow"};
+                         "d": h.attrs["d"]};
+            bc = "line-arrow"
+            try:
+                a = h.attrs["class"]
+                a.append(bc)
+                this_path["class"] = ' '.join(a)
+            except KeyError:
+                this_path["class"] = bc
             reaction_paths.append(this_path)
     data["reaction_paths"] = reaction_paths
 

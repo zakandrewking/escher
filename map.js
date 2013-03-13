@@ -203,6 +203,10 @@ function visualizeit(data, flux, flux2) {
         .attr("class", function(d) {return d.class})
         .attr("style", function(d) {
             var s = "", sc = flux_scale;
+	    // .fill-arrow is for simpheny maps where the path surrounds line and
+	    // arrowhead
+	    // .line-arrow is for bigg maps were the line is a path and the
+	    // arrowhead is a marker
             if (d.class=="fill-arrow") sc = flux_scale_fill;
             if (d.flux) {
                 s += "stroke-width:"+String(scale(sc(Math.abs(d.flux))))+";";
