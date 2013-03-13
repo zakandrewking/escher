@@ -74,7 +74,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         data = parse_metabolites_1(data, metabolites);
         if (metabolites2) {
             has_metabolite_deviation = true;
-            data = parse_metabolites_2(data, metabolites_2);
+            data = parse_metabolites_2(data, metabolites2);
         }
     }
 
@@ -112,10 +112,10 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .range(["rgb(200,200,200)", "rgb(150,150,255)", "blue", "red"]);
     var metabolite_concentration_scale = d3.scale.linear()
 	.domain([0, 10])
-	.range([4, 50]);
+	.range([15, 200]);
     var metabolite_color_scale = d3.scale.linear()
-	.domain([0, 0.001, 0.015, 5])
-        .range(["rgb(200,200,200)", "rgb(150,150,255)", "blue", "red"]);
+	.domain([0, 6])
+        .range(["green", "red"]);
 
     d3.select("#svg-container").remove();
 
@@ -196,16 +196,21 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
 	    .attr("style", function (d) {
 		sc = metabolite_color_scale;
 		if (d.metabolite_concentration) {
-		    a = "fill:"+sc(d.metabolite_concentration)+";stroke:black;stroke-width:1;";
-		    console.log(a);
+		    a = "fill:"+sc(d.metabolite_concentration) + ";" + 
+			"stroke:black;stroke-width:0.5;";
 		    return a;
 		}
 		else if (has_metabolites) {
-		    return "fill:none;stroke:black;stroke-width:1;";
+		    return "fill:none;stroke:black;stroke-width:0.5;";
 		}
 		else { return ""; }
 	    })
             .attr("transform", function(d){return "translate("+x_scale(d.cx)+","+y_scale(d.cy)+")";});
+	if (has_metabolite_deviation) {
+	    append_deviation_arcs(svg, data.metabolite_circles, 
+				  scale, metabolite_concentration_scale,
+				  x_scale, y_scale);
+	}
     }
     else if (data.hasOwnProperty("metabolite_paths")) {
         if (has_metabolites) { alert('metabolites do not render w simpheny maps'); }
@@ -267,7 +272,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
             return t;
         })
         .attr("text-anchor", "start")
-        .attr("font-size", scale(60))
+        .attr("font-size", scale(15))
     // .attr("style", function(d){ if(!d.flux) return "visibility:hidden;"; else return ""; })
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
@@ -286,8 +291,12 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .data(data.metabolite_labels)
         .enter().append("text")
         .text(function(d) { return d.text; })
-        .attr("font-size", scale(15))
-        .attr("style", "visibility:hidden;")
+        .attr("font-size", function(d) {
+	    if (d.metabolite_concentration) return scale(60);
+	    else if (has_metabolites) return scale(30);
+	    else return scale(10);
+	})
+        .style("visibility","visible")
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
 
 
@@ -350,11 +359,33 @@ function parse_metabolites_1(data, metabolites) {
 function parse_metabolites_2(data, metabolites) {
     data.metabolite_circles = data.metabolite_circles.map( function(o) {
         if (o.id in metabolites) {
-            o.metabolite_concentration = parseFloat(metabolites[o.id])
+            o.metabolite_deviation = parseFloat(metabolites[o.id])
         }
         return o;
     });
     return data;
+}
+
+function append_deviation_arcs(svg, metabolite_circle_data, scale, sc, x_scale, y_scale) {
+    arc_data = metabolite_circle_data.filter( function(o) {
+	return (o.hasOwnProperty('metabolite_deviation') &&
+		o.hasOwnProperty('metabolite_concentration'));
+    });
+    var arc = d3.svg.arc()
+	.startAngle(function(d) { return -d.metabolite_deviation/100*2*Math.PI; })
+	.endAngle(function(d) { return d.metabolite_deviation/100*2*Math.PI; })
+	.innerRadius(function(d) { return 0; })
+	.outerRadius(function(d) { return scale(sc(d.metabolite_concentration)); });
+    svg.append("g")
+	.attr("id", "metabolite-deviation-arcs")
+	.selectAll("path")
+	.data(arc_data)
+	.enter().append("path")
+	.attr('d', arc)
+	.attr('style', "fill:black;stroke:none;opacity:0.4;")
+	.attr("transform", function(d) { 
+	    return "translate("+x_scale(d.cx)+","+y_scale(d.cy)+")";
+	});
 }
 
 function scale_decimals(path, scale_fn, precision) {
