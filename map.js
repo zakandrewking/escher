@@ -178,7 +178,13 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .attr("width", function(d){ return x_size_scale(d.width) })
         .attr("height", function(d){ return y_size_scale(d.height) })
         .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";})
-        .attr("style", function(d) { return "stroke-width: "+scale(8)+";fill:none;stroke:orange;" });
+        .attr("style", function(d) { 
+	    if (d.style)
+		return d.style;
+	    else
+		return "fill:none;stroke:orange;" 
+	})
+	.style("stroke-width", function(d) { return scale(10) });
 
     if (data.hasOwnProperty("metabolite_circles")) {
         console.log('metabolite circles');
@@ -254,7 +260,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
                 else s += "fill:none";
             }
             else {
-                s += "stroke-width:"+String(scale(sc(0)))+";";
+                s += "stroke-width:"+String(scale(10))+";";
                 s += "stroke:"+path_color+";";
                 if (d.class=="fill-arrow") s += "fill:"+path_color+";";
                 else s += "fill:none";

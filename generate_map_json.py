@@ -1,5 +1,5 @@
 from bs4 import BeautifulSoup as bs
-import json
+import json, re
 from optparse import OptionParser
 
 # parse options
@@ -133,10 +133,13 @@ def read_bigg(map):
     membrane_rectangles = []
     for g in svg.find(id="Layer_base").find('g').find_all('g'):
         r = g.find('rect')
+        # remove fill from line style
         this_membrane = {'height':r.attrs['height'],
                          'width':r.attrs['width'],
                          'x':r.attrs['x'],
-                         'y':r.attrs['y']}
+                         'y':r.attrs['y'],
+                         'style':"fill:none;" +
+                           re.sub(r"fill:[\sA-Za-z0-9\(\),]+;\s", "", g.attrs['style']) }
         membrane_rectangles.append(this_membrane)
     data["membrane_rectangles"] = membrane_rectangles
 
@@ -156,6 +159,10 @@ def read_bigg(map):
                          "id": g.attrs["id"],
                          "d": h.attrs["d"]};
             bc = "line-arrow"
+            if h.attrs.has_key("marker-end"):
+                bc = bc + " end";
+            if h.attrs.has_key("marker-start"):
+                bc = bc + " start";
             try:
                 a = h.attrs["class"]
                 a.append(bc)
