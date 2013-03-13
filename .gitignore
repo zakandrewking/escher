@@ -2,3 +2,4 @@
 *.csv
 *.log
 .DS_Store
+*.pyc
