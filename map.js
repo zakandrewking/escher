@@ -22,7 +22,7 @@ function load() {
                     else metabolites = json;
 
                     d3.json("metabolites2.json", function(error, json) {
-                        var metabolites;
+                        var metabolites2;
                         if (error) metabolites2 = false;
                         else metabolites2 = json;
 
@@ -71,7 +71,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
     }
     if (metabolites) {
         has_metabolites = true;
-        data = parse_metabolites(data, metabolites);
+        data = parse_metabolites_1(data, metabolites);
         if (metabolites2) {
             has_metabolite_deviation = true;
             data = parse_metabolites_2(data, metabolites_2);
@@ -109,6 +109,12 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .range([1, 15, 15]);
     var flux_color = d3.scale.linear()
         .domain([0, 0.1, 15, 70])
+        .range(["rgb(200,200,200)", "rgb(150,150,255)", "blue", "red"]);
+    var metabolite_concentration_scale = d3.scale.linear()
+	.domain([0, 10])
+	.range([4, 50]);
+    var metabolite_color_scale = d3.scale.linear()
+	.domain([0, 0.001, 0.015, 5])
         .range(["rgb(200,200,200)", "rgb(150,150,255)", "blue", "red"]);
 
     d3.select("#svg-container").remove();
@@ -178,7 +184,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
             .data(data.metabolite_circles)
             .enter().append("circle")
             .attr("r", function (d) {
-		sc = flux_scale_fill; // TODO: make a better scale
+		sc = metabolite_concentration_scale; // TODO: make a better scale
 		if (d.metabolite_concentration) {
 		    return scale(sc(d.metabolite_concentration));
 		} else if (has_metabolites) {
@@ -186,6 +192,18 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
 		} else {
 		    return scale(d.r); 
 		}
+	    })
+	    .attr("style", function (d) {
+		sc = metabolite_color_scale;
+		if (d.metabolite_concentration) {
+		    a = "fill:"+sc(d.metabolite_concentration)+";stroke:black;stroke-width:1;";
+		    console.log(a);
+		    return a;
+		}
+		else if (has_metabolites) {
+		    return "fill:none;stroke:black;stroke-width:1;";
+		}
+		else { return ""; }
 	    })
             .attr("transform", function(d){return "translate("+x_scale(d.cx)+","+y_scale(d.cy)+")";});
     }
@@ -316,9 +334,8 @@ function parse_flux_2(data, flux2) {
 }
 
 function parse_metabolites_1(data, metabolites) {
-    data.metabolite_paths = data.metabolite_paths.map( function(o) {
+    data.metabolite_circles = data.metabolite_circles.map( function(o) {
         if (o.id in metabolites) {
-	    console.log('found metabolite ' + o.id)
             o.metabolite_concentration = parseFloat(metabolites[o.id])
         }
         return o;
@@ -327,7 +344,7 @@ function parse_metabolites_1(data, metabolites) {
 }
 
 function parse_metabolites_2(data, metabolites) {
-    data.metabolite_paths = data.metabolite_paths.map( function(o) {
+    data.metabolite_circles = data.metabolite_circles.map( function(o) {
         if (o.id in metabolites) {
             o.metabolite_concentration = parseFloat(metabolites[o.id])
         }
