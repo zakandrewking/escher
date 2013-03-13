@@ -6,9 +6,12 @@ def dump_json(in_file):
     """
     out_file = in_file.replace('csv','json')
     x = {}
-    with open(in_file) as file:
+    with open(in_file, 'Ur') as file:
         for row in csv.reader(file):
-            val = float(row[1])
+            try:
+                val = float(row[1])
+            except ValueError:
+                continue
             if val != 0:
                 if re.search('_b', row[0]):
                     val = -val
