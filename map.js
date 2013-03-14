@@ -131,12 +131,10 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
     svg.append("style")
         .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120);text-rendering: optimizelegibility;}" + 
 	      "#metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;}" +  
-	      "#misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;}" + 
-	      ".end{marker-end: url(#Triangle);}" +
-	      ".start{marker-start: url(#triangle);");
+	      "#misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;}");
 
     svg.append("marker")
-        .attr("id", "Triangle")
+        .attr("id", "end-triangle-path-color")
         .attr("markerHeight", 2.1)
         .attr("markerUnits", "strokeWidth")
         .attr("markerWidth", 2.1)
@@ -151,7 +149,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
 	.attr("stroke", path_color);
 
     svg.append("marker")
-        .attr("id", "triangle")
+        .attr("id", "start-triangle-path-color")
         .attr("markerHeight", 2.0)
         .attr("markerUnits", "strokeWidth")
         .attr("markerWidth", 2.0)
@@ -233,40 +231,9 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
             .attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
     }
 
-    svg.append("g")
-        .attr("id", "reaction-paths")
-        .selectAll("path")
-        .data(data.reaction_paths)
-        .enter().append("path")
-        .attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
-        .attr("class", function(d) {return d.class})
-        .attr("style", function(d) {
-            var s = "", sc = flux_scale;
-	    // .fill-arrow is for simpheny maps where the path surrounds line and
-	    // arrowhead
-	    // .line-arrow is for bigg maps were the line is a path and the
-	    // arrowhead is a marker
-            if (d.class=="fill-arrow") sc = flux_scale_fill;
-            if (d.flux) {
-                s += "stroke-width:"+String(scale(sc(Math.abs(d.flux))))+";";
-                s += "stroke:"+flux_color(Math.abs(d.flux))+";";
-                if (d.class=="fill-arrow") s += "fill:"+flux_color(Math.abs(d.flux))+";";
-                else s += "fill:none";
-            }
-            else if (has_flux) {
-                s += "stroke-width:"+String(scale(sc(0)))+";";
-                s += "stroke:"+flux_color(Math.abs(0))+";";
-                if (d.class=="fill-arrow") s += "fill:"+flux_color(Math.abs(0))+";";
-                else s += "fill:none";
-            }
-            else {
-                s += "stroke-width:"+String(scale(10))+";";
-                s += "stroke:"+path_color+";";
-                if (d.class=="fill-arrow") s += "fill:"+path_color+";";
-                else s += "fill:none";
-            }
-            return s;
-        });
+    append_reaction_paths(svg, data.reaction_paths,
+			  scale, scale_path, x_scale, y_scale, flux_scale);
+
 
     svg.append("g")
         .attr("id", "reaction-labels")
@@ -398,6 +365,50 @@ function append_deviation_arcs(svg, metabolite_circle_data, scale, sc, x_scale, 
 	    return "translate("+x_scale(d.cx)+","+y_scale(d.cy)+")";
 	});
 }
+
+
+function append_reaction_paths(svg, reaction_path_data, scale, scale_path, x_scale, y_scale, flux_scale) {
+
+    svg.append("g")
+        .attr("id", "reaction-paths")
+        .selectAll("path")
+        .data(reaction_path_data)
+        .enter().append("path")
+        .attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
+        .attr("class", function(d) { return d.class })
+        .attr("style", function(d) {
+            var s = "", sc = flux_scale;
+	    // .fill-arrow is for simpheny maps where the path surrounds line and
+	    // arrowhead
+	    // .line-arrow is for bigg maps were the line is a path and the
+	    // arrowhead is a marker
+            if (d.class=="fill-arrow") sc = flux_scale_fill;
+            if (d.flux) {
+                s += "stroke-width:"+String(scale(sc(Math.abs(d.flux))))+";";
+                s += "stroke:"+flux_color(Math.abs(d.flux))+";";
+                if (d.class=="fill-arrow") s += "fill:"+flux_color(Math.abs(d.flux))+";";
+		else if (d.class=="line-arrow") { make_arrowhead_for_fill(
+                else s += "fill:none";
+            }
+            else if (has_flux) {
+                s += "stroke-width:"+String(scale(sc(0)))+";";
+                s += "stroke:"+flux_color(Math.abs(0))+";";
+                if (d.class=="fill-arrow") s += "fill:"+flux_color(Math.abs(0))+";";
+                else s += "fill:none";
+            }
+            else {
+                s += "stroke-width:"+String(scale(10))+";";
+                s += "stroke:"+path_color+";";
+                if (d.class=="fill-arrow") s += "fill:"+path_color+";";
+                else s += "fill:none";
+            }
+            return s;
+        });
+	    // ".end{marker-end: url(#end-triangle-path-color);}" +
+	    // ".start{marker-start: url(#start-triangle-path-color);");
+	});
+}
+	     
 
 function scale_decimals(path, scale_fn, precision) {
     var str = d3.format("."+String(precision)+"f")
