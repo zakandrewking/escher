@@ -1,3 +1,5 @@
+maps = {'version': 0.1};
+
 function load() {
 
     // import json files
@@ -51,29 +53,30 @@ function load() {
 
 function visualizeit(data, flux, flux2, metabolites, metabolites2) {
 
-    var path_color = "rgb(80, 80, 80)"
+    maps.defaults = {}
+    maps.defaults.path_color = "rgb(80, 80, 80)"
 
     var decimal_format = d3.format('.1f');
     var decimal_format_3 = d3.format('.3f');
-    var has_flux = false;
-    var has_flux_comparison = false;
-    var has_metabolites = false;
-    var has_metabolite_deviation = false;
+    maps.has_flux = false;
+    maps.has_flux_comparison = false;
+    maps.has_metabolites = false;
+    maps.has_metabolite_deviation = false;
 
     // parse the data objects and attach values to map objects
     if (flux) {
-        has_flux = true;
+        maps.has_flux = true;
         data = parse_flux_1(data, flux);
         if (flux2) {
-            has_flux_comparison = true;
+            maps.has_flux_comparison = true;
             data = parse_flux_2(data, flux2);
         }
     }
     if (metabolites) {
-        has_metabolites = true;
+        maps.has_metabolites = true;
         data = parse_metabolites_1(data, metabolites);
         if (metabolites2) {
-            has_metabolite_deviation = true;
+            maps.has_metabolite_deviation = true;
             data = parse_metabolites_2(data, metabolites2);
         }
     }
@@ -81,40 +84,41 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
     var map_w = data.max_map_w, map_h = data.max_map_h;
     var width = $(window).width()-20;
     var height = $(window).height()-20;
-    factor = Math.min(width/map_w,height/map_h);
+    var factor = Math.min(width/map_w,height/map_h);
     console.log('map_w '+decimal_format(map_w));
     console.log('map_h '+decimal_format(map_h));
     console.log('scale factor '+decimal_format_3(factor));
 
-    var x_scale = d3.scale.linear()
+    maps.scale = {};
+    maps.scale.x = d3.scale.linear()
         .domain([0, map_w])
         .range([(width - map_w*factor)/2, map_w*factor + (width - map_w*factor)/2]);
-    var y_scale = d3.scale.linear()
+    maps.scale.y = d3.scale.linear()
         .domain([0, map_h])
         .range([(height - map_h*factor)/2, map_h*factor + (height - map_h*factor)/2]);
-    var x_size_scale = d3.scale.linear()
+    maps.scale.x_size = d3.scale.linear()
         .domain([0, map_w])
         .range([0, map_w*factor]);
-    var y_size_scale = d3.scale.linear()
+    maps.scale.y_size = d3.scale.linear()
         .domain([0, map_h])
         .range([0, map_h*factor]);
-    var scale = d3.scale.linear()
+    maps.scale.size = d3.scale.linear()
         .domain([0, 1])
         .range([0, factor]);
-    var flux_scale = d3.scale.linear()
+    maps.scale.flux = d3.scale.linear()
         .domain([0, 40])
         .range([6, 16]);
-    var flux_scale_fill = d3.scale.linear()
+    maps.scale.flux_fill = d3.scale.linear()
         .domain([0, 40, 200])
         .range([1, 15, 15]);
-    var flux_color = d3.scale.linear()
+    maps.scale.flux_color = d3.scale.linear()
         .domain([0, 0.1, 15, 70])
         .range(["rgb(200,200,200)", "rgb(150,150,255)", "blue", "red"]);
-    var metabolite_concentration_scale = d3.scale.linear()
-	.domain([0, 10])
-	.range([15, 200]);
-    var metabolite_color_scale = d3.scale.linear()
-	.domain([0, 6])
+    maps.scale.metabolite_concentration = d3.scale.linear()
+        .domain([0, 10])
+        .range([15, 200]);
+    maps.scale.metabolite_color = d3.scale.linear()
+        .domain([0, 6])
         .range(["red", "red"]);
 
     d3.select("#svg-container").remove();
@@ -127,13 +131,19 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .append("g")
         .call(d3.behavior.zoom().scaleExtent([1, 15]).on("zoom", zoom))
         .append("g");
+    maps.svg = svg;
+
 
     svg.append("style")
-        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120);text-rendering: optimizelegibility;}" + 
-	      "#metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;}" +  
-	      "#misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;}");
+        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120);text-rendering: optimizelegibility;}" +
+              "#metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;}" +
+              "#misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;}" + 
+	      ".line-arrow{ fill: none; }");
+    
+    var g = svg.append('g')
+	.attr('id', 'markers');
 
-    svg.append("marker")
+    g.append("marker")
         .attr("id", "end-triangle-path-color")
         .attr("markerHeight", 2.1)
         .attr("markerUnits", "strokeWidth")
@@ -144,11 +154,11 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .attr("viewBox", "0 0 12 12")
         .append("path")
         .attr("d", "M 0 0 L 12 6 L 0 12 z")
-	.attr("fill", path_color)
+        .attr("fill", maps.defaults.path_color)
     // stroke inheritance not supported in SVG 1.*
-	.attr("stroke", path_color);
+        .attr("stroke", maps.defaults.path_color);
 
-    svg.append("marker")
+    g.append("marker")
         .attr("id", "start-triangle-path-color")
         .attr("markerHeight", 2.0)
         .attr("markerUnits", "strokeWidth")
@@ -159,8 +169,8 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .attr("viewBox", "0 0 12 12")
         .append("path")
         .attr("d", "M 12 0 L 0 6 L 12 12 z")
-        .attr("fill", path_color)
-        .attr("stroke", path_color);
+        .attr("fill", maps.defaults.path_color)
+        .attr("stroke", maps.defaults.path_color);
 
     svg.append("rect")
         .attr("class", "overlay")
@@ -173,16 +183,16 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .selectAll("rect")
         .data(data.membrane_rectangles)
         .enter().append("rect")
-        .attr("width", function(d){ return x_size_scale(d.width) })
-        .attr("height", function(d){ return y_size_scale(d.height) })
-        .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";})
-        .attr("style", function(d) { 
-	    if (d.style)
-		return d.style;
-	    else
-		return "fill:none;stroke:orange;" 
-	})
-	.style("stroke-width", function(d) { return scale(10) });
+        .attr("width", function(d){ return maps.scale.x(d.width) })
+        .attr("height", function(d){ return maps.scale.y(d.height) })
+        .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";})
+        .attr("style", function(d) {
+            if (d.style)
+                return d.style;
+            else
+                return "fill:none;stroke:orange;"
+        })
+        .style("stroke-width", function(d) { return maps.scale.size(10) });
 
     if (data.hasOwnProperty("metabolite_circles")) {
         console.log('metabolite circles');
@@ -192,48 +202,44 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
             .data(data.metabolite_circles)
             .enter().append("circle")
             .attr("r", function (d) {
-		sc = metabolite_concentration_scale; // TODO: make a better scale
-		if (d.metabolite_concentration) {
-		    return scale(sc(d.metabolite_concentration));
-		} else if (has_metabolites) {
-		    return scale(10); 
-		} else {
-		    return scale(d.r); 
-		}
-	    })
-	    .attr("style", function (d) {
-		sc = metabolite_color_scale;
-		if (d.metabolite_concentration) {
-		    a = "fill:"+sc(d.metabolite_concentration) + ";" + 
-			"stroke:black;stroke-width:0.5;";
-		    return a;
-		}
-		else if (has_metabolites) {
-		    return "fill:none;stroke:black;stroke-width:0.5;";
-		}
-		else { return ""; }
-	    })
-            .attr("transform", function(d){return "translate("+x_scale(d.cx)+","+y_scale(d.cy)+")";});
-	if (has_metabolite_deviation) {
-	    append_deviation_arcs(svg, data.metabolite_circles, 
-				  scale, metabolite_concentration_scale,
-				  x_scale, y_scale);
-	}
+                sc = maps.scale.metabolite_concentration; // TODO: make a better scale
+                if (d.metabolite_concentration) {
+                    return maps.scale.size(sc(d.metabolite_concentration));
+                } else if (maps.has_metabolites) {
+                    return maps.scale.size(10);
+                } else {
+                    return maps.scale.size(d.r);
+                }
+            })
+            .attr("style", function (d) {
+                sc = maps.scale.metabolite_color;
+                if (d.metabolite_concentration) {
+                    a = "fill:"+sc(d.metabolite_concentration) + ";" +
+                        "stroke:black;stroke-width:0.5;";
+                    return a;
+                }
+                else if (maps.has_metabolites) {
+                    return "fill:none;stroke:black;stroke-width:0.5;";
+                }
+                else { return ""; }
+            })
+            .attr("transform", function(d){return "translate("+maps.scale.x(d.cx)+","+maps.scale.y(d.cy)+")";});
+        if (maps.has_metabolite_deviation) {
+            append_deviation_arcs(data.metabolite_circles);
+        }
     }
     else if (data.hasOwnProperty("metabolite_paths")) {
-        if (has_metabolites) { alert('metabolites do not render w simpheny maps'); }
+        if (maps.has_metabolites) { alert('metabolites do not render w simpheny maps'); }
         console.log('metabolite paths');
         svg.append("g")
             .attr("id", "metabolite-paths")
             .selectAll("path")
             .data(data.metabolite_paths)
             .enter().append("path")
-            .attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
+            .attr("d", function(d) { return scale_path(d.d); })
     }
 
-    append_reaction_paths(svg, data.reaction_paths,
-			  scale, scale_path, x_scale, y_scale, flux_scale);
-
+    append_reaction_paths(data.reaction_paths);
 
     svg.append("g")
         .attr("id", "reaction-labels")
@@ -242,16 +248,16 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .enter().append("text")
         .text(function(d) {
             t = d.text;
-            if (has_flux_comparison)
+            if (maps.has_flux_comparison)
                 t += " ("+decimal_format(d.flux1)+"/"+decimal_format(d.flux2)+": "+decimal_format(d.flux)+")";
             else if (d.flux) t += " ("+decimal_format(d.flux)+")";
-            else if (has_flux) t += " (0)";
+            else if (maps.has_flux) t += " (0)";
             return t;
         })
         .attr("text-anchor", "start")
-        .attr("font-size", scale(15))
+        .attr("font-size", maps.scale.size(15))
     // .attr("style", function(d){ if(!d.flux) return "visibility:hidden;"; else return ""; })
-        .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
+        .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";});
 
     svg.append("g")
         .attr("id", "misc-labels")
@@ -259,8 +265,8 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .data(data.misc_labels)
         .enter().append("text")
         .text(function(d) { return d.text; })
-        .attr("font-size", scale(60))
-        .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
+        .attr("font-size", maps.scale.size(60))
+        .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";});
 
     svg.append("g")
         .attr("id", "metabolite-labels")
@@ -269,16 +275,16 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .enter().append("text")
         .text(function(d) { return d.text; })
         .attr("font-size", function(d) {
-	    if (d.metabolite_concentration) return scale(60);
-	    else if (has_metabolites) return scale(30);
-	    else return scale(10);
-	})
+            if (d.metabolite_concentration) return maps.scale.size(60);
+            else if (maps.has_metabolites) return maps.scale.size(30);
+            else return maps.scale.size(10);
+        })
         .style("visibility","visible")
-        .attr("transform", function(d){return "translate("+x_scale(d.x)+","+y_scale(d.y)+")";});
+        .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";});
 
 
     function zoom() {
-	svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+        svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
     }
 
 }
@@ -344,71 +350,85 @@ function parse_metabolites_2(data, metabolites) {
     return data;
 }
 
-function append_deviation_arcs(svg, metabolite_circle_data, scale, sc, x_scale, y_scale) {
+function append_deviation_arcs(metabolite_circle_data) {
     arc_data = metabolite_circle_data.filter( function(o) {
-	return (o.hasOwnProperty('metabolite_deviation') &&
-		o.hasOwnProperty('metabolite_concentration'));
+        return (o.hasOwnProperty('metabolite_deviation') &&
+                o.hasOwnProperty('metabolite_concentration'));
     });
     var arc = d3.svg.arc()
-	.startAngle(function(d) { return -d.metabolite_deviation/100/2*2*Math.PI; })
-	.endAngle(function(d) { return d.metabolite_deviation/100/2*2*Math.PI; })
-	.innerRadius(function(d) { return 0; })
-	.outerRadius(function(d) { return scale(sc(d.metabolite_concentration)); });
-    svg.append("g")
-	.attr("id", "metabolite-deviation-arcs")
-	.selectAll("path")
-	.data(arc_data)
-	.enter().append("path")
-	.attr('d', arc)
-	.attr('style', "fill:black;stroke:none;opacity:0.4;")
-	.attr("transform", function(d) { 
-	    return "translate("+x_scale(d.cx)+","+y_scale(d.cy)+")";
-	});
+        .startAngle(function(d) { return -d.metabolite_deviation/100/2*2*Math.PI; })
+        .endAngle(function(d) { return d.metabolite_deviation/100/2*2*Math.PI; })
+        .innerRadius(function(d) { return 0; })
+        .outerRadius(function(d) { return maps.scale.size(maps.scale.metabolite_concentration(d.metabolite_concentration)); });
+    maps.svg.append("g")
+        .attr("id", "metabolite-deviation-arcs")
+        .selectAll("path")
+        .data(arc_data)
+        .enter().append("path")
+        .attr('d', arc)
+        .attr('style', "fill:black;stroke:none;opacity:0.4;")
+        .attr("transform", function(d) {
+            return "translate("+maps.scale.x(d.cx)+","+maps.scale.y(d.cy)+")";
+        });
 }
 
 
-function append_reaction_paths(svg, reaction_path_data, scale, scale_path, x_scale, y_scale, flux_scale) {
+function append_reaction_paths(reaction_path_data) {
 
-    svg.append("g")
+    maps.svg.append("g")
         .attr("id", "reaction-paths")
         .selectAll("path")
         .data(reaction_path_data)
         .enter().append("path")
-        .attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
+        .attr("d", function(d) { return scale_path(d.d); })
         .attr("class", function(d) { return d.class })
         .attr("style", function(d) {
-            var s = "", sc = flux_scale;
-	    // .fill-arrow is for simpheny maps where the path surrounds line and
-	    // arrowhead
-	    // .line-arrow is for bigg maps were the line is a path and the
-	    // arrowhead is a marker
+            var s = "", sc = maps.scale.flux;
+            // .fill-arrow is for simpheny maps where the path surrounds line and
+            // arrowhead
+            // .line-arrow is for bigg maps were the line is a path and the
+            // arrowhead is a marker
             if (d.class=="fill-arrow") sc = flux_scale_fill;
             if (d.flux) {
-                s += "stroke-width:"+String(scale(sc(Math.abs(d.flux))))+";";
-                s += "stroke:"+flux_color(Math.abs(d.flux))+";";
-                if (d.class=="fill-arrow") s += "fill:"+flux_color(Math.abs(d.flux))+";";
-		else if (d.class=="line-arrow") { make_arrowhead_for_fill(
+                s += "stroke-width:"+String(maps.scale.size(sc(Math.abs(d.flux))))+";";
+                s += "stroke:"+maps.scale.flux_color(Math.abs(d.flux))+";";
+                if (d.class=="fill-arrow") { s += "fill:"+maps.scale.flux_color(Math.abs(d.flux))+";"; }
+                else if (d.class=="line-arrow") { make_arrowhead_for_fill(); }
                 else s += "fill:none";
             }
-            else if (has_flux) {
-                s += "stroke-width:"+String(scale(sc(0)))+";";
-                s += "stroke:"+flux_color(Math.abs(0))+";";
-                if (d.class=="fill-arrow") s += "fill:"+flux_color(Math.abs(0))+";";
+            else if (maps.has_flux) {
+                s += "stroke-width:"+String(maps.scale.size(sc(0)))+";";
+                s += "stroke:"+maps.scale.flux_color(Math.abs(0))+";";
+                if (d.class=="fill-arrow") s += "fill:"+maps.scale.flux_color(0)+";";
                 else s += "fill:none";
             }
             else {
-                s += "stroke-width:"+String(scale(10))+";";
-                s += "stroke:"+path_color+";";
-                if (d.class=="fill-arrow") s += "fill:"+path_color+";";
+                s += "stroke-width:"+String(maps.scale.size(10))+";";
+                s += "stroke:"+maps.defaults.path_color+";";
+                if (d.class=="fill-arrow") s += "fill:"+maps.defaults.path_color+";";
                 else s += "fill:none";
             }
             return s;
+        })
+        .style('marker-end', function (d) {
+            if (!/end/.test(d.class)) return '';
+            if (d.flux) return make_arrowhead_for_fill(maps.scale.flux_color(d.flux));
+            else if (maps.has_flux) return make_arrowhead_for_fill(maps.scale.flux_color(0));
+            else return "url(#end-triangle-path-color)";
+        })
+        .style('marker-start', function (d) {
+            if (!/start/.test(d.class)) return '';
+            if (d.flux) return make_arrowhead_for_fill(maps.scale.flux_color(d.flux));
+            else if (maps.has_flux) return make_arrowhead_for_fill(maps.scale.flux_color(0));
+            else return "url(#start-triangle-path-color)";
         });
-	    // ".end{marker-end: url(#end-triangle-path-color);}" +
-	    // ".start{marker-start: url(#start-triangle-path-color);");
-	});
 }
-	     
+
+function make_arrowhead_for_fill(fill) {
+    d3.select('#markers').selectAll("marker"); // 
+    return ""
+}
+
 
 function scale_decimals(path, scale_fn, precision) {
     var str = d3.format("."+String(precision)+"f")
@@ -417,7 +437,8 @@ function scale_decimals(path, scale_fn, precision) {
     });
     return path
 }
-function scale_path(path, x_fn, y_fn) {
+function scale_path(path) {
+    x_fn = maps.scale.x; y_fn = maps.scale.y;
     // TODO: scale arrow width
     var str = d3.format(".2f")
     path = path.replace(/(M|L)([0-9-.]+),?\s*([0-9-.]+)/g, function (match, p0, p1, p2) {
