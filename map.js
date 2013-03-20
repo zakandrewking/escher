@@ -103,7 +103,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .range([0, factor]);
     var flux_scale = d3.scale.linear()
         .domain([0, 40])
-        .range([6, 16]);
+        .range([6, 6]);
     var flux_scale_fill = d3.scale.linear()
         .domain([0, 40, 200])
         .range([1, 15, 15]);
