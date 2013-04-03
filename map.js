@@ -51,7 +51,7 @@ function load() {
 
 function visualizeit(data, flux, flux2, metabolites, metabolites2) {
 
-    var path_color = "rgb(80, 80, 80)"
+    var path_color = "rgb(127, 179, 228)"
 
     var decimal_format = d3.format('.1f');
     var decimal_format_3 = d3.format('.3f');
@@ -238,6 +238,9 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
             .data(data.metabolite_paths)
             .enter().append("path")
             .attr("d", function(d) { return scale_path(d.d, x_scale, y_scale); })
+	    .style("fill", "rgb(224, 134, 91)")
+	    .style("stroke", "rgb(162, 69, 16)")
+	    .style("stroke-width", String(scale(2))+"px");
     }
 
     svg.append("g")
@@ -267,7 +270,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
                 else s += "fill:none";
             }
             else {
-                s += "stroke-width:"+String(scale(10))+";";
+                s += "stroke-width:"+String(scale(1))+";";
                 s += "stroke:"+path_color+";";
                 if (d.class=="fill-arrow") s += "fill:"+path_color+";";
                 else s += "fill:none";
