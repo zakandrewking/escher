@@ -124,6 +124,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
     var svg = d3.select("body").append("div").attr("id","svg-container")
         .attr("style", "width:"+width+"px;height:"+height+"px;margin:0px auto")// ;border:3px solid black;")
         .append("svg")
+    // TODO: add correct svg attributes (see '/Users/zaking/Dropbox/lab/optSwap/paper-2-GAPD/old figs/fig5-theoretical-production/')
         .attr("width", width)
         .attr("height", height)
         .append("g")
