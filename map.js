@@ -388,7 +388,7 @@ function append_reaction_paths(reaction_path_data) {
             // arrowhead
             // .line-arrow is for bigg maps were the line is a path and the
             // arrowhead is a marker
-            if (d.class=="fill-arrow") sc = flux_scale_fill;
+            if (d.class=="fill-arrow") sc = maps.scale.flux_fill;
             if (d.flux) {
                 s += "stroke-width:"+String(maps.scale.size(sc(Math.abs(d.flux))))+";";
                 s += "stroke:"+maps.scale.flux_color(Math.abs(d.flux))+";";
