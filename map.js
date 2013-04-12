@@ -184,8 +184,8 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .selectAll("rect")
         .data(data.membrane_rectangles)
         .enter().append("rect")
-        .attr("width", function(d){ return maps.scale.x(d.width) })
-        .attr("height", function(d){ return maps.scale.y(d.height) })
+        .attr("width", function(d){ return maps.scale.x_size(d.width) })
+        .attr("height", function(d){ return maps.scale.y_size(d.height) })
         .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";})
         .attr("style", function(d) {
             if (d.style)
@@ -207,7 +207,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
                 if (d.metabolite_concentration) {
 		    var s;
 		    if (d.should_size) s = maps.scale.size(sc(d.metabolite_concentration));
-		    else s = maps.scale.size(0));
+		    else s = maps.scale.size(0);
 		    return s;
                 } else if (maps.has_metabolites) {
                     return maps.scale.size(10);
@@ -245,7 +245,7 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
             .attr("d", function(d) { return scale_path(d.d); })
 	    .style("fill", "rgb(224, 134, 91)")
 	    .style("stroke", "rgb(162, 69, 16)")
-	    .style("stroke-width", String(scale(2))+"px");
+	    .style("stroke-width", String(maps.scale.size(2))+"px");
     }
 
     append_reaction_paths(data.reaction_paths);
@@ -476,8 +476,6 @@ function make_arrowhead_for_fill(fill) {
     d3.select('#markers').selectAll("marker"); // 
     return ""
 }
-
-b
 function scale_decimals(path, scale_fn, precision) {
     var str = d3.format("."+String(precision)+"f")
     path = path.replace(/([0-9.]+)/g, function (match, p1) {
