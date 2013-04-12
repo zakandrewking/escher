@@ -106,9 +106,9 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .range([6, 6]);
     var flux_scale_fill = d3.scale.linear()
         .domain([0, 40, 200])
-        .range([1, 15, 15]);
+        .range([1, 1, 1]);
     var flux_color = d3.scale.linear()
-        .domain([0, 0.1, 15, 70])
+        .domain([0, 1, 20, 50])
         .range(["rgb(200,200,200)", "rgb(150,150,255)", "blue", "red"]);
     var metabolite_concentration_scale = d3.scale.linear()
 	.domain([0, 10])
@@ -116,8 +116,6 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
     var metabolite_color_scale = d3.scale.linear()
 	.domain([0, 1.2])
         .range(["#FEF0D9", "#B30000"]);
-	// .domain([0, 0.1, 0.2, 0.5, 1])
-        // .range(["#FEF0D9", "#FEE8C8", "#FEE8C8", "#E34A33", "#B30000"]);
 
     d3.select("#svg-container").remove();
 
