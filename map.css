@@ -10,3 +10,11 @@
 .line-arrow{
     fill: none; 
 }
+
+.inner-membrane {
+    fill: white;
+}
+
+.outer-membrane {
+    fill: rgb(251, 207, 0);
+}
