@@ -78,8 +78,10 @@ def read_simpheny(map):
             this_path = {'name': g.attrs['id'],
                          'id': reaction_name_to_id(g.attrs['id']),
                          'd': h.attrs['d'],
-                         'class': 'fill-arrow'} 
-            reaction_paths.append(this_path)
+                         'class': 'fill-arrow'}
+            # check for duplicates in simpheny output
+            if not find_duplicate_path(this_path, reaction_paths):
+                reaction_paths.append(this_path)
     data["reaction_paths"] = reaction_paths
     
     misc_labels = []
@@ -108,7 +110,11 @@ def read_simpheny(map):
         for h in g.find_all('path'):
             this_path = {'id': g.attrs['id'],
                          'd': h.attrs['d']}
-            metabolite_paths.append(this_path)
+            # check for duplicates in simpheny output
+            if not find_duplicate_path(this_path, metabolite_paths):
+                # remove last element of path so that the circles are just circles
+                this_path['d'] = re.sub(r"\sL[0-9,\s.Z]{0,20}$", "", this_path['d'])
+                metabolite_paths.append(this_path)
     data["metabolite_paths"] = metabolite_paths
     
     metabolite_labels = []
@@ -125,6 +131,14 @@ def read_simpheny(map):
 
     save_as_json(data, svg)
 
+def find_duplicate_path(this_path, reaction_paths):
+    """Check for duplicates, which may differ by a final Line element."""
+    r = r"\sL[0-9,\s.Z]{0,20}$";
+    for path in reaction_paths:
+        if re.sub(r, "", this_path['d'])==re.sub(r, "", path['d']):
+            return True
+    return False
+    
 def read_bigg(map):
     
     svg = map.find('svg')
