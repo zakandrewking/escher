@@ -186,15 +186,10 @@ function visualizeit(data, style, flux, flux2, metabolites, metabolites2) {
         .selectAll("rect")
         .data(data.membrane_rectangles)
         .enter().append("rect")
+        .attr("class", function(d){ return d.class })
         .attr("width", function(d){ return maps.scale.x_size(d.width) })
         .attr("height", function(d){ return maps.scale.y_size(d.height) })
         .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";})
-        .attr("style", function(d) {
-            if (d.style)
-                return d.style;
-            else
-                return "fill:none;stroke:orange;"
-        })
         .style("stroke-width", function(d) { return maps.scale.size(10) })
         .attr('rx', function(d){ return maps.scale.x_size(20); })
         .attr('ry', function(d){ return maps.scale.x_size(20); });

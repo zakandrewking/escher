@@ -63,10 +63,12 @@ def read_simpheny(map):
             this_membrane = {'height':r.attrs['height'],
                              'width':r.attrs['width'],
                              'x':r.attrs['x'],
-                             'y':r.attrs['y']}
+                             'y':r.attrs['y'],
+                             'class': ""}
         except AttributeError:
             continue
         membrane_rectangles.append(this_membrane)
+    membrane_rectangles = set_inner_and_outer_membranes(membrane_rectangles)
     data["membrane_rectangles"] = membrane_rectangles
 
     # in Layer_0:?
@@ -152,9 +154,11 @@ def read_bigg(map):
                          'width':r.attrs['width'],
                          'x':r.attrs['x'],
                          'y':r.attrs['y'],
+                         'class': "",
                          'style':"fill:none;" +
                            re.sub(r"fill:[\sA-Za-z0-9\(\),]+;\s", "", g.attrs['style']) }
         membrane_rectangles.append(this_membrane)
+    membrane_rectangles = set_inner_and_outer_membranes(membrane_rectangles)
     data["membrane_rectangles"] = membrane_rectangles
 
     misc_labels = []
@@ -213,7 +217,17 @@ def read_bigg(map):
     data["metabolite_labels"] = metabolite_labels
 
     save_as_json(data, svg)
-    
+
+def set_inner_and_outer_membranes(membrane_rectangles):
+    if len(membrane_rectangles)==2:
+        classes = ['outer-membrane', 'inner-membrane']
+        if membrane_rectangles[0]['width'] < membrane_rectangles[1]['width']:
+            membrane_rectangles.reverse()
+        membrane_rectangles[0]['class'] = " ".join([membrane_rectangles[0]['class'], classes[0]]).strip()
+        membrane_rectangles[1]['class'] = " ".join([membrane_rectangles[1]['class'], classes[1]]).strip()
+    else:
+        print 'Warning: %d membranes' % len(membrane_rectangles)
+    return membrane_rectangles
 
 # GO!!
 if options.format.lower()=="bigg":
