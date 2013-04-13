@@ -195,7 +195,9 @@ function visualizeit(data, style, flux, flux2, metabolites, metabolites2) {
             else
                 return "fill:none;stroke:orange;"
         })
-        .style("stroke-width", function(d) { return maps.scale.size(10) });
+        .style("stroke-width", function(d) { return maps.scale.size(10) })
+        .attr('rx', function(d){ return maps.scale.x_size(20); })
+        .attr('ry', function(d){ return maps.scale.x_size(20); });
 
     if (data.hasOwnProperty("metabolite_circles")) {
         console.log('metabolite circles');
