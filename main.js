@@ -8,27 +8,32 @@ function load() {
         if (error) return console.warn(error);
         var map_data = json;
 
-        d3.json("flux1.json", function(error, json) {
-            var flux;
-            if (error) flux = false;
-            else flux = json;
+        d3.text("map.css", function(error, text) {
+            if (error) return console.warn(error);
+            var map_style = text;
 
-            d3.json("flux2.json", function(error, json) {
-                var flux2;
-                if (error) flux2 = false;
-                else flux2 = json;
+            d3.json("flux1.json", function(error, json) {
+                var flux;
+                if (error) flux = false;
+                else flux = json;
 
-                d3.json("metabolites1.json", function(error, json) {
-                    var metabolites;
-                    if (error) metabolites = false;
-                    else metabolites = json;
+                d3.json("flux2.json", function(error, json) {
+                    var flux2;
+                    if (error) flux2 = false;
+                    else flux2 = json;
 
-                    d3.json("metabolites2.json", function(error, json) {
-                        var metabolites2;
-                        if (error) metabolites2 = false;
-                        else metabolites2 = json;
+                    d3.json("metabolites1.json", function(error, json) {
+                        var metabolites;
+                        if (error) metabolites = false;
+                        else metabolites = json;
 
-                        visualizeit(map_data, flux, flux2, metabolites, metabolites2);
+                        d3.json("metabolites2.json", function(error, json) {
+                            var metabolites2;
+                            if (error) metabolites2 = false;
+                            else metabolites2 = json;
+
+                            visualizeit(map_data, map_style, flux, flux2, metabolites, metabolites2);
+                        });
                     });
                 });
             });
@@ -51,7 +56,7 @@ function load() {
 }
 
 
-function visualizeit(data, flux, flux2, metabolites, metabolites2) {
+function visualizeit(data, style, flux, flux2, metabolites, metabolites2) {
 
     maps.defaults = {}
     maps.defaults.path_color = "rgb(80, 80, 80)"
@@ -136,13 +141,10 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
 
 
     svg.append("style")
-        .text("#reaction-labels{ font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120);text-rendering: optimizelegibility;}" +
-              "#metabolite-labels{ font-family: sans-serif; font-style: italic; font-weight: bold;}" +
-              "#misc-labels{ font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;}" + 
-	      ".line-arrow{ fill: none; }");
-    
+        .text(style);
+
     var g = svg.append('g')
-	.attr('id', 'markers');
+        .attr('id', 'markers');
 
     g.append("marker")
         .attr("id", "end-triangle-path-color")
@@ -205,10 +207,10 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
             .attr("r", function (d) {
                 sc = maps.scale.metabolite_concentration; // TODO: make a better scale
                 if (d.metabolite_concentration) {
-		    var s;
-		    if (d.should_size) s = maps.scale.size(sc(d.metabolite_concentration));
-		    else s = maps.scale.size(0);
-		    return s;
+                    var s;
+                    if (d.should_size) s = maps.scale.size(sc(d.metabolite_concentration));
+                    else s = maps.scale.size(0);
+                    return s;
                 } else if (maps.has_metabolites) {
                     return maps.scale.size(10);
                 } else {
@@ -218,11 +220,11 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
             .attr("style", function (d) {
                 sc = maps.scale.metabolite_color;
                 if (d.metabolite_concentration) {
-		    var a;
+                    var a;
                     if (d.should_color) a = "fill:"+sc(d.metabolite_concentration) + ";" +
                         "stroke:black;stroke-width:0.5;";
-		    else a = "fill:none;stroke:black;stroke-width:0.5;";
-		    return a;
+                    else a = "fill:none;stroke:black;stroke-width:0.5;";
+                    return a;
                 }
                 else if (maps.has_metabolites) {
                     return "fill:grey;stroke:none;stroke-width:0.5;";
@@ -243,9 +245,9 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
             .data(data.metabolite_paths)
             .enter().append("path")
             .attr("d", function(d) { return scale_path(d.d); })
-	    .style("fill", "rgb(224, 134, 91)")
-	    .style("stroke", "rgb(162, 69, 16)")
-	    .style("stroke-width", String(maps.scale.size(2))+"px");
+            .style("fill", "rgb(224, 134, 91)")
+            .style("stroke", "rgb(162, 69, 16)")
+            .style("stroke-width", String(maps.scale.size(2))+"px");
     }
 
     append_reaction_paths(data.reaction_paths);
@@ -284,16 +286,16 @@ function visualizeit(data, flux, flux2, metabolites, metabolites2) {
         .enter().append("text")
         .text(function(d) {
             var t = d.text;
-	    if (isNaN(d.metabolite_concentration)) {}
-	    else if (has_metabolite_deviation) {
-		var a = (isNaN(d.metabolite_concentration) ? "-" : decimal_format(d.metabolite_concentration));
-		var b = (isNaN(d.metabolite_deviation) ? "-" : decimal_format(d.metabolite_deviation));
+            if (isNaN(d.metabolite_concentration)) {}
+            else if (has_metabolite_deviation) {
+                var a = (isNaN(d.metabolite_concentration) ? "-" : decimal_format(d.metabolite_concentration));
+                var b = (isNaN(d.metabolite_deviation) ? "-" : decimal_format(d.metabolite_deviation));
                 t += " ("+a+" \xB1 "+b+"%)";
-	    }
+            }
             else if (d.metabolite_concentration) {
-		var a = (isNaN(d.metabolite_concentration) ? "-" : decimal_format(d.metabolite_concentration));
-		t += " ("+a+")";
-	    }
+                var a = (isNaN(d.metabolite_concentration) ? "-" : decimal_format(d.metabolite_concentration));
+                t += " ("+a+")";
+            }
             else if (has_metabolites) t += " (0)";
             return t;
         })
@@ -353,26 +355,26 @@ function parse_flux_2(data, flux2) {
 }
 
 function parse_metabolites_1(data, metabolites) {
-    skip_these_metabolites = []; // 
+    skip_these_metabolites = []; //
     do_not_size_these_metabolites = ['nad','nadp','nadh','nadph','atp','adp','coa','accoa'];
     data.metabolite_circles = data.metabolite_circles.map( function(o) {
         if (o.id in metabolites && skip_these_metabolites.indexOf(o.id)==-1) {
             o.metabolite_concentration = parseFloat(metabolites[o.id])
-	    if (do_not_size_these_metabolites.indexOf(o.id)>=0) {
-		o.should_size = false;
-		o.should_color = true;
-	    } else { 
-		o.should_size = true; 
-		o.should_color = false;
-	    }
+            if (do_not_size_these_metabolites.indexOf(o.id)>=0) {
+                o.should_size = false;
+                o.should_color = true;
+            } else {
+                o.should_size = true;
+                o.should_color = false;
+            }
         }
         return o;
     });
     data.metabolite_labels = data.metabolite_labels.map( function(o) {
-	if (o.text in metabolites) {
-	    o.metabolite_concentration = parseFloat(metabolites[o.text])
-	}
-	return o;
+        if (o.text in metabolites) {
+            o.metabolite_concentration = parseFloat(metabolites[o.text])
+        }
+        return o;
     });
     return data;
 }
@@ -385,10 +387,10 @@ function parse_metabolites_2(data, metabolites) {
         return o;
     });
     data.metabolite_labels = data.metabolite_labels.map( function(o) {
-	if (o.text in metabolites) {
-	    o.metabolite_deviation = parseFloat(metabolites[o.text])
-	}
-	return o;
+        if (o.text in metabolites) {
+            o.metabolite_deviation = parseFloat(metabolites[o.text])
+        }
+        return o;
     });
     return data;
 }
@@ -402,12 +404,12 @@ function append_deviation_arcs(metabolite_circle_data) {
         .startAngle(function(d) { return -d.metabolite_deviation/100/2*2*Math.PI; })
         .endAngle(function(d) { return d.metabolite_deviation/100/2*2*Math.PI; })
         .innerRadius(function(d) { return 0; })
-        .outerRadius(function(d) { 
-	    var s;
-	    if (d.should_size) s = maps.scale.size(maps.scale.metabolite_concentration(d.metabolite_concentration)); 
-	    else s = maps.scale.size(0);
-	    return s;
-	});
+        .outerRadius(function(d) {
+            var s;
+            if (d.should_size) s = maps.scale.size(maps.scale.metabolite_concentration(d.metabolite_concentration));
+            else s = maps.scale.size(0);
+            return s;
+        });
     maps.svg.append("g")
         .attr("id", "metabolite-deviation-arcs")
         .selectAll("path")
@@ -473,7 +475,7 @@ function append_reaction_paths(reaction_path_data) {
 }
 
 function make_arrowhead_for_fill(fill) {
-    d3.select('#markers').selectAll("marker"); // 
+    d3.select('#markers').selectAll("marker"); //
     return ""
 }
 function scale_decimals(path, scale_fn, precision) {
