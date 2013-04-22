@@ -7,9 +7,9 @@ Metabolic network visualizations using d3.js.
 
 To generate a json map file from svg, run:
 ```Bash
-python generate_map_json.py -f bigg bigg-maps/ecoli.svg 
+python set_map.py -f bigg bigg-maps/ecoli.svg 
 # OR:
-python generate_map_json.py -f simpheny simpheny-maps/ijo-central.svg 
+python set_map.py -f simpheny simpheny-maps/ijo-central.svg 
 ```
 
 Use the -f option to specify format, either 'BIGG' or 'SimPheny' [default].
