@@ -58,8 +58,10 @@ function load() {
 
 function visualizeit(data, style, flux, flux2, metabolites, metabolites2) {
 
-    maps.defaults = {}
-    maps.defaults.path_color = "rgb(80, 80, 80)"
+    maps.defaults = {};
+    maps.defaults.path_color = "rgb(80, 80, 80)";
+
+    maps.style_variables = get_style_variables(style);
 
     var decimal_format = d3.format('.1f');
     var decimal_format_3 = d3.format('.3f');
@@ -138,7 +140,6 @@ function visualizeit(data, style, flux, flux2, metabolites, metabolites2) {
         .call(d3.behavior.zoom().scaleExtent([1, 15]).on("zoom", zoom))
         .append("g");
     maps.svg = svg;
-
 
     svg.append("style")
         .text(style);
@@ -263,7 +264,14 @@ function visualizeit(data, style, flux, flux2, metabolites, metabolites2) {
             return t;
         })
         .attr("text-anchor", "start")
-        .attr("font-size", maps.scale.size(15))
+        .attr("font-size", function(d) {
+	    var s;
+	    if maps.style_variables.hasOwnProperty('reaction_label_size') {
+		s = maps.style_variables['reaction_label_size'];
+	    }
+	    else { s = 15; }
+	    return maps.scale.size(s);
+	})
     // .attr("style", function(d){ if(!d.flux) return "visibility:hidden;"; else return ""; })
         .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";});
 
@@ -311,8 +319,15 @@ function visualizeit(data, style, flux, flux2, metabolites, metabolites2) {
 
 }
 
-
-
+function get_style_variables(style) {
+    // var r = new RegExp("/\*(a-zA-Z)+\*/");
+    // var r = /\/\*([a-zA-Z_]+)=([0-9.]+)\*\//g;
+    var r = /\/\*\s([a-zA-Z_]+)\s=\s([0-9.]+)\s\*\//g;
+    matches = r.exec(style);	// only returns the first one...need findAll
+    params = {};
+    params[matches[1]] = matches[2]; 
+    return params
+}
 
 function parse_flux_1(data, flux) {
     data.reaction_paths = data.reaction_paths.map( function(o) {
