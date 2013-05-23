@@ -163,6 +163,8 @@ function setup_plot(f) {
 	.append("path")
 	.attr("d", line([[x(dom[0]), y(dom[0])], [x(dom[1]), y(dom[1])]]));
 
+    var save_key = 83;
     if (true) cursor_tooltip(svg, width+margin.left+margin.right,
-			     height+margin.top+margin.bottom, x, y);
+			     height+margin.top+margin.bottom, x, y,
+			     save_key);
 }
