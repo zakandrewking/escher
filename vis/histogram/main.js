@@ -1,17 +1,27 @@
 // data.json:
-// [
-//     {name:, x1:, x2: },
-//     ...
-// ]
+// 
+// {data: [
+//      {name:, x1:, x2: },
+//      ...
+//  ], 
+//  options: {
+//      x_axis_label: ,
+//      y_axis_label: ,
+//      x_data_label: ,
+//      y_data_label: ,
+//  }
+// }
 
 var default_filename = 0,
-x_axis_label = 'x',
-y_axis_label = 'frequency';
+def_x_axis_label = 'x',
+def_y_axis_label = 'count',
+def_x_data_label = '1',
+def_y_data_label = '2';
 
 // setup dropdown menu
 $.ajax({
     dataType: "json",
-    url: 'http://zak.ucsd.edu/git/histogram/getdatafiles',
+    url: 'http://zak.ucsd.edu/git/visbio/vis/histogram/getdatafiles',
     success:function(json){
         $('#dropdown-menu').change( function() {
             console.log('value: ' + $(this).val());
@@ -48,8 +58,13 @@ function update_dropdown(list) {
     menu.focus();
 }
 
-function setup_plot(f) {
-    this_d = f
+function setup_plot(json) {
+    f = json.data;
+    o = json.options;
+    x_axis_label = o.hasOwnProperty('x_axis_label') ? o.x_axis_label : def_x_axis_label;
+    y_axis_label = o.hasOwnProperty('y_axis_label') ? o.y_axis_label : def_y_axis_label;
+    x_data_label = o.hasOwnProperty('x_data_label') ? o.x_data_label : def_x_data_label;
+    y_data_label = o.hasOwnProperty('y_data_label') ? o.y_data_label : def_y_data_label;
 
     var margin = {top: 30, right: 20, bottom: 30, left: 40},
     width = $(window).width() - 20 - margin.left - margin.right,
@@ -158,8 +173,8 @@ function setup_plot(f) {
 	.attr("width", "300px")
 	.attr("height", "200px");
 
-    add_legend(g, '10x', 0, 'bar1');
-    add_legend(g, '100x', 1, 'bar2'); 
+    add_legend(g, x_data_label, 0, 'bar1');
+    add_legend(g, y_data_label, 1, 'bar2'); 
     function add_legend(a, t, i, cl) {
 	var g = a.append("g")
 	    .attr("transform", "translate(0,"+i*40+")");
