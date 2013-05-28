@@ -320,6 +320,8 @@ var visBioMap = (function(d3) {
     }
 
     function get_style_variables(style) {
+	return [];
+
         // var r = new RegExp("/\*(a-zA-Z)+\*/");
         // var r = /\/\*([a-zA-Z_]+)=([0-9.]+)\*\//g;
         var r = /\/\*\s([a-zA-Z_]+)\s=\s([0-9.]+)\s\*\//g;
