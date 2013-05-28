@@ -11,9 +11,13 @@
     fill: none; 
 }
 
-.inner-membrane {
-    fill: white;
+.membrane {
+    fill: none;
     stroke: rgb(255, 187, 0);
+}
+
+.inner-membrane {
+    fill: white;   
 }
 
 .outer-membrane {
