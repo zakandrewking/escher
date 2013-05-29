@@ -1,8 +1,8 @@
 // data.json:
 // 
 // {data: [
-//      {name:, x1:, x2: },
-//      ...
+//      [{name:, x:}, {name:, x:} ...]
+//      [{name:, x:}, {name:, x:} ...]
 //  ], 
 //  options: {
 //      x_axis_label: ,
@@ -21,7 +21,7 @@ def_y_data_label = '2';
 // setup dropdown menu
 $.ajax({
     dataType: "json",
-    url: 'http://zak.ucsd.edu/git/visbio/vis/histogram/getdatafiles',
+    url: 'getdatafiles',
     success:function(json){
         $('#dropdown-menu').change( function() {
             console.log('value: ' + $(this).val());
@@ -59,7 +59,8 @@ function update_dropdown(list) {
 }
 
 function setup_plot(json) {
-    f = json.data;
+    f1 = json.data[0];
+    f2 = json.data[1];
     o = json.options;
     x_axis_label = o.hasOwnProperty('x_axis_label') ? o.x_axis_label : def_x_axis_label;
     y_axis_label = o.hasOwnProperty('y_axis_label') ? o.y_axis_label : def_y_axis_label;
@@ -77,15 +78,15 @@ function setup_plot(json) {
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     // var
-    x_dom = [d3.min([d3.min(f, function (d) { return d.x1; }), d3.min(f, function (d) { return d.x2; })]),
-                 d3.max([d3.max(f, function (d) { return d.x1; }), d3.max(f, function (d) { return d.x2; })]) ];
+    var x_dom = [d3.min([d3.min(f1, function (d) { return d.x; }), d3.min(f2, function (d) { return d.x; })]),
+             d3.max([d3.max(f1, function (d) { return d.x; }), d3.max(f2, function (d) { return d.x; })]) ];
 
     // var
-    x = d3.scale.linear()
+    var x = d3.scale.linear()
         .range([0, width])
         .domain(x_dom);
 
-    x_size_scale = d3.scale.linear()
+    var x_size_scale = d3.scale.linear()
         .range([0, width])
 	.domain([0, x_dom[1] - x_dom[0]]);
 
@@ -93,13 +94,13 @@ function setup_plot(json) {
 
     // var
     data1 = d3.layout.histogram()
-        .value(function (d) { return d.x1; })
+        .value(function (d) { return d.x; })
         .bins(x.ticks(20))
-    (f);
+    (f1);
     var data2 = d3.layout.histogram()
-        .value(function (d) { return d.x2; })
+        .value(function (d) { return d.x; })
         .bins(x.ticks(20))
-    (f); 
+    (f2); 
 
     // var
     y = d3.scale.linear()
