@@ -60,20 +60,20 @@ function setup_plot(f) {
     d3.selectAll('svg').remove();
 
     // set zero values to min
-    var f1nz = f.map(function (d) {
+    var f1nz = f.map(function (d) { // f1 not zero
 	if (d.f1>0) { return d.f1; }
 	else { return null; }
     });
-    var f2nz = f.map(function (d) {
-	if (d.f1>0) { return d.f1; }
+    var f2nz = f.map(function (d) { // f2 not zero
+	if (d.f2>0) { return d.f2; }
 	else { return null; }
     });
-    var dom = [d3.min([d3.min(f1nz), d3.min(f2nz)]),
+    var dom = [d3.min([d3.min(f1nz), d3.min(f2nz)]) / 2,
 	       d3.max([d3.max(f1nz), d3.max(f2nz)])];
-    console.log(dom);
+    console.log(dom)
     f = f.map(function (d) { 
-	if (d.f1 < dom[0]) { d.f1 = dom[0]; }
-	if (d.f2 < dom[0]) { d.f2 = dom[0]; }
+	if (d.f1 < dom[0]) { d.f1 = dom[0];  }
+	if (d.f2 < dom[0]) { d.f2 = dom[0];  }
 	return d;
     });
 
@@ -92,8 +92,7 @@ function setup_plot(f) {
         .domain(dom);
     var y = d3.scale.log()
         .range([height, 1])
-        .domain(dom)
-        .nice();
+        .domain(dom);
 
     var xAxis = d3.svg.axis()
         .scale(x)
