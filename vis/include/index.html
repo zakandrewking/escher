@@ -1,0 +1,16 @@
+<!doctype html>
+<title>the littlest plot</title>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="subplot.js"></script>
+<style>
+.grid { border: 1px solid black; }
+</style>
+<body>
+<div id="main"></div>
+<script>
+subplot = Subplot()
+  .setup({ rows:3, columns:2,
+           selection: d3.select("#main"),
+	   fillScreen: true });
+</script>
+</body>
