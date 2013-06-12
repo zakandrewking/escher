@@ -6,13 +6,12 @@ var Subplot = function() {
     get_frame = function(o) {
         return frames[o.row, o.column];
     },
-    d = {},
     setup = function(options) {
         // // some defaults
         var rows = options.rows || 2,
         columns = options.columns || 2,
         selection = options.selection || d3.select("body"),
-	margin = 20;
+        margin = 20;
 
         if (options.fillScreen==true) {
             // d3.select('html').style('height','100%');
@@ -26,35 +25,25 @@ var Subplot = function() {
         row_h = height/rows,
         col_w = width/columns;
 
+        var data = [];
         for (var y=margin; y<height; y+=row_h) {
             // divide into rows
             for (var x=margin; x<width; x+=col_w) {
-                // divide into rows
-                frames.push({'x': Math.floor(x),
-                             'y': Math.floor(y),
-                             'width': Math.floor(col_w),
-                             'height': Math.floor(row_h)});
+                // divide into columns
+                var fr = selection.append('div')
+                    .attr('class', 'grid')
+                    .style('position', 'absolute')
+                    .style('left', function(d) { return Math.floor(x)+'px' })
+                    .style('top', function(d) { return Math.floor(y)+'px' })
+                    .style('width', function(d) { return Math.floor(col_w)+'px' })
+                    .style('height', function(d) { return Math.floor(row_h)+'px' }); 
+		frames.push(fr);
             }
-        }
-        // d.x = x; d.y = y; d.height = height; d.width = width; d.selection = selection; d.row_h = row_h;
-        // d.col_w = col_w; d.rows = rows; d.columns = columns;
-
-        selection.selectAll('.grid')
-            .data(frames)
-            .enter()
-            .append('div')
-            .attr('class', 'grid')
-            .style('position', 'absolute')
-            .style('left', function(d) { return d.x+'px' })
-            .style('top', function(d) { return d.y+'px' })
-            .style('width', function(d) { return d.width+'px' })
-            .style('height', function(d) { return d.height+'px' });
-
+        } 
         return this;
     };
 
     return {
-        d:d,
         setup: setup,
         frames: frames,
         get_frame: get_frame
