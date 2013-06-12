@@ -6,33 +6,44 @@
 
 var Scatter = function() {
     var setup = function(options) {
-        var default_filename = 'median-translation-wt-alanine.json',
+	if (typeof variable === 'undefined') options = {};
+        var selection = options.selection || d3.select('body'),
+	margins = options.margins  || {top: 20, right: 20, bottom: 30, left: 50},
+        default_filename = 'median-translation-wt-alanine.json',
         x_axis_label = '10x',
         y_axis_label = '100x';
 
         // setup dropdown menu
-        $.ajax({
-            dataType: "json",
-            url: 'http://zak.ucsd.edu/visbio/scatter/getdatafiles',
-            success:function(json){
-                $('#dropdown-menu').change( function() {
-                    console.log('value: ' + $(this).val());
-                    load_datafile($(this).val());
-                });
-                update_dropdown(json.data);
-                var file;
-                if (json.data.indexOf(default_filename) > -1) {
-                    file = default_filename;
-                } else {
-                    file = json.data[0];
-                }
-                d3.json(file, function(error, data) {
-                    if (error) return console.warn(error);
-                    setup_plot(data);
-                    // TODO focus menu on correct entry
-                });
-            },
-            error:function(error) { console.log(error); }
+        d3.json('http://zak.ucsd.edu/visbio/getdatafiles', function(error, json) {
+            if (error) return console.warn(error);
+
+	    var txt = document.createTextNode(" This text was added to the DIV.");
+	    var menu = selection.append('div').attr('id','menu');
+	    menu.append('form')
+		.append('select').attr('id','dropdown-menu');
+	    menu.append('div').style('width','100%').text("Press 's' to freeze tooltip");
+
+	    //when it changes
+	    document.getElementById("dropdown-menu").addEventListener("change", function() {
+		// onchange = function(event) {
+                console.log('value: ' + this.val());
+                load_datafile(this.val());
+            }, false);
+
+            update_dropdown(json.data);
+
+            var file;
+            if (json.data.indexOf(default_filename) > -1) {
+                file = default_filename;
+            } else {
+                file = json.data[0];
+            }
+
+            d3.json(file, function(error, data) {
+                if (error) return console.warn(error);
+                setup_plot(data);
+                // TODO focus menu on correct entry
+            });
         });
 
         // functions
@@ -40,26 +51,27 @@ var Scatter = function() {
             d3.json(this_file, function(error, data) {
                 if (error) {
                     return console.warn(error);
-                    $('body').append('error loading');
+                    selection.append('error loading');
                 } else {
-                    $('svg').remove();
+                    // $('svg').remove();
                     setup_plot(data);
                 }
             });
         }
 
         function update_dropdown(list) {
-            var menu = $('#dropdown-menu');
+            var menu = d3.select('#dropdown-menu');
             menu.empty();
-            for (var i=0; i<list.length; i++) {
-                menu.append("<option value="+list[i]+">"+list[i]+"</option>");
-            }
-            menu.focus();
+	    menu.selectAll(".menu-option")
+		.data(list)
+		.enter()
+		.append('option')
+		.attr('value', function (d) { return d; } )
+		.text(function (d) { return d; } );
+            menu.node().focus();
         }
 
         function setup_plot(f) {
-
-            d3.selectAll('svg').remove();
 
             // set zero values to min
             var f1nz = f.map(function (d) { // f1 not zero
@@ -79,15 +91,14 @@ var Scatter = function() {
                 return d;
             });
 
-            var margin = {top: 20, right: 20, bottom: 30, left: 40},
-            width = $(window).width() - 30 - margin.left - margin.right,
-            height = $(window).height() - 30 - margin.top - margin.bottom;
+            var width = parseFloat(selection.style('width')) - margins.left - margins.right,
+            height = parseFloat(selection.style('height')) - margins.top - margins.bottom;
 
-            var svg = d3.select("body").append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
+            var svg = selection.append("svg")
+                .attr("width", width + margins.left + margins.right)
+                .attr("height", height + margins.top + margins.bottom)
                 .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+                .attr("transform", "translate(" + margins.left + "," + margins.top + ")");
 
             var x = d3.scale.log()
                 .range([1, width])
@@ -165,8 +176,8 @@ var Scatter = function() {
                 .attr("d", line([[x(dom[0]), y(dom[0])], [x(dom[1]), y(dom[1])]]));
 
             var save_key = 83;
-            if (true) cursor_tooltip(svg, width+margin.left+margin.right,
-                                     height+margin.top+margin.bottom, x, y,
+            if (false) cursor_tooltip(svg, width+margins.left+margins.right,
+                                     height+margins.top+margins.bottom, x, y,
                                      save_key);
         }
 
