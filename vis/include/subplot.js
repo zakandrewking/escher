@@ -11,23 +11,24 @@ var Subplot = function() {
         // // some defaults
         var rows = options.rows || 2,
         columns = options.columns || 2,
-        selection = options.selection || d3.select("body");
+        selection = options.selection || d3.select("body"),
+	margin = 20;
 
         if (options.fillScreen==true) {
-            d3.select('html').style('height','100%');
-            d3.select('body').style('height','100%');
-            selection.style('height', '100%');
-            selection.style('width', '100%');
+            // d3.select('html').style('height','100%');
+            // d3.select('body').style('height','100%');
+            selection.style('height', (window.innerHeight-margin)+'px');
+            selection.style('width', (window.innerWidth-margin)+'px');
         }
 
-        var height = parseFloat(selection.style('height')),
-        width = parseFloat(selection.style('width')),
+        var height = parseFloat(selection.style('height')) - (margin),
+        width = parseFloat(selection.style('width')) - (margin),
         row_h = height/rows,
         col_w = width/columns;
 
-        for (var y=0; y<height; y+=row_h) {
+        for (var y=margin; y<height; y+=row_h) {
             // divide into rows
-            for (var x=0; x<width; x+=col_w) {
+            for (var x=margin; x<width; x+=col_w) {
                 // divide into rows
                 frames.push({'x': Math.floor(x),
                              'y': Math.floor(y),
