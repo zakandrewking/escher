@@ -5,186 +5,237 @@
 // ]
 
 var Scatter = function() {
-    var setup = function(options) {
-	if (typeof variable === 'undefined') options = {};
-        var selection = options.selection || d3.select('body'),
-	margins = options.margins  || {top: 20, right: 20, bottom: 30, left: 50},
-        default_filename = 'median-translation-wt-alanine.json',
-        x_axis_label = '10x',
-        y_axis_label = '100x';
+    var s = {};
+
+    s.data = [];
+    s.selection = [];
+    s.update_size = function() {
+        if (s.fillScreen==true) {
+            s.selection.style('height', (window.innerHeight-s.margin)+'px');
+            s.selection.style('width', (window.innerWidth-s.margin)+'px');
+        }
+
+        var width = parseFloat(s.selection.style('width')) - s.margins.left - s.margins.right,
+        height = parseFloat(s.selection.style('height')) - s.margins.top - s.margins.bottom;
+        var ns = s.selection.select("svg")
+            .attr("width", width + s.margins.left + s.margins.right)
+            .attr("height", height + s.margins.top + s.margins.bottom);
+	ns.select('g').attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")");
+
+        s.x.range([1, width]);
+        s.y.range([height, 1]); 
+
+        s.xAxis.scale(s.x);
+        s.yAxis.scale(s.y);
+
+        s.selection.select('.x.axis')
+            .attr("transform", "translate(0," + height + ")")
+            .call(s.xAxis)
+	    .select('text')
+            .attr("x", width);
+        s.selection.select('.y.axis')
+            .call(s.yAxis);
+
+        s.selection.select(".points").selectAll('path')
+            .attr("transform", function (d) {
+                return "translate(" + s.x(d.f1) + "," + s.y(d.f2) + ")";
+            });
+
+        s.selection.select(".trendline").select('path')
+            .attr("d", s.line([[s.x(s.dom[0]), s.y(s.dom[0])], [s.x(s.dom[1]), s.y(s.dom[1])]]));
+    };
+    s.update = function() {
+	console.log(s.margin);
+        if (s.fillScreen==true) {
+            s.selection.style('height', (window.innerHeight-s.margins.bottom)+'px');
+            s.selection.style('width', (window.innerWidth-s.margins.right)+'px');
+        }
+
+	var f = s.data;
+
+        // set zero values to min
+        var f1nz = f.map(function (d) { // f1 not zero
+            if (d.f1>0) { return d.f1; }
+            else { return null; }
+        }),
+        f2nz = f.map(function (d) { // f2 not zero
+            if (d.f2>0) { return d.f2; }
+            else { return null; }
+        });
+        s.dom = [d3.min([d3.min(f1nz), d3.min(f2nz)]) / 2,
+		 d3.max([d3.max(f1nz), d3.max(f2nz)])];
+
+        f = f.map(function (d) {
+            if (d.f1 < s.dom[0]) { d.f1 = s.dom[0];  }
+            if (d.f2 < s.dom[0]) { d.f2 = s.dom[0];  }
+            return d;
+        });
+
+        var width = parseFloat(s.selection.style('width')) - s.margins.left - s.margins.right,
+        height = parseFloat(s.selection.style('height')) - s.margins.top - s.margins.bottom;
+
+	s.selection.empty();
+
+        var svg = s.selection.append("svg")
+            .attr("width", width + s.margins.left + s.margins.right)
+            .attr("height", height + s.margins.top + s.margins.bottom)
+            .append("g")
+            .attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")");
+
+        s.x = d3.scale.log()
+            .range([1, width])
+            .domain(s.dom);
+        s.y = d3.scale.log()
+            .range([height, 1])
+            .domain(s.dom);
+
+        s.xAxis = d3.svg.axis()
+            .scale(s.x)
+            .orient("bottom");
+
+        s.yAxis = d3.svg.axis()
+            .scale(s.y)
+            .orient("left");
+
+        s.line = d3.svg.line()
+            .x(function(d) { return d[0]; })
+            .y(function(d) { return d[1] });
+
+        var g = svg.append("g")
+            .attr("class", "legend")
+            .attr("transform", "translate(200, 80)")
+            .attr("width", "300px")
+            .attr("height", "200px");
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(s.xAxis)
+            .append("text")
+            .attr("class", "label")
+            .attr("x", width)
+            .attr("y", -6)
+            .style("text-anchor", "end")
+            .text(s.x_axis_label);
+
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(s.yAxis)
+            .append("text")
+            .attr("class", "label")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text(s.y_axis_label);
+
+        svg.append("g")
+            .attr("class", "points")
+            .selectAll("path")
+            .data(f)
+            .enter()
+            .append("path")
+            .attr("d", d3.svg.symbol().type('circle').size(8))
+            .attr('class', 'point-circle')
+            .style("fill", function(d) {
+                if (/.*/g.exec(d.name)) {
+                    return 'red';
+                } else {
+                    return 'none';
+                }
+            })
+            .attr("transform", function (d) {
+                return "translate(" + s.x(d.f1) + "," + s.y(d.f2) + ")";
+            })
+            .append("title")
+            .text(function(d) { return d.name; });
+
+        svg.append("g")
+            .attr("class", "trendline")
+            .append("path")
+            .attr("d", s.line([[s.x(s.dom[0]), s.y(s.dom[0])], [s.x(s.dom[1]), s.y(s.dom[1])]]));
+
+
+        // setup up cursor tooltip
+        var save_key = 83;
+        if (false) cursor_tooltip(svg, width+s.margins.left+s.margins.right,
+                                  height+s.margins.top+s.margins.bottom, s.x, s.y,
+                                  save_key);
+	return this;
+    };
+
+    s.setup = function(options) {
+        if (typeof options === 'undefined') options = {};
+        s.selection = options.selection || d3.select('body');
+        s.margins = options.margins  || {top: 20, right: 20, bottom: 30, left: 50};
+        s.fillScreen = options.fillScreen || false;
+        var default_filename_index = 0;
+        s.x_axis_label = options.x_axis_label || "";
+        s.y_axis_label = options.y_axis_label || "";
 
         // setup dropdown menu
-        d3.json('http://zak.ucsd.edu/visbio/getdatafiles', function(error, json) {
+        d3.json('getdatafiles', function(error, json) {
             if (error) return console.warn(error);
 
-	    var txt = document.createTextNode(" This text was added to the DIV.");
-	    var menu = selection.append('div').attr('id','menu');
-	    menu.append('form')
-		.append('select').attr('id','dropdown-menu');
-	    menu.append('div').style('width','100%').text("Press 's' to freeze tooltip");
+            var menu = s.selection.append('div').attr('id','menu');
+            menu.append('form')
+                .append('select').attr('id','dropdown-menu');
+            menu.append('div').style('width','100%').text("Press 's' to freeze tooltip");
 
-	    //when it changes
-	    document.getElementById("dropdown-menu").addEventListener("change", function() {
-		// onchange = function(event) {
-                console.log('value: ' + this.val());
+            //when it changes
+            document.getElementById("dropdown-menu").addEventListener("change", function() {
                 load_datafile(this.val());
             }, false);
 
             update_dropdown(json.data);
 
             var file;
-            if (json.data.indexOf(default_filename) > -1) {
-                file = default_filename;
+            if (default_filename_index < json.data.length) {
+                file = json.data[default_filename_index];
             } else {
                 file = json.data[0];
             }
 
-            d3.json(file, function(error, data) {
+            d3.json(file, function(error, d) {
                 if (error) return console.warn(error);
-                setup_plot(data);
-                // TODO focus menu on correct entry
+                s.data = d;
+		s.update();
+		return null;
             });
+	    return null;
         });
 
         // functions
         function load_datafile(this_file) {
-            d3.json(this_file, function(error, data) {
+            d3.json(this_file, function(error, d) {
                 if (error) {
                     return console.warn(error);
-                    selection.append('error loading');
+                    s.selection.append('error loading');
                 } else {
-                    // $('svg').remove();
-                    setup_plot(data);
+		    s.data = d;
+                    s.update();
                 }
+		return null;
             });
         }
 
         function update_dropdown(list) {
             var menu = d3.select('#dropdown-menu');
             menu.empty();
-	    menu.selectAll(".menu-option")
-		.data(list)
-		.enter()
-		.append('option')
-		.attr('value', function (d) { return d; } )
-		.text(function (d) { return d; } );
+            menu.selectAll(".menu-option")
+                .data(list)
+                .enter()
+                .append('option')
+                .attr('value', function (d) { return d; } )
+                .text(function (d) { return d; } );
             menu.node().focus();
         }
-
-        function setup_plot(f) {
-
-            // set zero values to min
-            var f1nz = f.map(function (d) { // f1 not zero
-                if (d.f1>0) { return d.f1; }
-                else { return null; }
-            });
-            var f2nz = f.map(function (d) { // f2 not zero
-                if (d.f2>0) { return d.f2; }
-                else { return null; }
-            });
-            var dom = [d3.min([d3.min(f1nz), d3.min(f2nz)]) / 2,
-                       d3.max([d3.max(f1nz), d3.max(f2nz)])];
-            console.log(dom)
-            f = f.map(function (d) {
-                if (d.f1 < dom[0]) { d.f1 = dom[0];  }
-                if (d.f2 < dom[0]) { d.f2 = dom[0];  }
-                return d;
-            });
-
-            var width = parseFloat(selection.style('width')) - margins.left - margins.right,
-            height = parseFloat(selection.style('height')) - margins.top - margins.bottom;
-
-            var svg = selection.append("svg")
-                .attr("width", width + margins.left + margins.right)
-                .attr("height", height + margins.top + margins.bottom)
-                .append("g")
-                .attr("transform", "translate(" + margins.left + "," + margins.top + ")");
-
-            var x = d3.scale.log()
-                .range([1, width])
-                .domain(dom);
-            var y = d3.scale.log()
-                .range([height, 1])
-                .domain(dom);
-
-            var xAxis = d3.svg.axis()
-                .scale(x)
-                .orient("bottom")
-                .ticks(20);
-
-            var yAxis = d3.svg.axis()
-                .scale(y)
-                .orient("left")
-                .ticks(20);
-
-            var line = d3.svg.line()
-                .x(function(d) { return d[0]; })
-                .y(function(d) { return d[1] });
-
-            var g = svg.append("g")
-                .attr("class", "legend")
-                .attr("transform", "translate(200, 80)")
-                .attr("width", "300px")
-                .attr("height", "200px");
-
-            svg.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")")
-                .call(xAxis)
-                .append("text")
-                .attr("class", "label")
-                .attr("x", width)
-                .attr("y", -6)
-                .style("text-anchor", "end")
-                .text(x_axis_label);
-
-            svg.append("g")
-                .attr("class", "y axis")
-                .call(yAxis)
-                .append("text")
-                .attr("class", "label")
-                .attr("transform", "rotate(-90)")
-                .attr("y", 6)
-                .attr("dy", ".71em")
-                .style("text-anchor", "end")
-                .text(y_axis_label)
-
-            svg.append("g")
-                .attr("class", "points")
-                .selectAll("path")
-                .data(f)
-                .enter()
-                .append("path")
-                .attr("d", d3.svg.symbol().type('circle').size(8))
-                .attr('class', 'point-circle')
-                .style("fill", function(d) {
-                    if (/.*/g.exec(d.name)) {
-                        return 'red';
-                    } else {
-                        return 'none';
-                    }
-                })
-                .attr("transform", function (d) {
-                    return "translate(" + x(d.f1) + "," + y(d.f2) + ")";
-                })
-                .append("title")
-                .text(function(d) { return d.name; });
-
-            svg.append("g")
-                .attr("class", "trendline")
-                .append("path")
-                .attr("d", line([[x(dom[0]), y(dom[0])], [x(dom[1]), y(dom[1])]]));
-
-            var save_key = 83;
-            if (false) cursor_tooltip(svg, width+margins.left+margins.right,
-                                     height+margins.top+margins.bottom, x, y,
-                                     save_key);
-        }
-
         return this;
     };
 
     return {
-        setup: setup
+        setup: s.setup,
+        update: s.update,
+	update_size: s.update_size
     };
 };
