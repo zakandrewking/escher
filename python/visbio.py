@@ -11,6 +11,22 @@ class Vis(object):
         publish_display_data('this', {'application/javascript': self.js})
 
 class Scatter(Vis):
+    """Scatter plot in IPython notebook.
+
+    Just run:
+    
+    import json
+    visbio.Scatter(json.dumps(data))
+
+    Data should be a list of dictionaries with keys name, f1, and f2.
+    TODO: switch to named tuples.
+    [
+      {name:, f1:, f2:},
+      {name:, f1:, f2:},
+      ...
+    ]
+    
+    """
     def __init__(self, json_data):
         with open('index_ipy.html', 'r') as f:
             self.html = f.read()
@@ -25,6 +41,20 @@ class Scatter(Vis):
         self.display()
 
 class Map(Vis):
+    """Metabolic map in IPython notebook.
+
+    Run:
+
+    visbio.Map()
+
+    Optional argument is a json string containing an object with key-value pairs
+    for reaction id's and flux values.
+
+    import json
+    data = {'reaction_id': 50, 'reaction_id': 35}
+    visbio.Map(json.dumps(data))
+    
+    """
     def __init__(self, flux=None):
         with open('map_ipy.html', 'r') as f:
             self.html = f.read()
