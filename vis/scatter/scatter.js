@@ -42,7 +42,7 @@ var Scatter = function() {
             });
 
         s.selection.select(".trendline").select('path')
-            .attr("d", s.line([[s.x(s.dom[0]), s.y(s.dom[0])], [s.x(s.dom[1]), s.y(s.dom[1])]]));
+            .attr("d", s.line([[s.x(s.dom.x[0]), s.y(s.dom.y[0])], [s.x(s.dom.x[1]), s.y(s.dom.y[1])]]));
     };
     s.update = function() {
 	console.log(s.margin);
@@ -62,12 +62,25 @@ var Scatter = function() {
             if (d.f2>0) { return d.f2; }
             else { return null; }
         });
-        s.dom = [d3.min([d3.min(f1nz), d3.min(f2nz)]) / 2,
-		 d3.max([d3.max(f1nz), d3.max(f2nz)])];
+
+        var equal_axes = false;
+        if (equal_axes) {
+            var a_dom = [d3.min([d3.min(f1nz), d3.min(f2nz)]) / 2,
+                         d3.max([d3.max(f1nz), d3.max(f2nz)])];
+            s.dom = {'x': a_dom, 'y': a_dom};
+        }
+        else {
+            s.dom = {'x': [d3.min(f1nz) / 2,
+                           d3.max(f1nz)],
+                     'y': [d3.min(f2nz) / 2,
+                           d3.max(f2nz)]};
+        }
+	console.log('domain');
+	console.log(s.dom);
 
         f = f.map(function (d) {
-            if (d.f1 < s.dom[0]) { d.f1 = s.dom[0];  }
-            if (d.f2 < s.dom[0]) { d.f2 = s.dom[0];  }
+            if (d.f1 < s.dom.x[0]) { d.f1 = s.dom.x[0];  }
+            if (d.f2 < s.dom.y[0]) { d.f2 = s.dom.y[0];  }
             return d;
         });
 
@@ -84,10 +97,10 @@ var Scatter = function() {
 
         s.x = d3.scale.log()
             .range([1, width])
-            .domain(s.dom);
+            .domain(s.dom.x);
         s.y = d3.scale.log()
             .range([height, 1])
-            .domain(s.dom);
+            .domain(s.dom.y);
 
         s.xAxis = d3.svg.axis()
             .scale(s.x)
@@ -135,7 +148,7 @@ var Scatter = function() {
             .data(f)
             .enter()
             .append("path")
-            .attr("d", d3.svg.symbol().type('circle').size(8))
+            .attr("d", d3.svg.symbol().type('circle').size(28))
             .attr('class', 'point-circle')
             .style("fill", function(d) {
                 if (/.*/g.exec(d.name)) {
@@ -153,12 +166,12 @@ var Scatter = function() {
         svg.append("g")
             .attr("class", "trendline")
             .append("path")
-            .attr("d", s.line([[s.x(s.dom[0]), s.y(s.dom[0])], [s.x(s.dom[1]), s.y(s.dom[1])]]));
+            .attr("d", s.line([[s.x(s.dom.x[0]), s.y(s.dom.y[0])], [s.x(s.dom.x[1]), s.y(s.dom.y[1])]]));
 
 
         // setup up cursor tooltip
         var save_key = 83;
-        if (false) cursor_tooltip(svg, width+s.margins.left+s.margins.right,
+        if (true) cursor_tooltip(svg, width+s.margins.left+s.margins.right,
                                   height+s.margins.top+s.margins.bottom, s.x, s.y,
                                   save_key);
 	return this;
@@ -184,7 +197,7 @@ var Scatter = function() {
 
             //when it changes
             document.getElementById("dropdown-menu").addEventListener("change", function() {
-                load_datafile(this.val());
+                load_datafile(this.value);
             }, false);
 
             update_dropdown(json.data);
