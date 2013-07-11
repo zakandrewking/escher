@@ -16,14 +16,14 @@ var Scatter = function() {
         }
 
         var width = parseFloat(s.selection.style('width')) - s.margins.left - s.margins.right,
-        height = parseFloat(s.selection.style('height')) - s.margins.top - s.margins.bottom;
+            height = parseFloat(s.selection.style('height')) - s.margins.top - s.margins.bottom;
         var ns = s.selection.select("svg")
-            .attr("width", width + s.margins.left + s.margins.right)
-            .attr("height", height + s.margins.top + s.margins.bottom);
-	ns.select('g').attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")");
+                .attr("width", width + s.margins.left + s.margins.right)
+                .attr("height", height + s.margins.top + s.margins.bottom);
+        ns.select('g').attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")");
 
         s.x.range([1, width]);
-        s.y.range([height, 1]); 
+        s.y.range([height, 1]);
 
         s.xAxis.scale(s.x);
         s.yAxis.scale(s.y);
@@ -31,7 +31,7 @@ var Scatter = function() {
         s.selection.select('.x.axis')
             .attr("transform", "translate(0," + height + ")")
             .call(s.xAxis)
-	    .select('text')
+            .select('text')
             .attr("x", width);
         s.selection.select('.y.axis')
             .call(s.yAxis);
@@ -42,52 +42,65 @@ var Scatter = function() {
             });
 
         s.selection.select(".trendline").select('path')
-            .attr("d", s.line([[s.x(s.dom[0]), s.y(s.dom[0])], [s.x(s.dom[1]), s.y(s.dom[1])]]));
+            .attr("d", s.line([[s.x(s.dom.x[0]), s.y(s.dom.y[0])], [s.x(s.dom.x[1]), s.y(s.dom.y[1])]]));
     };
     s.update = function() {
-	console.log(s.margin);
+        console.log(s.margin);
         if (s.fillScreen==true) {
             s.selection.style('height', (window.innerHeight-s.margins.bottom)+'px');
             s.selection.style('width', (window.innerWidth-s.margins.right)+'px');
         }
 
-	var f = s.data;
+        var f = s.data;
+
+        var width = parseFloat(s.selection.style('width')) - s.margins.left - s.margins.right,
+            height = parseFloat(s.selection.style('height')) - s.margins.top - s.margins.bottom;
+
+        s.selection.empty();
+
+        var svg = s.selection.append("svg")
+                .attr("width", width + s.margins.left + s.margins.right)
+                .attr("height", height + s.margins.top + s.margins.bottom)
+                .append("g")
+                .attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")");
 
         // set zero values to min
         var f1nz = f.map(function (d) { // f1 not zero
             if (d.f1>0) { return d.f1; }
             else { return null; }
         }),
-        f2nz = f.map(function (d) { // f2 not zero
-            if (d.f2>0) { return d.f2; }
-            else { return null; }
-        });
-        s.dom = [d3.min([d3.min(f1nz), d3.min(f2nz)]) / 2,
-		 d3.max([d3.max(f1nz), d3.max(f2nz)])];
+            f2nz = f.map(function (d) { // f2 not zero
+                if (d.f2>0) { return d.f2; }
+                else { return null; }
+            });
 
-        f = f.map(function (d) {
-            if (d.f1 < s.dom[0]) { d.f1 = s.dom[0];  }
-            if (d.f2 < s.dom[0]) { d.f2 = s.dom[0];  }
-            return d;
-        });
-
-        var width = parseFloat(s.selection.style('width')) - s.margins.left - s.margins.right,
-        height = parseFloat(s.selection.style('height')) - s.margins.top - s.margins.bottom;
-
-	s.selection.empty();
-
-        var svg = s.selection.append("svg")
-            .attr("width", width + s.margins.left + s.margins.right)
-            .attr("height", height + s.margins.top + s.margins.bottom)
-            .append("g")
-            .attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")");
+        var equal_axes = false;
+        if (equal_axes) {
+            var a_dom = [d3.min([d3.min(f1nz), d3.min(f2nz)]) / 2,
+                         d3.max([d3.max(f1nz), d3.max(f2nz)])];
+            s.dom = {'x': a_dom, 'y': a_dom};
+        }
+        else {
+            s.dom = {'x': [d3.min(f1nz) / 2,
+                           d3.max(f1nz)],
+                     'y': [d3.min(f2nz) / 2,
+                           d3.max(f2nz)]};
+        }
+	console.log('domain');
+	console.log(s.dom);
 
         s.x = d3.scale.log()
             .range([1, width])
-            .domain(s.dom);
+            .domain(s.dom.x);
         s.y = d3.scale.log()
             .range([height, 1])
-            .domain(s.dom);
+            .domain(s.dom.y);
+
+        f = f.map(function (d) {
+            if (d.f1 < s.dom.x[0]) { d.f1 = s.dom.x[0];  }
+            if (d.f2 < s.dom.y[0]) { d.f2 = s.dom.y[0];  }
+            return d;
+        });
 
         s.xAxis = d3.svg.axis()
             .scale(s.x)
@@ -102,10 +115,10 @@ var Scatter = function() {
             .y(function(d) { return d[1] });
 
         var g = svg.append("g")
-            .attr("class", "legend")
-            .attr("transform", "translate(200, 80)")
-            .attr("width", "300px")
-            .attr("height", "200px");
+                .attr("class", "legend")
+                .attr("transform", "translate(200, 80)")
+                .attr("width", "300px")
+                .attr("height", "200px");
 
         svg.append("g")
             .attr("class", "x axis")
@@ -153,15 +166,15 @@ var Scatter = function() {
         svg.append("g")
             .attr("class", "trendline")
             .append("path")
-            .attr("d", s.line([[s.x(s.dom[0]), s.y(s.dom[0])], [s.x(s.dom[1]), s.y(s.dom[1])]]));
+            .attr("d", s.line([[s.x(s.dom.x[0]), s.y(s.dom.y[0])], [s.x(s.dom.x[1]), s.y(s.dom.y[1])]]));
 
 
         // setup up cursor tooltip
         var save_key = 83;
         if (true) cursor_tooltip(svg, width+s.margins.left+s.margins.right,
-                                  height+s.margins.top+s.margins.bottom, s.x, s.y,
-                                  save_key);
-	return this;
+                                 height+s.margins.top+s.margins.bottom, s.x, s.y,
+                                 save_key);
+        return this;
     };
 
     s.setup = function(options) {
@@ -172,19 +185,19 @@ var Scatter = function() {
         var default_filename_index = 0;
         s.x_axis_label = options.x_axis_label || "";
         s.y_axis_label = options.y_axis_label || "";
-	s.data = options.data;
+        s.data = options.data;
 
         // var menu = s.selection.append('div').attr('id','menu');
         // menu.append('div').style('width','100%').text("Press 's' to freeze tooltip");
 
-	s.update();
+        s.update();
         return this;
     };
 
     return {
         setup: s.setup,
         update: s.update,
-	update_size: s.update_size
+        update_size: s.update_size
     };
 };
 
