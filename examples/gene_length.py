@@ -33,17 +33,25 @@ for g in tm_genes:
     d = {'name': g.qualifiers['locus_tag'][0], 'x': g.location.end - g.location.start}
     tm_length.append(d)
         
-out = {'data': [ec_length, tm_length],
-       'options': {
-           'x_axis_label':'gene length',
-           'x_data_label':'E. coli MG1655 genes',
-           'y_data_label':'T. maritima genes'
-           }
-      }
-
 print 'max %d' % max([a['x'] for a in tm_length])
 print 'min %d' % min([a['x'] for a in tm_length])
-    
-filename = 'ec-tm-gene-length.json'
+
+out = {'data': ec_length,
+       'options': {
+           'name': 'E. coli MG1655 genes',
+           'type': 'gene length'
+           }
+      }
+filename = 'ec-gene-length.json'
+with open(filename, 'w') as f:
+        json.dump(out, f)
+
+out = {'data': tm_length,
+       'options': {
+           'name': 'T. maritima genes',
+           'type': 'gene length'
+           }
+      }
+filename = 'tm-gene-length.json'
 with open(filename, 'w') as f:
         json.dump(out, f)

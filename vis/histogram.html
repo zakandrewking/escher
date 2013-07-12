@@ -1,18 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
 <meta charset="utf-8">
 <title>histogram</title>
 <script src="lib/d3.v3.js"></script>
 <script src="lib/jquery-latest.min.js" type="text/javascript"></script>
-<!-- <script src="vkbeautify.0.99.00.beta.js"></script> -->
+<script src="include/histogram.js" type="text/javascript"></script>
+<script src="include/data-menu.js" type="text/javascript"></script>
+<script src="include/resize.js" type="text/javascript"></script>
 <style>
 body {
   font: 10px sans-serif;
 }
-#menu {
+#menus {
 position:absolute;
 right:100px;
 top:20px;
+width:200px;
+z-index:10;
+}
+.menu {
+width: 190px;
+}
+.float {
+float: left;
+}
+svg {
+position: absolute;
+left:0px;
+top:0px;
 }
 .legend {
 font: 18px sans-serif;
@@ -26,13 +40,13 @@ font: 18px sans-serif;
   stroke: #000;
   shape-rendering: crispEdges;
 }
-.bar1 {
+.bar0 {
   fill: blue;
   opacity: 0.6;
   shape-rendering: crispEdges;
   stroke: #000;
 }
-.bar2 {
+.bar1 {
   fill: red;
   opacity: 0.6;
   shape-rendering: crispEdges;
@@ -40,7 +54,22 @@ font: 18px sans-serif;
 }
 </style>
 <body>
-<div id="menu"><form><select id="dropdown-menu"></select></form></div>
-<script src="include/histogram.js" type="text/javascript"></script>
+<div id="menus">
+  <div class="float">1:</div><div id="menu1" class="menu float"></div>
+  <div class="float">2:</div><div id="menu2" class="menu float"></div>
+</div>
+<script>
+histogram = Histogram().setup({ fillScreen: true });
+data_menu1 = DataMenu().setup({ 
+    selection: d3.select('#menu1'),
+    datafiles: ['data/tm-gene-length.json', 'data/ec-gene-length.json'],
+    update_callback: histogram.collect_data_0 <!--partial with 1?-->
+});
+data_menu2 = DataMenu().setup({
+    selection: d3.select('#menu2'),
+    datafiles: ['data/ec-gene-length.json', 'data/tm-gene-length.json'],
+    update_callback: histogram.collect_data_1 <!--partial with 2?-->
+});
+update_on_resize(histogram.update_size);
+</script>
 </body>
-</html>

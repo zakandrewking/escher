@@ -11,9 +11,8 @@ var Scatter = function() {
     s.selection = [];
     s.update_size = function() {
         if (s.fillScreen==true) {
-            s.selection.style('height', (window.innerHeight-s.margin)+'px');
-            s.selection.style('width', (window.innerWidth-s.margin)+'px');
-        }
+            s.selection.style('height', (window.innerHeight-s.margins.bottom)+'px');
+            s.selection.style('width', (window.innerWidth-s.margins.right)+'px');
 
         var width = parseFloat(s.selection.style('width')) - s.margins.left - s.margins.right,
         height = parseFloat(s.selection.style('height')) - s.margins.top - s.margins.bottom;
@@ -87,7 +86,7 @@ var Scatter = function() {
         var width = parseFloat(s.selection.style('width')) - s.margins.left - s.margins.right,
         height = parseFloat(s.selection.style('height')) - s.margins.top - s.margins.bottom;
 
-	s.selection.empty();
+	s.selection.select('svg').remove();
 
         var svg = s.selection.append("svg")
             .attr("width", width + s.margins.left + s.margins.right)
@@ -234,7 +233,6 @@ var Scatter = function() {
 
         function update_dropdown(list) {
             var menu = d3.select('#dropdown-menu');
-            menu.empty();
             menu.selectAll(".menu-option")
                 .data(list)
                 .enter()

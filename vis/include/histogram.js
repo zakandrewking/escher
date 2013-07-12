@@ -1,191 +1,218 @@
-// data.json:
-// 
-// {data: [
-//      [{name:, x:}, {name:, x:} ...]
-//      [{name:, x:}, {name:, x:} ...]
-//  ], 
-//  options: {
-//      x_axis_label: ,
-//      y_axis_label: ,
-//      x_data_label: ,
-//      y_data_label: ,
-//  }
-// }
+var Histogram = function() {
+    var s = {};
 
-var default_filename = 0,
-def_x_axis_label = 'x',
-def_y_axis_label = 'count',
-def_x_data_label = '1',
-def_y_data_label = '2';
-
-// setup dropdown menu
-$.ajax({
-    dataType: "json",
-    url: 'getdatafiles',
-    success:function(json){
-        $('#dropdown-menu').change( function() {
-            console.log('value: ' + $(this).val());
-            load_datafile($(this).val());
-        });
-        update_dropdown(json.data)
-        d3.json(json.data[default_filename], function(error, data) {
-            if (error) return console.warn(error);
-            setup_plot(data);
-        });
-    },
-    error:function(error) { console.log(error); }
-});
-
-// functions
-function load_datafile(this_file) {
-    d3.json(this_file, function(error, data) {
-        if (error) {
-            return console.warn(error);
-            $('body').append('error loading');
-        } else {
-            $('svg').remove();
-            setup_plot(data);
+    s.height_width = function(fillScreen, sel, margins) {
+        if (fillScreen==true) {
+            sel.style('height', (window.innerHeight-margins.bottom)+'px');
+            sel.style('width', (window.innerWidth-margins.right)+'px');
         }
-    });
-}
 
-function update_dropdown(list) {
-    var menu = $('#dropdown-menu');
-    menu.empty();
-    for (var i=0; i<list.length; i++) {
-        menu.append("<option value="+list[i]+">"+list[i]+"</option>");
-    }
-    menu.focus();
-}
+        var width = parseFloat(s.selection.style('width')) - margins.left - margins.right,
+            height = parseFloat(s.selection.style('height')) - margins.top - margins.bottom;
 
-function setup_plot(json) {
-    f1 = json.data[0];
-    f2 = json.data[1];
-    o = json.options;
-    x_axis_label = o.hasOwnProperty('x_axis_label') ? o.x_axis_label : def_x_axis_label;
-    y_axis_label = o.hasOwnProperty('y_axis_label') ? o.y_axis_label : def_y_axis_label;
-    x_data_label = o.hasOwnProperty('x_data_label') ? o.x_data_label : def_x_data_label;
-    y_data_label = o.hasOwnProperty('y_data_label') ? o.y_data_label : def_y_data_label;
+        return {'width': width, 'height': height};
+    };
 
-    var margin = {top: 30, right: 20, bottom: 30, left: 40},
-    width = $(window).width() - 20 - margin.left - margin.right,
-    height = $(window).height() - 20 - margin.top - margin.bottom;
+    s.update_size = function () {
+        // TODO inherit this function
+        var o = s.height_width(s.fillScreen, s.selection, s.margins);
+        var height = o.height, width = o.width;
 
-    var svg = d3.select("body").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        var ns = s.selection.select("svg")
+                .attr("width", width + s.margins.left + s.margins.right)
+                .attr("height", height + s.margins.top + s.margins.bottom);
+        ns.select('g').attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")");
 
-    // var
-    var x_dom = [d3.min([d3.min(f1, function (d) { return d.x; }), d3.min(f2, function (d) { return d.x; })]),
-             d3.max([d3.max(f1, function (d) { return d.x; }), d3.max(f2, function (d) { return d.x; })]) ];
+        s.x.range([0, width]);
+        s.y.range([height, 0]);
 
-    // var
-    var x = d3.scale.linear()
-        .range([0, width])
-        .domain(x_dom);
+        s.x_size_scale.range([0, width]);
 
-    var x_size_scale = d3.scale.linear()
-        .range([0, width])
-	.domain([0, x_dom[1] - x_dom[0]]);
+        s.xAxis.scale(s.x);
+        s.yAxis.scale(s.y);
 
-    // Generate a histogram using twenty uniformly-spaced bins.
+        s.selection.select('.x.axis')
+            .attr("transform", "translate(0," + height + ")")
+            .call(s.xAxis)
+            .select('text')
+            .attr("x", width);
+        s.selection.select('.y.axis')
+            .call(s.yAxis);
 
-    // var
-    data1 = d3.layout.histogram()
-        .value(function (d) { return d.x; })
-        .bins(x.ticks(20))
-    (f1);
-    var data2 = d3.layout.histogram()
-        .value(function (d) { return d.x; })
-        .bins(x.ticks(20))
-    (f2); 
+        var bar_w = s.x_size_scale(s.hist_dx) - s.diff - 8;
 
-    // var
-    y = d3.scale.linear()
-        .domain([0, d3.max([data1, data2],
-                           function (a) {
-                               return d3.max(a, function(d) { return d.y; });
-                           })
-                ])
-        .range([height, 0]);
+        for (var i=0; i<s.json.length; i++) {
+            s.selection.selectAll(".bar.bar"+String(i))
+                .attr("transform", function(d) {
+                    return "translate(" + (s.x(d.x) + s.x_shift*i) + "," + s.y(d.y) + ")";
+                })
+                .select('rect')
+                .attr("width", bar_w)
+                .attr("height", function(d) { return height - s.y(d.y); });
+        }
 
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .orient("bottom")
-	.ticks(20);
+        d3.select(".legend")	//TODO options for legend location
+            .attr("transform", "translate(" + (width-300) + ", 80)");
 
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left")
-        .ticks(20);
+        return this;
+    };
 
-    var diff = 10;
-    var bar_w = x_size_scale(data1[0].dx) - diff - 8;
+    s.update = function(json) {
+        var o = s.height_width(s.fillScreen, s.selection, s.margins);
+        var height = o.height, width = o.width;
 
-    var bar1 = svg.selectAll(".bar1")
-        .data(data1)
-        .enter().append("g")
-        .attr("class", "bar1")
-        .attr("transform", function(d) { return "translate(" + (x(d.x)+4) + "," + y(d.y) + ")"; });
+        s.selection.select('svg').remove();
 
-    bar1.append("rect")
-        .attr("x", 1)
-        .attr("width", bar_w)
-        .attr("height", function(d) { return height - y(d.y); });
+        var svg = s.selection.append("svg")
+                .attr("width", width + s.margins.left + s.margins.right)
+                .attr("height", height + s.margins.top + s.margins.bottom)
+                .append("g")
+                .attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")");
 
-    var bar2 = svg.selectAll(".bar2")
-        .data(data2)
-        .enter().append("g")
-        .attr("class", "bar2")
-        .attr("transform", function(d) { return "translate(" + (x(d.x)+diff+4) + "," + y(d.y) + ")"; });
+        // find x domain
+        var x_dom = [
+            d3.min(json, function(a) {
+                return d3.min(a.data, function(d) { return d.x; });
+            }),
+            d3.max(json, function(a) {
+                return d3.max(a.data, function(d) { return d.x; });
+            })
+        ];
+        s.dom = {'x': x_dom};
+        s.x = d3.scale.linear()
+            .range([0, width])
+            .domain(s.dom.x);
+        s.x_size_scale = d3.scale.linear()
+            .range([0, width])
+            .domain([0, s.dom.x[1] - s.dom.x[0]]);
+        var x_ticks = s.x.ticks(15);
 
-    bar2.append("rect")
-        .attr("x", 1)
-        .attr("width", bar_w)
-        .attr("height", function(d) { return height - y(d.y); });
+        // Generate a histogram using twenty uniformly-spaced bins.
+        var layout = [],
+            hist = d3.layout.histogram()
+                .value(function (d) { return d.x; })
+                .bins(x_ticks);
+        layout = json.map(function(j) { return hist(j.data); });
 
-    svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis)
-        .append("text")
-        .attr("class", "label")
-        .attr("x", width)
-        .attr("y", -6)
-        .style("text-anchor", "end")
-        .text(x_axis_label);
+        var y_dom = [
+            0,
+            d3.max(layout, function (a) {
+                return d3.max(a, function(d) { return d.y; });
+            })
+        ];
+        s.dom.y = y_dom;
 
-    svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis)
-        .append("text")
-        .attr("class", "label")
-        .attr("transform", "rotate(-90)")
-        .attr("y", 6)
-        .attr("dy", ".71em")
-        .style("text-anchor", "end")
-        .text(y_axis_label)
+        s.y = d3.scale.linear()
+            .range([height, 0])
+            .domain(s.dom.y);
 
-    var g = svg.append("g")
-	.attr("class", "legend")
-	.attr("transform", "translate(" + width/10 + ", 80)")
-	.attr("width", "300px")
-	.attr("height", "200px");
+        s.xAxis = d3.svg.axis()
+            .scale(s.x)
+            .orient("bottom")
+            .ticks(15);         //TODO make sure this matches x_ticks
 
-    add_legend(g, x_data_label, 0, 'bar1');
-    add_legend(g, y_data_label, 1, 'bar2'); 
-    function add_legend(a, t, i, cl) {
-	var g = a.append("g")
-	    .attr("transform", "translate(0,"+i*40+")");
-	g.append("text")
-	    .text(t)
-	    .attr("transform", "translate(30, 14)");
-	g.append("rect")
-	    .attr("width", 15)
-	    .attr("height", 15)
-	    .attr("class", cl);
-    }
+        s.yAxis = d3.svg.axis()
+            .scale(s.y)
+            .orient("left")
+            .ticks(20);
 
-}
+
+        var legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(" + (width-300) + ", 80)")
+                .attr("width", "300px")
+                .attr("height", "200px");
+
+        s.diff = 10;
+        s.hist_dx = layout[0][0].dx;
+        var bar_w = s.x_size_scale(s.hist_dx) - s.diff - 8;
+
+        for (var j=0; j<layout.length; j++) {
+            var cl = 'bar'+String(j);
+            var bars = svg.selectAll("."+cl)
+                    .data(layout[j])
+                    .enter().append("g")
+                    .attr("class", "bar "+cl)
+                    .attr("transform", function(d) { return "translate(" + (s.x(d.x)+s.x_shift*j) + "," + s.y(d.y) + ")"; });
+            bars.append("rect")
+                .attr("x", 1)
+                .attr("width", bar_w)
+                .attr("height", function(d) { return height - s.y(d.y); });
+            add_legend(legend, json[j].options.name, j, 'legend '+cl);
+        }
+
+        svg.append("g")
+            .attr("class", "x axis")
+            .attr("transform", "translate(0," + height + ")")
+            .call(s.xAxis)
+            .append("text")
+            .attr("class", "label")
+            .attr("x", width)
+            .attr("y", -6)
+            .style("text-anchor", "end")
+            .text(s.x_axis_label);
+
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(s.yAxis)
+            .append("text")
+            .attr("class", "label")
+            .attr("transform", "rotate(-90)")
+            .attr("y", 6)
+            .attr("dy", ".71em")
+            .style("text-anchor", "end")
+            .text(s.y_axis_label);
+
+        function add_legend(a, t, i, cl) {
+            var g = a.append("g")
+                    .attr("transform", "translate(0,"+i*40+")");
+            g.append("text")
+                .text(t)
+                .attr("transform", "translate(30, 14)");
+            g.append("rect")
+                .attr("width", 15)
+                .attr("height", 15)
+                .attr("class", cl);
+        }
+        return this;
+    };
+
+    s.setup = function (options) {
+        if (typeof options === 'undefined') options = {};
+        s.selection = options.selection || d3.select('body').append('div');
+        s.margins = options.margins  || {top: 20, right: 20, bottom: 30, left: 50};
+        s.fillScreen = options.fillScreen || false;
+        s.x_axis_label = options.x_axis_label || "";
+        s.y_axis_label = options.y_axis_label || "";
+        s.x_data_label = options.x_data_label || '1',
+        s.y_data_label = options.y_data_label || '2';
+        s.x_shift      = options.x_shift      || 4;
+        var data_size  = options.data_size    || 2;
+        s.json = [];
+        for (var i=0; i<data_size; i++) {
+            s.json[i] = null;
+        }
+        return this;
+    };
+
+    s.collect_data = function(this_d, index) {
+        s.json[index] = this_d; // TODO generalize
+        var are_null = s.json.filter(function (b) { return (b === null); });
+        if (are_null.length==0) {
+            s.update(s.json);
+        } else {
+            console.log('waiting');
+        }
+    };
+    s.collect_data_0 = function(d) { return s.collect_data(d, 0); };
+    s.collect_data_1 = function(d) { return s.collect_data(d, 1); };
+
+    return {
+        setup: s.setup,
+        update: s.update,
+        update_size: s.update_size,
+        collect_data_0: s.collect_data_0,
+        collect_data_1: s.collect_data_1,
+        collect_data: s.collect_data
+    };
+};
