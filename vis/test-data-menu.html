@@ -5,7 +5,8 @@
 <body>
 <script src="include/data-menu.js" type="text/javascript"></script>
 <script>
-data_menu = DataMenu().setup({datafile: 'data/ec-tm-gene-length.json'});
-d3.select('body').append('text').text(JSON.toString(data_menu.get_data()));
+data_menu = DataMenu().setup({datafiles: ['data/ec-tm-gene-length.json', 'data/ec-tm-gene-length.json'],
+update_callback: function (data) { d3.select('body').append('text').text(JSON.toString(data_menu.get_data())); }
+});
 </script>
 </body>
