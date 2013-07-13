@@ -1,9 +1,3 @@
-// data.json:
-// [
-//     {name:, f1:, f2:},
-//     ...
-// ]
-
 var Scatter = function() {
     var s = {};
 
