@@ -1,16 +1,14 @@
-var visBioMap = (function($, d3) {
-    var maps = {};
-    maps.version = 0.1;
+var Builder = function() {
+    var m = {};
+    m.version = 0.1;
 
-    // builder
-
-    maps.load_builder = function() {
-        maps.map_data = {};
-        maps.mode = 'builder';
+    m.load_builder = function() {
+        m.map_data = {};
+        m.mode = 'builder';
         var width = $(window).width()-20;
         var height = $(window).height()-20;
         svg = setup_container(width, height);
-        maps.svg = svg;
+        m.svg = svg;
         var mouse_node = svg.append('rect')
             .attr("width", width)
             .attr("height", height)
@@ -20,7 +18,7 @@ var visBioMap = (function($, d3) {
         // generate arrowhead markers
         generate_arrowheads(svg);
 
-        maps.data = [];
+        m.data = [];
         new_object_event(mouse_node);
 
         svg.append('g')
@@ -29,7 +27,7 @@ var visBioMap = (function($, d3) {
 
         function new_object_event(sel) {
             sel.on('click', function () {
-                maps.data = maps.data.concat([align_to_grid(d3.mouse(this))]);
+                m.data = m.data.concat([align_to_grid(d3.mouse(this))]);
                 update_circles();
             });
         }
@@ -52,10 +50,10 @@ var visBioMap = (function($, d3) {
                 this.append('circle')
                     .attr('r', r)
                     .attr('transform','translate(0,'+(dis+r*3)+')');
-            }
+            };
             d3.select('#reactions')
                 .selectAll('g')
-                .data(maps.data)
+                .data(m.data)
                 .enter()
                 .append('g')
                 .attr('transform', function(d) {
@@ -65,11 +63,11 @@ var visBioMap = (function($, d3) {
         }
 
         function align_to_grid(loc) {
-            var r = function (a) { return Math.round(a/20.)*20.; }
+            var r = function (a) { return Math.round(a/20.)*20.; };
             var n = [r(loc[0]), r(loc[1])];
             return n;
         }
-    }
+    };
 
     function generate_arrowheads(svg) {
         var markerWidth = 10,
@@ -109,8 +107,8 @@ var visBioMap = (function($, d3) {
 
     // browser
 
-    maps.load = function() {
-        maps.mode = 'browser';
+    m.load = function() {
+        m.mode = 'browser';
 
         // import json files
         d3.json("map.json", function(error, json) {
@@ -163,35 +161,35 @@ var visBioMap = (function($, d3) {
         x.append('div')
             .text('Google Chrome only')
             .attr('style','font-family:sans-serif;color:grey;font-size:8pt;text-align:center;width:100%');
-    }
+    };
 
     function visualizeit(data, style, flux, flux2, metabolites, metabolites2) {
-        maps.defaults = {};
-        maps.defaults.path_color = "rgb(80, 80, 80)";
+        m.defaults = {};
+        m.defaults.path_color = "rgb(80, 80, 80)";
 
-        maps.style_variables = get_style_variables(style);
+        m.style_variables = get_style_variables(style);
 
         var decimal_format = d3.format('.1f');
         var decimal_format_3 = d3.format('.3f');
-        maps.has_flux = false;
-        maps.has_flux_comparison = false;
-        maps.has_metabolites = false;
-        maps.has_metabolite_deviation = false;
+        m.has_flux = false;
+        m.has_flux_comparison = false;
+        m.has_metabolites = false;
+        m.has_metabolite_deviation = false;
 
         // parse the data objects and attach values to map objects
         if (flux) {
-            maps.has_flux = true;
+            m.has_flux = true;
             data = parse_flux_1(data, flux);
             if (flux2) {
-                maps.has_flux_comparison = true;
+                m.has_flux_comparison = true;
                 data = parse_flux_2(data, flux2);
             }
         }
         if (metabolites) {
-            maps.has_metabolites = true;
+            m.has_metabolites = true;
             data = parse_metabolites_1(data, metabolites);
             if (metabolites2) {
-                maps.has_metabolite_deviation = true;
+                m.has_metabolite_deviation = true;
                 data = parse_metabolites_2(data, metabolites2);
             }
         }
@@ -204,40 +202,40 @@ var visBioMap = (function($, d3) {
         console.log('map_h '+decimal_format(map_h));
         console.log('scale factor '+decimal_format_3(factor));
 
-        maps.scale = {};
-        maps.scale.x = d3.scale.linear()
+        m.scale = {};
+        m.scale.x = d3.scale.linear()
             .domain([0, map_w])
             .range([(width - map_w*factor)/2, map_w*factor + (width - map_w*factor)/2]);
-        maps.scale.y = d3.scale.linear()
+        m.scale.y = d3.scale.linear()
             .domain([0, map_h])
             .range([(height - map_h*factor)/2, map_h*factor + (height - map_h*factor)/2]);
-        maps.scale.x_size = d3.scale.linear()
+        m.scale.x_size = d3.scale.linear()
             .domain([0, map_w])
             .range([0, map_w*factor]);
-        maps.scale.y_size = d3.scale.linear()
+        m.scale.y_size = d3.scale.linear()
             .domain([0, map_h])
             .range([0, map_h*factor]);
-        maps.scale.size = d3.scale.linear()
+        m.scale.size = d3.scale.linear()
             .domain([0, 1])
             .range([0, factor]);
-        maps.scale.flux = d3.scale.linear()
+        m.scale.flux = d3.scale.linear()
             .domain([0, 40])
             .range([6, 6]);
-        maps.scale.flux_fill = d3.scale.linear()
+        m.scale.flux_fill = d3.scale.linear()
             .domain([0, 40, 200])
             .range([1, 1, 1]);
-        maps.scale.flux_color = d3.scale.linear()
+        m.scale.flux_color = d3.scale.linear()
             .domain([0, 1, 20, 50])
             .range(["rgb(200,200,200)", "rgb(150,150,255)", "blue", "red"]);
-        maps.scale.metabolite_concentration = d3.scale.linear()
+        m.scale.metabolite_concentration = d3.scale.linear()
             .domain([0, 10])
             .range([15, 200]);
-        maps.scale.metabolite_color = d3.scale.linear()
+        m.scale.metabolite_color = d3.scale.linear()
             .domain([0, 1.2])
             .range(["#FEF0D9", "#B30000"]);
 
         svg = setup_container(width, height);
-        maps.svg = svg;
+        m.svg = svg;
 
         svg.append("style")
             .text(style);
@@ -256,9 +254,9 @@ var visBioMap = (function($, d3) {
             .attr("viewBox", "0 0 12 12")
             .append("path")
             .attr("d", "M 0 0 L 12 6 L 0 12 z")
-            .attr("fill", maps.defaults.path_color)
+            .attr("fill", m.defaults.path_color)
         // stroke inheritance not supported in SVG 1.*
-            .attr("stroke", maps.defaults.path_color);
+            .attr("stroke", m.defaults.path_color);
 
         g.append("marker")
             .attr("id", "start-triangle-path-color")
@@ -271,8 +269,8 @@ var visBioMap = (function($, d3) {
             .attr("viewBox", "0 0 12 12")
             .append("path")
             .attr("d", "M 12 0 L 0 6 L 12 12 z")
-            .attr("fill", maps.defaults.path_color)
-            .attr("stroke", maps.defaults.path_color);
+            .attr("fill", m.defaults.path_color)
+            .attr("stroke", m.defaults.path_color);
 
         svg.append("rect")
             .attr("class", "overlay")
@@ -286,12 +284,12 @@ var visBioMap = (function($, d3) {
             .data(data.membrane_rectangles)
             .enter().append("rect")
             .attr("class", function(d){ return d.class })
-            .attr("width", function(d){ return maps.scale.x_size(d.width) })
-            .attr("height", function(d){ return maps.scale.y_size(d.height) })
-            .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";})
-            .style("stroke-width", function(d) { return maps.scale.size(10) })
-            .attr('rx', function(d){ return maps.scale.x_size(20); })
-            .attr('ry', function(d){ return maps.scale.x_size(20); });
+            .attr("width", function(d){ return m.scale.x_size(d.width) })
+            .attr("height", function(d){ return m.scale.y_size(d.height) })
+            .attr("transform", function(d){return "translate("+m.scale.x(d.x)+","+m.scale.y(d.y)+")";})
+            .style("stroke-width", function(d) { return m.scale.size(10) })
+            .attr('rx', function(d){ return m.scale.x_size(20); })
+            .attr('ry', function(d){ return m.scale.x_size(20); });
 
         if (data.hasOwnProperty("metabolite_circles")) {
             console.log('metabolite circles');
@@ -301,20 +299,20 @@ var visBioMap = (function($, d3) {
                 .data(data.metabolite_circles)
                 .enter().append("circle")
                 .attr("r", function (d) {
-                    sc = maps.scale.metabolite_concentration; // TODO: make a better scale
+                    sc = m.scale.metabolite_concentration; // TODO: make a better scale
                     if (d.metabolite_concentration) {
                         var s;
-                        if (d.should_size) s = maps.scale.size(sc(d.metabolite_concentration));
-                        else s = maps.scale.size(0);
+                        if (d.should_size) s = m.scale.size(sc(d.metabolite_concentration));
+                        else s = m.scale.size(0);
                         return s;
-                    } else if (maps.has_metabolites) {
-                        return maps.scale.size(10);
+                    } else if (m.has_metabolites) {
+                        return m.scale.size(10);
                     } else {
-                        return maps.scale.size(d.r);
+                        return m.scale.size(d.r);
                     }
                 })
                 .attr("style", function (d) {
-                    sc = maps.scale.metabolite_color;
+                    sc = m.scale.metabolite_color;
                     if (d.metabolite_concentration) {
                         var a;
                         if (d.should_color) a = "fill:"+sc(d.metabolite_concentration) + ";" +
@@ -322,18 +320,18 @@ var visBioMap = (function($, d3) {
                         else a = "fill:none;stroke:black;stroke-width:0.5;";
                         return a;
                     }
-                    else if (maps.has_metabolites) {
+                    else if (m.has_metabolites) {
                         return "fill:grey;stroke:none;stroke-width:0.5;";
                     }
                     else { return ""; }
                 })
-                .attr("transform", function(d){return "translate("+maps.scale.x(d.cx)+","+maps.scale.y(d.cy)+")";});
-            if (maps.has_metabolite_deviation) {
+                .attr("transform", function(d){return "translate("+m.scale.x(d.cx)+","+m.scale.y(d.cy)+")";});
+            if (m.has_metabolite_deviation) {
                 append_deviation_arcs(data.metabolite_circles);
             }
         }
         else if (data.hasOwnProperty("metabolite_paths")) {
-            if (maps.has_metabolites) { alert('metabolites do not render w simpheny maps'); }
+            if (m.has_metabolites) { alert('metabolites do not render w simpheny m'); }
             console.log('metabolite paths');
             svg.append("g")
                 .attr("id", "metabolite-paths")
@@ -343,7 +341,7 @@ var visBioMap = (function($, d3) {
                 .attr("d", function(d) { return scale_path(d.d); })
                 .style("fill", "rgb(224, 134, 91)")
                 .style("stroke", "rgb(162, 69, 16)")
-                .style("stroke-width", String(maps.scale.size(2))+"px");
+                .style("stroke-width", String(m.scale.size(2))+"px");
         }
 
         append_reaction_paths(data.reaction_paths);
@@ -355,23 +353,23 @@ var visBioMap = (function($, d3) {
             .enter().append("text")
             .text(function(d) {
                 var t = d.text;
-                if (maps.has_flux_comparison)
+                if (m.has_flux_comparison)
                     t += " ("+decimal_format(d.flux1)+"/"+decimal_format(d.flux2)+": "+decimal_format(d.flux)+")";
                 else if (d.flux) t += " ("+decimal_format(d.flux)+")";
-                else if (maps.has_flux) t += " (0)";
+                else if (m.has_flux) t += " (0)";
                 return t;
             })
             .attr("text-anchor", "start")
             .attr("font-size", function(d) {
                 var s;
-                if (maps.style_variables.hasOwnProperty('reaction_label_size')) {
-                    s = maps.style_variables['reaction_label_size'];
+                if (m.style_variables.hasOwnProperty('reaction_label_size')) {
+                    s = m.style_variables['reaction_label_size'];
                 }
                 else { s = 15; }
-                return maps.scale.size(s);
+                return m.scale.size(s);
             })
         // .attr("style", function(d){ if(!d.flux) return "visibility:hidden;"; else return ""; })
-            .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";});
+            .attr("transform", function(d){return "translate("+m.scale.x(d.x)+","+m.scale.y(d.y)+")";});
 
         svg.append("g")
             .attr("id", "misc-labels")
@@ -379,8 +377,8 @@ var visBioMap = (function($, d3) {
             .data(data.misc_labels)
             .enter().append("text")
             .text(function(d) { return d.text; })
-            .attr("font-size", maps.scale.size(60))
-            .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";});
+            .attr("font-size", m.scale.size(60))
+            .attr("transform", function(d){return "translate("+m.scale.x(d.x)+","+m.scale.y(d.y)+")";});
 
         svg.append("g")
             .attr("id", "metabolite-labels")
@@ -403,12 +401,12 @@ var visBioMap = (function($, d3) {
                 return t;
             })
             .attr("font-size", function(d) {
-                if (d.metabolite_concentration) return maps.scale.size(30);
-                else if (maps.has_metabolites) return maps.scale.size(20);
-                else return maps.scale.size(20);
+                if (d.metabolite_concentration) return m.scale.size(30);
+                else if (m.has_metabolites) return m.scale.size(20);
+                else return m.scale.size(20);
             })
             .style("visibility","visible")
-            .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";});
+            .attr("transform", function(d){return "translate("+m.scale.x(d.x)+","+m.scale.y(d.y)+")";});
     }
 
     function setup_container(width, height) {
@@ -531,11 +529,11 @@ var visBioMap = (function($, d3) {
             .innerRadius(function(d) { return 0; })
             .outerRadius(function(d) {
                 var s;
-                if (d.should_size) s = maps.scale.size(maps.scale.metabolite_concentration(d.metabolite_concentration));
-                else s = maps.scale.size(0);
+                if (d.should_size) s = m.scale.size(m.scale.metabolite_concentration(d.metabolite_concentration));
+                else s = m.scale.size(0);
                 return s;
             });
-        maps.svg.append("g")
+        m.svg.append("g")
             .attr("id", "metabolite-deviation-arcs")
             .selectAll("path")
             .data(arc_data)
@@ -543,12 +541,12 @@ var visBioMap = (function($, d3) {
             .attr('d', arc)
             .attr('style', "fill:black;stroke:none;opacity:0.4;")
             .attr("transform", function(d) {
-                return "translate("+maps.scale.x(d.cx)+","+maps.scale.y(d.cy)+")";
+                return "translate("+m.scale.x(d.cx)+","+m.scale.y(d.cy)+")";
             });
     }
 
     function append_reaction_paths(reaction_path_data) {
-        maps.svg.append("g")
+        m.svg.append("g")
             .attr("id", "reaction-paths")
             .selectAll("path")
             .data(reaction_path_data)
@@ -556,43 +554,43 @@ var visBioMap = (function($, d3) {
             .attr("d", function(d) { return scale_path(d.d); })
             .attr("class", function(d) { return d.class })
             .attr("style", function(d) {
-                var s = "", sc = maps.scale.flux;
+                var s = "", sc = m.scale.flux;
                 // .fill-arrow is for simpheny maps where the path surrounds line and
                 // arrowhead
                 // .line-arrow is for bigg maps were the line is a path and the
                 // arrowhead is a marker
-                if (d.class=="fill-arrow") sc = maps.scale.flux_fill;
+                if (d.class=="fill-arrow") sc = m.scale.flux_fill;
                 if (d.flux) {
-                    s += "stroke-width:"+String(maps.scale.size(sc(Math.abs(d.flux))))+";";
-                    s += "stroke:"+maps.scale.flux_color(Math.abs(d.flux))+";";
-                    if (d.class=="fill-arrow") { s += "fill:"+maps.scale.flux_color(Math.abs(d.flux))+";"; }
+                    s += "stroke-width:"+String(m.scale.size(sc(Math.abs(d.flux))))+";";
+                    s += "stroke:"+m.scale.flux_color(Math.abs(d.flux))+";";
+                    if (d.class=="fill-arrow") { s += "fill:"+m.scale.flux_color(Math.abs(d.flux))+";"; }
                     else if (d.class=="line-arrow") { make_arrowhead_for_fill(); }
                     else s += "fill:none";
                 }
-                else if (maps.has_flux) {
-                    s += "stroke-width:"+String(maps.scale.size(sc(0)))+";";
-                    s += "stroke:"+maps.scale.flux_color(Math.abs(0))+";";
-                    if (d.class=="fill-arrow") s += "fill:"+maps.scale.flux_color(0)+";";
+                else if (m.has_flux) {
+                    s += "stroke-width:"+String(m.scale.size(sc(0)))+";";
+                    s += "stroke:"+m.scale.flux_color(Math.abs(0))+";";
+                    if (d.class=="fill-arrow") s += "fill:"+m.scale.flux_color(0)+";";
                     else s += "fill:none";
                 }
                 else {
-                    s += "stroke-width:"+String(maps.scale.size(1))+";";
-                    s += "stroke:"+maps.defaults.path_color+";";
-                    if (d.class=="fill-arrow") s += "fill:"+maps.defaults.path_color+";";
+                    s += "stroke-width:"+String(m.scale.size(1))+";";
+                    s += "stroke:"+m.defaults.path_color+";";
+                    if (d.class=="fill-arrow") s += "fill:"+m.defaults.path_color+";";
                     else s += "fill:none";
                 }
                 return s;
             })
             .style('marker-end', function (d) {
                 if (!/end/.test(d.class)) return '';
-                if (d.flux) return make_arrowhead_for_fill(maps.scale.flux_color(d.flux));
-                else if (maps.has_flux) return make_arrowhead_for_fill(maps.scale.flux_color(0));
+                if (d.flux) return make_arrowhead_for_fill(m.scale.flux_color(d.flux));
+                else if (m.has_flux) return make_arrowhead_for_fill(m.scale.flux_color(0));
                 else return "url(#end-triangle-path-color)";
             })
             .style('marker-start', function (d) {
                 if (!/start/.test(d.class)) return '';
-                if (d.flux) return make_arrowhead_for_fill(maps.scale.flux_color(d.flux));
-                else if (maps.has_flux) return make_arrowhead_for_fill(maps.scale.flux_color(0));
+                if (d.flux) return make_arrowhead_for_fill(m.scale.flux_color(d.flux));
+                else if (m.has_flux) return make_arrowhead_for_fill(m.scale.flux_color(0));
                 else return "url(#start-triangle-path-color)";
             });
     }
@@ -611,7 +609,7 @@ var visBioMap = (function($, d3) {
     }
 
     function scale_path(path) {
-        x_fn = maps.scale.x; y_fn = maps.scale.y;
+        x_fn = m.scale.x; y_fn = m.scale.y;
         // TODO: scale arrow width
         var str = d3.format(".2f")
         path = path.replace(/(M|L)([0-9-.]+),?\s*([0-9-.]+)/g, function (match, p0, p1, p2) {
@@ -623,5 +621,8 @@ var visBioMap = (function($, d3) {
         return path
     }
 
-    return maps;
-}($, d3));
+    return {
+	version: m.version,
+	load_builder: m.load_builder
+    };
+};
