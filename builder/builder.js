@@ -39,7 +39,7 @@ var Builder = function() {
                                                response(results.slice(0,num));
                                            },
                                            change: function(event, ui) {
-                                               m.new_object(ui.item.value, coords);
+                                               m.new_reaction(ui.item.value, coords);
 					       // d3.select(this).style('display', 'none');
 					       // $('#rxn-input').focus();
                                            }
@@ -53,11 +53,12 @@ var Builder = function() {
         return n;
     };
 
-    m.new_object = function(name, coords) {
+    m.new_reaction = function(name, coords) {
         // new object at x, y /coords/
         if (m.nodes_drawn.indexOf(name) == -1) {
             m.data = m.data.concat({ name: name,
-                                     coords: m.align_to_grid(coords) });
+                                     coords: m.align_to_grid(coords),
+				     direction: 'down'});
             var new_coords = m.update_circles();
             m.node_selected = name;
 	    m.nodes_drawn = m.nodes_drawn.concat(name);
@@ -65,14 +66,34 @@ var Builder = function() {
         }
     };
 
-    m.update_circles = function() {
+    m.update_circles = function(name) {
         var create_reaction = function(t) {
 	    var d = t.datum(),
 		dis = 80,
-		r = 10;
+		r = 10,
+		li, ci;
+	    switch (d.direction) {
+		case 'up':
+		li = [[0, -(r*3)], [0, -(dis + r*3)]];
+		ci = [0, -(dis + r*6)];		
+		break;
+		case 'down': 
+		li = [[0, r*3], [0, dis + r*3]];
+		ci = [0, dis + r*6];
+		break;
+		case 'right':
+		li = [[r*3, 0], [dis + r*3, 0]];
+		ci = [dis + r*6, 0];
+		break;
+		case 'left':
+		li = [[-(r*3), 0], [-(dis + r*3), 0]];
+		ci = [-(dis + r*6), 0];
+		break;
+		default: return;
+	    }			 
             this.append('path')
                 .attr('class', 'reaction-arrow')
-                .attr('d', d3.svg.line()([[0, r*3], [0, dis + r*3]]))
+                .attr('d', d3.svg.line()(li))
                 .attr("marker-start", function (d) {
                     return "url(#start)";
                 })
@@ -84,12 +105,12 @@ var Builder = function() {
                 .attr('transform','translate(0, 0)');
             this.append('circle')
                 .attr('r', r)
-                .attr('transform','translate(0,' + (dis+r*6) + ')');
-	    m.newest_coords = [d.coords[0], d.coords[1] + dis + r*6];
+                .attr('transform','translate(' + ci[0] + ',' + ci[1] + ')');
+	    m.newest_coords = [d.coords[0] + ci[0], d.coords[1] + ci[1]];
         };
         d3.select('#reactions')
             .selectAll('g')
-            .data(m.data)
+            .data(m.data)     // how does d3 know if this data is new? how can i update the relevant item?
             .enter()
             .append('g')
             .attr('transform', function(d) {
@@ -97,6 +118,17 @@ var Builder = function() {
             })
             .call(create_reaction);
 	return m.newest_coords;
+    };
+
+    m.modify_reaction = function(name, key, value) {
+	if (key=="direction") {
+	    for (var i=0; i<m.data.length; i++) {
+		if (m.data[i].name==name) {
+		    m.data[i][key] = value;
+		}
+	    }
+	    m.update_circles();
+	}
     };
 
     m.load_builder = function(options) {
@@ -120,14 +152,27 @@ var Builder = function() {
         svg.append('g')
             .attr('id', 'reactions');
 
-        var mouse_node = svg.append('rect')
-                .attr("width", width)
-                .attr("height", height)
-                .attr('style', 'visibility: hidden')
-                .attr('pointer-events', 'all')
-                .on('click', function () {
-                    m.new_object("", d3.mouse(this));
-                });
+	$('#up').on('click', function() {
+	    m.modify_reaction(m.node_selected, 'direction', 'up');
+	});
+	$('#down').on('click', function() {
+	    m.modify_reaction(m.node_selected, 'direction', 'down');
+	});
+	$('#right').on('click', function() {
+	    m.modify_reaction(m.node_selected, 'direction', 'right');
+	});
+	$('#left').on('click', function() {
+	    m.modify_reaction(m.node_selected, 'direction', 'left');
+	});
+
+	// var mouse_node = svg.append('rect')
+        //         .attr("width", width)
+        //         .attr("height", height)
+        //         .attr('style', 'visibility: hidden')
+        //         .attr('pointer-events', 'all')
+        //         .on('click', function () {
+        //             m.new_reaction("", d3.mouse(this));
+        //         });
 
         // generate arrowhead markers
         generate_arrowheads(svg);
