@@ -1,108 +1,175 @@
 var Builder = function() {
     var m = {};
     m.version = 0.1;
+    m.nodes_drawn = [];
+    m.node_selected = "";
+    m.newest_coords = [];
+    m.data = [];
 
-    m.load_builder = function() {
+    m.load_list = function(coords) {
+        // reloads data for autocomplete box and
+        // redraws box at the new /coords/
+	if (coords==[]) {
+	    console.log('no coords');
+	    return;
+	}
+        var l_w = 200, d_y = 20;
+        d3.select('#rxn-input').style('position', 'absolute')
+	    // .style('display', 'block')
+            .style('left', (coords[0] - l_w - 30)+'px')
+            .style('top', (coords[1] - d_y)+'px')
+            .style('width', l_w+'px');
+
+        // load list data
+        d3.json("data/flux_example.json", function(error, json) {
+            if (error) console.warn(error);
+            var json_f = [], num=20;
+            for (var i=0; i<json.length; i++) {
+                json_f = json_f.concat({ label: json[i][0]+" -- "+parseFloat(json[i][1]),
+                                         value: json[i][0] });
+            }
+            // set up the box with data, searching for first /num/ results
+            $("#rxn-input").autocomplete({ autoFocus: true,
+                                           source: function(request, response) {
+                                               var matcher = new RegExp("^" + $.ui.autocomplete.escapeRegex(request.term), "i"),
+                                                   results = $.grep( json_f, function( item ) {
+                                                       return matcher.test(item.value) &&
+                                                           m.nodes_drawn.indexOf(item.value) == -1;
+                                                   });
+                                               response(results.slice(0,num));
+                                           },
+                                           change: function(event, ui) {
+                                               m.new_object(ui.item.value, coords);
+					       // d3.select(this).style('display', 'none');
+					       // $('#rxn-input').focus();
+                                           }
+                                         });
+        });
+    };
+
+    m.align_to_grid = function(loc) {
+        var r = function (a) { return Math.round(a/20.)*20.; };
+        var n = [r(loc[0]), r(loc[1])];
+        return n;
+    };
+
+    m.new_object = function(name, coords) {
+        // new object at x, y /coords/
+        if (m.nodes_drawn.indexOf(name) == -1) {
+            m.data = m.data.concat({ name: name,
+                                     coords: m.align_to_grid(coords) });
+            var new_coords = m.update_circles();
+            m.node_selected = name;
+	    m.nodes_drawn = m.nodes_drawn.concat(name);
+	    m.load_list(new_coords);
+        }
+    };
+
+    m.update_circles = function() {
+        var create_reaction = function(t) {
+	    var d = t.datum(),
+		dis = 80,
+		r = 10;
+            this.append('path')
+                .attr('class', 'reaction-arrow')
+                .attr('d', d3.svg.line()([[0, r*3], [0, dis + r*3]]))
+                .attr("marker-start", function (d) {
+                    return "url(#start)";
+                })
+                .attr("marker-end", function (d) {
+                    return "url(#end)";
+                });
+            this.append('circle')
+                .attr('r', r)
+                .attr('transform','translate(0, 0)');
+            this.append('circle')
+                .attr('r', r)
+                .attr('transform','translate(0,' + (dis+r*6) + ')');
+	    m.newest_coords = [d.coords[0], d.coords[1] + dis + r*6];
+        };
+        d3.select('#reactions')
+            .selectAll('g')
+            .data(m.data)
+            .enter()
+            .append('g')
+            .attr('transform', function(d) {
+                return 'translate(' + d.coords[0] + ',' + d.coords[1] + ')';
+            })
+            .call(create_reaction);
+	return m.newest_coords;
+    };
+
+    m.load_builder = function(options) {
+        if (typeof options === 'undefined') options = {};
+        m.selection = options.selection || d3.select('body').append('div');
+        m.margin    = options.margin    || 20;
+
         m.map_data = {};
         m.mode = 'builder';
-        var width = $(window).width()-20;
-        var height = $(window).height()-20;
-        svg = setup_container(width, height);
+
+        var width = $(window).width() - m.margin;
+        var height = $(window).height() - m.margin;
+
+        // setup selection box
+        var start_coords = [width/2, 40];
+        m.load_list(start_coords);
+
+        var svg = setup_container(width, height);
         m.svg = svg;
+
+        svg.append('g')
+            .attr('id', 'reactions');
+
         var mouse_node = svg.append('rect')
-            .attr("width", width)
-            .attr("height", height)
-            .attr('style', 'visibility: hidden')
-            .attr('pointer-events', 'all');
+                .attr("width", width)
+                .attr("height", height)
+                .attr('style', 'visibility: hidden')
+                .attr('pointer-events', 'all')
+                .on('click', function () {
+                    m.new_object("", d3.mouse(this));
+                });
 
         // generate arrowhead markers
         generate_arrowheads(svg);
 
-        m.data = [];
-        new_object_event(mouse_node);
-
-        svg.append('g')
-            .attr('id', 'reactions');
-        update_circles();
-
-        function new_object_event(sel) {
-            sel.on('click', function () {
-                m.data = m.data.concat([align_to_grid(d3.mouse(this))]);
-                update_circles();
-            });
-        }
-
-        function update_circles() {
-            var create_reaction = function() {
-		var dis = 40, r = 10;
-                this.append('path')
-		    .attr('class', 'reaction-arrow')
-		    .attr('d', d3.svg.line()([[0, -dis], [0, dis]]))
-		    .attr("marker-start", function (d) {
-			return "url(#start)";
-		    })
-		    .attr("marker-end", function (d) {
-			return "url(#end)";
-		    });
-                this.append('circle')
-                    .attr('r', r)
-                    .attr('transform','translate(0,-'+(dis+r*3)+')');
-                this.append('circle')
-                    .attr('r', r)
-                    .attr('transform','translate(0,'+(dis+r*3)+')');
-            };
-            d3.select('#reactions')
-                .selectAll('g')
-                .data(m.data)
-                .enter()
-                .append('g')
-                .attr('transform', function(d) {
-                    return 'translate('+d[0]+','+d[1]+')';
-                })
-                .call(create_reaction);
-        }
-
-        function align_to_grid(loc) {
-            var r = function (a) { return Math.round(a/20.)*20.; };
-            var n = [r(loc[0]), r(loc[1])];
-            return n;
-        }
     };
 
     function generate_arrowheads(svg) {
         var markerWidth = 10,
-        markerHeight = 10,
-        // cRadius = 0, // play with the cRadius value
-        // refX = cRadius + (markerWidth * 2),
-        // refY = -Math.sqrt(cRadius),
-        // drSub = cRadius + refY;
-	refX = markerHeight,
-	refY = markerWidth/2;
+            markerHeight = 10,
+            // cRadius = 0, // play with the cRadius value
+            // refX = cRadius + (markerWidth * 2),
+            // refY = -Math.sqrt(cRadius),
+            // drSub = cRadius + refY;
+            refX = markerHeight,
+            refY = markerWidth/2;
 
         svg.append("svg:defs").selectAll("marker")
             .data([{"id":"start", "direction":-1},
-		   {"id":"end", "direction":1}])
+                   {"id":"end", "direction":1}])
             .enter().append("svg:marker")
             .attr("id", function (d) { return d.id; })
             .attr("refX", function (d) {
-		if (d.direction==1) {
-		    return 0;
-		} else if (d.direction==-1) {
-		    return markerHeight;
-		}
-	    })
+                if (d.direction==1) {
+                    return 0;
+                } else if (d.direction==-1) {
+                    return markerHeight;
+                }
+		return null;
+            })
             .attr("refY", function(d) { return refY; })
             .attr("markerWidth", markerWidth)
             .attr("markerHeight", markerHeight)
             .attr("orient", "auto")
             .append("svg:path")
             .attr("d", function (d) {
-		if (d.direction==1) {
-		    return 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
-		} else if (d.direction==-1) {
-		    return 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
-		}
-	    });
+                if (d.direction==1) {
+                    return 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
+                } else if (d.direction==-1) {
+                    return 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
+                }
+		return null;
+            });
     }
 
     // browser
@@ -241,7 +308,7 @@ var Builder = function() {
             .text(style);
 
         var g = svg.append('g')
-            .attr('id', 'markers');
+                .attr('id', 'markers');
 
         g.append("marker")
             .attr("id", "end-triangle-path-color")
@@ -417,14 +484,14 @@ var Builder = function() {
         }
 
         var svg = d3.select("body").append("div").attr("id","svg-container")
-            .attr("style", "width:"+width+"px;height:"+height+"px;margin:0px auto")// ;border:3px solid black;")
-            .append("svg")
+                .attr("style", "width:"+width+"px;height:"+height+"px;margin:0px auto")// ;border:3px solid black;")
+                .append("svg")
         // TODO: add correct svg attributes (see '/Users/zaking/Dropbox/lab/optSwap/paper-2-GAPD/old figs/fig5-theoretical-production/')
-            .attr("width", width)
-            .attr("height", height)
-            .append("g")
-            .call(d3.behavior.zoom().scaleExtent([1, 15]).on("zoom", zoom))
-            .append("g");
+                .attr("width", width)
+                .attr("height", height)
+                .append("g")
+                .call(d3.behavior.zoom().scaleExtent([1, 15]).on("zoom", zoom))
+                .append("g");
         return svg;
     }
 
@@ -524,15 +591,15 @@ var Builder = function() {
                     o.hasOwnProperty('metabolite_concentration'));
         });
         var arc = d3.svg.arc()
-            .startAngle(function(d) { return -d.metabolite_deviation/100/2*2*Math.PI; })
-            .endAngle(function(d) { return d.metabolite_deviation/100/2*2*Math.PI; })
-            .innerRadius(function(d) { return 0; })
-            .outerRadius(function(d) {
-                var s;
-                if (d.should_size) s = m.scale.size(m.scale.metabolite_concentration(d.metabolite_concentration));
-                else s = m.scale.size(0);
-                return s;
-            });
+                .startAngle(function(d) { return -d.metabolite_deviation/100/2*2*Math.PI; })
+                .endAngle(function(d) { return d.metabolite_deviation/100/2*2*Math.PI; })
+                .innerRadius(function(d) { return 0; })
+                .outerRadius(function(d) {
+                    var s;
+                    if (d.should_size) s = m.scale.size(m.scale.metabolite_concentration(d.metabolite_concentration));
+                    else s = m.scale.size(0);
+                    return s;
+                });
         m.svg.append("g")
             .attr("id", "metabolite-deviation-arcs")
             .selectAll("path")
@@ -622,7 +689,7 @@ var Builder = function() {
     }
 
     return {
-	version: m.version,
-	load_builder: m.load_builder
+        version: m.version,
+        load_builder: m.load_builder
     };
 };
