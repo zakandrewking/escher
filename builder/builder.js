@@ -1,49 +1,66 @@
 var Builder = function() {
     var m = {};
     m.version = 0.1;
-    m.nodes_drawn = [];
     m.node_selected = "";
     m.newest_coords = [];
-    m.data = [];
+    m.reactions_drawn = [];
+    m.cobra_model = [];
 
     m.load_list = function(coords) {
         // reloads data for autocomplete box and
         // redraws box at the new /coords/
-	if (coords==[]) {
-	    console.log('no coords');
-	    return;
-	}
+        if (coords==[]) {
+            console.log('no coords');
+            return;
+        }
         var l_w = 200, d_y = 20;
         d3.select('#rxn-input').style('position', 'absolute')
-	    // .style('display', 'block')
+        // .style('display', 'block')
             .style('left', (coords[0] - l_w - 30)+'px')
             .style('top', (coords[1] - d_y)+'px')
             .style('width', l_w+'px');
 
-        // load list data
-        d3.json("data/flux_example.json", function(error, json) {
+        // load cobra model data. looks like:
+        //  model = {
+        //      reactions: [
+        //          { cobra_id: ,
+        //            metabolites: [ { cobra_id: , coefficient: }, ... ]
+        //          }, ... ]
+        //  }
+        d3.json("data/cobra_model.json", function(error, model) {
             if (error) console.warn(error);
-            var json_f = [], num=20;
-            for (var i=0; i<json.length; i++) {
-                json_f = json_f.concat({ label: json[i][0]+" -- "+parseFloat(json[i][1]),
-                                         value: json[i][0] });
-            }
-            // set up the box with data, searching for first /num/ results
-            $("#rxn-input").autocomplete({ autoFocus: true,
-                                           source: function(request, response) {
-                                               var matcher = new RegExp("^" + $.ui.autocomplete.escapeRegex(request.term), "i"),
-                                                   results = $.grep( json_f, function( item ) {
-                                                       return matcher.test(item.value) &&
-                                                           m.nodes_drawn.indexOf(item.value) == -1;
-                                                   });
-                                               response(results.slice(0,num));
-                                           },
-                                           change: function(event, ui) {
-                                               m.new_reaction(ui.item.value, coords);
-					       // d3.select(this).style('display', 'none');
-					       // $('#rxn-input').focus();
-                                           }
-                                         });
+            m.cobra_model = model;
+
+            // load list data
+            d3.json("data/flux_example.json", function(error, json) {
+                if (error) console.warn(error);
+                var json_f = [], num=20;
+                for (var i=0; i<json.length; i++) {
+                    json_f = json_f.concat({ label: json[i][0]+" -- "+parseFloat(json[i][1]),
+                                             value: json[i][0] });
+                }
+                // set up the box with data, searching for first /num/ results
+                $("#rxn-input").autocomplete({ autoFocus: true,
+                                               source: function(request, response) {
+                                                   var matcher = new RegExp("^" + $.ui.autocomplete.escapeRegex(request.term), "i"),
+                                                       results = json_f.filter(function(x) {
+                                                           // check against drawn reactions
+                                                           // TODO speed up by keeping a running list of available reactions?
+                                                           for (var i=0; i<m.reactions_drawn.length; i++) {
+                                                               if (m.reactions_drawn.cobra_id==x.value) return false;
+                                                           }
+							   // match against entered string
+                                                           return matcher.test(x.value);
+                                                       });
+                                                   response(results.slice(0,num));
+                                               },
+                                               change: function(event, ui) {
+						   if (ui.item) m.new_reaction(ui.item.value, coords);
+						   // d3.select(this).style('display', 'none');
+                                                   // $('#rxn-input').focus();
+                                               }
+                                             });
+            });
         });
     };
 
@@ -53,44 +70,49 @@ var Builder = function() {
         return n;
     };
 
-    m.new_reaction = function(name, coords) {
+    m.new_reaction = function(cobra_id, coords) {
         // new object at x, y /coords/
-        if (m.nodes_drawn.indexOf(name) == -1) {
-            m.data = m.data.concat({ name: name,
-                                     coords: m.align_to_grid(coords),
-				     direction: 'down'});
+	// if reaction id is new
+        if (m.reactions_drawn.filter(function(x) { return x.cobra_id==cobra_id; }).length==0) {
+            m.reactions_drawn = m.reactions_drawn.concat({ cobra_id: cobra_id,
+                                                           coords: m.align_to_grid(coords),
+                                                           direction: 'down'});
+            console.log(m.reactions_drawn);
             var new_coords = m.update_circles();
-            m.node_selected = name;
-	    m.nodes_drawn = m.nodes_drawn.concat(name);
-	    m.load_list(new_coords);
+            m.node_selected = cobra_id;
+            m.load_list(new_coords);
         }
     };
 
-    m.update_circles = function(name) {
+    m.update_circles = function(cobra_id) {
         var create_reaction = function(t) {
-	    var d = t.datum(),
-		dis = 80,
-		r = 10,
-		li, ci;
-	    switch (d.direction) {
-		case 'up':
-		li = [[0, -(r*3)], [0, -(dis + r*3)]];
-		ci = [0, -(dis + r*6)];		
-		break;
-		case 'down': 
-		li = [[0, r*3], [0, dis + r*3]];
-		ci = [0, dis + r*6];
-		break;
-		case 'right':
-		li = [[r*3, 0], [dis + r*3, 0]];
-		ci = [dis + r*6, 0];
-		break;
-		case 'left':
-		li = [[-(r*3), 0], [-(dis + r*3), 0]];
-		ci = [-(dis + r*6), 0];
-		break;
-		default: return;
-	    }			 
+            console.log(t);
+            var d = t.datum(),
+                dis = 80,
+                r = 10,
+                angle,
+                li, ci;
+            switch (d.direction) {
+            case 'up':
+                angle = Math.PI;
+                break;
+            case 'down':
+                angle = 0;
+                break;
+            case 'right':
+                angle = Math.PI/2;
+                break;
+            case 'left':
+                angle = Math.PI * 3/2;
+                break;
+            default: return;
+            }
+            var ds = r*3,
+                de = dis + r*3,
+                dc = dis + r*6;
+            li = [[Math.sin(angle) * ds, Math.cos(angle) * ds],
+                  [Math.sin(angle) * de, Math.cos(angle) * de]];
+            ci = [Math.sin(angle) * dc, Math.cos(angle) * dc];
             this.append('path')
                 .attr('class', 'reaction-arrow')
                 .attr('d', d3.svg.line()(li))
@@ -103,32 +125,67 @@ var Builder = function() {
             this.append('circle')
                 .attr('r', r)
                 .attr('transform','translate(0, 0)');
+
+            function first_met_id(cobra_id, coefficient) {
+                try {
+                    var rxn = m.cobra_model.filter(function (x) { return x.cobra_id==d.cobra_id; })[0],
+                        met = rxn.metabolites.filter(function (x) { return x.coefficient==coefficient; })[0],
+                        me_id = met.cobra_id;
+                    return me_id;
+                } catch (e) { return null; }
+            }
+            var met_id = first_met_id(cobra_id, -1);
+            if (met_id) {
+                this.append('text').text(met_id)
+                    .attr('transform', 'translate(10, 0)');
+            }
             this.append('circle')
                 .attr('r', r)
                 .attr('transform','translate(' + ci[0] + ',' + ci[1] + ')');
-	    m.newest_coords = [d.coords[0] + ci[0], d.coords[1] + ci[1]];
+            met_id = first_met_id(cobra_id, 1);
+            if (met_id) {
+                this.append('text').text(met_id)
+                    .attr('transform', 'translate(' + (ci[0] + 10) + ',' + ci[1] + ')');
+            }
+            m.newest_coords = [d.coords[0] + ci[0], d.coords[1] + ci[1]];
         };
         d3.select('#reactions')
-            .selectAll('g')
-            .data(m.data)     // how does d3 know if this data is new? how can i update the relevant item?
+            .selectAll('.reaction')
+            .data(m.reactions_drawn)     // how does d3 know if this data is new? how can i update the relevant item?
             .enter()
             .append('g')
+            .attr('id', function(d) { return d.cobra_id; })
+            .attr('class', 'reaction')
             .attr('transform', function(d) {
                 return 'translate(' + d.coords[0] + ',' + d.coords[1] + ')';
             })
             .call(create_reaction);
-	return m.newest_coords;
+        return m.newest_coords;
     };
 
-    m.modify_reaction = function(name, key, value) {
-	if (key=="direction") {
-	    for (var i=0; i<m.data.length; i++) {
-		if (m.data[i].name==name) {
-		    m.data[i][key] = value;
-		}
-	    }
-	    m.update_circles();
-	}
+    m.modify_reaction = function(cobra_id, key, value) {
+        if (key=="direction") {
+            // TODO more efficient updating
+
+            // OPTION 1 (probably faster)
+            for (var i=0; i<m.reactions_drawn.length; i++) {
+                if (m.reactions_drawn[i].cobra_id==cobra_id) {
+                    m.reactions_drawn[i][key] = value;
+                }
+            }
+
+            // OPTION 2
+            // var td = m.reactions_drawn.filter(function(x) {
+            //  return x.cobra_id == cobra_id;
+            // })[0];
+            // td[key] = value;
+            // m.reactions_drawn = m.reactions_drawn.filter(function(x) {
+            //  return x.cobra_id != cobra_id;
+            // });
+            // m.reactions_drawn = m.reactions_drawn.concat(td);
+
+            m.update_circles();
+        }
     };
 
     m.load_builder = function(options) {
@@ -152,20 +209,20 @@ var Builder = function() {
         svg.append('g')
             .attr('id', 'reactions');
 
-	$('#up').on('click', function() {
-	    m.modify_reaction(m.node_selected, 'direction', 'up');
-	});
-	$('#down').on('click', function() {
-	    m.modify_reaction(m.node_selected, 'direction', 'down');
-	});
-	$('#right').on('click', function() {
-	    m.modify_reaction(m.node_selected, 'direction', 'right');
-	});
-	$('#left').on('click', function() {
-	    m.modify_reaction(m.node_selected, 'direction', 'left');
-	});
+        $('#up').on('click', function() {
+            m.modify_reaction(m.node_selected, 'direction', 'up');
+        });
+        $('#down').on('click', function() {
+            m.modify_reaction(m.node_selected, 'direction', 'down');
+        });
+        $('#right').on('click', function() {
+            m.modify_reaction(m.node_selected, 'direction', 'right');
+        });
+        $('#left').on('click', function() {
+            m.modify_reaction(m.node_selected, 'direction', 'left');
+        });
 
-	// var mouse_node = svg.append('rect')
+        // var mouse_node = svg.append('rect')
         //         .attr("width", width)
         //         .attr("height", height)
         //         .attr('style', 'visibility: hidden')
@@ -200,7 +257,7 @@ var Builder = function() {
                 } else if (d.direction==-1) {
                     return markerHeight;
                 }
-		return null;
+                return null;
             })
             .attr("refY", function(d) { return refY; })
             .attr("markerWidth", markerWidth)
@@ -213,7 +270,7 @@ var Builder = function() {
                 } else if (d.direction==-1) {
                     return 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
                 }
-		return null;
+                return null;
             });
     }
 
