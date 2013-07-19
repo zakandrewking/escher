@@ -1,8 +1,8 @@
-#reaction-labels{ 
+.reaction-label { 
     font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120);text-rendering: optimizelegibility;
 }
-#metabolite-labels{
-    font-family: sans-serif; font-style: italic; font-weight: bold;
+.metabolite-label {
+    font-family: sans-serif; font-style: italic; font-weight: bold; font-size: 8px;
 }
 #misc-labels{
     font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;
