@@ -25,8 +25,8 @@
     stroke: rgb(255, 187, 0);
 }
 
-/* builder */
 .reaction-arrow {
     stroke: grey;
     stroke-width: 3px;
+    fill: none;
 }
