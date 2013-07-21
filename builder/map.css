@@ -4,6 +4,10 @@
 .metabolite-label {
     font-family: sans-serif; font-style: italic; font-weight: bold; font-size: 8px;
 }
+.metabolite-circle {
+    fill: rgb(224, 134, 91);
+    stroke: rgb(162, 69, 16);
+}
 #misc-labels{
     font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;
 }

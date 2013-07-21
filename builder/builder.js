@@ -163,6 +163,7 @@ var Builder = function() {
                 var mg = g.append('g')
                         .attr('transform','translate('+(w*index - w*(count-1)/2)+','+0+')');
                 mg.append('circle')
+		    .attr('class', 'metabolite-circle')
                     .attr('r', r);
                 mg.append('text').text(reactant.cobra_id)
                     .attr('class', 'metabolite-label')
@@ -182,6 +183,7 @@ var Builder = function() {
                 var mg = g.append('g')
                         .attr('transform','translate('+(ci[0]+(w*index - w*(count-1)/2))+','+ci[1]+')');
                 mg.append('circle')
+		    .attr('class', 'metabolite-circle')
                     .attr('r', r);
                 mg.append('text').text(product.cobra_id)
                     .attr('class', 'metabolite-label')
