@@ -110,23 +110,23 @@ var Builder = function() {
     };
 
     m.rotate_coords = function(coords, center, angle) {
-	// TODO look this up
-	var rot = function(c) {
-	    var d = c;
-	    return d;
-	};
+        // TODO look this up
+        var rot = function(c) {
+            var d = c;
+            return d;
+        };
 
-	var rotated = [];
-	// if coords is nested array
-	if (coords[0].length==2) {
-	    var i=-1;
-	    while (++i<coords.length) {
-		rotated.concat(rot([coords[i]]));
-	    }
-	} else {
-	    rotated = rot(coords);
-	}
-	return rotated;
+        var rotated = [];
+        // if coords is nested array
+        if (coords[0].length==2) {
+            var i=-1;
+            while (++i<coords.length) {
+                rotated.concat(rot([coords[i]]));
+            }
+        } else {
+            rotated = rot(coords);
+        }
+        return rotated;
     };
 
     m.new_reaction = function(cobra_id, coords) {
@@ -145,10 +145,8 @@ var Builder = function() {
     m.update_circles = function(cobra_id) {
         var create_reaction = function(t) {
             var d = t.datum(),
-                dis = 80,
-                r = 10,
-                angle,
-                li, ci;
+                dis = 120,
+                angle, li, ci;
             switch (d.direction) {
             case 'up':
                 angle = Math.PI;
@@ -178,67 +176,104 @@ var Builder = function() {
                 products = reactions[0].metabolites.filter(function (x) {
                     return x.coefficient > 0;
                 });
-            console.log('found ' + reactants.length + ' reactants');
-            console.log('found ' + products.length + ' products');
 
-            // Define line parameters and axis.
-	    // Begin with unrotated coordinate system. +y = Down, +x = Right.
-            var ds = r*3,
-                de = dis + r*3, // distance between ends of line axis
-                dc = dis + r*6, // distance between ends of circle axis
-                w = 80,  // distance between reactants and between products
-		text_dis = [0,-18]; // displacement of metabolite label
-            var reaction_axis = [[Math.sin(angle) * ds, Math.cos(angle) * ds],
-                                 [Math.sin(angle) * de, Math.cos(angle) * de]],
-                center = [(reaction_axis[0][0] + reaction_axis[1][0])/2,   // for convenience
-                          (reaction_axis[0][1] + reaction_axis[1][1])/2],
-		circle_axis = [[0,0], [Math.sin(angle) * dc, Math.cos(angle) * dc]];
+            // Define primary metabolites
+            // TODO choose the primary metabolite by clicking or cycle by pressing 'p'
+            var primary_reactant_index = 0,
+                primary_product_index = 0;
 
             var c;
             if (reaction.flux) c = m.scale.flux_color(Math.abs(reaction.flux));
             else c = '#eeeeee'; // default color
 
-            function draw_curve(g, reactant, index, count, direction) {
-                var start, end, circle, b1, b2,
-		    b1_strength = 0.5,
-		    b2_strength = 0.2,
-		    w2 = w*0.7;
-                if (direction=='reactant') {
-                    start = center,
-                    end = [reaction_axis[0][0] + (w2*index - w2*(count-1)/2), reaction_axis[0][1]],
-		    b1 = [start[0]*b1_strength + reaction_axis[0][0]*(1-b1_strength),
-			  start[1]*b1_strength + reaction_axis[0][1]*(1-b1_strength)];
-		    b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
-			  start[1]*b2_strength + end[1]*(1-b2_strength)],
-		    circle = [circle_axis[0][0] + (w*index - w*(count-1)/2), circle_axis[0][1]];
-                } else if (direction=='product') {
-                    start = center,
-                    end = [reaction_axis[1][0] + (w2*index - w2*(count-1)/2), reaction_axis[1][1]],
-		    b1 = [start[0]*b1_strength + reaction_axis[1][0]*(1-b1_strength),
-			  start[1]*b1_strength + reaction_axis[1][1]*(1-b1_strength)];
-		    b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
-			  start[1]*b2_strength + end[1]*(1-b2_strength)],
-		    circle = [circle_axis[1][0] + (w*index - w*(count-1)/2), circle_axis[1][1]];
-                } else {
-		    console.warn('draw_curve: bad direction');
-		    return;
-		}
-		// rotate coordinates around start point
-		start  = m.rotate_coords(start,  angle, circle_axis[0]),
-		end    = m.rotate_coords(end,    angle, circle_axis[0]),
-		b1     = m.rotate_coords(b1,     angle, circle_axis[0]),
-		b2     = m.rotate_coords(b2,     angle, circle_axis[0]),
-		circle = m.rotate_coords(circle, angle, circle_axis[0]);
+            // define primary axis
+            var main_axis = [[0,0], [Math.sin(angle) * dis, Math.cos(angle) * dis]],
+                center = [(main_axis[0][0] + main_axis[1][0])/2,   // for convenience
+                          (main_axis[0][1] + main_axis[1][1])/2];
 
-		// generate arrowhead for specific color
+            function draw_curve(g, reactant, index, count, direction, is_primary) {
+                // Draw a curve for a metabolite
+                var w = 60,  // distance between reactants and between products
+                    text_dis = [0,-18], // displacement of metabolite label
+                    b1_strength = 0.5,
+                    b2_strength = 0.2,
+                    w2 = w*0.7,
+                    secondary_dis = 20,
+		    num_slots = Math.max(3, count);
+		
+                // size and spacing for primary and secondary metabolites
+                var ds, r;
+                if (is_primary) {
+                    r = 10;
+                    ds = 20;
+                } else { // secondary
+                    r = 5;
+                    ds = 10;
+		    // don't use center slot
+		    if ((num_slots % 2)!=0 && index>=(Math.ceil(num_slots/2)-1)) {
+			++index;
+		    }
+                }
+                var de = dis - ds; // distance between ends of line axis
+
+                // Define line parameters and axis.
+                // Begin with unrotated coordinate system. +y = Down, +x = Right.
+                var reaction_axis = [[Math.sin(angle) * ds, Math.cos(angle) * ds],
+                                     [Math.sin(angle) * de, Math.cos(angle) * de]],
+                    start = center,
+                    end, circle, b1, b2;
+                if (direction=='reactant' && is_primary) {
+                    end = reaction_axis[0],
+                    b1 = [start[0]*b1_strength + reaction_axis[0][0]*(1-b1_strength),
+                          start[1]*b1_strength + reaction_axis[0][1]*(1-b1_strength)];
+                    b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
+                          start[1]*b2_strength + end[1]*(1-b2_strength)],
+                    circle = main_axis[0];
+                } else if (direction=='reactant') {
+                    end = [reaction_axis[0][0] + (w2*index - w2*(num_slots-1)/2),
+                           reaction_axis[0][1] + secondary_dis],
+                    b1 = [start[0]*b1_strength + reaction_axis[0][0]*(1-b1_strength),
+                          start[1]*b1_strength + reaction_axis[0][1]*(1-b1_strength)];
+                    b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
+                          start[1]*b2_strength + end[1]*(1-b2_strength)],
+                    circle = [main_axis[0][0] + (w*index - w*(num_slots-1)/2),
+                              main_axis[0][1] + secondary_dis];
+                } else if (direction=='product' && is_primary) {
+                    end = reaction_axis[1],
+                    b1 = [start[0]*b1_strength + reaction_axis[1][0]*(1-b1_strength),
+                          start[1]*b1_strength + reaction_axis[1][1]*(1-b1_strength)];
+                    b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
+                          start[1]*b2_strength + end[1]*(1-b2_strength)],
+                    circle = main_axis[1];
+                } else if (direction=='product') {
+                    end = [reaction_axis[1][0] + (w2*index - w2*(num_slots-1)/2),
+                           reaction_axis[1][1] - secondary_dis],
+                    b1 = [start[0]*b1_strength + reaction_axis[1][0]*(1-b1_strength),
+                          start[1]*b1_strength + reaction_axis[1][1]*(1-b1_strength)];
+                    b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
+                          start[1]*b2_strength + end[1]*(1-b2_strength)],
+                    circle = [main_axis[1][0] + (w*index - w*(num_slots-1)/2),
+                              main_axis[1][1] - secondary_dis];
+                } else {
+                    console.warn('draw_curve: bad direction');
+                    return;
+                }
+                // rotate coordinates around start point
+                start  = m.rotate_coords(start,  angle, main_axis[0]),
+                end    = m.rotate_coords(end,    angle, main_axis[0]),
+                b1     = m.rotate_coords(b1,     angle, main_axis[0]),
+                b2     = m.rotate_coords(b2,     angle, main_axis[0]),
+                circle = m.rotate_coords(circle, angle, main_axis[0]);
+
+                // generate arrowhead for specific color
                 var arrow_id = m.generate_arrowhead_for_color(c, true);
                 g.append('path')
                     .attr('class', 'reaction-arrow')
-		    .attr('d', 
-			  'M'+start[0]+','+start[1]+
-			  'C'+b1[0]+','+b1[1]+' '+
-			  b2[0]+','+b2[1]+' '+
-			  end[0]+','+end[1]) // TODO replace with d3.curve or equivalent
+                    .attr('d',
+                          'M'+start[0]+','+start[1]+
+                          'C'+b1[0]+','+b1[1]+' '+
+                          b2[0]+','+b2[1]+' '+
+                          end[0]+','+end[1]) // TODO replace with d3.curve or equivalent
                     .attr("marker-end", function (d) {
                         return "url(#" + arrow_id + ")";
                     })
@@ -253,22 +288,37 @@ var Builder = function() {
                     .attr('transform', 'translate('+text_dis[0]+','+text_dis[1]+')');
             }
             function draw_reaction_label(g, reaction) {
-		var dis = [60,0], // displacement of reaction label
-		    loc = m.rotate_coords([center[0] + dis[0], center[1] + dis[1]], angle, circle_axis[0]);
+                var dis = [60,0], // displacement of reaction label
+                    loc = m.rotate_coords([center[0] + dis[0], center[1] + dis[1]], angle, main_axis[0]);
                 g.append('text')
                     .attr('class', 'reaction-label')
                     .text(reaction.cobra_id + " (" + m.decimal_format(reaction.flux) + ")")
                     .attr('transform', 'translate('+loc[0]+','+loc[1]+')');
             }
-            var i = -1;
-            while (++i < reactants.length) draw_curve(this, reactants[i], i, reactants.length, 'reactant');
-            i = -1;
-            while (++i < products.length) draw_curve(this, products[i], i, products.length, 'product');
+            // draw primary
+            draw_curve(this, reactants[primary_reactant_index], primary_reactant_index,
+                       reactants.length, 'reactant', true);
+            draw_curve(this, products[primary_product_index], primary_product_index,
+                       products.length, 'product', true);
+            var i = -1, count = 0;
+            while (++i < reactants.length) {
+                if (i==primary_reactant_index) continue;
+                draw_curve(this, reactants[i], count, reactants.length-1,
+                           'reactant', false);
+                ++count;
+            }
+            i = -1, count = 0;
+            while (++i < products.length) {
+                if (i==primary_product_index) continue;
+                draw_curve(this, products[i], count, products.length-1,
+                           'product', false);
+                ++count;
+            }
             draw_reaction_label(this, reaction);
-            m.newest_coords = m.rotate_coords([d.coords[0] + circle_axis[1][0], d.coords[1] + circle_axis[1][1]],
-					      angle, circle_axis[0]);
-	    // TODO consider switching to style: [circle_axis.start.x, circle_axis.start.y]
-	    // (speed consideration?)
+            m.newest_coords = m.rotate_coords([d.coords[0] + main_axis[1][0], d.coords[1] + main_axis[1][1]],
+                                              angle, main_axis[0]);
+            // TODO consider switching to style: [main_axis.start.x, main_axis.start.y]
+            // (speed consideration?)
         };
         d3.select('#reactions')
             .selectAll('.reaction')
@@ -318,8 +368,8 @@ var Builder = function() {
         if (m.arrowheads_generated.indexOf(id) < 0) {
             m.arrowheads_generated = m.arrowheads_generated.concat(id);
 
-            var markerWidth = 10,
-                markerHeight = 10,
+            var markerWidth = 5,
+                markerHeight = 5,
                 // cRadius = 0, // play with the cRadius value
                 // refX = cRadius + (markerWidth * 2),
                 // refY = -Math.sqrt(cRadius),
