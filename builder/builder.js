@@ -1,16 +1,16 @@
 var Builder = function() {
     var m = {};
     m.version = 0.1;
-    m.node_selected = "";
+    // m.node_selected = "";
     m.newest_coords = [];
     m.reactions_drawn = [];
+    m.arrowheads_generated = [];
     m.cobra_model = [];
     m.scale = {};
     m.scale.flux_color = d3.scale.linear()
         .domain([0, 1000])
         .range(["blue", "red"]);
     m.decimal_format = d3.format('.1f');
-    m.arrowheads_generated = [];
 
     m.setup_container = function(width, height) {
         d3.select("#svg-container").remove();
@@ -20,9 +20,8 @@ var Builder = function() {
         };
 
         var svg = d3.select("body").append("div").attr("id","svg-container")
-                .attr("style", "width:"+width+"px;height:"+height+"px;margin:0px auto")// ;border:3px solid black;")
+                .attr("style", "width:"+width+"px;height:"+height+"px;margin:0px auto")
                 .append("svg")
-        // TODO: add correct svg attributes (see '/Users/zaking/Dropbox/lab/optSwap/paper-2-GAPD/old figs/fig5-theoretical-production/')
                 .attr("width", width)
                 .attr("height", height)
                 .append("g")
@@ -69,26 +68,31 @@ var Builder = function() {
                                              value: json[i][0] });
                 }
                 // set up the box with data, searching for first /num/ results
-                $("#rxn-input").autocomplete({ autoFocus: true,
-                                               source: function(request, response) {
-                                                   var matcher = new RegExp("^" + $.ui.autocomplete.escapeRegex(request.term), "i"),
-                                                       results = json_f.filter(function(x) {
-                                                           // check against drawn reactions
-                                                           // TODO speed up by keeping a running list of available reactions?
-                                                           for (var i=0; i<m.reactions_drawn.length; i++) {
-                                                               if (m.reactions_drawn.cobra_id==x.value) return false;
-                                                           }
-                                                           // match against entered string
-                                                           return matcher.test(x.value);
-                                                       });
-                                                   response(results.slice(0,num));
-                                               },
-                                               change: function(event, ui) {
-                                                   if (ui.item) m.new_reaction(ui.item.value, coords);
-                                                   // d3.select(this).style('display', 'none');
-                                                   // $('#rxn-input').focus();
-                                               }
-                                             });
+                $("#rxn-input").autocomplete(
+                    { autoFocus: true,
+                      source: function(request, response) {
+                          var escaped = $.ui.autocomplete.escapeRegex(request.term),
+                              matcher = new RegExp("^" + escaped, "i"),
+                              results = json_f.filter(function(x) {
+                                  // check against drawn reactions
+                                  // TODO speed up by keeping a running list of
+                                  // available reactions?
+                                  for (var i=0; i<m.reactions_drawn.length; i++) {
+                                      if (m.reactions_drawn.cobra_id==x.value) {
+                                          return false;
+                                      }
+                                  }
+                                  // match against entered string
+                                  return matcher.test(x.value);
+                              });
+                          response(results.slice(0,num));
+                      },
+                      change: function(event, ui) {
+                          if (ui.item) m.new_reaction(ui.item.value, coords);
+                          // d3.select(this).style('display', 'none');
+                          // $('#rxn-input').focus();
+                      }
+                    });
 
                 // TEST case
                 if (true) {
@@ -103,6 +107,26 @@ var Builder = function() {
         var r = function (a) { return Math.round(a/20.)*20.; };
         var n = [r(loc[0]), r(loc[1])];
         return n;
+    };
+
+    m.rotate_coords = function(coords, center, angle) {
+	// TODO look this up
+	var rot = function(c) {
+	    var d = c;
+	    return d;
+	};
+
+	var rotated = [];
+	// if coords is nested array
+	if (coords[0].length==2) {
+	    var i=-1;
+	    while (++i<coords.length) {
+		rotated.concat(rot([coords[i]]));
+	    }
+	} else {
+	    rotated = rot(coords);
+	}
+	return rotated;
     };
 
     m.new_reaction = function(cobra_id, coords) {
@@ -141,6 +165,7 @@ var Builder = function() {
             default: return;
             }
 
+            // Find the reactants and products
             var reactions = m.cobra_model.filter(function (x) { return x.cobra_id==d.cobra_id; });
             if (reactions.length!=1) {
                 console.warn('wrong # reactions: '+ reactions.length);
@@ -156,70 +181,94 @@ var Builder = function() {
             console.log('found ' + reactants.length + ' reactants');
             console.log('found ' + products.length + ' products');
 
+            // Define line parameters and axis.
+	    // Begin with unrotated coordinate system. +y = Down, +x = Right.
             var ds = r*3,
-                de = dis + r*3,
-                dc = dis + r*6,
-                w = 80;
-            li = [[Math.sin(angle) * ds, Math.cos(angle) * ds],
-                  [Math.sin(angle) * de, Math.cos(angle) * de]];
-            ci = [Math.sin(angle) * dc, Math.cos(angle) * dc];
+                de = dis + r*3, // distance between ends of line axis
+                dc = dis + r*6, // distance between ends of circle axis
+                w = 80,  // distance between reactants and between products
+		text_dis = [0,-18]; // displacement of metabolite label
+            var reaction_axis = [[Math.sin(angle) * ds, Math.cos(angle) * ds],
+                                 [Math.sin(angle) * de, Math.cos(angle) * de]],
+                center = [(reaction_axis[0][0] + reaction_axis[1][0])/2,   // for convenience
+                          (reaction_axis[0][1] + reaction_axis[1][1])/2],
+		circle_axis = [[0,0], [Math.sin(angle) * dc, Math.cos(angle) * dc]];
 
             var c;
             if (reaction.flux) c = m.scale.flux_color(Math.abs(reaction.flux));
-            else c = '#000000';
+            else c = '#eeeeee'; // default color
 
-            function draw_reactant(g, reactant, index, count) {
-                var lia = [ [li[0][0] + (w*index - w*(count-1)/2), li[0][1]],
-                            [li[1][0] + (w*index - w*(count-1)/2), li[1][1]] ],
-		    arrow_id = m.generate_arrowhead_for_color(c, false);
+            function draw_curve(g, reactant, index, count, direction) {
+                var start, end, circle, b1, b2,
+		    b1_strength = 0.5,
+		    b2_strength = 0.2,
+		    w2 = w*0.7;
+                if (direction=='reactant') {
+                    start = center,
+                    end = [reaction_axis[0][0] + (w2*index - w2*(count-1)/2), reaction_axis[0][1]],
+		    b1 = [start[0]*b1_strength + reaction_axis[0][0]*(1-b1_strength),
+			  start[1]*b1_strength + reaction_axis[0][1]*(1-b1_strength)];
+		    b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
+			  start[1]*b2_strength + end[1]*(1-b2_strength)],
+		    circle = [circle_axis[0][0] + (w*index - w*(count-1)/2), circle_axis[0][1]];
+                } else if (direction=='product') {
+                    start = center,
+                    end = [reaction_axis[1][0] + (w2*index - w2*(count-1)/2), reaction_axis[1][1]],
+		    b1 = [start[0]*b1_strength + reaction_axis[1][0]*(1-b1_strength),
+			  start[1]*b1_strength + reaction_axis[1][1]*(1-b1_strength)];
+		    b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
+			  start[1]*b2_strength + end[1]*(1-b2_strength)],
+		    circle = [circle_axis[1][0] + (w*index - w*(count-1)/2), circle_axis[1][1]];
+                } else {
+		    console.warn('draw_curve: bad direction');
+		    return;
+		}
+		// rotate coordinates around start point
+		start  = m.rotate_coords(start,  angle, circle_axis[0]),
+		end    = m.rotate_coords(end,    angle, circle_axis[0]),
+		b1     = m.rotate_coords(b1,     angle, circle_axis[0]),
+		b2     = m.rotate_coords(b2,     angle, circle_axis[0]),
+		circle = m.rotate_coords(circle, angle, circle_axis[0]);
+
+		// generate arrowhead for specific color
+                var arrow_id = m.generate_arrowhead_for_color(c, true);
                 g.append('path')
                     .attr('class', 'reaction-arrow')
-                    .attr('d', d3.svg.line()(lia))
-                    .attr("marker-start", function (d) {
+		    .attr('d', 
+			  'M'+start[0]+','+start[1]+
+			  'C'+b1[0]+','+b1[1]+' '+
+			  b2[0]+','+b2[1]+' '+
+			  end[0]+','+end[1]) // TODO replace with d3.curve or equivalent
+                    .attr("marker-end", function (d) {
                         return "url(#" + arrow_id + ")";
                     })
                     .style('stroke', c);
                 var mg = g.append('g')
-                        .attr('transform','translate('+(w*index - w*(count-1)/2)+','+0+')');
+                        .attr('transform','translate('+circle[0]+','+circle[1]+')');
                 mg.append('circle')
-		    .attr('class', 'metabolite-circle')
+                    .attr('class', 'metabolite-circle')
                     .attr('r', r);
                 mg.append('text').text(reactant.cobra_id)
                     .attr('class', 'metabolite-label')
-                    .attr('transform', 'translate(0, -18)');
-            }
-            function draw_product(g, product, index, count) {
-                var lia = [ [li[0][0] + (w*index - w*(count-1)/2), li[0][1]],
-                            [li[1][0] + (w*index - w*(count-1)/2), li[1][1]] ],
-		    arrow_id = m.generate_arrowhead_for_color(c, true);
-                g.append('path')
-                    .attr('class', 'reaction-arrow')
-                    .attr('d', d3.svg.line()(lia))
-                    .attr("marker-end", function (d) {
-                         return "url(#" + arrow_id + ")";
-                    })
-                    .style('stroke', c);
-                var mg = g.append('g')
-                        .attr('transform','translate('+(ci[0]+(w*index - w*(count-1)/2))+','+ci[1]+')');
-                mg.append('circle')
-		    .attr('class', 'metabolite-circle')
-                    .attr('r', r);
-                mg.append('text').text(product.cobra_id)
-                    .attr('class', 'metabolite-label')
-                    .attr('transform', 'translate(0, -18)');
+                    .attr('transform', 'translate('+text_dis[0]+','+text_dis[1]+')');
             }
             function draw_reaction_label(g, reaction) {
+		var dis = [60,0], // displacement of reaction label
+		    loc = m.rotate_coords([center[0] + dis[0], center[1] + dis[1]], angle, circle_axis[0]);
                 g.append('text')
                     .attr('class', 'reaction-label')
                     .text(reaction.cobra_id + " (" + m.decimal_format(reaction.flux) + ")")
-                    .attr('transform', 'translate('+(ci[0]+60)+','+(ci[1]/2)+')');
+                    .attr('transform', 'translate('+loc[0]+','+loc[1]+')');
             }
             var i = -1;
-            while (++i < reactants.length) draw_reactant(this, reactants[i], i, reactants.length);
+            while (++i < reactants.length) draw_curve(this, reactants[i], i, reactants.length, 'reactant');
             i = -1;
-            while (++i < products.length) draw_product(this, products[i], i, products.length);
+            while (++i < products.length) draw_curve(this, products[i], i, products.length, 'product');
             draw_reaction_label(this, reaction);
-            m.newest_coords = [d.coords[0] + ci[0], d.coords[1] + ci[1]];
+            m.newest_coords = m.rotate_coords([d.coords[0] + circle_axis[1][0], d.coords[1] + circle_axis[1][1]],
+					      angle, circle_axis[0]);
+	    // TODO consider switching to style: [circle_axis.start.x, circle_axis.start.y]
+	    // (speed consideration?)
         };
         d3.select('#reactions')
             .selectAll('.reaction')
@@ -264,10 +313,10 @@ var Builder = function() {
         var pref;
         if (is_end) pref = 'start-';
         else        pref = 'end-';
-        
+
         var id = String(color).replace('#', pref);
         if (m.arrowheads_generated.indexOf(id) < 0) {
-	    m.arrowheads_generated = m.arrowheads_generated.concat(id);
+            m.arrowheads_generated = m.arrowheads_generated.concat(id);
 
             var markerWidth = 10,
                 markerHeight = 10,
@@ -277,21 +326,21 @@ var Builder = function() {
                 // drSub = cRadius + refY;
                 refX,
                 refY = markerWidth/2,
-		d;
+                d;
 
             if (is_end) refX = 0;
             else        refX = markerHeight;
             if (is_end) d = 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
             else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
 
-	    // generate defs if it doesn't exist
+            // generate defs if it doesn't exist
             var defs = m.svg.select("defs");
-	    if (defs.empty()) defs = m.svg.append("svg:defs");
+            if (defs.empty()) defs = m.svg.append("svg:defs");
 
-	    // make the marker
+            // make the marker
             defs.append("svg:marker")
                 .attr("id", id)
-		.attr("class", "arrowhead")
+                .attr("class", "arrowhead")
                 .attr("refX", refX)
                 .attr("refY", refY)
                 .attr("markerWidth", markerWidth)
@@ -299,7 +348,7 @@ var Builder = function() {
                 .attr("orient", "auto")
                 .append("svg:path")
                 .attr("d", d)
-		.style("fill", color);
+                .style("fill", color);
         }
         return id;
     };
