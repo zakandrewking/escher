@@ -95,7 +95,7 @@ var Builder = function() {
                     });
 
                 // TEST case
-                if (true) {
+                if (false) {
                     m.new_reaction(json_f[0].value, coords);
                     m.new_reaction(json_f[1].value, m.newest_coords);
                 }
@@ -140,6 +140,25 @@ var Builder = function() {
             m.node_selected = cobra_id;
             m.load_list(new_coords);
         }
+    };
+
+    m.rotate_primary_key = function(index) {
+	var new_index,
+	    selected_index = 0,
+	    metabolites = [];
+	if ((typeof index === 'undefined') || (index < 0)) { // rotate
+	    if (index < metabolites.length - 1) new_index = selected_index + 1;
+	    else new_index = 0;
+	} else { // specific index
+	    if (index >= metabolites.length) {
+		console.warn('rotate_primary_key: index too large');
+		return;
+	    }
+	    new_index = index;
+	}
+	m.selected_metabolite = metabolites[new_index];
+	// update primary in m.data
+	m.update_circles();
     };
 
     m.update_circles = function(cobra_id) {
@@ -199,8 +218,8 @@ var Builder = function() {
                     b2_strength = 0.2,
                     w2 = w*0.7,
                     secondary_dis = 20,
-		    num_slots = Math.max(3, count);
-		
+                    num_slots = Math.max(3, count);
+
                 // size and spacing for primary and secondary metabolites
                 var ds, r;
                 if (is_primary) {
@@ -209,10 +228,10 @@ var Builder = function() {
                 } else { // secondary
                     r = 5;
                     ds = 10;
-		    // don't use center slot
-		    if ((num_slots % 2)!=0 && index>=(Math.ceil(num_slots/2)-1)) {
-			++index;
-		    }
+                    // don't use center slot
+                    if ((num_slots % 2)!=0 && index>=(Math.ceil(num_slots/2)-1)) {
+                        ++index;
+                    }
                 }
                 var de = dis - ds; // distance between ends of line axis
 
@@ -403,6 +422,23 @@ var Builder = function() {
         return id;
     };
 
+    m.key_listeners = function() {
+        var primary_cycle_key = 80, // 'p'
+	    hide_show_input_key = 32, // SPACE
+	    rotate_keys = {'left':  37,
+			   'right': 39,
+			   'up':    38,
+			   'down':  40};
+        d3.select(window).on("keydown", function() {
+	    var kc = d3.event.keyCode;
+            if (kc==primary_cycle_key) {
+		m.rotate_primary_key();
+            } else if (kc==hide_show_input_key) {
+		
+	    }
+        });
+    };
+
     m.load_builder = function(options) {
         if (typeof options === 'undefined') options = {};
         m.selection = options.selection || d3.select('body').append('div');
@@ -445,6 +481,7 @@ var Builder = function() {
         // setup selection box
         var start_coords = [width/2, 40];
         m.load_list(start_coords);
+	m.key_listeners();
     };
 
     return {
