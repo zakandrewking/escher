@@ -73,7 +73,7 @@ var Builder = function() {
                       source: function(request, response) {
                           var escaped = $.ui.autocomplete.escapeRegex(request.term),
                               matcher = new RegExp("^" + escaped, "i"),
-                              results = json_f.filter(function(x) {
+                              results = json_f.filter(function(x) {	      // TODO BUG draw reaction showing up in list (loading list too soon?)
                                   // check against drawn reactions
                                   // TODO speed up by keeping a running list of
                                   // available reactions?
@@ -133,35 +133,41 @@ var Builder = function() {
         // new object at x, y /coords/
         // if reaction id is new
         if (m.reactions_drawn.filter(function(x) { return x.cobra_id==cobra_id; }).length==0) {
+	    var metabolites = [], // TODO finish
+		flux = [];
             m.reactions_drawn = m.reactions_drawn.concat({ cobra_id: cobra_id,
                                                            coords: m.align_to_grid(coords),
-                                                           direction: 'down'});
-            var new_coords = m.update_circles();
+                                                           direction: 'down', // TODO make angle in degrees
+							   metabolites: metabolites,
+							   flux: flux});
+            var new_coords = m.draw_reactions();
             m.node_selected = cobra_id;
             m.load_list(new_coords);
         }
     };
 
     m.rotate_primary_key = function(index) {
-	var new_index,
-	    selected_index = 0,
-	    metabolites = [];
-	if ((typeof index === 'undefined') || (index < 0)) { // rotate
-	    if (index < metabolites.length - 1) new_index = selected_index + 1;
-	    else new_index = 0;
-	} else { // specific index
-	    if (index >= metabolites.length) {
-		console.warn('rotate_primary_key: index too large');
-		return;
-	    }
-	    new_index = index;
-	}
-	m.selected_metabolite = metabolites[new_index];
-	// update primary in m.data
-	m.update_circles();
+        var new_index,
+            selected_index = 0,
+            metabolites = [];
+        if ((typeof index === 'undefined') || (index < 0)) { // rotate
+            if (index < metabolites.length - 1) new_index = selected_index + 1;
+            else new_index = 0;
+        } else { // specific index
+            if (index >= metabolites.length) {
+                console.warn('rotate_primary_key: index too large');
+                return;
+            }
+            new_index = index;
+        }
+        m.selected_metabolite = metabolites[new_index];
+        // update primary in m.data
+        m.draw_reactions();
     };
 
-    m.update_circles = function(cobra_id) {
+    m.draw_reactions = function(cobra_id) {
+	// Draw the reactions
+	
         var create_reaction = function(t) {
             var d = t.datum(),
                 dis = 120,
@@ -314,6 +320,14 @@ var Builder = function() {
                     .text(reaction.cobra_id + " (" + m.decimal_format(reaction.flux) + ")")
                     .attr('transform', 'translate('+loc[0]+','+loc[1]+')');
             }
+
+	    // TODO finish
+	    // var sel = t.selectAll('g').data(function(d) { return d.metabolites; });
+	    // sel.enter().append('g')
+	    // 	.attr('class', 'metabolite-group');
+	    // sel.exit().remove();
+	    // 
+
             // draw primary
             draw_curve(this, reactants[primary_reactant_index], primary_reactant_index,
                        reactants.length, 'reactant', true);
@@ -339,17 +353,42 @@ var Builder = function() {
             // TODO consider switching to style: [main_axis.start.x, main_axis.start.y]
             // (speed consideration?)
         };
-        d3.select('#reactions')
-            .selectAll('.reaction')
-            .data(m.reactions_drawn)     // how does d3 know if this data is new? how can i update the relevant item?
-            .enter()
+        var update_reaction = function(t) {
+
+	    // lay out primary vs. secondary nodes here
+
+            return;
+        };
+
+        // generate reactions for m.reactions_drawn
+        var sel = d3.select('#reactions')
+                .selectAll('.reaction')
+                .data(m.reactions_drawn, function(d) { return d.cobra_id; }); // assure constancy with cobra_id
+
+        // TODO pass in specific reactions and only call create and update on
+        // those. NOTE: must be careful not to call .exit().remove() in that
+        // case. Also, checks in .update() will not be as important for
+        // performance if I do it this way.
+
+        // enter
+        sel.enter()
             .append('g')
             .attr('id', function(d) { return d.cobra_id; })
-            .attr('class', 'reaction')
+            .attr('class', 'reaction') // TODO move this to create_reaction
+            .call(create_reaction) // generate and place reaction
             .attr('transform', function(d) {
                 return 'translate(' + d.coords[0] + ',' + d.coords[1] + ')';
-            })
-            .call(create_reaction);
+            }); // TODO move this to create_reaction
+
+        // update
+        sel.call(update_reaction); // update when necessary
+
+        // consider the nested data model: https://github.com/mbostock/d3/wiki/Selections#data
+
+        // exit
+        sel.exit().remove();
+
+        // return newest coordinates to place next reaction
         return m.newest_coords;
     };
 
@@ -374,7 +413,7 @@ var Builder = function() {
             // });
             // m.reactions_drawn = m.reactions_drawn.concat(td);
 
-            m.update_circles();
+            m.draw_reactions();
         }
     };
 
@@ -424,18 +463,18 @@ var Builder = function() {
 
     m.key_listeners = function() {
         var primary_cycle_key = 80, // 'p'
-	    hide_show_input_key = 32, // SPACE
-	    rotate_keys = {'left':  37,
-			   'right': 39,
-			   'up':    38,
-			   'down':  40};
+            hide_show_input_key = 32, // SPACE
+            rotate_keys = {'left':  37,
+                           'right': 39,
+                           'up':    38,
+                           'down':  40};
         d3.select(window).on("keydown", function() {
-	    var kc = d3.event.keyCode;
+            var kc = d3.event.keyCode;
             if (kc==primary_cycle_key) {
-		m.rotate_primary_key();
+                m.rotate_primary_key();
             } else if (kc==hide_show_input_key) {
-		
-	    }
+
+            }
         });
     };
 
@@ -481,7 +520,7 @@ var Builder = function() {
         // setup selection box
         var start_coords = [width/2, 40];
         m.load_list(start_coords);
-	m.key_listeners();
+        m.key_listeners();
     };
 
     return {
