@@ -5905,16 +5905,24 @@ $.widget( "ui.autocomplete", {
 				case keyCode.NUMPAD_ENTER:
 					// when menu is open and has focus
 					if ( this.menu.active ) {
-						// #6055 - Opera still allows the keypress to occur
-						// which causes forms to submit
-						suppressKeyPress = true;
-						event.preventDefault();
-						this.menu.select( event );
+					    // #6055 - Opera still allows the keypress to occur
+					    // which causes forms to submit
+					    suppressKeyPress = true;
+					    event.preventDefault();
+					    this.menu.select( event );
+					    this.element.blur();
+					    this.element.val([]);
+					    this.element.focus();
 					}
 					break;
 				case keyCode.TAB:
 					if ( this.menu.active ) {
-						this.menu.select( event );
+					    suppressKeyPress = true;
+					    event.preventDefault();
+					    this.menu.select( event );
+					    this.element.blur();
+					    this.element.val([]);
+					    this.element.focus();
 					}
 					break;
 				case keyCode.ESCAPE:
