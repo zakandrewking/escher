@@ -5982,6 +5982,7 @@ $.widget( "ui.autocomplete", {
 			focus: function() {
 				this.selectedItem = null;
 				this.previous = this._value();
+			        this._move("down", event);
 			},
 			blur: function( event ) {
 				if ( this.cancelBlur ) {
