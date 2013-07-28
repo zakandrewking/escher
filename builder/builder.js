@@ -13,6 +13,8 @@ var Builder = function() {
         .range(["blue", "red"]);
     m.default_reaction_color = '#eeeeee';
     m.decimal_format = d3.format('.1f');
+    m.window_translate = [0, 0];
+    m.window_scale = 1;
 
     // -----------------------------------------------------------------------------------
     // SETUP
@@ -22,6 +24,9 @@ var Builder = function() {
 
         var zoom = function() {
             svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+	    m.window_translate = d3.event.translate;
+	    m.window_scale = d3.event.scale;
+	    m.reload_reaction_input(m.newest_coords);
         };
 
         var svg = selection.append("div").attr("id","svg-container")
@@ -87,8 +92,10 @@ var Builder = function() {
         var l_w = 200, d_y = 20;
         d3.select('#rxn-input').style('position', 'absolute')
             .style('display', 'block')
-            .style('left', (coords[0] - l_w - 30)+'px')
-            .style('top', (coords[1] - d_y)+'px')
+            .style('left', (m.window_scale * coords[0] +
+			    m.window_translate[0] - l_w - 30)+'px')
+            .style('top', (m.window_scale * coords[1] +
+			   m.window_translate[1] - d_y)+'px')
             .style('width', l_w+'px');
 
         // set up the box with data, searching for first num results
