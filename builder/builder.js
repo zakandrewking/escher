@@ -1,7 +1,7 @@
 var Builder = function() {
     var m = {};
     m.version = 0.1;
-    m.node_selected = "";
+    m.selected_node = null;
     m.newest_coords = [];
     m.reactions_drawn = [];
     m.arrowheads_generated = [];
@@ -89,33 +89,32 @@ var Builder = function() {
             console.log('no coords');
             return;
         }
-        var d_y = 20;
+        var d_x = 280, d_y = 0;
         d3.select('#rxn-input').style('position', 'absolute')
-	    .attr('placeholder', 'Reaction ID -- Flux')
+            .attr('placeholder', 'Reaction ID -- Flux')
             .style('display', 'block')
             .style('left', (m.window_scale * coords[0] +
-                            m.window_translate[0] - 280)+'px')
+                            m.window_translate[0] - d_x)+'px')
             .style('top', (m.window_scale * coords[1] +
                            m.window_translate[1] - d_y)+'px');
 
         var reactions_found = [];
-        if (m.node_selected) {
+        if (m.selected_node) {
             reactions_found = m.cobra_model.filter(function(rxn) {
                 for (var i=0; i<rxn.metabolites.length; i++) {
-                    if (rxn.metabolites[i].cobra_id==m.node_selected &&
-			rxn.metabolites[i].coefficient < 0)
+                    if (rxn.metabolites[i].cobra_id==m.selected_node.metabolite &&
+                        rxn.metabolites[i].coefficient < 0)
                         return true;
                 }
-		return false;
+                return false;
             });
         };
-	// 2DGULRGx for h_c
 
         // set up the box with data, searching for first num results
         var num = 20;
         $("#rxn-input").autocomplete(
             { autoFocus: true,
-	      minLength: 0,
+              minLength: 0,
               source: function(request, response) {
                   var escaped = $.ui.autocomplete.escapeRegex(request.term),
                       matcher = new RegExp("^" + escaped, "i"),
@@ -123,12 +122,12 @@ var Builder = function() {
                           // check against drawn reactions
                           // TODO speed up by keeping a running list of
                           // available reactions?
-                          if (m.node_selected) {
-			      var i = -1;
-			      while (++i < reactions_found.length) {
-				  if (reactions_found[i].cobra_id==x.value) return matcher.test(x.value);
-			      }
-			      return false;
+                          if (m.selected_node) {
+                              var i = -1;
+                              while (++i < reactions_found.length) {
+                                  if (reactions_found[i].cobra_id==x.value) return matcher.test(x.value);
+                              }
+                              return false;
                           } else {
                               for (var i=0; i<m.reactions_drawn.length; i++) {
                                   if (m.reactions_drawn.cobra_id==x.value) {
@@ -186,7 +185,7 @@ var Builder = function() {
         return reaction;
     };
 
-    m.calculate_metabolite_coordinates = function(met, angle, main_axis, center, dis) {
+    m.calculate_metabolite_coordinates = function(met, primary_index, angle, main_axis, center, dis) {
         // basic constants
         met.text_dis = [0,-18]; // displacement of metabolite label
 
@@ -196,20 +195,19 @@ var Builder = function() {
             b2_strength = 0.2,
             w2 = w*0.7,
             secondary_dis = 20,
-            num_slots = Math.max(3, met.count);
+            num_slots = Math.min(2, met.count - 1);
 
         // size and spacing for primary and secondary metabolites
-        var ds;
-        if (met.is_primary) {
+        var ds, draw_at_index;
+        if (met.is_primary) { // primary
             met.r = 10;
             ds = 20;
         } else { // secondary
             met.r = 5;
             ds = 10;
             // don't use center slot
-            if ((num_slots % 2)!=0 && met.index>=(Math.ceil(num_slots/2)-1)) {
-                ++met.index;
-            }
+            if (met.index > primary_index) draw_at_index = met.index - 1;
+            else draw_at_index = met.index;
         }
 
         var de = dis - ds, // distance between ends of line axis
@@ -229,13 +227,13 @@ var Builder = function() {
                   start[1]*b2_strength + end[1]*(1-b2_strength)],
             circle = main_axis[0];
         } else if (met.coefficient < 0) {
-            end = [reaction_axis[0][0] + (w2*met.index - w2*(num_slots-1)/2),
+            end = [reaction_axis[0][0] + (w2*draw_at_index - w2*(num_slots-1)/2),
                    reaction_axis[0][1] + secondary_dis],
             b1 = [start[0]*b1_strength + reaction_axis[0][0]*(1-b1_strength),
                   start[1]*b1_strength + reaction_axis[0][1]*(1-b1_strength)];
             b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
                   start[1]*b2_strength + end[1]*(1-b2_strength)],
-            circle = [main_axis[0][0] + (w*met.index - w*(num_slots-1)/2),
+            circle = [main_axis[0][0] + (w*draw_at_index - w*(num_slots-1)/2),
                       main_axis[0][1] + secondary_dis];
         } else if (met.coefficient > 0 && met.is_primary) {        // products
             end = reaction_axis[1],
@@ -245,13 +243,13 @@ var Builder = function() {
                   start[1]*b2_strength + end[1]*(1-b2_strength)],
             circle = main_axis[1];
         } else if (met.coefficient > 0) {
-            end = [reaction_axis[1][0] + (w2*met.index - w2*(num_slots-1)/2),
+            end = [reaction_axis[1][0] + (w2*draw_at_index - w2*(num_slots-1)/2),
                    reaction_axis[1][1] - secondary_dis],
             b1 = [start[0]*b1_strength + reaction_axis[1][0]*(1-b1_strength),
                   start[1]*b1_strength + reaction_axis[1][1]*(1-b1_strength)];
             b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
                   start[1]*b2_strength + end[1]*(1-b2_strength)],
-            circle = [main_axis[1][0] + (w*met.index - w*(num_slots-1)/2),
+            circle = [main_axis[1][0] + (w*draw_at_index - w*(num_slots-1)/2),
                       main_axis[1][1] - secondary_dis];
         }
         // rotate coordinates around start point
@@ -292,65 +290,113 @@ var Builder = function() {
         var primary_reactant_index = 0,
             primary_product_index = 0,
             reactant_count = 0, product_count = 0,
-	    newest_primary_product_id = "",
-            i = -1;
-        while (++i < reaction.metabolites.length) {
-            if (reaction.metabolites[i].coefficient < 0) {
-                reaction.metabolites[i].index = reactant_count;
-                if (reactant_count==primary_reactant_index)
-                    reaction.metabolites[i].is_primary = true;
+            newest_primary_product_id = "";
+
+        reaction.metabolites = reaction.metabolites.map(function(metabolite) {
+            if (metabolite.coefficient < 0) {
+                metabolite.index = reactant_count;
+                if (reactant_count==primary_reactant_index) metabolite.is_primary = true;
                 reactant_count++;
             } else {
-                reaction.metabolites[i].index = product_count;
+                metabolite.index = product_count;
                 if (product_count==primary_product_index) {
-                    reaction.metabolites[i].is_primary = true;
-		    newest_primary_product_id = reaction.metabolites[i].cobra_id;
-		};
+                    metabolite.is_primary = true;
+                    newest_primary_product_id = metabolite.cobra_id;
+                };
                 product_count++;
             }
-        }
-        i = -1;
-        while (++i < reaction.metabolites.length) {
+            return metabolite;
+        });
+        reaction.metabolites = reaction.metabolites.map(function(metabolite) {
             // keep track of total reactants and products
-            if (reaction.metabolites[i].coefficient < 0)
-                reaction.metabolites[i].count = reactant_count + 1;
-            else
-                reaction.metabolites[i].count = product_count + 1;
+            var primary_index;
+            if (metabolite.coefficient < 0) {
+                metabolite.count = reactant_count + 1;
+                primary_index = primary_reactant_index;
+            } else {
+                metabolite.count = product_count + 1;
+                primary_index = primary_product_index;
+            }
 
             // calculate coordinates of metabolite components
-            reaction.metabolites[i] = m.calculate_metabolite_coordinates(reaction.metabolites[i],
-                                                                         reaction.angle,
-                                                                         reaction.main_axis,
-                                                                         reaction.center,
-                                                                         reaction.dis);
-        }
+            metabolite = m.calculate_metabolite_coordinates(metabolite,
+                                                            primary_index,
+                                                            reaction.angle,
+                                                            reaction.main_axis,
+                                                            reaction.center,
+                                                            reaction.dis);
+            return metabolite;
+        });
 
         // append the new reaction
         m.reactions_drawn = m.reactions_drawn.concat(reaction);
 
         // draw, and set the new coords
         var new_coords = m.draw_reactions();
-        m.node_selected = newest_primary_product_id;
+        m.selected_node = {reaction: reaction.cobra_id,
+                           direction: "product",
+                           metabolite: newest_primary_product_id};
         m.reload_reaction_input(new_coords);
     };
 
     m.rotate_primary_key = function(index) {
-        var new_index,
-            selected_index = 0,
-            metabolites = [];
-        if ((typeof index === 'undefined') || (index < 0)) { // rotate
-            if (index < metabolites.length - 1) new_index = selected_index + 1;
-            else new_index = 0;
-        } else { // specific index
-            if (index >= metabolites.length) {
-                console.warn('rotate_primary_key: index too large');
-                return;
-            }
-            new_index = index;
+        console.log('rotating primary key');
+
+        if (!m.selected_node) {
+            console.log('no selected node');
+            return;
         }
-        m.selected_metabolite = metabolites[new_index];
-        // update primary in m.data
-        m.draw_reactions();
+        if ((typeof index === 'undefined') || (index < 0)) { // rotate
+            // get last index
+            var last_index, count;
+            m.reactions_drawn.map(function(reaction) {
+                if (reaction.cobra_id == m.selected_node.reaction) {
+                    reaction.metabolites.map(function(metabolite) {
+                        if ((metabolite.coefficient > 0 && m.selected_node.direction=="product") ||
+                            (metabolite.coefficient < 0 && m.selected_node.direction=="reactant")) {
+                            if (metabolite.is_primary) {
+                                last_index = metabolite.index;
+                                count = metabolite.count;
+                            }
+                        }
+                        return null;
+                    });
+                }
+                return null;
+            });
+            // new index
+            index = last_index + 1 < count - 1 ? last_index + 1 : 0;
+        }
+
+        // update primary in m.reactions_drawn
+	var selected_metabolite_id;
+        m.reactions_drawn = m.reactions_drawn.map(function(reaction) {
+            if (reaction.cobra_id == m.selected_node.reaction) {
+                reaction.metabolites = reaction.metabolites.map(function(metabolite) {
+                    if ((metabolite.coefficient > 0 && m.selected_node.direction=="product") ||
+                        (metabolite.coefficient < 0 && m.selected_node.direction=="reactant")) {
+                        if (metabolite.index == index) {
+			    metabolite.is_primary = true;
+			    selected_metabolite_id = metabolite.cobra_id;
+			} else {
+			    metabolite.is_primary = false;
+			}
+                        // calculate coordinates of metabolite components
+                        metabolite = m.calculate_metabolite_coordinates(metabolite,
+                                                                        index,
+                                                                        reaction.angle,
+                                                                        reaction.main_axis,
+                                                                        reaction.center,
+                                                                        reaction.dis);
+                    }
+                    return metabolite;
+                });
+            }
+            return reaction;
+        });
+	m.selected_node.metabolite = selected_metabolite_id;
+        m.draw_reactions([m.selected_node.reaction]);
+	m.reload_reaction_input(m.newest_coords);
     };
 
     m.create_metabolite = function(enter_selection) {
@@ -364,7 +410,7 @@ var Builder = function() {
             .attr('class', 'reaction-arrow');
 
         // create metabolite circle and label
-	// TODO hide if the node is shared
+        // TODO hide if the node is shared
         var mg = g.append('g')
                 .attr('class', 'circle-and-label');
 
@@ -448,7 +494,6 @@ var Builder = function() {
         // (speed consideration?)
     };
     m.update_reaction = function(update_selection) {
-
         // update reaction label
         update_selection.select('.reaction-label')
             .call(m.update_reaction_label);
@@ -486,8 +531,6 @@ var Builder = function() {
 
             // update: update when necessary
             sel.call(m.update_reaction);
-
-            // consider the nested data model: https://github.com/mbostock/d3/wiki/Selections#data
 
             // exit
             sel.exit().remove();
@@ -612,6 +655,18 @@ var Builder = function() {
             } else if (kc==hide_show_input_key) {
 
             }
+            // $('#up').on('click', function() {
+            //     m.modify_reaction(m.selected_node, 'direction', 'up');
+            // });
+            // $('#down').on('click', function() {
+            //     m.modify_reaction(m.selected_node, 'direction', 'down');
+            // });
+            // $('#right').on('click', function() {
+            //     m.modify_reaction(m.selected_node, 'direction', 'right');
+            // });
+            // $('#left').on('click', function() {
+            //     m.modify_reaction(m.selected_node, 'direction', 'left');
+            // });
         });
     };
 
@@ -635,19 +690,6 @@ var Builder = function() {
         svg.append('g')
             .attr('id', 'reactions');
 
-        // $('#up').on('click', function() {
-        //     m.modify_reaction(m.node_selected, 'direction', 'up');
-        // });
-        // $('#down').on('click', function() {
-        //     m.modify_reaction(m.node_selected, 'direction', 'down');
-        // });
-        // $('#right').on('click', function() {
-        //     m.modify_reaction(m.node_selected, 'direction', 'right');
-        // });
-        // $('#left').on('click', function() {
-        //     m.modify_reaction(m.node_selected, 'direction', 'left');
-        // });
-
         // set up reaction for zooming and dragging
         var mouse_node = svg.append('rect')
                 .attr("width", width)
@@ -662,15 +704,14 @@ var Builder = function() {
         var start_coords = [width/2, 40];
         m.load_model_and_list(start_coords, function() {
             // TEST case
-            if (false) {
-                console.log(m.cobra_model[802]);
+            if (true) {
                 m.new_reaction(m.cobra_model[802].cobra_id, start_coords);
-                // m.new_reaction(m.cobra_model[801].cobra_id, m.newest_coords);
+                m.new_reaction(m.cobra_model[801].cobra_id, m.newest_coords);
             }
             d3.select('#loading').style('display', 'none');
-	    // Focus on menu. TODO use a better callback rather than the
-	    // setTimeout.
-	    setTimeout(function() { $('#rxn-input').focus(); }, 100);
+            // Focus on menu. TODO use a better callback rather than the
+            // setTimeout.
+            setTimeout(function() { $('#rxn-input').focus(); }, 100);
         });
 
         // set up keyboard listeners
