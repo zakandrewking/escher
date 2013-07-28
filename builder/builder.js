@@ -24,9 +24,9 @@ var Builder = function() {
 
         var zoom = function() {
             svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-	    m.window_translate = d3.event.translate;
-	    m.window_scale = d3.event.scale;
-	    m.reload_reaction_input(m.newest_coords);
+            m.window_translate = d3.event.translate;
+            m.window_scale = d3.event.scale;
+            m.reload_reaction_input(m.newest_coords);
         };
 
         var svg = selection.append("div").attr("id","svg-container")
@@ -89,19 +89,33 @@ var Builder = function() {
             console.log('no coords');
             return;
         }
-        var l_w = 200, d_y = 20;
+        var d_y = 20;
         d3.select('#rxn-input').style('position', 'absolute')
+	    .attr('placeholder', 'Reaction ID -- Flux')
             .style('display', 'block')
             .style('left', (m.window_scale * coords[0] +
-			    m.window_translate[0] - l_w - 30)+'px')
+                            m.window_translate[0] - 280)+'px')
             .style('top', (m.window_scale * coords[1] +
-			   m.window_translate[1] - d_y)+'px')
-            .style('width', l_w+'px');
+                           m.window_translate[1] - d_y)+'px');
+
+        var reactions_found = [];
+        if (m.node_selected) {
+            reactions_found = m.cobra_model.filter(function(rxn) {
+                for (var i=0; i<rxn.metabolites.length; i++) {
+                    if (rxn.metabolites[i].cobra_id==m.node_selected &&
+			rxn.metabolites[i].coefficient < 0)
+                        return true;
+                }
+		return false;
+            });
+        };
+	// 2DGULRGx for h_c
 
         // set up the box with data, searching for first num results
         var num = 20;
         $("#rxn-input").autocomplete(
             { autoFocus: true,
+	      minLength: 0,
               source: function(request, response) {
                   var escaped = $.ui.autocomplete.escapeRegex(request.term),
                       matcher = new RegExp("^" + escaped, "i"),
@@ -109,13 +123,21 @@ var Builder = function() {
                           // check against drawn reactions
                           // TODO speed up by keeping a running list of
                           // available reactions?
-                          for (var i=0; i<m.reactions_drawn.length; i++) {
-                              if (m.reactions_drawn.cobra_id==x.value) {
-                                  return false;
+                          if (m.node_selected) {
+			      var i = -1;
+			      while (++i < reactions_found.length) {
+				  if (reactions_found[i].cobra_id==x.value) return matcher.test(x.value);
+			      }
+			      return false;
+                          } else {
+                              for (var i=0; i<m.reactions_drawn.length; i++) {
+                                  if (m.reactions_drawn.cobra_id==x.value) {
+                                      return false;
+                                  }
                               }
+                              // match against entered string
+                              return matcher.test(x.value);
                           }
-                          // match against entered string
-                          return matcher.test(x.value);
                       });
                   response(results.slice(0,num));
               },
@@ -244,7 +266,6 @@ var Builder = function() {
 
     m.new_reaction = function(cobra_id, coords) {
         // New object at x, y coordinates.
-        console.log(cobra_id);
 
         // If reaction id is not new, then return:
         if (m.reactions_drawn.filter(function(x) { return x.cobra_id==cobra_id; }).length!=0) {
@@ -271,6 +292,7 @@ var Builder = function() {
         var primary_reactant_index = 0,
             primary_product_index = 0,
             reactant_count = 0, product_count = 0,
+	    newest_primary_product_id = "",
             i = -1;
         while (++i < reaction.metabolites.length) {
             if (reaction.metabolites[i].coefficient < 0) {
@@ -280,8 +302,10 @@ var Builder = function() {
                 reactant_count++;
             } else {
                 reaction.metabolites[i].index = product_count;
-                if (product_count==primary_product_index)
+                if (product_count==primary_product_index) {
                     reaction.metabolites[i].is_primary = true;
+		    newest_primary_product_id = reaction.metabolites[i].cobra_id;
+		};
                 product_count++;
             }
         }
@@ -306,7 +330,7 @@ var Builder = function() {
 
         // draw, and set the new coords
         var new_coords = m.draw_reactions();
-        m.node_selected = cobra_id;
+        m.node_selected = newest_primary_product_id;
         m.reload_reaction_input(new_coords);
     };
 
@@ -340,6 +364,7 @@ var Builder = function() {
             .attr('class', 'reaction-arrow');
 
         // create metabolite circle and label
+	// TODO hide if the node is shared
         var mg = g.append('g')
                 .attr('class', 'circle-and-label');
 
@@ -448,8 +473,6 @@ var Builder = function() {
     m.draw_reactions = function(cobra_ids) {
         var sel;
         if (typeof cobra_ids === 'undefined' || cobra_ids==[]) {
-            console.log('updating all data');
-
             // Draw the reactions
 
             // generate reactions for m.reactions_drawn
@@ -612,18 +635,18 @@ var Builder = function() {
         svg.append('g')
             .attr('id', 'reactions');
 
-        $('#up').on('click', function() {
-            m.modify_reaction(m.node_selected, 'direction', 'up');
-        });
-        $('#down').on('click', function() {
-            m.modify_reaction(m.node_selected, 'direction', 'down');
-        });
-        $('#right').on('click', function() {
-            m.modify_reaction(m.node_selected, 'direction', 'right');
-        });
-        $('#left').on('click', function() {
-            m.modify_reaction(m.node_selected, 'direction', 'left');
-        });
+        // $('#up').on('click', function() {
+        //     m.modify_reaction(m.node_selected, 'direction', 'up');
+        // });
+        // $('#down').on('click', function() {
+        //     m.modify_reaction(m.node_selected, 'direction', 'down');
+        // });
+        // $('#right').on('click', function() {
+        //     m.modify_reaction(m.node_selected, 'direction', 'right');
+        // });
+        // $('#left').on('click', function() {
+        //     m.modify_reaction(m.node_selected, 'direction', 'left');
+        // });
 
         // set up reaction for zooming and dragging
         var mouse_node = svg.append('rect')
@@ -639,17 +662,19 @@ var Builder = function() {
         var start_coords = [width/2, 40];
         m.load_model_and_list(start_coords, function() {
             // TEST case
-            if (true) {
-                console.log(m.cobra_model[800]);
-                m.new_reaction(m.cobra_model[800].cobra_id, start_coords);
+            if (false) {
+                console.log(m.cobra_model[802]);
+                m.new_reaction(m.cobra_model[802].cobra_id, start_coords);
                 // m.new_reaction(m.cobra_model[801].cobra_id, m.newest_coords);
             }
             d3.select('#loading').style('display', 'none');
+	    // Focus on menu. TODO use a better callback rather than the
+	    // setTimeout.
+	    setTimeout(function() { $('#rxn-input').focus(); }, 100);
         });
 
         // set up keyboard listeners
         m.key_listeners();
-
     };
 
     return {
