@@ -286,7 +286,7 @@ var Builder = function() {
         // set reaction coordinates and angle
         var reaction = reactions[0];
         reaction.coords = m.align_to_grid(coords);
-        reaction.angle = 90 * (Math.PI / 180);
+        reaction.angle = 0 * (Math.PI / 180);
 
         // calculate coordinates of reaction
         reaction = m.calculate_reaction_coordinates(reaction);
@@ -487,8 +487,10 @@ var Builder = function() {
                 .attr('id', function(d) { return d.cobra_id; })
                 .attr('class', 'reaction')
                 .attr('transform', function(d) {
-                    m.newest_coords = m.rotate_coords([d.coords[0] + d.main_axis[1][0], d.coords[1] + d.main_axis[1][1]],
-                                                      d.angle, d.main_axis[0]);
+		    // save newest coordinates for placing the input box
+		    // TODO instead, find location of selected node and place input there.
+		    var untranslated = m.rotate_coords(d.main_axis[1], d.angle, d.main_axis[0]);
+                    m.newest_coords = [d.coords[0] + untranslated[0], d.coords[1] + untranslated[1]];
                     return 'translate(' + d.coords[0] + ',' + d.coords[1] + ')';
                 })
                 .call(m.create_reaction_label);
