@@ -155,11 +155,15 @@ var Builder = function() {
         return n;
     };
 
-    m.rotate_coords = function(coords, center, angle) {
-        // TODO look this up
+    m.rotate_coords = function(coords, angle, center) {
         var rot = function(c) {
-            var d = c;
-            return d;
+            var dx = Math.cos(angle) * (c[0] - center[0]) +
+                    Math.sin(angle) * (c[1] - center[1]) +
+                    center[0],
+                dy = - Math.sin(angle) * (c[0] - center[0]) +
+                    Math.cos(angle) * (c[1] - center[1]) +
+                    center[1];
+            return [dx, dy];
         };
 
         var rotated = [];
@@ -167,18 +171,20 @@ var Builder = function() {
         if (coords[0].length==2) {
             var i=-1;
             while (++i<coords.length) {
-                rotated.concat(rot([coords[i]]));
+                rotated.concat([rot(coords[i])]);
             }
         } else {
             rotated = rot(coords);
         }
+	console.log(coords);
+	console.log(rotated);
         return rotated;
     };
 
     m.calculate_reaction_coordinates = function(reaction) {
         var dis = 120;
         reaction.dis = dis;
-        var main_axis = [[0,0], [Math.sin(reaction.angle) * dis, Math.cos(reaction.angle) * dis]];
+	var main_axis = [[0, 0], [0, dis]];
         reaction.main_axis = main_axis;
         reaction.center = [(main_axis[0][0] + main_axis[1][0])/2,   // for convenience
                            (main_axis[0][1] + main_axis[1][1])/2];
@@ -211,8 +217,7 @@ var Builder = function() {
         }
 
         var de = dis - ds, // distance between ends of line axis
-            reaction_axis = [[Math.sin(angle) * ds, Math.cos(angle) * ds],
-                             [Math.sin(angle) * de, Math.cos(angle) * de]];
+	    reaction_axis = [[0, ds], [0, de]];
 
         // Define line parameters and axis.
         // Begin with unrotated coordinate system. +y = Down, +x = Right.
@@ -258,7 +263,7 @@ var Builder = function() {
         met.b1     = m.rotate_coords(b1,     angle, main_axis[0]),
         met.b2     = m.rotate_coords(b2,     angle, main_axis[0]),
         met.circle = m.rotate_coords(circle, angle, main_axis[0]);
-
+	
         return met;
     };
 
@@ -281,7 +286,7 @@ var Builder = function() {
         // set reaction coordinates and angle
         var reaction = reactions[0];
         reaction.coords = m.align_to_grid(coords);
-        reaction.angle = 0;
+        reaction.angle = 90 * (Math.PI / 180);
 
         // calculate coordinates of reaction
         reaction = m.calculate_reaction_coordinates(reaction);
@@ -369,18 +374,18 @@ var Builder = function() {
         }
 
         // update primary in m.reactions_drawn
-	var selected_metabolite_id;
+        var selected_metabolite_id;
         m.reactions_drawn = m.reactions_drawn.map(function(reaction) {
             if (reaction.cobra_id == m.selected_node.reaction) {
                 reaction.metabolites = reaction.metabolites.map(function(metabolite) {
                     if ((metabolite.coefficient > 0 && m.selected_node.direction=="product") ||
                         (metabolite.coefficient < 0 && m.selected_node.direction=="reactant")) {
                         if (metabolite.index == index) {
-			    metabolite.is_primary = true;
-			    selected_metabolite_id = metabolite.cobra_id;
-			} else {
-			    metabolite.is_primary = false;
-			}
+                            metabolite.is_primary = true;
+                            selected_metabolite_id = metabolite.cobra_id;
+                        } else {
+                            metabolite.is_primary = false;
+                        }
                         // calculate coordinates of metabolite components
                         metabolite = m.calculate_metabolite_coordinates(metabolite,
                                                                         index,
@@ -394,9 +399,9 @@ var Builder = function() {
             }
             return reaction;
         });
-	m.selected_node.metabolite = selected_metabolite_id;
+        m.selected_node.metabolite = selected_metabolite_id;
         m.draw_reactions([m.selected_node.reaction]);
-	m.reload_reaction_input(m.newest_coords);
+        m.reload_reaction_input(m.newest_coords);
     };
 
     m.create_metabolite = function(enter_selection) {
@@ -706,7 +711,7 @@ var Builder = function() {
             // TEST case
             if (true) {
                 m.new_reaction(m.cobra_model[802].cobra_id, start_coords);
-                m.new_reaction(m.cobra_model[801].cobra_id, m.newest_coords);
+                // m.new_reaction(m.cobra_model[801].cobra_id, m.newest_coords);
             }
             d3.select('#loading').style('display', 'none');
             // Focus on menu. TODO use a better callback rather than the
