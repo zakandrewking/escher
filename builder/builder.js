@@ -1,11 +1,14 @@
 var Builder = function() {
     var m = {};
-    m.version = 0.1;
-    m.selected_node = null;
-    m.newest_coords = [];
-    m.reactions_drawn = [];
+    m.version = 0.2;
+    m.selected_node = {'reaction_id': '',
+                       'metabolite_id': '',
+                       'direction': '',
+                       'is_selected': false};
+    m.newest_coords = {x:0, y:0};
+    m.reactions_drawn = {};
     m.arrowheads_generated = [];
-    m.cobra_model = [];
+    m.cobra_model = {};
     m.list_strings = [];
     m.scale = {};
     m.scale.flux_color = d3.scale.linear()
@@ -13,7 +16,7 @@ var Builder = function() {
         .range(["blue", "red"]);
     m.default_reaction_color = '#eeeeee';
     m.decimal_format = d3.format('.1f');
-    m.window_translate = [0, 0];
+    m.window_translate = {'x': 0, 'y': 0};
     m.window_scale = 1;
 
     // -----------------------------------------------------------------------------------
@@ -49,7 +52,19 @@ var Builder = function() {
         //          }, ... ]
         //  }
 
-        d3.json("data/cobra_model.json", function(error, model) {
+        // TODO switch to this:
+        //  model = {
+        //      reactions: {
+        //          cobra_id_1: {
+        //            metabolites: { cobra_id_2: { coefficient: }, ... }
+        //          }, ...
+        //      }
+        //  }
+
+        // Object.keys(myArray).length for length of the object (no good in IE8)
+        // http://whattheheadsaid.com/2010/10/a-safer-object-keys-compatibility-implementation
+
+        d3.json("data/cobra_model_0.2.json", function(error, model) {
             if (error) console.warn(error);
             m.cobra_model = model;
 
@@ -59,19 +74,16 @@ var Builder = function() {
                 var flux;
                 for (var i=0; i<json.length; i++) {
                     // update model with fluxes
-                    m.cobra_model = m.cobra_model.map(function(x) {
+                    for (var cobra_id in m.cobra_model) {
                         flux = parseFloat(json[i][1]);
                         // set flux for reaction
-                        if (x.cobra_id == json[i][0]) {
-                            x.flux = flux;
+                        if (cobra_id == json[i][0]) {
+                            m.cobra_model[cobra_id].flux = flux;
                             // also set flux for metabolites (for simpler drawing)
-                            var j=-1;
-                            while (++j < x.metabolites.length) {
-                                x.metabolites[j].flux = flux;
-                            }
+                            for (var metabolite_id in m.cobra_model[cobra_id].metabolites)
+                                m.cobra_model[cobra_id].metabolites[metabolite_id].flux = flux;
                         }
-                        return x;
-                    });
+                    }
                     // update strings for reaction list
                     m.list_strings = m.list_strings.concat({ label: json[i][0]+" -- "+parseFloat(json[i][1]),
                                                              value: json[i][0] });
@@ -85,30 +97,35 @@ var Builder = function() {
     m.reload_reaction_input = function(coords) {
         // Reload data for autocomplete box and redraw box at the new
         // coordinates.
-        if (coords==[]) {
-            console.log('no coords');
-            return;
-        }
-        var d_x = 280, d_y = 0;
+        var d = {'x': 280, 'y': 0};
         d3.select('#rxn-input').style('position', 'absolute')
             .attr('placeholder', 'Reaction ID -- Flux')
             .style('display', 'block')
-            .style('left', (m.window_scale * coords[0] +
-                            m.window_translate[0] - d_x)+'px')
-            .style('top', (m.window_scale * coords[1] +
-                           m.window_translate[1] - d_y)+'px');
+            .style('left', (m.window_scale * coords.x +
+                            m.window_translate.x - d.x)+'px')
+            .style('top', (m.window_scale * coords.y +
+                           m.window_translate.y - d.y)+'px');
 
-        var reactions_found = [];
-        if (m.selected_node) {
-            reactions_found = m.cobra_model.filter(function(rxn) {
-                for (var i=0; i<rxn.metabolites.length; i++) {
-                    if (rxn.metabolites[i].cobra_id==m.selected_node.metabolite &&
-                        rxn.metabolites[i].coefficient < 0)
-                        return true;
+        // Find selected reaction
+        var reaction_ids_to_display; //TODO clean this up
+        for (var reaction_id in m.cobra_model) {
+            var reaction = m.cobra_model[reaction_id];
+            // ignore drawn reactions
+            for (var drawn_id in m.reactions_drawn) {
+                if (reaction_id==drawn_id) continue;
+            }
+            if (m.selected_node.is_selected) {
+                // check metabolites for match to selected metabolite
+                for (var metabolite_id in reaction.metabolites) {
+                    if (metabolite_id==m.selected_node.metabolite_id &&
+                        reaction.metabolites[metabolite_id].coefficient < 0) {
+                        reaction_ids_to_display.concat(reaction_id);
+                    }
                 }
-                return false;
-            });
-        };
+            } else {
+		reaction_ids_to_display.concat(reaction_id);
+	    }
+        }
 
         // set up the box with data, searching for first num results
         var num = 20;
@@ -122,7 +139,8 @@ var Builder = function() {
                           // check against drawn reactions
                           // TODO speed up by keeping a running list of
                           // available reactions?
-                          if (m.selected_node) {
+                          if (m.selected_node.is_selected) {
+
                               var i = -1;
                               while (++i < reactions_found.length) {
                                   if (reactions_found[i].cobra_id==x.value) return matcher.test(x.value);
@@ -151,24 +169,24 @@ var Builder = function() {
 
     m.align_to_grid = function(loc) {
         var r = function (a) { return Math.round(a/20.)*20.; };
-        var n = [r(loc[0]), r(loc[1])];
+        var n = [r(loc.x), r(loc.y)];
         return n;
     };
 
     m.rotate_coords = function(coords, angle, center) {
         var rot = function(c) {
-            var dx = Math.cos(angle) * (c[0] - center[0]) +
-                    Math.sin(angle) * (c[1] - center[1]) +
-                    center[0],
-                dy = - Math.sin(angle) * (c[0] - center[0]) +
-                    Math.cos(angle) * (c[1] - center[1]) +
-                    center[1];
+            var dx = Math.cos(angle) * (c.x - center.x) +
+                    Math.sin(angle) * (c.y - center.y) +
+                    center.x,
+                dy = - Math.sin(angle) * (c.x - center.x) +
+                    Math.cos(angle) * (c.y - center.y) +
+                    center.y;
             return [dx, dy];
         };
 
         var rotated = [];
         // if coords is nested array
-        if (coords[0].length==2) {
+        if (coords.x.length==2) {
             var i=-1;
             while (++i<coords.length) {
                 rotated.concat([rot(coords[i])]);
@@ -176,18 +194,18 @@ var Builder = function() {
         } else {
             rotated = rot(coords);
         }
-	console.log(coords);
-	console.log(rotated);
+        console.log(coords);
+        console.log(rotated);
         return rotated;
     };
 
     m.calculate_reaction_coordinates = function(reaction) {
         var dis = 120;
         reaction.dis = dis;
-	var main_axis = [[0, 0], [0, dis]];
+        var main_axis = [[0, 0], [0, dis]];
         reaction.main_axis = main_axis;
-        reaction.center = [(main_axis[0][0] + main_axis[1][0])/2,   // for convenience
-                           (main_axis[0][1] + main_axis[1][1])/2];
+        reaction.center = [(main_axis[0].x + main_axis[1].x)/2,   // for convenience
+                           (main_axis[0].y + main_axis[1].y)/2];
         return reaction;
     };
 
@@ -217,7 +235,7 @@ var Builder = function() {
         }
 
         var de = dis - ds, // distance between ends of line axis
-	    reaction_axis = [[0, ds], [0, de]];
+            reaction_axis = [[0, ds], [0, de]];
 
         // Define line parameters and axis.
         // Begin with unrotated coordinate system. +y = Down, +x = Right.
@@ -226,36 +244,36 @@ var Builder = function() {
         // reactants
         if (met.coefficient < 0 && met.is_primary) {
             end = reaction_axis[0],
-            b1 = [start[0]*b1_strength + reaction_axis[0][0]*(1-b1_strength),
-                  start[1]*b1_strength + reaction_axis[0][1]*(1-b1_strength)];
-            b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
-                  start[1]*b2_strength + end[1]*(1-b2_strength)],
+            b1 = [start.x*b1_strength + reaction_axis[0].x*(1-b1_strength),
+                  start.y*b1_strength + reaction_axis[0].y*(1-b1_strength)];
+            b2 = [start.x*b2_strength + end.x*(1-b2_strength),
+                  start.y*b2_strength + end.y*(1-b2_strength)],
             circle = main_axis[0];
         } else if (met.coefficient < 0) {
-            end = [reaction_axis[0][0] + (w2*draw_at_index - w2*(num_slots-1)/2),
-                   reaction_axis[0][1] + secondary_dis],
-            b1 = [start[0]*b1_strength + reaction_axis[0][0]*(1-b1_strength),
-                  start[1]*b1_strength + reaction_axis[0][1]*(1-b1_strength)];
-            b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
-                  start[1]*b2_strength + end[1]*(1-b2_strength)],
-            circle = [main_axis[0][0] + (w*draw_at_index - w*(num_slots-1)/2),
-                      main_axis[0][1] + secondary_dis];
+            end = [reaction_axis[0].x + (w2*draw_at_index - w2*(num_slots-1)/2),
+                   reaction_axis[0].y + secondary_dis],
+            b1 = [start.x*b1_strength + reaction_axis[0].x*(1-b1_strength),
+                  start.y*b1_strength + reaction_axis[0].y*(1-b1_strength)];
+            b2 = [start.x*b2_strength + end.x*(1-b2_strength),
+                  start.y*b2_strength + end.y*(1-b2_strength)],
+            circle = [main_axis[0].x + (w*draw_at_index - w*(num_slots-1)/2),
+                      main_axis[0].y + secondary_dis];
         } else if (met.coefficient > 0 && met.is_primary) {        // products
             end = reaction_axis[1],
-            b1 = [start[0]*b1_strength + reaction_axis[1][0]*(1-b1_strength),
-                  start[1]*b1_strength + reaction_axis[1][1]*(1-b1_strength)];
-            b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
-                  start[1]*b2_strength + end[1]*(1-b2_strength)],
+            b1 = [start.x*b1_strength + reaction_axis[1].x*(1-b1_strength),
+                  start.y*b1_strength + reaction_axis[1].y*(1-b1_strength)];
+            b2 = [start.x*b2_strength + end.x*(1-b2_strength),
+                  start.y*b2_strength + end.y*(1-b2_strength)],
             circle = main_axis[1];
         } else if (met.coefficient > 0) {
-            end = [reaction_axis[1][0] + (w2*draw_at_index - w2*(num_slots-1)/2),
-                   reaction_axis[1][1] - secondary_dis],
-            b1 = [start[0]*b1_strength + reaction_axis[1][0]*(1-b1_strength),
-                  start[1]*b1_strength + reaction_axis[1][1]*(1-b1_strength)];
-            b2 = [start[0]*b2_strength + end[0]*(1-b2_strength),
-                  start[1]*b2_strength + end[1]*(1-b2_strength)],
-            circle = [main_axis[1][0] + (w*draw_at_index - w*(num_slots-1)/2),
-                      main_axis[1][1] - secondary_dis];
+            end = [reaction_axis[1].x + (w2*draw_at_index - w2*(num_slots-1)/2),
+                   reaction_axis[1].y - secondary_dis],
+            b1 = [start.x*b1_strength + reaction_axis[1].x*(1-b1_strength),
+                  start.y*b1_strength + reaction_axis[1].y*(1-b1_strength)];
+            b2 = [start.x*b2_strength + end.x*(1-b2_strength),
+                  start.y*b2_strength + end.y*(1-b2_strength)],
+            circle = [main_axis[1].x + (w*draw_at_index - w*(num_slots-1)/2),
+                      main_axis[1].y - secondary_dis];
         }
         // rotate coordinates around start point
         met.start  = m.rotate_coords(start,  angle, main_axis[0]),
@@ -263,7 +281,7 @@ var Builder = function() {
         met.b1     = m.rotate_coords(b1,     angle, main_axis[0]),
         met.b2     = m.rotate_coords(b2,     angle, main_axis[0]),
         met.circle = m.rotate_coords(circle, angle, main_axis[0]);
-	
+
         return met;
     };
 
@@ -338,16 +356,17 @@ var Builder = function() {
 
         // draw, and set the new coords
         var new_coords = m.draw_reactions();
-        m.selected_node = {reaction: reaction.cobra_id,
+        m.selected_node = {reaction_id: reaction.cobra_id,
                            direction: "product",
-                           metabolite: newest_primary_product_id};
+                           metabolite_id: newest_primary_product_id,
+                           is_selected: true};
         m.reload_reaction_input(new_coords);
     };
 
     m.rotate_primary_key = function(index) {
         console.log('rotating primary key');
 
-        if (!m.selected_node) {
+        if (!m.selected_node.is_selected) {
             console.log('no selected node');
             return;
         }
@@ -355,7 +374,7 @@ var Builder = function() {
             // get last index
             var last_index, count;
             m.reactions_drawn.map(function(reaction) {
-                if (reaction.cobra_id == m.selected_node.reaction) {
+                if (reaction.cobra_id == m.selected_node.reaction_id) {
                     reaction.metabolites.map(function(metabolite) {
                         if ((metabolite.coefficient > 0 && m.selected_node.direction=="product") ||
                             (metabolite.coefficient < 0 && m.selected_node.direction=="reactant")) {
@@ -376,7 +395,7 @@ var Builder = function() {
         // update primary in m.reactions_drawn
         var selected_metabolite_id;
         m.reactions_drawn = m.reactions_drawn.map(function(reaction) {
-            if (reaction.cobra_id == m.selected_node.reaction) {
+            if (reaction.cobra_id == m.selected_node.reaction_id) {
                 reaction.metabolites = reaction.metabolites.map(function(metabolite) {
                     if ((metabolite.coefficient > 0 && m.selected_node.direction=="product") ||
                         (metabolite.coefficient < 0 && m.selected_node.direction=="reactant")) {
@@ -399,8 +418,8 @@ var Builder = function() {
             }
             return reaction;
         });
-        m.selected_node.metabolite = selected_metabolite_id;
-        m.draw_reactions([m.selected_node.reaction]);
+        m.selected_node.metabolite_id = selected_metabolite_id;
+        m.draw_specific_reactions([m.selected_node.reaction_id]);
         m.reload_reaction_input(m.newest_coords);
     };
 
@@ -433,10 +452,10 @@ var Builder = function() {
         update_selection
             .selectAll('.reaction-arrow')
             .attr('d', function(d) {
-                return 'M'+d.start[0]+','+d.start[1]+
-                    'C'+d.b1[0]+','+d.b1[1]+' '+
-                    d.b2[0]+','+d.b2[1]+' '+
-                    d.end[0]+','+d.end[1];
+                return 'M'+d.start.x+','+d.start.y+
+                    'C'+d.b1.x+','+d.b1.y+' '+
+                    d.b2.x+','+d.b2.y+' '+
+                    d.end.x+','+d.end.y;
             }) // TODO replace with d3.curve or equivalent
             .attr("marker-end", function (d) {
                 var c = d.flux ? m.scale.flux_color(Math.abs(d.flux)) :
@@ -455,13 +474,13 @@ var Builder = function() {
         var mg = update_selection
                 .selectAll('.circle-and-label')
                 .attr('transform', function(d) {
-                    return 'translate('+d.circle[0]+','+d.circle[1]+')';
+                    return 'translate('+d.circle.x+','+d.circle.y+')';
                 });
         mg.select('.metabolite-circle')
             .attr('r', function(d) { return d.r; });
         mg.select('.metabolite-label')
             .attr('transform', function(d) {
-                return 'translate('+d.text_dis[0]+','+d.text_dis[1]+')';
+                return 'translate('+d.text_dis.x+','+d.text_dis.y+')';
             });
     };
 
@@ -476,8 +495,8 @@ var Builder = function() {
         })
             .attr('transform', function(d) {
                 var dis = [60,0], // displacement of reaction label
-                    loc = m.rotate_coords([d.center[0] + dis[0], d.center[1] + dis[1]], d.angle, d.main_axis[0]);
-                return 'translate('+loc[0]+','+loc[1]+')';
+                    loc = m.rotate_coords([d.center.x + dis.x, d.center.y + dis.y], d.angle, d.main_axis[0]);
+                return 'translate('+loc.x+','+loc.y+')';
             });
     };
 
@@ -487,18 +506,15 @@ var Builder = function() {
                 .attr('id', function(d) { return d.cobra_id; })
                 .attr('class', 'reaction')
                 .attr('transform', function(d) {
-		    // save newest coordinates for placing the input box
-		    // TODO instead, find location of selected node and place input there.
-		    var untranslated = m.rotate_coords(d.main_axis[1], d.angle, d.main_axis[0]);
-                    m.newest_coords = [d.coords[0] + untranslated[0], d.coords[1] + untranslated[1]];
-                    return 'translate(' + d.coords[0] + ',' + d.coords[1] + ')';
+                    // save newest coordinates for placing the input box
+                    // TODO instead, find location of selected node and place input there.
+                    var untranslated = m.rotate_coords(d.main_axis[1], d.angle, d.main_axis[0]);
+                    m.newest_coords = [d.coords.x + untranslated.x, d.coords.y + untranslated.y];
+                    return 'translate(' + d.coords.x + ',' + d.coords.y + ')';
                 })
                 .call(m.create_reaction_label);
 
         return;
-
-        // TODO consider switching to style: [main_axis.start.x, main_axis.start.y]
-        // (speed consideration?)
     };
     m.update_reaction = function(update_selection) {
         // update reaction label
@@ -522,53 +538,55 @@ var Builder = function() {
         return;
     };
 
-    m.draw_reactions = function(cobra_ids) {
-        var sel;
-        if (typeof cobra_ids === 'undefined' || cobra_ids==[]) {
-            // Draw the reactions
+    m.draw_reactions = function() {
+        // Draw the reactions
 
-            // generate reactions for m.reactions_drawn
-            // assure constancy with cobra_id
-            sel = d3.select('#reactions')
+        // generate reactions for m.reactions_drawn
+        // assure constancy with cobra_id
+        var sel = d3.select('#reactions')
                 .selectAll('.reaction')
                 .data(m.reactions_drawn, function(d) { return d.cobra_id; });
 
-            // enter: generate and place reaction
-            sel.enter().call(m.create_reaction);
+        // enter: generate and place reaction
+        sel.enter().call(m.create_reaction);
 
-            // update: update when necessary
-            sel.call(m.update_reaction);
+        // update: update when necessary
+        sel.call(m.update_reaction);
 
-            // exit
-            sel.exit().remove();
+        // exit
+        sel.exit().remove();
+
+
+        // return newest coordinates to place next reaction
+        return m.newest_coords;
+    };
+
+    m.draw_specific_reactions = function(cobra_ids) {
+        console.log('updating these ids:');
+        console.log(cobra_ids);
+
+        // find reactions for cobra_ids
+        var reaction_subset = m.reactions_drawn.filter(function(x) {
+            return cobra_ids.indexOf(x.cobra_id) >= 0;
+        });
+        if (cobra_ids.length != reaction_subset.length) {
+            console.warn('did not find correct reaction subset');
         }
-        else {
-            console.log('updating these ids:');
-            console.log(cobra_ids);
 
-            // find reactions for cobra_ids
-            var reaction_subset = m.reactions_drawn.filter(function(x) {
-                return cobra_ids.indexOf(x.cobra_id) >= 0;
-            });
-            if (cobra_ids.length != reaction_subset.length) {
-                console.warn('did not find correct reaction subset');
-            }
-
-            // generate reactions for m.reactions_drawn
-            // assure constancy with cobra_id
-            sel = d3.select('#reactions')
+        // generate reactions for m.reactions_drawn
+        // assure constancy with cobra_id
+        var sel = d3.select('#reactions')
                 .selectAll('.reaction')
                 .data(reaction_subset, function(d) { return d.cobra_id; });
 
-            // enter: generate and place reaction
-            sel.enter().call(m.create_reaction);
+        // enter: generate and place reaction
+        sel.enter().call(m.create_reaction);
 
-            // update: update when necessary
-            sel.call(m.update_reaction);
+        // update: update when necessary
+        sel.call(m.update_reaction);
 
-            // exit
-            // sel.exit();
-        }
+        // exit
+        // sel.exit();
 
         // return newest coordinates to place next reaction
         return m.newest_coords;
