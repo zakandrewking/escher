@@ -29,7 +29,7 @@ var Builder = function() {
             svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
             m.window_translate = {'x': d3.event.translate[0], 'y': d3.event.translate[1]};
             m.window_scale = d3.event.scale;
-            m.reload_reaction_input(m.newest_coords);
+            m.place_reaction_input(m.newest_coords);
         };
 
         var svg = selection.append("div").attr("id","svg-container")
@@ -76,8 +76,8 @@ var Builder = function() {
                         }
                     }
                     // update strings for reaction list
-                    m.list_strings = m.list_strings.concat({ label: json[i][0]+" -- "+parseFloat(json[i][1]),
-                                                             value: json[i][0] });
+                    m.list_strings.push({ label: json[i][0]+" -- "+parseFloat(json[i][1]),
+                                          value: json[i][0] });
                 }
                 m.reload_reaction_input(coords);
                 callback_function();
@@ -85,10 +85,7 @@ var Builder = function() {
         });
     };
 
-    m.reload_reaction_input = function(coords) {
-        // Reload data for autocomplete box and redraw box at the new
-        // coordinates.
-
+    m.place_reaction_input = function(coords) {
         var d = {'x': 280, 'y': 0};
         d3.select('#rxn-input').style('position', 'absolute')
             .attr('placeholder', 'Reaction ID -- Flux')
@@ -97,6 +94,12 @@ var Builder = function() {
                             m.window_translate.x - d.x)+'px')
             .style('top', (m.window_scale * coords.y +
                            m.window_translate.y - d.y)+'px');
+    };
+
+    m.reload_reaction_input = function(coords) {
+        // Reload data for autocomplete box and redraw box at the new
+        // coordinates.
+        m.place_reaction_input(coords);
 
         // Find selected reaction
         var reaction_ids_to_display = [];
@@ -111,11 +114,11 @@ var Builder = function() {
                 for (var metabolite_id in reaction.metabolites) {
                     if (metabolite_id==m.selected_node.metabolite_id &&
                         reaction.metabolites[metabolite_id].coefficient < 0) {
-                        reaction_ids_to_display.concat(reaction_id);
+                        reaction_ids_to_display.push(reaction_id);
                     }
                 }
             } else {
-                reaction_ids_to_display = reaction_ids_to_display.concat(reaction_id);
+                reaction_ids_to_display.push(reaction_id);
             }
         }
 
@@ -153,7 +156,7 @@ var Builder = function() {
         var i=-1,
             rotated = [];
         while (++i<coords_array.length) {
-            rotated = rotated.concat([m.rotate_coords(coords_array[i])]);
+            rotated.push(m.rotate_coords(coords_array[i]));
         }
         return rotated;
     };
@@ -371,7 +374,7 @@ var Builder = function() {
                 (metabolite.coefficient < 0 && m.selected_node.direction=="reactant")) {
                 if (metabolite.index == index) {
                     metabolite.is_primary = true;
-                    selected_metabolite_id = metabolite.cobra_id;
+                    selected_metabolite_id = metabolite_id;
                 } else {
                     metabolite.is_primary = false;
                 }
@@ -418,11 +421,11 @@ var Builder = function() {
         // update arrows
         update_selection
             .selectAll('.reaction-arrow')
-	// see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
-	// only necessary for selectAll()
-	    .datum(function() { 
-		return this.parentNode.__data__; 
-	    })
+        // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
+        // only necessary for selectAll()
+            .datum(function() {
+                return this.parentNode.__data__;
+            })
             .attr('d', function(d) {
                 return 'M'+d.start.x+','+d.start.y+
                     'C'+d.b1.x+','+d.b1.y+' '+
@@ -445,11 +448,11 @@ var Builder = function() {
         // update circle and label location
         var mg = update_selection
                 .selectAll('.circle-and-label')
-	// see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
-	// only necessary for selectAll()
-		.datum(function() { 
-		    return this.parentNode.__data__; 
-		})
+        // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
+        // only necessary for selectAll()
+                .datum(function() {
+                    return this.parentNode.__data__;
+                })
                 .attr('transform', function(d) {
                     return 'translate('+d.circle.x+','+d.circle.y+')';
                 });
@@ -473,8 +476,8 @@ var Builder = function() {
             .attr('transform', function(d) {
                 var dis = {'x': 60, 'y': 0}, // displacement of reaction label
                     loc = m.rotate_coords({'x': d.center.x + dis.x,
-					   'y': d.center.y + dis.y},
-					  d.angle, d.main_axis[0]);
+                                           'y': d.center.y + dis.y},
+                                          d.angle, d.main_axis[0]);
                 return 'translate('+loc.x+','+loc.y+')';
             });
     };
@@ -501,12 +504,12 @@ var Builder = function() {
         update_selection.select('.reaction-label')
             .call(m.update_reaction_label);
 
-	// select metabolites
+        // select metabolites
         var sel = update_selection
                 .selectAll('.metabolite-group')
                 .data(function(d) {
-		    return m.make_array(d.metabolites, 'metabolite_id');
-		}, function(d) { return d.metabolite_id; });
+                    return m.make_array(d.metabolites, 'metabolite_id');
+                }, function(d) { return d.metabolite_id; });
 
         // new metabolites
         sel.enter().call(m.create_metabolite);
@@ -528,7 +531,7 @@ var Builder = function() {
             // add key as 'id'
             o[id_key] = key;
             // add object to array
-            array = array.concat(o);
+            array.push(o);
         }
         return array;
     };
@@ -603,7 +606,7 @@ var Builder = function() {
 
         var id = String(color).replace('#', pref);
         if (m.arrowheads_generated.indexOf(id) < 0) {
-            m.arrowheads_generated = m.arrowheads_generated.concat(id);
+            m.arrowheads_generated.push(id);
 
             var markerWidth = 5,
                 markerHeight = 5,
