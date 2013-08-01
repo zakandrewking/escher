@@ -7,7 +7,7 @@ var Builder = function() {
                        'direction': '',
                        'is_selected': false};
     m.newest_coords = {x:0, y:0};
-    m.reactions_drawn = {};
+    m.drawn_reactions = {};
     m.arrowheads_generated = [];
     m.cobra_reactions = {};
     m.list_strings = [];
@@ -115,12 +115,12 @@ var Builder = function() {
         // coordinates.
         m.place_reaction_input(coords);
 
-	console.log(m.reactions_drawn);
+	console.log(m.drawn_reactions);
 
         // Find selected reaction
         var reaction_ids_to_display = [],
 	    already_drawn = function(reaction_id) {
-		for (var drawn_id in m.reactions_drawn) 
+		for (var drawn_id in m.drawn_reactions) 
                     if (reaction_id==drawn_id) return true;
 		return false;
 	    };
@@ -281,7 +281,7 @@ var Builder = function() {
         // New object at x, y coordinates.
 
         // If reaction id is not new, then return:
-        if (m.reactions_drawn.hasOwnProperty(reaction_id)) {
+        if (m.drawn_reactions.hasOwnProperty(reaction_id)) {
             console.warn('reaction is already drawn');
             return;
         }
@@ -342,7 +342,7 @@ var Builder = function() {
         }
 
         // append the new reaction
-        m.reactions_drawn[reaction_id] = reaction;
+        m.drawn_reactions[reaction_id] = reaction;
 
         // draw, and set the new coords
         m.selected_node = {'reaction_id': reaction_id,
@@ -355,7 +355,7 @@ var Builder = function() {
     };
 
     m.get_coords_for_metabolite = function(metabolite_id, reaction_id) {
-	var reaction = m.reactions_drawn[reaction_id],
+	var reaction = m.drawn_reactions[reaction_id],
 	    metabolite = reaction.metabolites[metabolite_id],
 	    coords = reaction.coords;
 	return {'x': coords.x + metabolite.circle.x,
@@ -372,7 +372,7 @@ var Builder = function() {
 
         // get last index
         var last_index, count;
-        var reaction = m.reactions_drawn[m.selected_node.reaction_id];
+        var reaction = m.drawn_reactions[m.selected_node.reaction_id];
         for (var metabolite_id in reaction.metabolites) {
             var metabolite = reaction.metabolites[metabolite_id];
             if ((metabolite.coefficient > 0 && m.selected_node.direction=="product") ||
@@ -396,9 +396,9 @@ var Builder = function() {
             return;
         }
 
-        // update primary in m.reactions_drawn
+        // update primary in m.drawn_reactions
         var new_primary_metabolite_id;
-        var reaction = m.reactions_drawn[m.selected_node.reaction_id];
+        var reaction = m.drawn_reactions[m.selected_node.reaction_id];
 
 	// if primary is selected, then maintain that selection
 	var sel_is_primary = reaction.metabolites[m.selected_node.metabolite_id].is_primary,
@@ -615,12 +615,12 @@ var Builder = function() {
     m.draw = function() {
         // Draw the reactions
 
-        // generate reactions for m.reactions_drawn
+        // generate reactions for m.drawn_reactions
         // assure constancy with cobra_id
         var sel = d3.select('#reactions')
                 .selectAll('.reaction')
-                .data(m.make_array(m.reactions_drawn, 'reaction_id'),
-                      function(d) { return d.reaction_id; }); // LEFTOFF generate array from m.reactions_drawn object
+                .data(m.make_array(m.drawn_reactions, 'reaction_id'),
+                      function(d) { return d.reaction_id; }); // LEFTOFF generate array from m.drawn_reactions object
 
         // enter: generate and place reaction
         sel.enter().call(m.create_reaction);
@@ -644,13 +644,13 @@ var Builder = function() {
         var reaction_subset = {},
             i = -1;
         while (++i<reaction_ids.length) {
-            reaction_subset[reaction_ids[i]] = $.extend(true, {}, m.reactions_drawn[reaction_ids[i]]);
+            reaction_subset[reaction_ids[i]] = $.extend(true, {}, m.drawn_reactions[reaction_ids[i]]);
         }
         if (reaction_ids.length != Object.keys(reaction_subset).length) {
             console.warn('did not find correct reaction subset');
         }
 
-        // generate reactions for m.reactions_drawn
+        // generate reactions for m.drawn_reactions
         // assure constancy with cobra_id
         var sel = d3.select('#reactions')
                 .selectAll('.reaction')
@@ -672,7 +672,7 @@ var Builder = function() {
 
     m.modify_reaction = function(cobra_id, key, value) {
         // modify reaction with cobra_id to have new (key, value) pair
-        m.reactions_drawn[cobra_id][key] = value;
+        m.drawn_reactions[cobra_id][key] = value;
     };
 
     m.generate_arrowhead_for_color = function(color, is_end) {
