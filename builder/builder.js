@@ -77,28 +77,37 @@ var Builder = function() {
             // load list data
             d3.json("data/flux-wt-pFBA.json", function(error, json) {
                 if (error) console.warn(error);
+
+		// sort by flux value
+		var sorted = [];
 		for (var flux_reaction_id in json) {
 		    // fix reaction ids
-		    var flux = parseFloat(json[flux_reaction_id]),
-			parsed = flux_reaction_id.replace('(', '_').replace(')', '');
+		    sorted.push([flux_reaction_id.replace('(', '_').replace(')', ''),
+				 parseFloat(json[flux_reaction_id])]);
+		}
+		sorted.sort(function(a,b) { return Math.abs(b[1]) - Math.abs(a[1]); });
+		var i=-1;
+		while (++i < sorted.length) {
+                    // update strings for reaction list
+                    m.list_strings.push({ label: sorted[i][0]+" -- "+sorted[i][1],
+                                          value: sorted[i][0] });
+
 		    // update model with fluxes
                     for (var reaction_id in m.cobra_reactions) {
                         // set flux for reaction
-                        if (reaction_id == flux_reaction_id) {
-                            m.cobra_reactions[reaction_id].flux = flux;
+                        if (reaction_id == sorted[i][0]) {
+                            m.cobra_reactions[reaction_id].flux = sorted[i][1];
                             // also set flux for metabolites (for simpler drawing)
                             for (var metabolite_id in m.cobra_reactions[reaction_id].metabolites)
-                                m.cobra_reactions[reaction_id].metabolites[metabolite_id].flux = flux;
+                                m.cobra_reactions[reaction_id].metabolites[metabolite_id].flux = sorted[i][1];
                         }
                     }
-                    // update strings for reaction list
-                    m.list_strings.push({ label: parsed+" -- "+flux,
-                                          value: parsed });
                 }
                 m.reload_reaction_input(coords);
                 callback_function();
             });
         });
+
     };
 
     m.place_reaction_input = function(coords) {
