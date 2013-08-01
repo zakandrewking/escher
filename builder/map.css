@@ -6,6 +6,7 @@ body {
     width: 262px;
     height: 31px;
     font-size: 18px;
+    background: rgba(255,255,255,0.4);
 }
 
 #svg-container {

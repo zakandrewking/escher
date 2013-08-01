@@ -324,6 +324,9 @@ var Builder = function() {
                 primary_index = primary_product_index;
             }
 
+	    // record reaction_id with each metabolite
+	    metabolite.reaction_id = reaction_id;
+
             // calculate coordinates of metabolite components
             metabolite = m.calculate_metabolite_coordinates(metabolite,
                                                             primary_index,
@@ -337,12 +340,21 @@ var Builder = function() {
         m.reactions_drawn[reaction_id] = reaction;
 
         // draw, and set the new coords
-        var new_coords = m.draw_reactions();
         m.selected_node = {'reaction_id': reaction_id,
                            'direction': "product",
                            'metabolite_id': newest_primary_product_id,
-                           'is_selected': true};
+                           'is_selected': true};        
+
+	var new_coords = m.draw();
         m.reload_reaction_input(new_coords);
+    };
+
+    m.get_coords_for_metabolite = function(metabolite_id, reaction_id) {
+	var reaction = m.reactions_drawn[reaction_id],
+	    metabolite = reaction.metabolites[metabolite_id],
+	    coords = reaction.coords;
+	return {'x': coords.x + metabolite.circle.x,
+		'y': coords.y + metabolite.circle.y};
     };
 
     m.cycle_primary_key = function() {
@@ -380,15 +392,20 @@ var Builder = function() {
         }
 
         // update primary in m.reactions_drawn
-        var selected_metabolite_id;
+        var new_primary_metabolite_id;
         var reaction = m.reactions_drawn[m.selected_node.reaction_id];
+
+	// if primary is selected, then maintain that selection
+	var sel_is_primary = reaction.metabolites[m.selected_node.metabolite_id].is_primary,
+	    should_select_primary = sel_is_primary ? true : false;
+
         for (var metabolite_id in reaction.metabolites) {
             var metabolite = reaction.metabolites[metabolite_id];
             if ((metabolite.coefficient > 0 && m.selected_node.direction=="product") ||
                 (metabolite.coefficient < 0 && m.selected_node.direction=="reactant")) {
                 if (metabolite.index == index) {
                     metabolite.is_primary = true;
-                    selected_metabolite_id = metabolite_id;
+                    new_primary_metabolite_id = metabolite_id;
                 } else {
                     metabolite.is_primary = false;
                 }
@@ -401,10 +418,30 @@ var Builder = function() {
                                                                 reaction.dis);
             }
         }
+	
+	var coords;
+	if (should_select_primary) {
+	    m.selected_node.metabolite_id = new_primary_metabolite_id;
+	    coords = m.get_coords_for_metabolite(m.selected_node.metabolite_id,
+						     m.selected_node.reaction_id);
+	    m.reload_reaction_input(coords);
+	} else {
+	    coords = m.get_coords_for_metabolite(m.selected_node.metabolite_id,
+						     m.selected_node.reaction_id);
+	    m.place_reaction_input(coords);
+	}
 
-        m.selected_node.metabolite_id = selected_metabolite_id;
         m.draw_specific_reactions([m.selected_node.reaction_id]);
-        m.reload_reaction_input(m.newest_coords);
+    };
+
+    m.select_metabolite = function(d) {
+	m.selected_node.metabolite_id = d.metabolite_id;
+	m.selected_node.direction = d.coefficient > 0 ? 'product' : 'reactant';
+	m.selected_node.is_selected = true;
+	m.selected_node.reaction = d.reaction_id;
+	m.newest_coords = m.get_coords_for_metabolite(d.metabolite_id, d.reaction_id);
+	m.reload_reaction_input(m.newest_coords);
+	m.draw();
     };
 
     m.create_metabolite = function(enter_selection) {
@@ -423,10 +460,12 @@ var Builder = function() {
                 .attr('class', 'circle-and-label');
 
         mg.append('circle')
-            .attr('class', 'metabolite-circle');
+            .attr('class', 'metabolite-circle')
+	    .on("click", m.select_metabolite);
         mg.append('text')
             .attr('class', 'metabolite-label')
-            .text(function(d) { return d.metabolite_id; });
+            .text(function(d) { return d.metabolite_id; })
+	    .attr('pointer-events', 'none');
     };
 
     m.update_metabolite = function(update_selection) {
@@ -470,8 +509,25 @@ var Builder = function() {
                 .attr('transform', function(d) {
                     return 'translate('+d.circle.x+','+d.circle.y+')';
                 });
+
+	var is_sel = function(d) {
+	    if (d.reaction_id==m.selected_node.reaction_id &&
+		d.metabolite_id==m.selected_node.metabolite_id &&
+		m.selected_node.is_selected)
+		return true;
+	    return false;
+	};
+
         mg.select('.metabolite-circle')
-            .attr('r', function(d) { return d.r; });
+            .attr('r', function(d) { return d.r; })
+	    .style('stroke', function(d) {
+		if (is_sel(d)) return '#222';
+		return null;
+	    })
+	    .style('stroke-width', function(d) {
+		if (is_sel(d)) return '3px';
+		return null;
+	    });
         mg.select('.metabolite-label')
             .attr('transform', function(d) {
                 return 'translate('+d.text_dis.x+','+d.text_dis.y+')';
@@ -481,7 +537,8 @@ var Builder = function() {
     m.create_reaction_label = function(sel) {
         // draw reaction label for selection
         sel.append('text')
-            .attr('class', 'reaction-label');
+            .attr('class', 'reaction-label')
+	    .attr('pointer-events', 'none');
     };
     m.update_reaction_label = function(sel) {
         sel.text(function(d) {
@@ -550,7 +607,7 @@ var Builder = function() {
         return array;
     };
 
-    m.draw_reactions = function() {
+    m.draw = function() {
         // Draw the reactions
 
         // generate reactions for m.reactions_drawn
