@@ -115,14 +115,19 @@ var Builder = function() {
         // coordinates.
         m.place_reaction_input(coords);
 
+	console.log(m.reactions_drawn);
+
         // Find selected reaction
-        var reaction_ids_to_display = [];
+        var reaction_ids_to_display = [],
+	    already_drawn = function(reaction_id) {
+		for (var drawn_id in m.reactions_drawn) 
+                    if (reaction_id==drawn_id) return true;
+		return false;
+	    };
         for (var reaction_id in m.cobra_reactions) {
             var reaction = m.cobra_reactions[reaction_id];
             // ignore drawn reactions
-            for (var drawn_id in m.reactions_drawn) {
-                if (reaction_id==drawn_id) continue;
-            }
+	    if (already_drawn(reaction_id)) continue;
             if (m.selected_node.is_selected) {
                 // check metabolites for match to selected metabolite
                 for (var metabolite_id in reaction.metabolites) {
@@ -144,7 +149,7 @@ var Builder = function() {
               source: function(request, response) {
                   var escaped = $.ui.autocomplete.escapeRegex(request.term),
                       matcher = new RegExp("^" + escaped, "i"),
-                      results = m.list_strings.filter(function(x) {           // TODO BUG draw reaction showing up in list (loading list too soon?)
+                      results = m.list_strings.filter(function(x) {
                           // check against drawn reactions
                           if (reaction_ids_to_display.indexOf(x.value) >= 0)
                               return matcher.test(x.value);
