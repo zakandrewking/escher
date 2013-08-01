@@ -107,15 +107,15 @@ var Builder = function() {
             .style('left', (m.window_scale * coords.x +
                             m.window_translate.x - d.x)+'px')
             .style('top', (m.window_scale * coords.y +
-                           m.window_translate.y - d.y)+'px');
+                           m.window_translate.y - d.y)+'px')
+	// ignore spaces
+	    .on('input', function() { this.value = this.value.replace(" ", ""); });
     };
 
     m.reload_reaction_input = function(coords) {
         // Reload data for autocomplete box and redraw box at the new
         // coordinates.
         m.place_reaction_input(coords);
-
-	console.log(m.drawn_reactions);
 
         // Find selected reaction
         var reaction_ids_to_display = [],
@@ -734,7 +734,8 @@ var Builder = function() {
             if (kc==primary_cycle_key && !$('#rxn-input').is(":focus")) {
                 m.cycle_primary_key();
             } else if (kc==hide_show_input_key) {
-
+		if ($('#rxn-input').is(":focus")) $('#rxn-input').blur();
+		else $('#rxn-input').focus();
             }
             // $('#up').on('click', function() {
             //     m.modify_reaction(m.selected_node, 'direction', 'up');
