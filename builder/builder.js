@@ -1,6 +1,7 @@
 var Builder = function() {
     var m = {};
     m.version = 0.2;
+    m.g;
     m.selected_node = {'reaction_id': '',
                        'metabolite_id': '',
                        'direction': '',
@@ -25,8 +26,8 @@ var Builder = function() {
     m.setup_container = function(selection, width, height) {
         d3.select("#svg-container").remove();
 
-        var zoom = function() {
-            svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+        var zoom = function(a, b) {
+            m.g.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
             m.window_translate = {'x': d3.event.translate[0], 'y': d3.event.translate[1]};
             m.window_scale = d3.event.scale;
             m.place_reaction_input(m.newest_coords);
@@ -36,11 +37,24 @@ var Builder = function() {
                 .attr("style", "width:"+width+"px;height:"+height+"px;margin:0px auto")
                 .append("svg")
                 .attr("width", width)
+                .attr("height", height);
+
+        // set up reaction for zooming and dragging
+        var mouse_node = svg.append('rect')
+                .attr("width", width)
                 .attr("height", height)
-                .append("g")
-                .call(d3.behavior.zoom().scaleExtent([1, 15]).on("zoom", zoom))
-                .append("g");
-        return svg;
+                .attr('style', 'visibility: hidden')
+                .attr('pointer-events', 'all');
+        // .on('click', function () {
+        // show_input_here(d3.mouse(this));
+        // });
+	
+	// apply zoom behavior
+        var return_g = svg.call(d3.behavior.zoom().scaleExtent([1, 15]).on("zoom", zoom))
+		.append('g');
+	m.g = return_g;
+
+        return return_g;
     };
 
     m.load_model_and_list = function(coords, callback_function) {
@@ -624,8 +638,8 @@ var Builder = function() {
             else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
 
             // generate defs if it doesn't exist
-            var defs = m.svg.select("defs");
-            if (defs.empty()) defs = m.svg.append("svg:defs");
+            var defs = m.g.select("defs");
+            if (defs.empty()) defs = m.g.append("svg:defs");
 
             // make the marker
             defs.append("svg:marker")
@@ -690,20 +704,9 @@ var Builder = function() {
         var height = $(window).height() - m.margin;
 
         var svg = m.setup_container(m.selection, width, height);
-        m.svg = svg;
 
         svg.append('g')
             .attr('id', 'reactions');
-
-        // set up reaction for zooming and dragging
-        var mouse_node = svg.append('rect')
-                .attr("width", width)
-                .attr("height", height)
-                .attr('style', 'visibility: hidden')
-                .attr('pointer-events', 'all');
-        // .on('click', function () {
-        // show_input_here(d3.mouse(this));
-        // });
 
         // setup selection box
         var start_coords = {'x': width/2, 'y': 40};
