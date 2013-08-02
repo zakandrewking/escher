@@ -5,6 +5,8 @@ var Builder = function() {
     // only display each node once
     // why aren't some nodes appearing as selected?
     // BRANCHING!
+    // make object oriented
+    //   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript
     
     var m = {};
     m.version = 0.2;
@@ -616,14 +618,27 @@ var Builder = function() {
             .attr('pointer-events', 'none');
     };
     m.update_reaction_label = function(sel) {
+	var near_angle_degrees = function(angle, near) {
+	    return (angle > (near-45)*Math.PI/180 && angle<(near+45)*Math.PI/180);
+	};
+		
         sel.text(function(d) {
             return d.reaction_id + " (" + m.decimal_format(d.flux) + ")";
         })
             .attr('transform', function(d) {
-                var dis = {'x': 60, 'y': 0}, // displacement of reaction label
-                    loc = m.rotate_coords({'x': d.center.x + dis.x,
-                                           'y': d.center.y + dis.y},
-                                          d.angle, d.main_axis[0]);
+		// displacement of reaction label
+                var dis;
+		if (near_angle_degrees(d.angle, 90))
+		    dis = {'x': 30, 'y': -35};
+		else if (near_angle_degrees(d.angle, 180))
+		    dis = {'x': -20, 'y': 0};
+		else if (near_angle_degrees(d.angle, 270))
+		    dis = {'x': -30, 'y': 35};
+		else if (near_angle_degrees(d.angle, 0))
+		    dis = {'x': 20, 'y': 0};
+                var loc = m.rotate_coords({'x': d.center.x + dis.x,
+					   'y': d.center.y + dis.y},
+					  d.angle, d.main_axis[0]);
                 return 'translate('+loc.x+','+loc.y+')';
             });
     };
@@ -818,22 +833,23 @@ var Builder = function() {
 	    };
 
         d3.select(window).on("keydown", function() {
-            var kc = d3.event.keyCode;
-            if (kc==primary_cycle_key && !$('#rxn-input').is(":focus")) {
+            var kc = d3.event.keyCode,
+		reaction_input_focus =  $('#rxn-input').is(":focus");
+            if (kc==primary_cycle_key && !reaction_input_focus) {
                 m.cycle_primary_key();
             } else if (kc==hide_show_input_key) {
-                if ($('#rxn-input').is(":focus")) $('#rxn-input').blur();
+                if (reaction_input_focus) $('#rxn-input').blur();
                 else $('#rxn-input').focus();
-            } else if (kc==rotate_keys.left) {
+            } else if (kc==rotate_keys.left && !reaction_input_focus) {
 		m.modify_reaction(m.selected_node.reaction_id, 'angle', 270*(Math.PI/180));
 		draw_for_direction_change(m.selected_node.reaction_id);
-	    } else if (kc==rotate_keys.right) {
+	    } else if (kc==rotate_keys.right && !reaction_input_focus) {
 		m.modify_reaction(m.selected_node.reaction_id, 'angle', 90*(Math.PI/180));
 		draw_for_direction_change(m.selected_node.reaction_id);
-	    } else if (kc==rotate_keys.up) {
+	    } else if (kc==rotate_keys.up && !reaction_input_focus) {
 		m.modify_reaction(m.selected_node.reaction_id, 'angle', 180*(Math.PI/180));
 		draw_for_direction_change(m.selected_node.reaction_id);
-	    } else if (kc==rotate_keys.down) {
+	    } else if (kc==rotate_keys.down && !reaction_input_focus) {
 		m.modify_reaction(m.selected_node.reaction_id, 'angle', 0);
 		draw_for_direction_change(m.selected_node.reaction_id);
 	    }
