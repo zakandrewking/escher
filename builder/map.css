@@ -13,8 +13,10 @@ body {
     border: 1px solid grey;
 }
 
-.reaction-label { 
-    font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120);text-rendering: optimizelegibility;
+.reaction-label {
+    font-size: 14px;
+    font-family: sans-serif;
+    font-style: italic; font-weight: bold; fill: rgb(32, 32, 120);text-rendering: optimizelegibility;
 }
 .metabolite-label {
     font-family: sans-serif; font-style: italic; font-weight: bold; font-size: 8px;
