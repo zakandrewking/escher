@@ -1,4 +1,11 @@
 var Builder = function() {
+
+    // TODO
+    // connected node object
+    // only display each node once
+    // why aren't some nodes appearing as selected?
+    // BRANCHING!
+    
     var m = {};
     m.version = 0.2;
     m.g = [];
@@ -6,7 +13,6 @@ var Builder = function() {
                        'metabolite_id': '',
                        'direction': '',
                        'is_selected': false};
-    m.newest_coords = {x:0, y:0};
     m.drawn_reactions = {};
     m.arrowheads_generated = [];
     m.cobra_reactions = {};
@@ -30,7 +36,7 @@ var Builder = function() {
             m.g.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
             m.window_translate = {'x': d3.event.translate[0], 'y': d3.event.translate[1]};
             m.window_scale = d3.event.scale;
-            m.place_reaction_input(m.newest_coords);
+            m.place_reaction_input(m.coords_for_selected_metabolite());
         };
 
         m.svg = selection.append("div").attr("id","svg-container")
@@ -369,7 +375,8 @@ var Builder = function() {
                            'metabolite_id': newest_primary_product_id,
                            'is_selected': true};
 
-        var new_coords = m.draw();
+        m.draw();
+	var new_coords = m.coords_for_selected_metabolite();
 	m.translate_off_screen(new_coords);
         m.reload_reaction_input(new_coords);
         setTimeout(function() { $('#rxn-input').focus(); }, 50);
@@ -409,6 +416,14 @@ var Builder = function() {
 	    go();
 	}
     };
+
+    m.coords_for_selected_metabolite = function() {
+	if (m.selected_node.is_selected)
+	    return m.get_coords_for_metabolite(m.selected_node.metabolite_id, m.selected_node.reaction_id);
+	else
+	    console.log('no node selected');
+	    return {'x':0, 'y':0};
+    };   
 
     m.get_coords_for_metabolite = function(metabolite_id, reaction_id) {
         var reaction = m.drawn_reactions[reaction_id],
@@ -499,9 +514,8 @@ var Builder = function() {
         m.selected_node.metabolite_id = d.metabolite_id;
         m.selected_node.direction = d.coefficient > 0 ? 'product' : 'reactant';
         m.selected_node.is_selected = true;
-        m.selected_node.reaction = d.reaction_id;
-        m.newest_coords = m.get_coords_for_metabolite(d.metabolite_id, d.reaction_id);
-        m.reload_reaction_input(m.newest_coords);
+        m.selected_node.reaction_id = d.reaction_id;
+        m.reload_reaction_input(m.coords_for_selected_metabolite());
         m.draw();
     };
 
@@ -620,11 +634,6 @@ var Builder = function() {
                 .attr('id', function(d) { return d.reaction_id; })
                 .attr('class', 'reaction')
                 .attr('transform', function(d) {
-                    // save newest coordinates for placing the input box
-                    // TODO instead, find location of selected node and place input there.
-                    var untranslated = m.rotate_coords(d.main_axis[1], d.angle, d.main_axis[0]);
-                    m.newest_coords = {'x': d.coords.x + untranslated.x,
-                                       'y': d.coords.y + untranslated.y};
                     return 'translate(' + d.coords.x + ',' + d.coords.y + ')';
                 })
                 .call(m.create_reaction_label);
@@ -686,10 +695,6 @@ var Builder = function() {
 
         // exit
         sel.exit().remove();
-
-
-        // return newest coordinates to place next reaction
-        return m.newest_coords;
     };
 
     m.draw_specific_reactions = function(reaction_ids) {
@@ -721,9 +726,6 @@ var Builder = function() {
 
         // exit
         // sel.exit();
-
-        // return newest coordinates to place next reaction
-        return m.newest_coords;
     };
 
     m.modify_reaction = function(cobra_id, key, value) {
@@ -784,7 +786,37 @@ var Builder = function() {
             rotate_keys = {'left':  37,
                            'right': 39,
                            'up':    38,
-                           'down':  40};
+                           'down':  40},
+	    draw_for_direction_change = function(reaction_id) {
+		var reaction = m.drawn_reactions[reaction_id],
+		    primary_reactant_index, primary_product_index;
+		reaction = m.calculate_reaction_coordinates(reaction);
+		for (var metabolite_id in reaction.metabolites) {
+		    var metabolite = reaction.metabolites[metabolite_id];
+		    if (metabolite.coefficient < 0)
+			if (metabolite.is_primary) primary_reactant_index = metabolite.index;
+		    else 
+		    	if (metabolite.is_primary) primary_product_index = metabolite.index;
+		}
+		for (metabolite_id in reaction.metabolites) {
+		    metabolite = reaction.metabolites[metabolite_id];
+		    var primary_index;
+		    if (metabolite.coefficient < 0) {
+			primary_index = primary_reactant_index;
+		    } else {
+			primary_index = primary_product_index;
+		    }
+		    metabolite = m.calculate_metabolite_coordinates(metabolite,
+                                                            primary_index, //should this be saved as metabolite.primary_index?
+                                                            reaction.angle,
+                                                            reaction.main_axis,
+                                                            reaction.center,
+                                                            reaction.dis);
+		}
+		m.draw_specific_reactions([reaction_id]);
+		m.place_reaction_input(m.coords_for_selected_metabolite());
+	    };
+
         d3.select(window).on("keydown", function() {
             var kc = d3.event.keyCode;
             if (kc==primary_cycle_key && !$('#rxn-input').is(":focus")) {
@@ -792,19 +824,19 @@ var Builder = function() {
             } else if (kc==hide_show_input_key) {
                 if ($('#rxn-input').is(":focus")) $('#rxn-input').blur();
                 else $('#rxn-input').focus();
-            }
-            // $('#up').on('click', function() {
-            //     m.modify_reaction(m.selected_node, 'direction', 'up');
-            // });
-            // $('#down').on('click', function() {
-            //     m.modify_reaction(m.selected_node, 'direction', 'down');
-            // });
-            // $('#right').on('click', function() {
-            //     m.modify_reaction(m.selected_node, 'direction', 'right');
-            // });
-            // $('#left').on('click', function() {
-            //     m.modify_reaction(m.selected_node, 'direction', 'left');
-            // });
+            } else if (kc==rotate_keys.left) {
+		m.modify_reaction(m.selected_node.reaction_id, 'angle', 270*(Math.PI/180));
+		draw_for_direction_change(m.selected_node.reaction_id);
+	    } else if (kc==rotate_keys.right) {
+		m.modify_reaction(m.selected_node.reaction_id, 'angle', 90*(Math.PI/180));
+		draw_for_direction_change(m.selected_node.reaction_id);
+	    } else if (kc==rotate_keys.up) {
+		m.modify_reaction(m.selected_node.reaction_id, 'angle', 180*(Math.PI/180));
+		draw_for_direction_change(m.selected_node.reaction_id);
+	    } else if (kc==rotate_keys.down) {
+		m.modify_reaction(m.selected_node.reaction_id, 'angle', 0);
+		draw_for_direction_change(m.selected_node.reaction_id);
+	    }
         });
     };
 
@@ -833,7 +865,6 @@ var Builder = function() {
             // TEST case
             if (true) {
                 m.new_reaction('GLCtex', start_coords);
-                // m.new_reaction(m.cobra_reactions[801].cobra_id, m.newest_coords);
             }
             d3.select('#loading').style('display', 'none');
             // Focus on menu. TODO use a better callback rather than the
