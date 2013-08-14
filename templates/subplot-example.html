@@ -1,0 +1,65 @@
+<!doctype html>
+<title>the littlest plot</title>
+<script src="lib/d3.v3.js" charset="utf-8"></script>
+<script src="include/subplot.js"></script>
+<script src="include/scatter.js"></script>
+<style>
+  .grid { border: 1px dotted grey; }
+  body {
+  font: 12px sans-serif;
+  }
+  #menu {
+  position:absolute;
+  left:100px;
+  top:20px;
+  }
+  .legend {
+  font: 18px sans-serif;
+  }
+  .label {
+  font: 18px sans-serif;
+  }
+  .axis path,
+  .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+  }
+  .trendline {
+  stroke: grey;
+  stroke-width; 1px;
+  }
+  .cursor-tooltip-circle {
+  stroke: none;
+  fill: rgba(100, 100, 100, 0.4);
+  }
+  .cursor-tooltip-text {
+  font: 15px sans-serif;
+  fill: rgb(80,80,80);
+  }
+</style>
+<body>
+  <script>
+var subplot = Subplot()
+    .setup({ rows: 1, columns: 2,
+    selection: d3.select("body"),
+    fillScreen: true });
+var scatter = Scatter()
+    .setup({ selection: subplot.frame_by_row_col(0, 0) });
+
+    // resize code
+    // TODO: move to resize.js
+    window.do_resize = false;
+    window.onresize = function(event) {
+	window.do_resize = true;
+    }
+    setInterval( function () { 
+	    if (window.do_resize) {
+		    console.log('update');
+		    subplot.update();
+		    scatter.update_size();
+                    window.do_resize = false;
+	    }
+    }, 1000);
+  </script>
+</body>
