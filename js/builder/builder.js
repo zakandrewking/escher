@@ -79,12 +79,12 @@ var Builder = function() {
         // Object.keys(myArray).length for length of the object (no good in IE8)
         // http://whattheheadsaid.com/2010/10/a-safer-object-keys-compatibility-implementation
 
-        d3.json("data/cobra_model_0.2.json", function(error, model) {
+        d3.json("data/maps/cobra_model_0.2.json", function(error, model) {
             if (error) console.warn(error);
             m.cobra_reactions = model.reactions;
 
             // load list data
-            d3.json("data/flux-wt-pFBA.json", function(error, json) {
+            d3.json("data/flux/flux-wt-pFBA.json", function(error, json) {
                 if (error) console.warn(error);
 
 		// sort by flux value
