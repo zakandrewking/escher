@@ -4,6 +4,7 @@ import tornado.web
 import tornado.escape
 from tornado.options import define, options, parse_command_line
 import json
+import re
 
 # set directory to server
 directory = os.path.abspath(os.path.dirname(__file__).replace('server',''))
@@ -19,12 +20,14 @@ class BaseHandler(tornado.web.RequestHandler):
         if any([a.startswith(".") for a in path.split("/")]):
             raise tornado.web.HTTPError(404)
         path = os.path.join(directory, path.strip('/'))
-        if path.startswith('/js/'): 
-            path = os.path.join(directory, path.split('/js/')[1].strip('/'))
-            print path
+        for base_dir in ['js', 'css', 'data']:
+            if '/%s/' % base_dir in path:
+                path = os.path.join(directory, base_dir, path.split("/%s/" % base_dir)[1].strip('/'))
+                continue
         if os.path.commonprefix([os.path.abspath(path), directory]) != directory:
             print 'trying to reach illegal path'
             raise tornado.web.HTTPError(404)
+        print 'requesting %s' % path
         return path
 
     def set_content_type(self, path):
@@ -39,9 +42,7 @@ class BaseHandler(tornado.web.RequestHandler):
         return ''
 
     def check_and_render(self, path):
-        try:
-            subprocess.check_output(["ls",path])
-        except subprocess.CalledProcessError:
+        if not os.path.isfile(path):
             raise tornado.web.HTTPError(404)
         # serve it
         self.render(path) 
@@ -49,12 +50,18 @@ class BaseHandler(tornado.web.RequestHandler):
 class MainDataHandler(BaseHandler):
     @tornado.web.asynchronous
     def get(self, path, *args, **kwargs):
-        path = self.path_redirection(directory, path)
-        json_files = [f for f in os.listdir(path) if re.search(r'.json$', f)]
-        json_response = json.dumps({'data': json_files})
-        self.write(json_response)
-        self.set_header("Content-Type", "application/json")
-        self.finish()
+        try:
+            new_path = self.path_redirection(directory, path) 
+            self.set_header("Content-Type", self.set_content_type(new_path))
+            # get the file to serve
+            self.check_and_render(new_path) 
+        except tornado.web.HTTPError:
+            path = self.path_redirection(directory, path)
+            json_files = [f for f in os.listdir(path) if re.search(r'.json$', f)]
+            json_response = json.dumps({'data': json_files})
+            self.write(json_response)
+            self.set_header("Content-Type", "application/json")
+            self.finish()
         
 class MainHandler(BaseHandler):
     def get(self, path="index.html"):
@@ -73,7 +80,7 @@ class MainHandler(BaseHandler):
 settings = {"debug": "False"}
 
 application = tornado.web.Application([
-    (r"(/data/.*)getdatafiles", MainDataHandler),
+    (r"(/data/.*)", MainDataHandler),
     (r"/(.*)", MainHandler),
 ], **settings)
  
