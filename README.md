@@ -1,4 +1,4 @@
-vis bio
+visbio
 ======
 
 Visual biology -- a library of web-based visualizations for systems biology.
