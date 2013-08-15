@@ -31,18 +31,18 @@ var Histogram = function() {
         s.xAxis.scale(s.x);
         s.yAxis.scale(s.y);
 
-        s.selection.select('.x.axis')
+        s.selection.select('.x.hist-axis')
             .attr("transform", "translate(0," + height + ")")
             .call(s.xAxis)
             .select('text')
             .attr("x", width);
-        s.selection.select('.y.axis')
+        s.selection.select('.y.hist-axis')
             .call(s.yAxis);
 
         var bar_w = s.x_size_scale(s.hist_dx) - s.diff - 8;
 
         for (var i=0; i<s.json.length; i++) {
-            s.selection.selectAll(".bar.bar"+String(i))
+            s.selection.selectAll(".hist-bar.hist-bar"+String(i))
                 .attr("transform", function(d) {
                     return "translate(" + (s.x(d.x) + s.x_shift*i) + "," + s.y(d.y) + ")";
                 })
@@ -137,11 +137,11 @@ var Histogram = function() {
         var bar_w = s.x_size_scale(s.hist_dx) - s.diff - 8;
 
         for (var j=0; j<layout.length; j++) {
-            var cl = 'bar'+String(j);
+            var cl = 'hist-bar'+String(j);
             var bars = svg.selectAll("."+cl)
                     .data(layout[j])
                     .enter().append("g")
-                    .attr("class", "bar "+cl)
+                    .attr("class", "hist-bar "+cl)
                     .attr("transform", function(d) { return "translate(" + (s.x(d.x)+s.x_shift*j) + "," + s.y(d.y) + ")"; });
             bars.append("rect")
                 .attr("x", 1)
@@ -151,7 +151,7 @@ var Histogram = function() {
         }
 
         svg.append("g")
-            .attr("class", "x axis")
+            .attr("class", "x hist-axis")
             .attr("transform", "translate(0," + height + ")")
             .call(s.xAxis)
             .append("text")
@@ -162,7 +162,7 @@ var Histogram = function() {
             .text(s.x_axis_label);
 
         svg.append("g")
-            .attr("class", "y axis")
+            .attr("class", "y hist-axis")
             .call(s.yAxis)
             .append("text")
             .attr("class", "label")

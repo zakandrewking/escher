@@ -1,0 +1,18 @@
+.hist-axis path,
+.hist-axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.hist-bar0 {
+  fill: blue;
+  opacity: 0.6;
+  shape-rendering: crispEdges;
+  stroke: #000;
+}
+.hist-bar1 {
+  fill: red;
+  opacity: 0.6;
+  shape-rendering: crispEdges;
+  stroke: #000;
+}
