@@ -212,6 +212,8 @@ var Scatter = function() {
     };
 
     s.collect_data = function(json, axis, layer) {
+	// TODO take json.options (e.g. json.options.name) into account
+
 	if (axis!='x' && axis!='y') console.warn('bad axis: ' + axis);
 	
 	if (!s.data[layer]) s.data[layer] = [];
