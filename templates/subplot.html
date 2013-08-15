@@ -14,7 +14,7 @@
   }
   #menus {
   position:absolute;
-  right:100px;
+  right:30px;
   top:20px;
   width:300px;
   z-index:10;
@@ -83,6 +83,7 @@ data_menu2 = DataMenu().setup({
 update_on_resize(function() {
     subplot.update()
     scatter.update_size()
+    histogram.update_size()
 });
   </script>
 </body>
