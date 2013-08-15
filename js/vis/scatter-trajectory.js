@@ -4,40 +4,9 @@
 //     ...
 // ]
 
-var default_filename = '10x-100x-min-max.json';
-var x_axis_label = '10x',
-y_axis_label = '100x';
-
-// setup dropdown menu
-$.ajax({
-    dataType: "json",
-    url: 'http://zak.ucsd.edu/git/scatter-trajectory/getdatafiles',
-    success:function(json){
-	$('#dropdown-menu').change( function() {
-	    console.log('value: ' + $(this).val());
-	    load_datafile($(this).val());
-	});
-	update_dropdown(json.data)
-	d3.json(default_filename, function(error, data) {
-	    if (error) return console.warn(error);
-	    setup_plot(data);
-	});
-    },
-    error:function(error) { console.log(error); }
-});
-
-// functions
-function load_datafile(this_file) {
-    d3.json(this_file, function(error, data) {
-	if (error) {
-	    return console.warn(error);
-	    $('body').append('error loading');
-	} else {
-	    $('svg').remove();
-	    setup_plot(data);
-	}
-    });
-}
+var default_filename = 'data/min-max/data.json';
+var x_axis_label = '1',
+y_axis_label = '2';
 
 function update_dropdown(list) {
     var menu = $('#dropdown-menu');

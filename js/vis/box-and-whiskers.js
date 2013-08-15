@@ -4,8 +4,8 @@
 //     ...
 //     ]
 
-var filename = '10x.json';
-var filename2 = '100x.json';
+var filename = 'data/quartiles/data1.json';
+var filename2 = 'data/quartiles/data2.json';
 
 d3.json(filename, function(error, data) {
     if (error) return console.warn(error);
