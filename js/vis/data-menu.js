@@ -4,7 +4,7 @@ var DataMenu = function() {
     s.setup = function(options) {
         if (typeof options === 'undefined') options = {};
         var selection       = options.selection       || d3.select('body'),
-            getdatafiles    = options.getdatafiles    || false,
+            getdatafiles    = options.getdatafiles    || null,
 	    datafiles       = options.datafiles       || null,
 	    update_callback = options.update_callback || null;
 
@@ -24,7 +24,7 @@ var DataMenu = function() {
 	    if (datafiles) {
 		console.warn('DataMenu: getdatafiles option overrides datafiles');
 	    }
-            d3.json('getdatafiles', function(error, d) {
+            d3.json(getdatafiles, function(error, d) {
 		// returns json object:  { data: [file0, file1, ...] }
                 if (error) {
 		    return console.warn(error);
