@@ -45,7 +45,10 @@ class BaseHandler(tornado.web.RequestHandler):
         if not os.path.isfile(path):
             raise tornado.web.HTTPError(404)
         # serve it
-        self.render(path) 
+        with open(path, "rb") as file:
+            data = file.read()
+        self.write(data)
+        # self.render(path) 
 
 class MainDataHandler(BaseHandler):
     @tornado.web.asynchronous
@@ -75,9 +78,9 @@ class MainHandler(BaseHandler):
         path = self.path_redirection(directory, path) 
         self.set_header("Content-Type", self.set_content_type(path))
         # get the file to serve
-        self.check_and_render(path) 
-      
-settings = {"debug": "False"}
+        self.check_and_render(path)
+        
+settings = {"debug": "True"}
 
 application = tornado.web.Application([
     (r"(/data/.*)", MainDataHandler),
