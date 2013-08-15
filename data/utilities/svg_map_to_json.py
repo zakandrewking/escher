@@ -16,6 +16,9 @@ map_filename = args[0]
 with open(map_filename) as file:
     map = bs(file)
 
+# save in same folder as json file
+json_filename = map_filename.replace(".svg", ".json")
+    
 name_id_dictionary = {}
 with open('reaction_name_to_id.tsv', 'rU') as file:
     for line in file.readlines():
@@ -31,7 +34,7 @@ def reaction_name_to_id(name):
         the_id = name
     return the_id
     
-def save_as_json(data, svg):
+def save_as_json(data, svg, filename):
     max_x = 0; max_y = 0
     for x in svg.find_all(x=True):
         val = float(x.attrs["x"])
@@ -47,7 +50,6 @@ def save_as_json(data, svg):
     print max_y
 
     # convert to json representation
-    filename = 'map.json'
     with open(filename, 'w') as file:
         json_map = json.dump(data, file)
 
@@ -131,7 +133,7 @@ def read_simpheny(map):
     data["reaction_labels"] = reaction_labels
     data["metabolite_labels"] = metabolite_labels
 
-    save_as_json(data, svg)
+    save_as_json(data, svg, json_filename)
 
 def find_duplicate_path(this_path, reaction_paths):
     """Check for duplicates, which may differ by a final Line element."""
@@ -216,7 +218,7 @@ def read_bigg(map):
         metabolite_labels.append(this_label)
     data["metabolite_labels"] = metabolite_labels
 
-    save_as_json(data, svg)
+    save_as_json(data, svg, json_filename)
 
 def set_inner_and_outer_membranes(membrane_rectangles):
     for r in membrane_rectangles:

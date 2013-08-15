@@ -2,34 +2,35 @@ var visBioMap = (function(d3) {
     var maps = {};
     maps.version = 0.1;
 
-    maps.load = function() {
+    maps.load = function(map_path, flux1_path, flux2_path,
+			 metabolites1_path, metabolites2_path) {
 
         // import json files
-        d3.json("map.json", function(error, json) {
+        d3.json(map_path, function(error, json) {
             // console.log(error)
             if (error) return console.warn(error);
             var map_data = json;
 
-            d3.text("map.css", function(error, text) {
+            d3.text("css/metabolic-map.css", function(error, text) {
                 if (error) return console.warn(error);
                 var map_style = text;
 
-                d3.json("flux1.json", function(error, json) {
+                d3.json(flux1_path, function(error, json) {
                     var flux;
                     if (error) flux = false;
                     else flux = json;
 
-                    d3.json("flux2.json", function(error, json) {
+                    d3.json(flux2_path, function(error, json) {
                         var flux2;
                         if (error) flux2 = false;
                         else flux2 = json;
 
-                        d3.json("metabolites1.json", function(error, json) {
+                        d3.json(metabolites1_path, function(error, json) {
                             var metabolites;
                             if (error) metabolites = false;
                             else metabolites = json;
 
-                            d3.json("metabolites2.json", function(error, json) {
+                            d3.json(metabolites2_path, function(error, json) {
                                 var metabolites2;
                                 if (error) metabolites2 = false;
                                 else metabolites2 = json;

@@ -48,7 +48,6 @@ class BaseHandler(tornado.web.RequestHandler):
         with open(path, "rb") as file:
             data = file.read()
         self.write(data)
-        # self.render(path) 
 
 class MainDataHandler(BaseHandler):
     @tornado.web.asynchronous
@@ -57,10 +56,13 @@ class MainDataHandler(BaseHandler):
             new_path = self.path_redirection(directory, path) 
             self.set_header("Content-Type", self.set_content_type(new_path))
             # get the file to serve
+            print new_path
             self.check_and_render(new_path) 
+            self.finish()
         except tornado.web.HTTPError:
             path = self.path_redirection(directory, path)
-            json_files = [f for f in os.listdir(path) if re.search(r'.json$', f)]
+            rel_path = os.path.relpath(path, directory)
+            json_files = [os.path.join(rel_path, f) for f in os.listdir(path) if re.search(r'.json$', f)]
             json_response = json.dumps({'data': json_files})
             self.write(json_response)
             self.set_header("Content-Type", "application/json")
@@ -83,7 +85,7 @@ class MainHandler(BaseHandler):
 settings = {"debug": "True"}
 
 application = tornado.web.Application([
-    (r"(/data/.*)", MainDataHandler),
+    (r".*(/data/.*)", MainDataHandler),
     (r"/(.*)", MainHandler),
 ], **settings)
  
