@@ -58,6 +58,15 @@ var Histogram = function() {
     };
 
     s.update = function(json) {
+	// check data
+	var i=-1;
+	while(++i < json.length) {
+	    if (json[i]===undefined) {
+		console.log('waiting for all indices');
+		return;
+	    }
+	}
+
         var o = s.height_width(s.fillScreen, s.selection, s.margins);
         var height = o.height, width = o.width;
 
@@ -187,32 +196,19 @@ var Histogram = function() {
         s.x_data_label = options.x_data_label || '1',
         s.y_data_label = options.y_data_label || '2';
         s.x_shift      = options.x_shift      || 4;
-        var data_size  = options.data_size    || 2;
         s.json = [];
-        for (var i=0; i<data_size; i++) {
-            s.json[i] = null;
-        }
         return this;
     };
 
-    s.collect_data = function(this_d, index) {
-        s.json[index] = this_d; // TODO generalize
-        var are_null = s.json.filter(function (b) { return (b === null); });
-        if (are_null.length==0) {
-            s.update(s.json);
-        } else {
-            console.log('waiting');
-        }
+    s.collect_data = function(json, layer) {
+        s.json[layer] = json;
+        s.update(s.json);
     };
-    s.collect_data_0 = function(d) { return s.collect_data(d, 0); };
-    s.collect_data_1 = function(d) { return s.collect_data(d, 1); };
 
     return {
         setup: s.setup,
         update: s.update,
         update_size: s.update_size,
-        collect_data_0: s.collect_data_0,
-        collect_data_1: s.collect_data_1,
         collect_data: s.collect_data
     };
 };
