@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>  
+  <title>Builder</title>
+  <script src="js/libs/d3.v3.js"></script>
+  <link href="js/libs/ui-lightness/jquery-ui-1.10.3.custom.css" rel="stylesheet">
+    <script src="js/libs/jquery-latest.min.js" type="text/javascript"></script>
+    <script src="js/libs/builder/jquery-ui-1.10.3.custom.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="css/builder.css"/>
+    <style>
+      .overlay {
+      fill: none;
+      pointer-events: all;
+      }
+    </style>
+    <body>
+      <div id="loading" style="border: 1px solid #eee; display: block; min-width: 150px; width: 30%;">
+        LOADING...
+      </div>
+      <input id="rxn-input" style="display: none" />
+      <!-- <a href="#" id="left">left</a> -->
+      <!-- <a href="#" id="left">down</a> -->
+      <!-- <a href="#" id="right">right</a> -->
+      <!-- <a href="#" id="up">up</a> -->
+      <script src="js/builder/builder.js" type="text/javascript"></script>
+      <script type="text/javascript">
+        Builder().load_builder();
+      </script>
+    </body>
+  </html>

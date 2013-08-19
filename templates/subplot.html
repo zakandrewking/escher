@@ -1,0 +1,89 @@
+<!doctype html>
+<title>the littlest plot</title>
+<script src="js/libs/d3.v3.js" charset="utf-8"></script>
+<script src="js/vis/subplot.js"></script>
+<script src="js/vis/scatter.js"></script>
+<script src="js/vis/histogram.js"></script>
+<script src="js/vis/resize.js"></script>
+<script src="js/vis/data-menu.js"></script>
+<link rel="stylesheet" type="text/css" href="css/histogram.css">
+<style>
+  .grid { border: 1px dotted grey; }
+  body {
+  font: 12px sans-serif;
+  }
+  #menus {
+  position:absolute;
+  right:30px;
+  top:20px;
+  width:300px;
+  z-index:10;
+  }
+  .float {
+  float: left;
+  }
+  .menu {
+  width: 90%;
+  }
+  .legend {
+  font: 18px sans-serif;
+  }
+  .label {
+  font: 18px sans-serif;
+  width: 10%;
+  }
+  .axis path,
+  .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+  }
+  .trendline {
+  stroke: grey;
+  stroke-width; 1px;
+  }
+  .cursor-tooltip-circle {
+  stroke: none;
+  fill: rgba(100, 100, 100, 0.4);
+  }
+  .cursor-tooltip-text {
+  font: 15px sans-serif;
+  fill: rgb(80,80,80);
+  }
+</style>
+<body>
+  <div id="menus">
+    <div class="float label">1:</div><div id="menu1" class="menu float"></div>
+    <div class="float label">2:</div><div id="menu2" class="menu float"></div>
+  </div>
+  <script>
+var subplot = Subplot()
+    .setup({ rows: 1, columns: 2,
+    selection: d3.select("body"),
+    fillScreen: true });
+var scatter = Scatter()
+    .setup({ selection: subplot.frame_by_row_col(0, 0) });
+histogram = Histogram().setup({ selection: subplot.frame_by_row_col(0, 1) });
+data_menu1 = DataMenu().setup({
+    selection: d3.select('#menu1'),
+    getdatafiles: 'data/example',
+    update_callback: function(data) {
+        histogram.collect_data(data, 0);
+        scatter.collect_data(data, 'x', 0); 
+    }
+});
+data_menu2 = DataMenu().setup({
+    selection: d3.select('#menu2'),
+    getdatafiles: 'data/example',
+    update_callback: function(data) { 
+        histogram.collect_data(data, 1);
+        scatter.collect_data(data, 'y', 0); 
+    }
+});
+update_on_resize(function() {
+    subplot.update()
+    scatter.update_size()
+    histogram.update_size()
+});
+  </script>
+</body>
