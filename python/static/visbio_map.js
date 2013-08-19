@@ -2,11 +2,7 @@ var visBioMap = (function(d3) {
     var maps = {};
     maps.version = 0.1;
 
-    maps.load = function(selection, map_data, flux1) {
-        visualizeit(selection, map_data, null, flux1, null, null, null);
-    };
-
-    function visualizeit(selection, data, style, flux, flux2, metabolites, metabolites2) {
+    maps.visualizeit = function(selection, data, style, flux, flux2, metabolites, metabolites2) {
         maps.defaults = {};
         maps.defaults.path_color = "rgb(80, 80, 80)";
 
@@ -38,8 +34,8 @@ var visBioMap = (function(d3) {
         }
 
         var map_w = data.max_map_w, map_h = data.max_map_h;
-        var width = parseFloat(selection.style("width"))-20;
-        var height = parseFloat(selection.style("height"))-20;
+        var width = parseFloat(selection.style("width")) - 20;
+        var height = parseFloat(selection.style("height")) - 20;
         var factor = Math.min(width/map_w,height/map_h);
         console.log('map_w '+decimal_format(map_w));
         console.log('map_h '+decimal_format(map_h));
@@ -77,20 +73,20 @@ var visBioMap = (function(d3) {
             .domain([0, 1.2])
             .range(["#FEF0D9", "#B30000"]);
 
-        d3.select("#svg-container").remove();
-
-        var svg = selection.append("div").attr("id","svg-container")
+        var svg = selection
             .attr("style", "width:"+width+"px;height:"+height+"px;margin:0px auto")// ;border:3px solid black;")
             .append("svg")
         // TODO: add correct svg attributes (see '/Users/zaking/Dropbox/lab/optSwap/paper-2-GAPD/old figs/fig5-theoretical-production/')
             .attr("width", width)
             .attr("height", height)
+            .attr("xmlns", "http://www.w3.org/2000/svg")
             .append("g")
             .call(d3.behavior.zoom().scaleExtent([1, 15]).on("zoom", zoom))
             .append("g");
         maps.svg = svg;
 
         svg.append("style")
+            .attr("type", "text/css")
             .text(style);
 
         var g = svg.append('g')
@@ -449,7 +445,7 @@ var visBioMap = (function(d3) {
     }
 
     function scale_path(path) {
-        var x_fn = maps.scale.x, y_fn = maps.scale.y;
+        var x_fn = maps.scale.x; var y_fn = maps.scale.y;
         // TODO: scale arrow width
         var str = d3.format(".2f")
         path = path.replace(/(M|L)([0-9-.]+),?\s*([0-9-.]+)/g, function (match, p0, p1, p2) {
@@ -464,5 +460,15 @@ var visBioMap = (function(d3) {
     return maps;
 }(d3));
 
-d3.select("#map").style('height', "800px");
-visBioMap.load(d3.select("#map"), json, flux1);
+function download_map(div_name) {
+    svg = d3.select("#" + div_name)[0][0].getElementsByTagName("svg")[0]
+    var a = document.createElement('a'), xml, ev;
+    a.download = 'map.svg'; // file name
+    xml = (new XMLSerializer()).serializeToString(svg); // convert node to xml string
+    a.setAttribute("href-lang", "image/svg+xml")
+    a.href = 'data:image/svg+xml;base64,' + btoa(xml); // create data uri
+    // <a> constructed, simulate mouse click on it
+    ev = document.createEvent("MouseEvents");
+    ev.initMouseEvent("click", true, false, self, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+    a.dispatchEvent(ev);
+}
