@@ -1,3 +1,5 @@
+from ko_server import koHandler
+
 import os, subprocess
 import tornado.ioloop
 import tornado.web
@@ -86,6 +88,7 @@ settings = {"debug": "True"}
 
 application = tornado.web.Application([
     (r".*(/data/.*)", MainDataHandler),
+    (r"/knockout-map/(.*)", koHandler),
     (r"/(.*)", MainHandler),
 ], **settings)
  
