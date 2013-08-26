@@ -88,7 +88,7 @@ settings = {"debug": "True"}
 
 application = tornado.web.Application([
     (r".*(/data/.*)", MainDataHandler),
-    (r"/knockout-map/(.*)", koHandler),
+    (r".*/knockout-map/(.*)", koHandler),
     (r"/(.*)", MainHandler),
 ], **settings)
  

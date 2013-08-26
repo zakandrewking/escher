@@ -1,9 +1,46 @@
 var visBioMap = (function(d3) {
     var maps = {};
     maps.version = 0.1;
+    maps.flux_source = [];
+    maps.NoResults = {'name': 'NoResults'};
+
+    maps.default_load_sources = function(callback) {
+
+	d3.json(maps.flux1_path, function(error, json) {
+            var fluxes = [];
+            if (error) {
+		console.warn('Could not load flux: ' + error);
+            } else {
+		fluxes.push(json);
+	    }
+
+            d3.json(maps.flux2_path, function(error, json) {
+                var flux2;
+                if (error) {
+		    // return succesfully loaded flux files
+		    console.warn('Could not load flux2: ' + error);
+		    if 
+		    callback(fluxes);
+		    flux2 = false;
+                } else {
+		    flux2 = json;
+		    // return all loaded flux files
+		    callback([flux, flux2]);
+		}
+	    });
+	});
+    };
+
+    maps.set_flux_source = function(fn) {
+	self.flux_source = fn;
+    };
 
     maps.load = function(map_path, flux1_path, flux2_path,
 			 metabolites1_path, metabolites2_path) {
+
+	maps.flux1_path = flux1_path;
+	maps.flux2_path = flux2_path;
+	maps.flux_source = maps.default_load_sources;
 
         // import json files
         d3.json(map_path, function(error, json) {
