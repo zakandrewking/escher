@@ -1,20 +1,21 @@
 var Knockout = function() {
 
     var m = {};
-    m.reactions = [];
+    m.reactions = {};
     m.latest_flux = [];
     m.latest_objective_value = [];
 
     m.add_reaction = function(reaction) {
-	m.reactions.push(reaction);
+	m.reactions[reaction] = true;
     };
 
     m.get_flux = function(callback) {
-	var url = "/knockout_map/";
-	var i = -1, start="?";
-	while (++i < m.reactions.length) {
+	var url = "/knockout-map/";
+	var i = -1, start="?",
+	    k = Object.keys(m.reactions);
+	while (++i < k.length) {
 	    if (i>0) start = "&";
-	    url += start + "reactions[]=" + encodeURIComponent(m.reactions[i]);
+	    url += start + "reactions[]=" + encodeURIComponent(k[i]);
 	    console.log(url);
 	}
 	d3.json(url, function(error, json) {

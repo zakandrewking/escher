@@ -1,7 +1,9 @@
 var visBioMap = (function(d3) {
     var maps = {};
     maps.version = 0.1;
-    maps.flux_source = [];
+    maps.flux_source = function(callback) { callback([]); };
+    maps.map_data = {};
+    maps.map_style = {};
     maps.NoResults = {'name': 'NoResults'};
 
     maps.default_load_sources = function(callback) {
@@ -10,6 +12,7 @@ var visBioMap = (function(d3) {
             var fluxes = [];
             if (error) {
 		console.warn('Could not load flux: ' + error);
+		callback(fluxes);
             } else {
 		fluxes.push(json);
 	    }
@@ -19,48 +22,66 @@ var visBioMap = (function(d3) {
                 if (error) {
 		    // return succesfully loaded flux files
 		    console.warn('Could not load flux2: ' + error);
-		    if 
 		    callback(fluxes);
-		    flux2 = false;
                 } else {
-		    flux2 = json;
+		    fluxes.push(json);
 		    // return all loaded flux files
-		    callback([flux, flux2]);
+		    callback(fluxes);
 		}
 	    });
 	});
     };
 
     maps.set_flux_source = function(fn) {
-	self.flux_source = fn;
+	maps.flux_source = fn;
+    };
+
+    maps.reload_flux = function(fn) {
+	maps.flux_source(function (fluxes) {
+	    visualizeit(maps.map_data, maps.map_style, fluxes, false, false, fn);
+	});
+    };
+
+    maps.add_listener = function(target, action, callback) {
+	if (target=='reaction') {
+	    console.log(target, action, callback);
+	    d3.selectAll('.reaction-path, .reaction-label').on(action, function(d, i) {
+		console.log('did select', d);
+		callback(d.id);
+	    });
+	} else {
+	    console.warn('Invalid listener target: ' + target);
+	}
     };
 
     maps.load = function(map_path, flux1_path, flux2_path,
-			 metabolites1_path, metabolites2_path) {
+			 metabolites1_path, metabolites2_path, fn) {
 
 	maps.flux1_path = flux1_path;
 	maps.flux2_path = flux2_path;
-	maps.flux_source = maps.default_load_sources;
+	// maps.flux_source = maps.default_load_sources;
 
         // import json files
         d3.json(map_path, function(error, json) {
             // console.log(error)
             if (error) return console.warn(error);
             var map_data = json;
+	    maps.map_data = map_data;
 
             d3.text("css/metabolic-map.css", function(error, text) {
                 if (error) return console.warn(error);
                 var map_style = text;
+		maps.map_style = map_style;
 
+		maps.reload_flux(fn);
+		return;
+
+		var fluxes = [];
                 d3.json(flux1_path, function(error, json) {
-                    var flux;
-                    if (error) flux = false;
-                    else flux = json;
+                    if (!error) fluxes.push(json);
 
                     d3.json(flux2_path, function(error, json) {
-                        var flux2;
-                        if (error) flux2 = false;
-                        else flux2 = json;
+			if (!error) fluxes.push(json);
 
                         d3.json(metabolites1_path, function(error, json) {
                             var metabolites;
@@ -72,7 +93,7 @@ var visBioMap = (function(d3) {
                                 if (error) metabolites2 = false;
                                 else metabolites2 = json;
 
-                                visualizeit(map_data, map_style, flux, flux2, metabolites, metabolites2);
+                                visualizeit(map_data, map_style, fluxes, metabolites, metabolites2, fn);
                             });
                         });
                     });
@@ -95,7 +116,8 @@ var visBioMap = (function(d3) {
             .attr('style','font-family:sans-serif;color:grey;font-size:8pt;text-align:center;width:100%');
     }
 
-    function visualizeit(data, style, flux, flux2, metabolites, metabolites2) {
+    function visualizeit(data, style, fluxes, metabolites, metabolites2, callback) {
+
         maps.defaults = {};
         maps.defaults.path_color = "rgb(80, 80, 80)";
 
@@ -108,11 +130,14 @@ var visBioMap = (function(d3) {
         maps.has_metabolites = false;
         maps.has_metabolite_deviation = false;
 
+
         // parse the data objects and attach values to map objects
-        if (flux) {
+        if (fluxes.length > 0) {
+	    var flux = fluxes[0];
             maps.has_flux = true;
             data = parse_flux_1(data, flux);
-            if (flux2) {
+            if (fluxes.length > 1) {
+		var flux2 = fluxes[1];
                 maps.has_flux_comparison = true;
                 data = parse_flux_2(data, flux2);
             }
@@ -301,6 +326,7 @@ var visBioMap = (function(d3) {
                 else if (maps.has_flux) t += " (0)";
                 return t;
             })
+	    .attr("class", "reaction-label")
             .attr("text-anchor", "start")
             .attr("font-size", function(d) {
                 var s;
@@ -355,6 +381,7 @@ var visBioMap = (function(d3) {
             svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
         }
 
+        typeof callback === 'function' && callback();
     }
 
     function get_style_variables(style) {
@@ -481,7 +508,7 @@ var visBioMap = (function(d3) {
             .data(reaction_path_data)
             .enter().append("path")
             .attr("d", function(d) { return scale_path(d.d); })
-            .attr("class", function(d) { return d.class })
+            .attr("class", function(d) { return d.class + " reaction-path"; })
             .attr("style", function(d) {
                 var s = "", sc = maps.scale.flux;
                 // .fill-arrow is for simpheny maps where the path surrounds line and
