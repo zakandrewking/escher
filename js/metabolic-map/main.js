@@ -4,6 +4,7 @@ var visBioMap = (function(d3) {
     maps.flux_source = function(callback) { callback([]); };
     maps.map_data = {};
     maps.map_style = {};
+    maps.listeners = {};
     maps.NoResults = {'name': 'NoResults'};
 
     maps.default_load_sources = function(callback) {
@@ -38,21 +39,59 @@ var visBioMap = (function(d3) {
 
     maps.reload_flux = function(fn) {
 	maps.flux_source(function (fluxes) {
-	    visualizeit(maps.map_data, maps.map_style, fluxes, false, false, fn);
+	    maps.data = maps.flux_to_data(maps.data, fluxes, null, null);
+	    maps.update_svg(maps.svg, maps.style, maps.width, maps.height, maps.data, maps.decimal_format,
+			    maps.has_metabolite_deviation, maps.has_metabolites, fn);
+
 	});
     };
 
-    maps.add_listener = function(target, action, callback) {
-	if (target=='reaction') {
-	    console.log(target, action, callback);
-	    d3.selectAll('.reaction-path, .reaction-label').on(action, function(d, i) {
-		console.log('did select', d);
-		callback(d.id);
-	    });
-	} else {
-	    console.warn('Invalid listener target: ' + target);
-	}
+    maps.remove_listener = function(target, type) {
+	/**
+	 * Remove a listener.
+	 */
+	
+	// delete the saved listener
+	delete maps.listeners[target][type];
+	// removed from selection by applying null
+	maps.apply_a_listener(target, type, null);
     };
+
+    maps.apply_a_listener = function(target, type, callback) {
+	/**
+	 * Apply a single listener. To register multiple listeners for the same
+	 * event type, the type may be followed by an optional namespace, such
+	 * as "click.foo" and "click.bar".
+	 */
+
+	// If callback is null, pass the null through to remove the listener.
+	var new_callback = callback;
+	if (callback!=null) new_callback = function(d) { callback(d.id); };
+	d3.selectAll(target).on(type, new_callback);
+    };
+
+    maps.apply_listeners = function() {
+	/**
+	 * Update all saved listeners.
+	 */
+	
+	for (var target in maps.listeners)
+	    for (var type in maps.listeners[target])
+		maps.apply_a_listener(target, type, maps.listeners[target][type]);
+    };
+    maps.add_listener = function(target, type, callback) {
+	/**
+	 * Save a new listener, and apply it.
+	 */
+	console.log('adding listener');
+	// save listener
+	if (!maps.listeners.hasOwnProperty(target))
+	    maps.listeners[target] = {};
+	maps.listeners[target][type] = callback;
+	// apply the listener
+	maps.apply_a_listener(target, type, callback);
+    };
+
 
     maps.load = function(map_path, flux1_path, flux2_path,
 			 metabolites1_path, metabolites2_path, fn) {
@@ -66,44 +105,22 @@ var visBioMap = (function(d3) {
             // console.log(error)
             if (error) return console.warn(error);
             var map_data = json;
-	    maps.map_data = map_data;
 
             d3.text("css/metabolic-map.css", function(error, text) {
                 if (error) return console.warn(error);
                 var map_style = text;
 		maps.map_style = map_style;
 
-		maps.reload_flux(fn);
-		return;
-
-		var fluxes = [];
-                d3.json(flux1_path, function(error, json) {
-                    if (!error) fluxes.push(json);
-
-                    d3.json(flux2_path, function(error, json) {
-			if (!error) fluxes.push(json);
-
-                        d3.json(metabolites1_path, function(error, json) {
-                            var metabolites;
-                            if (error) metabolites = false;
-                            else metabolites = json;
-
-                            d3.json(metabolites2_path, function(error, json) {
-                                var metabolites2;
-                                if (error) metabolites2 = false;
-                                else metabolites2 = json;
-
-                                visualizeit(map_data, map_style, fluxes, metabolites, metabolites2, fn);
-                            });
-                        });
-                    });
-                });
+		maps.flux_source(function (fluxes) {
+		    map_data = maps.flux_to_data(map_data, fluxes, null, null);
+		    visualizeit(map_data, map_style, fluxes, null, null, fn);
+		});
             });
         });
 
         // add export svg button
         console.log('adding button');
-        x = d3.select('body')
+        var x = d3.select('body')
             .append('div')
             .attr("style", "margin:0px;position:absolute;top:15px;left:15px;background-color:white;border-radius:15px;")
             .attr('id', 'button-container');
@@ -114,17 +131,9 @@ var visBioMap = (function(d3) {
         x.append('div')
             .text('Google Chrome only')
             .attr('style','font-family:sans-serif;color:grey;font-size:8pt;text-align:center;width:100%');
-    }
+    };
 
-    function visualizeit(data, style, fluxes, metabolites, metabolites2, callback) {
-
-        maps.defaults = {};
-        maps.defaults.path_color = "rgb(80, 80, 80)";
-
-        maps.style_variables = get_style_variables(style);
-
-        var decimal_format = d3.format('.1f');
-        var decimal_format_3 = d3.format('.3f');
+    maps.flux_to_data = function(data, fluxes, metabolites, metabolites2) {
         maps.has_flux = false;
         maps.has_flux_comparison = false;
         maps.has_metabolites = false;
@@ -150,22 +159,38 @@ var visBioMap = (function(d3) {
                 data = parse_metabolites_2(data, metabolites2);
             }
         }
+	return data;
+    };
+
+    function visualizeit(data, style, fluxes, metabolites, metabolites2, callback) {
+
+	maps.data = data;
+	maps.data = maps.flux_to_data(data, fluxes, metabolites, metabolites2);
+
+	maps.style = style;
+        maps.defaults = {};
+        maps.defaults.path_color = "rgb(80, 80, 80)";
+
+        maps.style_variables = get_style_variables(style);
+
+        maps.decimal_format = d3.format('.1f');
+        maps.decimal_format_3 = d3.format('.3f');
 
         var map_w = data.max_map_w, map_h = data.max_map_h;
-        var width = $(window).width()-20;
-        var height = $(window).height()-20;
-        var factor = Math.min(width/map_w,height/map_h);
-        console.log('map_w '+decimal_format(map_w));
-        console.log('map_h '+decimal_format(map_h));
-        console.log('scale factor '+decimal_format_3(factor));
+        maps.width = $(window).width()-20;
+        maps.height = $(window).height()-20;
+        var factor = Math.min(maps.width/map_w,maps.height/map_h);
+        console.log('map_w '+maps.decimal_format(map_w));
+        console.log('map_h '+maps.decimal_format(map_h));
+        console.log('scale factor '+maps.decimal_format_3(factor));
 
         maps.scale = {};
         maps.scale.x = d3.scale.linear()
             .domain([0, map_w])
-            .range([(width - map_w*factor)/2, map_w*factor + (width - map_w*factor)/2]);
+            .range([(maps.width - map_w*factor)/2, map_w*factor + (maps.width - map_w*factor)/2]);
         maps.scale.y = d3.scale.linear()
             .domain([0, map_h])
-            .range([(height - map_h*factor)/2, map_h*factor + (height - map_h*factor)/2]);
+            .range([(maps.height - map_h*factor)/2, map_h*factor + (maps.height - map_h*factor)/2]);
         maps.scale.x_size = d3.scale.linear()
             .domain([0, map_w])
             .range([0, map_w*factor]);
@@ -193,16 +218,31 @@ var visBioMap = (function(d3) {
 
         d3.select("#svg-container").remove();
 
+
+        var zoom = function() {
+            svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+        };
+
         var svg = d3.select("body").append("div").attr("id","svg-container")
-            .attr("style", "width:"+width+"px;height:"+height+"px;margin:0px auto")// ;border:3px solid black;")
+            .attr("style", "width:"+maps.width+"px;height:"+maps.height+"px;margin:0px auto")// ;border:3px solid black;")
             .append("svg")
         // TODO: add correct svg attributes (see '/Users/zaking/Dropbox/lab/optSwap/paper-2-GAPD/old figs/fig5-theoretical-production/')
-            .attr("width", width)
-            .attr("height", height)
+            .attr("width", maps.width)
+            .attr("height", maps.height)
             .append("g")
             .call(d3.behavior.zoom().scaleExtent([1, 15]).on("zoom", zoom))
             .append("g");
         maps.svg = svg;
+
+	maps.update_svg(maps.svg, maps.style, maps.width, maps.height, maps.data, maps.decimal_format,
+			maps.has_metabolite_deviation, maps.has_metabolites, callback);
+
+    };
+
+    maps.update_svg = function(svg, style, width, height, data, decimal_format,
+			       has_metabolite_deviation, has_metabolites, callback) {
+
+	svg.selectAll("*").remove();
 
         svg.append("style")
             .text(style);
@@ -376,10 +416,7 @@ var visBioMap = (function(d3) {
             .style("visibility","visible")
             .attr("transform", function(d){return "translate("+maps.scale.x(d.x)+","+maps.scale.y(d.y)+")";});
 
-
-        function zoom() {
-            svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-        }
+	maps.apply_listeners();
 
         typeof callback === 'function' && callback();
     }

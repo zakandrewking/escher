@@ -19,12 +19,13 @@
     ko = Knockout();
     visBioMap.set_flux_source(ko.get_flux);
 
-    visBioMap.load("data/maps/simpheny-maps/ijo-central.json", null, null, null, null, function() {    
-        visBioMap.add_listener('reaction', 'click', function(reaction) {
-	console.log('is');
+    visBioMap.load("data/maps/simpheny-maps/ijo-central.json", null, null, null, null, function() {
+        var on_click = function(reaction) {
             ko.add_reaction(reaction);
             visBioMap.reload_flux();
-        });
+        };
+        visBioMap.add_listener('.reaction-label', 'click', on_click);
+        visBioMap.add_listener('.reaction-path', 'click', on_click);
     });
 
 </script>
