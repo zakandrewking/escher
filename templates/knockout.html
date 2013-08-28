@@ -16,18 +16,17 @@
     <script src="js/metabolic-map/main.js" type="text/javascript"></script>
     <script src="js/metabolic-map/knockout.js" type="text/javascript"></script>
 <script type="text/javascript">
-    ko = Knockout();
-    map = Map();
-    map.set_flux_source(ko.get_flux);
 
-    map.load("data/maps/simpheny-maps/ijo-central.json", null, null, null, null, function() {
-        var on_click = function(reaction) {
-            ko.add_reaction(reaction);
-            map.reload_flux();
-        };
-        map.add_listener('.reaction-label', 'click', on_click);
-        map.add_listener('.reaction-path', 'click', on_click);
-    });
+ko = Knockout();
+var on_click = function(reaction) {
+    ko.add_reaction(reaction);
+    this.reload_flux();
+};
+
+Map().set_flux_source(ko.get_flux)
+    .load("data/maps/simpheny-maps/ijo-central.json")
+    .add_listener('.reaction-label', 'click', on_click)
+    .add_listener('.reaction-path', 'click', on_click);
 
 </script>
 </body>

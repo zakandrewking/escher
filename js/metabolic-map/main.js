@@ -35,6 +35,7 @@ var Map = function() {
 
     m.set_flux_source = function(fn) {
 	m.flux_source = fn;
+	return this;
     };
 
     m.reload_flux = function(fn) {
@@ -44,6 +45,7 @@ var Map = function() {
 			    m.has_metabolite_deviation, m.has_metabolites, fn);
 
 	});
+	return this;
     };
 
     m.remove_listener = function(target, type) {
@@ -55,9 +57,10 @@ var Map = function() {
 	delete m.listeners[target][type];
 	// removed from selection by applying null
 	m.apply_a_listener(target, type, null);
+	return this;
     };
 
-    m.apply_a_listener = function(target, type, callback) {
+    m.apply_a_listener = function(target, type, callback, context) {
 	/**
 	 * Apply a single listener. To register multiple listeners for the same
 	 * event type, the type may be followed by an optional namespace, such
@@ -66,7 +69,7 @@ var Map = function() {
 
 	// If callback is null, pass the null through to remove the listener.
 	var new_callback = callback;
-	if (callback!=null) new_callback = function(d) { callback(d.id); };
+	if (callback!=null) new_callback = function(d) { callback.call(context, d.id); };
 	d3.selectAll(target).on(type, new_callback);
     };
 
@@ -77,7 +80,9 @@ var Map = function() {
 	
 	for (var target in m.listeners)
 	    for (var type in m.listeners[target])
-		m.apply_a_listener(target, type, m.listeners[target][type]);
+		m.apply_a_listener(target, type,
+				   m.listeners[target][type].callback,
+				   m.listeners[target][type].context);
     };
     m.add_listener = function(target, type, callback) {
 	/**
@@ -87,9 +92,10 @@ var Map = function() {
 	// save listener
 	if (!m.listeners.hasOwnProperty(target))
 	    m.listeners[target] = {};
-	m.listeners[target][type] = callback;
+	m.listeners[target][type] = {'callback': callback, 'context': this};
 	// apply the listener
-	m.apply_a_listener(target, type, callback);
+	m.apply_a_listener(target, type, callback, this);
+	return this;
     };
 
 
@@ -131,6 +137,8 @@ var Map = function() {
         x.append('div')
             .text('Google Chrome only')
             .attr('style','font-family:sans-serif;color:grey;font-size:8pt;text-align:center;width:100%');
+
+	return this;
     };
 
     m.flux_to_data = function(data, fluxes, metabolites, metabolites2) {
