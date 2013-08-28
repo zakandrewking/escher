@@ -17,15 +17,16 @@
     <script src="js/metabolic-map/knockout.js" type="text/javascript"></script>
 <script type="text/javascript">
     ko = Knockout();
-    visBioMap.set_flux_source(ko.get_flux);
+    map = Map();
+    map.set_flux_source(ko.get_flux);
 
-    visBioMap.load("data/maps/simpheny-maps/ijo-central.json", null, null, null, null, function() {
+    map.load("data/maps/simpheny-maps/ijo-central.json", null, null, null, null, function() {
         var on_click = function(reaction) {
             ko.add_reaction(reaction);
-            visBioMap.reload_flux();
+            map.reload_flux();
         };
-        visBioMap.add_listener('.reaction-label', 'click', on_click);
-        visBioMap.add_listener('.reaction-path', 'click', on_click);
+        map.add_listener('.reaction-label', 'click', on_click);
+        map.add_listener('.reaction-path', 'click', on_click);
     });
 
 </script>
