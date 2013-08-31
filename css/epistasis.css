@@ -1,0 +1,43 @@
+body {
+font: 12px sans-serif;
+}
+#menus {
+position:absolute;
+right:100px;
+top:20px;
+width:300px;
+z-index:10;
+}
+.menu {
+width: 90%;
+}
+
+.square {
+    stroke-width: 1px;
+    stroke: #333;
+}
+
+.circle {
+    stroke: rgba(43, 46, 71, 0.95);
+    stroke-width: 1px;
+}
+.x-circle {
+    /* fill: rgba(155, 173, 206, 0.5); */
+    fill: rgba(147, 154, 167, 0.5);
+}
+.y-circle {
+    /* fill: rgba(17, 28, 151, 0.95); */
+    fill: rgba(43, 46, 71, 0.95);
+}
+
+.labels {
+    font: 12px sans-serif;
+}
+.x-label {
+    fill: #555;
+}
+.y-label {
+    fill: #111;
+}
+
+
