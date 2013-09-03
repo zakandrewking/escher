@@ -82,7 +82,7 @@ var Epistasis = function() {
                 .domain([d3.min(data, function(x) {return x.ep;}),
                          0,
                          d3.max(data, function(x) {return x.ep;})])
-                .range(["#67A9CF", "#F7F7F7", "#EF8A62"]);
+                .range(["#EF8A62", "#F7F7F7", "#67A9CF"]);
 
         // draw boxes
         var axis_disp = {'x': s.margins.left, 'y': s.margins.top};
