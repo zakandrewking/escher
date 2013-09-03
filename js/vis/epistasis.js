@@ -102,14 +102,20 @@ var Epistasis = function() {
                 .attr('width', box_s)
                 .attr('height', box_s)
                 .attr('fill', function (d) { return rect_color(d.ep); });
+	    s.append('line')
+		.attr('class', 'divider')
+		// .attr('stroke-dasharray', '2')
+		.attr('x1', 0)
+		.attr('y1', box_s)
+		.attr('x2', box_s)
+		.attr('y2', 0);
+            s.append('rect')
+                .attr('class', 'square-outline')
+                .attr('width', box_s)
+                .attr('height', box_s);
         };
         var make_circles = function(s) {
 	    var rad = Math.floor(box_s/4);
-	    s.append('line')
-		.attr('x1', 0)
-		.attr('x2', box_s)
-		.attr('y1', 0)
-		.attr('y2', box_s);
 	    s.append('g')
 		.attr('height', box_s)
 		.attr('width', box_s)
@@ -187,6 +193,41 @@ var Epistasis = function() {
                                                  (s.margins.left - 3) + ',' +
                                                  (d.index*box_s + box_s/2 + s.margins.top) + ') '+
                                                  'rotate(' + 0 + ')'; });
+
+	// make flux arrows
+	var g = svg.append('g')
+		.attr('class', 'flux-arrows')
+		.attr('transform', 'translate('+(s.width/2+80)+','+(s.height/2-80)+')rotate(45)');
+	g.append('text')
+	    .text('High flux')
+	    .attr('transform', 'translate('+(-s.width/2+50)+',0)');
+	g.append('text')
+	    .text('Low flux')
+	    .attr('transform', 'translate('+(s.width/2-50)+',0)');
+
+	// make legend
+	var legend = svg.append('g')
+		.attr('class', 'legend')
+		.attr('transform', 'translate('+(s.width-100)+','+(30)+')');
+	var range = rect_color.range();
+	var gradient = svg.append('defs')
+		.append('linearGradient')
+		.attr('id', 'gradient');
+	gradient.append('stop')
+	    .attr('fill', range[0])
+	    .attr('offset', '0%');
+	gradient.append('stop')
+	    .attr('fill', range[1])
+	    .attr('offset', '50%');
+	gradient.append('stop')
+	    .attr('fill', range[2])
+	    .attr('offset', '100%');
+	legend.append('rect')
+	    .attr('class', 'legend-gradient')
+	    .attr('width', 60)
+	    .attr('height', 150)
+	    .attr('fill', 'url(#gradient)');
+	
         return this;
     };
 
@@ -194,8 +235,8 @@ var Epistasis = function() {
         if (typeof options === 'undefined') options = {};
         s.selection = options.selection || d3.select('body');
         s.margins = options.margins  || {top: 10, right: 10, bottom: 40, left: 70};
-        s.width = options.width || 600;
-        s.height = options.heigh || 600;
+        s.width = options.width || 700;
+        s.height = options.heigh || 700;
         var default_filename_index = 0;
         return this;
     };

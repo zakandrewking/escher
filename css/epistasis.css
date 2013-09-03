@@ -12,11 +12,15 @@ z-index:10;
 width: 90%;
 }
 
-.square {
+.square-outline {
+    fill: none;
     stroke-width: 1px;
     stroke: #333;
 }
-
+.divider {
+    stroke-width: 1px;
+    stroke: rgba(147, 154, 167, 0.2);
+}
 .circle {
     stroke: rgba(43, 46, 71, 0.95);
     stroke-width: 1px;
@@ -40,4 +44,6 @@ width: 90%;
     fill: #111;
 }
 
-
+.stop1 {
+    fill: 
+}
