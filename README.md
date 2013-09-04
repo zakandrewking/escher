@@ -11,14 +11,8 @@ getting started
 
 Just run
 
-```shell
-python -m visbio
+```python
+python server/tornado_main.py
 ```
 
 Should start a server at localhost:7777 with live plots and maps. Modify the data in the data/ directory to make your own plots and maps come to life!
-
-To specify a port, you can use the port option:
-
-```shell
-python -m visbio --port=8888
-```

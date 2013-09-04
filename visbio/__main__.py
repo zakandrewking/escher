@@ -1,2 +1,0 @@
-import server
-server.run()
