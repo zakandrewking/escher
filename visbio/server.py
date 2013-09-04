@@ -7,13 +7,10 @@ import json
 import re
 
 # set directory to server
-directory = os.path.abspath(os.path.dirname(__file__).replace('server',''))
-port = 7777
-
-print 'serving directory %s on port %d' % (directory, port)
+directory = os.path.dirname(os.path.dirname(__file__))
 
 # define port
-define("port", default=port, type=int)
+define("port", default=7777, type=int)
 
 class BaseHandler(tornado.web.RequestHandler):
     def path_redirection(self, directory, path):
@@ -89,10 +86,14 @@ application = tornado.web.Application([
     (r"/(.*)", MainHandler),
 ], **settings)
  
-if __name__ == "__main__":
+def run():
     parse_command_line()
+    print 'serving directory %s on port %d' % (directory, options.port)
     application.listen(options.port)
     try:
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:
         print "bye!"
+        
+if __name__ == "__main__":
+    run()
