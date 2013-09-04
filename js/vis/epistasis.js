@@ -40,8 +40,8 @@ var Epistasis = function() {
         // load data
         var rxn_list = s.data.sorted_rxns,
 	    name_function = function(x, i) { return {'name': x, 'index': i}; },
-            names = s.data.sorted_names.slice(0, -1).map(name_function),
-	    y_names = s.data.sorted_names.slice(1).map(name_function),
+            names = s.data.sorted_names.map(name_function),
+	    y_names = names,
 	    size = s.data.sorted_names.length,
             cases = s.data.cases,
             ep_type = 'ep_add',
@@ -54,21 +54,23 @@ var Epistasis = function() {
                 index_2 = rxn_list.indexOf(c['rxn2']),
                 p_1 = c['p1'],
                 p_2 = c['p2'];
+	    if (index_1==-1) console.warn('no match for ' + c['rxn1']);
+	    if (index_2==-1) console.warn('no match for ' + c['rxn2']);
             if (index_1 < index_2) {
                 n['index_x'] = index_1;
-                n['index_y'] = index_2 - 1; // y index start at 2nd entry
+                n['index_y'] = index_2; // y index start at 2nd entry
                 n['p_x'] = p_1;
                 n['p_y'] = p_2;
             } else {
                 n['index_x'] = index_2;
-                n['index_y'] = index_1 - 1;
+                n['index_y'] = index_1;
                 n['p_x'] = p_2;
                 n['p_y'] = p_1;
             }
             n['ep'] = c[ep_type];
+	    n['empty'] = false;
             data.push(n);
         }
-        console.log(data);
 
         // generate svg from scratch
         s.selection.select('svg').remove();
@@ -101,7 +103,10 @@ var Epistasis = function() {
                 .attr('class', 'square')
                 .attr('width', box_s)
                 .attr('height', box_s)
-                .attr('fill', function (d) { return rect_color(d.ep); });
+                .attr('fill', function (d) { 
+		    if (d.empty==true) return '#fff';
+		    else return rect_color(d.ep);
+		});
 	    s.append('line')
 		.attr('class', 'divider')
 		// .attr('stroke-dasharray', '2')
@@ -114,6 +119,12 @@ var Epistasis = function() {
                 .attr('width', box_s)
                 .attr('height', box_s);
         };
+	var update_rect = function(s) {
+            // update
+            s.attr('transform', function(d) { return 'translate(' +
+					      (d.index_x*box_s) + ',' +
+					      (d.index_y*box_s) + ')'; });
+	};
         var make_circles = function(s) {
 	    var rad = Math.floor(box_s/4);
 	    s.append('g')
@@ -159,11 +170,25 @@ var Epistasis = function() {
             .attr('class', 'cell')
             .call(make_rect)
             .call(make_circles);
-
         // update
-        sel.attr('transform', function(d) { return 'translate(' +
-                                            (d.index_x*box_s) + ',' +
-                                            (d.index_y*box_s) + ')'; });
+        sel.call(update_rect);
+
+	// make empty rects
+	for (var i=0, empty_data = []; i<size; i++) {
+	    empty_data.push({ empty: true,
+			      index_x: i,
+			      index_y: i });
+	}
+        var empty = svg.append("g")
+                .attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")")
+                .selectAll('.cell')
+                .data(empty_data);
+        empty.enter()
+            .append('g')
+            .attr('class', 'cell')
+            .call(make_rect);
+        // update
+        empty.call(update_rect);
 
         // make x labels
         var x_labels = svg.append('g')
@@ -176,7 +201,7 @@ var Epistasis = function() {
             .text(function (d) { return d.name; });
         x_labels.attr('transform', function(d) { return 'translate(' +
                                                  (d.index*box_s + box_s/3 + s.margins.left) + ',' +
-                                                 (s.height - s.margins.bottom - 5) + ') '+
+                                                 (s.height - s.margins.bottom + 25) + ') '+
                                                  'rotate(' + 45 + ')'; });
 
         // make xylabels
