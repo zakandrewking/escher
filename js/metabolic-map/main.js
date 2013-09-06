@@ -7,6 +7,15 @@ var Map = function() {
     m.listeners = {};
     m.NoResults = {'name': 'NoResults'};
 
+    m.set_status = function(status) {
+	var t = d3.select('body').select('#status');
+	if (t.empty()) t = d3.select('body')
+	    .append('text')
+	    .attr('id', 'status');
+	t.text(status);
+	return this;
+    };
+
     m.default_load_sources = function(callback) {
 
 	d3.json(m.flux1_path, function(error, json) {
@@ -39,7 +48,13 @@ var Map = function() {
     };
 
     m.reload_flux = function(fn) {
-	m.flux_source(function (fluxes) {
+	m.flux_source(function (fluxes, is_viable, objective) {
+	    if (!is_viable) {
+		m.set_status('cell is dead :\'(');
+		fluxes = [];
+	    } else if (objective) {
+		m.set_status('objective: ' + d3.format('.3f')(objective));
+	    }
 	    m.data = m.flux_to_data(m.data, fluxes, null, null);
 	    m.update_svg(m.svg, m.style, m.width, m.height, m.data, m.decimal_format,
 			    m.has_metabolite_deviation, m.has_metabolites, fn);
@@ -147,6 +162,17 @@ var Map = function() {
         m.has_metabolites = false;
         m.has_metabolite_deviation = false;
 
+	var remove_fluxes_from_data = function(d) {
+	    d.reaction_paths.map(function(o) {
+		delete o.flux;
+		return o;
+	    });
+	    d.reaction_labels.map(function(o) {
+		delete o.flux;
+		return o;
+	    });
+	    return d;
+	};
 
         // parse the data objects and attach values to map objects
         if (fluxes.length > 0) {
@@ -158,7 +184,9 @@ var Map = function() {
                 m.has_flux_comparison = true;
                 data = parse_flux_2(data, flux2);
             }
-        }
+        } else {
+	    remove_fluxes_from_data(data);
+	}
         if (metabolites) {
             m.has_metabolites = true;
             data = parse_metabolites_1(data, metabolites);
@@ -627,6 +655,7 @@ var Map = function() {
 	load: m.load,
 	add_listener: m.add_listener,
 	remove_listener: m.remove_listener,
-	reload_flux: m.reload_flux
+	reload_flux: m.reload_flux,
+	set_status: m.set_status
     };
 };

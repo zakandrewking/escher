@@ -24,7 +24,7 @@ var Knockout = function() {
 		objective = json.f;
 	    m.latest_flux = flux;
 	    m.latest_objective_value = objective;
-	    callback([flux]);
+	    callback([flux], objective > 1e-7, objective);
 	});
     };
 

@@ -19,6 +19,7 @@
 
 ko = Knockout();
 var on_click = function(reaction) {
+    this.set_status('calculating');
     ko.add_reaction(reaction);
     this.reload_flux();
 };
@@ -26,7 +27,8 @@ var on_click = function(reaction) {
 Map().set_flux_source(ko.get_flux)
     .load("data/maps/simpheny-maps/ijo-central.json")
     .add_listener('.reaction-label', 'click', on_click)
-    .add_listener('.reaction-path', 'click', on_click);
+    .add_listener('.reaction-path', 'click', on_click)
+    .set_status('HINT: Click a reaction');
 
 </script>
 </body>

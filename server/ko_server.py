@@ -8,11 +8,13 @@ import json
 def fba_for_reactions(reactions):
     model = cobra.io.load_matlab_model('/Users/zaking/models/iJO1366.mat')
     for r in reactions:
-        model.reactions.get_by_id(r).upper_bound = 0
+        print 'knocking out %s' % model.reactions.get_by_id(r)
+        model.reactions.get_by_id(r).lower_bound = 0
         model.reactions.get_by_id(r).upper_bound = 0
     model.optimize()
     x = model.solution.x_dict
     f = model.solution.f
+    print f
     return x, f
 
 class koHandler(tornado.web.RequestHandler):
