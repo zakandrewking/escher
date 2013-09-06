@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta charset="utf-8">
+  <title>Knockout</title>
+  <script src="js/libs/d3.v3.js"></script>
+  <script src="js/libs/jquery-latest.min.js" type="text/javascript"></script>
+  <script src="js/libs/vkbeautify.0.99.00.beta.js"></script>
+  <style>
+    .overlay {
+    fill: none;
+    pointer-events: all;
+    }
+  </style>
+  <body>
+    <script src="js/metabolic-map/exportsvg.js" type="text/javascript"></script>
+    <script src="js/metabolic-map/main.js" type="text/javascript"></script>
+    <script src="js/metabolic-map/knockout.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+ko = Knockout();
+var on_click = function(reaction) {
+    this.set_status('calculating');
+    ko.add_reaction(reaction);
+    this.reload_flux();
+};
+
+Map().set_flux_source(ko.get_flux)
+    .load("data/maps/simpheny-maps/ijo-central.json")
+    .add_listener('.reaction-label', 'click', on_click)
+    .add_listener('.reaction-path', 'click', on_click)
+    .set_status('HINT: Click a reaction');
+
+</script>
+</body>
+</html>
