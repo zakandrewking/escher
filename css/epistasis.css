@@ -19,17 +19,21 @@ width: 90%;
 }
 .divider {
     stroke-width: 1px;
-    stroke: rgba(147, 154, 167, 0.2);
+    stroke: rgb(147, 154, 167);
+    stroke-opacity: 0.2;
 }
 .circle {
-    stroke: rgba(43, 46, 71, 0.95);
+    stroke: rgb(43, 46, 71);
     stroke-width: 1px;
+    stroke-opacity: 0.95;
 }
 .x-circle {
-    fill: rgba(147, 154, 167, 0.5);
+    fill: rgb(147, 154, 167);
+    stroke-opacity: 0.5;
 }
 .y-circle {
-    fill: rgba(43, 46, 71, 0.95);
+    fill: rgb(43, 46, 71);
+    stroke-opacity: 0.95;
 }
 
 .labels {

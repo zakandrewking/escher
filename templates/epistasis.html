@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<meta charset="utf-8" />
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <!-- xhtml5 comliant -->
   <head>
     <title>epistasis</title>
     <script src="js/libs/d3.v3.js" type="text/javascript"></script>
@@ -8,23 +8,25 @@
     <script src="js/vis/epistasis.js" type="text/javascript"></script>
     <script src="js/vis/data-menu.js" type="text/javascript"></script>
     <script src="js/vis/export-svg.js" type="text/javascript"></script>
-    <link rel="stylesheet" type="text/css" href="css/epistasis.css" />
+    <meta charset="utf-8" />
   </head>
   <body>
     <div id="menus">
       <div class="float label"></div><div id="menu1" class="menu float"></div>
     </div>
-  </body>
-  <script>
-    epistasis = Epistasis().setup();
-    data_menu = DataMenu().setup({
-    selection: d3.select('#menu1'),
-    getdatafiles: 'data/epistasis',
-    update_callback: epistasis.collect_data
-    });
-    ex = ExportSvg();
-    d3.select('body').append('button')
+    <script type="text/javascript">
+      epistasis = Epistasis().setup({
+          css_path: 'css/epistasis.css'
+      });
+      data_menu = DataMenu().setup({
+          selection: d3.select('#menu1'),
+          getdatafiles: 'data/epistasis',
+          update_callback: epistasis.collect_data
+      });
+      ex = ExportSvg();
+      d3.select('body').append('button')
     .text('download')
-        .on('click', function(d) {ex.download('epistasis', 'svg', true);});
-  </script>
+    .on('click', function(d) {ex.download('epistasis', 'svg', true);});
+    </script>
+  </body>
 </html>

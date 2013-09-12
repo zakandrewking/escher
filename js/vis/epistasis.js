@@ -39,7 +39,8 @@ var Epistasis = function() {
     s.update = function() {
         // load data
         var rxn_list = s.data.sorted_rxns,
-            name_function = function(x, i) { return {'name': x, 'index': i}; },
+            // name_function = function(x, i) { return {'name': x, 'index': i}; },
+            name_function = function(x, i) { return {'name': 'enzyme '+(i+1), 'index': i}; },
             names = s.data.sorted_names.map(name_function),
             y_names = names,
             size = s.data.sorted_names.length,
@@ -79,14 +80,18 @@ var Epistasis = function() {
 
         var svg = s.selection.append("svg")
                 .attr("width", s.width + s.margins.left + s.margins.right)
-                .attr("height", s.height + s.margins.top + s.margins.bottom);
+                .attr("height", s.height + s.margins.top + s.margins.bottom)
+		.attr('xmlns', "http://www.w3.org/2000/svg");
+        svg.append("style")
+	    .attr('type', "text/css")
+            .text(s.css);
         var box_s = d3.min([Math.floor((s.width-s.margins.right)/size),
                             Math.floor((s.height-s.margins.bottom)/size)]),
             rect_color = d3.scale.linear()
                 .domain([d3.min(data, function(x) {return x.ep;}),
                          0,
                          d3.max(data, function(x) {return x.ep;})])
-                .range(["#EF8A62", "#F7F7F7", "#67A9CF"]),
+                .range(["#AF8DC3", "#F7F7F7", "#7FBF7B"]),
             rect_stroke = d3.scale.linear()
                 .domain([d3.min(data, function(x) {return x.min_max_diff;}),
                          d3.max(data, function(x) {return x.min_max_diff;})])
@@ -279,25 +284,32 @@ var Epistasis = function() {
         // make legend
         var legend = svg.append('g')
                 .attr('class', 'legend')
-                .attr('transform', 'translate('+(s.width-100)+','+(30)+')');
+                .attr('transform', 'translate('+(s.width-140)+','+(230)+')');
         var range = rect_color.range();
         var gradient = svg.append('defs')
                 .append('linearGradient')
                 .attr('id', 'gradient');
         gradient.append('stop')
-            .attr('fill', range[0])
+            .attr('stop-color', range[0])
             .attr('offset', '0%');
         gradient.append('stop')
-            .attr('fill', range[1])
+            .attr('stop-color', range[1])
             .attr('offset', '50%');
         gradient.append('stop')
-            .attr('fill', range[2])
+            .attr('stop-color', range[2])
             .attr('offset', '100%');
         legend.append('rect')
             .attr('class', 'legend-gradient')
-            .attr('width', 60)
-            .attr('height', 150)
-            .attr('fill', 'url(#gradient)');
+            .attr('width', 150)
+            .attr('height', 30)
+            .attr('fill', 'url(#gradient)')
+	    .attr('transform', 'rotate(-90)')
+	    .style('stroke', '#333')
+	    .style('stroke-width', '2px');
+	legend.append('text').text('positive')
+	    .attr('transform', 'translate(40, -140)');
+	legend.append('text').text('negative')
+	    .attr('transform', 'translate(40, 0)');
 
         return this;
     };
@@ -307,12 +319,28 @@ var Epistasis = function() {
         s.selection = options.selection || d3.select('body');
         s.margins = options.margins  || {top: 10, right: 10, bottom: 40, left: 70};
         s.width = options.width || 700;
-        s.height = options.heigh || 700;
-        var default_filename_index = 0;
+        s.height = options.height || 700;
+	if (options.css_path) {
+	    s.ready = false;
+            d3.text(options.css_path, function(error, text) {
+                if (error) {
+		    console.warn(error);
+		    s.css = "";
+		} else {
+                    s.css = text;
+		}
+		s.ready = true;
+		return null;
+	    });
+	} else {
+	    s.ready = true;
+	    s.css = "";
+	};
         return this;
     };
 
     s.collect_data = function(json) {
+	if (!s.ready) console.warn('Hasn\'t loaded css yet');
         s.data = json;
         s.update();
         return this;
