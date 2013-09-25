@@ -1,0 +1,15 @@
+.bar-axis path,
+.bar-axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.bar-axis {
+    font-size: 12px;
+}
+.bar {
+  fill: blue;
+  opacity: 0.6;
+  shape-rendering: crispEdges;
+  stroke: #000;
+}
