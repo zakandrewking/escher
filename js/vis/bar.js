@@ -6,10 +6,8 @@ var Bar = function() {
             sel.style('height', (window.innerHeight-margins.bottom)+'px');
             sel.style('width', (window.innerWidth-margins.right)+'px');
         }
-
-        var width = parseFloat(s.selection.style('width')) - margins.left - margins.right,
-            height = parseFloat(s.selection.style('height')) - margins.top - margins.bottom;
-
+        var width = parseFloat(sel.style('width')) - margins.left - margins.right,
+            height = parseFloat(sel.style('height')) - margins.top - margins.bottom;
         return {'width': width, 'height': height};
     };
 
@@ -65,20 +63,18 @@ var Bar = function() {
 	    }
 	}
 
-        var o = s.height_width(s.fillScreen, s.selection, s.margins);
-        var height = o.height, width = o.width;
-
-        s.selection.select('svg').remove();
-
-        var svg0 = s.selection.append("svg")
-                .attr("width", width + s.margins.left + s.margins.right)
-                .attr("height", height + s.margins.top + s.margins.bottom)		
-		.attr('xmlns', "http://www.w3.org/2000/svg");
-        svg0.append("style")
+	// clear the container and add again
+        s.sub_selection.select("#bar-container").remove();
+        var container = s.sub_selection.append("g").attr("id","bar-container");
+	container.append("style")
 	    .attr('type', "text/css")
-            .text(s.css);
-	var svg = svg0.append("g")
+	    .text(s.css);
+	var svg = container.append("g")
                 .attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")");
+
+	// var o = s.height_width(s.fillScreen, s.sub_selection, s.margins),
+	var height = s.height,
+	    width = s.width;
 
         // find x domain
         var x_dom = [0, d3.max(json, function(a) { return a.data.length; })],
@@ -169,9 +165,9 @@ var Bar = function() {
     };
 
     s.setup = function (options) {
+	// manage options
         if (typeof options === 'undefined') options = {};
-        s.selection = options.selection || d3.select('body').append('div');
-        s.margins = options.margins  || {top: 20, right: 20, bottom: 30, left: 50};
+	s.margins = options.margins  || {top: 20, right: 20, bottom: 30, left: 50};
         s.fillScreen = options.fillScreen || false;
         s.x_axis_label = options.x_axis_label || "";
         s.y_axis_label = options.y_axis_label || "";
@@ -179,6 +175,28 @@ var Bar = function() {
         s.y_data_label = options.y_data_label || '2';
 	s.x_shift = options.x_shift || 4;
 	s.data_is_object = true;
+
+	// set selection
+	// sub selection places the graph in an existing svg environment
+	var add_svg = function(s, fillScreen, margins) {
+	    var o = s.height_width(fillScreen, s, margins);
+	    return s.append('svg')
+                .attr("width", o.width + margins.left + margins.right)
+                .attr("height", o.height + margins.top + margins.bottom)	
+		.attr('xmlns', "http://www.w3.org/2000/svg");
+	};
+	if (options.sub_selection) {
+	    s.sub_selection = options.sub_selection;
+	    s.width = parseInt(s.sub_selection.attr("width"), 10);
+	    s.height = parseInt(s.sub_selection.attr("height"), 10);
+	} else if (options.selection) {
+	    s.sub_selection = add_svg(options.selection, s.fillScreen, s.margins);
+	} else {
+	    s.sub_selection = add_svg(d3.select('body').append('div'), s.fillScreen,
+				      s.margins);
+	}
+
+	// load the css
 	if (options.css_path) {
 	    s.ready = false;
             d3.text(options.css_path, function(error, text) {

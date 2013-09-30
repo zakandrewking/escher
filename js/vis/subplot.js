@@ -13,22 +13,22 @@ var Subplot = function() {
     };
     s.update = function() {
         if (s.fillScreen==true) {
-            // d3.select('html').style('height','100%');
-            // d3.select('body').style('height','100%');
-            s.selection.style('height', (window.innerHeight-s.margin)+'px');
-            s.selection.style('width', (window.innerWidth-s.margin)+'px');
+            s.svg.style('height', (window.innerHeight-s.margin)+'px');
+            s.svg.style('width', (window.innerWidth-s.margin)+'px');
         }
 
-        var height = parseFloat(s.selection.style('height')) - (s.margin),
-            width = parseFloat(s.selection.style('width')) - (s.margin),
+        var height = parseFloat(s.svg.style('height')) - (s.margin),
+            width = parseFloat(s.svg.style('width')) - (s.margin),
             row_h = height/s.rows,
             col_w = width/s.columns;
 
 	d3.selectAll('.grid') 
-            .style('left',   function(d) { return Math.floor(d.x_i*col_w+s.margin)+'px'; })
-            .style('top',    function(d) { return Math.floor(d.y_i*row_h+s.margin)+'px'; })
-            .style('width',  function(d) { return Math.floor(col_w)+'px'; })
-            .style('height', function(d) { return Math.floor(row_h)+'px'; });
+            .attr('transform',   function(d) { return 'translate(' + 
+					       Math.floor(d.x_i*col_w+s.margin)+'px' + ',' +
+					       Math.floor(d.y_i*row_h+s.margin)+'px' + ')';
+					     })
+            .attr('width',  function(d) { return Math.floor(col_w)+'px'; })
+            .attr('height', function(d) { return Math.floor(row_h)+'px'; });
         return this;
     };
     s.setup = function(options) {
@@ -41,19 +41,21 @@ var Subplot = function() {
         s.margin = 20;
 
         s.selection.empty();
+	s.svg = s.selection.append('svg')
+	    .attr('xmlns', "http://www.w3.org/2000/svg");
+
         s.frames = [];
         for (var y=0; y<s.rows; y+=1) {
             // divide into rows
 	    var a_row = [];
             for (var x=0; x<s.columns; x+=1) {
                 // divide into columns
-                var fr = s.selection.append('div')
+                var fr = s.svg.append('g')
                         .attr('class', 'grid') 
-			.style('position', 'absolute')
                         .datum({'x_i': x, 'y_i': y});
                 a_row.push(fr);
             }
-	    s.frames.push(a_row)
+	    s.frames.push(a_row);
         }
         s.update();
         return this;

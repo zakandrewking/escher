@@ -14,9 +14,9 @@
     <script type="text/javascript">
       var subplot = Subplot().setup({ rows: 3, columns: 1, 
                                       selection: d3.select("#container") });
-      var bar1 = Bar().setup({ selection: subplot.frame_by_row_col(0, 0), css_path: 'css/bar.css' });
-      var bar2 = Bar().setup({ selection: subplot.frame_by_row_col(1, 0), css_path: 'css/bar.css' });
-      var bar3 = Bar().setup({ selection: subplot.frame_by_row_col(2, 0), css_path: 'css/bar.css' });
+      var bar1 = Bar().setup({ sub_selection: subplot.frame_by_row_col(0, 0), css_path: 'css/bar.css' });
+      var bar2 = Bar().setup({ sub_selection: subplot.frame_by_row_col(1, 0), css_path: 'css/bar.css' });
+      var bar3 = Bar().setup({ sub_selection: subplot.frame_by_row_col(2, 0), css_path: 'css/bar.css' });
       var ex = ExportSvg();
       d3.select('body').append('button').text('download').on('click', function(d) { ex.download('chart', 'svg', true); });
       d3.json('data/flux/flux-wt-pFBA.json', function(error, d) {
