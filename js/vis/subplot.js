@@ -24,11 +24,11 @@ var Subplot = function() {
 
 	d3.selectAll('.grid') 
             .attr('transform',   function(d) { return 'translate(' + 
-					       Math.floor(d.x_i*col_w+s.margin)+'px' + ',' +
-					       Math.floor(d.y_i*row_h+s.margin)+'px' + ')';
+					       Math.floor(d.x_i*col_w+s.margin) + ',' +
+					       Math.floor(d.y_i*row_h+s.margin) + ')';
 					     })
-            .attr('width',  function(d) { return Math.floor(col_w)+'px'; })
-            .attr('height', function(d) { return Math.floor(row_h)+'px'; });
+            .attr('width',  function(d) { return Math.floor(col_w); })
+            .attr('height', function(d) { return Math.floor(row_h); });
         return this;
     };
     s.setup = function(options) {

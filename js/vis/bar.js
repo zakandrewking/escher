@@ -54,13 +54,13 @@ var Bar = function() {
     // };
 
     s.update = function(json) {
-	// check data
+	// check data 
 	var i=-1;
 	while(++i < json.length) {
 	    if (json[i]===undefined) {
 		console.log('waiting for all indices');
 		return;
-	    }
+	    } 
 	}
 
 	// clear the container and add again
@@ -80,10 +80,10 @@ var Bar = function() {
         var x_dom = [0, d3.max(json, function(a) { return a.data.length; })],
 	    y_dom = [
 		d3.min(json, function(a) {
-                    return d3.min(a.data, function(d) { return d[1]; });
+                    return d3.min(a.data, function(d) { return d.value; });
 		}),
 		d3.max(json, function(a) {
-                    return d3.max(a.data, function(d) { return d[1]; });
+                    return d3.max(a.data, function(d) { return d.value; });
 		})
             ];
 	
@@ -120,11 +120,12 @@ var Bar = function() {
                     .data(json[j].data)
                     .enter().append("g")
                     .attr("class", "bar "+cl)
-                    .attr("transform", function(d, i) { return "translate(" + (s.x(i) + s.x_shift*j) + "," + s.y(d[1]) + ")"; });
+                    .attr("transform", function(d, i) { return "translate(" + (s.x(i) + s.x_shift*j) + "," + s.y(d.value) + ")";  });
             bars.append("rect")
                 .attr("x", 1)
                 .attr("width", bar_w)
-                .attr("height", function(d) { return height - s.y(d[1]); });
+                .attr("height", function(d) { return height - s.y(d.value);
+					    });
 	    if (json[j].hasOwnProperty('options')) add_legend(legend, json[j].options.name, j, 'legend '+cl);
         }
 
@@ -165,16 +166,26 @@ var Bar = function() {
     };
 
     s.setup = function (options) {
-	// manage options
-        if (typeof options === 'undefined') options = {};
-	s.margins = options.margins  || {top: 20, right: 20, bottom: 30, left: 50};
-        s.fillScreen = options.fillScreen || false;
-        s.x_axis_label = options.x_axis_label || "";
-        s.y_axis_label = options.y_axis_label || "";
-        s.x_data_label = options.x_data_label || '1',
-        s.y_data_label = options.y_data_label || '2';
-	s.x_shift = options.x_shift || 4;
+	// set defaults
+	s.margins = {top: 20, right: 20, bottom: 30, left: 50};
+        s.fillScreen = false;
+        s.x_axis_label = "";
+        s.y_axis_label = "";
+        s.x_data_label = '1',
+        s.y_data_label = '2';
+	s.x_shift = 4;
 	s.data_is_object = true;
+
+	// manage options
+        if (typeof options !== undefined) {
+	    if (options.margins !== undefined)        s.margins = options.margins;
+	    if (options.fillScreen !== undefined)     s.fillScreen = options.fillScreen;
+	    if (options.x_axis_label !== undefined)   s.x_axis_label = options.x_axis_label;
+	    if (options.y_axis_label !== undefined)   s.y_axis_label = options.y_axis_label;
+	    if (options.y_data_label !== undefined)   s.y_data_label = options.y_data_label;
+	    if (options.x_shift !== undefined)        s.x_shift = options.x_shift;
+	    if (options.data_is_object !== undefined) s.data_is_object = options.data_is_object;
+	}
 
 	// set selection
 	// sub selection places the graph in an existing svg environment

@@ -10,23 +10,41 @@
     <meta charset="utf-8" />
   </head>
   <body>
-    <div id="container" style="width:500px; height:700px"></div>
+    <div id="container" style="width:500px; height:800px"></div>
     <script type="text/javascript">
-      var subplot = Subplot().setup({ rows: 3, columns: 1, 
+      var subplot = Subplot().setup({ rows: 4, columns: 1, 
                                       selection: d3.select("#container") });
-      var bar1 = Bar().setup({ sub_selection: subplot.frame_by_row_col(0, 0), css_path: 'css/bar.css' });
-      var bar2 = Bar().setup({ sub_selection: subplot.frame_by_row_col(1, 0), css_path: 'css/bar.css' });
-      var bar3 = Bar().setup({ sub_selection: subplot.frame_by_row_col(2, 0), css_path: 'css/bar.css' });
+      var bar1 = Bar().setup({ sub_selection: subplot.frame_by_row_col(0, 0), css_path: 'css/bar.css',
+			       data_is_object: false });
+      var bar2 = Bar().setup({ sub_selection: subplot.frame_by_row_col(1, 0), css_path: 'css/bar.css',
+			       data_is_object: false });
+      var bar3 = Bar().setup({ sub_selection: subplot.frame_by_row_col(2, 0), css_path: 'css/bar.css',
+			       data_is_object: false });
+      var bar4 = Bar().setup({ sub_selection: subplot.frame_by_row_col(3, 0), css_path: 'css/bar.css',
+			       data_is_object: false });
       var ex = ExportSvg();
       d3.select('body').append('button').text('download').on('click', function(d) { ex.download('chart', 'svg', true); });
-      d3.json('data/flux/flux-wt-pFBA.json', function(error, d) {
-	  bar1.collect_data(d, 0);
+      var process_optyield_data = function(d) {
+	  var i = -1;
+	  while (++i < d.length) {
+	      var t = d[i];
+	      t.value = t.diff;
+	      t.category = t.swap;
+	      // t.name = t.name;
+	  }
+	  return d;
+      };
+      d3.json('data/optyield/yeast_glucose_anaerobic.json', function(error, d) {
+	  bar1.collect_data(process_optyield_data(d), 0);
+      });      
+      d3.json('data/optyield/yeast_xylose_anaerobic.json', function(error, d) {
+      	  bar2.collect_data(process_optyield_data(d), 0);
+      });      
+      d3.json('data/optyield/yeast_glucose_aerobic.json', function(error, d) {
+      	  bar3.collect_data(process_optyield_data(d), 0);
       });
-      d3.json('data/flux/flux-wt-pFBA.json', function(error, d) {
-      	  bar2.collect_data(d, 0);
-      });
-      d3.json('data/flux/flux-wt-pFBA.json', function(error, d) {
-      	  bar3.collect_data(d, 0);
+      d3.json('data/optyield/yeast_xylose_aerobic.json', function(error, d) {
+      	  bar4.collect_data(process_optyield_data(d), 0);
       });	      
       </script>
   </body>
