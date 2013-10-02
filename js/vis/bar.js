@@ -240,9 +240,9 @@ var Bar = function() {
     s.collect_data = function(json, layer) {
 	if (!s.ready) console.warn('Hasn\'t loaded css yet');
 	if (s.data_is_object) {
-	    var tuples = [];
-	    for (var key in json) tuples.push([key, json[key]]);
-	    s.json[layer] = {data: tuples.slice(0,50)};
+	    var objects = [];
+	    for (var key in json) objects.push({name: key, value: json[key]});
+	    s.json[layer] = {data: objects};
 	} else {
             s.json[layer] = {data: json};
 	}

@@ -13,55 +13,31 @@
   <body>
     <div id="container" style="width:600px; height:400px"></div>
     <script type="text/javascript">
-      var static_categories = ['ALCD2x', 'GLUDyi', 'GAPD', 'MDH', 'ASADi', 'SACCD1', 'HSDxi', 'PGCD', 'SHK3D', 'XYLR'];
-      var subplot = Subplot().setup({ rows: 4, columns: 2, 
+      var subplot = Subplot().setup({ rows: 3, columns: 1, 
                                       selection: d3.select("#container") });
-      var legend = CategoryLegend().setup({ sub_selection: subplot.frame_by_row_col(0,1), 
-					    categories: static_categories });
       var bar1 = Bar().setup({ sub_selection: subplot.frame_by_row_col(0, 0), 
 			       css_path: 'css/bar.css',
-			       data_is_object: false,
-			       color_scale: legend.get_scale(),
-			       title: 'Glucose anaerobic' });
+			       data_is_object: true,
+			       title: 'bar1' });
       var bar2 = Bar().setup({ sub_selection: subplot.frame_by_row_col(1, 0), 
 			       css_path: 'css/bar.css',
-			       data_is_object: false,
-			       color_scale: legend.get_scale(),
-			       title: 'D-Xylose anaerobic' });
+			       data_is_object: true,
+			       title: 'bar2' });
       var bar3 = Bar().setup({ sub_selection: subplot.frame_by_row_col(2, 0), 
 			       css_path: 'css/bar.css',
-			       data_is_object: false,
-			       color_scale: legend.get_scale(),
-			       title: 'Glucose aerobic' });
-      var bar4 = Bar().setup({ sub_selection: subplot.frame_by_row_col(3, 0), 
-			       css_path: 'css/bar.css',
-			       data_is_object: false,
-			       color_scale: legend.get_scale(),
-			       title: 'D-Xylose aerobic' });
+			       data_is_object: true,
+			       title: 'bar3' });
       var ex = ExportSvg();
       d3.select('body').append('button').text('download').on('click', function(d) { ex.download('chart', 'svg', true); });
-      var process_optyield_data = function(d) {
-	  var i = -1;
-	  while (++i < d.length) {
-	      var t = d[i];
-	      t.value = t.diff;
-	      t.category = t.swap;
-	      // t.name = t.name;
-	  }
-	  return d;
-      };
-      d3.json('data/optyield/yeast_glucose_anaerobic.json', function(error, d) {
-	  bar1.collect_data(process_optyield_data(d), 0);
+      d3.json('data/flux/flux-wt-pFBA.json', function(error, d) {
+	  bar1.collect_data(d, 0);
       });      
-      d3.json('data/optyield/yeast_xylose_anaerobic.json', function(error, d) {
-      	  bar2.collect_data(process_optyield_data(d), 0);
+      d3.json('data/flux/flux-wt-pFBA.json', function(error, d) {
+	  bar2.collect_data(d, 0);
       });      
-      d3.json('data/optyield/yeast_glucose_aerobic.json', function(error, d) {
-      	  bar3.collect_data(process_optyield_data(d), 0);
-      });
-      d3.json('data/optyield/yeast_xylose_aerobic.json', function(error, d) {
-      	  bar4.collect_data(process_optyield_data(d), 0);
-      });	      
+      d3.json('data/flux/flux-wt-pFBA.json', function(error, d) {
+	  bar3.collect_data(d, 0);
+      });      
       </script>
   </body>
 </html>
