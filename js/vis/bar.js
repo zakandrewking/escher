@@ -59,7 +59,7 @@ var Bar = function() {
 	while(++i < json.length) {
 	    if (json[i]===undefined) {
 		console.log('waiting for all indices');
-		return;
+		return this;
 	    } 
 	}
 
@@ -78,6 +78,10 @@ var Bar = function() {
 
         // find x domain
         var x_dom = [0, d3.max(json, function(a) { return a.data.length; })],
+	    y_dom;
+	if (s.y_range) { 
+	    y_dom = s.y_range; 
+	} else {
 	    y_dom = [
 		d3.min(json, function(a) {
                     return d3.min(a.data, function(d) { return d.value; });
@@ -86,16 +90,17 @@ var Bar = function() {
                     return d3.max(a.data, function(d) { return d.value; });
 		})
             ];
+	}
 	
         s.dom = {'y': y_dom,
 		 'x': x_dom};
 
         s.x = d3.scale.linear()
             .range([0, width])
-            .domain(x_dom);
+            .domain(x_dom).nice();
         s.y = d3.scale.linear()
             .range([height, 0])
-            .domain(s.dom.y);
+            .domain(s.dom.y).nice();
 
         s.xAxis = d3.svg.axis()
             .scale(s.x)
@@ -103,7 +108,9 @@ var Bar = function() {
 	    .ticks(0);
         s.yAxis = d3.svg.axis()
             .scale(s.y)
-            .orient("left");
+            .orient("left")
+	    .tickFormat(d3.format(".1f"))
+	    .ticks(5);
 
         var legend = svg.append("g")
                 .attr("class", "legend")
@@ -111,7 +118,7 @@ var Bar = function() {
                 .attr("width", "300px")
                 .attr("height", "200px");
 
-        var diff = 2,
+        var diff = 0,
             bar_w = s.x(2) - s.x(1) - diff;
 
         for (var j = 0; j < json.length; j++) {
@@ -124,9 +131,9 @@ var Bar = function() {
             bars.append("rect")
                 .attr("x", 1)
                 .attr("width", bar_w)
-                .attr("height", function(d) { return height - s.y(d.value);
-					    });
-	    if (json[j].hasOwnProperty('options')) add_legend(legend, json[j].options.name, j, 'legend '+cl);
+                .attr("height", function(d) { return height - s.y(d.value); })
+		.style("fill", function(d) { if (s.color_scale) return s.color_scale(d.category);
+					     else return null; });
         }
 
         svg.append("g")
@@ -151,23 +158,19 @@ var Bar = function() {
             .style("text-anchor", "end")
             .text(s.y_axis_label);
 
-        function add_legend(a, t, i, cl) {
-            var g = a.append("g")
-                    .attr("transform", "translate(0,"+i*40+")");
-            g.append("text")
-                .text(t)
-                .attr("transform", "translate(30, 14)");
-            g.append("rect")
-                .attr("width", 15)
-                .attr("height", 15)
-                .attr("class", cl);
-        }
+	if (s.title) {
+	    svg.append('text')
+		.text(s.title)
+		.attr("transform", "translate("+width/2+",0)")
+		.attr("text-anchor", "middle");
+	}
+
         return this;
     };
 
     s.setup = function (options) {
 	// set defaults
-	s.margins = {top: 20, right: 20, bottom: 30, left: 50};
+	s.margins = {top: 10, right: 10, bottom: 10, left: 20};
         s.fillScreen = false;
         s.x_axis_label = "";
         s.y_axis_label = "";
@@ -175,6 +178,9 @@ var Bar = function() {
         s.y_data_label = '2';
 	s.x_shift = 4;
 	s.data_is_object = true;
+	s.color_scale = false;
+	s.y_range = false;
+	s.title = false;
 
 	// manage options
         if (typeof options !== undefined) {
@@ -185,6 +191,9 @@ var Bar = function() {
 	    if (options.y_data_label !== undefined)   s.y_data_label = options.y_data_label;
 	    if (options.x_shift !== undefined)        s.x_shift = options.x_shift;
 	    if (options.data_is_object !== undefined) s.data_is_object = options.data_is_object;
+	    if (options.color_scale !== undefined)    s.color_scale = options.color_scale;
+	    if (options.y_range !== undefined)        s.y_range = options.y_range;
+	    if (options.title !== undefined)          s.title = options.title;
 	}
 
 	// set selection
@@ -198,8 +207,8 @@ var Bar = function() {
 	};
 	if (options.sub_selection) {
 	    s.sub_selection = options.sub_selection;
-	    s.width = parseInt(s.sub_selection.attr("width"), 10);
-	    s.height = parseInt(s.sub_selection.attr("height"), 10);
+	    s.width = parseInt(s.sub_selection.attr("width"), 10) - s.margins.top - s.margins.bottom;
+	    s.height = parseInt(s.sub_selection.attr("height"), 10) - s.margins.left - s.margins.right;
 	} else if (options.selection) {
 	    s.sub_selection = add_svg(options.selection, s.fillScreen, s.margins);
 	} else {

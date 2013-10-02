@@ -1,15 +1,22 @@
+text {
+    font-family: sans-serif;
+    font-size: 14px;
+}
 .bar-axis path,
 .bar-axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
 }
 .bar-axis {
     font-size: 12px;
 }
 .bar {
-  fill: blue;
-  opacity: 0.6;
-  shape-rendering: crispEdges;
-  stroke: #000;
+    fill: blue;
+    opacity: 1.0;
+    shape-rendering: crispEdges;
+    stroke: #000;
+}
+.tick text {
+    font-size: 10px;
 }
