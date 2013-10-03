@@ -18,7 +18,6 @@ var CategoryLegend = function() {
         container.append("style")
             .attr('type', "text/css")
             .text(s.css);
-        console.log(s.css);
         var svg = container.append("g")
                 .attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")");
 

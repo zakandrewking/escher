@@ -14,7 +14,7 @@ text {
 .bar {
     fill: blue;
     opacity: 1.0;
-    shape-rendering: crispEdges;
+    /* shape-rendering: crispEdges; */
     stroke: #000;
 }
 .tick text {
