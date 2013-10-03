@@ -191,6 +191,7 @@ var Bar = function() {
                 .attr("text-anchor", "middle");
         }
 
+	if (s.update_hook) s.update_hook(svg);
         return this;
     };
 
@@ -208,6 +209,7 @@ var Bar = function() {
         s.y_range = false;
         s.title = false;
         s.is_stacked = false;
+	s.update_hook = false;
 
         // manage options
         if (typeof options !== undefined) {
@@ -222,6 +224,7 @@ var Bar = function() {
             if (options.y_range !== undefined)        s.y_range = options.y_range;
             if (options.title !== undefined)          s.title = options.title;
             if (options.is_stacked !== undefined)     s.is_stacked = options.is_stacked;
+            if (options.update_hook !== undefined)    s.update_hook = options.update_hook;
         }
 
         // set selection
@@ -277,10 +280,16 @@ var Bar = function() {
         s.update(s.json);
     };
 
+    s.set_update_hook = function(fn) {
+	s.update_hook = fn;
+	return this;
+    };
+
     return {
         setup: s.setup,
         update: s.update,
         // update_size: s.update_size,
-        collect_data: s.collect_data
+        collect_data: s.collect_data,
+	update_hook: s.set_update_hook
     };
 };
