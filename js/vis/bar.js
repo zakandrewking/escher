@@ -1,7 +1,7 @@
 define(["./scaffold", "lib/d3"], function (scaffold, d3) {
     return function(options) {
         // set defaults
-	var opt = scaffold.set_options(options, {
+	var o = scaffold.set_options(options, {
             margins: {top: 10, right: 10, bottom: 10, left: 20},
             fillScreen: false,
             x_axis_label: "",
@@ -17,22 +17,21 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             update_hook: false,
 	    css: '' });
  
-	var out = scaffold.setup_svg(opt.selection, opt.sub_selection, 
-				     opt.margins, opt.fill_screen);
-	opt.svg = out.svg;
-	opt.height = out.height;
-	opt.width = out.width;
+	var out = scaffold.setup_svg(o.selection, o.sub_selection, 
+				     o.margins, o.fill_screen);
+	o.svg = out.svg;
+	o.height = out.height;
+	o.width = out.width;
 	
         // load the css
-	opt.ready = scaffold.load_css(opt.css_path, function(css) {
-	    opt.css = css;
-	    console.log('css ready'); 
-	    opt.ready = true; 
+	o.ready = scaffold.load_css(o.css_path, function(css) {
+	    o.css = css;
+	    o.ready = true; 
 	});
-	opt.layers = [];
+	o.layers = [];
 
         var update_size = function () {
-	    var o = this.opt;
+
 
 	    out = scaffold.resize_svg(o.selection, o.sub_selection, o.margins, o.fill_screen);
 	    o.height = out.height;
@@ -68,8 +67,6 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         };
 
         var update = function() {
-	    var o = this.opt;
-
             // check data
             var i=-1;
             while(++i < o.layers.length) {
@@ -78,8 +75,6 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
                     return this;
                 }
             }
-
-	    console.log(o.width, o.height);
 
             // clear the container and add again
             o.svg.select("#bar-container").remove();
@@ -204,7 +199,6 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         };
 
         var collect_data = function(json, layer) {
-	    var o = this.opt;
             if (!o.ready) console.warn('Hasn\'t loaded css yet');
             if (o.data_is_object) {
                 var objects = [];
@@ -218,13 +212,12 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         };
 
         var set_update_hook = function(fn) {
-	    var o = this.opt;
+
             o.update_hook = fn;
             return this;
         };
 
         return {
-	    opt: opt,
             update: update,
             collect_data: collect_data,
             update_hook: set_update_hook

@@ -27,7 +27,6 @@
           var ex = ExportSvg();
           d3.select('body').append('button').text('download').on('click', function(d) { ex.download('chart', 'svg', true); });
           d3.json('data/flux/flux-wt-pFBA.json', function(error, d) {
-	      console.log(bar1);
 	      bar1.update_hook(function(svg) {
 		  svg.selectAll('.bar').append('text').text(function(d, i) { if (i==5 || i==20) return '+'; });
 	      });

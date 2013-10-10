@@ -3,13 +3,11 @@ define(["lib/d3"], function(d3) {
     var height_width_style = function(selection, margins) {   
         var width = parseFloat(selection.style('width')) - margins.left - margins.right,
 	    height = parseFloat(selection.style('height')) - margins.top - margins.bottom;
-	console.log(selection);
         return {'width': width, 'height': height};
     };
     var height_width_attr = function(selection, margins) {   
         var width = parseFloat(selection.attr('width')) - margins.left - margins.right,
 	    height = parseFloat(selection.attr('height')) - margins.top - margins.bottom;
-	console.log(selection);
         return {'width': width, 'height': height};
     };
 
@@ -87,7 +85,7 @@ define(["lib/d3"], function(d3) {
                 callback(css);
             });
         }
-        return null;
+        return false;
     };
     var update = function () {
 	return 'omg yes';
