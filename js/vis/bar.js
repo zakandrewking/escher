@@ -186,8 +186,9 @@ var Bar = function() {
 
         if (s.title) {
             svg.append('text')
+		.attr('class', 'title')
                 .text(s.title)
-                .attr("transform", "translate("+width/2+",0)")
+                .attr("transform", "translate("+width/2+",10)")
                 .attr("text-anchor", "middle");
         }
 
