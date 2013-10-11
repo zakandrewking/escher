@@ -31,9 +31,14 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
 	});
 	o.layers = [];
 
-        var update_size = function () {
+        return {
+            update: update,
+            collect_data: collect_data,
+            update_hook: set_update_hook
+        };
 
-
+	// definitions
+        function update_size() {
 	    out = scaffold.resize_svg(o.selection, o.selection_is_svg, o.margins, o.fill_screen);
 	    o.height = out.height;
 	    o.width = out.width;
@@ -67,7 +72,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             return this;
         };
 
-        var update = function() {
+        function update() {
             // check data
             var i=-1;
             while(++i < o.layers.length) {
@@ -199,7 +204,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             return this;
         };
 
-        var collect_data = function(json, layer) {
+        function collect_data(json, layer) {
             if (!o.ready) console.warn('Hasn\'t loaded css yet');
             if (o.data_is_object) {
                 var objects = [];
@@ -212,16 +217,10 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
 	    return this;
         };
 
-        var set_update_hook = function(fn) {
-
+        function set_update_hook(fn) {
             o.update_hook = fn;
             return this;
         };
 
-        return {
-            update: update,
-            collect_data: collect_data,
-            update_hook: set_update_hook
-        };
     };
 });

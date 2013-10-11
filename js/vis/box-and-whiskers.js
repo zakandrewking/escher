@@ -1,10 +1,11 @@
 define(["./scaffold", "lib/d3"], function (scaffold, d3) {
-    // Data should have elements {min: 0.0, max: 5.0, Q1: 2.0, Q2: 3.0, Q3: 4.0}
+    return function(options) {    
+	// Data should have elements {min: 0.0, max: 5.0, Q1: 2.0, Q2: 3.0, Q3: 4.0}
 
-    return function(options) {
         // set defaults
         var o = scaffold.set_options(options, {
             margins: {top: 10, right: 10, bottom: 10, left: 20},
+	    plot_padding: {left: 30, bottom: 30, top: 10, right: 10},
             selection_is_svg: false,
             fillScreen: false,
             x_axis_label: "",
@@ -28,24 +29,34 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         });
         o.layers = [];
 
-        var update_size = function () {
+        return {
+            update: update,
+            collect_data: collect_data,
+            update_hook: set_update_hook
+        };
+
+	// definitions
+        function update_size() {
             return this;
         };
 
-        var update = function() {
+        function update() {
             // add the styles
             o.svg.append("style")
                 .attr('type', "text/css")
                 .text(o.css);
 
-            var f = o.data;
+            var f = o.data,
+		padding = o.plot_padding,
+		width = o.width,
+		height = o.height;
 
             var x = d3.scale.linear()
-                    .range([0, o.width])
+                    .range([padding.left, (width - padding.right)])
                     .domain([0, f.length]);
 
             var y = d3.scale.linear()
-                    .range([o.height, 1])
+                    .range([(height - padding.bottom), 1+padding.top])
                     .domain([d3.min(f, function (d) { return d.min; }),
                              d3.max(f, function (d) { return d.max; }) ])
                     .nice();
@@ -120,17 +131,18 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
 
             o.svg.append("g")
                 .attr("class", "x axis")
-                .attr("transform", "translate(0," + o.height + ")")
+                .attr("transform", "translate(0,"+(height-padding.bottom)+")")
                 .call(xAxis)
                 .append("text")
                 .attr("class", "label")
-                .attr("x", o.width)
+                .attr("x", width)
                 .attr("y", -6)
                 .style("text-anchor", "end")
                 .text("flux variables");
 
             o.svg.append("g")
                 .attr("class", "y axis")
+                .attr("transform", "translate("+padding.left+",0)")
                 .call(yAxis)
                 .append("text")
                 .attr("class", "label")
@@ -184,7 +196,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             return this;
         };
 
-        var collect_data = function(json) {
+        function collect_data(json) {
             if (!o.ready) console.warn('Hasn\'t loaded css yet');
             // add ranks
             if (o.data_is_object) {
@@ -208,15 +220,9 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             return this;
         };
 
-        var set_update_hook = function(fn) {
+        function set_update_hook(fn) {
             o.update_hook = fn;
             return this;
-        };
-
-        return {
-            update: update,
-            collect_data: collect_data,
-            update_hook: set_update_hook
         };
     };
 });
