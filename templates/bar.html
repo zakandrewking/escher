@@ -9,7 +9,7 @@
   <body>
     <div id="container" style="width:1200px; height:400px"></div>
     <script type="text/javascript">
-      require(["lib/d3", "vis/subplot", "vis/bar", "vis/export-svg"], function(d3, _, bar) {
+      require(["lib/d3", "vis/subplot", "vis/bar", "vis/export-svg"], function(d3, _, bar, export_svg) {
           var subplot = Subplot().setup({ rows: 3, columns: 1,
                                           selection: d3.select("#container") });
           var bar1 = bar({ selection: subplot.frame_by_row_col(0, 0),
@@ -27,7 +27,7 @@
                            css_path: 'css/bar.css',
                            data_is_object: true,
                            title: 'bar3' });
-          var ex = ExportSvg();
+          var ex = export_svg();
           d3.select('body').append('button').text('download').on('click', function(d) { ex.download('chart', 'svg', true); });
           d3.json('data/flux/flux-wt-pFBA.json', function(error, d) {
 	      bar1.update_hook(function(svg) {

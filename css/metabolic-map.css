@@ -24,3 +24,8 @@
     fill: rgb(255, 238, 135);
     stroke: rgb(255, 187, 0);
 }
+
+.overlay {
+  fill: none;
+  pointer-events: all;
+}

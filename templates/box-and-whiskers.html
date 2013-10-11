@@ -9,11 +9,11 @@
   <body>
     <div id="container" style="width:1200px; height:400px"></div>
     <script type="text/javascript">
-      require(["lib/d3", "vis/box-and-whiskers", "vis/export-svg"], function(d3, box_and_whiskers) {
+      require(["lib/d3", "vis/box-and-whiskers", "vis/export-svg"], function(d3, box_and_whiskers, export_svg) {
           var baw = box_and_whiskers({ selection: d3.select("#container"),
 				       css_path: 'css/box-and-whiskers.css' });
-          var ex = ExportSvg();
-          d3.select('body').append('button').text('download').on('click', function(d) { ex.download('chart', 'svg', true); });
+          var ex = export_svg();
+          d3.select('body').append('button').text('download').on('click', function(d) { ex.download('box_and_whiskers', 'svg', true); });
           d3.json('data/example/quartiles.json', function(error, d) {
               baw.collect_data(d);
           });
