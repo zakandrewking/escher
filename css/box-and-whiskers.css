@@ -1,0 +1,40 @@
+body {
+    font: 10px sans-serif;
+}
+.legend {
+    font: 18px sans-serif;
+}
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+.Q1-Q3 {
+    stroke: blue;
+    stroke-width: 1px;
+    opacity: 0.3;
+}
+.min-max {
+    stroke: lightblue;
+    stroke-width: 1px;
+    opacity: 0.3;
+}
+.median {
+    stroke: black;
+    stroke-width: 1px;
+}
+.Q1-Q3-2 {
+    stroke: red;
+    stroke-width: 1px;
+    opacity: 0.3;
+}
+.min-max-2 {
+    stroke: #FF6A6A;
+    stroke-width: 1px;
+    opacity: 0.3;
+}
+.median-2 {
+    stroke: black;
+    stroke-width: 1px;
+}

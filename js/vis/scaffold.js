@@ -1,6 +1,6 @@
 define(["lib/d3"], function(d3) {
     // private
-    var height_width_style = function(selection, margins) {   
+    var height_width_style = function(selection, margins) {
         var width = parseFloat(selection.style('width')) - margins.left - margins.right,
 	    height = parseFloat(selection.style('height')) - margins.top - margins.bottom;
         return {'width': width, 'height': height};
@@ -19,14 +19,14 @@ define(["lib/d3"], function(d3) {
 	while (++i < keys.length) out[keys[i]] = options[keys[i]];
 	return out;
     };
-    var setup_svg = function(selection, sub_selection, margins, fill_screen) {
+    var setup_svg = function(selection, selection_is_svg, margins, fill_screen) {
         // sub selection places the graph in an existing svg environment
         var add_svg = function(f, s, m) {
             if (f) {
 		s.style('height', (window.innerHeight-margins.bottom)+'px');
 		s.style('width', (window.innerWidth-margins.right)+'px');
             }
-            var out = height_width_style(f, s, margins);
+            var out = height_width_style(s, m);
 	    out.svg = s.append('svg')
                 .attr("width", out.width + m.left + m.right)
                 .attr("height", out.height + m.top + m.bottom)
@@ -36,9 +36,9 @@ define(["lib/d3"], function(d3) {
 
 	// run
 	var out;
-        if (sub_selection) {
-            out = height_width_attr(sub_selection, margins);
-	    out.svg = sub_selection;
+        if (selection_is_svg) {
+            out = height_width_attr(selection, margins);
+	    out.svg = selection;
         } else if (selection) {
             out = add_svg(fill_screen, selection, margins);
         } else {
@@ -47,7 +47,7 @@ define(["lib/d3"], function(d3) {
 	return out;
     };
 
-    var resize_svg = function(selection, sub_selection, margins, fill_screen) {
+    var resize_svg = function(selection, selection_is_svg, margins, fill_screen) {
 	// returns null
       var resize = function(f, s, m) {
             if (f) {
@@ -63,9 +63,9 @@ define(["lib/d3"], function(d3) {
         };
 
 	var out;
-	if (sub_selection) {
-            out = height_width_attr(sub_selection, margins);
-	    out.svg = sub_selection;
+	if (selection_is_svg) {
+            out = height_width_attr(selection, margins);
+	    out.svg = selection;
         } else if (selection) {
             out = resize(fill_screen, selection, margins);
         } else {

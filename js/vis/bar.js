@@ -3,6 +3,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         // set defaults
 	var o = scaffold.set_options(options, {
             margins: {top: 10, right: 10, bottom: 10, left: 20},
+	    selection_is_svg: false,
             fillScreen: false,
             x_axis_label: "",
             y_axis_label: "",
@@ -17,7 +18,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             update_hook: false,
 	    css: '' });
  
-	var out = scaffold.setup_svg(o.selection, o.sub_selection, 
+	var out = scaffold.setup_svg(o.selection, o.selection_is_svg, 
 				     o.margins, o.fill_screen);
 	o.svg = out.svg;
 	o.height = out.height;
@@ -33,7 +34,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         var update_size = function () {
 
 
-	    out = scaffold.resize_svg(o.selection, o.sub_selection, o.margins, o.fill_screen);
+	    out = scaffold.resize_svg(o.selection, o.selection_is_svg, o.margins, o.fill_screen);
 	    o.height = out.height;
 	    o.width = out.width;
 	    

@@ -12,15 +12,18 @@
       require(["lib/d3", "vis/subplot", "vis/bar", "vis/export-svg"], function(d3, _, bar) {
           var subplot = Subplot().setup({ rows: 3, columns: 1,
                                           selection: d3.select("#container") });
-          var bar1 = bar({ sub_selection: subplot.frame_by_row_col(0, 0),
+          var bar1 = bar({ selection: subplot.frame_by_row_col(0, 0),
+			   selection_is_svg: true,
 			   css_path: 'css/bar.css',
 			   data_is_object: true,
                            title: 'bar1'});
-          var bar2 = bar({ sub_selection: subplot.frame_by_row_col(1, 0),
+          var bar2 = bar({ selection: subplot.frame_by_row_col(1, 0),
+			   selection_is_svg: true,
                            css_path: 'css/bar.css',
                            data_is_object: true,
                            title: 'bar2' });
-          var bar3 = bar({ sub_selection: subplot.frame_by_row_col(2, 0),
+          var bar3 = bar({ selection: subplot.frame_by_row_col(2, 0),
+			   selection_is_svg: true,
                            css_path: 'css/bar.css',
                            data_is_object: true,
                            title: 'bar3' });
