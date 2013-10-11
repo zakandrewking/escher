@@ -139,7 +139,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             yAxis = d3.svg.axis()
                 .scale(y)
                 .orient("left")
-                .tickFormat(d3.format("%"))
+                .tickFormat(d3.format("f"))
                 .ticks(5);
 
             var diff = 0,
