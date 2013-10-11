@@ -1,4 +1,4 @@
-#reaction-labels{ 
+#reaction-labels{
     font-family: sans-serif; font-style: italic; font-weight: bold; fill: rgb(32, 32, 120);text-rendering: optimizelegibility;
 }
 #metabolite-labels{
@@ -8,7 +8,7 @@
     font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;
 }
 .line-arrow{
-    fill: none; 
+    fill: none;
 }
 
 .membrane {
@@ -17,7 +17,7 @@
 }
 
 .inner-membrane {
-    fill: white;   
+    fill: white;
 }
 
 .outer-membrane {
@@ -26,6 +26,14 @@
 }
 
 .overlay {
-  fill: none;
-  pointer-events: all;
+    fill: none;
+    pointer-events: all;
+}
+
+.path {
+    stroke: rgb(80, 80, 80);
+}
+.marker {
+    fill: rgb(80, 80, 80);
+    stroke: rgb(80, 80, 80);
 }

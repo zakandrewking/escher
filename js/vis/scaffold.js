@@ -23,13 +23,18 @@ define(["lib/d3"], function(d3) {
         // sub selection places the graph in an existing svg environment
         var add_svg = function(f, s, m) {
             if (f) {
-                s.style('height', (window.innerHeight-margins.bottom)+'px');
-                s.style('width', (window.innerWidth-margins.right)+'px');
+		d3.select("body")
+		    .style("margin", "0")
+		    .style("padding", "0");
+                s.style('height', (window.innerHeight-m.top)+'px');
+                s.style('width', (window.innerWidth-m.left)+'px');
+		s.style("margin-left", m.left+"px");
+		s.style("margin-top", m.top+"px");
             }
             var out = height_width_style(s, m);
             out.svg = s.append('svg')
-                .attr("width", out.width + m.left + m.right)
-                .attr("height", out.height + m.top + m.bottom)
+                .attr("width", out.width)
+                .attr("height", out.height)
                 .attr('xmlns', "http://www.w3.org/2000/svg");
             return out;
         };
@@ -44,6 +49,11 @@ define(["lib/d3"], function(d3) {
         } else {
             out = add_svg(fill_screen, d3.select('body').append('div'), margins);
         }
+	if (out.height <= 0 || out.width <= 0) {
+	    console.warn("Container has invalid height or \
+width. Try setting styles for height \
+and width, or use the 'fill_screen' option.");
+	}
         return out;
     };
 
@@ -90,22 +100,32 @@ define(["lib/d3"], function(d3) {
     var update = function () {
         return 'omg yes';
     };
-    var load_the_file = function(file, callback) {
-	if (file) d3.json(file, callback);
-	else callback(null, "No filename");
-    };
-    var load_files = function(files_to_load, callback) {
-	// load multiple files asynchronously
-	// Takes a list of objects: { file: a_filename.json, callback: a_callback_fn }
-        var i = -1, remaining = files_to_load.length;
-        while (++i < files_to_load.length) {
-	    var this_file = files_to_load[i];
-            load_the_file(this_file.file,
-                          function(d, error) {
-                              this_file.callback(d, error);
-                              if (!--remaining) callback();
-                          });
+    var load_the_file = function(file, callback) { 
+	if (!file) {
+	    callback("No filename", null, file);
+	    return;
 	}
+        if (ends_with(file, 'json')) d3.json(file, function(e, d) { callback(e, d, file); });
+        else if (ends_with(file, 'css')) d3.text(file, function(e, d) { callback(e, d, file); });
+        else callback("Unrecognized file type", null, file);
+	return; 
+
+	// definitions
+	function ends_with(str, suffix) { return str.indexOf(suffix, str.length - suffix.length) !== -1; }
+    };
+    var load_files = function(files_to_load, final_callback) {
+        // load multiple files asynchronously
+        // Takes a list of objects: { file: a_filename.json, callback: a_callback_fn }
+        var i = -1, remaining = files_to_load.length, callbacks = {};
+        while (++i < files_to_load.length) {
+            var this_file = files_to_load[i].file;
+            callbacks[this_file] = files_to_load[i].callback;
+            load_the_file(this_file,
+                          function(e, d, file) {
+                              callbacks[file](e, d);
+                              if (!--remaining) final_callback();
+                          });
+        }
     };
     return {
         set_options: set_options,

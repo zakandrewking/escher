@@ -7,10 +7,9 @@
     <meta charset="utf-8" />
   </head>
   <body>
-    <div id="container" style="width:1200px; height:400px"></div>
     <script type="text/javascript">
       require(["lib/d3", "metabolic-map/main", "vis/export-svg"], function(d3, map, export_svg) {
-	  var map = map({ map_path: "data/maps/simpheny-maps/ijo-central.json" });
+	  var map = map({ map_path: "data/maps/simpheny-maps/ijo-central.json", fill_screen: true });
           var ex = export_svg();
           d3.select('body').append('button').text('download').on('click', function(d) { ex.download('map', 'svg', true); });
       });
