@@ -1,71 +1,33 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<title>scatter</title>
-<script src="js/libs/d3.v3.js"></script>
-<script src="js/vis/tooltip.js" type="text/javascript"></script>
-<script src="js/vis/scatter.js" type="text/javascript"></script>
-<script src="js/vis/resize.js" type="text/javascript"></script>
-<script src="js/vis/data-menu.js" type="text/javascript"></script>
-<style>
-body {
-font: 12px sans-serif;
-}
-#menus {
-position:absolute;
-right:100px;
-top:20px;
-width:300px;
-z-index:10;
-}
-.float {
-float: left;
-}
-.menu {
-width: 90%;
-}
-.legend {
-font: 18px sans-serif;
-}
-.label {
-font: 18px sans-serif;
-width: 10%;
-}
-.axis path,
-.axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
-.trendline {
-stroke: grey;
-stroke-width; 1px;
-}
-.cursor-tooltip-circle {
-stroke: none;
-fill: rgba(100, 100, 100, 0.4);
-}
-.cursor-tooltip-text {
-font: 15px sans-serif;
-fill: rgb(80,80,80);
-}
-</style>
-<body>
-<div id="menus">
-  <div class="float label">1:</div><div id="menu1" class="menu float"></div>
-  <div class="float label">2:</div><div id="menu2" class="menu float"></div>
-</div>
-<script>
-scatter = Scatter().setup({ fillScreen: true });
-data_menu1 = DataMenu().setup({ 
-    selection: d3.select('#menu1'),
-    getdatafiles: 'data/example',
-    update_callback: function(data) { return scatter.collect_data(data, 'x', 0); }
-});
-data_menu2 = DataMenu().setup({
-    selection: d3.select('#menu2'),
-    getdatafiles: 'data/example',
-    update_callback: function(data) { return scatter.collect_data(data, 'y', 0); }
-});
-update_on_resize(scatter.update_size);
-</script>
-</body>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>scatter</title>
+    <script src="js/lib/d3.v3.js"></script>
+    <script data-main="js/config.js" src="js/require.js"></script>
+    <meta charset="utf-8">
+  </head>
+  <body>
+    <div id="menus">
+      <div class="float label">1:</div><div id="menu1" class="menu float"></div>
+      <div class="float label">2:</div><div id="menu2" class="menu float"></div>
+    </div>
+    <script type="text/javascript">
+     require(["lib/d3", "vis/scatter", "vis/resize",
+              "vis/tooltip", "vis/data-menu"], function(d3, scatter, resize, tooltip, data_menu) {
+         var scatter1 = scatter({ fill_screen: true,
+								 tooltip: tooltip }),
+         data_menu1 = data_menu({
+           selection: d3.select('#menu1'),
+           getdatafiles: 'data/example',
+           update_callback: function(data) { return scatter1.collect_data(data, 'x', 0); }
+         }),
+         data_menu2 = data_menu({
+           selection: d3.select('#menu2'),
+           getdatafiles: 'data/example',
+           update_callback: function(data) { return scatter1.collect_data(data, 'y', 0); }
+         });
+         resize.on_resize(scatter.update_size);
+       });
+    </script>
+  </body>
+</html>

@@ -1,18 +1,16 @@
-var DataMenu = function() {
-    var s = {};
-    s.data = null;
-    s.setup = function(options) {
-        if (typeof options === 'undefined') options = {};
-        var selection       = options.selection       || d3.select('body'),
-            getdatafiles    = options.getdatafiles    || null,
-	    datafiles       = options.datafiles       || null,
-	    update_callback = options.update_callback || null;
+define(["./scaffold", "lib/d3"], function(scaffold, d3) {
+    return function(options) {
+	var o = scaffold.set_options(options, {
+	    selection: d3.select("body"),
+	    getdatafiles: null,
+	    datafiles: null,
+	    update_callback: null });
 
         // setup dropdown menu
 	// Append menu if it doesn't exist
-        var menu = selection.select('.data-menu');
+	var menu = o.selection.select('.data-menu');
 	if (menu.empty()) {
-	    menu = selection.append('div')
+	    menu = o.selection.append('div')
 		.attr('class','data-menu');
 	}
         var select_sel = menu.append('form')
@@ -20,57 +18,58 @@ var DataMenu = function() {
 	// TODO move this somewhere sensible
         // menu.append('div').style('width','100%').text("Press 's' to freeze tooltip");
 
-        if (getdatafiles) {
-	    if (datafiles) {
+        if (o.getdatafiles) {
+	    if (o.datafiles) {
 		console.warn('DataMenu: getdatafiles option overrides datafiles');
 	    }
-            d3.json(getdatafiles, function(error, d) {
+            d3.json(o.getdatafiles, function(error, d) {
 		// returns json object:  { data: [file0, file1, ...] }
                 if (error) {
 		    return console.warn(error);
 		} else {
-                    s.load_with_files(d.data, select_sel, update_callback, selection);
+                    load_with_files(d.data, select_sel, update_callback, selection);
 		}
                 return null;
             });
-        } else if (datafiles) {
-            s.load_with_files(datafiles, select_sel, update_callback, selection);
+        } else if (o.datafiles) {
+            load_with_files(datafiles, select_sel, update_callback, selection);
         } else {
             console.warn('DataMenu: No datafiles given');
         }
-	return this;
+
+	return { update: update };
     };
 
-    s.load_with_files = function(files, select_sel, update_callback, selection) {
+    // definitions
+    function load_with_files(files, select_sel, update_callback, selection) {
 
         //when it changes
         select_sel.node().addEventListener("change", function() {
-            s.load_datafile(this.value, selection, update_callback);
+            o.load_datafile(this.value, selection, update_callback);
         }, false);
 
 	var file = files[0];
 
-        s.update_dropdown(files, select_sel);
-        s.load_datafile(file, selection, update_callback);
+        o.update_dropdown(files, select_sel);
+        o.load_datafile(file, selection, update_callback);
     };
 
-    s.load_datafile = function(this_file, selection, callback) {
-        d3.json(this_file, function(error, d) {
-            if (error) {
+    function load_datafile(this_file, selection, callback) {
+	scaffold.load_the_file(the_file, function(error, data) {
+	    if (error) {
                 return console.warn(error);
                 selection.append('error loading');
-                s.data = null;
+                o.data = null;
             } else {
-                s.data = d;
+                o.data = d;
 		if (callback) {
 		    callback(d);
 		}
-            }
-            return null;
-        });
+            } 
+	});
     };
 
-    s.update_dropdown = function(list, select_sel) {
+    function update(list, select_sel) {
         // update select element with d3 selection /select_sel/ to have options
         // given by /list/
 	// TODO remove paths from file list
@@ -84,12 +83,7 @@ var DataMenu = function() {
         select_sel.node().focus();
     };
 
-    s.get_data = function() { 
-	return s.data;
+    function get_data() { 
+	return o.data;
     };
-
-    return {
-        get_data: s.get_data,
-        setup: s.setup
-    };
-};
+});
