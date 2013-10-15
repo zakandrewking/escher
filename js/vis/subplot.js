@@ -1,70 +1,64 @@
-// use revealing module pattern without immediate invocation
-// http://weblogs.asp.net/dwahlin/archive/2011/09/05/creating-multiple-javascript-objects-when-using-the-revealing-module-pattern.aspx
+define(["./scaffold", "lib/d3"], function (scaffold, d3) {
+    return function(options) {
+        var o = scaffold.set_options(options, {
+            margins: { top: 0, bottom: 0, left: 0, right: 0 },
+	    spacing: 0,
+            rows: 2,
+            columns: 2,
+            fill_screen: false,
+            selection: d3.select('body') });
 
-var Subplot = function() {
-    var s = {};
+        var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
+                                     o.margins, o.fill_screen);
+        o.svg = out.svg;
+        o.height = out.height;
+        o.width = out.width;
 
-    s.frames = [];            // subplot.get_frame({row:, column:}) or subplot.frames[row, col]
-    s.get_frames = function() {
-	return s.frames;
-    };
-    s.get_frame = function(row, column) {
-        return s.frames[row][column];
-    };
-    s.update = function() {
-        if (s.fillScreen==true) {
-            s.svg.style('height', (window.innerHeight-s.margin)+'px');
-            s.svg.style('width', (window.innerWidth-s.margin)+'px');
-        }
-
-        var height = parseFloat(s.svg.style('height')) - (s.margin),
-            width = parseFloat(s.svg.style('width')) - (s.margin),
-            row_h = height/s.rows,
-            col_w = width/s.columns;
-
-	d3.selectAll('.grid') 
-            .attr('transform',   function(d) { return 'translate(' + 
-					       Math.floor(d.x_i*col_w+s.margin) + ',' +
-					       Math.floor(d.y_i*row_h+s.margin) + ')';
-					     })
-            .attr('width',  function(d) { return Math.floor(col_w); })
-            .attr('height', function(d) { return Math.floor(row_h); });
-        return this;
-    };
-    s.setup = function(options) {
-        // // some defaults
-        if (typeof options === 'undefined') options = {};
-        s.rows = options.rows || 2;
-        s.columns = options.columns || 2;
-        s.selection = options.selection || d3.select("body");
-        s.fillScreen = options.fillScreen || false;
-        s.margin = 20;
-
-        s.selection.empty();
-	s.svg = s.selection.append('svg')
-	    .attr('xmlns', "http://www.w3.org/2000/svg");
-
-        s.frames = [];
-        for (var y=0; y<s.rows; y+=1) {
+        // clear the container and add again
+	// TODO add to scaffold.setup_svg
+        o.svg.select("#subplot-container").remove();
+        var container = o.svg.append("g").attr("id","subplot-container");
+        o.sel = container.attr("transform", "translate(" + o.margins.left + "," + o.margins.top + ")");
+        o.frames = [];
+        for (var y=0; y<o.rows; y+=1) {
             // divide into rows
-	    var a_row = [];
-            for (var x=0; x<s.columns; x+=1) {
+            var a_row = [];
+            for (var x=0; x<o.columns; x+=1) {
                 // divide into columns
-                var fr = s.svg.append('g')
-                        .attr('class', 'grid') 
+                var fr = o.sel.append('g')
+                        .attr('class', 'grid')
                         .datum({'x_i': x, 'y_i': y});
                 a_row.push(fr);
             }
-	    s.frames.push(a_row);
+            o.frames.push(a_row);
         }
-        s.update();
-        return this;
-    };
+        update();
 
-    return {
-        setup: s.setup,
-        get_frames: s.get_frames,
-        frame_by_row_col: s.get_frame,
-        update: s.update
+        return { get_frames: get_frames,
+                 frame_by_row_col: get_frame,
+                 update: update };
+
+        // definitions
+        function get_frames() {
+            return o.frames;
+            return this;
+        }
+        function get_frame(row, column) {
+            return o.frames[row][column];
+            return this;
+        }
+        function update() {
+            var row_h = o.height/o.rows,
+                col_w = o.width/o.columns;
+
+            d3.selectAll('.grid')
+                .attr('transform',   function(d) { return 'translate(' +
+                                                   Math.floor(d.x_i * col_w) + ',' +
+                                                   Math.floor(d.y_i * row_h) + ')';
+                                                 })
+                .attr('width',  function(d) { return Math.floor(col_w - o.spacing); })
+                .attr('height', function(d) { return Math.floor(row_h - o.spacing); });
+            return this;
+        }
     };
-};
+});

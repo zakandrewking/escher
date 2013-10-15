@@ -120,6 +120,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
                 return d;
             });
 
+	    // add scale and axes
 	    var out = scaffold.scale_and_axes(o.dom.x, o.dom.y, width, height,
 					      { padding: padding,
 						x_is_log: true,

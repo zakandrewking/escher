@@ -125,7 +125,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             }
 
             var dom = {'y': y_dom,
-                       'x': x_dom}
+                       'x': x_dom},
 	    out = scaffold.scale_and_axes(dom.x, dom.y,
 					  o.width, o.height,
 					  { padding: o.plot_padding,
