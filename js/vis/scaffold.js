@@ -13,6 +13,7 @@ define(["lib/d3"], function(d3) {
 
     // public
     var set_options = function(options, defaults) {
+	if (options===undefined) return defaults;
         var i = -1,
             out = defaults,
             keys = window.Object.keys(options);

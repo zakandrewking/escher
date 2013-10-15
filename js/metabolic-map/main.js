@@ -1,4 +1,4 @@
-define(["vis/scaffold", "lib/d3"], function (scaffold, d3) {
+define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, utils, d3) {
     return function(options) {
         // set defaults
         var o = scaffold.set_options(options, {
@@ -24,7 +24,7 @@ define(["vis/scaffold", "lib/d3"], function (scaffold, d3) {
                              {file: o.flux2_path, callback: function(e, f) { set_flux(e, f, 1); } } ];
         scaffold.load_files(files_to_load, update);
 
-        return {update: update};
+        return { update: update };
 
         // Definitions
         function set_css(error, css) {
@@ -79,9 +79,10 @@ define(["vis/scaffold", "lib/d3"], function (scaffold, d3) {
 
             // set up svg and svg definitions
             var scale = define_scales(data.max_map_w, data.max_map_h, width, height);
-            var defs = setup_defs(svg, style);
+            var defs = utils.setup_defs(svg, style);
             generate_markers(defs);
-            var sel = setup_zoom_container(svg, width, height);
+            var out = utils.setup_zoom_container(svg, width, height, [1, 15]),
+		sel = out.sel;
 
             // generate map
             draw_membranes(sel, data.membrane_rectangles, scale);
@@ -243,33 +244,6 @@ define(["vis/scaffold", "lib/d3"], function (scaffold, d3) {
                     return path;
 		};
                 return scale;
-            }
-
-            function setup_zoom_container(svg, w, h) {
-                // set up the container
-                svg.select("#container").remove();
-                var container = svg.append("g")
-                        .attr("id", "container"),
-		    sel = container.append("g"),
-		    zoom = function() {
-			sel.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-		    };
-                container.call(d3.behavior.zoom().scaleExtent([1, 15]).on("zoom", zoom));
-                sel.append("rect")
-                    .attr("class", "overlay")
-                    .attr("width", w)
-                    .attr("height", h)
-                    .attr("style", "stroke:black;fill:none;");
-                return sel;
-            }
-
-            function setup_defs(svg, style) {
-                // add stylesheet
-                svg.select("defs").remove();
-                var defs = svg.append("defs");
-                defs.append("style")
-                    .text(style);
-                return defs;
             }
 
             function generate_markers(defs) {
