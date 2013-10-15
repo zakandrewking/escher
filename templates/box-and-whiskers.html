@@ -14,7 +14,7 @@
 				       css_path: 'css/box-and-whiskers.css' });
           var ex = export_svg();
           d3.select('body').append('button').text('download').on('click', function(d) { ex.download('box_and_whiskers', 'svg', true); });
-          d3.json('data/example/quartiles.json', function(error, d) {
+          d3.json('data/quartiles/quartiles.json', function(error, d) {
               baw.collect_data(d);
           });
       });

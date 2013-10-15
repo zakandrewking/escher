@@ -4,27 +4,50 @@
     <title>scatter</title>
     <script src="js/lib/d3.v3.js"></script>
     <script data-main="js/config.js" src="js/require.js"></script>
+    <style>
+     body {
+       font: 12px sans-serif;
+     }
+     #menus {
+       position:absolute;
+       right:100px;
+       top:20px;
+       width:300px;
+       z-index:10;
+     }
+     .float {
+       float: left;
+     }
+     .menu {
+       width: 90%;
+     }
+     .label {
+       font: 18px sans-serif;
+       width: 10%;
+     }
+    </style>
     <meta charset="utf-8">
   </head>
   <body>
     <div id="menus">
-      <div class="float label">1:</div><div id="menu1" class="menu float"></div>
-      <div class="float label">2:</div><div id="menu2" class="menu float"></div>
+    <div class="float label">1:</div><div id="menu1" class="menu float"></div>
+    <div class="float label">2:</div><div id="menu2" class="menu float"></div>
     </div>
     <script type="text/javascript">
      require(["lib/d3", "vis/scatter", "vis/resize",
               "vis/tooltip", "vis/data-menu"], function(d3, scatter, resize, tooltip, data_menu) {
          var scatter1 = scatter({ fill_screen: true,
-								 tooltip: tooltip }),
+                                 tooltip: tooltip,
+								 css_path: "css/scatter.css" }),
          data_menu1 = data_menu({
            selection: d3.select('#menu1'),
-           getdatafiles: 'data/example',
-           update_callback: function(data) { return scatter1.collect_data(data, 'x', 0); }
+           getdatafiles: 'data/example', // TODO: get better example data
+           update_callback: function(json) { return scatter1.collect_data(json.data, 'x', 0); }
          }),
          data_menu2 = data_menu({
            selection: d3.select('#menu2'),
            getdatafiles: 'data/example',
-           update_callback: function(data) { return scatter1.collect_data(data, 'y', 0); }
+           update_callback: function(json) { return scatter1.collect_data(json.data, 'y', 0); }
          });
          resize.on_resize(scatter.update_size);
        });

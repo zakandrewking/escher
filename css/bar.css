@@ -2,13 +2,13 @@ text {
     font-family: sans-serif;
     font-size: 14px;
 }
-.bar-axis path,
-.bar-axis line {
+.axis path,
+.axis line {
     fill: none;
     stroke: #000;
     shape-rendering: crispEdges;
 }
-.bar-axis {
+.axis {
     font-size: 12px;
 }
 .bar {

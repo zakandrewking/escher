@@ -3,6 +3,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         // set defaults
 	var o = scaffold.set_options(options, {
             margins: {top: 10, right: 10, bottom: 10, left: 20},
+	    plot_padding: {left: 30, bottom: 30, top: 10, right: 10},
 	    selection_is_svg: false,
             fillScreen: false,
             x_axis_label: "",
@@ -16,7 +17,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             title: false,
             is_stacked: false,
             update_hook: false,
-	    css: '' });
+	    css_path: '' });
  
 	var out = scaffold.setup_svg(o.selection, o.selection_is_svg, 
 				     o.margins, o.fill_screen);
@@ -88,7 +89,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             container.append("style")
                 .attr('type', "text/css")
                 .text(o.css);
-            var svg = container.append("g")
+            var sel = container.append("g")
                     .attr("transform", "translate(" + o.margins.left + "," + o.margins.top + ")");
 
             // find x domain
@@ -124,33 +125,28 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             }
 
             var dom = {'y': y_dom,
-                     'x': x_dom},
-
-            x = d3.scale.linear()
-                .range([0, o.width])
-                .domain(x_dom).nice(),
-            y = d3.scale.linear()
-                .range([o.height, 0])
-                .domain(dom.y).nice(),
-            xAxis = d3.svg.axis()
-                .scale(x)
-                .orient("bottom")
-                .ticks(0),
-            yAxis = d3.svg.axis()
-                .scale(y)
-                .orient("left")
-                .tickFormat(d3.format("f"))
-                .ticks(5);
+                       'x': x_dom}
+	    out = scaffold.scale_and_axes(dom.x, dom.y,
+					  o.width, o.height,
+					  { padding: o.plot_padding,
+					    x_ticks: 0,
+					    y_ticks: 5,
+					    y_tick_format: d3.format("f") }),
+	    x = out.x, y = out.y;
+	    scaffold.add_generic_axis('x', o.x_axis_label, sel, out.x_axis, 
+				      o.width, o.height, o.plot_padding);
+	    scaffold.add_generic_axis('y', o.y_axis_label, sel, out.y_axis, 
+				      o.width, o.height, o.plot_padding);
 
             var diff = 0,
-                bar_w = x(2) - x(1) - diff;
+            bar_w = x(2) - x(1) - diff;
 
             for (var j = 0; j < o.layers.length; j++) {
                 var cl = 'bar'+String(j);
-                var bars = svg.selectAll("."+cl)
-                        .data(o.layers[j].data)
-                        .enter().append("g")
-                        .attr("class", "bar "+cl);
+                var bars = sel.selectAll("."+cl)
+                    .data(o.layers[j].data)
+                    .enter().append("g")
+                    .attr("class", "bar "+cl);
                 if (o.is_stacked) {
                     if (j > 0) {
                         bars.attr("transform", function(d, i) {
@@ -163,44 +159,22 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
                     bars.attr("transform", function(d, i) { return "translate(" + (x(i) + o.x_shift*j) + "," + y(d.value) + ")";  });
                 }
                 var rects = bars.append("rect")
-                        .attr("x", 1)
-                        .attr("width", bar_w)
-                        .attr("height", function(d) { return o.height - y(d.value); })
-                        .style("fill", function(d) { if (o.color_scale) return o.color_scale(d.category);
-                                                     else return null; });
+                    .attr("x", 1)
+                    .attr("width", bar_w)
+                    .attr("height", function(d) { return y(dom.y[0]) - y(d.value); })
+                    .style("fill", function(d) { if (o.color_scale) return o.color_scale(d.category);
+                                                 else return null; });
             }
 
-            svg.append("g")
-                .attr("class", "x bar-axis")
-                .attr("transform", "translate(0," + o.height + ")")
-                .call(xAxis)
-                .append("text")
-                .attr("class", "label")
-                .attr("x", o.width)
-                .attr("y", -6)
-                .style("text-anchor", "end")
-                .text(o.x_axis_label);
-
-            svg.append("g")
-                .attr("class", "y bar-axis")
-                .call(yAxis)
-                .append("text")
-                .attr("class", "label")
-                .attr("transform", "rotate(-90)")
-                .attr("y", 6)
-                .attr("dy", ".71em")
-                .style("text-anchor", "end")
-                .text(o.y_axis_label);
-
             if (o.title) {
-                svg.append('text')
+                sel.append('text')
                     .attr('class', 'title')
                     .text(o.title)
                     .attr("transform", "translate("+o.width/2+",10)")
                     .attr("text-anchor", "middle");
             }
 
-            if (o.update_hook) o.update_hook(svg);
+            if (o.update_hook) o.update_hook(sel);
             return this;
         };
 
@@ -213,7 +187,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             } else {
                 o.layers[layer] = {data: json};
             }
-            this.update();
+            update();
 	    return this;
         };
 

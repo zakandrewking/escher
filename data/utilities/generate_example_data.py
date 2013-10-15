@@ -15,5 +15,5 @@ for row in df.T.itertuples(index=False):
                 'Q3': percentile(row, 75)})
 print out
 
-with open("../example/quartiles.json", "w") as f:
+with open("../quartiles/quartiles.json", "w") as f:
     json.dump(out, f)

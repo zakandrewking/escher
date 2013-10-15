@@ -3,20 +3,13 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         // set defaults
         var o = scaffold.set_options(options, {
             margins: {top: 10, right: 10, bottom: 10, left: 20},
+	    plot_padding: {left: 30, bottom: 30, top: 10, right: 10},
             selection_is_svg: false,
             fillScreen: false,
-            x_axis_label: "",
-            y_axis_label: "",
-            x_data_label: '1',
-            y_data_label: '2',
-            x_shift: 4,
-            data_is_object: true,
-            color_scale: false,
-            y_range: false,
+            // data_is_object: true,
             title: false,
-            is_stacked: false,
             update_hook: false,
-            css: '' });
+            css_path: '' });
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
                                      o.margins, o.fill_screen);
@@ -37,34 +30,54 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         };
 
         // definitions
+        function update_size() {            
+	    // o.x.range([1, o.width]);
+            // o.y.range([o.height, 1]);
+
+            // o.xAxis.scale(o.x);
+            // o.yAxis.scale(o.y);
+
+            // o.selection.select('.x.axis')
+            //     .attr("transform", "translate(0," + o.height + ")")
+            //     .call(o.xAxis)
+            //     .select('text')
+            //     .attr("x", o.width);
+            // o.selection.select('.y.axis')
+            //     .call(o.yAxis);
+
+            // o.selection.select(".points").selectAll('path')
+            //     .attr("transform", function (d) {
+            //         return "translate(" + o.x(d.f1) + "," + o.y(d.f2) + ")";
+            //     });
+
+            // o.selection.select(".trendline").select('path')
+            //     .attr("d", o.line([[o.x(o.dom.x[0]), o.y(o.dom.y[0])],
+	    // 			   [o.x(o.dom.x[1]), o.y(o.dom.y[1])]]));
+	    return this;
+        }
         function update() {
-            o.x.range([1, width]);
-            o.y.range([height, 1]);
+	    // reset defs
+	    o.svg.select("defs").remove();
+            o.svg.append("defs").append("style")
+                .attr('type', "text/css")
+                .text(o.css);
 
-            o.xAxis.scale(o.x);
-            o.yAxis.scale(o.y);
+            // clear the container and add again
+            o.svg.select("#scatter-container").remove();
+            var container = o.svg.append("g").attr("id","scatter-container");
+            o.sel = container.attr("transform", "translate(" + o.margins.left + "," + o.margins.top + ")");
 
-            o.selection.select('.x.axis')
-                .attr("transform", "translate(0," + height + ")")
-                .call(o.xAxis)
-                .select('text')
-                .attr("x", width);
-            o.selection.select('.y.axis')
-                .call(o.yAxis);
-
-            o.selection.select(".points").selectAll('path')
-                .attr("transform", function (d) {
-                    return "translate(" + o.x(d.f1) + "," + o.y(d.f2) + ")";
-                });
-
-            o.selection.select(".trendline").select('path')
-                .attr("d", o.line([[o.x(o.dom.x[0]), o.y(o.dom.y[0])], [o.x(o.dom.x[1]), o.y(o.dom.y[1])]]));
+	    var height = o.height, width = o.width,
+	    padding = o.plot_padding;
 
             // assuming only a single layer for now
             // TODO allow for multiple layers
-            if (o.data.length==0) return null;
-            var layer_0 = o.data[0];
-            if (!(layer_0.hasOwnProperty('x') && layer_0.hasOwnProperty('y'))) return null;
+            if (o.layers.length==0) return null;
+            var layer_0 = o.layers[0];
+            if (layer_0.x===undefined || layer_0.y===undefined) {
+		console.log("data hasn't finished loading");
+		return null;
+	    }
 
             var name_x, name_y, f = [], pushed = [];
             for (var i=0; i<layer_0.x.length; i++) {
@@ -100,8 +113,6 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
                          'y': [d3.min(f2nz) / 2,
                                d3.max(f2nz)]};
             }
-            console.log('domain');
-            console.log(o.dom);
 
             f = f.map(function (d) {
                 if (d.f1 < o.dom.x[0]) { d.f1 = o.dom.x[0];  }
@@ -109,57 +120,25 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
                 return d;
             });
 
-            var width = parseFloat(o.selection.style('width')) - o.margins.left - o.margins.right,
-            height = parseFloat(o.selection.style('height')) - o.margins.top - o.margins.bottom;
-
-            o.x = d3.scale.log()
-                .range([1, width])
-                .domain(o.dom.x);
-            o.y = d3.scale.log()
-                .range([height, 1])
-                .domain(o.dom.y);
-
-            o.xAxis = d3.svg.axis()
-                .scale(o.x)
-                .orient("bottom");
-
-            o.yAxis = d3.svg.axis()
-                .scale(o.y)
-                .orient("left");
-
+	    var out = scaffold.scale_and_axes(o.dom.x, o.dom.y, width, height,
+					      { padding: padding,
+						x_is_log: true,
+						y_is_log: true });
+	    o.x = out.x, o.y = out.y;
+	    scaffold.add_generic_axis('x', o.x_axis_label, o.sel, out.x_axis, width, height, padding);
+	    scaffold.add_generic_axis('y', o.y_axis_label, o.sel, out.y_axis, width, height, padding);
+	   
             o.line = d3.svg.line()
                 .x(function(d) { return d[0]; })
                 .y(function(d) { return d[1]; });
 
-            var g = svg.append("g")
+            var g = o.sel.append("g")
                 .attr("class", "legend")
                 .attr("transform", "translate(200, 80)")
                 .attr("width", "300px")
                 .attr("height", "200px");
 
-            svg.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")")
-                .call(o.xAxis)
-                .append("text")
-                .attr("class", "label")
-                .attr("x", width)
-                .attr("y", -6)
-                .style("text-anchor", "end")
-                .text(o.x_axis_label);
-
-            svg.append("g")
-                .attr("class", "y axis")
-                .call(o.yAxis)
-                .append("text")
-                .attr("class", "label")
-                .attr("transform", "rotate(-90)")
-                .attr("y", 6)
-                .attr("dy", ".71em")
-                .style("text-anchor", "end")
-                .text(o.y_axis_label);
-
-            svg.append("g")
+            o.sel.append("g")
                 .attr("class", "points")
                 .selectAll("path")
                 .data(f)
@@ -180,7 +159,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
                 .append("title")
                 .text(function(d) { return d.name; });
 
-            svg.append("g")
+            o.sel.append("g")
                 .attr("class", "trendline")
                 .append("path")
                 .attr("d", o.line([[o.x(o.dom.x[0]), o.y(o.dom.y[0])], [o.x(o.dom.x[1]), o.y(o.dom.y[1])]]));
@@ -188,20 +167,18 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
 
             // setup up cursor tooltip
             var save_key = 83;
-            if (true) cursor_tooltip(svg, width+o.margins.left+o.margins.right,
+            if (true) cursor_tooltip(o.sel, width+o.margins.left+o.margins.right,
                                      height+o.margins.top+o.margins.bottom, o.x, o.y,
                                      save_key);
             return this;
         }
 
-        function collect_data(json, axis, layer) {
-            // TODO take json.options (e.g. json.options.name) into account
-
+        function collect_data(data, axis, layer) {
             if (axis!='x' && axis!='y') console.warn('bad axis: ' + axis);
-
-            if (!o.data[layer]) o.data[layer] = [];
-            o.data[layer][axis] = json.data;
+            if (!o.layers[layer]) o.layers[layer] = {};
+            o.layers[layer][axis] = data;
             update();
+	    return this;
         }
     };
 });

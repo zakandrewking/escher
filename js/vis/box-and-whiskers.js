@@ -47,38 +47,34 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
                 .text(o.css);
 
             var f = o.data,
-		padding = o.plot_padding,
-		width = o.width,
-		height = o.height;
+	    padding = o.plot_padding,
+	    width = o.width,
+	    height = o.height;
 
-            var x = d3.scale.linear()
-                    .range([padding.left, (width - padding.right)])
-                    .domain([0, f.length]);
-
-            var y = d3.scale.linear()
-                    .range([(height - padding.bottom), 1+padding.top])
-                    .domain([d3.min(f, function (d) { return d.min; }),
-                             d3.max(f, function (d) { return d.max; }) ])
-                    .nice();
-
-            var xAxis = d3.svg.axis()
-                    .scale(x)
-                    .orient("bottom");
-
-            var yAxis = d3.svg.axis()
-                    .scale(y)
-                    .orient("left")
-                    .ticks(20);
-
+	    // scale and axes
+	    var x_domain = [-0.5, f.length-0.5],
+	    y_domain = [d3.min(f, function (d) { return d.min; }),
+                        d3.max(f, function (d) { return d.max; }) ],
+	    out = scaffold.scale_and_axes(x_domain, y_domain,
+					  width, height,
+					  {padding: padding,
+					   x_is_log: false,
+					   y_is_log: false,
+					   x_ticks: 4,
+					   y_ticks: 20}),
+	    x = out.x, y = out.y;
+	    scaffold.add_generic_axis('x', 'x axis', o.svg, out.x_axis, width, height, padding);
+	    scaffold.add_generic_axis('y', 'y axis', o.svg, out.y_axis, width, height, padding);
+	    
             var line = d3.svg.line()
-                    .x(function(d) { return d[0]; })
-                    .y(function(d) { return d[1] });
+                .x(function(d) { return d[0]; })
+                .y(function(d) { return d[1] });
 
             var g = o.svg.append("g")
-                    .attr("class", "legend")
-                    .attr("transform", "translate(200, 80)")
-                    .attr("width", "300px")
-                    .attr("height", "200px");
+                .attr("class", "legend")
+                .attr("transform", "translate(200, 80)")
+                .attr("width", "300px")
+                .attr("height", "200px");
 
             // add_legend(g, '10x', 'blue', 0);
             // add_legend(g, '100x', 'red', 1);
@@ -128,29 +124,6 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             // g2.append("text")
             //     .text("max")
             //     .attr("transform", "translate(190,20)");
-
-            o.svg.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0,"+(height-padding.bottom)+")")
-                .call(xAxis)
-                .append("text")
-                .attr("class", "label")
-                .attr("x", width)
-                .attr("y", -6)
-                .style("text-anchor", "end")
-                .text("flux variables");
-
-            o.svg.append("g")
-                .attr("class", "y axis")
-                .attr("transform", "translate("+padding.left+",0)")
-                .call(yAxis)
-                .append("text")
-                .attr("class", "label")
-                .attr("transform", "rotate(-90)")
-                .attr("y", 6)
-                .attr("dy", ".71em")
-                .style("text-anchor", "end")
-                .text("flux");
 
             o.svg.append('g')
                 .selectAll("path")
@@ -216,7 +189,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
                 }
                 o.data = objects;
             }
-            this.update();
+            update();
             return this;
         };
 

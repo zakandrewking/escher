@@ -1,25 +1,5 @@
-body {
-    font: 12px sans-serif;
-}
-#menus {
-    position:absolute;
-    right:100px;
-    top:20px;
-    width:300px;
-    z-index:10;
-}
-.float {
-    float: left;
-}
-.menu {
-    width: 90%;
-}
 .legend {
     font: 18px sans-serif;
-}
-.label {
-    font: 18px sans-serif;
-    width: 10%;
 }
 .axis path,
 .axis line {
@@ -29,7 +9,7 @@ body {
 }
 .trendline {
     stroke: grey;
-    stroke-width; 1px;
+    stroke-width: 1px;
 }
 .cursor-tooltip-circle {
     stroke: none;
