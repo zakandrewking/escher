@@ -3,14 +3,17 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         // set defaults
         var o = scaffold.set_options(options, {
             margins: {top: 10, right: 10, bottom: 10, left: 20},
-	    plot_padding: {left: 30, bottom: 30, top: 10, right: 10},
+	    padding: {left: 30, bottom: 30, top: 10, right: 10},
             selection_is_svg: false,
+	    selection: d3.select('body'),
             fillScreen: false,
             // data_is_object: true,
             title: false,
             update_hook: false,
             css_path: '',
-	    tooltip: false});
+	    tooltip: false,
+	    x_is_log: true,
+	    y_is_log: true });
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
                                      o.margins, o.fill_screen);
@@ -27,33 +30,43 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
 
         return {
             update: update,
+	    update_size: update_size,
             collect_data: collect_data
         };
 
         // definitions
-        function update_size() {            
-	    // o.x.range([1, o.width]);
-            // o.y.range([o.height, 1]);
+        function update_size() {
+	    // update size
+            var out = scaffold.resize_svg(o.selection, o.selection_is_svg,
+					  o.margins, o.fill_screen);
+            o.height = out.height;
+            o.width = out.width;
 
-            // o.xAxis.scale(o.x);
-            // o.yAxis.scale(o.y);
+	    // update scales and axes
+	    out = scaffold.scale_and_axes(o.dom.x, o.dom.y, o.width, o.height,
+					      { padding: o.padding,
+						x_is_log: o.x_is_log,
+						y_is_log: o.y_is_log });
+	    o.x = out.x, o.y = out.y, o.x_axis = out.x_axis, o.y_axis = out.y_axis;
 
-            // o.selection.select('.x.axis')
-            //     .attr("transform", "translate(0," + o.height + ")")
-            //     .call(o.xAxis)
-            //     .select('text')
-            //     .attr("x", o.width);
-            // o.selection.select('.y.axis')
-            //     .call(o.yAxis);
+	    // redraw axes
+            o.sel.select('.x.axis').remove();
+            o.sel.select('.y.axis').remove();
+	    scaffold.add_generic_axis('x', o.x_axis_label, o.sel, o.x_axis, o.width,
+				      o.height, o.padding);
+	    scaffold.add_generic_axis('y', o.y_axis_label, o.sel, o.y_axis, o.width,
+				      o.height, o.padding);
 
-            // o.selection.select(".points").selectAll('path')
-            //     .attr("transform", function (d) {
-            //         return "translate(" + o.x(d.f1) + "," + o.y(d.f2) + ")";
-            //     });
+	    // update points
+            o.sel.select(".points").selectAll('path')
+                .attr("transform", function (d) {
+                    return "translate(" + o.x(d.f1) + "," + o.y(d.f2) + ")";
+                });
 
-            // o.selection.select(".trendline").select('path')
-            //     .attr("d", o.line([[o.x(o.dom.x[0]), o.y(o.dom.y[0])],
-	    // 			   [o.x(o.dom.x[1]), o.y(o.dom.y[1])]]));
+	    // update trendline
+            o.sel.select(".trendline").select('path')
+                .attr("d", o.line([[o.x(o.dom.x[0]), o.y(o.dom.y[0])],
+	    			   [o.x(o.dom.x[1]), o.y(o.dom.y[1])]]));
 	    return this;
         }
         function update() {
@@ -69,7 +82,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             o.sel = container.attr("transform", "translate(" + o.margins.left + "," + o.margins.top + ")");
 
 	    var height = o.height, width = o.width,
-	    padding = o.plot_padding;
+	    padding = o.padding;
 
             // assuming only a single layer for now
             // TODO allow for multiple layers
@@ -124,9 +137,9 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
 	    // add scale and axes
 	    var out = scaffold.scale_and_axes(o.dom.x, o.dom.y, width, height,
 					      { padding: padding,
-						x_is_log: true,
-						y_is_log: true });
-	    o.x = out.x, o.y = out.y;
+						x_is_log: o.x_is_log,
+						y_is_log: o.y_is_log });
+	    o.x = out.x, o.y = out.y, o.x_axis = out.x_axis, o.y_axis = out.y_axis;
 	    scaffold.add_generic_axis('x', o.x_axis_label, o.sel, out.x_axis, width, height, padding);
 	    scaffold.add_generic_axis('y', o.y_axis_label, o.sel, out.y_axis, width, height, padding);
 	   

@@ -2,6 +2,8 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
     /** tooltip.js
 
      (c) Zachary King 2013
+
+     TODO fix to update based on vis/resize.js
      */
 
     return function(options) {

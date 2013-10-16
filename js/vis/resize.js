@@ -7,7 +7,7 @@ define(function () {
         window.onresize = function(event) {
             window.do_resize = true;
         };
-        setInterval( function () {
+        window.setInterval( function () {
             if (window.do_resize) {
                 callback();
                 window.do_resize = false;

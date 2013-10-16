@@ -2,6 +2,7 @@ define(["lib/d3"], function(d3) {
     return {
         set_options: set_options,
         setup_svg: setup_svg,
+	resize_svg: resize_svg,
         load_css: load_css,
         load_files: load_files,
         load_the_file: load_the_file,
@@ -67,30 +68,33 @@ and width, or use the 'fill_screen' option.");
     };
 
     function resize_svg(selection, selection_is_svg, margins, fill_screen) {
-        // returns null
-        var resize = function(f, s, m) {
-            if (f) {
-                s.style('height', (window.innerHeight-margins.bottom)+'px');
-                s.style('width', (window.innerWidth-margins.right)+'px');
-            }
-            var out = height_width_style(f, s, margins);
-            out.svg = s.select('svg')
-                .attr("width", out.width + m.left + m.right)
-                .attr("height", out.height + m.top + m.bottom)
-                .attr('xmlns', "http://www.w3.org/2000/svg");
-            return out;
-        };
+        /** resize_svg(selection, selection_is_svg, margins, fill_screen)
 
+	 Returns object with new 'height' and 'width' keys.
+
+	 */
         var out;
         if (selection_is_svg) {
             out = height_width_attr(selection, margins);
-            out.svg = selection;
         } else if (selection) {
             out = resize(fill_screen, selection, margins);
-        } else {
-            out = resize(fill_screen, d3.select('body').append('div'), margins);
-        }
+	} else console.warn('No selection');
         return out;
+
+	// definitions
+        function resize(f, s, m) {
+            if (f) {
+                s.style('height', (window.innerHeight-m.top)+'px');
+                s.style('width', (window.innerWidth-m.left)+'px');
+                s.style("margin-left", m.left+"px");
+                s.style("margin-top", m.top+"px");
+            }
+            var out = height_width_style(s, margins);
+	    s.select("svg")
+		.attr("height", out.height)
+		.attr("width", out.width);
+            return out;
+        };
     };
 
     function load_css(css_path, callback) {

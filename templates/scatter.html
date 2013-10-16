@@ -49,8 +49,7 @@
            getdatafiles: 'data/example',
            update_callback: function(json) { return scatter1.collect_data(json.data, 'y', 0); }
          });
-         //TODO fix up resize
-         resize.on_resize(scatter.update_size);
+         resize.on_resize(scatter1.update_size);
        });
     </script>
   </body>
