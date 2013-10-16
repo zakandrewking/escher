@@ -32,7 +32,7 @@ define(["./scaffold", "lib/d3"], function(scaffold, d3) {
                 return null;
             });
         } else if (o.datafiles) {
-            load_with_files(datafiles, select_sel, o.update_callback, o.selection);
+            load_with_files(o.datafiles, select_sel, o.update_callback, o.selection);
         } else {
             console.warn('DataMenu: No datafiles given');
         }
