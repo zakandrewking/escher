@@ -9,7 +9,8 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             // data_is_object: true,
             title: false,
             update_hook: false,
-            css_path: '' });
+            css_path: '',
+	    tooltip: false});
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
                                      o.margins, o.fill_screen);
@@ -168,9 +169,9 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
 
             // setup up cursor tooltip
             var save_key = 83;
-            if (true) cursor_tooltip(o.sel, width+o.margins.left+o.margins.right,
-                                     height+o.margins.top+o.margins.bottom, o.x, o.y,
-                                     save_key);
+            if (o.tooltip) o.tooltip.cursor_tooltip(o.sel, width+o.margins.left+o.margins.right,
+						    height+o.margins.top+o.margins.bottom, o.x, o.y,
+						    save_key);
             return this;
         }
 
