@@ -1,35 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
-  <meta charset="utf-8">
-  <title>Knockout</title>
-  <script src="js/libs/d3.v3.js"></script>
-  <script src="js/libs/jquery-latest.min.js" type="text/javascript"></script>
-  <script src="js/libs/vkbeautify.0.99.00.beta.js"></script>
-  <style>
-    .overlay {
-    fill: none;
-    pointer-events: all;
-    }
-  </style>
+<html>
+  <head>
+    <title>Knockout</title>
+    <script src="js/lib/d3.v3.js"></script>
+    <script data-main="js/config.js" src="js/require.js"></script>
+    <style>
+     #status {
+       position:absolute;
+       top:10px;
+       right: 30px;
+       color: red;
+       background-color: white;
+       font-size: 16px
+     }
+    </style>
+    <meta charset="utf-8" />
+  </head>
   <body>
-    <script src="js/metabolic-map/exportsvg.js" type="text/javascript"></script>
-    <script src="js/metabolic-map/main.js" type="text/javascript"></script>
-    <script src="js/metabolic-map/knockout.js" type="text/javascript"></script>
-<script type="text/javascript">
-
-ko = Knockout();
-var on_click = function(reaction) {
-    this.set_status('calculating');
-    ko.add_reaction(reaction);
-    this.reload_flux();
-};
-
-Map().set_flux_source(ko.get_flux)
-    .load("data/maps/simpheny-maps/ijo-central.json")
-    .add_listener('.reaction-label', 'click', on_click)
-    .add_listener('.reaction-path', 'click', on_click)
-    .set_status('HINT: Click a reaction');
-
-</script>
-</body>
+    <script type="text/javascript">
+     require(["lib/d3", "metabolic-map/main", "metabolic-map/knockout"],
+             function(d3, map, knockout) {
+         ko = knockout();
+         var on_click = function(reaction) {
+           this.set_status('calculating');
+           ko.add_reaction(reaction);
+           this.reload_flux();
+         };
+         var m = map({ map_path: "data/maps/simpheny-maps/ijo-central.json", fill_screen: true })
+               .set_flux_source(ko.get_flux);
+	 window.setTimeout(function() {
+                                  m.add_listener('.reaction-label', 'click', on_click)
+                                  .add_listener('.reaction-path', 'click', on_click)
+                                  .set_status('Loading...    (HINT: Click a reaction)');
+	 }, 1000);
+       });
+    </script>
+  </body>
 </html>

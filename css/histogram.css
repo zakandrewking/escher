@@ -1,3 +1,16 @@
+text {
+    font-family: sans-serif;
+    font-size: 14px;
+}
+.axis path,
+.axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+.axis {
+    font-size: 12px;
+}
 .hist-axis path,
 .hist-axis line {
   fill: none;

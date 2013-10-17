@@ -42,7 +42,7 @@ out = {'data': ec_length,
            'type': 'gene length'
            }
       }
-filename = 'ec-gene-length.json'
+filename = '../example/ec-gene-length.json'
 with open(filename, 'w') as f:
         json.dump(out, f)
 
@@ -52,6 +52,6 @@ out = {'data': tm_length,
            'type': 'gene length'
            }
       }
-filename = 'tm-gene-length.json'
+filename = '../example/tm-gene-length.json'
 with open(filename, 'w') as f:
         json.dump(out, f)

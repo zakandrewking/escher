@@ -1,0 +1,47 @@
+body {
+font: 16px sans-serif;
+}
+#menus {
+position:absolute;
+right:100px;
+top:20px;
+width:300px;
+z-index:10;
+}
+.menu {
+width: 90%;
+}
+
+.square-outline {
+    fill: none;
+    stroke-width: 1px;
+    stroke: #333;
+}
+.divider {
+    stroke-width: 1px;
+    stroke: rgb(147, 154, 167);
+    stroke-opacity: 0.2;
+}
+.circle {
+    stroke: rgb(43, 46, 71);
+    stroke-width: 1px;
+    stroke-opacity: 0.95;
+}
+.x-circle {
+    fill: rgb(147, 154, 167);
+    stroke-opacity: 0.5;
+}
+.y-circle {
+    fill: rgb(43, 46, 71);
+    stroke-opacity: 0.95;
+}
+
+.labels {
+    font: 13px sans-serif;
+}
+.x-label {
+    fill: #111;
+}
+.y-label {
+    fill: #111;
+}
