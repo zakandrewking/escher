@@ -12,8 +12,8 @@ getting started
 You can include the visbio.js script in any html document. The only dependency is [d3.js](http://d3js.org/). Include them both like this:
 
 ```html
-<script src="js/lib/d3.v3.js"></script>
-<script src="visbio.js"> </script>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="visbio.min.js"> </script>
 ```
 
 running the server
