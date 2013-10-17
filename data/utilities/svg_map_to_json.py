@@ -124,6 +124,7 @@ def read_simpheny(map):
     metabolite_labels = []
     for t in svg.find(id="Layer_13").find_all('text'): # in all-rxns, this also contains reaction labels
         this_label = {'text': t.text,
+                      'id': t.text,
                       'x': t.attrs['x'],
                       'y': t.attrs['y']}
         if t.text in name_id_dictionary.values():
@@ -195,6 +196,7 @@ def read_bigg(map):
     reaction_labels = []
     for t in svg.find(id="Layer_label_rxn").find_all("text"):
         this_text = {"text":t.text,
+                     "id":t.text,
                      "x":t.attrs["x"],
                      "y":t.attrs["y"]}
         reaction_labels.append(this_text)
