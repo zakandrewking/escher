@@ -1,15 +1,27 @@
 define(["./scaffold", "lib/d3"], function (scaffold, d3) {
+    /** histogram.js
+
+     (c) Zachary King 2013
+
+     TODO add update_size function.
+     
+     */
     return function(options) {
         // set defaults
         var o = scaffold.set_options(options, {
             margins: {top: 10, right: 10, bottom: 10, left: 20},
-            plot_padding: {left: 30, bottom: 30, top: 10, right: 10},
+            padding: {left: 30, bottom: 30, top: 10, right: 10},
+            selection: d3.select('body').append('div'),
             selection_is_svg: false,
-            fillScreen: false,
-            // data_is_object: true,
+            fill_screen: false,
             title: false,
             update_hook: false,
-            css_path: '' });
+            css_path: '',
+            x_axis_label: "",
+            y_axis_label: "",
+            x_data_label: '1',
+            y_data_label: '2',
+            x_shift: 0 });
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
                                      o.margins, o.fill_screen);
@@ -32,40 +44,40 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         // definitions
         function update_size() {
             // // TODO inherit this function
-            // var o = s.height_width(s.fillScreen, s.selection, s.margins);
+            // var o = o.height_width(o.fillScreen, o.selection, o.margins);
             // var height = o.height, width = o.width;
 
-            // var ns = s.selection.select("svg")
-            //         .attr("width", width + s.margins.left + s.margins.right)
-            //         .attr("height", height + s.margins.top + s.margins.bottom);
-            // ns.select('g').attr("transform", "translate(" + s.margins.left + "," + s.margins.top + ")");
+            // var ns = o.selection.select("svg")
+            //         .attr("width", width + o.margins.left + o.margins.right)
+            //         .attr("height", height + o.margins.top + o.margins.bottom);
+            // ns.select('g').attr("transform", "translate(" + o.margins.left + "," + o.margins.top + ")");
 
-            // s.x.range([0, width]);
-            // s.y.range([height, 0]);
+            // o.x.range([0, width]);
+            // o.y.range([height, 0]);
 
-            // s.x_size_scale.range([0, width]);
+            // o.x_size_scale.range([0, width]);
 
-            // s.xAxis.scale(s.x);
-            // s.yAxis.scale(s.y);
+            // o.xAxis.scale(o.x);
+            // o.yAxis.scale(o.y);
 
-            // s.selection.select('.x.hist-axis')
+            // o.selection.select('.x.hist-axis')
             //     .attr("transform", "translate(0," + height + ")")
-            //     .call(s.xAxis)
+            //     .call(o.xAxis)
             //     .select('text')
             //     .attr("x", width);
-            // s.selection.select('.y.hist-axis')
-            //     .call(s.yAxis);
+            // o.selection.select('.y.hist-axis')
+            //     .call(o.yAxis);
 
-            // var bar_w = s.x_size_scale(s.hist_dx) - s.diff - 8;
+            // var bar_w = o.x_size_scale(o.hist_dx) - o.diff - 8;
 
             // for (var i=0; i<s.json.length; i++) {
-            //     s.selection.selectAll(".hist-bar.hist-bar"+String(i))
+            //     o.selection.selectAll(".hist-bar.hist-bar"+String(i))
             //         .attr("transform", function(d) {
-            //             return "translate(" + (s.x(d.x) + s.x_shift*i) + "," + s.y(d.y) + ")";
+            //             return "translate(" + (o.x(d.x) + o.x_shift*i) + "," + o.y(d.y) + ")";
             //         })
             //         .select('rect')
             //         .attr("width", bar_w)
-            //         .attr("height", function(d) { return height - s.y(d.y); });
+            //         .attr("height", function(d) { return height - o.y(d.y); });
             // }
 
             // d3.select(".legend")     //TODO options for legend location
@@ -84,15 +96,16 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             // clear the container and add again
             o.svg.select("#scatter-container").remove();
             var container = o.svg.append("g").attr("id","scatter-container");
-            o.sel = container.attr("transform", "translate(" + o.margins.left + "," + o.margins.top + ")");
+            o.sel = container.attr("transform", "translate(" + o.margins.left + "," + 
+				   o.margins.top + ")");
 
-            var json = o.json,
+            var layers = o.layers,
                 height = o.height, width = o.width;
 
             // check data
             var i=-1;
-            while(++i < json.length) {
-                if (json[i]===undefined) {
+            while(++i < layers.length) {
+                if (layers[i]===undefined) {
                     console.log('waiting for all indices');
                     return;
                 }
@@ -100,21 +113,28 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
 
             // find x domain
             var x_dom = [
-                d3.min(json, function(a) {
-                    return d3.min(a.data, function(d) { return d.x; });
+                d3.min(layers, function(a) {
+                    return d3.min(a, function(d) { return d.x; });
                 }),
-                d3.max(json, function(a) {
-                    return d3.max(a.data, function(d) { return d.x; });
+                d3.max(layers, function(a) {
+                    return d3.max(a, function(d) { return d.x; });
                 })
             ];
-            s.dom = {'x': x_dom};
+            o.dom = {'x': x_dom};
+
+            // generate x scale
+            var out = scaffold.scale_and_axes(o.dom.x, null, width, height,
+                                              { padding: o.padding,
+                                                x_is_log: true,
+                                                x_ticks: 15});
+            o.x = out.x;
 
             // Generate a histogram using twenty uniformly-spaced bins.
             var layout = [],
                 hist = d3.layout.histogram()
                     .value(function (d) { return d.x; })
-                    .bins(x_ticks);
-            layout = json.map(function(j) { return hist(j.data); });
+                    .bins(o.x.ticks(15));
+            layout = layers.map(function(j) { return hist(j); });
 
             var y_dom = [
                 0,
@@ -122,78 +142,79 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
                     return d3.max(a, function(d) { return d.y; });
                 })
             ];
-            s.dom.y = y_dom;
+            o.dom.y = y_dom;
 
             // add scale and axes
-            var out = scaffold.scale_and_axes(o.dom.x, o.dom.y, width, height,
-                                              { padding: padding,
-                                                x_is_log: true,
-                                                y_is_log: true,
-                                                x_ticks: 15});
+            out = scaffold.scale_and_axes(o.dom.x, o.dom.y, width, height,
+                                          { padding: o.padding,
+                                            x_is_log: true,
+                                            y_is_log: true,
+                                            x_ticks: 15});
             o.x = out.x, o.y = out.y;
-            scaffold.add_generic_axis('x', o.x_axis_label, o.sel, out.x_axis, width, height, padding);
-            scaffold.add_generic_axis('y', o.y_axis_label, o.sel, out.y_axis, width, height, padding);
+            scaffold.add_generic_axis('x', o.x_axis_label, o.sel, out.x_axis, width, height, o.padding);
+            scaffold.add_generic_axis('y', o.y_axis_label, o.sel, out.y_axis, width, height, o.padding);
 
-            s.x_size_scale = d3.scale.linear()
+            o.x_size_scale = d3.scale.linear()
                 .range([0, width])
-                .domain([0, s.dom.x[1] - s.dom.x[0]]);
+                .domain([0, o.dom.x[1] - o.dom.x[0]]);
 
-            s.xAxis = d3.svg.axis()
-                .scale(s.x)
+            o.xAxis = d3.svg.axis()
+                .scale(o.x)
                 .orient("bottom")
                 .ticks(15);         //TODO make sure this matches x_ticks
 
-            s.yAxis = d3.svg.axis()
-                .scale(s.y)
+            o.yAxis = d3.svg.axis()
+                .scale(o.y)
                 .orient("left")
                 .ticks(20);
 
 
-            var legend = svg.append("g")
+            var legend = o.sel.append("g")
                     .attr("class", "legend")
                     .attr("transform", "translate(" + (width-300) + ", 80)")
                     .attr("width", "300px")
                     .attr("height", "200px");
 
-            s.diff = 10;
-            s.hist_dx = layout[0][0].dx;
-            var bar_w = s.x_size_scale(s.hist_dx) - s.diff - 8;
+            o.diff = 0;
+            o.hist_dx = layout[0][0].dx;
+            var bar_w = o.x_size_scale(o.hist_dx) - o.diff;
+	    console.log(o.y);
 
             for (var j=0; j<layout.length; j++) {
                 var cl = 'hist-bar'+String(j);
-                var bars = svg.selectAll("."+cl)
+                var bars = o.sel.selectAll("."+cl)
                         .data(layout[j])
                         .enter().append("g")
                         .attr("class", "hist-bar "+cl)
-                        .attr("transform", function(d) { return "translate(" + (s.x(d.x)+s.x_shift*j) + "," + s.y(d.y) + ")"; });
+                        .attr("transform", function(d) { return "translate(" + (o.x(d.x)+o.x_shift*j) + "," + o.y(d.y) + ")"; });
                 bars.append("rect")
                     .attr("x", 1)
                     .attr("width", bar_w)
-                    .attr("height", function(d) { return height - s.y(d.y); });
-                add_legend(legend, json[j].options.name, j, 'legend '+cl);
+                    .attr("height", function(d) { return height - o.y(d.y); });
+                add_legend(legend, layers[j].options.name, j, 'legend '+cl);
             }
 
-            svg.append("g")
+            o.sel.append("g")
                 .attr("class", "x hist-axis")
                 .attr("transform", "translate(0," + height + ")")
-                .call(s.xAxis)
+                .call(o.xAxis)
                 .append("text")
                 .attr("class", "label")
                 .attr("x", width)
                 .attr("y", -6)
                 .style("text-anchor", "end")
-                .text(s.x_axis_label);
+                .text(o.x_axis_label);
 
-            svg.append("g")
+            o.sel.append("g")
                 .attr("class", "y hist-axis")
-                .call(s.yAxis)
+                .call(o.yAxis)
                 .append("text")
                 .attr("class", "label")
                 .attr("transform", "rotate(-90)")
                 .attr("y", 6)
                 .attr("dy", ".71em")
                 .style("text-anchor", "end")
-                .text(s.y_axis_label);
+                .text(o.y_axis_label);
 
             function add_legend(a, t, i, cl) {
                 var g = a.append("g")
@@ -207,32 +228,12 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
                     .attr("class", cl);
             }
             return this;
-        };
+        }
 
-        s.setup = function (options) {
-            if (typeof options === 'undefined') options = {};
-            s.selection = options.selection || d3.select('body').append('div');
-            s.margins = options.margins  || {top: 20, right: 20, bottom: 30, left: 50};
-            s.fillScreen = options.fillScreen || false;
-            s.x_axis_label = options.x_axis_label || "";
-            s.y_axis_label = options.y_axis_label || "";
-            s.x_data_label = options.x_data_label || '1',
-            s.y_data_label = options.y_data_label || '2';
-            s.x_shift      = options.x_shift      || 4;
-            s.json = [];
-            return this;
-        };
-
-        s.collect_data = function(json, layer) {
-            s.json[layer] = json;
-            s.update(s.json);
-        };
-
-        return {
-            setup: s.setup,
-            update: s.update,
-            update_size: s.update_size,
-            collect_data: s.collect_data
+        function collect_data(json, layer) {
+            o.layers[layer] = json.data;
+            update();
+	    return this;
         };
     };
 });

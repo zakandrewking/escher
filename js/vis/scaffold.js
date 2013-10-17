@@ -163,19 +163,23 @@ and width, or use the 'fill_screen' option.");
 	out.x.range([o.padding.left, (width - o.padding.right)])
 	    .domain(x_domain);
 
-	// y scale
-	if (o.y_is_log) out.y = d3.scale.log();
-	else out.y = d3.scale.linear();
-	out.y.range([(height - o.padding.bottom), 1+o.padding.top])
-	    .domain(y_domain);
+	if (y_domain) {
+	    // y scale
+	    if (o.y_is_log) out.y = d3.scale.log();
+	    else out.y = d3.scale.linear();
+	    out.y.range([(height - o.padding.bottom), 1+o.padding.top])
+		.domain(y_domain);
+	} else out.y = null;
 
-	// x axis
-        out.x_axis = d3.svg.axis()
-            .scale(out.x)
-            .orient("bottom");
-	if (o.x_nice) out.x_axis.nice();
-	if (o.x_ticks) out.x_axis.ticks(o.x_ticks);
-	if (o.x_tick_format) out.x_axis.tickFormat(x_tick_format);
+	if (x_domain) {
+	    // x axis
+            out.x_axis = d3.svg.axis()
+		.scale(out.x)
+		.orient("bottom");
+	    if (o.x_nice) out.x_axis.nice();
+	    if (o.x_ticks) out.x_axis.ticks(o.x_ticks);
+	    if (o.x_tick_format) out.x_axis.tickFormat(o.x_tick_format);
+	} else out.x = null;
 
 	// y axis
         out.y_axis = d3.svg.axis()
