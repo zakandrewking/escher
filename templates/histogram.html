@@ -1,77 +1,53 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<title>histogram</title>
-<script src="js/libs/d3.v3.js"></script>
-<script src="js/libs/jquery-latest.min.js" type="text/javascript"></script>
-<script src="js/vis/histogram.js" type="text/javascript"></script>
-<script src="js/vis/data-menu.js" type="text/javascript"></script>
-<script src="js/vis/resize.js" type="text/javascript"></script>
-<link rel="stylesheet" type="text/css" href="css/histogram.css">
-<style>
-body {
-  font: 10px sans-serif;
-}
-#menus {
-position:absolute;
-right:100px;
-top:20px;
-width:200px;
-z-index:10;
-}
-.menu {
-width: 90%;
-}
-.float {
-float: left;
-}
-svg {
-position: absolute;
-left:0px;
-top:0px;
-}
-.legend {
-font: 18px sans-serif;
-}
-.label {
-font: 18px sans-serif;
-width: 10%;
-}
-<!-- .axis path, -->
-<!-- .axis line { -->
-<!--   fill: none; -->
-<!--   stroke: #000; -->
-<!--   shape-rendering: crispEdges; -->
-<!-- } -->
-<!-- .bar0 { -->
-<!--   fill: blue; -->
-<!--   opacity: 0.6; -->
-<!--   shape-rendering: crispEdges; -->
-<!--   stroke: #000; -->
-<!-- } -->
-<!-- .bar1 { -->
-<!--   fill: red; -->
-<!--   opacity: 0.6; -->
-<!--   shape-rendering: crispEdges; -->
-<!--   stroke: #000; -->
-<!-- } -->
-</style>
-<body>
-<div id="menus">
-  <div class="float label">1:</div><div id="menu1" class="menu float"></div>
-  <div class="float label">2:</div><div id="menu2" class="menu float"></div>
-</div>
-<script>
-histogram = Histogram().setup({ fillScreen: true });
-data_menu1 = DataMenu().setup({ 
-    selection: d3.select('#menu1'),
-    getdatafiles: 'data/example',
-    update_callback: function(data) { return histogram.collect_data(data, 0); }
-});
-data_menu2 = DataMenu().setup({
-    selection: d3.select('#menu2'),
-    getdatafiles: 'data/example',
-    update_callback: function(data) { return histogram.collect_data(data, 1); }
-});
-update_on_resize(histogram.update_size);
-</script>
-</body>
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>histogram</title>
+    <script src="js/lib/d3.v3.js"></script>
+    <script data-main="js/config.js" src="js/require.js"></script>
+    <meta charset="utf-8">
+    <style>
+     body {
+       font: 12px sans-serif;
+     }
+     #menus {
+       position:absolute;
+       right:100px;
+       top:20px;
+       width:300px;
+       z-index:10;
+     }
+     .float {
+       float: left;
+     }
+     .menu {
+       width: 90%;
+     }
+     .label {
+       font: 18px sans-serif;
+       width: 10%;
+     }
+    </style>
+  </head>
+  <body>
+    <div id="menus">
+      <div class="float label">1:</div><div id="menu1" class="menu float"></div>
+      <div class="float label">2:</div><div id="menu2" class="menu float"></div>
+    </div>
+    <script>
+     require(["lib/d3", "vis/histogram", "vis/data-menu"], function(d3, histogram, data_menu) {
+       histogram1 = histogram({ fill_screen: true,
+                               css_path: "css/histogram.css" });
+       data_menu1 = data_menu({
+         selection: d3.select('#menu1'),
+         getdatafiles: 'data/example',
+         update_callback: function(data) { return histogram1.collect_data(data, 0); }
+       });
+       data_menu2 = data_menu({
+         selection: d3.select('#menu2'),
+         getdatafiles: 'data/example',
+         update_callback: function(data) { return histogram1.collect_data(data, 1); }
+       });
+     });
+    </script>
+  </body>
+</html>

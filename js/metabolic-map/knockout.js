@@ -1,35 +1,38 @@
-var Knockout = function() {
+define(["vis/scaffold", "lib/d3"], function (scaffold, d3) {
+    return function(options) {
+        // set defaults
+        var o = scaffold.set_options(options, {});
+        o.reactions = {};
+        o.latest_flux = [];
+        o.latest_objective_value = [];
 
-    var m = {};
-    m.reactions = {};
-    m.latest_flux = [];
-    m.latest_objective_value = [];
+        return {
+            add_reaction: add_reaction,
+            get_flux: get_flux
+        };
 
-    m.add_reaction = function(reaction) {
-	m.reactions[reaction] = true;
+	// definitions
+        function add_reaction(reaction) {
+            o.reactions[reaction] = true;
+        }
+        function get_flux(callback) {
+            var url = "/knockout-map/";
+            var i = -1, start="?",
+                k = Object.keys(o.reactions);
+            while (++i < k.length) {
+                if (i>0) start = "&";
+                url += start + "reactions[]=" + encodeURIComponent(k[i]);
+                console.log(url);
+            }
+            d3.json(url, function(error, json) {
+                if (error) return console.warn(error);
+                var flux = json.x,
+                    objective = json.f;
+                o.latest_flux = flux;
+                o.latest_objective_value = objective;
+                callback([flux], objective > 1e-7, objective);
+		return null;
+            });
+        }
     };
-
-    m.get_flux = function(callback) {
-	var url = "/knockout-map/";
-	var i = -1, start="?",
-	    k = Object.keys(m.reactions);
-	while (++i < k.length) {
-	    if (i>0) start = "&";
-	    url += start + "reactions[]=" + encodeURIComponent(k[i]);
-	    console.log(url);
-	}
-	d3.json(url, function(error, json) {
-	    if (error) return console.warn(error);
-	    var flux = json.x,
-		objective = json.f;
-	    m.latest_flux = flux;
-	    m.latest_objective_value = objective;
-	    callback([flux], objective > 1e-7, objective);
-	});
-    };
-
-    return {
-	add_reaction: m.add_reaction,
-        get_flux: m.get_flux
-    };
-};
+});
