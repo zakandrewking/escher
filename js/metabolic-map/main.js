@@ -18,13 +18,20 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
         o.height = out.height;
         o.width = out.width;
 
+	// listeners
+	o.listeners = {};
+
         var files_to_load = [{file: o.css_path, callback: set_css },
                              {file: o.map_path, callback: set_map },
                              {file: o.flux_path,  callback: function(e, f) { set_flux(e, f, 0); } },
                              {file: o.flux2_path, callback: function(e, f) { set_flux(e, f, 1); } } ];
-        scaffold.load_files(files_to_load, update);
+        scaffold.load_files(files_to_load, setup);
 
-        return { update: update };
+        return { set_flux_source: set_flux_source,
+		 add_listener: add_listener,
+		 remove_listener: remove_listener,
+		 reload_flux: reload_flux,
+		 set_status: set_status };
 
         // Definitions
         function set_css(error, css) {
@@ -40,152 +47,128 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             if (index==0) o.flux = flux;
             else if (index==1) o.flux2 = flux;
         };
-        function update() {
-            var data = o.map_data,
-                style = o.css,
-                flux = o.flux,
-                flux2 = o.flux2,
-                metabolites = o.metabolites,
-                metabolites2 = o.metabolites2,
-                svg = o.svg,
-                width = o.width,
-                height = o.height;
-
-            var decimal_format = d3.format('.1f'),
-                decimal_format_3 = d3.format('.3f'),
-                has_flux = false,
-                has_flux_comparison = false,
-                has_metabolites = false,
-                has_metabolite_deviation = false,
-                style_variables = get_style_variables(style);
-
-            // parse the data objects
-            if (flux) {
-                has_flux = true;
-                data = parse_flux_1(data, flux);
-                if (flux2) {
-                    has_flux_comparison = true;
-                    data = parse_flux_2(data, flux2);
+        function set_flux_source(fn) {
+            o.flux_source = fn;
+	    reload_flux();
+            return this;
+        };
+        function reload_flux() {
+            o.flux_source(function (fluxes, is_viable, objective) {
+                if (!is_viable) {
+                    set_status('cell is dead :\'(');
+                    fluxes = [];
+                } else if (objective) {
+                    set_status('objective: ' + d3.format('.3f')(objective) + "    (HINT: Click a reaction)");
                 }
-            }
-            if (metabolites) {
-                has_metabolites = true;
-                data = parse_metabolites_1(data, metabolites);
-                if (metabolites2) {
-                    has_metabolite_deviation = true;
-                    data = parse_metabolites_2(data, metabolites2);
-                }
-            }
+                o.map_data = flux_to_data(o.map_data, fluxes, null, null);
+		o.has_metabolites = false; o.has_metabolite_deviation = false;
+                update();
+
+            });
+            return this;
+        }
+        function remove_listener(target, type) {
+            /**
+             * Remove a listener.
+             */
+
+            // delete the saved listener
+            delete o.listeners[target][type];
+            // removed from selection by applying null
+            apply_a_listener(target, type, null);
+            return this;
+        }
+        function apply_a_listener(target, type, callback, context) {
+            /**
+             Apply a single listener. To register multiple listeners for the same
+             event type, the type may be followed by an optional namespace, such
+             as "click.foo" and "click.bar".
+
+             */
+
+            // If callback is null, pass the null through to remove the listener.
+	    console.log(d3.selectAll(target)[0].length);
+            var new_callback = callback;
+            if (callback!=null) new_callback = function(d) { callback.call(context, d.id); };
+            d3.selectAll(target).on(type, new_callback);
+        }
+        function apply_listeners() {
+            /**
+             Update all saved listeners.
+
+             */
+
+            for (var target in o.listeners)
+                for (var type in o.listeners[target])
+                    apply_a_listener(target, type,
+                                       o.listeners[target][type].callback,
+                                       o.listeners[target][type].context);
+        }
+        function add_listener(target, type, callback) {
+            /**
+             Save a new listener, and apply it.
+
+             */
+            console.log('adding listener');
+            // save listener
+            if (!o.listeners.hasOwnProperty(target))
+                o.listeners[target] = {};
+            o.listeners[target][type] = {'callback': callback, 'context': this};
+            // apply the listener
+            apply_a_listener(target, type, callback, this);
+            return this;
+        }
+	function set_status(status) {
+	    var t = d3.select('body').select('#status');
+	    if (t.empty()) t = d3.select('body')
+		.append('text')
+		.attr('id', 'status');
+	    t.text(status);
+	    return this;
+	}
+	function setup() {
+            o.decimal_format = d3.format('.1f');
+            o.decimal_format_3 = d3.format('.3f');
+            o.style_variables = get_style_variables(o.style);	   
 
             // set up svg and svg definitions
-            var scale = define_scales(data.max_map_w, data.max_map_h, width, height);
-            var defs = utils.setup_defs(svg, style);
+            o.scale = define_scales(o.map_data.max_map_w,
+				      o.map_data.max_map_h,
+				      o.width, o.height);
+            var defs = utils.setup_defs(o.svg, o.css);
             generate_markers(defs);
-            var out = utils.setup_zoom_container(svg, width, height, [1, 15]),
-		sel = out.sel;
 
-            // generate map
-            draw_membranes(sel, data.membrane_rectangles, scale);
-            if (data.hasOwnProperty("metabolite_circles")) {
-                draw_metabolite_circles(sel, data.metabolite_circles, scale,
-                                        has_metabolites, has_metabolite_deviation);
-            } else if (data.hasOwnProperty("metabolite_paths")) {
-                if (has_metabolites) { alert('metabolites do not render w simpheny maps'); }
-                draw_metabolite_paths(sel, data.metabolite_paths, scale);
+            var out = utils.setup_zoom_container(o.svg, o.width, o.height, [1, 15]);
+            o.sel = out.sel;
+
+            // parse the data objects
+	    o.has_flux = false; o.has_flux_comparison = false;
+	    o.has_metabolites = false; o.has_metabolite_deviation = false;
+            if (o.flux) {
+                o.has_flux = true;
+                o.map_data = parse_flux_1(o.map_data, o.flux);
+                if (o.flux2) {
+                    o.has_flux_comparison = true;
+                    o.map_data = parse_flux_2(o.map_data, o.flux2);
+                }
             }
-            draw_reaction_labels(sel, data.reaction_labels, scale, has_flux, 
-				 has_flux_comparison, style_variables);
-	    draw_labels(sel, "misc-labels", data.misc_labels, scale);
-	    draw_metabolite_labels(sel, data.metabolite_labels, scale,
-				   has_metabolites, has_metabolite_deviation,
-				   decimal_format);
-            draw_reaction_paths(sel, data.reaction_paths, scale, has_flux);
+            if (o.metabolites) {
+                o.has_metabolites = true;
+                o.map_data = parse_metabolites_1(o.map_data, o.metabolites);
+                if (o.metabolites2) {
+                    o.has_metabolite_deviation = true;
+                    o.map_data = parse_metabolites_2(o.map_data, o.metabolites2);
+                }
+            }
 
-            // definitions
+	    update();
+
+	    // setup() definitions
             function get_style_variables(style) {
                 return [];
 
                 // var r = new RegExp("/\*(a-zA-Z)+\*/");
             }
-
-            function parse_flux_1(data, flux) {
-                data.reaction_paths = data.reaction_paths.map( function(o) {
-                    // console.log(d3.keys(flux));
-                    if (o.id in flux) {
-                        o.flux = parseFloat(flux[o.id]);
-                    }
-                    // else { console.log(o.id) }
-                    return o;
-                });
-                data.reaction_labels = data.reaction_labels.map( function(o) {
-                    if (o.text in flux) {
-                        // TODO: make sure text==id
-                        o.flux = parseFloat(flux[o.text]);
-                    }
-                    return o;
-                });
-                return data;
-            }
-
-            function parse_flux_2(data, flux2) {
-                data.reaction_paths = data.reaction_paths.map( function(o) {
-                    if (o.id in flux2 && o.flux) {
-                        o.flux = (parseFloat(flux2[o.id]) - o.flux);
-                    }
-                    return o;
-                });
-                data.reaction_labels = data.reaction_labels.map( function(o) {
-                    if (o.flux) o.flux1 = o.flux;
-                    else o.flux1 = 0;
-                    if (o.text in flux2) o.flux2 = parseFloat(flux2[o.text]);
-                    else o.flux2 = 0;
-                    o.flux = (o.flux2 - o.flux1);
-                    return o;
-                });
-                return data;
-            }
-
-            function parse_metabolites_1(data, metabolites) {
-                var skip_these_metabolites = []; //
-                var do_not_size_these_metabolites = ['nad','nadp','nadh','nadph','atp','adp','coa','accoa'];
-                data.metabolite_circles = data.metabolite_circles.map( function(o) {
-                    if (o.id in metabolites && skip_these_metabolites.indexOf(o.id)==-1) {
-                        o.metabolite_concentration = parseFloat(metabolites[o.id]);
-                        if (do_not_size_these_metabolites.indexOf(o.id)>=0) {
-                            o.should_size = false;
-                            o.should_color = true;
-                        } else {
-                            o.should_size = true;
-                            o.should_color = false;
-                        }
-                    }
-                    return o;
-                });
-                data.metabolite_labels = data.metabolite_labels.map( function(o) {
-                    if (o.text in metabolites) {
-                        o.metabolite_concentration = parseFloat(metabolites[o.text]);
-                    }
-                    return o;
-                });
-                return data;
-            }
-
-            function parse_metabolites_2(data, metabolites) {
-                data.metabolite_circles = data.metabolite_circles.map( function(o) {
-                    if (o.id in metabolites) {
-                        o.metabolite_deviation = parseFloat(metabolites[o.id]);
-                    }
-                    return o;
-                });
-                data.metabolite_labels = data.metabolite_labels.map( function(o) {
-                    if (o.text in metabolites) {
-                        o.metabolite_deviation = parseFloat(metabolites[o.text]);
-                    }
-                    return o;
-                });
-                return data;
-            }
-
             function define_scales(map_w, map_h, w, h) {
                 var factor = Math.min(w/map_w, h/map_h),
                     scale = {};
@@ -218,34 +201,33 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                     .range([15, 200]),
                 scale.metabolite_color = d3.scale.linear()
                     .domain([0, 1.2])
-                    .range(["#FEF0D9", "#B30000"]);	
-		scale.scale_path = function(path) {
+                    .range(["#FEF0D9", "#B30000"]);
+                scale.scale_path = function(path) {
                     var x_fn = scale.x, y_fn = scale.y;
                     // TODO: scale arrow width
                     var str = d3.format(".2f"),
-			path = path.replace(/(M|L)([0-9-.]+),?\s*([0-9-.]+)/g, function (match, p0, p1, p2) {
-			    return p0 + [str(x_fn(parseFloat(p1))), str(y_fn(parseFloat(p2)))].join(', ');
-			}),
-			reg = /C([0-9-.]+),?\s*([0-9-.]+)\s*([0-9-.]+),?\s*([0-9-.]+)\s*([0-9-.]+),?\s*([0-9-.]+)/g;
+                        path = path.replace(/(M|L)([0-9-.]+),?\s*([0-9-.]+)/g, function (match, p0, p1, p2) {
+                            return p0 + [str(x_fn(parseFloat(p1))), str(y_fn(parseFloat(p2)))].join(', ');
+                        }),
+                        reg = /C([0-9-.]+),?\s*([0-9-.]+)\s*([0-9-.]+),?\s*([0-9-.]+)\s*([0-9-.]+),?\s*([0-9-.]+)/g;
                     path = path.replace(reg, function (match, p1, p2, p3, p4, p5, p6) {
-			return 'C'+str(x_fn(parseFloat(p1)))+','+
-			    str(y_fn(parseFloat(p2)))+' '+
-			    str(x_fn(parseFloat(p3)))+','+
-			    str(y_fn(parseFloat(p4)))+' '+ 
-			    [str(x_fn(parseFloat(p5)))+','+str(y_fn(parseFloat(p6)))];
-		    });
-                    return path;
-		};
-		scale.scale_decimals = function(path, scale_fn, precision) {
-                    var str = d3.format("."+String(precision)+"f");
-                    path = path.replace(/([0-9.]+)/g, function (match, p1) {
-			return str(scale_fn(parseFloat(p1)));
+                        return 'C'+str(x_fn(parseFloat(p1)))+','+
+                            str(y_fn(parseFloat(p2)))+' '+
+                            str(x_fn(parseFloat(p3)))+','+
+                            str(y_fn(parseFloat(p4)))+' '+
+                            [str(x_fn(parseFloat(p5)))+','+str(y_fn(parseFloat(p6)))];
                     });
                     return path;
-		};
+                };
+                scale.scale_decimals = function(path, scale_fn, precision) {
+                    var str = d3.format("."+String(precision)+"f");
+                    path = path.replace(/([0-9.]+)/g, function (match, p1) {
+                        return str(scale_fn(parseFloat(p1)));
+                    });
+                    return path;
+                };
                 return scale;
             }
-
             function generate_markers(defs) {
                 var g = defs.append('g')
                         .attr('id', 'markers');
@@ -277,7 +259,45 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                     .attr("class", "marker");
                 return defs;
             }
+	}
+        function update(callback) {
+	    if (callback===undefined) callback = function() {};
+	    var sel = o.sel, data = o.map_data, style = o.css,
+		style_variables = o.style_variables, scale = o.scale,
+		width = o.width, height = o.height, decimal_format = o.decimal_format,
+		has_metabolites = o.has_metabolites, has_metabolite_deviation = o.has_metabolite_deviation,
+		has_flux = o.has_flux, has_flux_comparison = o.has_flux_comparison;
 
+	    // remove everything from container
+	    sel.selectAll("*").remove();
+
+	    // add overlay
+            sel.append("rect")
+		.attr("class", "overlay")
+		.attr("width", width)
+		.attr("height", height)
+		.attr("style", "stroke:black;fill:none;");
+
+            // generate map
+            draw_membranes(sel, data.membrane_rectangles, scale);
+            if (data.hasOwnProperty("metabolite_circles")) {
+                draw_metabolite_circles(sel, data.metabolite_circles, scale,
+                                        has_metabolites, has_metabolite_deviation);
+            } else if (data.hasOwnProperty("metabolite_paths")) {
+                if (has_metabolites) { alert('metabolites do not render w simpheny maps'); }
+                draw_metabolite_paths(sel, data.metabolite_paths, scale);
+            }
+            draw_reaction_labels(sel, data.reaction_labels, scale, has_flux,
+                                 has_flux_comparison, style_variables);
+            draw_labels(sel, "misc-labels", data.misc_labels, scale);
+            draw_metabolite_labels(sel, data.metabolite_labels, scale,
+                                   has_metabolites, has_metabolite_deviation,
+                                   decimal_format);
+            draw_reaction_paths(sel, data.reaction_paths, scale, has_flux);
+
+	    apply_listeners();
+	    
+            // update() definitions
             function draw_membranes(selection, membrane_rectangles, scale) {
                 selection.append("g")
                     .attr("id", "membranes")
@@ -334,33 +354,33 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                     append_deviation_arcs(selection, metabolite_circles);
                 }
 
-		// definitions
-		function append_deviation_arcs(selection, metabolite_circles) {
+                // definitions
+                function append_deviation_arcs(selection, metabolite_circles) {
                     var arc_data = metabolite_circles.filter( function(o) {
-			return (o.hasOwnProperty('metabolite_deviation') &&
-				o.hasOwnProperty('metabolite_concentration'));
+                        return (o.hasOwnProperty('metabolite_deviation') &&
+                                o.hasOwnProperty('metabolite_concentration'));
                     });
                     var arc = d3.svg.arc()
                             .startAngle(function(d) { return -d.metabolite_deviation/100/2*2*Math.PI; })
                             .endAngle(function(d) { return d.metabolite_deviation/100/2*2*Math.PI; })
                             .innerRadius(function(d) { return 0; })
                             .outerRadius(function(d) {
-				var s;
-				if (d.should_size) s = scale.size(scale.metabolite_concentration(d.metabolite_concentration));
-				else s = scale.size(0);
-				return s;
+                                var s;
+                                if (d.should_size) s = scale.size(scale.metabolite_concentration(d.metabolite_concentration));
+                                else s = scale.size(0);
+                                return s;
                             });
                     selection.append("g")
-			.attr("id", "metabolite-deviation-arcs")
-			.selectAll("path")
-			.data(arc_data)
-			.enter().append("path")
-			.attr('d', arc)
-			.attr('style', "fill:black;stroke:none;opacity:0.4;")
-			.attr("transform", function(d) {
+                        .attr("id", "metabolite-deviation-arcs")
+                        .selectAll("path")
+                        .data(arc_data)
+                        .enter().append("path")
+                        .attr('d', arc)
+                        .attr('style', "fill:black;stroke:none;opacity:0.4;")
+                        .attr("transform", function(d) {
                             return "translate("+scale.x(d.cx)+","+scale.y(d.cy)+")";
-			});
-		}
+                        });
+                }
             }
 
             function draw_metabolite_paths(selection, metabolite_paths, scale) {
@@ -377,12 +397,13 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             }
 
             function draw_reaction_labels(selection, reaction_labels, scale, has_flux,
-					  has_flux_comparison, style_variables) {
+                                          has_flux_comparison, style_variables) {
                 selection.append("g")
                     .attr("id", "reaction-labels")
                     .selectAll("text")
                     .data(reaction_labels)
                     .enter().append("text")
+		    .attr("class", "reaction-label")
                     .text(function(d) {
                         var t = d.text;
                         if (has_flux_comparison)
@@ -404,8 +425,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                     .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
             }
 
-	    function draw_labels(selection, id, labels, scale) {
-		selection.append("g")
+            function draw_labels(selection, id, labels, scale) {
+                selection.append("g")
                     .attr("id", id)
                     .selectAll("text")
                     .data(labels)
@@ -413,39 +434,39 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                     .text(function(d) { return d.text; })
                     .attr("font-size", scale.size(60))
                     .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
-	    }
+            }
 
-	    function draw_metabolite_labels(selection, metabolite_labels, scale, 
-					    has_metabolites, has_metabolite_deviation, 
-					    decimal_format) {
-		selection.append("g")
+            function draw_metabolite_labels(selection, metabolite_labels, scale,
+                                            has_metabolites, has_metabolite_deviation,
+                                            decimal_format) {
+                selection.append("g")
                     .attr("id", "metabolite-labels")
                     .selectAll("text")
                     .data(metabolite_labels)
                     .enter().append("text")
                     .text(function(d) {
-			var t = d.text;
-			if (isNaN(d.metabolite_concentration)) {}
-			else if (has_metabolite_deviation) {
+                        var t = d.text;
+                        if (isNaN(d.metabolite_concentration)) {}
+                        else if (has_metabolite_deviation) {
                             var a = (isNaN(d.metabolite_concentration) ? "-" : decimal_format(d.metabolite_concentration));
                             var b = (isNaN(d.metabolite_deviation) ? "-" : decimal_format(d.metabolite_deviation));
                             t += " ("+a+" \xB1 "+b+"%)";
-			}
-			else if (d.metabolite_concentration) {
+                        }
+                        else if (d.metabolite_concentration) {
                             var a = (isNaN(d.metabolite_concentration) ? "-" : decimal_format(d.metabolite_concentration));
                             t += " ("+a+")";
-			}
-			else if (has_metabolites) t += " (0)";
-			return t;
+                        }
+                        else if (has_metabolites) t += " (0)";
+                        return t;
                     })
                     .attr("font-size", function(d) {
-			if (d.metabolite_concentration) return scale.size(30);
-			else if (has_metabolites) return scale.size(20);
-			else return scale.size(20);
+                        if (d.metabolite_concentration) return scale.size(30);
+                        else if (has_metabolites) return scale.size(20);
+                        else return scale.size(20);
                     })
                     .style("visibility","visible")
                     .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
-	    }
+            }
 
             function draw_reaction_paths(selection, reaction_paths, scale, has_flux) {
                 selection.append("g")
@@ -454,7 +475,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                     .data(reaction_paths)
                     .enter().append("path")
                     .attr("d", function(d) { return scale.scale_path(d.d); })
-                    .attr("class", function(d) { return d["class"]; })
+                    .attr("class", function(d) { return d["class"] + " reaction-path"; })
                     .attr("style", function(d) {
                         var s = "", sc = scale.flux;
                         // .fill-arrow is for simpheny maps where the path surrounds line and
@@ -498,6 +519,124 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                 d3.select('#markers').selectAll("marker"); //
                 return ""
             }
+        }
+	function flux_to_data (data, fluxes, metabolites, metabolites2) {
+	    o.has_flux = false;
+	    o.has_flux_comparison = false;
+	    o.has_metabolites = false;
+	    o.has_metabolite_deviation = false;
+
+	    var remove_fluxes_from_data = function(d) {
+		d.reaction_paths.map(function(o) {
+		    delete o.flux;
+		    return o;
+		});
+		d.reaction_labels.map(function(o) {
+		    delete o.flux;
+		    return o;
+		});
+		return d;
+	    };
+
+	    // parse the data objects and attach values to map objects
+	    if (fluxes.length > 0) {
+		var flux = fluxes[0];
+		o.has_flux = true;
+		data = parse_flux_1(data, flux);
+		if (fluxes.length > 1) {
+		    var flux2 = fluxes[1];
+		    o.has_flux_comparison = true;
+		    data = parse_flux_2(data, flux2);
+		}
+	    } else {
+		remove_fluxes_from_data(data);
+	    }
+	    if (metabolites) {
+		o.has_metabolites = true;
+		data = parse_metabolites_1(data, metabolites);
+		if (metabolites2) {
+		    o.has_metabolite_deviation = true;
+		    data = parse_metabolites_2(data, metabolites2);
+		}
+	    }
+	    return data;
+	}
+
+        function parse_flux_1(data, flux) {
+            data.reaction_paths = data.reaction_paths.map( function(o) {
+                // console.log(d3.keys(flux));
+                if (o.id in flux) {
+                    o.flux = parseFloat(flux[o.id]);
+                }
+                // else { console.log(o.id) }
+                return o;
+            });
+            data.reaction_labels = data.reaction_labels.map( function(o) {
+                if (o.text in flux) {
+                    // TODO: make sure text==id
+                    o.flux = parseFloat(flux[o.text]);
+                }
+                return o;
+            });
+            return data;
+        }
+
+        function parse_flux_2(data, flux2) {
+            data.reaction_paths = data.reaction_paths.map( function(o) {
+                if (o.id in flux2 && o.flux) {
+                    o.flux = (parseFloat(flux2[o.id]) - o.flux);
+                }
+                return o;
+            });
+            data.reaction_labels = data.reaction_labels.map( function(o) {
+                if (o.flux) o.flux1 = o.flux;
+                else o.flux1 = 0;
+                if (o.text in flux2) o.flux2 = parseFloat(flux2[o.text]);
+                else o.flux2 = 0;
+                o.flux = (o.flux2 - o.flux1);
+                return o;
+            });
+            return data;
+        }
+        function parse_metabolites_1(data, metabolites) {
+            var skip_these_metabolites = []; //
+            var do_not_size_these_metabolites = ['nad','nadp','nadh','nadph','atp','adp','coa','accoa'];
+            data.metabolite_circles = data.metabolite_circles.map( function(o) {
+                if (o.id in metabolites && skip_these_metabolites.indexOf(o.id)==-1) {
+                    o.metabolite_concentration = parseFloat(metabolites[o.id]);
+                    if (do_not_size_these_metabolites.indexOf(o.id)>=0) {
+                        o.should_size = false;
+                        o.should_color = true;
+                    } else {
+                        o.should_size = true;
+                        o.should_color = false;
+                    }
+                }
+                return o;
+            });
+            data.metabolite_labels = data.metabolite_labels.map( function(o) {
+                if (o.text in metabolites) {
+                    o.metabolite_concentration = parseFloat(metabolites[o.text]);
+                }
+                return o;
+            });
+            return data;
+        }
+
+        function parse_metabolites_2(data, metabolites) {
+            data.metabolite_circles = data.metabolite_circles.map( function(o) {
+                if (o.id in metabolites) {
+                    o.metabolite_deviation = parseFloat(metabolites[o.id]);
+                }
+                return o;
+            });
+            data.metabolite_labels = data.metabolite_labels.map( function(o) {
+                if (o.text in metabolites) {
+                    o.metabolite_deviation = parseFloat(metabolites[o.text]);
+                }
+                return o;
+            });
+            return data;
         }
     };
 });

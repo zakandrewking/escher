@@ -16,11 +16,6 @@ define(["lib/d3"], function (d3) {
             },
 	    zoom_behavior = d3.behavior.zoom().scaleExtent(scale_extent).on("zoom", zoom);
         container.call(zoom_behavior);
-        sel.append("rect")
-            .attr("class", "overlay")
-            .attr("width", w)
-            .attr("height", h)
-            .attr("style", "stroke:black;fill:none;");
         return {sel: sel,
 		zoom: zoom_behavior };
     }

@@ -2,8 +2,8 @@ require(["vis/bar", "vis/box-and-whiskers", "vis/category-legend",
          "vis/data-menu", "vis/epistasis", "vis/export-svg",
          "vis/histogram", "vis/resize", "vis/scatter",
          "vis/subplot", "vis/tooltip", "metabolic-map/main",
-	 "builder/main"],
-        function(bar, baw, cl, dm, ep, ev, hist, re, sc, sp, tt, mm, bu) {
+	 "metabolic-map/knockout", "builder/main"],
+        function(bar, baw, cl, dm, ep, ev, hist, re, sc, sp, tt, mm, bu, ko) {
             window.visbio = { bar: bar,
                               box_and_whiskers: baw,
                               category_legend: cl,
@@ -16,5 +16,7 @@ require(["vis/bar", "vis/box-and-whiskers", "vis/category-legend",
                               subplot: sp,
                               tooltip: tt,
 			      metabolic_map: mm,
-			      builder: bu };
+			      builder: bu,
+			      knockout: ko };
         });
+
