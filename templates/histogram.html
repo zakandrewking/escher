@@ -5,25 +5,29 @@
     <script src="js/lib/d3.v3.js"></script>
     <script data-main="js/config.js" src="js/require.js"></script>
     <meta charset="utf-8">
+    <style>
+     body {
+       font: 12px sans-serif;
+     }
+     #menus {
+       position:absolute;
+       right:100px;
+       top:20px;
+       width:300px;
+       z-index:10;
+     }
+     .float {
+       float: left;
+     }
+     .menu {
+       width: 90%;
+     }
+     .label {
+       font: 18px sans-serif;
+       width: 10%;
+     }
+    </style>
   </head>
-  <style>
-   body {
-     font: 10px sans-serif;
-   }
-   #menus {
-     position:absolute;
-     right:100px;
-     top:20px;
-     width:200px;
-     z-index:10;
-   }
-   .menu {
-     width: 90%;
-   }
-   .float {
-     float: left;
-   }
-  </style>
   <body>
     <div id="menus">
       <div class="float label">1:</div><div id="menu1" class="menu float"></div>
@@ -31,7 +35,8 @@
     </div>
     <script>
      require(["lib/d3", "vis/histogram", "vis/data-menu"], function(d3, histogram, data_menu) {
-       histogram1 = histogram({ fill_screen: true });
+       histogram1 = histogram({ fill_screen: true,
+                               css_path: "css/histogram.css" });
        data_menu1 = data_menu({
          selection: d3.select('#menu1'),
          getdatafiles: 'data/example',
