@@ -25,6 +25,7 @@ define(["lib/d3"], function (d3) {
         svg.select("defs").remove();
         var defs = svg.append("defs");
         defs.append("style")
+            .attr("type", "text/css")
             .text(style);
         return defs;
     }
