@@ -7,7 +7,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             fillScreen: false,
             update_hook: false,
             css_path: "css/metabolic-map.css",
-            map_path: "data/maps/simpheny-maps/ijo-central.json",
+            map_path: null,
+	    map_json: null,
             flux_path: false,
             flux2_path: false,
             css: '' });
@@ -22,9 +23,16 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
 	o.listeners = {};
 
         var files_to_load = [{file: o.css_path, callback: set_css },
-                             {file: o.map_path, callback: set_map },
                              {file: o.flux_path,  callback: function(e, f) { set_flux(e, f, 0); } },
                              {file: o.flux2_path, callback: function(e, f) { set_flux(e, f, 1); } } ];
+	if (o.map_json) {
+	    set_map(null, o.map_json);
+	    if (o.map_path) console.warn("map_json option overrides map_path");
+	} else if (o.map_path) {
+	    files_to_load.push({file: o.map_path, callback: set_map });
+	} else {
+	    return console.warn("No map provided. Set either map_json or map_path");
+	}
         scaffold.load_files(files_to_load, setup);
 
         return { set_flux_source: set_flux_source,
