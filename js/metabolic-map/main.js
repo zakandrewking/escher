@@ -8,9 +8,11 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             update_hook: false,
             css_path: "css/metabolic-map.css",
             map_path: null,
-	    map_json: null,
+	        map_json: null,
             flux_path: false,
+            flux: null,
             flux2_path: false,
+            flux2: null,
             css: '' });
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
@@ -19,20 +21,17 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
         o.height = out.height;
         o.width = out.width;
 
-	// listeners
-	o.listeners = {};
+	    // listeners
+	    o.listeners = {};
 
-        var files_to_load = [{file: o.css_path, callback: set_css },
-                             {file: o.flux_path,  callback: function(e, f) { set_flux(e, f, 0); } },
-                             {file: o.flux2_path, callback: function(e, f) { set_flux(e, f, 1); } } ];
-	if (o.map_json) {
-	    set_map(null, o.map_json);
-	    if (o.map_path) console.warn("map_json option overrides map_path");
-	} else if (o.map_path) {
-	    files_to_load.push({file: o.map_path, callback: set_map });
-	} else {
-	    return console.warn("No map provided. Set either map_json or map_path");
-	}
+        var files_to_load = [
+                             {file: o.map_path, callback: set_map, value: o.map_json },
+                             {file: o.css_path, callback: set_css, value: o.css },
+                             {file: o.flux_path,  callback: function(e, f) { set_flux(e, f, 0); }, value: o.flux },
+                             {file: o.flux2_path, callback: function(e, f) { set_flux(e, f, 1); }, value: o.flux2 } ];
+       if (!o.map_json && !o.map_path) {
+            return console.warn("No map provided. Set either map_json or map_path");
+        }
         scaffold.load_files(files_to_load, setup);
 
         return { set_flux_source: set_flux_source,

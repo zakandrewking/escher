@@ -113,7 +113,15 @@ and width, or use the 'fill_screen' option.");
     function update() {
         return 'omg yes';
     };
-    function load_the_file(file, callback) {
+    function load_the_file(file, callback, value) {
+        // if the value is specified, don't even need to do the ajax query
+        if (value) {
+            if (file) {
+                console.log('file ' + file + ' overridden by value')
+            }
+            callback('', value, file);
+            return;
+        }
         if (!file) {
             callback("No filename", null, file);
             return;
@@ -137,7 +145,8 @@ and width, or use the 'fill_screen' option.");
                           function(e, d, file) {
                               callbacks[file](e, d);
                               if (!--remaining) final_callback();
-                          });
+                          },
+                          files_to_load[i].value);
         }
     };
     function scale_and_axes(x_domain, y_domain, width, height, options) {
