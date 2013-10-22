@@ -1,12 +1,12 @@
 import tornado.web
 from tornado.web import MissingArgumentError
-import cobra.io
+import cobra.test
 import json
 
 # application/x-www-form-urlencoded
 
 def fba_for_reactions(reactions):
-    model = cobra.io.load_matlab_model('/Users/zaking/models/iJO1366.mat')
+    model = cobra.test.create_test_model(cobra.test.ecoli_pickle)
     for r in reactions:
         print 'knocking out %s' % model.reactions.get_by_id(r)
         model.reactions.get_by_id(r).lower_bound = 0
