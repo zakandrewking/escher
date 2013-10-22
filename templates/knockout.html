@@ -26,8 +26,9 @@
            ko.add_reaction(reaction);
            this.reload_flux();
          };
-         var m = map({ map_path: "data/maps/simpheny-maps/ijo-central.json", fill_screen: true })
-               .set_flux_source(ko.get_flux);
+         var m = map({ map_path: "data/maps/simpheny-maps/ijo-central.json",
+		      fill_screen: true,
+		      flux_source: ko.get_flux });
 	 window.setTimeout(function() {
                                   m.add_listener('.reaction-label', 'click', on_click)
                                   .add_listener('.reaction-path', 'click', on_click)
