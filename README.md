@@ -38,4 +38,7 @@ Install the [require.js optimizer](http://requirejs.org/docs/optimization.html) 
 ```bash
 cd /path/to/visbio/js
 r.js -o build.js
+r.js -o build.min.js
 ```
+
+This builds both the uglified and non-uglified javascript files.
