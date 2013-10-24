@@ -1,4 +1,4 @@
-define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jquery", "lib/builder/jquery-ui"], function(scaffold, utils, d3) {
+define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly", "lib/jquery", "lib/builder/jquery-ui"], function(scaffold, utils, d3, completely) {
     // TODO
     // connected node object
     // only display each node once
@@ -53,9 +53,15 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jquery", "lib/buil
             else if (index==1) o.flux2 = flux;
         };
 	function setup_reaction_input(selection) {
-	    return selection.append("input")
-		.attr("id", "rxn-input")
-		.style("display", "none");
+	    // set up container
+	    var sel = selection.append("div").attr("id", "rxn-input");
+	    sel.attr("display", "none");
+	    // set up complete.ly
+	    var complete = completely(sel.node(), { backgroundColor: "#eee" });
+	    d3.select(complete.input).attr('placeholder', 'Reaction ID -- Flux')
+		.on('input', function() { this.value = this.value.replace(" ", ""); });
+	    return { selection: sel,
+		     completely: complete };
 	};
         function update() {
             o.version = 0.2;
@@ -114,7 +120,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jquery", "lib/buil
                 d3.select('#loading').style('display', 'none');
                 // Focus on menu. TODO use a better callback rather than the
                 // setTimeout.
-                window.setTimeout(function() { $('#rxn-input').focus(); }, 50);
+                window.setTimeout(function() { o.reaction_input.completely.input.focus(); }, 50);
             });
 
             // set up keyboard listeners
@@ -175,18 +181,17 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jquery", "lib/buil
 
         function place_reaction_input(coords) {
             var d = {'x': 280, 'y': 0},
-                input = d3.select('#rxn-input');
+                input = o.reaction_input;
             var left = Math.max(20, Math.min(o.width-270, (o.window_scale * coords.x + o.window_translate.x - d.x)));
             var top = Math.max(20, Math.min(o.height-40, (o.window_scale * coords.y + o.window_translate.y - d.y)));
             // blur
-            input.node().blur();
-            input.style('position', 'absolute')
-                .attr('placeholder', 'Reaction ID -- Flux')
+	    input.completely.input.blur();
+            input.selection.style('position', 'absolute')
                 .style('display', 'block')
                 .style('left',left+'px')
-                .style('top',top+'px')
+                .style('top',top+'px');
             // ignore spaces
-                .on('input', function() { this.value = this.value.replace(" ", ""); });
+                
             // // focus
             // if (should_focus) input.node().focus();
         }
@@ -222,27 +227,24 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jquery", "lib/buil
 
             // set up the box with data, searching for first num results
             var num = 20;
-            $("#rxn-input").autocomplete(
-                { autoFocus: true,
-                  minLength: 0,
-                  source: function(request, response) {
-                      var escaped = $.ui.autocomplete.escapeRegex(request.term),
-                          matcher = new RegExp("^" + escaped, "i"),
-                          results = o.list_strings.filter(function(x) {
-                              // check against drawn reactions
-                              if (reaction_ids_to_display.indexOf(x.value) >= 0)
-                                  return matcher.test(x.value);
-                              return false;
-                          });
-                      response(results.slice(0,num));
-                  },
-                  change: function(event, ui) {
-                      if (ui.item) {
-                          new_reaction(ui.item.value, coords);
-                          this.value = "";
-                      }
-                  }
-                });
+	    var complete = o.reaction_input.completely;
+	    complete.onChange = function(text) {
+                var matcher = new RegExp("^" + text, "i"),
+                    results = o.list_strings.filter(function(x) { //=TODO escape regex characters?
+                        // check against drawn reactions
+                        if (reaction_ids_to_display.indexOf(x.value) >= 0)
+                            return matcher.test(x.value);
+                        return false;
+                    });
+                return results.slice(0,num);
+            };
+                //   change: function(event, ui) {
+                //       if (ui.item) {
+                //           new_reaction(ui.item.value, coords);
+                //           this.value = "";
+                //       }
+                //   }
+                // });
         }
 
         // -----------------------------------------------------------------------------------
@@ -443,7 +445,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jquery", "lib/buil
             var new_coords = coords_for_selected_metabolite();
             translate_off_screen(new_coords);
             reload_reaction_input(new_coords);
-            setTimeout(function() { $('#rxn-input').focus(); }, 50);
+            setTimeout(function() { d3.select('#rxn-input').node().focus(); }, 50);
         }
 
         function translate_off_screen(coords) {

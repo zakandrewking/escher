@@ -6,6 +6,7 @@
     <link href="js/lib/builder/ui-lightness/jquery-ui-1.10.3.custom.css" rel="stylesheet">
     <script src="js/lib/d3.v3.js"></script>
     <script src="js/lib/jquery-2.0.3.js"></script>
+    <script src="js/lib/complete.ly.1.0.1.js"></script>
     <script src="js/lib/builder/jquery-ui-1.10.3.custom.js"></script>
     <script data-main="js/config.js" src="js/require.js"></script>
     <meta charset="utf-8"/>
@@ -13,7 +14,7 @@
   </head>
   <body>
     <script type="text/javascript">
-     require(["builder/main", "lib/d3"], function(builder, d3) {
+     require(["builder/main"], function(builder) {
        builder({ fill_screen: true });
      });
     </script>
