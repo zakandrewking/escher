@@ -1,4 +1,5 @@
-define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly", "lib/jquery", "lib/builder/jquery-ui"], function(scaffold, utils, d3, completely) {
+define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly",
+	"lib/jquery", "lib/builder/jquery-ui"], function(scaffold, utils, d3, completely) {
     // TODO
     // connected node object
     // only display each node once
@@ -58,8 +59,14 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly", "lib
 	    sel.attr("display", "none");
 	    // set up complete.ly
 	    var complete = completely(sel.node(), { backgroundColor: "#eee" });
-	    d3.select(complete.input).attr('placeholder', 'Reaction ID -- Flux')
-		.on('input', function() { this.value = this.value.replace(" ", ""); });
+	    d3.select(complete.input)
+		// .attr('placeholder', 'Reaction ID -- Flux')
+		.on('input', function() {
+		    this.value = this.value.replace("/","")
+			.replace(" ","")
+			.replace("\\","")
+			.replace("<","");
+		});
 	    return { selection: sel,
 		     completely: complete };
 	};
@@ -101,11 +108,11 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly", "lib
 	    o.zoom = zoom;
 	    o.sel = sel;	// TODO remove these from o
 
-	    // var mouse_node = o.sel.append('rect')
-            //         .attr("width", o.width)
-            //         .attr("height", o.height)
-            //         .attr('style', 'visibility: hidden')
-            //         .attr('pointer-events', 'all');
+	    var mouse_node = o.sel.append('rect')
+                    .attr("width", o.width)
+                    .attr("height", o.height)
+		    .attr("style", "stroke:black;fill:none;")
+                    .attr('pointer-events', 'all');
 
             o.sel.append('g')
                 .attr('id', 'reactions');
@@ -190,10 +197,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly", "lib
                 .style('display', 'block')
                 .style('left',left+'px')
                 .style('top',top+'px');
-            // ignore spaces
-                
-            // // focus
-            // if (should_focus) input.node().focus();
+	    input.completely.repaint();
         }
 
         function reload_reaction_input(coords) {
@@ -225,26 +229,29 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly", "lib
                 }
             }
 
+	    var reactions = reaction_ids_to_display.map(function(x) {
+		return o.list_strings.filter(function(y) { return y.value==x; })[0];
+	    });
+	    var i = -1, reaction_obj = {}, strings_to_display = [];
+	    while (++i < reactions.length) {
+		if (reactions[i]===undefined) continue;
+		reaction_obj[reactions[i].label] = reactions[i].value;
+		strings_to_display.push(reactions[i].label);
+	    };
+console.log(reaction_obj);
+
             // set up the box with data, searching for first num results
             var num = 20;
 	    var complete = o.reaction_input.completely;
-	    complete.onChange = function(text) {
-                var matcher = new RegExp("^" + text, "i"),
-                    results = o.list_strings.filter(function(x) { //=TODO escape regex characters?
-                        // check against drawn reactions
-                        if (reaction_ids_to_display.indexOf(x.value) >= 0)
-                            return matcher.test(x.value);
-                        return false;
-                    });
-                return results.slice(0,num);
-            };
-                //   change: function(event, ui) {
-                //       if (ui.item) {
-                //           new_reaction(ui.item.value, coords);
-                //           this.value = "";
-                //       }
-                //   }
-                // });
+	    complete.options = strings_to_display;
+	    if (reaction_ids_to_display.length==1) complete.setText(reaction_ids_to_display[0]);
+	    else complete.setText("");
+	    complete.onEnter = function() {
+		if (reaction_obj.hasOwnProperty(this.getText()))
+		    new_reaction(reaction_obj[this.getText()], coords);
+		this.setText("");
+	    };
+	    complete.repaint();
         }
 
         // -----------------------------------------------------------------------------------
@@ -445,7 +452,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly", "lib
             var new_coords = coords_for_selected_metabolite();
             translate_off_screen(new_coords);
             reload_reaction_input(new_coords);
-            setTimeout(function() { d3.select('#rxn-input').node().focus(); }, 50);
+            window.setTimeout(function() { o.reaction_input.completely.input.focus(); }, 50);
         }
 
         function translate_off_screen(coords) {
@@ -919,7 +926,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly", "lib
 
         function key_listeners() {
             var primary_cycle_key = 80, // 'p'
-                hide_show_input_key = 32, // SPACE
+                hide_show_input_key = 191, // forward slash '/'
                 rotate_keys = {'left':  37,
                                'right': 39,
                                'up':    38,
@@ -927,12 +934,17 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly", "lib
 
             d3.select(window).on("keydown", function() {
                 var kc = d3.event.keyCode,
-                    reaction_input_focus =  $('#rxn-input').is(":focus");
+                    reaction_input_focus =  $(o.reaction_input.completely.input).is(":focus");
                 if (kc==primary_cycle_key && !reaction_input_focus) {
                     cycle_primary_key();
                 } else if (kc==hide_show_input_key) {
-                    if (reaction_input_focus) $('#rxn-input').blur();
-                    else $('#rxn-input').focus();
+                    if (reaction_input_focus) {
+			o.reaction_input.completely.input.blur();
+			o.reaction_input.completely.hideDropDown();
+		    } else {
+			o.reaction_input.completely.input.focus();
+			o.reaction_input.completely.repaint();
+		    }
                 } else if (kc==rotate_keys.left && !reaction_input_focus) {
                     modify_reaction(o.selected_node.reaction_id, 'angle', 270*(Math.PI/180));
                     draw_specific_reactions_with_location(o.selected_node.reaction_id);
