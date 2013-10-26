@@ -10,7 +10,11 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             map_path: "data/maps/simpheny-maps/ijo-central.json",
             flux_path: false,
             flux2_path: false,
-            css: '' });
+            css: '',
+            metabolite_zoom_threshold: 5,
+            reaction_zoom_threshold: 0,
+            label_zoom_threshold: 15,
+	    zoom_bounds: [0, 25] });
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
                                      o.margins, o.fill_screen);
@@ -18,8 +22,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
         o.height = out.height;
         o.width = out.width;
 
-	// listeners
-	o.listeners = {};
+        // listeners
+        o.listeners = {};
 
         var files_to_load = [{file: o.css_path, callback: set_css },
                              {file: o.map_path, callback: set_map },
@@ -28,10 +32,10 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
         scaffold.load_files(files_to_load, setup);
 
         return { set_flux_source: set_flux_source,
-		 add_listener: add_listener,
-		 remove_listener: remove_listener,
-		 reload_flux: reload_flux,
-		 set_status: set_status };
+                 add_listener: add_listener,
+                 remove_listener: remove_listener,
+                 reload_flux: reload_flux,
+                 set_status: set_status };
 
         // Definitions
         function set_css(error, css) {
@@ -49,7 +53,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
         };
         function set_flux_source(fn) {
             o.flux_source = fn;
-	    reload_flux();
+            reload_flux();
             return this;
         };
         function reload_flux() {
@@ -61,7 +65,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                     set_status('objective: ' + d3.format('.3f')(objective) + "    (HINT: Click a reaction)");
                 }
                 o.map_data = flux_to_data(o.map_data, fluxes, null, null);
-		o.has_metabolites = false; o.has_metabolite_deviation = false;
+                o.has_metabolites = false; o.has_metabolite_deviation = false;
                 update();
 
             });
@@ -87,7 +91,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
              */
 
             // If callback is null, pass the null through to remove the listener.
-	    console.log(d3.selectAll(target)[0].length);
             var new_callback = callback;
             if (callback!=null) new_callback = function(d) { callback.call(context, d.id); };
             d3.selectAll(target).on(type, new_callback);
@@ -101,8 +104,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             for (var target in o.listeners)
                 for (var type in o.listeners[target])
                     apply_a_listener(target, type,
-                                       o.listeners[target][type].callback,
-                                       o.listeners[target][type].context);
+                                     o.listeners[target][type].callback,
+                                     o.listeners[target][type].context);
         }
         function add_listener(target, type, callback) {
             /**
@@ -118,32 +121,41 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             apply_a_listener(target, type, callback, this);
             return this;
         }
-	function set_status(status) {
-	    var t = d3.select('body').select('#status');
-	    if (t.empty()) t = d3.select('body')
-		.append('text')
-		.attr('id', 'status');
-	    t.text(status);
-	    return this;
-	}
-	function setup() {
+        function set_status(status) {
+            var t = d3.select('body').select('#status');
+            if (t.empty()) t = d3.select('body')
+                .append('text')
+                .attr('id', 'status');
+            t.text(status);
+            return this;
+        }
+        function setup() {
             o.decimal_format = d3.format('.1f');
             o.decimal_format_3 = d3.format('.3f');
-            o.style_variables = get_style_variables(o.style);	   
+            o.style_variables = get_style_variables(o.style);
 
             // set up svg and svg definitions
             o.scale = define_scales(o.map_data.max_map_w,
-				      o.map_data.max_map_h,
-				      o.width, o.height);
+                                    o.map_data.max_map_h,
+                                    o.width, o.height);
             var defs = utils.setup_defs(o.svg, o.css);
             generate_markers(defs);
 
-            var out = utils.setup_zoom_container(o.svg, o.width, o.height, [1, 15]);
-            o.sel = out.sel;
+            var out = utils.setup_zoom_container(o.svg, o.width, o.height, o.zoom_bounds, function(ev) {
+		o.zoom = ev.scale;
+                if (ev.scale < o.reaction_zoom_threshold) hide_reactions();
+                else show_reactions();
+                if (ev.scale < o.metabolite_zoom_threshold) hide_metabolites();
+                else show_metabolites();
+                if (ev.scale < o.label_zoom_threshold) hide_labels();
+                else show_labels();
+            });
+            o.sel = out.sel,
+            o.zoom = out.initial_zoom;
 
             // parse the data objects
-	    o.has_flux = false; o.has_flux_comparison = false;
-	    o.has_metabolites = false; o.has_metabolite_deviation = false;
+            o.has_flux = false; o.has_flux_comparison = false;
+            o.has_metabolites = false; o.has_metabolite_deviation = false;
             if (o.flux) {
                 o.has_flux = true;
                 o.map_data = parse_flux_1(o.map_data, o.flux);
@@ -161,9 +173,42 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                 }
             }
 
-	    update();
+            update();
 
-	    // setup() definitions
+            // setup() definitions
+            function hide_reactions() { 
+		if (!o.is_visible.reactions) return;
+		o.sel.select("#reaction-paths").remove();
+                o.is_visible.reactions = false;
+            }
+            function show_reactions() { 
+		if (o.is_visible.reactions) return;
+                draw_reaction_paths();
+                o.is_visible.reactions = true;
+            }
+            function hide_metabolites() { 
+		if (!o.is_visible.metabolites) return;
+                o.sel.select("#metabolite-circles").remove();
+                o.sel.select("#metabolite-paths").remove();
+                o.is_visible.metabolites = false;
+            }
+            function show_metabolites() { 
+		if (o.is_visible.metabolites) return;
+                draw_metabolites();
+                o.is_visible.metabolites = true;
+            }
+            function hide_labels() { 
+		if (!o.is_visible.labels) return;
+                o.sel.select("#metabolite-labels").remove();
+                o.sel.select("#reaction-labels").remove();
+                o.is_visible.labels = false;
+            }
+            function show_labels() { 
+		if (o.is_visible.labels) return;
+		draw_reaction_labels();
+		draw_metabolite_labels();
+                o.is_visible.labels = true;
+            }
             function get_style_variables(style) {
                 return [];
 
@@ -259,308 +304,330 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                     .attr("class", "marker");
                 return defs;
             }
-	}
+        }
         function update(callback) {
-	    if (callback===undefined) callback = function() {};
-	    var sel = o.sel, data = o.map_data, style = o.css,
-		style_variables = o.style_variables, scale = o.scale,
-		width = o.width, height = o.height, decimal_format = o.decimal_format,
-		has_metabolites = o.has_metabolites, has_metabolite_deviation = o.has_metabolite_deviation,
-		has_flux = o.has_flux, has_flux_comparison = o.has_flux_comparison;
+            if (callback===undefined) callback = function() {};
 
-	    // remove everything from container
-	    sel.selectAll("*").remove();
+            // remove everything from container
+            o.sel.selectAll("*").remove();
 
-	    // add overlay
-            sel.append("rect")
-		.attr("class", "overlay")
-		.attr("width", width)
-		.attr("height", height)
-		.attr("style", "stroke:black;fill:none;");
+            // add overlay
+            o.sel.append("rect")
+                .attr("class", "overlay")
+                .attr("width", o.width)
+                .attr("height", o.height)
+                .attr("style", "stroke:black;fill:none;");
 
             // generate map
-            draw_membranes(sel, data.membrane_rectangles, scale);
-            if (data.hasOwnProperty("metabolite_circles")) {
-                draw_metabolite_circles(sel, data.metabolite_circles, scale,
-                                        has_metabolites, has_metabolite_deviation);
-            } else if (data.hasOwnProperty("metabolite_paths")) {
-                if (has_metabolites) { alert('metabolites do not render w simpheny maps'); }
-                draw_metabolite_paths(sel, data.metabolite_paths, scale);
+	    // always show these elements
+            draw_membranes();
+            draw_misc_labels();
+	    // draw these based on zoom thresholds
+            o.is_visible = { reactions: false, metabolites: false, labels: false };
+            if (o.zoom >= o.metabolite_zoom_threshold) {
+                draw_metabolites();
+                o.is_visible.metabolites = true;
             }
-            draw_reaction_labels(sel, data.reaction_labels, scale, has_flux,
-                                 has_flux_comparison, style_variables);
-            draw_labels(sel, "misc-labels", data.misc_labels, scale);
-            draw_metabolite_labels(sel, data.metabolite_labels, scale,
-                                   has_metabolites, has_metabolite_deviation,
-                                   decimal_format);
-            draw_reaction_paths(sel, data.reaction_paths, scale, has_flux);
+            if (o.zoom >= o.label_zoom_threshold) {
+                draw_reaction_labels();
 
-	    apply_listeners();
+                draw_metabolite_labels();
+                o.is_visible.labels = true;
+            }
+            if (o.zoom >= o.reaction_zoom_threshold) {
+                draw_reaction_paths();
+                o.is_visible.reactions = true;
+            }
+
+            apply_listeners();
+        };
+        // update() definitions
+        function draw_membranes() {
 	    
-            // update() definitions
-            function draw_membranes(selection, membrane_rectangles, scale) {
-                selection.append("g")
-                    .attr("id", "membranes")
-                    .selectAll("rect")
-                    .data(membrane_rectangles)
-                    .enter().append("rect")
-                    .attr("class", function(d){ return d.class; })
-                    .attr("width", function(d){ return scale.x_size(d.width); })
-                    .attr("height", function(d){ return scale.y_size(d.height); })
-                    .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";})
-                    .style("stroke-width", function(d) { return scale.size(10); })
-                    .attr('rx', function(d){ return scale.x_size(20); })
-                    .attr('ry', function(d){ return scale.x_size(20); });
-            }
+            draw_these_membranes(o.sel, o.map_data.membrane_rectangles, o.scale);
+        }
+        function draw_these_membranes(selection, membrane_rectangles, scale) {
+            selection.append("g")
+                .attr("id", "membranes")
+                .selectAll("rect")
+                .data(membrane_rectangles)
+                .enter().append("rect")
+                .attr("class", function(d){ return d.class; })
+                .attr("width", function(d){ return scale.x_size(d.width); })
+                .attr("height", function(d){ return scale.y_size(d.height); })
+                .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";})
+                .style("stroke-width", function(d) { return scale.size(10); })
+                .attr('rx', function(d){ return scale.x_size(20); })
+                .attr('ry', function(d){ return scale.x_size(20); });
+        }
 
-            function draw_metabolite_circles(selection, metabolite_circles, scale,
-                                             has_metabolites, has_metabolite_deviation) {
-                selection.append("g")
-                    .attr("id", "metabolite-circles")
-                    .selectAll("circle")
-                    .data(data.metabolite_circles)
-                    .enter().append("circle")
-                    .attr("r", function (d) {
-                        var sc = scale.metabolite_concentration;
-                        if (d.metabolite_concentration) {
-                            var s;
-                            if (d.should_size) s = scale.size(sc(d.metabolite_concentration));
-                            else s = scale.size(0);
-                            return s;
-                        } else if (has_metabolites) {
-                            return scale.size(10);
-                        } else {
-                            return scale.size(d.r);
-                        }
-                    })
-                    .attr("style", function (d) {
-                        var sc = scale.metabolite_color;
-                        if (d.metabolite_concentration) {
-                            var a;
-                            if (d.should_color) a = "fill:"+sc(d.metabolite_concentration) + ";" +
-                                "stroke:black;stroke-width:0.5;";
-                            else a = "fill:none;stroke:black;stroke-width:0.5;";
-                            return a;
-                        }
-                        else if (has_metabolites) {
-                            return "fill:grey;stroke:none;stroke-width:0.5;";
-                        }
-                        else { return ""; }
-                    })
-                    .attr("transform", function(d){
-                        return "translate("+scale.x(d.cx)+","+scale.y(d.cy)+")";
-                    });
-                if (has_metabolite_deviation) {
-                    append_deviation_arcs(selection, metabolite_circles);
-                }
-
-                // definitions
-                function append_deviation_arcs(selection, metabolite_circles) {
-                    var arc_data = metabolite_circles.filter( function(o) {
-                        return (o.hasOwnProperty('metabolite_deviation') &&
-                                o.hasOwnProperty('metabolite_concentration'));
-                    });
-                    var arc = d3.svg.arc()
-                            .startAngle(function(d) { return -d.metabolite_deviation/100/2*2*Math.PI; })
-                            .endAngle(function(d) { return d.metabolite_deviation/100/2*2*Math.PI; })
-                            .innerRadius(function(d) { return 0; })
-                            .outerRadius(function(d) {
-                                var s;
-                                if (d.should_size) s = scale.size(scale.metabolite_concentration(d.metabolite_concentration));
-                                else s = scale.size(0);
-                                return s;
-                            });
-                    selection.append("g")
-                        .attr("id", "metabolite-deviation-arcs")
-                        .selectAll("path")
-                        .data(arc_data)
-                        .enter().append("path")
-                        .attr('d', arc)
-                        .attr('style', "fill:black;stroke:none;opacity:0.4;")
-                        .attr("transform", function(d) {
-                            return "translate("+scale.x(d.cx)+","+scale.y(d.cy)+")";
-                        });
-                }
-            }
-
-            function draw_metabolite_paths(selection, metabolite_paths, scale) {
-                console.log('metabolite paths');
-                selection.append("g")
-                    .attr("id", "metabolite-paths")
-                    .selectAll("path")
-                    .data(metabolite_paths)
-                    .enter().append("path")
-                    .attr("d", function(d) { return scale.scale_path(d.d); })
-                    .style("fill", "rgb(224, 134, 91)")
-                    .style("stroke", "rgb(162, 69, 16)")
-                    .style("stroke-width", String(scale.size(2))+"px");
-            }
-
-            function draw_reaction_labels(selection, reaction_labels, scale, has_flux,
-                                          has_flux_comparison, style_variables) {
-                selection.append("g")
-                    .attr("id", "reaction-labels")
-                    .selectAll("text")
-                    .data(reaction_labels)
-                    .enter().append("text")
-		    .attr("class", "reaction-label")
-                    .text(function(d) {
-                        var t = d.text;
-                        if (has_flux_comparison)
-                            t += " ("+decimal_format(d.flux1)+"/"+decimal_format(d.flux2)+": "+decimal_format(d.flux)+")";
-                        else if (d.flux) t += " ("+decimal_format(d.flux)+")";
-                        else if (has_flux) t += " (0)";
-                        return t;
-                    })
-                    .attr("text-anchor", "start")
-                    .attr("font-size", function(d) {
-                        var s;
-                        if (style_variables.hasOwnProperty('reaction_label_size')) {
-                            s = style_variables['reaction_label_size'];
-                        }
-                        else { s = 15; }
-                        return scale.size(s);
-                    })
-                // .attr("style", function(d){ if(!d.flux) return "visibility:hidden;"; else return ""; })
-                    .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
-            }
-
-            function draw_labels(selection, id, labels, scale) {
-                selection.append("g")
-                    .attr("id", id)
-                    .selectAll("text")
-                    .data(labels)
-                    .enter().append("text")
-                    .text(function(d) { return d.text; })
-                    .attr("font-size", scale.size(60))
-                    .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
-            }
-
-            function draw_metabolite_labels(selection, metabolite_labels, scale,
-                                            has_metabolites, has_metabolite_deviation,
-                                            decimal_format) {
-                selection.append("g")
-                    .attr("id", "metabolite-labels")
-                    .selectAll("text")
-                    .data(metabolite_labels)
-                    .enter().append("text")
-                    .text(function(d) {
-                        var t = d.text;
-                        if (isNaN(d.metabolite_concentration)) {}
-                        else if (has_metabolite_deviation) {
-                            var a = (isNaN(d.metabolite_concentration) ? "-" : decimal_format(d.metabolite_concentration));
-                            var b = (isNaN(d.metabolite_deviation) ? "-" : decimal_format(d.metabolite_deviation));
-                            t += " ("+a+" \xB1 "+b+"%)";
-                        }
-                        else if (d.metabolite_concentration) {
-                            var a = (isNaN(d.metabolite_concentration) ? "-" : decimal_format(d.metabolite_concentration));
-                            t += " ("+a+")";
-                        }
-                        else if (has_metabolites) t += " (0)";
-                        return t;
-                    })
-                    .attr("font-size", function(d) {
-                        if (d.metabolite_concentration) return scale.size(30);
-                        else if (has_metabolites) return scale.size(20);
-                        else return scale.size(20);
-                    })
-                    .style("visibility","visible")
-                    .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
-            }
-
-            function draw_reaction_paths(selection, reaction_paths, scale, has_flux) {
-                selection.append("g")
-                    .attr("id", "reaction-paths")
-                    .selectAll("path")
-                    .data(reaction_paths)
-                    .enter().append("path")
-                    .attr("d", function(d) { return scale.scale_path(d.d); })
-                    .attr("class", function(d) { return d["class"] + " reaction-path"; })
-                    .attr("style", function(d) {
-                        var s = "", sc = scale.flux;
-                        // .fill-arrow is for simpheny maps where the path surrounds line and
-                        // arrowhead
-                        // .line-arrow is for bigg maps were the line is a path and the
-                        // arrowhead is a marker
-                        if (d["class"]=="fill-arrow") sc = scale.flux_fill;
-                        if (d.flux) {
-                            s += "stroke-width:"+String(scale.size(sc(Math.abs(d.flux))))+";";
-                            s += "stroke:"+scale.flux_color(Math.abs(d.flux))+";";
-                            if (d["class"]=="fill-arrow") { s += "fill:"+scale.flux_color(Math.abs(d.flux))+";"; }
-                            else if (d["class"]=="line-arrow") { make_arrowhead_for_fill(); }
-                            else s += "fill:none";
-                        }
-                        else if (has_flux) {
-                            s += "stroke-width:"+String(scale.size(sc(0)))+";";
-                            s += "stroke:"+scale.flux_color(Math.abs(0))+";";
-                            if (d["class"]=="fill-arrow") s += "fill:"+scale.flux_color(0)+";";
-                            else s += "fill:none";
-                        }
-                        else {
-                            s += "stroke-width:"+String(scale.size(1))+";";
-                        }
-                        return s;
-                    })
-                    .style('marker-end', function (d) {
-                        if (!/end/.test(d.class)) return '';
-                        if (d.flux) return make_arrowhead_for_fill(scale.flux_color(d.flux));
-                        else if (has_flux) return make_arrowhead_for_fill(scale.flux_color(0));
-                        else return "url(#end-triangle-path-color)";
-                    })
-                    .style('marker-start', function (d) {
-                        if (!/start/.test(d.class)) return '';
-                        if (d.flux) return make_arrowhead_for_fill(scale.flux_color(d.flux));
-                        else if (has_flux) return make_arrowhead_for_fill(scale.flux_color(0));
-                        else return "url(#start-triangle-path-color)";
-                    });
-            }
-
-            function make_arrowhead_for_fill(fill) {
-                d3.select('#markers').selectAll("marker"); //
-                return ""
+        function draw_metabolites() {
+            if (o.map_data.hasOwnProperty("metabolite_circles")) {
+                draw_these_metabolite_circles(o.sel, o.map_data.metabolite_circles, o.scale,
+                                              o.has_metabolites, o.has_metabolite_deviation);
+            } else if (o.map_data.hasOwnProperty("metabolite_paths")) {
+                if (o.has_metabolites) { alert('metabolites do not render w simpheny maps'); }
+                draw_these_metabolite_paths(o.sel, o.map_data.metabolite_paths, o.scale);
             }
         }
-	function flux_to_data (data, fluxes, metabolites, metabolites2) {
-	    o.has_flux = false;
-	    o.has_flux_comparison = false;
-	    o.has_metabolites = false;
-	    o.has_metabolite_deviation = false;
+        function draw_these_metabolite_circles(selection, metabolite_circles, scale,
+                                               has_metabolites, has_metabolite_deviation) {
+            selection.append("g")
+                .attr("id", "metabolite-circles")
+                .selectAll("circle")
+                .data(data.metabolite_circles)
+                .enter().append("circle")
+                .attr("r", function (d) {
+                    var sc = scale.metabolite_concentration;
+                    if (d.metabolite_concentration) {
+                        var s;
+                        if (d.should_size) s = scale.size(sc(d.metabolite_concentration));
+                        else s = scale.size(0);
+                        return s;
+                    } else if (has_metabolites) {
+                        return scale.size(10);
+                    } else {
+                        return scale.size(d.r);
+                    }
+                })
+                .attr("style", function (d) {
+                    var sc = scale.metabolite_color;
+                    if (d.metabolite_concentration) {
+                        var a;
+                        if (d.should_color) a = "fill:"+sc(d.metabolite_concentration) + ";" +
+                            "stroke:black;stroke-width:0.5;";
+                        else a = "fill:none;stroke:black;stroke-width:0.5;";
+                        return a;
+                    }
+                    else if (has_metabolites) {
+                        return "fill:grey;stroke:none;stroke-width:0.5;";
+                    }
+                    else { return ""; }
+                })
+                .attr("transform", function(d){
+                    return "translate("+scale.x(d.cx)+","+scale.y(d.cy)+")";
+                });
+            if (has_metabolite_deviation) {
+                append_deviation_arcs(selection, metabolite_circles);
+            }
 
-	    var remove_fluxes_from_data = function(d) {
-		d.reaction_paths.map(function(o) {
-		    delete o.flux;
-		    return o;
-		});
-		d.reaction_labels.map(function(o) {
-		    delete o.flux;
-		    return o;
-		});
-		return d;
-	    };
+            // definitions
+            function append_deviation_arcs(selection, metabolite_circles) {
+                var arc_data = metabolite_circles.filter( function(o) {
+                    return (o.hasOwnProperty('metabolite_deviation') &&
+                            o.hasOwnProperty('metabolite_concentration'));
+                });
+                var arc = d3.svg.arc()
+                        .startAngle(function(d) { return -d.metabolite_deviation/100/2*2*Math.PI; })
+                        .endAngle(function(d) { return d.metabolite_deviation/100/2*2*Math.PI; })
+                        .innerRadius(function(d) { return 0; })
+                        .outerRadius(function(d) {
+                            var s;
+                            if (d.should_size) s = scale.size(scale.metabolite_concentration(d.metabolite_concentration));
+                            else s = scale.size(0);
+                            return s;
+                        });
+                selection.append("g")
+                    .attr("id", "metabolite-deviation-arcs")
+                    .selectAll("path")
+                    .data(arc_data)
+                    .enter().append("path")
+                    .attr('d', arc)
+                    .attr('style', "fill:black;stroke:none;opacity:0.4;")
+                    .attr("transform", function(d) {
+                        return "translate("+scale.x(d.cx)+","+scale.y(d.cy)+")";
+                    });
+            }
+        }
+        function draw_these_metabolite_paths(selection, metabolite_paths, scale) {
+            selection.append("g")
+                .attr("id", "metabolite-paths")
+                .selectAll("path")
+                .data(metabolite_paths)
+                .enter().append("path")
+                .attr("d", function(d) { return scale.scale_path(d.d); })
+                .style("fill", "rgb(224, 134, 91)")
+                .style("stroke", "rgb(162, 69, 16)")
+                .style("stroke-width", String(scale.size(2))+"px");
+        }
 
-	    // parse the data objects and attach values to map objects
-	    if (fluxes.length > 0) {
-		var flux = fluxes[0];
-		o.has_flux = true;
-		data = parse_flux_1(data, flux);
-		if (fluxes.length > 1) {
-		    var flux2 = fluxes[1];
-		    o.has_flux_comparison = true;
-		    data = parse_flux_2(data, flux2);
-		}
-	    } else {
-		remove_fluxes_from_data(data);
-	    }
-	    if (metabolites) {
-		o.has_metabolites = true;
-		data = parse_metabolites_1(data, metabolites);
-		if (metabolites2) {
-		    o.has_metabolite_deviation = true;
-		    data = parse_metabolites_2(data, metabolites2);
-		}
-	    }
-	    return data;
-	}
+        function draw_reaction_labels() {
+            draw_these_reaction_labels(o.sel, o.map_data.reaction_labels, o.scale, o.has_flux,
+                                       o.has_flux_comparison, o.style_variables);
+        }
+        function draw_these_reaction_labels(selection, reaction_labels, scale, has_flux,
+                                            has_flux_comparison, style_variables) {
+            selection.append("g")
+                .attr("id", "reaction-labels")
+                .selectAll("text")
+                .data(reaction_labels)
+                .enter().append("text")
+                .attr("class", "reaction-label")
+                .text(function(d) {
+                    var t = d.text;
+                    if (has_flux_comparison)
+                        t += " ("+decimal_format(d.flux1)+"/"+decimal_format(d.flux2)+": "+decimal_format(d.flux)+")";
+                    else if (d.flux) t += " ("+decimal_format(d.flux)+")";
+                    else if (has_flux) t += " (0)";
+                    return t;
+                })
+                .attr("text-anchor", "start")
+                .attr("font-size", function(d) {
+                    var s;
+                    if (style_variables.hasOwnProperty('reaction_label_size')) {
+                        s = style_variables['reaction_label_size'];
+                    }
+                    else { s = 15; }
+                    return scale.size(s);
+                })
+            // .attr("style", function(d){ if(!d.flux) return "visibility:hidden;"; else return ""; })
+                .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
+        }
+
+        function draw_misc_labels() {
+            draw_these_labels(o.sel, "misc-labels", o.map_data.misc_labels, o.scale);
+        };
+        function draw_these_labels(selection, id, labels, scale) {
+            selection.append("g")
+                .attr("id", id)
+                .selectAll("text")
+                .data(labels)
+                .enter().append("text")
+                .text(function(d) { return d.text; })
+                .attr("font-size", scale.size(60))
+                .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
+        }
+
+        function draw_metabolite_labels() {
+            draw_these_metabolite_labels(o.sel, o.map_data.metabolite_labels, o.scale,
+					o.has_metabolites, o.has_metabolite_deviation, o.decimal_format);
+        };
+        function draw_these_metabolite_labels(selection, metabolite_labels, scale,
+                                              has_metabolites, has_metabolite_deviation,
+                                              decimal_format) {
+            selection.append("g")
+                .attr("id", "metabolite-labels")
+                .selectAll("text")
+                .data(metabolite_labels)
+                .enter().append("text")
+                .text(function(d) {
+                    var t = d.text;
+                    if (isNaN(d.metabolite_concentration)) {}
+                    else if (has_metabolite_deviation) {
+                        var a = (isNaN(d.metabolite_concentration) ? "-" : decimal_format(d.metabolite_concentration));
+                        var b = (isNaN(d.metabolite_deviation) ? "-" : decimal_format(d.metabolite_deviation));
+                        t += " ("+a+" \xB1 "+b+"%)";
+                    }
+                    else if (d.metabolite_concentration) {
+                        var a = (isNaN(d.metabolite_concentration) ? "-" : decimal_format(d.metabolite_concentration));
+                        t += " ("+a+")";
+                    }
+                    else if (has_metabolites) t += " (0)";
+                    return t;
+                })
+                .attr("font-size", function(d) {
+                    if (d.metabolite_concentration) return scale.size(30);
+                    else if (has_metabolites) return scale.size(20);
+                    else return scale.size(20);
+                })
+                .style("visibility","visible")
+                .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
+        }
+
+        function draw_reaction_paths() {
+            draw_these_reaction_paths(o.sel, o.map_data.reaction_paths, o.scale, o.has_flux);
+        }
+        function draw_these_reaction_paths(selection, reaction_paths, scale, has_flux) {
+            selection.append("g")
+                .attr("id", "reaction-paths")
+                .selectAll("path")
+                .data(reaction_paths)
+                .enter().append("path")
+                .attr("d", function(d) { return scale.scale_path(d.d); })
+                .attr("class", function(d) { return d["class"] + " reaction-path"; })
+                .attr("style", function(d) {
+                    var s = "", sc = scale.flux;
+                    // .fill-arrow is for simpheny maps where the path surrounds line and
+                    // arrowhead
+                    // .line-arrow is for bigg maps were the line is a path and the
+                    // arrowhead is a marker
+                    if (d["class"]=="fill-arrow") sc = scale.flux_fill;
+                    if (d.flux) {
+                        s += "stroke-width:"+String(scale.size(sc(Math.abs(d.flux))))+";";
+                        s += "stroke:"+scale.flux_color(Math.abs(d.flux))+";";
+                        if (d["class"]=="fill-arrow") { s += "fill:"+scale.flux_color(Math.abs(d.flux))+";"; }
+                        else if (d["class"]=="line-arrow") { make_arrowhead_for_fill(); }
+                        else s += "fill:none";
+                    }
+                    else if (has_flux) {
+                        s += "stroke-width:"+String(scale.size(sc(0)))+";";
+                        s += "stroke:"+scale.flux_color(Math.abs(0))+";";
+                        if (d["class"]=="fill-arrow") s += "fill:"+scale.flux_color(0)+";";
+                        else s += "fill:none";
+                    }
+                    else {
+                        s += "stroke-width:"+String(scale.size(1))+";";
+                    }
+                    return s;
+                })
+                .style('marker-end', function (d) {
+                    if (!/end/.test(d.class)) return '';
+                    if (d.flux) return make_arrowhead_for_fill(scale.flux_color(d.flux));
+                    else if (has_flux) return make_arrowhead_for_fill(scale.flux_color(0));
+                    else return "url(#end-triangle-path-color)";
+                })
+                .style('marker-start', function (d) {
+                    if (!/start/.test(d.class)) return '';
+                    if (d.flux) return make_arrowhead_for_fill(scale.flux_color(d.flux));
+                    else if (has_flux) return make_arrowhead_for_fill(scale.flux_color(0));
+                    else return "url(#start-triangle-path-color)";
+                });
+        }
+        function make_arrowhead_for_fill(fill) {
+            d3.select('#markers').selectAll("marker");
+            return "";
+        }
+        function flux_to_data (data, fluxes, metabolites, metabolites2) {
+            o.has_flux = false;
+            o.has_flux_comparison = false;
+            o.has_metabolites = false;
+            o.has_metabolite_deviation = false;
+
+            var remove_fluxes_from_data = function(d) {
+                d.reaction_paths.map(function(o) {
+                    delete o.flux;
+                    return o;
+                });
+                d.reaction_labels.map(function(o) {
+                    delete o.flux;
+                    return o;
+                });
+                return d;
+            };
+
+            // parse the data objects and attach values to map objects
+            if (fluxes.length > 0) {
+                var flux = fluxes[0];
+                o.has_flux = true;
+                data = parse_flux_1(data, flux);
+                if (fluxes.length > 1) {
+                    var flux2 = fluxes[1];
+                    o.has_flux_comparison = true;
+                    data = parse_flux_2(data, flux2);
+                }
+            } else {
+                remove_fluxes_from_data(data);
+            }
+            if (metabolites) {
+                o.has_metabolites = true;
+                data = parse_metabolites_1(data, metabolites);
+                if (metabolites2) {
+                    o.has_metabolite_deviation = true;
+                    data = parse_metabolites_2(data, metabolites2);
+                }
+            }
+            return data;
+        }
 
         function parse_flux_1(data, flux) {
             data.reaction_paths = data.reaction_paths.map( function(o) {

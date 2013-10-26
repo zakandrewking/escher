@@ -17,7 +17,8 @@ define(["lib/d3"], function (d3) {
 	    zoom_behavior = d3.behavior.zoom().scaleExtent(scale_extent).on("zoom", zoom);
         container.call(zoom_behavior);
         return {sel: sel,
-		zoom: zoom_behavior };
+		zoom: zoom_behavior,
+		initial_zoom: 1.0 };
     }
 
     function setup_defs(svg, style) {

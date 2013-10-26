@@ -9,7 +9,7 @@
   <body>
     <script type="text/javascript">
      require(["lib/d3", "metabolic-map/main", "vis/export-svg"], function(d3, map, export_svg) {
-       var map = map({ map_path: "data/maps/simpheny-maps/ijo-central.json", fill_screen: true });
+       var map = map({ map_path: "data/maps/simpheny-maps/e_coli_hot_spots.json", fill_screen: true });
        var ex = export_svg();
        d3.select('body').append('button')
 	 .attr("style", "position:absolute; top:20px; left:20px;")
