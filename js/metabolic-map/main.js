@@ -143,12 +143,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
 
             var out = utils.setup_zoom_container(o.svg, o.width, o.height, o.zoom_bounds, function(ev) {
 		o.zoom = ev.scale;
-                if (ev.scale < o.reaction_zoom_threshold) hide_reactions();
-                else show_reactions();
-                if (ev.scale < o.metabolite_zoom_threshold) hide_metabolites();
-                else show_metabolites();
-                if (ev.scale < o.label_zoom_threshold) hide_labels();
-                else show_labels();
+		update_visibility();
             });
             o.sel = out.sel,
             o.zoom = out.initial_zoom;
@@ -176,39 +171,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             update();
 
             // setup() definitions
-            function hide_reactions() { 
-		if (!o.is_visible.reactions) return;
-		o.sel.select("#reaction-paths").remove();
-                o.is_visible.reactions = false;
-            }
-            function show_reactions() { 
-		if (o.is_visible.reactions) return;
-                draw_reaction_paths();
-                o.is_visible.reactions = true;
-            }
-            function hide_metabolites() { 
-		if (!o.is_visible.metabolites) return;
-                o.sel.select("#metabolite-circles").remove();
-                o.sel.select("#metabolite-paths").remove();
-                o.is_visible.metabolites = false;
-            }
-            function show_metabolites() { 
-		if (o.is_visible.metabolites) return;
-                draw_metabolites();
-                o.is_visible.metabolites = true;
-            }
-            function hide_labels() { 
-		if (!o.is_visible.labels) return;
-                o.sel.select("#metabolite-labels").remove();
-                o.sel.select("#reaction-labels").remove();
-                o.is_visible.labels = false;
-            }
-            function show_labels() { 
-		if (o.is_visible.labels) return;
-		draw_reaction_labels();
-		draw_metabolite_labels();
-                o.is_visible.labels = true;
-            }
             function get_style_variables(style) {
                 return [];
 
@@ -319,25 +281,17 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                 .attr("style", "stroke:black;fill:none;");
 
             // generate map
+
 	    // always show these elements
             draw_membranes();
             draw_misc_labels();
-	    // draw these based on zoom thresholds
-            o.is_visible = { reactions: false, metabolites: false, labels: false };
-            if (o.zoom >= o.metabolite_zoom_threshold) {
-                draw_metabolites();
-                o.is_visible.metabolites = true;
-            }
-            if (o.zoom >= o.label_zoom_threshold) {
-                draw_reaction_labels();
 
-                draw_metabolite_labels();
-                o.is_visible.labels = true;
-            }
-            if (o.zoom >= o.reaction_zoom_threshold) {
-                draw_reaction_paths();
-                o.is_visible.reactions = true;
-            }
+	    // draw these based on zoom thresholds
+            draw_metabolites();
+            draw_reaction_labels();
+	    draw_metabolite_labels();
+	    draw_reaction_paths();
+	    update_visibility();
 
             apply_listeners();
         };
@@ -453,10 +407,10 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
 
         function draw_reaction_labels() {
             draw_these_reaction_labels(o.sel, o.map_data.reaction_labels, o.scale, o.has_flux,
-                                       o.has_flux_comparison, o.style_variables);
+                                       o.has_flux_comparison, o.style_variables, o.decimal_format);
         }
         function draw_these_reaction_labels(selection, reaction_labels, scale, has_flux,
-                                            has_flux_comparison, style_variables) {
+                                            has_flux_comparison, style_variables, decimal_format) {
             selection.append("g")
                 .attr("id", "reaction-labels")
                 .selectAll("text")
@@ -530,10 +484,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                     else if (has_metabolites) return scale.size(20);
                     else return scale.size(20);
                 })
-                .style("visibility","visible")
                 .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
         }
-
         function draw_reaction_paths() {
             draw_these_reaction_paths(o.sel, o.map_data.reaction_paths, o.scale, o.has_flux);
         }
@@ -583,6 +535,93 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                     else return "url(#start-triangle-path-color)";
                 });
         }
+	function update_visibility() {
+	    /* Update the visibility of element based on zoom thresholds.
+	     */
+	    if (o.is_visible===undefined)
+		o.is_visible = { metabolites: true, reactions: true, labels: true };
+	    if (o.hidden_dom===undefined)
+		o.hidden_dom = {};
+            if (o.zoom < o.reaction_zoom_threshold) hide_reactions();
+            else show_reactions();
+            if (o.zoom < o.metabolite_zoom_threshold) hide_metabolites();
+            else show_metabolites();
+            if (o.zoom < o.label_zoom_threshold) hide_labels();
+            else show_labels();
+	    
+	    // definitions
+            function hide_metabolites() { 
+		if (!o.is_visible.metabolites) return;
+		var t = o.sel.select("#metabolite-circles");
+		if (!t.empty()) {
+		    o.hidden_dom.metabolite_circles = t.node();
+		    t.remove();
+		    o.is_visible.metabolites = false;
+		    return;
+		}
+		t = o.sel.select("#metabolite-paths");
+		if (!t.empty()) {
+		    o.hidden_dom.metabolite_paths = t.node();
+		    t.remove();
+		    o.is_visible.metabolites = false;
+		    return;
+		}
+            }
+            function show_metabolites() { 
+		if (o.is_visible.metabolites) return;
+		if (!o.hidden_dom.metabolite_circles && !o.hidden_dom.metabolite_paths) {
+		    console.warn("couldn't find hidden metabolites.");
+		} else if (o.hidden_dom.metabolite_circles) {
+		    o.sel.node().appendChild(o.hidden_dom.metabolite_circles);
+		    o.is_visible.metabolites = true;
+		} else {
+		    o.sel.node().appendChild(o.hidden_dom.metabolite_paths);
+		    o.is_visible.metabolites = true;
+		}
+            }
+            function hide_reactions() { 
+		if (!o.is_visible.reactions) return;
+		var t = o.sel.select("#reaction-paths");
+		if (!t.empty()) {
+		    o.hidden_dom.reactions = t.node();
+		    t.remove();
+		    o.is_visible.reactions = false;
+		}
+            }
+            function show_reactions() { 
+		if (o.is_visible.reactions) return;
+		if (!o.hidden_dom.reactions) {
+		    console.warn("couldn't find hidden reactions.");
+		} else {
+		    o.sel.node().appendChild(o.hidden_dom.reactions);
+		    o.is_visible.reactions = true;
+		}
+            }
+            function hide_labels() { 
+		if (!o.is_visible.labels) return;
+		var t = o.sel.select("#metabolite-labels");
+		if (!t.empty()) {
+		    o.hidden_dom.metabolite_labels = t.node();
+		    t.remove();
+		}
+		t = o.sel.select("#reaction-labels");
+		if (!t.empty()) {
+		    o.hidden_dom.reaction_labels = t.node();
+		    t.remove();
+		}
+		o.is_visible.labels = false;
+            }
+            function show_labels() { 
+		if (o.is_visible.labels) return;
+		if (!o.hidden_dom.metabolite_labels || !o.hidden_dom.reaction_labels) {
+		    console.warn("couldn't find hidden metabolite or reaction labels.");
+		} else {
+		    o.sel.node().appendChild(o.hidden_dom.metabolite_labels);
+		    o.sel.node().appendChild(o.hidden_dom.reaction_labels);
+		    o.is_visible.labels = true;
+		}
+            }
+	}
         function make_arrowhead_for_fill(fill) {
             d3.select('#markers').selectAll("marker");
             return "";
