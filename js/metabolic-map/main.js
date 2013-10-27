@@ -11,9 +11,9 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             flux_path: false,
             flux2_path: false,
             css: '',
-            metabolite_zoom_threshold: 5,
+            metabolite_zoom_threshold: 0,
             reaction_zoom_threshold: 0,
-            label_zoom_threshold: 15,
+            label_zoom_threshold: 0,
 	    zoom_bounds: [0, 25] });
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
