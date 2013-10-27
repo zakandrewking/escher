@@ -145,8 +145,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             return this;
         }
         function setup() {
-            o.decimal_format = d3.format('.1f');
-            o.decimal_format_3 = d3.format('.3f');
+            o.decimal_format = d3.format('.4g');
             o.style_variables = get_style_variables(o.style);
 
             // set up svg and svg definitions
@@ -217,8 +216,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
                     .domain([0, 40, 200])
                     .range([1, 1, 1]),
                 scale.flux_color = d3.scale.linear()
-                    .domain([0, 1, 20, 50])
-                    .range(["rgb(200,200,200)", "rgb(150,150,255)", "blue", "red"]),
+                    .domain([0, 0.000001, 1, 8, 50])
+                    .range(["rgb(200,200,200)", "rgb(190,190,255)", "rgb(100,100,255)", "blue", "red"]),
                 scale.metabolite_concentration = d3.scale.linear()
                     .domain([0, 10])
                     .range([15, 200]),
