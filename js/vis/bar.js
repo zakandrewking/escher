@@ -131,7 +131,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
                                           { padding: o.plot_padding,
                                             x_ticks: 0,
                                             y_ticks: 5,
-                                            y_tick_format: d3.format("f") }),
+                                            y_tick_format: d3.format(".0%") }),
             x = out.x, y = out.y;
             scaffold.add_generic_axis('x', o.x_axis_label, sel, out.x_axis,
                                       o.width, o.height, o.plot_padding);
