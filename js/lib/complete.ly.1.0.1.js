@@ -6,7 +6,8 @@
  * This Software shall be used for doing good things, not bad things.
  * 
 **/  
-function completely(container, config) {
+define(function() {
+return function(container, config) {
     config = config || {};
     config.fontSize =                       config.fontSize   || '16px';
     config.fontFamily =                     config.fontFamily || 'sans-serif';
@@ -401,3 +402,4 @@ function completely(container, config) {
     }
     return rs;
 }
+});

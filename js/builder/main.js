@@ -1,12 +1,11 @@
-define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly",
-	"lib/jquery", "lib/builder/jquery-ui"], function(scaffold, utils, d3, completely) {
+define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], function(scaffold, utils, d3, completely) {
     // TODO
     // connected node object
     // only display each node once
     // why aren't some nodes appearing as selected?
     // BRANCHING!
-    // make object oriented
-    //   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript
+    // make object oriented ?
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript
     return function(options) {
         // set defaults
         var o = scaffold.set_options(options, {
@@ -15,13 +14,17 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly",
             selection_is_svg: false,
             fillScreen: false,
             update_hook: false,
-            css_path: "css/metabolic-map.css",
-            map_path: "data/maps/simpheny-maps/ijo-central.json",
-            flux_path: false,
-            flux2_path: false,
+            css_path: null,
+            map_path: null,
+	    map_json: null,
+            flux_path: null,
+            flux: null,
+            flux2_path: null,
+            flux2: null,
             css: '' });
 
-	if (o.selection_is_svg) console.error("Builder does not support placement within svg elements");
+	if (o.selection_is_svg)
+	    console.error("Builder does not support placement within svg elements");
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
                                      o.margins, o.fill_screen);
@@ -31,10 +34,14 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly",
 
 	o.reaction_input = setup_reaction_input(o.selection);
 
-        var files_to_load = [{file: o.css_path, callback: set_css },
-                             {file: o.map_path, callback: set_map },
-                             {file: o.flux_path,  callback: function(e, f) { set_flux(e, f, 0); } },
-                             {file: o.flux2_path, callback: function(e, f) { set_flux(e, f, 1); } } ];
+        var files_to_load = [{ file: o.css_path, callback: set_css },
+                             { file: o.map_path, callback: set_map },
+                             { file: o.flux_path,
+			       callback: function(e, f) { set_flux(e, f, 0); },
+			       value: o.flux},
+			     { file: o.flux2_path,
+			       callback: function(e, f) { set_flux(e, f, 1); }, 
+			       value: o.flux2 } ];
         scaffold.load_files(files_to_load, update);
 
         return { update: update };
@@ -132,6 +139,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly",
 
             // set up keyboard listeners
             key_listeners();
+
+	    return this;
         }
 
         function load_model_and_list(coords, callback_function) {
@@ -385,7 +394,8 @@ console.log(reaction_obj);
 
             // set reaction coordinates and angle
             // be sure to copy the reaction using jquery extend, recursively
-            var reaction = $.extend(true, {}, o.cobra_reactions[reaction_id]);
+	    return; 		//TODO fix
+            // var reaction = $.extend(true, {}, o.cobra_reactions[reaction_id]);
             reaction.coords = align_to_grid(coords);
             reaction.angle = 0 * (Math.PI / 180); // default angle
 
@@ -782,7 +792,8 @@ console.log(reaction_obj);
             var array = [];
             for (var key in obj) {
                 // copy object
-                var o = $.extend(true, {}, obj[key]);
+		return; 	//TODO fix
+                // var o = $.extend(true, {}, obj[key]);
                 // add key as 'id'
                 o[id_key] = key;
                 // add object to array
@@ -819,7 +830,8 @@ console.log(reaction_obj);
             var reaction_subset = {},
                 i = -1;
             while (++i<reaction_ids.length) {
-                reaction_subset[reaction_ids[i]] = $.extend(true, {}, o.drawn_reactions[reaction_ids[i]]);
+		return; //TODO fix
+                // reaction_subset[reaction_ids[i]] = $.extend(true, {}, o.drawn_reactions[reaction_ids[i]]);
             }
             if (reaction_ids.length != Object.keys(reaction_subset).length) {
                 console.warn('did not find correct reaction subset');
@@ -934,7 +946,7 @@ console.log(reaction_obj);
 
             d3.select(window).on("keydown", function() {
                 var kc = d3.event.keyCode,
-                    reaction_input_focus =  $(o.reaction_input.completely.input).is(":focus");
+                    reaction_input_focus = false; // $(o.reaction_input.completely.input).is(":focus"); TODO fix
                 if (kc==primary_cycle_key && !reaction_input_focus) {
                     cycle_primary_key();
                 } else if (kc==hide_show_input_key) {

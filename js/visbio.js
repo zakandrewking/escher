@@ -3391,25 +3391,420 @@ define('metabolic-map/knockout',["vis/scaffold", "lib/d3"], function (scaffold, 
     };
 });
 
-define('lib/jquery',[],function () {
-    if (window.$===undefined) console.warn('jquery is not loaded.');
-    return window.$;
+/**
+ * complete.ly 1.0.0
+ * MIT Licensing
+ * Copyright (c) 2013 Lorenzo Puccetti
+ * 
+ * This Software shall be used for doing good things, not bad things.
+ * 
+**/  
+define('lib/complete.ly',[],function() {
+return function(container, config) {
+    config = config || {};
+    config.fontSize =                       config.fontSize   || '16px';
+    config.fontFamily =                     config.fontFamily || 'sans-serif';
+    config.promptInnerHTML =                config.promptInnerHTML || ''; 
+    config.color =                          config.color || '#333';
+    config.hintColor =                      config.hintColor || '#aaa';
+    config.backgroundColor =                config.backgroundColor || '#fff';
+    config.dropDownBorderColor =            config.dropDownBorderColor || '#aaa';
+    config.dropDownZIndex =                 config.dropDownZIndex || '100'; // to ensure we are in front of everybody
+    config.dropDownOnHoverBackgroundColor = config.dropDownOnHoverBackgroundColor || '#ddd';
+    
+    var txtInput = document.createElement('input');
+    txtInput.type ='text';
+    txtInput.spellcheck = false; 
+    txtInput.style.fontSize =        config.fontSize;
+    txtInput.style.fontFamily =      config.fontFamily;
+    txtInput.style.color =           config.color;
+    txtInput.style.backgroundColor = config.backgroundColor;
+    txtInput.style.width = '100%';
+    txtInput.style.outline = '0';
+    txtInput.style.border =  '0';
+    txtInput.style.margin =  '0';
+    txtInput.style.padding = '0';
+    
+    var txtHint = txtInput.cloneNode(); 
+    txtHint.disabled='';        
+    txtHint.style.position = 'absolute';
+    txtHint.style.top =  '0';
+    txtHint.style.left = '0';
+    txtHint.style.borderColor = 'transparent';
+    txtHint.style.boxShadow =   'none';
+    txtHint.style.color = config.hintColor;
+    
+    txtInput.style.backgroundColor ='transparent';
+    txtInput.style.verticalAlign = 'top';
+    txtInput.style.position = 'relative';
+    
+    var wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    wrapper.style.outline = '0';
+    wrapper.style.border =  '0';
+    wrapper.style.margin =  '0';
+    wrapper.style.padding = '0';
+    
+    var prompt = document.createElement('div');
+    prompt.style.position = 'absolute';
+    prompt.style.outline = '0';
+    prompt.style.margin =  '0';
+    prompt.style.padding = '0';
+    prompt.style.border =  '0';
+    prompt.style.fontSize =   config.fontSize;
+    prompt.style.fontFamily = config.fontFamily;
+    prompt.style.color =           config.color;
+    prompt.style.backgroundColor = config.backgroundColor;
+    prompt.style.top = '0';
+    prompt.style.left = '0';
+    prompt.style.overflow = 'hidden';
+    prompt.innerHTML = config.promptInnerHTML;
+    prompt.style.background = 'transparent';
+    if (document.body === undefined) {
+        throw 'document.body is undefined. The library was wired up incorrectly.';
+    }
+    document.body.appendChild(prompt);            
+    var w = prompt.getBoundingClientRect().right; // works out the width of the prompt.
+    wrapper.appendChild(prompt);
+    prompt.style.visibility = 'visible';
+    prompt.style.left = '-'+w+'px';
+    wrapper.style.marginLeft= w+'px';
+    
+    wrapper.appendChild(txtHint);
+    wrapper.appendChild(txtInput);
+    
+    var dropDown = document.createElement('div');
+    dropDown.style.position = 'absolute';
+    dropDown.style.visibility = 'hidden';
+    dropDown.style.outline = '0';
+    dropDown.style.margin =  '0';
+    dropDown.style.padding = '0';  
+    dropDown.style.textAlign = 'left';
+    dropDown.style.fontSize =   config.fontSize;      
+    dropDown.style.fontFamily = config.fontFamily;
+    dropDown.style.backgroundColor = config.backgroundColor;
+    dropDown.style.zIndex = config.dropDownZIndex; 
+    dropDown.style.cursor = 'default';
+    dropDown.style.borderStyle = 'solid';
+    dropDown.style.borderWidth = '1px';
+    dropDown.style.borderColor = config.dropDownBorderColor;
+    dropDown.style.overflowX= 'hidden';
+    dropDown.style.whiteSpace = 'pre';
+    dropDown.style.overflowY = 'scroll';  // note: this might be ugly when the scrollbar is not required. however in this way the width of the dropDown takes into account
+    
+    
+    var createDropDownController = function(elem) {
+        var rows = [];
+        var ix = 0;
+        var oldIndex = -1;
+        
+        var onMouseOver =  function() { this.style.outline = '1px solid #ddd'; }
+        var onMouseOut =   function() { this.style.outline = '0'; }
+        var onMouseDown =  function() { p.hide(); p.onmouseselection(this.__hint); }
+        
+        var p = {
+            hide :  function() { elem.style.visibility = 'hidden'; }, 
+            refresh : function(token, array) {
+                elem.style.visibility = 'hidden';
+                ix = 0;
+                elem.innerHTML ='';
+                var vph = (window.innerHeight || document.documentElement.clientHeight);
+                var rect = elem.parentNode.getBoundingClientRect();
+                var distanceToTop = rect.top - 6;                        // heuristic give 6px 
+                var distanceToBottom = vph - rect.bottom -6;  // distance from the browser border.
+                
+                rows = [];
+                for (var i=0;i<array.length;i++) {
+                    if (array[i].indexOf(token)!==0) { continue; }
+                    var divRow =document.createElement('div');
+                    divRow.style.color = config.color;
+                    divRow.onmouseover = onMouseOver; 
+                    divRow.onmouseout =  onMouseOut;
+                    divRow.onmousedown = onMouseDown; 
+                    divRow.__hint =    array[i];
+                    divRow.innerHTML = token+'<b>'+array[i].substring(token.length)+'</b>';
+                    rows.push(divRow);
+                    elem.appendChild(divRow);
+                }
+                if (rows.length===0) {
+                    return; // nothing to show.
+                }
+                if (rows.length===1 && token === rows[0].__hint) {
+                    return; // do not show the dropDown if it has only one element which matches what we have just displayed.
+                }
+                
+                if (rows.length<2) return; 
+                p.highlight(0);
+                
+                if (distanceToTop > distanceToBottom*3) {        // Heuristic (only when the distance to the to top is 4 times more than distance to the bottom
+                    elem.style.maxHeight =  distanceToTop+'px';  // we display the dropDown on the top of the input text
+                    elem.style.top ='';
+                    elem.style.bottom ='100%';
+                } else {
+                    elem.style.top = '100%';  
+                    elem.style.bottom = '';
+                    elem.style.maxHeight =  distanceToBottom+'px';
+                }
+                elem.style.visibility = 'visible';
+            },
+            highlight : function(index) {
+                if (oldIndex !=-1 && rows[oldIndex]) { 
+                    rows[oldIndex].style.backgroundColor = config.backgroundColor;
+                }
+                rows[index].style.backgroundColor = config.dropDownOnHoverBackgroundColor; // <-- should be config
+                oldIndex = index;
+            },
+            move : function(step) { // moves the selection either up or down (unless it's not possible) step is either +1 or -1.
+                if (elem.style.visibility === 'hidden')             return ''; // nothing to move if there is no dropDown. (this happens if the user hits escape and then down or up)
+                if (ix+step === -1 || ix+step === rows.length) return rows[ix].__hint; // NO CIRCULAR SCROLLING. 
+                ix+=step; 
+                p.highlight(ix);
+                return rows[ix].__hint;//txtShadow.value = uRows[uIndex].__hint ;
+            },
+            onmouseselection : function() {} // it will be overwritten. 
+        };
+        return p;
+    }
+    
+    var dropDownController = createDropDownController(dropDown);
+    
+    dropDownController.onmouseselection = function(text) {
+        txtInput.value = txtHint.value = leftSide+text; 
+        rs.onChange(txtInput.value); // <-- forcing it.
+        registerOnTextChangeOldValue = txtInput.value; // <-- ensure that mouse down will not show the dropDown now.
+        setTimeout(function() { txtInput.focus(); },0);  // <-- I need to do this for IE 
+    }
+    
+    wrapper.appendChild(dropDown);
+    container.appendChild(wrapper);
+    
+    var spacer; 
+    var leftSide; // <-- it will contain the leftSide part of the textfield (the bit that was already autocompleted)
+    
+    
+    function calculateWidthForText(text) {
+        if (spacer === undefined) { // on first call only.
+            spacer = document.createElement('span'); 
+            spacer.style.visibility = 'hidden';
+            spacer.style.position = 'fixed';
+            spacer.style.outline = '0';
+            spacer.style.margin =  '0';
+            spacer.style.padding = '0';
+            spacer.style.border =  '0';
+            spacer.style.left = '0';
+            spacer.style.whiteSpace = 'pre';
+            spacer.style.fontSize =   config.fontSize;
+            spacer.style.fontFamily = config.fontFamily;
+            spacer.style.fontWeight = 'normal';
+            document.body.appendChild(spacer);    
+        }        
+        
+        // Used to encode an HTML string into a plain text.
+        // taken from http://stackoverflow.com/questions/1219860/javascript-jquery-html-encoding
+        spacer.innerHTML = String(text).replace(/&/g, '&amp;')
+                                       .replace(/"/g, '&quot;')
+                                       .replace(/'/g, '&#39;')
+                                       .replace(/</g, '&lt;')
+                                       .replace(/>/g, '&gt;');
+        return spacer.getBoundingClientRect().right;
+    }
+    
+    
+    var rs = { 
+        onArrowDown : function() {},               // defaults to no action.
+        onArrowUp :   function() {},               // defaults to no action.
+        onEnter :     function() {},               // defaults to no action.
+        onTab :       function() {},               // defaults to no action.
+        onChange:     function() { rs.repaint() }, // defaults to repainting.
+        startFrom:    0,
+        options:      [],
+        wrapper : wrapper,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        input :  txtInput,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations) 
+        hint  :  txtHint,       // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        dropDown :  dropDown,         // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        prompt : prompt,
+        setText : function(text) {
+            txtHint.value = text;
+            txtInput.value = text; 
+        },
+        getText : function() {
+        	return txtInput.value; 
+        },
+        hideDropDown : function() {
+        	dropDownController.hide();
+        },
+        repaint : function() {
+            var text = txtInput.value;
+            var startFrom =  rs.startFrom; 
+            var options =    rs.options;
+            var optionsLength = options.length; 
+            
+            // breaking text in leftSide and token.
+            var token = text.substring(startFrom);
+            leftSide =  text.substring(0,startFrom);
+            
+            // updating the hint. 
+            txtHint.value ='';
+            for (var i=0;i<optionsLength;i++) {
+                var opt = options[i];
+                if (opt.indexOf(token)===0) {         // <-- how about upperCase vs. lowercase
+                    txtHint.value = leftSide +opt;
+                    break;
+                }
+            }
+            
+            // moving the dropDown and refreshing it.
+            dropDown.style.left = calculateWidthForText(leftSide)+'px';
+            dropDownController.refresh(token, rs.options);
+        }
+    };
+    
+    var registerOnTextChangeOldValue;
+
+    /**
+     * Register a callback function to detect changes to the content of the input-type-text.
+     * Those changes are typically followed by user's action: a key-stroke event but sometimes it might be a mouse click.
+    **/
+    var registerOnTextChange = function(txt, callback) {
+        registerOnTextChangeOldValue = txt.value;
+        var handler = function() {
+            var value = txt.value;
+            if (registerOnTextChangeOldValue !== value) {
+                registerOnTextChangeOldValue = value;
+                callback(value);
+            }
+        };
+
+        //  
+        // For user's actions, we listen to both input events and key up events
+        // It appears that input events are not enough so we defensively listen to key up events too.
+        // source: http://help.dottoro.com/ljhxklln.php
+        //
+        // The cost of listening to three sources should be negligible as the handler will invoke callback function
+        // only if the text.value was effectively changed. 
+        //  
+        // 
+        if (txt.addEventListener) {
+            txt.addEventListener("input",  handler, false);
+            txt.addEventListener('keyup',  handler, false);
+            txt.addEventListener('change', handler, false);
+        } else { // is this a fair assumption: that attachEvent will exist ?
+            txt.attachEvent('oninput', handler); // IE<9
+            txt.attachEvent('onkeyup', handler); // IE<9
+            txt.attachEvent('onchange',handler); // IE<9
+        }
+    };
+    
+    
+    registerOnTextChange(txtInput,function(text) { // note the function needs to be wrapped as API-users will define their onChange
+        rs.onChange(text);
+    });
+    
+    
+    var keyDownHandler = function(e) {
+        e = e || window.event;
+        var keyCode = e.keyCode;
+        
+        if (keyCode == 33) { return; } // page up (do nothing)
+        if (keyCode == 34) { return; } // page down (do nothing);
+        
+        if (keyCode == 27) { //escape
+            dropDownController.hide();
+            txtHint.value = txtInput.value; // ensure that no hint is left.
+            txtInput.focus(); 
+            return; 
+        }
+        
+        if (keyCode == 39 || keyCode == 35 || keyCode == 9) { // right,  end, tab  (autocomplete triggered)
+        	if (keyCode == 9) { // for tabs we need to ensure that we override the default behaviour: move to the next focusable HTML-element 
+           	    e.preventDefault();
+                e.stopPropagation();
+                if (txtHint.value.length == 0) {
+                	rs.onTab(); // tab was called with no action.
+                	            // users might want to re-enable its default behaviour or handle the call somehow.
+                }
+            }
+            if (txtHint.value.length > 0) { // if there is a hint
+                dropDownController.hide();
+                txtInput.value = txtHint.value;
+                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
+                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
+                                                          // for example imagine the array contains the following words: bee, beef, beetroot
+                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
+                if (hasTextChanged) {
+                    rs.onChange(txtInput.value); // <-- forcing it.
+                }
+            }
+            return; 
+        }
+        
+        if (keyCode == 13) {       // enter  (autocomplete triggered)
+            if (txtHint.value.length == 0) { // if there is a hint
+                rs.onEnter();
+            } else {
+                var wasDropDownHidden = (dropDown.style.visibility == 'hidden');
+                dropDownController.hide();
+                
+                if (wasDropDownHidden) {
+                    txtHint.value = txtInput.value; // ensure that no hint is left.
+                    txtInput.focus();
+                    rs.onEnter();    
+                    return; 
+                }
+                
+                txtInput.value = txtHint.value;
+                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
+                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
+                                                          // for example imagine the array contains the following words: bee, beef, beetroot
+                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
+                if (hasTextChanged) {
+                    rs.onChange(txtInput.value); // <-- forcing it.
+                }
+                
+            }
+            return; 
+        }
+        
+        if (keyCode == 40) {     // down
+            var m = dropDownController.move(+1);
+            if (m == '') { rs.onArrowDown(); }
+            txtHint.value = leftSide+m;
+            return; 
+        } 
+            
+        if (keyCode == 38 ) {    // up
+            var m = dropDownController.move(-1);
+            if (m == '') { rs.onArrowUp(); }
+            txtHint.value = leftSide+m;
+            e.preventDefault();
+            e.stopPropagation();
+            return; 
+        }
+            
+        // it's important to reset the txtHint on key down.
+        // think: user presses a letter (e.g. 'x') and never releases... you get (xxxxxxxxxxxxxxxxx)
+        // and you would see still the hint
+        txtHint.value =''; // resets the txtHint. (it might be updated onKeyUp)
+        
+    };
+    
+    if (txtInput.addEventListener) {
+        txtInput.addEventListener("keydown",  keyDownHandler, false);
+    } else { // is this a fair assumption: that attachEvent will exist ?
+        txtInput.attachEvent('onkeydown', keyDownHandler); // IE<9
+    }
+    return rs;
+}
 });
 
-define('lib/builder/jquery-ui',[],function () {
-    if (window.$===undefined) return console.warn('jquery is still not loaded.');
-    if (window.$.ui===undefined) return console.warn('jquery-ui is not loaded.');
-    return window.$.ui;
-});
-
-define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jquery", "lib/builder/jquery-ui"], function(scaffold, utils, d3) {
+define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], function(scaffold, utils, d3, completely) {
     // TODO
     // connected node object
     // only display each node once
     // why aren't some nodes appearing as selected?
     // BRANCHING!
-    // make object oriented
-    //   https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript
+    // make object oriented ?
+    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript
     return function(options) {
         // set defaults
         var o = scaffold.set_options(options, {
@@ -3418,13 +3813,17 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
             selection_is_svg: false,
             fillScreen: false,
             update_hook: false,
-            css_path: "css/metabolic-map.css",
-            map_path: "data/maps/simpheny-maps/ijo-central.json",
-            flux_path: false,
-            flux2_path: false,
+            css_path: null,
+            map_path: null,
+	    map_json: null,
+            flux_path: null,
+            flux: null,
+            flux2_path: null,
+            flux2: null,
             css: '' });
 
-	if (o.selection_is_svg) console.error("Builder does not support placement within svg elements");
+	if (o.selection_is_svg)
+	    console.error("Builder does not support placement within svg elements");
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
                                      o.margins, o.fill_screen);
@@ -3434,10 +3833,14 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
 
 	o.reaction_input = setup_reaction_input(o.selection);
 
-        var files_to_load = [{file: o.css_path, callback: set_css },
-                             {file: o.map_path, callback: set_map },
-                             {file: o.flux_path,  callback: function(e, f) { set_flux(e, f, 0); } },
-                             {file: o.flux2_path, callback: function(e, f) { set_flux(e, f, 1); } } ];
+        var files_to_load = [{ file: o.css_path, callback: set_css },
+                             { file: o.map_path, callback: set_map },
+                             { file: o.flux_path,
+			       callback: function(e, f) { set_flux(e, f, 0); },
+			       value: o.flux},
+			     { file: o.flux2_path,
+			       callback: function(e, f) { set_flux(e, f, 1); }, 
+			       value: o.flux2 } ];
         scaffold.load_files(files_to_load, update);
 
         return { update: update };
@@ -3457,9 +3860,21 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
             else if (index==1) o.flux2 = flux;
         };
 	function setup_reaction_input(selection) {
-	    return selection.append("input")
-		.attr("id", "rxn-input")
-		.style("display", "none");
+	    // set up container
+	    var sel = selection.append("div").attr("id", "rxn-input");
+	    sel.attr("display", "none");
+	    // set up complete.ly
+	    var complete = completely(sel.node(), { backgroundColor: "#eee" });
+	    d3.select(complete.input)
+		// .attr('placeholder', 'Reaction ID -- Flux')
+		.on('input', function() {
+		    this.value = this.value.replace("/","")
+			.replace(" ","")
+			.replace("\\","")
+			.replace("<","");
+		});
+	    return { selection: sel,
+		     completely: complete };
 	};
         function update() {
             o.version = 0.2;
@@ -3499,11 +3914,11 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
 	    o.zoom = zoom;
 	    o.sel = sel;	// TODO remove these from o
 
-	    // var mouse_node = o.sel.append('rect')
-            //         .attr("width", o.width)
-            //         .attr("height", o.height)
-            //         .attr('style', 'visibility: hidden')
-            //         .attr('pointer-events', 'all');
+	    var mouse_node = o.sel.append('rect')
+                    .attr("width", o.width)
+                    .attr("height", o.height)
+		    .attr("style", "stroke:black;fill:none;")
+                    .attr('pointer-events', 'all');
 
             o.sel.append('g')
                 .attr('id', 'reactions');
@@ -3518,11 +3933,13 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
                 d3.select('#loading').style('display', 'none');
                 // Focus on menu. TODO use a better callback rather than the
                 // setTimeout.
-                window.setTimeout(function() { $('#rxn-input').focus(); }, 50);
+                window.setTimeout(function() { o.reaction_input.completely.input.focus(); }, 50);
             });
 
             // set up keyboard listeners
             key_listeners();
+
+	    return this;
         }
 
         function load_model_and_list(coords, callback_function) {
@@ -3579,20 +3996,16 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
 
         function place_reaction_input(coords) {
             var d = {'x': 280, 'y': 0},
-                input = d3.select('#rxn-input');
+                input = o.reaction_input;
             var left = Math.max(20, Math.min(o.width-270, (o.window_scale * coords.x + o.window_translate.x - d.x)));
             var top = Math.max(20, Math.min(o.height-40, (o.window_scale * coords.y + o.window_translate.y - d.y)));
             // blur
-            input.node().blur();
-            input.style('position', 'absolute')
-                .attr('placeholder', 'Reaction ID -- Flux')
+	    input.completely.input.blur();
+            input.selection.style('position', 'absolute')
                 .style('display', 'block')
                 .style('left',left+'px')
-                .style('top',top+'px')
-            // ignore spaces
-                .on('input', function() { this.value = this.value.replace(" ", ""); });
-            // // focus
-            // if (should_focus) input.node().focus();
+                .style('top',top+'px');
+	    input.completely.repaint();
         }
 
         function reload_reaction_input(coords) {
@@ -3624,29 +4037,29 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
                 }
             }
 
+	    var reactions = reaction_ids_to_display.map(function(x) {
+		return o.list_strings.filter(function(y) { return y.value==x; })[0];
+	    });
+	    var i = -1, reaction_obj = {}, strings_to_display = [];
+	    while (++i < reactions.length) {
+		if (reactions[i]===undefined) continue;
+		reaction_obj[reactions[i].label] = reactions[i].value;
+		strings_to_display.push(reactions[i].label);
+	    };
+console.log(reaction_obj);
+
             // set up the box with data, searching for first num results
             var num = 20;
-            $("#rxn-input").autocomplete(
-                { autoFocus: true,
-                  minLength: 0,
-                  source: function(request, response) {
-                      var escaped = $.ui.autocomplete.escapeRegex(request.term),
-                          matcher = new RegExp("^" + escaped, "i"),
-                          results = o.list_strings.filter(function(x) {
-                              // check against drawn reactions
-                              if (reaction_ids_to_display.indexOf(x.value) >= 0)
-                                  return matcher.test(x.value);
-                              return false;
-                          });
-                      response(results.slice(0,num));
-                  },
-                  change: function(event, ui) {
-                      if (ui.item) {
-                          new_reaction(ui.item.value, coords);
-                          this.value = "";
-                      }
-                  }
-                });
+	    var complete = o.reaction_input.completely;
+	    complete.options = strings_to_display;
+	    if (reaction_ids_to_display.length==1) complete.setText(reaction_ids_to_display[0]);
+	    else complete.setText("");
+	    complete.onEnter = function() {
+		if (reaction_obj.hasOwnProperty(this.getText()))
+		    new_reaction(reaction_obj[this.getText()], coords);
+		this.setText("");
+	    };
+	    complete.repaint();
         }
 
         // -----------------------------------------------------------------------------------
@@ -3780,7 +4193,8 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
 
             // set reaction coordinates and angle
             // be sure to copy the reaction using jquery extend, recursively
-            var reaction = $.extend(true, {}, o.cobra_reactions[reaction_id]);
+	    return; 		//TODO fix
+            // var reaction = $.extend(true, {}, o.cobra_reactions[reaction_id]);
             reaction.coords = align_to_grid(coords);
             reaction.angle = 0 * (Math.PI / 180); // default angle
 
@@ -3847,7 +4261,7 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
             var new_coords = coords_for_selected_metabolite();
             translate_off_screen(new_coords);
             reload_reaction_input(new_coords);
-            setTimeout(function() { $('#rxn-input').focus(); }, 50);
+            window.setTimeout(function() { o.reaction_input.completely.input.focus(); }, 50);
         }
 
         function translate_off_screen(coords) {
@@ -4177,7 +4591,8 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
             var array = [];
             for (var key in obj) {
                 // copy object
-                var o = $.extend(true, {}, obj[key]);
+		return; 	//TODO fix
+                // var o = $.extend(true, {}, obj[key]);
                 // add key as 'id'
                 o[id_key] = key;
                 // add object to array
@@ -4214,7 +4629,8 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
             var reaction_subset = {},
                 i = -1;
             while (++i<reaction_ids.length) {
-                reaction_subset[reaction_ids[i]] = $.extend(true, {}, o.drawn_reactions[reaction_ids[i]]);
+		return; //TODO fix
+                // reaction_subset[reaction_ids[i]] = $.extend(true, {}, o.drawn_reactions[reaction_ids[i]]);
             }
             if (reaction_ids.length != Object.keys(reaction_subset).length) {
                 console.warn('did not find correct reaction subset');
@@ -4321,7 +4737,7 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
 
         function key_listeners() {
             var primary_cycle_key = 80, // 'p'
-                hide_show_input_key = 32, // SPACE
+                hide_show_input_key = 191, // forward slash '/'
                 rotate_keys = {'left':  37,
                                'right': 39,
                                'up':    38,
@@ -4329,12 +4745,17 @@ define('builder/main',["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/jqu
 
             d3.select(window).on("keydown", function() {
                 var kc = d3.event.keyCode,
-                    reaction_input_focus =  $('#rxn-input').is(":focus");
+                    reaction_input_focus = false; // $(o.reaction_input.completely.input).is(":focus"); TODO fix
                 if (kc==primary_cycle_key && !reaction_input_focus) {
                     cycle_primary_key();
                 } else if (kc==hide_show_input_key) {
-                    if (reaction_input_focus) $('#rxn-input').blur();
-                    else $('#rxn-input').focus();
+                    if (reaction_input_focus) {
+			o.reaction_input.completely.input.blur();
+			o.reaction_input.completely.hideDropDown();
+		    } else {
+			o.reaction_input.completely.input.focus();
+			o.reaction_input.completely.repaint();
+		    }
                 } else if (kc==rotate_keys.left && !reaction_input_focus) {
                     modify_reaction(o.selected_node.reaction_id, 'angle', 270*(Math.PI/180));
                     draw_specific_reactions_with_location(o.selected_node.reaction_id);
