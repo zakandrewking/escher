@@ -86,7 +86,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             o.drawn_reactions = {};
             o.arrowheads_generated = [];
             o.cobra_reactions = {};
-            o.list_strings = [];
+            o.sorted_reaction_suggestions = [];
             o.scale = {};
             o.scale.flux_color = d3.scale.linear()
                 .domain([0, 20])
@@ -108,7 +108,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		out = utils.setup_zoom_container(svg, width, height, [0.05, 15], function(ev) {
 		    o.window_translate = {'x': ev.translate[0], 'y': ev.translate[1]};
 		    o.window_scale = ev.scale;
-		    place_reaction_input(coords_for_selected_metabolite());
+		    if (reaction_input_is_visible()) 
+			place_reaction_input(coords_for_selected_metabolite());
 		}),
 		sel = out.sel,
 		zoom = out.zoom;
@@ -174,8 +175,10 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     var i=-1;
                     while (++i < sorted.length) {
                         // update strings for reaction list
-                        o.list_strings.push({ label: sorted[i][0]+": "+o.decimal_format(sorted[i][1]),
-                                              value: sorted[i][0] });
+                        o.sorted_reaction_suggestions.push({
+			    label: sorted[i][0]+": "+o.decimal_format(sorted[i][1]),
+			    value: sorted[i][0]
+			});
 
                         // update model with fluxes
                         for (var reaction_id in o.cobra_reactions) {
@@ -210,8 +213,9 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         }
 
         function reload_reaction_input(coords) {
-            // Reload data for autocomplete box and redraw box at the new
-            // coordinates.
+            /* Reload data for autocomplete box and redraw box at the new
+	     * coordinates.
+	     */
             place_reaction_input(coords);
 
             // Find selected reaction
@@ -238,16 +242,17 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 }
             }
 
-	    var reactions = reaction_ids_to_display.map(function(x) {
-		return o.list_strings.filter(function(y) { return y.value==x; })[0];
+	    // Generate the list of reactions to suggest
+	    var filtered_suggestions = o.sorted_reaction_suggestions.filter(function(x) {
+		return reaction_ids_to_display.indexOf(x.value) > -1;
 	    });
+	    // Make an array of strings to suggest, and an object to retrieve
+	    // the reaction ids
 	    var i = -1, reaction_obj = {}, strings_to_display = [];
-	    while (++i < reactions.length) {
-		if (reactions[i]===undefined) continue;
-		reaction_obj[reactions[i].label] = reactions[i].value;
-		strings_to_display.push(reactions[i].label);
+	    while (++i < filtered_suggestions.length) {
+		reaction_obj[filtered_suggestions[i].label] = filtered_suggestions[i].value;
+		strings_to_display.push(filtered_suggestions[i].label);
 	    };
-console.log(reaction_obj);
 
             // set up the box with data, searching for first num results
             var num = 20;
@@ -261,6 +266,7 @@ console.log(reaction_obj);
 		this.setText("");
 	    };
 	    complete.repaint();
+	    o.reaction_input.completely.input.focus();
         }
 
         // -----------------------------------------------------------------------------------
@@ -460,9 +466,9 @@ console.log(reaction_obj);
             draw();
             var new_coords = coords_for_selected_metabolite();
             translate_off_screen(new_coords);
-            reload_reaction_input(new_coords);
-            window.setTimeout(function() { o.reaction_input.completely.input.focus(); }, 50);
-        }
+	    if (reaction_input_is_visible())
+		reload_reaction_input(new_coords);
+	}
 
         function translate_off_screen(coords) {
             // shift window if new reaction will draw off the screen
@@ -582,11 +588,9 @@ console.log(reaction_obj);
                 o.selected_node.metabolite_id = new_primary_metabolite_id;
                 coords = get_coords_for_metabolite(o.selected_node.metabolite_id,
                                                      o.selected_node.reaction_id);
-                reload_reaction_input(coords);
             } else {
                 coords = get_coords_for_metabolite(o.selected_node.metabolite_id,
                                                      o.selected_node.reaction_id);
-                place_reaction_input(coords);
             }
 
             draw_specific_reactions([o.selected_node.reaction_id]);
@@ -597,7 +601,8 @@ console.log(reaction_obj);
             o.selected_node.direction = d.coefficient > 0 ? 'product' : 'reactant';
             o.selected_node.is_selected = true;
             o.selected_node.reaction_id = d.reaction_id;
-            reload_reaction_input(coords_for_selected_metabolite());
+	    if (reaction_input_is_visible())
+		reload_reaction_input(coords_for_selected_metabolite());
             draw();
         }
 
@@ -606,33 +611,7 @@ console.log(reaction_obj);
             var g = enter_selection
                     .append('g')
                     .attr('class', 'metabolite-group')
-                    .attr('id', function(d) { return d.metabolite_id; }),
-                move = function() {
-                    // console.log(d3.event);
-
-                    var sel = d3.select(this),
-                        met = o.drawn_reactions[sel.datum().reaction_id]
-                            .metabolites[sel.datum().metabolite_id],
-                        d = align_to_grid({'x': d3.event.dx, 'y': d3.event.dy});
-                    met.dis = align_to_grid({'x': met.dis.x + d3.event.dx,
-                                               'y': met.dis.y + d3.event.dy});
-
-                    var transform = d3.transform(sel.attr('transform'));
-                    sel.attr('transform', 'translate(' +
-                             (transform.translate[0]+d3.event.dx) + ',' +
-                             (transform.translate[1]+d3.event.dy) + ')' +
-                             'scale(' + transform.scale + ')');
-                },
-                silence = function() {
-                    d3.event.sourceEvent.stopPropagation(); // silence other listeners
-                },
-                update = function() {
-                    var sel = d3.select(this),
-                        transform = d3.transform(sel.attr('transform'));
-                    sel.attr('transform', null);
-                    draw_specific_reactions_with_location([sel.datum().reaction_id]);
-                };
-
+                    .attr('id', function(d) { return d.metabolite_id; });
 
             // create reaction arrow
             g.append('path')
@@ -646,11 +625,40 @@ console.log(reaction_obj);
             mg.append('circle')
                 .attr('class', 'metabolite-circle')
                 .on("click", select_metabolite)
-                .call(d3.behavior.drag().on("dragstart", silence).on("drag", move).on("dragend", update));
+                .call(d3.behavior.drag()
+		      .on("dragstart", drag_silence)
+		      .on("drag", drag_move)
+		      .on("dragend", drag_update));
             mg.append('text')
                 .attr('class', 'metabolite-label')
                 .text(function(d) { return d.metabolite_id; })
                 .attr('pointer-events', 'none');
+
+            function drag_move() {
+                // console.log(d3.event);
+
+                var sel = d3.select(this),
+                    met = o.drawn_reactions[sel.datum().reaction_id]
+                        .metabolites[sel.datum().metabolite_id],
+                    d = align_to_grid({'x': d3.event.dx, 'y': d3.event.dy});
+                met.dis = align_to_grid({'x': met.dis.x + d3.event.dx,
+                                         'y': met.dis.y + d3.event.dy});
+
+                var transform = d3.transform(sel.attr('transform'));
+                sel.attr('transform', 'translate(' +
+                         (transform.translate[0]+d3.event.dx) + ',' +
+                         (transform.translate[1]+d3.event.dy) + ')' +
+                         'scale(' + transform.scale + ')');
+            }
+            function drag_silence() {
+                d3.event.sourceEvent.stopPropagation(); // silence other listeners
+            }
+            function drag_update() {
+                var sel = d3.select(this),
+                    transform = d3.transform(sel.attr('transform'));
+                sel.attr('transform', null);
+                draw_specific_reactions_with_location([sel.datum().reaction_id]);
+            }
         }
 
         function update_metabolite(update_selection) {
@@ -878,7 +886,6 @@ console.log(reaction_obj);
                                                                 reaction.dis);
             }
             draw_specific_reactions([reaction_id]);
-            place_reaction_input(coords_for_selected_metabolite());
         }
 
         function modify_reaction(cobra_id, key, value) {
@@ -930,6 +937,10 @@ console.log(reaction_obj);
             return id;
         }
 
+	function reaction_input_is_visible() {
+	    return (o.reaction_input.selection.style("display")!="none");
+	}
+
         // -----------------------------------------------------------------------------------
         // KEYBOARD
 
@@ -943,29 +954,27 @@ console.log(reaction_obj);
 
             d3.select(window).on("keydown", function() {
                 var kc = d3.event.keyCode,
-                    reaction_input_focus = (document.activeElement===o.reaction_input.completely.input);
-                if (kc==primary_cycle_key && !reaction_input_focus) {
+		    reaction_input_visible = reaction_input_is_visible();
+                if (kc==primary_cycle_key && !reaction_input_visible) {
                     cycle_primary_key();
                 } else if (kc==hide_show_input_key) {
-                    if (reaction_input_focus) {
+                    if (reaction_input_visible) {
 			o.reaction_input.selection.style("display", "none");
 			o.reaction_input.completely.input.blur();
 			o.reaction_input.completely.hideDropDown();
 		    } else {
-			o.reaction_input.selection.style("display", "block");
-			o.reaction_input.completely.input.focus();
-			o.reaction_input.completely.repaint();
+			reload_reaction_input(coords_for_selected_metabolite());
 		    }
-                } else if (kc==rotate_keys.left && !reaction_input_focus) {
+                } else if (kc==rotate_keys.left && !reaction_input_visible) {
                     modify_reaction(o.selected_node.reaction_id, 'angle', 270*(Math.PI/180));
                     draw_specific_reactions_with_location(o.selected_node.reaction_id);
-                } else if (kc==rotate_keys.right && !reaction_input_focus) {
+                } else if (kc==rotate_keys.right && !reaction_input_visible) {
                     modify_reaction(o.selected_node.reaction_id, 'angle', 90*(Math.PI/180));
                     draw_specific_reactions_with_location(o.selected_node.reaction_id);
-                } else if (kc==rotate_keys.up && !reaction_input_focus) {
+                } else if (kc==rotate_keys.up && !reaction_input_visible) {
                     modify_reaction(o.selected_node.reaction_id, 'angle', 180*(Math.PI/180));
                     draw_specific_reactions_with_location(o.selected_node.reaction_id);
-                } else if (kc==rotate_keys.down && !reaction_input_focus) {
+                } else if (kc==rotate_keys.down && !reaction_input_visible) {
                     modify_reaction(o.selected_node.reaction_id, 'angle', 0);
                     draw_specific_reactions_with_location(o.selected_node.reaction_id);
                 }
