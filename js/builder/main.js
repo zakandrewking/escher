@@ -63,7 +63,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	function setup_reaction_input(selection) {
 	    // set up container
 	    var sel = selection.append("div").attr("id", "rxn-input");
-	    sel.attr("display", "none");
+	    sel.style("display", "none");
 	    // set up complete.ly
 	    var complete = completely(sel.node(), { backgroundColor: "#eee" });
 	    d3.select(complete.input)
@@ -92,7 +92,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 .domain([0, 20])
                 .range(["blue", "red"]);
             o.default_reaction_color = '#eeeeee';
-            o.decimal_format = d3.format('.1f');
+            o.decimal_format = d3.format('.3g');
             o.window_translate = {'x': 0, 'y': 0};
             o.window_scale = 1;
             o.map_data = {};
@@ -113,7 +113,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		sel = out.sel,
 		zoom = out.zoom;
 	    o.zoom = zoom;
-	    o.sel = sel;	// TODO remove these from o
+	    o.sel = sel;
 
 	    var mouse_node = o.sel.append('rect')
                     .attr("width", o.width)
@@ -131,7 +131,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 if (true) {
                     new_reaction('GLCtex', start_coords);
                 }
-                d3.select('#loading').style('display', 'none');
+                d3.select('#loading').style("display", "none");
                 // Focus on menu. TODO use a better callback rather than the
                 // setTimeout.
                 window.setTimeout(function() { o.reaction_input.completely.input.focus(); }, 50);
@@ -174,7 +174,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     var i=-1;
                     while (++i < sorted.length) {
                         // update strings for reaction list
-                        o.list_strings.push({ label: sorted[i][0]+" -- "+sorted[i][1],
+                        o.list_strings.push({ label: sorted[i][0]+": "+o.decimal_format(sorted[i][1]),
                                               value: sorted[i][0] });
 
                         // update model with fluxes
@@ -393,9 +393,8 @@ console.log(reaction_obj);
             }
 
             // set reaction coordinates and angle
-            // be sure to copy the reaction using jquery extend, recursively
-	    return; 		//TODO fix
-            // var reaction = $.extend(true, {}, o.cobra_reactions[reaction_id]);
+            // be sure to copy the reaction recursively
+	    var reaction = utils.clone(o.cobra_reactions[reaction_id]);
             reaction.coords = align_to_grid(coords);
             reaction.angle = 0 * (Math.PI / 180); // default angle
 
@@ -792,12 +791,11 @@ console.log(reaction_obj);
             var array = [];
             for (var key in obj) {
                 // copy object
-		return; 	//TODO fix
-                // var o = $.extend(true, {}, obj[key]);
+		var it = utils.clone(obj[key]);
                 // add key as 'id'
-                o[id_key] = key;
+                it[id_key] = key;
                 // add object to array
-                array.push(o);
+                array.push(it);
             }
             return array;
         }
@@ -830,8 +828,7 @@ console.log(reaction_obj);
             var reaction_subset = {},
                 i = -1;
             while (++i<reaction_ids.length) {
-		return; //TODO fix
-                // reaction_subset[reaction_ids[i]] = $.extend(true, {}, o.drawn_reactions[reaction_ids[i]]);
+                reaction_subset[reaction_ids[i]] = utils.clone(o.drawn_reactions[reaction_ids[i]]);
             }
             if (reaction_ids.length != Object.keys(reaction_subset).length) {
                 console.warn('did not find correct reaction subset');
@@ -946,14 +943,16 @@ console.log(reaction_obj);
 
             d3.select(window).on("keydown", function() {
                 var kc = d3.event.keyCode,
-                    reaction_input_focus = false; // $(o.reaction_input.completely.input).is(":focus"); TODO fix
+                    reaction_input_focus = (document.activeElement===o.reaction_input.completely.input);
                 if (kc==primary_cycle_key && !reaction_input_focus) {
                     cycle_primary_key();
                 } else if (kc==hide_show_input_key) {
                     if (reaction_input_focus) {
+			o.reaction_input.selection.style("display", "none");
 			o.reaction_input.completely.input.blur();
 			o.reaction_input.completely.hideDropDown();
 		    } else {
+			o.reaction_input.selection.style("display", "block");
 			o.reaction_input.completely.input.focus();
 			o.reaction_input.completely.repaint();
 		    }

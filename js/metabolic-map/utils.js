@@ -1,6 +1,7 @@
 define(["lib/d3"], function (d3) {
     return { setup_zoom_container: setup_zoom_container,
-             setup_defs: setup_defs };
+             setup_defs: setup_defs,
+	     clone: clone };
 
     // definitions
     function setup_zoom_container(svg, w, h, scale_extent, callback) {
@@ -29,5 +30,27 @@ define(["lib/d3"], function (d3) {
             .attr("type", "text/css")
             .text(style);
         return defs;
+    }
+
+    function clone(obj) {
+	// Handles the array and object types, and null or undefined
+	if (null == obj || "object" != typeof obj) return obj;
+	// Handle Array
+	if (obj instanceof Array) {
+            var copy = [];
+            for (var i = 0, len = obj.length; i < len; i++) {
+		copy[i] = clone(obj[i]);
+            }
+            return copy;
+	}
+	// Handle Object
+	if (obj instanceof Object) {
+            var copy = {};
+            for (var attr in obj) {
+		if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+            }
+            return copy;
+	}
+	throw new Error("Unable to copy obj! Its type isn't supported.");
     }
 });
