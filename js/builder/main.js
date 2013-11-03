@@ -32,6 +32,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         o.height = out.height;
         o.width = out.width;
 
+	o.menu = setup_menu(o.selection);
+
 	o.reaction_input = setup_reaction_input(o.selection);
 
         var files_to_load = [{ file: o.css_path, callback: set_css },
@@ -60,6 +62,21 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             if (index==0) o.flux = flux;
             else if (index==1) o.flux2 = flux;
         };
+	function setup_menu(selection) {
+	    var sel = selection.append("div").attr("id", "menu");
+	    new_button(sel, cmd_hide_show_input, "New reaction (/)");
+	    new_button(sel, cmd_cycle_primary_metabolite, "Cycle primary metabolite (p)");
+	    new_button(sel, cmd_left, "Left (←)");
+	    new_button(sel, cmd_right, "Right (→)");
+	    new_button(sel, cmd_up, "Up (↑)");
+	    new_button(sel, cmd_down, "Down (↓)");
+	    return sel;
+
+	    function new_button(s, fn, name) {
+		s.append("button").attr("class", "command-button")
+		    .text(name).on("click", fn);
+	    }
+	}
 	function setup_reaction_input(selection) {
 	    // set up container
 	    var sel = selection.append("div").attr("id", "rxn-input");
@@ -956,29 +973,56 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 var kc = d3.event.keyCode,
 		    reaction_input_visible = reaction_input_is_visible();
                 if (kc==primary_cycle_key && !reaction_input_visible) {
-                    cycle_primary_key();
+                    cmd_cycle_primary_metabolite();
                 } else if (kc==hide_show_input_key) {
-                    if (reaction_input_visible) {
-			o.reaction_input.selection.style("display", "none");
-			o.reaction_input.completely.input.blur();
-			o.reaction_input.completely.hideDropDown();
-		    } else {
-			reload_reaction_input(coords_for_selected_metabolite());
-		    }
+		    cmd_hide_show_input();
                 } else if (kc==rotate_keys.left && !reaction_input_visible) {
-                    modify_reaction(o.selected_node.reaction_id, 'angle', 270*(Math.PI/180));
-                    draw_specific_reactions_with_location(o.selected_node.reaction_id);
+		    cmd_left();
                 } else if (kc==rotate_keys.right && !reaction_input_visible) {
-                    modify_reaction(o.selected_node.reaction_id, 'angle', 90*(Math.PI/180));
-                    draw_specific_reactions_with_location(o.selected_node.reaction_id);
+		    cmd_right();
                 } else if (kc==rotate_keys.up && !reaction_input_visible) {
-                    modify_reaction(o.selected_node.reaction_id, 'angle', 180*(Math.PI/180));
-                    draw_specific_reactions_with_location(o.selected_node.reaction_id);
+		    cmd_up();
                 } else if (kc==rotate_keys.down && !reaction_input_visible) {
-                    modify_reaction(o.selected_node.reaction_id, 'angle', 0);
-                    draw_specific_reactions_with_location(o.selected_node.reaction_id);
+		    cmd_down();
                 }
             });
         }
+	// Commands
+	function cmd_hide_show_input() {
+            if (reaction_input_is_visible()) cmd_hide_input();
+	    else cmd_show_input();	    
+	}
+	function cmd_hide_input() {
+	    o.reaction_input.selection.style("display", "none");
+	    o.reaction_input.completely.input.blur();
+	    o.reaction_input.completely.hideDropDown();
+	}
+	function cmd_show_input() {
+	    reload_reaction_input(coords_for_selected_metabolite());
+	}
+	function cmd_cycle_primary_metabolite() {
+	    cmd_hide_input();
+	    cycle_primary_key();
+	}
+	function cmd_left() {
+	    cmd_hide_input();
+            modify_reaction(o.selected_node.reaction_id, 'angle', 270*(Math.PI/180));
+            draw_specific_reactions_with_location(o.selected_node.reaction_id);
+	}
+	function cmd_right() {
+	    cmd_hide_input();
+            modify_reaction(o.selected_node.reaction_id, 'angle', 90*(Math.PI/180));
+            draw_specific_reactions_with_location(o.selected_node.reaction_id);
+	}
+	function cmd_up() {
+	    cmd_hide_input();
+            modify_reaction(o.selected_node.reaction_id, 'angle', 180*(Math.PI/180));
+            draw_specific_reactions_with_location(o.selected_node.reaction_id);
+	}
+	function cmd_down() { 
+	    cmd_hide_input();
+            modify_reaction(o.selected_node.reaction_id, 'angle', 0);
+            draw_specific_reactions_with_location(o.selected_node.reaction_id);
+	}
     };
 });

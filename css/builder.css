@@ -1,49 +1,20 @@
-body {
-    font-family: sans-serif;
+#menu {
+    position: absolute;
+    left: 10px;
+    top: 10px;
 }
-
-#rxn-input {
-    width: 262px;
-    height: 31px;
-    font-size: 18px;
-    background: rgba(255,255,255,0.4);
+.command-button {
+    float: left;
+    font-size: 15px;
+    color: #444;
+    padding: 4px 8px;
+    text-align: center;
+    background-color: #f5f5f5;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    border-width: 1px;
 }
-
-#svg-container {
-    border: 1px solid grey;
-}
-
-.reaction-label {
-    font-size: 14px;
-    font-family: sans-serif;
-    font-style: italic; font-weight: bold; fill: rgb(32, 32, 120);text-rendering: optimizelegibility;
-}
-.metabolite-label {
-    font-family: sans-serif; font-style: italic; font-weight: bold; font-size: 8px;
-}
-.metabolite-circle {
-    fill: rgb(224, 134, 91);
-    stroke: rgb(162, 69, 16);
-}
-#misc-labels{
-    font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;
-}
-.line-arrow{
-    fill: none; 
-}
-
-.inner-membrane {
-    fill: white;
-    stroke: rgb(255, 187, 0);
-}
-
-.outer-membrane {
-    fill: rgb(255, 238, 135);
-    stroke: rgb(255, 187, 0);
-}
-
-.reaction-arrow {
-    stroke: grey;
-    stroke-width: 3px;
-    fill: none;
+.command-button:hover {
+    background-color: #e5e5e5;    
 }
