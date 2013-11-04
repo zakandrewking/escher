@@ -2,7 +2,8 @@ define(["lib/d3"], function (d3) {
     return { setup_zoom_container: setup_zoom_container,
              setup_defs: setup_defs,
 	     clone: clone,
-	     download_json: download_json };
+	     download_json: download_json,
+	     load_json: load_json };
 
     // definitions
     function setup_zoom_container(svg, w, h, scale_extent, callback) {
@@ -70,5 +71,22 @@ define(["lib/d3"], function (d3) {
         function utf8_to_b64(str) {
             return window.btoa(unescape(encodeURIComponent( str )));
         }
+    }
+
+    function load_json(f, callback) {
+	// Check for the various File API support.
+	if (!(window.File && window.FileReader && window.FileList && window.Blob))
+	    callback("The File APIs are not fully supported in this browser.", null);
+	if (!f.type.match("application/json"))
+	    callback("Not a json file.", null);
+
+	var reader = new window.FileReader();
+	// Closure to capture the file information.
+	reader.onload = function(event) {
+	    var json = JSON.parse(event.target.result);
+	    callback(null, json);
+        };
+	// Read in the image file as a data URL.
+	reader.readAsText(f);
     }
 });
