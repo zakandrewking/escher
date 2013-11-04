@@ -95,6 +95,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 			    utils.load_json(this.files[0], function(error, data) {
 				if (error) return console.warn(error);
 				o.drawn_reactions = data;
+				reset();
 				draw();
 				return null;
 			    });
@@ -859,6 +860,12 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             }
             return array;
         }
+
+	function reset() {
+            var sel = d3.select('#reactions')
+                    .selectAll('.reaction')
+		    .remove();
+	}	    
 
         function draw() {
             /* Draw the reactions
