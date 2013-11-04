@@ -1,3 +1,11 @@
+#status {
+    position:absolute;
+    top:10px;
+    right: 30px;
+    color: red;
+    background-color: white;
+    font-size: 16px
+}
 #menu {
     position: absolute;
     left: 10px;

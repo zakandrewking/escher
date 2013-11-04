@@ -33,6 +33,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         o.width = out.width;
 
 	o.menu = setup_menu(o.selection);
+	o.status = setup_status(o.selection);
 
 	o.reaction_input = setup_reaction_input(o.selection);
 
@@ -70,6 +71,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    new_button(sel, cmd_right, "Right (→)");
 	    new_button(sel, cmd_up, "Up (↑)");
 	    new_button(sel, cmd_down, "Down (↓)");
+	    new_button(sel, cmd_save, "Save (^s)");
 	    return sel;
 
 	    function new_button(s, fn, name) {
@@ -94,6 +96,20 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    return { selection: sel,
 		     completely: complete };
 	};
+
+	function setup_status(selection) {
+	    return selection.append("div").attr("id", "status");
+	};
+        function set_status(status) {
+	    // TODO put this in js/metabolic-map/utils.js
+            var t = d3.select('body').select('#status');
+            if (t.empty()) t = d3.select('body')
+                .append('text')
+                .attr('id', 'status');
+            t.text(status);
+            return this;
+        }
+
         function update() {
             o.version = 0.2;
             o.selected_node = {'reaction_id': '',
@@ -125,8 +141,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		out = utils.setup_zoom_container(svg, width, height, [0.05, 15], function(ev) {
 		    o.window_translate = {'x': ev.translate[0], 'y': ev.translate[1]};
 		    o.window_scale = ev.scale;
-		    if (reaction_input_is_visible()) 
-			place_reaction_input(coords_for_selected_metabolite());
+		    // if (reaction_input_is_visible()) 
+		    // 	place_reaction_input(coords_for_selected_metabolite());
 		}),
 		sel = out.sel,
 		zoom = out.zoom;
@@ -152,7 +168,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 d3.select('#loading').style("display", "none");
                 // Focus on menu. TODO use a better callback rather than the
                 // setTimeout.
-                window.setTimeout(function() { o.reaction_input.completely.input.focus(); }, 50);
+                // window.setTimeout(function() { o.reaction_input.completely.input.focus(); }, 50);
             });
 
             // set up keyboard listeners
@@ -208,7 +224,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                             }
                         }
                     }
-                    reload_reaction_input(coords);
                     callback_function();
                 });
             });
@@ -962,30 +977,65 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         // KEYBOARD
 
         function key_listeners() {
-            var primary_cycle_key = 80, // 'p'
-                hide_show_input_key = 191, // forward slash '/'
-                rotate_keys = {'left':  37,
-                               'right': 39,
-                               'up':    38,
-                               'down':  40};
+	    var held_keys = { command: false,
+			      control: false,
+			      option: false,
+			      shift: false },
+		modifier_keys = { command: 91,
+				  control: 17,
+				  option: 18,
+				  shift: 16},
+		primary_cycle_key= { key: 80 }, // 'p'
+		hide_show_input_key = { key: 191 }, // forward slash '/'
+		rotate_keys = {'left':  { key: 37 },
+			       'right': { key: 39 },
+			       'up':    { key: 38 },
+			       'down':  { key: 40 } },
+		control_key = { key: 17 },
+		save_key = { key: 83, modifiers: { control: true } };
 
             d3.select(window).on("keydown", function() {
                 var kc = d3.event.keyCode,
 		    reaction_input_visible = reaction_input_is_visible();
-                if (kc==primary_cycle_key && !reaction_input_visible) {
+		held_keys = toggle_modifiers(modifier_keys, held_keys, kc);
+                if (check_key(primary_cycle_key, kc, held_keys) && !reaction_input_visible)
                     cmd_cycle_primary_metabolite();
-                } else if (kc==hide_show_input_key) {
+                else if (check_key(hide_show_input_key, kc, held_keys))
 		    cmd_hide_show_input();
-                } else if (kc==rotate_keys.left && !reaction_input_visible) {
+                else if (check_key(rotate_keys.left, kc, held_keys) && !reaction_input_visible)
 		    cmd_left();
-                } else if (kc==rotate_keys.right && !reaction_input_visible) {
+                else if (check_key(rotate_keys.right, kc, held_keys) && !reaction_input_visible)
 		    cmd_right();
-                } else if (kc==rotate_keys.up && !reaction_input_visible) {
+                else if (check_key(rotate_keys.up, kc, held_keys) && !reaction_input_visible)
 		    cmd_up();
-                } else if (kc==rotate_keys.down && !reaction_input_visible) {
+                else if (check_key(rotate_keys.down, kc, held_keys) && !reaction_input_visible)
 		    cmd_down();
-                }
-            });
+                else if (check_key(save_key, kc, held_keys) && !reaction_input_visible)
+		    cmd_save();
+            }).on("keyup", function() {
+		held_keys = toggle_modifiers(modifier_keys, held_keys, d3.event.keyCode);
+	    });
+
+	    function toggle_modifiers(mod, held, kc) {
+		for (var k in mod)
+		    if (mod[k] == kc)
+			held[k] = !held[k];
+		return held;
+	    }	    
+	    function check_key(key, pressed, held) {
+		if (key.key != pressed) return false;
+		var mod = key.modifiers;
+		if (mod === undefined)
+		    mod = { control: false,
+			    command: false,
+			    option: false,
+			    shift: false };
+		for (var k in held) {
+		    if (mod[k] === undefined) mod[k] = false;
+		    if (mod[k] != held[k]) return false;
+		}
+		return true;
+	    }
         }
 	// Commands
 	function cmd_hide_show_input() {
@@ -1023,6 +1073,10 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    cmd_hide_input();
             modify_reaction(o.selected_node.reaction_id, 'angle', 0);
             draw_specific_reactions_with_location(o.selected_node.reaction_id);
+	}
+	function cmd_save() {
+	    console.log(o.drawn_reactions);
+	    utils.download_json(o.drawn_reactions, "map");
 	}
     };
 });
