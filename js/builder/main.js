@@ -1,11 +1,9 @@
 define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], function(scaffold, utils, d3, completely) {
     // TODO
-    // connected node object
-    // only display each node once
-    // why aren't some nodes appearing as selected?
-    // BRANCHING!
-    // make object oriented ?
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript
+    // - connected node object
+    // - only display each node once
+    // - Make metabolites and reaction locations (center, main_axis, etc.) actual
+    //   coordinates rather than unrotated coords.
     return function(options) {
         // set defaults
         var o = scaffold.set_options(options, {
@@ -14,139 +12,61 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             selection_is_svg: false,
             fillScreen: false,
             update_hook: false,
-            css_path: null,
             map_path: null,
-            map_json: null,
+            map: null,
+            cobra_model_path: null,
+            cobra_model: null,
+            css_path: null,
+            css: null,
             flux_path: null,
             flux: null,
             flux2_path: null,
-            flux2: null,
-            css: '' });
+            flux2: null });
 
-        if (o.selection_is_svg)
+        if (o.selection_is_svg) {
             console.error("Builder does not support placement within svg elements");
+            return null;
+        }
 
-        var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
-                                     o.margins, o.fill_screen);
-        o.svg = out.svg;
-        o.height = out.height;
-        o.width = out.width;
-
-        // setup menu and status bars
-        o.menu = setup_menu(o.selection);
-        o.status = setup_status(o.selection);
-
-        // setup the reaction input with complete.ly
-        o.reaction_input = setup_reaction_input(o.selection);
-
-        // set up keyboard listeners
-        key_listeners();
-
-        var files_to_load = [{ file: o.css_path, callback: set_css },
-                             { file: o.map_path, callback: set_map },
-                             { file: o.flux_path,
-                               callback: function(e, f) { set_flux(e, f, 0); },
-                               value: o.flux},
-                             { file: o.flux2_path,
-                               callback: function(e, f) { set_flux(e, f, 1); },
-                               value: o.flux2 } ];
-        scaffold.load_files(files_to_load, load);
-
-        return { load: load };
+        var files_to_load = [{ file: o.map_path, value: o.map, callback: set_map },
+                             { file: o.cobra_model_path, value: o.cobra_model, callback: set_cobra_model },
+                             { file: o.css_path, value: o.css, callback: set_css },
+                             { file: o.flux_path, value: o.flux,
+                               callback: function(e, f) { set_flux(e, f, 0); } },
+                             { file: o.flux2_path, value: o.flux2,
+                               callback: function(e, f) { set_flux(e, f, 1); } } ];
+        scaffold.load_files(files_to_load, setup);
+        return {};
 
         // Definitions
+        function set_map(error, map) {
+            if (error) console.warn(error);
+            o.map = map;
+        };
+        function set_cobra_model(error, cobra_model) {
+            if (error) console.warn(error);
+            o.cobra_model = cobra_model;
+        }
         function set_css(error, css) {
             if (error) console.warn(error);
             o.css = css;
-        };
-        function set_map(error, map_data) {
-            if (error) console.warn(error);
-            o.map_data = map_data;
         };
         function set_flux(error, flux, index) {
             if (error) console.warn(error);
             if (index==0) o.flux = flux;
             else if (index==1) o.flux2 = flux;
         };
-        function setup_menu(selection) {
-            var sel = selection.append("div").attr("id", "menu");
-            new_button(sel, cmd_hide_show_input, "New reaction (/)");
-            new_button(sel, cmd_cycle_primary_metabolite, "Cycle primary metabolite (p)");
-            new_button(sel, cmd_left, "Left (←)");
-            new_button(sel, cmd_right, "Right (→)");
-            new_button(sel, cmd_up, "Up (↑)");
-            new_button(sel, cmd_down, "Down (↓)");
-            new_button(sel, cmd_save, "Save (^s)");
-            o.load_input_click_fn = new_input(sel, cmd_load, "Load (^o)");
-            return sel;
+        function setup() {
+            /* Load the svg container and draw a loaded map if provided.
+             */
 
-            function new_button(s, fn, name) {
-                s.append("button").attr("class", "command-button")
-                    .text(name).on("click", fn);
-            }
-            function new_input(s, fn, name) {
-		/* Returns a function that can be called to programmatically
-		 * load files.
-		 */
-                var input = s.append("input").attr("class", "command-button")
-                        .attr("type", "file")
-                        .style("display", "none")
-                        .on("change", function() {
-			    utils.load_json(this.files[0], function(error, data) {
-				if (error) return console.warn(error);
-				o.drawn_reactions = data;
-				reset();
-				draw();
-				return null;
-			    });
-			});
-                new_button(sel, function(e) {
-                    input.node().click();
-                }, name);
-		return function() { input.node().click(); };
-            }
-        }
-        function setup_reaction_input(selection) {
-            // set up container
-            var sel = selection.append("div").attr("id", "rxn-input");
-            sel.style("display", "none");
-            // set up complete.ly
-            var complete = completely(sel.node(), { backgroundColor: "#eee" });
-            d3.select(complete.input)
-            // .attr('placeholder', 'Reaction ID -- Flux')
-                .on('input', function() {
-                    this.value = this.value.replace("/","")
-                        .replace(" ","")
-                        .replace("\\","")
-                        .replace("<","");
-                });
-            return { selection: sel,
-                     completely: complete };
-        };
-
-        function setup_status(selection) {
-            return selection.append("div").attr("id", "status");
-        };
-        function set_status(status) {
-            // TODO put this in js/metabolic-map/utils.js
-            var t = d3.select('body').select('#status');
-            if (t.empty()) t = d3.select('body')
-                .append('text')
-                .attr('id', 'status');
-            t.text(status);
-            return this;
-        }
-
-        function load() {
-            o.version = 0.2;
+            // Begin with some definitions
             o.selected_node = {'reaction_id': '',
                                'metabolite_id': '',
                                'direction': '',
                                'is_selected': false};
             o.drawn_reactions = {};
             o.arrowheads_generated = [];
-            o.cobra_reactions = {};
-            o.sorted_reaction_suggestions = [];
             o.scale = {};
             o.scale.flux_color = d3.scale.linear()
                 .domain([0, 20])
@@ -155,7 +75,31 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             o.decimal_format = d3.format('.3g');
             o.window_translate = {'x': 0, 'y': 0};
             o.window_scale = 1;
-            o.mode = 'builder';
+
+	    console.log(o.css);
+
+	    // Check the cobra model
+	    if (o.cobra_model) {
+		// TODO better checks
+		o.cobra_reactions = o.cobra_model.reactions;
+	    }
+
+	    // set up the svg
+            var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
+                                         o.margins, o.fill_screen);
+            o.svg = out.svg;
+            o.height = out.height;
+            o.width = out.width;
+
+            // setup menu and status bars
+            o.menu = setup_menu(o.selection);
+            o.status = setup_status(o.selection);
+
+            // setup the reaction input with complete.ly
+            o.reaction_input = setup_reaction_input(o.selection);
+
+            // set up keyboard listeners
+            setup_key_listeners();
 
             var svg = o.svg,
                 style = o.css,
@@ -184,73 +128,152 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             o.sel.append('g')
                 .attr('id', 'reactions');
 
-            // setup selection box
-            var start_coords = {'x': o.width/2, 'y': 40};
-            load_model_and_list(start_coords, function() {
-                // TEST case
-                if (true) {
-                    new_reaction('GLCtex', start_coords);
-                }
-                d3.select('#loading').style("display", "none");
-                // Focus on menu. TODO use a better callback rather than the
-                // setTimeout.
-                // window.setTimeout(function() { o.reaction_input.completely.input.focus(); }, 50);
-            });
+            // Sort reactions by flux
+	    if (o.flux) {
+		// TODO also include reactions without flux
+		var sorted = [], json = o.flux;
+		for (var flux_reaction_id in json) {
+                    // fix reaction ids
+                    sorted.push([flux_reaction_id.replace('(', '_').replace(')', ''),
+				 parseFloat(json[flux_reaction_id])]);
+		}
+		sorted.sort(function(a,b) { return Math.abs(b[1]) - Math.abs(a[1]); });
+		var i=-1;
+		o.sorted_reaction_suggestions = [];
+		while (++i < sorted.length) {
+                    // update strings for reaction list
+                    o.sorted_reaction_suggestions.push({
+			label: sorted[i][0]+": "+o.decimal_format(sorted[i][1]),
+			value: sorted[i][0]
+                    });
 
-            return this;
+                    // update model with fluxes
+                    for (var reaction_id in o.cobra_reactions) {
+			// set flux for reaction
+			if (reaction_id == sorted[i][0]) {
+                            o.cobra_reactions[reaction_id].flux = sorted[i][1];
+                            // also set flux for metabolites (for simpler drawing)
+                            for (var metabolite_id in o.cobra_reactions[reaction_id].metabolites)
+				o.cobra_reactions[reaction_id].metabolites[metabolite_id].flux = sorted[i][1];
+			}
+                    }
+		}
+	    } else {
+		o.sorted_reaction_suggestions = [];
+		for (var reaction_id in o.cobra_reactions) {
+		    o.sorted_reaction_suggestions.push({
+			label: reaction_id,
+			value: reaction_id
+                    });
+		}
+	    }
+
+            // setup selection box
+	    var start_coords = {'x': o.width/2, 'y': 40};
+            // TEST case
+            if (!o.map) {
+                new_reaction('GLCtex', start_coords);
+            } else {
+		o.drawn_reactions = import_map(o.map);
+	    }
+            d3.select('#loading').style("display", "none");
+	    return;
+
+            // definitions
+            function setup_menu(selection) {
+                var sel = selection.append("div").attr("id", "menu");
+                new_button(sel, cmd_hide_show_input, "New reaction (/)");
+                new_button(sel, cmd_cycle_primary_metabolite, "Cycle primary metabolite (p)");
+                new_button(sel, cmd_left, "Left (←)");
+                new_button(sel, cmd_right, "Right (→)");
+                new_button(sel, cmd_up, "Up (↑)");
+                new_button(sel, cmd_down, "Down (↓)");
+                new_button(sel, cmd_save, "Save (^s)");
+                o.load_input_click_fn = new_input(sel, cmd_load, "Load (^o)");
+                return sel;
+
+                function new_button(s, fn, name) {
+                    s.append("button").attr("class", "command-button")
+                        .text(name).on("click", fn);
+                }
+                function new_input(s, fn, name) {
+                    /* Returns a function that can be called to programmatically
+                     * load files.
+                     */
+                    var input = s.append("input").attr("class", "command-button")
+                            .attr("type", "file")
+                            .style("display", "none")
+                            .on("change", function() {
+                                utils.load_json(this.files[0], function(error, data) {
+                                    if (error) return console.warn(error);
+                                    o.drawn_reactions = data;
+                                    reset();
+                                    draw();
+                                    return null;
+                                });
+                            });
+                    new_button(sel, function(e) {
+                        input.node().click();
+                    }, name);
+                    return function() { input.node().click(); };
+                }
+            }
+            function setup_reaction_input(selection) {
+                // set up container
+                var sel = selection.append("div").attr("id", "rxn-input");
+                sel.style("display", "none");
+                // set up complete.ly
+                var complete = completely(sel.node(), { backgroundColor: "#eee" });
+                d3.select(complete.input)
+                // .attr('placeholder', 'Reaction ID -- Flux')
+                    .on('input', function() {
+                        this.value = this.value.replace("/","")
+                            .replace(" ","")
+                            .replace("\\","")
+                            .replace("<","");
+                    });
+                return { selection: sel,
+                         completely: complete };
+            };
+
+            function setup_status(selection) {
+                return selection.append("div").attr("id", "status");
+            };
         }
 
-        function load_model_and_list(coords, callback_function) {
-            //  model = {
-            //      reactions: {
-            //          cobra_id_1: {
-            //            metabolites: { cobra_id_2: { coefficient: }, ... }
-            //          }, ...
-            //      }
-            //  }
+	function import_map(map) {
+	    /* Load a json map and add necessary fields for rendering.
+	     *
+	     * The returned value will be o.drawn_reactions.
+	     */
+	    var debug = true;
+	    if (debug) {
+		var required_reaction_props = ["metabolites", "angle", "center", "coords", "dis", "main_axis"],
+		    required_metabolite_props = [];
+		map.map(function(reaction) {
+		    required_reaction_props.map(function(req) {
+			if (!reaction.hasOwnProperty(req)) console.error("Missing property " + req);
+		    });
+		    reaction.metabolites = reaction.metabolites.map(function(metabolite) {
+			required_metabolite_props.map(function(req) {
+			    if (!metabolite.hasOwnProperty(req)) console.error("Missing property " + req);
+			});
+			return metabolite;
+		    });
+		    return reaction;
+		});
+	    }
+	    return map;
+	}
 
-            // Object.keys(myArray).length for length of the object (no good in IE8)
-            // http://whattheheadsaid.com/2010/10/a-safer-object-keys-compatibility-implementation
-
-            d3.json("data/maps/cobra_model_0.2.json", function(error, model) {
-                if (error) console.warn(error);
-                o.cobra_reactions = model.reactions;
-
-                // load list data
-                d3.json("data/flux/flux-wt-pFBA.json", function(error, json) {
-                    if (error) console.warn(error);
-
-                    // sort by flux value
-                    var sorted = [];
-                    for (var flux_reaction_id in json) {
-                        // fix reaction ids
-                        sorted.push([flux_reaction_id.replace('(', '_').replace(')', ''),
-                                     parseFloat(json[flux_reaction_id])]);
-                    }
-                    sorted.sort(function(a,b) { return Math.abs(b[1]) - Math.abs(a[1]); });
-                    var i=-1;
-                    while (++i < sorted.length) {
-                        // update strings for reaction list
-                        o.sorted_reaction_suggestions.push({
-                            label: sorted[i][0]+": "+o.decimal_format(sorted[i][1]),
-                            value: sorted[i][0]
-                        });
-
-                        // update model with fluxes
-                        for (var reaction_id in o.cobra_reactions) {
-                            // set flux for reaction
-                            if (reaction_id == sorted[i][0]) {
-                                o.cobra_reactions[reaction_id].flux = sorted[i][1];
-                                // also set flux for metabolites (for simpler drawing)
-                                for (var metabolite_id in o.cobra_reactions[reaction_id].metabolites)
-                                    o.cobra_reactions[reaction_id].metabolites[metabolite_id].flux = sorted[i][1];
-                            }
-                        }
-                    }
-                    callback_function();
-                });
-            });
-
+        function set_status(status) {
+            // TODO put this in js/metabolic-map/utils.js
+            var t = d3.select('body').select('#status');
+            if (t.empty()) t = d3.select('body')
+                .append('text')
+                .attr('id', 'status');
+            t.text(status);
+            return this;
         }
 
         function place_reaction_input(coords) {
@@ -861,15 +884,15 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             return array;
         }
 
-	function reset() {
+        function reset() {
             var sel = d3.select('#reactions')
                     .selectAll('.reaction')
-		    .remove();
-	}	    
+                    .remove();
+        }
 
         function draw() {
             /* Draw the reactions
-	     */
+             */
 
             // generate reactions for o.drawn_reactions
             // assure constancy with cobra_id
@@ -1004,7 +1027,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         // -----------------------------------------------------------------------------------
         // KEYBOARD
 
-        function key_listeners() {
+        function setup_key_listeners() {
             var held_keys = reset_held_keys(),
                 modifier_keys = { command: 91,
                                   control: 17,
@@ -1026,39 +1049,39 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 held_keys = toggle_modifiers(modifier_keys, held_keys, kc, true);
                 if (check_key(primary_cycle_key, kc, held_keys) && !reaction_input_visible) {
                     cmd_cycle_primary_metabolite();
-		    held_keys = reset_held_keys();
+                    held_keys = reset_held_keys();
                 } else if (check_key(hide_show_input_key, kc, held_keys)) {
                     cmd_hide_show_input();
-		    held_keys = reset_held_keys();
+                    held_keys = reset_held_keys();
                 } else if (check_key(rotate_keys.left, kc, held_keys) && !reaction_input_visible) {
                     cmd_left();
-		    held_keys = reset_held_keys();
+                    held_keys = reset_held_keys();
                 } else if (check_key(rotate_keys.right, kc, held_keys) && !reaction_input_visible) {
                     cmd_right();
-		    held_keys = reset_held_keys();
+                    held_keys = reset_held_keys();
                 } else if (check_key(rotate_keys.up, kc, held_keys) && !reaction_input_visible) {
                     cmd_up();
-		    held_keys = reset_held_keys();
+                    held_keys = reset_held_keys();
                 } else if (check_key(rotate_keys.down, kc, held_keys) && !reaction_input_visible) {
                     cmd_down();
-		    held_keys = reset_held_keys();
+                    held_keys = reset_held_keys();
                 } else if (check_key(save_key, kc, held_keys) && !reaction_input_visible) {
-		    held_keys = reset_held_keys();
+                    held_keys = reset_held_keys();
                     cmd_save();
                 } else if (check_key(load_key, kc, held_keys) && !reaction_input_visible) {
                     cmd_load();
-		    held_keys = reset_held_keys();
-		}
+                    held_keys = reset_held_keys();
+                }
             }).on("keyup", function() {
                 held_keys = toggle_modifiers(modifier_keys, held_keys, d3.event.keyCode, false);
             });
 
-	    function reset_held_keys() {
-		return { command: false,
+            function reset_held_keys() {
+                return { command: false,
                          control: false,
                          option: false,
                          shift: false };
-	    }
+            }
             function toggle_modifiers(mod, held, kc, on_off) {
                 for (var k in mod)
                     if (mod[k] == kc)
@@ -1122,8 +1145,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             utils.download_json(o.drawn_reactions, "map");
         }
         function cmd_load() {
-	    console.log("Loading");
-	    o.load_input_click_fn();
+            console.log("Loading");
+            o.load_input_click_fn();
         }
     };
 });

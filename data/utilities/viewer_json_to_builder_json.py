@@ -14,7 +14,7 @@ def main():
         print "Not enough arguments"
         sys.exit()
 
-    out_file = "/Users/zaking/Desktop/new_dump.json"
+    out_file = "../maps/converted/" + in_file.split("/")[-1]
     model_file = "/Users/zaking/models/iJO1366.pickle"
         
     with open(in_file, 'r') as f: data = json.load(f)
@@ -56,28 +56,31 @@ def main():
         # estimate reaction coordinates
         angle, center, coords, dis, main_axis, abs_center = parse_path(path)
         new_reaction = { "metabolites": {},
-                         "angle": angle,
                          "center": center,
-                         "coords": coords }
-                         # "dis": None, # these are redundant
-                         # "main_axis": None }
+                         "coords": coords,
+                         "angle": angle, # these are redundant
+                         "dis": None, 
+                         "main_axis": None }
         for k, v in r._metabolites.iteritems():
             center = find_likely_metabolite_center(str(k), abs_center, metabolite_centers)
-            try:
+            if center is not None:
                 center_rel = {"x": center["x"] - coords["x"],
                               "y": center["y"] - coords["y"]}
-            except TypeError:
-                pass
+                start, b1, b2, end = beziers(center, center_rel)
+            else:
+                center_rel = None
+                b1 = None; b2 = None
             the_met = { "coefficient": v,
                         "reaction_id": str(k),
                         "text_dis": {"x": 0, "y": -18},
-                        "center": center_rel }
+                        "circle": center_rel,
+                        "b1": None,
+                        "b2": None,
+                        "start": start,
+                        "end": end }
                        # these are redundant/optional:
                        # "is_primary": None, 
                        # "center": None, # exact coordinates when desirable
-                       # "b1": None,
-                       # "b2": None,
-                       # "circle": None,
                        # "start": None,
                        # "end": None,
                        # "flux": None,
@@ -94,6 +97,12 @@ def main():
       
     print 'done'
 
+def beziers(reaction_center, met_center):
+    start = reaction_center
+    b1_strength = 0.5
+    b2_strength = 0.2
+    return start, b1, b2, end
+    
 def find_likely_metabolite_center(met_id, reaction_coords, met_centers):
     """ Find closest metabolite to reaction.
     """
