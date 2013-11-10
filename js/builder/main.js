@@ -67,16 +67,10 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                                'is_selected': false};
             o.drawn_reactions = {};
             o.arrowheads_generated = [];
-            o.scale = {};
-            o.scale.flux_color = d3.scale.linear()
-                .domain([0, 20])
-                .range(["blue", "red"]);
-            o.default_reaction_color = '#eeeeee';
+            o.default_reaction_color = '#505050';
             o.decimal_format = d3.format('.3g');
             o.window_translate = {'x': 0, 'y': 0};
             o.window_scale = 1;
-
-	    console.log(o.css);
 
 	    // Check the cobra model
 	    if (o.cobra_model) {
@@ -95,33 +89,30 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             o.menu = setup_menu(o.selection);
             o.status = setup_status(o.selection);
 
+	    // setup scales
+            o.scale = setup_scales();
+
             // setup the reaction input with complete.ly
             o.reaction_input = setup_reaction_input(o.selection);
 
             // set up keyboard listeners
             setup_key_listeners();
 
-            var svg = o.svg,
-                style = o.css,
-                width = o.width,
-                height = o.height;
-
             // set up svg and svg definitions
-            var defs = utils.setup_defs(svg, style),
-                out = utils.setup_zoom_container(svg, width, height, [0.05, 15], function(ev) {
+            var defs = utils.setup_defs(o.svg, o.css),
+                out = utils.setup_zoom_container(o.svg, o.width, o.height, [0.05, 15], function(ev) {
                     o.window_translate = {'x': ev.translate[0], 'y': ev.translate[1]};
                     o.window_scale = ev.scale;
-                    // if (reaction_input_is_visible())
-                    //  place_reaction_input(coords_for_selected_metabolite());
-                }),
-                sel = out.sel,
-                zoom = out.zoom;
-            o.zoom = zoom;
-            o.sel = sel;
+                });
+            o.sel = out.sel,
+            o.zoom = out.zoom;
 
-            var mouse_node = o.sel.append('rect')
-                    .attr("width", o.width)
-                    .attr("height", o.height)
+            var extent = {"x": o.width*3, "y": o.height*3},
+		mouse_node = o.sel.append('rect')
+                    .attr("width", extent.x)
+                    .attr("height", extent.y)
+		    .attr("transform",
+			  "translate("+(-extent.x/3)+","+(-extent.y/3)+")")
                     .attr("style", "stroke:black;fill:none;")
                     .attr('pointer-events', 'all');
 
@@ -197,7 +188,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                         .text(name).on("click", fn);
                 }
                 function new_input(s, fn, name) {
-                    /* Returns a function that can be called to programmatically
+                    /* 
+		     * Returns a function that can be called to programmatically
                      * load files.
                      */
                     var input = s.append("input").attr("class", "command-button")
@@ -235,14 +227,21 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 return { selection: sel,
                          completely: complete };
             };
-
             function setup_status(selection) {
                 return selection.append("div").attr("id", "status");
             };
+	    function setup_scales() {
+		var scale = {};
+		scale.flux_color = d3.scale.linear()
+                    .domain([0, 20])
+                    .range(["blue", "red"]);
+		return scale;
+	    }
         }
 
 	function import_map(map) {
-	    /* Load a json map and add necessary fields for rendering.
+	    /* 
+	     * Load a json map and add necessary fields for rendering.
 	     *
 	     * The returned value will be o.drawn_reactions.
 	     */
@@ -357,116 +356,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             // return {'x': r(loc.x), 'y': r(loc.y)};
         }
 
-        function rotate_coords_recursive(coords_array, angle, center) {
-            var i=-1,
-                rotated = [];
-            while (++i<coords_array.length) {
-                rotated.push(rotate_coords(coords_array[i]));
-            }
-            return rotated;
-        }
-
-        function rotate_coords(c, angle, center) {
-            var dx = Math.cos(angle) * (c.x - center.x) +
-                    Math.sin(angle) * (c.y - center.y) +
-                    center.x,
-                dy = - Math.sin(angle) * (c.x - center.x) +
-                    Math.cos(angle) * (c.y - center.y) +
-                    center.y;
-            return {'x': dx, 'y': dy};
-        }
-
-        function calculate_reaction_coordinates(reaction) {
-            var dis = 120;
-            reaction.dis = dis;
-            var main_axis = [{'x': 0, 'y': 0}, {'x': 0, 'y': dis}];
-            reaction.main_axis = main_axis;
-            reaction.center = {'x': (main_axis[0].x + main_axis[1].x)/2,   // for convenience
-                               'y': (main_axis[0].y + main_axis[1].y)/2};
-            return reaction;
-        }
-
-        function calculate_metabolite_coordinates(met, primary_index, angle, main_axis, center, dis) {
-            // basic constants
-            met.text_dis = {'x': 0, 'y': -18}; // displacement of metabolite label
-
-            // Curve parameters
-            var w = 60,  // distance between reactants and between products
-                b1_strength = 0.5,
-                b2_strength = 0.2,
-                w2 = w*0.7,
-                secondary_dis = 20,
-                num_slots = Math.min(2, met.count - 1);
-
-            // size and spacing for primary and secondary metabolites
-            var ds, draw_at_index;
-            if (met.is_primary) { // primary
-                met.r = 10;
-                ds = 20;
-            } else { // secondary
-                met.r = 5;
-                ds = 10;
-                // don't use center slot
-                if (met.index > primary_index) draw_at_index = met.index - 1;
-                else draw_at_index = met.index;
-            }
-
-            var de = dis - ds, // distance between ends of line axis
-                reaction_axis = [{'x': 0, 'y': ds},
-                                 {'x': 0, 'y': de}];
-
-            // Define line parameters and axis.
-            // Begin with unrotated coordinate system. +y = Down, +x = Right.
-            var start = center,
-                end, circle, b1, b2;
-            // reactants
-            if (met.coefficient < 0 && met.is_primary) {
-                end = {'x': reaction_axis[0].x + met.dis.x,
-                       'y': reaction_axis[0].y + met.dis.y};
-                b1 = {'x': start.x*b1_strength + reaction_axis[0].x*(1-b1_strength),
-                      'y': start.y*b1_strength + reaction_axis[0].y*(1-b1_strength)};
-                b2 = {'x': start.x*b2_strength + (end.x)*(1-b2_strength),
-                      'y': start.y*b2_strength + (end.y)*(1-b2_strength)},
-                circle = {'x': main_axis[0].x + met.dis.x,
-                          'y': main_axis[0].y + met.dis.y};
-            } else if (met.coefficient < 0) {
-                end = {'x': reaction_axis[0].x + (w2*draw_at_index - w2*(num_slots-1)/2) + met.dis.x,
-                       'y': reaction_axis[0].y + secondary_dis + met.dis.y},
-                b1 = {'x': start.x*b1_strength + reaction_axis[0].x*(1-b1_strength),
-                      'y': start.y*b1_strength + reaction_axis[0].y*(1-b1_strength)},
-                b2 = {'x': start.x*b2_strength + end.x*(1-b2_strength),
-                      'y': start.y*b2_strength + end.y*(1-b2_strength)},
-                circle = {'x': main_axis[0].x + (w*draw_at_index - w*(num_slots-1)/2) + met.dis.x,
-                          'y': main_axis[0].y + secondary_dis + met.dis.y};
-            } else if (met.coefficient > 0 && met.is_primary) {        // products
-                end = {'x': reaction_axis[1].x + met.dis.x,
-                       'y': reaction_axis[1].y + met.dis.y};
-                b1 = {'x': start.x*b1_strength + reaction_axis[1].x*(1-b1_strength),
-                      'y': start.y*b1_strength + reaction_axis[1].y*(1-b1_strength)};
-                b2 = {'x': start.x*b2_strength + end.x*(1-b2_strength),
-                      'y': start.y*b2_strength + end.y*(1-b2_strength)},
-                circle = {'x': main_axis[1].x + met.dis.x,
-                          'y': main_axis[1].y + met.dis.y};
-            } else if (met.coefficient > 0) {
-                end = {'x': reaction_axis[1].x + (w2*draw_at_index - w2*(num_slots-1)/2) + met.dis.x,
-                       'y': reaction_axis[1].y - secondary_dis + met.dis.y},
-                b1 = {'x': start.x*b1_strength + reaction_axis[1].x*(1-b1_strength),
-                      'y': start.y*b1_strength + reaction_axis[1].y*(1-b1_strength)};
-                b2 = {'x': start.x*b2_strength + end.x*(1-b2_strength),
-                      'y': start.y*b2_strength + end.y*(1-b2_strength)},
-                circle = {'x': main_axis[1].x + (w*draw_at_index - w*(num_slots-1)/2) + met.dis.x,
-                          'y': main_axis[1].y - secondary_dis + met.dis.y};
-            }
-            // rotate coordinates around start point
-            met.start  = rotate_coords(start,  angle, main_axis[0]),
-            met.end    = rotate_coords(end,    angle, main_axis[0]),
-            met.b1     = rotate_coords(b1,     angle, main_axis[0]),
-            met.b2     = rotate_coords(b2,     angle, main_axis[0]),
-            met.circle = rotate_coords(circle, angle, main_axis[0]);
-
-            return met;
-        }
-
         function new_reaction(reaction_id, coords) {
             // New object at x, y coordinates.
 
@@ -483,7 +372,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             reaction.angle = 0 * (Math.PI / 180); // default angle
 
             // calculate coordinates of reaction
-            reaction = calculate_reaction_coordinates(reaction);
+            reaction = utils.calculate_reaction_coordinates(reaction);
 
             // set primary metabolites and count reactants/products
             var primary_reactant_index = 0,
@@ -524,12 +413,12 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 metabolite.dis = {'x': 0, 'y': 0};
 
                 // calculate coordinates of metabolite components
-                metabolite = calculate_metabolite_coordinates(metabolite,
-                                                              primary_index,
-                                                              reaction.angle,
-                                                              reaction.main_axis,
-                                                              reaction.center,
-                                                              reaction.dis);
+                metabolite = utils.calculate_metabolite_coordinates(metabolite,
+								    primary_index,
+								    reaction.angle,
+								    reaction.main_axis,
+								    reaction.center,
+								    reaction.dis);
             }
 
             // append the new reaction
@@ -652,7 +541,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                         metabolite.is_primary = false;
                     }
                     // calculate coordinates of metabolite components
-                    metabolite = calculate_metabolite_coordinates(metabolite,
+                    metabolite = utils.calculate_metabolite_coordinates(metabolite,
                                                                   index,
                                                                   reaction.angle,
                                                                   reaction.main_axis,
@@ -815,7 +704,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             };
 
             sel.text(function(d) {
-                return d.reaction_id + " (" + o.decimal_format(d.flux) + ")";
+                return d.flux ? d.reaction_id + " (" + o.decimal_format(d.flux) + ")" :
+		    d.reaction_id;
             })
                 .attr('transform', function(d) {
                     // displacement of reaction label
@@ -828,9 +718,9 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                         dis = {'x': -30, 'y': 35};
                     else if (near_angle_degrees(d.angle, 0))
                         dis = {'x': 20, 'y': 0};
-                    var loc = rotate_coords({'x': d.center.x + dis.x,
-                                             'y': d.center.y + dis.y},
-                                            d.angle, d.main_axis[0]);
+                    var loc = utils.rotate_coords({'x': d.center.x + dis.x,
+						   'y': d.center.y + dis.y},
+						  d.angle, d.main_axis[0]);
                     return 'translate('+loc.x+','+loc.y+')';
                 });
         }
@@ -945,7 +835,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         function draw_specific_reactions_with_location(reaction_id) {
             var reaction = o.drawn_reactions[reaction_id],
                 primary_reactant_index, primary_product_index;
-            reaction = calculate_reaction_coordinates(reaction);
+            reaction = utils.calculate_reaction_coordinates(reaction);
             for (var metabolite_id in reaction.metabolites) {
                 var metabolite = reaction.metabolites[metabolite_id];
                 if (metabolite.coefficient < 0)
@@ -961,7 +851,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 } else {
                     primary_index = primary_product_index;
                 }
-                metabolite = calculate_metabolite_coordinates(metabolite,
+                metabolite = utils.calculate_metabolite_coordinates(metabolite,
                                                               primary_index, //should this be saved as metabolite.primary_index?
                                                               reaction.angle,
                                                               reaction.main_axis,
