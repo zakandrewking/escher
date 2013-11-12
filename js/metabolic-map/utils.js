@@ -2,12 +2,18 @@ define(["lib/d3"], function (d3) {
     return { setup_zoom_container: setup_zoom_container,
              setup_defs: setup_defs,
 	     clone: clone,
+	     c_plus_c: c_plus_c,
+	     c_minus_c: c_minus_c,
 	     download_json: download_json,
 	     load_json: load_json,
-	     calculate_reaction_coordinates: calculate_reaction_coordinates,
+	     calculate_new_reaction_coordinates: calculate_new_reaction_coordinates,
 	     calculate_new_metabolite_coordinates: calculate_new_metabolite_coordinates,
 	     rotate_coords_recursive: rotate_coords_recursive,
-	     rotate_coords: rotate_coords };
+	     rotate_coords: rotate_coords,
+	     rotate_coords_relative: rotate_coords_relative,
+	     rotate_coords_relative_recursive: rotate_coords_relative_recursive,
+	     get_angle: get_angle,
+	     to_degrees: to_degrees };
 
     // definitions
     function setup_zoom_container(svg, w, h, scale_extent, callback) {
@@ -103,19 +109,33 @@ define(["lib/d3"], function (d3) {
 	reader.readAsText(f);
     }
 
-    function calculate_reaction_coordinates(reaction) {
+    function calculate_new_reaction_coordinates(reaction, coords) {
+	/* Assign coordinates to a new reaction.
+	 *	 
+	 * Sets dis, main_axis, center, and coords.	 
+	 *
+	 * The coords are absolute; center and main_axis are relative.
+	 */
         var dis = 120;
+
+	// rotate main axis around angle with distance
+        var main_axis = [{'x': 0, 'y': 0}, {'x': dis, 'y': 0}],
+	    center = { 'x': (main_axis[0].x + main_axis[1].x)/2,   // for convenience
+                       'y': (main_axis[0].y + main_axis[1].y)/2 };
         reaction.dis = dis;
-        var main_axis = [{'x': 0, 'y': 0}, {'x': 0, 'y': dis}];
         reaction.main_axis = main_axis;
-        reaction.center = {'x': (main_axis[0].x + main_axis[1].x)/2,   // for convenience
-                           'y': (main_axis[0].y + main_axis[1].y)/2};
+        reaction.center = center;
+	reaction.coords = coords;
         return reaction;
     }
 
-    function calculate_new_metabolite_coordinates(met, primary_index, angle, main_axis, center, dis) {
+    function calculate_new_metabolite_coordinates(met, primary_index, main_axis, center, dis) {
+	/* Calculate metabolite coordinates for a new reaction metabolite.
+	 */
+
         // basic constants
         met.text_dis = {'x': 0, 'y': -18}; // displacement of metabolite label
+        met.dis = {'x': 0, 'y': 0};
 
         // Curve parameters
         var w = 60,  // distance between reactants and between products
@@ -184,32 +204,50 @@ define(["lib/d3"], function (d3) {
             circle = {'x': main_axis[1].x + (w*draw_at_index - w*(num_slots-1)/2) + met.dis.x,
                       'y': main_axis[1].y - secondary_dis + met.dis.y};
         }
-        // rotate coordinates around start point
-        met.start  = rotate_coords(start,  angle, main_axis[0]),
-        met.end    = rotate_coords(end,    angle, main_axis[0]),
-        met.b1     = rotate_coords(b1,     angle, main_axis[0]),
-        met.b2     = rotate_coords(b2,     angle, main_axis[0]),
-        met.circle = rotate_coords(circle, angle, main_axis[0]);
-
+	met.end = end; met.b1 = b1; met.b2 = b2; met.circle = circle; met.start = start;
         return met;
     }
 
     function rotate_coords_recursive(coords_array, angle, center) {
-        var i=-1,
-            rotated = [];
-        while (++i<coords_array.length) {
-            rotated.push(rotate_coords(coords_array[i]));
-        }
-        return rotated;
+	var rot = function(c) { return rotate_coords(c, angle, center); };
+        return coords_array.map(rot);
     }
 
     function rotate_coords(c, angle, center) {
-        var dx = Math.cos(angle) * (c.x - center.x) +
-                Math.sin(angle) * (c.y - center.y) +
+        var dx = Math.cos(-angle) * (c.x - center.x) +
+                Math.sin(-angle) * (c.y - center.y) +
                 center.x,
-            dy = - Math.sin(angle) * (c.x - center.x) +
-                Math.cos(angle) * (c.y - center.y) +
+            dy = - Math.sin(-angle) * (c.x - center.x) +
+                Math.cos(-angle) * (c.y - center.y) +
                 center.y;
         return {'x': dx, 'y': dy};
     }
+
+    function rotate_coords_relative(coord, angle, center, displacement) {
+	// convert to absolute coords, rotate, then convert back
+	var abs = c_plus_c(coord, displacement);
+	return c_minus_c(rotate_coords(abs, angle, center), displacement);
+    }
+    function rotate_coords_relative_recursive(coords, angle, center, displacement) {
+	// convert to absolute coords, rotate, then convert back
+	var to_abs = function(c) { return c_plus_c(c, displacement); };
+	var to_rel = function(c) { return c_minus_c(c, displacement); };
+	return rotate_coords_recursive(coords.map(to_abs), angle, center).map(to_rel);
+    }
+
+    function get_angle(coords) {
+	/* Takes an array of 2 coordinate objects {"x": 1, "y": 1}
+	 *
+	 * Returns angle between 0 and 2PI.
+	 */
+	var denominator = coords[1].x - coords[0].x,
+	    numerator = coords[1].y - coords[0].y;
+	if (denominator==0 && numerator >= 0) return Math.PI/2;
+	else if (denominator==0 && numerator < 0) return 3*Math.PI/2;
+	else if (denominator >= 0 && numerator >= 0) return Math.atan(numerator/denominator);
+	else if (denominator >= 0) return (Math.atan(numerator/denominator) + 2*Math.PI);
+	else return (Math.atan(numerator/denominator) + Math.PI);
+    }
+
+    function to_degrees(radians) { return radians*180/Math.PI; }
 });

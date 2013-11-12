@@ -247,7 +247,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	     */
 	    var debug = true;
 	    if (debug) {
-		var required_reaction_props = ["metabolites", "angle", "center", "coords", "dis", "main_axis"],
+		var required_reaction_props = ["metabolites", "center", "coords", "dis", "main_axis"],
 		    required_metabolite_props = [];
 		map.map(function(reaction) {
 		    required_reaction_props.map(function(req) {
@@ -357,7 +357,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         }
 
         function new_reaction(reaction_id, coords) {
-            // New object at x, y coordinates.
+            /* New reaction at x, y coordinates.
+	     */
 
             // If reaction id is not new, then return:
             if (o.drawn_reactions.hasOwnProperty(reaction_id)) {
@@ -368,11 +369,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             // set reaction coordinates and angle
             // be sure to copy the reaction recursively
             var reaction = utils.clone(o.cobra_reactions[reaction_id]);
-            reaction.coords = align_to_grid(coords);
-            reaction.angle = 0 * (Math.PI / 180); // default angle
-
             // calculate coordinates of reaction
-            reaction = utils.calculate_reaction_coordinates(reaction);
+            reaction = utils.calculate_new_reaction_coordinates(reaction, coords);
 
             // set primary metabolites and count reactants/products
             var primary_reactant_index = 0,
@@ -410,16 +408,20 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 
                 // record reaction_id with each metabolite
                 metabolite.reaction_id = reaction_id;
-                metabolite.dis = {'x': 0, 'y': 0};
 
                 // calculate coordinates of metabolite components
                 metabolite = utils.calculate_new_metabolite_coordinates(metabolite,
-								    primary_index,
-								    reaction.angle,
-								    reaction.main_axis,
-								    reaction.center,
-								    reaction.dis);
-            }
+									primary_index,
+									reaction.main_axis,
+									reaction.center,
+									reaction.dis);
+	    }
+
+	    // rotate the new reaction
+	    var angle = Math.PI / 2; // default angle
+	    reaction = rotate_reaction(reaction, angle, coords);
+
+	    console.log(reaction, angle);
 
             // append the new reaction
             o.drawn_reactions[reaction_id] = reaction;
@@ -700,7 +702,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         }
         function update_reaction_label(sel) {
             var near_angle_degrees = function(angle, near) {
-                return (angle > (near-45)*Math.PI/180 && angle<(near+45)*Math.PI/180);
+		var diff = angle-near, diff_r = diff-360;
+		return Math.abs(diff) <= 45 || Math.abs(diff_r) <= 45;
             };
 
             sel.text(function(d) {
@@ -709,24 +712,25 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             })
                 .attr('transform', function(d) {
                     // displacement of reaction label
-                    var dis;
-                    if (near_angle_degrees(d.angle, 90))
+                    var dis, angle = utils.to_degrees(utils.get_angle(d.main_axis));
+                    if (near_angle_degrees(angle, 90))
                         dis = {'x': 30, 'y': -35};
-                    else if (near_angle_degrees(d.angle, 180))
+                    else if (near_angle_degrees(angle, 180))
                         dis = {'x': -20, 'y': 0};
-                    else if (near_angle_degrees(d.angle, 270))
+                    else if (near_angle_degrees(angle, 270))
                         dis = {'x': -30, 'y': 35};
-                    else if (near_angle_degrees(d.angle, 0))
+                    else
                         dis = {'x': 20, 'y': 0};
-                    var loc = utils.rotate_coords({'x': d.center.x + dis.x,
-						   'y': d.center.y + dis.y},
-						  d.angle, d.main_axis[0]);
+		    console.log(dis, angle, d.center, d.main_axis);
+		    var dis_rotated = utils.rotate_coords(dis, angle, d.center),
+			loc = utils.c_plus_c(d.center, dis_rotated);
                     return 'translate('+loc.x+','+loc.y+')';
                 });
         }
 
         function create_reaction(enter_selection) {
             // attributes for new reaction group
+
             var t = enter_selection.append('g')
                     .attr('id', function(d) { return d.reaction_id; })
                     .attr('class', 'reaction')
@@ -832,7 +836,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         function draw_specific_reactions_with_location(reaction_id) {
             var reaction = o.drawn_reactions[reaction_id],
                 primary_reactant_index, primary_product_index;
-            reaction = utils.calculate_reaction_coordinates(reaction);
+            reaction = utils.calculate_new_reaction_coordinates(reaction);
             for (var metabolite_id in reaction.metabolites) {
                 var metabolite = reaction.metabolites[metabolite_id];
                 if (metabolite.coefficient < 0)
@@ -860,44 +864,53 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 
 	function rotate_reaction_id(cobra_id, angle, center) {
 	    /* Rotate reaction with cobra_id in o.drawn_reactions around center.
-	     * 
-	     * UNFINISHED
 	     */
 
 	    var reaction = o.drawn_reactions[cobra_id];
 	    o.drawn_reactions[cobra_id] = rotate_reaction(reaction,
 							  angle, center);
-	    
-	    // definitions
-            function rotate_reaction(reaction, angle, center) {
-		/* Rotate reaction around center.
-		 */
-
-		var rotate_around = function(coord) {
-		    return utils.rotate_coords(coord, angle, center);
-		};
-		var rotate_around_recursive = function(coords) {
-		    return utils.rotate_coords_recursive(coords, angle, center);
-		};
-
-		// recalculate: reaction.main_axis, reaction.coords
-		var new_main_axis = rotate_around_recursive(reaction.main_axis),
-		    new_coords = utils.c_plus_c(reaction.coords.x - (new_main_axis[0].x - reaction.main_axis[0].x));
-		// recalculate: metabolite.*
-		var new_metabolites = reaction.metabolites.map(function(metabolite) {
-		    metabolite.b1 = rotate_around(metabolite.b1);
-		    metabolite.b2 = rotate_around(metabolite.b2);
-		    metabolite.start = rotate_around(metabolite.start);
-		    metabolite.end = rotate_around(metabolite.end);
-		    metabolite.circle = rotate_around(metabolite.circle);
-		    return metabolite;
-		});
-		reaction.metabolites = new_metabolites;
-		reaction.main_axis = new_main_axis;
-		reaction.coords = new_coords;
-		return reaction;
-            }
 	}
+	
+        function rotate_reaction(reaction, angle, center_absolute) {
+	    /* Rotate reaction around center.
+	     */
+
+	    // functions
+	    var rotate_around = function(coord) {
+		return utils.rotate_coords(coord, angle, center_absolute);
+	    };
+	    var rotate_around_recursive = function(coords) {
+		return utils.rotate_coords_recursive(coords, angle, center_absolute);
+	    };
+	    var rotate_around_rel = function(coord) {
+		// convert to absolute coords, rotate, then convert back
+		return utils.rotate_coords_relative(coord, angle, 
+						    center_absolute, reaction.coords);
+	    };
+	    var rotate_around_rel_recursive = function(coords) {
+		// convert to absolute coords, rotate, then convert back, recursively
+		return utils.rotate_coords_relative_recursive(coords, angle,
+							      center_absolute,
+							      reaction.coords);
+	    };
+
+	    // recalculate: reaction.main_axis, reaction.coords
+	    reaction.coords = rotate_around(reaction.coords);
+	    reaction.center = rotate_around_rel(reaction.center);
+	    reaction.main_axis = rotate_around_rel_recursive(reaction.main_axis);
+
+	    // recalculate: metabolite.*
+	    for (var met_id in reaction.metabolites) {
+		var metabolite = reaction.metabolites[met_id];
+		metabolite.b1 = rotate_around_rel(metabolite.b1);
+		metabolite.b2 = rotate_around_rel(metabolite.b2);
+		metabolite.start = rotate_around_rel(metabolite.start);
+		metabolite.end = rotate_around_rel(metabolite.end);
+		metabolite.circle = rotate_around_rel(metabolite.circle);
+	    }
+	    return reaction;
+        }
+	
 
         function generate_arrowhead_for_color(color, is_end) {
             var pref;
