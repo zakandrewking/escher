@@ -413,7 +413,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 metabolite.dis = {'x': 0, 'y': 0};
 
                 // calculate coordinates of metabolite components
-                metabolite = utils.calculate_metabolite_coordinates(metabolite,
+                metabolite = utils.calculate_new_metabolite_coordinates(metabolite,
 								    primary_index,
 								    reaction.angle,
 								    reaction.main_axis,
@@ -541,7 +541,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                         metabolite.is_primary = false;
                     }
                     // calculate coordinates of metabolite components
-                    metabolite = utils.calculate_metabolite_coordinates(metabolite,
+                    metabolite = utils.calculate_new_metabolite_coordinates(metabolite,
                                                                   index,
                                                                   reaction.angle,
                                                                   reaction.main_axis,
@@ -802,9 +802,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         }
 
         function draw_specific_reactions(reaction_ids) {
-            // console.log('updating these ids:');
-            // console.log(reaction_ids);
-
             // find reactions for reaction_ids
             var reaction_subset = {},
                 i = -1;
@@ -851,7 +848,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 } else {
                     primary_index = primary_product_index;
                 }
-                metabolite = utils.calculate_metabolite_coordinates(metabolite,
+                metabolite = utils.calculate_new_metabolite_coordinates(metabolite,
                                                               primary_index, //should this be saved as metabolite.primary_index?
                                                               reaction.angle,
                                                               reaction.main_axis,
@@ -861,10 +858,46 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             draw_specific_reactions([reaction_id]);
         }
 
-        function modify_reaction(cobra_id, key, value) {
-            // modify reaction with cobra_id to have new (key, value) pair
-            o.drawn_reactions[cobra_id][key] = value;
-        }
+	function rotate_reaction_id(cobra_id, angle, center) {
+	    /* Rotate reaction with cobra_id in o.drawn_reactions around center.
+	     * 
+	     * UNFINISHED
+	     */
+
+	    var reaction = o.drawn_reactions[cobra_id];
+	    o.drawn_reactions[cobra_id] = rotate_reaction(reaction,
+							  angle, center);
+	    
+	    // definitions
+            function rotate_reaction(reaction, angle, center) {
+		/* Rotate reaction around center.
+		 */
+
+		var rotate_around = function(coord) {
+		    return utils.rotate_coords(coord, angle, center);
+		};
+		var rotate_around_recursive = function(coords) {
+		    return utils.rotate_coords_recursive(coords, angle, center);
+		};
+
+		// recalculate: reaction.main_axis, reaction.coords
+		var new_main_axis = rotate_around_recursive(reaction.main_axis),
+		    new_coords = utils.c_plus_c(reaction.coords.x - (new_main_axis[0].x - reaction.main_axis[0].x));
+		// recalculate: metabolite.*
+		var new_metabolites = reaction.metabolites.map(function(metabolite) {
+		    metabolite.b1 = rotate_around(metabolite.b1);
+		    metabolite.b2 = rotate_around(metabolite.b2);
+		    metabolite.start = rotate_around(metabolite.start);
+		    metabolite.end = rotate_around(metabolite.end);
+		    metabolite.circle = rotate_around(metabolite.circle);
+		    return metabolite;
+		});
+		reaction.metabolites = new_metabolites;
+		reaction.main_axis = new_main_axis;
+		reaction.coords = new_coords;
+		return reaction;
+            }
+	}
 
         function generate_arrowhead_for_color(color, is_end) {
             var pref;
@@ -1012,22 +1045,22 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         }
         function cmd_left() {
             cmd_hide_input();
-            modify_reaction(o.selected_node.reaction_id, 'angle', 270*(Math.PI/180));
+            rotate_reaction_id(o.selected_node.reaction_id, 'angle', 270*(Math.PI/180));
             draw_specific_reactions_with_location(o.selected_node.reaction_id);
         }
         function cmd_right() {
             cmd_hide_input();
-            modify_reaction(o.selected_node.reaction_id, 'angle', 90*(Math.PI/180));
+            rotate_reaction_id(o.selected_node.reaction_id, 'angle', 90*(Math.PI/180));
             draw_specific_reactions_with_location(o.selected_node.reaction_id);
         }
         function cmd_up() {
             cmd_hide_input();
-            modify_reaction(o.selected_node.reaction_id, 'angle', 180*(Math.PI/180));
+            rotate_reaction_id(o.selected_node.reaction_id, 'angle', 180*(Math.PI/180));
             draw_specific_reactions_with_location(o.selected_node.reaction_id);
         }
         function cmd_down() {
             cmd_hide_input();
-            modify_reaction(o.selected_node.reaction_id, 'angle', 0);
+            rotate_reaction_id(o.selected_node.reaction_id, 'angle', 0);
             draw_specific_reactions_with_location(o.selected_node.reaction_id);
         }
         function cmd_save() {

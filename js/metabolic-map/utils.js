@@ -5,7 +5,7 @@ define(["lib/d3"], function (d3) {
 	     download_json: download_json,
 	     load_json: load_json,
 	     calculate_reaction_coordinates: calculate_reaction_coordinates,
-	     calculate_metabolite_coordinates: calculate_metabolite_coordinates,
+	     calculate_new_metabolite_coordinates: calculate_new_metabolite_coordinates,
 	     rotate_coords_recursive: rotate_coords_recursive,
 	     rotate_coords: rotate_coords };
 
@@ -60,6 +60,15 @@ define(["lib/d3"], function (d3) {
 	throw new Error("Unable to copy obj! Its type isn't supported.");
     }
 
+    function c_plus_c(coords1, coords2) {
+	return { "x": coords1.x + coords2.x,
+		 "y": coords1.y + coords2.y };
+    }
+    function c_minus_c(coords1, coords2) {
+	return { "x": coords1.x - coords2.x,
+		 "y": coords1.y - coords2.y };
+    }
+
     function download_json(json, name) {
         var a = document.createElement('a');
         a.download = name+'.json'; // file name
@@ -104,7 +113,7 @@ define(["lib/d3"], function (d3) {
         return reaction;
     }
 
-    function calculate_metabolite_coordinates(met, primary_index, angle, main_axis, center, dis) {
+    function calculate_new_metabolite_coordinates(met, primary_index, angle, main_axis, center, dis) {
         // basic constants
         met.text_dis = {'x': 0, 'y': -18}; // displacement of metabolite label
 
