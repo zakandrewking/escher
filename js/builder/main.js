@@ -421,8 +421,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    var angle = Math.PI / 2; // default angle
 	    reaction = rotate_reaction(reaction, angle, coords);
 
-	    console.log(reaction, angle);
-
             // append the new reaction
             o.drawn_reactions[reaction_id] = reaction;
 
@@ -486,12 +484,13 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             var reaction = o.drawn_reactions[reaction_id],
                 metabolite = reaction.metabolites[metabolite_id],
                 coords = reaction.coords;
-            return {'x': coords.x + metabolite.circle.x,
-                    'y': coords.y + metabolite.circle.y};
+            return utils.c_plus_c(metabolite.circle, coords);
         }
 
         function cycle_primary_key() {
-            // cycle the primary metabolite among the products of the selected reaction
+            /* Cycle the primary metabolite among the products of the selected reaction.
+	     *
+	     */
 
             if (!o.selected_node.is_selected) {
                 console.log('no selected node');
@@ -517,7 +516,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         }
 
         function rotate_primary_key(index) {
-            // switch the primary metabolite to the index of a particular product
+            /* Switch the primary metabolite to the index of a particular product.
+	     */
 
             if (!o.selected_node.is_selected) {
                 console.log('no selected node');
@@ -544,11 +544,10 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     }
                     // calculate coordinates of metabolite components
                     metabolite = utils.calculate_new_metabolite_coordinates(metabolite,
-                                                                  index,
-                                                                  reaction.angle,
-                                                                  reaction.main_axis,
-                                                                  reaction.center,
-                                                                  reaction.dis);
+									    index,
+                                                                            reaction.main_axis,
+									    reaction.center,
+									    reaction.dis);
                 }
             }
 
@@ -695,7 +694,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         }
 
         function create_reaction_label(sel) {
-            // draw reaction label for selection
+            /* Draw reaction label for selection.
+	     */
             sel.append('text')
                 .attr('class', 'reaction-label')
                 .attr('pointer-events', 'none');
@@ -721,7 +721,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                         dis = {'x': -30, 'y': 35};
                     else
                         dis = {'x': 20, 'y': 0};
-		    console.log(dis, angle, d.center, d.main_axis);
 		    var dis_rotated = utils.rotate_coords(dis, angle, d.center),
 			loc = utils.c_plus_c(d.center, dis_rotated);
                     return 'translate('+loc.x+','+loc.y+')';
@@ -853,11 +852,10 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     primary_index = primary_product_index;
                 }
                 metabolite = utils.calculate_new_metabolite_coordinates(metabolite,
-                                                              primary_index, //should this be saved as metabolite.primary_index?
-                                                              reaction.angle,
-                                                              reaction.main_axis,
-                                                              reaction.center,
-                                                              reaction.dis);
+									primary_index,
+                                                                        reaction.main_axis,
+									reaction.center,
+									reaction.dis);
             }
             draw_specific_reactions([reaction_id]);
         }

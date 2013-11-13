@@ -135,7 +135,7 @@ define(["lib/d3"], function (d3) {
 
         // basic constants
         met.text_dis = {'x': 0, 'y': -18}; // displacement of metabolite label
-        met.dis = {'x': 0, 'y': 0};
+        met.dis = {'x': 0, 'y': 0}; // metabolite drag displacement
 
         // Curve parameters
         var w = 60,  // distance between reactants and between products
@@ -159,8 +159,8 @@ define(["lib/d3"], function (d3) {
         }
 
         var de = dis - ds, // distance between ends of line axis
-            reaction_axis = [{'x': 0, 'y': ds},
-                             {'x': 0, 'y': de}];
+            reaction_axis = [{'x': ds, 'y': 0},
+                             {'x': de, 'y': 0}];
 
         // Define line parameters and axis.
         // Begin with unrotated coordinate system. +y = Down, +x = Right.
@@ -177,14 +177,14 @@ define(["lib/d3"], function (d3) {
             circle = {'x': main_axis[0].x + met.dis.x,
                       'y': main_axis[0].y + met.dis.y};
         } else if (met.coefficient < 0) {
-            end = {'x': reaction_axis[0].x + (w2*draw_at_index - w2*(num_slots-1)/2) + met.dis.x,
-                   'y': reaction_axis[0].y + secondary_dis + met.dis.y},
+	    end = {'x': reaction_axis[0].x + secondary_dis + met.dis.x,
+                   'y': reaction_axis[0].y + (w2*draw_at_index - w2*(num_slots-1)/2) + met.dis.y},
             b1 = {'x': start.x*b1_strength + reaction_axis[0].x*(1-b1_strength),
                   'y': start.y*b1_strength + reaction_axis[0].y*(1-b1_strength)},
             b2 = {'x': start.x*b2_strength + end.x*(1-b2_strength),
                   'y': start.y*b2_strength + end.y*(1-b2_strength)},
-            circle = {'x': main_axis[0].x + (w*draw_at_index - w*(num_slots-1)/2) + met.dis.x,
-                      'y': main_axis[0].y + secondary_dis + met.dis.y};
+            circle = {'x': main_axis[0].x + secondary_dis + met.dis.x,
+                      'y': main_axis[0].y + (w*draw_at_index - w*(num_slots-1)/2) + met.dis.y};
         } else if (met.coefficient > 0 && met.is_primary) {        // products
             end = {'x': reaction_axis[1].x + met.dis.x,
                    'y': reaction_axis[1].y + met.dis.y};
@@ -195,14 +195,14 @@ define(["lib/d3"], function (d3) {
             circle = {'x': main_axis[1].x + met.dis.x,
                       'y': main_axis[1].y + met.dis.y};
         } else if (met.coefficient > 0) {
-            end = {'x': reaction_axis[1].x + (w2*draw_at_index - w2*(num_slots-1)/2) + met.dis.x,
-                   'y': reaction_axis[1].y - secondary_dis + met.dis.y},
+            end = {'x': reaction_axis[1].x - secondary_dis + met.dis.x,
+                   'y': reaction_axis[1].y + (w2*draw_at_index - w2*(num_slots-1)/2) + met.dis.y},
             b1 = {'x': start.x*b1_strength + reaction_axis[1].x*(1-b1_strength),
                   'y': start.y*b1_strength + reaction_axis[1].y*(1-b1_strength)};
             b2 = {'x': start.x*b2_strength + end.x*(1-b2_strength),
                   'y': start.y*b2_strength + end.y*(1-b2_strength)},
-            circle = {'x': main_axis[1].x + (w*draw_at_index - w*(num_slots-1)/2) + met.dis.x,
-                      'y': main_axis[1].y - secondary_dis + met.dis.y};
+            circle = {'x': main_axis[1].x - secondary_dis + met.dis.x,
+                      'y': main_axis[1].y + (w*draw_at_index - w*(num_slots-1)/2) + met.dis.y};
         }
 	met.end = end; met.b1 = b1; met.b2 = b2; met.circle = circle; met.start = start;
         return met;
