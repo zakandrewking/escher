@@ -170,8 +170,8 @@ define(["lib/d3"], function (d3) {
         if (met.coefficient < 0 && met.is_primary) {
             end = {'x': reaction_axis[0].x + met.dis.x,
                    'y': reaction_axis[0].y + met.dis.y};
-            b1 = {'x': start.x*b1_strength + reaction_axis[0].x*(1-b1_strength),
-                  'y': start.y*b1_strength + reaction_axis[0].y*(1-b1_strength)};
+            b1 = {'x': start.x*(1-b1_strength) + reaction_axis[0].x*b1_strength,
+                  'y': start.y*(1-b1_strength) + reaction_axis[0].y*b1_strength};
             b2 = {'x': start.x*b2_strength + (end.x)*(1-b2_strength),
                   'y': start.y*b2_strength + (end.y)*(1-b2_strength)},
             circle = {'x': main_axis[0].x + met.dis.x,
@@ -179,8 +179,8 @@ define(["lib/d3"], function (d3) {
         } else if (met.coefficient < 0) {
 	    end = {'x': reaction_axis[0].x + secondary_dis + met.dis.x,
                    'y': reaction_axis[0].y + (w2*draw_at_index - w2*(num_slots-1)/2) + met.dis.y},
-            b1 = {'x': start.x*b1_strength + reaction_axis[0].x*(1-b1_strength),
-                  'y': start.y*b1_strength + reaction_axis[0].y*(1-b1_strength)},
+            b1 = {'x': start.x*(1-b1_strength) + reaction_axis[0].x*b1_strength,
+                  'y': start.y*(1-b1_strength) + reaction_axis[0].y*b1_strength},
             b2 = {'x': start.x*b2_strength + end.x*(1-b2_strength),
                   'y': start.y*b2_strength + end.y*(1-b2_strength)},
             circle = {'x': main_axis[0].x + secondary_dis + met.dis.x,
@@ -188,8 +188,8 @@ define(["lib/d3"], function (d3) {
         } else if (met.coefficient > 0 && met.is_primary) {        // products
             end = {'x': reaction_axis[1].x + met.dis.x,
                    'y': reaction_axis[1].y + met.dis.y};
-            b1 = {'x': start.x*b1_strength + reaction_axis[1].x*(1-b1_strength),
-                  'y': start.y*b1_strength + reaction_axis[1].y*(1-b1_strength)};
+            b1 = {'x': start.x*(1-b1_strength) + reaction_axis[1].x*b1_strength,
+                  'y': start.y*(1-b1_strength) + reaction_axis[1].y*b1_strength};
             b2 = {'x': start.x*b2_strength + end.x*(1-b2_strength),
                   'y': start.y*b2_strength + end.y*(1-b2_strength)},
             circle = {'x': main_axis[1].x + met.dis.x,
@@ -197,8 +197,8 @@ define(["lib/d3"], function (d3) {
         } else if (met.coefficient > 0) {
             end = {'x': reaction_axis[1].x - secondary_dis + met.dis.x,
                    'y': reaction_axis[1].y + (w2*draw_at_index - w2*(num_slots-1)/2) + met.dis.y},
-            b1 = {'x': start.x*b1_strength + reaction_axis[1].x*(1-b1_strength),
-                  'y': start.y*b1_strength + reaction_axis[1].y*(1-b1_strength)};
+            b1 = {'x': start.x*(1-b1_strength) + reaction_axis[1].x*b1_strength,
+                  'y': start.y*(1-b1_strength) + reaction_axis[1].y*b1_strength};
             b2 = {'x': start.x*b2_strength + end.x*(1-b2_strength),
                   'y': start.y*b2_strength + end.y*(1-b2_strength)},
             circle = {'x': main_axis[1].x - secondary_dis + met.dis.x,

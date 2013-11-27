@@ -582,6 +582,12 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             g.append('path')
                 .attr('class', 'reaction-arrow');
 
+	    if (false) {
+		// new bezier points
+		g.append('circle').attr('class', 'bezier1');
+		g.append('circle').attr('class', 'bezier2');
+	    }
+
             // create metabolite circle and label
             // TODO hide if the node is shared
             var mg = g.append('g')
@@ -653,6 +659,32 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                             o.default_reaction_color;
                     return c;
                 });
+
+	    if (false) {
+		// draw bezier points
+		update_selection
+		    .selectAll('.bezier1')
+		    .datum(function() {
+			return this.parentNode.__data__;
+                    })
+                    .attr('transform', function(d) {
+			return 'translate('+d.b1.x+','+d.b1.y+')';
+                    })
+		    .attr('r', '5px')
+                    .style('fill', 'none')
+		    .style('stroke', 'blue');
+		update_selection
+		    .selectAll('.bezier2')
+		    .datum(function() {
+			return this.parentNode.__data__;
+                    })
+                    .attr('transform', function(d) {
+			return 'translate('+d.b2.x+','+d.b2.y+')';
+                    })
+		    .attr('r', '5px')
+                    .style('fill', 'none')
+		    .style('stroke', 'red');
+	    }
 
             // update circle and label location
             var mg = update_selection
