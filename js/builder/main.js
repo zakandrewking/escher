@@ -119,44 +119,41 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             o.sel.append('g')
                 .attr('id', 'reactions');
 
-            // Sort reactions by flux
+	    // make a list of reactions
+	    o.sorted_reaction_suggestions = [];
+	    for (var reaction_id in o.cobra_reactions) {
+		o.sorted_reaction_suggestions.push({
+		    label: reaction_id,
+		    cobra_id: reaction_id,
+		    flux: 0
+                });
+	    }
 	    if (o.flux) {
-		// TODO also include reactions without flux
-		var sorted = [], json = o.flux;
-		for (var flux_reaction_id in json) {
+		// reactions with flux
+		for (var flux_reaction_id in o.flux) {
                     // fix reaction ids
-                    sorted.push([flux_reaction_id.replace('(', '_').replace(')', ''),
-				 parseFloat(json[flux_reaction_id])]);
-		}
-		sorted.sort(function(a,b) { return Math.abs(b[1]) - Math.abs(a[1]); });
-		var i=-1;
-		o.sorted_reaction_suggestions = [];
-		while (++i < sorted.length) {
-                    // update strings for reaction list
-                    o.sorted_reaction_suggestions.push({
-			label: sorted[i][0]+": "+o.decimal_format(sorted[i][1]),
-			value: sorted[i][0]
-                    });
-
-                    // update model with fluxes
-                    for (var reaction_id in o.cobra_reactions) {
-			// set flux for reaction
-			if (reaction_id == sorted[i][0]) {
-                            o.cobra_reactions[reaction_id].flux = sorted[i][1];
+                    var fixed_id = flux_reaction_id.replace('(', '_').replace(')', ''),
+			flux = parseFloat(o.flux[flux_reaction_id]);
+                    // update model with fluxes. if not found, add the empty reaction to the list
+		    var found = false;
+		    o.sorted_reaction_suggestions.map(function(x) {
+			if (fixed_id == x.cobra_id) {
+			    // update label
+			    x.label = x.label+": "+o.decimal_format(flux);
+			    x.flux = flux;
+			    // set flux for reaction
+                            o.cobra_reactions[fixed_id].flux = flux;
                             // also set flux for metabolites (for simpler drawing)
-                            for (var metabolite_id in o.cobra_reactions[reaction_id].metabolites)
-				o.cobra_reactions[reaction_id].metabolites[metabolite_id].flux = sorted[i][1];
+                            for (var metabolite_id in o.cobra_reactions[fixed_id].metabolites)
+				o.cobra_reactions[fixed_id].metabolites[metabolite_id].flux = flux;
+			    // this reaction has been found
 			}
-                    }
-		}
-	    } else {
-		o.sorted_reaction_suggestions = [];
-		for (var reaction_id in o.cobra_reactions) {
-		    o.sorted_reaction_suggestions.push({
-			label: reaction_id,
-			value: reaction_id
                     });
 		}
+		// sort the reactions by flux
+		o.sorted_reaction_suggestions.sort(function(a, b) { 
+		    return Math.abs(b.flux) - Math.abs(a.flux); 
+		});
 	    }
 
             // setup selection box
@@ -321,13 +318,13 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 
             // Generate the list of reactions to suggest
             var filtered_suggestions = o.sorted_reaction_suggestions.filter(function(x) {
-                return reaction_ids_to_display.indexOf(x.value) > -1;
+                return reaction_ids_to_display.indexOf(x.cobra_id) > -1;
             });
             // Make an array of strings to suggest, and an object to retrieve
             // the reaction ids
             var i = -1, reaction_obj = {}, strings_to_display = [];
             while (++i < filtered_suggestions.length) {
-                reaction_obj[filtered_suggestions[i].label] = filtered_suggestions[i].value;
+                reaction_obj[filtered_suggestions[i].label] = filtered_suggestions[i].cobra_id;
                 strings_to_display.push(filtered_suggestions[i].label);
             };
 
