@@ -19,8 +19,13 @@ def main():
         
     with open(in_file, 'r') as f: data = json.load(f)
     with open(model_file, 'r') as f: model = load(f)
-    out = {}
 
+    # map data
+    out = {}
+    out['info'] = {'max_map_w': data['max_map_w'],
+                   'max_map_h': data['max_map_h']}
+    out['reactions'] = {}
+    
     # locate all the metabolites in the old map
     metabolite_centers = []
     for metabolite_path in data["metabolite_paths"]:
@@ -38,7 +43,6 @@ def main():
       (len(metabolite_centers), len(data["metabolite_paths"]))
 
     # locate all reactions in the old map
-    out = []
     for reaction_path in data['reaction_paths']:
         # find the matching cobra reaction
         the_id = reaction_path['id']
@@ -54,57 +58,86 @@ def main():
 
         path = reaction_path['d']
         # estimate reaction coordinates
-        angle, center, coords, dis, main_axis, abs_center = parse_path(path)
+        angle, absolute_center, _ = parse_path(path)
         new_reaction = { "metabolites": {},
-                         "center": center,
-                         "coords": coords,
-                         "angle": angle, # these are redundant
-                         "dis": None, 
-                         "main_axis": None }
+                         "coords": absolute_center,
+                         "angle": angle }
         for k, v in r._metabolites.iteritems():
-            center = find_likely_metabolite_center(str(k), abs_center, metabolite_centers)
-            if center is not None:
-                center_rel = {"x": center["x"] - coords["x"],
-                              "y": center["y"] - coords["y"]}
-                start, b1, b2, end = beziers(center, center_rel)
+            # find the most likely metabolite, or return None
+            absolute_met_center = find_metabolite_center(str(k),
+                                                         absolute_center,
+                                                         metabolite_centers)
+            if absolute_met_center is not None:
+                start, b1, b2, end, circle = beziers(absolute_center,
+                                                     absolute_met_center,
+                                                     angle)
             else:
-                center_rel = None
-                b1 = None; b2 = None
+                start = None; b1 = None; b2 = None;
+                end = None; circle = None
             the_met = { "coefficient": v,
                         "reaction_id": str(k),
                         "text_dis": {"x": 0, "y": -18},
-                        "circle": center_rel,
-                        "b1": None,
-                        "b2": None,
+                        "circle": circle,
+                        "b1": b1,
+                        "b2": b2,
                         "start": start,
                         "end": end }
                        # these are redundant/optional:
                        # "is_primary": None, 
-                       # "center": None, # exact coordinates when desirable
-                       # "start": None,
-                       # "end": None,
-                       # "flux": None,
                        # "index": None,
-                       # "count": None, 
-                       # "index": None }
+                       # "count": None }
             new_reaction["metabolites"][str(k)] = the_met
-        out.append((r.id, new_reaction))
+        out['reactions'][r.id] = new_reaction
 
     print 'Found %d of %d reaction_paths.' % \
-      (len(out), len(data["reaction_paths"]))
+      (len(out['reactions']), len(data["reaction_paths"]))
 
     with open(out_file, 'w') as f: json.dump(out, f)
       
     print 'done'
 
-def beziers(reaction_center, met_center):
-    start = reaction_center
+def beziers(reaction_center, met_center, angle):
+    """ Adapted from visbio:
+    
+    js.metabolic_map.utils.calculate_new_metabolite_coordinates
+
+    Finds beziers for a metabolite arrow that starts at center, ends
+    at met_center, and follows the angle.
+    
+    """
+    
+    # Curve parameters
     b1_strength = 0.5
     b2_strength = 0.2
-    return start, b1, b2, end
+    gap = 20 # gap between arrow end and metabolite
+        
+    # Define line parameters and axis.
+    start = reaction_center
+    circle = met_center
+    end = displace_along_angle(start, circle, -gap)
+    angle_b = angle_between(start, end)   # between -pi and pi
     
-def find_likely_metabolite_center(met_id, reaction_coords, met_centers):
-    """ Find closest metabolite to reaction.
+    # print '%.3f, %.3f' % (angle_b, angle)
+    # determine the angle direction
+    angle_diff = abs(angle_b - angle)
+    if angle_diff > pi/2:
+        if angle > 0:
+            angle = angle - pi
+        else:
+            angle = angle + pi
+        # print 'new angle: %g' % angle
+        # print 'diff: %g' % abs(angle_b-angle)
+                        
+    # Beziers
+    dis = distance(reaction_center, met_center)
+    b1 = { 'x': start['x'] + (dis * cos(angle) * b1_strength),
+           'y': start['y'] + (dis * sin(angle) * b1_strength) }
+    b2 = { 'x': start['x'] + (dis * cos(angle_b) * (1-b2_strength)),
+           'y': start['y'] + (dis * sin(angle_b) * (1-b2_strength)) }
+    return start, b1, b2, end, circle
+    
+def find_metabolite_center(met_id, reaction_coords, met_centers):
+    """ Find absolute coords for closest matching metabolite to reaction.
     """
     d = inf; closest = None
     for c_id, c_center in met_centers:
@@ -123,22 +156,24 @@ def parse_met_id(the_id):
         return "c", the_id
 
 def parse_path(path):
+    """ Returns:
+
+    ( The angle of the reaction (without direction),
+      The absolute center determined for the reaction,
+      The farthest distance from the center to a metabolite )
+          
+    """
     all_coords = get_all_coords(path)
     x = [a["x"] for a in all_coords]
     y = [a["y"] for a in all_coords]
     # first find the center of the reaction in map coordinates
-    map_reaction_center = {"x": mean(x), "y": mean(y)}
+    absolute_center = {"x": mean(x), "y": mean(y)}
     # then find the angle using some tricky method
     slope, _, _, _, _ = stats.linregress(x, y)
     angle = atan(slope)
     # then find the max extent along that angle
-    dis = max([distance(map_reaction_center, a) for a in all_coords])
-    # set the center and new coords based on these
-    center = {"x": dis/2*cos(angle), "y": dis/2*sin(angle)} # angle and distance/2
-    coords = {"x": map_reaction_center["x"] - center["x"],
-              "y": map_reaction_center["y"] - center["y"]} # map_reaction_center - center
-    main_axis = [{"x": 0, "y": 0}, {"x": center["x"]*2, "y": center["y"]*2}]   # calculate from dis to center * 2
-    return (angle, center, coords, dis, main_axis, map_reaction_center)
+    dis = max([distance(absolute_center, a) for a in all_coords])
+    return (angle, absolute_center, dis)
 
 def path_center(path):
     all_coords = get_all_coords(path)
@@ -153,6 +188,19 @@ def get_all_coords(path):
 
 def distance(p1, p2):
     return sqrt((p2["x"]-p1["x"])**2 + (p2["y"]-p1["y"])**2)
+
+def displace_along_angle(st, end, length):
+    """Return a point along the line from st to end, displaced
+    by length from end.
+    """
+    n = {}
+    hyp = distance(st, end)
+    n['x'] = end['x'] + length * (end['x'] - st['x']) / hyp
+    n['y'] = end['y'] + length * (end['y'] - st['y']) / hyp
+    return n
+
+def angle_between(st, end):
+    return atan((end['y'] - st['y']) / (end['x'] - st['x']))
 
 if __name__ == '__main__':
         main()

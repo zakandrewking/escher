@@ -6,6 +6,7 @@ define(["lib/d3"], function (d3) {
 	     c_minus_c: c_minus_c,
 	     download_json: download_json,
 	     load_json: load_json,
+	     define_scales: define_scales,
 	     calculate_new_reaction_coordinates: calculate_new_reaction_coordinates,
 	     calculate_new_metabolite_coordinates: calculate_new_metabolite_coordinates,
 	     rotate_coords_recursive: rotate_coords_recursive,
@@ -107,6 +108,66 @@ define(["lib/d3"], function (d3) {
         };
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
+    }
+
+    function define_scales(map_w, map_h, w, h) {
+        var factor = Math.min(w/map_w, h/map_h),
+            scale = {};
+        scale.x = d3.scale.linear()
+            .domain([0, map_w])
+            .range([(w - map_w*factor)/2, map_w*factor + (w - map_w*factor)/2]),
+        scale.y = d3.scale.linear()
+            .domain([0, map_h])
+            .range([(h - map_h*factor)/2, map_h*factor + (h - map_h*factor)/2]),
+        scale.x_size = d3.scale.linear()
+            .domain([0, map_w])
+            .range([0, map_w*factor]),
+        scale.y_size = d3.scale.linear()
+            .domain([0, map_h])
+            .range([0, map_h*factor]),
+        scale.size = d3.scale.linear()
+            .domain([0, 1])
+            .range([0, factor]),
+        scale.flux = d3.scale.linear()
+            .domain([0, 40])
+            .range([6, 6]),
+        scale.flux_fill = d3.scale.linear()
+            .domain([0, 40, 200])
+            .range([1, 1, 1]),
+        scale.flux_color = d3.scale.linear()
+            .domain([0, 0.000001, 1, 8, 50])
+            .range(["rgb(200,200,200)", "rgb(190,190,255)", "rgb(100,100,255)", "blue", "red"]),
+        scale.metabolite_concentration = d3.scale.linear()
+            .domain([0, 10])
+            .range([15, 200]),
+        scale.metabolite_color = d3.scale.linear()
+            .domain([0, 1.2])
+            .range(["#FEF0D9", "#B30000"]);
+        scale.scale_path = function(path) {
+            var x_fn = scale.x, y_fn = scale.y;
+            // TODO: scale arrow width
+            var str = d3.format(".2f"),
+                path = path.replace(/(M|L)([0-9-.]+),?\s*([0-9-.]+)/g, function (match, p0, p1, p2) {
+                    return p0 + [str(x_fn(parseFloat(p1))), str(y_fn(parseFloat(p2)))].join(', ');
+                }),
+                reg = /C([0-9-.]+),?\s*([0-9-.]+)\s*([0-9-.]+),?\s*([0-9-.]+)\s*([0-9-.]+),?\s*([0-9-.]+)/g;
+            path = path.replace(reg, function (match, p1, p2, p3, p4, p5, p6) {
+                return 'C'+str(x_fn(parseFloat(p1)))+','+
+                    str(y_fn(parseFloat(p2)))+' '+
+                    str(x_fn(parseFloat(p3)))+','+
+                    str(y_fn(parseFloat(p4)))+' '+
+                    [str(x_fn(parseFloat(p5)))+','+str(y_fn(parseFloat(p6)))];
+            });
+            return path;
+        };
+        scale.scale_decimals = function(path, scale_fn, precision) {
+            var str = d3.format("."+String(precision)+"f");
+            path = path.replace(/([0-9.]+)/g, function (match, p1) {
+                return str(scale_fn(parseFloat(p1)));
+            });
+            return path;
+        };
+        return scale;
     }
 
     function calculate_new_reaction_coordinates(reaction, coords) {

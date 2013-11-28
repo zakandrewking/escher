@@ -21,7 +21,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             flux_path: null,
             flux: null,
             flux2_path: null,
-            flux2: null });
+            flux2: null,
+	    debug: false});
 
         if (o.selection_is_svg) {
             console.error("Builder does not support placement within svg elements");
@@ -89,16 +90,26 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             o.menu = setup_menu(o.selection);
             o.status = setup_status(o.selection);
 
-	    // setup scales
-            o.scale = setup_scales();
-
             // setup the reaction input with complete.ly
             o.reaction_input = setup_reaction_input(o.selection);
 
             // set up keyboard listeners
             setup_key_listeners();
 
-            // set up svg and svg definitions
+	    // import map
+	    var max_w = o.width, max_h = o.height;
+	    if (o.map) {
+		out = import_map(o.map, o.height, o.width);
+		o.drawn_reactions = out.map;
+		max_w = out.max_map_w;
+		max_h = out.max_map_h;
+	    }
+
+	    // set up svg and svg definitions
+	    o.scale = utils.define_scales(max_w, max_h,
+					  o.width, o.height);
+	    console.log(o.scale.x(900));
+
             var defs = utils.setup_defs(o.svg, o.css),
                 out = utils.setup_zoom_container(o.svg, o.width, o.height, [0.05, 15], function(ev) {
                     o.window_translate = {'x': ev.translate[0], 'y': ev.translate[1]};
@@ -157,13 +168,14 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    }
 
             // setup selection box
-	    var start_coords = {'x': o.width/2, 'y': 40};
-            // TEST case
             if (!o.map) {
+		// TEST case
+		var start_coords = {'x': o.width/2, 'y': 40};
                 new_reaction('GLCtex', start_coords);
             } else {
-		o.drawn_reactions = import_map(o.map);
+		draw();
 	    }
+
             d3.select('#loading').style("display", "none");
 	    return;
 
@@ -227,13 +239,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             function setup_status(selection) {
                 return selection.append("div").attr("id", "status");
             };
-	    function setup_scales() {
-		var scale = {};
-		scale.flux_color = d3.scale.linear()
-                    .domain([0, 20])
-                    .range(["blue", "red"]);
-		return scale;
-	    }
         }
 
 	function import_map(map) {
@@ -242,24 +247,26 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	     *
 	     * The returned value will be o.drawn_reactions.
 	     */
-	    var debug = true;
-	    if (debug) {
-		var required_reaction_props = ["metabolites", "center", "coords", "dis", "main_axis"],
+	    if (o.debug) {
+		console.log(map);
+		var required_reaction_props = ["metabolites", "coords", "angle"],
 		    required_metabolite_props = [];
-		map.map(function(reaction) {
+		for (var reaction_id in map.reactions) {
+		    var reaction = map.reactions[reaction_id];
 		    required_reaction_props.map(function(req) {
 			if (!reaction.hasOwnProperty(req)) console.error("Missing property " + req);
 		    });
-		    reaction.metabolites = reaction.metabolites.map(function(metabolite) {
+		    for (var met_id in reaction.metabolites) {
+			var metabolite = reaction.metabolites[met_id];
 			required_metabolite_props.map(function(req) {
 			    if (!metabolite.hasOwnProperty(req)) console.error("Missing property " + req);
 			});
-			return metabolite;
-		    });
-		    return reaction;
-		});
+		    }
+		}
 	    }
-	    return map;
+	    return { map: map.reactions,
+		     max_map_w: map.info.max_map_w,
+		     max_map_h: map.info.max_map_h };
 	}
 
         function set_status(status) {
@@ -752,7 +759,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                         dis = {'x': 20, 'y': 0};
 		    var dis_rotated = utils.rotate_coords(dis, angle, d.center),
 			loc = utils.c_plus_c(d.center, dis_rotated);
-                    return 'translate('+loc.x+','+loc.y+')';
+                    return 'translate('+o.scale.x(loc.x)+','+o.scale.y(loc.y)+')';
                 });
         }
 
@@ -763,7 +770,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     .attr('id', function(d) { return d.reaction_id; })
                     .attr('class', 'reaction')
                     .attr('transform', function(d) {
-                        return 'translate(' + d.coords.x + ',' + d.coords.y + ')';
+                        return 'translate(' + o.scale.x(d.coords.x) + ',' + o.scale.y(d.coords.y) + ')';
                     })
                     .call(create_reaction_label);
 
