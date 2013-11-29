@@ -22,6 +22,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             flux: null,
             flux2_path: null,
             flux2: null,
+	    show_beziers: false,
 	    debug: false});
 
         if (o.selection_is_svg) {
@@ -108,7 +109,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    // set up svg and svg definitions
 	    o.scale = utils.define_scales(max_w, max_h,
 					  o.width, o.height);
-	    console.log(o.scale.x(900));
 
             var defs = utils.setup_defs(o.svg, o.css),
                 out = utils.setup_zoom_container(o.svg, o.width, o.height, [0.05, 15], function(ev) {
@@ -139,7 +139,22 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		    flux: 0
                 });
 	    }
-	    if (o.flux) {
+	    if (o.flux) { 
+		// flux onto existing map reactions
+		if (o.map) {
+		    for (var reaction_id in o.map.reactions) {
+			var reaction = o.map.reactions[reaction_id];
+			if (reaction_id in o.flux) {
+			    var flux = parseFloat(o.flux[reaction_id]);
+			    reaction.flux = flux;
+			    for (var met_id in reaction.metabolites) {
+				var metabolite = reaction.metabolites[met_id];
+				metabolite.flux = flux;
+			    }
+			}
+		    }
+		}
+
 		// reactions with flux
 		for (var flux_reaction_id in o.flux) {
                     // fix reaction ids
@@ -190,6 +205,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 new_button(sel, cmd_down, "Down (↓)");
                 new_button(sel, cmd_save, "Save (^s)");
                 o.load_input_click_fn = new_input(sel, cmd_load, "Load (^o)");
+		if (o.show_beziers) new_button(sel, cmd_hide_beziers, "Hide control points");
+		else new_button(sel, cmd_show_beziers, "Show control points");
                 return sel;
 
                 function new_button(s, fn, name) {
@@ -589,11 +606,9 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             g.append('path')
                 .attr('class', 'reaction-arrow');
 
-	    if (false) {
-		// new bezier points
-		g.append('circle').attr('class', 'bezier1');
-		g.append('circle').attr('class', 'bezier2');
-	    }
+	    // new bezier points
+	    g.append('circle').attr('class', 'bezier1');
+	    g.append('circle').attr('class', 'bezier2');
 
             // create metabolite circle and label
             // TODO hide if the node is shared
@@ -649,10 +664,12 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     return this.parentNode.__data__;
                 })
                 .attr('d', function(d) {
-                    return 'M'+d.start.x+','+d.start.y+
-                        'C'+d.b1.x+','+d.b1.y+' '+
-                        d.b2.x+','+d.b2.y+' '+
-                        d.end.x+','+d.end.y;
+		    if (d.start==null || d.end==null || d.b1==null || d.b2==null)
+			return null;
+                    return 'M'+o.scale.x_size(d.start.x)+','+o.scale.y_size(d.start.y)+
+                        'C'+o.scale.x_size(d.b1.x)+','+o.scale.y_size(d.b1.y)+' '+
+                        o.scale.x_size(d.b2.x)+','+o.scale.y_size(d.b2.y)+' '+
+                        o.scale.x_size(d.end.x)+','+o.scale.y_size(d.end.y);
                 }) // TODO replace with d3.curve or equivalent
                 .attr("marker-end", function (d) {
                     var c = d.flux ? o.scale.flux_color(Math.abs(d.flux)) :
@@ -662,12 +679,17 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     return "url(#" + arrow_id + ")";
                 })
                 .style('stroke', function(d) {
-                    var c = d.flux ? o.scale.flux_color(Math.abs(d.flux)) :
-                            o.default_reaction_color;
-                    return c;
+		    if (o.flux) 
+			return d.flux ? o.scale.flux_color(Math.abs(d.flux)) : o.scale.flux_color(0);
+		    else
+			return o.default_reaction_color;
+		})
+		.style('stroke-width', function(d) {
+		    return d.flux ? o.scale.size(o.scale.flux(Math.abs(d.flux))) :
+			o.scale.size(o.scale.flux(1));
                 });
 
-	    if (false) {
+	    if (o.show_beziers) {
 		// draw bezier points
 		update_selection
 		    .selectAll('.bezier1')
@@ -675,22 +697,35 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 			return this.parentNode.__data__;
                     })
                     .attr('transform', function(d) {
-			return 'translate('+d.b1.x+','+d.b1.y+')';
+			if (d.b1==null) return "";
+			return 'translate('+o.scale.x_size(d.b1.x)+','+o.scale.y_size(d.b1.y)+')';
                     })
-		    .attr('r', '5px')
+		    .attr('r', String(o.scale.size(5))+'px')
+		    .style('stroke-width', String(o.scale.size(1))+'px')
                     .style('fill', 'none')
-		    .style('stroke', 'blue');
+		    .style('stroke', 'blue')
+		    .attr('visibility', 'visible');
 		update_selection
 		    .selectAll('.bezier2')
 		    .datum(function() {
 			return this.parentNode.__data__;
                     })
                     .attr('transform', function(d) {
-			return 'translate('+d.b2.x+','+d.b2.y+')';
+			if (d.b2==null) return "";
+			return 'translate('+o.scale.x_size(d.b2.x)+','+o.scale.y_size(d.b2.y)+')';
                     })
-		    .attr('r', '5px')
+		    .attr('r', String(o.scale.size(5))+'px')
+		    .style('stroke-width', String(o.scale.size(1))+'px')
                     .style('fill', 'none')
-		    .style('stroke', 'red');
+		    .style('stroke', 'red')
+		    .attr('visibility', 'visible');
+	    } else {
+		update_selection
+		    .selectAll('.bezier1')
+		    .attr('visibility', 'hidden');
+		update_selection
+		    .selectAll('.bezier2')
+		    .attr('visibility', 'hidden');
 	    }
 
             // update circle and label location
@@ -702,7 +737,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                         return this.parentNode.__data__;
                     })
                     .attr('transform', function(d) {
-                        return 'translate('+d.circle.x+','+d.circle.y+')';
+			if (d.circle==null) return "";
+                        return 'translate('+o.scale.x_size(d.circle.x)+','+o.scale.y_size(d.circle.y)+')';
                     });
 
             var is_sel = function(d) {
@@ -714,18 +750,21 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             };
 
             mg.select('.metabolite-circle')
-                .attr('r', function(d) { return d.r; })
+                .attr('r', function(d) { return o.scale.size(d.r); })
                 .style('stroke', function(d) {
                     if (is_sel(d)) return '#222';
                     return null;
                 })
                 .style('stroke-width', function(d) {
-                    if (is_sel(d)) return '3px';
-                    return null;
+                    if (is_sel(d)) return String(o.scale.size(3))+'px';
+		    else return String(o.scale.size(2))+'px';
                 });
             mg.select('.metabolite-label')
                 .attr('transform', function(d) {
-                    return 'translate('+d.text_dis.x+','+d.text_dis.y+')';
+                    return 'translate('+o.scale.x_size(d.text_dis.x)+','+o.scale.y_size(d.text_dis.y)+')';
+                })
+                .style("font-size", function(d) {
+                    return o.scale.size(20);
                 });
         }
 
@@ -748,7 +787,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             })
                 .attr('transform', function(d) {
                     // displacement of reaction label
-                    var dis, angle = utils.to_degrees(utils.get_angle(d.main_axis));
+		    var dis,
+			angle = utils.to_degrees(d.angle);
                     if (near_angle_degrees(angle, 90))
                         dis = {'x': 30, 'y': -35};
                     else if (near_angle_degrees(angle, 180))
@@ -757,9 +797,11 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                         dis = {'x': -30, 'y': 35};
                     else
                         dis = {'x': 20, 'y': 0};
-		    var dis_rotated = utils.rotate_coords(dis, angle, d.center),
-			loc = utils.c_plus_c(d.center, dis_rotated);
-                    return 'translate('+o.scale.x(loc.x)+','+o.scale.y(loc.y)+')';
+		    var loc = utils.rotate_coords(dis, angle, {'x': 0, 'y': 0});
+                    return 'translate('+o.scale.x_size(loc.x)+','+o.scale.y_size(loc.y)+')';
+                })
+                .style("font-size", function(d) {
+                    return o.scale.size(25);
                 });
         }
 
@@ -1118,5 +1160,17 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             console.log("Loading");
             o.load_input_click_fn();
         }
+	function cmd_show_beziers() {
+	    o.show_beziers = true;
+	    d3.select(this).text('Hide control points')
+		.on('click', cmd_hide_beziers);
+	    draw();
+	}
+	function cmd_hide_beziers() {
+	    o.show_beziers = false;
+	    d3.select(this).text('Show control points')
+		.on('click', cmd_show_beziers);
+	    draw();
+	}
     };
 });
