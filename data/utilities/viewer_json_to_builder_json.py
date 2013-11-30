@@ -24,6 +24,7 @@ def main():
     out = {}
     out['info'] = {'max_map_w': data['max_map_w'],
                    'max_map_h': data['max_map_h']}
+    out['membranes'] = data['membrane_rectangles']
     out['reactions'] = {}
     
     # locate all the metabolites in the old map

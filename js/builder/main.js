@@ -101,7 +101,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    var max_w = o.width, max_h = o.height;
 	    if (o.map) {
 		out = import_map(o.map, o.height, o.width);
-		o.drawn_reactions = out.map;
+		o.drawn_reactions = out.map.reactions;
+		o.membranes = out.map.membranes;
 		max_w = out.max_map_w;
 		max_h = out.max_map_h;
 	    }
@@ -127,6 +128,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     .attr("style", "stroke:black;fill:none;")
                     .attr('pointer-events', 'all');
 
+            o.sel.append('g')
+                .attr('id', 'membranes');
             o.sel.append('g')
                 .attr('id', 'reactions');
 
@@ -281,7 +284,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		    }
 		}
 	    }
-	    return { map: map.reactions,
+	    return { map: map,
 		     max_map_w: map.info.max_map_w,
 		     max_map_h: map.info.max_map_h };
 	}
@@ -764,7 +767,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     return 'translate('+o.scale.x_size(d.text_dis.x)+','+o.scale.y_size(d.text_dis.y)+')';
                 })
                 .style("font-size", function(d) {
-                    return o.scale.size(20);
+		    return String(o.scale.size(20))+"px";
                 });
         }
 
@@ -800,9 +803,9 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		    var loc = utils.rotate_coords(dis, angle, {'x': 0, 'y': 0});
                     return 'translate('+o.scale.x_size(loc.x)+','+o.scale.y_size(loc.y)+')';
                 })
-                .style("font-size", function(d) {
-                    return o.scale.size(25);
-                });
+                .style("font-size", function(d) { 
+		    return String(o.scale.size(25))+"px";
+		});
         }
 
         function create_reaction(enter_selection) {
@@ -856,21 +859,38 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         }
 
         function reset() {
-            var sel = d3.select('#reactions')
-                    .selectAll('.reaction')
-                    .remove();
+	    d3.select('#membranes')
+                .selectAll('.membrane')
+                .remove();
+	    d3.select('#reactions')
+                .selectAll('.reaction')
+                .remove();
         }
 
         function draw() {
-            /* Draw the reactions
+            /* Draw the reactions and membranes
              */
+
+	    // draw the membranes
+	    var sel = d3.select('#membranes')
+		.selectAll('.membrane')
+		.data(o.membranes);
+
+            // enter: generate and place reaction
+            sel.enter().call(create_membrane);
+
+            // update: update when necessary
+            sel.call(update_membrane);
+
+            // exit
+            sel.exit().remove();
 
             // generate reactions for o.drawn_reactions
             // assure constancy with cobra_id
-            var sel = d3.select('#reactions')
-                    .selectAll('.reaction')
-                    .data(make_array(o.drawn_reactions, 'reaction_id'),
-                          function(d) { return d.reaction_id; }); // LEFTOFF generate array from o.drawn_reactions object
+            sel = d3.select('#reactions')
+                .selectAll('.reaction')
+                .data(make_array(o.drawn_reactions, 'reaction_id'),
+                      function(d) { return d.reaction_id; });
 
             // enter: generate and place reaction
             sel.enter().call(create_reaction);
@@ -880,6 +900,20 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 
             // exit
             sel.exit().remove();
+        }
+
+        function create_membrane(enter_selection) {
+	    enter_selection.append('rect')
+		.attr('class', 'membrane');
+	}
+        function update_membrane(update_selection) {
+            update_selection
+                .attr("width", function(d){ return o.scale.x_size(d.width); })
+                .attr("height", function(d){ return o.scale.y_size(d.height); })
+                .attr("transform", function(d){return "translate("+o.scale.x(d.x)+","+o.scale.y(d.y)+")";})
+                .style("stroke-width", function(d) { return o.scale.size(10); })
+                .attr('rx', function(d){ return o.scale.x_size(20); })
+                .attr('ry', function(d){ return o.scale.x_size(20); });
         }
 
         function draw_specific_reactions(reaction_ids) {
