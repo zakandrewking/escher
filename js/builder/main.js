@@ -23,7 +23,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             flux2_path: null,
             flux2: null,
 	    show_beziers: false,
-	    debug: false});
+	    debug: false,
+	    starting_reaction: 'ACALDtex' });
 
         if (o.selection_is_svg) {
             console.error("Builder does not support placement within svg elements");
@@ -105,6 +106,10 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		o.membranes = out.map.membranes;
 		max_w = out.max_map_w;
 		max_h = out.max_map_h;
+	    } else {
+		o.membranes = [];
+		max_w = o.width;
+		max_h = o.height;
 	    }
 
 	    // set up svg and svg definitions
@@ -189,7 +194,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             if (!o.map) {
 		// TEST case
 		var start_coords = {'x': o.width/2, 'y': 40};
-                new_reaction('GLCtex', start_coords);
+                new_reaction(o.starting_reaction, start_coords);
             } else {
 		draw();
 	    }
