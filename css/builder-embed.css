@@ -19,7 +19,7 @@
 .line-arrow{
     fill: none; 
 }
-.reaction-arrow {
+.segment {
     stroke: grey;
     stroke-width: 3px;
     fill: none;

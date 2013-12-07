@@ -3,6 +3,8 @@ import gzip
 import json
 import pprint
 from math import atan2
+from itertools import izip
+from numpy import inf
 
 PP = pprint.PrettyPrinter(indent=4)
         
@@ -14,8 +16,8 @@ def main():
 
     { 'reactions': {unique_int: { 'segments': {unique_int: { 'from_node_id': 2,
                                                               'to_node_id': 3,
-                                                              'b1': {'absolute_x':1.1, 'absolute_y':1.2},
-                                                              'b2': {'absolute_x':1.1, 'absolute_y':1.2}
+                                                              'b1': {'x':1.1, 'y':1.2},
+                                                              'b2': {'x':1.1, 'y':1.2}
                                                             },
                                                  ...
                                                ],
@@ -27,12 +29,12 @@ def main():
                     },
       'nodes': {unique_int: {'node_type': '',
                               'compartment_id': '',
-                              'absolute_x': 5.0,
-                              'absolute_y': 5.0,
+                              'x': 5.0,
+                              'y': 5.0,
                               'metabolite_name': '',
                               'metabolite_simpheny_id': '',
-                              'label_absolute_x': 5.0,
-                              'label_absolute_y': 5.0,
+                              'label_x': 5.0,
+                              'label_y': 5.0,
                               'node_is_primary': True,
                               'connected_segments': [ {'reaction_id': 4,
                                                        'segment_id': 7},
@@ -46,7 +48,7 @@ def main():
     """
     try:
         in_file = sys.argv[1]
-        # out_file = sys.argv[2]
+        out_file = sys.argv[2]
     except IndexError:
         print "Not enough arguments"
         sys.exit()
@@ -104,10 +106,10 @@ def main():
     
     # for export, only keep the necessary stuff
     for k, reaction in out['reactions'].iteritems():
-        node_keys_to_keep = ['node_type', 'compartment_id', 'absolute_x',
-                             'absolute_y', 'metabolite_name',
-                             'metabolite_simpheny_id', 'label_absolute_x',
-                             'label_absolute_y', 'node_is_primary',
+        node_keys_to_keep = ['node_type', 'compartment_id', 'x',
+                             'y', 'metabolite_name',
+                             'metabolite_simpheny_id', 'label_x',
+                             'label_y', 'node_is_primary',
                              'connected_segments']
         segment_keys_to_keep = ['from_node_id', 'to_node_id', 'b1', 'b2']
         reaction_keys_to_keep = ['segments', 'name', 'direction', 'abbreviation']
@@ -118,8 +120,21 @@ def main():
             only_keep_keys(segment, segment_keys_to_keep)
         only_keep_keys(reaction, reaction_keys_to_keep)
 
-    PP.pprint(out['reactions'])
-    # with open(out_file, 'w') as f: json.dump(out, f)
+    # get max width and height
+    min_max = {'x': [inf, -inf], 'y': [inf, -inf]}
+    for k, node in nodes.iteritems():
+        if node['x'] < min_max['x'][0]: min_max['x'][0] = node['x']
+        if node['x'] > min_max['x'][1]: min_max['x'][1] = node['x']
+        if node['y'] < min_max['y'][0]: min_max['y'][0] = node['y']
+        if node['y'] > min_max['y'][1]: min_max['y'][1] = node['y']
+    max_map_w = min_max['x'][1] - min_max['x'][0]
+    max_map_h = min_max['y'][1] - min_max['y'][0]
+    out['info'] = {'max_map_w': max_map_w,
+                   'max_map_h': max_map_h}
+
+    out['membranes'] = []
+        
+    with open(out_file, 'w') as f: json.dump(out, f)
 
 def parse_node(nodes):
     for node in nodes:
@@ -134,13 +149,13 @@ def parse_node(nodes):
                     node[new_key] = node[key]
             except KeyError:
                 pass
-        try_assignment(node, 'MAPNODEPOSITIONX', 'absolute_x', cast=float)
-        try_assignment(node, 'MAPNODEPOSITIONY', 'absolute_y', cast=float)
+        try_assignment(node, 'MAPNODEPOSITIONX', 'x', cast=float)
+        try_assignment(node, 'MAPNODEPOSITIONY', 'y', cast=float)
         try_assignment(node, 'MAPNODECOMPARTMENT_ID', 'compartment_id', cast=int)
         try_assignment(node, 'MOLECULEOFFICIALNAME', 'metabolite_name')
         try_assignment(node, 'MOLECULEABBREVIATION', 'metabolite_simpheny_id')
-        try_assignment(node, 'MAPNODELABELPOSITIONX', 'label_absolute_x', cast=float)
-        try_assignment(node, 'MAPNODELABELPOSITIONY', 'label_absolute_y', cast=float)
+        try_assignment(node, 'MAPNODELABELPOSITIONX', 'label_x', cast=float)
+        try_assignment(node, 'MAPNODELABELPOSITIONY', 'label_y', cast=float)
         try_assignment(node, 'MAPNODEISPRIMARY', 'node_is_primary',
                        cast=lambda x: True if x=='Y' else False)
 
@@ -161,7 +176,7 @@ def check_and_add_to_nodes(nodes, node_id, segment_id, reaction_id):
     return node_id
         
 def to_x_y(array):
-    return {'absolute_x': float(array[0]), 'absolute_y': float(array[1])}
+    return {'x': float(array[0]), 'y': float(array[1])}
 
 def parse_reactions(reactions):
     for reaction in reactions:

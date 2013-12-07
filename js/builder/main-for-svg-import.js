@@ -156,8 +156,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 			if (reaction_id in o.flux) {
 			    var flux = parseFloat(o.flux[reaction_id]);
 			    reaction.flux = flux;
-			    for (var met_id in reaction.segments) {
-				var metabolite = reaction.segments[met_id];
+			    for (var met_id in reaction.metabolites) {
+				var metabolite = reaction.metabolites[met_id];
 				metabolite.flux = flux;
 			    }
 			}
@@ -178,9 +178,9 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 			    x.flux = flux;
 			    // set flux for reaction
                             o.cobra_reactions[fixed_id].flux = flux;
-                            // also set flux for segments (for simpler drawing)
-                            for (var metabolite_id in o.cobra_reactions[fixed_id].segments)
-				o.cobra_reactions[fixed_id].segments[metabolite_id].flux = flux;
+                            // also set flux for metabolites (for simpler drawing)
+                            for (var metabolite_id in o.cobra_reactions[fixed_id].metabolites)
+				o.cobra_reactions[fixed_id].metabolites[metabolite_id].flux = flux;
 			    // this reaction has been found
 			}
                     });
@@ -275,24 +275,16 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	     */
 	    if (o.debug) {
 		console.log(map);
-		var required_node_props = ['node_type', 'x', 'y',
-					   'connected_segments'],
-		    required_reaction_props = ["segments", 'name', 'direction', 'abbreviation'],
-		    required_segment_props = ['from_node_id', 'to_node_id'];
-		for (var node_id in map.nodes) {
-		    var node = map.nodes[node_id];
-		    required_node_props.map(function(req) {
-			if (!node.hasOwnProperty(req)) console.error("Missing property " + req);
-		    });
-		}
+		var required_reaction_props = ["metabolites", "coords", "angle"],
+		    required_metabolite_props = [];
 		for (var reaction_id in map.reactions) {
 		    var reaction = map.reactions[reaction_id];
 		    required_reaction_props.map(function(req) {
 			if (!reaction.hasOwnProperty(req)) console.error("Missing property " + req);
 		    });
-		    for (var segment_id in reaction.segments) {
-			var metabolite = reaction.segments[segment_id];
-			required_segment_props.map(function(req) {
+		    for (var met_id in reaction.metabolites) {
+			var metabolite = reaction.metabolites[met_id];
+			required_metabolite_props.map(function(req) {
 			    if (!metabolite.hasOwnProperty(req)) console.error("Missing property " + req);
 			});
 		    }
@@ -345,10 +337,10 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 // ignore drawn reactions
                 if (already_drawn(reaction_id)) continue;
                 if (o.selected_node.is_selected) {
-                    // check segments for match to selected metabolite
-                    for (var metabolite_id in reaction.segments) {
+                    // check metabolites for match to selected metabolite
+                    for (var metabolite_id in reaction.metabolites) {
                         if (metabolite_id==o.selected_node.metabolite_id &&
-                            reaction.segments[metabolite_id].coefficient < 0) {
+                            reaction.metabolites[metabolite_id].coefficient < 0) {
                             reaction_ids_to_display.push(reaction_id);
                         }
                     }
@@ -416,8 +408,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 reactant_count = 0, product_count = 0,
                 newest_primary_product_id = "";
 
-            for (var metabolite_id in reaction.segments) {
-                var metabolite = reaction.segments[metabolite_id];
+            for (var metabolite_id in reaction.metabolites) {
+                var metabolite = reaction.metabolites[metabolite_id];
                 if (metabolite.coefficient < 0) {
                     metabolite.index = reactant_count;
                     if (reactant_count==primary_reactant_index) metabolite.is_primary = true;
@@ -433,8 +425,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             }
 
             // keep track of total reactants and products
-            for (metabolite_id in reaction.segments) {
-                metabolite = reaction.segments[metabolite_id];
+            for (metabolite_id in reaction.metabolites) {
+                metabolite = reaction.metabolites[metabolite_id];
                 var primary_index;
                 if (metabolite.coefficient < 0) {
                     metabolite.count = reactant_count + 1;
@@ -520,7 +512,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 
         function get_coords_for_metabolite(metabolite_id, reaction_id) {
             var reaction = o.drawn_reactions[reaction_id],
-                metabolite = reaction.segments[metabolite_id],
+                metabolite = reaction.metabolites[metabolite_id],
                 coords = reaction.coords;
             return utils.c_plus_c(metabolite.circle, coords);
         }
@@ -538,8 +530,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             // get last index
             var last_index, count;
             var reaction = o.drawn_reactions[o.selected_node.reaction_id];
-            for (var metabolite_id in reaction.segments) {
-                var metabolite = reaction.segments[metabolite_id];
+            for (var metabolite_id in reaction.metabolites) {
+                var metabolite = reaction.metabolites[metabolite_id];
                 if ((metabolite.coefficient > 0 && o.selected_node.direction=="product") ||
                     (metabolite.coefficient < 0 && o.selected_node.direction=="reactant")) {
                     if (metabolite.is_primary) {
@@ -567,11 +559,11 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             var reaction = o.drawn_reactions[o.selected_node.reaction_id];
 
             // if primary is selected, then maintain that selection
-            var sel_is_primary = reaction.segments[o.selected_node.metabolite_id].is_primary,
+            var sel_is_primary = reaction.metabolites[o.selected_node.metabolite_id].is_primary,
                 should_select_primary = sel_is_primary ? true : false;
 
-            for (var metabolite_id in reaction.segments) {
-                var metabolite = reaction.segments[metabolite_id];
+            for (var metabolite_id in reaction.metabolites) {
+                var metabolite = reaction.metabolites[metabolite_id];
                 if ((metabolite.coefficient > 0 && o.selected_node.direction=="product") ||
                     (metabolite.coefficient < 0 && o.selected_node.direction=="reactant")) {
                     if (metabolite.index == index) {
@@ -612,12 +604,20 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             draw();
         }
 
-	function create_node(enter_selection) {
-            // create nodes
+        function create_metabolite(enter_selection) {
+            // create metabolites
             var g = enter_selection
                     .append('g')
-                    .attr('class', 'node')
-                    .attr('id', function(d) { return d.node_id; });
+                    .attr('class', 'metabolite-group')
+                    .attr('id', function(d) { return d.metabolite_id; });
+
+            // create reaction arrow
+            g.append('path')
+                .attr('class', 'segment');
+
+	    // new bezier points
+	    g.append('circle').attr('class', 'bezier1');
+	    g.append('circle').attr('class', 'bezier2');
 
             // create metabolite circle and label
             // TODO hide if the node is shared
@@ -639,7 +639,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             function drag_move() {
                 var sel = d3.select(this),
                     met = o.drawn_reactions[sel.datum().reaction_id]
-                        .segments[sel.datum().metabolite_id],
+                        .metabolites[sel.datum().metabolite_id],
                     d = align_to_grid({'x': d3.event.dx, 'y': d3.event.dy});
                 met.dis = align_to_grid({'x': met.dis.x + d3.event.dx,
                                          'y': met.dis.y + d3.event.dy});
@@ -659,73 +659,33 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 sel.attr('transform', null);
                 draw_specific_reactions_with_location([sel.datum().reaction_id]);
             }
-	}
-
-	function update_node(update_selection) {
-
-	}
-
-        function create_segment(enter_selection) {
-            // create segments
-            var g = enter_selection
-                    .append('g')
-                    .attr('class', 'segment')
-                    .attr('id', function(d) { return d.segment_id; });
-
-            // create reaction arrow
-            g.append('path')
-                .attr('class', 'segment');
-
-	    // new bezier points
-	    g.append('circle').attr('class', 'bezier1');
-	    g.append('circle').attr('class', 'bezier2');
-
         }
 
-        function update_segment(update_selection) {
-            // update segment attributes
+        function update_metabolite(update_selection) {
+            // update metabolite attributes
+
             // update arrows
             update_selection
-                .selectAll('.segment')
+                .selectAll('.reaction-arrow')
             // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
             // only necessary for selectAll()
                 .datum(function() {
                     return this.parentNode.__data__;
                 })
                 .attr('d', function(d) {
-		    if (d.from_node_id==null || d.to_node_id==null)
+		    if (d.start==null || d.end==null || d.b1==null || d.b2==null)
 			return null;
-		    var start = o.drawn_nodes[d.from_node_id],
-			end = o.drawn_nodes[d.to_node_id];
-		    if (d.b1==null || d.b2==null) {
-			return 'M'+o.scale.x_size(start.x)+','+o.scale.y_size(start.y)+
-			    o.scale.x_size(end.x)+','+o.scale.y_size(end.y);
-		    } else {
-			return 'M'+o.scale.x_size(start.x)+','+o.scale.y_size(start.y)+
-                            'C'+o.scale.x_size(d.b1.x)+','+o.scale.y_size(d.b1.y)+' '+
-                            o.scale.x_size(d.b2.x)+','+o.scale.y_size(d.b2.y)+' '+
-                            o.scale.x_size(end.x)+','+o.scale.y_size(end.y);
-		    }
+                    return 'M'+o.scale.x_size(d.start.x)+','+o.scale.y_size(d.start.y)+
+                        'C'+o.scale.x_size(d.b1.x)+','+o.scale.y_size(d.b1.y)+' '+
+                        o.scale.x_size(d.b2.x)+','+o.scale.y_size(d.b2.y)+' '+
+                        o.scale.x_size(d.end.x)+','+o.scale.y_size(d.end.y);
                 }) // TODO replace with d3.curve or equivalent
-                .attr("marker-start", function (d) {
-		    var start = o.drawn_nodes[d.from_node_id];
-		    if (start['node_type']=='metabolite') {
-			var c = d.flux ? o.scale.flux_color(Math.abs(d.flux)) :
-				o.default_reaction_color;
-			// generate arrowhead for specific color
-			var arrow_id = generate_arrowhead_for_color(c, false);
-			return "url(#" + arrow_id + ")";
-		    } else { return null; };
-                })     
-		.attr("marker-end", function (d) {
-		    var end = o.drawn_nodes[d.to_node_id];
-		    if (end['node_type']=='metabolite') {
-			var c = d.flux ? o.scale.flux_color(Math.abs(d.flux)) :
-				o.default_reaction_color;
-			// generate arrowhead for specific color
-			var arrow_id = generate_arrowhead_for_color(c, true);
-			return "url(#" + arrow_id + ")";
-		    } else { return null; };
+                .attr("marker-end", function (d) {
+                    var c = d.flux ? o.scale.flux_color(Math.abs(d.flux)) :
+                            o.default_reaction_color;
+                    // generate arrowhead for specific color
+                    var arrow_id = generate_arrowhead_for_color(c, true);
+                    return "url(#" + arrow_id + ")";
                 })
                 .style('stroke', function(d) {
 		    if (o.flux) 
@@ -860,30 +820,32 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             var t = enter_selection.append('g')
                     .attr('id', function(d) { return d.reaction_id; })
                     .attr('class', 'reaction')
+                    .attr('transform', function(d) {
+                        return 'translate(' + o.scale.x(d.coords.x) + ',' + o.scale.y(d.coords.y) + ')';
+                    })
                     .call(create_reaction_label);
 
             return;
         }
-
         function update_reaction(update_selection) {
             // update reaction label
             update_selection.select('.reaction-label')
                 .call(update_reaction_label);
 
-            // select segments
+            // select metabolites
             var sel = update_selection
-                    .selectAll('.segment-group')
+                    .selectAll('.metabolite-group')
                     .data(function(d) {
-                        return make_array(d.segments, 'segment_id');
-                    }, function(d) { return d.segment_id; });
+                        return make_array(d.metabolites, 'metabolite_id');
+                    }, function(d) { return d.metabolite_id; });
 
-            // new segments
-            sel.enter().call(create_segment);
+            // new metabolites
+            sel.enter().call(create_metabolite);
 
-            // update segments
-            sel.call(update_segment);
+            // update metabolites
+            sel.call(update_metabolite);
 
-            // old segments
+            // old metabolites
             sel.exit().remove();
 
             return;
@@ -944,22 +906,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 
             // exit
             sel.exit().remove();
-
-            // generate reactions for o.drawn_reactions
-            // assure constancy with cobra_id
-            sel = d3.select('#nodes')
-                .selectAll('.node')
-                .data(make_array(o.drawn_nodes, 'node_id'),
-                      function(d) { return d.node_id; });
-
-            // enter: generate and place reaction
-            sel.enter().call(create_node);
-
-            // update: update when necessary
-            sel.call(update_node);
-
-            // exit
-            sel.exit().remove();
         }
 
         function create_membrane(enter_selection) {
@@ -1008,15 +954,15 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             var reaction = o.drawn_reactions[reaction_id],
                 primary_reactant_index, primary_product_index;
             reaction = utils.calculate_new_reaction_coordinates(reaction);
-            for (var metabolite_id in reaction.segments) {
-                var metabolite = reaction.segments[metabolite_id];
+            for (var metabolite_id in reaction.metabolites) {
+                var metabolite = reaction.metabolites[metabolite_id];
                 if (metabolite.coefficient < 0)
                     if (metabolite.is_primary) primary_reactant_index = metabolite.index;
                 else
                     if (metabolite.is_primary) primary_product_index = metabolite.index;
             }
-            for (metabolite_id in reaction.segments) {
-                metabolite = reaction.segments[metabolite_id];
+            for (metabolite_id in reaction.metabolites) {
+                metabolite = reaction.metabolites[metabolite_id];
                 var primary_index;
                 if (metabolite.coefficient < 0) {
                     primary_index = primary_reactant_index;
@@ -1070,8 +1016,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    reaction.main_axis = rotate_around_rel_recursive(reaction.main_axis);
 
 	    // recalculate: metabolite.*
-	    for (var met_id in reaction.segments) {
-		var metabolite = reaction.segments[met_id];
+	    for (var met_id in reaction.metabolites) {
+		var metabolite = reaction.metabolites[met_id];
 		metabolite.b1 = rotate_around_rel(metabolite.b1);
 		metabolite.b2 = rotate_around_rel(metabolite.b2);
 		metabolite.start = rotate_around_rel(metabolite.start);
