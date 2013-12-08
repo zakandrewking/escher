@@ -754,7 +754,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 
             g.append('text')
                 .attr('class', 'label')
-                .text(function(d) { return d.metabolite_id; })
+                .text(function(d) { return d.metabolite_simpheny_id; })
                 .attr('pointer-events', 'none');
 
             function drag_move() {
@@ -820,10 +820,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     return this.parentNode.__data__;
                 })
                 .attr('transform', function(d) {
-		    if (d.circle==null) return "";
-                    return 'translate('+o.scale.x_size(d.label_x)+','+o.scale.y_size(d.label_y)+')';
-                })
-		.attr('transform', function(d) {
                     return 'translate('+o.scale.x_size(d.label_x)+','+o.scale.y_size(d.label_y)+')';
                 })
                 .style("font-size", function(d) {
