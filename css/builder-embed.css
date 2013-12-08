@@ -9,7 +9,11 @@
 .metabolite-label {
     font-family: sans-serif; font-style: italic; font-weight: bold; font-size: 8px;
 }
-.metabolite-circle {
+.node {
+    fill: none;
+    stroke: rgb(50, 50, 50);
+}
+.node .metabolite-circle {
     fill: rgb(224, 134, 91);
     stroke: rgb(162, 69, 16);
 }

@@ -14,7 +14,8 @@ define(["lib/d3"], function (d3) {
 	     rotate_coords_relative: rotate_coords_relative,
 	     rotate_coords_relative_recursive: rotate_coords_relative_recursive,
 	     get_angle: get_angle,
-	     to_degrees: to_degrees };
+	     to_degrees: to_degrees,
+	     distance: distance };
 
     // definitions
     function setup_zoom_container(svg, w, h, scale_extent, callback) {
@@ -311,4 +312,7 @@ define(["lib/d3"], function (d3) {
     }
 
     function to_degrees(radians) { return radians*180/Math.PI; }
+
+    function distance(start, end) { return Math.sqrt(Math.pow(end.y-start.y, 2) + Math.pow(end.x-start.x, 2)); }
+
 });
