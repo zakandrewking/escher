@@ -1030,11 +1030,16 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		return true;
 	    } else {
 		// select the node
+		var previous_node = o.selected_node.node_id,
+		    was_selected = o.selected_node.is_selected;
 		o.selected_node.node_id = d.node_id;
 		o.selected_node.is_selected = true;
 		if (reaction_input_is_visible())
                     reload_reaction_input(coords_for_selected_node());
-		draw();
+		if (was_selected)
+		    draw_specific_nodes([d.node_id, previous_node]);
+		else
+		    draw_specific_nodes([d.node_id]);
 		return false;
 	    }
         }
