@@ -18,9 +18,15 @@
     fill: none;
     stroke: rgb(50, 50, 50);
 }
-.node .metabolite-circle {
+.selected {
+    stroke: rgb(20, 113, 199);
+}
+.metabolite-circle {
     fill: rgb(224, 134, 91);
     stroke: rgb(162, 69, 16);
+}
+.metabolite-circle.selected {
+    stroke: rgb(5, 2, 0);
 }
 #misc-labels{
     font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;
