@@ -24,6 +24,8 @@ def main():
                                     'name': '',
                                     'direction': '',
                                     'abbreviation': ''
+                                    'label_x': 4.3,
+                                    'label_y': 4.5
                                  },
                      ...
                     },
@@ -42,7 +44,11 @@ def main():
                                                     ]
                              },
                 ...
-               }
+               },
+      'text_labels': { unique_int: { 'text': '',
+                                'x': 6.1,
+                                'y': 7.2 }
+                }
     }
 
     """
@@ -50,8 +56,7 @@ def main():
         in_file = sys.argv[1]
         out_file = sys.argv[2]
     except IndexError:
-        print "Not enough arguments"
-        sys.exit()
+        raise Exception("Not enough arguments")
 
     if in_file.endswith('.gz'):
         with gzip.open(in_file, "r") as f:
@@ -61,14 +66,15 @@ def main():
             data = json.load(f)
 
     # major categories
+    reactions = []; line_segments = []; text_labels = []; nodes = []
     for k, v in data.iteritems():
         if k=="MAPREACTION": reactions = v
         elif k=="MAPLINESEGMENT": line_segments = v
-        elif k=="MAPTEXT": text = v
+        elif k=="MAPTEXT": text_labels = v
         elif k=="MAPNODE": nodes = v
         else:
             raise Exception('Unrecognized category: %s' % k)
-
+        
     # do the nodes
     nodes = parse_node(nodes)
 
@@ -78,7 +84,7 @@ def main():
         # get the reaction
         reaction_id = segment['MAPLINESEGMENTREACTION']['MAPREACTIONREACTION_ID']
         reaction = [a for a in reactions if a['MAPREACTIONREACTION_ID']==reaction_id]
-        if len(reaction) > 1: raise Exception('Too many matches')
+        if len(reaction) > 1: reaction = reaction[0] # raise Exception('Too many matches')
         else: reaction = reaction[0]
 
         # get the nodes
@@ -92,6 +98,14 @@ def main():
         except KeyError:
             segment['b1'] = None
             segment['b2'] = None
+
+        # get reaction label position
+        # PP.pprint(segment)
+        try:
+            reaction['label_x'] = float(segment['MAPLINESEGMENTFROMNODE']['MAPNODELABELPOSITIONX'])
+            reaction['label_y'] = float(segment['MAPLINESEGMENTFROMNODE']['MAPNODELABELPOSITIONY'])
+        except KeyError:
+            pass
         
         if 'segments' not in reaction: reaction['segments'] = {}
         reaction['segments'][segment_id] = segment
@@ -99,26 +113,33 @@ def main():
 
     # do the reactions
     reactions = parse_reactions(reactions)
+
+    # do the text labels
+    text_labels = parse_labels(text_labels)
     
     out = {}
     out['nodes'] = nodes
     out['reactions'] = reactions
+    out['text_labels'] = text_labels
     
     # for export, only keep the necessary stuff
-    for k, reaction in out['reactions'].iteritems():
-        node_keys_to_keep = ['node_type', 'compartment_id', 'x',
-                             'y', 'metabolite_name',
-                             'metabolite_simpheny_id', 'label_x',
-                             'label_y', 'node_is_primary',
-                             'connected_segments']
-        segment_keys_to_keep = ['from_node_id', 'to_node_id', 'b1', 'b2']
-        reaction_keys_to_keep = ['segments', 'name', 'direction', 'abbreviation']
-
-        for k, node in out['nodes'].iteritems():
+    node_keys_to_keep = ['node_type', 'compartment_id', 'x',
+                         'y', 'metabolite_name',
+                         'metabolite_simpheny_id', 'label_x',
+                         'label_y', 'node_is_primary',
+                         'connected_segments']
+    segment_keys_to_keep = ['from_node_id', 'to_node_id', 'b1', 'b2']
+    reaction_keys_to_keep = ['segments', 'name', 'direction', 'abbreviation', 'label_x', 'label_y']
+    text_label_keys_to_keep = ['x', 'y', 'text']
+    for k, node in out['nodes'].iteritems():
             only_keep_keys(node, node_keys_to_keep)
+    for k, reaction in out['reactions'].iteritems():
+        if 'segments' not in reaction: continue
         for k, segment in reaction['segments'].iteritems():
             only_keep_keys(segment, segment_keys_to_keep)
         only_keep_keys(reaction, reaction_keys_to_keep)
+    for k, text_label in out['text_labels'].iteritems():
+        only_keep_keys(text_label, text_label_keys_to_keep)
 
     # get max width and height
     min_max = {'x': [inf, -inf], 'y': [inf, -inf]}
@@ -141,14 +162,6 @@ def parse_node(nodes):
         # assign new keys
         node['node_type'] = node['MAPNODENODETYPE'].lower()
 
-        def try_assignment(node, key, new_key, cast=None):
-            try:
-                if cast is not None:
-                    node[new_key] = cast(node[key])
-                else:
-                    node[new_key] = node[key]
-            except KeyError:
-                pass
         try_assignment(node, 'MAPNODEPOSITIONX', 'x', cast=float)
         try_assignment(node, 'MAPNODEPOSITIONY', 'y', cast=float)
         try_assignment(node, 'MAPNODECOMPARTMENT_ID', 'compartment_id', cast=int)
@@ -186,10 +199,27 @@ def parse_reactions(reactions):
         reaction["id"] = reaction['MAPOBJECT_ID']
     return dict((int(r['id']), r) for r in reactions)
 
+def parse_labels(labels):
+    for label in labels:
+        try_assignment(label, 'MAPTEXTPOSITIONX', 'x', cast=float)
+        try_assignment(label, 'MAPTEXTPOSITIONY', 'y', cast=float) # cast=lambda x: float(x) - 2000)
+        label["id"] = label['MAPOBJECT_ID']
+        label["text"] = label["MAPTEXTCONTENT"]
+    return dict((int(r['id']), r) for r in labels)
+
 def only_keep_keys(d, keys):
     for k, v in d.items():
         if k not in keys:
             del d[k]
+
+def try_assignment(node, key, new_key, cast=None):
+    try:
+        if cast is not None:
+            node[new_key] = cast(node[key])
+        else:
+            node[new_key] = node[key]
+    except KeyError:
+        pass
         
 if __name__=="__main__":
     main()

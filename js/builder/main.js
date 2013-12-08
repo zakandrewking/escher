@@ -106,6 +106,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		o.drawn_reactions = out.map.reactions;
 		o.drawn_nodes = out.map.nodes;
 		o.membranes = out.map.membranes;
+		o.drawn_text_labels = out.map.text_labels;
 		max_w = out.max_map_w;
 		max_h = out.max_map_h;
 	    } else {
@@ -141,6 +142,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 .attr('id', 'reactions');
             o.sel.append('g')
                 .attr('id', 'nodes');
+            o.sel.append('g')
+                .attr('id', 'text-labels');
 
 	    // make a list of reactions
 	    o.sorted_reaction_suggestions = [];
@@ -281,7 +284,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		var required_node_props = ['node_type', 'x', 'y',
 					   'connected_segments'],
 		    required_reaction_props = ["segments", 'name', 'direction', 'abbreviation'],
-		    required_segment_props = ['from_node_id', 'to_node_id'];
+		    required_segment_props = ['from_node_id', 'to_node_id'],
+		    required_text_label_props = ['text', 'x', 'y'];
 		for (var node_id in map.nodes) {
 		    var node = map.nodes[node_id];
 		    required_node_props.map(function(req) {
@@ -299,6 +303,12 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 			    if (!metabolite.hasOwnProperty(req)) console.error("Missing property " + req);
 			});
 		    }
+		}
+		for (var text_label_id in map.text_labels) {
+		    var text_label = map.text_labels[text_label_id];
+		    required_text_label_props.map(function(req) {
+			if (!text_label.hasOwnProperty(req)) console.error("Missing property " + req);
+		    });
 		}
 	    }
 	    return { map: map,
@@ -480,45 +490,46 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    var sel = d3.select('#membranes')
 		.selectAll('.membrane')
 		.data(o.membranes);
-
             // enter: generate and place reaction
             sel.enter().call(create_membrane);
-
             // update: update when necessary
             sel.call(update_membrane);
-
             // exit
             sel.exit().remove();
 
-            // generate reactions for o.drawn_reactions
-            // assure constancy with cobra_id
+            // reactions
             sel = d3.select('#reactions')
                 .selectAll('.reaction')
                 .data(make_array(o.drawn_reactions, 'reaction_id'),
                       function(d) { return d.reaction_id; });
-
             // enter: generate and place reaction
             sel.enter().call(create_reaction);
-
             // update: update when necessary
             sel.call(update_reaction);
-
             // exit
             sel.exit().remove();
 
-            // generate reactions for o.drawn_reactions
-            // assure constancy with cobra_id
+            // nodes
             sel = d3.select('#nodes')
                 .selectAll('.node')
                 .data(make_array(o.drawn_nodes, 'node_id'),
                       function(d) { return d.node_id; });
-
             // enter: generate and place reaction
             sel.enter().call(create_node);
-
             // update: update when necessary
             sel.call(update_node);
+            // exit
+            sel.exit().remove();
 
+	    // Draw the labels
+            sel = d3.select('#text-labels')
+                .selectAll('.text-label')
+                .data(make_array(o.drawn_text_labels, 'text_label_id'),
+                      function(d) { return d.text_label_id; });
+            // enter: generate and place reaction
+            sel.enter().call(create_text_label);
+            // update: update when necessary
+            sel.call(update_text_label);
             // exit
             sel.exit().remove();
         }
@@ -548,14 +559,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             return;
         }
 
-        function create_reaction_label(sel) {
-            /* Draw reaction label for selection.
-	     */
-            sel.append('text')
-                .attr('class', 'reaction-label')
-                .attr('pointer-events', 'none');
-        }
-
         function update_reaction(update_selection) {
             // update reaction label
             update_selection.select('.reaction-label')
@@ -580,11 +583,31 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             return;
         }
 
+        function create_reaction_label(sel) {
+            /* Draw reaction label for selection.
+	     */
+            sel.append('text')
+		.text(function(d) { return d.abbreviation; })
+                .attr('class', 'reaction-label label')
+                .attr('pointer-events', 'none');
+        }
+
+        function update_reaction_label(sel) {
+	    sel
+		.attr('transform', function(d) {
+		    console.log(d);
+                    return 'translate('+o.scale.x_size(d.label_x)+','+o.scale.y_size(d.label_y)+')';
+		})
+                .style("font-size", function(d) {
+		    return String(o.scale.size(30))+"px";
+                });
+        }
+
         function create_segment(enter_selection) {
             // create segments
             var g = enter_selection
                     .append('g')
-                    .attr('class', 'segment')
+                    .attr('class', 'segment-group')
                     .attr('id', function(d) { return d.segment_id; });
 
             // create reaction arrow
@@ -595,36 +618,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    g.append('circle').attr('class', 'bezier1');
 	    g.append('circle').attr('class', 'bezier2');
 
-        }
-
-        function update_reaction_label(sel) {
-            var near_angle_degrees = function(angle, near) {
-		var diff = angle-near, diff_r = diff-360;
-		return Math.abs(diff) <= 45 || Math.abs(diff_r) <= 45;
-            };
-
-            sel.text(function(d) {
-                return d.flux ? d.reaction_id + " (" + o.decimal_format(d.flux) + ")" :
-		    d.reaction_id;
-            })
-                .attr('transform', function(d) {
-                    // displacement of reaction label
-		    var dis,
-			angle = utils.to_degrees(d.angle);
-                    if (near_angle_degrees(angle, 90))
-                        dis = {'x': 30, 'y': -35};
-                    else if (near_angle_degrees(angle, 180))
-                        dis = {'x': -20, 'y': 0};
-                    else if (near_angle_degrees(angle, 270))
-                        dis = {'x': -30, 'y': 35};
-                    else
-                        dis = {'x': 20, 'y': 0};
-		    var loc = utils.rotate_coords(dis, angle, {'x': 0, 'y': 0});
-                    return 'translate('+o.scale.x_size(loc.x)+','+o.scale.y_size(loc.y)+')';
-                })
-                .style("font-size", function(d) { 
-		    return String(o.scale.size(25))+"px";
-		});
         }
 
         function update_segment(update_selection) {
@@ -753,7 +746,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                       .on("dragend", drag_update));
 
             g.append('text')
-                .attr('class', 'label')
+                .attr('class', 'node-label label')
                 .text(function(d) { return d.metabolite_simpheny_id; })
                 .attr('pointer-events', 'none');
 
@@ -792,9 +785,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                         return this.parentNode.__data__;
                     })
 		    .attr('class', function(d) {
-			if (d.node_type=='metabolite') 
-			    return 'node metabolite-circle';
-			return 'node';
+			if (d.node_type=='metabolite') return 'node metabolite-circle';
+			else return 'node';
 		    })
                     .attr('transform', function(d) {
                         return 'translate('+o.scale.x_size(d.x)+','+o.scale.y_size(d.y)+')';
@@ -813,7 +805,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     });
 
             update_selection
-                .selectAll('.label')
+                .selectAll('.node-label')
             // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
             // only necessary for selectAll()
                 .datum(function() {
@@ -836,7 +828,16 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             };
 	}
 
+        function create_text_label(enter_selection) {
+	    enter_selection.append('text')
+		.attr('class', 'text-label label')
+		.text(function(d) { return d.text; });
+	}
 
+        function update_text_label(update_selection) {
+            update_selection
+                .attr("transform", function(d) { return "translate("+o.scale.x(d.x)+","+o.scale.y(d.y)+")";});
+        }
 
         function translate_off_screen(coords) {
             // shift window if new reaction will draw off the screen
