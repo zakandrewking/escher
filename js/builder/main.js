@@ -799,54 +799,56 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		.on("mouseout", function(d) {
 		    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
 		})
-                .on("mousedown", function(d) { 
-		    select_metabolite(this, d, o.sel.select('#nodes').selectAll('.node'), o.shift_key_on);
-		})
                 .call(d3.behavior.drag()
                       .on("dragstart", drag_silence)
-                      .on("drag", drag_move));
-                      // .on("dragend", drag_update));
-
-	    // TODO behavior
+                      .on("drag", drag_move))
+                .on("click", function(d) { 
+		    select_metabolite(this, d, o.sel.select('#nodes').selectAll('.node'), o.shift_key_on);
+		});
 
             g.append('text')
                 .attr('class', 'node-label label')
                 .text(function(d) { return d.metabolite_simpheny_id; })
                 .attr('pointer-events', 'none');
 
+            function drag_silence() {
+		// silence other listeners
+                d3.event.sourceEvent.stopPropagation();
+            }
             function drag_move() {
-                var sel = d3.select(this),
-		    node_id = sel.datum().node_id;
-		if (!(o.selected_node.node_id==node_id)) return;
+		var grabbed_id = this.parentNode.__data__.node_id,		    
+                    selected_ids = [];
+		d3.select('#nodes').selectAll('.selected').each(function(d) { selected_ids.push(d.node_id); });
+		if (selected_ids.indexOf(grabbed_id)==-1) { 
+		    console.log('Dragging unselected node');
+		    return;
+		}
 
-		// update node position
-                var node = o.drawn_nodes[node_id],
-                    d = {'x': d3.event.dx, 'y': d3.event.dy};
-                node.x = node.x + o.scale.x_size.invert(d3.event.dx);
-		node.y = node.y + o.scale.y_size.invert(d3.event.dy);
-		// update node labels
-                node.label_x = node.label_x + o.scale.x_size.invert(d3.event.dx);
-		node.label_y = node.label_y + o.scale.y_size.invert(d3.event.dy);
-		draw_specific_nodes([node_id]);
+		var reaction_ids = [];
+		// update node positions
+		d3.selectAll('.node').each(function(d) {
+		    if (selected_ids.indexOf(d.node_id)==-1) return;
+		    // update data
+                    var node = o.drawn_nodes[d.node_id];
+                    node.x = node.x + o.scale.x_size.invert(d3.event.dx);
+		    node.y = node.y + o.scale.y_size.invert(d3.event.dy);
+		    // update node labels
+                    node.label_x = node.label_x + o.scale.x_size.invert(d3.event.dx);
+		    node.label_y = node.label_y + o.scale.y_size.invert(d3.event.dy);
+
+		    // update connected reactions
+		    d.connected_segments.map(function(segment_object) {
+			reaction_ids.push(segment_object.reaction_id);
+		    });
+		});
+		draw_specific_nodes(selected_ids);
+		draw_specific_reactions(reaction_ids);
 
 		// 	shift_beziers_for_segments(sel.datum().connected_segments,
 		// 				   {'x': sel.datum().x, 'y': sel.datum().y});
 		// function shift_beziers_for_segments(segments, new_coords) {
 		// }
-
-		// update connected reactions
-		var reaction_ids = [];
-		sel.datum().connected_segments.map(function(segment_object) {
-		    reaction_ids.push(segment_object.reaction_id);
-		});
-		draw_specific_reactions(reaction_ids);
-
             }
-            function drag_silence() {
-                d3.event.sourceEvent.stopPropagation(); // silence other listeners
-            }
-            // function drag_update() {
-            // }
 	}
 
 	function update_node(update_selection) {
@@ -1081,10 +1083,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    var selected_nodes = d3.select('.selected');
 	    if (selected_nodes.length==1 && reaction_input_is_visible())
                 reload_reaction_input(coords_for_selected_node(selected_nodes[0]));
-	    // // redraw the nodes
-	    // var node_ids = [];
-	    // node_selection.each(function(d) { node_ids.push(d.node_id); });
-	    // draw_specific_nodes(node_ids);
 	}
     
 	function displaced_coords(start, end, displace) {
