@@ -80,6 +80,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             o.window_translate = {'x': 0, 'y': 0};
             o.window_scale = 1;
 	    o.zoom_enabled = true;
+	    o.shift_key_on = false;
 
 	    // Check the cobra model
 	    if (o.cobra_model) {
@@ -145,6 +146,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     .attr("style", "stroke:black;fill:none;")
                     .attr('pointer-events', 'all');
 
+            o.sel.append('g')
+                .attr('id', 'brush-container');
             o.sel.append('g')
                 .attr('id', 'membranes');
             o.sel.append('g')
@@ -288,23 +291,34 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             }
         }
 	function enable_brush(on) {
+	    var brush_sel = o.sel.select('#brush-container');
 	    if (on) {
-		o.selection_brush = setup_selection_brush(o.sel);
+		o.selection_brush = setup_selection_brush(brush_sel, 
+							  d3.select('#nodes').selectAll('.node'),
+							  o.width, o.height);
 	    } else {
-		o.sel.selectAll('.brush').remove();
+		brush_sel.selectAll('.brush').remove();
 	    }
-	    function setup_selection_brush(selection) {
+
+	    // definitions
+	    function setup_selection_brush(selection, node_selection, width, height) {
+		var node_ids = [];
+		node_selection.each(function(d) { node_ids.push(d.node_id); });
 		var brush_fn = d3.svg.brush()
-			.x(d3.scale.identity().domain([0, o.width]))
-			.y(d3.scale.identity().domain([0, o.height]))
+			.x(d3.scale.identity().domain([0, width]))
+			.y(d3.scale.identity().domain([0, height]))
 			.on("brush", function() {
 			    var extent = d3.event.target.extent();
-			    d3.select('#nodes')
-				.selectAll('.node-circle')
-				.classed("selected", function(d) {
-				    return extent[0][0] <= d.x && d.x < extent[1][0]
-					&& extent[0][1] <= d.y && d.y < extent[1][1];
+			    node_selection
+				.classed("selected", function(d) { 
+				    var sx = o.scale.x(d.x), sy = o.scale.y(d.y);
+				    return extent[0][0] <= sx && sx < extent[1][0]
+					    && extent[0][1] <= sy && sy < extent[1][1];
 				});
+			})        
+			.on("brushend", function() {console.log(node_ids);
+			    d3.event.target.clear();
+			    d3.select(this).call(d3.event.target);
 			}),
 		    brush = selection.append("g")
 			.attr("class", "brush")
@@ -327,6 +341,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		    required_text_label_props = ['text', 'x', 'y'];
 		for (var node_id in map.nodes) {
 		    var node = map.nodes[node_id];
+		    node.selected = false; node.previously_selected = false;
 		    required_node_props.map(function(req) {
 			if (!node.hasOwnProperty(req)) console.error("Missing property " + req);
 		    });
@@ -634,7 +649,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
         function update_reaction_label(sel) {
 	    sel
 		.attr('transform', function(d) {
-                    return 'translate('+o.scale.x_size(d.label_x)+','+o.scale.y_size(d.label_y)+')';
+                    return 'translate('+o.scale.x(d.label_x)+','+o.scale.y(d.label_y)+')';
 		})
                 .style("font-size", function(d) {
 		    return String(o.scale.size(30))+"px";
@@ -683,13 +698,13 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 			b2 = displaced_coords(start, b2, 'end');
 		    }
 		    if (d.b1==null || d.b2==null) {
-			return 'M'+o.scale.x_size(start.x)+','+o.scale.y_size(start.y)+' '+
-			    o.scale.x_size(end.x)+','+o.scale.y_size(end.y);
+			return 'M'+o.scale.x(start.x)+','+o.scale.y(start.y)+' '+
+			    o.scale.x(end.x)+','+o.scale.y(end.y);
 		    } else {
-			return 'M'+o.scale.x_size(start.x)+','+o.scale.y_size(start.y)+
-                            'C'+o.scale.x_size(b1.x)+','+o.scale.y_size(b1.y)+' '+
-                            o.scale.x_size(b2.x)+','+o.scale.y_size(b2.y)+' '+
-                            o.scale.x_size(end.x)+','+o.scale.y_size(end.y);
+			return 'M'+o.scale.x(start.x)+','+o.scale.y(start.y)+
+                            'C'+o.scale.x(b1.x)+','+o.scale.y(b1.y)+' '+
+                            o.scale.x(b2.x)+','+o.scale.y(b2.y)+' '+
+                            o.scale.x(end.x)+','+o.scale.y(end.y);
 		    }
                 }) // TODO replace with d3.curve or equivalent
                 .attr("marker-start", function (d) {
@@ -731,8 +746,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 			return this.parentNode.__data__;
                     })
                     .attr('transform', function(d) {
-			if (d.b1==null) return ""; console.log('update');
-			return 'translate('+o.scale.x_size(d.b1.x)+','+o.scale.y_size(d.b1.y)+')';
+			if (d.b1==null) return ""; 
+			return 'translate('+o.scale.x(d.b1.x)+','+o.scale.y(d.b1.y)+')';
                     })
 		    .attr('r', String(o.scale.size(5))+'px')
 		    .style('stroke-width', String(o.scale.size(1))+'px')
@@ -746,7 +761,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     })
                     .attr('transform', function(d) {
 			if (d.b2==null) return "";
-			return 'translate('+o.scale.x_size(d.b2.x)+','+o.scale.y_size(d.b2.y)+')';
+			return 'translate('+o.scale.x(d.b2.x)+','+o.scale.y(d.b2.y)+')';
                     })
 		    .attr('r', String(o.scale.size(5))+'px')
 		    .style('stroke-width', String(o.scale.size(1))+'px')
@@ -784,8 +799,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		.on("mouseout", function(d) {
 		    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
 		})
-                .on("click", function(d) { 
-		    select_metabolite(d);
+                .on("mousedown", function(d) { 
+		    select_metabolite(this, d, o.sel.select('#nodes').selectAll('.node'), o.shift_key_on);
 		})
                 .call(d3.behavior.drag()
                       .on("dragstart", drag_silence)
@@ -839,7 +854,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             var mg = update_selection
                     .select('.node-circle')
                     .attr('transform', function(d) {
-                        return 'translate('+o.scale.x_size(d.x)+','+o.scale.y_size(d.y)+')';
+                        return 'translate('+o.scale.x(d.x)+','+o.scale.y(d.y)+')';
                     })
 		    .attr('r', function(d) { 
 			if (d.node_type!='metabolite') return o.scale.size(5);
@@ -853,7 +868,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             update_selection
                 .select('.node-label')
                 .attr('transform', function(d) {
-                    return 'translate('+o.scale.x_size(d.label_x)+','+o.scale.y_size(d.label_y)+')';
+                    return 'translate('+o.scale.x(d.label_x)+','+o.scale.y(d.label_y)+')';
                 })
                 .style("font-size", function(d) {
 		    return String(o.scale.size(20))+"px";
@@ -1060,26 +1075,18 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             draw_specific_reactions([o.selected_node.reaction_id]);
         }
 
-        function select_metabolite(d) {
-	    if (o.selected_node.node_id==d.node_id) {
-		// already selected
-		return true;
-	    } else {
-		// select the node
-		var previous_node = o.selected_node.node_id,
-		    was_selected = o.selected_node.is_selected;
-		o.selected_node.node_id = d.node_id;
-		o.selected_node.is_selected = true;
-		if (reaction_input_is_visible())
-                    reload_reaction_input(coords_for_selected_node());
-		if (was_selected)
-		    draw_specific_nodes([d.node_id, previous_node]);
-		else
-		    draw_specific_nodes([d.node_id]);
-		return false;
-	    }
-        }
-
+        function select_metabolite(sel, d, node_selection, shift_key_on) {
+	    if (shift_key_on) d3.select(sel.parentNode).classed("selected", !d3.select(sel.parentNode).classed("selected")); //d.selected = !d.selected);
+            else node_selection.classed("selected", function(p) { return d === p; });
+	    var selected_nodes = d3.select('.selected');
+	    if (selected_nodes.length==1 && reaction_input_is_visible())
+                reload_reaction_input(coords_for_selected_node(selected_nodes[0]));
+	    // // redraw the nodes
+	    // var node_ids = [];
+	    // node_selection.each(function(d) { node_ids.push(d.node_id); });
+	    // draw_specific_nodes(node_ids);
+	}
+    
 	function displaced_coords(start, end, displace) {
 	    var length = o.reaction_arrow_displacement,
 		hyp = utils.distance(start, end),
@@ -1238,7 +1245,9 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             d3.select(window).on("keydown", function() {
                 var kc = d3.event.keyCode,
                     reaction_input_visible = reaction_input_is_visible();
+
                 held_keys = toggle_modifiers(modifier_keys, held_keys, kc, true);
+		o.shift_key_on = held_keys.shift;
                 if (check_key(primary_cycle_key, kc, held_keys) && !reaction_input_visible) {
                     cmd_cycle_primary_metabolite();
                     held_keys = reset_held_keys();
@@ -1272,6 +1281,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 }
             }).on("keyup", function() {
                 held_keys = toggle_modifiers(modifier_keys, held_keys, d3.event.keyCode, false);
+		o.shift_key_on = held_keys.shift;
             });
 
             function reset_held_keys() {
