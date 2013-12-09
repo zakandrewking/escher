@@ -43,3 +43,9 @@
     fill: none;
     stroke: rgb(255, 187, 0);
 }
+.brush .extent { 
+  fill-opacity: 0.1;
+  fill: black;
+  stroke: #fff;
+  shape-rendering: crispEdges;
+}

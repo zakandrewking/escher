@@ -31,7 +31,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    show_beziers: false,
 	    debug: false,
 	    starting_reaction: 'ACALDtex',
-	    reaction_arrow_displacement: 35});
+	    reaction_arrow_displacement: 35 });
 
         if (o.selection_is_svg) {
             console.error("Builder does not support placement within svg elements");
@@ -79,6 +79,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             o.decimal_format = d3.format('.3g');
             o.window_translate = {'x': 0, 'y': 0};
             o.window_scale = 1;
+	    o.zoom_enabled = true;
 
 	    // Check the cobra model
 	    if (o.cobra_model) {
@@ -99,6 +100,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 
             // setup the reaction input with complete.ly
             o.reaction_input = setup_reaction_input(o.selection);
+
 
             // set up keyboard listeners
             setup_key_listeners();
@@ -124,10 +126,13 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 					  o.width, o.height);
 
             var defs = utils.setup_defs(o.svg, o.css),
-                out = utils.setup_zoom_container(o.svg, o.width, o.height, [0.05, 15], function(ev) {
-                    o.window_translate = {'x': ev.translate[0], 'y': ev.translate[1]};
-                    o.window_scale = ev.scale;
-                });
+                out = utils.setup_zoom_container(o.svg, o.width, o.height, [0.05, 15], 
+						 function(ev) {
+						     o.window_translate = {'x': ev.translate[0], 'y': ev.translate[1]};
+						     o.window_scale = ev.scale;
+						 }, 
+						 function() { return o.zoom_enabled; });
+	    // TODO fix like this http://jsfiddle.net/La8PR/5/
             o.sel = out.sel,
             o.zoom = out.zoom;
 
@@ -226,10 +231,16 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 o.load_input_click_fn = new_input(sel, cmd_load, "Load (^o)");
 		if (o.show_beziers) new_button(sel, cmd_hide_beziers, "Hide control points");
 		else new_button(sel, cmd_show_beziers, "Show control points");
+
+		var z;
+		if (o.zoom_enabled) z = new_button(sel, cmd_zoom_off, "Enable select (v)");
+		else z = new_button(sel, cmd_zoom_on, "Enable pan+zoom (z)");
+		z.attr('id', 'zoom-button');
+
                 return sel;
 
                 function new_button(s, fn, name) {
-                    s.append("button").attr("class", "command-button")
+                    return s.append("button").attr("class", "command-button")
                         .text(name).on("click", fn);
                 }
                 function new_input(s, fn, name) {
@@ -271,11 +282,36 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     });
                 return { selection: sel,
                          completely: complete };
-            };
+            }
             function setup_status(selection) {
                 return selection.append("div").attr("id", "status");
-            };
+            }
         }
+	function enable_brush(on) {
+	    if (on) {
+		o.selection_brush = setup_selection_brush(o.sel);
+	    } else {
+		o.sel.selectAll('.brush').remove();
+	    }
+	    function setup_selection_brush(selection) {
+		var brush_fn = d3.svg.brush()
+			.x(d3.scale.identity().domain([0, o.width]))
+			.y(d3.scale.identity().domain([0, o.height]))
+			.on("brush", function() {
+			    var extent = d3.event.target.extent();
+			    d3.select('#nodes')
+				.selectAll('.node-circle')
+				.classed("selected", function(d) {
+				    return extent[0][0] <= d.x && d.x < extent[1][0]
+					&& extent[0][1] <= d.y && d.y < extent[1][1];
+				});
+			}),
+		    brush = selection.append("g")
+			.attr("class", "brush")
+			.call(brush_fn);
+		return brush;
+	    }
+	}
 
 	function import_map(map) {
 	    /* 
@@ -1195,7 +1231,9 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                                'down':  { key: 40 } },
                 control_key = { key: 17 },
                 save_key = { key: 83, modifiers: { control: true } },
-                load_key = { key: 79, modifiers: { control: true } };
+                load_key = { key: 79, modifiers: { control: true } },
+		pan_and_zoom_key = { key: 90 },
+		brush_key = { key: 86 };
 
             d3.select(window).on("keydown", function() {
                 var kc = d3.event.keyCode,
@@ -1224,6 +1262,12 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     cmd_save();
                 } else if (check_key(load_key, kc, held_keys) && !reaction_input_visible) {
                     cmd_load();
+                    held_keys = reset_held_keys();
+                } else if (check_key(pan_and_zoom_key, kc, held_keys) && !reaction_input_visible) {
+                    cmd_zoom_on();
+                    held_keys = reset_held_keys();
+                } else if (check_key(brush_key, kc, held_keys) && !reaction_input_visible) {
+                    cmd_zoom_off();
                     held_keys = reset_held_keys();
                 }
             }).on("keyup", function() {
@@ -1313,6 +1357,18 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    d3.select(this).text('Show control points')
 		.on('click', cmd_show_beziers);
 	    draw();
+	}
+	function cmd_zoom_on() {
+	    o.zoom_enabled = true;
+	    enable_brush(false);
+	    d3.select('#zoom-button').text('Enable select (v)')
+		.on('click', cmd_zoom_off);
+	}
+	function cmd_zoom_off() {
+	    o.zoom_enabled = false;
+	    enable_brush(true);
+	    d3.select('#zoom-button').text('Enable pan+zoom (z)')
+		.on('click', cmd_zoom_on);
 	}
     };
 });

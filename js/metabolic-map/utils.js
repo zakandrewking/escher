@@ -18,16 +18,19 @@ define(["lib/d3"], function (d3) {
 	     distance: distance };
 
     // definitions
-    function setup_zoom_container(svg, w, h, scale_extent, callback) {
+    function setup_zoom_container(svg, w, h, scale_extent, callback, zoom_on_fn) {
 	if (callback===undefined) callback = function() {};
+	if (zoom_on_fn===undefined) zoom_on_fn = function() { return true; };
         // set up the container
         svg.select("#container").remove();
         var container = svg.append("g")
                 .attr("id", "container"),
             sel = container.append("g"),
             zoom = function() {
-                sel.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-		callback(d3.event);
+		if (zoom_on_fn()) {
+                    sel.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+		    callback(d3.event);
+		}
             },
 	    zoom_behavior = d3.behavior.zoom().scaleExtent(scale_extent).on("zoom", zoom);
         container.call(zoom_behavior);
