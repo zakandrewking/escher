@@ -633,8 +633,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 
             // old segments
             sel.exit().remove();
-
-            return;
         }
 
         function create_reaction_label(sel) {
@@ -669,64 +667,61 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 
 	    // THE FOLLOWING IS ALL TERRIBLE
 
-	    // new bezier points
-	    var g = g.append('g')
-		    .attr('class', 'beziers');
 
-	    g.append('circle')
-		.attr('class', 'bezier bezier1')
-		.style('stroke-width', String(o.scale.size(1))+'px') 
-		.call(d3.behavior.drag()
-		      .on("dragstart", drag_silence)
-		      .on("drag", drag_move_1))		
-		.on("mouseover", function(d) {
-		    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
-		})
-		.on("mouseout", function(d) {
-		    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
-		});
+	    // g.append('circle')
+	    // 	.attr('class', 'bezier bezier1')
+	    // 	.style('stroke-width', String(o.scale.size(1))+'px') 
+	    // 	.call(d3.behavior.drag()
+	    // 	      .on("dragstart", drag_silence)
+	    // 	      .on("drag", drag_move_1))		
+	    // 	.on("mouseover", function(d) {
+	    // 	    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
+	    // 	})
+	    // 	.on("mouseout", function(d) {
+	    // 	    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
+	    // 	});
 
-	    // TODO fix this hack
-	    g.append('circle')
-		.attr('class', 'bezier bezier2')
-		.style('stroke-width', String(o.scale.size(1))+'px') 
-		.call(d3.behavior.drag()
-		      .on("dragstart", drag_silence)
-		      .on("drag", drag_move_2))
-		.on("mouseover", function(d) {
-		    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
-		})
-		.on("mouseout", function(d) {
-		    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
-		});
+	    // // TODO fix this hack
+	    // g.append('circle')
+	    // 	.attr('class', 'bezier bezier2')
+	    // 	.style('stroke-width', String(o.scale.size(1))+'px') 
+	    // 	.call(d3.behavior.drag()
+	    // 	      .on("dragstart", drag_silence)
+	    // 	      .on("drag", drag_move_2))
+	    // 	.on("mouseover", function(d) {
+	    // 	    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
+	    // 	})
+	    // 	.on("mouseout", function(d) {
+	    // 	    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
+	    // 	});
 
-	    // definitions
-	    function drag_silence() {
-		// silence other listeners
-                d3.event.sourceEvent.stopPropagation();
-	    }
-	    function drag_move_1() { 
-		// TODO fix this hack too
-		var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
-		    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
-		var seg = o.drawn_reactions[reaction_id].segments[segment_id],
-		    dx = o.scale.x_size.invert(d3.event.dx),
-		    dy = o.scale.y_size.invert(d3.event.dy);
-		seg.b1.x = seg.b1.x + dx;
-		seg.b1.y = seg.b1.y + dy;
-		draw_specific_reactions([reaction_id]);
-	    }
-	    function drag_move_2() { 
-		// TODO fix this hack too
-		var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
-		    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
-		var seg = o.drawn_reactions[reaction_id].segments[segment_id],
-		    dx = o.scale.x_size.invert(d3.event.dx),
-		    dy = o.scale.y_size.invert(d3.event.dy);
-		seg.b2.x = seg.b2.x + dx;
-		seg.b2.y = seg.b2.y + dy;
-		draw_specific_reactions([reaction_id]);
-	    }
+	    // // definitions
+	    // function drag_silence() {
+	    // 	// silence other listeners
+            //     d3.event.sourceEvent.stopPropagation();
+	    // }
+	    // function drag_move_1() { 
+	    // 	// TODO fix this hack too
+	    // 	var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
+	    // 	    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
+	    // 	var seg = o.drawn_reactions[reaction_id].segments[segment_id],
+	    // 	    dx = o.scale.x_size.invert(d3.event.dx),
+	    // 	    dy = o.scale.y_size.invert(d3.event.dy);
+	    // 	seg.b1.x = seg.b1.x + dx;
+	    // 	seg.b1.y = seg.b1.y + dy;
+	    // 	draw_specific_reactions([reaction_id]);
+	    // }
+	    // function drag_move_2() { 
+	    // 	// TODO fix this hack too
+	    // 	var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
+	    // 	    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
+	    // 	var seg = o.drawn_reactions[reaction_id].segments[segment_id],
+	    // 	    dx = o.scale.x_size.invert(d3.event.dx),
+	    // 	    dy = o.scale.y_size.invert(d3.event.dy);
+	    // 	seg.b2.x = seg.b2.x + dx;
+	    // 	seg.b2.y = seg.b2.y + dy;
+	    // 	draw_specific_reactions([reaction_id]);
+	    // }
 	}
         
         function update_segment(update_selection) {
@@ -793,40 +788,46 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		    return d.flux ? o.scale.size(o.scale.flux(Math.abs(d.flux))) :
 			o.scale.size(o.scale.flux(1));
                 });
-	    console.log(o.show_beziers);
-	    if (o.show_beziers) {
-		// draw bezier points
-		update_selection
-		    .selectAll('.bezier1')
-                    .attr('transform', function(d) {
-			if (d.b1==null) return ""; 
-			return 'translate('+o.scale.x(d.b1.x)+','+o.scale.y(d.b1.y)+')';
-                    })
-		    .attr('r', String(o.scale.size(5))+'px')
-		    .style('stroke-width', String(o.scale.size(1))+'px')
-                    .style('fill', 'none')
-		    .style('stroke', 'blue')
-		    .attr('visibility', 'visible');
-		update_selection
-		    .selectAll('.bezier2')
-                    .attr('transform', function(d) {
-			if (d.b2==null) return "";
-			return 'translate('+o.scale.x(d.b2.x)+','+o.scale.y(d.b2.y)+')';
-                    })
-		    .attr('r', String(o.scale.size(5))+'px')
-		    .style('stroke-width', String(o.scale.size(1))+'px')
-                    .style('fill', 'none')
-		    .style('stroke', 'red')
-		    .attr('visibility', 'visible');
-	    } else {
-		update_selection
-		    .selectAll('.bezier1')
-		    .attr('visibility', 'hidden');
-		update_selection
-		    .selectAll('.bezier2')
-		    .attr('visibility', 'hidden');
-	    }
 
+	    // new bezier points
+	    var bez = update_selection
+		    .append('g')
+		    .attr('class', 'beziers')
+		    .selectAll('.bezier')
+		    .data(function(d) {
+			var beziers = [];
+			if (d.b1!=null && d.b1.x!=null && d.b1.y!=null)
+			    beziers.push({'bezier': 1, x:d.b1.x, y:d.b1.y});
+			if (d.b2!=null && d.b2.x!=null && d.b2.y!=null)
+			    beziers.push({'bezier': 2, x:d.b2.x, y:d.b2.y});
+			return beziers;
+		    }, function(d) { return d.bezier; });
+	    bez.enter().call(create_bezier);
+	    // update bezier points
+	    bez.call(update_bezier);
+	    // remove
+	    bez.exit().remove();
+
+	    function create_bezier(enter_selection) {
+	    	enter_selection.append('circle')
+	    	    .attr('class', function(d) { return 'bezier bezier'+d.bezier; })
+	    	    .style('stroke-width', String(o.scale.size(1))+'px')	
+    		    .attr('r', String(o.scale.size(5))+'px');
+	    }
+	    function update_bezier(update_selection) {
+		if (o.show_beziers) {
+	    	    // draw bezier points
+		    update_selection
+			.attr('visibility', 'visible')
+			.attr('transform', function(d) {
+	    		    if (d.x==null || d.y==null) return ""; 
+			    return 'translate('+o.scale.x(d.x)+','+o.scale.y(d.y)+')';
+			});
+		    console.log(update_selection);
+		} else {
+	    	    update_selection.attr('visibility', 'hidden');
+		}
+	    }
         }
 
 	function create_node(enter_selection) {

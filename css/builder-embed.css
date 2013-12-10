@@ -49,3 +49,12 @@
   stroke: #fff;
   shape-rendering: crispEdges;
 }
+.bezier {
+    fill: none;
+}
+.bezier1 {
+    stroke: red;
+}
+.bezier2 {
+    stroke: blue;
+}
