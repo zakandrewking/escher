@@ -665,6 +665,9 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             g.append('path')
                 .attr('class', 'segment');
 
+	    g.append('g')
+		.attr('class', 'beziers');
+
 	    // THE FOLLOWING IS ALL TERRIBLE
 
 
@@ -790,9 +793,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 });
 
 	    // new bezier points
-	    var bez = update_selection
-		    .append('g')
-		    .attr('class', 'beziers')
+	    var bez = update_selection.select('.beziers')
 		    .selectAll('.bezier')
 		    .data(function(d) {
 			var beziers = [];
