@@ -316,7 +316,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 					    && extent[0][1] <= sy && sy < extent[1][1];
 				});
 			})        
-			.on("brushend", function() {console.log(node_ids);
+			.on("brushend", function() {
 			    d3.event.target.clear();
 			    d3.select(this).call(d3.event.target);
 			}),
@@ -667,12 +667,68 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             g.append('path')
                 .attr('class', 'segment');
 
+	    // THE FOLLOWING IS ALL TERRIBLE
+
 	    // new bezier points
-	    g.append('circle').attr('class', 'bezier1');
-	    g.append('circle').attr('class', 'bezier2');
+	    var g = g.append('g')
+		    .attr('class', 'beziers');
 
-        }
+	    g.append('circle')
+		.attr('class', 'bezier bezier1')
+		.style('stroke-width', String(o.scale.size(1))+'px') 
+		.call(d3.behavior.drag()
+		      .on("dragstart", drag_silence)
+		      .on("drag", drag_move_1))		
+		.on("mouseover", function(d) {
+		    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
+		})
+		.on("mouseout", function(d) {
+		    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
+		});
 
+	    // TODO fix this hack
+	    g.append('circle')
+		.attr('class', 'bezier bezier2')
+		.style('stroke-width', String(o.scale.size(1))+'px') 
+		.call(d3.behavior.drag()
+		      .on("dragstart", drag_silence)
+		      .on("drag", drag_move_2))
+		.on("mouseover", function(d) {
+		    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
+		})
+		.on("mouseout", function(d) {
+		    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
+		});
+
+	    // definitions
+	    function drag_silence() {
+		// silence other listeners
+                d3.event.sourceEvent.stopPropagation();
+	    }
+	    function drag_move_1() { 
+		// TODO fix this hack too
+		var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
+		    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
+		var seg = o.drawn_reactions[reaction_id].segments[segment_id],
+		    dx = o.scale.x_size.invert(d3.event.dx),
+		    dy = o.scale.y_size.invert(d3.event.dy);
+		seg.b1.x = seg.b1.x + dx;
+		seg.b1.y = seg.b1.y + dy;
+		draw_specific_reactions([reaction_id]);
+	    }
+	    function drag_move_2() { 
+		// TODO fix this hack too
+		var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
+		    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
+		var seg = o.drawn_reactions[reaction_id].segments[segment_id],
+		    dx = o.scale.x_size.invert(d3.event.dx),
+		    dy = o.scale.y_size.invert(d3.event.dy);
+		seg.b2.x = seg.b2.x + dx;
+		seg.b2.y = seg.b2.y + dy;
+		draw_specific_reactions([reaction_id]);
+	    }
+	}
+        
         function update_segment(update_selection) {
             // update segment attributes
             // update arrows
@@ -737,14 +793,11 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		    return d.flux ? o.scale.size(o.scale.flux(Math.abs(d.flux))) :
 			o.scale.size(o.scale.flux(1));
                 });
-
+	    console.log(o.show_beziers);
 	    if (o.show_beziers) {
 		// draw bezier points
 		update_selection
 		    .selectAll('.bezier1')
-		    .datum(function() {
-			return this.parentNode.__data__;
-                    })
                     .attr('transform', function(d) {
 			if (d.b1==null) return ""; 
 			return 'translate('+o.scale.x(d.b1.x)+','+o.scale.y(d.b1.y)+')';
@@ -756,9 +809,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		    .attr('visibility', 'visible');
 		update_selection
 		    .selectAll('.bezier2')
-		    .datum(function() {
-			return this.parentNode.__data__;
-                    })
                     .attr('transform', function(d) {
 			if (d.b2==null) return "";
 			return 'translate('+o.scale.x(d.b2.x)+','+o.scale.y(d.b2.y)+')';
@@ -829,25 +879,38 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		d3.selectAll('.node').each(function(d) {
 		    if (selected_ids.indexOf(d.node_id)==-1) return;
 		    // update data
-                    var node = o.drawn_nodes[d.node_id];
-                    node.x = node.x + o.scale.x_size.invert(d3.event.dx);
-		    node.y = node.y + o.scale.y_size.invert(d3.event.dy);
+                    var node = o.drawn_nodes[d.node_id],
+			dx = o.scale.x_size.invert(d3.event.dx),
+			dy = o.scale.y_size.invert(d3.event.dy);
+                    node.x = node.x + dx; 
+		    node.y = node.y + dy;
 		    // update node labels
-                    node.label_x = node.label_x + o.scale.x_size.invert(d3.event.dx);
-		    node.label_y = node.label_y + o.scale.y_size.invert(d3.event.dy);
+                    node.label_x = node.label_x + dx;
+		    node.label_y = node.label_y + dy;
 
 		    // update connected reactions
 		    d.connected_segments.map(function(segment_object) {
+			shift_beziers_for_segment(segment_object.reaction_id, segment_object.segment_id, 
+						  d.node_id, dx, dy);
 			reaction_ids.push(segment_object.reaction_id);
 		    });
 		});
+
 		draw_specific_nodes(selected_ids);
 		draw_specific_reactions(reaction_ids);
 
-		// 	shift_beziers_for_segments(sel.datum().connected_segments,
-		// 				   {'x': sel.datum().x, 'y': sel.datum().y});
-		// function shift_beziers_for_segments(segments, new_coords) {
-		// }
+		// definitions
+		function shift_beziers_for_segment(reaction_id, segment_id, node_id, dx, dy) {
+		    var seg = o.drawn_reactions[reaction_id].segments[segment_id];
+		    if (seg.from_node_id==node_id && seg.b1) {
+			seg.b1.x = seg.b1.x + dx;
+			seg.b1.y = seg.b1.y + dy;
+		    }
+		    if (seg.to_node_id==node_id && seg.b2) {
+			seg.b2.x = seg.b2.x + dx;
+			seg.b2.y = seg.b2.y + dy;
+		    }
+		}
             }
 	}
 
