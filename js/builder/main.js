@@ -225,11 +225,11 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             function setup_menu(selection) {
                 var sel = selection.append("div").attr("id", "menu");
                 new_button(sel, cmd_hide_show_input, "New reaction (/)");
-                new_button(sel, cmd_cycle_primary_metabolite, "Cycle primary metabolite (p)");
-                new_button(sel, cmd_left, "Left (←)");
-                new_button(sel, cmd_right, "Right (→)");
-                new_button(sel, cmd_up, "Up (↑)");
-                new_button(sel, cmd_down, "Down (↓)");
+                // new_button(sel, cmd_cycle_primary_metabolite, "Cycle primary metabolite (p)");
+                // new_button(sel, cmd_left, "Left (←)");
+                // new_button(sel, cmd_right, "Right (→)");
+                // new_button(sel, cmd_up, "Up (↑)");
+                // new_button(sel, cmd_down, "Down (↓)");
                 new_button(sel, cmd_save, "Save (^s)");
                 o.load_input_click_fn = new_input(sel, cmd_load, "Load (^o)");
 		if (o.show_beziers) new_button(sel, cmd_hide_beziers, "Hide control points");
@@ -1311,24 +1311,24 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 
                 held_keys = toggle_modifiers(modifier_keys, held_keys, kc, true);
 		o.shift_key_on = held_keys.shift;
-                if (check_key(primary_cycle_key, kc, held_keys) && !reaction_input_visible) {
-                    cmd_cycle_primary_metabolite();
-                    held_keys = reset_held_keys();
-                } else if (check_key(hide_show_input_key, kc, held_keys)) {
+		if (check_key(hide_show_input_key, kc, held_keys)) {
                     cmd_hide_show_input();
                     held_keys = reset_held_keys();
-                } else if (check_key(rotate_keys.left, kc, held_keys) && !reaction_input_visible) {
-                    cmd_left();
-                    held_keys = reset_held_keys();
-                } else if (check_key(rotate_keys.right, kc, held_keys) && !reaction_input_visible) {
-                    cmd_right();
-                    held_keys = reset_held_keys();
-                } else if (check_key(rotate_keys.up, kc, held_keys) && !reaction_input_visible) {
-                    cmd_up();
-                    held_keys = reset_held_keys();
-                } else if (check_key(rotate_keys.down, kc, held_keys) && !reaction_input_visible) {
-                    cmd_down();
-                    held_keys = reset_held_keys();
+                // } else if (check_key(primary_cycle_key, kc, held_keys) && !reaction_input_visible) {
+                //     cmd_cycle_primary_metabolite();
+                //     held_keys = reset_held_keys();
+                // } else if (check_key(rotate_keys.left, kc, held_keys) && !reaction_input_visible) {
+                //     cmd_left();
+                //     held_keys = reset_held_keys();
+                // } else if (check_key(rotate_keys.right, kc, held_keys) && !reaction_input_visible) {
+                //     cmd_right();
+                //     held_keys = reset_held_keys();
+                // } else if (check_key(rotate_keys.up, kc, held_keys) && !reaction_input_visible) {
+                //     cmd_up();
+                //     held_keys = reset_held_keys();
+                // } else if (check_key(rotate_keys.down, kc, held_keys) && !reaction_input_visible) {
+                //     cmd_down();
+                //     held_keys = reset_held_keys();
                 } else if (check_key(save_key, kc, held_keys) && !reaction_input_visible) {
                     held_keys = reset_held_keys();
                     cmd_save();
