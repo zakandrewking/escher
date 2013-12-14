@@ -116,11 +116,15 @@ def main():
 
     # do the text labels
     text_labels = parse_labels(text_labels)
-    
+
+    # compile the data
     out = {}
     out['nodes'] = nodes
     out['reactions'] = reactions
     out['text_labels'] = text_labels
+
+    # translate everything so x > 0 and y > 0
+    out = translate_everything(out)
     
     # for export, only keep the necessary stuff
     node_keys_to_keep = ['node_type', 'compartment_id', 'x',
@@ -220,6 +224,44 @@ def try_assignment(node, key, new_key, cast=None):
             node[new_key] = node[key]
     except KeyError:
         pass
+
+def translate_everything(out):
+    def get_min(a):
+        def check(d, mins):
+            if type(d) is not dict: return
+            
+            xs = []; ys = []
+            if 'x' in d: xs.append(d['x'])
+            if 'label_x' in d: xs.append(d['label_x'])
+            if 'y' in d: ys.append(d['y'])
+            if 'label_y' in d: ys.append(d['label_y'])
+
+            mins['x'] = min(xs + [mins['x']])
+            mins['y'] = min(ys + [mins['y']])
+
+            for k, v in d.iteritems():
+                check(v, mins)
+
+        mins = {'x': 0, 'y': 0}
+        check(a, mins)
+        return mins['x'], mins['y']
+    
+    def translate(d, subtract_x, subtract_y):
+        if type(d) is not dict: return d
+
+        if 'x' in d: d['x'] = d['x'] - subtract_x
+        if 'label_x' in d: d['label_x'] = d['label_x'] - subtract_x
+        if 'y' in d: d['y'] = d['y'] - subtract_y
+        if 'label_y' in d: d['label_y'] = d['label_y'] - subtract_y
         
+        for k, v in d.iteritems():
+            d[k] = translate(v, subtract_x, subtract_y)
+            
+        return d
+
+    subtract_x, subtract_y = get_min(out)
+    print subtract_x, subtract_y
+    return translate(out, subtract_x, subtract_y)
+    
 if __name__=="__main__":
     main()
