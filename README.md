@@ -58,8 +58,6 @@ You can include the visbio.js script in any html document. The only dependency i
 <script src="visbio.min.js"> </script>
 ```
 
-Note: this has not been thoroughly tested.
-
 
 building visbio.js
 =======
