@@ -6,3 +6,5 @@
 .#*
 visbio.egg-info/
 build/
+pub/
+dist/
