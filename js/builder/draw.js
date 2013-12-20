@@ -1,11 +1,22 @@
 define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
-    return { draw: draw,
+    return { setup_containers: setup_containers,
+	     draw: draw,
 	     reset: reset,
 	     draw_specific_reactions: draw_specific_reactions,
 	     draw_specific_nodes: draw_specific_nodes
 	   };
 
     // definitions
+    function setup_containers(sel) {
+        sel.append('g')
+            .attr('id', 'membranes');
+        sel.append('g')
+            .attr('id', 'reactions');
+        sel.append('g')
+            .attr('id', 'nodes');
+        sel.append('g')
+            .attr('id', 'text-labels');
+    }
     function draw(membranes, reactions, nodes, text_labels, scale,
 		  show_beziers, arrow_displacement, defs, arrowheads,
 		  default_reaction_color, has_flux, 

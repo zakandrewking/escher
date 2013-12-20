@@ -110,22 +110,16 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
 	    // import map
 	    var max_w = o.width, max_h = o.height;
 	    if (o.map) {
-		out = import_map(o.map, o.height, o.width);
-		o.drawn_reactions = out.map.reactions;
-		o.drawn_nodes = out.map.nodes;
-		o.membranes = out.map.membranes;
-		o.drawn_text_labels = out.map.text_labels;
-		max_w = out.max_map_w;
-		max_h = out.max_map_h;
+		out = import_and_load_map(o.map, o.height, o.width);
 	    } else {
 		o.membranes = [];
 		max_w = o.width;
 		max_h = o.height;
-	    }
 
-	    // set up svg and svg definitions
-	    o.scale = utils.define_scales(max_w, max_h,
-					  o.width, o.height);
+		// set up svg and svg definitions
+		o.scale = utils.define_scales(max_w, max_h,
+					      o.width, o.height);
+	    }
 
             o.defs = utils.setup_defs(o.svg, o.css);
             var out = utils.setup_zoom_container(o.svg, o.width, o.height, [0.05, 15], 
@@ -149,14 +143,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
 
             o.sel.append('g')
                 .attr('id', 'brush-container');
-            o.sel.append('g')
-                .attr('id', 'membranes');
-            o.sel.append('g')
-                .attr('id', 'reactions');
-            o.sel.append('g')
-                .attr('id', 'nodes');
-            o.sel.append('g')
-                .attr('id', 'text-labels');
+	    draw.setup_containers(o.sel);
 
 	    // make a list of reactions
 	    o.sorted_reaction_suggestions = [];
@@ -258,7 +245,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
                             .on("change", function() {
                                 utils.load_json(this.files[0], function(error, data) {
                                     if (error) return console.warn(error);
-                                    o.drawn_reactions = data;
+                                    import_and_load_map(data);
                                     draw.reset();
                                     draw_everything();
                                     return null;
@@ -444,9 +431,24 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
 		    });
 		}
 	    }
-	    return { map: map,
-		     max_map_w: map.info.max_map_w,
-		     max_map_h: map.info.max_map_h };
+	    return map;
+	}
+	function import_and_load_map(map) {
+	    map = import_map(map);
+	    o.drawn_reactions = map.reactions;
+	    o.drawn_nodes = map.nodes;
+	    o.membranes = map.membranes;
+	    o.drawn_text_labels = map.text_labels;
+	    // set up svg and svg definitions
+	    o.scale = utils.define_scales(map.info.max_map_w, map.info.max_map_h,
+					  o.width, o.height);
+	    // reset zoom
+	    if (o.zoom) {
+		o.window_translate.x = 0; o.window_translate.y = 0; o.window_scale = 1.0;
+                o.zoom.translate([o.window_translate.x, o.window_translate.y]);
+                o.zoom.scale(o.window_scale);
+                o.sel.attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
+	    }
 	}
 
         function set_status(status) {
