@@ -152,23 +152,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
 		    cobra_id: reaction_id,
 		    flux: 0
                 });
-	    }
-	    if (o.flux) { 
-		// flux onto existing map reactions
-		if (o.map) {
-		    for (var reaction_id in o.map.reactions) {
-			var reaction = o.map.reactions[reaction_id];
-			if (reaction_id in o.flux) {
-			    var flux = parseFloat(o.flux[reaction_id]);
-			    reaction.flux = flux;
-			    for (var met_id in reaction.segments) {
-				var metabolite = reaction.segments[met_id];
-				metabolite.flux = flux;
-			    }
-			}
-		    }
-		}
-
+	    } 
+	    if (o.flux) {
 		// reactions with flux
 		for (var flux_reaction_id in o.flux) {
                     // fix reaction ids
@@ -205,8 +190,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
 		draw_everything();
 	    }
 
+	    // turn off loading message
             d3.select('#loading').style("display", "none");
-	    return;
 
             // definitions
             function setup_menu(selection) {
@@ -393,7 +378,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
 	}
 
 	function import_map(map) {
-	    /* 
+	    /*
 	     * Load a json map and add necessary fields for rendering.
 	     *
 	     * The returned value will be o.drawn_reactions.
@@ -448,6 +433,20 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
                 o.zoom.translate([o.window_translate.x, o.window_translate.y]);
                 o.zoom.scale(o.window_scale);
                 o.sel.attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
+	    }
+	    // flux onto existing map reactions
+	    if (o.flux) {
+		for (var reaction_id in o.drawn_reactions) {
+		    var reaction = o.drawn_reactions[reaction_id];
+		    if (reaction.abbreviation in o.flux) {
+			var flux = parseFloat(o.flux[reaction.abbreviation]);
+			reaction.flux = flux;
+			for (var segment_id in reaction.segments) {
+			    var segment = reaction.segments[segment_id];
+			    segment.flux = flux;
+			}
+		    }
+		}
 	    }
 	}
 	function map_for_export() {
