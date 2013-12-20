@@ -1,6 +1,9 @@
 define(["lib/d3"], function (d3) {
     return { setup_zoom_container: setup_zoom_container,
              setup_defs: setup_defs,
+	     draw_an_array: draw_an_array,
+	     draw_an_object: draw_an_object,
+	     make_array: make_array,
 	     clone: clone,
 	     c_plus_c: c_plus_c,
 	     c_minus_c: c_minus_c,
@@ -47,6 +50,49 @@ define(["lib/d3"], function (d3) {
             .attr("type", "text/css")
             .text(style);
         return defs;
+    }
+
+    function draw_an_array(sel_parent_node, sel_children, array, 
+			   create_function, update_function) {
+	/** Run through the d3 data binding steps for an array.
+	 */
+	var sel = d3.select(sel_parent_node)
+            .selectAll(sel_children)
+            .data(array);
+	// enter: generate and place reaction
+	sel.enter().call(create_function);
+	// update: update when necessary
+	sel.call(update_function);
+	// exit
+	sel.exit().remove();
+    }
+
+    function draw_an_object(sel_parent_node, sel_children, object, 
+			    id_key, create_function, update_function) {
+	/** Run through the d3 data binding steps for an object.
+	 */
+	var sel = d3.select(sel_parent_node)
+            .selectAll(sel_children)
+            .data(make_array(object, id_key), function(d) { return d[id_key]; });
+	// enter: generate and place reaction
+	sel.enter().call(create_function);
+	// update: update when necessary
+	sel.call(update_function);
+	// exit
+	sel.exit().remove();
+    }
+
+    function make_array(obj, id_key) { // is this super slow?
+        var array = [];
+        for (var key in obj) {
+            // copy object
+            var it = clone(obj[key]);
+            // add key as 'id'
+            it[id_key] = key;
+            // add object to array
+            array.push(it);
+        }
+        return array;
     }
 
     function clone(obj) {

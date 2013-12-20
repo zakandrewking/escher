@@ -1,4 +1,5 @@
-define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], function(scaffold, utils, d3, completely) {
+define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/complete.ly"], 
+       function(scaffold, utils, draw, d3, completely) {
     // TODO
     // - connected node object
     // - only display each node once
@@ -71,8 +72,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
              */
 
             // Begin with some definitions
-            o.selected_node = {'node_id': '',
-                               'is_selected': false};
+            // o.selected_node = {'node_id': '',
+            //                    'is_selected': false};
             o.drawn_reactions = {};
             o.arrowheads_generated = [];
             o.default_reaction_color = '#505050';
@@ -126,8 +127,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    o.scale = utils.define_scales(max_w, max_h,
 					  o.width, o.height);
 
-            var defs = utils.setup_defs(o.svg, o.css),
-                out = utils.setup_zoom_container(o.svg, o.width, o.height, [0.05, 15], 
+            o.defs = utils.setup_defs(o.svg, o.css);
+            var out = utils.setup_zoom_container(o.svg, o.width, o.height, [0.05, 15], 
 						 function(ev) {
 						     o.window_translate = {'x': ev.translate[0], 'y': ev.translate[1]};
 						     o.window_scale = ev.scale;
@@ -215,7 +216,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 		var start_coords = {'x': o.width/2, 'y': 40};
                 new_reaction(o.starting_reaction, start_coords);
             } else {
-		draw();
+		draw_everything();
 	    }
 
             d3.select('#loading').style("display", "none");
@@ -258,8 +259,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                                 utils.load_json(this.files[0], function(error, data) {
                                     if (error) return console.warn(error);
                                     o.drawn_reactions = data;
-                                    reset();
-                                    draw();
+                                    draw.reset();
+                                    draw_everything();
                                     return null;
                                 });
                             });
@@ -290,6 +291,84 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 return selection.append("div").attr("id", "status");
             }
         }
+
+	// drawing
+	function node_click_function(sel, data) {
+	}
+	function has_flux() {
+	    return o.flux ? true : false;
+	}
+	function node_click(d) {
+	    return select_metabolite(this, d, o.sel.select('#nodes').selectAll('.node'), o.shift_key_on);
+	}
+	function node_dragstart() {
+	    // silence other listeners
+            d3.event.sourceEvent.stopPropagation();
+	}
+	function node_drag() {
+	    var grabbed_id = this.parentNode.__data__.node_id,		    
+                selected_ids = [];
+	    d3.select('#nodes').selectAll('.selected').each(function(d) { selected_ids.push(d.node_id); });
+	    if (selected_ids.indexOf(grabbed_id)==-1) { 
+		console.log('Dragging unselected node');
+		return;
+	    }
+
+	    var reaction_ids = [];
+	    // update node positions
+	    d3.selectAll('.node').each(function(d) {
+		if (selected_ids.indexOf(d.node_id)==-1) return;
+		// update data
+                var node = o.drawn_nodes[d.node_id],
+		    dx = o.scale.x_size.invert(d3.event.dx),
+		    dy = o.scale.y_size.invert(d3.event.dy);
+                node.x = node.x + dx; 
+		node.y = node.y + dy;
+		// update node labels
+                node.label_x = node.label_x + dx;
+		node.label_y = node.label_y + dy;
+
+		// update connected reactions
+		d.connected_segments.map(function(segment_object) {
+		    shift_beziers_for_segment(segment_object.reaction_id, segment_object.segment_id, 
+					      d.node_id, dx, dy);
+		    reaction_ids.push(segment_object.reaction_id);
+		});
+	    });
+
+	    draw_specific_nodes(selected_ids);
+	    draw_specific_reactions(reaction_ids);
+
+	    // definitions
+	    function shift_beziers_for_segment(reaction_id, segment_id, node_id, dx, dy) {
+		var seg = o.drawn_reactions[reaction_id].segments[segment_id];
+		if (seg.from_node_id==node_id && seg.b1) {
+		    seg.b1.x = seg.b1.x + dx;
+		    seg.b1.y = seg.b1.y + dy;
+		}
+		if (seg.to_node_id==node_id && seg.b2) {
+		    seg.b2.x = seg.b2.x + dx;
+		    seg.b2.y = seg.b2.y + dy;
+		}
+	    }
+	}
+	function draw_everything() {
+	    draw.draw(o.membranes, o.drawn_reactions, o.drawn_nodes, o.drawn_text_labels, o.scale, 
+		      o.show_beziers, o.reaction_arrow_displacement, o.defs, o.arrowheads_generated,
+		      o.default_reaction_color, has_flux(), 
+		      node_click, node_drag, node_dragstart);
+	}
+	function draw_specific_reactions(reaction_ids) {
+	    draw.draw_specific_reactions(reaction_ids, o.drawn_reactions, o.drawn_nodes, o.scale, o.show_beziers,
+					 o.reaction_arrow_displacement, o.defs, o.arrowheads_generated, 
+					 o.default_reaction_color, has_flux());
+	}
+	function draw_specific_nodes(node_ids) {
+	    draw.draw_specific_nodes(node_ids, o.drawn_nodes, o.drawn_reactions, o.scale, 
+				     node_click, node_drag, node_dragstart);
+	}    
+
+	// brushing
 	function enable_brush(on) {
 	    var brush_sel = o.sel.select('#brush-container');
 	    if (on) {
@@ -411,7 +490,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                 var reaction = o.cobra_reactions[reaction_id];
                 // ignore drawn reactions
                 if (already_drawn(reaction_id)) continue;
-                if (o.selected_node.is_selected) {
+                // if (o.selected_node.is_selected) {
                     // check segments for match to selected metabolite
                     // for (var metabolite_id in reaction.segments) {
                     //     if (metabolite_id==o.selected_node.metabolite_id &&
@@ -419,9 +498,9 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
                     //         reaction_ids_to_display.push(reaction_id);
                     //     }
                     // }
-                } else {
+                // } else {
                     // reaction_ids_to_display.push(reaction_id);
-                }
+                // }
             }
 
             // Generate the list of reactions to suggest
@@ -450,8 +529,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             complete.repaint();
             o.reaction_input.completely.input.focus();
         }
-
-
 
         function new_reaction(reaction_id, coords) {
             /* New reaction at x, y coordinates.
@@ -522,501 +599,16 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             o.drawn_reactions[reaction_id] = reaction;
 
             // draw, and set the new coords
-            o.selected_node = {'reaction_id': reaction_id,
-                               'direction': "product",
-                               'metabolite_id': newest_primary_product_id,
-                               'is_selected': true};
-            draw();
+            // o.selected_node = {'reaction_id': reaction_id,
+            //                    'direction': "product",
+            //                    'metabolite_id': newest_primary_product_id,
+            //                    'is_selected': true};
+            draw_everything();
             var new_coords = coords_for_selected_node();
             translate_off_screen(new_coords);
             if (reaction_input_is_visible())
                 reload_reaction_input(new_coords);
         }
-
-        // -----------------------------------------------------------------------------------
-        // DRAW
-
-        function draw() {
-            /* Draw the reactions and membranes
-             */
-
-	    // draw the membranes
-	    var sel = d3.select('#membranes')
-		.selectAll('.membrane')
-		.data(o.membranes);
-            // enter: generate and place reaction
-            sel.enter().call(create_membrane);
-            // update: update when necessary
-            sel.call(update_membrane);
-            // exit
-            sel.exit().remove();
-
-            // reactions
-            sel = d3.select('#reactions')
-                .selectAll('.reaction')
-                .data(make_array(o.drawn_reactions, 'reaction_id'),
-                      function(d) { return d.reaction_id; });
-            // enter: generate and place reaction
-            sel.enter().call(create_reaction);
-            // update: update when necessary
-            sel.call(update_reaction);
-            // exit
-            sel.exit().remove();
-
-            // nodes
-            sel = d3.select('#nodes')
-                .selectAll('.node')
-                .data(make_array(o.drawn_nodes, 'node_id'),
-                      function(d) { return d.node_id; });
-            // enter: generate and place reaction
-            sel.enter().call(create_node);
-            // update: update when necessary
-            sel.call(update_node);
-            // exit
-            sel.exit().remove();
-
-	    // Draw the labels
-            sel = d3.select('#text-labels')
-                .selectAll('.text-label')
-                .data(make_array(o.drawn_text_labels, 'text_label_id'),
-                      function(d) { return d.text_label_id; });
-            // enter: generate and place reaction
-            sel.enter().call(create_text_label);
-            // update: update when necessary
-            sel.call(update_text_label);
-            // exit
-            sel.exit().remove();
-        }
-
-        function create_membrane(enter_selection) {
-	    enter_selection.append('rect')
-		.attr('class', 'membrane');
-	}
-
-        function update_membrane(update_selection) {
-            update_selection
-                .attr("width", function(d){ return o.scale.x_size(d.width); })
-                .attr("height", function(d){ return o.scale.y_size(d.height); })
-                .attr("transform", function(d){return "translate("+o.scale.x(d.x)+","+o.scale.y(d.y)+")";})
-                .style("stroke-width", function(d) { return o.scale.size(10); })
-                .attr('rx', function(d){ return o.scale.x_size(20); })
-                .attr('ry', function(d){ return o.scale.x_size(20); });
-        }
-
-        function create_reaction(enter_selection) {
-            // attributes for new reaction group
-
-            var t = enter_selection.append('g')
-                    .attr('id', function(d) { return d.reaction_id; })
-                    .attr('class', 'reaction')
-                    .call(create_reaction_label);
-            return;
-        }
-
-        function update_reaction(update_selection) {
-            // update reaction label
-            update_selection.select('.reaction-label')
-                .call(update_reaction_label);
-
-            // select segments
-            var sel = update_selection
-                    .selectAll('.segment-group')
-                    .data(function(d) {
-                        return make_array(d.segments, 'segment_id');
-                    }, function(d) { return d.segment_id; });
-
-            // new segments
-            sel.enter().call(create_segment);
-
-            // update segments
-            sel.call(update_segment);
-
-            // old segments
-            sel.exit().remove();
-        }
-
-        function create_reaction_label(sel) {
-            /* Draw reaction label for selection.
-	     */
-            sel.append('text')
-		.text(function(d) { return d.abbreviation; })
-                .attr('class', 'reaction-label label')
-                .attr('pointer-events', 'none');
-        }
-
-        function update_reaction_label(sel) {
-	    sel
-		.attr('transform', function(d) {
-                    return 'translate('+o.scale.x(d.label_x)+','+o.scale.y(d.label_y)+')';
-		})
-                .style("font-size", function(d) {
-		    return String(o.scale.size(30))+"px";
-                });
-        }
-
-        function create_segment(enter_selection) {
-            // create segments
-            var g = enter_selection
-                    .append('g')
-                    .attr('class', 'segment-group')
-                    .attr('id', function(d) { return d.segment_id; });
-
-            // create reaction arrow
-            g.append('path')
-                .attr('class', 'segment');
-
-	    g.append('g')
-		.attr('class', 'beziers');
-
-	    // THE FOLLOWING IS ALL TERRIBLE
-
-
-	    // g.append('circle')
-	    // 	.attr('class', 'bezier bezier1')
-	    // 	.style('stroke-width', String(o.scale.size(1))+'px') 
-	    // 	.call(d3.behavior.drag()
-	    // 	      .on("dragstart", drag_silence)
-	    // 	      .on("drag", drag_move_1))		
-	    // 	.on("mouseover", function(d) {
-	    // 	    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
-	    // 	})
-	    // 	.on("mouseout", function(d) {
-	    // 	    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
-	    // 	});
-
-	    // // TODO fix this hack
-	    // g.append('circle')
-	    // 	.attr('class', 'bezier bezier2')
-	    // 	.style('stroke-width', String(o.scale.size(1))+'px') 
-	    // 	.call(d3.behavior.drag()
-	    // 	      .on("dragstart", drag_silence)
-	    // 	      .on("drag", drag_move_2))
-	    // 	.on("mouseover", function(d) {
-	    // 	    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
-	    // 	})
-	    // 	.on("mouseout", function(d) {
-	    // 	    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
-	    // 	});
-
-	    // // definitions
-	    // function drag_silence() {
-	    // 	// silence other listeners
-            //     d3.event.sourceEvent.stopPropagation();
-	    // }
-	    // function drag_move_1() { 
-	    // 	// TODO fix this hack too
-	    // 	var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
-	    // 	    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
-	    // 	var seg = o.drawn_reactions[reaction_id].segments[segment_id],
-	    // 	    dx = o.scale.x_size.invert(d3.event.dx),
-	    // 	    dy = o.scale.y_size.invert(d3.event.dy);
-	    // 	seg.b1.x = seg.b1.x + dx;
-	    // 	seg.b1.y = seg.b1.y + dy;
-	    // 	draw_specific_reactions([reaction_id]);
-	    // }
-	    // function drag_move_2() { 
-	    // 	// TODO fix this hack too
-	    // 	var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
-	    // 	    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
-	    // 	var seg = o.drawn_reactions[reaction_id].segments[segment_id],
-	    // 	    dx = o.scale.x_size.invert(d3.event.dx),
-	    // 	    dy = o.scale.y_size.invert(d3.event.dy);
-	    // 	seg.b2.x = seg.b2.x + dx;
-	    // 	seg.b2.y = seg.b2.y + dy;
-	    // 	draw_specific_reactions([reaction_id]);
-	    // }
-	}
-        
-        function update_segment(update_selection) {
-            // update segment attributes
-            // update arrows
-            update_selection
-                .selectAll('.segment')
-                .datum(function() {
-                    return this.parentNode.__data__;
-                })
-                .attr('d', function(d) {
-		    if (d.from_node_id==null || d.to_node_id==null)
-			return null;
-		    var start = o.drawn_nodes[d.from_node_id],
-			end = o.drawn_nodes[d.to_node_id],
-			b1 = d.b1,
-			b2 = d.b2;
-		    // if metabolite, then displace the arrow
-		    if (start['node_type']=='metabolite') {
-			start = displaced_coords(start, end, 'start');
-			b1 = displaced_coords(b1, end, 'start');
-		    }
-		    if (end['node_type']=='metabolite') {
-			end = displaced_coords(start, end, 'end');
-			b2 = displaced_coords(start, b2, 'end');
-		    }
-		    if (d.b1==null || d.b2==null) {
-			return 'M'+o.scale.x(start.x)+','+o.scale.y(start.y)+' '+
-			    o.scale.x(end.x)+','+o.scale.y(end.y);
-		    } else {
-			return 'M'+o.scale.x(start.x)+','+o.scale.y(start.y)+
-                            'C'+o.scale.x(b1.x)+','+o.scale.y(b1.y)+' '+
-                            o.scale.x(b2.x)+','+o.scale.y(b2.y)+' '+
-                            o.scale.x(end.x)+','+o.scale.y(end.y);
-		    }
-                }) // TODO replace with d3.curve or equivalent
-                .attr("marker-start", function (d) {
-		    var start = o.drawn_nodes[d.from_node_id];
-		    if (start['node_type']=='metabolite') {
-			var c = d.flux ? o.scale.flux_color(Math.abs(d.flux)) :
-				o.default_reaction_color;
-			// generate arrowhead for specific color
-			var arrow_id = generate_arrowhead_for_color(c, false);
-			return "url(#" + arrow_id + ")";
-		    } else { return null; };
-                })     
-		.attr("marker-end", function (d) {
-		    var end = o.drawn_nodes[d.to_node_id];
-		    if (end['node_type']=='metabolite') {
-			var c = d.flux ? o.scale.flux_color(Math.abs(d.flux)) :
-				o.default_reaction_color;
-			// generate arrowhead for specific color
-			var arrow_id = generate_arrowhead_for_color(c, true);
-			return "url(#" + arrow_id + ")";
-		    } else { return null; };
-                })
-                .style('stroke', function(d) {
-		    if (o.flux) 
-			return d.flux ? o.scale.flux_color(Math.abs(d.flux)) : o.scale.flux_color(0);
-		    else
-			return o.default_reaction_color;
-		})
-		.style('stroke-width', function(d) {
-		    return d.flux ? o.scale.size(o.scale.flux(Math.abs(d.flux))) :
-			o.scale.size(o.scale.flux(1));
-                });
-
-	    // new bezier points
-	    var bez = update_selection.select('.beziers')
-		    .selectAll('.bezier')
-		    .data(function(d) {
-			var beziers = [];
-			if (d.b1!=null && d.b1.x!=null && d.b1.y!=null)
-			    beziers.push({'bezier': 1, x:d.b1.x, y:d.b1.y});
-			if (d.b2!=null && d.b2.x!=null && d.b2.y!=null)
-			    beziers.push({'bezier': 2, x:d.b2.x, y:d.b2.y});
-			return beziers;
-		    }, function(d) { return d.bezier; });
-	    bez.enter().call(create_bezier);
-	    // update bezier points
-	    bez.call(update_bezier);
-	    // remove
-	    bez.exit().remove();
-
-	    function create_bezier(enter_selection) {
-	    	enter_selection.append('circle')
-	    	    .attr('class', function(d) { return 'bezier bezier'+d.bezier; })
-	    	    .style('stroke-width', String(o.scale.size(1))+'px')	
-    		    .attr('r', String(o.scale.size(5))+'px');
-	    }
-	    function update_bezier(update_selection) {
-		if (o.show_beziers) {
-	    	    // draw bezier points
-		    update_selection
-			.attr('visibility', 'visible')
-			.attr('transform', function(d) {
-	    		    if (d.x==null || d.y==null) return ""; 
-			    return 'translate('+o.scale.x(d.x)+','+o.scale.y(d.y)+')';
-			});
-		    console.log(update_selection);
-		} else {
-	    	    update_selection.attr('visibility', 'hidden');
-		}
-	    }
-        }
-
-	function create_node(enter_selection) {
-            // create nodes
-            var g = enter_selection
-                    .append('g')
-                    .attr('class', 'node')
-                    .attr('id', function(d) { return d.node_id; });
-
-            // create metabolite circle and label
-            g.append('circle')
-		.attr('class', function(d) {
-		    if (d.node_type=='metabolite') return 'node-circle metabolite-circle';
-		    else return 'node-circle';
-		})		
-                .style('stroke-width', String(o.scale.size(2))+'px')
-		.on("mouseover", function(d) {
-		    d3.select(this).style('stroke-width', String(o.scale.size(3))+'px');
-		})
-		.on("mouseout", function(d) {
-		    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
-		})
-                .call(d3.behavior.drag()
-                      .on("dragstart", drag_silence)
-                      .on("drag", drag_move))
-                .on("click", function(d) { 
-		    select_metabolite(this, d, o.sel.select('#nodes').selectAll('.node'), o.shift_key_on);
-		});
-
-            g.append('text')
-                .attr('class', 'node-label label')
-                .text(function(d) { return d.metabolite_simpheny_id; })
-                .attr('pointer-events', 'none');
-
-            function drag_silence() {
-		// silence other listeners
-                d3.event.sourceEvent.stopPropagation();
-            }
-            function drag_move() {
-		var grabbed_id = this.parentNode.__data__.node_id,		    
-                    selected_ids = [];
-		d3.select('#nodes').selectAll('.selected').each(function(d) { selected_ids.push(d.node_id); });
-		if (selected_ids.indexOf(grabbed_id)==-1) { 
-		    console.log('Dragging unselected node');
-		    return;
-		}
-
-		var reaction_ids = [];
-		// update node positions
-		d3.selectAll('.node').each(function(d) {
-		    if (selected_ids.indexOf(d.node_id)==-1) return;
-		    // update data
-                    var node = o.drawn_nodes[d.node_id],
-			dx = o.scale.x_size.invert(d3.event.dx),
-			dy = o.scale.y_size.invert(d3.event.dy);
-                    node.x = node.x + dx; 
-		    node.y = node.y + dy;
-		    // update node labels
-                    node.label_x = node.label_x + dx;
-		    node.label_y = node.label_y + dy;
-
-		    // update connected reactions
-		    d.connected_segments.map(function(segment_object) {
-			shift_beziers_for_segment(segment_object.reaction_id, segment_object.segment_id, 
-						  d.node_id, dx, dy);
-			reaction_ids.push(segment_object.reaction_id);
-		    });
-		});
-
-		draw_specific_nodes(selected_ids);
-		draw_specific_reactions(reaction_ids);
-
-		// definitions
-		function shift_beziers_for_segment(reaction_id, segment_id, node_id, dx, dy) {
-		    var seg = o.drawn_reactions[reaction_id].segments[segment_id];
-		    if (seg.from_node_id==node_id && seg.b1) {
-			seg.b1.x = seg.b1.x + dx;
-			seg.b1.y = seg.b1.y + dy;
-		    }
-		    if (seg.to_node_id==node_id && seg.b2) {
-			seg.b2.x = seg.b2.x + dx;
-			seg.b2.y = seg.b2.y + dy;
-		    }
-		}
-            }
-	}
-
-	function update_node(update_selection) {
-            // update circle and label location
-            var mg = update_selection
-                    .select('.node-circle')
-                    .attr('transform', function(d) {
-                        return 'translate('+o.scale.x(d.x)+','+o.scale.y(d.y)+')';
-                    })
-		    .attr('r', function(d) { 
-			if (d.node_type!='metabolite') return o.scale.size(5);
-			else return o.scale.size(d.node_is_primary ? 15 : 10); 
-		    })
-                    .classed('selected', function(d) {
-			if (is_sel(d)) return true;
-			return false;
-                    });
-
-            update_selection
-                .select('.node-label')
-                .attr('transform', function(d) {
-                    return 'translate('+o.scale.x(d.label_x)+','+o.scale.y(d.label_y)+')';
-                })
-                .style("font-size", function(d) {
-		    return String(o.scale.size(20))+"px";
-                });
-
-	    // definitions
-            function is_sel(d) {
-                if (d.node_id==o.selected_node.node_id &&
-                    o.selected_node.is_selected)
-                    return true;
-                return false;
-            };
-	}
-
-        function create_text_label(enter_selection) {
-	    enter_selection.append('text')
-		.attr('class', 'text-label label')
-		.text(function(d) { return d.text; });
-	}
-
-        function update_text_label(update_selection) {
-            update_selection
-                .attr("transform", function(d) { return "translate("+o.scale.x(d.x)+","+o.scale.y(d.y)+")";});
-        }
-
-	// Specific drawing methods
-        function draw_specific_reactions(reaction_ids) {
-            // find reactions for reaction_ids
-            var reaction_subset = {},
-                i = -1;
-            while (++i<reaction_ids.length) {
-                reaction_subset[reaction_ids[i]] = utils.clone(o.drawn_reactions[reaction_ids[i]]);
-            }
-            if (reaction_ids.length != Object.keys(reaction_subset).length) {
-                console.warn('did not find correct reaction subset');
-            }
-
-            // generate reactions for o.drawn_reactions
-            // assure constancy with cobra_id
-            var sel = d3.select('#reactions')
-                    .selectAll('.reaction')
-                    .data(make_array(reaction_subset, 'reaction_id'),
-                          function(d) { return d.reaction_id; });
-
-            // enter: generate and place reaction
-            sel.enter().call(create_reaction);
-
-            // update: update when necessary
-            sel.call(update_reaction);
-
-            // exit
-            sel.exit();
-        }
-
-	function draw_specific_nodes(node_ids) {
-            // find nodes for node_ids
-            var node_subset = {},
-                i = -1;
-            while (++i<node_ids.length) {
-                node_subset[node_ids[i]] = utils.clone(o.drawn_nodes[node_ids[i]]);
-            }
-            if (node_ids.length != Object.keys(node_subset).length) {
-                console.warn('did not find correct node subset');
-            }
-
-            // generate nodes for o.drawn_nodes
-            // assure constancy with cobra_id
-            var sel = d3.select('#nodes')
-                    .selectAll('.node')
-                    .data(make_array(node_subset, 'node_id'),
-                          function(d) { return d.node_id; });
-
-            // enter: generate and place node
-            sel.enter().call(create_node);
-
-            // update: update when necessary
-            sel.call(update_node);
-
-            // exit
-            sel.exit();
-	}
 
         function translate_off_screen(coords) {
             // shift window if new reaction will draw off the screen
@@ -1053,13 +645,13 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             }
         }
 
-        function coords_for_selected_node() {
-            if (o.selected_node.is_selected)
-                return get_coords_for_node(o.selected_node.node_id);
-            else
-                console.log('no node selected');
-            return {'x':0, 'y':0};
-        }
+        // function coords_for_selected_node() {
+        //     if (o.selected_node.is_selected)
+        //         return get_coords_for_node(o.selected_node.node_id);
+        //     else
+        //         console.log('no node selected');
+        //     return {'x':0, 'y':0};
+        // }
 
         function get_coords_for_node(node_id) {
             var node = o.drawn_nodes[node_id],
@@ -1067,124 +659,88 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
             return coords;
         }
 
-        function cycle_primary_key() {
-            /* Cycle the primary metabolite among the products of the selected reaction.
-	     *
-	     */
+        // function cycle_primary_key() {
+        //     /* Cycle the primary metabolite among the products of the selected reaction.
+	//      *
+	//      */
 
-            if (!o.selected_node.is_selected) {
-                console.log('no selected node');
-                return;
-            }
+        //     // if (!o.selected_node.is_selected) {
+        //     //     console.log('no selected node');
+        //     //     return;
+        //     // }
 
-            // get last index
-            var last_index, count;
-            var reaction = o.drawn_reactions[o.selected_node.reaction_id];
-            for (var metabolite_id in reaction.segments) {
-                var metabolite = reaction.segments[metabolite_id];
-                if ((metabolite.coefficient > 0 && o.selected_node.direction=="product") ||
-                    (metabolite.coefficient < 0 && o.selected_node.direction=="reactant")) {
-                    if (metabolite.is_primary) {
-                        last_index = metabolite.index;
-                        count = metabolite.count;
-                    }
-                }
-            }
-            // rotate to new index
-            var index = last_index + 1 < count - 1 ? last_index + 1 : 0;
-            rotate_primary_key(index);
-        }
+        //     // get last index
+        //     var last_index, count;
+        //     var reaction = o.drawn_reactions[o.selected_node.reaction_id];
+        //     for (var metabolite_id in reaction.segments) {
+        //         var metabolite = reaction.segments[metabolite_id];
+        //         if ((metabolite.coefficient > 0 && o.selected_node.direction=="product") ||
+        //             (metabolite.coefficient < 0 && o.selected_node.direction=="reactant")) {
+        //             if (metabolite.is_primary) {
+        //                 last_index = metabolite.index;
+        //                 count = metabolite.count;
+        //             }
+        //         }
+        //     }
+        //     // rotate to new index
+        //     var index = last_index + 1 < count - 1 ? last_index + 1 : 0;
+        //     rotate_primary_key(index);
+        // }
 
-        function rotate_primary_key(index) {
-            /* Switch the primary metabolite to the index of a particular product.
-	     */
+        // function rotate_primary_key(index) {
+        //     /* Switch the primary metabolite to the index of a particular product.
+	//      */
 
-            if (!o.selected_node.is_selected) {
-                console.warn('no selected node');
-                return;
-            }
+        //     if (!o.selected_node.is_selected) {
+        //         console.warn('no selected node');
+        //         return;
+        //     }
 
-            // update primary in o.drawn_reactions
-            var new_primary_metabolite_id;
-            var reaction = o.drawn_reactions[o.selected_node.reaction_id];
+        //     // update primary in o.drawn_reactions
+        //     var new_primary_metabolite_id;
+        //     var reaction = o.drawn_reactions[o.selected_node.reaction_id];
 
-            // if primary is selected, then maintain that selection
-            var sel_is_primary = reaction.segments[o.selected_node.metabolite_id].is_primary,
-                should_select_primary = sel_is_primary ? true : false;
+        //     // if primary is selected, then maintain that selection
+        //     var sel_is_primary = reaction.segments[o.selected_node.metabolite_id].is_primary,
+        //         should_select_primary = sel_is_primary ? true : false;
 
-            for (var metabolite_id in reaction.segments) {
-                var metabolite = reaction.segments[metabolite_id];
-                if ((metabolite.coefficient > 0 && o.selected_node.direction=="product") ||
-                    (metabolite.coefficient < 0 && o.selected_node.direction=="reactant")) {
-                    if (metabolite.index == index) {
-                        metabolite.is_primary = true;
-                        new_primary_metabolite_id = metabolite_id;
-                    } else {
-                        metabolite.is_primary = false;
-                    }
-                    // calculate coordinates of metabolite components
-                    metabolite = utils.calculate_new_metabolite_coordinates(metabolite,
-									    index,
-                                                                            reaction.main_axis,
-									    reaction.center,
-									    reaction.dis);
-                }
-            }
+        //     for (var metabolite_id in reaction.segments) {
+        //         var metabolite = reaction.segments[metabolite_id];
+        //         if ((metabolite.coefficient > 0 && o.selected_node.direction=="product") ||
+        //             (metabolite.coefficient < 0 && o.selected_node.direction=="reactant")) {
+        //             if (metabolite.index == index) {
+        //                 metabolite.is_primary = true;
+        //                 new_primary_metabolite_id = metabolite_id;
+        //             } else {
+        //                 metabolite.is_primary = false;
+        //             }
+        //             // calculate coordinates of metabolite components
+        //             metabolite = utils.calculate_new_metabolite_coordinates(metabolite,
+	// 								    index,
+        //                                                                     reaction.main_axis,
+	// 								    reaction.center,
+	// 								    reaction.dis);
+        //         }
+        //     }
 
-            var coords;
-            if (should_select_primary) {
-                o.selected_node.node_id = new_primary_node_id;
-                coords = get_coords_for_node(o.selected_node.node_id);
-            } else {
-                coords = get_coords_for_node(o.selected_node.node_id);
-            }
+        //     var coords;
+        //     if (should_select_primary) {
+        //         o.selected_node.node_id = new_primary_node_id;
+        //         coords = get_coords_for_node(o.selected_node.node_id);
+        //     } else {
+        //         coords = get_coords_for_node(o.selected_node.node_id);
+        //     }
 
-            draw_specific_reactions([o.selected_node.reaction_id]);
-        }
+        //     draw_specific_reactions([o.selected_node.reaction_id]);
+        // }
 
         function select_metabolite(sel, d, node_selection, shift_key_on) {
 	    if (shift_key_on) d3.select(sel.parentNode).classed("selected", !d3.select(sel.parentNode).classed("selected")); //d.selected = !d.selected);
             else node_selection.classed("selected", function(p) { return d === p; });
 	    var selected_nodes = d3.select('.selected');
-	    if (selected_nodes.length==1 && reaction_input_is_visible())
-                reload_reaction_input(coords_for_selected_node(selected_nodes[0]));
+	    // if (selected_nodes.length==1 && reaction_input_is_visible())
+            //     reload_reaction_input(coords_for_selected_node(selected_nodes[0]));
 	}
-    
-	function displaced_coords(start, end, displace) {
-	    var length = o.reaction_arrow_displacement,
-		hyp = utils.distance(start, end),
-		new_x, new_y;
-	    if (displace=='start') {
-		new_x = start.x + length * (end.x - start.x) / hyp,
-		new_y = start.y + length * (end.y - start.y) / hyp;
-	    } else if (displace=='end') {
-		new_x = end.x - length * (end.x - start.x) / hyp,
-		new_y = end.y - length * (end.y - start.y) / hyp;
-	    } else { console.error('bad displace value: ' + displace); }
-	    return {x: new_x, y: new_y};
-	}
-
-        function make_array(obj, id_key) { // is this super slow?
-            var array = [];
-            for (var key in obj) {
-                // copy object
-                var it = utils.clone(obj[key]);
-                // add key as 'id'
-                it[id_key] = key;
-                // add object to array
-                array.push(it);
-            }
-            return array;
-        }
-
-        function reset() {
-	    d3.select('#membranes')
-                .selectAll('.membrane')
-                .remove();
-	    d3.select('#reactions')
-                .selectAll('.reaction')
-                .remove();
-        }
 
 	function rotate_reaction_id(cobra_id, angle, center) {
 	    /* Rotate reaction with cobra_id in o.drawn_reactions around center.
@@ -1235,51 +791,6 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    return reaction;
         }
 	
-
-        function generate_arrowhead_for_color(color, is_end) {
-            var pref;
-            if (is_end) pref = 'start-';
-            else        pref = 'end-';
-
-            var id = String(color).replace('#', pref);
-            if (o.arrowheads_generated.indexOf(id) < 0) {
-                o.arrowheads_generated.push(id);
-
-                var markerWidth = 5,
-                    markerHeight = 5,
-                    // cRadius = 0, // play with the cRadius value
-                    // refX = cRadius + (markerWidth * 2),
-                    // refY = -Math.sqrt(cRadius),
-                    // drSub = cRadius + refY;
-                    refX,
-                    refY = markerWidth/2,
-                    d;
-
-                if (is_end) refX = 0;
-                else        refX = markerHeight;
-                if (is_end) d = 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
-                else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
-
-                // generate defs if it doesn't exist
-                var defs = o.svg.select("defs");
-                if (defs.empty()) defs = o.svg.append("svg:defs");
-
-                // make the marker
-                defs.append("svg:marker")
-                    .attr("id", id)
-                    .attr("class", "arrowhead")
-                    .attr("refX", refX)
-                    .attr("refY", refY)
-                    .attr("markerWidth", markerWidth)
-                    .attr("markerHeight", markerHeight)
-                    .attr("orient", "auto")
-                    .append("svg:path")
-                    .attr("d", d)
-                    .style("fill", color);
-            }
-            return id;
-        }
-
         function reaction_input_is_visible() {
             return (o.reaction_input.selection.style("display")!="none");
         }
@@ -1423,13 +934,13 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3", "lib/complete.ly"], fun
 	    o.show_beziers = true;
 	    d3.select(this).text('Hide control points')
 		.on('click', cmd_hide_beziers);
-	    draw();
+	    draw_everything();
 	}
 	function cmd_hide_beziers() {
 	    o.show_beziers = false;
 	    d3.select(this).text('Show control points')
 		.on('click', cmd_show_beziers);
-	    draw();
+	    draw_everything();
 	}
 	function cmd_zoom_on() {
 	    o.zoom_enabled = true;
