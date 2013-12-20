@@ -110,14 +110,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
 	    // import map
 	    var max_w = o.width, max_h = o.height;
 	    if (o.map) {
-		out = import_and_load_map(o.map, o.height, o.width);
+		import_and_load_map(o.map, o.height, o.width);
 	    } else {
-		o.membranes = [];
-		max_w = o.width;
-		max_h = o.height;
+		o.drawn_membranes = [];
+		o.map_info = { max_map_w: o.width, max_map_h: o.height };
 
 		// set up svg and svg definitions
-		o.scale = utils.define_scales(max_w, max_h,
+		o.scale = utils.define_scales(o.map_info.max_map_w, o.map_info.max_map_h,
 					      o.width, o.height);
 	    }
 
@@ -340,7 +339,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
 	    }
 	}
 	function draw_everything() {
-	    draw.draw(o.membranes, o.drawn_reactions, o.drawn_nodes, o.drawn_text_labels, o.scale, 
+	    draw.draw(o.drawn_membranes, o.drawn_reactions, o.drawn_nodes, o.drawn_text_labels, o.scale, 
 		      o.show_beziers, o.reaction_arrow_displacement, o.defs, o.arrowheads_generated,
 		      o.default_reaction_color, has_flux(), 
 		      node_click, node_drag, node_dragstart);
@@ -435,12 +434,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
 	}
 	function import_and_load_map(map) {
 	    map = import_map(map);
-	    o.drawn_reactions = map.reactions;
-	    o.drawn_nodes = map.nodes;
-	    o.membranes = map.membranes;
-	    o.drawn_text_labels = map.text_labels;
+	    o.drawn_reactions = map.reactions ? map.reactions : {};
+	    o.drawn_nodes = map.nodes ? map.nodes : {};
+	    o.drawn_membranes = map.membranes ? map.membranes : [];
+	    o.drawn_text_labels = map.text_labels ? map.text_labels : {};
+	    o.map_info = map.info ? map.info : {};
 	    // set up svg and svg definitions
-	    o.scale = utils.define_scales(map.info.max_map_w, map.info.max_map_h,
+	    o.scale = utils.define_scales(o.map_info.max_map_w, o.map_info.max_map_h,
 					  o.width, o.height);
 	    // reset zoom
 	    if (o.zoom) {
@@ -450,6 +450,19 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
                 o.sel.attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
 	    }
 	}
+	function map_for_export() {
+	    // var exported_node_props = ['node_type', 'x', 'y', TODO make minimal map for export
+	    // 			       'connected_segments'],
+	    // 	exported_reaction_props = ["segments", 'name', 'direction', 'abbreviation'],
+	    // 	exported_segment_props = ['from_node_id', 'to_node_id'],
+	    // 	exported_text_label_props = ['text', 'x', 'y'];
+	    var membranes = utils.clone(o.drawn_membranes),
+		nodes = utils.clone(o.drawn_nodes),
+		reactions = utils.clone(o.drawn_reactions),
+		text_labels = utils.clone(o.drawn_text_labels),
+		info = utils.clone(o.map_info);
+	    return { membranes: membranes, nodes: nodes, reactions: reactions, text_labels: text_labels, info: info };
+	}   
 
         function set_status(status) {
             // TODO put this in js/metabolic-map/utils.js
@@ -926,7 +939,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "lib/d3", "lib/co
         }
         function cmd_save() {
             console.log("Saving");
-            utils.download_json(o.drawn_reactions, "map");
+            utils.download_json(map_for_export(), "saved_map");
         }
         function cmd_load() {
             console.log("Loading");
