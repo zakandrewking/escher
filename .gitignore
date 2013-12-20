@@ -10,3 +10,4 @@ build/
 TAGS
 visbio*.js
 pub/*
+builder-json
