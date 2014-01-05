@@ -5,6 +5,9 @@ import pprint
 from math import atan2
 from itertools import izip
 from numpy import inf
+from os.path import join
+from os import listdir
+import logging
 
 PP = pprint.PrettyPrinter(indent=4)
         
@@ -30,7 +33,7 @@ def main():
                      ...
                     },
       'nodes': {unique_int: {'node_type': '',
-                              'compartment_id': '',
+                              'compartment_name': '',
                               'x': 5.0,
                               'y': 5.0,
                               'metabolite_name': '',
@@ -53,18 +56,38 @@ def main():
 
     """
     try:
-        in_file = sys.argv[1]
-        out_file = sys.argv[2]
+        in_directory = sys.argv[1]
+        out_directory = sys.argv[2]
     except IndexError:
         raise Exception("Not enough arguments")
 
-    if in_file.endswith('.gz'):
-        with gzip.open(in_file, "r") as f:
+    
+    try:
+        # export just this map
+        map_name = sys.argv[3]
+        save_map(in_directory, map_name+".json.gz", out_directory)
+    except KeyError:
+        # export all maps
+        for filename in listdir(in_directory):
+            save_map(in_directory, filename, out_directory)
+            
+def save_map(in_directory, in_file, out_directory):
+    
+    if in_file.endswith('.json.gz'):
+        with gzip.open(join(in_directory, in_file), "r") as f:
             data = json.load(f)
+        out_file = join(out_directory, in_file.replace('.json.gz', '_map.json'))
+    elif in_file.endswith('.json'):
+        with open(join(in_directory, in_file), "r") as f:
+            data = json.load(f)
+        out_file = join(out_directory, in_file.replace('.json', '_map.json'))
     else:
-        with open(in_file, "r") as f:
-            data = json.load(f)
+        logging.warn('Not loading file %s' % in_file)
 
+    # get the compartment dictionary
+    with open(join(in_directory, "../compartment_id_key.json"), 'r') as f:
+        compartment_id_dictionary = json.load(f)
+            
     # major categories
     reactions = []; line_segments = []; text_labels = []; nodes = []
     for k, v in data.iteritems():
@@ -76,7 +99,7 @@ def main():
             raise Exception('Unrecognized category: %s' % k)
         
     # do the nodes
-    nodes = parse_node(nodes)
+    nodes = parse_node(nodes, compartment_id_dictionary)
 
     # do the segments
     segment_id = 0
@@ -110,7 +133,7 @@ def main():
         if 'segments' not in reaction: reaction['segments'] = {}
         reaction['segments'][segment_id] = segment
         segment_id = segment_id + 1
-
+        
     # do the reactions
     reactions = parse_reactions(reactions)
 
@@ -127,9 +150,10 @@ def main():
     out = translate_everything(out)
     
     # for export, only keep the necessary stuff
-    node_keys_to_keep = ['node_type', 'compartment_id', 'x',
+    node_keys_to_keep = ['node_type', 'compartment_name', 'x',
                          'y', 'metabolite_name',
-                         'metabolite_simpheny_id', 'label_x',
+                         'metabolite_simpheny_id', 'metabolite_simpheny_id_compartmentalized',
+                         'label_x',
                          'label_y', 'node_is_primary',
                          'connected_segments']
     segment_keys_to_keep = ['from_node_id', 'to_node_id', 'b1', 'b2']
@@ -161,21 +185,29 @@ def main():
         
     with open(out_file, 'w') as f: json.dump(out, f)
 
-def parse_node(nodes):
+def parse_node(nodes, compartment_id_key):
     for node in nodes:
         # assign new keys
         node['node_type'] = node['MAPNODENODETYPE'].lower()
 
         try_assignment(node, 'MAPNODEPOSITIONX', 'x', cast=float)
         try_assignment(node, 'MAPNODEPOSITIONY', 'y', cast=float)
-        try_assignment(node, 'MAPNODECOMPARTMENT_ID', 'compartment_id', cast=int)
         try_assignment(node, 'MOLECULEOFFICIALNAME', 'metabolite_name')
         try_assignment(node, 'MOLECULEABBREVIATION', 'metabolite_simpheny_id')
         try_assignment(node, 'MAPNODELABELPOSITIONX', 'label_x', cast=float)
         try_assignment(node, 'MAPNODELABELPOSITIONY', 'label_y', cast=float)
         try_assignment(node, 'MAPNODEISPRIMARY', 'node_is_primary',
                        cast=lambda x: True if x=='Y' else False)
+        try_assignment(node, 'MAPNODECOMPARTMENT_ID', 'compartment_id', cast=int)
+        try_assignment(node, 'MAPNODECOMPARTMENT_ID', 'compartment_name',
+                       cast=lambda x: compartment_id_key[x])
 
+        try:
+            node['metabolite_simpheny_id_compartmentalized'] = "%s_%s" % (node['metabolite_simpheny_id'],
+                                                                          node['compartment_name'][:1])
+        except KeyError:
+            pass
+            
         node['id'] = node['MAPOBJECT_ID']
         
     # Make into dictionary
