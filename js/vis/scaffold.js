@@ -116,23 +116,26 @@ and width, or use the 'fill_screen' option.");
     function load_the_file(file, callback, value) {
         // if the value is specified, don't even need to do the ajax query
         if (value) {
-            if (file) {
-                console.log('file ' + file + ' overridden by value')
-            }
-            callback('', value, file);
+            if (file) console.warn('File ' + file + ' overridden by value.');
+            callback(null, value, file);
             return;
         }
         if (!file) {
             callback("No filename", null, file);
             return;
         }
-        if (ends_with(file, 'json')) d3.json(file, function(e, d) { callback(e, d, file); });
-        else if (ends_with(file, 'css')) d3.text(file, function(e, d) { callback(e, d, file); });
-        else callback("Unrecognized file type", null, file);
+        if (ends_with(file, 'json'))
+	    d3.json(file, function(e, d) { callback(e, d, file); });
+        else if (ends_with(file, 'css'))
+	    d3.text(file, function(e, d) { callback(e, d, file); });
+        else
+	    callback("Unrecognized file type", null, file);
         return;
 
         // definitions
-        function ends_with(str, suffix) { return str.indexOf(suffix, str.length - suffix.length) !== -1; }
+        function ends_with(str, suffix) {
+	    return str.indexOf(suffix, str.length - suffix.length) !== -1;
+	}
     };
     function load_files(files_to_load, final_callback) {
         // load multiple files asynchronously

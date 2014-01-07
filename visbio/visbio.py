@@ -2,14 +2,13 @@ from os.path import dirname, abspath, join, isfile, isdir
 from warnings import warn
 from urllib2 import urlopen
 import json
+import os
+import appdirs
 
-maps_dir = join(abspath(dirname(__file__)), "")
-map_cache_dir = join(maps_dir, "map_cache", "")
-static_dir = join(maps_dir, "static", "")
+static_dir = join(abspath(dirname(__file__)), "static", "")
 d3_filepath = join(static_dir, 'd3.v3.min.js')
 map_js_filepath = join(static_dir, 'visbio_map.js')
-with open(join(static_dir, 'map.css')) as infile:
-    style = infile.read().replace("\n", " ")
+
 ipython_html = """
 <style>
 .overlay {
@@ -18,11 +17,24 @@ ipython_html = """
 }
 </style>
 <button onclick="download_map('map%d')">Download svg</button>
-<div id="map%d" style="height:400px;"></div>"""
-
+<div id="map%d" style="height:800px;"></div>"""
 
 map_download_url = "http://zakandrewking.github.io/visbio/maps/"
 map_download_display_url = "http://zakandrewking.github.io/visbio/"
+
+def get_maps_cache_dir():
+    cache_dir = appdirs.user_cache_dir('visbio', appauthor="Zachary King")
+    map_cache_dir = join(cache_dir, "map_cache", "")
+    try:
+        os.makedirs(map_cache_dir)
+    except OSError:
+        pass
+    return map_cache_dir
+
+def get_style():
+    with open(join(static_dir, 'map.css')) as infile:
+        style = infile.read().replace("\n", " ")
+    return style
 
 class Map(object):
     """Viewable metabolic map
@@ -39,15 +51,13 @@ class Map(object):
         if map_name.endswith(".json"):
             warn("Map file name should not include .json")
         # if the file is not present attempt to download
-        map_filename = join(maps_dir, "map_cache", map_name + ".json")
+        maps_cache_dir = get_maps_cache_dir()
+        map_filename = join(maps_cache_dir, map_name + ".json")
         if not isfile(map_filename):
             map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
                 (map_name, map_download_display_url)
             warn(map_not_cached)
             from urllib2 import urlopen, HTTPError
-            if not isdir(map_cache_dir):
-                from os import mkdir
-                mkdir(map_cache_dir)
             try:
                 download = urlopen(map_download_url + map_name + ".json")
                 with open(map_filename, "w") as outfile:
@@ -80,7 +90,7 @@ class Map(object):
             "var " + d3, map_js,
             "var map_data = %s;" % self.map_json,
             "var flux = %s;" % json.dumps(self.flux),
-            'var style = "%s";' % style])
+            'var style = "%s";' % get_style()])
         return javascript
 
     def create_standalone_html(self, outfilepath=None):
