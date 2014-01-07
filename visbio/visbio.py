@@ -17,7 +17,7 @@ ipython_html = """
 }
 </style>
 <button onclick="download_map('map%d')">Download svg</button>
-<div id="map%d" style="height:400px;"></div>"""
+<div id="map%d" style="height:800px;"></div>"""
 
 map_download_url = "http://zakandrewking.github.io/visbio/maps/"
 map_download_display_url = "http://zakandrewking.github.io/visbio/"
