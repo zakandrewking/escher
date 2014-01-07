@@ -8,7 +8,10 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             fill_screen: false,
             categories: [],
             css_path: "css/category-legend.css",
-            squares: true });
+            update_hook: false,
+            squares: true,
+	    labels_align: 'right',
+	    colors: d3.scale.category20() });
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
                                      o.margins, o.fill_screen);
@@ -23,7 +26,7 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
         });
         o.layers = [];
 
-        o.color_scale = d3.scale.category20().domain(o.categories);
+        o.color_scale = o.colors.domain(o.categories);
 
         // load the css
         d3.text(o.css_path, function(error, text) {
@@ -39,7 +42,8 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
 
         return {
             update: update,
-            get_scale: function () { return o.color_scale; }
+            get_scale: function () { return o.color_scale; },
+            update_hook: set_update_hook
         };
 
         function update() {
@@ -59,41 +63,55 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             var radius = 10,
             legend_w = o.width;
 
+	    var colors;
             if (o.squares) {
-                svg.selectAll('circle')
+                colors = svg.selectAll('circle')
                     .data(o.categories)
                     .enter()
                     .append('rect')
                     .attr("class", "legend-circle")
                     .attr('width', radius*2)
                     .attr('height', radius*2)
-                    .attr("transform", function(d, i) {
-                        return "translate("+(legend_w/2 - radius)+","+(i*25+20)+")";
-                    })
                     .attr('fill', function (d) { return o.color_scale(d); });
             } else {
-                svg.selectAll('circle')
+                colors = svg.selectAll('circle')
                     .data(o.categories)
                     .enter()
                     .append('circle')
                     .attr("class", "legend-circle")
                     .attr('r', radius)
-                    .attr("cx", legend_w/2 - radius)
-                    .attr("cy", function(d, i) { return i * 25+30; })
                     .attr('fill', function (d) { return o.color_scale(d); });
             }
-            svg.selectAll('text')
+	  
+            var text = svg.selectAll('text')
                 .data(o.categories)
                 .enter()
                 .append('text')
-                .attr("class", "legend-text")
-                .attr("text-anchor", "end")
-                .text(function (d) { return d; })
-                .attr('x', legend_w/2 - (3*radius))
-                .attr('y', function(d, i) {
-                    return (i*25)+30+radius/2;
-                });
+                    .attr("class", "legend-text");
 
+	    // align
+	    if (o.labels_align=='left') {
+                text.attr("text-anchor", "start")
+                    .text(function (d) { return d; })
+                    .attr('x', (4*radius))
+                    .attr('y', function(d, i) {
+			return (i*25)+30+radius/2;
+                    });
+		colors.attr("transform", function(d, i) {
+                    return "translate("+(radius)+","+(i*25+20)+")";
+                });
+	    } else if (o.labels_align=='right') {
+                text.attr("text-anchor", "end")
+                    .text(function (d) { return d; })
+                    .attr('x', legend_w/2 - (3*radius))
+                    .attr('y', function(d, i) {
+			return (i*25)+30+radius/2;
+                    });
+		colors.attr("transform", function(d, i) {
+                    return "translate("+(legend_w/2 - radius)+","+(i*25+20)+")";
+                });
+	    }		
+            if (o.update_hook) o.update_hook(svg);
             return this;
         };
 
@@ -106,5 +124,10 @@ define(["./scaffold", "lib/d3"], function (scaffold, d3) {
             height = parseFloat(sel.style('height')) - margins.top - margins.bottom;
             return {'width': width, 'height': height};
         };
+        function set_update_hook(fn) {
+            o.update_hook = fn;
+            return this;
+        };
+
     };
 });
