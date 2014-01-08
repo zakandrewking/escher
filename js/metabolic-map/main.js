@@ -623,6 +623,17 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
         }
 
         function parse_flux_1(data, flux) {
+
+	    // fix metabolite labels that shoule be reaction labels
+	    data.metabolite_labels = data.metabolite_labels.filter(function(d) {
+		if (d.text in flux) {
+		    data.reaction_labels.push(d);
+		    return false;
+		} else {
+		    return true;
+		}
+	    });
+
             data.reaction_paths = data.reaction_paths.map( function(o) {
                 if (o.id in flux) {
                     o.flux = parseFloat(flux[o.id]);
