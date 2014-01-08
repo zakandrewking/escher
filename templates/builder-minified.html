@@ -3,17 +3,16 @@
   <head>
     <title>Builder</title>
     <link rel="stylesheet" href="css/builder.css"/>
-    <link href="js/lib/builder/ui-lightness/jquery-ui-1.10.3.custom.css" rel="stylesheet">
-    <script src="js/lib/d3.v3.js"></script>
-    <script src="js/lib/jquery-2.0.3.js"></script>    
-    <script src="js/lib/builder/jquery-ui-1.10.3.custom.js"></script>
-    <script src="js/visbio.js"></script>
+    <script src="js/lib/d3.v3.min.js"></script>
+    <script src="js/visbio.min.js"></script>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   </head>
   <body>
     <script type="text/javascript">
-     visbio.builder({ fill_screen: true });
+     visbio.builder({ fill_screen: true,
+		     map_path: "data/maps/simpheny-maps/ijo-central.json",
+		     css_path: "css/metabolic-map.css" });
     </script>
   </body>
 </html>

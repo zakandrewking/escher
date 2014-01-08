@@ -1,8 +1,6 @@
 requirejs.config({
     baseUrl: 'js',
-    shim: {
-        "lib/builder/jquery-ui": {
-            "deps": ['lib/jquery']
-        }
+    paths: {
+        'lib/complete.ly': 'lib/complete.ly.1.0.1'
     }
 });

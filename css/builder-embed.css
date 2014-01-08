@@ -1,0 +1,60 @@
+#svg-container {
+    border: 1px solid grey;
+}
+.label {
+    font-family: sans-serif; 
+    font-style: italic; 
+    font-weight: bold; 
+    font-size: 8px; 
+    fill: black; 
+    stroke: none;
+    text-rendering: optimizelegibility;
+}
+.label .reaction-label {
+    fill: rgb(32, 32, 120);
+    text-rendering: optimizelegibility;
+}
+.node-circle {
+    fill: none;
+    stroke: rgb(50, 50, 50);
+}
+.selected .node-circle{
+    stroke: rgb(20, 113, 199);
+}
+.metabolite-circle {
+    fill: rgb(224, 134, 91);
+    stroke: rgb(162, 69, 16);
+}
+.selected .metabolite-circle {
+    stroke: rgb(5, 2, 0);
+}
+#misc-labels{
+    font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;
+}
+.line-arrow{
+    fill: none; 
+}
+.segment {
+    stroke: grey;
+    stroke-width: 3px;
+    fill: none;
+}
+.membrane {
+    fill: none;
+    stroke: rgb(255, 187, 0);
+}
+.brush .extent { 
+  fill-opacity: 0.1;
+  fill: black;
+  stroke: #fff;
+  shape-rendering: crispEdges;
+}
+.bezier {
+    fill: none;
+}
+.bezier1 {
+    stroke: red;
+}
+.bezier2 {
+    stroke: blue;
+}

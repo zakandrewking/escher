@@ -1,4 +1,5 @@
 *.json
+*.json.gz
 *.csv
 *.log
 .DS_Store
@@ -6,5 +7,8 @@
 .#*
 visbio.egg-info/
 build/
+TAGS
+visbio*.js
+builder-json
 pub/
 dist/
