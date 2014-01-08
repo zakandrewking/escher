@@ -249,7 +249,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
 
             apply_listeners();
 
-	    o.update_hook();
+	    o.update_hook(o.sel);
         }
         function draw_membranes() {
 
