@@ -549,23 +549,26 @@ and width, or use the 'fill_screen' option.");
     function load_the_file(file, callback, value) {
         // if the value is specified, don't even need to do the ajax query
         if (value) {
-            if (file) {
-                console.log('file ' + file + ' overridden by value')
-            }
-            callback('', value, file);
+            if (file) console.warn('File ' + file + ' overridden by value.');
+            callback(null, value, file);
             return;
         }
         if (!file) {
             callback("No filename", null, file);
             return;
         }
-        if (ends_with(file, 'json')) d3.json(file, function(e, d) { callback(e, d, file); });
-        else if (ends_with(file, 'css')) d3.text(file, function(e, d) { callback(e, d, file); });
-        else callback("Unrecognized file type", null, file);
+        if (ends_with(file, 'json'))
+	    d3.json(file, function(e, d) { callback(e, d, file); });
+        else if (ends_with(file, 'css'))
+	    d3.text(file, function(e, d) { callback(e, d, file); });
+        else
+	    callback("Unrecognized file type", null, file);
         return;
 
         // definitions
-        function ends_with(str, suffix) { return str.indexOf(suffix, str.length - suffix.length) !== -1; }
+        function ends_with(str, suffix) {
+	    return str.indexOf(suffix, str.length - suffix.length) !== -1;
+	}
     };
     function load_files(files_to_load, final_callback) {
         // load multiple files asynchronously
@@ -691,7 +694,8 @@ define('vis/bar',["./scaffold", "lib/d3"], function (scaffold, d3) {
             title: false,
             is_stacked: false,
             update_hook: false,
-            css_path: '' });
+            css_path: '',
+	    y_tick_format: d3.format("f") });
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
                                      o.margins, o.fill_screen);
@@ -805,7 +809,7 @@ define('vis/bar',["./scaffold", "lib/d3"], function (scaffold, d3) {
                                           { padding: o.plot_padding,
                                             x_ticks: 0,
                                             y_ticks: 5,
-                                            y_tick_format: d3.format("f") }),
+                                            y_tick_format: o.y_tick_format }),
             x = out.x, y = out.y;
             scaffold.add_generic_axis('x', o.x_axis_label, sel, out.x_axis,
                                       o.width, o.height, o.plot_padding);
@@ -1092,7 +1096,10 @@ define('vis/category-legend',["./scaffold", "lib/d3"], function (scaffold, d3) {
             fill_screen: false,
             categories: [],
             css_path: "css/category-legend.css",
-            squares: true });
+            update_hook: false,
+            squares: true,
+	    labels_align: 'right',
+	    colors: d3.scale.category20() });
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
                                      o.margins, o.fill_screen);
@@ -1107,7 +1114,7 @@ define('vis/category-legend',["./scaffold", "lib/d3"], function (scaffold, d3) {
         });
         o.layers = [];
 
-        o.color_scale = d3.scale.category20().domain(o.categories);
+        o.color_scale = o.colors.domain(o.categories);
 
         // load the css
         d3.text(o.css_path, function(error, text) {
@@ -1123,7 +1130,8 @@ define('vis/category-legend',["./scaffold", "lib/d3"], function (scaffold, d3) {
 
         return {
             update: update,
-            get_scale: function () { return o.color_scale; }
+            get_scale: function () { return o.color_scale; },
+            update_hook: set_update_hook
         };
 
         function update() {
@@ -1143,41 +1151,55 @@ define('vis/category-legend',["./scaffold", "lib/d3"], function (scaffold, d3) {
             var radius = 10,
             legend_w = o.width;
 
+	    var colors;
             if (o.squares) {
-                svg.selectAll('circle')
+                colors = svg.selectAll('circle')
                     .data(o.categories)
                     .enter()
                     .append('rect')
                     .attr("class", "legend-circle")
                     .attr('width', radius*2)
                     .attr('height', radius*2)
-                    .attr("transform", function(d, i) {
-                        return "translate("+(legend_w/2 - radius)+","+(i*25+20)+")";
-                    })
                     .attr('fill', function (d) { return o.color_scale(d); });
             } else {
-                svg.selectAll('circle')
+                colors = svg.selectAll('circle')
                     .data(o.categories)
                     .enter()
                     .append('circle')
                     .attr("class", "legend-circle")
                     .attr('r', radius)
-                    .attr("cx", legend_w/2 - radius)
-                    .attr("cy", function(d, i) { return i * 25+30; })
                     .attr('fill', function (d) { return o.color_scale(d); });
             }
-            svg.selectAll('text')
+	  
+            var text = svg.selectAll('text')
                 .data(o.categories)
                 .enter()
                 .append('text')
-                .attr("class", "legend-text")
-                .attr("text-anchor", "end")
-                .text(function (d) { return d; })
-                .attr('x', legend_w/2 - (3*radius))
-                .attr('y', function(d, i) {
-                    return (i*25)+30+radius/2;
-                });
+                    .attr("class", "legend-text");
 
+	    // align
+	    if (o.labels_align=='left') {
+                text.attr("text-anchor", "start")
+                    .text(function (d) { return d; })
+                    .attr('x', (4*radius))
+                    .attr('y', function(d, i) {
+			return (i*25)+30+radius/2;
+                    });
+		colors.attr("transform", function(d, i) {
+                    return "translate("+(radius)+","+(i*25+20)+")";
+                });
+	    } else if (o.labels_align=='right') {
+                text.attr("text-anchor", "end")
+                    .text(function (d) { return d; })
+                    .attr('x', legend_w/2 - (3*radius))
+                    .attr('y', function(d, i) {
+			return (i*25)+30+radius/2;
+                    });
+		colors.attr("transform", function(d, i) {
+                    return "translate("+(legend_w/2 - radius)+","+(i*25+20)+")";
+                });
+	    }		
+            if (o.update_hook) o.update_hook(svg);
             return this;
         };
 
@@ -1190,6 +1212,11 @@ define('vis/category-legend',["./scaffold", "lib/d3"], function (scaffold, d3) {
             height = parseFloat(sel.style('height')) - margins.top - margins.bottom;
             return {'width': width, 'height': height};
         };
+        function set_update_hook(fn) {
+            o.update_hook = fn;
+            return this;
+        };
+
     };
 });
 
