@@ -9,9 +9,8 @@ import json
 import re
 
 # set directory to server
-directory = os.path.abspath(os.path.dirname(__file__).replace('server',''))
+directory = re.sub('server\%s?$' % os.sep, '', os.path.abspath(os.path.dirname(__file__)))
 port = 7777
-
 print 'serving directory %s on port %d' % (directory, port)
 
 # define port
