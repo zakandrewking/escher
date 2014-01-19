@@ -1,4 +1,4 @@
-define(["lib/d3"], function (d3) {
+define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
     return { setup_zoom_container: setup_zoom_container,
              setup_defs: setup_defs,
 	     draw_an_array: draw_an_array,
@@ -160,9 +160,14 @@ define(["lib/d3"], function (d3) {
 	reader.readAsText(f);
     }
 
-    function define_scales(map_w, map_h, w, h) {
-        var factor = Math.min(w/map_w, h/map_h),
-            scale = {};
+    function define_scales(map_w, map_h, w, h, options) {
+	var scale = scaffold.set_options(options, 
+					 { flux_color: d3.scale.linear()
+					   .domain([0, 0.000001, 1, 8, 50])
+					   .range(["rgb(200,200,200)", "rgb(190,190,255)", 
+						   "rgb(100,100,255)", "blue", "red"])});
+
+        var factor = Math.min(w/map_w, h/map_h);
         scale.x = d3.scale.linear()
             .domain([0, map_w])
             .range([(w - map_w*factor)/2, map_w*factor + (w - map_w*factor)/2]),
@@ -184,9 +189,6 @@ define(["lib/d3"], function (d3) {
         scale.flux_fill = d3.scale.linear()
             .domain([0, 40, 200])
             .range([1, 1, 1]),
-        scale.flux_color = d3.scale.linear()
-            .domain([0, 0.000001, 1, 8, 50])
-            .range(["rgb(200,200,200)", "rgb(190,190,255)", "rgb(100,100,255)", "blue", "red"]),
         scale.metabolite_concentration = d3.scale.linear()
             .domain([0, 10])
             .range([15, 200]),

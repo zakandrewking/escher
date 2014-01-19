@@ -18,7 +18,10 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             metabolite_zoom_threshold: 0,
             reaction_zoom_threshold: 0,
             label_zoom_threshold: 0,
-            zoom_bounds: [0, 25] });
+            zoom_bounds: [0, 25],
+	    flux_color_scale: d3.scale.linear()
+		.domain([0, 0.000001, 1, 8, 50])
+		.range(["rgb(200,200,200)", "rgb(190,190,255)", "rgb(100,100,255)", "blue", "red"]) });
 
         var out = scaffold.setup_svg(o.selection, o.selection_is_svg,
                                      o.margins, o.fill_screen);
@@ -76,7 +79,7 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
         function reload_flux() {
             o.flux_source(function (fluxes, is_viable, objective) {
                 if (!is_viable) {
-                    set_status('cell is dead :\'(');
+                    // set_status('cell is dead :\'(');
                     fluxes = [];
                 } else if (objective) {
                     set_status('objective: ' + d3.format('.3f')(objective) + "    (HINT: Click a reaction)");
@@ -151,7 +154,8 @@ define(["vis/scaffold", "metabolic-map/utils", "lib/d3"], function (scaffold, ut
             // set up svg and svg definitions
             o.scale = utils.define_scales(o.map_data.max_map_w,
 					  o.map_data.max_map_h,
-					  o.width, o.height);
+					  o.width, o.height,
+					  { flux_color: o.flux_color_scale });
             var defs = utils.setup_defs(o.svg, o.css);
             generate_markers(defs);
 

@@ -9,6 +9,7 @@ visbio.egg-info/
 build/
 TAGS
 visbio*.js
+viewer-json
 builder-json
 pub/
 dist/
