@@ -3,7 +3,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     
     // definitions
     function new_reaction(reaction_abbreviation, cobra_reaction,
-			  selected_metabolite, selected_node_id, largest_ids) {
+			  selected_node_id, selected_node,
+			  largest_ids) {
         /** New reaction.
 
 	 */
@@ -12,19 +13,19 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	var new_reaction_id = ++largest_ids.reactions;
 
         // calculate coordinates of reaction
-	var selected_metabolite_coords = { x: selected_metabolite.x,
-					   y: selected_metabolite.y };
+	var selected_node_coords = { x: selected_node.x,
+				     y: selected_node.y };
 		
 	// rotate main axis around angle with distance
 	var reaction_length = 300,
-            main_axis = [ selected_metabolite_coords,
-			  utils.c_plus_c(selected_metabolite_coords,
+            main_axis = [ selected_node_coords,
+			  utils.c_plus_c(selected_node_coords,
 					 {'x': reaction_length, 'y': 0}) ],
 	    center = { 'x': (main_axis[0].x + main_axis[1].x)/2,  
                        'y': (main_axis[0].y + main_axis[1].y)/2 };
 	    
 	// relative label location
-	var label_d = { x: 80, y: 0 };
+	var label_d = { x: 30, y: 10 };
 
 	// relative anchor node distance
 	var anchor_distance = 20;
@@ -36,11 +37,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 			     label_x: center.x + label_d.x,
 			     label_y: center.y + label_d.y,
 			     name: cobra_reaction.name,
-			     segments: {} };
-
-	console.log(cobra_reaction);
-	console.log(selected_metabolite);
-	
+			     segments: {} };	
 
 	// generate anchor nodes
 	// 
@@ -87,8 +84,10 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 						       b2: null,
 						       from_node_id: from_id,
 						       to_node_id: to_id };
-	    new_anchors[from_id].connected_segments.push(new_segment_id);
-	    new_anchors[to_id].connected_segments.push(new_segment_id);
+	    new_anchors[from_id].connected_segments.push({ segment_id: new_segment_id,
+							   reaction_id: new_reaction_id });
+	    new_anchors[to_id].connected_segments.push({ segment_id: new_segment_id,
+							 reaction_id: new_reaction_id });
 	});
 
         // set primary metabolites and count reactants/products
@@ -100,7 +99,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	// look for the selected metabolite
         for (var metabolite_abbreviation in cobra_reaction.metabolites) {
             var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
-	    if (selected_metabolite.bigg_id_compartmentalized==
+	    if (selected_node.bigg_id_compartmentalized==
 		metabolite.bigg_id_compartmentalized) {
 		metabolite.is_primary = true;
 		if (metabolite.coefficient < 0) {
@@ -132,6 +131,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	// imported new metabolite nodes look like this:
 	// compartment_name: "cytosol"
 	// connected_segments: Array[2]
+	//     reaction_id: 755313
+	//     segment_id: 472
 	// label_x: 2780
 	// label_y: 2030
 	// metabolite_name: "D-Alanine"
@@ -178,12 +179,15 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 
 	    // if this is the existing metabolite
 	    if (metabolite.bigg_id_compartmentalized==
-		selected_metabolite.bigg_id_compartmentalized) {
+		selected_node.bigg_id_compartmentalized) {
 		var new_segment_id = ++largest_ids.segments;
 		new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
 							  to_node_id: selected_node_id,
 							  b1: met_loc.b1,
-							  b2: met_loc.b2 };		
+							  b2: met_loc.b2 };
+		// update the existing node
+		selected_node.connected_segments.push({ segment_id: new_segment_id,
+							reaction_id: new_reaction_id });
 	    } else {
 		// save new metabolite
 		var new_segment_id = ++largest_ids.segments,
@@ -193,7 +197,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 							  b1: met_loc.b1,
 							  b2: met_loc.b2 };
 		// save new node
-		new_nodes[new_node_id] = { connected_segments: [new_segment_id],
+		new_nodes[new_node_id] = { connected_segments: [{ segment_id: new_segment_id,
+								  reaction_id: new_reaction_id }],
 					   x: met_loc.circle.x,
 					   y: met_loc.circle.y,
 					   node_is_primary: metabolite.is_primary,
@@ -210,13 +215,10 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	// new_reactions object
 	var new_reactions = {};
 	new_reactions[new_reaction_id] = new_reaction;
-
-	console.log(new_reactions);
-	console.log(new_nodes);
 	
 	// rotate the new reaction around the selected metabolite
-	//var angle = Math.PI / 2; // default angle
-	//rotate_reactions(new_reactions, new_nodes, angle, selected_metabolite_coords);
+	var angle = Math.PI / 2; // default angle
+	rotate_reactions(new_reactions, new_nodes, angle, selected_node_coords);
 
 	return { new_reactions: new_reactions,
 		 new_nodes: new_nodes };
@@ -230,23 +232,26 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     // 							 angle, center);
     // }
     
-    function rotate_reactions(new_reactions, new_nodes, angle, center) {
+    function rotate_reactions(reactions, nodes, angle, center) {
 	/** Rotate reaction around center.
 
 	 */
-
+	console.log(reactions, nodes);
+	
 	// functions
 	var rotate_around = function(coord) {
+	    if (coord === null)
+		return null;
 	    return utils.rotate_coords(coord, angle, center);
 	};
 
-	for (var reaction_id in new_reactions) {
-	    var reaction = new_reactions[reaction_id];
+	for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id];
 
 	    // recalculate: label
-	    var new_label_coords = rotate_around({ x: reaction.label_x, y: reaction.label_y });
-	    reaction.label_x.x = new_label_coords.x;
-	    reaction.label_y.y = new_label_coords.y;
+	    var label_coords = rotate_around({ x: reaction.label_x, y: reaction.label_y });
+	    reaction.label_x = label_coords.x;
+	    reaction.label_y = label_coords.y;
 
 	    // recalculate: segment
 	    for (var segment_id in reaction.segments) {
@@ -254,15 +259,18 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 		segment.b1 = rotate_around(segment.b1);
 		segment.b2 = rotate_around(segment.b2);
 	    }
-
-	    // recalculate: node
-	    for (var node_id in new_nodes) {
-		var node = new_nodes[node_id],
-		    new_node_coords = rotate_around({ x: node.x, y: node.x });
-		node.x = new_node_coords.x;
-		node.y = new_node_coords.y;
-	    }
 	}
-    }
-    
+	// recalculate: node
+	for (var node_id in nodes) {
+	    var node = nodes[node_id],
+		node_coords = rotate_around({ x: node.x, y: node.y });
+	    node.x = node_coords.x;
+	    node.y = node_coords.y;
+	    
+	    // recalculate: label
+	    var label_coords = rotate_around({ x: node.label_x, y: node.label_y });
+	    node.label_x = label_coords.x;
+	    node.label_y = label_coords.y;
+	}
+    }    
 });

@@ -239,13 +239,12 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
     function calculate_new_metabolite_coordinates(met, primary_index, main_axis, center, dis) {
 	/** Calculate metabolite coordinates for a new reaction metabolite.
 
-	 */	
-        // basic constants
-        // var text_dis = {'x': 0, 'y': -18}, // displacement of metabolite label
-        //     drag_displacement = {'x': 0, 'y': 0}; // metabolite drag displacement
-
-	if (met.bigg_id == 'h2o') 
-	    console.log(met, primary_index, main_axis, center, dis);
+	 */
+	// new local coordinate system
+	var displacement = main_axis[0],
+	    main_axis = [c_minus_c(main_axis[0], displacement),
+			 c_minus_c(main_axis[1], displacement)],
+	    center = c_minus_c(center, displacement);
 	
         // Curve parameters
         var w = 60,  // distance between reactants and between products
@@ -314,9 +313,9 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
                       'y': main_axis[1].y + (w*draw_at_index - w*(num_slots-1)/2)};
         }
 	var loc = {};
-	loc.b1 = null;// b1;
-	loc.b2 = null;// b2;
-	loc.circle = circle;
+	loc.b1 = c_plus_c(displacement, b1);
+	loc.b2 = c_plus_c(displacement, b2);
+	loc.circle = c_plus_c(displacement, circle);
         return loc;
     }
 

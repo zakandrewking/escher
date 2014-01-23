@@ -120,9 +120,10 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 						 function(ev) {
 						     o.window_translate = {'x': ev.translate[0], 'y': ev.translate[1]};
 						     o.window_scale = ev.scale;
-						     input.place_at_selected(o.reaction_input, o.scale.x, o.scale.y, 
-									     o.window_scale, o.window_translate, 
-									     o.width, o.height);
+						     if (input.is_visible(o.reaction_input))
+							 input.place_at_selected(o.reaction_input, o.scale.x, o.scale.y, 
+										 o.window_scale, o.window_translate, 
+										 o.width, o.height);
 						 }, 
 						 function() { return o.zoom_enabled; });
 	    // TODO fix like this http://jsfiddle.net/La8PR/5/
@@ -463,8 +464,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		}
             }
 
-	    // get the metabolite node id
-	    var selected_met = o.drawn_nodes[selected_node_id];
+	    // get the metabolite node
+	    var selected_node = o.drawn_nodes[selected_node_id];
 
             // set reaction coordinates and angle
             // be sure to copy the reaction recursively
@@ -472,16 +473,17 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
 	    // build the new reaction
 	    var out = build.new_reaction(reaction_abbreviation, cobra_reaction,
-					 selected_met, selected_node_id,
+					 selected_node_id, selected_node,
 					 o.map_info.largest_ids);
 	    utils.extend(o.drawn_reactions, out.new_reactions);
 	    utils.extend(o.drawn_nodes, out.new_nodes);
 
 	    // draw new reaction and (TODO) select new metabolite
+	    draw_specific_nodes(Object.keys(out.new_nodes));
 	    draw_specific_reactions(Object.keys(out.new_reactions));
-            var new_coords;
-	    d3.select('.selected').each(function(d) { new_coords = {x: d.x, y: d.y}; });
-            translate_off_screen(new_coords);
+            // var new_coords;
+	    // d3.select('.selected').each(function(d) { new_coords = {x: d.x, y: d.y}; });
+            // translate_off_screen(new_coords);
             if (input.is_visible(o.reaction_input)) cmd_show_input();
 	}
 
@@ -612,7 +614,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
         // }
 
         function select_metabolite(sel, d, node_selection, shift_key_on) {
-	    if (shift_key_on) d3.select(sel.parentNode).classed("selected", !d3.select(sel.parentNode).classed("selected")); //d.selected = !d.selected);
+	    if (shift_key_on) d3.select(sel.parentNode).classed("selected", !d3.select(sel.parentNode).classed("selected"));
             else node_selection.classed("selected", function(p) { return d === p; });
 	    var selected_nodes = d3.select('.selected'),
 		count = 0;

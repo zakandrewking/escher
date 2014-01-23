@@ -72,45 +72,6 @@ define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
 	if (count > 1) { console.error('Too many selected nodes'); return; }
 	else if (count < 1) { console.error('No selected node'); return; }
 
-
-	    // // make a list of reactions
-	    // o.sorted_reaction_suggestions = [];
-	    // for (var reaction_id in o.cobra_reactions) {
-	    // 	o.sorted_reaction_suggestions.push({
-	    // 	    label: reaction_id,
-	    // 	    cobra_id: reaction_id,
-	    // 	    flux: 0
-            //     });
-	    // } 
-	    // if (o.flux) {
-	    // 	// reactions with flux
-	    // 	for (var flux_reaction_id in o.flux) {
-            //         // fix reaction ids
-            //         var fixed_id = flux_reaction_id.replace('(', '_').replace(')', ''),
-	    // 		flux = parseFloat(o.flux[flux_reaction_id]);
-            //         // update model with fluxes. if not found, add the empty reaction to the list
-	    // 	    var found = false;
-	    // 	    o.sorted_reaction_suggestions.map(function(x) {
-	    // 		if (fixed_id == x.cobra_id) {
-	    // 		    // update label
-	    // 		    x.label = x.label+": "+o.decimal_format(flux);
-	    // 		    x.flux = flux;
-	    // 		    // set flux for reaction
-            //                 o.cobra_reactions[fixed_id].flux = flux;
-            //                 // also set flux for segments (for simpler drawing)
-            //                 for (var metabolite_id in o.cobra_reactions[fixed_id].segments)
-	    // 			o.cobra_reactions[fixed_id].segments[metabolite_id].flux = flux;
-	    // 		    // this reaction has been found
-	    // 		}
-            //         });
-	    // 	}
-	    // 	// sort the reactions by flux
-	    // 	o.sorted_reaction_suggestions.sort(function(a, b) { 
-	    // 	    return Math.abs(b.flux) - Math.abs(a.flux); 
-	    // 	});
-	    // }
-
-
         // Find selected reaction
         var suggestions = [];
         for (var reaction_abbreviation in cobra_reactions) {
@@ -122,7 +83,6 @@ define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
 	    // check segments for match to selected metabolite
 	    for (var metabolite_id in reaction.metabolites) {
 		var metabolite = reaction.metabolites[metabolite_id]; 
-		//TODO sort out node __data__.compartment_id vs. _c and _p in model.reaction.metabolite_id
                 if (selected_met.bigg_id_compartmentalized == metabolite_id) {
 		    if (reaction_abbreviation in suggestions) continue;
 		    // reverse for production
