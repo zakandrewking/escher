@@ -40,16 +40,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 			     segments: {} };	
 
 	// generate anchor nodes
-	// 
-	// imported anchor nodes look like this:
-	// connected_segments: Array[5]
-	// node_id: "755272"
-	// node_is_primary: false // ignoring for now
-	// node_type: "multimarker" // ignoring for now
-	// previously_selected: false // ignoring for now
-	// selected: false // ignoring for now
-	// x: 2750
-	// y: 2150 
 	var new_anchors = {},
 	    anchors = [ { node_type: 'anchor_reactants',
 			  dis: { x: -anchor_distance, y: 0 } },
@@ -68,13 +58,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	}); 
 
 	// add the segments, outside to inside
-	// 
-	// imported anchor segments look like this:
-	// b1: null
-	// b2: null
-	// from_node_id: "755271"
-	// segment_id: "453" // ignoring for now
-	// to_node_id: "755272"
 	var new_anchor_groups = [ [ anchor_ids['anchor_reactants'], anchor_ids['center'] ],
 				  [ anchor_ids['anchor_products'],  anchor_ids['center'] ] ];
 	new_anchor_groups.map(function(l) {
@@ -91,38 +74,33 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	});
 
         // set primary metabolites and count reactants/products
-	// 
-	// defaults
         var primary_reactant_index = 0,
             primary_product_index = 0;
         var reactant_count = 0, product_count = 0;
 	// look for the selected metabolite
         for (var metabolite_abbreviation in cobra_reaction.metabolites) {
             var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
-	    if (selected_node.bigg_id_compartmentalized==
-		metabolite.bigg_id_compartmentalized) {
-		metabolite.is_primary = true;
-		if (metabolite.coefficient < 0) {
-		    primary_reactant_index = reactant_count;
-                    reactant_count++;
-		} else {
-		    primary_product_index = reactant_count;
-                    product_count++;
-		}
+	    if (metabolite.coefficient < 0) {
+                metabolite.index = reactant_count;
+		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized)
+		    primary_reactant_index = reactant_count; 
+                reactant_count++;
+	    } else {
+                metabolite.index = product_count;
+		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized)
+		    primary_product_index = product_count;
+                product_count++;
 	    }
 	}
 	// set primary metabolites
-        var reactant_count = 0, product_count = 0;
         for (var metabolite_abbreviation in cobra_reaction.metabolites) {
             var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
             if (metabolite.coefficient < 0) {
-                metabolite.index = reactant_count;
-                if (reactant_count==primary_reactant_index) metabolite.is_primary = true;
-                reactant_count++;
+                if (metabolite.index==primary_reactant_index) metabolite.is_primary = true;
+		metabolite.count = reactant_count + 1;
             } else {
-                metabolite.index = product_count;
-                if (product_count==primary_product_index) metabolite.is_primary = true;
-                product_count++;
+                if (metabolite.index==primary_product_index) metabolite.is_primary = true;
+		metabolite.count = product_count + 1;
             }
         }
 

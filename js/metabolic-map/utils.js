@@ -257,10 +257,8 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
         // size and spacing for primary and secondary metabolites
         var ds, draw_at_index, r;
         if (met.is_primary) { // primary
-            r = 10;
             ds = 20;
         } else { // secondary
-            r = 5;
             ds = 10;
             // don't use center slot
             if (met.index > primary_index) draw_at_index = met.index - 1;
