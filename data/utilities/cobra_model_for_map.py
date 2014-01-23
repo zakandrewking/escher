@@ -40,17 +40,22 @@ elif version=='v0.4.0':
     for reaction in m.reactions:
         mets = {}
         for metabolite, coefficient in reaction._metabolites.iteritems():
+            # replace __ with -
+            the_id = unicode(metabolite.id).replace('__', '-')
+            
             # get the compartment
             try:
                 compartment = compartments[metabolite.id[-2:]]
+                bigg_id_no_compartment = the_id[:-2]
             except KeyError:
                 raise Exception('Compartment not found for: %s' % metabolite.id)
 
-            # replace __ with -
-            the_id = unicode(metabolite.id).replace('__', '-')
             # add metabolite
             mets[the_id] = { 'coefficient': coefficient,
-                             'compartment': compartment }
+                             'compartment': compartment,
+                             'name': metabolite.name,
+                             'bigg_id': bigg_id_no_compartment,
+                             'bigg_id_compartmentalized': the_id }
             
         # replace __ with -
         the_id = unicode(reaction.id).replace('__', '-')

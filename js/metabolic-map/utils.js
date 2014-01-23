@@ -11,7 +11,6 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
 	     download_json: download_json,
 	     load_json: load_json,
 	     define_scales: define_scales,
-	     calculate_new_reaction_coordinates: calculate_new_reaction_coordinates,
 	     calculate_new_metabolite_coordinates: calculate_new_metabolite_coordinates,
 	     rotate_coords_recursive: rotate_coords_recursive,
 	     rotate_coords: rotate_coords,
@@ -237,38 +236,17 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
         return scale;
     }
 
-    function calculate_new_reaction_coordinates(coords) {
-	/** Assign coordinates to a new reaction.
-	 	 
-	 Sets dis, main_axis, center, and coords.	 
-	 
-	 The coords are absolute; center and main_axis are relative.
-
-	 */
-	
-	var loc = {};
-        var dis = 120;
-
-	// rotate main axis around angle with distance
-        var main_axis = [{'x': 0, 'y': 0}, {'x': dis, 'y': 0}],
-	    center = { 'x': (main_axis[0].x + main_axis[1].x)/2,   // for convenience
-                       'y': (main_axis[0].y + main_axis[1].y)/2 };
-        loc.dis = dis;
-        loc.main_axis = main_axis;
-        loc.center = center;
-	loc.coords = coords;
-        return loc;
-    }
-
     function calculate_new_metabolite_coordinates(met, primary_index, main_axis, center, dis) {
 	/** Calculate metabolite coordinates for a new reaction metabolite.
 
-	 */
-
+	 */	
         // basic constants
-        met.text_dis = {'x': 0, 'y': -18}; // displacement of metabolite label
-        met.dis = {'x': 0, 'y': 0}; // metabolite drag displacement
+        // var text_dis = {'x': 0, 'y': -18}, // displacement of metabolite label
+        //     drag_displacement = {'x': 0, 'y': 0}; // metabolite drag displacement
 
+	if (met.bigg_id == 'h2o') 
+	    console.log(met, primary_index, main_axis, center, dis);
+	
         // Curve parameters
         var w = 60,  // distance between reactants and between products
             b1_strength = 0.5,
@@ -278,12 +256,12 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
             num_slots = Math.min(2, met.count - 1);
 
         // size and spacing for primary and secondary metabolites
-        var ds, draw_at_index;
+        var ds, draw_at_index, r;
         if (met.is_primary) { // primary
-            met.r = 10;
+            r = 10;
             ds = 20;
         } else { // secondary
-            met.r = 5;
+            r = 5;
             ds = 10;
             // don't use center slot
             if (met.index > primary_index) draw_at_index = met.index - 1;
@@ -295,49 +273,51 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
                              {'x': de, 'y': 0}];
 
         // Define line parameters and axis.
-        // Begin with unrotated coordinate system. +y = Down, +x = Right.
-        var start = center,
-            end, circle, b1, b2;
+        // Begin with unrotated coordinate system. +y = Down, +x = Right. 
+        var end, circle, b1, b2;
         // reactants
         if (met.coefficient < 0 && met.is_primary) {
-            end = {'x': reaction_axis[0].x + met.dis.x,
-                   'y': reaction_axis[0].y + met.dis.y};
-            b1 = {'x': start.x*(1-b1_strength) + reaction_axis[0].x*b1_strength,
-                  'y': start.y*(1-b1_strength) + reaction_axis[0].y*b1_strength};
-            b2 = {'x': start.x*b2_strength + (end.x)*(1-b2_strength),
-                  'y': start.y*b2_strength + (end.y)*(1-b2_strength)},
-            circle = {'x': main_axis[0].x + met.dis.x,
-                      'y': main_axis[0].y + met.dis.y};
+            end = {'x': reaction_axis[0].x,
+                   'y': reaction_axis[0].y};
+            b1 = {'x': center.x*(1-b1_strength) + reaction_axis[0].x*b1_strength,
+                  'y': center.y*(1-b1_strength) + reaction_axis[0].y*b1_strength};
+            b2 = {'x': center.x*b2_strength + (end.x)*(1-b2_strength),
+                  'y': center.y*b2_strength + (end.y)*(1-b2_strength)},
+            circle = {'x': main_axis[0].x,
+                      'y': main_axis[0].y};
         } else if (met.coefficient < 0) {
-	    end = {'x': reaction_axis[0].x + secondary_dis + met.dis.x,
-                   'y': reaction_axis[0].y + (w2*draw_at_index - w2*(num_slots-1)/2) + met.dis.y},
-            b1 = {'x': start.x*(1-b1_strength) + reaction_axis[0].x*b1_strength,
-                  'y': start.y*(1-b1_strength) + reaction_axis[0].y*b1_strength},
-            b2 = {'x': start.x*b2_strength + end.x*(1-b2_strength),
-                  'y': start.y*b2_strength + end.y*(1-b2_strength)},
-            circle = {'x': main_axis[0].x + secondary_dis + met.dis.x,
-                      'y': main_axis[0].y + (w*draw_at_index - w*(num_slots-1)/2) + met.dis.y};
+	    end = {'x': reaction_axis[0].x + secondary_dis,
+                   'y': reaction_axis[0].y + (w2*draw_at_index - w2*(num_slots-1)/2)},
+            b1 = {'x': center.x*(1-b1_strength) + reaction_axis[0].x*b1_strength,
+                  'y': center.y*(1-b1_strength) + reaction_axis[0].y*b1_strength},
+            b2 = {'x': center.x*b2_strength + end.x*(1-b2_strength),
+                  'y': center.y*b2_strength + end.y*(1-b2_strength)},
+            circle = {'x': main_axis[0].x + secondary_dis,
+                      'y': main_axis[0].y + (w*draw_at_index - w*(num_slots-1)/2)};
         } else if (met.coefficient > 0 && met.is_primary) {        // products
-            end = {'x': reaction_axis[1].x + met.dis.x,
-                   'y': reaction_axis[1].y + met.dis.y};
-            b1 = {'x': start.x*(1-b1_strength) + reaction_axis[1].x*b1_strength,
-                  'y': start.y*(1-b1_strength) + reaction_axis[1].y*b1_strength};
-            b2 = {'x': start.x*b2_strength + end.x*(1-b2_strength),
-                  'y': start.y*b2_strength + end.y*(1-b2_strength)},
-            circle = {'x': main_axis[1].x + met.dis.x,
-                      'y': main_axis[1].y + met.dis.y};
+            end = {'x': reaction_axis[1].x,
+                   'y': reaction_axis[1].y};
+            b1 = {'x': center.x*(1-b1_strength) + reaction_axis[1].x*b1_strength,
+                  'y': center.y*(1-b1_strength) + reaction_axis[1].y*b1_strength};
+            b2 = {'x': center.x*b2_strength + end.x*(1-b2_strength),
+                  'y': center.y*b2_strength + end.y*(1-b2_strength)},
+            circle = {'x': main_axis[1].x,
+                      'y': main_axis[1].y};
         } else if (met.coefficient > 0) {
-            end = {'x': reaction_axis[1].x - secondary_dis + met.dis.x,
-                   'y': reaction_axis[1].y + (w2*draw_at_index - w2*(num_slots-1)/2) + met.dis.y},
-            b1 = {'x': start.x*(1-b1_strength) + reaction_axis[1].x*b1_strength,
-                  'y': start.y*(1-b1_strength) + reaction_axis[1].y*b1_strength};
-            b2 = {'x': start.x*b2_strength + end.x*(1-b2_strength),
-                  'y': start.y*b2_strength + end.y*(1-b2_strength)},
-            circle = {'x': main_axis[1].x - secondary_dis + met.dis.x,
-                      'y': main_axis[1].y + (w*draw_at_index - w*(num_slots-1)/2) + met.dis.y};
+            end = {'x': reaction_axis[1].x - secondary_dis,
+                   'y': reaction_axis[1].y + (w2*draw_at_index - w2*(num_slots-1)/2)},
+            b1 = {'x': center.x*(1-b1_strength) + reaction_axis[1].x*b1_strength,
+                  'y': center.y*(1-b1_strength) + reaction_axis[1].y*b1_strength};
+            b2 = {'x': center.x*b2_strength + end.x*(1-b2_strength),
+                  'y': center.y*b2_strength + end.y*(1-b2_strength)},
+            circle = {'x': main_axis[1].x - secondary_dis,
+                      'y': main_axis[1].y + (w*draw_at_index - w*(num_slots-1)/2)};
         }
-	met.end = end; met.b1 = b1; met.b2 = b2; met.circle = circle; met.start = start;
-        return met;
+	var loc = {};
+	loc.b1 = null;// b1;
+	loc.b2 = null;// b2;
+	loc.circle = circle;
+        return loc;
     }
 
     function rotate_coords_recursive(coords_array, angle, center) {

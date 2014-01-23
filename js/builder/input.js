@@ -63,10 +63,11 @@ define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
 	// make sure only one node is selected
 	var selected_nodes = d3.selectAll('.selected'), 
 	    count = 0,
-	    selected_met;
+	    selected_met, selected_node_id;
 	selected_nodes.each(function(d) { 
 	    count++; 
 	    selected_met = d;
+	    selected_node_id = parseInt(d.node_id);
 	});
 	if (count > 1) { console.error('Too many selected nodes'); return; }
 	else if (count < 1) { console.error('No selected node'); return; }
@@ -122,7 +123,7 @@ define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
 	    for (var metabolite_id in reaction.metabolites) {
 		var metabolite = reaction.metabolites[metabolite_id]; 
 		//TODO sort out node __data__.compartment_id vs. _c and _p in model.reaction.metabolite_id
-                if (selected_met.metabolite_simpheny_id_compartmentalized == metabolite_id) {
+                if (selected_met.bigg_id_compartmentalized == metabolite_id) {
 		    if (reaction_abbreviation in suggestions) continue;
 		    // reverse for production
 		    var this_flux, this_string;
@@ -161,7 +162,7 @@ define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
 	    this.setText("");
 	    suggestions_array.map(function(x) {
 		if (x.string==text)
-                    enter_callback(x.reaction_abbreviation, selected_met);
+                    enter_callback(x.reaction_abbreviation, selected_node_id);
 	    });
         };
         complete.repaint();

@@ -2,9 +2,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     return { new_reaction: new_reaction };
     
     // definitions
-    function new_reaction(reaction_abbreviation, cobra_reaction, 
-			  metabolite_simpheny_id_compartmentalized,
-			  selected_metabolite_coords, largest_ids) {
+    function new_reaction(reaction_abbreviation, cobra_reaction,
+			  selected_metabolite, selected_node_id, largest_ids) {
         /** New reaction.
 
 	 */
@@ -13,8 +12,17 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	var new_reaction_id = ++largest_ids.reactions;
 
         // calculate coordinates of reaction
-        var loc = utils.calculate_new_reaction_coordinates(selected_metabolite_coords);
-
+	var selected_metabolite_coords = { x: selected_metabolite.x,
+					   y: selected_metabolite.y };
+		
+	// rotate main axis around angle with distance
+	var reaction_length = 300,
+            main_axis = [ selected_metabolite_coords,
+			  utils.c_plus_c(selected_metabolite_coords,
+					 {'x': reaction_length, 'y': 0}) ],
+	    center = { 'x': (main_axis[0].x + main_axis[1].x)/2,  
+                       'y': (main_axis[0].y + main_axis[1].y)/2 };
+	    
 	// relative label location
 	var label_d = { x: 80, y: 0 };
 
@@ -22,20 +30,23 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	var anchor_distance = 20;
 
 	// new reaction structure
-	var new_reaction = { abbreviation: reaction_abbreviation,
-			     direction: cobra_reaction.reversibility ? 'Reversible' : 'Irreversible',
-			     label_x: loc.center.x + label_d.x,
-			     label_y: loc.center.y + label_d.y,
+	var direction = cobra_reaction.reversibility ? 'Reversible' : 'Irreversible',
+	    new_reaction = { abbreviation: reaction_abbreviation,
+			     direction: direction,
+			     label_x: center.x + label_d.x,
+			     label_y: center.y + label_d.y,
 			     name: cobra_reaction.name,
 			     segments: {} };
 
 	console.log(cobra_reaction);
+	console.log(selected_metabolite);
+	
 
 	// generate anchor nodes
 	// 
 	// imported anchor nodes look like this:
 	// connected_segments: Array[5]
-	// node_id: "755272" // ignoring for now
+	// node_id: "755272"
 	// node_is_primary: false // ignoring for now
 	// node_type: "multimarker" // ignoring for now
 	// previously_selected: false // ignoring for now
@@ -43,20 +54,20 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	// x: 2750
 	// y: 2150 
 	var new_anchors = {},
-	    anchors = [ { title: 'anchor_reactants',
+	    anchors = [ { node_type: 'anchor_reactants',
 			  dis: { x: -anchor_distance, y: 0 } },
-			{ title: 'center',
+			{ node_type: 'center',
 			  dis: { x: 0, y: 0 } },
-			{ title: 'anchor_products',
+			{ node_type: 'anchor_products',
 			  dis: { x: anchor_distance, y: 0 } } ],
-	    anchor_ids;
+	    anchor_ids = {};
 	anchors.map(function(n) {
 	    var new_id = ++largest_ids.nodes;
-	    new_anchors[new_id] = { title: n.title,
-				    x: loc.center.x + n.dis.x,
-				    y: loc.center.y + n.dis.y,
+	    new_anchors[new_id] = { node_type: n.node_type,
+				    x: center.x + n.dis.x,
+				    y: center.y + n.dis.y,
 				    connected_segments: [] };
-	    anchor_ids[n.title] = new_id;
+	    anchor_ids[n.node_type] = new_id;
 	}); 
 
 	// add the segments, outside to inside
@@ -85,15 +96,19 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	// defaults
         var primary_reactant_index = 0,
             primary_product_index = 0;
+        var reactant_count = 0, product_count = 0;
 	// look for the selected metabolite
         for (var metabolite_abbreviation in cobra_reaction.metabolites) {
             var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
-	    if (metabolite_simpheny_id_compartmentalized==metabolite_abbreviation) {
+	    if (selected_metabolite.bigg_id_compartmentalized==
+		metabolite.bigg_id_compartmentalized) {
 		metabolite.is_primary = true;
 		if (metabolite.coefficient < 0) {
 		    primary_reactant_index = reactant_count;
+                    reactant_count++;
 		} else {
 		    primary_product_index = reactant_count;
+                    product_count++;
 		}
 	    }
 	}
@@ -120,9 +135,9 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	// label_x: 2780
 	// label_y: 2030
 	// metabolite_name: "D-Alanine"
-	// metabolite_simpheny_id: "ala-D"
-	// metabolite_simpheny_id_compartmentalized: "ala-D_c"
-	// node_id: "755258"
+	// bigg_id: "ala-D"
+	// bigg_id_compartmentalized: "ala-D_c"
+	// node_id: "755258" // where does this come from?
 	// node_is_primary: true
 	// node_type: "metabolite"
 	// previously_selected: false
@@ -146,49 +161,62 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
             var primary_index, from_node_id;
             if (metabolite.coefficient < 0) {
                 // metabolite.count = reactant_count + 1;
-                // primary_index = primary_reactant_index;
+                primary_index = primary_reactant_index;
 		from_node_id = anchor_ids['anchor_reactants'];
             } else {
                 // metabolite.count = product_count + 1;
-                // primary_index = primary_product_index;
+                primary_index = primary_product_index;
 		from_node_id = anchor_ids['anchor_products'];
             }
 	    
             // calculate coordinates of metabolite components
-            var metabolite_loc = utils.calculate_new_metabolite_coordinates(metabolite,
-									    primary_index,
-									    loc.main_axis,
-									    loc.center,
-									    loc.dis);
+            var met_loc = utils.calculate_new_metabolite_coordinates(metabolite,
+								     primary_index,
+								     main_axis,
+								     center,
+								     reaction_length);
 
-	    // save new metabolite
-	    var new_segment_id = ++largest_ids.segments,
-		new_node_id = ++largest_ids.nodes;
-	    new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
-						      to_node_id: new_node_id,
-						      b1: metabolite_loc.b1,
-						      b2: metabolite_loc.b2 };
-	    // save new node
-	    new_nodes[new_node_id] = { connected_segments: [new_segment_id],
-				       x: metabolite_loc.x,
-				       y: metabolite_loc.y,
-				       node_is_primary: metabolite.is_primary,
-				       compartment_name: null,
-				       label_x: null,
-				       label_y: null,
-				       metabolite_name: null,
-				       metabolite_simpheny_id: null,
-				       metabolite_simpheny_id_compartmentalized: null,
-				       node_type: null };	    
+	    // if this is the existing metabolite
+	    if (metabolite.bigg_id_compartmentalized==
+		selected_metabolite.bigg_id_compartmentalized) {
+		var new_segment_id = ++largest_ids.segments;
+		new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
+							  to_node_id: selected_node_id,
+							  b1: met_loc.b1,
+							  b2: met_loc.b2 };		
+	    } else {
+		// save new metabolite
+		var new_segment_id = ++largest_ids.segments,
+		    new_node_id = ++largest_ids.nodes;
+		new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
+							  to_node_id: new_node_id,
+							  b1: met_loc.b1,
+							  b2: met_loc.b2 };
+		// save new node
+		new_nodes[new_node_id] = { connected_segments: [new_segment_id],
+					   x: met_loc.circle.x,
+					   y: met_loc.circle.y,
+					   node_is_primary: metabolite.is_primary,
+					   compartment_name: metabolite.compartment,
+					   label_x: met_loc.circle.x + label_d.x,
+					   label_y: met_loc.circle.y + label_d.y,
+					   metabolite_name: metabolite.name,
+					   bigg_id: metabolite.bigg_id,
+					   bigg_id_compartmentalized: metabolite.bigg_id_compartmentalized,
+					   node_type: 'metabolite' };
+	    }
 	}
 
 	// new_reactions object
 	var new_reactions = {};
 	new_reactions[new_reaction_id] = new_reaction;
 
+	console.log(new_reactions);
+	console.log(new_nodes);
+	
 	// rotate the new reaction around the selected metabolite
-	var angle = Math.PI / 2; // default angle
-	rotate_reactions(new_reactions, new_nodes, angle, selected_metabolite_coords);
+	//var angle = Math.PI / 2; // default angle
+	//rotate_reactions(new_reactions, new_nodes, angle, selected_metabolite_coords);
 
 	return { new_reactions: new_reactions,
 		 new_nodes: new_nodes };

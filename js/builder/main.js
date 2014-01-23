@@ -146,7 +146,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             if (!o.map) {
 		// TEST case
 		var start_coords = {'x': o.width/2, 'y': 40};
-                new_reaction_for_metabolite(o.starting_reaction, start_coords);
+                new_reaction_from_scratch(o.starting_reaction, start_coords);
             } else {
 		draw_everything();
 	    }
@@ -450,7 +450,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    return { membranes: membranes, nodes: nodes, reactions: reactions, text_labels: text_labels, info: info };
 	}   
 
-	function new_reaction_for_metabolite(reaction_abbreviation, selected_met) {
+	function new_reaction_for_metabolite(reaction_abbreviation, selected_node_id) {
 	    /** Build a new reaction starting with selected_met.
 
 	     */
@@ -463,21 +463,19 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		}
             }
 
+	    // get the metabolite node id
+	    var selected_met = o.drawn_nodes[selected_node_id];
+
             // set reaction coordinates and angle
             // be sure to copy the reaction recursively
             var cobra_reaction = utils.clone(o.cobra_reactions[reaction_abbreviation]);
 
-	    // selected metabolite
-	    var selected_metabolite_coords = { x: selected_met.x,
-					       y: selected_met.y };
-
-	    console.log(o.map_info.largest_ids);
 	    // build the new reaction
 	    var out = build.new_reaction(reaction_abbreviation, cobra_reaction,
-					 selected_metabolite_coords, o.map_info.largest_ids);
+					 selected_met, selected_node_id,
+					 o.map_info.largest_ids);
 	    utils.extend(o.drawn_reactions, out.new_reactions);
 	    utils.extend(o.drawn_nodes, out.new_nodes);
-	    console.log(o.map_info.largest_ids);
 
 	    // draw new reaction and (TODO) select new metabolite
 	    draw_specific_reactions(Object.keys(out.new_reactions));
