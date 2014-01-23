@@ -1,6 +1,6 @@
 define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", "lib/d3", 
-	"lib/complete.ly"],
-       function(scaffold, utils, draw, input, d3, completely) {
+	"lib/complete.ly", "builder/build"],
+       function(scaffold, utils, draw, input, d3, completely, build) {
     // NOTE
     // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
     // only necessary for selectAll()
@@ -146,7 +146,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             if (!o.map) {
 		// TEST case
 		var start_coords = {'x': o.width/2, 'y': 40};
-                new_reaction(o.starting_reaction, start_coords);
+                new_reaction_for_metabolite(o.starting_reaction, start_coords);
             } else {
 		draw_everything();
 	    }
@@ -403,6 +403,19 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    o.drawn_membranes = map.membranes ? map.membranes : [];
 	    o.drawn_text_labels = map.text_labels ? map.text_labels : {};
 	    o.map_info = map.info ? map.info : {};
+
+	    // get largest ids for adding new reactions, nodes, text labels, and segments
+	    o.map_info.largest_ids = {};
+	    o.map_info.largest_ids.reactions = get_largest_id(map.reactions);
+	    o.map_info.largest_ids.nodes = get_largest_id(map.nodes);
+	    o.map_info.largest_ids.text_labels = get_largest_id(map.text_labels);
+
+	    var largest_segment_id = 0;
+	    for (var id in map.reactions) {
+		largest_segment_id = get_largest_id(map.reactions[id].segments, largest_segment_id);
+	    }
+	    o.map_info.largest_ids.segments = largest_segment_id;
+
 	    // set up svg and svg definitions
 	    o.scale = utils.define_scales(o.map_info.max_map_w, o.map_info.max_map_h,
 					  o.width, o.height);
@@ -415,6 +428,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    }
 	    // flux onto existing map reactions
 	    if (o.flux) apply_flux_to_map();
+
+	    // definitions
+	    function get_largest_id(obj, current_largest) {
+		/** Return the largest integer key in obj, or current_largest, whichever is bigger. */
+		if (current_largest===undefined) current_largest = 0;
+		return Math.max.apply(null, Object.keys(obj).concat([current_largest]));
+	    }
 	}
 	function map_for_export() {
 	    // var exported_node_props = ['node_type', 'x', 'y', TODO make minimal map for export
@@ -430,6 +450,43 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    return { membranes: membranes, nodes: nodes, reactions: reactions, text_labels: text_labels, info: info };
 	}   
 
+	function new_reaction_for_metabolite(reaction_abbreviation, selected_met) {
+	    /** Build a new reaction starting with selected_met.
+
+	     */
+
+            // If reaction id is not new, then return:
+	    for (var reaction_id in o.drawn_reactions) {
+		if (o.drawn_reactions[reaction_id].abbreviation == reaction_abbreviation) {             
+		    console.warn('reaction is already drawn');
+                    return;
+		}
+            }
+
+            // set reaction coordinates and angle
+            // be sure to copy the reaction recursively
+            var cobra_reaction = utils.clone(o.cobra_reactions[reaction_abbreviation]);
+
+	    // selected metabolite
+	    var selected_metabolite_coords = { x: selected_met.x,
+					       y: selected_met.y };
+
+	    console.log(o.map_info.largest_ids);
+	    // build the new reaction
+	    var out = build.new_reaction(reaction_abbreviation, cobra_reaction,
+					 selected_metabolite_coords, o.map_info.largest_ids);
+	    utils.extend(o.drawn_reactions, out.new_reactions);
+	    utils.extend(o.drawn_nodes, out.new_nodes);
+	    console.log(o.map_info.largest_ids);
+
+	    // draw new reaction and (TODO) select new metabolite
+	    draw_specific_reactions(Object.keys(out.new_reactions));
+            var new_coords;
+	    d3.select('.selected').each(function(d) { new_coords = {x: d.x, y: d.y}; });
+            translate_off_screen(new_coords);
+            if (input.is_visible(o.reaction_input)) cmd_show_input();
+	}
+
         function set_status(status) {
             // TODO put this in js/metabolic-map/utils.js
             var t = d3.select('body').select('#status');
@@ -438,86 +495,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                 .attr('id', 'status');
             t.text(status);
             return this;
-        }
-
-        function new_reaction(reaction_id, selected_met) {
-            /* New reaction at x, y coordinates.
-	     */
-
-            // If reaction id is not new, then return:
-            if (o.drawn_reactions.hasOwnProperty(reaction_id)) {
-                console.warn('reaction is already drawn');
-                return;
-            }
-
-            // set reaction coordinates and angle
-            // be sure to copy the reaction recursively
-            var reaction = utils.clone(o.cobra_reactions[reaction_id]);
-            // calculate coordinates of reaction
-            reaction = utils.calculate_new_reaction_coordinates(reaction, coords);
-
-            // set primary metabolites and count reactants/products
-            var primary_reactant_index = 0,
-                primary_product_index = 0,
-                reactant_count = 0, product_count = 0,
-                newest_primary_product_id = "";
-
-            for (var metabolite_id in reaction.segments) {
-                var metabolite = reaction.segments[metabolite_id];
-                if (metabolite.coefficient < 0) {
-                    metabolite.index = reactant_count;
-                    if (reactant_count==primary_reactant_index) metabolite.is_primary = true;
-                    reactant_count++;
-                } else {
-                    metabolite.index = product_count;
-                    if (product_count==primary_product_index) {
-                        metabolite.is_primary = true;
-                        newest_primary_product_id = metabolite_id;
-                    };
-                    product_count++;
-                }
-            }
-
-            // keep track of total reactants and products
-            for (metabolite_id in reaction.metabolites) {
-                metabolite = reaction.metabolites[metabolite_id];
-                var primary_index;
-                if (metabolite.coefficient < 0) {
-                    metabolite.count = reactant_count + 1;
-                    primary_index = primary_reactant_index;
-                } else {
-                    metabolite.count = product_count + 1;
-                    primary_index = primary_product_index;
-                }
-
-                // record reaction_id with each metabolite
-                metabolite.reaction_id = reaction_id;
-
-                // calculate coordinates of metabolite components
-                metabolite = utils.calculate_new_metabolite_coordinates(metabolite,
-									primary_index,
-									reaction.main_axis,
-									reaction.center,
-									reaction.dis);
-	    }
-
-	    // rotate the new reaction
-	    var angle = Math.PI / 2; // default angle
-	    reaction = rotate_reaction(reaction, angle, coords);
-
-            // append the new reaction
-            o.drawn_reactions[reaction_id] = reaction;
-
-            // draw, and set the new coords
-            // o.selected_node = {'reaction_id': reaction_id,
-            //                    'direction': "product",
-            //                    'metabolite_id': newest_primary_product_id,
-            //                    'is_selected': true};
-            draw_everything();
-            var new_coords;
-	    d3.select('.selected').each(function(d) { new_coords = {x: d.x, y: d.y}; });
-            translate_off_screen(new_coords);
-            if (input.is_visible(o.reaction_input)) cmd_show_input();
         }
 
         function translate_off_screen(coords) {
@@ -648,55 +625,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    }
 	}
 
-	function rotate_reaction_id(cobra_id, angle, center) {
-	    /* Rotate reaction with cobra_id in o.drawn_reactions around center.
-	     */
-
-	    var reaction = o.drawn_reactions[cobra_id];
-	    o.drawn_reactions[cobra_id] = rotate_reaction(reaction,
-							  angle, center);
-	}
-	
-        function rotate_reaction(reaction, angle, center_absolute) {
-	    /* Rotate reaction around center.
-	     */
-
-	    // functions
-	    var rotate_around = function(coord) {
-		return utils.rotate_coords(coord, angle, center_absolute);
-	    };
-	    var rotate_around_recursive = function(coords) {
-		return utils.rotate_coords_recursive(coords, angle, center_absolute);
-	    };
-	    var rotate_around_rel = function(coord) {
-		// convert to absolute coords, rotate, then convert back
-		return utils.rotate_coords_relative(coord, angle, 
-						    center_absolute, reaction.coords);
-	    };
-	    var rotate_around_rel_recursive = function(coords) {
-		// convert to absolute coords, rotate, then convert back, recursively
-		return utils.rotate_coords_relative_recursive(coords, angle,
-							      center_absolute,
-							      reaction.coords);
-	    };
-
-	    // recalculate: reaction.main_axis, reaction.coords
-	    reaction.coords = rotate_around(reaction.coords);
-	    reaction.center = rotate_around_rel(reaction.center);
-	    reaction.main_axis = rotate_around_rel_recursive(reaction.main_axis);
-
-	    // recalculate: metabolite.*
-	    for (var met_id in reaction.segments) {
-		var metabolite = reaction.segments[met_id];
-		metabolite.b1 = rotate_around_rel(metabolite.b1);
-		metabolite.b2 = rotate_around_rel(metabolite.b2);
-		metabolite.start = rotate_around_rel(metabolite.start);
-		metabolite.end = rotate_around_rel(metabolite.end);
-		metabolite.circle = rotate_around_rel(metabolite.circle);
-	    }
-	    return reaction;
-        }
-	
         // -----------------------------------------------------------------------------------
         // KEYBOARD
 
@@ -804,7 +732,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
         function cmd_show_input() {
 	    input.reload_at_selected(o.reaction_input, o.scale.x, o.scale.y, o.window_scale, 
 				     o.window_translate, o.width, o.height, o.flux, 
-				     o.drawn_reactions, o.cobra_reactions, new_reaction);
+				     o.drawn_reactions, o.cobra_reactions, new_reaction_for_metabolite);
         }
         function cmd_cycle_primary_metabolite() {
             // cmd_hide_input();

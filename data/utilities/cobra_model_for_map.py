@@ -50,12 +50,15 @@ elif version=='v0.4.0':
             the_id = unicode(metabolite.id).replace('__', '-')
             # add metabolite
             mets[the_id] = { 'coefficient': coefficient,
-                                      'compartment': compartment }
+                             'compartment': compartment }
             
         # replace __ with -
         the_id = unicode(reaction.id).replace('__', '-')
-        # add metabolite
-        reactions[the_id] = { 'metabolites': mets }
+
+        # save reaction
+        reactions[the_id] = { 'metabolites': mets,
+                              'reversibility': reaction.reversibility,
+                              'name': reaction.name }
 
         # # check that they are all in the same compartment
         # first_compartment = mets.iterkeys().next()[-2:]
@@ -68,7 +71,7 @@ elif version=='v0.4.0':
         #     # transport reaction
         #     reactions[unicode(reaction.id)] = {'metabolites': mets,
         #                                        'compartment': 'transport'}
-
+        
     data = {'reactions': reactions}
 
     out_file = os.path.join(directory, 'iJO1366_visbio_model_0.4.0.json')

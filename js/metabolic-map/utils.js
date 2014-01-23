@@ -5,6 +5,7 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
 	     draw_an_object: draw_an_object,
 	     make_array: make_array,
 	     clone: clone,
+	     extend: extend,
 	     c_plus_c: c_plus_c,
 	     c_minus_c: c_minus_c,
 	     download_json: download_json,
@@ -117,6 +118,20 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
 	throw new Error("Unable to copy obj! Its type isn't supported.");
     }
 
+    function extend(obj1, obj2) {
+	/** Extends obj1 with keys/values from obj2.
+
+	 Performs the extension cautiously, and does not override attributes.
+
+	 */
+	for (var attrname in obj2) { 
+	    if (!(attrname in obj1))
+		obj1[attrname] = obj2[attrname];
+	    else
+		console.error('Attribute ' + attrname + ' already in object.');
+	}
+    }
+
     function c_plus_c(coords1, coords2) {
 	return { "x": coords1.x + coords2.x,
 		 "y": coords1.y + coords2.y };
@@ -222,28 +237,32 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
         return scale;
     }
 
-    function calculate_new_reaction_coordinates(reaction, coords) {
-	/* Assign coordinates to a new reaction.
-	 *	 
-	 * Sets dis, main_axis, center, and coords.	 
-	 *
-	 * The coords are absolute; center and main_axis are relative.
+    function calculate_new_reaction_coordinates(coords) {
+	/** Assign coordinates to a new reaction.
+	 	 
+	 Sets dis, main_axis, center, and coords.	 
+	 
+	 The coords are absolute; center and main_axis are relative.
+
 	 */
+	
+	var loc = {};
         var dis = 120;
 
 	// rotate main axis around angle with distance
         var main_axis = [{'x': 0, 'y': 0}, {'x': dis, 'y': 0}],
 	    center = { 'x': (main_axis[0].x + main_axis[1].x)/2,   // for convenience
                        'y': (main_axis[0].y + main_axis[1].y)/2 };
-        reaction.dis = dis;
-        reaction.main_axis = main_axis;
-        reaction.center = center;
-	reaction.coords = coords;
-        return reaction;
+        loc.dis = dis;
+        loc.main_axis = main_axis;
+        loc.center = center;
+	loc.coords = coords;
+        return loc;
     }
 
     function calculate_new_metabolite_coordinates(met, primary_index, main_axis, center, dis) {
-	/* Calculate metabolite coordinates for a new reaction metabolite.
+	/** Calculate metabolite coordinates for a new reaction metabolite.
+
 	 */
 
         // basic constants
