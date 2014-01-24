@@ -108,24 +108,31 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		import_and_load_map(o.map, o.height, o.width);
 	    } else {
 		o.drawn_membranes = [];
+		o.drawn_reactions = {};
+		o.drawn_nodes = {};
 		o.map_info = { max_map_w: o.width, max_map_h: o.height };
-
+		o.map_info.largest_ids = { reactions: -1,
+					   nodes: -1,
+					   segments: -1 };
 		// set up svg and svg definitions
 		o.scale = utils.define_scales(o.map_info.max_map_w, o.map_info.max_map_h,
 					      o.width, o.height);
 	    }
 
             o.defs = utils.setup_defs(o.svg, o.css);
-            var out = utils.setup_zoom_container(o.svg, o.width, o.height, [0.05, 15], 
-						 function(ev) {
-						     o.window_translate = {'x': ev.translate[0], 'y': ev.translate[1]};
-						     o.window_scale = ev.scale;
-						     if (input.is_visible(o.reaction_input))
-							 input.place_at_selected(o.reaction_input, o.scale.x, o.scale.y, 
-										 o.window_scale, o.window_translate, 
-										 o.width, o.height);
-						 }, 
-						 function() { return o.zoom_enabled; });
+	    var zoom_fn = function(ev) {
+		o.window_translate = {'x': ev.translate[0], 'y': ev.translate[1]};
+		o.window_scale = ev.scale;
+		if (input.is_visible(o.reaction_input))
+		    input.place_at_selected(o.reaction_input, o.scale.x, o.scale.y, 
+					    o.window_scale, o.window_translate, 
+					    o.width, o.height);
+	    };
+	    var out = utils.setup_zoom_container(o.svg, o.width, o.height, [0.05, 15],
+						 zoom_fn,
+						 function() {
+						     return o.zoom_enabled;
+						 });
 	    // TODO fix like this http://jsfiddle.net/La8PR/5/
             o.sel = out.sel,
             o.zoom = out.zoom;
@@ -451,6 +458,67 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    return { membranes: membranes, nodes: nodes, reactions: reactions, text_labels: text_labels, info: info };
 	}   
 
+        function new_reaction_from_scratch(starting_reaction, coords) {
+	    /** Draw a reaction on a blank canvas.
+
+	     starting_reaction: bigg_id for a reaction to draw.
+	     coords: coordinates to start drawing
+
+	     */
+	    
+            // If reaction id is not new, then return:
+	    for (var reaction_id in o.drawn_reactions) {
+		if (o.drawn_reactions[reaction_id].abbreviation == starting_reaction) {             
+		    console.warn('reaction is already drawn');
+                    return;
+		}
+            }
+
+            // set reaction coordinates and angle
+            // be sure to copy the reaction recursively
+            var cobra_reaction = utils.clone(o.cobra_reactions[starting_reaction]);
+
+	    // create the first node
+	    for (var metabolite_id in cobra_reaction.metabolites) {
+		var metabolite = cobra_reaction.metabolites[metabolite_id];
+		if (metabolite.coefficient < 0) {
+		    var selected_node_id = ++o.map_info.largest_ids.nodes,
+			label_d = { x: 30, y: 10 },
+			selected_node = { connected_segments: [],
+				     x: coords.x,
+				     y: coords.y,
+				     node_is_primary: true,
+				     compartment_name: metabolite.compartment,
+				     label_x: coords.x + label_d.x,
+				     label_y: coords.y + label_d.y,
+				     metabolite_name: metabolite.name,
+				     bigg_id: metabolite.bigg_id,
+				     bigg_id_compartmentalized: metabolite.bigg_id_compartmentalized,
+				     node_type: 'metabolite' },
+			new_nodes = {};
+		    new_nodes[selected_node_id] = selected_node;
+		    utils.extend(o.drawn_nodes, new_nodes);
+		    draw_specific_nodes([selected_node_id]);
+		    break;
+		}
+	    }
+	    
+	    // build the new reaction
+	    var out = build.new_reaction(starting_reaction, cobra_reaction,
+					 selected_node_id, selected_node,
+					 o.map_info.largest_ids);
+	    utils.extend(o.drawn_reactions, out.new_reactions);
+	    utils.extend(o.drawn_nodes, out.new_nodes);
+
+	    // draw new reaction and (TODO) select new metabolite
+	    draw_specific_nodes(Object.keys(out.new_nodes));
+	    draw_specific_reactions(Object.keys(out.new_reactions));
+            // var new_coords;
+	    // d3.select('.selected').each(function(d) { new_coords = {x: d.x, y: d.y}; });
+            // translate_off_screen(new_coords);
+            if (input.is_visible(o.reaction_input)) cmd_show_input();
+	}
+	
 	function new_reaction_for_metabolite(reaction_abbreviation, selected_node_id) {
 	    /** Build a new reaction starting with selected_met.
 

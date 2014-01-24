@@ -214,7 +214,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	/** Rotate reaction around center.
 
 	 */
-	console.log(reactions, nodes);
 	
 	// functions
 	var rotate_around = function(coord) {
