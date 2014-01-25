@@ -68,14 +68,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
              */
 
             // Begin with some definitions
-            // o.selected_node = {'node_id': '',
-            //                    'is_selected': false};
             o.drawn_reactions = {};
             o.arrowheads_generated = [];
             o.default_reaction_color = '#505050';
             o.window_translate = {'x': 0, 'y': 0};
             o.window_scale = 1;
 	    o.zoom_enabled = true;
+	    o.metabolite_click_enabled = true;
 	    o.shift_key_on = false;
 
 	    // Check the cobra model
@@ -110,7 +109,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		o.drawn_membranes = [];
 		o.drawn_reactions = {};
 		o.drawn_nodes = {};
-		o.map_info = { max_map_w: o.width, max_map_h: o.height };
+		o.map_info = { max_map_w: o.width*10, max_map_h: o.height*10 };
 		o.map_info.largest_ids = { reactions: -1,
 					   nodes: -1,
 					   segments: -1 };
@@ -137,12 +136,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             o.sel = out.sel,
             o.zoom = out.zoom;
 
-            var extent = {"x": o.width*3, "y": o.height*3},
+            var extent = {"x": o.width, "y": o.height},
 		mouse_node = o.sel.append('rect')
+		    .attr('id', 'mouse-node')
                     .attr("width", extent.x)
                     .attr("height", extent.y)
-		    .attr("transform",
-			  "translate("+(-extent.x/3)+","+(-extent.y/3)+")")
+		    // .attr("transform",
+		    // 	  "translate("+(-extent.x/2)+","+(-extent.y/2)+")")
                     .attr("style", "stroke:black;fill:none;")
                     .attr('pointer-events', 'all');
 
@@ -152,8 +152,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
             // setup selection box
             if (!o.map) {
-		// TEST case
-		var start_coords = {'x': o.width/2, 'y': 40};
+		// Draw default reaction if no map is provided
+		var start_coords = {'x': o.width*5, 'y': o.height*5};
                 new_reaction_from_scratch(o.starting_reaction, start_coords);
             } else {
 		draw_everything();
@@ -166,23 +166,21 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             function setup_menu(selection) {
                 var sel = selection.append("div").attr("id", "menu");
                 new_button(sel, cmd_hide_show_input, "New reaction (/)");
-                // new_button(sel, cmd_cycle_primary_metabolite, "Cycle primary metabolite (p)");
-                // new_button(sel, cmd_left, "Left (←)");
-                // new_button(sel, cmd_right, "Right (→)");
-                // new_button(sel, cmd_up, "Up (↑)");
-                // new_button(sel, cmd_down, "Down (↓)");
                 new_button(sel, cmd_save, "Save (^s)");
                 o.load_input_click_fn = new_input(sel, load_map_for_file, "Load (^o)");
-                o.load_flux_input_click_fn = new_input(sel, load_flux_for_file, "Load flux (^f)");
-		if (o.show_beziers) new_button(sel, cmd_hide_beziers, "Hide control points");
-		else new_button(sel, cmd_show_beziers, "Show control points");
-
-		var z;
-		if (o.zoom_enabled) z = new_button(sel, cmd_zoom_off, "Enable select (v)");
-		else z = new_button(sel, cmd_zoom_on, "Enable pan+zoom (z)");
-		z.attr('id', 'zoom-button');
-
-                return sel;
+                o.load_flux_input_click_fn = new_input(sel, load_flux_for_file,
+						       "Load flux (^f)");
+		if (o.show_beziers)
+		    new_button(sel, cmd_hide_beziers, "Hide control points");
+		else
+		    new_button(sel, cmd_show_beziers, "Show control points");
+		if (o.zoom_enabled)
+		    new_button(sel, cmd_zoom_off, "Enable select (v)", 'zoom-button');
+		else
+		    new_button(sel, cmd_zoom_on, "Enable pan+zoom (z)", 'zoom-button');
+		
+                new_button(sel, cmd_rotate_selected_nodes, "Rotate (r)");
+		return sel;
 
 		// definitions
 		function load_map_for_file(error, data) {
@@ -196,9 +194,11 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    apply_flux_to_map();
                     draw_everything();
                 }
-                function new_button(s, fn, name) {
-                    return s.append("button").attr("class", "command-button")
-                        .text(name).on("click", fn);
+                function new_button(s, fn, name, id) {
+                    var b = s.append("button").attr("class", "command-button")
+                            .text(name).on("click", fn);
+		    if (id !== undefined) b.attr('id', id);
+		    return b;
                 }
                 function new_input(s, fn, name) {
                     /* 
@@ -244,7 +244,9 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    return o.flux ? true : false;
 	}
 	function node_click(d) {
-	    return select_metabolite(this, d, o.sel.select('#nodes').selectAll('.node'), o.shift_key_on);
+	    if (o.metabolite_click_enabled)
+		return select_metabolite(this, d, o.sel.select('#nodes').selectAll('.node'), 
+					 o.shift_key_on);
 	}
 	function node_dragstart() {
 	    // silence other listeners
@@ -252,8 +254,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	}
 	function node_drag() {
 	    var grabbed_id = this.parentNode.__data__.node_id,		    
-                selected_ids = [];
-	    d3.select('#nodes').selectAll('.selected').each(function(d) { selected_ids.push(d.node_id); });
+                selected_ids = get_selected_node_ids();
 	    if (selected_ids.indexOf(grabbed_id)==-1) { 
 		console.log('Dragging unselected node');
 		return;
@@ -600,89 +601,31 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             }
         }
 
+	// -------------------------------------------------------------------------------
+	// node interaction
+	
         function get_coords_for_node(node_id) {
             var node = o.drawn_nodes[node_id],
                 coords = {'x': node.x, 'y': node.y};
             return coords;
         }
-
-        // function cycle_primary_key() {
-        //     /* Cycle the primary metabolite among the products of the selected reaction.
-	//      *
-	//      */
-
-        //     // if (!o.selected_node.is_selected) {
-        //     //     console.log('no selected node');
-        //     //     return;
-        //     // }
-
-        //     // get last index
-        //     var last_index, count;
-        //     var reaction = o.drawn_reactions[o.selected_node.reaction_id];
-        //     for (var metabolite_id in reaction.segments) {
-        //         var metabolite = reaction.segments[metabolite_id];
-        //         if ((metabolite.coefficient > 0 && o.selected_node.direction=="product") ||
-        //             (metabolite.coefficient < 0 && o.selected_node.direction=="reactant")) {
-        //             if (metabolite.is_primary) {
-        //                 last_index = metabolite.index;
-        //                 count = metabolite.count;
-        //             }
-        //         }
-        //     }
-        //     // rotate to new index
-        //     var index = last_index + 1 < count - 1 ? last_index + 1 : 0;
-        //     rotate_primary_key(index);
-        // }
-
-        // function rotate_primary_key(index) {
-        //     /* Switch the primary metabolite to the index of a particular product.
-	//      */
-
-        //     if (!o.selected_node.is_selected) {
-        //         console.warn('no selected node');
-        //         return;
-        //     }
-
-        //     // update primary in o.drawn_reactions
-        //     var new_primary_metabolite_id;
-        //     var reaction = o.drawn_reactions[o.selected_node.reaction_id];
-
-        //     // if primary is selected, then maintain that selection
-        //     var sel_is_primary = reaction.segments[o.selected_node.metabolite_id].is_primary,
-        //         should_select_primary = sel_is_primary ? true : false;
-
-        //     for (var metabolite_id in reaction.segments) {
-        //         var metabolite = reaction.segments[metabolite_id];
-        //         if ((metabolite.coefficient > 0 && o.selected_node.direction=="product") ||
-        //             (metabolite.coefficient < 0 && o.selected_node.direction=="reactant")) {
-        //             if (metabolite.index == index) {
-        //                 metabolite.is_primary = true;
-        //                 new_primary_metabolite_id = metabolite_id;
-        //             } else {
-        //                 metabolite.is_primary = false;
-        //             }
-        //             // calculate coordinates of metabolite components
-        //             metabolite = utils.calculate_new_metabolite_coordinates(metabolite,
-	// 								    index,
-        //                                                                     reaction.main_axis,
-	// 								    reaction.center,
-	// 								    reaction.dis);
-        //         }
-        //     }
-
-        //     var coords;
-        //     if (should_select_primary) {
-        //         o.selected_node.node_id = new_primary_node_id;
-        //         coords = get_coords_for_node(o.selected_node.node_id);
-        //     } else {
-        //         coords = get_coords_for_node(o.selected_node.node_id);
-        //     }
-
-        //     draw_specific_reactions([o.selected_node.reaction_id]);
-        // }
-
+	function get_selected_node_ids() {
+	    var selected_node_ids = [];
+	    d3.select('#nodes')
+		.selectAll('.selected')
+		.each(function(d) { selected_node_ids.push(d.node_id); });
+	    return selected_node_ids;
+	}
+	function get_selected_nodes() {
+	    var selected_nodes = {};
+	    d3.select('#nodes')
+		.selectAll('.selected')
+		.each(function(d) { selected_nodes[parseInt(d.node_id)] = o.drawn_nodes[d.node_id]; });
+	    return selected_nodes;
+	}	
         function select_metabolite(sel, d, node_selection, shift_key_on) {
-	    if (shift_key_on) d3.select(sel.parentNode).classed("selected", !d3.select(sel.parentNode).classed("selected"));
+	    if (shift_key_on) d3.select(sel.parentNode)
+		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
             else node_selection.classed("selected", function(p) { return d === p; });
 	    var selected_nodes = d3.select('.selected'),
 		count = 0;
@@ -693,27 +636,34 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    }
 	}
 
-        // -----------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------
         // KEYBOARD
 
         function setup_key_listeners() {
+	    /** Assign keys for commands.
+
+	     */
             var held_keys = reset_held_keys(),
                 modifier_keys = { command: 91,
                                   control: 17,
                                   option: 18,
-                                  shift: 16},
-                primary_cycle_key= { key: 80 }, // 'p'
-                hide_show_input_key = { key: 191 }, // forward slash '/'
-                rotate_keys = {'left':  { key: 37 },
-                               'right': { key: 39 },
-                               'up':    { key: 38 },
-                               'down':  { key: 40 } },
-                control_key = { key: 17 },
-                save_key = { key: 83, modifiers: { control: true } },
-                load_key = { key: 79, modifiers: { control: true } },
-		load_flux_key = { key: 70, modifiers: { control: true } },
-		pan_and_zoom_key = { key: 90 },
-		brush_key = { key: 86 };
+                                  shift: 16 },
+		assigned_keys = {
+                    hide_show_input_key: { key: 191, // forward slash '/'
+					   fn: cmd_hide_show_input },
+                    save_key: { key: 83, modifiers: { control: true }, // ctrl-s
+				fn: cmd_save },
+                    load_key: { key: 79, modifiers: { control: true }, // ctrl-o
+				fn: cmd_load },
+		    load_flux_key: { key: 70, modifiers: { control: true }, // ctrl-f
+				     fn: cmd_load_flux },
+		    pan_and_zoom_key: { key: 90, // z 
+					fn: cmd_zoom_on },
+		    brush_key: { key: 86, // v
+				 fn: cmd_zoom_off },
+		    rotate_key: { key: 82, // r
+				  fn: cmd_rotate_selected_nodes }
+		};
 
             d3.select(window).on("keydown", function() {
                 var kc = d3.event.keyCode,
@@ -721,42 +671,16 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
                 held_keys = toggle_modifiers(modifier_keys, held_keys, kc, true);
 		o.shift_key_on = held_keys.shift;
-		if (check_key(hide_show_input_key, kc, held_keys)) {
-                    cmd_hide_show_input();
-                    held_keys = reset_held_keys();
-                // } else if (check_key(primary_cycle_key, kc, held_keys) && !reaction_input_visible) {
-                //     cmd_cycle_primary_metabolite();
-                //     held_keys = reset_held_keys();
-                // } else if (check_key(rotate_keys.left, kc, held_keys) && !reaction_input_visible) {
-                //     cmd_left();
-                //     held_keys = reset_held_keys();
-                // } else if (check_key(rotate_keys.right, kc, held_keys) && !reaction_input_visible) {
-                //     cmd_right();
-                //     held_keys = reset_held_keys();
-                // } else if (check_key(rotate_keys.up, kc, held_keys) && !reaction_input_visible) {
-                //     cmd_up();
-                //     held_keys = reset_held_keys();
-                // } else if (check_key(rotate_keys.down, kc, held_keys) && !reaction_input_visible) {
-                //     cmd_down();
-                //     held_keys = reset_held_keys();
-                } else if (check_key(save_key, kc, held_keys) && !reaction_input_visible) {
-                    held_keys = reset_held_keys();
-                    cmd_save();
-                } else if (check_key(load_key, kc, held_keys) && !reaction_input_visible) {
-                    cmd_load();
-                    held_keys = reset_held_keys();
-                } else if (check_key(load_flux_key, kc, held_keys) && !reaction_input_visible) {
-                    cmd_load_flux();
-                    held_keys = reset_held_keys();
-                } else if (check_key(pan_and_zoom_key, kc, held_keys) && !reaction_input_visible) {
-                    cmd_zoom_on();
-                    held_keys = reset_held_keys();
-                } else if (check_key(brush_key, kc, held_keys) && !reaction_input_visible) {
-                    cmd_zoom_off();
-                    held_keys = reset_held_keys();
-                }
+		for (var key_id in assigned_keys) {
+		    var assigned_key = assigned_keys[key_id];
+		    if (check_key(assigned_key, kc, held_keys)) {
+			assigned_key.fn();
+			held_keys = reset_held_keys();
+		    }
+		}
             }).on("keyup", function() {
-                held_keys = toggle_modifiers(modifier_keys, held_keys, d3.event.keyCode, false);
+                held_keys = toggle_modifiers(modifier_keys, held_keys,
+					     d3.event.keyCode, false);
 		o.shift_key_on = held_keys.shift;
             });
 
@@ -787,7 +711,25 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                 return true;
             }
         }
+	
+	function add_escape_listener(callback) {
+	    /** Call the callback when the escape key is pressed, then
+	     unregisters the listener.
+
+	     */
+	    var selection = d3.select(window);
+	    selection.on('keydown.esc', function() {
+		if (d3.event.keyCode==27) { // esc
+		    callback();
+		    selection.on('keydown.esc', null);
+		}
+	    });
+	    return { clear: function() { selection.on('keydown.esc', null); } };
+	}
+
+	//----------------------------------------------------------------------
         // Commands
+	
         function cmd_hide_show_input() {
             if (input.is_visible(o.reaction_input)) cmd_hide_input();
             else cmd_show_input();
@@ -801,30 +743,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    input.reload_at_selected(o.reaction_input, o.scale.x, o.scale.y, o.window_scale, 
 				     o.window_translate, o.width, o.height, o.flux, 
 				     o.drawn_reactions, o.cobra_reactions, new_reaction_for_metabolite);
-        }
-        function cmd_cycle_primary_metabolite() {
-            // cmd_hide_input();
-            // cycle_primary_key();
-        }
-        function cmd_left() {
-            // cmd_hide_input();
-            // rotate_reaction_id(o.selected_node.reaction_id, 'angle', 270*(Math.PI/180));
-            // draw_specific_reactions_with_location(o.selected_node.reaction_id);
-        }
-        function cmd_right() {
-            // cmd_hide_input();
-            // rotate_reaction_id(o.selected_node.reaction_id, 'angle', 90*(Math.PI/180));
-            // draw_specific_reactions_with_location(o.selected_node.reaction_id);
-        }
-        function cmd_up() {
-            // cmd_hide_input();
-            // rotate_reaction_id(o.selected_node.reaction_id, 'angle', 180*(Math.PI/180));
-            // draw_specific_reactions_with_location(o.selected_node.reaction_id);
-        }
-        function cmd_down() {
-            // cmd_hide_input();
-            // rotate_reaction_id(o.selected_node.reaction_id, 'angle', 0);
-            // draw_specific_reactions_with_location(o.selected_node.reaction_id);
         }
         function cmd_save() {
             console.log("Saving");
@@ -861,6 +779,113 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    enable_brush(true);
 	    d3.select('#zoom-button').text('Enable pan+zoom (z)')
 		.on('click', cmd_zoom_on);
+	}
+	function cmd_rotate_selected_nodes() {
+	    /** Request a center, then listen for rotation, and rotate nodes.
+
+	     */
+	    var selected_nodes = get_selected_nodes();
+	    if (selected_nodes.length < 1) return console.warn('No nodes selected');
+	    
+	    var zoom_on = o.zoom_enabled, click_on = o.metabolite_click_enabled,
+		turn_everything_on = function() {
+		    // turn the zoom and click back on 
+		    o.zoom_enabled = zoom_on;
+		    o.metabolite_click_enabled = click_on;
+		};
+	    o.zoom_enabled = false;
+	    o.metabolite_click_enabled = false;
+
+	    choose_center(function(center) {
+		listen_for_rotation(center, function(angle) {
+		    // console.log(angle, center);
+		    // console.log(selected_nodes);
+		    build.rotate_selected_nodes(selected_nodes, angle, center);
+		    draw_specific_nodes(Object.keys(selected_nodes));
+		}, turn_everything_on, turn_everything_on);
+	    }, turn_everything_on);
+
+	    // definitions
+	    function choose_center(callback, callback_canceled) {
+		console.log('Choose center');
+		set_status('Choose a node or point to rotate around.');
+		var selection_node = d3.selectAll('.node-circle'),
+		    selection_background = d3.selectAll('#mouse-node'),
+		    escape_listener = add_escape_listener(function() {
+			console.log('choose_center escape');
+			selection_node.on('mousedown.center', null);
+			selection_background.on('mousedown.center', null);
+			set_status('');
+			callback_canceled();
+		    });
+		// if the user clicks a metabolite node
+		selection_node.on('mousedown.center', function(d) {		    
+		    console.log('mousedown.center');
+		    // turn off the click listeners to prepare for drag
+		    selection_node.on('mousedown.center', null);
+		    selection_background.on('mousedown.center', null);
+		    set_status('');
+		    escape_listener.clear();
+		    // find the location of the clicked metabolite
+		    var center = { x: d.x, y: d.y };
+		    callback(center); 
+		});
+		// if the user clicks a point
+		selection_background.on('mousedown.center', function() {
+		    console.log('mousedown.center');
+		    // turn off the click listeners to prepare for drag
+		    selection_node.on('mousedown.center', null);
+		    selection_background.on('mousedown.center', null);
+		    set_status('');
+		    escape_listener.clear();
+		    // find the point on the background node where the user clicked
+		    var center = { x: o.scale.x_size.invert(d3.mouse(this)[0]), 
+				   y: o.scale.y_size.invert(d3.mouse(this)[1]) };
+		    callback(center); 
+		});
+	    }
+	    function listen_for_rotation(center, callback, callback_finished, 
+					 callback_canceled) {
+		console.log('listen_for_rotation');
+		set_status('Drag to rotate.');
+		o.zoom_enabled = false;
+		var angle = Math.PI/2,
+		    selection = d3.selectAll('#mouse-node'),
+		    drag = d3.behavior.drag(),
+		    escape_listener = add_escape_listener(function() {
+			console.log('listen_for_rotation escape');
+			drag.on('drag.rotate', null);
+			drag.on('dragend.rotate', null);
+			set_status('');
+			callback_canceled();
+		    });
+		// drag.origin(function() { return point_of_grab; });
+		drag.on("drag.rotate", function() { 
+		    console.log('drag.rotate');
+		    callback(angle_for_event({ dx: o.scale.x_size.invert(d3.event.dx), 
+					       dy: o.scale.y_size.invert(d3.event.dy) },
+					     { x: o.scale.x_size.invert(d3.mouse(this)[0]),
+					       y: o.scale.y_size.invert(d3.mouse(this)[1]) },
+					     center));
+		}).on("dragend.rotate", function() {
+		    console.log('dragend.rotate');
+		    drag.on('drag.rotate', null);
+		    drag.on('dragend.rotate', null);
+		    set_status('');
+		    escape_listener.clear();
+		    callback_finished();
+		});
+		selection.call(drag);
+
+		// definitions
+		function angle_for_event(displacement, point, center) {
+		    var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
+			beta = Math.atan2((point.x - center.x + displacement.dx), 
+					 (center.y - point.y - displacement.dy)),
+			angle = beta - gamma;
+		    return angle;
+		}
+	    }
 	}
     };
 });

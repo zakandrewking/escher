@@ -1,5 +1,6 @@
 define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
-    return { new_reaction: new_reaction };
+    return { new_reaction: new_reaction,
+	     rotate_selected_nodes: rotate_selected_nodes };
     
     // definitions
     function new_reaction(reaction_abbreviation, cobra_reaction,
@@ -249,5 +250,31 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	    node.label_x = label_coords.x;
 	    node.label_y = label_coords.y;
 	}
-    }    
+    }
+
+    function rotate_selected_nodes(selected_nodes, angle, center) {
+	/** Rotate the selected nodes around center
+
+	 */
+	
+	// functions
+	var rotate_around = function(coord) {
+	    if (coord === null)
+		return null;
+	    return utils.rotate_coords(coord, angle, center);
+	};
+
+	// recalculate: node
+	for (var node_id in selected_nodes) {
+	    var node = selected_nodes[node_id],
+		node_coords = rotate_around({ x: node.x, y: node.y });
+	    node.x = node_coords.x;
+	    node.y = node_coords.y;
+	    
+	    // recalculate: label
+	    var label_coords = rotate_around({ x: node.label_x, y: node.label_y });
+	    node.label_x = label_coords.x;
+	    node.label_y = label_coords.y;
+	}
+    }
 });
