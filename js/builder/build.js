@@ -184,8 +184,13 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 		 new_nodes: new_nodes };
     }
 
-    function rotate_selected_nodes(selected_nodes, drawn_reactions, angle, center) {
-	/** Rotate the selected nodes around center
+    function rotate_selected_nodes(selected_nodes, reactions, angle, center) {
+	/** Rotate the selected nodes around center.
+
+	 selected_nodes: Nodes to rotate.
+	 reactions: Only updates beziers for these reactions.
+	 angle: Angle to rotate in radians.
+	 center: Point to rotate around.
 
 	 */
 	
@@ -203,12 +208,16 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 		// rotation distance
 		displacement = rotate_around({ x: node.x, y: node.y }),
 		// move the node
-		updated = move_node_and_labels(node, drawn_reactions,
+		updated = move_node_and_labels(node, reactions,
 						   displacement);
 	    // move the bezier points
 	    node.connected_segments.map(function(segment_obj) {
-		var reaction = drawn_reactions[segment_obj.reaction_id],
-		    segment = reaction.segments[segment_obj.segment_id];
+		var reaction = reactions[segment_obj.reaction_id];
+		// If the reaction was not passed in the reactions argument, then ignore
+		if (reaction === undefined) return;
+
+		// rotate the beziers
+		var segment = reaction.segments[segment_obj.segment_id];
 		if (segment.to_node_id==node_id && segment.b2) {
 		    var displacement = rotate_around(segment.b2);
 		    segment.b2 = utils.c_plus_c(segment.b2, displacement);
@@ -235,7 +244,12 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 
 	// move beziers
 	node.connected_segments.map(function(segment_obj) {
-	    var segment = reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
+	    var reaction = reactions[segment_obj.reaction_id];
+	    // If the reaction was not passed in the reactions argument, then ignore
+	    if (reaction === undefined) return;
+
+	    // update beziers
+	    var segment = reaction.segments[segment_obj.segment_id];
 	    if (segment.from_node_id==node_id && segment.b1) {
 		segment.b1 = utils.c_plus_c(segment.b1, displacement);
 	    }

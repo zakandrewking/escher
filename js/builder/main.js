@@ -180,6 +180,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    new_button(sel, cmd_zoom_on, "Enable pan+zoom (z)", 'zoom-button');
 		
                 new_button(sel, cmd_rotate_selected_nodes, "Rotate (r)");
+                new_button(sel, cmd_delete_selected_nodes, "Delete (del)");
 		return sel;
 
 		// definitions
@@ -647,7 +648,9 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    brush_key: { key: 86, // v
 				 fn: cmd_zoom_off },
 		    rotate_key: { key: 82, // r
-				  fn: cmd_rotate_selected_nodes }
+				  fn: cmd_rotate_selected_nodes },
+		    delete_key: { key: 8, // del
+				  fn: cmd_delete_selected_nodes }
 		};
 
             d3.select(window).on("keydown", function() {
@@ -661,6 +664,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    if (check_key(assigned_key, kc, held_keys)) {
 			assigned_key.fn();
 			held_keys = reset_held_keys();
+			// prevent browser action
+			d3.event.preventDefault();
 		    }
 		}
             }).on("keyup", function() {
@@ -877,6 +882,41 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    return angle;
 		}
 	    }
+	}
+	function cmd_delete_selected_nodes() {
+	    /** Delete the selected nodes and associated segments and reactions.
+
+	     */
+	    var selected_nodes = get_selected_nodes();
+	    if (selected_nodes.length < 1) return console.warn('No nodes selected');
+
+	    // for each node
+	    var updated_reaction_ids = [], updated_node_ids = [];
+	    for (var node_id in selected_nodes) {
+		var node = selected_nodes[node_id];
+
+		// delete associated segments and reactions	    
+		node.connected_segments.forEach(function(segment_obj) {
+		    var reaction = o.drawn_reactions[segment_obj.reaction_id];
+		    // if the reaction has already been delete (for the last node)
+		    if (reaction===undefined) return;
+		    // delete the segment
+		    delete reaction.segments[segment_obj.segment_id];
+		    // delete a reaction with no segments
+		    if (Object.keys(reaction.segments).length == 0)
+			delete o.drawn_reactions[segment_obj.reaction_id];
+		    if (updated_reaction_ids.indexOf(segment_obj.reaction_id) < 0)
+			updated_reaction_ids.push(segment_obj.reaction_id);
+		});
+		// delete nodes
+		delete o.drawn_nodes[node_id];
+		updated_node_ids.push(node_id);
+	    }
+	    
+	    // redraw
+	    draw_everything();
+	    // draw_specific_reactions(updated_reaction_ids);
+	    // draw_specific_nodes(updated_node_ids);
 	}
     };
 });
