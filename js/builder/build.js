@@ -1,6 +1,7 @@
 define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     return { new_reaction: new_reaction,
-	     rotate_selected_nodes: rotate_selected_nodes };
+	     rotate_selected_nodes: rotate_selected_nodes,
+	     move_node_and_dependents: move_node_and_dependents };
     
     // definitions
     function new_reaction(reaction_abbreviation, cobra_reaction,
@@ -106,35 +107,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
         }
 
         // Add the metabolites, keeping track of total reactants and products.
-	// 
-	// imported new metabolite nodes look like this:
-	// compartment_name: "cytosol"
-	// connected_segments: Array[2]
-	//     reaction_id: 755313
-	//     segment_id: 472
-	// label_x: 2780
-	// label_y: 2030
-	// metabolite_name: "D-Alanine"
-	// bigg_id: "ala-D"
-	// bigg_id_compartmentalized: "ala-D_c"
-	// node_id: "755258" // where does this come from?
-	// node_is_primary: true
-	// node_type: "metabolite"
-	// previously_selected: false
-	// selected: false
-	// x: 2750
-	// y: 2030
-	//
-	// and new metabolite segments:
-	// b1: Object
-	//     x: 2750
-	//     y: 2177
-	// b2: Object
-	//     x: 2750
-	//     y: 2240
-	// from_node_id: "755272"
-	// segment_id: "457" // ignoring for now
-	// to_node_id: "755252"
 	var new_nodes = new_anchors;
         for (var metabolite_abbreviation in cobra_reaction.metabolites) {
             metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
@@ -167,6 +139,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 		// update the existing node
 		selected_node.connected_segments.push({ segment_id: new_segment_id,
 							reaction_id: new_reaction_id });
+		new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
+								  reaction_id: new_reaction_id });
 	    } else {
 		// save new metabolite
 		var new_segment_id = ++largest_ids.segments,
@@ -188,6 +162,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 					   bigg_id: metabolite.bigg_id,
 					   bigg_id_compartmentalized: metabolite.bigg_id_compartmentalized,
 					   node_type: 'metabolite' };
+		new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
+								  reaction_id: new_reaction_id });
 	    }
 	}
 
@@ -197,62 +173,18 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	
 	// rotate the new reaction around the selected metabolite
 	var angle = Math.PI / 2; // default angle
-	rotate_reactions(new_reactions, new_nodes, angle, selected_node_coords);
+
+	// add the selected node for rotation, but don't return it as a new node
+	new_nodes[selected_node_id] = selected_node;
+	var updated = rotate_selected_nodes(new_nodes, new_reactions,
+					    angle, selected_node_coords);
+	delete new_nodes[selected_node_id];
 
 	return { new_reactions: new_reactions,
 		 new_nodes: new_nodes };
     }
 
-    // function rotate_reaction_id(reaction_id, angle, center) {
-    // 	/** Rotate reaction with reaction_id in o.drawn_reactions around center.
-
-    // 	 */
-    // 	o.drawn_reactions[reaction_id] = rotate_reaction(o.drawn_reactions[reaction_id],
-    // 							 angle, center);
-    // }
-    
-    function rotate_reactions(reactions, nodes, angle, center) {
-	/** Rotate reaction around center.
-
-	 */
-	
-	// functions
-	var rotate_around = function(coord) {
-	    if (coord === null)
-		return null;
-	    return utils.rotate_coords(coord, angle, center);
-	};
-
-	for (var reaction_id in reactions) {
-	    var reaction = reactions[reaction_id];
-
-	    // recalculate: label
-	    var label_coords = rotate_around({ x: reaction.label_x, y: reaction.label_y });
-	    reaction.label_x = label_coords.x;
-	    reaction.label_y = label_coords.y;
-
-	    // recalculate: segment
-	    for (var segment_id in reaction.segments) {
-		var segment = reaction.segments[segment_id];
-		segment.b1 = rotate_around(segment.b1);
-		segment.b2 = rotate_around(segment.b2);
-	    }
-	}
-	// recalculate: node
-	for (var node_id in nodes) {
-	    var node = nodes[node_id],
-		node_coords = rotate_around({ x: node.x, y: node.y });
-	    node.x = node_coords.x;
-	    node.y = node_coords.y;
-	    
-	    // recalculate: label
-	    var label_coords = rotate_around({ x: node.label_x, y: node.label_y });
-	    node.label_x = label_coords.x;
-	    node.label_y = label_coords.y;
-	}
-    }
-
-    function rotate_selected_nodes(selected_nodes, angle, center) {
+    function rotate_selected_nodes(selected_nodes, drawn_reactions, angle, center) {
 	/** Rotate the selected nodes around center
 
 	 */
@@ -265,16 +197,82 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	};
 
 	// recalculate: node
+	var updated_node_ids = [], updated_reaction_ids = [];
 	for (var node_id in selected_nodes) {
 	    var node = selected_nodes[node_id],
-		node_coords = rotate_around({ x: node.x, y: node.y });
-	    node.x = node_coords.x;
-	    node.y = node_coords.y;
-	    
-	    // recalculate: label
-	    var label_coords = rotate_around({ x: node.label_x, y: node.label_y });
-	    node.label_x = label_coords.x;
-	    node.label_y = label_coords.y;
+		// rotation distance
+		displacement = rotate_around({ x: node.x, y: node.y }),
+		// move the node
+		updated = move_node_and_labels(node, drawn_reactions,
+						   displacement);
+	    // move the bezier points
+	    node.connected_segments.map(function(segment_obj) {
+		var reaction = drawn_reactions[segment_obj.reaction_id],
+		    segment = reaction.segments[segment_obj.segment_id];
+		if (segment.to_node_id==node_id && segment.b2) {
+		    var displacement = rotate_around(segment.b2);
+		    segment.b2 = utils.c_plus_c(segment.b2, displacement);
+		} else if (segment.from_node_id==node_id && segment.b1) {
+		    var displacement = rotate_around(segment.b1);
+		    segment.b1 = utils.c_plus_c(segment.b1, displacement);
+		}
+	    });
+
+	    updated_reaction_ids = utils.unique_concat([updated_reaction_ids,
+							updated.reaction_ids]);
+	    updated_node_ids.push(node_id);
 	}
+
+	return { node_ids: updated_node_ids,
+		 reaction_ids: updated_reaction_ids };
+    }
+    
+    function move_node_and_dependents(node, node_id, reactions, displacement) {
+	/** Move the node and its labels and beziers.
+
+	 */
+	var updated = move_node_and_labels(node, reactions, displacement);
+
+	// move beziers
+	node.connected_segments.map(function(segment_obj) {
+	    var segment = reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
+	    if (segment.from_node_id==node_id && segment.b1) {
+		segment.b1 = utils.c_plus_c(segment.b1, displacement);
+	    }
+	    if (segment.to_node_id==node_id && segment.b2) {
+		segment.b2 = utils.c_plus_c(segment.b2, displacement);
+	    }
+	    // add to list of updated reaction ids if it isn't already there
+	    if (updated.reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
+	        updated.reaction_ids.push(segment_obj.reaction_id);
+	    }
+	});
+	return updated;
+    }
+
+    function move_node_and_labels(node, reactions, displacement) {
+	node.x = node.x + displacement.x;
+	node.y = node.y + displacement.y;
+	    
+	// recalculate: node label
+	node.label_x = node.label_x + displacement.x;
+	node.label_y = node.label_y + displacement.y;
+
+	// recalculate: reaction label
+	var updated_reaction_ids = [];
+	node.connected_segments.map(function(segment_obj) {
+	    var reaction = reactions[segment_obj.reaction_id];
+	    // add to list of updated reaction ids if it isn't already there
+	    if (updated_reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
+		updated_reaction_ids.push(segment_obj.reaction_id);
+
+		// update reaction label (but only once per reaction
+		if (node.node_type == 'center') {
+		    reaction.label_x = reaction.label_x + displacement.x;
+		    reaction.label_y = reaction.label_y + displacement.y;
+		}
+	    }
+	});
+	return { reaction_ids: updated_reaction_ids };
     }
 });

@@ -266,37 +266,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		if (selected_ids.indexOf(d.node_id)==-1) return;
 		// update data
                 var node = o.drawn_nodes[d.node_id],
-		    dx = o.scale.x_size.invert(d3.event.dx),
-		    dy = o.scale.y_size.invert(d3.event.dy);
-                node.x = node.x + dx; 
-		node.y = node.y + dy;
-		// update node labels
-                node.label_x = node.label_x + dx;
-		node.label_y = node.label_y + dy;
-
-		// update connected reactions
-		d.connected_segments.map(function(segment_object) {
-		    shift_beziers_for_segment(segment_object.reaction_id, segment_object.segment_id, 
-					      d.node_id, dx, dy);
-		    reaction_ids.push(segment_object.reaction_id);
-		});
+		    displacement = { x: o.scale.x_size.invert(d3.event.dx),
+				     y: o.scale.y_size.invert(d3.event.dy) },
+		    updated = build.move_node_and_dependents(node, d.node_id, o.drawn_reactions, displacement);
+		reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids]);
 	    });
-
 	    draw_specific_nodes(selected_ids);
 	    draw_specific_reactions(reaction_ids);
-
-	    // definitions
-	    function shift_beziers_for_segment(reaction_id, segment_id, node_id, dx, dy) {
-		var seg = o.drawn_reactions[reaction_id].segments[segment_id];
-		if (seg.from_node_id==node_id && seg.b1) {
-		    seg.b1.x = seg.b1.x + dx;
-		    seg.b1.y = seg.b1.y + dy;
-		}
-		if (seg.to_node_id==node_id && seg.b2) {
-		    seg.b2.x = seg.b2.x + dx;
-		    seg.b2.y = seg.b2.y + dy;
-		}
-	    }
 	}
 	function draw_everything() {
 	    draw.draw(o.drawn_membranes, o.drawn_reactions, o.drawn_nodes, o.drawn_text_labels, o.scale, 
@@ -800,8 +776,10 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		listen_for_rotation(center, function(angle) {
 		    // console.log(angle, center);
 		    // console.log(selected_nodes);
-		    build.rotate_selected_nodes(selected_nodes, angle, center);
-		    draw_specific_nodes(Object.keys(selected_nodes));
+		    var updated = build.rotate_selected_nodes(selected_nodes, o.drawn_reactions,
+							      angle, center);
+		    draw_specific_nodes(updated.node_ids);
+		    draw_specific_reactions(updated.reaction_ids);
 		}, turn_everything_on, turn_everything_on);
 	    }, turn_everything_on);
 
@@ -861,7 +839,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    });
 		// drag.origin(function() { return point_of_grab; });
 		drag.on("drag.rotate", function() { 
-		    console.log('drag.rotate');
+		    // console.log('drag.rotate');
 		    callback(angle_for_event({ dx: o.scale.x_size.invert(d3.event.dx), 
 					       dy: o.scale.y_size.invert(d3.event.dy) },
 					     { x: o.scale.x_size.invert(d3.mouse(this)[0]),

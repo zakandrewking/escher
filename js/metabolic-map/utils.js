@@ -6,6 +6,7 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
 	     make_array: make_array,
 	     clone: clone,
 	     extend: extend,
+	     unique_concat: unique_concat,
 	     c_plus_c: c_plus_c,
 	     c_minus_c: c_minus_c,
 	     download_json: download_json,
@@ -14,8 +15,8 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
 	     calculate_new_metabolite_coordinates: calculate_new_metabolite_coordinates,
 	     rotate_coords_recursive: rotate_coords_recursive,
 	     rotate_coords: rotate_coords,
-	     rotate_coords_relative: rotate_coords_relative,
-	     rotate_coords_relative_recursive: rotate_coords_relative_recursive,
+	     // rotate_coords_relative: rotate_coords_relative,
+	     // rotate_coords_relative_recursive: rotate_coords_relative_recursive,
 	     get_angle: get_angle,
 	     to_degrees: to_degrees,
 	     distance: distance };
@@ -131,11 +132,28 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
 	}
     }
 
+    function unique_concat(arrays) {
+	var new_array = [];
+	arrays.forEach(function (a) {
+	    a.forEach(function(x) {
+		if (new_array.indexOf(x) < 0)
+		    new_array.push(x);
+	    });
+	});
+	return new_array;
+    }
+
     function c_plus_c(coords1, coords2) {
+	if (coords1 === null || coords2 === null || 
+	    coords1 === undefined || coords2 === undefined)
+	    return null;
 	return { "x": coords1.x + coords2.x,
 		 "y": coords1.y + coords2.y };
     }
     function c_minus_c(coords1, coords2) {
+	if (coords1 === null || coords2 === null || 
+	    coords1 === undefined || coords2 === undefined)
+	    return null;
 	return { "x": coords1.x - coords2.x,
 		 "y": coords1.y - coords2.y };
     }
@@ -323,26 +341,30 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
     }
 
     function rotate_coords(c, angle, center) {
+	/** Calculates displacement { x: dx, y: dy } based on rotating point c around 
+	 center with angle.
+
+	 */
         var dx = Math.cos(-angle) * (c.x - center.x) +
-                Math.sin(-angle) * (c.y - center.y) +
-                center.x,
+                Math.sin(-angle) * (c.y - center.y)
+		+ center.x - c.x,
             dy = - Math.sin(-angle) * (c.x - center.x) +
-                Math.cos(-angle) * (c.y - center.y) +
-                center.y;
-        return {'x': dx, 'y': dy};
+                Math.cos(-angle) * (c.y - center.y)
+		+ center.y - c.y;
+        return { x: dx, y: dy };
     }
 
-    function rotate_coords_relative(coord, angle, center, displacement) {
-	// convert to absolute coords, rotate, then convert back
-	var abs = c_plus_c(coord, displacement);
-	return c_minus_c(rotate_coords(abs, angle, center), displacement);
-    }
-    function rotate_coords_relative_recursive(coords, angle, center, displacement) {
-	// convert to absolute coords, rotate, then convert back
-	var to_abs = function(c) { return c_plus_c(c, displacement); };
-	var to_rel = function(c) { return c_minus_c(c, displacement); };
-	return rotate_coords_recursive(coords.map(to_abs), angle, center).map(to_rel);
-    }
+    // function rotate_coords_relative(coord, angle, center, displacement) {
+    // 	// convert to absolute coords, rotate, then convert back
+    // 	var abs = c_plus_c(coord, displacement);
+    // 	return c_minus_c(rotate_coords(abs, angle, center), displacement);
+    // }
+    // function rotate_coords_relative_recursive(coords, angle, center, displacement) {
+    // 	// convert to absolute coords, rotate, then convert back
+    // 	var to_abs = function(c) { return c_plus_c(c, displacement); };
+    // 	var to_rel = function(c) { return c_minus_c(c, displacement); };
+    // 	return rotate_coords_recursive(coords.map(to_abs), angle, center).map(to_rel);
+    // }
 
     function get_angle(coords) {
 	/* Takes an array of 2 coordinate objects {"x": 1, "y": 1}
