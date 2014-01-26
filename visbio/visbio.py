@@ -19,8 +19,8 @@ ipython_html = """
 <button onclick="download_map('map%d')">Download svg</button>
 <div id="map%d" style="height:800px;"></div>"""
 
-map_download_url = "http://zakandrewking.github.io/visbio/maps/"
-map_download_display_url = "http://zakandrewking.github.io/visbio/"
+map_download_url = "http://zakandrewking.github.io/escher/maps/"
+map_download_display_url = "http://zakandrewking.github.io/escher/"
 
 def get_maps_cache_dir():
     cache_dir = appdirs.user_cache_dir('visbio', appauthor="Zachary King")
