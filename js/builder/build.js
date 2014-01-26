@@ -174,11 +174,10 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	// rotate the new reaction around the selected metabolite
 	var angle = Math.PI / 2; // default angle
 
-	// add the selected node for rotation, but don't return it as a new node
+	// add the selected node for rotation, and return it as a new (updated) node
 	new_nodes[selected_node_id] = selected_node;
 	var updated = rotate_selected_nodes(new_nodes, new_reactions,
 					    angle, selected_node_coords);
-	delete new_nodes[selected_node_id];
 
 	return { new_reactions: new_reactions,
 		 new_nodes: new_nodes };

@@ -27,7 +27,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             flux2: null,
 	    show_beziers: false,
 	    debug: false,
-	    starting_reaction: 'ACALDtex',
+	    starting_reaction: 'GLCtex',
 	    reaction_arrow_displacement: 35 });
 
         if (o.selection_is_svg) {
@@ -492,14 +492,17 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    
 	    // build the new reaction
 	    var out = build.new_reaction(starting_reaction, cobra_reaction,
-					 selected_node_id, selected_node,
+					 selected_node_id, utils.clone(selected_node),
 					 o.map_info.largest_ids);
 	    utils.extend(o.drawn_reactions, out.new_reactions);
+	    // remove the selected node so it can be updated
+	    delete o.drawn_nodes[selected_node_id];
 	    utils.extend(o.drawn_nodes, out.new_nodes);
 
 	    // draw new reaction and (TODO) select new metabolite
-	    draw_specific_nodes(Object.keys(out.new_nodes));
 	    draw_specific_reactions(Object.keys(out.new_reactions));
+	    draw_specific_nodes(Object.keys(out.new_nodes));
+
             // var new_coords;
 	    // d3.select('.selected').each(function(d) { new_coords = {x: d.x, y: d.y}; });
             // translate_off_screen(new_coords);
@@ -528,14 +531,17 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
 	    // build the new reaction
 	    var out = build.new_reaction(reaction_abbreviation, cobra_reaction,
-					 selected_node_id, selected_node,
+					 selected_node_id, utils.clone(selected_node),
 					 o.map_info.largest_ids);
 	    utils.extend(o.drawn_reactions, out.new_reactions);
+	    // remove the selected node so it can be updated
+	    delete o.drawn_nodes[selected_node_id];
 	    utils.extend(o.drawn_nodes, out.new_nodes);
 
 	    // draw new reaction and (TODO) select new metabolite
 	    draw_specific_nodes(Object.keys(out.new_nodes));
 	    draw_specific_reactions(Object.keys(out.new_reactions));
+
             // var new_coords;
 	    // d3.select('.selected').each(function(d) { new_coords = {x: d.x, y: d.y}; });
             // translate_off_screen(new_coords);
@@ -898,9 +904,23 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		// delete associated segments and reactions	    
 		node.connected_segments.forEach(function(segment_obj) {
 		    var reaction = o.drawn_reactions[segment_obj.reaction_id];
-		    // if the reaction has already been delete (for the last node)
+
+		    // if the reaction has already been deleted (for the last node)
 		    if (reaction===undefined) return;
-		    // delete the segment
+
+		    // updated connected nodes, and delete the segments
+		    var segment = reaction.segments[segment_obj.segment_id];
+		    if (node_id==segment.to_node_id) {
+			var connected_segments = o.drawn_nodes[segment.from_node_id].connected_segments;
+			o.drawn_nodes[segment.from_node_id].connected_segments = connected_segments.filter(function(so) {
+			    return so.segment_id != segment_obj.segment_id;				
+			});
+		    } else if (node_id==segment.from_node_id) {
+			var connected_segments = o.drawn_nodes[segment.to_node_id].connected_segments;
+			 o.drawn_nodes[segment.to_node_id].connected_segments = connected_segments.filter(function(so) {
+			    return so.segment_id != segment_obj.segment_id;				
+			});
+		    }
 		    delete reaction.segments[segment_obj.segment_id];
 		    // delete a reaction with no segments
 		    if (Object.keys(reaction.segments).length == 0)

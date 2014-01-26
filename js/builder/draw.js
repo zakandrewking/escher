@@ -401,7 +401,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 
         g.append('text')
             .attr('class', 'node-label label')
-            .text(function(d) { return d.bigg_id; })
+            .text(function(d) { return d.bigg_id_compartmentalized; })
             .attr('pointer-events', 'none');
     }
 
