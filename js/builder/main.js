@@ -304,7 +304,16 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	}
 
 	// brushing
+	function brush_is_enabled() {
+	    /** Returns a boolean for the on/off status of the brush
+
+	     */
+	    return d3.select('.brush').empty();
+	}
 	function enable_brush(on) {
+	    /** Turn the brush on or off
+
+	     */
 	    var brush_sel = o.sel.select('#brush-container');
 	    if (on) {
 		o.selection_brush = setup_selection_brush(brush_sel, 
@@ -763,14 +772,18 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    var selected_nodes = get_selected_nodes();
 	    if (selected_nodes.length < 1) return console.warn('No nodes selected');
 	    
-	    var zoom_on = o.zoom_enabled, click_on = o.metabolite_click_enabled,
+	    var zoom_on = o.zoom_enabled,
+		click_on = o.metabolite_click_enabled,
+		brush_on = brush_is_enabled(),
 		turn_everything_on = function() {
 		    // turn the zoom and click back on 
 		    o.zoom_enabled = zoom_on;
 		    o.metabolite_click_enabled = click_on;
+		    enable_brush(brush_on);
 		};
 	    o.zoom_enabled = false;
 	    o.metabolite_click_enabled = false;
+	    enable_brush(false);
 
 	    choose_center(function(center) {
 		listen_for_rotation(center, function(angle) {
