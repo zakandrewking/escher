@@ -255,24 +255,24 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	}
 	function node_drag() {
 	    var grabbed_id = this.parentNode.__data__.node_id,		    
-                selected_ids = get_selected_node_ids();
+                selected_ids = get_selected_node_ids(),
+		nodes_to_drag = [];
 	    if (selected_ids.indexOf(grabbed_id)==-1) { 
-		console.log('Dragging unselected node');
-		return;
+	    	console.log('Dragging unselected node');
+		nodes_to_drag.push(grabbed_id);
+	    } else {
+		nodes_to_drag = selected_ids;
 	    }
-
 	    var reaction_ids = [];
-	    // update node positions
-	    d3.selectAll('.node').each(function(d) {
-		if (selected_ids.indexOf(d.node_id)==-1) return;
+	    nodes_to_drag.forEach(function(node_id) {
 		// update data
-                var node = o.drawn_nodes[d.node_id],
+                var node = o.drawn_nodes[node_id],
 		    displacement = { x: o.scale.x_size.invert(d3.event.dx),
 				     y: o.scale.y_size.invert(d3.event.dy) },
-		    updated = build.move_node_and_dependents(node, d.node_id, o.drawn_reactions, displacement);
+		    updated = build.move_node_and_dependents(node, node_id, o.drawn_reactions, displacement);
 		reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids]);
 	    });
-	    draw_specific_nodes(selected_ids);
+	    draw_specific_nodes(nodes_to_drag);
 	    draw_specific_reactions(reaction_ids);
 	}
 	function draw_everything() {
@@ -645,6 +645,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					   fn: cmd_hide_show_input },
                     save_key: { key: 83, modifiers: { control: true }, // ctrl-s
 				fn: cmd_save },
+                    // save_key_cmd: { key: 83, modifiers: { command: true }, // command-s
+		    // 		       fn: cmd_save },
                     load_key: { key: 79, modifiers: { control: true }, // ctrl-o
 				fn: cmd_load },
 		    load_flux_key: { key: 70, modifiers: { control: true }, // ctrl-f
