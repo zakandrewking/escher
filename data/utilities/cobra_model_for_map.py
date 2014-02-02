@@ -55,7 +55,8 @@ elif version=='v0.4.0':
                              'compartment': compartment,
                              'name': metabolite.name,
                              'bigg_id': bigg_id_no_compartment,
-                             'bigg_id_compartmentalized': the_id }
+                             'bigg_id_compartmentalized': the_id,
+                             'formula': unicode(metabolite.formula) }
             
         # replace __ with -
         the_id = unicode(reaction.id).replace('__', '-')
@@ -65,18 +66,6 @@ elif version=='v0.4.0':
                               'reversibility': reaction.reversibility,
                               'name': reaction.name }
 
-        # # check that they are all in the same compartment
-        # first_compartment = mets.iterkeys().next()[-2:]
-        # if all([met_id[-2:] == first_compartment for met_id in mets.iterkeys()]):
-        #     # remove compartment labels
-        #     new_mets = dict([(k[:-2], v) for k, v in mets.iteritems()])
-        #     reactions[unicode(reaction.id)] = {'metabolites': new_mets,
-        #                                        'compartment': first_compartment.replace('_','')}
-        # else:
-        #     # transport reaction
-        #     reactions[unicode(reaction.id)] = {'metabolites': mets,
-        #                                        'compartment': 'transport'}
-        
     data = {'reactions': reactions}
 
     out_file = os.path.join(directory, 'iJO1366_visbio_model_0.4.0.json')
