@@ -76,25 +76,36 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	});
 
         // set primary metabolites and count reactants/products
-        var primary_reactant_index = 0,
-            primary_product_index = 0;
-        var reactant_count = 0, product_count = 0;
-	// look for the selected metabolite
+
+	// look for the selected metabolite, and record the indices
+	var reactant_ranks = [], product_ranks = [], 
+            reactant_count = 0, product_count = 0;
         for (var metabolite_abbreviation in cobra_reaction.metabolites) {
             var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
 	    if (metabolite.coefficient < 0) {
                 metabolite.index = reactant_count;
+		// score the metabolites. 2 = selected, 1 = carbon containing
 		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized)
-		    primary_reactant_index = reactant_count; 
+		    reactant_ranks.push([metabolite.index, 2]);
+		else if (/C([0-9]+)/.test(metabolite.formula))
+		    reactant_ranks.push([metabolite.index, 1]);
                 reactant_count++;
 	    } else {
                 metabolite.index = product_count;
 		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized)
-		    primary_product_index = product_count;
+		    product_ranks.push([metabolite.index, 2]);
+		else if (/C([0-9]+)/.test(metabolite.formula))
+		    product_ranks.push([metabolite.index, 1]);
                 product_count++;
 	    }
 	}
-	// set primary metabolites
+
+	// get the rank with the highest score
+	var max_rank = function(old, current) { return current[1] > old[1] ? current : old; },
+            primary_reactant_index = reactant_ranks.reduce(max_rank, [0,0])[0],
+            primary_product_index = reactant_ranks.reduce(max_rank, [0,0])[0];
+
+	// set primary metabolites, and keep track of the total counts
         for (var metabolite_abbreviation in cobra_reaction.metabolites) {
             var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
             if (metabolite.coefficient < 0) {
