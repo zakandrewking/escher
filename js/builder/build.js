@@ -78,7 +78,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
         // set primary metabolites and count reactants/products
         var primary_reactant_index = 0,
             primary_product_index = 0;
-        var reactant_count = 0, product_count = 0;
+        var reactant_count = 0, product_count = 0,
+	    reaction_is_reversed = false;
 	// look for the selected metabolite
         for (var metabolite_abbreviation in cobra_reaction.metabolites) {
             var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
@@ -89,8 +90,10 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
                 reactant_count++;
 	    } else {
                 metabolite.index = product_count;
-		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized)
+		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized) {
 		    primary_product_index = product_count;
+		    reaction_is_reversed = true;
+		}
                 product_count++;
 	    }
 	}
@@ -126,7 +129,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 								     primary_index,
 								     main_axis,
 								     center,
-								     reaction_length);
+								     reaction_length,
+								     reaction_is_reversed);
 
 	    // if this is the existing metabolite
 	    if (metabolite.bigg_id_compartmentalized==

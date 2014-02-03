@@ -254,7 +254,7 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
         return scale;
     }
 
-    function calculate_new_metabolite_coordinates(met, primary_index, main_axis, center, dis) {
+    function calculate_new_metabolite_coordinates(met, primary_index, main_axis, center, dis, reversed) {
 	/** Calculate metabolite coordinates for a new reaction metabolite.
 
 	 */
