@@ -155,6 +155,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		// Draw default reaction if no map is provided
 		var start_coords = {'x': o.width*5, 'y': o.height*5};
                 new_reaction_from_scratch(o.starting_reaction, start_coords);
+		cmd_zoom_extent();
             } else {
 		draw_everything();
 	    }
@@ -181,6 +182,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		
                 new_button(sel, cmd_rotate_selected_nodes, "Rotate (r)");
                 new_button(sel, cmd_delete_selected_nodes, "Delete (del)");
+                new_button(sel, cmd_zoom_extent, "Zoom extent (^0)");
 		return sel;
 
 		// definitions
@@ -658,7 +660,9 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    rotate_key: { key: 82, // r
 				  fn: cmd_rotate_selected_nodes },
 		    delete_key: { key: 8, // del
-				  fn: cmd_delete_selected_nodes }
+				  fn: cmd_delete_selected_nodes },
+		    extent_key: { key: 48, modifiers: { control: true }, // ctrl-0
+				  fn: cmd_zoom_extent }
 		};
 
             d3.select(window).on("keydown", function() {
@@ -939,6 +943,43 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    draw_everything();
 	    // draw_specific_reactions(updated_reaction_ids);
 	    // draw_specific_nodes(updated_node_ids);
+	}
+
+	function cmd_zoom_extent() {
+	    // get the extent of the nodes
+	    var min = { x: null, y: null }, // TODO make infinity?
+		max = { x: null, y: null }; 
+	    for (var node_id in o.drawn_nodes) {
+		var node = o.drawn_nodes[node_id];
+		if (min.x===null) min.x = o.scale.x(node.x);
+		if (min.y===null) min.y = o.scale.y(node.y);
+		if (max.x===null) max.x = o.scale.x(node.x);
+		if (max.y===null) max.y = o.scale.y(node.y);
+
+		min.x = Math.min(min.x, o.scale.x(node.x));
+		min.y = Math.min(min.y, o.scale.y(node.y));
+		max.x = Math.max(max.x, o.scale.x(node.x));
+		max.y = Math.max(max.y, o.scale.y(node.y));
+	    }
+	    // set the zoom
+            var margin = 100,
+                current = {'x': {'min': -o.window_translate.x,
+                                 'max': (o.width-o.window_translate.x)/o.window_scale},
+                           'y': {'min': -o.window_translate.y,
+                                 'max': (o.height-o.window_translate.y)/o.window_scale} },
+                go = function() {
+                    o.zoom.translate([o.window_translate.x, o.window_translate.y]);
+                    o.zoom.scale(o.window_scale);
+                    o.sel.transition()
+                        .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
+                };
+            var new_zoom = Math.min((o.width - margin*2) / (max.x - min.x),
+				    (o.height - margin*2) / (max.y - min.y)),
+		new_pos = { x: - (min.x * new_zoom) + margin + ((o.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
+			    y: - (min.y * new_zoom) + margin + ((o.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
+	    o.window_scale = new_zoom;
+            o.window_translate = new_pos;
+            go();
 	}
     };
 });
