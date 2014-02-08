@@ -183,6 +183,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                 new_button(sel, cmd_rotate_selected_nodes, "Rotate (r)");
                 new_button(sel, cmd_delete_selected_nodes, "Delete (del)");
                 new_button(sel, cmd_zoom_extent, "Zoom extent (^0)");
+                new_button(sel, cmd_make_selected_node_primary, "Make primary metabolite (p)");
+                new_button(sel, cmd_cycle_primary_node, "Cycle primary metabolite (c)");
 		return sel;
 
 		// definitions
@@ -660,7 +662,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 				  fn: cmd_delete_selected_nodes,
 				  ignore_with_input: true },
 		    extent_key: { key: 48, modifiers: { control: true }, // ctrl-0
-				  fn: cmd_zoom_extent }
+				  fn: cmd_zoom_extent },
+		    make_primary_key: { key: 80, // p
+					 fn: cmd_make_selected_node_primary,
+					 ignore_with_input: true },
+		    cycle_primary_key: { key: 67, // c
+					 fn: cmd_cycle_primary_node,
+					 ignore_with_input: true }
 		};
 
             d3.select(window).on("keydown", function() {
@@ -978,6 +986,57 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                 o.sel.transition()
                     .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
             };
+	}
+
+	function cmd_make_selected_node_primary() {
+	    var selected_nodes = get_selected_nodes();	    
+	    // can only have one selected
+	    if (Object.keys(selected_nodes).length != 1)
+		return console.error('Only one node can be selected');
+	    // get the first node
+	    var node_id = Object.keys(selected_nodes)[0],
+		node = selected_nodes[node_id];
+	    // make it primary
+	    o.drawn_nodes[node_id].node_is_primary = true;
+	    var nodes_to_draw = [node_id];
+	    // make the other reactants or products secondary
+	    // 1. Get the connected anchor nodes for the node
+	    var connected_anchor_ids = [];
+	    o.drawn_nodes[node_id].connected_segments.forEach(function(segment_info) {
+		var segment = o.drawn_reactions[segment_info.reaction_id].segments[segment_info.segment_id];
+		connected_anchor_ids.push(segment.from_node_id==node_id ?
+				       segment.to_node_id : segment.from_node_id);
+	    });
+	    // 2. find nodes connected to the anchor that are metabolites
+	    connected_anchor_ids.forEach(function(anchor_id) {
+		var segments = [];
+		o.drawn_nodes[anchor_id].connected_segments.forEach(function(segment_info) {
+		    var segment = o.drawn_reactions[segment_info.reaction_id].segments[segment_info.segment_id],
+			conn_met_id = segment.from_node_id == anchor_id ? segment.to_node_id : segment.from_node_id,
+			conn_node = o.drawn_nodes[conn_met_id];
+		    if (conn_node.node_type == 'metabolite' && conn_met_id != node_id) {
+			conn_node.node_is_primary = false;
+			nodes_to_draw.push(conn_met_id);
+		    }
+		});
+	    });
+	    // draw the nodes
+	    draw_specific_nodes(nodes_to_draw);
+	}
+
+	function cmd_cycle_primary_node() {
+	    return console.error('Not implemented');
+	    // var selected_nodes = get_selected_nodes();	    
+	    // // make sure the selected nodes are on the same side of the same
+	    // // two reactions
+	    // var reactions;
+	    // for (var node_id in selected_nodes) {
+	    // 	var node = selected_nodes[node_id];
+	    // 	// add the connected segments to the reactions list
+	    // 	node.connected_segments.forEach(function(segment) {
+	    // 	    reactions.push({reaction_id: segment.reaction_id});
+	    // 	});
+	    // }
 	}
     };
 });
