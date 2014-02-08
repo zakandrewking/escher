@@ -648,13 +648,17 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    load_flux_key: { key: 70, modifiers: { control: true }, // ctrl-f
 				     fn: cmd_load_flux },
 		    pan_and_zoom_key: { key: 90, // z 
-					fn: cmd_zoom_on },
+					fn: cmd_zoom_on,
+					ignore_with_input: true },
 		    brush_key: { key: 86, // v
-				 fn: cmd_zoom_off },
+				 fn: cmd_zoom_off,
+				 ignore_with_input: true },
 		    rotate_key: { key: 82, // r
-				  fn: cmd_rotate_selected_nodes },
+				  fn: cmd_rotate_selected_nodes,
+				  ignore_with_input: true },
 		    delete_key: { key: 8, // del
-				  fn: cmd_delete_selected_nodes },
+				  fn: cmd_delete_selected_nodes,
+				  ignore_with_input: true },
 		    extent_key: { key: 48, modifiers: { control: true }, // ctrl-0
 				  fn: cmd_zoom_extent }
 		};
@@ -668,10 +672,12 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		for (var key_id in assigned_keys) {
 		    var assigned_key = assigned_keys[key_id];
 		    if (check_key(assigned_key, kc, held_keys)) {
-			assigned_key.fn();
+			if (!(assigned_key.ignore_with_input && reaction_input_visible)) {
+			    assigned_key.fn();
+			    // prevent browser action
+			    d3.event.preventDefault();
+			}
 			held_keys = reset_held_keys();
-			// prevent browser action
-			d3.event.preventDefault();
 		    }
 		}
             }).on("keyup", function() {
