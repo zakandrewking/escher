@@ -248,8 +248,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	}
 	function node_click(d) {
 	    if (o.metabolite_click_enabled)
-		return select_metabolite(this, d, o.sel.select('#nodes').selectAll('.node'), 
-					 o.shift_key_on);
+		return select_metabolite(this, d);
 	}
 	function node_dragstart() {
 	    // silence other listeners
@@ -492,23 +491,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		}
 	    }
 	    
-	    // build the new reaction
-	    var out = build.new_reaction(starting_reaction, cobra_reaction,
-					 selected_node_id, utils.clone(selected_node),
-					 o.map_info.largest_ids);
-	    utils.extend(o.drawn_reactions, out.new_reactions);
-	    // remove the selected node so it can be updated
-	    delete o.drawn_nodes[selected_node_id];
-	    utils.extend(o.drawn_nodes, out.new_nodes);
-
-	    // draw new reaction and (TODO) select new metabolite
-	    draw_specific_reactions(Object.keys(out.new_reactions));
-	    draw_specific_nodes(Object.keys(out.new_nodes));
-
-            // var new_coords;
-	    // d3.select('.selected').each(function(d) { new_coords = {x: d.x, y: d.y}; });
-            // translate_off_screen(new_coords);
-            if (input.is_visible(o.reaction_input)) cmd_show_input();
+	    // draw the reaction
+	    new_reaction_for_metabolite(starting_reaction, selected_node_id);
 	}
 	
 	function new_reaction_for_metabolite(reaction_abbreviation, selected_node_id) {
@@ -544,10 +528,12 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    draw_specific_nodes(Object.keys(out.new_nodes));
 	    draw_specific_reactions(Object.keys(out.new_reactions));
 
-            // var new_coords;
-	    // d3.select('.selected').each(function(d) { new_coords = {x: d.x, y: d.y}; });
+	    // select new primary metabolite
+	    for (var node_id in out.new_nodes) {
+		if (out.new_nodes[node_id].node_is_primary && node_id!=selected_node_id)
+		    select_metabolite_with_id(node_id);
+	    }
             // translate_off_screen(new_coords);
-            if (input.is_visible(o.reaction_input)) cmd_show_input();
 	}
 
         function set_status(status) {
@@ -617,7 +603,17 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		.each(function(d) { selected_nodes[parseInt(d.node_id)] = o.drawn_nodes[d.node_id]; });
 	    return selected_nodes;
 	}	
-        function select_metabolite(sel, d, node_selection, shift_key_on) {
+	function select_metabolite_with_id(node_id) {
+	    var node_selection = o.sel.select('#nodes').selectAll('.node');
+	    node_selection.classed("selected", function(d) {
+		console.log(d, node_id);
+		return parseInt(d.node_id) == parseInt(node_id);
+	    });
+	    if (input.is_visible(o.reaction_input)) cmd_show_input();
+	}
+        function select_metabolite(sel, d) {
+	    var node_selection = o.sel.select('#nodes').selectAll('.node'), 
+		shift_key_on = o.shift_key_on;
 	    if (shift_key_on) d3.select(sel.parentNode)
 		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
             else node_selection.classed("selected", function(p) { return d === p; });
