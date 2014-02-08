@@ -309,7 +309,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
             b1_strength = 0.5,
             b2_strength = 0.2,
             w2 = w*0.7,
-            secondary_dis = 20,
+            secondary_dis = 40,
             num_slots = Math.min(2, met.count - 1);
 
         // size and spacing for primary and secondary metabolites

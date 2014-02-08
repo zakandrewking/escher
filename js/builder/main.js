@@ -259,7 +259,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                 selected_ids = get_selected_node_ids(),
 		nodes_to_drag = [];
 	    if (selected_ids.indexOf(grabbed_id)==-1) { 
-	    	console.log('Dragging unselected node');
 		nodes_to_drag.push(grabbed_id);
 	    } else {
 		nodes_to_drag = selected_ids;
@@ -557,7 +556,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                                  'max': - o.window_translate.x / o.window_scale + (o.width-margin) / o.window_scale },
                            'y': {'min': - o.window_translate.y / o.window_scale + margin / o.window_scale,
                                  'max': - o.window_translate.y / o.window_scale + (o.height-margin) / o.window_scale } };
-	    console.log(current);
             if (o.scale.x(coords.x) < current.x.min) {
                 o.window_translate.x = o.window_translate.x - (o.scale.x(coords.x) - current.x.min) * o.window_scale;
                 go();
@@ -607,7 +605,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	function select_metabolite_with_id(node_id) {
 	    var node_selection = o.sel.select('#nodes').selectAll('.node');
 	    node_selection.classed("selected", function(d) {
-		console.log(d, node_id);
 		return parseInt(d.node_id) == parseInt(node_id);
 	    });
 	    if (input.is_visible(o.reaction_input)) cmd_show_input();
