@@ -1025,18 +1025,45 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	}
 
 	function cmd_cycle_primary_node() {
-	    return console.error('Not implemented');
-	    // var selected_nodes = get_selected_nodes();	    
-	    // // make sure the selected nodes are on the same side of the same
-	    // // two reactions
-	    // var reactions;
-	    // for (var node_id in selected_nodes) {
-	    // 	var node = selected_nodes[node_id];
-	    // 	// add the connected segments to the reactions list
-	    // 	node.connected_segments.forEach(function(segment) {
-	    // 	    reactions.push({reaction_id: segment.reaction_id});
-	    // 	});
-	    // }
+	    var selected_nodes = get_selected_nodes();
+	    // get the first node
+	    var node_id = Object.keys(selected_nodes)[0],
+		node = selected_nodes[node_id];
+	    // make the other reactants or products secondary
+	    // 1. Get the connected anchor nodes for the node
+	    var connected_anchor_ids = [];
+	    o.drawn_nodes[node_id].connected_segments.forEach(function(segment_info) {
+		var segment = o.drawn_reactions[segment_info.reaction_id].segments[segment_info.segment_id];
+		connected_anchor_ids.push(segment.from_node_id==node_id ?
+				       segment.to_node_id : segment.from_node_id);
+	    });
+	    // 2. find nodes connected to the anchor that are metabolites
+	    var related_node_ids = [node_id];
+	    connected_anchor_ids.forEach(function(anchor_id) {
+		var segments = [];
+		o.drawn_nodes[anchor_id].connected_segments.forEach(function(segment_info) {
+		    var segment = o.drawn_reactions[segment_info.reaction_id].segments[segment_info.segment_id],
+			conn_met_id = segment.from_node_id == anchor_id ? segment.to_node_id : segment.from_node_id,
+			conn_node = o.drawn_nodes[conn_met_id];
+		    if (conn_node.node_type == 'metabolite' && conn_met_id != node_id) {
+			related_node_ids.push(String(conn_met_id));
+		    }
+		});
+	    });
+	    // 3. check if they match the other selected nodes
+	    for (var a_selected_node_id in selected_nodes) {
+		if (a_selected_node_id!=node_id && related_node_ids.indexOf(a_selected_node_id) == -1) {
+		    return console.warn('Cannot cycle this selection');
+		}
+	    }
+	    // 4. change the primary node,
+	    var nodes_to_draw = [];
+	    related_node_ids.forEach(function(related_node_id) {
+		o.drawn_nodes[related_node_id].node_is_primary = !o.drawn_nodes[related_node_id].node_is_primary;
+		nodes_to_draw.push(related_node_id);
+	    });
+	    // draw the nodes
+	    draw_specific_nodes(nodes_to_draw);
 	}
     };
 });
