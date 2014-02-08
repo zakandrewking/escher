@@ -530,10 +530,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
 	    // select new primary metabolite
 	    for (var node_id in out.new_nodes) {
-		if (out.new_nodes[node_id].node_is_primary && node_id!=selected_node_id)
+		var node = out.new_nodes[node_id];
+		if (node.node_is_primary && node_id!=selected_node_id) {
 		    select_metabolite_with_id(node_id);
+		    var new_coords = { x: node.x, y: node.y };
+		    translate_off_screen(new_coords);
+		}
 	    }
-            // translate_off_screen(new_coords);
 	}
 
         function set_status(status) {
@@ -549,35 +552,33 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
         function translate_off_screen(coords) {
             // shift window if new reaction will draw off the screen
             // TODO BUG not accounting for scale correctly
-            var margin = 200,
-                new_pos,
-                current = {'x': {'min': -o.window_translate.x,
-                                 'max': (o.width-o.window_translate.x)/o.window_scale},
-                           'y': {'min': -o.window_translate.y,
-                                 'max': (o.height-o.window_translate.y)/o.window_scale} },
-                go = function() {
-                    o.zoom.translate([o.window_translate.x, o.window_translate.y]);
-                    o.zoom.scale(o.window_scale);
-                    o.sel.transition()
-                        .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
-                };
-            if (coords.x < current.x.min + margin) {
-                new_pos = -(coords.x - current.x.min - margin) * o.window_scale + o.window_translate.x;
-                o.window_translate.x = new_pos;
+            var margin = 40, // pixels
+		current = {'x': {'min': - o.window_translate.x / o.window_scale + margin / o.window_scale,
+                                 'max': - o.window_translate.x / o.window_scale + (o.width-margin) / o.window_scale },
+                           'y': {'min': - o.window_translate.y / o.window_scale + margin / o.window_scale,
+                                 'max': - o.window_translate.y / o.window_scale + (o.height-margin) / o.window_scale } };
+	    console.log(current);
+            if (o.scale.x(coords.x) < current.x.min) {
+                o.window_translate.x = o.window_translate.x - (o.scale.x(coords.x) - current.x.min) * o.window_scale;
                 go();
-            } else if (coords.x > current.x.max - margin) {
-                new_pos = -(coords.x - current.x.max + margin) * o.window_scale + o.window_translate.x;
-                o.window_translate.x = new_pos;
+            } else if (o.scale.x(coords.x) > current.x.max) {
+                o.window_translate.x = o.window_translate.x - (o.scale.x(coords.x) - current.x.max) * o.window_scale;
                 go();
             }
-            if (coords.y < current.y.min + margin) {
-                new_pos = -(coords.y - current.y.min - margin) * o.window_scale + o.window_translate.y;
-                o.window_translate.y = new_pos;
+            if (o.scale.y(coords.y) < current.y.min) {
+                o.window_translate.y = o.window_translate.y - (o.scale.y(coords.y) - current.y.min) * o.window_scale;
                 go();
-            } else if (coords.y > current.y.max - margin) {
-                new_pos = -(coords.y - current.y.max + margin) * o.window_scale + o.window_translate.y;
-                o.window_translate.y = new_pos;
+            } else if (o.scale.y(coords.y) > current.y.max) {
+                o.window_translate.y = o.window_translate.y - (o.scale.y(coords.y) - current.y.max) * o.window_scale;
                 go();
+            }
+
+	    // definitions
+            function go() {
+                o.zoom.translate([o.window_translate.x, o.window_translate.y]);
+                o.zoom.scale(o.window_scale);
+                o.sel.transition()
+                    .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
             }
         }
 
@@ -959,23 +960,21 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    }
 	    // set the zoom
             var margin = 100,
-                current = {'x': {'min': -o.window_translate.x,
-                                 'max': (o.width-o.window_translate.x)/o.window_scale},
-                           'y': {'min': -o.window_translate.y,
-                                 'max': (o.height-o.window_translate.y)/o.window_scale} },
-                go = function() {
-                    o.zoom.translate([o.window_translate.x, o.window_translate.y]);
-                    o.zoom.scale(o.window_scale);
-                    o.sel.transition()
-                        .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
-                };
-            var new_zoom = Math.min((o.width - margin*2) / (max.x - min.x),
+		new_zoom = Math.min((o.width - margin*2) / (max.x - min.x),
 				    (o.height - margin*2) / (max.y - min.y)),
 		new_pos = { x: - (min.x * new_zoom) + margin + ((o.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
 			    y: - (min.y * new_zoom) + margin + ((o.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
 	    o.window_scale = new_zoom;
             o.window_translate = new_pos;
             go();
+
+	    // definitions
+            function go() {
+                o.zoom.translate([o.window_translate.x, o.window_translate.y]);
+                o.zoom.scale(o.window_scale);
+                o.sel.transition()
+                    .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
+            };
 	}
     };
 });
