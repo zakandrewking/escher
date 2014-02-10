@@ -6,7 +6,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     // definitions
     function new_reaction(reaction_abbreviation, cobra_reaction,
 			  selected_node_id, selected_node,
-			  largest_ids) {
+			  largest_ids, cofactors) {
         /** New reaction.
 
 	 */
@@ -90,8 +90,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 		var carbons = /C([0-9]+)/.exec(metabolite.formula);
 		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized) {
 		    reactant_ranks.push([metabolite.index, Infinity]);
-		} else if (carbons) {
-		    reactant_ranks.push([metabolite.index, carbons[1]]);
+		} else if (carbons && cofactors.indexOf(metabolite.bigg_id)==-1) {
+		    reactant_ranks.push([metabolite.index, parseInt(carbons[1])]);
 		}
                 reactant_count++;
 	    } else {
@@ -100,8 +100,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized) {
 		    product_ranks.push([metabolite.index, Infinity]);
 		    reaction_is_reversed = true;
-		} else if (carbons) {
-		    product_ranks.push([metabolite.index, carbons[1]]);
+		} else if (carbons && cofactors.indexOf(metabolite.bigg_id)==-1) {
+		    product_ranks.push([metabolite.index, parseInt(carbons[1])]);
 		}
                 product_count++;
 	    }
@@ -110,7 +110,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	// get the rank with the highest score
 	var max_rank = function(old, current) { return current[1] > old[1] ? current : old; },
             primary_reactant_index = reactant_ranks.reduce(max_rank, [0,0])[0],
-            primary_product_index = reactant_ranks.reduce(max_rank, [0,0])[0];
+            primary_product_index = product_ranks.reduce(max_rank, [0,0])[0];
 
 	// set primary metabolites, and keep track of the total counts
         for (var metabolite_abbreviation in cobra_reaction.metabolites) {

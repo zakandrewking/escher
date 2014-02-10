@@ -81,6 +81,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    if (o.cobra_model) {
 		// TODO better checks
 		o.cobra_reactions = o.cobra_model.reactions;
+		o.cofactors = o.cobra_model.cofactors;
 	    }
 
 	    // set up the svg
@@ -519,7 +520,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    // build the new reaction
 	    var out = build.new_reaction(reaction_abbreviation, cobra_reaction,
 					 selected_node_id, utils.clone(selected_node),
-					 o.map_info.largest_ids);
+					 o.map_info.largest_ids, o.cofactors);
 	    utils.extend(o.drawn_reactions, out.new_reactions);
 	    // remove the selected node so it can be updated
 	    delete o.drawn_nodes[selected_node_id];

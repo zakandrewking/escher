@@ -66,7 +66,9 @@ elif version=='v0.4.0':
                               'reversibility': reaction.reversibility,
                               'name': reaction.name }
 
-    data = {'reactions': reactions}
+    cofactor_bigg_ids = ['nadh', 'nad', 'nadph', 'nadp', 'h', 'atp', 'adp']
+    data = {'reactions': reactions,
+            'cofactors': cofactor_bigg_ids}
 
     out_file = os.path.join(directory, 'iJO1366_visbio_model_0.4.0.json')
     with open(out_file, 'w') as f:
