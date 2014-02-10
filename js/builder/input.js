@@ -106,8 +106,8 @@ define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
 	var strings_to_display = [],
 	    suggestions_array = utils.make_array(suggestions, 'reaction_abbreviation');
 	if (flux)
-	    suggestions_array.sort(function(x, y) { return Math.abs(x.flux) > Math.abs(y.flux); });
-	suggestions_array.map(function(x) {
+	    suggestions_array.sort(function(x, y) { return Math.abs(y.flux) - Math.abs(x.flux); });
+	suggestions_array.forEach(function(x) {
 	    strings_to_display.push(x.string);
 	});
 
