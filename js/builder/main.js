@@ -1,6 +1,6 @@
 define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", "lib/d3", 
-	"lib/complete.ly", "builder/build"],
-       function(scaffold, utils, draw, input, d3, completely, build) {
+	"lib/complete.ly", "builder/build", "builder/DirectionArrow"],
+       function(scaffold, utils, draw, input, d3, completely, build, DirectionArrow) {
     // NOTE
     // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
     // only necessary for selectAll()
@@ -91,13 +91,15 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             o.height = out.height;
             o.width = out.width;
 
-            // setup menu and status bars
+            // set up menu and status bars
             o.menu = setup_menu(o.selection);
             o.status = setup_status(o.selection);
 
-            // setup the reaction input with complete.ly
+            // set up the reaction input with complete.ly
             o.reaction_input = setup_reaction_input(o.selection);
 
+	    // set up the reaction direction arrow
+	    o.direction_arrow = new DirectionArrow();
 
             // set up keyboard listeners
             setup_key_listeners();

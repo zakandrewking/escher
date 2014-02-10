@@ -7,7 +7,8 @@ define(["lib/d3"], function(d3) {
         load_files: load_files,
         load_the_file: load_the_file,
 	scale_and_axes: scale_and_axes,
-	add_generic_axis: add_generic_axis
+	add_generic_axis: add_generic_axis,
+	make_class: make_class
     };
 
     // definitions
@@ -239,5 +240,24 @@ and width, or use the 'fill_screen' option.");
 	    .attr("dy", dy)
 	    .style("text-anchor", "end")
 	    .text(text);
+    }
+    // makeClass - By Hubert Kauker (MIT Licensed)
+    // original by John Resig (MIT Licensed).
+    // http://stackoverflow.com/questions/7892884/simple-class-instantiation
+    function make_class(){
+	var isInternal;
+	var constructor = function(args){
+            if ( this instanceof constructor ) {
+		if ( typeof this.init == "function" ) {
+                    this.init.apply( this, isInternal ? args : arguments );
+		}
+            } else {
+		isInternal = true;
+		var instance = new constructor( arguments );
+		isInternal = false;
+		return instance;
+            }
+	};
+	return constructor;
     }
 });
