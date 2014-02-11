@@ -1,6 +1,6 @@
 define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", "lib/d3", 
-	"lib/complete.ly", "builder/build", "builder/DirectionArrow"],
-       function(scaffold, utils, draw, input, d3, completely, build, DirectionArrow) {
+	"lib/complete.ly", "builder/build", "builder/DirectionArrow", "builder/UndoStack"],
+       function(scaffold, utils, draw, input, d3, completely, build, DirectionArrow, UndoStack) {
     // NOTE
     // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
     // only necessary for selectAll()
@@ -102,6 +102,9 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             // set up keyboard listeners
             setup_key_listeners();
 
+	    // make the undo/redo stack
+	    o.undo_stack = new UndoStack();
+
 	    // import map
 	    var max_w = o.width, max_h = o.height;
 	    if (o.map) {
@@ -194,6 +197,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                 new_button(sel, cmd_direction_arrow_up, "^");
                 new_button(sel, cmd_direction_arrow_down, "v");
                 new_button(sel, cmd_direction_arrow_right, ">");
+                new_button(sel, cmd_undo, "Undo (^z)");
+                new_button(sel, cmd_redo, "Redo (^Shift z)");
 		return sel;
 
 		// definitions
@@ -530,24 +535,91 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					 selected_node_id, utils.clone(selected_node),
 					 o.map_info.largest_ids, o.cofactors,
 					 o.direction_arrow.get_rotation());
-	    utils.extend(o.drawn_reactions, out.new_reactions);
-	    // remove the selected node so it can be updated
-	    delete o.drawn_nodes[selected_node_id];
-	    utils.extend(o.drawn_nodes, out.new_nodes);
+	    // draw
+	    // clone the nodes and reactions, to redo this action later
+	    extend_and_draw_reaction(utils.clone(out.new_nodes),
+				     utils.clone(out.new_reactions), selected_node_id);
 
-	    // draw new reaction and (TODO) select new metabolite
-	    draw_specific_nodes(Object.keys(out.new_nodes));
-	    draw_specific_reactions(Object.keys(out.new_reactions));
+	    // add to undo/redo stack
+	    o.undo_stack.push(function() {
+		// undo
+		// get the nodes to delete
+		var these_nodes = Object.keys(out.new_nodes)
+			.filter(function(n) { return n!=String(selected_node_id); });
+		delete_nodes(these_nodes);
+		select_metabolite_with_id(selected_node_id);
+	    }, function () {
+		// redo
+		// clone the nodes and reactions, to redo this action later
+		extend_and_draw_reaction(utils.clone(out.new_nodes),
+					 utils.clone(out.new_reactions), selected_node_id);
+	    });
 
-	    // select new primary metabolite
-	    for (var node_id in out.new_nodes) {
-		var node = out.new_nodes[node_id];
-		if (node.node_is_primary && node_id!=selected_node_id) {
-		    select_metabolite_with_id(node_id);
-		    var new_coords = { x: node.x, y: node.y };
-		    translate_off_screen(new_coords);
+	    // definitions
+	    function extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id) {
+		utils.extend(o.drawn_reactions, new_reactions);
+		// remove the selected node so it can be updated
+		delete o.drawn_nodes[selected_node_id];
+		utils.extend(o.drawn_nodes, new_nodes);
+
+		// draw new reaction and (TODO) select new metabolite
+		draw_specific_nodes(Object.keys(new_nodes));
+		draw_specific_reactions(Object.keys(new_reactions));
+
+		// select new primary metabolite
+		for (var node_id in new_nodes) {
+		    var node = new_nodes[node_id];
+		    if (node.node_is_primary && node_id!=selected_node_id) {
+			select_metabolite_with_id(node_id);
+			var new_coords = { x: node.x, y: node.y };
+			translate_off_screen(new_coords);
+		    }
 		}
 	    }
+		
+	}
+
+	function delete_nodes(node_ids) {
+	    // for each node
+	    var updated_reaction_ids = [], updated_node_ids = [];
+	    for (var i=0; i<node_ids.length; i++) {
+		var node_id = node_ids[i],
+		    node = o.drawn_nodes[node_id];
+
+		// delete associated segments and reactions	    
+		node.connected_segments.forEach(function(segment_obj) {
+		    var reaction = o.drawn_reactions[segment_obj.reaction_id];
+
+		    // if the reaction has already been deleted (for the last node)
+		    if (reaction===undefined) return;
+
+		    // updated connected nodes, and delete the segments
+		    var segment = reaction.segments[segment_obj.segment_id];
+		    if (node_id==segment.to_node_id) {
+			var connected_segments = o.drawn_nodes[segment.from_node_id].connected_segments;
+			o.drawn_nodes[segment.from_node_id].connected_segments = connected_segments.filter(function(so) {
+			    return so.segment_id != segment_obj.segment_id;				
+			});
+		    } else if (node_id==segment.from_node_id) {
+			var connected_segments = o.drawn_nodes[segment.to_node_id].connected_segments;
+			 o.drawn_nodes[segment.to_node_id].connected_segments = connected_segments.filter(function(so) {
+			    return so.segment_id != segment_obj.segment_id;				
+			});
+		    }
+		    delete reaction.segments[segment_obj.segment_id];
+		    // delete a reaction with no segments
+		    if (Object.keys(reaction.segments).length == 0)
+			delete o.drawn_reactions[segment_obj.reaction_id];
+		    if (updated_reaction_ids.indexOf(segment_obj.reaction_id) < 0)
+			updated_reaction_ids.push(segment_obj.reaction_id);
+		});
+		// delete nodes
+		delete o.drawn_nodes[node_id];
+		updated_node_ids.push(node_id);
+	    }
+	    
+	    // redraw
+	    draw_everything();
 	}
 
         function set_status(status) {
@@ -704,7 +776,11 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    direction_arrow_left: { key: 37, // left
 					    fn: cmd_direction_arrow_left },
 		    direction_arrow_up: { key: 38, // up
-					  fn: cmd_direction_arrow_up }
+					  fn: cmd_direction_arrow_up },
+		    undo_key: { key: 90, modifiers: { control: true },
+				fn: cmd_undo },
+		    redo_key: { key: 90, modifiers: { control: true, shift: true },
+				fn: cmd_redo }
 		};
 
             d3.select(window).on("keydown", function() {
@@ -939,54 +1015,15 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		}
 	    }
 	}
+
 	function cmd_delete_selected_nodes() {
 	    /** Delete the selected nodes and associated segments and reactions.
 
 	     */
-	    var selected_nodes = get_selected_nodes();
-	    if (selected_nodes.length < 1) return console.warn('No nodes selected');
+	    var selected_node_ids = get_selected_node_ids();
+	    if (selected_node_ids.length < 1) return console.warn('No nodes selected');
 
-	    // for each node
-	    var updated_reaction_ids = [], updated_node_ids = [];
-	    for (var node_id in selected_nodes) {
-		var node = selected_nodes[node_id];
-
-		// delete associated segments and reactions	    
-		node.connected_segments.forEach(function(segment_obj) {
-		    var reaction = o.drawn_reactions[segment_obj.reaction_id];
-
-		    // if the reaction has already been deleted (for the last node)
-		    if (reaction===undefined) return;
-
-		    // updated connected nodes, and delete the segments
-		    var segment = reaction.segments[segment_obj.segment_id];
-		    if (node_id==segment.to_node_id) {
-			var connected_segments = o.drawn_nodes[segment.from_node_id].connected_segments;
-			o.drawn_nodes[segment.from_node_id].connected_segments = connected_segments.filter(function(so) {
-			    return so.segment_id != segment_obj.segment_id;				
-			});
-		    } else if (node_id==segment.from_node_id) {
-			var connected_segments = o.drawn_nodes[segment.to_node_id].connected_segments;
-			 o.drawn_nodes[segment.to_node_id].connected_segments = connected_segments.filter(function(so) {
-			    return so.segment_id != segment_obj.segment_id;				
-			});
-		    }
-		    delete reaction.segments[segment_obj.segment_id];
-		    // delete a reaction with no segments
-		    if (Object.keys(reaction.segments).length == 0)
-			delete o.drawn_reactions[segment_obj.reaction_id];
-		    if (updated_reaction_ids.indexOf(segment_obj.reaction_id) < 0)
-			updated_reaction_ids.push(segment_obj.reaction_id);
-		});
-		// delete nodes
-		delete o.drawn_nodes[node_id];
-		updated_node_ids.push(node_id);
-	    }
-	    
-	    // redraw
-	    draw_everything();
-	    // draw_specific_reactions(updated_reaction_ids);
-	    // draw_specific_nodes(updated_node_ids);
+	    delete_nodes(selected_node_ids);
 	}
 
 	function cmd_zoom_extent(margin) {
@@ -1162,6 +1199,12 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	}
 	function cmd_direction_arrow_up() {
 	    o.direction_arrow.set_rotation(270);
+	}
+	function cmd_undo() {
+	    o.undo_stack.undo();
+	}
+	function cmd_redo() {
+	    o.undo_stack.redo();
 	}
     };
 });
