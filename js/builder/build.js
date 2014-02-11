@@ -47,41 +47,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 			     name: cobra_reaction.name,
 			     segments: {} };	
 
-        // // set primary metabolites and count reactants/products
-        // var primary_reactant_index = 0,
-        //     primary_product_index = 0;
-        // var reactant_count = 0, product_count = 0,
-	//     reaction_is_reversed = false;
-	// // look for the selected metabolite
-        // for (var metabolite_abbreviation in cobra_reaction.metabolites) {
-        //     var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
-	//     if (metabolite.coefficient < 0) {
-        //         metabolite.index = reactant_count;
-	// 	if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized)
-	// 	    primary_reactant_index = reactant_count; 
-        //         reactant_count++;
-	//     } else {
-        //         metabolite.index = product_count;
-	// 	if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized) {
-	// 	    primary_product_index = product_count;
-	// 	    reaction_is_reversed = true;
-	// 	}
-        //         product_count++;
-	//     }
-	// }
-	// // set primary metabolites
-        // for (var metabolite_abbreviation in cobra_reaction.metabolites) {
-        //     var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
-        //     if (metabolite.coefficient < 0) {
-        //         if (metabolite.index==primary_reactant_index) metabolite.is_primary = true;
-	// 	metabolite.count = reactant_count + 1;
-        //     } else {
-        //         if (metabolite.index==primary_product_index) metabolite.is_primary = true;
-	// 	metabolite.count = product_count + 1;
-        //     }
-        // }
-
-	// NEW =========
         // set primary metabolites and count reactants/products
 
 	// look for the selected metabolite, and record the indices
@@ -129,7 +94,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 		metabolite.count = product_count + 1;
             }
         }
-	// =======
 
 	// generate anchor nodes
 	var new_anchors = {},

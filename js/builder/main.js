@@ -615,15 +615,15 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    return selected_nodes;
 	}	
 	function select_metabolite_with_id(node_id) {
-	    var node_selection = o.sel.select('#nodes').selectAll('.node');
+	    var node_selection = o.sel.select('#nodes').selectAll('.node'),
+		coords;
 	    node_selection.classed("selected", function(d) {
-		return parseInt(d.node_id) == parseInt(node_id);
+		var selected = String(d.node_id) == String(node_id);
+		if (selected)
+		    coords = { x: o.scale.x(d.x), y: o.scale.y(d.y) };
+		return selected;
 	    });
 	    if (input.is_visible(o.reaction_input)) cmd_show_input();
-	    var coords;
-	    node_selection.each(function(d) {
-		coords = { x: o.scale.x(d.x), y: o.scale.y(d.y) };
-	    });
 	    o.direction_arrow.set_location(coords);
 	    o.direction_arrow.show();
 	}
@@ -1116,7 +1116,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 				label_x: last_node.label_x, label_y: last_node.label_y },
 		last_segment_info = last_node.connected_segments[0], // guaranteed above to have only one
 		last_segment = o.drawn_reactions[last_segment_info.reaction_id].segments[last_segment_info.segment_id],
-		last_bezier = { b1: last_segment.b1, b2: last_segment.b2 };
+		last_bezier = { b1: last_segment.b1, b2: last_segment.b2 },
+		primary_node_id;
 	    related_node_ids.forEach(function(related_node_id) {
 		var node = o.drawn_nodes[related_node_id],
 		    this_is_primary = node.node_is_primary,
@@ -1126,13 +1127,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    this_segment = o.drawn_reactions[this_segment_info.reaction_id].segments[this_segment_info.segment_id],
 		    this_bezier = { b1: this_segment.b1, b2: this_segment.b2 };
 		node.node_is_primary = last_is_primary;
-		if (node.node_is_primary) select_metabolite_with_id(related_node_id);
 		node.x = last_coords.x; node.y = last_coords.y;
 		node.label_x = last_coords.label_x; node.label_y = last_coords.label_y;
 		this_segment.b1 = last_bezier.b1; this_segment.b2 = last_bezier.b2;
 		last_is_primary = this_is_primary;
 		last_coords = these_coords;
 		last_bezier = this_bezier;
+		if (node.node_is_primary) primary_node_id = related_node_id;
 		nodes_to_draw.push(related_node_id);
 	    });
 	    // 5. cycle the connected_segments array so the next time, it cycles differently
@@ -1147,6 +1148,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    // 6. draw the nodes
 	    draw_specific_nodes(nodes_to_draw);
 	    draw_specific_reactions(reactions_to_draw);
+	    // 7. select the primary node
+	    select_metabolite_with_id(primary_node_id);
 	}
 	function cmd_direction_arrow_right() {
 	    o.direction_arrow.set_rotation(0);
