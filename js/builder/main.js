@@ -76,6 +76,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    o.zoom_enabled = true;
 	    o.metabolite_click_enabled = true;
 	    o.shift_key_on = false;
+	    o.default_angle = 90; // degrees
 
 	    // Check the cobra model
 	    if (o.cobra_model) {
@@ -97,9 +98,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
             // set up the reaction input with complete.ly
             o.reaction_input = setup_reaction_input(o.selection);
-
-	    // set up the reaction direction arrow
-	    o.direction_arrow = new DirectionArrow();
 
             // set up keyboard listeners
             setup_key_listeners();
@@ -153,12 +151,16 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                 .attr('id', 'brush-container');
 	    draw.setup_containers(o.sel);
 
+	    // set up the reaction direction arrow
+	    o.direction_arrow = new DirectionArrow(o.sel);
+	    o.direction_arrow.set_rotation(o.default_angle);
+
             // setup selection box
             if (!o.map) {
 		// Draw default reaction if no map is provided
 		var start_coords = {'x': o.width*5, 'y': o.height*5};
                 new_reaction_from_scratch(o.starting_reaction, start_coords);
-		cmd_zoom_extent();
+		cmd_zoom_extent(200);
             } else {
 		draw_everything();
 	    }
@@ -188,6 +190,10 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                 new_button(sel, cmd_zoom_extent, "Zoom extent (^0)");
                 new_button(sel, cmd_make_selected_node_primary, "Make primary metabolite (p)");
                 new_button(sel, cmd_cycle_primary_node, "Cycle primary metabolite (c)");
+                new_button(sel, cmd_direction_arrow_left, "<");
+                new_button(sel, cmd_direction_arrow_up, "^");
+                new_button(sel, cmd_direction_arrow_down, "v");
+                new_button(sel, cmd_direction_arrow_right, ">");
 		return sel;
 
 		// definitions
@@ -522,7 +528,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    // build the new reaction
 	    var out = build.new_reaction(reaction_abbreviation, cobra_reaction,
 					 selected_node_id, utils.clone(selected_node),
-					 o.map_info.largest_ids, o.cofactors);
+					 o.map_info.largest_ids, o.cofactors,
+					 o.direction_arrow.get_rotation());
 	    utils.extend(o.drawn_reactions, out.new_reactions);
 	    // remove the selected node so it can be updated
 	    delete o.drawn_nodes[selected_node_id];
@@ -556,7 +563,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
         function translate_off_screen(coords) {
             // shift window if new reaction will draw off the screen
             // TODO BUG not accounting for scale correctly
-            var margin = 40, // pixels
+            var margin = 80, // pixels
 		current = {'x': {'min': - o.window_translate.x / o.window_scale + margin / o.window_scale,
                                  'max': - o.window_translate.x / o.window_scale + (o.width-margin) / o.window_scale },
                            'y': {'min': - o.window_translate.y / o.window_scale + margin / o.window_scale,
@@ -613,6 +620,12 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		return parseInt(d.node_id) == parseInt(node_id);
 	    });
 	    if (input.is_visible(o.reaction_input)) cmd_show_input();
+	    var coords;
+	    node_selection.each(function(d) {
+		coords = { x: o.scale.x(d.x), y: o.scale.y(d.y) };
+	    });
+	    o.direction_arrow.set_location(coords);
+	    o.direction_arrow.show();
 	}
         function select_metabolite(sel, d) {
 	    var node_selection = o.sel.select('#nodes').selectAll('.node'), 
@@ -621,11 +634,23 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
             else node_selection.classed("selected", function(p) { return d === p; });
 	    var selected_nodes = d3.select('.selected'),
-		count = 0;
-	    selected_nodes.each(function() { count++; });
-	    if (input.is_visible(o.reaction_input)) {
-		if (count == 1) cmd_show_input();
-		else cmd_hide_input();
+		count = 0,
+		coords;
+	    selected_nodes.each(function(d) {
+		coords = { x: o.scale.x(d.x), y: o.scale.y(d.y) };
+		count++;
+	    });
+	    if (count == 1) {
+		if (input.is_visible(o.reaction_input)) {
+		    cmd_show_input();
+		} else {
+		    cmd_hide_input();
+		}
+		o.direction_arrow.set_location(coords);
+		o.direction_arrow.show();
+	    } else {
+		cmd_hide_input();
+		o.direction_arrow.hide();
 	    }
 	}
 
@@ -671,7 +696,15 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					 ignore_with_input: true },
 		    cycle_primary_key: { key: 67, // c
 					 fn: cmd_cycle_primary_node,
-					 ignore_with_input: true }
+					 ignore_with_input: true },
+		    direction_arrow_right: { key: 39, // right
+					     fn: cmd_direction_arrow_right },
+		    direction_arrow_down: { key: 40, // down
+					    fn: cmd_direction_arrow_down },
+		    direction_arrow_left: { key: 37, // left
+					    fn: cmd_direction_arrow_left },
+		    direction_arrow_up: { key: 38, // up
+					  fn: cmd_direction_arrow_up }
 		};
 
             d3.select(window).on("keydown", function() {
@@ -956,7 +989,16 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    // draw_specific_nodes(updated_node_ids);
 	}
 
-	function cmd_zoom_extent() {
+	function cmd_zoom_extent(margin) {
+	    /** Zoom to fit all the nodes.
+
+	     margin: optional argument to set the margins.
+
+	     */
+
+	    // optional args
+	    if (margin===undefined) margin = 100;
+
 	    // get the extent of the nodes
 	    var min = { x: null, y: null }, // TODO make infinity?
 		max = { x: null, y: null }; 
@@ -973,8 +1015,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		max.y = Math.max(max.y, o.scale.y(node.y));
 	    }
 	    // set the zoom
-            var margin = 100,
-		new_zoom = Math.min((o.width - margin*2) / (max.x - min.x),
+            var new_zoom = Math.min((o.width - margin*2) / (max.x - min.x),
 				    (o.height - margin*2) / (max.y - min.y)),
 		new_pos = { x: - (min.x * new_zoom) + margin + ((o.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
 			    y: - (min.y * new_zoom) + margin + ((o.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
@@ -1106,6 +1147,18 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    // 6. draw the nodes
 	    draw_specific_nodes(nodes_to_draw);
 	    draw_specific_reactions(reactions_to_draw);
+	}
+	function cmd_direction_arrow_right() {
+	    o.direction_arrow.set_rotation(0);
+	}
+	function cmd_direction_arrow_down() {
+	    o.direction_arrow.set_rotation(90);
+	}
+	function cmd_direction_arrow_left() {
+	    o.direction_arrow.set_rotation(180);
+	}
+	function cmd_direction_arrow_up() {
+	    o.direction_arrow.set_rotation(270);
 	}
     };
 });

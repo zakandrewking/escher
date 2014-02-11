@@ -6,11 +6,17 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     // definitions
     function new_reaction(reaction_abbreviation, cobra_reaction,
 			  selected_node_id, selected_node,
-			  largest_ids, cofactors) {
+			  largest_ids, cofactors, angle) {
         /** New reaction.
+
+	 angle: clockwise from 'right', in degrees
 
 	 */
 	
+	// rotate the new reaction around the selected metabolite
+	// convert to radians
+	angle = Math.PI / 180 * angle; // default angle
+
 	// generate a new integer id
 	var new_reaction_id = ++largest_ids.reactions;
 
@@ -225,9 +231,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	var new_reactions = {};
 	new_reactions[new_reaction_id] = new_reaction;
 	
-	// rotate the new reaction around the selected metabolite
-	var angle = Math.PI / 2; // default angle
-
 	// add the selected node for rotation, and return it as a new (updated) node
 	new_nodes[selected_node_id] = selected_node;
 	var updated = rotate_selected_nodes(new_nodes, new_reactions,

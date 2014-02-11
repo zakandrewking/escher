@@ -58,3 +58,9 @@
 .bezier2 {
     stroke: blue;
 }
+.direction-arrow {
+    stroke: grey;
+    stroke-width: 1px;
+    fill: none;
+    opacity: 0.5;
+}
