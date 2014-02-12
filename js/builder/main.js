@@ -534,25 +534,34 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    var out = build.new_reaction(reaction_abbreviation, cobra_reaction,
 					 selected_node_id, utils.clone(selected_node),
 					 o.map_info.largest_ids, o.cofactors,
-					 o.direction_arrow.get_rotation());
+					 o.direction_arrow.get_rotation()),
+		new_nodes = out.new_nodes,
+		new_reactions = out.new_reactions;
+
 	    // draw
+	    extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id);
+
 	    // clone the nodes and reactions, to redo this action later
-	    extend_and_draw_reaction(utils.clone(out.new_nodes),
-				     utils.clone(out.new_reactions), selected_node_id);
+	    var saved_nodes = utils.clone(new_nodes),
+		saved_reactions = utils.clone(new_reactions);
 
 	    // add to undo/redo stack
 	    o.undo_stack.push(function() {
 		// undo
 		// get the nodes to delete
-		var these_nodes = Object.keys(out.new_nodes)
-			.filter(function(n) { return n!=String(selected_node_id); });
-		delete_nodes(these_nodes);
+		delete new_nodes[selected_node_id];
+		delete_nodes(new_nodes);
+		delete_reactions(new_reactions);
 		select_metabolite_with_id(selected_node_id);
+		// save the nodes and reactions again, for redo
+		new_nodes = utils.clone(saved_nodes);
+		new_reactions = utils.clone(saved_reactions);
+		// draw
+		draw_everything();
 	    }, function () {
 		// redo
 		// clone the nodes and reactions, to redo this action later
-		extend_and_draw_reaction(utils.clone(out.new_nodes),
-					 utils.clone(out.new_reactions), selected_node_id);
+		extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id);
 	    });
 
 	    // definitions
@@ -579,47 +588,70 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		
 	}
 
-	function delete_nodes(node_ids) {
+	function segments_and_reactions_for_nodes(nodes) {
+	    /** Get segments and reactions that should be deleted with node deletions
+	     */
+	    var segment_objs_w_segments = [], reactions = {}, nodes_for_reactions = {};
 	    // for each node
-	    var updated_reaction_ids = [], updated_node_ids = [];
-	    for (var i=0; i<node_ids.length; i++) {
-		var node_id = node_ids[i],
-		    node = o.drawn_nodes[node_id];
-
-		// delete associated segments and reactions	    
+	    for (var node_id in nodes) {
+		var node = nodes[node_id];
+		// find associated segments and reactions	    
 		node.connected_segments.forEach(function(segment_obj) {
-		    var reaction = o.drawn_reactions[segment_obj.reaction_id];
-
-		    // if the reaction has already been deleted (for the last node)
-		    if (reaction===undefined) return;
-
-		    // updated connected nodes, and delete the segments
-		    var segment = reaction.segments[segment_obj.segment_id];
-		    if (node_id==segment.to_node_id) {
-			var connected_segments = o.drawn_nodes[segment.from_node_id].connected_segments;
-			o.drawn_nodes[segment.from_node_id].connected_segments = connected_segments.filter(function(so) {
-			    return so.segment_id != segment_obj.segment_id;				
-			});
-		    } else if (node_id==segment.from_node_id) {
-			var connected_segments = o.drawn_nodes[segment.to_node_id].connected_segments;
-			 o.drawn_nodes[segment.to_node_id].connected_segments = connected_segments.filter(function(so) {
-			    return so.segment_id != segment_obj.segment_id;				
-			});
-		    }
-		    delete reaction.segments[segment_obj.segment_id];
-		    // delete a reaction with no segments
-		    if (Object.keys(reaction.segments).length == 0)
-			delete o.drawn_reactions[segment_obj.reaction_id];
-		    if (updated_reaction_ids.indexOf(segment_obj.reaction_id) < 0)
-			updated_reaction_ids.push(segment_obj.reaction_id);
+		    var reaction = o.drawn_reactions[segment_obj.reaction_id],
+			segment = reaction.segments[segment_obj.segment_id],
+			segment_obj_w_segment = utils.clone(segment_obj);
+		    segment_obj_w_segment['segment'] = utils.clone(segment);
+		    segment_objs_w_segments.push(segment_obj_w_segment);
+		    if (!(segment_obj.reaction_id in nodes_for_reactions))
+			nodes_for_reactions[segment_obj.reaction_id] = 0;
+		    nodes_for_reactions[segment_obj.reaction_id]++;
 		});
-		// delete nodes
-		delete o.drawn_nodes[node_id];
-		updated_node_ids.push(node_id);
 	    }
-	    
-	    // redraw
-	    draw_everything();
+	    // find the reactions that should be deleted because they have no segments left
+	    for (var reaction_id in nodes_for_reactions) {
+		var reaction = o.drawn_reactions[reaction_id];
+		if (Object.keys(reaction.segments).length == nodes_for_reactions[reaction_id])
+		    reactions[reaction_id] = reaction;
+	    }
+	    return { segment_objs_w_segments: segment_objs_w_segments, reactions: reactions };
+	}
+	function delete_nodes(nodes) {
+	    /** delete nodes
+	     */
+	    for (var node_id in nodes) {
+		delete o.drawn_nodes[node_id];
+	    }
+	}
+	function delete_segments(segment_objs) {
+	    /** Delete segments, and update connected_segments in nodes. Also
+	     deletes any reactions with 0 segments.
+	     
+	     segment_objs: Array of objects with { reaction_id: "123", segment_id: "456" }
+	     
+	     */
+	    segment_objs.forEach(function(segment_obj) {
+		var reaction = o.drawn_reactions[segment_obj.reaction_id],
+		    segment = reaction.segments[segment_obj.segment_id];
+
+		// updated connected nodes
+		[segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
+		    if (!(node_id in o.drawn_nodes)) return;
+		    var node = o.drawn_nodes[node_id],
+			connected_segments = node.connected_segments;
+		    connected_segments = connected_segments.filter(function(so) {
+			return so.segment_id != segment_obj.segment_id;				
+		    });
+		});
+
+		delete reaction.segments[segment_obj.segment_id];
+	    });
+	}
+	function delete_reactions(reactions) {
+	    /** delete reactions
+	     */
+	    for (var reaction_id in reactions) {
+		delete o.drawn_reactions[reaction_id];
+	    }
 	}
 
         function set_status(status) {
@@ -1018,11 +1050,59 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	function cmd_delete_selected_nodes() {
 	    /** Delete the selected nodes and associated segments and reactions.
 
-	     */
-	    var selected_node_ids = get_selected_node_ids();
-	    if (selected_node_ids.length < 1) return console.warn('No nodes selected');
+	     Undoable.
 
-	    delete_nodes(selected_node_ids);
+	     */
+	    var selected_nodes = get_selected_nodes();
+	    if (selected_nodes.length < 1) return console.warn('No nodes selected');
+
+	    var out = segments_and_reactions_for_nodes(selected_nodes),
+		reactions = out.reactions,
+		segment_objs_w_segments = out.segment_objs_w_segments;
+
+	    // copy nodes to undelete
+	    var saved_nodes = utils.clone(selected_nodes),
+		saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments),
+		saved_reactions = utils.clone(reactions);
+
+	    // delete
+	    delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
+
+	    // add to undo/redo stack
+	    o.undo_stack.push(function() {
+		// undo
+		// redraw the saved nodes, reactions, and segments
+		utils.extend(o.drawn_nodes, saved_nodes);
+		utils.extend(o.drawn_reactions, saved_reactions);
+		var reactions_to_draw = Object.keys(saved_reactions);
+		saved_segment_objs_w_segments.forEach(function(segment_obj) {
+		    o.drawn_reactions[segment_obj.reaction_id]
+			.segments[segment_obj.segment_id] = segment_obj.segment;
+		    reactions_to_draw.push(segment_obj.reaction_id);
+		});
+		draw_specific_nodes(Object.keys(saved_nodes));
+		draw_specific_reactions(reactions_to_draw);
+		// copy nodes to re-delete
+		selected_nodes = utils.clone(saved_nodes);
+		segment_objs_w_segments = utils.clone(saved_segment_objs_w_segments);
+		reactions = utils.clone(saved_reactions);
+	    }, function () {
+		// redo
+		// clone the nodes and reactions, to redo this action later
+		delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
+	    });
+
+	    // definitions
+	    function delete_and_draw(nodes, reactions, segment_objs) {
+		// delete nodes, segments, and reactions with no segments
+		delete_nodes(selected_nodes);
+		delete_segments(segment_objs);
+		delete_reactions(reactions);
+		
+		// redraw
+		// TODO just redraw these nodes and segments
+		draw_everything();
+	    }
 	}
 
 	function cmd_zoom_extent(margin) {
