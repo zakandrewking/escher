@@ -20,7 +20,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     function draw(membranes, reactions, nodes, text_labels, scale,
 		  show_beziers, arrow_displacement, defs, arrowheads,
 		  default_reaction_color, has_flux, 
-		  node_click_fn, node_drag_fn, node_dragstart_fn) {
+		  node_click_fn, node_drag_behavior) {
         /** Draw the reactions and membranes
          */
 
@@ -39,7 +39,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 
 	utils.draw_an_object('#nodes', '.node', nodes, 'node_id', 
 			     function(sel) { return create_node(sel, scale, nodes, reactions,
-								node_click_fn, node_drag_fn, node_dragstart_fn); },
+								node_click_fn, node_drag_behavior); },
 			     function(sel) { return update_node(sel, scale); });
 
 	utils.draw_an_object('#text-labels', '.text-label', text_labels,
@@ -97,7 +97,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
         sel.exit();
     }
 
-    function draw_specific_nodes(node_ids, nodes, reactions, scale, click_fn, drag_fn, dragstart_fn) {
+    function draw_specific_nodes(node_ids, nodes, reactions, scale, click_fn, drag_behavior) {
         // find nodes for node_ids
         var node_subset = {},
             i = -1;
@@ -117,7 +117,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 
         // enter: generate and place node
         sel.enter().call(function(sel) { return create_node(sel, scale, nodes, reactions, 
-							    click_fn, drag_fn, dragstart_fn); });
+							    click_fn, drag_behavior); });
 
         // update: update when necessary
         sel.call(function(sel) { return update_node(sel, scale); });
@@ -374,7 +374,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     }
 
     function create_node(enter_selection, scale, drawn_nodes, drawn_reactions, 
-			 click_fn, drag_fn, dragstart_fn) {
+			 click_fn, drag_behavior) {
         // create nodes
         var g = enter_selection
                 .append('g')
@@ -394,9 +394,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	    .on("mouseout", function(d) {
 		d3.select(this).style('stroke-width', String(scale.size(2))+'px');
 	    })
-            .call(d3.behavior.drag()
-                  .on("dragstart", dragstart_fn)
-                  .on("drag", drag_fn))
+            .call(drag_behavior)
             .on("click", click_fn);
 
         g.append('text')

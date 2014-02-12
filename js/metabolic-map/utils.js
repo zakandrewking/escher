@@ -9,6 +9,7 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
 	     unique_concat: unique_concat,
 	     c_plus_c: c_plus_c,
 	     c_minus_c: c_minus_c,
+	     c_times_scalar: c_times_scalar,
 	     download_json: download_json,
 	     load_json: load_json,
 	     define_scales: define_scales,
@@ -153,6 +154,11 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
 	    return null;
 	return { "x": coords1.x - coords2.x,
 		 "y": coords1.y - coords2.y };
+    }
+
+    function c_times_scalar(coords, scalar) {
+	return { "x": coords['x'] * scalar,
+		 "y": coords['y'] * scalar };
     }
 
     function download_json(json, name) {

@@ -257,8 +257,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
         }
 
 	// drawing
-	function node_click_function(sel, data) {
-	}
 	function has_flux() {
 	    return o.flux ? true : false;
 	}
@@ -266,36 +264,75 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    if (o.metabolite_click_enabled)
 		return select_metabolite(this, d);
 	}
-	function node_dragstart() {
-	    // silence other listeners
-            d3.event.sourceEvent.stopPropagation();
-	}
-	function node_drag() {
-	    var grabbed_id = this.parentNode.__data__.node_id,		    
-                selected_ids = get_selected_node_ids(),
-		nodes_to_drag = [];
-	    if (selected_ids.indexOf(grabbed_id)==-1) { 
-		nodes_to_drag.push(grabbed_id);
-	    } else {
-		nodes_to_drag = selected_ids;
-	    }
-	    var reaction_ids = [];
-	    nodes_to_drag.forEach(function(node_id) {
-		// update data
-                var node = o.drawn_nodes[node_id],
-		    displacement = { x: o.scale.x_size.invert(d3.event.dx),
-				     y: o.scale.y_size.invert(d3.event.dy) },
-		    updated = build.move_node_and_dependents(node, node_id, o.drawn_reactions, displacement);
-		reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids]);
+	function get_node_drag_behavior() {
+	    // define some variables
+	    var behavior = d3.behavior.drag(),
+		total_displacement,
+		saved_node_ids,
+		saved_reaction_ids;
+
+            behavior.on("dragstart", function () {
+		// silence other listeners
+		d3.event.sourceEvent.stopPropagation();
+		total_displacement = { x: 0, y: 0 }; // TODO Doesn't work for multiple nodes!
 	    });
-	    draw_specific_nodes(nodes_to_drag);
-	    draw_specific_reactions(reaction_ids);
+            behavior.on("drag", function() {
+		var grabbed_id = this.parentNode.__data__.node_id,		    
+		    selected_ids = get_selected_node_ids(),
+		    nodes_to_drag = [];
+		// choose the nodes to drag
+		if (selected_ids.indexOf(grabbed_id)==-1) { 
+		    nodes_to_drag.push(grabbed_id);
+		} else {
+		    nodes_to_drag = selected_ids;
+		}
+		var reaction_ids = [];
+		nodes_to_drag.forEach(function(node_id) {
+		    // update data
+		    var node = o.drawn_nodes[node_id],
+			displacement = { x: o.scale.x_size.invert(d3.event.dx),
+					 y: o.scale.y_size.invert(d3.event.dy) },
+			updated = build.move_node_and_dependents(node, node_id, o.drawn_reactions, displacement);
+		    reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids]);
+		    // remember the displacement
+		    total_displacement = utils.c_plus_c(total_displacement, displacement);
+		});
+		// remember the dragged nodes and reactions
+		saved_node_ids = nodes_to_drag;
+		saved_reaction_ids = reaction_ids;
+		// draw
+		draw_specific_nodes(nodes_to_drag);
+		draw_specific_reactions(reaction_ids);
+	    });
+	    behavior.on("dragend", function() {			  
+		// add to undo/redo stack
+		var undo_displacement = utils.c_times_scalar(utils.clone(total_displacement), -1),
+		    redo_displacement = utils.clone(total_displacement);
+		o.undo_stack.push(function() {
+		    // undo
+		    saved_node_ids.forEach(function(node_id) {
+			var node = o.drawn_nodes[node_id];
+			build.move_node_and_dependents(node, node_id, o.drawn_reactions, undo_displacement);
+		    });
+		    draw_specific_nodes(saved_node_ids);
+		    draw_specific_reactions(saved_reaction_ids);
+		}, function () {
+		    // redo
+		    saved_node_ids.forEach(function(node_id) {
+			var node = o.drawn_nodes[node_id];
+			build.move_node_and_dependents(node, node_id, o.drawn_reactions, redo_displacement);
+		    });
+		    draw_specific_nodes(saved_node_ids);
+		    draw_specific_reactions(saved_reaction_ids);
+		});
+	    });
+	    return behavior;
 	}
 	function draw_everything() {
 	    draw.draw(o.drawn_membranes, o.drawn_reactions, o.drawn_nodes, o.drawn_text_labels, o.scale, 
 		      o.show_beziers, o.reaction_arrow_displacement, o.defs, o.arrowheads_generated,
 		      o.default_reaction_color, has_flux(), 
-		      node_click, node_drag, node_dragstart);
+		      node_click, get_node_drag_behavior());
 	}
 	function draw_specific_reactions(reaction_ids) {
 	    draw.draw_specific_reactions(reaction_ids, o.drawn_reactions, o.drawn_nodes, o.scale, o.show_beziers,
@@ -304,7 +341,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	}
 	function draw_specific_nodes(node_ids) {
 	    draw.draw_specific_nodes(node_ids, o.drawn_nodes, o.drawn_reactions, o.scale, 
-				     node_click, node_drag, node_dragstart);
+				     node_click, get_node_drag_behavior());
 	}    
 	function apply_flux_to_map() {
 	    for (var reaction_id in o.drawn_reactions) {
@@ -977,7 +1014,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		var nodes = {};
 		selected_node_ids.forEach(function(id) { nodes[id] = o.drawn_nodes[id]; });
 		var updated = build.rotate_selected_nodes(nodes, o.drawn_reactions,
-						      -total_angle, saved_center);
+							  -total_angle, saved_center);
 		draw_specific_nodes(updated.node_ids);
 		draw_specific_reactions(updated.reaction_ids);
 	    }, function () {
