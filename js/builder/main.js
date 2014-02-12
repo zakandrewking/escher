@@ -268,25 +268,25 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    // define some variables
 	    var behavior = d3.behavior.drag(),
 		total_displacement,
-		saved_node_ids,
-		saved_reaction_ids;
+		nodes_to_drag,
+		reaction_ids;
 
             behavior.on("dragstart", function () {
 		// silence other listeners
 		d3.event.sourceEvent.stopPropagation();
-		total_displacement = { x: 0, y: 0 }; // TODO Doesn't work for multiple nodes!
+		total_displacement = {};
 	    });
             behavior.on("drag", function() {
 		var grabbed_id = this.parentNode.__data__.node_id,		    
-		    selected_ids = get_selected_node_ids(),
-		    nodes_to_drag = [];
+		    selected_ids = get_selected_node_ids();
+		nodes_to_drag = [];
 		// choose the nodes to drag
 		if (selected_ids.indexOf(grabbed_id)==-1) { 
 		    nodes_to_drag.push(grabbed_id);
 		} else {
 		    nodes_to_drag = selected_ids;
 		}
-		var reaction_ids = [];
+		reaction_ids = [];
 		nodes_to_drag.forEach(function(node_id) {
 		    // update data
 		    var node = o.drawn_nodes[node_id],
@@ -294,25 +294,26 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					 y: o.scale.y_size.invert(d3.event.dy) },
 			updated = build.move_node_and_dependents(node, node_id, o.drawn_reactions, displacement);
 		    reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids]);
-		    // remember the displacement
-		    total_displacement = utils.c_plus_c(total_displacement, displacement);
+		    // remember the displacements
+		    if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 };
+		    total_displacement[node_id] = utils.c_plus_c(total_displacement[node_id], displacement);
 		});
-		// remember the dragged nodes and reactions
-		saved_node_ids = nodes_to_drag;
-		saved_reaction_ids = reaction_ids;
 		// draw
 		draw_specific_nodes(nodes_to_drag);
 		draw_specific_reactions(reaction_ids);
 	    });
 	    behavior.on("dragend", function() {			  
 		// add to undo/redo stack
-		var undo_displacement = utils.c_times_scalar(utils.clone(total_displacement), -1),
-		    redo_displacement = utils.clone(total_displacement);
+		// remember the displacement, dragged nodes, and reactions
+		var saved_displacement = utils.clone(total_displacement), // BUG TODO this variable disappears!
+		    saved_node_ids = utils.clone(nodes_to_drag),
+		    saved_reaction_ids = utils.clone(reaction_ids);
 		o.undo_stack.push(function() {
 		    // undo
 		    saved_node_ids.forEach(function(node_id) {
 			var node = o.drawn_nodes[node_id];
-			build.move_node_and_dependents(node, node_id, o.drawn_reactions, undo_displacement);
+			build.move_node_and_dependents(node, node_id, o.drawn_reactions,
+						       utils.c_times_scalar(saved_displacement[node_id], -1));
 		    });
 		    draw_specific_nodes(saved_node_ids);
 		    draw_specific_reactions(saved_reaction_ids);
@@ -320,7 +321,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    // redo
 		    saved_node_ids.forEach(function(node_id) {
 			var node = o.drawn_nodes[node_id];
-			build.move_node_and_dependents(node, node_id, o.drawn_reactions, redo_displacement);
+			build.move_node_and_dependents(node, node_id, o.drawn_reactions,
+						       saved_displacement[node_id]);
 		    });
 		    draw_specific_nodes(saved_node_ids);
 		    draw_specific_reactions(saved_reaction_ids);

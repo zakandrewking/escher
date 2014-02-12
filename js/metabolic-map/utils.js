@@ -157,8 +157,8 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
     }
 
     function c_times_scalar(coords, scalar) {
-	return { "x": coords['x'] * scalar,
-		 "y": coords['y'] * scalar };
+	return { "x": coords.x * scalar,
+		 "y": coords.y * scalar };
     }
 
     function download_json(json, name) {
