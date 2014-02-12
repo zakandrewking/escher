@@ -513,6 +513,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	function new_reaction_for_metabolite(reaction_abbreviation, selected_node_id) {
 	    /** Build a new reaction starting with selected_met.
 
+	     Undoable
+
 	     */
 
             // If reaction id is not new, then return:
@@ -953,16 +955,40 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    o.metabolite_click_enabled = false;
 	    enable_brush(false);
 
+	    var saved_center, total_angle = 0,
+		selected_node_ids = Object.keys(selected_nodes);
+
 	    choose_center(function(center) {
+		saved_center = center;
 		listen_for_rotation(center, function(angle) {
 		    // console.log(angle, center);
 		    // console.log(selected_nodes);
+		    total_angle += angle;
 		    var updated = build.rotate_selected_nodes(selected_nodes, o.drawn_reactions,
 							      angle, center);
 		    draw_specific_nodes(updated.node_ids);
 		    draw_specific_reactions(updated.reaction_ids);
 		}, turn_everything_on, turn_everything_on);
 	    }, turn_everything_on);
+
+	    // add to undo/redo stack
+	    o.undo_stack.push(function() {
+		// undo
+		var nodes = {};
+		selected_node_ids.forEach(function(id) { nodes[id] = o.drawn_nodes[id]; });
+		var updated = build.rotate_selected_nodes(nodes, o.drawn_reactions,
+						      -total_angle, saved_center);
+		draw_specific_nodes(updated.node_ids);
+		draw_specific_reactions(updated.reaction_ids);
+	    }, function () {
+		// redo
+		var nodes = {};
+		selected_node_ids.forEach(function(id) { nodes[id] = o.drawn_nodes[id]; });
+		var updated = build.rotate_selected_nodes(nodes, o.drawn_reactions,
+							  total_angle, saved_center);
+		draw_specific_nodes(updated.node_ids);
+		draw_specific_reactions(updated.reaction_ids);
+	    });
 
 	    // definitions
 	    function choose_center(callback, callback_canceled) {
