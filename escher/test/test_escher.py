@@ -1,4 +1,4 @@
-from visbio import get_maps_cache_dir, get_style, Map
+from escher import get_maps_cache_dir, get_style, Map
 import os
 
 def test_get_cache_dir():
