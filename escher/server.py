@@ -11,7 +11,6 @@ import re
 # set directory to server
 directory = os.path.abspath(os.path.dirname(__file__)).strip(os.pathsep)
 directory = re.sub(r'escher$', '', directory)
-print os.path.dirname(__file__), directory
 NO_CACHE = True
 default_port = 7778
 
