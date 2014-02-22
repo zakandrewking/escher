@@ -8,16 +8,23 @@ from tornado.options import define, options, parse_command_line
 import json
 import re
 
-NO_CACHE = True
-
 # set directory to server
-directory = os.path.abspath(os.path.dirname(__file__).replace('server',''))
-port = 7778
+directory = os.path.abspath(os.path.dirname(__file__)).strip(os.pathsep)
+directory = re.sub(r'escher$', '', directory)
+print os.path.dirname(__file__), directory
+NO_CACHE = True
+default_port = 7778
 
-print 'serving directory %s on port %d' % (directory, port)
+def run(port=default_port):    
+    print 'serving directory %s on port %d' % (directory, port)
+    application.listen(port)
+    try:
+        tornado.ioloop.IOLoop.instance().start()
+    except KeyboardInterrupt:
+        print "bye!"
 
-# define port
-define("port", default=port, type=int)
+def stop():
+    tornado.ioloop.IOLoop.instance().stop()
 
 class BaseHandler(tornado.web.RequestHandler):
     def path_redirection(self, directory, path):
@@ -97,9 +104,7 @@ application = tornado.web.Application([
 ], **settings)
  
 if __name__ == "__main__":
+    # define port
+    define("port", default=default_port, type=int)
     parse_command_line()
-    application.listen(options.port)
-    try:
-        tornado.ioloop.IOLoop.instance().start()
-    except KeyboardInterrupt:
-        print "bye!"
+    run(port=options.port)
