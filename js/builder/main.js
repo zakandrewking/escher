@@ -255,9 +255,9 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	function has_flux() {
 	    return o.flux ? true : false;
 	}
-	function node_click(d) {
-	    if (o.metabolite_click_enabled)
-		return select_metabolite(this, d);
+	function node_click(d) {	  
+	    if (o.metabolite_click_enabled) select_metabolite(this, d);
+	    d3.event.stopPropagation();
 	}
 	function get_node_drag_behavior() {
 	    // define some variables
@@ -549,7 +549,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    return { membranes: membranes, nodes: nodes, reactions: reactions, text_labels: text_labels, info: info };
 	}   
 
-        function new_reaction_from_scratch(starting_reaction, coords) {
+        function new_reaction_from_scratch(starting_reaction, coords) { console.log(starting_reaction, coords);
 	    /** Draw a reaction on a blank canvas.
 
 	     starting_reaction: bigg_id for a reaction to draw.
@@ -975,6 +975,32 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    return { clear: function() { selection.on('keydown.esc', null); } };
 	}
 
+	function toggle_start_reaction_listener(on_off) {
+	    if (on_off===undefined) {
+		o.start_reaction_listener = !o.start_reaction_listener;
+	    } else if (o.start_reaction_listener==on_off) {
+		return;
+	    } else {
+		o.start_reaction_listener = on_off;
+	    }
+	    if (o.start_reaction_listener) {
+		o.sel.on('click.start_reaction', function() {
+		    console.log('clicked for new reaction');
+		    // reload the reaction input
+		    var coords = { x: o.scale.x_size.invert(d3.mouse(this)[0]), 
+				   y: o.scale.y_size.invert(d3.mouse(this)[1]) };
+		    // unselect metabolites
+		    d3.selectAll('.selected').classed('selected', false);
+		    input.reload_at_point(o.reaction_input, coords, o.scale.x, o.scale.y, o.window_scale, 
+					  o.window_translate, o.width, o.height, o.flux, 
+					  o.drawn_reactions, o.cobra_reactions,
+					  new_reaction_from_scratch);
+		});
+	    } else {
+		o.sel.on('click.start_reaction', null);
+	    }
+	}
+
 	//----------------------------------------------------------------------
         // Commands
 	
@@ -983,14 +1009,17 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             else cmd_show_input();
         }
         function cmd_hide_input() {
+	    toggle_start_reaction_listener(false);
             o.reaction_input.selection.style("display", "none");
             o.reaction_input.completely.input.blur();
             o.reaction_input.completely.hideDropDown();
         }
         function cmd_show_input() {
+	    toggle_start_reaction_listener(true);
 	    input.reload_at_selected(o.reaction_input, o.scale.x, o.scale.y, o.window_scale, 
 				     o.window_translate, o.width, o.height, o.flux, 
-				     o.drawn_reactions, o.cobra_reactions, new_reaction_for_metabolite);
+				     o.drawn_reactions, o.cobra_reactions,
+				     new_reaction_for_metabolite);
         }
         function cmd_save() {
             console.log("Saving");

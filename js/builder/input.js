@@ -1,5 +1,6 @@
 define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
     return { reload_at_selected: reload_at_selected,
+	     reload_at_point: reload_at_point,
 	     place_at_selected: place_at_selected,
 	     is_visible: is_visible };
 
@@ -20,9 +21,22 @@ define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
 	    });
 	    // reload the reaction input
 	    reload(input, {x: d.x, y: d.y}, x_scale, y_scale, window_scale, window_translate, width, height,
-		   flux, drawn_reactions, cobra_reactions, 
+		   flux, drawn_reactions, cobra_reactions, false,
 		   enter_callback);
 	});
+    }
+
+    function reload_at_point(input, coords, x_scale, y_scale, window_scale, window_translate, width, height,
+			     flux, drawn_reactions, cobra_reactions,
+			     enter_callback) {
+	/** Reload data for autocomplete box and redraw box at the coords.
+	 *
+	 * enter_callback(reaction_id, coords)
+	 *
+	 */
+	reload(input, coords, x_scale, y_scale, window_scale, window_translate, width, height,
+	       flux, drawn_reactions, cobra_reactions, true,
+	       enter_callback);
     }
 
     function place_at_selected(input, x_scale, y_scale, window_scale, window_translate, width, height) {
@@ -44,7 +58,7 @@ define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
     }
 
     function reload(input, coords, x_scale, y_scale, window_scale, window_translate, width, height,
-		    flux, drawn_reactions, cobra_reactions, 
+		    flux, drawn_reactions, cobra_reactions, starting_from_scratch,
 		    enter_callback) {
         /** Reload data for autocomplete box and redraw box at the new
          * coordinates.
@@ -60,18 +74,20 @@ define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
         input.completely.input.blur();
         input.completely.repaint(); //put in place()?
 
-	// make sure only one node is selected
-	var selected_nodes = d3.selectAll('.selected'), 
-	    count = 0,
-	    selected_met, selected_node_id;
-	selected_nodes.each(function(d) { 
-	    count++; 
-	    selected_met = d;
-	    selected_node_id = parseInt(d.node_id);
-	});
-	if (count > 1) { console.error('Too many selected nodes'); return; }
-	else if (count < 1) { console.error('No selected node'); return; }
-
+	if (!starting_from_scratch) {
+	    // make sure only one node is selected
+	    var selected_nodes = d3.selectAll('.selected'), 
+		count = 0,
+		selected_met, selected_node_id;
+	    selected_nodes.each(function(d) { 
+		count++; 
+		selected_met = d;
+		selected_node_id = parseInt(d.node_id);
+	    });
+	    if (count > 1) { console.error('Too many selected nodes'); return; }
+	    if (count == 0) { console.error('No selected node'); return; }
+	}
+	
         // Find selected reaction
         var suggestions = [];
         for (var reaction_abbreviation in cobra_reactions) {
@@ -83,22 +99,24 @@ define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
 	    // check segments for match to selected metabolite
 	    for (var metabolite_id in reaction.metabolites) {
 		var metabolite = reaction.metabolites[metabolite_id]; 
-                if (selected_met.bigg_id_compartmentalized == metabolite_id) {
-		    if (reaction_abbreviation in suggestions) continue;
-		    // reverse for production
-		    var this_flux, this_string;
-		    if (flux) {
-			if (reaction_abbreviation in flux) 
-			    this_flux = flux[reaction_abbreviation] * (metabolite.coefficient < 1 ? 1 : -1);
-			else
-			    this_flux = 0;
-			this_string = string_for_flux(reaction_abbreviation, this_flux, decimal_format);
-	    		suggestions[reaction_abbreviation] = { flux: this_flux,
-							       string: this_string };
-		    } else {
-	    		suggestions[reaction_abbreviation] = { string: reaction_abbreviation };
-		    }
+		// if starting with a selected metabolite, check for that id
+		if (!starting_from_scratch && selected_met.bigg_id_compartmentalized!=metabolite_id) continue;
+		// don't add suggestions twice
+		if (reaction_abbreviation in suggestions) continue;
+		// reverse for production
+		var this_flux, this_string;
+		if (flux) {
+		    if (reaction_abbreviation in flux) 
+			this_flux = flux[reaction_abbreviation] * (metabolite.coefficient < 1 ? 1 : -1);
+		    else
+			this_flux = 0;
+		    this_string = string_for_flux(reaction_abbreviation, this_flux, decimal_format);
+	    	    suggestions[reaction_abbreviation] = { flux: this_flux,
+							   string: this_string };
+		} else {
+	    	    suggestions[reaction_abbreviation] = { string: reaction_abbreviation };
 		}
+		
 	    }
         }
 
@@ -121,8 +139,10 @@ define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
 	    var text = this.getText();
 	    this.setText("");
 	    suggestions_array.map(function(x) {
-		if (x.string==text)
-                    enter_callback(x.reaction_abbreviation, selected_node_id);
+		if (x.string==text) {
+		    if (starting_from_scratch) enter_callback(x.reaction_abbreviation, coords);
+		    else enter_callback(x.reaction_abbreviation, selected_node_id);
+		}
 	    });
         };
         complete.repaint();
