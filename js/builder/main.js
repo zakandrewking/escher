@@ -629,7 +629,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		new_reactions = out.new_reactions;
 
 	    // add the flux
-	    apply_flux_to_reactions(new_reactions);
+	    if (o.flux) apply_flux_to_reactions(new_reactions);
 
 	    // draw
 	    extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id);

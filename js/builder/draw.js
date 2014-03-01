@@ -185,13 +185,18 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
         /* Draw reaction label for selection.
 	 */
         sel.append('text')
-	    .text(function(d) { return d.abbreviation; })
             .attr('class', 'reaction-label label')
             .attr('pointer-events', 'none');
     }
 
-    function update_reaction_label(sel, scale) {
-	sel.attr('transform', function(d) {
+    function update_reaction_label(sel, scale, has_flux) {
+	var decimal_format = d3.format('.4g');
+	sel.text(function(d) { 
+            var t = d.abbreviation;
+            if (d.flux) t += " ("+decimal_format(d.flux)+")";
+            else if (has_flux) t += " (0)";
+            return t;
+	}).attr('transform', function(d) {
             return 'translate('+scale.x(d.label_x)+','+scale.y(d.label_y)+')';
 	}).style("font-size", function(d) {
 	    return String(scale.size(30))+"px";
