@@ -120,8 +120,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					    o.width, o.height);
 	    };
 	    o.zoom_container = new ZoomContainer(o.svg, o.width, o.height, [0.05, 15], zoom_fn);
-            o.sel = o.zoom_container.zoomed_sel,
-            o.zoom = o.zoom_container.zoom_behavior;
+            o.sel = o.zoom_container.zoomed_sel;
 
             // set up menu and status bars
             o.menu = setup_menu(o.selection);
@@ -468,8 +467,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    // reset zoom
 	    if (o.zoom) {
 		o.window_translate.x = 0; o.window_translate.y = 0; o.window_scale = 1.0;
-                o.zoom.translate([o.window_translate.x, o.window_translate.y]);
-                o.zoom.scale(o.window_scale);
+                o.zoom_container.translate([o.window_translate.x, o.window_translate.y]);
+                o.zoom_container.scale(o.window_scale);
                 o.sel.attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
 	    }
 	    // flux onto existing map reactions
@@ -726,8 +725,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
 	    // definitions
             function go() {
-                o.zoom.translate([o.window_translate.x, o.window_translate.y]);
-                o.zoom.scale(o.window_scale);
+                o.zoom_container.translate([o.window_translate.x, o.window_translate.y]);
+                o.zoom_container.scale(o.window_scale);
                 o.sel.transition()
                     .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
             }
@@ -1202,8 +1201,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
 	    // definitions
             function go() {
-                o.zoom.translate([o.window_translate.x, o.window_translate.y]);
-                o.zoom.scale(o.window_scale);
+                o.zoom_container.translate([o.window_translate.x, o.window_translate.y]);
+                o.zoom_container.scale(o.window_scale);
                 o.sel.transition()
                     .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
             };

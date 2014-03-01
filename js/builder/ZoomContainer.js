@@ -55,7 +55,16 @@ define(["vis/scaffold", "lib/d3", "metabolic-map/utils"], function(scaffold, d3,
 	};
         container.call(zoom_behavior);
 
-	this.zoom_behavior = zoom_behavior;
+	// functions to scale and translate
+	this.scale = function(scale) {
+	    zoom_behavior.scale(scale);
+	    if (saved_scale !== null) saved_scale = scale;
+	};
+	this.translate = function(translate) {
+	    zoom_behavior.translate(translate);
+	    if (saved_translate !== null) saved_translate = translate;
+	};			    
+
 	this.zoomed_sel = zoomed_sel;
 	this.initial_zoom = 1.0;
     }
