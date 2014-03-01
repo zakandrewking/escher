@@ -325,16 +325,67 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    });
 	    return behavior;
 	}
+	function get_bezier_drag_behavior() {
+	    // define some variables
+	    var behavior = d3.behavior.drag(),
+		total_displacement,
+		segment_id, reaction_id, bezier_number;
+
+            behavior.on("dragstart", function () {
+		// silence other listeners
+		d3.event.sourceEvent.stopPropagation();
+		total_displacement = { x: 0, y: 0 };
+	    });
+            behavior.on("drag", function(d) {
+		reaction_id = d.reaction_id;
+		segment_id = d.segment_id;
+		bezier_number = d.bezier;
+		// update data
+		var displacement = { x: o.scale.x_size.invert(d3.event.dx),
+				     y: o.scale.y_size.invert(d3.event.dy) };
+		move_bezier(reaction_id, segment_id, bezier_number, displacement);
+		// remember the displacement
+		total_displacement = utils.c_plus_c(total_displacement, displacement);
+		// draw
+		draw_specific_reactions([reaction_id]);
+	    });
+	    behavior.on("dragend", function(d) {			  
+		// add to undo/redo stack
+		// remember the displacement, dragged nodes, and reactions
+		var saved_displacement = utils.clone(total_displacement), // BUG TODO this variable disappears!
+		    saved_reaction_id = utils.clone(reaction_id);
+		o.undo_stack.push(function() {
+		    // undo
+		    move_bezier(reaction_id, segment_id, bezier_number,
+				utils.c_times_scalar(saved_displacement, -1));
+		    draw_specific_reactions([saved_reaction_id]);
+		}, function () {
+		    // redo
+		    move_bezier(reaction_id, segment_id, bezier_number,
+				saved_displacement);
+		    draw_specific_reactions([saved_reaction_id]);
+		});
+	    });
+	    return behavior;
+
+	    // definitions
+	    function move_bezier(reaction_id, segment_id, bezier_number, displacement) {
+		var segment = o.drawn_reactions[reaction_id].segments[segment_id];
+		segment['b'+bezier_number] = utils.c_plus_c(segment['b'+bezier_number], displacement);
+	    };
+	}
 	function draw_everything() {
 	    draw.draw(o.drawn_membranes, o.drawn_reactions, o.drawn_nodes, o.drawn_text_labels, o.scale, 
 		      o.show_beziers, o.reaction_arrow_displacement, o.defs, o.arrowheads_generated,
 		      o.default_reaction_color, has_flux(), 
-		      node_click, get_node_drag_behavior());
+		      node_click, get_node_drag_behavior(),
+		      get_bezier_drag_behavior());
 	}
 	function draw_specific_reactions(reaction_ids) {
 	    draw.draw_specific_reactions(reaction_ids, o.drawn_reactions, o.drawn_nodes, o.scale, o.show_beziers,
 					 o.reaction_arrow_displacement, o.defs, o.arrowheads_generated, 
-					 o.default_reaction_color, has_flux());
+					 o.default_reaction_color, has_flux(),
+					 get_bezier_drag_behavior());
 	}
 	function draw_specific_nodes(node_ids) {
 	    draw.draw_specific_nodes(node_ids, o.drawn_nodes, o.drawn_reactions, o.scale, 

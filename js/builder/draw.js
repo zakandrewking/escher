@@ -20,7 +20,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     function draw(membranes, reactions, nodes, text_labels, scale,
 		  show_beziers, arrow_displacement, defs, arrowheads,
 		  default_reaction_color, has_flux, 
-		  node_click_fn, node_drag_behavior) {
+		  node_click_fn, node_drag_behavior,
+		  bezier_drag_behavior) {
         /** Draw the reactions and membranes
          */
 
@@ -35,7 +36,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 								    arrow_displacement,
 								    defs, arrowheads,
 								    default_reaction_color,
-								    has_flux); });
+								    has_flux, 
+								    bezier_drag_behavior); });
 
 	utils.draw_an_object('#nodes', '.node', nodes, 'node_id', 
 			     function(sel) { return create_node(sel, scale, nodes, reactions,
@@ -63,7 +65,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 
     function draw_specific_reactions(reaction_ids, reactions, nodes, scale, show_beziers,
 				     arrow_displacement, defs, arrowheads, default_reaction_color, 
-				     has_flux) {
+				     has_flux, bezier_drag_behavior) {
         // find reactions for reaction_ids
         var reaction_subset = {},
             i = -1;
@@ -91,7 +93,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 							arrow_displacement,
 							defs, arrowheads,
 							default_reaction_color,
-							has_flux); });
+							has_flux,
+							bezier_drag_behavior); });
 
         // exit
         sel.exit();
@@ -152,7 +155,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     }
 
     function update_reaction(update_selection, scale, drawn_nodes, show_beziers, arrow_displacement, defs, arrowheads,
-			     default_reaction_color, has_flux) {
+			     default_reaction_color, has_flux, bezier_drag_behavior) {
         // update reaction label
         update_selection.select('.reaction-label')
             .call(function(sel) { return update_reaction_label(sel, scale); });
@@ -170,7 +173,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
         // update segments
         sel.call(function(sel) { 
 	    return update_segment(sel, scale, drawn_nodes, show_beziers, arrow_displacement, defs, arrowheads, 
-				  default_reaction_color, has_flux);
+				  default_reaction_color, has_flux, bezier_drag_behavior);
 
 	});
 
@@ -270,7 +273,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     
     function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
 			    arrow_displacement, defs, arrowheads, default_reaction_color,
-			    has_flux) {
+			    has_flux, bezier_drag_behavior) {
         // update segment attributes
         // update arrows
         update_selection
@@ -339,24 +342,44 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	var bez = update_selection.select('.beziers')
 		.selectAll('.bezier')
 		.data(function(d) {
-		    var beziers = [];
+		    var beziers = [],
+			reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
+			segment_id = this.parentNode.parentNode.__data__.segment_id;
+		    //TODO fix; this is a bit of a hack
 		    if (d.b1!=null && d.b1.x!=null && d.b1.y!=null)
-			beziers.push({'bezier': 1, x:d.b1.x, y:d.b1.y});
+			beziers.push({bezier: 1,
+				      x: d.b1.x,
+				      y: d.b1.y,
+				      reaction_id: reaction_id,
+				      segment_id: segment_id });
 		    if (d.b2!=null && d.b2.x!=null && d.b2.y!=null)
-			beziers.push({'bezier': 2, x:d.b2.x, y:d.b2.y});
+			beziers.push({bezier: 2,
+				      x: d.b2.x,
+				      y: d.b2.y,
+				      reaction_id: reaction_id,
+				      segment_id: segment_id });
 		    return beziers;
 		}, function(d) { return d.bezier; });
-	bez.enter().call(create_bezier);
+	bez.enter().call(function(sel) {
+	    return create_bezier(sel, bezier_drag_behavior);
+	});
 	// update bezier points
 	bez.call(function(sel) { return update_bezier(sel, show_beziers); });
 	// remove
 	bez.exit().remove();
 
-	function create_bezier(enter_selection) {
+	function create_bezier(enter_selection, drag_behavior) {
 	    enter_selection.append('circle')
 	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
 	    	.style('stroke-width', String(scale.size(1))+'px')	
-    		.attr('r', String(scale.size(5))+'px');
+    		.attr('r', String(scale.size(5))+'px')
+		.on("mouseover", function(d) {
+		    d3.select(this).style('stroke-width', String(scale.size(3))+'px');
+		})
+		.on("mouseout", function(d) {
+		    d3.select(this).style('stroke-width', String(scale.size(1))+'px');
+		})
+		.call(drag_behavior);
 	}
 	function update_bezier(update_selection, show_beziers) {
 	    if (show_beziers) {

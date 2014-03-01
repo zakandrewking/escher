@@ -15,7 +15,7 @@
     text-rendering: optimizelegibility;
 }
 .node-circle {
-    fill: none;
+    fill: rgba(255,255,255,0.0);	
     stroke: rgb(50, 50, 50);
 }
 .selected .node-circle{
@@ -50,7 +50,7 @@
   shape-rendering: crispEdges;
 }
 .bezier {
-    fill: none;
+    fill: rgba(255,255,255,0.0);	
 }
 .bezier1 {
     stroke: red;
