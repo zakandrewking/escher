@@ -175,9 +175,9 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                 o.load_flux_input_click_fn = new_input(sel, load_flux_for_file,
 						       "Load flux (^f)");
 		if (o.show_beziers)
-		    new_button(sel, cmd_hide_beziers, "Hide control points");
+		    new_button(sel, cmd_hide_beziers, "Hide control points (b)", 'bezier-button');
 		else
-		    new_button(sel, cmd_show_beziers, "Show control points");
+		    new_button(sel, cmd_show_beziers, "Show control points (b)", 'bezier-button');
 		if (o.zoom_container.zoom_enabled())
 		    new_button(sel, cmd_zoom_off, "Enable select (v)", 'zoom-button');
 		else
@@ -868,6 +868,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 				fn: cmd_load },
 		    load_flux_key: { key: 70, modifiers: { control: true }, // ctrl-f
 				     fn: cmd_load_flux },
+		    toggle_beziers_key: { key: 66,
+					  fn: cmd_toggle_beziers }, // b
 		    pan_and_zoom_key: { key: 90, // z 
 					fn: cmd_zoom_on,
 					ignore_with_input: true },
@@ -996,15 +998,19 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    console.log("Loading flux");
 	    o.load_flux_input_click_fn();
 	}
+	function cmd_toggle_beziers() {
+	    if (o.show_beziers) cmd_hide_beziers();
+	    else cmd_show_beziers();
+	}
 	function cmd_show_beziers() {
 	    o.show_beziers = true;
-	    d3.select(this).text('Hide control points')
+	    d3.select('#bezier-button').text('Hide control points (b)')
 		.on('click', cmd_hide_beziers);
 	    draw_everything();
 	}
 	function cmd_hide_beziers() {
 	    o.show_beziers = false;
-	    d3.select(this).text('Show control points')
+	    d3.select('#bezier-button').text('Show control points (b)')
 		.on('click', cmd_show_beziers);
 	    draw_everything();
 	}
