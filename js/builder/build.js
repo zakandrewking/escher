@@ -322,9 +322,9 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	    center = utils.c_minus_c(center, displacement);
 	
         // Curve parameters
-        var w = 60,  // distance between reactants and between products
-            b1_strength = 0.5,
-            b2_strength = 0.2,
+        var w = 80,  // distance between reactants and between products
+            b1_strength = 0.4,
+            b2_strength = 0.25,
             w2 = w*0.7,
             secondary_dis = 40,
             num_slots = Math.min(2, met.count - 1);
