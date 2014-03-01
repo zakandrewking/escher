@@ -390,10 +390,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	function draw_specific_nodes(node_ids) {
 	    draw.draw_specific_nodes(node_ids, o.drawn_nodes, o.drawn_reactions, o.scale, 
 				     node_click, get_node_drag_behavior());
-	}    
+	}
 	function apply_flux_to_map() {
-	    for (var reaction_id in o.drawn_reactions) {
-		var reaction = o.drawn_reactions[reaction_id];
+	    apply_flux_to_reactions(o.drawn_reactions);
+	}
+	function apply_flux_to_reactions(reactions) {
+	    for (var reaction_id in reactions) {
+		var reaction = reactions[reaction_id];
 		if (reaction.abbreviation in o.flux) {
 		    var flux = parseFloat(o.flux[reaction.abbreviation]);
 		    reaction.flux = flux;
@@ -624,6 +627,9 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					 o.direction_arrow.get_rotation()),
 		new_nodes = out.new_nodes,
 		new_reactions = out.new_reactions;
+
+	    // add the flux
+	    apply_flux_to_reactions(new_reactions);
 
 	    // draw
 	    extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id);
