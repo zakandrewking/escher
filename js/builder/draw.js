@@ -211,64 +211,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 
 	g.append('g')
 	    .attr('class', 'beziers');
-
-	// THE FOLLOWING IS ALL TERRIBLE
-
-
-	// g.append('circle')
-	// 	.attr('class', 'bezier bezier1')
-	// 	.style('stroke-width', String(o.scale.size(1))+'px') 
-	// 	.call(d3.behavior.drag()
-	// 	      .on("dragstart", drag_silence)
-	// 	      .on("drag", drag_move_1))		
-	// 	.on("mouseover", function(d) {
-	// 	    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
-	// 	})
-	// 	.on("mouseout", function(d) {
-	// 	    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
-	// 	});
-
-	// // TODO fix this hack
-	// g.append('circle')
-	// 	.attr('class', 'bezier bezier2')
-	// 	.style('stroke-width', String(o.scale.size(1))+'px') 
-	// 	.call(d3.behavior.drag()
-	// 	      .on("dragstart", drag_silence)
-	// 	      .on("drag", drag_move_2))
-	// 	.on("mouseover", function(d) {
-	// 	    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
-	// 	})
-	// 	.on("mouseout", function(d) {
-	// 	    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
-	// 	});
-
-	// // definitions
-	// function drag_silence() {
-	// 	// silence other listeners
-        //     d3.event.sourceEvent.stopPropagation();
-	// }
-	// function drag_move_1() { 
-	// 	// TODO fix this hack too
-	// 	var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
-	// 	    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
-	// 	var seg = o.drawn_reactions[reaction_id].segments[segment_id],
-	// 	    dx = o.scale.x_size.invert(d3.event.dx),
-	// 	    dy = o.scale.y_size.invert(d3.event.dy);
-	// 	seg.b1.x = seg.b1.x + dx;
-	// 	seg.b1.y = seg.b1.y + dy;
-	// 	draw_specific_reactions([reaction_id]);
-	// }
-	// function drag_move_2() { 
-	// 	// TODO fix this hack too
-	// 	var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
-	// 	    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
-	// 	var seg = o.drawn_reactions[reaction_id].segments[segment_id],
-	// 	    dx = o.scale.x_size.invert(d3.event.dx),
-	// 	    dy = o.scale.y_size.invert(d3.event.dy);
-	// 	seg.b2.x = seg.b2.x + dx;
-	// 	seg.b2.y = seg.b2.y + dy;
-	// 	draw_specific_reactions([reaction_id]);
-	// }
     }
     
     function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
@@ -290,12 +232,10 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 		    b2 = d.b2;
 		// if metabolite, then displace the arrow
 		if (start['node_type']=='metabolite') {
-		    start = displaced_coords(arrow_displacement, start, end, 'start');
-		    b1 = displaced_coords(arrow_displacement, b1, end, 'start');
+		    start = displaced_coords(arrow_displacement, start, b1, 'start');
 		}
 		if (end['node_type']=='metabolite') {
-		    end = displaced_coords(arrow_displacement, start, end, 'end');
-		    b2 = displaced_coords(arrow_displacement, start, b2, 'end');
+		    end = displaced_coords(arrow_displacement, b2, end, 'end');
 		}
 		if (d.b1==null || d.b2==null) {
 		    return 'M'+scale.x(start.x)+','+scale.y(start.y)+' '+
