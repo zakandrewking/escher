@@ -1,6 +1,5 @@
 define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
-    return { setup_zoom_container: setup_zoom_container,
-             setup_defs: setup_defs,
+    return { setup_defs: setup_defs,
 	     draw_an_array: draw_an_array,
 	     draw_an_object: draw_an_object,
 	     make_array: make_array,
@@ -20,27 +19,6 @@ define(["lib/d3", "vis/scaffold"], function (d3, scaffold) {
 	     distance: distance };
 
     // definitions
-    function setup_zoom_container(svg, w, h, scale_extent, callback, zoom_on_fn) {
-	if (callback===undefined) callback = function() {};
-	if (zoom_on_fn===undefined) zoom_on_fn = function() { return true; };
-        // set up the container
-        svg.select("#container").remove();
-        var container = svg.append("g")
-                .attr("id", "container"),
-            sel = container.append("g"),
-            zoom = function() {
-		if (zoom_on_fn()) {
-                    sel.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-		    callback(d3.event);
-		}
-            },
-	    zoom_behavior = d3.behavior.zoom().scaleExtent(scale_extent).on("zoom", zoom);
-        container.call(zoom_behavior);
-        return {sel: sel,
-		zoom: zoom_behavior,
-		initial_zoom: 1.0 };
-    }
-
     function setup_defs(svg, style) {
         // add stylesheet
         svg.select("defs").remove();
