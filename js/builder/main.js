@@ -1,6 +1,8 @@
 define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", "lib/d3", 
-	"lib/complete.ly", "builder/build", "builder/DirectionArrow", "builder/UndoStack"],
-       function(scaffold, utils, draw, input, d3, completely, build, DirectionArrow, UndoStack) {
+	"lib/complete.ly", "builder/build", "builder/DirectionArrow", "builder/UndoStack",
+	"builder/ZoomContainer"],
+       function(scaffold, utils, draw, input, d3, completely, build, DirectionArrow, UndoStack,
+		ZoomContainer) {
     // NOTE
     // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
     // only necessary for selectAll()
@@ -73,7 +75,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             o.default_reaction_color = '#505050';
             o.window_translate = {'x': 0, 'y': 0};
             o.window_scale = 1;
-	    o.zoom_enabled = true;
 	    o.metabolite_click_enabled = true;
 	    o.shift_key_on = false;
 	    o.default_angle = 90; // degrees
@@ -91,19 +92,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             o.svg = out.svg;
             o.height = out.height;
             o.width = out.width;
-
-            // set up menu and status bars
-            o.menu = setup_menu(o.selection);
-            o.status = setup_status(o.selection);
-
-            // set up the reaction input with complete.ly
-            o.reaction_input = setup_reaction_input(o.selection);
-
-            // set up keyboard listeners
-            setup_key_listeners();
-
-	    // make the undo/redo stack
-	    o.undo_stack = new UndoStack();
 
 	    // import map
 	    var max_w = o.width, max_h = o.height;
@@ -131,14 +119,21 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					    o.window_scale, o.window_translate, 
 					    o.width, o.height);
 	    };
-	    var out = utils.setup_zoom_container(o.svg, o.width, o.height, [0.05, 15],
-						 zoom_fn,
-						 function() {
-						     return o.zoom_enabled;
-						 });
-	    // TODO fix like this http://jsfiddle.net/La8PR/5/
-            o.sel = out.sel,
-            o.zoom = out.zoom;
+	    o.zoom_container = new ZoomContainer(o.svg, o.width, o.height, [0.05, 15], zoom_fn);
+            o.sel = o.zoom_container.zoomed_sel;
+
+            // set up menu and status bars
+            o.menu = setup_menu(o.selection);
+            o.status = setup_status(o.selection);
+
+            // set up the reaction input with complete.ly
+            o.reaction_input = setup_reaction_input(o.selection);
+
+            // set up keyboard listeners
+            setup_key_listeners();
+
+	    // make the undo/redo stack
+	    o.undo_stack = new UndoStack();
 
             var extent = {"x": o.width, "y": o.height},
 		mouse_node = o.sel.append('rect')
@@ -183,7 +178,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    new_button(sel, cmd_hide_beziers, "Hide control points");
 		else
 		    new_button(sel, cmd_show_beziers, "Show control points");
-		if (o.zoom_enabled)
+		if (o.zoom_container.zoom_enabled())
 		    new_button(sel, cmd_zoom_off, "Enable select (v)", 'zoom-button');
 		else
 		    new_button(sel, cmd_zoom_on, "Enable pan+zoom (z)", 'zoom-button');
@@ -472,8 +467,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    // reset zoom
 	    if (o.zoom) {
 		o.window_translate.x = 0; o.window_translate.y = 0; o.window_scale = 1.0;
-                o.zoom.translate([o.window_translate.x, o.window_translate.y]);
-                o.zoom.scale(o.window_scale);
+                o.zoom_container.translate([o.window_translate.x, o.window_translate.y]);
+                o.zoom_container.scale(o.window_scale);
                 o.sel.attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
 	    }
 	    // flux onto existing map reactions
@@ -730,8 +725,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
 	    // definitions
             function go() {
-                o.zoom.translate([o.window_translate.x, o.window_translate.y]);
-                o.zoom.scale(o.window_scale);
+                o.zoom_container.translate([o.window_translate.x, o.window_translate.y]);
+                o.zoom_container.scale(o.window_scale);
                 o.sel.transition()
                     .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
             }
@@ -963,13 +958,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    draw_everything();
 	}
 	function cmd_zoom_on() {
-	    o.zoom_enabled = true;
+	    o.zoom_container.toggle_zoom(true);
 	    enable_brush(false);
 	    d3.select('#zoom-button').text('Enable select (v)')
 		.on('click', cmd_zoom_off);
 	}
 	function cmd_zoom_off() {
-	    o.zoom_enabled = false;
+	    o.zoom_container.toggle_zoom(false);
 	    enable_brush(true);
 	    d3.select('#zoom-button').text('Enable pan+zoom (z)')
 		.on('click', cmd_zoom_on);
@@ -981,16 +976,16 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    var selected_nodes = get_selected_nodes();
 	    if (selected_nodes.length < 1) return console.warn('No nodes selected');
 	    
-	    var zoom_on = o.zoom_enabled,
+	    var zoom_on = o.zoom_container.zoom_enabled(),
 		click_on = o.metabolite_click_enabled,
 		brush_on = brush_is_enabled(),
 		turn_everything_on = function() {
 		    // turn the zoom and click back on 
-		    o.zoom_enabled = zoom_on;
+		    o.zoom_container.toggle_zoom(zoom_on);
 		    o.metabolite_click_enabled = click_on;
 		    enable_brush(brush_on);
 		};
-	    o.zoom_enabled = false;
+	    o.zoom_container.toggle_zoom(false);
 	    o.metabolite_click_enabled = false;
 	    enable_brush(false);
 
@@ -1072,7 +1067,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					 callback_canceled) {
 		console.log('listen_for_rotation');
 		set_status('Drag to rotate.');
-		o.zoom_enabled = false;
+		o.zoom_container.toggle_zoom(false);
 		var angle = Math.PI/2,
 		    selection = d3.selectAll('#mouse-node'),
 		    drag = d3.behavior.drag(),
@@ -1206,8 +1201,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
 	    // definitions
             function go() {
-                o.zoom.translate([o.window_translate.x, o.window_translate.y]);
-                o.zoom.scale(o.window_scale);
+                o.zoom_container.translate([o.window_translate.x, o.window_translate.y]);
+                o.zoom_container.scale(o.window_scale);
                 o.sel.transition()
                     .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
             };
