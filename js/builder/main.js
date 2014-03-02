@@ -924,6 +924,9 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 			    // prevent browser action
 			    d3.event.preventDefault();
 			}
+		    } else {
+			// sometimes modifiers get 'stuck', so reset them once in a while.
+			reset_held_keys();
 		    }
 		}
             }).on("keyup", function() {
