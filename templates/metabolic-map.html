@@ -18,7 +18,7 @@
   </head>
   <body>
     <script type="text/javascript">
-     require(["lib/d3", "metabolic-map/main", "vis/export-svg"], function(d3, map, export_svg) {
+     require(["lib/d3", "metabolic-map/main", "metabolic-map/utils"], function(d3, map, utils) {
        var map = map({ map_path: "data/maps/simpheny-maps/ijo-central.json", fill_screen: true,
 		      flux_path: "data/flux/flux-wt-pFBA.json",
 		      metabolite_zoom_threshold: 0,
@@ -26,11 +26,10 @@
 		      label_zoom_threshold: 0 });
        map.set_update_hook( function() { map.set_status(""); } );
        map.set_status('Loading...');
-       var ex = export_svg();
        d3.select('body').append('button')
 	 .attr("style", "position:absolute; top:20px; left:20px;")
 	 .text('download')
-         .on('click', function(d) { ex.download('map', 'svg', true); });
+         .on('click', function(d) { utils.export_svg.download('map', 'svg', true); });
      });
     </script>
   </body>

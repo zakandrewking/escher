@@ -171,6 +171,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                 var sel = selection.append("div").attr("id", "menu");
                 new_button(sel, cmd_hide_show_input, "New reaction (/)");
                 new_button(sel, cmd_save, "Save (^s)");
+                new_button(sel, cmd_save_svg, "Export SVG (^Shift s)");
                 o.load_input_click_fn = new_input(sel, load_map_for_file, "Load (^o)");
                 o.load_flux_input_click_fn = new_input(sel, load_flux_for_file,
 						       "Load flux (^f)");
@@ -897,6 +898,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 				fn: cmd_save },
                     // save_key_cmd: { key: 83, modifiers: { command: true }, // command-s
 		    // 		       fn: cmd_save },
+                    save_svg_key: { key: 83, modifiers: { control: true, shift: true }, // ctrl-Shift-s
+				fn: cmd_save_svg },
                     load_key: { key: 79, modifiers: { control: true }, // ctrl-o
 				fn: cmd_load },
 		    load_flux_key: { key: 70, modifiers: { control: true }, // ctrl-f
@@ -939,23 +942,27 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
             d3.select(window).on("keydown", function() {
                 var kc = d3.event.keyCode,
-                    reaction_input_visible = input.is_visible(o.reaction_input);
-
+                    reaction_input_visible = input.is_visible(o.reaction_input),
+		    meaningless = true;
                 held_keys = toggle_modifiers(modifier_keys, held_keys, kc, true);
 		o.shift_key_on = held_keys.shift;
 		for (var key_id in assigned_keys) {
 		    var assigned_key = assigned_keys[key_id];
 		    if (check_key(assigned_key, kc, held_keys)) {
+			meaningless = false;
 			if (!(assigned_key.ignore_with_input && reaction_input_visible)) {
 			    assigned_key.fn();
 			    // prevent browser action
 			    d3.event.preventDefault();
 			}
-		    } else {
-			// sometimes modifiers get 'stuck', so reset them once in a while.
-			reset_held_keys();
 		    }
 		}
+		// Sometimes modifiers get 'stuck', so reset them once in a while.
+		// Only do this when a meaningless key is pressed
+		for (var k in modifier_keys)
+		    if (modifier_keys[k] == kc) meaningless = false;
+		if (meaningless) 
+		    held_keys = reset_held_keys();
             }).on("keyup", function() {
                 held_keys = toggle_modifiers(modifier_keys, held_keys,
 					     d3.event.keyCode, false);
@@ -1065,6 +1072,12 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
         function cmd_save() {
             console.log("Saving");
             utils.download_json(map_for_export(), "saved_map");
+        }
+        function cmd_save_svg() {
+            console.log("Exporting SVG");
+	    o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');	    
+	    o.direction_arrow.hide();
+            utils.export_svg("saved_map", "svg");
         }
         function cmd_load() {
             console.log("Loading");
