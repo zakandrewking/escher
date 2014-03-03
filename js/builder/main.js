@@ -588,14 +588,39 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 				     node_type: 'metabolite' },
 			new_nodes = {};
 		    new_nodes[selected_node_id] = selected_node;
-		    utils.extend(o.drawn_nodes, new_nodes);
-		    draw_specific_nodes([selected_node_id]);
 		    break;
 		}
 	    }
-	    
+
+	    // draw
+	    extend_and_draw_metabolite(new_nodes, selected_node_id);
+
+	    // clone the nodes and reactions, to redo this action later
+	    var saved_nodes = utils.clone(new_nodes);
+
+	    // add to undo/redo stack
+	    o.undo_stack.push(function() {
+		// undo
+		// get the nodes to delete
+		delete_nodes(new_nodes);
+		// save the nodes and reactions again, for redo
+		new_nodes = utils.clone(saved_nodes);
+		// draw
+		draw_everything();
+	    }, function () {
+		// redo
+		// clone the nodes and reactions, to redo this action later
+		extend_and_draw_metabolite(new_nodes, selected_node_id);
+	    });
+	   
 	    // draw the reaction
 	    new_reaction_for_metabolite(starting_reaction, selected_node_id);
+
+            // definitions
+	    function extend_and_draw_metabolite(new_nodes, selected_node_id) {
+		utils.extend(o.drawn_nodes, new_nodes);
+		draw_specific_nodes([selected_node_id]);
+	    }
 	}
 	
 	function new_reaction_for_metabolite(reaction_abbreviation, selected_node_id) {
