@@ -50,7 +50,7 @@
   shape-rendering: crispEdges;
 }
 .bezier {
-    fill: rgba(255,255,255,0.0);	
+    fill: rgb(255,255,255);	
 }
 .bezier1 {
     stroke: red;
@@ -61,6 +61,14 @@
 .direction-arrow {
     stroke: grey;
     stroke-width: 1px;
+    fill: none;
+    opacity: 0.5;
+}
+.start-reaction-cursor {
+    cursor: pointer;
+}
+.start-reaction-target {
+    stroke: rgb(100,100,100);
     fill: none;
     opacity: 0.5;
 }

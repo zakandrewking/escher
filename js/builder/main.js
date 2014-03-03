@@ -823,6 +823,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    if (input.is_visible(o.reaction_input)) cmd_show_input();
 	    o.direction_arrow.set_location(coords);
 	    o.direction_arrow.show();
+	    o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	}
         function select_metabolite(sel, d) {
 	    var node_selection = o.sel.select('#nodes').selectAll('.node'), 
@@ -849,6 +850,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		cmd_hide_input();
 		o.direction_arrow.hide();
 	    }
+	    o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	}
 
         // ---------------------------------------------------------------------
@@ -998,9 +1000,19 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					  o.window_translate, o.width, o.height, o.flux, 
 					  o.drawn_reactions, o.cobra_reactions,
 					  new_reaction_from_scratch);
+		    var s = o.sel.selectAll('.start-reaction-target').data([12, 5]);
+		    s.enter().append('circle')
+			.classed('start-reaction-target', true)
+			.attr('r', function(d) { return o.scale.x_size(d); })
+			.style('stroke-width', o.scale.x_size(4));
+		    s.style('visibility', 'visible')
+			.attr('transform', 'translate('+o.scale.x(coords.x)+','+o.scale.y(coords.y)+')');
 		});
+		o.sel.classed('start-reaction-cursor', true);
 	    } else {
 		o.sel.on('click.start_reaction', null);
+		o.sel.classed('start-reaction-cursor', false);
+		o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	    }
 	}
 
@@ -1018,6 +1030,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             o.reaction_input.completely.hideDropDown();
         }
         function cmd_show_input() {
+	    cmd_zoom_on();
 	    toggle_start_reaction_listener(true);
 	    input.reload_at_selected(o.reaction_input, o.scale.x, o.scale.y, o.window_scale, 
 				     o.window_translate, o.width, o.height, o.flux, 
@@ -1268,7 +1281,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	     */
 
 	    // optional args
-	    if (margin===undefined) margin = 100;
+	    if (margin===undefined) margin = 180;
 
 	    // get the extent of the nodes
 	    var min = { x: null, y: null }, // TODO make infinity?
