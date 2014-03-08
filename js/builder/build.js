@@ -18,7 +18,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	angle = Math.PI / 180 * angle; // default angle
 
 	// generate a new integer id
-	var new_reaction_id = ++largest_ids.reactions;
+	var new_reaction_id = String(++largest_ids.reactions);
 
         // calculate coordinates of reaction
 	var selected_node_coords = { x: selected_node.x,
@@ -105,7 +105,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 			  dis: { x: anchor_distance * (reaction_is_reversed ? -1 : 1), y: 0 } } ],
 	    anchor_ids = {};
 	anchors.map(function(n) {
-	    var new_id = ++largest_ids.nodes;
+	    var new_id = String(++largest_ids.nodes);
 	    new_anchors[new_id] = { node_type: n.node_type,
 				    x: center.x + n.dis.x,
 				    y: center.y + n.dis.y,
@@ -118,7 +118,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 				  [ anchor_ids['anchor_products'],  anchor_ids['center'] ] ];
 	new_anchor_groups.map(function(l) {
 	    var from_id = l[0], to_id = l[1],
-		new_segment_id = ++largest_ids.segments;
+		new_segment_id = String(++largest_ids.segments);
 	    new_reaction.segments[new_segment_id] =  { b1: null,
 						       b2: null,
 						       from_node_id: from_id,
@@ -155,7 +155,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	    // if this is the existing metabolite
 	    if (metabolite.bigg_id_compartmentalized==
 		selected_node.bigg_id_compartmentalized) {
-		var new_segment_id = ++largest_ids.segments;
+		var new_segment_id = String(++largest_ids.segments);
 		new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
 							  to_node_id: selected_node_id,
 							  b1: met_loc.b1,
@@ -167,8 +167,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 								  reaction_id: new_reaction_id });
 	    } else {
 		// save new metabolite
-		var new_segment_id = ++largest_ids.segments,
-		    new_node_id = ++largest_ids.nodes;
+		var new_segment_id = String(++largest_ids.segments),
+		    new_node_id = String(++largest_ids.nodes);
 		new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
 							  to_node_id: new_node_id,
 							  b1: met_loc.b1,

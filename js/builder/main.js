@@ -615,7 +615,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    function get_largest_id(obj, current_largest) {
 		/** Return the largest integer key in obj, or current_largest, whichever is bigger. */
 		if (current_largest===undefined) current_largest = 0;
-		return Math.max.apply(null, Object.keys(obj).concat([current_largest]));
+		return Math.max.apply(null, Object.keys(obj).map(function(x) { return parseInt(x); }).concat([current_largest]));
 	    }
 	}
 	function map_for_export() {
@@ -916,7 +916,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    var selected_nodes = {};
 	    d3.select('#nodes')
 		.selectAll('.selected')
-		.each(function(d) { selected_nodes[parseInt(d.node_id)] = o.drawn_nodes[d.node_id]; });
+		.each(function(d) { selected_nodes[d.node_id] = o.drawn_nodes[d.node_id]; });
 	    return selected_nodes;
 	}	
 	function select_metabolite_with_id(node_id) {
