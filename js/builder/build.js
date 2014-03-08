@@ -310,7 +310,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	return { reaction_ids: updated_reaction_ids };
     }
 
-
     function calculate_new_metabolite_coordinates(met, primary_index, main_axis, center, dis, is_reversed) {
 	/** Calculate metabolite coordinates for a new reaction metabolite.
 
@@ -391,5 +390,4 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	loc.circle = utils.c_plus_c(displacement, circle);
         return loc;
     }
-
 });

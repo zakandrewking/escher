@@ -382,10 +382,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 		    if (d.node_type!='metabolite') return scale.size(5);
 		    else return scale.size(d.node_is_primary ? 15 : 10); 
 		});
-                // .classed('selected', function(d) {
-		//     if (is_sel(d)) return true;
-		//     return false;
-                // });
 
         update_selection
             .select('.node-label')
@@ -395,14 +391,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
             .style("font-size", function(d) {
 		return String(scale.size(20))+"px";
             });
-
-	// definitions
-        // function is_sel(d) {	//FIX
-        //     if (d.node_id==o.selected_node.node_id &&
-        //         o.selected_node.is_selected)
-        //         return true;
-        //     return false;
-        // };
     }
 
     function create_text_label(enter_selection) {

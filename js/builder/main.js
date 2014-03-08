@@ -268,12 +268,33 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		reaction_ids;
 
             behavior.on("dragstart", function () {
+		var data = this.parentNode.__data__,
+		    bigg_id_compartmentalized = data.bigg_id_compartmentalized,
+		    node_group = this.parentNode;
 		// silence other listeners
 		d3.event.sourceEvent.stopPropagation();
+		// remember the total displacement for later
 		total_displacement = {};
+		// move element to back (for the next step to work)
+		node_group.parentNode.insertBefore(node_group,node_group.parentNode.firstChild);
+		// prepare to combine metabolites
+		d3.selectAll('.metabolite-circle')
+		    .on('mouseover.combine', function(d) {
+			if (d.bigg_id_compartmentalized==bigg_id_compartmentalized &&
+			    d.node_id!=data.node_id) {
+			    d3.select(this).style('stroke-width', String(o.scale.size(12))+'px')
+				.classed('node-to-combine', true);
+			}
+		    }).on('mouseout.combine', function(d) {
+			if (d.bigg_id_compartmentalized==bigg_id_compartmentalized &&
+			    d.node_id!==data.node_id) {
+			    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px')
+				.classed('node-to-combine', false);
+			}
+		    });
 	    });
             behavior.on("drag", function() {
-		var grabbed_id = this.parentNode.__data__.node_id,		    
+		var grabbed_id = this.parentNode.__data__.node_id, 
 		    selected_ids = get_selected_node_ids();
 		nodes_to_drag = [];
 		// choose the nodes to drag
@@ -298,33 +319,94 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		draw_specific_nodes(nodes_to_drag);
 		draw_specific_reactions(reaction_ids);
 	    });
-	    behavior.on("dragend", function() {			  
-		// add to undo/redo stack
-		// remember the displacement, dragged nodes, and reactions
-		var saved_displacement = utils.clone(total_displacement), // BUG TODO this variable disappears!
-		    saved_node_ids = utils.clone(nodes_to_drag),
-		    saved_reaction_ids = utils.clone(reaction_ids);
-		o.undo_stack.push(function() {
-		    // undo
-		    saved_node_ids.forEach(function(node_id) {
-			var node = o.drawn_nodes[node_id];
-			build.move_node_and_dependents(node, node_id, o.drawn_reactions,
-						       utils.c_times_scalar(saved_displacement[node_id], -1));
-		    });
-		    draw_specific_nodes(saved_node_ids);
-		    draw_specific_reactions(saved_reaction_ids);
-		}, function () {
-		    // redo
-		    saved_node_ids.forEach(function(node_id) {
-			var node = o.drawn_nodes[node_id];
-			build.move_node_and_dependents(node, node_id, o.drawn_reactions,
-						       saved_displacement[node_id]);
-		    });
-		    draw_specific_nodes(saved_node_ids);
-		    draw_specific_reactions(saved_reaction_ids);
+	    behavior.on("dragend", function() {	
+		// look for mets to combine
+		var node_to_combine_array = [];
+		d3.selectAll('.node-to-combine').each(function(d) {
+		    node_to_combine_array.push(d.node_id);
 		});
+		if (node_to_combine_array.length==1) { console.log(node_to_combine_array);
+		    // If a node is ready for it, combine nodes
+		    var fixed_node_id = node_to_combine_array[0],
+			dragged_node_id = this.parentNode.__data__.node_id,
+			saved_dragged_node = utils.clone(o.drawn_nodes[dragged_node_id]),
+			segment_objs_moved_to_combine = combine_nodes_and_draw(fixed_node_id, dragged_node_id);
+		    o.undo_stack.push(function() {
+			// undo
+			o.drawn_nodes[dragged_node_id] = saved_dragged_node;
+			var fixed_node = o.drawn_nodes[fixed_node_id];
+			segment_objs_moved_to_combine.forEach(function(segment_obj) {
+			    var segment = o.drawn_reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
+			    if (segment.from_node_id==fixed_node_id) segment.from_node_id = dragged_node_id;
+			    else if (segment.to_node_id==fixed_node_id) segment.to_node_id = dragged_node_id;
+			    else console.error('Segment does not connect to new node');
+			    // removed this segment_obj from the fixed node
+			    fixed_node.connected_segments = fixed_node.connected_segments.filter(function(x) {
+				return !(x.reaction_id==segment_obj.reaction_id && x.segment_id==segment_obj.segment_id);
+			    });
+			});
+			draw_specific_nodes([dragged_node_id]);
+			draw_specific_reactions(saved_reaction_ids);
+		    }, function () {
+			// redo
+			combine_nodes_and_draw(fixed_node_id, dragged_node_id);
+		    });
+
+		} else {
+		    // otherwise, drag node
+		    
+		    // add to undo/redo stack
+		    // remember the displacement, dragged nodes, and reactions
+		    var saved_displacement = utils.clone(total_displacement), // BUG TODO this variable disappears!
+			saved_node_ids = utils.clone(nodes_to_drag),
+			saved_reaction_ids = utils.clone(reaction_ids);
+		    o.undo_stack.push(function() {
+			// undo
+			saved_node_ids.forEach(function(node_id) {
+			    var node = o.drawn_nodes[node_id];
+			    build.move_node_and_dependents(node, node_id, o.drawn_reactions,
+							   utils.c_times_scalar(saved_displacement[node_id], -1));
+			});
+			draw_specific_nodes(saved_node_ids);
+			draw_specific_reactions(saved_reaction_ids);
+		    }, function () {
+			// redo
+			saved_node_ids.forEach(function(node_id) {
+			    var node = o.drawn_nodes[node_id];
+			    build.move_node_and_dependents(node, node_id, o.drawn_reactions,
+							   saved_displacement[node_id]);
+			});
+			draw_specific_nodes(saved_node_ids);
+			draw_specific_reactions(saved_reaction_ids);
+		    });
+		}
+
+		// stop combining metabolites
+		d3.selectAll('.metabolite-circle')
+		    .on('mouseover.combine', null)
+		    .on('mouseout.combine', null);
 	    });
 	    return behavior;
+
+	    // definitions
+	    function combine_nodes_and_draw(fixed_node_id, dragged_node_id) {
+		var dragged_node = o.drawn_nodes[dragged_node_id],
+		    fixed_node = o.drawn_nodes[fixed_node_id],
+		    updated_segment_objs = [];
+		dragged_node.connected_segments.forEach(function(segment_obj) {
+		    // change the segments to reflect
+		    updated_segment_objs.push(segment_obj);
+		    var segment = o.drawn_reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
+		    if (segment.from_node_id==dragged_node_id) segment.from_node_id = fixed_node_id;
+		    else if (segment.to_node_id==dragged_node_id) segment.to_node_id = fixed_node_id;
+		    else return console.error('Segment does not connect to new node');
+		    // moved segment_obj to fixed_node
+		    fixed_node.connected_segments.push(segment_obj);
+		});
+		delete_nodes([dragged_node_id]);
+		draw_everything();
+		return updated_segment_objs;
+	    }
 	}
 	function get_bezier_drag_behavior() {
 	    // define some variables
@@ -550,7 +632,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    return { membranes: membranes, nodes: nodes, reactions: reactions, text_labels: text_labels, info: info };
 	}   
 
-        function new_reaction_from_scratch(starting_reaction, coords) { console.log(starting_reaction, coords);
+        function new_reaction_from_scratch(starting_reaction, coords) {
 	    /** Draw a reaction on a blank canvas.
 
 	     starting_reaction: bigg_id for a reaction to draw.
