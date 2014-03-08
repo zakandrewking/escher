@@ -333,20 +333,24 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 			segment_objs_moved_to_combine = combine_nodes_and_draw(fixed_node_id, dragged_node_id);
 		    o.undo_stack.push(function() {
 			// undo
+			// put the old node back
 			o.drawn_nodes[dragged_node_id] = saved_dragged_node;
-			var fixed_node = o.drawn_nodes[fixed_node_id];
+			var fixed_node = o.drawn_nodes[fixed_node_id],
+			    updated_reactions = [];
 			segment_objs_moved_to_combine.forEach(function(segment_obj) {
 			    var segment = o.drawn_reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
 			    if (segment.from_node_id==fixed_node_id) segment.from_node_id = dragged_node_id;
 			    else if (segment.to_node_id==fixed_node_id) segment.to_node_id = dragged_node_id;
-			    else console.error('Segment does not connect to new node');
+			    else console.error('Segment does not connect to fixed node');
 			    // removed this segment_obj from the fixed node
 			    fixed_node.connected_segments = fixed_node.connected_segments.filter(function(x) {
 				return !(x.reaction_id==segment_obj.reaction_id && x.segment_id==segment_obj.segment_id);
 			    });
+			    if (updated_reactions.indexOf(segment_obj.reaction_id)==-1)
+				updated_reactions.push(segment_obj.reaction_id);
 			});
 			draw_specific_nodes([dragged_node_id]);
-			draw_specific_reactions(saved_reaction_ids);
+			draw_specific_reactions(updated_reactions);
 		    }, function () {
 			// redo
 			combine_nodes_and_draw(fixed_node_id, dragged_node_id);
@@ -395,16 +399,21 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    updated_segment_objs = [];
 		dragged_node.connected_segments.forEach(function(segment_obj) {
 		    // change the segments to reflect
-		    updated_segment_objs.push(segment_obj);
 		    var segment = o.drawn_reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
 		    if (segment.from_node_id==dragged_node_id) segment.from_node_id = fixed_node_id;
 		    else if (segment.to_node_id==dragged_node_id) segment.to_node_id = fixed_node_id;
-		    else return console.error('Segment does not connect to new node');
+		    else return console.error('Segment does not connect to dragged node');
 		    // moved segment_obj to fixed_node
 		    fixed_node.connected_segments.push(segment_obj);
+		    updated_segment_objs.push(utils.clone(segment_obj));
 		});
-		delete_nodes([dragged_node_id]);
+		// delete the old node
+		delete_nodes_by_id([dragged_node_id]);
+		// turn off the class
+		d3.selectAll('.node-to-combine').classed('node-to-combine', false);
+		// draw
 		draw_everything();
+		// return for undo
 		return updated_segment_objs;
 	    }
 	}
@@ -823,6 +832,14 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		delete o.drawn_nodes[node_id];
 	    }
 	}
+	function delete_nodes_by_id(node_ids) {
+	    /** delete nodes for an array of ids
+	     */
+	    node_ids.forEach(function(node_id) {
+		delete o.drawn_nodes[node_id];
+	    });
+	}
+
 	function delete_segments(segment_objs) {
 	    /** Delete segments, and update connected_segments in nodes. Also
 	     deletes any reactions with 0 segments.
