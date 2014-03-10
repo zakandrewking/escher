@@ -1004,7 +1004,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    load_flux_key: { key: 70, modifiers: { control: true }, // ctrl-f
 				     fn: cmd_load_flux },
 		    toggle_beziers_key: { key: 66,
-					  fn: cmd_toggle_beziers }, // b
+					  fn: cmd_toggle_beziers,
+					  ignore_with_input: true  }, // b
 		    pan_and_zoom_key: { key: 90, // z 
 					fn: cmd_zoom_on,
 					ignore_with_input: true },
@@ -1026,13 +1027,17 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					 fn: cmd_cycle_primary_node,
 					 ignore_with_input: true },
 		    direction_arrow_right: { key: 39, // right
-					     fn: cmd_direction_arrow_right },
+					     fn: cmd_direction_arrow_right,
+					     ignore_with_input: true },
 		    direction_arrow_down: { key: 40, // down
-					    fn: cmd_direction_arrow_down },
+					    fn: cmd_direction_arrow_down,
+					    ignore_with_input: true },
 		    direction_arrow_left: { key: 37, // left
-					    fn: cmd_direction_arrow_left },
+					    fn: cmd_direction_arrow_left,
+					    ignore_with_input: true },
 		    direction_arrow_up: { key: 38, // up
-					  fn: cmd_direction_arrow_up },
+					  fn: cmd_direction_arrow_up,
+					    ignore_with_input: true },
 		    undo_key: { key: 90, modifiers: { control: true },
 				fn: cmd_undo },
 		    redo_key: { key: 90, modifiers: { control: true, shift: true },
