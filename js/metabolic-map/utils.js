@@ -161,8 +161,10 @@ define(["lib/d3", "vis/scaffold", "lib/vkbeautify"], function (d3, scaffold, vkb
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
 	    callback("The File APIs are not fully supported in this browser.", null);
-	if (!f.type.match("application/json"))
-	    callback("Not a json file.", null);
+
+	// The following is not a safe assumption.
+	// if (!f.type.match("application/json"))
+	//     callback("Not a json file.", null);
 
 	var reader = new window.FileReader();
 	// Closure to capture the file information.
