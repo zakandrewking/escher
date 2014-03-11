@@ -496,6 +496,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 			var segment = reaction.segments[segment_id];
 			segment.flux = flux;
 		    }
+		} else {
+		    var flux = 0.0;
+		    reaction.flux = flux;
+		    for (var segment_id in reaction.segments) {
+			var segment = reaction.segments[segment_id];
+			segment.flux = flux;
+		    }
 		}
 	    }
 	}
@@ -624,6 +631,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    function get_largest_id(obj, current_largest) {
 		/** Return the largest integer key in obj, or current_largest, whichever is bigger. */
 		if (current_largest===undefined) current_largest = 0;
+		if (obj===undefined) return current_largest;
 		return Math.max.apply(null, Object.keys(obj).map(function(x) { return parseInt(x); }).concat([current_largest]));
 	    }
 	}
