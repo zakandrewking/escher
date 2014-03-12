@@ -19,7 +19,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     }
     function draw(membranes, reactions, nodes, text_labels, scale,
 		  show_beziers, arrow_displacement, defs, arrowheads,
-		  default_reaction_color, has_flux, 
+		  default_reaction_color, has_flux, has_node_data, node_data_style,
 		  node_click_fn, node_drag_behavior,
 		  bezier_drag_behavior) {
         /** Draw the reactions and membranes
@@ -36,13 +36,14 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 								    arrow_displacement,
 								    defs, arrowheads,
 								    default_reaction_color,
-								    has_flux, 
+								    has_flux,
+								    has_node_data,
 								    bezier_drag_behavior); });
 
 	utils.draw_an_object('#nodes', '.node', nodes, 'node_id', 
 			     function(sel) { return create_node(sel, scale, nodes, reactions,
 								node_click_fn, node_drag_behavior); },
-			     function(sel) { return update_node(sel, scale); });
+			     function(sel) { return update_node(sel, scale, has_node_data, node_data_style); });
 
 	utils.draw_an_object('#text-labels', '.text-label', text_labels,
 			     'text_label_id', create_text_label, 
@@ -100,7 +101,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
         sel.exit();
     }
 
-    function draw_specific_nodes(node_ids, nodes, reactions, scale, click_fn, drag_behavior) {
+    function draw_specific_nodes(node_ids, nodes, reactions, scale, node_data, node_data_style,
+				 click_fn, drag_behavior) {
         // find nodes for node_ids
         var node_subset = {},
             i = -1;
@@ -123,7 +125,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 							    click_fn, drag_behavior); });
 
         // update: update when necessary
-        sel.call(function(sel) { return update_node(sel, scale); });
+        sel.call(function(sel) { return update_node(sel, scale, node_data, node_data_style); });
 
         // exit
         sel.exit();
@@ -371,16 +373,23 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
             .attr('pointer-events', 'none');
     }
 
-    function update_node(update_selection, scale) {
+    function update_node(update_selection, scale, has_node_data, node_data_style) {
         // update circle and label location
         var mg = update_selection
                 .select('.node-circle')
                 .attr('transform', function(d) {
                     return 'translate('+scale.x(d.x)+','+scale.y(d.y)+')';
                 })
-		.attr('r', function(d) { 
-		    if (d.node_type!='metabolite') return scale.size(5);
-		    else return scale.size(d.node_is_primary ? 15 : 10); 
+		.attr('r', function(d) {
+		    if (d.node_type!='metabolite') {
+			if (node_data_style.indexOf('Size')!==1) {
+			    return scale.size(scale.metabolite_size(d.data));
+			} else {
+			    return scale.size(5);
+			}
+		    } else {
+			return scale.size(d.node_is_primary ? 15 : 10); 
+		    }
 		});
 
         update_selection

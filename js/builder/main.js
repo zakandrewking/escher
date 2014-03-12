@@ -27,6 +27,10 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             flux: null,
             flux2_path: null,
             flux2: null,
+	    node_data: null,
+	    node_data_path: null,
+	    node_data_style: 'ColorSize',
+	    node_data_range: [0, 100],
 	    show_beziers: false,
 	    debug: false,
 	    starting_reaction: 'GLCtex',
@@ -43,7 +47,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                              { file: o.flux_path, value: o.flux,
                                callback: function(e, f) { set_flux(e, f, 0); } },
                              { file: o.flux2_path, value: o.flux2,
-                               callback: function(e, f) { set_flux(e, f, 1); } } ];
+                               callback: function(e, f) { set_flux(e, f, 1); } },
+                             { file: o.node_data_path, value: o.node_data, callback: set_node_data } ];
         scaffold.load_files(files_to_load, setup);
         return {};
 
@@ -64,6 +69,10 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
             if (error) console.warn(error);
             if (index==0) o.flux = flux;
             else if (index==1) o.flux2 = flux;
+        };
+        function set_node_data(error, data) {
+            if (error) console.warn(error);
+            o.set_node_data = data;
         };
         function setup() {
             /* Load the svg container and draw a loaded map if provided.
@@ -107,7 +116,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					   segments: -1 };
 		// set up svg and svg definitions
 		o.scale = utils.define_scales(o.map_info.max_map_w, o.map_info.max_map_h,
-					      o.width, o.height);
+					      o.width, o.height, o.node_data_range);
 	    }
 
             o.defs = utils.setup_defs(o.svg, o.css);
@@ -175,6 +184,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
                 o.load_input_click_fn = new_input(sel, load_map_for_file, "Load (^o)");
                 o.load_flux_input_click_fn = new_input(sel, load_flux_for_file,
 						       "Load flux (^f)");
+		new_input(sel, load_node_data_for_file, "Load node data");
 		if (o.show_beziers)
 		    new_button(sel, cmd_hide_beziers, "Hide control points (b)", 'bezier-button');
 		else
@@ -207,6 +217,11 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		function load_flux_for_file(error, data) {
                     set_flux(error, data, 0);
 		    apply_flux_to_map();
+                    draw_everything();
+                }
+		function load_node_data_for_file(error, data) {
+                    set_node_data(error, data);
+		    apply_node_data_to_map();
                     draw_everything();
                 }
                 function new_button(s, fn, name, id) {
@@ -254,8 +269,11 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
 	// drawing
 	function has_flux() {
-	    return o.flux ? true : false;
+	    return Boolean(o.flux);
 	}
+	function has_node_data() {
+	    return Boolean(o.node_data);
+	};
 	function node_click(d) {	  
 	    if (o.metabolite_click_enabled) select_metabolite(this, d);
 	    d3.event.stopPropagation();
@@ -469,7 +487,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	function draw_everything() {
 	    draw.draw(o.drawn_membranes, o.drawn_reactions, o.drawn_nodes, o.drawn_text_labels, o.scale, 
 		      o.show_beziers, o.reaction_arrow_displacement, o.defs, o.arrowheads_generated,
-		      o.default_reaction_color, has_flux(), 
+		      o.default_reaction_color, has_flux(), has_node_data(), o.node_data_style,
 		      node_click, get_node_drag_behavior(),
 		      get_bezier_drag_behavior());
 	}
@@ -480,7 +498,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					 get_bezier_drag_behavior());
 	}
 	function draw_specific_nodes(node_ids) {
-	    draw.draw_specific_nodes(node_ids, o.drawn_nodes, o.drawn_reactions, o.scale, 
+	    draw.draw_specific_nodes(node_ids, o.drawn_nodes, o.drawn_reactions, o.scale, has_node_data(), o.node_data_style,
 				     node_click, get_node_drag_behavior());
 	}
 	function apply_flux_to_map() {
@@ -504,6 +522,18 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 			segment.flux = flux;
 		    }
 		}
+	    }
+	}
+	function apply_node_data_to_map() {
+	    apply_node_data_to_nodes(o.drawn_nodes);
+	}
+	function apply_node_data_to_nodes(nodes) {
+	    for (var node_id in nodes) {
+		var node = nodes[node_id], data = 0.0;
+		if (node.bigg_id_compartmentalized in o.node_data) {
+		    data = parseFloat(o.node_data[node.bigg_id_compartmentalized]);
+		}
+		node.data = data;
 	    }
 	}
 
@@ -626,6 +656,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    }
 	    // flux onto existing map reactions
 	    if (o.flux) apply_flux_to_map();
+	    if (o.node_data) apply_node_data_to_map();
 
 	    // definitions
 	    function get_largest_id(obj, current_largest) {
@@ -755,6 +786,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 
 	    // add the flux
 	    if (o.flux) apply_flux_to_reactions(new_reactions);
+	    if (o.node_data) apply_node_data_to_nodes(new_nodes);
 
 	    // draw
 	    extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id);
