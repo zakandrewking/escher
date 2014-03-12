@@ -22,7 +22,6 @@
     stroke: rgb(20, 113, 199);
 }
 .metabolite-circle {
-    fill: rgb(224, 134, 91);
     stroke: rgb(162, 69, 16);
 }
 .selected .metabolite-circle {

@@ -116,7 +116,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					   segments: -1 };
 		// set up svg and svg definitions
 		o.scale = utils.define_scales(o.map_info.max_map_w, o.map_info.max_map_h,
-					      o.width, o.height, o.node_data_range);
+					      o.width, o.height);
 	    }
 
             o.defs = utils.setup_defs(o.svg, o.css);
@@ -528,13 +528,18 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    apply_node_data_to_nodes(o.drawn_nodes);
 	}
 	function apply_node_data_to_nodes(nodes) {
+	    var vals = [];
 	    for (var node_id in nodes) {
 		var node = nodes[node_id], data = 0.0;
 		if (node.bigg_id_compartmentalized in o.node_data) {
 		    data = parseFloat(o.node_data[node.bigg_id_compartmentalized]);
 		}
+		vals.push(data);
 		node.data = data;
 	    }
+	    var min = Math.min(vals), max = Math.max(vals);
+	    o.scale.node_size.domain([min, max]);
+	    o.scale.node_color.domain([min, max]);
 	}
 
 	// brushing

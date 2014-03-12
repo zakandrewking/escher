@@ -226,9 +226,10 @@ define(["lib/d3", "vis/scaffold", "lib/vkbeautify"], function (d3, scaffold, vkb
         scale.flux_fill = d3.scale.linear()
             .domain([0, 40, 200])
             .range([1, 1, 1]),
-	scale.metabolite_size = d3.scale.linear()
-	    .domain([0, 100])
-	    .range([0,20]),
+	scale.node_size = d3.scale.linear()
+	    .range([2,20]),
+	scale.node_color = d3.scale.linear()
+	    .range(["rgb(200,200,200)", "red"]),
         scale.metabolite_concentration = d3.scale.linear()
             .domain([0, 10])
             .range([15, 200]),

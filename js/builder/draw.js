@@ -369,7 +369,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 
         g.append('text')
             .attr('class', 'node-label label')
-            .text(function(d) { return d.bigg_id_compartmentalized; })
             .attr('pointer-events', 'none');
     }
 
@@ -382,13 +381,22 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
                 })
 		.attr('r', function(d) {
 		    if (d.node_type!='metabolite') {
-			if (node_data_style.indexOf('Size')!==1) {
-			    return scale.size(scale.metabolite_size(d.data));
+			if (has_node_data && node_data_style.indexOf('Size')!==1) {
+			    return scale.size(scale.node_size(d.data));
 			} else {
 			    return scale.size(5);
 			}
 		    } else {
 			return scale.size(d.node_is_primary ? 15 : 10); 
+		    }
+		})
+		.style('fill', function(d) {
+		    if (d.node_type=='metabolite') {
+			if (has_node_data && node_data_style.indexOf('Color')!==1) {
+			    return scale.node_color(d.data);
+			} else {
+			    return 'rgb(224, 134, 91)';
+			}
 		    }
 		});
 
@@ -399,7 +407,14 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
             })
             .style("font-size", function(d) {
 		return String(scale.size(20))+"px";
-            });
+            })
+            .text(function(d) {	
+		var decimal_format = d3.format('.4g');
+		var t = d.bigg_id_compartmentalized;
+		if (d.data) t += " ("+decimal_format(d.data)+")";
+		else if (has_node_data) t += " (0)";
+		return t;
+	    });
     }
 
     function create_text_label(enter_selection) {
