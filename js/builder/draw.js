@@ -37,7 +37,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 								    defs, arrowheads,
 								    default_reaction_color,
 								    has_flux,
-								    has_node_data,
 								    bezier_drag_behavior); });
 
 	utils.draw_an_object('#nodes', '.node', nodes, 'node_id', 
@@ -380,14 +379,14 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
                     return 'translate('+scale.x(d.x)+','+scale.y(d.y)+')';
                 })
 		.attr('r', function(d) {
-		    if (d.node_type!='metabolite') {
+		    if (d.node_type == 'metabolite') {
 			if (has_node_data && node_data_style.indexOf('Size')!==1) {
 			    return scale.size(scale.node_size(d.data));
 			} else {
-			    return scale.size(5);
+			    return scale.size(d.node_is_primary ? 15 : 10); 
 			}
 		    } else {
-			return scale.size(d.node_is_primary ? 15 : 10); 
+			return scale.size(5);
 		    }
 		})
 		.style('fill', function(d) {

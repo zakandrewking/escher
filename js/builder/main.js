@@ -72,7 +72,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
         };
         function set_node_data(error, data) {
             if (error) console.warn(error);
-            o.set_node_data = data;
+            o.node_data = data;
         };
         function setup() {
             /* Load the svg container and draw a loaded map if provided.
@@ -170,6 +170,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		cmd_zoom_extent(200);
             } else {
 		draw_everything();
+		cmd_zoom_extent(200);
 	    }
 
 	    // turn off loading message
@@ -498,7 +499,8 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 					 get_bezier_drag_behavior());
 	}
 	function draw_specific_nodes(node_ids) {
-	    draw.draw_specific_nodes(node_ids, o.drawn_nodes, o.drawn_reactions, o.scale, has_node_data(), o.node_data_style,
+	    draw.draw_specific_nodes(node_ids, o.drawn_nodes, o.drawn_reactions, o.scale,
+				     has_node_data(), o.node_data_style,
 				     node_click, get_node_drag_behavior());
 	}
 	function apply_flux_to_map() {
@@ -537,7 +539,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		vals.push(data);
 		node.data = data;
 	    }
-	    var min = Math.min(vals), max = Math.max(vals);
+	    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
 	    o.scale.node_size.domain([min, max]);
 	    o.scale.node_color.domain([min, max]);
 	}
