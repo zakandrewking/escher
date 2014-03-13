@@ -275,7 +275,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	function has_node_data() {
 	    return Boolean(o.node_data);
 	};
-	function node_click(d) {	  
+	function node_click(d) {
 	    if (o.metabolite_click_enabled) select_metabolite(this, d);
 	    d3.event.stopPropagation();
 	}
@@ -284,9 +284,11 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    var behavior = d3.behavior.drag(),
 		total_displacement,
 		nodes_to_drag,
-		reaction_ids;
+		reaction_ids,
+		the_timeout;
 
-            behavior.on("dragstart", function () {
+            behavior.on("dragstart", function () { 
+		// Note that dragstart is called even for a click event
 		var data = this.parentNode.__data__,
 		    bigg_id_compartmentalized = data.bigg_id_compartmentalized,
 		    node_group = this.parentNode;
@@ -294,8 +296,13 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		d3.event.sourceEvent.stopPropagation();
 		// remember the total displacement for later
 		total_displacement = {};
-		// move element to back (for the next step to work)
-		node_group.parentNode.insertBefore(node_group,node_group.parentNode.firstChild);
+		// Move element to back (for the next step to work). Wait 200ms
+		// before making the move, becuase otherwise the element will be
+		// deleted before the click event gets called, and selection
+		// will stop working.
+		the_timeout = window.setTimeout(function() {
+		    node_group.parentNode.insertBefore(node_group,node_group.parentNode.firstChild);
+		}, 200);
 		// prepare to combine metabolites
 		d3.selectAll('.metabolite-circle')
 		    .on('mouseover.combine', function(d) {
@@ -344,7 +351,7 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		d3.selectAll('.node-to-combine').each(function(d) {
 		    node_to_combine_array.push(d.node_id);
 		});
-		if (node_to_combine_array.length==1) { console.log(node_to_combine_array);
+		if (node_to_combine_array.length==1) {
 		    // If a node is ready for it, combine nodes
 		    var fixed_node_id = node_to_combine_array[0],
 			dragged_node_id = this.parentNode.__data__.node_id,
@@ -408,6 +415,9 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		d3.selectAll('.metabolite-circle')
 		    .on('mouseover.combine', null)
 		    .on('mouseout.combine', null);
+
+		// clear the timeout
+		window.clearTimeout(the_timeout);
 	    });
 	    return behavior;
 
@@ -1292,8 +1302,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 	    choose_center(function(center) {
 		saved_center = center;
 		listen_for_rotation(center, function(angle) {
-		    // console.log(angle, center);
-		    // console.log(selected_nodes);
 		    total_angle += angle;
 		    var updated = build.rotate_selected_nodes(selected_nodes, o.drawn_reactions,
 							      angle, center);
@@ -1377,7 +1385,6 @@ define(["vis/scaffold", "metabolic-map/utils", "builder/draw", "builder/input", 
 		    });
 		// drag.origin(function() { return point_of_grab; });
 		drag.on("drag.rotate", function() { 
-		    // console.log('drag.rotate');
 		    callback(angle_for_event({ dx: o.scale.x_size.invert(d3.event.dx), 
 					       dy: o.scale.y_size.invert(d3.event.dy) },
 					     { x: o.scale.x_size.invert(d3.mouse(this)[0]),
