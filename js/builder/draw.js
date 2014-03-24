@@ -23,6 +23,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 		  node_click_fn, node_drag_behavior,
 		  bezier_drag_behavior) {
         /** Draw the reactions and membranes
+
          */
 
 	utils.draw_an_array('#membranes' ,'.membrane', membranes, create_membrane, 
