@@ -1,58 +1,151 @@
-define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) {
+define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils, d3, draw, Scale) {
     /**
      */
 
-    var Map = scaffold.make_class();
+    var Map = utils.make_class();
+    // static methods
+    Map.from_data = from_data;
+    // instance methods
     Map.prototype = { init: init,
-		      select_metabolite: select_metabolite };
+		      select_metabolite: select_metabolite,
+		      new_reaction_from_scratch: new_reaction_from_scratch };
 
     return Map;
 
-    function init() {
-	this.drawn_nodes = [];
-	this.drawn_reactions = [];
+    function init(selection) {
+	this.nodes = [];
+	this.reactions = [];
+
+	this.debug = false;
+
+	draw.setup_containers(selection);
     };
 
     function select_metabolite() {
     };
 
+    // -------------------------------------------------------------------------
+    // Import
+
+    function from_data(map_data, height, width, flux, node_data) {
+	map_data = check_map_data(map_data);
+	
+	var map = new Map();
+	map.reactions = map.reactions ? map.reactions : {};
+	map.nodes = map.nodes ? map.nodes : {};
+	map.membranes = map.membranes ? map.membranes : [];
+	map.text_labels = map.text_labels ? map.text_labels : {};
+	map.map_info = map.info ? map.info : {};
+
+	// get largest ids for adding new reactions, nodes, text labels, and segments
+	map.map_info.largest_ids = {};
+	map.map_info.largest_ids.reactions = get_largest_id(map.reactions);
+	map.map_info.largest_ids.nodes = get_largest_id(map.nodes);
+	map.map_info.largest_ids.text_labels = get_largest_id(map.text_labels);
+
+	var largest_segment_id = 0;
+	for (var id in map.reactions) {
+	    largest_segment_id = get_largest_id(map.reactions[id].segments, largest_segment_id);
+	}
+	map.map_info.largest_ids.segments = largest_segment_id;
+
+	// set up svg and svg definitions
+	map.scale = Scale(map.map_info.max_map_w, map.map_info.max_map_h,
+			  width, height);
+
+	// flux onto existing map reactions
+	if (flux) map.apply_flux_to_map();
+	if (node_data) map.apply_node_data_to_map();
+
+	return { map: map };
+
+	// definitions
+	function get_largest_id(obj, current_largest) {
+	    /** Return the largest integer key in obj, or current_largest, whichever is bigger. */
+	    if (current_largest===undefined) current_largest = 0;
+	    if (obj===undefined) return current_largest;
+	    return Math.max.apply(null, Object.keys(obj).map(function(x) { return parseInt(x); }).concat([current_largest]));
+	}
+    }
+
+    function check_map_data(map_data) {
+	/*
+	 * Load a json map and add necessary fields for rendering.
+	 *
+	 * The returned value will be this.reactions.
+	 */
+	if (this.debug) {
+	    var required_node_props = ['node_type', 'x', 'y',
+				       'connected_segments'],
+		required_reaction_props = ["segments", 'name', 'direction', 'abbreviation'],
+		required_segment_props = ['from_node_id', 'to_node_id'],
+		required_text_label_props = ['text', 'x', 'y'];
+	    for (var node_id in map_data.nodes) {
+		var node = map_data.nodes[node_id];
+		node.selected = false; node.previously_selected = false;
+		required_node_props.map(function(req) {
+		    if (!node.hasOwnProperty(req)) console.error("Missing property " + req);
+		});
+	    }
+	    for (var reaction_id in map_data.reactions) {
+		var reaction = map_data.reactions[reaction_id];
+		required_reaction_props.map(function(req) {
+		    if (!reaction.hasOwnProperty(req)) console.error("Missing property " + req);
+		});
+		for (var segment_id in reaction.segments) {
+		    var metabolite = reaction.segments[segment_id];
+		    required_segment_props.map(function(req) {
+			if (!metabolite.hasOwnProperty(req)) console.error("Missing property " + req);
+		    });
+		}
+	    }
+	    for (var text_label_id in map_data.text_labels) {
+		var text_label = map_data.text_labels[text_label_id];
+		required_text_label_props.map(function(req) {
+		    if (!text_label.hasOwnProperty(req)) console.error("Missing property " + req);
+		});
+	    }
+	}
+	return map_data;
+    }
+
     // ---------------------------------------------------------------------
     // Drawing
 
     function has_flux() {
-	return Boolean(o.flux);
+	return Boolean(this.flux);
     }
     function has_node_data() {
-	return Boolean(o.node_data);
+	return Boolean(this.node_data);
     };
     function draw_everything() {
-	draw.draw(o.drawn_membranes, o.drawn_reactions, o.drawn_nodes,
-		  o.drawn_text_labels, o.scale, o.show_beziers,
-		  o.reaction_arrow_displacement, o.defs, o.arrowheads_generated,
-		  o.default_reaction_color, has_flux(), has_node_data(),
-		  o.node_data_style, o.behavior.node_click,
-		  o.behavior.node_drag, o.behavior.bezier_drag);
+	draw.draw(this.membranes, this.reactions, this.nodes,
+		  this.text_labels, this.scale, this.show_beziers,
+		  this.reaction_arrow_displacement, this.defs, this.arrowheads_generated,
+		  this.default_reaction_color, has_flux(), has_node_data(),
+		  this.node_data_style, this.behavior.node_click,
+		  this.behavior.node_drag, this.behavior.bezier_drag);
     }
     function draw_these_reactions(reaction_ids) {
-	draw.draw_specific_reactions(reaction_ids, o.drawn_reactions, o.drawn_nodes,
-				     o.scale, o.show_beziers,
-				     o.reaction_arrow_displacement, o.defs,
-				     o.arrowheads_generated, o.default_reaction_color,
-				     has_flux(), o.behavior.node_drag);
+	draw.draw_specific_reactions(reaction_ids, this.reactions, this.nodes,
+				     this.scale, this.show_beziers,
+				     this.reaction_arrow_displacement, this.defs,
+				     this.arrowheads_generated, this.default_reaction_color,
+				     has_flux(), this.behavior.node_drag);
     }
     function draw_these_nodes(node_ids) {
-	draw.draw_specific_nodes(node_ids, o.drawn_nodes, o.drawn_reactions, o.scale,
-				 has_node_data(), o.node_data_style,
-				 o.behavior.node_click, o.behavior.node_drag);
+	draw.draw_specific_nodes(node_ids, this.nodes, this.reactions, this.scale,
+				 has_node_data(), this.node_data_style,
+				 this.behavior.node_click, this.behavior.node_drag);
     }
     function apply_flux_to_map() {
-	apply_flux_to_reactions(o.drawn_reactions);
+	apply_flux_to_reactions(this.reactions);
     }
     function apply_flux_to_reactions(reactions) {
 	for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id];
-	    if (reaction.abbreviation in o.flux) {
-		var flux = parseFloat(o.flux[reaction.abbreviation]);
+	    if (reaction.abbreviation in this.flux) {
+		var flux = parseFloat(this.flux[reaction.abbreviation]);
 		reaction.flux = flux;
 		for (var segment_id in reaction.segments) {
 		    var segment = reaction.segments[segment_id];
@@ -69,28 +162,28 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	}
     }
     function apply_node_data_to_map() {
-	apply_node_data_to_nodes(o.drawn_nodes);
+	apply_node_data_to_nodes(this.nodes);
     }
     function apply_node_data_to_nodes(nodes) {
 	var vals = [];
 	for (var node_id in nodes) {
 	    var node = nodes[node_id], data = 0.0;
-	    if (node.bigg_id_compartmentalized in o.node_data) {
-		data = parseFloat(o.node_data[node.bigg_id_compartmentalized]);
+	    if (node.bigg_id_compartmentalized in this.node_data) {
+		data = parseFloat(this.node_data[node.bigg_id_compartmentalized]);
 	    }
 	    vals.push(data);
 	    node.data = data;
 	}
 	var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
-	o.scale.node_size.domain([min, max]);
-	o.scale.node_color.domain([min, max]);
+	this.scale.node_size.domain([min, max]);
+	this.scale.node_color.domain([min, max]);
     }
 
     // ---------------------------------------------------------------------
     // Node interaction
     
     function get_coords_for_node(node_id) {
-        var node = o.drawn_nodes[node_id],
+        var node = this.nodes[node_id],
             coords = {'x': node.x, 'y': node.y};
         return coords;
     }
@@ -105,26 +198,26 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	var selected_nodes = {};
 	d3.select('#nodes')
 	    .selectAll('.selected')
-	    .each(function(d) { selected_nodes[d.node_id] = o.drawn_nodes[d.node_id]; });
+	    .each(function(d) { selected_nodes[d.node_id] = this.nodes[d.node_id]; });
 	return selected_nodes;
     }	
     function select_metabolite_with_id(node_id) {
-	var node_selection = o.sel.select('#nodes').selectAll('.node'),
+	var node_selection = this.sel.select('#nodes').selectAll('.node'),
 	    coords;
 	node_selection.classed("selected", function(d) {
 	    var selected = String(d.node_id) == String(node_id);
 	    if (selected)
-		coords = { x: o.scale.x(d.x), y: o.scale.y(d.y) };
+		coords = { x: this.scale.x(d.x), y: this.scale.y(d.y) };
 	    return selected;
 	});
-	if (input.is_visible(o.reaction_input)) cmd_show_input();
-	o.direction_arrow.set_location(coords);
-	o.direction_arrow.show();
-	o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	if (this.input.is_visible) cmd_show_input();
+	this.direction_arrow.set_location(coords);
+	this.direction_arrow.show();
+	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
     }
     function select_metabolite(sel, d) {
-	var node_selection = o.sel.select('#nodes').selectAll('.node'), 
-	    shift_key_on = o.shift_key_on;
+	var node_selection = this.sel.select('#nodes').selectAll('.node'), 
+	    shift_key_on = this.shift_key_on;
 	if (shift_key_on) d3.select(sel.parentNode)
 	    .classed("selected", !d3.select(sel.parentNode).classed("selected"));
         else node_selection.classed("selected", function(p) { return d === p; });
@@ -132,22 +225,22 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	    count = 0,
 	    coords;
 	selected_nodes.each(function(d) {
-	    coords = { x: o.scale.x(d.x), y: o.scale.y(d.y) };
+	    coords = { x: this.scale.x(d.x), y: this.scale.y(d.y) };
 	    count++;
 	});
 	if (count == 1) {
-	    if (input.is_visible(o.reaction_input)) {
+	    if (input.is_visible(this.reaction_input)) {
 		cmd_show_input();
 	    } else {
 		cmd_hide_input();
 	    }
-	    o.direction_arrow.set_location(coords);
-	    o.direction_arrow.show();
+	    this.direction_arrow.set_location(coords);
+	    this.direction_arrow.show();
 	} else {
 	    cmd_hide_input();
-	    o.direction_arrow.hide();
+	    this.direction_arrow.hide();
 	}
-	o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
     }
 
     // ---------------------------------------------------------------------
@@ -162,8 +255,8 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	 */
 	
         // If reaction id is not new, then return:
-	for (var reaction_id in o.drawn_reactions) {
-	    if (o.drawn_reactions[reaction_id].abbreviation == starting_reaction) {             
+	for (var reaction_id in this.reactions) {
+	    if (this.reactions[reaction_id].abbreviation == starting_reaction) {             
 		console.warn('reaction is already drawn');
                 return;
 	    }
@@ -171,13 +264,13 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 
         // set reaction coordinates and angle
         // be sure to copy the reaction recursively
-        var cobra_reaction = utils.clone(o.cobra_reactions[starting_reaction]);
+        var cobra_reaction = utils.clone(this.cobra_reactions[starting_reaction]);
 
 	// create the first node
 	for (var metabolite_id in cobra_reaction.metabolites) {
 	    var metabolite = cobra_reaction.metabolites[metabolite_id];
 	    if (metabolite.coefficient < 0) {
-		var selected_node_id = ++o.map_info.largest_ids.nodes,
+		var selected_node_id = ++this.map_info.largest_ids.nodes,
 		    label_d = { x: 30, y: 10 },
 		    selected_node = { connected_segments: [],
 				      x: coords.x,
@@ -203,7 +296,7 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	var saved_nodes = utils.clone(new_nodes);
 
 	// add to undo/redo stack
-	o.undo_stack.push(function() {
+	this.undo_stack.push(function() {
 	    // undo
 	    // get the nodes to delete
 	    delete_nodes(new_nodes);
@@ -222,7 +315,7 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 
         // definitions
 	function extend_and_draw_metabolite(new_nodes, selected_node_id) {
-	    utils.extend(o.drawn_nodes, new_nodes);
+	    utils.extend(this.nodes, new_nodes);
 	    draw_these_nodes([selected_node_id]);
 	}
     }
@@ -235,31 +328,31 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	 */
 
         // If reaction id is not new, then return:
-	for (var reaction_id in o.drawn_reactions) {
-	    if (o.drawn_reactions[reaction_id].abbreviation == reaction_abbreviation) {             
+	for (var reaction_id in this.reactions) {
+	    if (this.reactions[reaction_id].abbreviation == reaction_abbreviation) {             
 		console.warn('reaction is already drawn');
                 return;
 	    }
         }
 
 	// get the metabolite node
-	var selected_node = o.drawn_nodes[selected_node_id];
+	var selected_node = this.nodes[selected_node_id];
 
         // set reaction coordinates and angle
         // be sure to copy the reaction recursively
-        var cobra_reaction = utils.clone(o.cobra_reactions[reaction_abbreviation]);
+        var cobra_reaction = utils.clone(this.cobra_reactions[reaction_abbreviation]);
 
 	// build the new reaction
 	var out = build.new_reaction(reaction_abbreviation, cobra_reaction,
 				     selected_node_id, utils.clone(selected_node),
-				     o.map_info.largest_ids, o.cofactors,
-				     o.direction_arrow.get_rotation()),
+				     this.map_info.largest_ids, this.cofactors,
+				     this.direction_arrow.get_rotation()),
 	    new_nodes = out.new_nodes,
 	    new_reactions = out.new_reactions;
 
 	// add the flux
-	if (o.flux) apply_flux_to_reactions(new_reactions);
-	if (o.node_data) apply_node_data_to_nodes(new_nodes);
+	if (this.flux) apply_flux_to_reactions(new_reactions);
+	if (this.node_data) apply_node_data_to_nodes(new_nodes);
 
 	// draw
 	extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id);
@@ -269,7 +362,7 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	    saved_reactions = utils.clone(new_reactions);
 
 	// add to undo/redo stack
-	o.undo_stack.push(function() {
+	this.undo_stack.push(function() {
 	    // undo
 	    // get the nodes to delete
 	    delete new_nodes[selected_node_id];
@@ -289,10 +382,10 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 
 	// definitions
 	function extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id) {
-	    utils.extend(o.drawn_reactions, new_reactions);
+	    utils.extend(this.reactions, new_reactions);
 	    // remove the selected node so it can be updated
-	    delete o.drawn_nodes[selected_node_id];
-	    utils.extend(o.drawn_nodes, new_nodes);
+	    delete this.nodes[selected_node_id];
+	    utils.extend(this.nodes, new_nodes);
 
 	    // draw new reaction and (TODO) select new metabolite
 	    draw_these_nodes(Object.keys(new_nodes));
@@ -320,7 +413,7 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	    var node = nodes[node_id];
 	    // find associated segments and reactions	    
 	    node.connected_segments.forEach(function(segment_obj) {
-		var reaction = o.drawn_reactions[segment_obj.reaction_id],
+		var reaction = this.reactions[segment_obj.reaction_id],
 		    segment = reaction.segments[segment_obj.segment_id],
 		    segment_obj_w_segment = utils.clone(segment_obj);
 		segment_obj_w_segment['segment'] = utils.clone(segment);
@@ -332,7 +425,7 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	}
 	// find the reactions that should be deleted because they have no segments left
 	for (var reaction_id in nodes_for_reactions) {
-	    var reaction = o.drawn_reactions[reaction_id];
+	    var reaction = this.reactions[reaction_id];
 	    if (Object.keys(reaction.segments).length == nodes_for_reactions[reaction_id])
 		reactions[reaction_id] = reaction;
 	}
@@ -342,14 +435,14 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	/** delete nodes
 	 */
 	for (var node_id in nodes) {
-	    delete o.drawn_nodes[node_id];
+	    delete this.nodes[node_id];
 	}
     }
     function delete_nodes_by_id(node_ids) {
 	/** delete nodes for an array of ids
 	 */
 	node_ids.forEach(function(node_id) {
-	    delete o.drawn_nodes[node_id];
+	    delete this.nodes[node_id];
 	});
     }
 
@@ -361,13 +454,13 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	 
 	 */
 	segment_objs.forEach(function(segment_obj) {
-	    var reaction = o.drawn_reactions[segment_obj.reaction_id],
+	    var reaction = this.reactions[segment_obj.reaction_id],
 		segment = reaction.segments[segment_obj.segment_id];
 
 	    // updated connected nodes
 	    [segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
-		if (!(node_id in o.drawn_nodes)) return;
-		var node = o.drawn_nodes[node_id],
+		if (!(node_id in this.nodes)) return;
+		var node = this.nodes[node_id],
 		    connected_segments = node.connected_segments;
 		connected_segments = connected_segments.filter(function(so) {
 		    return so.segment_id != segment_obj.segment_id;				
@@ -381,7 +474,7 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
 	/** delete reactions
 	 */
 	for (var reaction_id in reactions) {
-	    delete o.drawn_reactions[reaction_id];
+	    delete this.reactions[reaction_id];
 	}
     }
 
@@ -399,31 +492,31 @@ define(["vis/scaffold", "lib/d3", "builder/draw"], function(scaffold, d3, draw) 
         // shift window if new reaction will draw off the screen
         // TODO BUG not accounting for scale correctly
         var margin = 80, // pixels
-	    current = {'x': {'min': - o.window_translate.x / o.window_scale + margin / o.window_scale,
-                             'max': - o.window_translate.x / o.window_scale + (o.width-margin) / o.window_scale },
-                       'y': {'min': - o.window_translate.y / o.window_scale + margin / o.window_scale,
-                             'max': - o.window_translate.y / o.window_scale + (o.height-margin) / o.window_scale } };
-        if (o.scale.x(coords.x) < current.x.min) {
-            o.window_translate.x = o.window_translate.x - (o.scale.x(coords.x) - current.x.min) * o.window_scale;
+	    current = {'x': {'min': - this.window_translate.x / this.window_scale + margin / this.window_scale,
+                             'max': - this.window_translate.x / this.window_scale + (this.width-margin) / this.window_scale },
+                       'y': {'min': - this.window_translate.y / this.window_scale + margin / this.window_scale,
+                             'max': - this.window_translate.y / this.window_scale + (this.height-margin) / this.window_scale } };
+        if (this.scale.x(coords.x) < current.x.min) {
+            this.window_translate.x = this.window_translate.x - (this.scale.x(coords.x) - current.x.min) * this.window_scale;
             go();
-        } else if (o.scale.x(coords.x) > current.x.max) {
-            o.window_translate.x = o.window_translate.x - (o.scale.x(coords.x) - current.x.max) * o.window_scale;
+        } else if (this.scale.x(coords.x) > current.x.max) {
+            this.window_translate.x = this.window_translate.x - (this.scale.x(coords.x) - current.x.max) * this.window_scale;
             go();
         }
-        if (o.scale.y(coords.y) < current.y.min) {
-            o.window_translate.y = o.window_translate.y - (o.scale.y(coords.y) - current.y.min) * o.window_scale;
+        if (this.scale.y(coords.y) < current.y.min) {
+            this.window_translate.y = this.window_translate.y - (this.scale.y(coords.y) - current.y.min) * this.window_scale;
             go();
-        } else if (o.scale.y(coords.y) > current.y.max) {
-            o.window_translate.y = o.window_translate.y - (o.scale.y(coords.y) - current.y.max) * o.window_scale;
+        } else if (this.scale.y(coords.y) > current.y.max) {
+            this.window_translate.y = this.window_translate.y - (this.scale.y(coords.y) - current.y.max) * this.window_scale;
             go();
         }
 
 	// definitions
         function go() {
-            o.zoom_container.translate([o.window_translate.x, o.window_translate.y]);
-            o.zoom_container.scale(o.window_scale);
-            o.sel.transition()
-                .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
+            this.zoom_container.translate([this.window_translate.x, this.window_translate.y]);
+            this.zoom_container.scale(this.window_scale);
+            this.sel.transition()
+                .attr('transform', 'translate('+this.window_translate.x+','+this.window_translate.y+')scale('+this.window_scale+')');
         }
     }
 

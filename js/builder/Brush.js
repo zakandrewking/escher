@@ -1,8 +1,8 @@
-define(["vis/scaffold", "lib/d3"], function(scaffold, d3) {
+define(["vis/utils", "lib/d3"], function(utils, d3) {
     /**
      */
 
-    var Brush = scaffold.make_class();
+    var Brush = utils.make_class();
     Brush.prototype = { init: init };
 
     return Brush;

@@ -1,15 +1,15 @@
-define(["vis/scaffold", "lib/d3"], function(scaffold, d3) {
+define(["vis/utils", "lib/d3"], function(utils, d3) {
     /** 
      */
 
-    var Scale = scaffold.make_class();
+    var Scale = utils.make_class();
     Scale.prototype = { init: init };
 
     return Scale;
 
     // definitions
     function init(map_w, map_h, w, h, options) {
-	var sc = scaffold.set_options(options, 
+	var sc = utils.set_options(options, 
 				      { flux_color: d3.scale.linear()
 					.domain([0, 0.000001, 1, 8, 50])
 					.range(["rgb(200,200,200)", "rgb(190,190,255)", 

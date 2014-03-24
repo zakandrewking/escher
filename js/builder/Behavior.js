@@ -1,4 +1,4 @@
-define(["vis/scaffold", "lib/d3", "builder/build", "metabolic-map/utils"], function(scaffold, d3, build, utils) {
+define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
     /** Defines the set of click and drag behaviors for the map, and keeps track
      of which behaviors are activated.
 
@@ -10,7 +10,7 @@ define(["vis/scaffold", "lib/d3", "builder/build", "metabolic-map/utils"], funct
      Behavior.label_drag
      */
 
-    var Behavior = scaffold.make_class();
+    var Behavior = utils.make_class();
     Behavior.prototype = { init: init,
 			   turn_everything_on: turn_everything_on,
 			   turn_everything_off: turn_everything_off,

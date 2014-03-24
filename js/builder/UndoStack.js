@@ -1,7 +1,7 @@
-define(["vis/scaffold"], function(scaffold) {
+define(["vis/utils"], function(utils) {
     /** UndoStack returns a constructor that can be used to store undo info.
      */
-    var UndoStack = scaffold.make_class();
+    var UndoStack = utils.make_class();
     UndoStack.prototype = { init: init,
 			    push: push,
 			    undo: undo,

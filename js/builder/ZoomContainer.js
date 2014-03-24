@@ -1,10 +1,10 @@
-define(["vis/scaffold", "lib/d3", "metabolic-map/utils"], function(scaffold, d3, utils) {
+define(["vis/utils", "lib/d3"], function(utils, d3) {
     /** ZoomContainer
 
      The zoom behavior is based on this SO question:
      http://stackoverflow.com/questions/18788188/how-to-temporarily-disable-the-zooming-in-d3-js
      */
-    var ZoomContainer = scaffold.make_class();
+    var ZoomContainer = utils.make_class();
     ZoomContainer.prototype = { init: init };
     return ZoomContainer;
 

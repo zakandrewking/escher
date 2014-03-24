@@ -1,4 +1,4 @@
-define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
+define(["vis/utils", "lib/d3"], function(utils, d3) {
     return { setup_containers: setup_containers,
 	     draw: draw,
 	     reset: reset,

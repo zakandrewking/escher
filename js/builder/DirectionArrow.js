@@ -1,8 +1,8 @@
-define(["vis/scaffold", "lib/d3"], function(scaffold, d3) {
+define(["vis/utils", "lib/d3"], function(utils, d3) {
     /** DirectionArrow returns a constructor for an arrow that can be rotated
      and dragged, and supplies its direction.
      */
-    var DirectionArrow = scaffold.make_class();
+    var DirectionArrow = utils.make_class();
     DirectionArrow.prototype = { init: init,
 				 set_location: set_location,
 				 set_rotation: set_rotation,

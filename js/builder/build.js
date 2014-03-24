@@ -1,4 +1,4 @@
-define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
+define(["vis/utils", "lib/d3"], function(utils, d3) {
     return { new_reaction: new_reaction,
 	     rotate_selected_nodes: rotate_selected_nodes,
 	     move_node_and_dependents: move_node_and_dependents };

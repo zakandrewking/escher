@@ -1,10 +1,21 @@
-define(["lib/d3", "metabolic-map/utils"], function(d3, utils) {
-    return { reload_at_selected: reload_at_selected,
-	     reload_at_point: reload_at_point,
-	     place_at_selected: place_at_selected,
-	     is_visible: is_visible };
+define(["lib/d3", "vis/utils"], function(d3, utils) {
+    /**
+     */
+
+    var Input = utils.make_class();
+    // instance methods
+    Input.prototype = { init: init,
+		      reload_at_selected: reload_at_selected,
+		      reload_at_point: reload_at_point,
+		      place_at_selected: place_at_selected,
+		      is_visible: is_visible };
+
+    return Input;
 
     // definitions
+    function init() {
+    };
+
     function reload_at_selected(input, x_scale, y_scale, window_scale, window_translate, width, height,
 				flux, drawn_reactions, cobra_reactions, 
 				enter_callback) {
