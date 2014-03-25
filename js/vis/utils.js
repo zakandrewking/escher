@@ -2,6 +2,7 @@ define(["lib/d3", "lib/vkbeautify"], function(d3, vkbeautify) {
     return { set_options: set_options,
              setup_svg: setup_svg,
 	     resize_svg: resize_svg,
+	     remove_child_nodes: remove_child_nodes,
              load_css: load_css,
              load_files: load_files,
              load_the_file: load_the_file,
@@ -114,6 +115,16 @@ define(["lib/d3", "lib/vkbeautify"], function(d3, vkbeautify) {
         };
     };
 
+    function remove_child_nodes(selection) {
+	/** Removes all child nodes from a d3 selection
+
+	 */
+	var node =  selection.node();
+	while (node.hasChildNodes()) {
+	    node.removeChild(node.lastChild);
+	}
+    }
+
     function load_css(css_path, callback) {
         var css = "";
         if (css_path) {
@@ -130,15 +141,15 @@ define(["lib/d3", "lib/vkbeautify"], function(d3, vkbeautify) {
     function update() {
         return 'omg yes';
     };
-    function load_the_file(file, callback, value) {
+    function load_the_file(t, file, callback, value) {
         // if the value is specified, don't even need to do the ajax query
         if (value) {
             if (file) console.warn('File ' + file + ' overridden by value.');
-            callback(null, value, file);
+            callback.call(t, null, value, file);
             return;
         }
         if (!file) {
-            callback("No filename", null, file);
+            callback.call(t, "No filename", null, file);
             return;
         }
         if (ends_with(file, 'json'))
@@ -146,7 +157,7 @@ define(["lib/d3", "lib/vkbeautify"], function(d3, vkbeautify) {
         else if (ends_with(file, 'css'))
 	    d3.text(file, function(e, d) { callback(e, d, file); });
         else
-	    callback("Unrecognized file type", null, file);
+	    callback.call(t, "Unrecognized file type", null, file);
         return;
 
         // definitions
@@ -154,17 +165,18 @@ define(["lib/d3", "lib/vkbeautify"], function(d3, vkbeautify) {
 	    return str.indexOf(suffix, str.length - suffix.length) !== -1;
 	}
     };
-    function load_files(files_to_load, final_callback) {
+    function load_files(t, files_to_load, final_callback) {
         // load multiple files asynchronously
         // Takes a list of objects: { file: a_filename.json, callback: a_callback_fn }
         var i = -1, remaining = files_to_load.length, callbacks = {};
         while (++i < files_to_load.length) {
             var this_file = files_to_load[i].file;
             callbacks[this_file] = files_to_load[i].callback;
-            load_the_file(this_file,
+            load_the_file(t,
+			  this_file,
                           function(e, d, file) {
-                              callbacks[file](e, d);
-                              if (!--remaining) final_callback();
+                              callbacks[file].call(t, e, d);
+                              if (!--remaining) final_callback.call(t);
                           },
                           files_to_load[i].value);
         }

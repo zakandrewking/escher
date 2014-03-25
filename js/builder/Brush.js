@@ -3,11 +3,18 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
      */
 
     var Brush = utils.make_class();
-    Brush.prototype = { init: init };
+    Brush.prototype = { init: init,
+			on: on,
+			off: off,
+			toggle: toggle };
 
     return Brush;
 
-    function init() {
+    function init(selection, is_enabled, map) {
+	this.brush_sel = selection.append('g')
+	    .attr('id', 'brush-container');
+	this.enabled = is_enabled;
+	this.map = map;
     };
 
     function brush_is_enabled() {
@@ -16,17 +23,24 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	 */
 	return d3.select('.brush').empty();
     }
-    function enable_brush(on) {
+    function on() {
+	this.enable_brush(true);
+    }
+    function off() {
+	this.enable_brush(false);
+    }
+    function toggle(on_off) {
 	/** Turn the brush on or off
 
 	 */
-	var brush_sel = o.sel.select('#brush-container');
-	if (on) {
-	    o.selection_brush = setup_selection_brush(brush_sel, 
+	if (on_off===undefined) on_off = !this.enabled;
+
+	if (on_off) {
+	    this.selection_brush = setup_selection_brush(this.brush_sel, 
 						      d3.select('#nodes').selectAll('.node'),
-						      o.width, o.height);
+						      width, height);
 	} else {
-	    brush_sel.selectAll('.brush').remove();
+	    this.brush_sel.selectAll('.brush').remove();
 	}
 
 	// definitions
@@ -40,7 +54,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 			var extent = d3.event.target.extent();
 			node_selection
 			    .classed("selected", function(d) { 
-				var sx = o.scale.x(d.x), sy = o.scale.y(d.y);
+				var sx = this.map.scale.x(d.x), sy = this.map.scale.y(d.y);
 				return extent[0][0] <= sx && sx < extent[1][0]
 				    && extent[0][1] <= sy && sy < extent[1][1];
 			    });

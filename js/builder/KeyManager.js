@@ -129,34 +129,34 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     // ---------------------------------------------------------------------
     // Commands
     
-    function cmd_hide_show_input() {
-        if (input.is_visible(o.reaction_input)) cmd_hide_input();
-        else cmd_show_input();
-    }
-    function cmd_hide_input() {
-	toggle_start_reaction_listener(false);
-        o.reaction_input.selection.style("display", "none");
-        o.reaction_input.completely.input.blur();
-        o.reaction_input.completely.hideDropDown();
-    }
-    function cmd_show_input() {
-	cmd_zoom_on();
-	toggle_start_reaction_listener(true);
-	input.reload_at_selected(o.reaction_input, o.scale.x, o.scale.y, o.window_scale, 
-				 o.window_translate, o.width, o.height, o.flux, 
-				 o.drawn_reactions, o.cobra_reactions,
-				 new_reaction_for_metabolite);
-    }
-    function cmd_save() {
-        console.log("Saving");
-        utils.download_json(map_for_export(), "saved_map");
-    }
-    function cmd_save_svg() {
-        console.log("Exporting SVG");
-	o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');	    
-	o.direction_arrow.hide();
-        utils.export_svg("saved_map", "svg");
-    }
+    // function cmd_hide_show_input() {
+    //     if (input.is_visible(o.reaction_input)) cmd_hide_input();
+    //     else cmd_show_input();
+    // }
+    // function cmd_hide_input() {
+    // 	toggle_start_reaction_listener(false);
+    //     o.reaction_input.selection.style("display", "none");
+    //     o.reaction_input.completely.input.blur();
+    //     o.reaction_input.completely.hideDropDown();
+    // }
+    // function cmd_show_input() {
+    // 	cmd_zoom_on();
+    // 	toggle_start_reaction_listener(true);
+    // 	input.reload_at_selected(o.reaction_input, o.scale.x, o.scale.y, o.window_scale, 
+    // 				 o.window_translate, o.width, o.height, o.flux, 
+    // 				 o.drawn_reactions, o.cobra_reactions,
+    // 				 new_reaction_for_metabolite);
+    // }
+    // function cmd_save() {
+    //     console.log("Saving");
+    //     utils.download_json(map_for_export(), "saved_map");
+    // }
+    // function cmd_save_svg() {
+    //     console.log("Exporting SVG");
+    // 	o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');	    
+    // 	o.direction_arrow.hide();
+    //     utils.export_svg("saved_map", "svg");
+    // }
     function cmd_load() {
         console.log("Loading");
         o.load_input_click_fn();

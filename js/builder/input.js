@@ -1,22 +1,24 @@
-define(["lib/d3", "vis/utils",  "lib/complete.ly"], function(d3, utils, completely) {
+define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomContainer"], function(d3, utils, completely, Map, ZoomContainer) {
     /**
      */
 
     var Input = utils.make_class();
     // instance methods
     Input.prototype = { init: init,
-			set_scale: set_scale,
+			setup_map_callbacks: setup_map_callbacks,
+			setup_zoom_callbacks: setup_zoom_callbacks,
 			is_visible: is_visible,
 			show: show,
 			hide: hide,
 			reload_at_selected: reload_at_selected,
 			reload_at_point: reload_at_point,
-			place_at_selected: place_at_selected };
+			place_at_selected: place_at_selected,
+			place: place };
 
     return Input;
 
     // definitions
-    function init(selection) {
+    function init(selection, map, zoom_container) {
 	// set up container
 	var sel = selection.append("div").attr("id", "rxn-input");
 	sel.style("display", "none");
@@ -33,19 +35,62 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly"], function(d3, utils, complete
 	this.sel = sel;
 	this.complete = complete;
 
-	this.x_scale = this.y_scale = null;
+	if (map instanceof Map) {
+	    this.map = map;
+	    this.setup_map_callbacks();
+	} else {
+	    console.error('Cannot set the map. It is not an instance of builder/Map');
+	}
+	if (zoom_container instanceof ZoomContainer) {
+	    this.zoom_container = zoom_container;
+	    this.setup_zoom_callbacks();
+	} else {
+	    console.error('Cannot set the zoom_container. It is not an instance of ' +
+			  'builder/ZoomContainer');
+	}
     }
-    function set_scale(x_scale, y_scale) {
-	this.x_scale = x_scale;
-	this.y_scale = y_scale;
+    function setup_map_callbacks() {
+	var input = this;
+	this.map.callback_manager.set('select_metabolite_with_id.input', function() {
+	    if (input.is_visible) input.show();
+	});
+	this.map.callback_manager.set('select_metabolite.input', function(count) {
+	    if (count == 1) {
+		input.toggle();
+	    } else {
+		input.hide();
+	    }
+	});
+    }
+    function setup_zoom_callbacks() {
+	var input = this;
+	this.zoom_container.callback_manager.set('zoom.input', function() {
+	    if (input.is_visible) {
+		console.error('unfinished');
+		// input.place({x: d.x, y: d.y}, window_scale, window_translate, width, height);
+	    }
+	});
     }
     function is_visible(input) {
         return this.sel.style("display") != "none";
     }
+    function toggle() {
+	console.error('not implemented');
+    }
     function show() {
 	this.sel.style("display", "block");
+	cmd_zoom_on();
+	toggle_start_reaction_listener(true);
+	input.reload_at_selected(o.reaction_input, o.scale.x, o.scale.y, o.window_scale, 
+				 o.window_translate, o.width, o.height, o.flux, 
+				 o.drawn_reactions, o.cobra_reactions,
+				 new_reaction_for_metabolite);
     }
     function hide() {
+	toggle_start_reaction_listener(false);
+        o.reaction_input.selection.style("display", "none");
+        o.reaction_input.completely.input.blur();
+        o.reaction_input.completely.hideDropDown();
 	this.sel.style("display", "none");
     }
     function reload_at_selected(window_scale, window_translate, width, height,
@@ -89,10 +134,10 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly"], function(d3, utils, complete
     function place_at_selected(window_scale, window_translate, width, height) {
         /** Place autocomplete box at the first selected node.
          */
-	if (!this.x_scale | !this.y_scale) console.error('Scale is not set for the reaction input');
+	if (!this.map.scale.x | !this.map.scale.y) console.error('Scale is not set for the reaction input');
 
 	d3.select('.selected').each(function(d) {
-	    place({x: d.x, y: d.y}, window_scale, window_translate, width, height);
+	    this.place({x: d.x, y: d.y}, window_scale, window_translate, width, height);
 	});
     }
 
@@ -118,7 +163,7 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly"], function(d3, utils, complete
 
 	var decimal_format = d3.format('.3g');
 
-	place(coords, x_scale, y_scale, window_scale, window_translate, width, height);
+	this.place(coords, x_scale, y_scale, window_scale, window_translate, width, height);
         // blur
         this.completely.input.blur();
         this.completely.repaint(); //put in place()?

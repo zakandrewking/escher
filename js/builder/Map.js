@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack"], function(utils, d3, draw, Behavior, Scale, DirectionArrow, build, UndoStack) {
+define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack", "vis/CallbackManager"], function(utils, d3, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Map(selection, behavior)
@@ -25,17 +25,22 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 		      apply_node_data_to_map: apply_node_data_to_map,
 		      apply_node_data_to_nodes: apply_node_data_to_nodes,
 		      select_metabolite_with_id: select_metabolite_with_id,
-		      zoom_extent: zoom_extent };
+		      toggle_beziers: toggle_beziers,
+		      hide_beziers: hide_beziers,
+		      show_beziers: show_beziers,
+		      zoom_extent: zoom_extent,
+		      save: save,
+		      map_for_export: map_for_export,
+		      save_svg: save_svg };
 
     return Map;
 
-    function init(selection, input, defs, zoom_container, height, width, flux, node_data, cobra_model) {
+    function init(selection, defs, zoom_container, height, width, flux, node_data, cobra_model) {
 	// defaults
 	var default_angle = 90; // degrees
 
 	draw.setup_containers(selection);
 	this.sel = selection;
-	this.input = input;
 	this.defs = defs;
 	this.zoom_container = zoom_container;
 
@@ -62,9 +67,15 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	var window_translate = {'x': 0, 'y': 0},
 	    window_scale = 1;
 
+	// hide beziers
+	this.beziers_enabled = false;
+
 	// set up the reaction direction arrow
 	this.direction_arrow = new DirectionArrow(selection);
 	this.direction_arrow.set_rotation(default_angle);
+
+	// set up the callbacks
+	this.callback_manager = new CallbackManager();
 
 	// these will be filled
 	this.arrowheads_generated = [];
@@ -82,10 +93,11 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     // -------------------------------------------------------------------------
     // Import
 
-    function from_data(map_data, selection, input, defs, zoom_container, height, width, flux, node_data, cobra_model) {
+    function from_data(map_data, selection, defs, zoom_container, height, width, flux,
+		       node_data, cobra_model) {
 	map_data = check_map_data(map_data);
 	
-	var map = new Map(selection, input, defs, zoom_container, height, width, flux, node_data, cobra_model);
+	var map = new Map(selection, defs, zoom_container, height, width, flux, node_data, cobra_model);
 	if (map_data.reactions) map.reactions = map_data.reactions;
 	if (map_data.nodes) map.nodes = map_data.nodes;
 	if (map_data.membranes) map.membranes = map_data.membranes;
@@ -170,7 +182,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     };
     function draw_everything() {
 	draw.draw(this.membranes, this.reactions, this.nodes,
-		  this.text_labels, this.scale, this.show_beziers,
+		  this.text_labels, this.scale, this.beziers_enabled,
 		  this.reaction_arrow_displacement, this.defs, this.arrowheads_generated,
 		  this.default_reaction_color, has_flux(), has_node_data(),
 		  this.node_data_style, this.behavior.node_click,
@@ -178,7 +190,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     }
     function draw_these_reactions(reaction_ids) {
 	draw.draw_specific_reactions(reaction_ids, this.reactions, this.nodes,
-				     this.scale, this.show_beziers,
+				     this.scale, this.beziers_enabled,
 				     this.reaction_arrow_displacement, this.defs,
 				     this.arrowheads_generated, this.default_reaction_color,
 				     has_flux(), this.behavior.node_drag);
@@ -261,10 +273,10 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 		coords = { x: scale.x(d.x), y: scale.y(d.y) };
 	    return selected;
 	});
-	if (this.input.is_visible) this.input.show();
 	this.direction_arrow.set_location(coords);
 	this.direction_arrow.show();
 	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	this.callback_manager.run('select_metabolite_with_id');
     }
     function select_metabolite(sel, d) {
 	var node_selection = this.sel.select('#nodes').selectAll('.node'), 
@@ -279,15 +291,26 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	    coords = { x: this.scale.x(d.x), y: this.scale.y(d.y) };
 	    count++;
 	});
+	this.callback_manager.run('select_metabolite', count);
 	if (count == 1) {
-	    this.input.toggle();
 	    this.direction_arrow.set_location(coords);
 	    this.direction_arrow.show();
 	} else {
-	    this.input.hide();
 	    this.direction_arrow.hide();
 	}
 	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+    }
+
+    function show_beziers() {
+	this.toggle_beziers(true);
+    }
+    function hide_beziers() {
+	this.toggle_beziers(false);
+    }
+    function toggle_beziers(on_off) {
+	if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
+	else this.beziers_enabled = on_off;
+	draw_everything();
     }
 
     // ---------------------------------------------------------------------
@@ -585,4 +608,19 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
         };
     }
 
+    function save() {
+        console.log("Saving");
+        utils.download_json(this.map_for_export(), "saved_map");
+    }
+    function map_for_export() {
+	console.error('not implemented');
+    }
+    function save_svg() {
+        console.log("Exporting SVG");
+	// o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');	    
+	// o.direction_arrow.hide();
+	this.callback_manager.run('before_svg_export');
+        utils.export_svg("saved_map", "svg");
+	this.callback_manager.run('after_svg_export');
+    }
 });
