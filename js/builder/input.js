@@ -7,7 +7,6 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomC
     Input.prototype = { init: init,
 			setup_map_callbacks: setup_map_callbacks,
 			setup_zoom_callbacks: setup_zoom_callbacks,
-			is_visible: is_visible,
 			show: show,
 			hide: hide,
 			reload_at_selected: reload_at_selected,
@@ -22,6 +21,7 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomC
 	// set up container
 	var sel = selection.append("div").attr("id", "rxn-input");
 	sel.style("display", "none");
+	this.is_visible = false;
 	// set up complete.ly
 	var complete = completely(sel.node(), { backgroundColor: "#eee" });
 	d3.select(complete.input)
@@ -71,26 +71,29 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomC
 	    }
 	});
     }
-    function is_visible(input) {
-        return this.sel.style("display") != "none";
-    }
-    function toggle() {
-	console.error('not implemented');
-    }
     function show() {
+	this.toggle(true);
 	this.sel.style("display", "block");
-	cmd_zoom_on();
-	toggle_start_reaction_listener(true);
-	input.reload_at_selected(o.reaction_input, o.scale.x, o.scale.y, o.window_scale, 
-				 o.window_translate, o.width, o.height, o.flux, 
-				 o.drawn_reactions, o.cobra_reactions,
-				 new_reaction_for_metabolite);
     }
     function hide() {
-	toggle_start_reaction_listener(false);
-        o.reaction_input.selection.style("display", "none");
-        o.reaction_input.completely.input.blur();
-        o.reaction_input.completely.hideDropDown();
+	this.toggle(false);
+    }
+    function toggle(on_off) {
+	if (on_off===undefined) this.is_visible = !this.is_visible;
+	if (this.is_visible) {
+	    this.sel.style("display", "block");
+	    // cmd_zoom_on(); // TODO turn this back on
+	    // input.reload_at_selected(o.reaction_input, o.scale.x, o.scale.y, o.window_scale, 
+	    // 			     o.window_translate, o.width, o.height, o.flux, 
+	    // 			     o.drawn_reactions, o.cobra_reactions,
+	    // 			     new_reaction_for_metabolite);
+	} else {
+	    this.sel.style("display", "none");
+            this.selection.style("display", "none");
+            this.completely.input.blur();
+            this.completely.hideDropDown();
+	}
+	// toggle_start_reaction_listener(on_off); // TODO turn this back on
 	this.sel.style("display", "none");
     }
     function reload_at_selected(window_scale, window_translate, width, height,

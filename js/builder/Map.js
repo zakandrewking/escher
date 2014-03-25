@@ -38,6 +38,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     function init(selection, defs, zoom_container, height, width, flux, node_data, cobra_model) {
 	// defaults
 	var default_angle = 90; // degrees
+	this.reaction_arrow_displacement = 35;
 
 	draw.setup_containers(selection);
 	this.sel = selection;
@@ -311,6 +312,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
 	else this.beziers_enabled = on_off;
 	draw_everything();
+	this.callback_manager.run('toggle_beziers', this.beziers_enabled);
     }
 
     // ---------------------------------------------------------------------
@@ -577,7 +579,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	// get the extent of the nodes
 	var min = { x: null, y: null }, // TODO make infinity?
 	    max = { x: null, y: null }; 
-	for (var node_id in this.drawn_nodes) {
+	for (var node_id in this.nodes) {
 	    var node = this.nodes[node_id];
 	    if (min.x===null) min.x = this.scale.x(node.x);
 	    if (min.y===null) min.y = this.scale.y(node.y);
@@ -594,18 +596,20 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 				(this.height - margin*2) / (max.y - min.y)),
 	    new_pos = { x: - (min.x * new_zoom) + margin + ((this.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
 			y: - (min.y * new_zoom) + margin + ((this.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
-	this.zoom_container.window_scale = new_zoom;
-        this.zoom_container.window_translate = new_pos;
-        go();
+	this.zoom_container.scale(new_zoom);
+	this.zoom_container.translate(new_pos);
+	// this.zoom_container.window_scale = new_zoom;
+        // this.zoom_container.window_translate = new_pos;
+        // go();
 
-	// definitions
-        function go() { // TODO move some of this zoom container
-            this.zoom_container.translate([this.zoom_container.window_translate.x,
-					   this.zoom_container.window_translate.y]);
-            this.zoom_container.scale(this.zoom_container.window_scale);
-            this.sel.transition()
-                .attr('transform', 'translate('+this.zoom_container.window_translate+')scale('+this.zoom_container.window_scale+')');
-        };
+	// // definitions
+        // function go() { // TODO move some of this zoom container
+        //     this.zoom_container.translate([this.zoom_container.window_translate.x,
+	// 				   this.zoom_container.window_translate.y]);
+        //     this.zoom_container.scale(this.zoom_container.window_scale);
+        //     this.sel.transition()
+        //         .attr('transform', 'translate('+this.zoom_container.window_translate+')scale('+this.zoom_container.window_scale+')');
+        // };
     }
 
     function save() {

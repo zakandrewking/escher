@@ -14,7 +14,7 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
     return ZoomContainer;
 
     // definitions
-    function init(sel, w, h, scale_extent) {
+    function init(selection, w, h, scale_extent) {
 	this.zoom_on = true;
 	this.initial_zoom = 1.0;
 	this.window_translate = {x: 0, y: 0};
@@ -24,23 +24,29 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
 	this.callback_manager = new CallbackManager();
 
         // set up the container
-        sel.select("#container").remove();
-        var container = sel.append("g")
-                .attr("id", "container");
+        selection.select("#zoom-container").remove();
+        var container = selection.append("g")
+                .attr("id", "zoom-container");
         this.zoomed_sel = container.append("g");
 
 	// the zoom function and behavior
-        var zoom = function() {
-	    if (this.zoom_on) {
-                this.zoomed_sel.attr("transform", "translate(" + d3.event.translate +
-				     ")scale(" + d3.event.scale + ")");
-		this.window_translate = {'x': d3.event.translate[0], 'y': d3.event.translate[1]};
-		this.window_scale = d3.event.scale;
-		this.callback_manager.run('zoom');
+        var zoom = function(zoom_container, event) {
+	    if (zoom_container.zoom_on) {
+                zoom_container.zoomed_sel.attr("transform", "translate(" + event.translate + ")" +
+					       "scale(" + event.scale + ")");
+		zoom_container.window_translate = {'x': event.translate[0],
+						   'y': event.translate[1]};
+		zoom_container.window_scale = event.scale;
+		zoom_container.callback_manager.run('zoom');
 	    }
         };
-	var zoom_behavior = d3.behavior.zoom().scaleExtent(scale_extent).on("zoom", zoom);
-	container.call(zoom_behavior);
+	var zoom_container = this;
+	this.zoom_behavior = d3.behavior.zoom()
+	    // .scaleExtent(scale_extent)
+	    .on("zoom", function() {
+		zoom(zoom_container, d3.event);
+	    });
+	container.call(this.zoom_behavior);
 
 	this.saved_scale = null;
 	this.saved_translate = null;
@@ -75,13 +81,17 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
     }
 
     // functions to scale and translate
-    function scale(scale) {
+    function scale(scale) { 
+	if (!scale) return console.error('Bad scale value');
 	this.zoom_behavior.scale(scale);
 	if (this.saved_scale !== null) this.saved_scale = scale;
     }
     
     function translate(translate) {
-	this.zoom_behavior.translate(translate);
+	/** translate: object like {x: 3, y: 2.3}
+	 */
+	if (!translate || !translate.x || !translate.y) return console.error('Bad translate value');
+	this.zoom_behavior.translate([translate.x, translate.y]);
 	if (this.saved_translate !== null) this.saved_translate = translate;
     }			    
 
@@ -127,11 +137,7 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
     }
 
     function reset() {
-	this.window_translate = {x: 0, y: 0};
-	this.window_scale = 1.0;
-	this.translate([this.window_translate.x, this.window_translate.y]);
-	this.scale(this.window_scale);
-	this.sel.attr('transform', 'translate('+this.window_translate.x+','+this.window_translate.y+
-		      ')scale('+this.window_scale+')');
+	this.translate([0.0, 0.0]);
+	this.scale(1.0);
     }
 });

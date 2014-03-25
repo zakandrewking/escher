@@ -47,7 +47,9 @@ define(["vis/utils"], function(utils) {
 	for (var a_name in this.callbacks) {
 	    var split_name = a_name.split('.')[0];
 	    if (split_name==name) {
-		this.callbacks[a_name].apply(null, pass_args);
+		this.callbacks[a_name].forEach(function(fn) {
+		    fn.apply(null, pass_args);
+		});
 	    }
 	}
     }

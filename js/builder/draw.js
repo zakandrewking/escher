@@ -432,6 +432,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	var length = reaction_arrow_displacement,
 	    hyp = utils.distance(start, end),
 	    new_x, new_y;
+	if (!length || !hyp) console.error('Bad value');
 	if (displace=='start') {
 	    new_x = start.x + length * (end.x - start.x) / hyp,
 	    new_y = start.y + length * (end.y - start.y) / hyp;

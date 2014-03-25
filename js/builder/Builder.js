@@ -133,7 +133,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    // import map
 	    map = Map.from_data(this.o.map_data, zoomed_sel, defs, zoom_container,
 				height, width, this.o.flux, this.o.node_data, cobra_model);
-	    zoom_container.reset_zoom();
+	    zoom_container.reset();
 	} else {
 	    // new map
 	    map = new Map(zoomed_sel, defs, zoom_container,
@@ -143,7 +143,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	// set up the reaction input with complete.ly
 	var reaction_input = Input(this.o.selection, map, zoom_container);
 
-	var extent = {"x": this.o.width, "y": this.o.height},
+	var extent = {"x": width, "y": height},
 	    mouse_node = zoomed_sel.append('rect')
 		.attr('id', 'mouse-node')
 		.attr("width", extent.x)
@@ -168,7 +168,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    // Draw default reaction if no map is provided
 	    var start_coords = {'x': this.o.width*5, 'y': this.o.height*5};
 	    map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
-	    zoom_container.zoom_extent(200);
+	    map.zoom_extent(200);
 	} else {
 	    map.draw_everything();
 	    map.zoom_extent(200);
@@ -200,21 +200,19 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	key_manager.load_flux_input_click_fn = new_input(sel, load_flux_for_file,
 							 "Load flux (^f)");
 	new_input(sel, load_node_data_for_file, "Load node data");
-	if (map.beziers_enabled) {
-	    new_button(sel, keys.hide_beziers.fn, "Hide control points (b)", 'bezier-button');
-	} else {
-	    new_button(sel, keys.show_beziers.fn, "Show control points (b)", 'bezier-button');
-	}
-	if (zoom_container.zoom_enabled())
-	    new_button(sel, keys.zoom_off.fn, "Enable select (v)", 'zoom-button');
-	else
-	    new_button(sel, keys.zoom_on.fn, "Enable pan+zoom (z)", 'zoom-button');
-	
-	new_button(sel, keys.rotate_selected_nodes.fn, "Rotate (r)");
-	new_button(sel, keys.delete_selected_nodes.fn, "Delete (del)");
-	new_button(sel, keys.zoom_extent.fn, "Zoom extent (^0)");
-	new_button(sel, keys.make_selected_node_primary.fn, "Make primary metabolite (p)");
-	new_button(sel, keys.cycle_primary_node.fn, "Cycle primary metabolite (c)");
+	var b = new_button(sel, keys.toggle_beziers.fn, "Hide control points (b)", 'bezier-button');
+	map.callback_manager.set('toggle_beziers.button', function(on_off) {
+	    b.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
+	});
+	var z = new_button(sel, keys.toggle_zoom.fn, "Enable select (v)", 'zoom-button');
+	zoom_container.callback_manager.set('toggle_zoom.button', function(on_off) {
+	    b.text(on_off ? 'Enable select (v)': 'Enable pan+zoom (z)');
+	});
+	new_button(sel, keys.rotate.fn, "Rotate (r)");
+	new_button(sel, keys.delete.fn, "Delete (del)");
+	new_button(sel, keys.extent.fn, "Zoom extent (^0)");
+	new_button(sel, keys.make_primary.fn, "Make primary metabolite (p)");
+	new_button(sel, keys.cycle_primary.fn, "Cycle primary metabolite (c)");
 	new_button(sel, keys.direction_arrow_left.fn, "<");
 	new_button(sel, keys.direction_arrow_up.fn, "^");
 	new_button(sel, keys.direction_arrow_down.fn, "v");
@@ -267,8 +265,6 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	return {
             toggle_input: { key: 191, // forward slash '/'
 			    fn: input.toggle },
-            hide_input: { fn: input.hide },
-            show_input: { fn: input.show },
             save: { key: 83, modifiers: { control: true }, // ctrl-s
 		    fn: map.save },
             // save_cmd: { key: 83, modifiers: { command: true }, // command-s
@@ -282,13 +278,11 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    toggle_beziers: { key: 66,
 			      fn: map.toggle_beziers,
 			      ignore_with_input: true  }, // b
-	    hide_beziers: { fn: map.hide_beziers },
-	    show_beziers: { fn: map.show_beziers },
-	    pan_and_zoom: { key: 90, // z 
-			    fn: brush.off,
-			    ignore_with_input: true },
+	    toggle_zoom: { key: 90, // z 
+			   fn: this.toggle_zoom,
+			   ignore_with_input: true },
 	    brush: { key: 86, // v
-		     fn: brush.on,
+		     fn: this.toggle_zoom,
 		     ignore_with_input: true },
 	    rotate: { key: 82, // r
 		      fn: map.rotate_selected_nodes,
