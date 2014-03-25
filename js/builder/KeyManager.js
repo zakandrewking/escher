@@ -8,7 +8,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     return KeyManager;
 
     // definitions
-    function init() {
+    function init(assigned_keys) {
 	/** Assign keys for commands.
 
 	 */
@@ -16,60 +16,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
             modifier_keys = { command: 91,
                               control: 17,
                               option: 18,
-                              shift: 16 },
-	    assigned_keys = {
-                hide_show_input_key: { key: 191, // forward slash '/'
-				       fn: cmd_hide_show_input },
-                save_key: { key: 83, modifiers: { control: true }, // ctrl-s
-			    fn: cmd_save },
-                // save_key_cmd: { key: 83, modifiers: { command: true }, // command-s
-		// 		       fn: cmd_save },
-                save_svg_key: { key: 83, modifiers: { control: true, shift: true }, // ctrl-Shift-s
-				fn: cmd_save_svg },
-                load_key: { key: 79, modifiers: { control: true }, // ctrl-o
-			    fn: cmd_load },
-		load_flux_key: { key: 70, modifiers: { control: true }, // ctrl-f
-				 fn: cmd_load_flux },
-		toggle_beziers_key: { key: 66,
-				      fn: cmd_toggle_beziers,
-				      ignore_with_input: true  }, // b
-		pan_and_zoom_key: { key: 90, // z 
-				    fn: cmd_zoom_on,
-				    ignore_with_input: true },
-		brush_key: { key: 86, // v
-			     fn: cmd_zoom_off,
-			     ignore_with_input: true },
-		rotate_key: { key: 82, // r
-			      fn: cmd_rotate_selected_nodes,
-			      ignore_with_input: true },
-		delete_key: { key: 8, // del
-			      fn: cmd_delete_selected_nodes,
-			      ignore_with_input: true },
-		extent_key: { key: 48, modifiers: { control: true }, // ctrl-0
-			      fn: cmd_zoom_extent },
-		make_primary_key: { key: 80, // p
-				    fn: cmd_make_selected_node_primary,
-				    ignore_with_input: true },
-		cycle_primary_key: { key: 67, // c
-				     fn: cmd_cycle_primary_node,
-				     ignore_with_input: true },
-		direction_arrow_right: { key: 39, // right
-					 fn: cmd_direction_arrow_right,
-					 ignore_with_input: true },
-		direction_arrow_down: { key: 40, // down
-					fn: cmd_direction_arrow_down,
-					ignore_with_input: true },
-		direction_arrow_left: { key: 37, // left
-					fn: cmd_direction_arrow_left,
-					ignore_with_input: true },
-		direction_arrow_up: { key: 38, // up
-				      fn: cmd_direction_arrow_up,
-				      ignore_with_input: true },
-		undo_key: { key: 90, modifiers: { control: true },
-			    fn: cmd_undo },
-		redo_key: { key: 90, modifiers: { control: true, shift: true },
-			    fn: cmd_redo }
-	    };
+                              shift: 16 };
 
         d3.select(window).on("keydown", function() {
             var kc = d3.event.keyCode,
@@ -437,49 +384,6 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	    // TODO just redraw these nodes and segments
 	    draw_everything();
 	}
-    }
-
-    function cmd_zoom_extent(margin) {
-	/** Zoom to fit all the nodes.
-
-	 margin: optional argument to set the margins.
-
-	 */
-
-	// optional args
-	if (margin===undefined) margin = 180;
-
-	// get the extent of the nodes
-	var min = { x: null, y: null }, // TODO make infinity?
-	    max = { x: null, y: null }; 
-	for (var node_id in o.drawn_nodes) {
-	    var node = o.drawn_nodes[node_id];
-	    if (min.x===null) min.x = o.scale.x(node.x);
-	    if (min.y===null) min.y = o.scale.y(node.y);
-	    if (max.x===null) max.x = o.scale.x(node.x);
-	    if (max.y===null) max.y = o.scale.y(node.y);
-
-	    min.x = Math.min(min.x, o.scale.x(node.x));
-	    min.y = Math.min(min.y, o.scale.y(node.y));
-	    max.x = Math.max(max.x, o.scale.x(node.x));
-	    max.y = Math.max(max.y, o.scale.y(node.y));
-	}
-	// set the zoom
-        var new_zoom = Math.min((o.width - margin*2) / (max.x - min.x),
-				(o.height - margin*2) / (max.y - min.y)),
-	    new_pos = { x: - (min.x * new_zoom) + margin + ((o.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
-			y: - (min.y * new_zoom) + margin + ((o.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
-	o.window_scale = new_zoom;
-        o.window_translate = new_pos;
-        go();
-
-	// definitions
-        function go() {
-            o.zoom_container.translate([o.window_translate.x, o.window_translate.y]);
-            o.zoom_container.scale(o.window_scale);
-            o.sel.transition()
-                .attr('transform', 'translate('+o.window_translate.x+','+o.window_translate.y+')scale('+o.window_scale+')');
-        };
     }
 
     function cmd_make_selected_node_primary() {

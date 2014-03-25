@@ -21,14 +21,18 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
     return Behavior;
 
     // definitions
-    function init(map, scale, undo_stack) {
+    function init(map, undo_stack) {
 	this.map = map;
-	this.scale = scale;
 	this.undo_stack = undo_stack;
+
+	// make an empty function that can be called as a behavior and does nothing
+	this.empty_behavior = function() {};
+
+	// init empty
 	this.node_click = null;
-	this.node_drag = null;
-	this.bezier_drag = null;
-	this.label_drag = null;
+	this.node_drag = this.empty_behavior;
+	this.bezier_drag = this.empty_behavior;
+	this.label_drag = this.empty_behavior;
 	turn_everything_on();
     }
     function turn_everything_on() {
@@ -64,12 +68,12 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	 Pass in a boolean argument to set the on/off state.
 
 	 */
-	if (on_off===undefined) on_off = this.node_click==null;
+	if (on_off===undefined) on_off = this.node_drag===this.empty_behavior;
 	if (on_off) {
-	    this.node_drag = get_node_drag_behavior(this.map, this.scale);
-	    this.bezier_drag = get_bezier_drag_behavior(this.map, this.scale);
+	    this.node_drag = get_node_drag_behavior(this.map);
+	    this.bezier_drag = get_bezier_drag_behavior(this.map);
 	} else {
-	    this.node_click = null;
+	    this.node_drag = this.empty_behavior;
 	}
     }
     function toggle_label_drag(on_off) {
@@ -78,15 +82,15 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	 Pass in a boolean argument to set the on/off state.
 
 	 */
-	if (on_off===undefined) on_off = this.node_click==null;
+	if (on_off===undefined) on_off = this.label_drag===this.empty_behavior;
 	if (on_off) {
 	    // this.label_drag = get_label_drag_behavior(this.map, this.scale);
 	} else {
-	    this.node_click = null;
+	    this.label_drag = this.empty_behavior;
 	}
     }
 
-    function get_node_drag_behavior(map, scale) {
+    function get_node_drag_behavior(map, undo_stack) {
 	// define some variables
 	var behavior = d3.behavior.drag(),
 	    total_displacement,
@@ -115,13 +119,13 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		.on('mouseover.combine', function(d) {
 		    if (d.bigg_id_compartmentalized==bigg_id_compartmentalized &&
 			d.node_id!=data.node_id) {
-			d3.select(this).style('stroke-width', String(scale.size(12))+'px')
+			d3.select(this).style('stroke-width', String(map.scale.size(12))+'px')
 			    .classed('node-to-combine', true);
 		    }
 		}).on('mouseout.combine', function(d) {
 		    if (d.bigg_id_compartmentalized==bigg_id_compartmentalized &&
 			d.node_id!==data.node_id) {
-			d3.select(this).style('stroke-width', String(scale.size(2))+'px')
+			d3.select(this).style('stroke-width', String(map.scale.size(2))+'px')
 			    .classed('node-to-combine', false);
 		    }
 		});
@@ -139,10 +143,10 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	    reaction_ids = [];
 	    nodes_to_drag.forEach(function(node_id) {
 		// update data
-		var node = map.drawn_nodes[node_id],
-		    displacement = { x: scale.x_size.invert(d3.event.dx),
-				     y: scale.y_size.invert(d3.event.dy) },
-		    updated = build.move_node_and_dependents(node, node_id, map.drawn_reactions, displacement);
+		var node = map.nodes[node_id],
+		    displacement = { x: map.scale.x_size.invert(d3.event.dx),
+				     y: map.scale.y_size.invert(d3.event.dy) },
+		    updated = build.move_node_and_dependents(node, node_id, map.reactions, displacement);
 		reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids]);
 		// remember the displacements
 		if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 };
@@ -162,16 +166,16 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		// If a node is ready for it, combine nodes
 		var fixed_node_id = node_to_combine_array[0],
 		    dragged_node_id = this.parentNode.__data__.node_id,
-		    saved_dragged_node = utils.clone(map.drawn_nodes[dragged_node_id]),
+		    saved_dragged_node = utils.clone(map.nodes[dragged_node_id]),
 		    segment_objs_moved_to_combine = combine_nodes_and_draw(fixed_node_id, dragged_node_id);
 		undo_stack.push(function() {
 		    // undo
 		    // put the old node back
-		    map.drawn_nodes[dragged_node_id] = saved_dragged_node;
-		    var fixed_node = map.drawn_nodes[fixed_node_id],
+		    map.nodes[dragged_node_id] = saved_dragged_node;
+		    var fixed_node = map.nodes[fixed_node_id],
 			updated_reactions = [];
 		    segment_objs_moved_to_combine.forEach(function(segment_obj) {
-			var segment = map.drawn_reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
+			var segment = map.reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
 			if (segment.from_node_id==fixed_node_id) segment.from_node_id = dragged_node_id;
 			else if (segment.to_node_id==fixed_node_id) segment.to_node_id = dragged_node_id;
 			else console.error('Segment does not connect to fixed node');
@@ -197,24 +201,24 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		var saved_displacement = utils.clone(total_displacement), // BUG TODO this variable disappears!
 		    saved_node_ids = utils.clone(nodes_to_drag),
 		    saved_reaction_ids = utils.clone(reaction_ids);
-		o.undo_stack.push(function() {
+		undo_stack.push(function() {
 		    // undo
 		    saved_node_ids.forEach(function(node_id) {
-			var node = o.drawn_nodes[node_id];
-			build.move_node_and_dependents(node, node_id, o.drawn_reactions,
+			var node = map.nodes[node_id];
+			build.move_node_and_dependents(node, node_id, map.reactions,
 						       utils.c_times_scalar(saved_displacement[node_id], -1));
 		    });
-		    draw_specific_nodes(saved_node_ids);
-		    draw_specific_reactions(saved_reaction_ids);
+		    map.draw_specific_nodes(saved_node_ids);
+		    map.draw_specific_reactions(saved_reaction_ids);
 		}, function () {
 		    // redo
 		    saved_node_ids.forEach(function(node_id) {
-			var node = o.drawn_nodes[node_id];
-			build.move_node_and_dependents(node, node_id, o.drawn_reactions,
+			var node = map.nodes[node_id];
+			build.move_node_and_dependents(node, node_id, map.reactions,
 						       saved_displacement[node_id]);
 		    });
-		    draw_specific_nodes(saved_node_ids);
-		    draw_specific_reactions(saved_reaction_ids);
+		    map.draw_specific_nodes(saved_node_ids);
+		    map.draw_specific_reactions(saved_reaction_ids);
 		});
 	    }
 
@@ -230,12 +234,12 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 
 	// definitions
 	function combine_nodes_and_draw(fixed_node_id, dragged_node_id) {
-	    var dragged_node = o.drawn_nodes[dragged_node_id],
-		fixed_node = o.drawn_nodes[fixed_node_id],
+	    var dragged_node = map.nodes[dragged_node_id],
+		fixed_node = map.nodes[fixed_node_id],
 		updated_segment_objs = [];
 	    dragged_node.connected_segments.forEach(function(segment_obj) {
 		// change the segments to reflect
-		var segment = o.drawn_reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
+		var segment = map.reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
 		if (segment.from_node_id==dragged_node_id) segment.from_node_id = fixed_node_id;
 		else if (segment.to_node_id==dragged_node_id) segment.to_node_id = fixed_node_id;
 		else return console.error('Segment does not connect to dragged node');
@@ -244,16 +248,16 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		updated_segment_objs.push(utils.clone(segment_obj));
 	    });
 	    // delete the old node
-	    delete_nodes_by_id([dragged_node_id]);
+	    map.delete_nodes_by_id([dragged_node_id]);
 	    // turn off the class
 	    d3.selectAll('.node-to-combine').classed('node-to-combine', false);
 	    // draw
-	    draw_everything();
+	    map.draw_everything();
 	    // return for undo
 	    return updated_segment_objs;
 	}
     }
-    function get_bezier_drag_behavior() {
+    function get_bezier_drag_behavior(map, undo_stack) {
 	// define some variables
 	var behavior = d3.behavior.drag(),
 	    total_displacement,
@@ -269,42 +273,42 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	    segment_id = d.segment_id;
 	    bezier_number = d.bezier;
 	    // update data
-	    var displacement = { x: o.scale.x_size.invert(d3.event.dx),
-				 y: o.scale.y_size.invert(d3.event.dy) };
+	    var displacement = { x: map.scale.x_size.invert(d3.event.dx),
+				 y: map.scale.y_size.invert(d3.event.dy) };
 	    move_bezier(reaction_id, segment_id, bezier_number, displacement);
 	    // remember the displacement
 	    total_displacement = utils.c_plus_c(total_displacement, displacement);
 	    // draw
-	    draw_specific_reactions([reaction_id]);
+	    map.draw_specific_reactions([reaction_id]);
 	});
 	behavior.on("dragend", function(d) {			  
 	    // add to undo/redo stack
 	    // remember the displacement, dragged nodes, and reactions
 	    var saved_displacement = utils.clone(total_displacement), // BUG TODO this variable disappears!
 		saved_reaction_id = utils.clone(reaction_id);
-	    o.undo_stack.push(function() {
+	    undo_stack.push(function() {
 		// undo
 		move_bezier(reaction_id, segment_id, bezier_number,
 			    utils.c_times_scalar(saved_displacement, -1));
-		draw_specific_reactions([saved_reaction_id]);
+		map.draw_specific_reactions([saved_reaction_id]);
 	    }, function () {
 		// redo
 		move_bezier(reaction_id, segment_id, bezier_number,
 			    saved_displacement);
-		draw_specific_reactions([saved_reaction_id]);
+		map.draw_specific_reactions([saved_reaction_id]);
 	    });
 	});
 	return behavior;
 
 	// definitions
 	function move_bezier(reaction_id, segment_id, bezier_number, displacement) {
-	    var segment = o.drawn_reactions[reaction_id].segments[segment_id];
+	    var segment = map.reactions[reaction_id].segments[segment_id];
 	    segment['b'+bezier_number] = utils.c_plus_c(segment['b'+bezier_number], displacement);
 	};
     }
     function generate_click_behavior(on_click_fn) {
     }
-    function generate_drag_behavior() {
+    function generate_drag_behavior(map, undo_stack) {
 	// define some variables
 	var behavior = d3.behavior.drag(),
 	    total_displacement,
@@ -320,36 +324,36 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	    segment_id = d.segment_id;
 	    bezier_number = d.bezier;
 	    // update data
-	    var displacement = { x: o.scale.x_size.invert(d3.event.dx),
-				 y: o.scale.y_size.invert(d3.event.dy) };
+	    var displacement = { x: map.scale.x_size.invert(d3.event.dx),
+				 y: map.scale.y_size.invert(d3.event.dy) };
 	    move_bezier(reaction_id, segment_id, bezier_number, displacement);
 	    // remember the displacement
 	    total_displacement = utils.c_plus_c(total_displacement, displacement);
 	    // draw
-	    draw_specific_reactions([reaction_id]);
+	    map.draw_specific_reactions([reaction_id]);
 	});
 	behavior.on("dragend", function(d) {			  
 	    // add to undo/redo stack
 	    // remember the displacement, dragged nodes, and reactions
 	    var saved_displacement = utils.clone(total_displacement), // BUG TODO this variable disappears!
 		saved_reaction_id = utils.clone(reaction_id);
-	    o.undo_stack.push(function() {
+	    undo_stack.push(function() {
 		// undo
 		move_bezier(reaction_id, segment_id, bezier_number,
 			    utils.c_times_scalar(saved_displacement, -1));
-		draw_specific_reactions([saved_reaction_id]);
+		map.draw_specific_reactions([saved_reaction_id]);
 	    }, function () {
 		// redo
 		move_bezier(reaction_id, segment_id, bezier_number,
 			    saved_displacement);
-		draw_specific_reactions([saved_reaction_id]);
+		map.draw_specific_reactions([saved_reaction_id]);
 	    });
 	});
 	return behavior;
 
 	// definitions
 	function move_bezier(reaction_id, segment_id, bezier_number, displacement) {
-	    var segment = o.drawn_reactions[reaction_id].segments[segment_id];
+	    var segment = map.reactions[reaction_id].segments[segment_id];
 	    segment['b'+bezier_number] = utils.c_plus_c(segment['b'+bezier_number], displacement);
 	};
     }

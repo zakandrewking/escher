@@ -1,5 +1,12 @@
-define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils, d3, draw, Scale) {
-    /**
+define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack"], function(utils, d3, draw, Behavior, Scale, DirectionArrow, build, UndoStack) {
+    /** Defines the metabolic map data, and manages drawing and building.
+
+     Map(selection, behavior)
+
+     selection: A d3 selection for a node to place the map inside. Should be an SVG element.
+
+     behavior: A Behavior object which defines the interactivity of the map.
+
      */
 
     var Map = utils.make_class();
@@ -8,37 +15,84 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
     // instance methods
     Map.prototype = { init: init,
 		      select_metabolite: select_metabolite,
-		      new_reaction_from_scratch: new_reaction_from_scratch };
+		      new_reaction_from_scratch: new_reaction_from_scratch,
+		      new_reaction_for_metabolite: new_reaction_for_metabolite,
+		      draw_everything: draw_everything,
+		      draw_these_reactions: draw_these_reactions,
+		      draw_these_nodes: draw_these_nodes,
+		      apply_flux_to_map: apply_flux_to_map,
+		      apply_flux_to_reactions: apply_flux_to_reactions,
+		      apply_node_data_to_map: apply_node_data_to_map,
+		      apply_node_data_to_nodes: apply_node_data_to_nodes,
+		      select_metabolite_with_id: select_metabolite_with_id,
+		      zoom_extent: zoom_extent };
 
     return Map;
 
-    function init(selection) {
-	this.nodes = [];
-	this.reactions = [];
-
-	this.debug = false;
+    function init(selection, input, defs, zoom_container, height, width, flux, node_data, cobra_model) {
+	// defaults
+	var default_angle = 90; // degrees
 
 	draw.setup_containers(selection);
-    };
+	this.sel = selection;
+	this.input = input;
+	this.defs = defs;
+	this.zoom_container = zoom_container;
 
-    function select_metabolite() {
+	this.flux = flux;
+	this.node_data = node_data;
+	this.cobra_model = cobra_model;
+
+	this.map_info = { max_map_w: width * 10, max_map_h: height * 10 };
+	this.map_info.largest_ids = { reactions: -1,
+				      nodes: -1,
+				      segments: -1 };
+
+	// make the scale
+	this.scale = new Scale(this.map_info.max_map_w, this.map_info.max_map_h,
+			       width, height);
+
+	// make the undo/redo stack
+	this.undo_stack = new UndoStack();
+
+	// make a behavior object
+	this.behavior = new Behavior(this, this.undo_stack);
+
+	// deal with the window
+	var window_translate = {'x': 0, 'y': 0},
+	    window_scale = 1;
+
+	// set up the reaction direction arrow
+	this.direction_arrow = new DirectionArrow(selection);
+	this.direction_arrow.set_rotation(default_angle);
+
+	// these will be filled
+	this.arrowheads_generated = [];
+	
+	this.nodes = {};
+	this.reactions = {};
+	this.membranes = [];
+	this.text_labels = {};
+	this.info = {};
+
+	// performs some extra checks
+	this.debug = false;
     };
 
     // -------------------------------------------------------------------------
     // Import
 
-    function from_data(map_data, height, width, flux, node_data) {
+    function from_data(map_data, selection, input, defs, zoom_container, height, width, flux, node_data, cobra_model) {
 	map_data = check_map_data(map_data);
 	
-	var map = new Map();
-	map.reactions = map.reactions ? map.reactions : {};
-	map.nodes = map.nodes ? map.nodes : {};
-	map.membranes = map.membranes ? map.membranes : [];
-	map.text_labels = map.text_labels ? map.text_labels : {};
-	map.map_info = map.info ? map.info : {};
+	var map = new Map(selection, input, defs, zoom_container, height, width, flux, node_data, cobra_model);
+	if (map_data.reactions) map.reactions = map_data.reactions;
+	if (map_data.nodes) map.nodes = map_data.nodes;
+	if (map_data.membranes) map.membranes = map_data.membranes;
+	if (map_data.text_labels) map.text_labels = map_data.text_labels;
+	if (map_data.info) map.info = map_data.info;
 
 	// get largest ids for adding new reactions, nodes, text labels, and segments
-	map.map_info.largest_ids = {};
 	map.map_info.largest_ids.reactions = get_largest_id(map.reactions);
 	map.map_info.largest_ids.nodes = get_largest_id(map.nodes);
 	map.map_info.largest_ids.text_labels = get_largest_id(map.text_labels);
@@ -49,15 +103,11 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 	}
 	map.map_info.largest_ids.segments = largest_segment_id;
 
-	// set up svg and svg definitions
-	map.scale = Scale(map.map_info.max_map_w, map.map_info.max_map_h,
-			  width, height);
-
 	// flux onto existing map reactions
 	if (flux) map.apply_flux_to_map();
 	if (node_data) map.apply_node_data_to_map();
 
-	return { map: map };
+	return map;
 
 	// definitions
 	function get_largest_id(obj, current_largest) {
@@ -139,7 +189,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 				 this.behavior.node_click, this.behavior.node_drag);
     }
     function apply_flux_to_map() {
-	apply_flux_to_reactions(this.reactions);
+	this.apply_flux_to_reactions(this.reactions);
     }
     function apply_flux_to_reactions(reactions) {
 	for (var reaction_id in reactions) {
@@ -162,7 +212,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 	}
     }
     function apply_node_data_to_map() {
-	apply_node_data_to_nodes(this.nodes);
+	this.apply_node_data_to_nodes(this.nodes);
     }
     function apply_node_data_to_nodes(nodes) {
 	var vals = [];
@@ -203,14 +253,15 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
     }	
     function select_metabolite_with_id(node_id) {
 	var node_selection = this.sel.select('#nodes').selectAll('.node'),
-	    coords;
+	    coords,
+	    scale = this.scale;
 	node_selection.classed("selected", function(d) {
 	    var selected = String(d.node_id) == String(node_id);
 	    if (selected)
-		coords = { x: this.scale.x(d.x), y: this.scale.y(d.y) };
+		coords = { x: scale.x(d.x), y: scale.y(d.y) };
 	    return selected;
 	});
-	if (this.input.is_visible) cmd_show_input();
+	if (this.input.is_visible) this.input.show();
 	this.direction_arrow.set_location(coords);
 	this.direction_arrow.show();
 	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
@@ -229,15 +280,11 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 	    count++;
 	});
 	if (count == 1) {
-	    if (input.is_visible(this.reaction_input)) {
-		cmd_show_input();
-	    } else {
-		cmd_hide_input();
-	    }
+	    this.input.toggle();
 	    this.direction_arrow.set_location(coords);
 	    this.direction_arrow.show();
 	} else {
-	    cmd_hide_input();
+	    this.input.hide();
 	    this.direction_arrow.hide();
 	}
 	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
@@ -262,9 +309,12 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 	    }
         }
 
+	// If there is no cobra model, error
+	if (!this.cobra_model) console.error('No CobraModel. Cannot build new reaction');
+
         // set reaction coordinates and angle
         // be sure to copy the reaction recursively
-        var cobra_reaction = utils.clone(this.cobra_reactions[starting_reaction]);
+        var cobra_reaction = utils.clone(this.cobra_model.reactions[starting_reaction]);
 
 	// create the first node
 	for (var metabolite_id in cobra_reaction.metabolites) {
@@ -290,10 +340,11 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 	}
 
 	// draw
-	extend_and_draw_metabolite(new_nodes, selected_node_id);
+	extend_and_draw_metabolite.apply(this, [new_nodes, selected_node_id]);
 
 	// clone the nodes and reactions, to redo this action later
-	var saved_nodes = utils.clone(new_nodes);
+	var saved_nodes = utils.clone(new_nodes),
+	    map = this;
 
 	// add to undo/redo stack
 	this.undo_stack.push(function() {
@@ -307,16 +358,16 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 	}, function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
-	    extend_and_draw_metabolite(new_nodes, selected_node_id);
+	    extend_and_draw_metabolite.apply(map, [new_nodes, selected_node_id]);
 	});
 	
 	// draw the reaction
-	new_reaction_for_metabolite(starting_reaction, selected_node_id);
+	this.new_reaction_for_metabolite(starting_reaction, selected_node_id);
 
         // definitions
 	function extend_and_draw_metabolite(new_nodes, selected_node_id) {
 	    utils.extend(this.nodes, new_nodes);
-	    draw_these_nodes([selected_node_id]);
+	    this.draw_these_nodes([selected_node_id]);
 	}
     }
     
@@ -329,7 +380,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 
         // If reaction id is not new, then return:
 	for (var reaction_id in this.reactions) {
-	    if (this.reactions[reaction_id].abbreviation == reaction_abbreviation) {             
+	    if (this.reactions[reaction_id].abbreviation == reaction_abbreviation) {
 		console.warn('reaction is already drawn');
                 return;
 	    }
@@ -340,26 +391,27 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 
         // set reaction coordinates and angle
         // be sure to copy the reaction recursively
-        var cobra_reaction = utils.clone(this.cobra_reactions[reaction_abbreviation]);
+        var cobra_reaction = utils.clone(this.cobra_model.reactions[reaction_abbreviation]);
 
 	// build the new reaction
 	var out = build.new_reaction(reaction_abbreviation, cobra_reaction,
 				     selected_node_id, utils.clone(selected_node),
-				     this.map_info.largest_ids, this.cofactors,
+				     this.map_info.largest_ids, this.cobra_model.cofactors,
 				     this.direction_arrow.get_rotation()),
 	    new_nodes = out.new_nodes,
 	    new_reactions = out.new_reactions;
 
 	// add the flux
-	if (this.flux) apply_flux_to_reactions(new_reactions);
-	if (this.node_data) apply_node_data_to_nodes(new_nodes);
+	if (this.flux) this.apply_flux_to_reactions(new_reactions);
+	if (this.node_data) this.apply_node_data_to_nodes(new_nodes);
 
 	// draw
-	extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id);
+	extend_and_draw_reaction.apply(this, [new_nodes, new_reactions, selected_node_id]);
 
 	// clone the nodes and reactions, to redo this action later
 	var saved_nodes = utils.clone(new_nodes),
-	    saved_reactions = utils.clone(new_reactions);
+	    saved_reactions = utils.clone(new_reactions),
+	    map = this;
 
 	// add to undo/redo stack
 	this.undo_stack.push(function() {
@@ -368,7 +420,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 	    delete new_nodes[selected_node_id];
 	    delete_nodes(new_nodes);
 	    delete_reactions(new_reactions);
-	    select_metabolite_with_id(selected_node_id);
+	    select_metabolite_with_id.apply(map, [selected_node_id]);
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    new_reactions = utils.clone(saved_reactions);
@@ -377,7 +429,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 	}, function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
-	    extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id);
+	    extend_and_draw_reaction.apply(map, [new_nodes, new_reactions, selected_node_id]);
 	});
 
 	// definitions
@@ -388,16 +440,17 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
 	    utils.extend(this.nodes, new_nodes);
 
 	    // draw new reaction and (TODO) select new metabolite
-	    draw_these_nodes(Object.keys(new_nodes));
-	    draw_these_reactions(Object.keys(new_reactions));
+	    this.draw_these_nodes(Object.keys(new_nodes));
+	    this.draw_these_reactions(Object.keys(new_reactions));
 
 	    // select new primary metabolite
 	    for (var node_id in new_nodes) {
 		var node = new_nodes[node_id];
 		if (node.node_is_primary && node_id!=selected_node_id) {
-		    select_metabolite_with_id(node_id);
+		    this.select_metabolite_with_id(node_id);
 		    var new_coords = { x: node.x, y: node.y };
-		    translate_off_screen(new_coords);
+		    if (this.zoom_container)
+			this.zoom_container.translate_off_screen(new_coords, this.scale.x, this.scale.y);
 		}
 	    }
 	}
@@ -488,36 +541,48 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Scale"], function(utils,
         return this;
     }
 
-    function translate_off_screen(coords) {
-        // shift window if new reaction will draw off the screen
-        // TODO BUG not accounting for scale correctly
-        var margin = 80, // pixels
-	    current = {'x': {'min': - this.window_translate.x / this.window_scale + margin / this.window_scale,
-                             'max': - this.window_translate.x / this.window_scale + (this.width-margin) / this.window_scale },
-                       'y': {'min': - this.window_translate.y / this.window_scale + margin / this.window_scale,
-                             'max': - this.window_translate.y / this.window_scale + (this.height-margin) / this.window_scale } };
-        if (this.scale.x(coords.x) < current.x.min) {
-            this.window_translate.x = this.window_translate.x - (this.scale.x(coords.x) - current.x.min) * this.window_scale;
-            go();
-        } else if (this.scale.x(coords.x) > current.x.max) {
-            this.window_translate.x = this.window_translate.x - (this.scale.x(coords.x) - current.x.max) * this.window_scale;
-            go();
-        }
-        if (this.scale.y(coords.y) < current.y.min) {
-            this.window_translate.y = this.window_translate.y - (this.scale.y(coords.y) - current.y.min) * this.window_scale;
-            go();
-        } else if (this.scale.y(coords.y) > current.y.max) {
-            this.window_translate.y = this.window_translate.y - (this.scale.y(coords.y) - current.y.max) * this.window_scale;
-            go();
-        }
+    function zoom_extent(margin) {
+	/** Zoom to fit all the nodes.
+
+	 margin: optional argument to set the margins.
+
+	 */
+
+	// optional args
+	if (margin===undefined) margin = 180;
+
+	// get the extent of the nodes
+	var min = { x: null, y: null }, // TODO make infinity?
+	    max = { x: null, y: null }; 
+	for (var node_id in this.drawn_nodes) {
+	    var node = this.nodes[node_id];
+	    if (min.x===null) min.x = this.scale.x(node.x);
+	    if (min.y===null) min.y = this.scale.y(node.y);
+	    if (max.x===null) max.x = this.scale.x(node.x);
+	    if (max.y===null) max.y = this.scale.y(node.y);
+
+	    min.x = Math.min(min.x, this.scale.x(node.x));
+	    min.y = Math.min(min.y, this.scale.y(node.y));
+	    max.x = Math.max(max.x, this.scale.x(node.x));
+	    max.y = Math.max(max.y, this.scale.y(node.y));
+	}
+	// set the zoom
+        var new_zoom = Math.min((this.width - margin*2) / (max.x - min.x),
+				(this.height - margin*2) / (max.y - min.y)),
+	    new_pos = { x: - (min.x * new_zoom) + margin + ((this.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
+			y: - (min.y * new_zoom) + margin + ((this.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
+	this.zoom_container.window_scale = new_zoom;
+        this.zoom_container.window_translate = new_pos;
+        go();
 
 	// definitions
-        function go() {
-            this.zoom_container.translate([this.window_translate.x, this.window_translate.y]);
-            this.zoom_container.scale(this.window_scale);
+        function go() { // TODO move some of this zoom container
+            this.zoom_container.translate([this.zoom_container.window_translate.x,
+					   this.zoom_container.window_translate.y]);
+            this.zoom_container.scale(this.zoom_container.window_scale);
             this.sel.transition()
-                .attr('transform', 'translate('+this.window_translate.x+','+this.window_translate.y+')scale('+this.window_scale+')');
-        }
+                .attr('transform', 'translate('+this.zoom_container.window_translate+')scale('+this.zoom_container.window_scale+')');
+        };
     }
 
 });
