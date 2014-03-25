@@ -8,10 +8,13 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     return KeyManager;
 
     // definitions
-    function init(assigned_keys) {
+    function init(assigned_keys, reaction_input) {
 	/** Assign keys for commands.
 
 	 */
+
+	this.reaction_input = reaction_input;
+
         var held_keys = reset_held_keys(),
             modifier_keys = { command: 91,
                               control: 17,
@@ -20,10 +23,10 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
         d3.select(window).on("keydown", function() {
             var kc = d3.event.keyCode,
-                reaction_input_visible = input.is_visible(o.reaction_input),
+                reaction_input_visible = reaction_input.is_visible,
 		meaningless = true;
             held_keys = toggle_modifiers(modifier_keys, held_keys, kc, true);
-	    o.shift_key_on = held_keys.shift;
+	    this.shift_key_on = held_keys.shift;
 	    for (var key_id in assigned_keys) {
 		var assigned_key = assigned_keys[key_id];
 		if (check_key(assigned_key, kc, held_keys)) {

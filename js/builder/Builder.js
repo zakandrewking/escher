@@ -158,7 +158,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 
 	// make key manager
 	var keys = Builder.get_keys(map, reaction_input, brush);
-	var key_manager = new KeyManager(keys);
+	var key_manager = new KeyManager(keys, reaction_input);
 	// set up menu and status bars
 	var menu = this._setup_menu(this.o.selection, map, zoom_container, key_manager, keys),
 	    status = this._setup_status(this.o.selection);
