@@ -17,6 +17,10 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 		      select_metabolite: select_metabolite,
 		      new_reaction_from_scratch: new_reaction_from_scratch,
 		      new_reaction_for_metabolite: new_reaction_for_metabolite,
+		      setup_containers: setup_containers,
+		      reset_containers: reset_containers,
+		      has_flux: has_flux,
+		      has_node_data: has_node_data,
 		      draw_everything: draw_everything,
 		      draw_these_reactions: draw_these_reactions,
 		      draw_these_nodes: draw_these_nodes,
@@ -43,7 +47,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	var default_angle = 90; // degrees
 	this.reaction_arrow_displacement = 35;
 
-	draw.setup_containers(selection);
+	this.setup_containers(selection);
 	this.sel = selection;
 	this.defs = defs;
 	this.zoom_container = zoom_container;
@@ -178,31 +182,162 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     // ---------------------------------------------------------------------
     // Drawing
 
+    function setup_containers(sel) {
+        sel.append('g')
+            .attr('id', 'membranes');
+        sel.append('g')
+            .attr('id', 'reactions');
+        sel.append('g')
+            .attr('id', 'nodes');
+        sel.append('g')
+            .attr('id', 'text-labels');
+    }
+    function reset_containers() {
+	d3.select('#membranes')
+            .selectAll('.membrane')
+            .remove();
+	d3.select('#reactions')
+            .selectAll('.reaction')
+            .remove();
+	d3.select('#nodes')
+            .selectAll('.node')
+            .remove();
+	d3.select('#text-labels')
+            .selectAll('.text-label')
+            .remove();
+    }
     function has_flux() {
 	return Boolean(this.flux);
     }
     function has_node_data() {
 	return Boolean(this.node_data);
-    };
+    }
     function draw_everything() {
-	draw.draw(this.membranes, this.reactions, this.nodes,
-		  this.text_labels, this.scale, this.beziers_enabled,
-		  this.reaction_arrow_displacement, this.defs, this.arrowheads_generated,
-		  this.default_reaction_color, has_flux(), has_node_data(),
-		  this.node_data_style, this.behavior.node_click,
-		  this.behavior.node_drag, this.behavior.bezier_drag);
+        /** Draw the reactions and membranes
+
+         */
+	var membranes = this.membranes,
+	    scale = this.scale,
+	    reactions = this.reactions,
+	    nodes = this.nodes,
+	    text_labels = this.text_labels,
+	    arrow_displacement = this.reaction_arrow_displacement,
+	    defs = this.defs,
+	    arrowheads = this.arrowheads_generated,
+	    default_reaction_color = this.default_reaction_color,
+	    bezier_drag_behavior = this.behavior.bezier_drag,
+	    node_click_fn = this.behavior.node_click,
+	    node_drag_behavior = this.behavior.node_drag,
+	    node_data_style = this.node_data_style,
+	    has_flux = this.has_flux(),
+	    has_node_data = this.has_node_data(),
+	    beziers_enabled = this.beziers_enabled;
+
+	utils.draw_an_array('#membranes' ,'.membrane', membranes, draw.create_membrane,
+			    function(sel) { return draw.update_membrane(sel, scale); });
+
+	utils.draw_an_object('#reactions', '.reaction', reactions,
+			     'reaction_id', draw.create_reaction, 
+			     function(sel) { return draw.update_reaction(sel, scale, 
+									 nodes,
+									 beziers_enabled, 
+									 arrow_displacement,
+									 defs, arrowheads,
+									 default_reaction_color,
+									 has_flux,
+									 bezier_drag_behavior); });
+
+	utils.draw_an_object('#nodes', '.node', nodes, 'node_id', 
+			     function(sel) { return draw.create_node(sel, scale, nodes, reactions,
+								     node_click_fn, node_drag_behavior); },
+			     function(sel) { return draw.update_node(sel, scale, has_node_data, node_data_style); });
+
+	utils.draw_an_object('#text-labels', '.text-label', text_labels,
+			     'text_label_id', draw.create_text_label, 
+			     function(sel) { return draw.update_text_label(sel, scale); });
+
+
     }
     function draw_these_reactions(reaction_ids) {
-	draw.draw_specific_reactions(reaction_ids, this.reactions, this.nodes,
-				     this.scale, this.beziers_enabled,
-				     this.reaction_arrow_displacement, this.defs,
-				     this.arrowheads_generated, this.default_reaction_color,
-				     has_flux(), this.behavior.node_drag);
+	var scale = this.scale,
+	    reactions = this.reactions,
+	    nodes = this.nodes,
+	    arrow_displacement = this.reaction_arrow_displacement,
+	    defs = this.defs,
+	    arrowheads = this.arrowheads_generated,
+	    default_reaction_color = this.default_reaction_color,
+	    bezier_drag_behavior = this.behavior.bezier_drag,
+	    has_flux = this.has_flux(),
+	    beziers_enabled = this.beziers_enabled;
+
+        // find reactions for reaction_ids
+        var reaction_subset = {},
+            i = -1;
+        while (++i<reaction_ids.length) {
+            reaction_subset[reaction_ids[i]] = utils.clone(reactions[reaction_ids[i]]);
+        }
+        if (reaction_ids.length != Object.keys(reaction_subset).length) {
+            console.warn('did not find correct reaction subset');
+        }
+
+        // generate reactions for o.drawn_reactions
+        // assure constancy with cobra_id
+        var sel = d3.select('#reactions')
+                .selectAll('.reaction')
+                .data(utils.make_array(reaction_subset, 'reaction_id'),
+                      function(d) { return d.reaction_id; });
+
+        // enter: generate and place reaction
+        sel.enter().call(draw.create_reaction);
+
+        // update: update when necessary
+        sel.call(function(sel) { return draw.update_reaction(sel, scale, 
+							     nodes,
+							     beziers_enabled, 
+							     arrow_displacement,
+							     defs, arrowheads,
+							     default_reaction_color,
+							     has_flux,
+							     bezier_drag_behavior); });
+
+        // exit
+        sel.exit();
     }
     function draw_these_nodes(node_ids) {
-	draw.draw_specific_nodes(node_ids, this.nodes, this.reactions, this.scale,
-				 has_node_data(), this.node_data_style,
-				 this.behavior.node_click, this.behavior.node_drag);
+	var scale = this.scale,
+	    reactions = this.reactions,
+	    nodes = this.nodes,
+	    node_click_fn = this.behavior.node_click,
+	    node_drag_behavior = this.behavior.node_drag,
+	    node_data_style = this.node_data_style,
+	    has_node_data = this.has_node_data();
+
+	// find nodes for node_ids
+        var node_subset = {},
+            i = -1;
+        while (++i<node_ids.length) {
+            node_subset[node_ids[i]] = utils.clone(nodes[node_ids[i]]);
+        }
+        if (node_ids.length != Object.keys(node_subset).length) {
+            console.warn('did not find correct node subset');
+        }
+
+        // generate nodes for o.drawn_nodes
+        // assure constancy with cobra_id
+        var sel = d3.select('#nodes')
+                .selectAll('.node')
+                .data(utils.make_array(node_subset, 'node_id'),
+                      function(d) { return d.node_id; });
+
+        // enter: generate and place node
+        sel.enter().call(function(sel) { return draw.create_node(sel, scale, nodes, reactions, 
+							    node_click_fn, node_drag_behavior); });
+
+        // update: update when necessary
+        sel.call(function(sel) { return draw.update_node(sel, scale, has_node_data, node_data_style); });
+
+        // exit
+        sel.exit();
     }
     function apply_flux_to_map() {
 	this.apply_flux_to_reactions(this.reactions);

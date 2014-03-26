@@ -1,136 +1,15 @@
 define(["vis/utils", "lib/d3"], function(utils, d3) {
-    return { setup_containers: setup_containers,
-	     draw: draw,
-	     reset: reset,
-	     draw_specific_reactions: draw_specific_reactions,
-	     draw_specific_nodes: draw_specific_nodes
+    return { create_reaction: create_reaction,
+	     update_reaction: update_reaction,
+	     create_node: create_node,
+	     update_node: update_node,
+	     create_text_label: create_text_label,
+	     update_text_label: update_text_label,
+	     create_membrane: create_membrane,
+	     update_membrane: update_membrane
 	   };
 
     // definitions
-    function setup_containers(sel) {
-        sel.append('g')
-            .attr('id', 'membranes');
-        sel.append('g')
-            .attr('id', 'reactions');
-        sel.append('g')
-            .attr('id', 'nodes');
-        sel.append('g')
-            .attr('id', 'text-labels');
-    }
-    function draw(membranes, reactions, nodes, text_labels, scale,
-		  show_beziers, arrow_displacement, defs, arrowheads,
-		  default_reaction_color, has_flux, has_node_data, node_data_style,
-		  node_click_fn, node_drag_behavior,
-		  bezier_drag_behavior) {
-        /** Draw the reactions and membranes
-
-         */
-
-	utils.draw_an_array('#membranes' ,'.membrane', membranes, create_membrane, 
-			     function(sel) { return update_membrane(sel, scale); });
-
-	utils.draw_an_object('#reactions', '.reaction', reactions,
-			     'reaction_id', create_reaction, 
-			     function(sel) { return update_reaction(sel, scale, 
-								    nodes,
-								    show_beziers, 
-								    arrow_displacement,
-								    defs, arrowheads,
-								    default_reaction_color,
-								    has_flux,
-								    bezier_drag_behavior); });
-
-	utils.draw_an_object('#nodes', '.node', nodes, 'node_id', 
-			     function(sel) { return create_node(sel, scale, nodes, reactions,
-								node_click_fn, node_drag_behavior); },
-			     function(sel) { return update_node(sel, scale, has_node_data, node_data_style); });
-
-	utils.draw_an_object('#text-labels', '.text-label', text_labels,
-			     'text_label_id', create_text_label, 
-			     function(sel) { return update_text_label(sel, scale); });
-    }
-    function reset() {
-	d3.select('#membranes')
-            .selectAll('.membrane')
-            .remove();
-	d3.select('#reactions')
-            .selectAll('.reaction')
-            .remove();
-	d3.select('#nodes')
-            .selectAll('.node')
-            .remove();
-	d3.select('#text-labels')
-            .selectAll('.text-label')
-            .remove();
-    }
-
-    function draw_specific_reactions(reaction_ids, reactions, nodes, scale, show_beziers,
-				     arrow_displacement, defs, arrowheads, default_reaction_color, 
-				     has_flux, bezier_drag_behavior) {
-        // find reactions for reaction_ids
-        var reaction_subset = {},
-            i = -1;
-        while (++i<reaction_ids.length) {
-            reaction_subset[reaction_ids[i]] = utils.clone(reactions[reaction_ids[i]]);
-        }
-        if (reaction_ids.length != Object.keys(reaction_subset).length) {
-            console.warn('did not find correct reaction subset');
-        }
-
-        // generate reactions for o.drawn_reactions
-        // assure constancy with cobra_id
-        var sel = d3.select('#reactions')
-                .selectAll('.reaction')
-                .data(utils.make_array(reaction_subset, 'reaction_id'),
-                      function(d) { return d.reaction_id; });
-
-        // enter: generate and place reaction
-        sel.enter().call(create_reaction);
-
-        // update: update when necessary
-        sel.call(function(sel) { return update_reaction(sel, scale, 
-							nodes,
-							show_beziers, 
-							arrow_displacement,
-							defs, arrowheads,
-							default_reaction_color,
-							has_flux,
-							bezier_drag_behavior); });
-
-        // exit
-        sel.exit();
-    }
-
-    function draw_specific_nodes(node_ids, nodes, reactions, scale, node_data, node_data_style,
-				 click_fn, drag_behavior) {
-        // find nodes for node_ids
-        var node_subset = {},
-            i = -1;
-        while (++i<node_ids.length) {
-            node_subset[node_ids[i]] = utils.clone(nodes[node_ids[i]]);
-        }
-        if (node_ids.length != Object.keys(node_subset).length) {
-            console.warn('did not find correct node subset');
-        }
-
-        // generate nodes for o.drawn_nodes
-        // assure constancy with cobra_id
-        var sel = d3.select('#nodes')
-                .selectAll('.node')
-                .data(utils.make_array(node_subset, 'node_id'),
-                      function(d) { return d.node_id; });
-
-        // enter: generate and place node
-        sel.enter().call(function(sel) { return create_node(sel, scale, nodes, reactions, 
-							    click_fn, drag_behavior); });
-
-        // update: update when necessary
-        sel.call(function(sel) { return update_node(sel, scale, node_data, node_data_style); });
-
-        // exit
-        sel.exit();
-    }
-
     function create_membrane(enter_selection) {
 	enter_selection.append('rect')
 	    .attr('class', 'membrane');
