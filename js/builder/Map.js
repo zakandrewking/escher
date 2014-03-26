@@ -40,12 +40,14 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
     return Map;
 
-    function init(selection, defs, zoom_container, height, width, flux, node_data, cobra_model) {
+    function init(selection, defs, zoom_container, height, width, flux, node_data, node_data_style,
+		  cobra_model) {
 	// TODO make these inputs optional when possible
 
 	// defaults
 	var default_angle = 90; // degrees
 	this.reaction_arrow_displacement = 35;
+	this.default_reaction_color = '#505050',
 
 	this.setup_containers(selection);
 	this.sel = selection;
@@ -54,6 +56,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
 	this.flux = flux;
 	this.node_data = node_data;
+	this.node_data_style = node_data_style;
 	this.cobra_model = cobra_model;
 
 	this.map_info = { max_map_w: width * 10, max_map_h: height * 10 };
@@ -102,7 +105,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     // Import
 
     function from_data(map_data, selection, defs, zoom_container, height, width, flux,
-		       node_data, cobra_model) {
+		       node_data, node_data_style, cobra_model) {
 	map_data = check_map_data(map_data);
 	
 	var map = new Map(selection, defs, zoom_container, height, width, flux, node_data, cobra_model);

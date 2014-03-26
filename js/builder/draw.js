@@ -1,3 +1,5 @@
+"use strict";
+
 define(["vis/utils", "lib/d3"], function(utils, d3) {
     return { create_reaction: create_reaction,
 	     update_reaction: update_reaction,
@@ -11,11 +13,13 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
     // definitions
     function create_membrane(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
 	enter_selection.append('rect')
 	    .attr('class', 'membrane');
     }
 
     function update_membrane(update_selection, scale) {
+	utils.check_undefined(arguments, ['enter_selection', 'scale']);
         update_selection
             .attr("width", function(d){ return scale.x_size(d.width); })
             .attr("height", function(d){ return scale.y_size(d.height); })
@@ -26,6 +30,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     }
 
     function create_reaction(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
         // attributes for new reaction group
 
         var t = enter_selection.append('g')
@@ -35,8 +40,13 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
         return;
     }
 
-    function update_reaction(update_selection, scale, drawn_nodes, show_beziers, arrow_displacement, defs, arrowheads,
-			     default_reaction_color, has_flux, bezier_drag_behavior) {
+    function update_reaction(update_selection, scale, drawn_nodes, show_beziers, arrow_displacement,
+			     defs, arrowheads, default_reaction_color, has_flux, bezier_drag_behavior) {
+	utils.check_undefined(arguments,
+			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
+			       'arrow_displacement', 'defs', 'arrowheads', 'default_reaction_color',
+			       'has_flux', 'bezier_drag_behavior']);
+
         // update reaction label
         update_selection.select('.reaction-label')
             .call(function(sel) { return update_reaction_label(sel, scale); });
@@ -63,6 +73,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     }
 
     function create_reaction_label(sel) {
+	utils.check_undefined(arguments, ['sel']);
         /* Draw reaction label for selection.
 	 */
         sel.append('text')
@@ -71,6 +82,8 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     }
 
     function update_reaction_label(sel, scale, has_flux) {
+	utils.check_undefined(arguments, ['sel', 'scale', 'has_flux']);
+	
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
             var t = d.abbreviation;
@@ -85,6 +98,8 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     }
 
     function create_segment(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
+
         // create segments
         var g = enter_selection
                 .append('g')
@@ -102,6 +117,10 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
 			    arrow_displacement, defs, arrowheads, default_reaction_color,
 			    has_flux, bezier_drag_behavior) {
+	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes', 'show_beziers', 
+					  'arrow_displacement', 'defs', 'arrowheads', 'default_reaction_color',
+					  'has_flux', 'bezier_drag_behavior']);
+
         // update segment attributes
         // update arrows
         update_selection
@@ -195,6 +214,8 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	bez.exit().remove();
 
 	function create_bezier(enter_selection, drag_behavior) {
+	utils.check_undefined(arguments, ['enter_selection', 'drag_behavior']);
+
 	    enter_selection.append('circle')
 	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
 	    	.style('stroke-width', String(scale.size(1))+'px')	
@@ -208,6 +229,8 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 		.call(drag_behavior);
 	}
 	function update_bezier(update_selection, show_beziers) {
+	utils.check_undefined(arguments, ['update_selection', 'show_beziers']);
+
 	    if (show_beziers) {
 	    	// draw bezier points
 		update_selection
@@ -224,6 +247,9 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
     function create_node(enter_selection, scale, drawn_nodes, drawn_reactions, 
 			 click_fn, drag_behavior) {
+	utils.check_undefined(arguments, ['enter_selection', 'scale', 'drawn_nodes', 'drawn_reactions', 
+					  'click_fn', 'drag_behavior']);
+
         // create nodes
         var g = enter_selection
                 .append('g')
@@ -252,6 +278,8 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     }
 
     function update_node(update_selection, scale, has_node_data, node_data_style) {
+	utils.check_undefined(arguments, ['update_selection', 'scale', 'has_node_data', 'node_data_style']);
+
         // update circle and label location
         var mg = update_selection
                 .select('.node-circle')
@@ -297,17 +325,23 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     }
 
     function create_text_label(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
+
 	enter_selection.append('text')
 	    .attr('class', 'text-label label')
 	    .text(function(d) { return d.text; });
     }
 
     function update_text_label(update_selection, scale) {
+	utils.check_undefined(arguments, ['update_selection', 'scale']);
+
         update_selection
             .attr("transform", function(d) { return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
     }
 
     function displaced_coords(reaction_arrow_displacement, start, end, displace) {
+	utils.check_undefined(arguments, ['reaction_arrow_displacement', 'start', 'end', 'displace']);
+
 	var length = reaction_arrow_displacement,
 	    hyp = utils.distance(start, end),
 	    new_x, new_y;
@@ -323,6 +357,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     }
 
     function generate_arrowhead_for_color(defs, arrowheads_generated, color, is_end) {
+	utils.check_undefined(arguments, ['defs', 'arrowheads_generated', 'color', 'is_end']);
 
 	var pref = is_end ? 'start-' : 'end-';
 

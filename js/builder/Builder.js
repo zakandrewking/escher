@@ -100,8 +100,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	 */
 
 	// Begin with some definitions
-	var default_reaction_color = '#505050',
-	    metabolite_click_enabled = true,
+	var metabolite_click_enabled = true,
 	    shift_key_on = false;
 
 	// Check the cobra model
@@ -142,12 +141,14 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	if (this.o.map_data) {
 	    // import map
 	    map = Map.from_data(this.o.map_data, zoomed_sel, defs, zoom_container,
-				height, width, this.o.flux, this.o.node_data, cobra_model);
+				height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
+				cobra_model);
 	    zoom_container.reset();
 	} else {
 	    // new map
 	    map = new Map(zoomed_sel, defs, zoom_container,
-			  height, width, this.o.flux, this.o.node_data, cobra_model);
+			  height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
+			  cobra_model);
 	}
 
 	// set up the reaction input with complete.ly
