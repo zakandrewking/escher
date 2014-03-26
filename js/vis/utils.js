@@ -505,9 +505,16 @@ define(["lib/d3", "lib/vkbeautify"], function(d3, vkbeautify) {
     function distance(start, end) { return Math.sqrt(Math.pow(end.y-start.y, 2) + Math.pow(end.x-start.x, 2)); }
 
     function check_undefined(args, names) {
-	Array.prototype.slice.call(args).map(function(arg, i) {
-	    if (arg===undefined)
-		console.warn('Argument is undefined: '+String(names[i]));
+	/** Report an error if any of the arguments are undefined.
+
+	 Call by passing in *arguments* from any function and an array of
+	 argument names.
+
+	 */
+	names.map(function(name, i) {
+	    if (args[i]===undefined) {
+		console.error('Argument is undefined: '+String(names[i]));
+	    }
 	});
     }
 });

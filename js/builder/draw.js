@@ -29,27 +29,29 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
             .attr('ry', function(d){ return scale.x_size(20); });
     }
 
-    function create_reaction(enter_selection) {
-	utils.check_undefined(arguments, ['enter_selection']);
+    function create_reaction(enter_selection, label_drag_behavior) {
+	utils.check_undefined(arguments, ['enter_selection', 'label_drag_behavior']);
         // attributes for new reaction group
 
         var t = enter_selection.append('g')
                 .attr('id', function(d) { return d.reaction_id; })
                 .attr('class', 'reaction')
-                .call(create_reaction_label);
+                .call(create_reaction_label, label_drag_behavior);
         return;
     }
 
-    function update_reaction(update_selection, scale, drawn_nodes, show_beziers, arrow_displacement,
-			     defs, arrowheads, default_reaction_color, has_flux, bezier_drag_behavior) {
+    function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
+			     arrow_displacement, defs, arrowheads,
+			     default_reaction_color, has_flux, bezier_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
-			       'arrow_displacement', 'defs', 'arrowheads', 'default_reaction_color',
-			       'has_flux', 'bezier_drag_behavior']);
+			       'arrow_displacement', 'defs', 'arrowheads',
+			       'default_reaction_color', 'has_flux',
+			       'bezier_drag_behavior']);
 
         // update reaction label
         update_selection.select('.reaction-label')
-            .call(function(sel) { return update_reaction_label(sel, scale); });
+            .call(function(sel) { return update_reaction_label(sel, scale, has_flux); });
 
         // select segments
         var sel = update_selection
@@ -72,13 +74,14 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
         sel.exit().remove();
     }
 
-    function create_reaction_label(sel) {
-	utils.check_undefined(arguments, ['sel']);
+    function create_reaction_label(sel, label_drag_behavior) {
+	utils.check_undefined(arguments, ['sel', 'label_drag_behavior']);
         /* Draw reaction label for selection.
 	 */
         sel.append('text')
             .attr('class', 'reaction-label label')
-            .attr('pointer-events', 'none');
+            .attr('pointer-events', 'none')
+	    .call(label_drag_behavior);
     }
 
     function update_reaction_label(sel, scale, has_flux) {
@@ -117,8 +120,9 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
 			    arrow_displacement, defs, arrowheads, default_reaction_color,
 			    has_flux, bezier_drag_behavior) {
-	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes', 'show_beziers', 
-					  'arrow_displacement', 'defs', 'arrowheads', 'default_reaction_color',
+	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
+					  'show_beziers', 'arrow_displacement', 'defs',
+					  'arrowheads', 'default_reaction_color',
 					  'has_flux', 'bezier_drag_behavior']);
 
         // update segment attributes
@@ -214,7 +218,8 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	bez.exit().remove();
 
 	function create_bezier(enter_selection, drag_behavior) {
-	utils.check_undefined(arguments, ['enter_selection', 'drag_behavior']);
+	    utils.check_undefined(arguments,
+				  ['enter_selection', 'drag_behavior']);
 
 	    enter_selection.append('circle')
 	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
@@ -246,9 +251,11 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     }
 
     function create_node(enter_selection, scale, drawn_nodes, drawn_reactions, 
-			 click_fn, drag_behavior) {
-	utils.check_undefined(arguments, ['enter_selection', 'scale', 'drawn_nodes', 'drawn_reactions', 
-					  'click_fn', 'drag_behavior']);
+			 click_fn, drag_behavior, label_drag_behavior) {
+	utils.check_undefined(arguments,
+			      ['enter_selection', 'scale', 'drawn_nodes',
+			       'drawn_reactions', 'click_fn',
+			       'drag_behavior', 'label_drag_behavior']);
 
         // create nodes
         var g = enter_selection
@@ -274,11 +281,14 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
         g.append('text')
             .attr('class', 'node-label label')
-            .attr('pointer-events', 'none');
+            .attr('pointer-events', 'none')
+	    .call(label_drag_behavior);
     }
 
     function update_node(update_selection, scale, has_node_data, node_data_style) {
-	utils.check_undefined(arguments, ['update_selection', 'scale', 'has_node_data', 'node_data_style']);
+	utils.check_undefined(arguments,
+			      ['update_selection', 'scale', 'has_node_data',
+			       'node_data_style']);
 
         // update circle and label location
         var mg = update_selection
@@ -324,12 +334,13 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	    });
     }
 
-    function create_text_label(enter_selection) {
-	utils.check_undefined(arguments, ['enter_selection']);
+    function create_text_label(enter_selection, label_drag_behavior) {
+	utils.check_undefined(arguments, ['enter_selection', 'label_drag_behavior']);
 
 	enter_selection.append('text')
 	    .attr('class', 'text-label label')
-	    .text(function(d) { return d.text; });
+	    .text(function(d) { return d.text; })
+	    .call(label_drag_behavior);
     }
 
     function update_text_label(update_selection, scale) {
