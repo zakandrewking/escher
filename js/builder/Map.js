@@ -1,7 +1,7 @@
 define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack", "vis/CallbackManager"], function(utils, d3, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager) {
     /** Defines the metabolic map data, and manages drawing and building.
 
-     Map(selection, behavior)
+     Map(selection, defs, zoom_container, height, width, flux, node_data, cobra_model)
 
      selection: A d3 selection for a node to place the map inside. Should be an SVG element.
 
@@ -25,6 +25,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 		      apply_node_data_to_map: apply_node_data_to_map,
 		      apply_node_data_to_nodes: apply_node_data_to_nodes,
 		      select_metabolite_with_id: select_metabolite_with_id,
+		      get_selected_node_ids: get_selected_node_ids,
 		      toggle_beziers: toggle_beziers,
 		      hide_beziers: hide_beziers,
 		      show_beziers: show_beziers,
@@ -36,6 +37,8 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     return Map;
 
     function init(selection, defs, zoom_container, height, width, flux, node_data, cobra_model) {
+	// TODO make these inputs optional when possible
+
 	// defaults
 	var default_angle = 90; // degrees
 	this.reaction_arrow_displacement = 35;
@@ -258,10 +261,11 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	return selected_node_ids;
     }
     function get_selected_nodes() {
-	var selected_nodes = {};
+	var selected_nodes = {},
+	    self = this;
 	d3.select('#nodes')
 	    .selectAll('.selected')
-	    .each(function(d) { selected_nodes[d.node_id] = this.nodes[d.node_id]; });
+	    .each(function(d) { selected_nodes[d.node_id] = self.nodes[d.node_id]; });
 	return selected_nodes;
     }	
     function select_metabolite_with_id(node_id) {
@@ -287,9 +291,10 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
         else node_selection.classed("selected", function(p) { return d === p; });
 	var selected_nodes = d3.select('.selected'),
 	    count = 0,
-	    coords;
+	    coords,
+	    scale = this.scale;
 	selected_nodes.each(function(d) {
-	    coords = { x: this.scale.x(d.x), y: this.scale.y(d.y) };
+	    coords = { x: scale.x(d.x), y: scale.y(d.y) };
 	    count++;
 	});
 	this.callback_manager.run('select_metabolite', count);
@@ -311,7 +316,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     function toggle_beziers(on_off) {
 	if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
 	else this.beziers_enabled = on_off;
-	draw_everything();
+	this.draw_everything();
 	this.callback_manager.run('toggle_beziers', this.beziers_enabled);
     }
 
@@ -379,7 +384,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    // draw
-	    draw_everything();
+	    map.draw_everything();
 	}, function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
@@ -450,7 +455,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	    new_nodes = utils.clone(saved_nodes);
 	    new_reactions = utils.clone(saved_reactions);
 	    // draw
-	    draw_everything();
+	    map.draw_everything();
 	}, function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
@@ -485,13 +490,16 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     function segments_and_reactions_for_nodes(nodes) {
 	/** Get segments and reactions that should be deleted with node deletions
 	 */
-	var segment_objs_w_segments = [], reactions = {}, nodes_for_reactions = {};
+	var segment_objs_w_segments = [],
+	    these_reactions = {},
+	    nodes_for_reactions = {},
+	    reactions = this.reactions;
 	// for each node
 	for (var node_id in nodes) {
 	    var node = nodes[node_id];
 	    // find associated segments and reactions	    
 	    node.connected_segments.forEach(function(segment_obj) {
-		var reaction = this.reactions[segment_obj.reaction_id],
+		var reaction = reactions[segment_obj.reaction_id],
 		    segment = reaction.segments[segment_obj.segment_id],
 		    segment_obj_w_segment = utils.clone(segment_obj);
 		segment_obj_w_segment['segment'] = utils.clone(segment);
@@ -503,11 +511,11 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	}
 	// find the reactions that should be deleted because they have no segments left
 	for (var reaction_id in nodes_for_reactions) {
-	    var reaction = this.reactions[reaction_id];
+	    var reaction = reactions[reaction_id];
 	    if (Object.keys(reaction.segments).length == nodes_for_reactions[reaction_id])
-		reactions[reaction_id] = reaction;
+		these_reactions[reaction_id] = reaction;
 	}
-	return { segment_objs_w_segments: segment_objs_w_segments, reactions: reactions };
+	return { segment_objs_w_segments: segment_objs_w_segments, reactions: these_reactions };
     }
     function delete_nodes(nodes) {
 	/** delete nodes
@@ -519,8 +527,9 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     function delete_nodes_by_id(node_ids) {
 	/** delete nodes for an array of ids
 	 */
+	var nodes = this.nodes;
 	node_ids.forEach(function(node_id) {
-	    delete this.nodes[node_id];
+	    delete nodes[node_id];
 	});
     }
 
@@ -531,14 +540,16 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	 segment_objs: Array of objects with { reaction_id: "123", segment_id: "456" }
 	 
 	 */
+	var reactions = this.reactions,
+	    nodes = this.nodes;
 	segment_objs.forEach(function(segment_obj) {
-	    var reaction = this.reactions[segment_obj.reaction_id],
+	    var reaction = reactions[segment_obj.reaction_id],
 		segment = reaction.segments[segment_obj.segment_id];
 
 	    // updated connected nodes
 	    [segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
-		if (!(node_id in this.nodes)) return;
-		var node = this.nodes[node_id],
+		if (!(node_id in nodes)) return;
+		var node = nodes[node_id],
 		    connected_segments = node.connected_segments;
 		connected_segments = connected_segments.filter(function(so) {
 		    return so.segment_id != segment_obj.segment_id;				

@@ -128,6 +128,16 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	var zoom_container = new ZoomContainer(svg, width, height, [0.05, 15]),
 	    zoomed_sel = zoom_container.zoomed_sel;
 
+	var extent = {"x": width, "y": height},
+	    mouse_node = zoomed_sel.append('rect')
+		.attr('id', 'mouse-node')
+		.attr("width", extent.x)
+		.attr("height", extent.y)
+	// .attr("transform",
+	// 	  "translate("+(-extent.x/2)+","+(-extent.y/2)+")")
+		.attr("style", "stroke:black;fill:none;")
+		.attr('pointer-events', 'all');
+
 	var max_w = width, max_h = height, scale, map;
 	if (this.o.map_data) {
 	    // import map
@@ -142,16 +152,6 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 
 	// set up the reaction input with complete.ly
 	var reaction_input = Input(this.o.selection, map, zoom_container);
-
-	var extent = {"x": width, "y": height},
-	    mouse_node = zoomed_sel.append('rect')
-		.attr('id', 'mouse-node')
-		.attr("width", extent.x)
-		.attr("height", extent.y)
-	// .attr("transform",
-	// 	  "translate("+(-extent.x/2)+","+(-extent.y/2)+")")
-		.attr("style", "stroke:black;fill:none;")
-		.attr('pointer-events', 'all');
 
 	// setup the Brush
 	var brush = new Brush(zoomed_sel, false, map);
@@ -193,32 +193,32 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
     // definitions
     function _setup_menu(selection, map, zoom_container, key_manager, keys) {
 	var sel = selection.append("div").attr("id", "menu");
-	new_button(sel, keys.toggle_input.fn, "New reaction (/)");
-	new_button(sel, keys.save.fn, "Save (^s)");
-	new_button(sel, keys.save_svg.fn, "Export SVG (^Shift s)");
+	new_button(sel, keys.toggle_input, "New reaction (/)");
+	new_button(sel, keys.save, "Save (^s)");
+	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
 	key_manager.load_input_click_fn = new_input(sel, load_map_for_file, "Load (^o)");
 	key_manager.load_flux_input_click_fn = new_input(sel, load_flux_for_file,
 							 "Load flux (^f)");
 	new_input(sel, load_node_data_for_file, "Load node data");
-	var b = new_button(sel, keys.toggle_beziers.fn, "Hide control points (b)", 'bezier-button');
+	var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
 	map.callback_manager.set('toggle_beziers.button', function(on_off) {
 	    b.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
 	});
-	var z = new_button(sel, keys.toggle_zoom.fn, "Enable select (v)", 'zoom-button');
+	var z = new_button(sel, keys.toggle_zoom, "Enable select (v)", 'zoom-button');
 	zoom_container.callback_manager.set('toggle_zoom.button', function(on_off) {
 	    b.text(on_off ? 'Enable select (v)': 'Enable pan+zoom (z)');
 	});
-	new_button(sel, keys.rotate.fn, "Rotate (r)");
-	new_button(sel, keys.delete.fn, "Delete (del)");
-	new_button(sel, keys.extent.fn, "Zoom extent (^0)");
-	new_button(sel, keys.make_primary.fn, "Make primary metabolite (p)");
-	new_button(sel, keys.cycle_primary.fn, "Cycle primary metabolite (c)");
-	new_button(sel, keys.direction_arrow_left.fn, "<");
-	new_button(sel, keys.direction_arrow_up.fn, "^");
-	new_button(sel, keys.direction_arrow_down.fn, "v");
-	new_button(sel, keys.direction_arrow_right.fn, ">");
-	new_button(sel, keys.undo.fn, "Undo (^z)");
-	new_button(sel, keys.redo.fn, "Redo (^Shift z)");
+	new_button(sel, keys.rotate, "Rotate (r)");
+	new_button(sel, keys.delete, "Delete (del)");
+	new_button(sel, keys.extent, "Zoom extent (^0)");
+	new_button(sel, keys.make_primary, "Make primary metabolite (p)");
+	new_button(sel, keys.cycle_primary, "Cycle primary metabolite (c)");
+	new_button(sel, keys.direction_arrow_left, "<");
+	new_button(sel, keys.direction_arrow_up, "^");
+	new_button(sel, keys.direction_arrow_down, "v");
+	new_button(sel, keys.direction_arrow_right, ">");
+	new_button(sel, keys.undo, "Undo (^z)");
+	new_button(sel, keys.redo, "Redo (^Shift z)");
 	return sel;
 
 	// definitions
@@ -235,9 +235,9 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    this.o.node_data = data;
 	    map.set_node_data(data);
 	}
-	function new_button(s, fn, name, id) {
+	function new_button(s, key, name, id) {
 	    var b = s.append("button").attr("class", "command-button")
-		    .text(name).on("click", fn);
+		    .text(name).on("click", function() { key.fn.call(key.target); });
 	    if (id !== undefined) b.attr('id', id);
 	    return b;
 	}
@@ -264,55 +264,72 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
     function get_keys(map, input, brush) {
 	return {
             toggle_input: { key: 191, // forward slash '/'
+			    target: input,
 			    fn: input.toggle },
             save: { key: 83, modifiers: { control: true }, // ctrl-s
+		    target: map,
 		    fn: map.save },
             // save_cmd: { key: 83, modifiers: { command: true }, // command-s
 	    // 		       fn: save },
             save_svg: { key: 83, modifiers: { control: true, shift: true }, // ctrl-Shift-s
+			target: map,
 			fn: map.save_svg },
             load: { key: 79, modifiers: { control: true }, // ctrl-o
 		    fn: null },
 	    load_flux: { key: 70, modifiers: { control: true }, // ctrl-f
 			 fn: null },
 	    toggle_beziers: { key: 66,
+			      target: map,
 			      fn: map.toggle_beziers,
 			      ignore_with_input: true  }, // b
 	    toggle_zoom: { key: 90, // z 
+			   target: this,
 			   fn: this.toggle_zoom,
 			   ignore_with_input: true },
 	    brush: { key: 86, // v
+		     target: this,
 		     fn: this.toggle_zoom,
 		     ignore_with_input: true },
 	    rotate: { key: 82, // r
+		      target: map,
 		      fn: map.rotate_selected_nodes,
 		      ignore_with_input: true },
 	    delete: { key: 8, // del
+		      target: map,
 		      fn: map.delete_selected_nodes,
 		      ignore_with_input: true },
 	    extent: { key: 48, modifiers: { control: true }, // ctrl-0
+		      target: map,
 		      fn: map.zoom_extent },
 	    make_primary: { key: 80, // p
+			    target: map,
 			    fn: map.make_selected_node_primary,
 			    ignore_with_input: true },
 	    cycle_primary: { key: 67, // c
+			     target: map,
 			     fn: map.cycle_primary_node,
 			     ignore_with_input: true },
 	    direction_arrow_right: { key: 39, // right
+				     target: map.direction_arrow,
 				     fn: map.direction_arrow.right,
 				     ignore_with_input: true },
 	    direction_arrow_down: { key: 40, // down
+				    target: map.direction_arrow,
 				    fn: map.direction_arrow.down,
 				    ignore_with_input: true },
 	    direction_arrow_left: { key: 37, // left
+				    target: map.direction_arrow,
 				    fn: map.direction_arrow.left,
 				    ignore_with_input: true },
 	    direction_arrow_up: { key: 38, // up
+				  target: map.direction_arrow,
 				  fn: map.direction_arrow.up,
 				  ignore_with_input: true },
 	    undo: { key: 90, modifiers: { control: true },
+		    target: map.undo_stack,
 		    fn: map.undo_stack.undo },
 	    redo: { key: 90, modifiers: { control: true, shift: true },
+		    target: map.undo_stack,
 		    fn: map.undo_stack.redo }
 	};
     }

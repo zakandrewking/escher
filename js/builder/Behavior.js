@@ -33,17 +33,17 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	this.node_drag = this.empty_behavior;
 	this.bezier_drag = this.empty_behavior;
 	this.label_drag = this.empty_behavior;
-	turn_everything_on();
+	this.turn_everything_on();
     }
     function turn_everything_on() {
-	toggle_node_click(true);
-	toggle_node_drag(true);
-	toggle_label_drag(true);
+	this.toggle_node_click(true);
+	this.toggle_node_drag(true);
+	this.toggle_label_drag(true);
     }
     function turn_everything_off() {
-	toggle_node_click(false);
-	toggle_node_drag(false);
-	toggle_label_drag(false);
+	this.toggle_node_click(false);
+	this.toggle_node_drag(false);
+	this.toggle_label_drag(false);
     }
     function toggle_node_click(on_off) {
 	/** With no argument, toggle the node click on or off.
@@ -70,8 +70,8 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	 */
 	if (on_off===undefined) on_off = this.node_drag===this.empty_behavior;
 	if (on_off) {
-	    this.node_drag = get_node_drag_behavior(this.map);
-	    this.bezier_drag = get_bezier_drag_behavior(this.map);
+	    this.node_drag = get_node_drag_behavior(this.map, this.undo_stack);
+	    this.bezier_drag = get_bezier_drag_behavior(this.map, this.undo_stack);
 	} else {
 	    this.node_drag = this.empty_behavior;
 	}
@@ -153,8 +153,8 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		total_displacement[node_id] = utils.c_plus_c(total_displacement[node_id], displacement);
 	    });
 	    // draw
-	    map.draw_specific_nodes(nodes_to_drag);
-	    map.draw_specific_reactions(reaction_ids);
+	    map.draw_these_nodes(nodes_to_drag);
+	    map.draw_these_reactions(reaction_ids);
 	});
 	behavior.on("dragend", function() {	
 	    // look for mets to combine
@@ -186,8 +186,8 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 			if (updated_reactions.indexOf(segment_obj.reaction_id)==-1)
 			    updated_reactions.push(segment_obj.reaction_id);
 		    });
-		    map.draw_specific_nodes([dragged_node_id]);
-		    map.draw_specific_reactions(updated_reactions);
+		    map.draw_these_nodes([dragged_node_id]);
+		    map.draw_these_reactions(updated_reactions);
 		}, function () {
 		    // redo
 		    combine_nodes_and_draw(fixed_node_id, dragged_node_id);
@@ -208,8 +208,8 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 			build.move_node_and_dependents(node, node_id, map.reactions,
 						       utils.c_times_scalar(saved_displacement[node_id], -1));
 		    });
-		    map.draw_specific_nodes(saved_node_ids);
-		    map.draw_specific_reactions(saved_reaction_ids);
+		    map.draw_these_nodes(saved_node_ids);
+		    map.draw_these_reactions(saved_reaction_ids);
 		}, function () {
 		    // redo
 		    saved_node_ids.forEach(function(node_id) {
@@ -217,8 +217,8 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 			build.move_node_and_dependents(node, node_id, map.reactions,
 						       saved_displacement[node_id]);
 		    });
-		    map.draw_specific_nodes(saved_node_ids);
-		    map.draw_specific_reactions(saved_reaction_ids);
+		    map.draw_these_nodes(saved_node_ids);
+		    map.draw_these_reactions(saved_reaction_ids);
 		});
 	    }
 
@@ -279,7 +279,7 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	    // remember the displacement
 	    total_displacement = utils.c_plus_c(total_displacement, displacement);
 	    // draw
-	    map.draw_specific_reactions([reaction_id]);
+	    map.draw_these_reactions([reaction_id]);
 	});
 	behavior.on("dragend", function(d) {			  
 	    // add to undo/redo stack
@@ -290,12 +290,12 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		// undo
 		move_bezier(reaction_id, segment_id, bezier_number,
 			    utils.c_times_scalar(saved_displacement, -1));
-		map.draw_specific_reactions([saved_reaction_id]);
+		map.draw_these_reactions([saved_reaction_id]);
 	    }, function () {
 		// redo
 		move_bezier(reaction_id, segment_id, bezier_number,
 			    saved_displacement);
-		map.draw_specific_reactions([saved_reaction_id]);
+		map.draw_these_reactions([saved_reaction_id]);
 	    });
 	});
 	return behavior;
@@ -330,7 +330,7 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	    // remember the displacement
 	    total_displacement = utils.c_plus_c(total_displacement, displacement);
 	    // draw
-	    map.draw_specific_reactions([reaction_id]);
+	    map.draw_these_reactions([reaction_id]);
 	});
 	behavior.on("dragend", function(d) {			  
 	    // add to undo/redo stack
@@ -341,12 +341,12 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		// undo
 		move_bezier(reaction_id, segment_id, bezier_number,
 			    utils.c_times_scalar(saved_displacement, -1));
-		map.draw_specific_reactions([saved_reaction_id]);
+		map.draw_these_reactions([saved_reaction_id]);
 	    }, function () {
 		// redo
 		move_bezier(reaction_id, segment_id, bezier_number,
 			    saved_displacement);
-		map.draw_specific_reactions([saved_reaction_id]);
+		map.draw_these_reactions([saved_reaction_id]);
 	    });
 	});
 	return behavior;

@@ -33,7 +33,11 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 		if (check_key(assigned_key, kc, held_keys)) {
 		    meaningless = false;
 		    if (!(assigned_key.ignore_with_input && reaction_input_visible)) {
-			assigned_key.fn();
+			if (assigned_key.fn) {
+			    assigned_key.fn.call(assigned_key.target);
+			} else {
+			    console.warn('No function for key');
+			}
 			// prevent browser action
 			d3.event.preventDefault();
 		    }

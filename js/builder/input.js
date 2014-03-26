@@ -9,6 +9,7 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomC
 			setup_zoom_callbacks: setup_zoom_callbacks,
 			show: show,
 			hide: hide,
+			toggle: toggle,
 			reload_at_selected: reload_at_selected,
 			reload_at_point: reload_at_point,
 			place_at_selected: place_at_selected,
@@ -19,12 +20,11 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomC
     // definitions
     function init(selection, map, zoom_container) {
 	// set up container
-	var sel = selection.append("div").attr("id", "rxn-input");
-	sel.style("display", "none");
+	var new_sel = selection.append("div").attr("id", "rxn-input");
 	this.is_visible = false;
 	// set up complete.ly
-	var complete = completely(sel.node(), { backgroundColor: "#eee" });
-	d3.select(complete.input)
+	var c = completely(new_sel.node(), { backgroundColor: "#eee" });
+	d3.select(c.input)
 	// .attr('placeholder', 'Reaction ID -- Flux')
 	    .on('input', function() {
 		this.value = this.value.replace("/","")
@@ -32,8 +32,8 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomC
 		    .replace("\\","")
 		    .replace("<","");
 	    });
-	this.sel = sel;
-	this.complete = complete;
+	this.selection = new_sel;
+	this.completely = c;
 
 	if (map instanceof Map) {
 	    this.map = map;
@@ -48,17 +48,20 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomC
 	    console.error('Cannot set the zoom_container. It is not an instance of ' +
 			  'builder/ZoomContainer');
 	}
+
+	// toggle off
+	this.hide();
     }
     function setup_map_callbacks() {
-	var input = this;
+	var self = this;
 	this.map.callback_manager.set('select_metabolite_with_id.input', function() {
-	    if (input.is_visible) input.show();
+	    if (self.is_visible) self.show();
 	});
 	this.map.callback_manager.set('select_metabolite.input', function(count) {
 	    if (count == 1) {
-		input.toggle();
+		self.toggle.call(self);
 	    } else {
-		input.hide();
+		self.hide.call(self);
 	    }
 	});
     }
@@ -73,28 +76,27 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomC
     }
     function show() {
 	this.toggle(true);
-	this.sel.style("display", "block");
     }
     function hide() {
 	this.toggle(false);
     }
     function toggle(on_off) {
 	if (on_off===undefined) this.is_visible = !this.is_visible;
+	else this.is_visible = on_off;
 	if (this.is_visible) {
-	    this.sel.style("display", "block");
+	    this.selection.style("display", "block");
 	    // cmd_zoom_on(); // TODO turn this back on
 	    // input.reload_at_selected(o.reaction_input, o.scale.x, o.scale.y, o.window_scale, 
 	    // 			     o.window_translate, o.width, o.height, o.flux, 
 	    // 			     o.drawn_reactions, o.cobra_reactions,
 	    // 			     new_reaction_for_metabolite);
+	    // toggle_start_reaction_listener(on_off); // TODO turn this back on
 	} else {
-	    this.sel.style("display", "none");
-            this.selection.style("display", "none");
+	    // toggle_start_reaction_listener(on_off); // TODO turn this back on
+	    this.selection.style("display", "none");
             this.completely.input.blur();
             this.completely.hideDropDown();
 	}
-	// toggle_start_reaction_listener(on_off); // TODO turn this back on
-	this.sel.style("display", "none");
     }
     function reload_at_selected(window_scale, window_translate, width, height,
 				flux, drawn_reactions, cobra_reactions, 
