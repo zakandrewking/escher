@@ -14,6 +14,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	 */
 
 	this.reaction_input = reaction_input;
+	this.shift_key_on = false;
 
         var held_keys = reset_held_keys(),
             modifier_keys = { command: 91,
@@ -23,7 +24,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
         d3.select(window).on("keydown", function() {
             var kc = d3.event.keyCode,
-                reaction_input_visible = reaction_input.is_visible,
+                reaction_input_visible = reaction_input ? reaction_input.is_visible : false,
 		meaningless = true;
             held_keys = toggle_modifiers(modifier_keys, held_keys, kc, true);
 	    this.shift_key_on = held_keys.shift;
@@ -47,7 +48,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
         }).on("keyup", function() {
             held_keys = toggle_modifiers(modifier_keys, held_keys,
 					 d3.event.keyCode, false);
-	    o.shift_key_on = held_keys.shift;
+	    this.shift_key_on = held_keys.shift;
         });
 
         function reset_held_keys() {
