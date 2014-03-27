@@ -407,39 +407,4 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     // 	}
     // }
 
-    function cmd_make_selected_node_primary() {
-	var selected_nodes = get_selected_nodes();	    
-	// can only have one selected
-	if (Object.keys(selected_nodes).length != 1)
-	    return console.error('Only one node can be selected');
-	// get the first node
-	var node_id = Object.keys(selected_nodes)[0],
-	    node = selected_nodes[node_id];
-	// make it primary
-	o.drawn_nodes[node_id].node_is_primary = true;
-	var nodes_to_draw = [node_id];
-	// make the other reactants or products secondary
-	// 1. Get the connected anchor nodes for the node
-	var connected_anchor_ids = [];
-	o.drawn_nodes[node_id].connected_segments.forEach(function(segment_info) {
-	    var segment = o.drawn_reactions[segment_info.reaction_id].segments[segment_info.segment_id];
-	    connected_anchor_ids.push(segment.from_node_id==node_id ?
-				      segment.to_node_id : segment.from_node_id);
-	});
-	// 2. find nodes connected to the anchor that are metabolites
-	connected_anchor_ids.forEach(function(anchor_id) {
-	    var segments = [];
-	    o.drawn_nodes[anchor_id].connected_segments.forEach(function(segment_info) {
-		var segment = o.drawn_reactions[segment_info.reaction_id].segments[segment_info.segment_id],
-		    conn_met_id = segment.from_node_id == anchor_id ? segment.to_node_id : segment.from_node_id,
-		    conn_node = o.drawn_nodes[conn_met_id];
-		if (conn_node.node_type == 'metabolite' && conn_met_id != node_id) {
-		    conn_node.node_is_primary = false;
-		    nodes_to_draw.push(conn_met_id);
-		}
-	    });
-	});
-	// draw the nodes
-	draw_these_nodes(nodes_to_draw);
-    }
 });

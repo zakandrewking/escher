@@ -29,6 +29,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	new_reaction_from_scratch: new_reaction_from_scratch,
 	new_reaction_for_metabolite: new_reaction_for_metabolite,
 	cycle_primary_node: cycle_primary_node,
+	make_selected_node_primary: make_selected_node_primary,
 	// delete
 	delete_selected: delete_selected,
 	delete_nodes: delete_nodes,
@@ -1011,6 +1012,44 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	// 7. select the primary node
 	this.select_metabolite_with_id(primary_node_id);
     }
+    function make_selected_node_primary() {
+	var selected_nodes = get_selected_nodes(),
+	    reactions = this.reactions,
+	    nodes = this.nodes;	    
+	// can only have one selected
+	if (Object.keys(selected_nodes).length != 1)
+	    return console.error('Only one node can be selected');
+	// get the first node
+	var node_id = Object.keys(selected_nodes)[0],
+	    node = selected_nodes[node_id];
+	// make it primary
+	nodes[node_id].node_is_primary = true;
+	var nodes_to_draw = [node_id];
+	// make the other reactants or products secondary
+	// 1. Get the connected anchor nodes for the node
+	var connected_anchor_ids = [];
+	nodes[node_id].connected_segments.forEach(function(segment_info) {
+	    var segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id];
+	    connected_anchor_ids.push(segment.from_node_id==node_id ?
+				      segment.to_node_id : segment.from_node_id);
+	});
+	// 2. find nodes connected to the anchor that are metabolites
+	connected_anchor_ids.forEach(function(anchor_id) {
+	    var segments = [];
+	    nodes[anchor_id].connected_segments.forEach(function(segment_info) {
+		var segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id],
+		    conn_met_id = segment.from_node_id == anchor_id ? segment.to_node_id : segment.from_node_id,
+		    conn_node = nodes[conn_met_id];
+		if (conn_node.node_type == 'metabolite' && conn_met_id != node_id) {
+		    conn_node.node_is_primary = false;
+		    nodes_to_draw.push(conn_met_id);
+		}
+	    });
+	});
+	// draw the nodes
+	this.draw_these_nodes(nodes_to_draw);
+    }
+
     function segments_and_reactions_for_nodes(nodes) {
 	/** Get segments and reactions that should be deleted with node deletions
 	 */
