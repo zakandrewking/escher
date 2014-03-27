@@ -1,5 +1,11 @@
-#svg-container {
-    border: 1px solid grey;
+.canvas {
+    stroke: grey;
+    fill: none;
+}
+.resize-rect {
+    fill: black;
+    opacity: 0;
+    stroke: none;
 }
 .label {
     font-family: sans-serif; 
@@ -46,10 +52,10 @@
     stroke: rgb(255, 187, 0);
 }
 .brush .extent { 
-  fill-opacity: 0.1;
-  fill: black;
-  stroke: #fff;
-  shape-rendering: crispEdges;
+    fill-opacity: 0.1;
+    fill: black;
+    stroke: #fff;
+    shape-rendering: crispEdges;
 }
 .bezier {
     fill: rgb(255,255,255);	
@@ -73,7 +79,4 @@
     stroke: rgb(100,100,100);
     fill: none;
     opacity: 0.5;
-}
-.can-combine {
-
 }

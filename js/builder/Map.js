@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack", "vis/CallbackManager", "builder/KeyManager"], function(utils, d3, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager) {
+define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack", "vis/CallbackManager", "builder/KeyManager", "builder/Canvas"], function(utils, d3, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Map(selection, defs, zoom_container, height, width, flux, node_data, cobra_model)
@@ -72,6 +72,9 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	var default_angle = 90; // degrees
 	this.reaction_arrow_displacement = 35;
 	this.default_reaction_color = '#505050',
+
+	// make the canvas
+	this.canvas = new Canvas(selection, 0, 0, width, height);
 
 	this.setup_containers(selection);
 	this.sel = selection;

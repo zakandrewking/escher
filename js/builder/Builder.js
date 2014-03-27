@@ -16,7 +16,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 			  reload_for_flux: reload_for_flux,
 			  reload_for_node_data: reload_for_node_data,
 			  _setup_menu: _setup_menu,
-			  _setup_status: _setup_status, };
+			  _setup_status: _setup_status };
 
     return Builder;
 
@@ -24,7 +24,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
     function init(options) {
 	// set defaults
 	var o = utils.set_options(options, {
-	    margins: {top: 10, right: 10, bottom: 10, left: 20},
+	    margins: {top: 0, right: 0, bottom: 0, left: 0},
 	    selection: d3.select("body").append("div"),
 	    selection_is_svg: false,
 	    fillScreen: false,
@@ -126,16 +126,6 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	// se up the zoom container
 	var zoom_container = new ZoomContainer(svg, width, height, [0.05, 15]),
 	    zoomed_sel = zoom_container.zoomed_sel;
-
-	var extent = {"x": width, "y": height},
-	    mouse_node = zoomed_sel.append('rect')
-		.attr('id', 'mouse-node')
-		.attr("width", extent.x)
-		.attr("height", extent.y)
-	// .attr("transform",
-	// 	  "translate("+(-extent.x/2)+","+(-extent.y/2)+")")
-		.attr("style", "stroke:black;fill:none;")
-		.attr('pointer-events', 'all');
 
 	var max_w = width, max_h = height, scale, map;
 	if (this.o.map_data) {
