@@ -16,6 +16,7 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 			   turn_everything_off: turn_everything_off,
 			   toggle_node_click: toggle_node_click,
 			   toggle_node_drag: toggle_node_drag,
+			   toggle_text_label_click: toggle_text_label_click,
 			   toggle_label_drag: toggle_label_drag,
 			   get_node_drag: get_node_drag,
 			   get_bezier_drag: get_bezier_drag,
@@ -40,17 +41,20 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	this.bezier_drag = this.empty_behavior;
 	this.reaction_label_drag = this.empty_behavior;
 	this.node_label_drag = this.empty_behavior;
+	this.text_label_click = null;
 	this.text_label_drag = this.empty_behavior;
 	this.turn_everything_on();
     }
     function turn_everything_on() {
 	this.toggle_node_click(true);
 	this.toggle_node_drag(true);
+	this.toggle_text_label_click(true);
 	this.toggle_label_drag(true);
     }
     function turn_everything_off() {
 	this.toggle_node_click(false);
 	this.toggle_node_drag(false);
+	this.toggle_text_label_click(false);
 	this.toggle_label_drag(false);
     }
     function toggle_node_click(on_off) {
@@ -62,12 +66,29 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	if (on_off===undefined) on_off = this.node_click==null;
 	if (on_off) {
 	    var map = this.map;
-	    this.node_click = function node_click(d) {
+	    this.node_click = function(d) {
 		map.select_metabolite(this, d);
 		d3.event.stopPropagation();
 	    };
 	} else {
 	    this.node_click = null;
+	}
+    }
+    function toggle_text_label_click(on_off) {
+	/** With no argument, toggle the node click on or off.
+
+	 Pass in a boolean argument to set the on/off state.
+
+	 */
+	if (on_off===undefined) on_off = this.text_label_click==null;
+	if (on_off) {
+	    var map = this.map;
+	    this.text_label_click = function(d) {
+		map.select_text_label(this, d);
+		d3.event.stopPropagation();
+	    };
+	} else {
+	    this.text_label_click = null;
 	}
     }
     function toggle_node_drag(on_off) {

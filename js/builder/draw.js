@@ -335,13 +335,14 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	    });
     }
 
-    function create_text_label(enter_selection, label_drag_behavior) {
-	utils.check_undefined(arguments, ['enter_selection', 'label_drag_behavior']);
+    function create_text_label(enter_selection, label_click, label_drag_behavior) {
+	utils.check_undefined(arguments, ['enter_selection', 'label_click', 'label_drag_behavior']);
 
 	enter_selection.append('text')
 	    .attr('class', 'text-label label')
 	    .style('cursor', 'default')
 	    .text(function(d) { return d.text; })
+	    .on('click', label_click)
 	    .call(label_drag_behavior);
     }
 

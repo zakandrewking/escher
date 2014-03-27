@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack", "vis/CallbackManager"], function(utils, d3, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager) {
+define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack", "vis/CallbackManager", "builder/KeyManager"], function(utils, d3, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Map(selection, defs, zoom_container, height, width, flux, node_data, cobra_model)
@@ -15,6 +15,10 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     // instance methods
     Map.prototype = { init: init,
 		      select_metabolite: select_metabolite,
+		      select_metabolite_with_id: select_metabolite_with_id,
+		      deselect_nodes: deselect_nodes,
+		      select_text_label: select_text_label,
+		      deselect_text_labels: deselect_text_labels,
 		      new_reaction_from_scratch: new_reaction_from_scratch,
 		      new_reaction_for_metabolite: new_reaction_for_metabolite,
 		      setup_containers: setup_containers,
@@ -29,7 +33,6 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 		      apply_flux_to_reactions: apply_flux_to_reactions,
 		      apply_node_data_to_map: apply_node_data_to_map,
 		      apply_node_data_to_nodes: apply_node_data_to_nodes,
-		      select_metabolite_with_id: select_metabolite_with_id,
 		      get_selected_node_ids: get_selected_node_ids,
 		      toggle_beziers: toggle_beziers,
 		      hide_beziers: hide_beziers,
@@ -74,6 +77,9 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
 	// make a behavior object
 	this.behavior = new Behavior(this, this.undo_stack);
+
+	// make a key manager
+	this.key_manager = new KeyManager();
 
 	// deal with the window
 	var window_translate = {'x': 0, 'y': 0},
@@ -234,6 +240,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	    node_drag_behavior = this.behavior.node_drag,
 	    reaction_label_drag = this.behavior.reaction_label_drag,
 	    node_label_drag = this.behavior.node_label_drag,
+	    text_label_click = this.behavior.text_label_click,
 	    text_label_drag = this.behavior.text_label_drag,
 	    node_data_style = this.node_data_style,
 	    has_flux = this.has_flux(),
@@ -263,7 +270,8 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
 	utils.draw_an_object('#text-labels', '.text-label', text_labels,
 			     'text_label_id',
-			     function(sel) { return draw.create_text_label(sel, text_label_drag); }, 
+			     function(sel) { return draw.create_text_label(sel, text_label_click,
+									   text_label_drag); }, 
 			     function(sel) { return draw.update_text_label(sel, scale); });
 
 
@@ -355,6 +363,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     function draw_these_text_labels(text_label_ids) {
 	var scale = this.scale,
 	    text_labels = this.text_labels,
+	    text_label_click = this.behavior.text_label_click,
 	    text_label_drag = this.behavior.text_label_drag;
 
 	// find text labels for text_label_ids
@@ -375,7 +384,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
         // enter: generate and place label
         sel.enter().call(function(sel) {
-	    return draw.create_text_label(sel, text_label_drag);
+	    return draw.create_text_label(sel, text_label_click, text_label_drag);
 	});
 
         // update: update when necessary
@@ -451,6 +460,9 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	return selected_nodes;
     }	
     function select_metabolite_with_id(node_id) {
+	// deselect all text labels
+	this.deselect_text_labels();
+
 	var node_selection = this.sel.select('#nodes').selectAll('.node'),
 	    coords,
 	    scale = this.scale;
@@ -466,12 +478,17 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	this.callback_manager.run('select_metabolite_with_id');
     }
     function select_metabolite(sel, d) {
+	// deselect all text labels
+	this.deselect_text_labels();
+	
 	var node_selection = this.sel.select('#nodes').selectAll('.node'), 
-	    shift_key_on = this.shift_key_on;
-	if (shift_key_on) d3.select(sel.parentNode)
-	    .classed("selected", !d3.select(sel.parentNode).classed("selected"));
+	    shift_key_on = this.key_manager.held_keys.shift;
+	if (shift_key_on) {
+	    d3.select(sel.parentNode)
+		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
+	}
         else node_selection.classed("selected", function(p) { return d === p; });
-	var selected_nodes = d3.select('.selected'),
+	var selected_nodes = d3.select('#nodes').selectAll('.selected'),
 	    count = 0,
 	    coords,
 	    scale = this.scale;
@@ -488,7 +505,29 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	}
 	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
     }
-
+    function deselect_nodes() {
+	var node_selection = this.sel.select('#nodes').selectAll('.node');
+	node_selection.classed("selected", false);
+    }
+    function select_text_label(sel, d) {
+	// deselect all nodes
+	this.deselect_nodes();
+	// find the new selection
+	// Ignore shift key and only allow single selection for now
+	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
+	text_label_selection.classed("selected", function(p) { return d === p; });
+	var selected_text_labels = d3.select('#text-labels').selectAll('.selected'),
+	    coords,
+	    scale = this.scale;
+	selected_text_labels.each(function(d) {
+	    coords = { x: scale.x(d.x), y: scale.y(d.y) };
+	});
+	this.callback_manager.run('select_text_label');
+    }
+    function deselect_text_labels() {
+	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
+	text_label_selection.classed("selected", false);
+    }
     function show_beziers() {
 	this.toggle_beziers(true);
     }

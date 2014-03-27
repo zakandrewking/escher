@@ -21,6 +21,9 @@
 .selected .node-circle{
     stroke: rgb(20, 113, 199);
 }
+.selected.text-label {
+    fill: rgb(20, 113, 199);
+}
 .metabolite-circle {
     stroke: rgb(162, 69, 16);
 }

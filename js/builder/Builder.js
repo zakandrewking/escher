@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builder/Map", "builder/KeyManager", "builder/CobraModel", "builder/Brush"], function(utils, d3, Input, ZoomContainer, Map, KeyManager, CobraModel, Brush) {
+define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builder/Map", "builder/CobraModel", "builder/Brush"], function(utils, d3, Input, ZoomContainer, Map, CobraModel, Brush) {
     // NOTE
     // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
     // only necessary for selectAll()
@@ -159,9 +159,9 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 
 	// make key manager
 	var keys = Builder.get_keys(map, reaction_input, brush);
-	var key_manager = new KeyManager(keys, reaction_input);
+	map.key_manager.set_keys(keys);
 	// set up menu and status bars
-	var menu = this._setup_menu(this.o.selection, map, zoom_container, key_manager, keys),
+	var menu = this._setup_menu(this.o.selection, map, zoom_container, map.key_manager, keys),
 	    status = this._setup_status(this.o.selection);
 
 	// setup selection box

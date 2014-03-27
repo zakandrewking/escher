@@ -3,33 +3,56 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
      */
 
     var KeyManager = utils.make_class();
-    KeyManager.prototype = { init: init };
+    // static methods
+    KeyManager.reset_held_keys = reset_held_keys;
+    // instance methods
+    KeyManager.prototype = { init: init,
+			     set_keys: set_keys };
 
     return KeyManager;
 
-    // definitions
+    // static methods
+    function reset_held_keys(h) {
+        h.command = false;
+	h.control = false;
+	h.option = false;
+	h.shift = false;
+    }
+    // instance methods
     function init(assigned_keys, reaction_input) {
 	/** Assign keys for commands.
 
 	 */
 
-	this.reaction_input = reaction_input;
-	this.shift_key_on = false;
+	if (assigned_keys===undefined) assigned_keys = {};
+	if (reaction_input===undefined) reaction_input = null;
 
-        var held_keys = reset_held_keys(),
-            modifier_keys = { command: 91,
+	this.assigned_keys = assigned_keys;
+	this.held_keys = {};
+	reset_held_keys(this.held_keys);
+
+	this.set_keys(assigned_keys);
+    }
+    function set_keys(keys) {
+	this.assigned_keys = keys;
+
+        var modifier_keys = { command: 91,
                               control: 17,
                               option: 18,
                               shift: 16 };
 
-        d3.select(window).on("keydown", function() {
+        d3.select(window).on("keydown.key_manager", null);
+        d3.select(window).on("keyup.key_manager", null);
+
+	var held_keys = this.held_keys;
+        d3.select(window).on("keydown.key_manager", function() {
             var kc = d3.event.keyCode,
-                reaction_input_visible = reaction_input ? reaction_input.is_visible : false,
+                reaction_input_visible = this.reaction_input ?
+		    this.reaction_input.is_visible : false,
 		meaningless = true;
-            held_keys = toggle_modifiers(modifier_keys, held_keys, kc, true);
-	    this.shift_key_on = held_keys.shift;
-	    for (var key_id in assigned_keys) {
-		var assigned_key = assigned_keys[key_id];
+            toggle_modifiers(modifier_keys, held_keys, kc, true);
+	    for (var key_id in keys) {
+		var assigned_key = keys[key_id];
 		if (check_key(assigned_key, kc, held_keys)) {
 		    meaningless = false;
 		    if (!(assigned_key.ignore_with_input && reaction_input_visible)) {
@@ -48,24 +71,15 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	    for (var k in modifier_keys)
 		if (modifier_keys[k] == kc) meaningless = false;
 	    if (meaningless) 
-		held_keys = reset_held_keys();
-        }).on("keyup", function() {
-            held_keys = toggle_modifiers(modifier_keys, held_keys,
-					 d3.event.keyCode, false);
-	    this.shift_key_on = held_keys.shift;
+		reset_held_keys(held_keys);
+        }).on("keyup.key_manager", function() {
+            toggle_modifiers(modifier_keys, held_keys,
+			     d3.event.keyCode, false);
         });
-
-        function reset_held_keys() {
-            return { command: false,
-                     control: false,
-                     option: false,
-                     shift: false };
-        }
         function toggle_modifiers(mod, held, kc, on_off) {
             for (var k in mod)
                 if (mod[k] == kc)
                     held[k] = on_off;
-            return held;
         }
         function check_key(key, pressed, held) {
             if (key.key != pressed) return false;
@@ -82,7 +96,6 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
             return true;
         }
     }
-    
     function add_escape_listener(callback) {
 	/** Call the callback when the escape key is pressed, then
 	 unregisters the listener.
