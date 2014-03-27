@@ -108,6 +108,8 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	if (this.o.cobra_model) {
 	    // TODO better checks
 	    cobra_model = CobraModel(this.o.cobra_model.reactions, this.o.cobra_model.cofactors);
+	} else {
+	    console.warn('No cobra model was loaded.');
 	}
 
 	// remove the old builder

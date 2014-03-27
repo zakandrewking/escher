@@ -21,6 +21,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	// selection
 	select_metabolite: select_metabolite,
 	select_metabolite_with_id: select_metabolite_with_id,
+	select_single_node: select_single_node,
 	deselect_nodes: deselect_nodes,
 	select_text_label: select_text_label,
 	deselect_text_labels: deselect_text_labels,
@@ -66,6 +67,8 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
     function init(selection, defs, zoom_container, height, width, flux, node_data, node_data_style,
 		  cobra_model) {
+	utils.check_undefined(arguments, ['selection', 'defs', 'zoom_container', 'height', 'width', 'flux',
+					  'node_data', 'node_data_style', 'cobra_model']);
 	// TODO make these inputs optional when possible
 
 	// defaults
@@ -80,6 +83,8 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	this.sel = selection;
 	this.defs = defs;
 	this.zoom_container = zoom_container;
+	this.height = height;
+	this.width = width;
 
 	this.flux = flux;
 	this.node_data = node_data;
@@ -136,9 +141,11 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
     function from_data(map_data, selection, defs, zoom_container, height, width, flux,
 		       node_data, node_data_style, cobra_model) {
+	utils.check_undefined(arguments, ['map_data', 'selection', 'defs', 'zoom_container', 'height', 'width', 'flux',
+					  'node_data', 'node_data_style', 'cobra_model']);
 	map_data = check_map_data(map_data);
 	
-	var map = new Map(selection, defs, zoom_container, height, width, flux, node_data, cobra_model);
+	var map = new Map(selection, defs, zoom_container, height, width, flux, node_data, node_data_style, cobra_model);
 	if (map_data.reactions) map.reactions = map_data.reactions;
 	if (map_data.nodes) map.nodes = map_data.nodes;
 	if (map_data.membranes) map.membranes = map_data.membranes;
@@ -502,18 +509,21 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	this.deselect_text_labels();
 
 	var node_selection = this.sel.select('#nodes').selectAll('.node'),
-	    coords,
-	    scale = this.scale;
+	    scaled_coords,
+	    scale = this.scale,
+	    selected_node;
 	node_selection.classed("selected", function(d) {
 	    var selected = String(d.node_id) == String(node_id);
-	    if (selected)
-		coords = { x: scale.x(d.x), y: scale.y(d.y) };
+	    if (selected) {
+		selected_node = d;
+		scaled_coords = { x: scale.x(d.x), y: scale.y(d.y) };
+	    }
 	    return selected;
 	});
-	this.direction_arrow.set_location(coords);
+	this.direction_arrow.set_location(scaled_coords);
 	this.direction_arrow.show();
 	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-	this.callback_manager.run('select_metabolite_with_id');
+	this.callback_manager.run('select_metabolite_with_id', selected_node, scaled_coords);
     }
     function select_metabolite(sel, d) {
 	// deselect all text labels
@@ -528,20 +538,40 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
         else node_selection.classed("selected", function(p) { return d === p; });
 	var selected_nodes = d3.select('#nodes').selectAll('.selected'),
 	    count = 0,
-	    coords,
-	    scale = this.scale;
+	    scaled_coords,
+	    scale = this.scale,
+	    selected_node;
 	selected_nodes.each(function(d) {
-	    coords = { x: scale.x(d.x), y: scale.y(d.y) };
+	    selected_node = d;
+	    scaled_coords = { x: scale.x(d.x), y: scale.y(d.y) };
 	    count++;
 	});
-	this.callback_manager.run('select_metabolite', count);
 	if (count == 1) {
-	    this.direction_arrow.set_location(coords);
+	    this.direction_arrow.set_location(scaled_coords);
 	    this.direction_arrow.show();
 	} else {
 	    this.direction_arrow.hide();
 	}
-	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	this.callback_manager.run('select_metabolite', count, selected_node, scaled_coords);
+    }
+    function select_single_node() {
+	/** Unselect all but one selected node, and return the node.
+
+	 If no nodes are selected, return null.
+
+	 */
+	var out = null,
+	    self = this,
+	    node_selection = this.sel.select('#nodes').selectAll('.selected');
+	node_selection.classed("selected", function(d, i) {
+	    if (i==0) {
+		out = d;
+		return true;
+	    } else {
+		return false;
+	    }
+	});
+	return out;		   
     }
     function deselect_nodes() {
 	var node_selection = this.sel.select('#nodes').selectAll('.node');
