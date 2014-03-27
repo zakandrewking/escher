@@ -19,6 +19,7 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 			   toggle_label_drag: toggle_label_drag,
 			   get_reaction_label_drag: get_reaction_label_drag,
 			   get_node_label_drag: get_node_label_drag,
+			   get_text_label_drag: get_text_label_drag,
 			   get_generic_drag: get_generic_drag };
 
     return Behavior;
@@ -91,7 +92,7 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	if (on_off) {
 	    this.reaction_label_drag = this.get_reaction_label_drag(this.map, this.scale);
 	    this.node_label_drag = this.get_node_label_drag(this.map, this.scale);
-	    // this.text_label_drag = this.get_text_label_drag(this.map, this.scale);
+	    this.text_label_drag = this.get_text_label_drag(this.map, this.scale);
 	} else {
 	    this.reaction_label_drag = this.empty_behavior;
 	    this.node_label_drag = this.empty_behavior;
@@ -362,6 +363,31 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	    redo_fn = function(d, displacement) {
 		move_label(d.node_id, displacement);
 		map.draw_these_nodes([d.node_id]);
+	    };
+	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
+    }
+    function get_text_label_drag(map, undo_stack) {
+	var move_label = function(text_label_id, displacement) {
+	    var text_label = map.text_labels[text_label_id];
+	    text_label.x = text_label.x + displacement.x;
+	    text_label.y = text_label.y + displacement.y;
+	},
+	    start_fn = function(d) {
+	    },
+	    drag_fn = function(d, displacement, total_displacement) {
+		// draw
+		move_label(d.text_label_id, displacement);
+		map.draw_these_text_labels([d.text_label_id]);
+	    },
+	    end_fn = function(d) {
+	    },
+	    undo_fn = function(d, displacement) {
+		move_label(d.text_label_id, utils.c_times_scalar(displacement, -1));
+		map.draw_these_text_labels([d.text_label_id]);
+	    },
+	    redo_fn = function(d, displacement) {
+		move_label(d.text_label_id, displacement);
+		map.draw_these_text_labels([d.text_label_id]);
 	    };
 	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
     }

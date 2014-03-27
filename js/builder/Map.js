@@ -24,6 +24,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 		      draw_everything: draw_everything,
 		      draw_these_reactions: draw_these_reactions,
 		      draw_these_nodes: draw_these_nodes,
+		      draw_these_text_labels: draw_these_text_labels,
 		      apply_flux_to_map: apply_flux_to_map,
 		      apply_flux_to_reactions: apply_flux_to_reactions,
 		      apply_node_data_to_map: apply_node_data_to_map,
@@ -347,6 +348,40 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
         // update: update when necessary
         sel.call(function(sel) { return draw.update_node(sel, scale, has_node_data, node_data_style); });
+
+        // exit
+        sel.exit();
+    }
+    function draw_these_text_labels(text_label_ids) {
+	var scale = this.scale,
+	    text_labels = this.text_labels,
+	    text_label_drag = this.behavior.text_label_drag;
+
+	// find text labels for text_label_ids
+        var text_label_subset = {},
+            i = -1;
+        while (++i<text_label_ids.length) {
+            text_label_subset[text_label_ids[i]] = utils.clone(text_labels[text_label_ids[i]]);
+        }
+        if (text_label_ids.length != Object.keys(text_label_subset).length) {
+            console.warn('did not find correct text label subset');
+        }
+
+        // generate text for this.text_labels
+        var sel = d3.select('#text-labels')
+                .selectAll('.text-label')
+                .data(utils.make_array(text_label_subset, 'text_label_id'),
+                      function(d) { return d.text_label_id; });
+
+        // enter: generate and place label
+        sel.enter().call(function(sel) {
+	    return draw.create_text_label(sel, text_label_drag);
+	});
+
+        // update: update when necessary
+        sel.call(function(sel) {
+	    return draw.update_text_label(sel, scale);
+	});
 
         // exit
         sel.exit();
