@@ -8,7 +8,11 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 				 set_rotation: set_rotation,
 				 get_rotation: get_rotation,
 				 show: show,
-				 hide: hide };
+				 hide: hide,
+				 right: right,
+				 left: left,
+				 up: up,
+				 down: down };
     return DirectionArrow;
 
     // definitions
@@ -51,5 +55,17 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     }
     function hide() {
 	this.arrow.style('visibility', 'hidden');
+    }
+    function right() {
+	this.set_rotation(0);
+    }
+    function down() {
+	this.set_rotation(90);
+    }
+    function left() {
+	this.set_rotation(180);
+    }
+    function up() {
+	this.set_rotation(270);
     }
 });

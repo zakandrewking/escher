@@ -59,10 +59,10 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomC
 	var self = this;
 	this.map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, scaled_coords) {
 	    if (self.is_visible) self.reload(selected_node, scaled_coords, false);
-	    this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	});
 	this.map.callback_manager.set('select_metabolite.input', function(count, selected_node, scaled_coords) {
-	    this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	    if (count == 1 && self.is_visible && scaled_coords) {
 		self.reload(selected_node, scaled_coords, false);
 	    } else {
