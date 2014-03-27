@@ -427,20 +427,20 @@ define(["lib/d3", "lib/vkbeautify"], function(d3, vkbeautify) {
         }
     }
 
-    function load_json(f, callback) {
+    function load_json(f, callback, target) {
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
-	    callback("The File APIs are not fully supported in this browser.", null);
+	    callback.call(target, "The File APIs are not fully supported in this browser.", null);
 
 	// The following is not a safe assumption.
 	// if (!f.type.match("application/json"))
-	//     callback("Not a json file.", null);
+	//     callback.call(target, "Not a json file.", null);
 
 	var reader = new window.FileReader();
 	// Closure to capture the file information.
 	reader.onload = function(event) {
 	    var json = JSON.parse(event.target.result);
-	    callback(null, json);
+	    callback.call(target, null, json);
         };
 	// Read in the image file as a data URL.
 	reader.readAsText(f);

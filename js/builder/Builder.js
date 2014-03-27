@@ -155,7 +155,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 
 	// make key manager
 	var keys = Builder.get_keys(map, reaction_input, brush);
-	map.key_manager.set_keys(keys);
+	map.key_manager.assigned_keys = keys;
 	// set up menu and status bars
 	var menu = this._setup_menu(this.o.selection, map, zoom_container, map.key_manager, keys),
 	    status = this._setup_status(this.o.selection, map);
@@ -193,10 +193,9 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	new_button(sel, keys.toggle_input, "New reaction (/)");
 	new_button(sel, keys.save, "Save (^s)");
 	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
-	key_manager.load_input_click_fn = new_input(sel, load_map_for_file, "Load (^o)");
-	key_manager.load_flux_input_click_fn = new_input(sel, load_flux_for_file,
-							 "Load flux (^f)");
-	new_input(sel, load_node_data_for_file, "Load node data");
+	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load (^o)");
+	key_manager.assigned_keys.load_flux.fn = new_input(sel, load_flux_for_file, this, "Load flux (^f)");
+	new_input(sel, load_node_data_for_file, this, "Load node data");
 	var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
 	map.callback_manager.set('toggle_beziers.button', function(on_off) {
 	    b.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
@@ -238,18 +237,21 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    if (id !== undefined) b.attr('id', id);
 	    return b;
 	}
-	function new_input(s, fn, name) {
+	function new_input(s, fn, target, name) {
 	    /* 
 	     * Returns a function that can be called to programmatically
 	     * load files.
 	     */
-	    var input = s.append("input").attr("class", "command-button")
+	    var input = s.append("input")
 		    .attr("type", "file")
 		    .style("display", "none")
-		    .on("change", function() { utils.load_json(this.files[0], fn); });
-	    new_button(sel, function(e) {
-		input.node().click();
-	    }, name);
+		    .on("change", function() { utils.load_json(this.files[0], fn, target); });
+	    s.append("button")
+		.attr("class", "command-button")
+		.text(name)
+		.on('click', function(e) {
+	    	    input.node().click();
+		});
 	    return function() { input.node().click(); };
 	}
     }
@@ -295,9 +297,9 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 			target: map,
 			fn: map.save_svg },
             load: { key: 79, modifiers: { control: true }, // ctrl-o
-		    fn: null },
+		    fn: null }, // defined by button
 	    load_flux: { key: 70, modifiers: { control: true }, // ctrl-f
-			 fn: null },
+			 fn: null }, // defined by button
 	    toggle_beziers: { key: 66,
 			      target: map,
 			      fn: map.toggle_beziers,

@@ -63,6 +63,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	hide_beziers: hide_beziers,
 	show_beziers: show_beziers,
 	zoom_extent: zoom_extent,
+	// io
 	save: save,
 	map_for_export: map_for_export,
 	save_svg: save_svg
@@ -71,9 +72,10 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     return Map;
 
     function init(selection, defs, zoom_container, height, width, flux, node_data, node_data_style,
-		  cobra_model) {
+		  cobra_model, canvas_size_and_loc) {
+	if (canvas_size_and_loc===undefined) canvas_size_and_loc = {x:0, y:0, width:width, height: height};
 	utils.check_undefined(arguments, ['selection', 'defs', 'zoom_container', 'height', 'width', 'flux',
-					  'node_data', 'node_data_style', 'cobra_model']);
+					  'node_data', 'node_data_style', 'cobra_model', 'canvas_size_and_loc']);
 	// TODO make these inputs optional when possible
 
 	// defaults
@@ -82,7 +84,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	this.default_reaction_color = '#505050',
 
 	// make the canvas
-	this.canvas = new Canvas(selection, 0, 0, width, height);
+	this.canvas = new Canvas(selection, canvas_size_and_loc);
 
 	this.setup_containers(selection);
 	this.sel = selection;
@@ -149,8 +151,10 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	utils.check_undefined(arguments, ['map_data', 'selection', 'defs', 'zoom_container', 'height', 'width', 'flux',
 					  'node_data', 'node_data_style', 'cobra_model']);
 	map_data = check_map_data(map_data);
-	
-	var map = new Map(selection, defs, zoom_container, height, width, flux, node_data, node_data_style, cobra_model);
+
+	var canvas;
+	if (map_data.canvas) canvas = map_data.canvas;
+	var map = new Map(selection, defs, zoom_container, height, width, flux, node_data, node_data_style, cobra_model, canvas);
 	if (map_data.reactions) map.reactions = map_data.reactions;
 	if (map_data.nodes) map.nodes = map_data.nodes;
 	if (map_data.membranes) map.membranes = map_data.membranes;
@@ -1278,12 +1282,19 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
         // };
     }
 
+    // -------------------------------------------------------------------------
+    // IO
+
     function save() {
         console.log("Saving");
         utils.download_json(this.map_for_export(), "saved_map");
     }
     function map_for_export() {
-	console.error('not implemented');
+	return { reactions: this.reactions,
+		 nodes: this.nodes,
+		 membranes: this.membranes,
+		 text_labels: this.text_labels,
+		 canvas: this.canvas.size_and_location() };
     }
     function save_svg() {
         console.log("Exporting SVG");
