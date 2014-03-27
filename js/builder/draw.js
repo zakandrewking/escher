@@ -1,3 +1,4 @@
+
 "use strict";
 
 define(["vis/utils", "lib/d3"], function(utils, d3) {
@@ -80,7 +81,6 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	 */
         sel.append('text')
             .attr('class', 'reaction-label label')
-            .attr('pointer-events', 'none')
 	    .call(label_drag_behavior);
     }
 
