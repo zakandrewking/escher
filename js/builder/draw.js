@@ -81,6 +81,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	 */
         sel.append('text')
             .attr('class', 'reaction-label label')
+	    .style('cursor', 'default')
 	    .call(label_drag_behavior);
     }
 
@@ -281,7 +282,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
         g.append('text')
             .attr('class', 'node-label label')
-            .attr('pointer-events', 'none')
+	    .style('cursor', 'default')
 	    .call(label_drag_behavior);
     }
 
@@ -339,6 +340,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
 	enter_selection.append('text')
 	    .attr('class', 'text-label label')
+	    .style('cursor', 'default')
 	    .text(function(d) { return d.text; })
 	    .call(label_drag_behavior);
     }
