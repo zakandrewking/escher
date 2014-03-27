@@ -1266,20 +1266,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 				(this.height - margin*2) / (max.y - min.y)),
 	    new_pos = { x: - (min.x * new_zoom) + margin + ((this.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
 			y: - (min.y * new_zoom) + margin + ((this.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
-	this.zoom_container.scale(new_zoom);
-	this.zoom_container.translate(new_pos);
-	// this.zoom_container.window_scale = new_zoom;
-        // this.zoom_container.window_translate = new_pos;
-        // go();
-
-	// // definitions
-        // function go() { // TODO move some of this zoom container
-        //     this.zoom_container.translate([this.zoom_container.window_translate.x,
-	// 				   this.zoom_container.window_translate.y]);
-        //     this.zoom_container.scale(this.zoom_container.window_scale);
-        //     this.sel.transition()
-        //         .attr('transform', 'translate('+this.zoom_container.window_translate+')scale('+this.zoom_container.window_scale+')');
-        // };
+	this.zoom_container.go_to(new_zoom, new_pos);
     }
 
     // -------------------------------------------------------------------------

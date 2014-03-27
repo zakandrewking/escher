@@ -159,7 +159,9 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	// set up menu and status bars
 	var menu = this._setup_menu(this.o.selection, map, zoom_container, map.key_manager, keys),
 	    status = this._setup_status(this.o.selection, map);
-
+	// make sure the key manager remembers all those changes
+	map.key_manager.update();
+	
 	// setup selection box
 	if (!this.o.map_data) {
 	    // Draw default reaction if no map is provided

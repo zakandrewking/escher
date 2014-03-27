@@ -7,6 +7,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
     KeyManager.reset_held_keys = reset_held_keys;
     // instance methods
     KeyManager.prototype = { init: init,
+			     update: update,
 			     add_escape_listener: add_escape_listener };
 
     return KeyManager;
@@ -31,6 +32,13 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	this.held_keys = {};
 	reset_held_keys(this.held_keys);
 
+	this.update();
+    }
+
+    function update() {
+	var held_keys = this.held_keys,
+	    keys = this.assigned_keys;
+
         var modifier_keys = { command: 91,
                               control: 17,
                               option: 18,
@@ -39,8 +47,6 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
         d3.select(window).on("keydown.key_manager", null);
         d3.select(window).on("keyup.key_manager", null);
 
-	var held_keys = this.held_keys,
-	    keys = this.assigned_keys;
         d3.select(window).on("keydown.key_manager", function() {
             var kc = d3.event.keyCode,
                 reaction_input_visible = this.reaction_input ?

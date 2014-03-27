@@ -7,8 +7,7 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
     var ZoomContainer = utils.make_class();
     ZoomContainer.prototype = { init: init,
 				toggle_zoom: toggle_zoom,
-				translate: translate,
-				scale: scale,
+				go_to: go_to,
 				translate_off_screen: translate_off_screen,
 				reset: reset };
     return ZoomContainer;
@@ -81,18 +80,20 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
     }
 
     // functions to scale and translate
-    function scale(scale) { 
+    function go_to(scale, translate) { 
 	if (!scale) return console.error('Bad scale value');
-	this.zoom_behavior.scale(scale);
-	if (this.saved_scale !== null) this.saved_scale = scale;
-    }
-    
-    function translate(translate) {
-	/** translate: object like {x: 3, y: 2.3}
-	 */
 	if (!translate || !translate.x || !translate.y) return console.error('Bad translate value');
+
+	this.zoom_behavior.scale(scale);
+	this.window_scale = scale;
+	if (this.saved_scale !== null) this.saved_scale = scale;
+
 	this.zoom_behavior.translate([translate.x, translate.y]);
+        this.window_translate = translate;
 	if (this.saved_translate !== null) this.saved_translate = translate;
+
+        this.zoomed_sel.transition()
+            .attr('transform', 'translate('+this.window_translate+')scale('+this.window_scale+')');
     }			    
 
     function translate_off_screen(coords, x_scale, y_scale) {
@@ -110,34 +111,23 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
         if (x_scale(coords.x) < current.x.min) {
             this.window_translate.x = this.window_translate.x -
 		(x_scale(coords.x) - current.x.min) * this.window_scale;
-            go();
+            this.go_to(this.window_scale, this.window_translate);
         } else if (x_scale(coords.x) > current.x.max) {
             this.window_translate.x = this.window_translate.x -
 		(x_scale(coords.x) - current.x.max) * this.window_scale;
-            go();
+            this.go_to(this.window_scale, this.window_translate);
         }
         if (y_scale(coords.y) < current.y.min) {
             this.window_translate.y = this.window_translate.y -
 		(y_scale(coords.y) - current.y.min) * this.window_scale;
-            go();
+            this.go_to(this.window_scale, this.window_translate);
         } else if (y_scale(coords.y) > current.y.max) {
             this.window_translate.y = this.window_translate.y -
 		(y_scale(coords.y) - current.y.max) * this.window_scale;
-            go();
-        }
-
-	// definitions
-        function go() {
-            this.zoom_container.translate([this.window_translate.x, this.window_translate.y]);
-            this.zoom_container.scale(this.window_scale);
-            this.sel.transition()
-                .attr('transform', 'translate('+this.window_translate.x+','+this.window_translate.y+
-		      ')scale('+this.window_scale+')');
+            this.go_to(this.window_scale, this.window_translate);
         }
     }
-
     function reset() {
-	this.translate([0.0, 0.0]);
-	this.scale(1.0);
+	this.go_to(1.0, [0.0, 0.0]);
     }
 });
