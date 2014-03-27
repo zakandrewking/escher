@@ -349,63 +349,63 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	}
     }
 
-    function cmd_delete_selected_nodes() {
-	/** Delete the selected nodes and associated segments and reactions.
+    // function cmd_delete_selected_nodes() {
+    // 	/** Delete the selected nodes and associated segments and reactions.
 
-	 Undoable.
+    // 	 Undoable.
 
-	 */
-	var selected_nodes = get_selected_nodes();
-	if (selected_nodes.length < 1) return console.warn('No nodes selected');
+    // 	 */
+    // 	var selected_nodes = get_selected_nodes();
+    // 	if (selected_nodes.length < 1) return console.warn('No nodes selected');
 
-	var out = segments_and_reactions_for_nodes(selected_nodes),
-	    reactions = out.reactions,
-	    segment_objs_w_segments = out.segment_objs_w_segments;
+    // 	var out = segments_and_reactions_for_nodes(selected_nodes),
+    // 	    reactions = out.reactions,
+    // 	    segment_objs_w_segments = out.segment_objs_w_segments;
 
-	// copy nodes to undelete
-	var saved_nodes = utils.clone(selected_nodes),
-	    saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments),
-	    saved_reactions = utils.clone(reactions);
+    // 	// copy nodes to undelete
+    // 	var saved_nodes = utils.clone(selected_nodes),
+    // 	    saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments),
+    // 	    saved_reactions = utils.clone(reactions);
 
-	// delete
-	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
+    // 	// delete
+    // 	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
 
-	// add to undo/redo stack
-	o.undo_stack.push(function() {
-	    // undo
-	    // redraw the saved nodes, reactions, and segments
-	    utils.extend(o.drawn_nodes, saved_nodes);
-	    utils.extend(o.drawn_reactions, saved_reactions);
-	    var reactions_to_draw = Object.keys(saved_reactions);
-	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
-		o.drawn_reactions[segment_obj.reaction_id]
-		    .segments[segment_obj.segment_id] = segment_obj.segment;
-		reactions_to_draw.push(segment_obj.reaction_id);
-	    });
-	    draw_these_nodes(Object.keys(saved_nodes));
-	    draw_these_reactions(reactions_to_draw);
-	    // copy nodes to re-delete
-	    selected_nodes = utils.clone(saved_nodes);
-	    segment_objs_w_segments = utils.clone(saved_segment_objs_w_segments);
-	    reactions = utils.clone(saved_reactions);
-	}, function () {
-	    // redo
-	    // clone the nodes and reactions, to redo this action later
-	    delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
-	});
+    // 	// add to undo/redo stack
+    // 	o.undo_stack.push(function() {
+    // 	    // undo
+    // 	    // redraw the saved nodes, reactions, and segments
+    // 	    utils.extend(o.drawn_nodes, saved_nodes);
+    // 	    utils.extend(o.drawn_reactions, saved_reactions);
+    // 	    var reactions_to_draw = Object.keys(saved_reactions);
+    // 	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
+    // 		o.drawn_reactions[segment_obj.reaction_id]
+    // 		    .segments[segment_obj.segment_id] = segment_obj.segment;
+    // 		reactions_to_draw.push(segment_obj.reaction_id);
+    // 	    });
+    // 	    draw_these_nodes(Object.keys(saved_nodes));
+    // 	    draw_these_reactions(reactions_to_draw);
+    // 	    // copy nodes to re-delete
+    // 	    selected_nodes = utils.clone(saved_nodes);
+    // 	    segment_objs_w_segments = utils.clone(saved_segment_objs_w_segments);
+    // 	    reactions = utils.clone(saved_reactions);
+    // 	}, function () {
+    // 	    // redo
+    // 	    // clone the nodes and reactions, to redo this action later
+    // 	    delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
+    // 	});
 
-	// definitions
-	function delete_and_draw(nodes, reactions, segment_objs) {
-	    // delete nodes, segments, and reactions with no segments
-	    delete_nodes(selected_nodes);
-	    delete_segments(segment_objs);
-	    delete_reactions(reactions);
+    // 	// definitions
+    // 	function delete_and_draw(nodes, reactions, segment_objs) {
+    // 	    // delete nodes, segments, and reactions with no segments
+    // 	    delete_nodes(selected_nodes);
+    // 	    delete_segments(segment_objs);
+    // 	    delete_reactions(reactions);
 	    
-	    // redraw
-	    // TODO just redraw these nodes and segments
-	    draw_everything();
-	}
-    }
+    // 	    // redraw
+    // 	    // TODO just redraw these nodes and segments
+    // 	    draw_everything();
+    // 	}
+    // }
 
     function cmd_make_selected_node_primary() {
 	var selected_nodes = get_selected_nodes();	    

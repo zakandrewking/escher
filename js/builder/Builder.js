@@ -210,7 +210,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    b.text(on_off ? 'Enable select (v)': 'Enable pan+zoom (z)');
 	});
 	new_button(sel, keys.rotate, "Rotate (r)");
-	new_button(sel, keys.delete, "Delete (del)");
+	new_button(sel, keys.delete, "Delete (^del)");
 	new_button(sel, keys.extent, "Zoom extent (^0)");
 	new_button(sel, keys.make_primary, "Make primary metabolite (p)");
 	new_button(sel, keys.cycle_primary, "Cycle primary metabolite (c)");
@@ -295,9 +295,9 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 		      target: map,
 		      fn: map.rotate_selected_nodes,
 		      ignore_with_input: true },
-	    delete: { key: 8, // del
+	    delete: { key: 8, modifiers: { control: true }, // ctrl-del
 		      target: map,
-		      fn: map.delete_selected_nodes,
+		      fn: map.delete_selected,
 		      ignore_with_input: true },
 	    extent: { key: 48, modifiers: { control: true }, // ctrl-0
 		      target: map,

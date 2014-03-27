@@ -13,34 +13,54 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     // static methods
     Map.from_data = from_data;
     // instance methods
-    Map.prototype = { init: init,
-		      select_metabolite: select_metabolite,
-		      select_metabolite_with_id: select_metabolite_with_id,
-		      deselect_nodes: deselect_nodes,
-		      select_text_label: select_text_label,
-		      deselect_text_labels: deselect_text_labels,
-		      new_reaction_from_scratch: new_reaction_from_scratch,
-		      new_reaction_for_metabolite: new_reaction_for_metabolite,
-		      setup_containers: setup_containers,
-		      reset_containers: reset_containers,
-		      has_flux: has_flux,
-		      has_node_data: has_node_data,
-		      draw_everything: draw_everything,
-		      draw_these_reactions: draw_these_reactions,
-		      draw_these_nodes: draw_these_nodes,
-		      draw_these_text_labels: draw_these_text_labels,
-		      apply_flux_to_map: apply_flux_to_map,
-		      apply_flux_to_reactions: apply_flux_to_reactions,
-		      apply_node_data_to_map: apply_node_data_to_map,
-		      apply_node_data_to_nodes: apply_node_data_to_nodes,
-		      get_selected_node_ids: get_selected_node_ids,
-		      toggle_beziers: toggle_beziers,
-		      hide_beziers: hide_beziers,
-		      show_beziers: show_beziers,
-		      zoom_extent: zoom_extent,
-		      save: save,
-		      map_for_export: map_for_export,
-		      save_svg: save_svg };
+    Map.prototype = {
+	// setup
+	init: init,
+	setup_containers: setup_containers,
+	reset_containers: reset_containers,
+	// selection
+	select_metabolite: select_metabolite,
+	select_metabolite_with_id: select_metabolite_with_id,
+	deselect_nodes: deselect_nodes,
+	select_text_label: select_text_label,
+	deselect_text_labels: deselect_text_labels,
+	// build
+	new_reaction_from_scratch: new_reaction_from_scratch,
+	new_reaction_for_metabolite: new_reaction_for_metabolite,
+	// delete
+	delete_selected: delete_selected,
+	delete_nodes: delete_nodes,
+	delete_text_labels: delete_text_labels,
+	delete_node_data: delete_node_data,
+	delete_segment_data: delete_segment_data,
+	delete_reaction_data: delete_reaction_data,
+	delete_text_label_data: delete_text_label_data,
+	// find
+	get_selected_node_ids: get_selected_node_ids,
+	get_selected_nodes: get_selected_nodes,
+	get_selected_text_label_ids: get_selected_text_label_ids,
+	get_selected_text_labels: get_selected_text_labels,
+	segments_and_reactions_for_nodes: segments_and_reactions_for_nodes,
+	// draw
+	has_flux: has_flux,
+	has_node_data: has_node_data,
+	draw_everything: draw_everything,
+	draw_these_reactions: draw_these_reactions,
+	draw_these_nodes: draw_these_nodes,
+	draw_these_text_labels: draw_these_text_labels,
+	apply_flux_to_map: apply_flux_to_map,
+	apply_flux_to_reactions: apply_flux_to_reactions,
+	apply_node_data_to_map: apply_node_data_to_map,
+	apply_node_data_to_nodes: apply_node_data_to_nodes,
+	get_selected_node_ids: get_selected_node_ids,
+	toggle_beziers: toggle_beziers,
+	hide_beziers: hide_beziers,
+	show_beziers: show_beziers,
+	zoom_extent: zoom_extent,
+	save: save,
+	map_for_export: map_for_export,
+	save_svg: save_svg
+    };
 
     return Map;
 
@@ -459,6 +479,21 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	    .each(function(d) { selected_nodes[d.node_id] = self.nodes[d.node_id]; });
 	return selected_nodes;
     }	
+    function get_selected_text_label_ids() {
+	var selected_text_label_ids = [];
+	d3.select('#text-labels')
+	    .selectAll('.selected')
+	    .each(function(d) { selected_text_label_ids.push(d.text_label_id); });
+	return selected_text_label_ids;
+    }	
+    function get_selected_text_labels() {
+	var selected_text_labels = {},
+	    self = this;
+	d3.select('#text-labels')
+	    .selectAll('.selected')
+	    .each(function(d) { selected_text_labels[d.text_label_id] = self.text_labels[d.text_label_id]; });
+	return selected_text_labels;
+    }	
     function select_metabolite_with_id(node_id) {
 	// deselect all text labels
 	this.deselect_text_labels();
@@ -527,6 +562,155 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     function deselect_text_labels() {
 	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
 	text_label_selection.classed("selected", false);
+    }
+
+    // ---------------------------------------------------------------------
+    // Delete
+
+    function delete_selected() {
+	/** Delete the selected nodes and associated segments and reactions, and selected labels.
+
+	 Undoable.
+
+	 */
+	var selected_nodes = this.get_selected_nodes();
+	if (Object.keys(selected_nodes).length >= 1)
+	    this.delete_nodes(selected_nodes);
+	
+	var selected_text_labels = this.get_selected_text_labels();
+	if (Object.keys(selected_text_labels).length >= 1)
+	    this.delete_text_labels(selected_text_labels);
+    }
+    function delete_nodes(selected_nodes) {
+	/** Delete the nodes and associated segments and reactions.
+
+	 Undoable.
+
+	 */
+	var out = this.segments_and_reactions_for_nodes(selected_nodes),
+	    reactions = out.reactions,
+	    segment_objs_w_segments = out.segment_objs_w_segments;
+
+	// copy nodes to undelete
+	var saved_nodes = utils.clone(selected_nodes),
+	    saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments),
+	    saved_reactions = utils.clone(reactions),
+	    self = this,
+	    delete_and_draw = function(nodes, reactions, segment_objs) {
+		// delete nodes, segments, and reactions with no segments
+  		self.delete_node_data(selected_nodes);
+		self.delete_segment_data(segment_objs);
+		self.delete_reaction_data(reactions);
+		// redraw
+		// TODO just redraw these nodes and segments
+		self.draw_everything();
+	    };
+
+	// delete
+	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
+
+	// add to undo/redo stack
+	this.undo_stack.push(function() {
+	    // undo
+	    // redraw the saved nodes, reactions, and segments
+	    utils.extend(self.nodes, saved_nodes);
+	    utils.extend(self.reactions, saved_reactions);
+	    var reactions_to_draw = Object.keys(saved_reactions);
+	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
+		self.reactions[segment_obj.reaction_id]
+		    .segments[segment_obj.segment_id] = segment_obj.segment;
+		reactions_to_draw.push(segment_obj.reaction_id);
+	    });
+	    self.draw_these_nodes(Object.keys(saved_nodes));
+	    self.draw_these_reactions(reactions_to_draw);
+	    // copy nodes to re-delete
+	    selected_nodes = utils.clone(saved_nodes);
+	    segment_objs_w_segments = utils.clone(saved_segment_objs_w_segments);
+	    reactions = utils.clone(saved_reactions);
+	}, function () {
+	    // redo
+	    // clone the nodes and reactions, to redo this action later
+	    delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
+	});
+    }
+    function delete_text_labels(selected_text_labels) {
+	/** Delete the text_labels.
+
+	 Undoable.
+
+	 */
+	// copy text_labels to undelete
+	var saved_text_labels = utils.clone(selected_text_labels),
+	    self = this,
+	    delete_and_draw = function(text_labels) {
+		// delete text_labels, segments, and reactions with no segments
+  		self.delete_text_label_data(selected_text_labels);
+		// redraw
+		// TODO just redraw these text_labels
+		self.draw_everything();
+	    };
+
+	// delete
+	delete_and_draw(selected_text_labels);
+
+	// add to undo/redo stack
+	this.undo_stack.push(function() { // undo
+	    // redraw the saved text_labels, reactions, and segments
+	    utils.extend(self.text_labels, saved_text_labels);
+	    self.draw_these_text_labels(Object.keys(saved_text_labels));
+	    // copy text_labels to re-delete
+	    selected_text_labels = utils.clone(saved_text_labels);
+	}, function () { // redo
+	    // clone the text_labels
+	    delete_and_draw(selected_text_labels);
+	});
+    }
+    function delete_node_data(nodes) {
+	/** Simply delete nodes.
+	 */
+	for (var node_id in nodes) {
+	    delete this.nodes[node_id];
+	}
+    }
+    function delete_segment_data(segment_objs) {
+	/** Delete segments, and update connected_segments in nodes. Also
+	 deletes any reactions with 0 segments.
+	 
+	 segment_objs: Array of objects with { reaction_id: "123", segment_id: "456" }
+	 
+	 */
+	var reactions = this.reactions,
+	    nodes = this.nodes;
+	segment_objs.forEach(function(segment_obj) {
+	    var reaction = reactions[segment_obj.reaction_id],
+		segment = reaction.segments[segment_obj.segment_id];
+
+	    // updated connected nodes
+	    [segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
+		if (!(node_id in nodes)) return;
+		var node = nodes[node_id],
+		    connected_segments = node.connected_segments;
+		connected_segments = connected_segments.filter(function(so) {
+		    return so.segment_id != segment_obj.segment_id;				
+		});
+	    });
+
+	    delete reaction.segments[segment_obj.segment_id];
+	});
+    }
+    function delete_reaction_data(reactions) {
+	/** delete reactions
+	 */
+	for (var reaction_id in reactions) {
+	    delete this.reactions[reaction_id];
+	}
+    }
+    function delete_text_label_data(text_labels) {
+	/** delete text labels for an array of ids
+	 */
+	for (var text_label_id in text_labels) {
+	    delete this.text_labels[text_label_id];
+	}
     }
     function show_beziers() {
 	this.toggle_beziers(true);
@@ -601,7 +785,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	this.undo_stack.push(function() {
 	    // undo
 	    // get the nodes to delete
-	    delete_nodes(new_nodes);
+	    map.delete_node_data(new_nodes);
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    // draw
@@ -669,8 +853,8 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	    // undo
 	    // get the nodes to delete
 	    delete new_nodes[selected_node_id];
-	    delete_nodes(new_nodes);
-	    delete_reactions(new_reactions);
+	    map.delete_node_data(new_nodes);
+	    map.delete_reaction_data(new_reactions);
 	    select_metabolite_with_id.apply(map, [selected_node_id]);
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
@@ -707,7 +891,6 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	}
 	
     }
-
     function segments_and_reactions_for_nodes(nodes) {
 	/** Get segments and reactions that should be deleted with node deletions
 	 */
@@ -738,56 +921,6 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	}
 	return { segment_objs_w_segments: segment_objs_w_segments, reactions: these_reactions };
     }
-    function delete_nodes(nodes) {
-	/** delete nodes
-	 */
-	for (var node_id in nodes) {
-	    delete this.nodes[node_id];
-	}
-    }
-    function delete_nodes_by_id(node_ids) {
-	/** delete nodes for an array of ids
-	 */
-	var nodes = this.nodes;
-	node_ids.forEach(function(node_id) {
-	    delete nodes[node_id];
-	});
-    }
-
-    function delete_segments(segment_objs) {
-	/** Delete segments, and update connected_segments in nodes. Also
-	 deletes any reactions with 0 segments.
-	 
-	 segment_objs: Array of objects with { reaction_id: "123", segment_id: "456" }
-	 
-	 */
-	var reactions = this.reactions,
-	    nodes = this.nodes;
-	segment_objs.forEach(function(segment_obj) {
-	    var reaction = reactions[segment_obj.reaction_id],
-		segment = reaction.segments[segment_obj.segment_id];
-
-	    // updated connected nodes
-	    [segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
-		if (!(node_id in nodes)) return;
-		var node = nodes[node_id],
-		    connected_segments = node.connected_segments;
-		connected_segments = connected_segments.filter(function(so) {
-		    return so.segment_id != segment_obj.segment_id;				
-		});
-	    });
-
-	    delete reaction.segments[segment_obj.segment_id];
-	});
-    }
-    function delete_reactions(reactions) {
-	/** delete reactions
-	 */
-	for (var reaction_id in reactions) {
-	    delete this.reactions[reaction_id];
-	}
-    }
-
     function set_status(status) {
         // TODO put this in js/metabolic-map/utils.js
         var t = d3.select('body').select('#status');
