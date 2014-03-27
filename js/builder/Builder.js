@@ -16,7 +16,8 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 			  reload_for_flux: reload_for_flux,
 			  reload_for_node_data: reload_for_node_data,
 			  _setup_menu: _setup_menu,
-			  _setup_status: _setup_status };
+			  _setup_status: _setup_status,
+			  _setup_modes: _setup_modes};
 
     return Builder;
 
@@ -149,12 +150,15 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	// setup the Brush
 	var brush = new Brush(zoomed_sel, false, map);
 
+	// setup the modes
+	this._setup_modes(map, brush, zoom_container);
+
 	// make key manager
 	var keys = Builder.get_keys(map, reaction_input, brush);
 	map.key_manager.set_keys(keys);
 	// set up menu and status bars
 	var menu = this._setup_menu(this.o.selection, map, zoom_container, map.key_manager, keys),
-	    status = this._setup_status(this.o.selection);
+	    status = this._setup_status(this.o.selection, map);
 
 	// setup selection box
 	if (!this.o.map_data) {
@@ -250,8 +254,31 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	}
     }
 
-    function _setup_status(selection) {
-	return selection.append("div").attr("id", "status");
+    function _setup_status(selection, map) {
+	var status_bar = selection.append("div").attr("id", "status");
+	map.callback_manager.set('set_status', function(status) {
+	    status_bar.text(status);
+	});
+	return status_bar;
+    }
+
+    function _setup_modes(map, brush, zoom_container) {
+	// set up zoom+pan and brush modes
+	var was_enabled = {};
+	map.callback_manager.set('start_rotation', function() {
+	    was_enabled.brush = brush.enabled;
+	    brush.toggle(false);
+	    was_enabled.zoom = zoom_container.zoom_on;
+	    zoom_container.toggle_zoom(false);
+	    was_enabled.node_click = map.behavior.node_click!=null;
+	    map.behavior.toggle_node_click(false);
+	});
+	map.callback_manager.set('end_rotation', function() {
+	    brush.toggle(was_enabled.brush);
+	    zoom_container.toggle_zoom(was_enabled.zoom);
+	    map.behavior.toggle_node_click(was_enabled.node_click);
+	    was_enabled = {};
+	});
     }
 
     function get_keys(map, input, brush) {

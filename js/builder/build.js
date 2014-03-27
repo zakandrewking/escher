@@ -1,6 +1,6 @@
 define(["vis/utils", "lib/d3"], function(utils, d3) {
     return { new_reaction: new_reaction,
-	     rotate_selected_nodes: rotate_selected_nodes,
+	     rotate_nodes: rotate_nodes,
 	     move_node_and_dependents: move_node_and_dependents };
     
     // definitions
@@ -197,15 +197,15 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	
 	// add the selected node for rotation, and return it as a new (updated) node
 	new_nodes[selected_node_id] = selected_node;
-	var updated = rotate_selected_nodes(new_nodes, new_reactions,
+	var updated = rotate_nodes(new_nodes, new_reactions,
 					    angle, selected_node_coords);
 
 	return { new_reactions: new_reactions,
 		 new_nodes: new_nodes };
     }
 
-    function rotate_selected_nodes(selected_nodes, reactions, angle, center) {
-	/** Rotate the selected nodes around center.
+    function rotate_nodes(selected_nodes, reactions, angle, center) {
+	/** Rotate the nodes around center.
 
 	 selected_nodes: Nodes to rotate.
 	 reactions: Only updates beziers for these reactions.

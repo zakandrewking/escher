@@ -18,6 +18,8 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	init: init,
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
+	// appearance
+	set_status: set_status,
 	// selection
 	select_metabolite: select_metabolite,
 	select_metabolite_with_id: select_metabolite_with_id,
@@ -30,6 +32,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	new_reaction_for_metabolite: new_reaction_for_metabolite,
 	cycle_primary_node: cycle_primary_node,
 	make_selected_node_primary: make_selected_node_primary,
+	rotate_selected_nodes: rotate_selected_nodes,
 	// delete
 	delete_selected: delete_selected,
 	delete_nodes: delete_nodes,
@@ -247,6 +250,14 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	d3.select('#text-labels')
             .selectAll('.text-label')
             .remove();
+    }
+
+    // -------------------------------------------------------------------------
+    // Appearance
+
+    function set_status(status) {
+	this.status = status;
+	this.callback_manager.run('set_status', status);
     }
     function has_flux() {
 	return Boolean(this.flux);
@@ -1013,7 +1024,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	this.select_metabolite_with_id(primary_node_id);
     }
     function make_selected_node_primary() {
-	var selected_nodes = get_selected_nodes(),
+	var selected_nodes = this.get_selected_nodes(),
 	    reactions = this.reactions,
 	    nodes = this.nodes;	    
 	// can only have one selected
@@ -1048,6 +1059,137 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	});
 	// draw the nodes
 	this.draw_these_nodes(nodes_to_draw);
+    }
+
+    function rotate_selected_nodes() {
+	/** Request a center, then listen for rotation, and rotate nodes.
+
+	 */
+	this.callback_manager.run('start_rotation');
+	
+	var selected_nodes = this.get_selected_nodes();
+	if (selected_nodes.length < 1) return console.warn('No nodes selected');
+	
+	var saved_center, total_angle = 0,
+	    selected_node_ids = Object.keys(selected_nodes),
+	    self = this,
+	    reactions = this.reactions,
+	    nodes = this.nodes,
+	    end_function = function() {
+		self.callback_manager.run('end_rotation');
+	    };
+
+	choose_center.call(this, function(center) {
+	    saved_center = center;
+	    listen_for_rotation.call(self, center, function(angle) {
+		total_angle += angle;
+		var updated = build.rotate_nodes(selected_nodes, reactions,
+						 angle, center);
+		self.draw_these_nodes(updated.node_ids);
+		self.draw_these_reactions(updated.reaction_ids);
+	    }, end_function, end_function);
+	}, end_function);
+
+	// add to undo/redo stack
+	this.undo_stack.push(function() {
+	    // undo
+	    var these_nodes = {};
+	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+	    var updated = build.rotate_selected_nodes(these_nodes, reactions,
+						      -total_angle, saved_center);
+	    self.draw_these_nodes(updated.node_ids);
+	    self.draw_these_reactions(updated.reaction_ids);
+	}, function () {
+	    // redo
+	    var these_nodes = {};
+	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+	    var updated = build.rotate_selected_nodes(these_nodes, reactions,
+						      total_angle, saved_center);
+	    self.draw_these_nodes(updated.node_ids);
+	    self.draw_these_reactions(updated.reaction_ids);
+	});
+
+	// definitions
+	function choose_center(callback, callback_canceled) {
+	    console.log('Choose center');
+	    set_status('Choose a node or point to rotate around.');
+	    var selection_node = d3.selectAll('.node-circle'),
+		selection_background = d3.selectAll('#mouse-node'),
+		scale = this.scale,
+		escape_listener = this.key_manager.add_escape_listener(function() {
+		    console.log('choose_center escape');
+		    selection_node.on('mousedown.center', null);
+		    selection_background.on('mousedown.center', null);
+		    set_status('');
+		    callback_canceled();
+		});
+	    // if the user clicks a metabolite node
+	    selection_node.on('mousedown.center', function(d) {		    
+		console.log('mousedown.center');
+		// turn off the click listeners to prepare for drag
+		selection_node.on('mousedown.center', null);
+		selection_background.on('mousedown.center', null);
+		set_status('');
+		escape_listener.clear();
+		// find the location of the clicked metabolite
+		var center = { x: d.x, y: d.y };
+		callback(center); 
+	    });
+	    // if the user clicks a point
+	    selection_background.on('mousedown.center', function() {
+		console.log('mousedown.center');
+		// turn off the click listeners to prepare for drag
+		selection_node.on('mousedown.center', null);
+		selection_background.on('mousedown.center', null);
+		set_status('');
+		escape_listener.clear();
+		// find the point on the background node where the user clicked
+		var center = { x: scale.x_size.invert(d3.mouse(this)[0]), 
+			       y: scale.y_size.invert(d3.mouse(this)[1]) };
+		callback(center); 
+	    });
+	}
+	function listen_for_rotation(center, callback, callback_finished, 
+				     callback_canceled) {
+	    this.set_status('Drag to rotate.');
+	    this.zoom_container.toggle_zoom(false);
+	    var angle = Math.PI/2,
+		selection = d3.selectAll('#mouse-node'),
+		drag = d3.behavior.drag(),
+		scale = this.scale,
+		escape_listener = this.key_manager.add_escape_listener(function() {
+		    console.log('listen_for_rotation escape');
+		    drag.on('drag.rotate', null);
+		    drag.on('dragend.rotate', null);
+		    set_status('');
+		    callback_canceled();
+		});
+	    // drag.origin(function() { return point_of_grab; });
+	    drag.on("drag.rotate", function() { 
+		callback(angle_for_event({ dx: scale.x_size.invert(d3.event.dx), 
+					   dy: scale.y_size.invert(d3.event.dy) },
+					 { x: scale.x_size.invert(d3.mouse(this)[0]),
+					   y: scale.y_size.invert(d3.mouse(this)[1]) },
+					 center));
+	    }).on("dragend.rotate", function() {
+		console.log('dragend.rotate');
+		drag.on('drag.rotate', null);
+		drag.on('dragend.rotate', null);
+		set_status('');
+		escape_listener.clear();
+		callback_finished();
+	    });
+	    selection.call(drag);
+
+	    // definitions
+	    function angle_for_event(displacement, point, center) {
+		var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
+		    beta = Math.atan2((point.x - center.x + displacement.dx), 
+				      (center.y - point.y - displacement.dy)),
+		    angle = beta - gamma;
+		return angle;
+	    }
+	}
     }
 
     function segments_and_reactions_for_nodes(nodes) {

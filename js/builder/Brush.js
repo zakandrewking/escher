@@ -4,8 +4,6 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
     var Brush = utils.make_class();
     Brush.prototype = { init: init,
-			on: on,
-			off: off,
 			toggle: toggle };
 
     return Brush;
@@ -23,12 +21,6 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	 */
 	return d3.select('.brush').empty();
     }
-    function on() {
-	this.enable_brush(true);
-    }
-    function off() {
-	this.enable_brush(false);
-    }
     function toggle(on_off) {
 	/** Turn the brush on or off
 
@@ -37,8 +29,9 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
 	if (on_off) {
 	    this.selection_brush = setup_selection_brush(this.brush_sel, 
-						      d3.select('#nodes').selectAll('.node'),
-						      width, height);
+							 d3.select('#nodes').selectAll('.node'),
+							 this.map.width,
+							 this.map.height);
 	} else {
 	    this.brush_sel.selectAll('.brush').remove();
 	}
