@@ -281,7 +281,9 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		updated_segment_objs.push(utils.clone(segment_obj));
 	    });
 	    // delete the old node
-	    map.delete_nodes_by_id([dragged_node_id]);
+	    var to_delete = {};
+	    to_delete[dragged_node_id] = dragged_node;
+	    map.delete_node_data(to_delete);
 	    // turn off the class
 	    d3.selectAll('.node-to-combine').classed('node-to-combine', false);
 	    // draw

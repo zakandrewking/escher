@@ -28,6 +28,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	// build
 	new_reaction_from_scratch: new_reaction_from_scratch,
 	new_reaction_for_metabolite: new_reaction_for_metabolite,
+	cycle_primary_node: cycle_primary_node,
 	// delete
 	delete_selected: delete_selected,
 	delete_nodes: delete_nodes,
@@ -923,6 +924,92 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	    }
 	}
 	
+    }
+    function cycle_primary_node() {
+	var selected_nodes = this.get_selected_nodes();
+	// get the first node
+	var node_id = Object.keys(selected_nodes)[0],
+	    node = selected_nodes[node_id],
+	    reactions = this.reactions,
+	    nodes = this.nodes;
+	// make the other reactants or products secondary
+	// 1. Get the connected anchor nodes for the node
+	var connected_anchor_ids = [],
+	    reactions_to_draw;
+	nodes[node_id].connected_segments.forEach(function(segment_info) {
+	    reactions_to_draw = [segment_info.reaction_id];
+	    var segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id];
+	    connected_anchor_ids.push(segment.from_node_id==node_id ?
+				      segment.to_node_id : segment.from_node_id);
+	});
+	// can only be connected to one anchor
+	if (connected_anchor_ids.length != 1)
+	    return console.error('Only connected nodes with a single reaction can be selected');
+	var connected_anchor_id = connected_anchor_ids[0];
+	// 2. find nodes connected to the anchor that are metabolites
+	var related_node_ids = [node_id];
+	var segments = [];
+	nodes[connected_anchor_id].connected_segments.forEach(function(segment_info) { // deterministic order
+	    var segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id],
+		conn_met_id = segment.from_node_id == connected_anchor_id ? segment.to_node_id : segment.from_node_id,
+		conn_node = nodes[conn_met_id];
+	    if (conn_node.node_type == 'metabolite' && conn_met_id != node_id) {
+		related_node_ids.push(String(conn_met_id));
+	    }
+	});
+	// 3. make sure they only have 1 reaction connection, and check if
+	// they match the other selected nodes
+	for (var i=0; i<related_node_ids.length; i++) {
+	    if (nodes[related_node_ids[i]].connected_segments.length > 1)
+		return console.error('Only connected nodes with a single reaction can be selected');
+	}
+	for (var a_selected_node_id in selected_nodes) {
+	    if (a_selected_node_id!=node_id && related_node_ids.indexOf(a_selected_node_id) == -1)
+		return console.warn('Selected nodes are not on the same reaction');
+	}
+	// 4. change the primary node, and change coords, label coords, and beziers
+	var nodes_to_draw = [],
+	    last_i = related_node_ids.length - 1,
+	    last_node = nodes[related_node_ids[last_i]],
+	    last_is_primary = last_node.node_is_primary,
+	    last_coords = { x: last_node.x, y: last_node.y,
+			    label_x: last_node.label_x, label_y: last_node.label_y },
+	    last_segment_info = last_node.connected_segments[0], // guaranteed above to have only one
+	    last_segment = reactions[last_segment_info.reaction_id].segments[last_segment_info.segment_id],
+	    last_bezier = { b1: last_segment.b1, b2: last_segment.b2 },
+	    primary_node_id;
+	related_node_ids.forEach(function(related_node_id) {
+	    var node = nodes[related_node_id],
+		this_is_primary = node.node_is_primary,
+		these_coords = { x: node.x, y: node.y,
+				 label_x: node.label_x, label_y: node.label_y },
+		this_segment_info = node.connected_segments[0],
+		this_segment = reactions[this_segment_info.reaction_id].segments[this_segment_info.segment_id],
+		this_bezier = { b1: this_segment.b1, b2: this_segment.b2 };
+	    node.node_is_primary = last_is_primary;
+	    node.x = last_coords.x; node.y = last_coords.y;
+	    node.label_x = last_coords.label_x; node.label_y = last_coords.label_y;
+	    this_segment.b1 = last_bezier.b1; this_segment.b2 = last_bezier.b2;
+	    last_is_primary = this_is_primary;
+	    last_coords = these_coords;
+	    last_bezier = this_bezier;
+	    if (node.node_is_primary) primary_node_id = related_node_id;
+	    nodes_to_draw.push(related_node_id);
+	});
+	// 5. cycle the connected_segments array so the next time, it cycles differently
+	var old_connected_segments = nodes[connected_anchor_id].connected_segments,
+	    last_i = old_connected_segments.length - 1,
+	    new_connected_segments = [old_connected_segments[last_i]];
+	old_connected_segments.forEach(function(segment, i) {
+	    if (last_i==i) return;
+	    new_connected_segments.push(segment);
+	});
+	nodes[connected_anchor_id].connected_segments = new_connected_segments;	    
+	// 6. draw the nodes
+	this.draw_these_nodes(nodes_to_draw);
+	this.draw_these_reactions(reactions_to_draw);
+	// 7. select the primary node
+	this.select_metabolite_with_id(primary_node_id);
     }
     function segments_and_reactions_for_nodes(nodes) {
 	/** Get segments and reactions that should be deleted with node deletions
