@@ -17,6 +17,8 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 			   toggle_node_click: toggle_node_click,
 			   toggle_node_drag: toggle_node_drag,
 			   toggle_label_drag: toggle_label_drag,
+			   get_node_drag: get_node_drag,
+			   get_bezier_drag: get_bezier_drag,
 			   get_reaction_label_drag: get_reaction_label_drag,
 			   get_node_label_drag: get_node_label_drag,
 			   get_text_label_drag: get_text_label_drag,
@@ -76,8 +78,8 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	 */
 	if (on_off===undefined) on_off = this.node_drag===this.empty_behavior;
 	if (on_off) {
-	    this.node_drag = get_node_drag_behavior(this.map, this.undo_stack);
-	    this.bezier_drag = get_bezier_drag_behavior(this.map, this.undo_stack);
+	    this.node_drag = this.get_node_drag(this.map, this.undo_stack);
+	    this.bezier_drag = this.get_bezier_drag(this.map, this.undo_stack);
 	} else {
 	    this.node_drag = this.empty_behavior;
 	}
@@ -100,7 +102,7 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	}
     }
 
-    function get_node_drag_behavior(map, undo_stack) {
+    function get_node_drag(map, undo_stack) {
 	// define some variables
 	var behavior = d3.behavior.drag(),
 	    total_displacement,
@@ -267,54 +269,30 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	    return updated_segment_objs;
 	}
     }
-    function get_bezier_drag_behavior(map, undo_stack) {
-	// define some variables
-	var behavior = d3.behavior.drag(),
-	    total_displacement,
-	    segment_id, reaction_id, bezier_number;
-
-        behavior.on("dragstart", function () {
-	    // silence other listeners
-	    d3.event.sourceEvent.stopPropagation();
-	    total_displacement = { x: 0, y: 0 };
-	});
-        behavior.on("drag", function(d) {
-	    reaction_id = d.reaction_id;
-	    segment_id = d.segment_id;
-	    bezier_number = d.bezier;
-	    // update data
-	    var displacement = { x: map.scale.x_size.invert(d3.event.dx),
-				 y: map.scale.y_size.invert(d3.event.dy) };
-	    move_bezier(reaction_id, segment_id, bezier_number, displacement);
-	    // remember the displacement
-	    total_displacement = utils.c_plus_c(total_displacement, displacement);
-	    // draw
-	    map.draw_these_reactions([reaction_id]);
-	});
-	behavior.on("dragend", function(d) {			  
-	    // add to undo/redo stack
-	    // remember the displacement, dragged nodes, and reactions
-	    var saved_displacement = utils.clone(total_displacement), // BUG TODO this variable disappears!
-		saved_reaction_id = utils.clone(reaction_id);
-	    undo_stack.push(function() {
-		// undo
-		move_bezier(reaction_id, segment_id, bezier_number,
-			    utils.c_times_scalar(saved_displacement, -1));
-		map.draw_these_reactions([saved_reaction_id]);
-	    }, function () {
-		// redo
-		move_bezier(reaction_id, segment_id, bezier_number,
-			    saved_displacement);
-		map.draw_these_reactions([saved_reaction_id]);
-	    });
-	});
-	return behavior;
-
-	// definitions
-	function move_bezier(reaction_id, segment_id, bezier_number, displacement) {
+    function get_bezier_drag(map, undo_stack) {
+	var move_bezier = function(reaction_id, segment_id, bezier, displacement) {
 	    var segment = map.reactions[reaction_id].segments[segment_id];
-	    segment['b'+bezier_number] = utils.c_plus_c(segment['b'+bezier_number], displacement);
-	};
+	    segment['b'+bezier] = utils.c_plus_c(segment['b'+bezier], displacement);
+	},
+	    start_fn = function(d) {
+	    },
+	    drag_fn = function(d, displacement, total_displacement) {
+		// draw
+		move_bezier(d.reaction_id, d.segment_id, d.bezier, displacement);
+		map.draw_these_reactions([d.reaction_id]);
+	    },
+	    end_fn = function(d) {
+	    },
+	    undo_fn = function(d, displacement) {
+		move_bezier(d.reaction_id, d.segment_id, d.bezier,
+			    utils.c_times_scalar(displacement, -1));
+		map.draw_these_reactions([d.reaction_id]);
+	    },
+	    redo_fn = function(d, displacement) {
+		move_bezier(d.reaction_id, d.segment_id, d.bezier, displacement);
+		map.draw_these_reactions([d.reaction_id]);
+	    };
+	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
     }
     function get_reaction_label_drag(map, undo_stack) {
 	var move_label = function(reaction_id, displacement) {
