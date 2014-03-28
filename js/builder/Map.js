@@ -55,6 +55,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	draw_everything: draw_everything,
 	draw_all_reactions: draw_all_reactions,
 	draw_these_reactions: draw_these_reactions,
+	draw_all_nodes: draw_all_nodes,
 	draw_these_nodes: draw_these_nodes,
 	draw_these_text_labels: draw_these_text_labels,
 	apply_flux_to_map: apply_flux_to_map,

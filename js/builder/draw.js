@@ -280,8 +280,9 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
             .call(drag_behavior)
             .on("click", click_fn);
 
-        g.append('text')
-            .attr('class', 'node-label label')
+        g.filter(function(d) { return d.node_type=='metabolite'; })
+	    .append('text')
+	    .attr('class', 'node-label label')
 	    .style('cursor', 'default')
 	    .call(label_drag_behavior);
     }

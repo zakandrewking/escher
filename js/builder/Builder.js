@@ -27,7 +27,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    selection: d3.select("body").append("div"),
 	    selection_is_svg: false,
 	    fillScreen: false,
-	    update_hook: false,
+	    on_load: null,
 	    map_path: null,
 	    map: null,
 	    cobra_model_path: null,
@@ -179,6 +179,9 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 
 	// turn off loading message
 	d3.select('#loading').style("display", "none");
+
+	// run the load callback
+	this.o.on_load();
     }
     function brush_mode() {
 	this.brush.toggle(true);
