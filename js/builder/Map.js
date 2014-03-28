@@ -732,9 +732,12 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	var reactions = this.reactions,
 	    nodes = this.nodes;
 	segment_objs.forEach(function(segment_obj) {
-	    var reaction = reactions[segment_obj.reaction_id],
-		segment = reaction.segments[segment_obj.segment_id];
+	    var reaction = reactions[segment_obj.reaction_id];
 
+	    // segment already deleted
+	    if (!(segment_obj.segment_id in reaction.segments)) return;
+	    
+	    var segment = reaction.segments[segment_obj.segment_id];
 	    // updated connected nodes
 	    [segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
 		if (!(node_id in nodes)) return;
