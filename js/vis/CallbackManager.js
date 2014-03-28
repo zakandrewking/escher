@@ -26,6 +26,8 @@ define(["vis/utils"], function(utils) {
 	if (this.callbacks===undefined) this.callbacks = {};
 	if (this.callbacks[name]===undefined) this.callbacks[name] = [];
 	this.callbacks[name].push(fn);
+
+	return this;
     }
     function remove(name) {
 	/** Remove a callback by name
@@ -35,12 +37,13 @@ define(["vis/utils"], function(utils) {
 	    console.warn('No callbacks to remove');
 	}
 	delete this.callbacks[name];
+	return this;
     }
     function run(name) {
 	/** Run all callbacks that match the portion of name before the period ('.').
 
 	 */
-	if (this.callbacks===undefined) return;
+	if (this.callbacks===undefined) return this;
 	// pass all but the first (name) argument to the callback
 	var pass_args = Array.prototype.slice.call(arguments, 1);
 	// look for matching callback names
@@ -52,5 +55,6 @@ define(["vis/utils"], function(utils) {
 		});
 	    }
 	}
+	return this;
     }
 });

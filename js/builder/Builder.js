@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builder/Map", "builder/CobraModel", "builder/Brush"], function(utils, d3, Input, ZoomContainer, Map, CobraModel, Brush) {
+define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builder/Map", "builder/CobraModel", "builder/Brush", "vis/CallbackManager"], function(utils, d3, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager) {
     // NOTE
     // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
     // only necessary for selectAll()
@@ -8,16 +8,16 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 
 
     var Builder = utils.make_class();
-    // static methods
-    Builder.get_keys = get_keys;
-    // instance methods
     Builder.prototype = { init: init,
 			  reload_builder: reload_builder,
 			  reload_for_flux: reload_for_flux,
 			  reload_for_node_data: reload_for_node_data,
+			  brush_mode: brush_mode,
+			  zoom_mode: zoom_mode,
 			  _setup_menu: _setup_menu,
 			  _setup_status: _setup_status,
-			  _setup_modes: _setup_modes};
+			  _setup_modes: _setup_modes,
+			  _get_keys: _get_keys };
 
     return Builder;
 
@@ -104,6 +104,9 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	var metabolite_click_enabled = true,
 	    shift_key_on = false;
 
+	// set up this callback manager
+	this.callback_manager = CallbackManager();
+
 	// Check the cobra model
 	var cobra_model = null;
 	if (this.o.cobra_model) {
@@ -127,37 +130,37 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	var defs = utils.setup_defs(svg, this.o.css);
 
 	// se up the zoom container
-	var zoom_container = new ZoomContainer(svg, width, height, [0.05, 15]),
-	    zoomed_sel = zoom_container.zoomed_sel;
+	this.zoom_container = new ZoomContainer(svg, width, height, [0.05, 15]);
+	var zoomed_sel = this.zoom_container.zoomed_sel;
 
 	var max_w = width, max_h = height, scale, map;
 	if (this.o.map_data) {
 	    // import map
-	    map = Map.from_data(this.o.map_data, zoomed_sel, defs, zoom_container,
+	    map = Map.from_data(this.o.map_data, zoomed_sel, defs, this.zoom_container,
 				height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
 				cobra_model);
-	    zoom_container.reset();
+	    this.zoom_container.reset();
 	} else {
 	    // new map
-	    map = new Map(zoomed_sel, defs, zoom_container,
+	    map = new Map(zoomed_sel, defs, this.zoom_container,
 			  height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
 			  cobra_model);
 	}
 
 	// set up the reaction input with complete.ly
-	var reaction_input = Input(this.o.selection, map, zoom_container);
+	var reaction_input = Input(this.o.selection, map, this.zoom_container);
 
 	// setup the Brush
-	var brush = new Brush(zoomed_sel, false, map);
+	this.brush = new Brush(zoomed_sel, false, map);
 
 	// setup the modes
-	this._setup_modes(map, brush, zoom_container);
+	this._setup_modes(map, this.brush, this.zoom_container);
 
 	// make key manager
-	var keys = Builder.get_keys(map, reaction_input, brush);
+	var keys = this._get_keys(map, reaction_input, this.brush);
 	map.key_manager.assigned_keys = keys;
 	// set up menu and status bars
-	var menu = this._setup_menu(this.o.selection, map, zoom_container, map.key_manager, keys),
+	var menu = this._setup_menu(this.o.selection, map, this.zoom_container, map.key_manager, keys),
 	    status = this._setup_status(this.o.selection, map);
 	// make sure the key manager remembers all those changes
 	map.key_manager.update();
@@ -172,6 +175,9 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    map.draw_everything();
 	    map.zoom_extent(200);
 	}
+
+	// start in zoom mode
+	this.zoom_mode();
 
 	// turn off loading message
 	d3.select('#loading').style("display", "none");
@@ -189,7 +195,16 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	console.error('not implemented');
     }
 
-    // definitions
+    function brush_mode() {
+	this.brush.toggle(true);
+	this.zoom_container.toggle_zoom(false);
+	this.callback_manager.run('brush_mode');
+    }
+    function zoom_mode() {
+	this.brush.toggle(false);
+	this.zoom_container.toggle_zoom(true);
+	this.callback_manager.run('zoom_mode');
+    }
     function _setup_menu(selection, map, zoom_container, key_manager, keys) {
 	var sel = selection.append("div").attr("id", "menu");
 	new_button(sel, keys.toggle_input, "New reaction (/)");
@@ -198,14 +213,21 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load (^o)");
 	key_manager.assigned_keys.load_flux.fn = new_input(sel, load_flux_for_file, this, "Load flux (^f)");
 	new_input(sel, load_node_data_for_file, this, "Load node data");
+
 	var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
-	map.callback_manager.set('toggle_beziers.button', function(on_off) {
-	    b.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
-	});
-	var z = new_button(sel, keys.toggle_zoom, "Enable select (v)", 'zoom-button');
-	zoom_container.callback_manager.set('toggle_zoom.button', function(on_off) {
-	    b.text(on_off ? 'Enable select (v)': 'Enable pan+zoom (z)');
-	});
+	map.callback_manager
+	    .set('toggle_beziers.button', function(on_off) {
+		b.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
+	    });
+
+	var z = new_button(sel, keys.brush_mode, "Enable select (v)", 'zoom-button');
+	this.callback_manager
+	    .set('zoom_mode', function() {
+		set_button(z, keys.brush_mode, "Enable select (v)");
+	    }).set('brush_mode', function() {
+		set_button(z, keys.zoom_mode, "Enable pan+zoom (z)");
+	    });
+
 	new_button(sel, keys.rotate, "Rotate (r)");
 	new_button(sel, keys.delete, "Delete (^del)");
 	new_button(sel, keys.extent, "Zoom extent (^0)");
@@ -234,10 +256,15 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    map.set_node_data(data);
 	}
 	function new_button(s, key, name, id) {
-	    var b = s.append("button").attr("class", "command-button")
-		    .text(name).on("click", function() { key.fn.call(key.target); });
-	    if (id !== undefined) b.attr('id', id);
-	    return b;
+	    var button = s.append("button").attr("class", "command-button");
+	    if (id !== undefined) button.attr('id', id);
+	    return set_button(button, key, name);
+	}
+	function set_button(button, key, name) {
+	    button.text(name).on("click", function() {
+		key.fn.call(key.target);
+	    });
+	    return button;
 	}
 	function new_input(s, fn, target, name) {
 	    /* 
@@ -285,7 +312,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	});
     }
 
-    function get_keys(map, input, brush) {
+    function _get_keys(map, input, brush) {
 	return {
             toggle_input: { key: 191, // forward slash '/'
 			    target: input,
@@ -306,14 +333,14 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 			      target: map,
 			      fn: map.toggle_beziers,
 			      ignore_with_input: true  }, // b
-	    toggle_zoom: { key: 90, // z 
-			   target: this,
-			   fn: this.toggle_zoom,
-			   ignore_with_input: true },
-	    brush: { key: 86, // v
-		     target: this,
-		     fn: this.toggle_zoom,
-		     ignore_with_input: true },
+	    zoom_mode: { key: 90, // z 
+			 target: this,
+			 fn: this.zoom_mode,
+			 ignore_with_input: true },
+	    brush_mode: { key: 86, // v
+			  target: this,
+			  fn: this.brush_mode,
+			  ignore_with_input: true },
 	    rotate: { key: 82, // r
 		      target: map,
 		      fn: map.rotate_selected_nodes,
