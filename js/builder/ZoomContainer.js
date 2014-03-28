@@ -82,7 +82,7 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
     // functions to scale and translate
     function go_to(scale, translate) { 
 	if (!scale) return console.error('Bad scale value');
-	if (!translate || !translate.x || !translate.y) return console.error('Bad translate value');
+	if (!translate || !('x' in translate) || !('y' in translate)) return console.error('Bad translate value');
 
 	this.zoom_behavior.scale(scale);
 	this.window_scale = scale;
@@ -92,8 +92,9 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
         this.window_translate = translate;
 	if (this.saved_translate !== null) this.saved_translate = translate;
 
-        this.zoomed_sel.transition()
-            .attr('transform', 'translate('+this.window_translate+')scale('+this.window_scale+')');
+        this.zoomed_sel
+	    // .transition()
+            .attr('transform', 'translate('+this.window_translate.x+','+this.window_translate.y+')scale('+this.window_scale+')');
     }			    
 
     function translate_off_screen(coords, x_scale, y_scale) {
@@ -128,6 +129,6 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
         }
     }
     function reset() {
-	this.go_to(1.0, [0.0, 0.0]);
+	this.go_to(1.0, {x: 0.0, y: 0.0});
     }
 });

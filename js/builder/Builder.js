@@ -42,7 +42,6 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    node_data: null,
 	    node_data_path: null,
 	    node_data_style: 'ColorSize',
-	    node_data_range: [0, 100],
 	    show_beziers: false,
 	    debug: false,
 	    starting_reaction: 'GLCtex',
@@ -171,10 +170,10 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    // Draw default reaction if no map is provided
 	    var start_coords = {'x': this.o.width*5, 'y': this.o.height*5};
 	    this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
-	    this.map.zoom_extent(200);
+	    this.map.zoom_extent();
 	} else {
 	    this.map.draw_everything();
-	    this.map.zoom_extent(200);
+	    this.map.zoom_extent();
 	}
 
 	if (this.o.enable_editing) {
