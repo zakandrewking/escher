@@ -20,6 +20,8 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	reset_containers: reset_containers,
 	// appearance
 	set_status: set_status,
+	set_flux: set_flux,
+	set_node_data: set_node_data,
 	// selection
 	select_metabolite: select_metabolite,
 	select_metabolite_with_id: select_metabolite_with_id,
@@ -51,6 +53,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	has_flux: has_flux,
 	has_node_data: has_node_data,
 	draw_everything: draw_everything,
+	draw_all_reactions: draw_all_reactions,
 	draw_these_reactions: draw_these_reactions,
 	draw_these_nodes: draw_these_nodes,
 	draw_these_text_labels: draw_these_text_labels,
@@ -263,6 +266,16 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	this.status = status;
 	this.callback_manager.run('set_status', status);
     }
+    function set_flux(flux) {
+	this.flux = flux;
+	this.apply_flux_to_map();
+	this.draw_all_reactions();
+    }
+    function set_node_data(node_data) {
+	this.node_data = node_data;
+	this.apply_node_data_to_map();
+	this.draw_all_nodes();
+    }
     function has_flux() {
 	return Boolean(this.flux);
     }
@@ -323,6 +336,13 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
 
     }
+    function draw_all_reactions() {
+	var reaction_ids = [];
+	for (var reaction_id in this.reactions) {
+	    reaction_ids.push(reaction_id);
+	}
+	this.draw_these_reactions(reaction_ids);
+    }
     function draw_these_reactions(reaction_ids) {
 	var scale = this.scale,
 	    reactions = this.reactions,
@@ -368,6 +388,13 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
         // exit
         sel.exit();
+    }
+    function draw_all_nodes() {
+	var node_ids = [];
+	for (var node_id in this.nodes) {
+	    node_ids.push(node_id);
+	}
+	this.draw_these_nodes(node_ids);
     }
     function draw_these_nodes(node_ids) {
 	var scale = this.scale,

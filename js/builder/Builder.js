@@ -10,8 +10,6 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
 			  reload_builder: reload_builder,
-			  reload_for_flux: reload_for_flux,
-			  reload_for_node_data: reload_for_node_data,
 			  brush_mode: brush_mode,
 			  zoom_mode: zoom_mode,
 			  _setup_menu: _setup_menu,
@@ -133,47 +131,47 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	this.zoom_container = new ZoomContainer(svg, width, height, [0.05, 15]);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
-	var max_w = width, max_h = height, scale, map;
+	var max_w = width, max_h = height, scale;
 	if (this.o.map_data) {
 	    // import map
-	    map = Map.from_data(this.o.map_data, zoomed_sel, defs, this.zoom_container,
+	    this.map = Map.from_data(this.o.map_data, zoomed_sel, defs, this.zoom_container,
 				height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
 				cobra_model);
 	    this.zoom_container.reset();
 	} else {
 	    // new map
-	    map = new Map(zoomed_sel, defs, this.zoom_container,
+	    this.map = new Map(zoomed_sel, defs, this.zoom_container,
 			  height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
 			  cobra_model);
 	}
 
 	// set up the reaction input with complete.ly
-	var reaction_input = Input(this.o.selection, map, this.zoom_container);
+	var reaction_input = Input(this.o.selection, this.map, this.zoom_container);
 
 	// setup the Brush
-	this.brush = new Brush(zoomed_sel, false, map);
+	this.brush = new Brush(zoomed_sel, false, this.map);
 
 	// setup the modes
-	this._setup_modes(map, this.brush, this.zoom_container);
+	this._setup_modes(this.map, this.brush, this.zoom_container);
 
 	// make key manager
-	var keys = this._get_keys(map, reaction_input, this.brush);
-	map.key_manager.assigned_keys = keys;
+	var keys = this._get_keys(this.map, reaction_input, this.brush);
+	this.map.key_manager.assigned_keys = keys;
 	// set up menu and status bars
-	var menu = this._setup_menu(this.o.selection, map, this.zoom_container, map.key_manager, keys),
-	    status = this._setup_status(this.o.selection, map);
+	var menu = this._setup_menu(this.o.selection, this.map, this.zoom_container, this.map.key_manager, keys),
+	    status = this._setup_status(this.o.selection, this.map);
 	// make sure the key manager remembers all those changes
-	map.key_manager.update();
+	this.map.key_manager.update();
 	
 	// setup selection box
 	if (!this.o.map_data) {
 	    // Draw default reaction if no map is provided
 	    var start_coords = {'x': this.o.width*5, 'y': this.o.height*5};
-	    map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
-	    map.zoom_extent(200);
+	    this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
+	    this.map.zoom_extent(200);
 	} else {
-	    map.draw_everything();
-	    map.zoom_extent(200);
+	    this.map.draw_everything();
+	    this.map.zoom_extent(200);
 	}
 
 	// start in zoom mode
@@ -182,19 +180,6 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	// turn off loading message
 	d3.select('#loading').style("display", "none");
     }
-
-    function reload_map() {
-	console.error('not implemented');
-    }
-
-    function reload_for_flux() {
-	console.error('not implemented');
-    }
-
-    function reload_for_node_data() {
-	console.error('not implemented');
-    }
-
     function brush_mode() {
 	this.brush.toggle(true);
 	this.zoom_container.toggle_zoom(false);
@@ -248,12 +233,12 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    this.reload_builder();
 	}
 	function load_flux_for_file(error, data) {
-	    this.o.flux = data;
-	    map.set_flux(data);
+	    if (error) console.warn(error);
+	    this.map.set_flux(data);
 	}
 	function load_node_data_for_file(error, data) {
-	    this.o.node_data = data;
-	    map.set_node_data(data);
+	    if (error) console.warn(error);
+	    this.reload_for_node_data(data);
 	}
 	function new_button(s, key, name, id) {
 	    var button = s.append("button").attr("class", "command-button");
