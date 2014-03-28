@@ -106,6 +106,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	    //Max x on the right is x + width - dragbar_width
 	    //Max x on the left is 0 - (dragbar_width/2)
 	    d.x = Math.min(d.x + self.width - (dragbar_width / 2), d3.event.x);
+	    self.x = d.x;
 	    self.width = self.width + (oldx - d.x);
 	    left.attr("x", function(d) { return d.x - (dragbar_width / 2); });	    
 	    rect.attr("x", function(d) { return d.x; }).attr("width", self.width);
@@ -137,6 +138,7 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	    //Max x on the right is x + width - dragbar_width
 	    //Max x on the left is 0 - (dragbar_width/2)
 	    d.y = Math.min(d.y + self.height - (dragbar_width / 2), d3.event.y);
+	    self.y = d.y;
 	    self.height = self.height + (oldy - d.y);
 	    top.attr("y", function(d) { return d.y - (dragbar_width / 2); });	    
 	    rect.attr("y", function(d) { return d.y; })
