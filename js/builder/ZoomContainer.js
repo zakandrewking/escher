@@ -93,8 +93,9 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
 	if (this.saved_translate !== null) this.saved_translate = translate;
 
         this.zoomed_sel
-	    // .transition()
+	    .transition()
             .attr('transform', 'translate('+this.window_translate.x+','+this.window_translate.y+')scale('+this.window_scale+')');
+	return null;
     }			    
 
     function translate_off_screen(coords, x_scale, y_scale) {

@@ -1275,44 +1275,53 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
         return this;
     }
 
-    function zoom_extent(margin) {
+    function zoom_extent(margin, mode) {
 	/** Zoom to fit all the nodes.
 
 	 margin: optional argument to set the margins.
+	 mode: Values are 'nodes', 'canvas'.
+
+	 Returns error if one is raised.
 
 	 */
 
 	// optional args
 	if (margin===undefined) margin = 100;
+	if (mode===undefined) mode = 'canvas';
 
-	// // get the extent of the nodes
-	// var min = { x: null, y: null }, // TODO make infinity?
-	//     max = { x: null, y: null }; 
-	// for (var node_id in this.nodes) {
-	//     var node = this.nodes[node_id];
-	//     if (min.x===null) min.x = this.scale.x(node.x);
-	//     if (min.y===null) min.y = this.scale.y(node.y);
-	//     if (max.x===null) max.x = this.scale.x(node.x);
-	//     if (max.y===null) max.y = this.scale.y(node.y);
+	var new_zoom, new_pos;
+	if (mode=='nodes') {
+	    // get the extent of the nodes
+	    var min = { x: null, y: null }, // TODO make infinity?
+		max = { x: null, y: null }; 
+	    for (var node_id in this.nodes) {
+		var node = this.nodes[node_id];
+		if (min.x===null) min.x = this.scale.x(node.x);
+		if (min.y===null) min.y = this.scale.y(node.y);
+		if (max.x===null) max.x = this.scale.x(node.x);
+		if (max.y===null) max.y = this.scale.y(node.y);
 
-	//     min.x = Math.min(min.x, this.scale.x(node.x));
-	//     min.y = Math.min(min.y, this.scale.y(node.y));
-	//     max.x = Math.max(max.x, this.scale.x(node.x));
-	//     max.y = Math.max(max.y, this.scale.y(node.y));
-	// }
-	// // set the zoom
-        // var new_zoom = Math.min((this.width - margin*2) / (max.x - min.x),
-	// 			(this.height - margin*2) / (max.y - min.y)),
-	//     new_pos = { x: - (min.x * new_zoom) + margin + ((this.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
-	// 		y: - (min.y * new_zoom) + margin + ((this.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
-	
-	// center the canvas
-	var new_zoom =  Math.min((this.width - margin*2) / (this.canvas.width),
-				(this.height - margin*2) / (this.canvas.height)),
+		min.x = Math.min(min.x, this.scale.x(node.x));
+		min.y = Math.min(min.y, this.scale.y(node.y));
+		max.x = Math.max(max.x, this.scale.x(node.x));
+		max.y = Math.max(max.y, this.scale.y(node.y));
+	    }
+	    // set the zoom
+            new_zoom = Math.min((this.width - margin*2) / (max.x - min.x),
+				(this.height - margin*2) / (max.y - min.y));
+	    new_pos = { x: - (min.x * new_zoom) + margin + ((this.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
+			y: - (min.y * new_zoom) + margin + ((this.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
+	} else if (mode=='canvas') {
+	    // center the canvas
+	    new_zoom =  Math.min((this.width - margin*2) / (this.canvas.width),
+				 (this.height - margin*2) / (this.canvas.height));
 	    new_pos = { x: - (this.canvas.x * new_zoom) + margin + ((this.width - margin*2 - this.canvas.width*new_zoom) / 2),
 			y: - (this.canvas.y * new_zoom) + margin + ((this.height - margin*2 - this.canvas.height*new_zoom) / 2) };
-	
+	} else {
+	    return console.error('Did not recognize mode');
+	}
 	this.zoom_container.go_to(new_zoom, new_pos);
+	return null;
     }
 
     // -------------------------------------------------------------------------
