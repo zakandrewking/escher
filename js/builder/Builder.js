@@ -166,17 +166,19 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	}
 	
 	// setup selection box
-	if (!this.o.map_data) {
+	if (this.o.map_data) {
+	    this.map.draw_everything();
+	    this.map.zoom_extent();
+	} else {
 	    if (this.o.starting_reaction) {
 		// Draw default reaction if no map is provided
 		var start_coords = { x: this.map.scale.x.invert(width/2),
 				     y: this.map.scale.x.invert(height/4) };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
 		this.map.zoom_extent(300, 'nodes');
+	    } else {
+		this.map.zoom_extent();
 	    }
-	} else {
-	    this.map.draw_everything();
-	    this.map.zoom_extent();
 	}
 
 	if (this.o.enable_editing) {
