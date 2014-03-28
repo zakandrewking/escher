@@ -254,7 +254,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	}
 	function load_node_data_for_file(error, data) {
 	    if (error) console.warn(error);
-	    this.reload_for_node_data(data);
+	    this.map.set_node_data(data);
 	}
 	function new_button(s, key, name, id) {
 	    var button = s.append("button").attr("class", "command-button");
