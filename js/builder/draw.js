@@ -1,4 +1,3 @@
-
 "use strict";
 
 define(["vis/utils", "lib/d3"], function(utils, d3) {
@@ -13,6 +12,11 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	   };
 
     // definitions
+    function turn_off_drag(sel) {
+	sel.on('mousedown.drag', null);
+	sel.on('touchstart.drag', null);
+    }
+    
     function create_membrane(enter_selection) {
 	utils.check_undefined(arguments, ['enter_selection']);
 	enter_selection.append('rect')
@@ -30,29 +34,29 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
             .attr('ry', function(d){ return scale.x_size(20); });
     }
 
-    function create_reaction(enter_selection, label_drag_behavior) {
-	utils.check_undefined(arguments, ['enter_selection', 'label_drag_behavior']);
+    function create_reaction(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
         // attributes for new reaction group
 
         var t = enter_selection.append('g')
                 .attr('id', function(d) { return d.reaction_id; })
                 .attr('class', 'reaction')
-                .call(create_reaction_label, label_drag_behavior);
+                .call(create_reaction_label);
         return;
     }
 
     function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
 			     arrow_displacement, defs, arrowheads,
-			     default_reaction_color, has_flux, bezier_drag_behavior) {
+			     default_reaction_color, has_flux, bezier_drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
 			       'arrow_displacement', 'defs', 'arrowheads',
 			       'default_reaction_color', 'has_flux',
-			       'bezier_drag_behavior']);
+			       'bezier_drag_behavior', 'label_drag_behavior']);
 
         // update reaction label
         update_selection.select('.reaction-label')
-            .call(function(sel) { return update_reaction_label(sel, scale, has_flux); });
+            .call(function(sel) { return update_reaction_label(sel, scale, has_flux, label_drag_behavior); });
 
         // select segments
         var sel = update_selection
@@ -75,18 +79,17 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
         sel.exit().remove();
     }
 
-    function create_reaction_label(sel, label_drag_behavior) {
-	utils.check_undefined(arguments, ['sel', 'label_drag_behavior']);
+    function create_reaction_label(sel) {
+	utils.check_undefined(arguments, ['sel']);
         /* Draw reaction label for selection.
 	 */
         sel.append('text')
             .attr('class', 'reaction-label label')
-	    .style('cursor', 'default')
-	    .call(label_drag_behavior);
+	    .style('cursor', 'default');
     }
 
-    function update_reaction_label(sel, scale, has_flux) {
-	utils.check_undefined(arguments, ['sel', 'scale', 'has_flux']);
+    function update_reaction_label(sel, scale, has_flux, label_drag_behavior) {
+	utils.check_undefined(arguments, ['sel', 'scale', 'has_flux', 'label_drag_behavior']);
 	
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
@@ -98,7 +101,9 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
             return 'translate('+scale.x(d.label_x)+','+scale.y(d.label_y)+')';
 	}).style("font-size", function(d) {
 	    return String(scale.size(30))+"px";
-        });
+        })
+	    .call(turn_off_drag)
+	    .call(label_drag_behavior);
     }
 
     function create_segment(enter_selection) {
@@ -211,16 +216,15 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 		    return beziers;
 		}, function(d) { return d.bezier; });
 	bez.enter().call(function(sel) {
-	    return create_bezier(sel, bezier_drag_behavior);
+	    return create_bezier(sel);
 	});
 	// update bezier points
-	bez.call(function(sel) { return update_bezier(sel, show_beziers); });
+	bez.call(function(sel) { return update_bezier(sel, show_beziers, bezier_drag_behavior); });
 	// remove
 	bez.exit().remove();
 
-	function create_bezier(enter_selection, drag_behavior) {
-	    utils.check_undefined(arguments,
-				  ['enter_selection', 'drag_behavior']);
+	function create_bezier(enter_selection) {
+	    utils.check_undefined(arguments, ['enter_selection']);
 
 	    enter_selection.append('circle')
 	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
@@ -231,12 +235,14 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 		})
 		.on("mouseout", function(d) {
 		    d3.select(this).style('stroke-width', String(scale.size(1))+'px');
-		})
-		.call(drag_behavior);
+		});
 	}
-	function update_bezier(update_selection, show_beziers) {
-	utils.check_undefined(arguments, ['update_selection', 'show_beziers']);
-
+	function update_bezier(update_selection, show_beziers, drag_behavior) {
+	    utils.check_undefined(arguments, ['update_selection', 'show_beziers', 'drag_behavior']);
+	    
+	    update_selection
+		.call(turn_off_drag)
+		.call(drag_behavior);
 	    if (show_beziers) {
 	    	// draw bezier points
 		update_selection
@@ -251,12 +257,10 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	}
     }
 
-    function create_node(enter_selection, scale, drawn_nodes, drawn_reactions, 
-			 click_fn, drag_behavior, label_drag_behavior) {
+    function create_node(enter_selection, scale, drawn_nodes, drawn_reactions) {
 	utils.check_undefined(arguments,
 			      ['enter_selection', 'scale', 'drawn_nodes',
-			       'drawn_reactions', 'click_fn',
-			       'drag_behavior', 'label_drag_behavior']);
+			       'drawn_reactions']);
 
         // create nodes
         var g = enter_selection
@@ -276,21 +280,20 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	    })
 	    .on("mouseout", function(d) {
 		d3.select(this).style('stroke-width', String(scale.size(2))+'px');
-	    })
-            .call(drag_behavior)
-            .on("click", click_fn);
+	    });
 
         g.filter(function(d) { return d.node_type=='metabolite'; })
 	    .append('text')
 	    .attr('class', 'node-label label')
-	    .style('cursor', 'default')
-	    .call(label_drag_behavior);
+	    .style('cursor', 'default');
     }
 
-    function update_node(update_selection, scale, has_node_data, node_data_style) {
+    function update_node(update_selection, scale, has_node_data, node_data_style,
+			 click_fn, drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'has_node_data',
-			       'node_data_style']);
+			       'node_data_style', 'click_fn',
+			       'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
         var mg = update_selection
@@ -317,7 +320,10 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 			    return 'rgb(224, 134, 91)';
 			}
 		    }
-		});
+		})
+		.call(turn_off_drag)
+		.call(drag_behavior)
+		.on("click", click_fn);
 
         update_selection
             .select('.node-label')
@@ -333,25 +339,28 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 		if (d.data) t += " ("+decimal_format(d.data)+")";
 		else if (has_node_data) t += " (0)";
 		return t;
-	    });
+	    })
+	    .call(turn_off_drag)
+	    .call(label_drag_behavior);
     }
 
-    function create_text_label(enter_selection, label_click, label_drag_behavior) {
-	utils.check_undefined(arguments, ['enter_selection', 'label_click', 'label_drag_behavior']);
+    function create_text_label(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
 
 	enter_selection.append('text')
 	    .attr('class', 'text-label label')
 	    .style('cursor', 'default')
-	    .text(function(d) { return d.text; })
-	    .on('click', label_click)
-	    .call(label_drag_behavior);
+	    .text(function(d) { return d.text; });
     }
 
-    function update_text_label(update_selection, scale) {
-	utils.check_undefined(arguments, ['update_selection', 'scale']);
+    function update_text_label(update_selection, scale, label_click, label_drag_behavior) {
+	utils.check_undefined(arguments, ['update_selection', 'scale', 'label_click', 'label_drag_behavior']);
 
         update_selection
-            .attr("transform", function(d) { return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
+            .attr("transform", function(d) { return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";})
+	    .on('click', label_click)
+	    .call(turn_off_drag)
+	    .call(label_drag_behavior);
     }
 
     function displaced_coords(reaction_arrow_displacement, start, end, displace) {

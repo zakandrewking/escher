@@ -27,7 +27,8 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    selection: d3.select("body").append("div"),
 	    selection_is_svg: false,
 	    fillScreen: false,
-	    on_load: null,
+	    enable_editing: true,
+	    on_load: function() {},
 	    map_path: null,
 	    map: null,
 	    cobra_model_path: null,
@@ -148,20 +149,22 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	// set up the reaction input with complete.ly
 	var reaction_input = Input(this.o.selection, this.map, this.zoom_container);
 
-	// setup the Brush
-	this.brush = new Brush(zoomed_sel, false, this.map);
+	if (this.o.enable_editing) {
+	    // setup the Brush
+	    this.brush = new Brush(zoomed_sel, false, this.map);
 
-	// setup the modes
-	this._setup_modes(this.map, this.brush, this.zoom_container);
-
-	// make key manager
-	var keys = this._get_keys(this.map, reaction_input, this.brush);
-	this.map.key_manager.assigned_keys = keys;
-	// set up menu and status bars
-	var menu = this._setup_menu(this.o.selection, this.map, this.zoom_container, this.map.key_manager, keys),
-	    status = this._setup_status(this.o.selection, this.map);
-	// make sure the key manager remembers all those changes
-	this.map.key_manager.update();
+	    // setup the modes
+	    this._setup_modes(this.map, this.brush, this.zoom_container);
+	
+	    // make key manager
+	    var keys = this._get_keys(this.map, reaction_input, this.brush);
+	    this.map.key_manager.assigned_keys = keys;
+	    // set up menu and status bars
+	    var menu = this._setup_menu(this.o.selection, this.map, this.zoom_container, this.map.key_manager, keys),
+		status = this._setup_status(this.o.selection, this.map);
+	    // make sure the key manager remembers all those changes
+	    this.map.key_manager.update();
+	}
 	
 	// setup selection box
 	if (!this.o.map_data) {
@@ -174,8 +177,14 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	    this.map.zoom_extent(200);
 	}
 
-	// start in zoom mode
-	this.zoom_mode();
+	if (this.o.enable_editing) {
+	    // start in zoom mode
+	    this.zoom_mode();
+	} else {
+	    // turn off the behaviors
+	    this.map.behavior.turn_everything_off();
+	    this.map.draw_everything();
+	}
 
 	// turn off loading message
 	d3.select('#loading').style("display", "none");

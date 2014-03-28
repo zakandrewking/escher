@@ -313,7 +313,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
 	utils.draw_an_object('#reactions', '.reaction', reactions,
 			     'reaction_id',
-			     function(sel) { return draw.create_reaction(sel, reaction_label_drag); }, 
+			     function(sel) { return draw.create_reaction(sel); }, 
 			     function(sel) { return draw.update_reaction(sel, scale, 
 									 nodes,
 									 beziers_enabled, 
@@ -321,19 +321,21 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 									 defs, arrowheads,
 									 default_reaction_color,
 									 has_flux,
-									 bezier_drag_behavior); });
+									 bezier_drag_behavior,
+									 reaction_label_drag); });
 
 	utils.draw_an_object('#nodes', '.node', nodes, 'node_id', 
-			     function(sel) { return draw.create_node(sel, scale, nodes, reactions,
+			     function(sel) { return draw.create_node(sel, scale, nodes, reactions); },
+			     function(sel) { return draw.update_node(sel, scale, has_node_data, node_data_style,
 								     node_click_fn, node_drag_behavior,
-								     node_label_drag); },
-			     function(sel) { return draw.update_node(sel, scale, has_node_data, node_data_style); });
+								     node_label_drag); });
 
 	utils.draw_an_object('#text-labels', '.text-label', text_labels,
 			     'text_label_id',
-			     function(sel) { return draw.create_text_label(sel, text_label_click,
-									   text_label_drag); }, 
-			     function(sel) { return draw.update_text_label(sel, scale); });
+			     function(sel) { return draw.create_text_label(sel); }, 
+			     function(sel) { return draw.update_text_label(sel, scale,
+									   text_label_click,
+									   text_label_drag); });
 
 
     }
@@ -375,7 +377,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
                       function(d) { return d.reaction_id; });
 
         // enter: generate and place reaction
-        sel.enter().call(draw.create_reaction, reaction_label_drag);
+        sel.enter().call(draw.create_reaction);
 
         // update: update when necessary
         sel.call(function(sel) { return draw.update_reaction(sel, scale, 
@@ -385,7 +387,8 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 							     defs, arrowheads,
 							     default_reaction_color,
 							     has_flux,
-							     bezier_drag_behavior); });
+							     bezier_drag_behavior,
+							     reaction_label_drag); });
 
         // exit
         sel.exit();
@@ -425,12 +428,12 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
                       function(d) { return d.node_id; });
 
         // enter: generate and place node
-        sel.enter().call(function(sel) { return draw.create_node(sel, scale, nodes, reactions, 
-								 node_click_fn, node_drag_behavior,
-								 node_label_drag); });
+        sel.enter().call(function(sel) { return draw.create_node(sel, scale, nodes, reactions); });
 
         // update: update when necessary
-        sel.call(function(sel) { return draw.update_node(sel, scale, has_node_data, node_data_style); });
+        sel.call(function(sel) { return draw.update_node(sel, scale, has_node_data, node_data_style, 
+							 node_click_fn, node_drag_behavior,
+							 node_label_drag); });
 
         // exit
         sel.exit();
@@ -459,12 +462,12 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 
         // enter: generate and place label
         sel.enter().call(function(sel) {
-	    return draw.create_text_label(sel, text_label_click, text_label_drag);
+	    return draw.create_text_label(sel);
 	});
 
         // update: update when necessary
         sel.call(function(sel) {
-	    return draw.update_text_label(sel, scale);
+	    return draw.update_text_label(sel, scale, text_label_click, text_label_drag);
 	});
 
         // exit
