@@ -1,5 +1,11 @@
 define(["vis/utils", "lib/d3"], function(utils, d3) {
-    /**
+    /** Define a brush to select elements in a map.
+
+     Brush(selection, is_enabled, map, insert_after)
+
+     insert_after: A d3 selector string to choose the svg element that the brush
+     will be inserted after. Often a canvas element (e.g. '.canvas-group').
+
      */
 
     var Brush = utils.make_class();
@@ -9,9 +15,13 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
     return Brush;
 
-    function init(selection, is_enabled, map) {
+    function init(selection, is_enabled, map, insert_after) {
 	this.brush_sel = selection.append('g')
 	    .attr('id', 'brush-container');
+	var node = this.brush_sel.node(),
+	    insert_before_node = selection.select(insert_after).node().nextSibling;
+	if (!(node===insert_before_node))
+	    node.parentNode.insertBefore(node, insert_before_node);
 	this.enabled = is_enabled;
 	this.map = map;
     };

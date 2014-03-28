@@ -150,7 +150,7 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 
 	if (this.o.enable_editing) {
 	    // setup the Brush
-	    this.brush = new Brush(zoomed_sel, false, this.map);
+	    this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
 
 	    // setup the modes
 	    this._setup_modes(this.map, this.brush, this.zoom_container);
