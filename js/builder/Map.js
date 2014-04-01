@@ -777,9 +777,8 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	    // updated connected nodes
 	    [segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
 		if (!(node_id in nodes)) return;
-		var node = nodes[node_id],
-		    connected_segments = node.connected_segments;
-		connected_segments = connected_segments.filter(function(so) {
+		var node = nodes[node_id];
+		node.connected_segments = node.connected_segments.filter(function(so) {
 		    return so.segment_id != segment_obj.segment_id;				
 		});
 	    });
@@ -1240,7 +1239,7 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	 */
 	var segment_objs_w_segments = [],
 	    these_reactions = {},
-	    nodes_for_reactions = {},
+	    segment_ids_for_reactions = {},
 	    reactions = this.reactions;
 	// for each node
 	for (var node_id in nodes) {
@@ -1252,16 +1251,20 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 		    segment_obj_w_segment = utils.clone(segment_obj);
 		segment_obj_w_segment['segment'] = utils.clone(segment);
 		segment_objs_w_segments.push(segment_obj_w_segment);
-		if (!(segment_obj.reaction_id in nodes_for_reactions))
-		    nodes_for_reactions[segment_obj.reaction_id] = 0;
-		nodes_for_reactions[segment_obj.reaction_id]++;
+		if (!(segment_obj.reaction_id in segment_ids_for_reactions))
+		    segment_ids_for_reactions[segment_obj.reaction_id] = [];
+		segment_ids_for_reactions[segment_obj.reaction_id].push(segment_obj.segment_id);
 	    });
 	}
 	// find the reactions that should be deleted because they have no segments left
-	for (var reaction_id in nodes_for_reactions) {
-	    var reaction = reactions[reaction_id];
-	    if (Object.keys(reaction.segments).length == nodes_for_reactions[reaction_id])
-		these_reactions[reaction_id] = reaction;
+	for (var reaction_id in segment_ids_for_reactions) {
+	    var reaction = reactions[reaction_id],
+		these_ids = segment_ids_for_reactions[reaction_id],
+		has = true;
+	    for (var segment_id in reaction.segments) {
+		if (these_ids.indexOf(segment_id)==-1) has = false;
+	    }
+	    if (has) these_reactions[reaction_id] = reaction;
 	}
 	return { segment_objs_w_segments: segment_objs_w_segments, reactions: these_reactions };
     }

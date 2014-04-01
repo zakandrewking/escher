@@ -231,7 +231,9 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		
 		// add to undo/redo stack
 		// remember the displacement, dragged nodes, and reactions
-		var saved_displacement = utils.clone(total_displacement), // BUG TODO this variable disappears!
+		var saved_displacement = utils.clone(total_displacement), 
+		    // BUG TODO this variable disappears!
+		    // Happens sometimes when you drag a node, then delete it, then undo twice
 		    saved_node_ids = utils.clone(nodes_to_drag),
 		    saved_reaction_ids = utils.clone(reaction_ids);
 		undo_stack.push(function() {
@@ -247,8 +249,7 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		    // redo
 		    saved_node_ids.forEach(function(node_id) {
 			var node = map.nodes[node_id];
-			build.move_node_and_dependents(node, node_id, map.reactions,
-						       saved_displacement[node_id]);
+			build.move_node_and_dependents(node, node_id, map.reactions, saved_displacement[node_id]);
 		    });
 		    map.draw_these_nodes(saved_node_ids);
 		    map.draw_these_reactions(saved_reaction_ids);
