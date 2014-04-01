@@ -66,7 +66,9 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	toggle_beziers: toggle_beziers,
 	hide_beziers: hide_beziers,
 	show_beziers: show_beziers,
-	zoom_extent: zoom_extent,
+	zoom_extent_nodes: zoom_extent_nodes,
+	zoom_extent_canvas: zoom_extent_canvas,
+	_zoom_extent: _zoom_extent,
 	// io
 	save: save,
 	map_for_export: map_for_export,
@@ -78,8 +80,8 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
     function init(selection, defs, zoom_container, height, width, flux, node_data, node_data_style,
 		  cobra_model, canvas_size_and_loc) {
 	if (canvas_size_and_loc===undefined) canvas_size_and_loc = {x:0, y:0, width:width, height: height};
-	utils.check_undefined(arguments, ['selection', 'defs', 'zoom_container', 'height', 'width', 'flux',
-					  'node_data', 'node_data_style', 'cobra_model', 'canvas_size_and_loc']);
+	// utils.check_undefined(arguments, ['selection', 'defs', 'zoom_container', 'height', 'width', 'flux',
+	// 				  'node_data', 'node_data_style', 'cobra_model', 'canvas_size_and_loc']);
 	// TODO make these inputs optional when possible
 
 	// defaults
@@ -1278,7 +1280,27 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
         return this;
     }
 
-    function zoom_extent(margin, mode) {
+    function zoom_extent_nodes(margin) {
+	/** Zoom to fit all the nodes.
+
+	 margin: optional argument to set the margins.
+
+	 Returns error if one is raised.
+
+	 */
+	this._zoom_extent(margin, 'nodes');
+    }
+    function zoom_extent_canvas(margin) {
+	/** Zoom to fit the canvas.
+
+	 margin: optional argument to set the margins.
+
+	 Returns error if one is raised.
+
+	 */
+	this._zoom_extent(margin, 'canvas');
+    }
+    function _zoom_extent(margin, mode) {
 	/** Zoom to fit all the nodes.
 
 	 margin: optional argument to set the margins.

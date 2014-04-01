@@ -6,7 +6,6 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
     //     return this.parentNode.__data__;
     // })
 
-
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
 			  reload_builder: reload_builder,
@@ -168,16 +167,16 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 	// setup selection box
 	if (this.o.map_data) {
 	    this.map.draw_everything();
-	    this.map.zoom_extent();
+	    this.map.zoom_extent_canvas();
 	} else {
 	    if (this.o.starting_reaction) {
 		// Draw default reaction if no map is provided
 		var start_coords = { x: this.map.scale.x.invert(width/2),
 				     y: this.map.scale.x.invert(height/4) };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
-		this.map.zoom_extent(300, 'nodes');
+		this.map.zoom_extent_nodes(300, 'nodes');
 	    } else {
-		this.map.zoom_extent();
+		this.map.zoom_extent_canvas();
 	    }
 	}
 
@@ -231,7 +230,8 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 
 	new_button(sel, keys.rotate, "Rotate (r)");
 	new_button(sel, keys.delete, "Delete (^del)");
-	new_button(sel, keys.extent, "Zoom extent (^0)");
+	new_button(sel, keys.extent_nodes, "Zoom to nodes (^0)");
+	new_button(sel, keys.extent_canvas, "Zoom to canvas (^1)");
 	new_button(sel, keys.make_primary, "Make primary metabolite (p)");
 	new_button(sel, keys.cycle_primary, "Cycle primary metabolite (c)");
 	new_button(sel, keys.direction_arrow_left, "<");
@@ -350,9 +350,12 @@ define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builde
 		      target: map,
 		      fn: map.delete_selected,
 		      ignore_with_input: true },
-	    extent: { key: 48, modifiers: { control: true }, // ctrl-0
-		      target: map,
-		      fn: map.zoom_extent },
+	    extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
+			    target: map,
+			    fn: map.zoom_extent_nodes },
+	    extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
+			     target: map,
+			     fn: map.zoom_extent_canvas },
 	    make_primary: { key: 80, // p
 			    target: map,
 			    fn: map.make_selected_node_primary,
