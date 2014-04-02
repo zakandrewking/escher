@@ -84,19 +84,23 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
     // functions to scale and translate
     function go_to(scale, translate) { 
 	if (!scale) return console.error('Bad scale value');
-	if (!translate || !('x' in translate) || !('y' in translate)) return console.error('Bad translate value');
+	if (!translate || !('x' in translate) || !('y' in translate))
+	    return console.error('Bad translate value');
 
 	this.zoom_behavior.scale(scale);
 	this.window_scale = scale;
 	if (this.saved_scale !== null) this.saved_scale = scale;
 
-	this.zoom_behavior.translate([translate.x, translate.y]);
+	var translate_array = [translate.x, translate.y];
+	this.zoom_behavior.translate(translate_array);
         this.window_translate = translate;
-	if (this.saved_translate !== null) this.saved_translate = translate;
+	if (this.saved_translate !== null) this.saved_translate = translate_array;
 
         this.zoomed_sel
 	    .transition()
-            .attr('transform', 'translate('+this.window_translate.x+','+this.window_translate.y+')scale('+this.window_scale+')');
+            .attr('transform',
+		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
+		  'scale('+this.window_scale+')');
 	return null;
     }			    
 
