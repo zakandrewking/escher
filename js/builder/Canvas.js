@@ -58,8 +58,10 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 		.on("drag", bdragresize);
 
 	var left = new_sel.append("rect")
-		.attr("x", function(d) { return d.x - (dragbar_width/2); })
-		.attr("y", function(d) { return d.y + (dragbar_width/2); })
+		.attr('transform', function(d) {
+		    return 'translate('+[ d.x - (dragbar_width/2),
+					  d.y + (dragbar_width/2) ]+')';
+		})
 		.attr("height", this.height - dragbar_width)
 		.attr("id", "dragleft")
 		.attr("width", dragbar_width)
@@ -68,8 +70,10 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 		.call(drag_left);
 	
 	var right = new_sel.append("rect")
-		.attr("x", function(d) { return d.x + self.width - (dragbar_width/2); })
-		.attr("y", function(d) { return d.y + (dragbar_width/2); })
+		.attr('transform', function(d) {
+		    return 'translate('+[ d.x + self.width - (dragbar_width/2),
+					  d.y + (dragbar_width/2) ]+')';
+		})
 		.attr("id", "dragright")
 		.attr("height", this.height - dragbar_width)
 		.attr("width", dragbar_width)
@@ -78,8 +82,10 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 		.call(drag_right);
 	
 	var top = new_sel.append("rect")
-		.attr("x", function(d) { return d.x + (dragbar_width/2); })
-		.attr("y", function(d) { return d.y - (dragbar_width/2); })
+		.attr('transform', function(d) {
+		    return 'translate('+[ d.x + (dragbar_width/2),
+					  d.y - (dragbar_width/2) ]+')';
+		})
 		.attr("height", dragbar_width)
 		.attr("id", "dragleft")
 		.attr("width", this.width - dragbar_width)
@@ -88,8 +94,10 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 		.call(drag_top);
 	
 	var bottom = new_sel.append("rect")
-		.attr("x", function(d) { return d.x + (dragbar_width/2); })
-		.attr("y", function(d) { return d.y + self.height - (dragbar_width/2); })
+		.attr('transform', function(d) {
+		    return 'translate('+[ d.x + (dragbar_width/2),
+					  d.y + self.height - (dragbar_width/2) ]+')';
+		})
 		.attr("id", "dragright")
 		.attr("height", dragbar_width)
 		.attr("width", this.width - dragbar_width)
@@ -101,30 +109,41 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	function stop_propagation() {
 	    d3.event.sourceEvent.stopPropagation();
 	}
+	function transform_string(x, y, current_transform) {
+	    var tr = d3.transform(current_transform),
+		translate = tr.translate;	    
+	    if (x!==null) translate[0] = x;
+	    if (y!==null) translate[1] = y;
+	    return 'translate('+translate+')';
+	}
 	function ldragresize(d) {
 	    var oldx = d.x; 
-	    //Max x on the right is x + width - dragbar_width
-	    //Max x on the left is 0 - (dragbar_width/2)
 	    d.x = Math.min(d.x + self.width - (dragbar_width / 2), d3.event.x);
 	    self.x = d.x;
 	    self.width = self.width + (oldx - d.x);
-	    left.attr("x", function(d) { return d.x - (dragbar_width / 2); });	    
-	    rect.attr("x", function(d) { return d.x; }).attr("width", self.width);
-	    top.attr("x", function(d) { return d.x + (dragbar_width/2); })
-		.attr("width", self.width - dragbar_width);
-	    bottom.attr("x", function(d) { return d.x + (dragbar_width/2); })
-		.attr("width", self.width - dragbar_width);
+	    left.attr("transform", function(d) {
+		return transform_string(d.x - (dragbar_width / 2), null, left.attr('transform'));
+	    });
+	    rect.attr("transform", function(d) {
+		return transform_string(d.x, null, rect.attr('transform'));
+	    }).attr("width", self.width);
+	    top.attr("transform", function(d) {
+		return transform_string(d.x + (dragbar_width/2), null, top.attr('transform'));
+	    }).attr("width", self.width - dragbar_width);
+	    bottom.attr("transform", function(d) {
+		return transform_string(d.x + (dragbar_width/2), null, bottom.attr('transform'));
+	    }).attr("width", self.width - dragbar_width);
 	}
 
 	function rdragresize(d) {
 	    d3.event.sourceEvent.stopPropagation();
-	    //Max x on the left is x - width 
-	    //Max x on the right is width of screen + (dragbar_width/2)
 	    var dragx = Math.max(d.x + (dragbar_width/2), d.x + self.width + d3.event.dx);
 	    //recalculate width
 	    self.width = dragx - d.x;
 	    //move the right drag handle
-	    right.attr("x", function(d) { return dragx - (dragbar_width/2); });
+	    right.attr("transform", function(d) {
+		return transform_string(dragx - (dragbar_width/2), null, right.attr('transform'));
+	    });
 	    //resize the drag rectangle
 	    //as we are only resizing from the right, the x coordinate does not need to change
 	    rect.attr("width", self.width);
@@ -135,29 +154,32 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 	function tdragresize(d) {
 	    d3.event.sourceEvent.stopPropagation();	    
 	    var oldy = d.y; 
-	    //Max x on the right is x + width - dragbar_width
-	    //Max x on the left is 0 - (dragbar_width/2)
 	    d.y = Math.min(d.y + self.height - (dragbar_width / 2), d3.event.y);
 	    self.y = d.y;
 	    self.height = self.height + (oldy - d.y);
-	    top.attr("y", function(d) { return d.y - (dragbar_width / 2); });	    
-	    rect.attr("y", function(d) { return d.y; })
-		.attr("height", self.height);
-	    left.attr("y", function(d) { return d.y + (dragbar_width/2); })
-		.attr("height", self.height - dragbar_width);
-	    right.attr("y", function(d) { return d.y + (dragbar_width/2); })
-		.attr("height", self.height - dragbar_width);
+	    top.attr("transform", function(d) {
+		return transform_string(null, d.y - (dragbar_width / 2), top.attr('transform'));
+	    });
+	    rect.attr("transform", function(d) {
+		return transform_string(null, d.y, rect.attr('transform'));
+	    }).attr("height", self.height);
+	    left.attr("transform", function(d) {
+		return transform_string(null, d.y + (dragbar_width/2), left.attr('transform'));
+	    }).attr("height", self.height - dragbar_width);
+	    right.attr("transform", function(d) {
+		return transform_string(null, d.y + (dragbar_width/2), right.attr('transform'));
+	    }).attr("height", self.height - dragbar_width);
 	}
 
 	function bdragresize(d) {
 	    d3.event.sourceEvent.stopPropagation();
-	    //Max x on the left is x - width 
-	    //Max x on the right is width of screen + (dragbar_width/2)
 	    var dragy = Math.max(d.y + (dragbar_width/2), d.y + self.height + d3.event.dy);
 	    //recalculate width
 	    self.height = dragy - d.y;
 	    //move the right drag handle
-	    bottom.attr("y", function(d) { return dragy - (dragbar_width/2); });
+	    bottom.attr("transform", function(d) {
+		return transform_string(null, dragy - (dragbar_width/2), bottom.attr('transform'));
+	    });
 	    //resize the drag rectangle
 	    //as we are only resizing from the right, the x coordinate does not need to change
 	    rect.attr("height", self.height);
