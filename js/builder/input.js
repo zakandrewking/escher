@@ -89,14 +89,15 @@ define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomC
 	else this.is_visible = on_off;
 	if (this.is_visible) {
 	    this.toggle_start_reaction_listener(true);
-	    this.selection.style("display", "block");
 	    this.reload_at_selected();
+	    this.map.set_status('Click on the canvas or an existing metabolite');
 	    this.callback_manager.run('show_reaction_input');
 	} else {
 	    this.toggle_start_reaction_listener(false);
 	    this.selection.style("display", "none");
             this.completely.input.blur();
             this.completely.hideDropDown();
+	    this.map.set_status(null);
 	    this.callback_manager.run('hide_reaction_input');
 	}
     }

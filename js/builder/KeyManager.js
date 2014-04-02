@@ -37,7 +37,8 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
     function update() {
 	var held_keys = this.held_keys,
-	    keys = this.assigned_keys;
+	    keys = this.assigned_keys,
+	    self = this;
 
         var modifier_keys = { command: 91,
                               control: 17,
@@ -49,8 +50,8 @@ define(["vis/utils", "lib/d3"], function(utils, d3) {
 
         d3.select(window).on("keydown.key_manager", function() {
             var kc = d3.event.keyCode,
-                reaction_input_visible = this.reaction_input ?
-		    this.reaction_input.is_visible : false,
+                reaction_input_visible = self.reaction_input ?
+		    self.reaction_input.is_visible : false,
 		meaningless = true;
             toggle_modifiers(modifier_keys, held_keys, kc, true);
 	    for (var key_id in keys) {
