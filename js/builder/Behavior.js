@@ -126,10 +126,10 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
     function get_node_drag(map, undo_stack) {
 	// define some variables
 	var behavior = d3.behavior.drag(),
-	    total_displacement,
-	    nodes_to_drag,
-	    reaction_ids,
-	    the_timeout;
+	    total_displacement = null,
+	    nodes_to_drag = null,
+	    reaction_ids = null,
+	    the_timeout = null;
 
         behavior.on("dragstart", function () { 
 	    // Note that dragstart is called even for a click event
@@ -156,9 +156,8 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 			    .classed('node-to-combine', true);
 		    }
 		}).on('mouseout.combine', function(d) {
-		    if (d.bigg_id_compartmentalized==bigg_id_compartmentalized &&
-			d.node_id!==data.node_id) {
-			d3.select(this).style('stroke-width', String(map.scale.size(2))+'px')
+		    if (d.bigg_id_compartmentalized==bigg_id_compartmentalized) {
+			d3.selectAll('.node-to-combine').style('stroke-width', String(map.scale.size(2))+'px')
 			    .classed('node-to-combine', false);
 		    }
 		});
@@ -189,7 +188,16 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 	    map.draw_these_nodes(nodes_to_drag);
 	    map.draw_these_reactions(reaction_ids);
 	});
-	behavior.on("dragend", function() {	
+	behavior.on("dragend", function() {
+	    if (nodes_to_drag===null) {
+		// Dragend can be called when drag has not been called. In this,
+		// case, do nothing.
+		total_displacement = null;
+		nodes_to_drag = null;
+		reaction_ids = null;
+		the_timeout = null;
+		return;
+	    }
 	    // look for mets to combine
 	    var node_to_combine_array = [];
 	    d3.selectAll('.node-to-combine').each(function(d) {
@@ -200,7 +208,8 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		var fixed_node_id = node_to_combine_array[0],
 		    dragged_node_id = this.parentNode.__data__.node_id,
 		    saved_dragged_node = utils.clone(map.nodes[dragged_node_id]),
-		    segment_objs_moved_to_combine = combine_nodes_and_draw(fixed_node_id, dragged_node_id);
+		    segment_objs_moved_to_combine = combine_nodes_and_draw(fixed_node_id,
+									   dragged_node_id);
 		undo_stack.push(function() {
 		    // undo
 		    // put the old node back
@@ -209,9 +218,13 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 			updated_reactions = [];
 		    segment_objs_moved_to_combine.forEach(function(segment_obj) {
 			var segment = map.reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
-			if (segment.from_node_id==fixed_node_id) segment.from_node_id = dragged_node_id;
-			else if (segment.to_node_id==fixed_node_id) segment.to_node_id = dragged_node_id;
-			else console.error('Segment does not connect to fixed node');
+			if (segment.from_node_id==fixed_node_id) {
+			    segment.from_node_id = dragged_node_id;
+			} else if (segment.to_node_id==fixed_node_id) {
+			    segment.to_node_id = dragged_node_id;
+			} else {
+			    console.error('Segment does not connect to fixed node');
+			}
 			// removed this segment_obj from the fixed node
 			fixed_node.connected_segments = fixed_node.connected_segments.filter(function(x) {
 			    return !(x.reaction_id==segment_obj.reaction_id && x.segment_id==segment_obj.segment_id);
@@ -249,7 +262,8 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 		    // redo
 		    saved_node_ids.forEach(function(node_id) {
 			var node = map.nodes[node_id];
-			build.move_node_and_dependents(node, node_id, map.reactions, saved_displacement[node_id]);
+			build.move_node_and_dependents(node, node_id, map.reactions,
+						       saved_displacement[node_id]);
 		    });
 		    map.draw_these_nodes(saved_node_ids);
 		    map.draw_these_reactions(saved_reaction_ids);
@@ -263,6 +277,12 @@ define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
 
 	    // clear the timeout
 	    window.clearTimeout(the_timeout);
+
+	    // clear the shared variables
+	    total_displacement = null;
+	    nodes_to_drag = null;
+	    reaction_ids = null;
+	    the_timeout = null;
 	});
 	return behavior;
 

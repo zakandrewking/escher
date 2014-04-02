@@ -705,8 +705,19 @@ define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scal
 	    utils.extend(self.reactions, saved_reactions);
 	    var reactions_to_draw = Object.keys(saved_reactions);
 	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
+		var segment = segment_obj.segment;
 		self.reactions[segment_obj.reaction_id]
-		    .segments[segment_obj.segment_id] = segment_obj.segment;
+		    .segments[segment_obj.segment_id] = segment;
+
+		// updated connected nodes
+		[segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
+		    // not necessary for the deleted nodes
+		    if (node_id in saved_nodes) return;
+		    var node = self.nodes[node_id];
+		    node.connected_segments.push({ reaction_id: segment_obj.reaction_id,
+						   segment_id: segment_obj.segment_id });
+		});
+
 		reactions_to_draw.push(segment_obj.reaction_id);
 	    });
 	    self.draw_these_nodes(Object.keys(saved_nodes));
