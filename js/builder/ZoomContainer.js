@@ -18,6 +18,8 @@ define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, Callb
 	this.initial_zoom = 1.0;
 	this.window_translate = {x: 0, y: 0};
 	this.window_scale = 1.0;
+	this.width = w;
+	this.height = h;
 
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
