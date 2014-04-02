@@ -13,10 +13,11 @@ directory = os.path.abspath(os.path.dirname(__file__)).strip(os.pathsep)
 directory = re.sub(r'escher$', '', directory)
 NO_CACHE = True
 default_port = 7778
+default_public = False
 
-def run(port=default_port):    
-    print 'serving directory %s on port %d' % (directory, port)
-    application.listen(port)
+def run(port=default_port, public=False):
+    print 'serving directory %s on port %d' % (directory, options.port)
+    application.listen(port, None if public else "localhost")
     try:
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:
@@ -104,6 +105,9 @@ application = tornado.web.Application([
  
 if __name__ == "__main__":
     # define port
-    define("port", default=default_port, type=int)
+    define("port", default=default_port, type=int, help="Port to serve on.")
+    define("public", default=default_public, type=bool,
+           help=("If False, listen only on localhost. If True, listen on "
+                 "all available addresses."))
     parse_command_line()
-    run(port=options.port)
+    run(port=options.port, public=options.public)
