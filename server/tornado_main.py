@@ -8,9 +8,12 @@ from tornado.options import define, options, parse_command_line
 import json
 import re
 
+NO_CACHE = True
+
 # set directory to server
-directory = re.sub('server\%s?$' % os.sep, '', os.path.abspath(os.path.dirname(__file__)))
-port = 7777
+directory = os.path.abspath(os.path.dirname(__file__).replace('server',''))
+port = 7778
+
 print 'serving directory %s on port %d' % (directory, port)
 
 # define port
@@ -80,6 +83,8 @@ class MainHandler(BaseHandler):
                 self.redirect(path.split('/')[-1] + '/index.html')
         path = self.path_redirection(directory, path) 
         self.set_header("Content-Type", self.set_content_type(path))
+        if (NO_CACHE):
+            self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
         # get the file to serve
         self.check_and_render(path)
         

@@ -3,18 +3,21 @@
   <head>
     <title>Builder</title>
     <link rel="stylesheet" href="css/builder.css"/>
-    <link href="js/lib/builder/ui-lightness/jquery-ui-1.10.3.custom.css" rel="stylesheet">
     <script src="js/lib/d3.v3.js"></script>
-    <script src="js/lib/jquery-2.0.3.js"></script>
-    <script src="js/lib/builder/jquery-ui-1.10.3.custom.js"></script>
     <script data-main="js/config.js" src="js/require.js"></script>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   </head>
   <body>
     <script type="text/javascript">
-     require(["builder/main", "lib/d3"], function(builder, d3) {
-       builder({ fill_screen: true });
+     require(["builder/Builder"], function(Builder) {
+       Builder({ fill_screen: true,
+		 /* map_path: "data/maps/builder-json/755234_map.json", */
+		 css_path: "css/builder-embed.css",
+		 cobra_model_path: "data/maps/iJO1366_visbio_model_0.4.0.json",
+		 flux_path: "data/flux/flux-wt-pFBA.json",
+		 /* node_data_path: "data/flux/ijo_node_data.json", */
+		 debug: true });
      });
     </script>
   </body>

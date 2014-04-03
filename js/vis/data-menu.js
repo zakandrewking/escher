@@ -1,10 +1,11 @@
-define(["./scaffold", "lib/d3"], function(scaffold, d3) {
+define(["vis/utils", "lib/d3"], function(utils, d3) {
     return function(options) {
-        var o = scaffold.set_options(options, {
+        var o = utils.set_options(options, {
             selection: d3.select("body"),
             getdatafiles: null,
             datafiles: null,
-            update_callback: null });
+            update_callback: null,
+	    target: null});
 
         // setup dropdown menu
         // Append menu if it doesn't exist
@@ -27,12 +28,12 @@ define(["./scaffold", "lib/d3"], function(scaffold, d3) {
                 if (error) {
                     return console.warn(error);
                 } else {
-                    load_with_files(d.data, select_sel, o.update_callback, o.selection);
+                    load_with_files(o.target, d.data, select_sel, o.update_callback, o.selection);
                 }
                 return null;
             });
         } else if (o.datafiles) {
-            load_with_files(o.datafiles, select_sel, o.update_callback, o.selection);
+            load_with_files(o.target, o.datafiles, select_sel, o.update_callback, o.selection);
         } else {
             console.warn('DataMenu: No datafiles given');
         }
@@ -40,20 +41,20 @@ define(["./scaffold", "lib/d3"], function(scaffold, d3) {
         return { update: update };
 
         // definitions
-        function load_with_files(files, select_sel, update_callback, selection) {
+        function load_with_files(t, files, select_sel, update_callback, selection) {
 
             //when it changes
             select_sel.node().addEventListener("change", function() {
-                load_datafile(this.value, selection, update_callback);
+                load_datafile(t, this.value, selection, update_callback);
             }, false);
 
             var file = files[0];
 
             update(files, select_sel);
-            load_datafile(file, selection, update_callback);
+            load_datafile(t, file, selection, update_callback);
         };
-        function load_datafile(this_file, selection, callback) {
-            scaffold.load_the_file(this_file, function(error, data) {
+        function load_datafile(t, this_file, selection, callback) {
+            utils.load_the_file(t, this_file, function(error, data) {
                 if (error) {
                     return console.warn(error);
                     selection.append('error loading');

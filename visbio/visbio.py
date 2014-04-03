@@ -19,11 +19,11 @@ ipython_html = """
 <button onclick="download_map('map%d')">Download svg</button>
 <div id="map%d" style="height:800px;"></div>"""
 
-map_download_url = "http://zakandrewking.github.io/escher/maps/"
+map_download_url = "http://zakandrewking.github.io/escher/maps/v0.4/"
 map_download_display_url = "http://zakandrewking.github.io/escher/"
 
 def get_maps_cache_dir():
-    cache_dir = appdirs.user_cache_dir('visbio', appauthor="Zachary King")
+    cache_dir = appdirs.user_cache_dir('escher', appauthor="Zachary King")
     map_cache_dir = join(cache_dir, "map_cache", "")
     try:
         os.makedirs(map_cache_dir)
@@ -47,7 +47,7 @@ class Map(object):
     Maps which are not found will be downloaded from a map repository if
     found.
     """
-    def __init__(self, map_name="e-coli-core", flux={}):
+    def __init__(self, map_name="iJO1366_central_metabolism", flux={}):
         if map_name.endswith(".json"):
             warn("Map file name should not include .json")
         # if the file is not present attempt to download

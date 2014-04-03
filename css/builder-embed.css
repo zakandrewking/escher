@@ -1,0 +1,82 @@
+.canvas {
+    stroke: grey;
+    fill: none;
+}
+.resize-rect {
+    fill: black;
+    opacity: 0;
+    stroke: none;
+}
+.label {
+    font-family: sans-serif; 
+    font-style: italic; 
+    font-weight: bold; 
+    font-size: 8px; 
+    fill: black; 
+    stroke: none;
+    text-rendering: optimizelegibility;
+}
+.label .reaction-label {
+    fill: rgb(32, 32, 120);
+    text-rendering: optimizelegibility;
+}
+.node-circle {
+    fill: rgba(255,255,255,0.0);	
+    stroke: rgb(50, 50, 50);
+}
+.selected .node-circle{
+    stroke: rgb(20, 113, 199);
+}
+.selected.text-label {
+    fill: rgb(20, 113, 199);
+}
+.metabolite-circle {
+    stroke: rgb(162, 69, 16);
+}
+.selected .metabolite-circle {
+    stroke: rgb(5, 2, 0);
+}
+#misc-labels{
+    font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;
+}
+.line-arrow{
+    fill: none; 
+}
+.segment {
+    stroke: grey;
+    stroke-width: 3px;
+    fill: none;
+}
+.membrane {
+    fill: none;
+    stroke: rgb(255, 187, 0);
+}
+.brush .extent { 
+    fill-opacity: 0.1;
+    fill: black;
+    stroke: #fff;
+    shape-rendering: crispEdges;
+}
+.bezier {
+    fill: rgb(255,255,255);	
+}
+.bezier1 {
+    stroke: red;
+}
+.bezier2 {
+    stroke: blue;
+}
+.direction-arrow {
+    stroke: grey;
+    stroke-width: 1px;
+    fill: none;
+    opacity: 0.5;
+}
+.start-reaction-cursor {
+    cursor: pointer;
+}
+.start-reaction-target {
+    stroke: rgb(100,100,100);
+    fill: none;
+    opacity: 0.5;
+}

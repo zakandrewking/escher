@@ -8,7 +8,7 @@
     } else {
         //Browser globals case. Just assign the
         //result to a property on the global.
-        root.visbio = factory();
+        root.escher = factory();
     }
 }(this, function () {
     //almond, and your modules will be inlined here
