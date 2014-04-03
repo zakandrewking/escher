@@ -6,7 +6,7 @@ A library of web-based maps and visualizations for systems biology.
 See the [wiki](https://github.com/zakandrewking/escher/wiki) for some project info.
 
 
-1) Installation[Download](https://github.com/zakandrewking/escher/releases)
+1) Installation [Download](https://github.com/zakandrewking/escher/releases)
 =======
 
 
