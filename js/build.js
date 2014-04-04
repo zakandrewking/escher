@@ -1,6 +1,6 @@
 ({
     baseUrl: '.',
-    out: "visbio.js",
+    out: "escher-1.0.dev.js",
     name: "almond",
     paths: {
         'lib/complete.ly': 'lib/complete.ly.1.0.1'

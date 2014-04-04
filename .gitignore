@@ -13,3 +13,4 @@ viewer-json
 builder-json
 pub/
 dist/
+escher*.js

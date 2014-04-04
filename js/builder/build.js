@@ -1,6 +1,6 @@
-define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
+define(["vis/utils", "lib/d3"], function(utils, d3) {
     return { new_reaction: new_reaction,
-	     rotate_selected_nodes: rotate_selected_nodes,
+	     rotate_nodes: rotate_nodes,
 	     move_node_and_dependents: move_node_and_dependents };
     
     // definitions
@@ -18,7 +18,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	angle = Math.PI / 180 * angle; // default angle
 
 	// generate a new integer id
-	var new_reaction_id = ++largest_ids.reactions;
+	var new_reaction_id = String(++largest_ids.reactions);
 
         // calculate coordinates of reaction
 	var selected_node_coords = { x: selected_node.x,
@@ -105,7 +105,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 			  dis: { x: anchor_distance * (reaction_is_reversed ? -1 : 1), y: 0 } } ],
 	    anchor_ids = {};
 	anchors.map(function(n) {
-	    var new_id = ++largest_ids.nodes;
+	    var new_id = String(++largest_ids.nodes);
 	    new_anchors[new_id] = { node_type: n.node_type,
 				    x: center.x + n.dis.x,
 				    y: center.y + n.dis.y,
@@ -118,7 +118,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 				  [ anchor_ids['anchor_products'],  anchor_ids['center'] ] ];
 	new_anchor_groups.map(function(l) {
 	    var from_id = l[0], to_id = l[1],
-		new_segment_id = ++largest_ids.segments;
+		new_segment_id = String(++largest_ids.segments);
 	    new_reaction.segments[new_segment_id] =  { b1: null,
 						       b2: null,
 						       from_node_id: from_id,
@@ -155,7 +155,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	    // if this is the existing metabolite
 	    if (metabolite.bigg_id_compartmentalized==
 		selected_node.bigg_id_compartmentalized) {
-		var new_segment_id = ++largest_ids.segments;
+		var new_segment_id = String(++largest_ids.segments);
 		new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
 							  to_node_id: selected_node_id,
 							  b1: met_loc.b1,
@@ -167,8 +167,8 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 								  reaction_id: new_reaction_id });
 	    } else {
 		// save new metabolite
-		var new_segment_id = ++largest_ids.segments,
-		    new_node_id = ++largest_ids.nodes;
+		var new_segment_id = String(++largest_ids.segments),
+		    new_node_id = String(++largest_ids.nodes);
 		new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
 							  to_node_id: new_node_id,
 							  b1: met_loc.b1,
@@ -197,15 +197,15 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	
 	// add the selected node for rotation, and return it as a new (updated) node
 	new_nodes[selected_node_id] = selected_node;
-	var updated = rotate_selected_nodes(new_nodes, new_reactions,
+	var updated = rotate_nodes(new_nodes, new_reactions,
 					    angle, selected_node_coords);
 
 	return { new_reactions: new_reactions,
 		 new_nodes: new_nodes };
     }
 
-    function rotate_selected_nodes(selected_nodes, reactions, angle, center) {
-	/** Rotate the selected nodes around center.
+    function rotate_nodes(selected_nodes, reactions, angle, center) {
+	/** Rotate the nodes around center.
 
 	 selected_nodes: Nodes to rotate.
 	 reactions: Only updates beziers for these reactions.
@@ -310,7 +310,6 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	return { reaction_ids: updated_reaction_ids };
     }
 
-
     function calculate_new_metabolite_coordinates(met, primary_index, main_axis, center, dis, is_reversed) {
 	/** Calculate metabolite coordinates for a new reaction metabolite.
 
@@ -322,9 +321,9 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	    center = utils.c_minus_c(center, displacement);
 	
         // Curve parameters
-        var w = 60,  // distance between reactants and between products
-            b1_strength = 0.5,
-            b2_strength = 0.2,
+        var w = 80,  // distance between reactants and between products
+            b1_strength = 0.4,
+            b2_strength = 0.25,
             w2 = w*0.7,
             secondary_dis = 40,
             num_slots = Math.min(2, met.count - 1);
@@ -391,5 +390,4 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	loc.circle = utils.c_plus_c(displacement, circle);
         return loc;
     }
-
 });

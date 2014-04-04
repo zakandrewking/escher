@@ -1,137 +1,30 @@
-define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
-    return { setup_containers: setup_containers,
-	     draw: draw,
-	     reset: reset,
-	     draw_specific_reactions: draw_specific_reactions,
-	     draw_specific_nodes: draw_specific_nodes
+"use strict";
+
+define(["vis/utils", "lib/d3"], function(utils, d3) {
+    return { create_reaction: create_reaction,
+	     update_reaction: update_reaction,
+	     create_node: create_node,
+	     update_node: update_node,
+	     create_text_label: create_text_label,
+	     update_text_label: update_text_label,
+	     create_membrane: create_membrane,
+	     update_membrane: update_membrane
 	   };
 
     // definitions
-    function setup_containers(sel) {
-        sel.append('g')
-            .attr('id', 'membranes');
-        sel.append('g')
-            .attr('id', 'reactions');
-        sel.append('g')
-            .attr('id', 'nodes');
-        sel.append('g')
-            .attr('id', 'text-labels');
+    function turn_off_drag(sel) {
+	sel.on('mousedown.drag', null);
+	sel.on('touchstart.drag', null);
     }
-    function draw(membranes, reactions, nodes, text_labels, scale,
-		  show_beziers, arrow_displacement, defs, arrowheads,
-		  default_reaction_color, has_flux, 
-		  node_click_fn, node_drag_behavior) {
-        /** Draw the reactions and membranes
-         */
-
-	utils.draw_an_array('#membranes' ,'.membrane', membranes, create_membrane, 
-			     function(sel) { return update_membrane(sel, scale); });
-
-	utils.draw_an_object('#reactions', '.reaction', reactions,
-			     'reaction_id', create_reaction, 
-			     function(sel) { return update_reaction(sel, scale, 
-								    nodes,
-								    show_beziers, 
-								    arrow_displacement,
-								    defs, arrowheads,
-								    default_reaction_color,
-								    has_flux); });
-
-	utils.draw_an_object('#nodes', '.node', nodes, 'node_id', 
-			     function(sel) { return create_node(sel, scale, nodes, reactions,
-								node_click_fn, node_drag_behavior); },
-			     function(sel) { return update_node(sel, scale); });
-
-	utils.draw_an_object('#text-labels', '.text-label', text_labels,
-			     'text_label_id', create_text_label, 
-			     function(sel) { return update_text_label(sel, scale); });
-    }
-    function reset() {
-	d3.select('#membranes')
-            .selectAll('.membrane')
-            .remove();
-	d3.select('#reactions')
-            .selectAll('.reaction')
-            .remove();
-	d3.select('#nodes')
-            .selectAll('.node')
-            .remove();
-	d3.select('#text-labels')
-            .selectAll('.text-label')
-            .remove();
-    }
-
-    function draw_specific_reactions(reaction_ids, reactions, nodes, scale, show_beziers,
-				     arrow_displacement, defs, arrowheads, default_reaction_color, 
-				     has_flux) {
-        // find reactions for reaction_ids
-        var reaction_subset = {},
-            i = -1;
-        while (++i<reaction_ids.length) {
-            reaction_subset[reaction_ids[i]] = utils.clone(reactions[reaction_ids[i]]);
-        }
-        if (reaction_ids.length != Object.keys(reaction_subset).length) {
-            console.warn('did not find correct reaction subset');
-        }
-
-        // generate reactions for o.drawn_reactions
-        // assure constancy with cobra_id
-        var sel = d3.select('#reactions')
-                .selectAll('.reaction')
-                .data(utils.make_array(reaction_subset, 'reaction_id'),
-                      function(d) { return d.reaction_id; });
-
-        // enter: generate and place reaction
-        sel.enter().call(create_reaction);
-
-        // update: update when necessary
-        sel.call(function(sel) { return update_reaction(sel, scale, 
-							nodes,
-							show_beziers, 
-							arrow_displacement,
-							defs, arrowheads,
-							default_reaction_color,
-							has_flux); });
-
-        // exit
-        sel.exit();
-    }
-
-    function draw_specific_nodes(node_ids, nodes, reactions, scale, click_fn, drag_behavior) {
-        // find nodes for node_ids
-        var node_subset = {},
-            i = -1;
-        while (++i<node_ids.length) {
-            node_subset[node_ids[i]] = utils.clone(nodes[node_ids[i]]);
-        }
-        if (node_ids.length != Object.keys(node_subset).length) {
-            console.warn('did not find correct node subset');
-        }
-
-        // generate nodes for o.drawn_nodes
-        // assure constancy with cobra_id
-        var sel = d3.select('#nodes')
-                .selectAll('.node')
-                .data(utils.make_array(node_subset, 'node_id'),
-                      function(d) { return d.node_id; });
-
-        // enter: generate and place node
-        sel.enter().call(function(sel) { return create_node(sel, scale, nodes, reactions, 
-							    click_fn, drag_behavior); });
-
-        // update: update when necessary
-        sel.call(function(sel) { return update_node(sel, scale); });
-
-        // exit
-        sel.exit();
-    }
-
+    
     function create_membrane(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
 	enter_selection.append('rect')
 	    .attr('class', 'membrane');
     }
 
     function update_membrane(update_selection, scale) {
+	utils.check_undefined(arguments, ['enter_selection', 'scale']);
         update_selection
             .attr("width", function(d){ return scale.x_size(d.width); })
             .attr("height", function(d){ return scale.y_size(d.height); })
@@ -142,6 +35,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     }
 
     function create_reaction(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
         // attributes for new reaction group
 
         var t = enter_selection.append('g')
@@ -151,11 +45,18 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
         return;
     }
 
-    function update_reaction(update_selection, scale, drawn_nodes, show_beziers, arrow_displacement, defs, arrowheads,
-			     default_reaction_color, has_flux) {
+    function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
+			     arrow_displacement, defs, arrowheads,
+			     default_reaction_color, has_flux, bezier_drag_behavior, label_drag_behavior) {
+	utils.check_undefined(arguments,
+			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
+			       'arrow_displacement', 'defs', 'arrowheads',
+			       'default_reaction_color', 'has_flux',
+			       'bezier_drag_behavior', 'label_drag_behavior']);
+
         // update reaction label
         update_selection.select('.reaction-label')
-            .call(function(sel) { return update_reaction_label(sel, scale); });
+            .call(function(sel) { return update_reaction_label(sel, scale, has_flux, label_drag_behavior); });
 
         // select segments
         var sel = update_selection
@@ -170,7 +71,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
         // update segments
         sel.call(function(sel) { 
 	    return update_segment(sel, scale, drawn_nodes, show_beziers, arrow_displacement, defs, arrowheads, 
-				  default_reaction_color, has_flux);
+				  default_reaction_color, has_flux, bezier_drag_behavior);
 
 	});
 
@@ -179,23 +80,35 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     }
 
     function create_reaction_label(sel) {
+	utils.check_undefined(arguments, ['sel']);
         /* Draw reaction label for selection.
 	 */
         sel.append('text')
-	    .text(function(d) { return d.abbreviation; })
             .attr('class', 'reaction-label label')
-            .attr('pointer-events', 'none');
+	    .style('cursor', 'default');
     }
 
-    function update_reaction_label(sel, scale) {
-	sel.attr('transform', function(d) {
+    function update_reaction_label(sel, scale, has_flux, label_drag_behavior) {
+	utils.check_undefined(arguments, ['sel', 'scale', 'has_flux', 'label_drag_behavior']);
+	
+	var decimal_format = d3.format('.4g');
+	sel.text(function(d) { 
+            var t = d.abbreviation;
+            if (d.flux) t += " ("+decimal_format(d.flux)+")";
+            else if (has_flux) t += " (0)";
+            return t;
+	}).attr('transform', function(d) {
             return 'translate('+scale.x(d.label_x)+','+scale.y(d.label_y)+')';
 	}).style("font-size", function(d) {
 	    return String(scale.size(30))+"px";
-        });
+        })
+	    .call(turn_off_drag)
+	    .call(label_drag_behavior);
     }
 
     function create_segment(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
+
         // create segments
         var g = enter_selection
                 .append('g')
@@ -208,69 +121,16 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 
 	g.append('g')
 	    .attr('class', 'beziers');
-
-	// THE FOLLOWING IS ALL TERRIBLE
-
-
-	// g.append('circle')
-	// 	.attr('class', 'bezier bezier1')
-	// 	.style('stroke-width', String(o.scale.size(1))+'px') 
-	// 	.call(d3.behavior.drag()
-	// 	      .on("dragstart", drag_silence)
-	// 	      .on("drag", drag_move_1))		
-	// 	.on("mouseover", function(d) {
-	// 	    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
-	// 	})
-	// 	.on("mouseout", function(d) {
-	// 	    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
-	// 	});
-
-	// // TODO fix this hack
-	// g.append('circle')
-	// 	.attr('class', 'bezier bezier2')
-	// 	.style('stroke-width', String(o.scale.size(1))+'px') 
-	// 	.call(d3.behavior.drag()
-	// 	      .on("dragstart", drag_silence)
-	// 	      .on("drag", drag_move_2))
-	// 	.on("mouseover", function(d) {
-	// 	    d3.select(this).style('stroke-width', String(o.scale.size(2))+'px');
-	// 	})
-	// 	.on("mouseout", function(d) {
-	// 	    d3.select(this).style('stroke-width', String(o.scale.size(1))+'px');
-	// 	});
-
-	// // definitions
-	// function drag_silence() {
-	// 	// silence other listeners
-        //     d3.event.sourceEvent.stopPropagation();
-	// }
-	// function drag_move_1() { 
-	// 	// TODO fix this hack too
-	// 	var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
-	// 	    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
-	// 	var seg = o.drawn_reactions[reaction_id].segments[segment_id],
-	// 	    dx = o.scale.x_size.invert(d3.event.dx),
-	// 	    dy = o.scale.y_size.invert(d3.event.dy);
-	// 	seg.b1.x = seg.b1.x + dx;
-	// 	seg.b1.y = seg.b1.y + dy;
-	// 	draw_specific_reactions([reaction_id]);
-	// }
-	// function drag_move_2() { 
-	// 	// TODO fix this hack too
-	// 	var segment_id = d3.select(this.parentNode.parentNode).datum().segment_id,
-	// 	    reaction_id = d3.select(this.parentNode.parentNode.parentNode).datum().reaction_id;
-	// 	var seg = o.drawn_reactions[reaction_id].segments[segment_id],
-	// 	    dx = o.scale.x_size.invert(d3.event.dx),
-	// 	    dy = o.scale.y_size.invert(d3.event.dy);
-	// 	seg.b2.x = seg.b2.x + dx;
-	// 	seg.b2.y = seg.b2.y + dy;
-	// 	draw_specific_reactions([reaction_id]);
-	// }
     }
     
     function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
 			    arrow_displacement, defs, arrowheads, default_reaction_color,
-			    has_flux) {
+			    has_flux, bezier_drag_behavior) {
+	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
+					  'show_beziers', 'arrow_displacement', 'defs',
+					  'arrowheads', 'default_reaction_color',
+					  'has_flux', 'bezier_drag_behavior']);
+
         // update segment attributes
         // update arrows
         update_selection
@@ -287,12 +147,10 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 		    b2 = d.b2;
 		// if metabolite, then displace the arrow
 		if (start['node_type']=='metabolite') {
-		    start = displaced_coords(arrow_displacement, start, end, 'start');
-		    b1 = displaced_coords(arrow_displacement, b1, end, 'start');
+		    start = displaced_coords(arrow_displacement, start, b1, 'start');
 		}
 		if (end['node_type']=='metabolite') {
-		    end = displaced_coords(arrow_displacement, start, end, 'end');
-		    b2 = displaced_coords(arrow_displacement, start, b2, 'end');
+		    end = displaced_coords(arrow_displacement, b2, end, 'end');
 		}
 		if (d.b1==null || d.b2==null) {
 		    return 'M'+scale.x(start.x)+','+scale.y(start.y)+' '+
@@ -339,26 +197,52 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	var bez = update_selection.select('.beziers')
 		.selectAll('.bezier')
 		.data(function(d) {
-		    var beziers = [];
+		    var beziers = [],
+			reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
+			segment_id = this.parentNode.parentNode.__data__.segment_id;
+		    //TODO fix; this is a bit of a hack
 		    if (d.b1!=null && d.b1.x!=null && d.b1.y!=null)
-			beziers.push({'bezier': 1, x:d.b1.x, y:d.b1.y});
+			beziers.push({bezier: 1,
+				      x: d.b1.x,
+				      y: d.b1.y,
+				      reaction_id: reaction_id,
+				      segment_id: segment_id });
 		    if (d.b2!=null && d.b2.x!=null && d.b2.y!=null)
-			beziers.push({'bezier': 2, x:d.b2.x, y:d.b2.y});
+			beziers.push({bezier: 2,
+				      x: d.b2.x,
+				      y: d.b2.y,
+				      reaction_id: reaction_id,
+				      segment_id: segment_id });
 		    return beziers;
 		}, function(d) { return d.bezier; });
-	bez.enter().call(create_bezier);
+	bez.enter().call(function(sel) {
+	    return create_bezier(sel);
+	});
 	// update bezier points
-	bez.call(function(sel) { return update_bezier(sel, show_beziers); });
+	bez.call(function(sel) { return update_bezier(sel, show_beziers, bezier_drag_behavior); });
 	// remove
 	bez.exit().remove();
 
 	function create_bezier(enter_selection) {
+	    utils.check_undefined(arguments, ['enter_selection']);
+
 	    enter_selection.append('circle')
 	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
 	    	.style('stroke-width', String(scale.size(1))+'px')	
-    		.attr('r', String(scale.size(5))+'px');
+    		.attr('r', String(scale.size(5))+'px')
+		.on("mouseover", function(d) {
+		    d3.select(this).style('stroke-width', String(scale.size(3))+'px');
+		})
+		.on("mouseout", function(d) {
+		    d3.select(this).style('stroke-width', String(scale.size(1))+'px');
+		});
 	}
-	function update_bezier(update_selection, show_beziers) {
+	function update_bezier(update_selection, show_beziers, drag_behavior) {
+	    utils.check_undefined(arguments, ['update_selection', 'show_beziers', 'drag_behavior']);
+	    
+	    update_selection
+		.call(turn_off_drag)
+		.call(drag_behavior);
 	    if (show_beziers) {
 	    	// draw bezier points
 		update_selection
@@ -373,8 +257,11 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	}
     }
 
-    function create_node(enter_selection, scale, drawn_nodes, drawn_reactions, 
-			 click_fn, drag_behavior) {
+    function create_node(enter_selection, scale, drawn_nodes, drawn_reactions) {
+	utils.check_undefined(arguments,
+			      ['enter_selection', 'scale', 'drawn_nodes',
+			       'drawn_reactions']);
+
         // create nodes
         var g = enter_selection
                 .append('g')
@@ -393,31 +280,50 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
 	    })
 	    .on("mouseout", function(d) {
 		d3.select(this).style('stroke-width', String(scale.size(2))+'px');
-	    })
-            .call(drag_behavior)
-            .on("click", click_fn);
+	    });
 
-        g.append('text')
-            .attr('class', 'node-label label')
-            .text(function(d) { return d.bigg_id_compartmentalized; })
-            .attr('pointer-events', 'none');
+        g.filter(function(d) { return d.node_type=='metabolite'; })
+	    .append('text')
+	    .attr('class', 'node-label label')
+	    .style('cursor', 'default');
     }
 
-    function update_node(update_selection, scale) {
+    function update_node(update_selection, scale, has_node_data, node_data_style,
+			 click_fn, drag_behavior, label_drag_behavior) {
+	utils.check_undefined(arguments,
+			      ['update_selection', 'scale', 'has_node_data',
+			       'node_data_style', 'click_fn',
+			       'drag_behavior', 'label_drag_behavior']);
+
         // update circle and label location
         var mg = update_selection
                 .select('.node-circle')
                 .attr('transform', function(d) {
                     return 'translate('+scale.x(d.x)+','+scale.y(d.y)+')';
                 })
-		.attr('r', function(d) { 
-		    if (d.node_type!='metabolite') return scale.size(5);
-		    else return scale.size(d.node_is_primary ? 15 : 10); 
-		});
-                // .classed('selected', function(d) {
-		//     if (is_sel(d)) return true;
-		//     return false;
-                // });
+		.attr('r', function(d) {
+		    if (d.node_type == 'metabolite') {
+			if (has_node_data && node_data_style.indexOf('Size')!==1) {
+			    return scale.size(scale.node_size(d.data));
+			} else {
+			    return scale.size(d.node_is_primary ? 15 : 10); 
+			}
+		    } else {
+			return scale.size(5);
+		    }
+		})
+		.style('fill', function(d) {
+		    if (d.node_type=='metabolite') {
+			if (has_node_data && node_data_style.indexOf('Color')!==1) {
+			    return scale.node_color(d.data);
+			} else {
+			    return 'rgb(224, 134, 91)';
+			}
+		    }
+		})
+		.call(turn_off_drag)
+		.call(drag_behavior)
+		.on("click", click_fn);
 
         update_selection
             .select('.node-label')
@@ -426,32 +332,44 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
             })
             .style("font-size", function(d) {
 		return String(scale.size(20))+"px";
-            });
-
-	// definitions
-        // function is_sel(d) {	//FIX
-        //     if (d.node_id==o.selected_node.node_id &&
-        //         o.selected_node.is_selected)
-        //         return true;
-        //     return false;
-        // };
+            })
+            .text(function(d) {	
+		var decimal_format = d3.format('.4g');
+		var t = d.bigg_id_compartmentalized;
+		if (d.data) t += " ("+decimal_format(d.data)+")";
+		else if (has_node_data) t += " (0)";
+		return t;
+	    })
+	    .call(turn_off_drag)
+	    .call(label_drag_behavior);
     }
 
     function create_text_label(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
+
 	enter_selection.append('text')
 	    .attr('class', 'text-label label')
+	    .style('cursor', 'default')
 	    .text(function(d) { return d.text; });
     }
 
-    function update_text_label(update_selection, scale) {
+    function update_text_label(update_selection, scale, label_click, label_drag_behavior) {
+	utils.check_undefined(arguments, ['update_selection', 'scale', 'label_click', 'label_drag_behavior']);
+
         update_selection
-            .attr("transform", function(d) { return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";});
+            .attr("transform", function(d) { return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";})
+	    .on('click', label_click)
+	    .call(turn_off_drag)
+	    .call(label_drag_behavior);
     }
 
     function displaced_coords(reaction_arrow_displacement, start, end, displace) {
+	utils.check_undefined(arguments, ['reaction_arrow_displacement', 'start', 'end', 'displace']);
+
 	var length = reaction_arrow_displacement,
 	    hyp = utils.distance(start, end),
 	    new_x, new_y;
+	if (!length || !hyp) console.error('Bad value');
 	if (displace=='start') {
 	    new_x = start.x + length * (end.x - start.x) / hyp,
 	    new_y = start.y + length * (end.y - start.y) / hyp;
@@ -463,6 +381,7 @@ define(["metabolic-map/utils", "lib/d3"], function(utils, d3) {
     }
 
     function generate_arrowhead_for_color(defs, arrowheads_generated, color, is_end) {
+	utils.check_undefined(arguments, ['defs', 'arrowheads_generated', 'color', 'is_end']);
 
 	var pref = is_end ? 'start-' : 'end-';
 
