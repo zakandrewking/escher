@@ -7,7 +7,7 @@ import appdirs
 
 static_dir = join(abspath(dirname(__file__)), "static", "")
 d3_filepath = join(static_dir, 'd3.v3.min.js')
-map_js_filepath = join(static_dir, 'visbio_map.js')
+js_filepath = join(static_dir, 'visbio_map.js')
 
 ipython_html = """
 <style>

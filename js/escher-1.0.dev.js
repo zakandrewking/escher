@@ -2662,10 +2662,10 @@ define('builder/Behavior',["vis/utils", "lib/d3", "builder/build"], function(uti
     function get_node_drag(map, undo_stack) {
 	// define some variables
 	var behavior = d3.behavior.drag(),
-	    total_displacement,
-	    nodes_to_drag,
-	    reaction_ids,
-	    the_timeout;
+	    total_displacement = null,
+	    nodes_to_drag = null,
+	    reaction_ids = null,
+	    the_timeout = null;
 
         behavior.on("dragstart", function () { 
 	    // Note that dragstart is called even for a click event
@@ -2692,9 +2692,8 @@ define('builder/Behavior',["vis/utils", "lib/d3", "builder/build"], function(uti
 			    .classed('node-to-combine', true);
 		    }
 		}).on('mouseout.combine', function(d) {
-		    if (d.bigg_id_compartmentalized==bigg_id_compartmentalized &&
-			d.node_id!==data.node_id) {
-			d3.select(this).style('stroke-width', String(map.scale.size(2))+'px')
+		    if (d.bigg_id_compartmentalized==bigg_id_compartmentalized) {
+			d3.selectAll('.node-to-combine').style('stroke-width', String(map.scale.size(2))+'px')
 			    .classed('node-to-combine', false);
 		    }
 		});
@@ -2725,7 +2724,16 @@ define('builder/Behavior',["vis/utils", "lib/d3", "builder/build"], function(uti
 	    map.draw_these_nodes(nodes_to_drag);
 	    map.draw_these_reactions(reaction_ids);
 	});
-	behavior.on("dragend", function() {	
+	behavior.on("dragend", function() {
+	    if (nodes_to_drag===null) {
+		// Dragend can be called when drag has not been called. In this,
+		// case, do nothing.
+		total_displacement = null;
+		nodes_to_drag = null;
+		reaction_ids = null;
+		the_timeout = null;
+		return;
+	    }
 	    // look for mets to combine
 	    var node_to_combine_array = [];
 	    d3.selectAll('.node-to-combine').each(function(d) {
@@ -2736,7 +2744,8 @@ define('builder/Behavior',["vis/utils", "lib/d3", "builder/build"], function(uti
 		var fixed_node_id = node_to_combine_array[0],
 		    dragged_node_id = this.parentNode.__data__.node_id,
 		    saved_dragged_node = utils.clone(map.nodes[dragged_node_id]),
-		    segment_objs_moved_to_combine = combine_nodes_and_draw(fixed_node_id, dragged_node_id);
+		    segment_objs_moved_to_combine = combine_nodes_and_draw(fixed_node_id,
+									   dragged_node_id);
 		undo_stack.push(function() {
 		    // undo
 		    // put the old node back
@@ -2745,9 +2754,13 @@ define('builder/Behavior',["vis/utils", "lib/d3", "builder/build"], function(uti
 			updated_reactions = [];
 		    segment_objs_moved_to_combine.forEach(function(segment_obj) {
 			var segment = map.reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
-			if (segment.from_node_id==fixed_node_id) segment.from_node_id = dragged_node_id;
-			else if (segment.to_node_id==fixed_node_id) segment.to_node_id = dragged_node_id;
-			else console.error('Segment does not connect to fixed node');
+			if (segment.from_node_id==fixed_node_id) {
+			    segment.from_node_id = dragged_node_id;
+			} else if (segment.to_node_id==fixed_node_id) {
+			    segment.to_node_id = dragged_node_id;
+			} else {
+			    console.error('Segment does not connect to fixed node');
+			}
 			// removed this segment_obj from the fixed node
 			fixed_node.connected_segments = fixed_node.connected_segments.filter(function(x) {
 			    return !(x.reaction_id==segment_obj.reaction_id && x.segment_id==segment_obj.segment_id);
@@ -2785,7 +2798,8 @@ define('builder/Behavior',["vis/utils", "lib/d3", "builder/build"], function(uti
 		    // redo
 		    saved_node_ids.forEach(function(node_id) {
 			var node = map.nodes[node_id];
-			build.move_node_and_dependents(node, node_id, map.reactions, saved_displacement[node_id]);
+			build.move_node_and_dependents(node, node_id, map.reactions,
+						       saved_displacement[node_id]);
 		    });
 		    map.draw_these_nodes(saved_node_ids);
 		    map.draw_these_reactions(saved_reaction_ids);
@@ -2799,6 +2813,12 @@ define('builder/Behavior',["vis/utils", "lib/d3", "builder/build"], function(uti
 
 	    // clear the timeout
 	    window.clearTimeout(the_timeout);
+
+	    // clear the shared variables
+	    total_displacement = null;
+	    nodes_to_drag = null;
+	    reaction_ids = null;
+	    the_timeout = null;
 	});
 	return behavior;
 
@@ -3309,7 +3329,8 @@ define('builder/KeyManager',["vis/utils", "lib/d3"], function(utils, d3) {
 
     function update() {
 	var held_keys = this.held_keys,
-	    keys = this.assigned_keys;
+	    keys = this.assigned_keys,
+	    self = this;
 
         var modifier_keys = { command: 91,
                               control: 17,
@@ -3321,8 +3342,8 @@ define('builder/KeyManager',["vis/utils", "lib/d3"], function(utils, d3) {
 
         d3.select(window).on("keydown.key_manager", function() {
             var kc = d3.event.keyCode,
-                reaction_input_visible = this.reaction_input ?
-		    this.reaction_input.is_visible : false,
+                reaction_input_visible = self.reaction_input ?
+		    self.reaction_input.is_visible : false,
 		meaningless = true;
             toggle_modifiers(modifier_keys, held_keys, kc, true);
 	    for (var key_id in keys) {
@@ -3446,8 +3467,10 @@ define('builder/Canvas',["vis/utils", "lib/d3"], function(utils, d3) {
 		.on("drag", bdragresize);
 
 	var left = new_sel.append("rect")
-		.attr("x", function(d) { return d.x - (dragbar_width/2); })
-		.attr("y", function(d) { return d.y + (dragbar_width/2); })
+		.attr('transform', function(d) {
+		    return 'translate('+[ d.x - (dragbar_width/2),
+					  d.y + (dragbar_width/2) ]+')';
+		})
 		.attr("height", this.height - dragbar_width)
 		.attr("id", "dragleft")
 		.attr("width", dragbar_width)
@@ -3456,8 +3479,10 @@ define('builder/Canvas',["vis/utils", "lib/d3"], function(utils, d3) {
 		.call(drag_left);
 	
 	var right = new_sel.append("rect")
-		.attr("x", function(d) { return d.x + self.width - (dragbar_width/2); })
-		.attr("y", function(d) { return d.y + (dragbar_width/2); })
+		.attr('transform', function(d) {
+		    return 'translate('+[ d.x + self.width - (dragbar_width/2),
+					  d.y + (dragbar_width/2) ]+')';
+		})
 		.attr("id", "dragright")
 		.attr("height", this.height - dragbar_width)
 		.attr("width", dragbar_width)
@@ -3466,8 +3491,10 @@ define('builder/Canvas',["vis/utils", "lib/d3"], function(utils, d3) {
 		.call(drag_right);
 	
 	var top = new_sel.append("rect")
-		.attr("x", function(d) { return d.x + (dragbar_width/2); })
-		.attr("y", function(d) { return d.y - (dragbar_width/2); })
+		.attr('transform', function(d) {
+		    return 'translate('+[ d.x + (dragbar_width/2),
+					  d.y - (dragbar_width/2) ]+')';
+		})
 		.attr("height", dragbar_width)
 		.attr("id", "dragleft")
 		.attr("width", this.width - dragbar_width)
@@ -3476,8 +3503,10 @@ define('builder/Canvas',["vis/utils", "lib/d3"], function(utils, d3) {
 		.call(drag_top);
 	
 	var bottom = new_sel.append("rect")
-		.attr("x", function(d) { return d.x + (dragbar_width/2); })
-		.attr("y", function(d) { return d.y + self.height - (dragbar_width/2); })
+		.attr('transform', function(d) {
+		    return 'translate('+[ d.x + (dragbar_width/2),
+					  d.y + self.height - (dragbar_width/2) ]+')';
+		})
 		.attr("id", "dragright")
 		.attr("height", dragbar_width)
 		.attr("width", this.width - dragbar_width)
@@ -3489,30 +3518,41 @@ define('builder/Canvas',["vis/utils", "lib/d3"], function(utils, d3) {
 	function stop_propagation() {
 	    d3.event.sourceEvent.stopPropagation();
 	}
+	function transform_string(x, y, current_transform) {
+	    var tr = d3.transform(current_transform),
+		translate = tr.translate;	    
+	    if (x!==null) translate[0] = x;
+	    if (y!==null) translate[1] = y;
+	    return 'translate('+translate+')';
+	}
 	function ldragresize(d) {
 	    var oldx = d.x; 
-	    //Max x on the right is x + width - dragbar_width
-	    //Max x on the left is 0 - (dragbar_width/2)
 	    d.x = Math.min(d.x + self.width - (dragbar_width / 2), d3.event.x);
 	    self.x = d.x;
 	    self.width = self.width + (oldx - d.x);
-	    left.attr("x", function(d) { return d.x - (dragbar_width / 2); });	    
-	    rect.attr("x", function(d) { return d.x; }).attr("width", self.width);
-	    top.attr("x", function(d) { return d.x + (dragbar_width/2); })
-		.attr("width", self.width - dragbar_width);
-	    bottom.attr("x", function(d) { return d.x + (dragbar_width/2); })
-		.attr("width", self.width - dragbar_width);
+	    left.attr("transform", function(d) {
+		return transform_string(d.x - (dragbar_width / 2), null, left.attr('transform'));
+	    });
+	    rect.attr("transform", function(d) {
+		return transform_string(d.x, null, rect.attr('transform'));
+	    }).attr("width", self.width);
+	    top.attr("transform", function(d) {
+		return transform_string(d.x + (dragbar_width/2), null, top.attr('transform'));
+	    }).attr("width", self.width - dragbar_width);
+	    bottom.attr("transform", function(d) {
+		return transform_string(d.x + (dragbar_width/2), null, bottom.attr('transform'));
+	    }).attr("width", self.width - dragbar_width);
 	}
 
 	function rdragresize(d) {
 	    d3.event.sourceEvent.stopPropagation();
-	    //Max x on the left is x - width 
-	    //Max x on the right is width of screen + (dragbar_width/2)
 	    var dragx = Math.max(d.x + (dragbar_width/2), d.x + self.width + d3.event.dx);
 	    //recalculate width
 	    self.width = dragx - d.x;
 	    //move the right drag handle
-	    right.attr("x", function(d) { return dragx - (dragbar_width/2); });
+	    right.attr("transform", function(d) {
+		return transform_string(dragx - (dragbar_width/2), null, right.attr('transform'));
+	    });
 	    //resize the drag rectangle
 	    //as we are only resizing from the right, the x coordinate does not need to change
 	    rect.attr("width", self.width);
@@ -3523,29 +3563,32 @@ define('builder/Canvas',["vis/utils", "lib/d3"], function(utils, d3) {
 	function tdragresize(d) {
 	    d3.event.sourceEvent.stopPropagation();	    
 	    var oldy = d.y; 
-	    //Max x on the right is x + width - dragbar_width
-	    //Max x on the left is 0 - (dragbar_width/2)
 	    d.y = Math.min(d.y + self.height - (dragbar_width / 2), d3.event.y);
 	    self.y = d.y;
 	    self.height = self.height + (oldy - d.y);
-	    top.attr("y", function(d) { return d.y - (dragbar_width / 2); });	    
-	    rect.attr("y", function(d) { return d.y; })
-		.attr("height", self.height);
-	    left.attr("y", function(d) { return d.y + (dragbar_width/2); })
-		.attr("height", self.height - dragbar_width);
-	    right.attr("y", function(d) { return d.y + (dragbar_width/2); })
-		.attr("height", self.height - dragbar_width);
+	    top.attr("transform", function(d) {
+		return transform_string(null, d.y - (dragbar_width / 2), top.attr('transform'));
+	    });
+	    rect.attr("transform", function(d) {
+		return transform_string(null, d.y, rect.attr('transform'));
+	    }).attr("height", self.height);
+	    left.attr("transform", function(d) {
+		return transform_string(null, d.y + (dragbar_width/2), left.attr('transform'));
+	    }).attr("height", self.height - dragbar_width);
+	    right.attr("transform", function(d) {
+		return transform_string(null, d.y + (dragbar_width/2), right.attr('transform'));
+	    }).attr("height", self.height - dragbar_width);
 	}
 
 	function bdragresize(d) {
 	    d3.event.sourceEvent.stopPropagation();
-	    //Max x on the left is x - width 
-	    //Max x on the right is width of screen + (dragbar_width/2)
 	    var dragy = Math.max(d.y + (dragbar_width/2), d.y + self.height + d3.event.dy);
 	    //recalculate width
 	    self.height = dragy - d.y;
 	    //move the right drag handle
-	    bottom.attr("y", function(d) { return dragy - (dragbar_width/2); });
+	    bottom.attr("transform", function(d) {
+		return transform_string(null, dragy - (dragbar_width/2), bottom.attr('transform'));
+	    });
 	    //resize the drag rectangle
 	    //as we are only resizing from the right, the x coordinate does not need to change
 	    rect.attr("height", self.height);
@@ -3630,7 +3673,9 @@ define('builder/Map',["vis/utils", "lib/d3", "builder/draw", "builder/Behavior",
 	toggle_beziers: toggle_beziers,
 	hide_beziers: hide_beziers,
 	show_beziers: show_beziers,
-	zoom_extent: zoom_extent,
+	zoom_extent_nodes: zoom_extent_nodes,
+	zoom_extent_canvas: zoom_extent_canvas,
+	_zoom_extent: _zoom_extent,
 	// io
 	save: save,
 	map_for_export: map_for_export,
@@ -3642,8 +3687,8 @@ define('builder/Map',["vis/utils", "lib/d3", "builder/draw", "builder/Behavior",
     function init(selection, defs, zoom_container, height, width, flux, node_data, node_data_style,
 		  cobra_model, canvas_size_and_loc) {
 	if (canvas_size_and_loc===undefined) canvas_size_and_loc = {x:0, y:0, width:width, height: height};
-	utils.check_undefined(arguments, ['selection', 'defs', 'zoom_container', 'height', 'width', 'flux',
-					  'node_data', 'node_data_style', 'cobra_model', 'canvas_size_and_loc']);
+	// utils.check_undefined(arguments, ['selection', 'defs', 'zoom_container', 'height', 'width', 'flux',
+	// 				  'node_data', 'node_data_style', 'cobra_model', 'canvas_size_and_loc']);
 	// TODO make these inputs optional when possible
 
 	// defaults
@@ -4267,8 +4312,19 @@ define('builder/Map',["vis/utils", "lib/d3", "builder/draw", "builder/Behavior",
 	    utils.extend(self.reactions, saved_reactions);
 	    var reactions_to_draw = Object.keys(saved_reactions);
 	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
+		var segment = segment_obj.segment;
 		self.reactions[segment_obj.reaction_id]
-		    .segments[segment_obj.segment_id] = segment_obj.segment;
+		    .segments[segment_obj.segment_id] = segment;
+
+		// updated connected nodes
+		[segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
+		    // not necessary for the deleted nodes
+		    if (node_id in saved_nodes) return;
+		    var node = self.nodes[node_id];
+		    node.connected_segments.push({ reaction_id: segment_obj.reaction_id,
+						   segment_id: segment_obj.segment_id });
+		});
+
 		reactions_to_draw.push(segment_obj.reaction_id);
 	    });
 	    self.draw_these_nodes(Object.keys(saved_nodes));
@@ -4842,7 +4898,27 @@ define('builder/Map',["vis/utils", "lib/d3", "builder/draw", "builder/Behavior",
         return this;
     }
 
-    function zoom_extent(margin, mode) {
+    function zoom_extent_nodes(margin) {
+	/** Zoom to fit all the nodes.
+
+	 margin: optional argument to set the margins.
+
+	 Returns error if one is raised.
+
+	 */
+	this._zoom_extent(margin, 'nodes');
+    }
+    function zoom_extent_canvas(margin) {
+	/** Zoom to fit the canvas.
+
+	 margin: optional argument to set the margins.
+
+	 Returns error if one is raised.
+
+	 */
+	this._zoom_extent(margin, 'canvas');
+    }
+    function _zoom_extent(margin, mode) {
 	/** Zoom to fit all the nodes.
 
 	 margin: optional argument to set the margins.
@@ -4935,6 +5011,8 @@ define('builder/ZoomContainer',["vis/utils", "lib/d3", "vis/CallbackManager"], f
 	this.initial_zoom = 1.0;
 	this.window_translate = {x: 0, y: 0};
 	this.window_scale = 1.0;
+	this.width = w;
+	this.height = h;
 
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
@@ -4999,19 +5077,23 @@ define('builder/ZoomContainer',["vis/utils", "lib/d3", "vis/CallbackManager"], f
     // functions to scale and translate
     function go_to(scale, translate) { 
 	if (!scale) return console.error('Bad scale value');
-	if (!translate || !('x' in translate) || !('y' in translate)) return console.error('Bad translate value');
+	if (!translate || !('x' in translate) || !('y' in translate))
+	    return console.error('Bad translate value');
 
 	this.zoom_behavior.scale(scale);
 	this.window_scale = scale;
 	if (this.saved_scale !== null) this.saved_scale = scale;
 
-	this.zoom_behavior.translate([translate.x, translate.y]);
+	var translate_array = [translate.x, translate.y];
+	this.zoom_behavior.translate(translate_array);
         this.window_translate = translate;
-	if (this.saved_translate !== null) this.saved_translate = translate;
+	if (this.saved_translate !== null) this.saved_translate = translate_array;
 
         this.zoomed_sel
 	    .transition()
-            .attr('transform', 'translate('+this.window_translate.x+','+this.window_translate.y+')scale('+this.window_scale+')');
+            .attr('transform',
+		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
+		  'scale('+this.window_scale+')');
 	return null;
     }			    
 
@@ -5142,14 +5224,15 @@ define('builder/Input',["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map"
 	else this.is_visible = on_off;
 	if (this.is_visible) {
 	    this.toggle_start_reaction_listener(true);
-	    this.selection.style("display", "block");
 	    this.reload_at_selected();
+	    this.map.set_status('Click on the canvas or an existing metabolite');
 	    this.callback_manager.run('show_reaction_input');
 	} else {
 	    this.toggle_start_reaction_listener(false);
 	    this.selection.style("display", "none");
             this.completely.input.blur();
             this.completely.hideDropDown();
+	    this.map.set_status(null);
 	    this.callback_manager.run('hide_reaction_input');
 	}
     }
@@ -5444,7 +5527,6 @@ define('builder/Builder',["vis/utils", "lib/d3", "builder/Input", "builder/ZoomC
     //     return this.parentNode.__data__;
     // })
 
-
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
 			  reload_builder: reload_builder,
@@ -5599,23 +5681,25 @@ define('builder/Builder',["vis/utils", "lib/d3", "builder/Input", "builder/ZoomC
 	    // set up menu and status bars
 	    var menu = this._setup_menu(this.o.selection, this.map, this.zoom_container, this.map.key_manager, keys),
 		status = this._setup_status(this.o.selection, this.map);
-	    // make sure the key manager remembers all those changes
-	    this.map.key_manager.update();
 	}
+	// tell the key manager about the reaction input
+	this.map.key_manager.reaction_input = reaction_input;
+	// make sure the key manager remembers all those changes
+	this.map.key_manager.update();
 	
 	// setup selection box
 	if (this.o.map_data) {
 	    this.map.draw_everything();
-	    this.map.zoom_extent();
+	    this.map.zoom_extent_canvas();
 	} else {
 	    if (this.o.starting_reaction) {
 		// Draw default reaction if no map is provided
 		var start_coords = { x: this.map.scale.x.invert(width/2),
 				     y: this.map.scale.x.invert(height/4) };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
-		this.map.zoom_extent(300, 'nodes');
+		this.map.zoom_extent_nodes(300, 'nodes');
 	    } else {
-		this.map.zoom_extent();
+		this.map.zoom_extent_canvas();
 	    }
 	}
 
@@ -5669,7 +5753,8 @@ define('builder/Builder',["vis/utils", "lib/d3", "builder/Input", "builder/ZoomC
 
 	new_button(sel, keys.rotate, "Rotate (r)");
 	new_button(sel, keys.delete, "Delete (^del)");
-	new_button(sel, keys.extent, "Zoom extent (^0)");
+	new_button(sel, keys.extent_nodes, "Zoom to nodes (^0)");
+	new_button(sel, keys.extent_canvas, "Zoom to canvas (^1)");
 	new_button(sel, keys.make_primary, "Make primary metabolite (p)");
 	new_button(sel, keys.cycle_primary, "Cycle primary metabolite (c)");
 	new_button(sel, keys.direction_arrow_left, "<");
@@ -5788,9 +5873,12 @@ define('builder/Builder',["vis/utils", "lib/d3", "builder/Input", "builder/ZoomC
 		      target: map,
 		      fn: map.delete_selected,
 		      ignore_with_input: true },
-	    extent: { key: 48, modifiers: { control: true }, // ctrl-0
-		      target: map,
-		      fn: map.zoom_extent },
+	    extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
+			    target: map,
+			    fn: map.zoom_extent_nodes },
+	    extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
+			     target: map,
+			     fn: map.zoom_extent_canvas },
 	    make_primary: { key: 80, // p
 			    target: map,
 			    fn: map.make_selected_node_primary,
