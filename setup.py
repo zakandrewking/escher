@@ -10,4 +10,4 @@ setup(name='Escher',
       author='Zachary King',
       url='http://zakandrewking.github.io/escher/',
       packages=['escher'],
-      data_files=[('escher/js', ['js/escher-1.0.dev.js', 'js/escher-1.0.dev.min.js', 'js/lib/d3.v3.js'])])
+      package_data={'escher': ['js/*', 'css/*']})

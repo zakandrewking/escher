@@ -11,3 +11,4 @@ dist/
 escher*.js
 Escher.egg-info/
 escher/js/*
+escher/css/*

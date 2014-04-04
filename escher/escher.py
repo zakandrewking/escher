@@ -4,10 +4,18 @@ from urllib2 import urlopen
 import json
 import os
 import appdirs
+import escher
+import re
 
-static_dir = join(abspath(dirname(__file__)), "static", "")
-d3_filepath = join(static_dir, 'd3.v3.min.js')
-js_filepath = join(static_dir, 'visbio_map.js')
+js_dir = join(abspath(dirname(__file__)), "js")
+css_dir = join(abspath(dirname(__file__)), "css")
+for path in os.listdir(js_dir):
+    if re.match(r'd3.*.js', path):
+        d3_filepath = join(js_dir, path)
+    elif re.match(r'escher.*.min.js', path):
+        escher_min_filepath = join(js_dir, path)
+    elif re.match(r'escher.*.js', path):
+        escher_filepath = join(js_dir, path)
 
 ipython_html = """
 <style>
@@ -32,24 +40,24 @@ def get_maps_cache_dir():
     return map_cache_dir
 
 def get_style():
-    with open(join(static_dir, 'map.css')) as infile:
+    with open(join(css_dir, 'builder.css')) as infile:
         style = infile.read().replace("\n", " ")
     return style
 
-class Map(object):
-    """Viewable metabolic map
+class Builder(object):
+    """Viewable metabolic map.
     
-    This map will also show metabolic fluxes passed in during consruction.
-    It can be viewed as a standalone html inside a browswer. Alternately,
-    the respresentation inside an IPython notebook will also display the map.
+    This map will also show metabolic fluxes passed in during consruction.  It
+    can be viewed as a standalone html inside a browswer. Alternately, the
+    respresentation inside an IPython notebook will also display the map.
 
-    Maps are stored in json files and are stored in a map_cache directory.
-    Maps which are not found will be downloaded from a map repository if
-    found.
+    Maps are stored in json files and are stored in a map_cache directory. Maps
+    which are not found will be downloaded from a map repository if found.
+    
     """
-    def __init__(self, map_name="iJO1366_central_metabolism", flux={}):
-        if map_name.endswith(".json"):
-            warn("Map file name should not include .json")
+    def __init__(self, map_name=None, reaction_data=None, metabolite_data=None):
+        if map_name.replace(".json", "")
+            
         # if the file is not present attempt to download
         maps_cache_dir = get_maps_cache_dir()
         map_filename = join(maps_cache_dir, map_name + ".json")
