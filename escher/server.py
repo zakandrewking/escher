@@ -16,7 +16,7 @@ default_port = 7778
 default_public = False
 
 def run(port=default_port, public=False):
-    print 'serving directory %s on port %d' % (directory, options.port)
+    print 'serving directory %s on port %d' % (directory, port)
     application.listen(port, None if public else "localhost")
     try:
         tornado.ioloop.IOLoop.instance().start()
