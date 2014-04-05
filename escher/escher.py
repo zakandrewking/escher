@@ -33,8 +33,16 @@ def get_an_id():
 
 def get_embed_style():
     download = urlopen('https://raw.githubusercontent.com/zakandrewking/escher/master/css/builder-embed.css')
-    return download.read()
-    
+    return download.read().replace('\n', ' ')
+
+class Link(object):
+    def __init__(self, address, text):
+        self.address = address
+        self.text = text
+
+    def _repr_html_(self):
+        return '<a href="%s" target="_blank">%s</a>' % (self.address, self.text)
+
 class Builder(object):
     """Viewable metabolic map.
     

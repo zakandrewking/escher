@@ -1,15 +1,17 @@
 <div id="{{id}}" style="height: {{height}}px"></div>
-<link rel="stylesheet" href="https://raw.githubusercontent.com/zakandrewking/escher/master/css/builder.css"/>
+<link rel="stylesheet" href="http://zakandrewking.github.io/escher/css/builder.css"/>
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-<script src="https://raw.githubusercontent.com/zakandrewking/escher/master/js/escher-1.0.dev.min.js" charset="utf-8"></script>
-<script>
- var css_string = '{{css_embed}}';
- escher.Builder({ selection: d3.select('#{{id}}'),
-		  css: css_string,
-		  map_data: map_data,
-		  flux: reaction_data,
-		  node_data: metabolite_data });
-</script>         
+<!-- <script src="http://zakandrewking.github.io/escher/escher.min.js" charset="utf-8"></script> -->
 <script>
  {{javascript}}
+ var css_string = '{{css_embed}}';
 </script>
+<script>
+ $.getScript('http://zakandrewking.github.io/escher/escher.min.js', function() {
+   escher.Builder({ selection: d3.select('#{{id}}'),
+		    css: css_string,
+		    map_data: map_data,
+		    flux: reaction_data,
+		    node_data: metabolite_data });
+ });
+</script>         
