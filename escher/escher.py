@@ -6,9 +6,17 @@ import os
 import appdirs
 import escher
 import re
+from uuid import uuid4
+from jinja2 import Environment, PackageLoader
 
-js_dir = join(abspath(dirname(__file__)), "js")
-css_dir = join(abspath(dirname(__file__)), "css")
+# set up jinja2 template location
+env = Environment(loader=PackageLoader('escher', 'templates'))
+
+# find the necessary files for embedding
+this_dir = abspath(dirname(__file__))
+js_dir = join(this_dir, "js")
+css_dir = join(this_dir, "css")
+template_dir = join(this_dir, "templates")
 for path in os.listdir(js_dir):
     if re.match(r'd3.*.js', path):
         d3_filepath = join(js_dir, path)
@@ -16,16 +24,6 @@ for path in os.listdir(js_dir):
         escher_min_filepath = join(js_dir, path)
     elif re.match(r'escher.*.js', path):
         escher_filepath = join(js_dir, path)
-
-ipython_html = """
-<style>
-.overlay {
-  fill: none;
-  pointer-events: all;
-}
-</style>
-<button onclick="download_map('map%d')">Download svg</button>
-<div id="map%d" style="height:800px;"></div>"""
 
 map_download_url = "http://zakandrewking.github.io/escher/maps/v0.4/"
 map_download_display_url = "http://zakandrewking.github.io/escher/"
@@ -55,9 +53,21 @@ class Builder(object):
     which are not found will be downloaded from a map repository if found.
     
     """
-    def __init__(self, map_name=None, reaction_data=None, metabolite_data=None):
-        if map_name.replace(".json", "")
-            
+    def __init__(self, map_name=None, reaction_data=None, metabolite_data=None,
+                 height=800):
+        self.map_name = map_name
+        if map_name:
+            self.load_map()
+        self.reaction_data = reaction_data
+        self.metabolite_data = metabolite_data
+        self.height = height
+
+    def load_map(self):
+        map_name = self.map_name
+        if map_name is None: return
+        
+        map_name = map_name.replace(".json", "")
+
         # if the file is not present attempt to download
         maps_cache_dir = get_maps_cache_dir()
         map_filename = join(maps_cache_dir, map_name + ".json")
@@ -72,38 +82,37 @@ class Builder(object):
                     outfile.write(download.read())
             except HTTPError:
                 raise ValueError("No map named %s found in cache or at %s" % \
-                    (map_name, map_download_display_url))
+                                     (map_name, map_download_display_url))
         with open(map_filename) as f:
             self.map_json = f.read()
-        self.flux = flux
 
     def _repr_html_(self):
-        from random import randint
-        n = randint(1, 1000000)
-        javascript = """<script type="text/Javascript">
+        n = uuid4()
+        html = """
+            <button onclick="download_map('%s')">Download svg</button>
+            <div id="%s" style="height:%dpx;"></div>
             %s
-            selection = d3.select("#map%d");
-            selection[0][0].style["width"] = window.innerWidth * 0.7 + "px";
-            visBioMap.visualizeit(selection, map_data, style, flux, null, null, null);
-        </script>""" % (self._assemble_javascript(), n)
-        return (ipython_html % (n, n)) + javascript
-
+            <script>
+                escher.Builder({ selection: d3.select('#%s') });
+            </script>
+        """ % (n, n, self.height, self._assemble_javascript(), n)
+        return html
 
     def _assemble_javascript(self):
         with open(d3_filepath, 'r') as f:
             d3 = f.read()
-        with open(map_js_filepath, 'r') as f:
-            map_js = f.read()
-        javascript = "\n".join([
-            "var " + d3, map_js,
-            "var map_data = %s;" % self.map_json,
-            "var flux = %s;" % json.dumps(self.flux),
-            'var style = "%s";' % get_style()])
+        with open(escher_min_filepath, 'r') as f:
+            escher_min_js = f.read()
+        javascript = " ".join([d3, escher_min_js,
+                               "var map_data = %s;" % self.map_json if self.map_json else '{}',
+                               "var flux = %s;" % json.dumps(self.flux)])
         return javascript
 
-    def create_standalone_html(self, outfilepath=None):
-        """saves an html file containing the map"""
-        with open(join(static_dir, "standalone_map_template.html")) as infile:
+    def create_standalone_html(self, filepath=None):
+        """Save an html file containing the map.
+
+        """
+        with open(join(template_dir, "builder.html")) as infile:
             template = infile.read()
         template = template.replace("__ALL_JAVASCRIPT__", self._assemble_javascript())
         if outfilepath is not None:
@@ -118,13 +127,9 @@ class Builder(object):
             close(os_file)
             return filename
     
-    
-    def view_browser(self):
-        """launches a webpage with the map open"""
+    def view_in_browser(self):
+        """Launch a web browser to view the map.
+
+        """
         import webbrowser
         webbrowser.open("file://" + self.create_standalone_html())
-
-
-    #def run_server(self):
-    #    """start a tornado server to display the map"""
-    #    None  # TODO implement

@@ -12,3 +12,4 @@ escher*.js
 Escher.egg-info/
 escher/js/*
 escher/css/*
+escher/templates/*
