@@ -7,7 +7,7 @@ import appdirs
 import escher
 import re
 from uuid import uuid4
-from jinja2 import Environment, PackageLoader
+from jinja2 import Environment, PackageLoader, Template
 
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
@@ -37,11 +37,6 @@ def get_maps_cache_dir():
         pass
     return map_cache_dir
 
-def get_style():
-    with open(join(css_dir, 'builder.css')) as infile:
-        style = infile.read().replace("\n", " ")
-    return style
-
 class Builder(object):
     """Viewable metabolic map.
     
@@ -54,13 +49,14 @@ class Builder(object):
     
     """
     def __init__(self, map_name=None, reaction_data=None, metabolite_data=None,
-                 height=800):
+                 height=800, always_make_standalone=False):
         self.map_name = map_name
         if map_name:
             self.load_map()
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
         self.height = height
+        self.always_make_standalone = always_make_standalone
 
     def load_map(self):
         map_name = self.map_name
@@ -86,18 +82,31 @@ class Builder(object):
         with open(map_filename) as f:
             self.map_json = f.read()
 
-    def _repr_html_(self):
-        n = uuid4()
-        html = """
-            <button onclick="download_map('%s')">Download svg</button>
-            <div id="%s" style="height:%dpx;"></div>
-            %s
-            <script>
-                escher.Builder({ selection: d3.select('#%s') });
-            </script>
-        """ % (n, n, self.height, self._assemble_javascript(), n)
-        return html
+    def _get_embed_style():
+        with open(join(css_dir, 'builder_embed.css')) as infile:
+            style = infile.read().replace("\n", " ")
+        return style
 
+    def _get_style():
+        with open(join(css_dir, 'builder.css')) as infile:
+            style = infile.read().replace("\n", " ")
+        return style
+            
+    def _repr_html_(self):
+        content = self._assemble_content()
+        if (self.always_make_standalone):
+            link = ('<a href="%s" target="_blank">Open standalone map</a>' %
+                    self.create_standalone_html())
+            content = " ".join(link, content)
+        return content
+
+    def _assemble_content(self):
+        content = env.get_template('content.html')
+        html = content.render(style=self._get_style, id=uuid4(), height=self.height,
+                              javascript=self._assemble_javascript(),
+                              css_embed=self._get_embed_style())
+        return html
+    
     def _assemble_javascript(self):
         with open(d3_filepath, 'r') as f:
             d3 = f.read()
@@ -112,18 +121,20 @@ class Builder(object):
         """Save an html file containing the map.
 
         """
-        with open(join(template_dir, "builder.html")) as infile:
-            template = infile.read()
-        template = template.replace("__ALL_JAVASCRIPT__", self._assemble_javascript())
+        template = env.get_template('standalone.html')
+        variables = {'title': Builder,
+                     'content': self._assemble_content()};
+        filled = template.render(variables)
+        
         if outfilepath is not None:
             with open(outfilepath, "w") as outfile:
-                outfile.write(template)
+                outfile.write(filled)
             return outfilepath
         else:
             from tempfile import mkstemp
             from os import write, close
             os_file, filename = mkstemp(suffix=".html")
-            write(os_file, template)
+            write(os_file, filled)
             close(os_file)
             return filename
     
