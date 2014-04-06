@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from ._server import serve_and_open
+
 from os.path import dirname, abspath, join, isfile, isdir
 from warnings import warn
 from urllib2 import urlopen, HTTPError
@@ -18,6 +20,8 @@ env = Environment(loader=PackageLoader('escher', 'templates'))
 
 map_download_url = "http://zakandrewking.github.io/escher/maps/v0.4/"
 map_download_display_url = "http://zakandrewking.github.io/escher/"
+D3_URL = "http://d3js.org/d3.v3.min.js"
+ESCHER_URL = "http://zakandrewking.github.io/escher/escher.js"
 
 def get_maps_cache_dir():
     cache_dir = appdirs.user_cache_dir('escher', appauthor="Zachary King")
@@ -31,19 +35,46 @@ def get_maps_cache_dir():
 def get_an_id():
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
 
-def get_embed_style():
-    download = urlopen('https://raw.githubusercontent.com/zakandrewking/escher/master/css/builder-embed.css')
-    return download.read().replace('\n', ' ')
+class Plot(object):
+    def standalone_html(self):
+        raise NotImplemented()
+    def embed_html(self):
+        raise NotImplemented()
+    
+    def display_in_notebook(self):
+        """Display the plot in the notebook.
 
-class Link(object):
-    def __init__(self, address, text):
-        self.address = address
-        self.text = text
+        """
+        # import here, in case users don't have requirements installed
+        from IPython.display import HTML
+        import matplotlib.pyplot as plt
+        return HTML(self.embedded_html())
 
-    def _repr_html_(self):
-        return '<a href="%s" target="_blank">%s</a>' % (self.address, self.text)
+    def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50):
+        """Launch a web browser to view the map.
 
-class Builder(object):
+        """
+        html = self.standalone_html()
+        serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
+
+    def save_html(self, filepath=None):
+        """Save an html file containing the map.
+
+        """
+        html = self.standalone_html()
+        if filepath is not None:
+            with codeds.open(filepath, 'w', encoding='utf-8') as f:
+                f.write(html)
+            return filepath
+        else:
+            from tempfile import mkstemp
+            from os import write, close
+            os_file, filename = mkstemp(suffix=".html")
+            write(os_file, unicode(html).encode('utf-8'))
+            close(os_file)
+            return filename
+    
+class Builder(Plot):
     """Viewable metabolic map.
     
     This map will also show metabolic fluxes passed in during consruction.  It
@@ -64,6 +95,9 @@ class Builder(object):
         self.height = height
         self.always_make_standalone = always_make_standalone
         self.map_json = None
+        
+        self.css_path = "http://zakandrewking.github.io/escher/css/builder.css"
+        self.embed_css_path = "https://raw.githubusercontent.com/zakandrewking/escher/master/css/builder-embed.css"
 
     def load_map(self):
         map_name = self.map_name
@@ -87,53 +121,40 @@ class Builder(object):
                                      (map_name, map_download_display_url))
         with open(map_filename) as f:
             self.map_json = f.read()
-
-    def _assemble_content(self):
-        content = env.get_template('builder_content.html')
-        html = content.render(id=unicode(get_an_id()),
-                              height=u"%d"%self.height,
-                              javascript=self._assemble_javascript(),
-                              css_embed=get_embed_style())
-        return html
     
-    def _assemble_javascript(self):
+    def _initialize_javascript(self):
         javascript = u"\n".join([u"var map_data = %s;" % (self.map_json if self.map_json else u'{}'),
                                  u"var reaction_data = %s;" % json.dumps(self.reaction_data),
-                                 u"var metabolite_data = %s;" % json.dumps(self.metabolite_data)])
+                                 u"var metabolite_data = %s;" % json.dumps(self.metabolite_data),
+                                 u"var css_string = '%s';" % self._embed_style()])
         return javascript
 
-    def _repr_html_(self):
-        content = self._assemble_content()
-        if (self.always_make_standalone):
-            link = (u'<a href="%s" target="_blank">Open standalone map</a>' %
-                    self.create_standalone_html())
-            content = u" ".join(link, content)
-        return content
+    def _draw_js(self, the_id):
+        return """escher.Builder({ selection: d3.select('#%s'),
+		                   map_data: map_data,
+		                   flux: reaction_data,
+		                   node_data: metabolite_data,
+		                   css: css_string });
+        """ % the_id
 
-    def create_standalone_html(self, filepath=None):
-        """Save an html file containing the map.
+    def _embed_style(self):
+        download = urlopen(self.embed_css_path)
+        return unicode(download.read().replace('\n', ' '))
+    
+    def embedded_html(self):
+        content = env.get_template('content.html')
+        an_id = unicode(get_an_id())
+        html = content.render(id=an_id,
+                              height=unicode(self.height),
+                              css_path=self.css_path,
+                              initialize_js=self._initialize_javascript(),
+                              draw_js=self._draw_js(an_id),
+                              d3_url=D3_URL,
+                              escher_url=ESCHER_URL)
+        return html
 
-        """
+    def standalone_html(self):
         template = env.get_template('standalone.html')
         variables = {'title': u'Builder',
-                     'content': self._assemble_content()};
-        filled = template.render(variables)
-        
-        if filepath is not None:
-            with codeds.open(filepath, 'w', encoding='utf-8') as f:
-                f.write(filled)
-            return filepath
-        else:
-            from tempfile import mkstemp
-            from os import write, close
-            os_file, filename = mkstemp(suffix=".html")
-            write(os_file, unicode(filled).encode('utf-8'))
-            close(os_file)
-            return filename
-    
-    def view_in_browser(self):
-        """Launch a web browser to view the map.
-
-        """
-        import webbrowser
-        webbrowser.open("file://" + self.create_standalone_html())
+                     'content': self.embedded_html()};
+        return template.render(variables)
