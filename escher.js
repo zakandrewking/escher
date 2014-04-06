@@ -4,7 +4,7 @@
         //in another project. That other project will only
         //see this AMD call, not the internal modules in
         //the closure below.
-        define(escher, factory);
+        define('escher', factory);
     } else {
         //Browser globals case. Just assign the
         //result to a property on the global.
@@ -426,11 +426,6 @@ var requirejs, require, define;
 
 define("almond", function(){});
 
-define('lib/d3',[],function () {
-    if (window.d3===undefined) console.error('d3 is not loaded.');
-    return window.d3;
-});
-
 /**
  * vkBeautify - javascript plugin to pretty-print or minify text in XML, JSON, CSS and SQL formats.
  *
@@ -789,7 +784,7 @@ define('lib/vkbeautify',[],function() {
 
 });
 
-define('vis/utils',["lib/d3", "lib/vkbeautify"], function(d3, vkbeautify) {
+define('vis/utils',["lib/vkbeautify"], function(vkbeautify) {
     return { set_options: set_options,
              setup_svg: setup_svg,
 	     resize_svg: resize_svg,
@@ -1718,7 +1713,7 @@ return function(container, config) {
 
 
 
-define('builder/draw',["vis/utils", "lib/d3"], function(utils, d3) {
+define('builder/draw',["vis/utils"], function(utils) {
     return { create_reaction: create_reaction,
 	     update_reaction: update_reaction,
 	     create_node: create_node,
@@ -2140,7 +2135,7 @@ define('builder/draw',["vis/utils", "lib/d3"], function(utils, d3) {
 
 });
 
-define('builder/build',["vis/utils", "lib/d3"], function(utils, d3) {
+define('builder/build',["vis/utils"], function(utils) {
     return { new_reaction: new_reaction,
 	     rotate_nodes: rotate_nodes,
 	     move_node_and_dependents: move_node_and_dependents };
@@ -2534,7 +2529,7 @@ define('builder/build',["vis/utils", "lib/d3"], function(utils, d3) {
     }
 });
 
-define('builder/Behavior',["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
+define('builder/Behavior',["vis/utils", "builder/build"], function(utils, build) {
     /** Defines the set of click and drag behaviors for the map, and keeps track
      of which behaviors are activated.
 
@@ -3003,7 +2998,7 @@ define('builder/Behavior',["vis/utils", "lib/d3", "builder/build"], function(uti
     }
 });
 
-define('builder/Scale',["vis/utils", "lib/d3"], function(utils, d3) {
+define('builder/Scale',["vis/utils"], function(utils) {
     /** 
      */
 
@@ -3083,7 +3078,7 @@ define('builder/Scale',["vis/utils", "lib/d3"], function(utils, d3) {
     }
 });
 
-define('builder/DirectionArrow',["vis/utils", "lib/d3"], function(utils, d3) {
+define('builder/DirectionArrow',["vis/utils"], function(utils) {
     /** DirectionArrow returns a constructor for an arrow that can be rotated
      and dragged, and supplies its direction.
      */
@@ -3290,7 +3285,7 @@ define('vis/CallbackManager',["vis/utils"], function(utils) {
     }
 });
 
-define('builder/KeyManager',["vis/utils", "lib/d3"], function(utils, d3) {
+define('builder/KeyManager',["vis/utils"], function(utils) {
     /** 
      */
 
@@ -3407,7 +3402,7 @@ define('builder/KeyManager',["vis/utils", "lib/d3"], function(utils, d3) {
     }
 });
 
-define('builder/Canvas',["vis/utils", "lib/d3"], function(utils, d3) {
+define('builder/Canvas',["vis/utils"], function(utils) {
     /** Defines a canvas that accepts drag/zoom events and can be resized.
 
      Canvas(selection, x, y, width, height)
@@ -3605,7 +3600,7 @@ define('builder/Canvas',["vis/utils", "lib/d3"], function(utils, d3) {
     }
 });
 
-define('builder/Map',["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack", "vis/CallbackManager", "builder/KeyManager", "builder/Canvas"], function(utils, d3, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas) {
+define('builder/Map',["vis/utils", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack", "vis/CallbackManager", "builder/KeyManager", "builder/Canvas"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Map(selection, defs, zoom_container, height, width, flux, node_data, cobra_model)
@@ -4991,7 +4986,7 @@ define('builder/Map',["vis/utils", "lib/d3", "builder/draw", "builder/Behavior",
     }
 });
 
-define('builder/ZoomContainer',["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, CallbackManager) {
+define('builder/ZoomContainer',["vis/utils", "vis/CallbackManager"], function(utils, CallbackManager) {
     /** ZoomContainer
 
      The zoom behavior is based on this SO question:
@@ -5133,7 +5128,7 @@ define('builder/ZoomContainer',["vis/utils", "lib/d3", "vis/CallbackManager"], f
     }
 });
 
-define('builder/Input',["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomContainer", "vis/CallbackManager"], function(d3, utils, completely, Map, ZoomContainer, CallbackManager) {
+define('builder/Input',["vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomContainer", "vis/CallbackManager"], function(utils, completely, Map, ZoomContainer, CallbackManager) {
     /**
      */
 
@@ -5440,7 +5435,7 @@ define('builder/CobraModel',["vis/utils"], function(utils) {
     }
 });
 
-define('builder/Brush',["vis/utils", "lib/d3"], function(utils, d3) {
+define('builder/Brush',["vis/utils"], function(utils) {
     /** Define a brush to select elements in a map.
 
      Brush(selection, is_enabled, map, insert_after)
@@ -5519,7 +5514,7 @@ define('builder/Brush',["vis/utils", "lib/d3"], function(utils, d3) {
     }
 });
 
-define('builder/Builder',["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builder/Map", "builder/CobraModel", "builder/Brush", "vis/CallbackManager"], function(utils, d3, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager) {
+define('builder/Builder',["vis/utils", "builder/Input", "builder/ZoomContainer", "builder/Map", "builder/CobraModel", "builder/Brush", "vis/CallbackManager"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager) {
     // NOTE
     // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
     // only necessary for selectAll()
@@ -5913,7 +5908,7 @@ define('builder/Builder',["vis/utils", "lib/d3", "builder/Input", "builder/ZoomC
     }
 });
 
-define('vis/data-menu',["vis/utils", "lib/d3"], function(utils, d3) {
+define('vis/data-menu',["vis/utils"], function(utils) {
     return function(options) {
         var o = utils.set_options(options, {
             selection: d3.select("body"),

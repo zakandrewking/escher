@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3"], function(utils, d3) {
+define(["vis/utils"], function(utils) {
     /** 
      */
 

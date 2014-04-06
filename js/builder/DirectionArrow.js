@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3"], function(utils, d3) {
+define(["vis/utils"], function(utils) {
     /** DirectionArrow returns a constructor for an arrow that can be rotated
      and dragged, and supplies its direction.
      */

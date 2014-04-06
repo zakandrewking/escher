@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack", "vis/CallbackManager", "builder/KeyManager", "builder/Canvas"], function(utils, d3, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas) {
+define(["vis/utils", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack", "vis/CallbackManager", "builder/KeyManager", "builder/Canvas"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Map(selection, defs, zoom_container, height, width, flux, node_data, cobra_model)

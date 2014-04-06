@@ -1,4 +1,4 @@
-define(["lib/d3", "vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomContainer", "vis/CallbackManager"], function(d3, utils, completely, Map, ZoomContainer, CallbackManager) {
+define(["vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomContainer", "vis/CallbackManager"], function(utils, completely, Map, ZoomContainer, CallbackManager) {
     /**
      */
 

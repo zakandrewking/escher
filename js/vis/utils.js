@@ -1,4 +1,4 @@
-define(["lib/d3", "lib/vkbeautify"], function(d3, vkbeautify) {
+define(["lib/vkbeautify"], function(vkbeautify) {
     return { set_options: set_options,
              setup_svg: setup_svg,
 	     resize_svg: resize_svg,

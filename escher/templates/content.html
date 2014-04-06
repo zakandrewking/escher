@@ -21,11 +21,11 @@
    }(escher);
  } else if (typeof define === "function" && define.amd) {
    // require.js is available: use it to load d3/mpld3
-   require.config({paths: {d3: "{{ d3_url[:-3] }}",
-			   escher: "{{ escher_url[:-3] }}"}});
-   require(["d3", "escher"], function(d3, escher){
-     /* window.d3 = d3;
-     window.escher = escher; */
+   require.config({paths: { d3: "{{ d3_url[:-3] }}",
+			    escher: "{{ escher_url[:-3] }}" }});
+   require(["d3", "escher"], function(d3, escher) {
+     window.d3 = d3;
+     window.escher = escher;
      {{ draw_js }}
    });
  } else {

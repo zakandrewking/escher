@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3"], function(utils, d3) {
+define(["vis/utils"], function(utils) {
     /** Defines a canvas that accepts drag/zoom events and can be resized.
 
      Canvas(selection, x, y, width, height)

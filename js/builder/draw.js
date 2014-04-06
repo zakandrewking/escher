@@ -1,6 +1,6 @@
 "use strict";
 
-define(["vis/utils", "lib/d3"], function(utils, d3) {
+define(["vis/utils"], function(utils) {
     return { create_reaction: create_reaction,
 	     update_reaction: update_reaction,
 	     create_node: create_node,

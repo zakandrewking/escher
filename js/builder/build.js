@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3"], function(utils, d3) {
+define(["vis/utils"], function(utils) {
     return { new_reaction: new_reaction,
 	     rotate_nodes: rotate_nodes,
 	     move_node_and_dependents: move_node_and_dependents };

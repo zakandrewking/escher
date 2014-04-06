@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3", "builder/build"], function(utils, d3, build) {
+define(["vis/utils", "builder/build"], function(utils, build) {
     /** Defines the set of click and drag behaviors for the map, and keeps track
      of which behaviors are activated.
 

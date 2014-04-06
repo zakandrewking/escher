@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3", "vis/CallbackManager"], function(utils, d3, CallbackManager) {
+define(["vis/utils", "vis/CallbackManager"], function(utils, CallbackManager) {
     /** ZoomContainer
 
      The zoom behavior is based on this SO question:

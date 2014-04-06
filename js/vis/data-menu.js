@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3"], function(utils, d3) {
+define(["vis/utils"], function(utils) {
     return function(options) {
         var o = utils.set_options(options, {
             selection: d3.select("body"),

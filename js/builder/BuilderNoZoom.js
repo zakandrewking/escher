@@ -1,4 +1,4 @@
-define(["vis/utils", "lib/d3", "builder/Input", "builder/ZoomContainer", "builder/Map", "builder/KeyManager", "builder/CobraModel"], function(utils, d3, Input, ZoomContainer, Map, KeyManager, CobraModel) {
+define(["vis/utils", "builder/Input", "builder/ZoomContainer", "builder/Map", "builder/KeyManager", "builder/CobraModel"], function(utils, Input, ZoomContainer, Map, KeyManager, CobraModel) {
     // NOTE
     // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
     // only necessary for selectAll()
