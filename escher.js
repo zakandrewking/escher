@@ -424,7 +424,7 @@ var requirejs, require, define;
     };
 }());
 
-define("almond", function(){});
+define("../build/almond", function(){});
 
 /**
  * vkBeautify - javascript plugin to pretty-print or minify text in XML, JSON, CSS and SQL formats.
@@ -784,7 +784,7 @@ define('lib/vkbeautify',[],function() {
 
 });
 
-define('vis/utils',["lib/vkbeautify"], function(vkbeautify) {
+define('utils',["lib/vkbeautify"], function(vkbeautify) {
     return { set_options: set_options,
              setup_svg: setup_svg,
 	     resize_svg: resize_svg,
@@ -1713,7 +1713,7 @@ return function(container, config) {
 
 
 
-define('builder/draw',["vis/utils"], function(utils) {
+define('draw',["utils"], function(utils) {
     return { create_reaction: create_reaction,
 	     update_reaction: update_reaction,
 	     create_node: create_node,
@@ -2135,7 +2135,7 @@ define('builder/draw',["vis/utils"], function(utils) {
 
 });
 
-define('builder/build',["vis/utils"], function(utils) {
+define('build',["utils"], function(utils) {
     return { new_reaction: new_reaction,
 	     rotate_nodes: rotate_nodes,
 	     move_node_and_dependents: move_node_and_dependents };
@@ -2529,7 +2529,7 @@ define('builder/build',["vis/utils"], function(utils) {
     }
 });
 
-define('builder/Behavior',["vis/utils", "builder/build"], function(utils, build) {
+define('Behavior',["utils", "build"], function(utils, build) {
     /** Defines the set of click and drag behaviors for the map, and keeps track
      of which behaviors are activated.
 
@@ -2998,7 +2998,7 @@ define('builder/Behavior',["vis/utils", "builder/build"], function(utils, build)
     }
 });
 
-define('builder/Scale',["vis/utils"], function(utils) {
+define('Scale',["utils"], function(utils) {
     /** 
      */
 
@@ -3078,7 +3078,7 @@ define('builder/Scale',["vis/utils"], function(utils) {
     }
 });
 
-define('builder/DirectionArrow',["vis/utils"], function(utils) {
+define('DirectionArrow',["utils"], function(utils) {
     /** DirectionArrow returns a constructor for an arrow that can be rotated
      and dragged, and supplies its direction.
      */
@@ -3150,7 +3150,7 @@ define('builder/DirectionArrow',["vis/utils"], function(utils) {
     }
 });
 
-define('builder/UndoStack',["vis/utils"], function(utils) {
+define('UndoStack',["utils"], function(utils) {
     /** UndoStack returns a constructor that can be used to store undo info.
      */
     var UndoStack = utils.make_class();
@@ -3224,7 +3224,7 @@ define('builder/UndoStack',["vis/utils"], function(utils) {
     }
 });
 
-define('vis/CallbackManager',["vis/utils"], function(utils) {
+define('CallbackManager',["utils"], function(utils) {
     /** CallbackManager()
 
      */
@@ -3285,7 +3285,7 @@ define('vis/CallbackManager',["vis/utils"], function(utils) {
     }
 });
 
-define('builder/KeyManager',["vis/utils"], function(utils) {
+define('KeyManager',["utils"], function(utils) {
     /** 
      */
 
@@ -3402,7 +3402,7 @@ define('builder/KeyManager',["vis/utils"], function(utils) {
     }
 });
 
-define('builder/Canvas',["vis/utils"], function(utils) {
+define('Canvas',["utils"], function(utils) {
     /** Defines a canvas that accepts drag/zoom events and can be resized.
 
      Canvas(selection, x, y, width, height)
@@ -3600,7 +3600,7 @@ define('builder/Canvas',["vis/utils"], function(utils) {
     }
 });
 
-define('builder/Map',["vis/utils", "builder/draw", "builder/Behavior", "builder/Scale", "builder/DirectionArrow", "builder/build", "builder/UndoStack", "vis/CallbackManager", "builder/KeyManager", "builder/Canvas"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas) {
+define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Map(selection, defs, zoom_container, height, width, flux, node_data, cobra_model)
@@ -4986,7 +4986,7 @@ define('builder/Map',["vis/utils", "builder/draw", "builder/Behavior", "builder/
     }
 });
 
-define('builder/ZoomContainer',["vis/utils", "vis/CallbackManager"], function(utils, CallbackManager) {
+define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackManager) {
     /** ZoomContainer
 
      The zoom behavior is based on this SO question:
@@ -5128,7 +5128,7 @@ define('builder/ZoomContainer',["vis/utils", "vis/CallbackManager"], function(ut
     }
 });
 
-define('builder/Input',["vis/utils",  "lib/complete.ly", "builder/Map", "builder/ZoomContainer", "vis/CallbackManager"], function(utils, completely, Map, ZoomContainer, CallbackManager) {
+define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"], function(utils, completely, Map, ZoomContainer, CallbackManager) {
     /**
      */
 
@@ -5419,7 +5419,7 @@ define('builder/Input',["vis/utils",  "lib/complete.ly", "builder/Map", "builder
 
 });
 
-define('builder/CobraModel',["vis/utils"], function(utils) {
+define('CobraModel',["utils"], function(utils) {
     /**
      */
 
@@ -5435,7 +5435,7 @@ define('builder/CobraModel',["vis/utils"], function(utils) {
     }
 });
 
-define('builder/Brush',["vis/utils"], function(utils) {
+define('Brush',["utils"], function(utils) {
     /** Define a brush to select elements in a map.
 
      Brush(selection, is_enabled, map, insert_after)
@@ -5514,7 +5514,7 @@ define('builder/Brush',["vis/utils"], function(utils) {
     }
 });
 
-define('builder/Builder',["vis/utils", "builder/Input", "builder/ZoomContainer", "builder/Map", "builder/CobraModel", "builder/Brush", "vis/CallbackManager"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager) {
+define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager) {
     // NOTE
     // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
     // only necessary for selectAll()
@@ -5908,7 +5908,7 @@ define('builder/Builder',["vis/utils", "builder/Input", "builder/ZoomContainer",
     }
 });
 
-define('vis/data-menu',["vis/utils"], function(utils) {
+define('DataMenu',["utils"], function(utils) {
     return function(options) {
         var o = utils.set_options(options, {
             selection: d3.select("body"),
@@ -5998,7 +5998,7 @@ define('vis/data-menu',["vis/utils"], function(utils) {
     };
 });
 
-define('main',["builder/Builder", "builder/KeyManager", "vis/data-menu"],
+define('main',["Builder", "KeyManager", "DataMenu"],
        function(bu, km, dm) {
            return { Builder: bu,
 		    KeyManager: km,
