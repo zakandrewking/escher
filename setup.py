@@ -14,12 +14,14 @@ if 'clean' in argv:
     print 'done cleaning'
     
 if 'build' in argv or 'install' in argv:
-    call("bin/r.js -o escher/js/build/build.js".split(' '))
-    call("bin/r.js -o escher/js/build/build.min.js".split(' '))
+    version = __import__('escher').__version__
+    call(['bin/r.js', '-o', 'escher/js/build/build.js',
+          'out=escher.%s.js'%version, 'optimize=none'])
+    call(['bin/r.js', '-o', 'escher/js/build/build.js',
+          'out=escher.%s.min.js'%version, 'optimize=uglify'])
     print 'done building'
 
 if 'install' in argv:
-    version = __import__('escher').__version__
     setup(name='Escher',
           version=version,
           author='Zachary King',

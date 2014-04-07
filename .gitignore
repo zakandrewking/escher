@@ -5,8 +5,6 @@
 .DS_Store
 *.pyc
 .#*
-build/
 TAGS
 dist/
-escher*.js
 Escher.egg-info/

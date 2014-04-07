@@ -137,9 +137,10 @@ class Builder(Plot):
     def _draw_js_dev(self, the_id):
         draw = """require(["Builder"], function(Builder) {
                       Builder({  selection: d3.select('#%s'),
-                                 debug: true%s });
+                                 fill_screen: true,
+                                 css_path: '%s'%s, });
                   });
-        """ % (the_id, self._options_string())
+        """ % (the_id, urls.builder_embed_css_local, self._options_string())
         return draw
 
 
