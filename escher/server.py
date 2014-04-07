@@ -1,12 +1,18 @@
 from ko_server import koHandler
 
 import os, subprocess
+from os.path import join
 import tornado.ioloop
 import tornado.web
 import tornado.escape
 from tornado.options import define, options, parse_command_line
 import json
 import re
+from jinja2 import Environment, PackageLoader
+from mimetypes import guess_type
+        
+# set up jinja2 template location
+env = Environment(loader=PackageLoader('escher', 'templates'))
 
 # set directory to server
 directory = os.path.abspath(os.path.dirname(__file__)).strip(os.pathsep)
@@ -30,10 +36,10 @@ class BaseHandler(tornado.web.RequestHandler):
     def path_redirection(self, directory, path):
         if any([a.startswith(".") for a in path.split("/")]):
             raise tornado.web.HTTPError(404)
-        path = os.path.join(directory, path.strip('/'))
+        path = join(directory, path.strip('/'))
         for base_dir in ['js', 'css', 'data']:
             if '/%s/' % base_dir in path:
-                path = os.path.join(directory, base_dir, path.split("/%s/" % base_dir)[1].strip('/'))
+                path = join(directory, base_dir, path.split("/%s/" % base_dir)[1].strip('/'))
                 continue
         if os.path.commonprefix([os.path.abspath(path), directory]) != directory:
             print 'trying to reach illegal path'
@@ -41,23 +47,20 @@ class BaseHandler(tornado.web.RequestHandler):
         print 'requesting %s' % path
         return path
 
-    def set_content_type(self, path):
-        if path.endswith('.html') or path.endswith('.htm'):
-            return 'text/html'
-        elif path.endswith('.css'):
-            return 'text/css'
-        elif path.endswith('.json'):
-            return 'application/json'
-        elif path.endswith('.js'):
-            return 'application/javascript'
-        return ''
-
-    def check_and_render(self, path):
+    def serve_path(self, path):
+        # make sure the path exists
         if not os.path.isfile(path):
             raise tornado.web.HTTPError(404)
         # serve it
         with open(path, "rb") as file:
             data = file.read()
+        # set the mimetype
+        self.set_header("Content-Type", guess_type(path, strict=False)[0])
+        self.serve(data)
+        
+    def serve(self, data):
+        if (NO_CACHE):
+            self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
         self.write(data)
 
 class MainDataHandler(BaseHandler):
@@ -65,42 +68,50 @@ class MainDataHandler(BaseHandler):
     def get(self, path, *args, **kwargs):
         try:
             new_path = self.path_redirection(directory, path) 
-            self.set_header("Content-Type", self.set_content_type(new_path))
             # get the file to serve
             print new_path
-            self.check_and_render(new_path) 
+            self.serve_path(new_path) 
             self.finish()
         except tornado.web.HTTPError:
             path = self.path_redirection(directory, path)
             rel_path = os.path.relpath(path, directory)
-            json_files = [os.path.join(rel_path, f) for f in os.listdir(path) if re.search(r'.json$', f)]
+            json_files = [join(rel_path, f) for f in os.listdir(path) if re.search(r'.json$', f)]
             json_response = json.dumps({'data': json_files})
             self.write(json_response)
             self.set_header("Content-Type", "application/json")
             self.finish()
         
-class MainHandler(BaseHandler):
-    def get(self, path="index.html"):
-        if path=="":
-            path = "index.html"
-        elif path.find(".") == -1:
-            if path.endswith('/'):
-                self.redirect('index.html')
-            else:
-                self.redirect(path.split('/')[-1] + '/index.html')
-        path = self.path_redirection(directory, path) 
-        self.set_header("Content-Type", self.set_content_type(path))
-        if (NO_CACHE):
-            self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
-        # get the file to serve
-        self.check_and_render(path)
+class IndexHandler(BaseHandler):
+    def get(self):
+        template = env.get_template('index.html')
+        data = template.render()
+        self.set_header("Content-Type", "text/html")
+        self.serve(data)
         
-settings = {"debug": "True"}
+class BuilderHandler(BaseHandler):
+    def get(self, path):
+        pass
+
+class LibHandler(BaseHandler):
+    def get(self, path):
+        # try ./, lib/ and escher/lib
+        for d in ['.', 'lib', 'escher/lib']:
+            full_path = join(directory, d, path)
+            if os.path.isfile(full_path):
+                path = full_path
+                break
+        else:
+            raise tornado.web.HTTPError(404)
+        self.serve_path(path)
+        
+settings = {"debug": "False"}
 
 application = tornado.web.Application([
     (r".*(/data/.*)", MainDataHandler),
     (r".*/knockout-map/(.*)", koHandler),
-    (r"/(.*)", MainHandler),
+    (r"/lib/(.*)", LibHandler),
+    (r"/builder(.*)", BuilderHandler),
+    (r"/.*", IndexHandler),
 ], **settings)
  
 if __name__ == "__main__":
