@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
+
 from ko_server import koHandler
+from plots import Builder
 
 import os, subprocess
 from os.path import join
@@ -90,7 +93,25 @@ class IndexHandler(BaseHandler):
         
 class BuilderHandler(BaseHandler):
     def get(self, path):
-        pass
+        kwargs = {}
+        for a in ['starting_reaction']:
+            args = self.get_arguments(a)
+            if len(args)==1:
+                kwargs[a] = args[0]
+        builder = Builder(**kwargs)
+        self.set_header("Content-Type", "text/html")
+        self.serve(builder.standalone_html())
+  
+class DevBuilderHandler(BaseHandler):
+    def get(self, path):
+        kwargs = {}
+        for a in ['starting_reaction']:
+            args = self.get_arguments(a)
+            if len(args)==1:
+                kwargs[a] = args[0]
+        builder = Builder(**kwargs)
+        self.set_header("Content-Type", "text/html")
+        self.serve(builder.standalone_html(dev=True))
 
 class LibHandler(BaseHandler):
     def get(self, path):
@@ -103,15 +124,23 @@ class LibHandler(BaseHandler):
         else:
             raise tornado.web.HTTPError(404)
         self.serve_path(path)
+
+class StaticHandler(BaseHandler):
+    def get(self, path):
+        path = join(directory, 'escher', path)
+        self.serve_path(path)
         
 settings = {"debug": "False"}
 
 application = tornado.web.Application([
     (r".*(/data/.*)", MainDataHandler),
     (r".*/knockout-map/(.*)", koHandler),
-    (r"/lib/(.*)", LibHandler),
+    (r".*/lib/(.*)", LibHandler),
+    (r".*/(js/.*)", StaticHandler),
+    (r".*/(css/.*)", StaticHandler),
     (r"/builder(.*)", BuilderHandler),
-    (r"/.*", IndexHandler),
+    (r"/dev/builder(.*)", DevBuilderHandler),
+    (r"/", IndexHandler),
 ], **settings)
  
 if __name__ == "__main__":

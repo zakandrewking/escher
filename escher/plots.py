@@ -9,7 +9,6 @@ from urllib2 import urlopen, HTTPError
 import json
 import os
 import appdirs
-import escher
 import re
 from jinja2 import Environment, PackageLoader, Template
 import codecs
@@ -82,7 +81,7 @@ class Builder(Plot):
     
     """
     def __init__(self, map_name=None, reaction_data=None, metabolite_data=None,
-                 height=800, always_make_standalone=False):
+                 height=800, always_make_standalone=False, **kwargs):
         self.map_name = map_name
         if map_name:
             self.load_map()
@@ -91,9 +90,7 @@ class Builder(Plot):
         self.height = height
         self.always_make_standalone = always_make_standalone
         self.map_json = None
-        
-        self.css_path = urls.builder_css
-        self.embed_css_url = urls.builder_embed_css
+        self.options = kwargs
 
     def load_map(self):
         map_name = self.map_name
@@ -125,32 +122,55 @@ class Builder(Plot):
                                  u"var css_string = '%s';" % self._embed_style()])
         return javascript
 
+    def _options_string(self):
+        return ' '.join(",\n %s: '%s'"%(k,v) for k,v in self.options.iteritems())
+    
     def _draw_js(self, the_id):
-        return """escher.Builder({ selection: d3.select('#%s'),
+        draw = """escher.Builder({ selection: d3.select('#%s'),
 		                   map_data: map_data,
 		                   flux: reaction_data,
 		                   node_data: metabolite_data,
-		                   css: css_string });
-        """ % the_id
+		                   css: css_string%s });
+        """ % (the_id, self._options_string())
+        return draw
+
+    def _draw_js_dev(self, the_id):
+        draw = """require(["Builder"], function(Builder) {
+                      Builder({  selection: d3.select('#%s'),
+                                 debug: true%s });
+                  });
+        """ % (the_id, self._options_string())
+        return draw
+
 
     def _embed_style(self):
-        download = urlopen(self.embed_css_url)
+        download = urlopen(urls.builder_embed_css)
         return unicode(download.read().replace('\n', ' '))
     
-    def embedded_html(self):
-        content = env.get_template('content.html')
+    def _get_html(self, dev=False, wrapper=False):
         an_id = unicode(get_an_id())
-        html = content.render(id=an_id,
-                              height=unicode(self.height),
-                              css_path=self.css_path,
-                              initialize_js=self._initialize_javascript(),
-                              draw_js=self._draw_js(an_id),
-                              d3_url=urls.d3,
-                              escher_url=urls.escher)
+        if dev:
+            content = env.get_template('dev_content.html')
+            html = content.render(id=an_id,
+                                  height=unicode(self.height),
+                                  css_path=urls.builder_css_local,
+                                  draw_js=self._draw_js_dev(an_id),
+                                  d3_url=urls.d3,
+                                  wrapper=wrapper)
+        else:
+            content = env.get_template('content.html')
+            html = content.render(id=an_id,
+                                  height=unicode(self.height),
+                                  css_path=urls.builder_css,
+                                  initialize_js=self._initialize_javascript(),
+                                  draw_js=self._draw_js(an_id),
+                                  d3_url=urls.d3,
+                                  escher_url=urls.escher,
+                                  wrapper=wrapper)
         return html
 
-    def standalone_html(self):
-        template = env.get_template('standalone.html')
-        variables = {'title': u'Builder',
-                     'content': self.embedded_html()};
-        return template.render(variables)
+    def embedded_html(self, dev=False):
+        return self._get_html(dev=dev, wrapper=False)
+    
+    def standalone_html(self, dev=False):
+        return self._get_html(dev=dev, wrapper=True)
