@@ -3312,10 +3312,11 @@ define('KeyManager',["utils"], function(utils) {
 
 	 */
 
-	if (assigned_keys===undefined) assigned_keys = {};
-	if (reaction_input===undefined) reaction_input = null;
+	if (assigned_keys===undefined) this.assigned_keys = {};
+	else this.assigned_keys = assigned_keys;
+	if (reaction_input===undefined) this.reaction_input = null;
+	else this.reaction_input = reaction_input;
 
-	this.assigned_keys = assigned_keys;
 	this.held_keys = {};
 	reset_held_keys(this.held_keys);
 
@@ -5998,11 +5999,14 @@ define('DataMenu',["utils"], function(utils) {
     };
 });
 
-define('main',["Builder", "KeyManager", "DataMenu"],
-       function(bu, km, dm) {
+define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack"],
+       function(bu, mp, bh, km, dm, us) {
            return { Builder: bu,
+		    Map: mp,
+		    Behavior: bh,
 		    KeyManager: km,
-		    DataMenu: dm };
+		    DataMenu: dm,
+		    UndoStack: us };
        });
 
     //The modules for your project will be inlined above

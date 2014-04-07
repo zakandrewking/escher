@@ -25,10 +25,11 @@ define(["utils"], function(utils) {
 
 	 */
 
-	if (assigned_keys===undefined) assigned_keys = {};
-	if (reaction_input===undefined) reaction_input = null;
+	if (assigned_keys===undefined) this.assigned_keys = {};
+	else this.assigned_keys = assigned_keys;
+	if (reaction_input===undefined) this.reaction_input = null;
+	else this.reaction_input = reaction_input;
 
-	this.assigned_keys = assigned_keys;
 	this.held_keys = {};
 	reset_held_keys(this.held_keys);
 

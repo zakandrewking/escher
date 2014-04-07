@@ -3,7 +3,7 @@ describe('UndoStack', function() {
 	var stack = new escher.UndoStack();
 	expect(stack).toEqual(jasmine.any(escher.UndoStack));
 	var stack2 = escher.UndoStack();
-	expect(stack2).toEqual(jasmin.any(escher.UndoStack));
+	expect(stack2).toEqual(jasmine.any(escher.UndoStack));
     });
     it("track push and pop", function() {
 	var tracker = 0;

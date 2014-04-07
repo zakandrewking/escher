@@ -1,5 +1,5 @@
 describe('Behavior', function() {
-    var map = escher.Map(),
+    var map = {},
 	behavior = escher.Behavior(map, null);
 
     it("Check class", function () {

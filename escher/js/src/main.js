@@ -1,7 +1,10 @@
-define(["Builder", "KeyManager", "DataMenu"],
-       function(bu, km, dm) {
+define(["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack"],
+       function(bu, mp, bh, km, dm, us) {
            return { Builder: bu,
+		    Map: mp,
+		    Behavior: bh,
 		    KeyManager: km,
-		    DataMenu: dm };
+		    DataMenu: dm,
+		    UndoStack: us };
        });
 

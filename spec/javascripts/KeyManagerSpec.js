@@ -7,28 +7,33 @@ describe("KeyManager", function() {
 });
 
 describe("KeySpy", function() {
-    var key_manager, keys, k = 1, k2 = 2;
+    var x, key, key_shift, key_manager,
+	k = 1, k2 = 2, shift = 16;
 
     beforeEach(function() {
-	keys = { key1: { key: k,
-			 fn: function() { return 'return1'; } },
-		 key_shift_2: { key: k2,
-			 fn: function() { return 'return2'; } } };
-	key_manager = escher.KeyManager(keys);
+	x = null;
+	key = { key: k,
+		fn: function() { return 'return1'; }};
+	key_shift =  { key: k2,
+		       modifiers: { shift: true },
+		       target: 'hi',
+		       fn: function() { x = this; } };
+	key_manager = escher.KeyManager({ k1: key, k2: key_shift });
 
-	spyOn(keys.key1, 'fn');
-	spyOn(keys.key2, 'fn');
+	spyOn(key, 'fn');
+	spyOn(key_shift, 'fn').and.callThrough();
 
-	__triggerKeyboardEvent(document.body, 1);
-	__triggerKeyboardEvent(document.body, 16);
-	__triggerKeyboardEvent(document.body, 2);
+	__triggerKeyboardEvent(document.body, k);
+	__triggerKeyboardEvent(document.body, shift);
+	__triggerKeyboardEvent(document.body, k2);
     });
 
     it("Tests keys", function() {
-	expect(keys.key1.fn).toHaveBeenCalled();
+	expect(key.fn).toHaveBeenCalled();
     });
 
     it("Tests shift key", function() {
-	expect(keys.key2.fn).toHaveBeenCalled();
+	expect(key_shift.fn).toHaveBeenCalled();
+	expect(x).toEqual('hi');
     });
 });
