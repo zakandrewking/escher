@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from ._server import serve_and_open
+from quick_server import serve_and_open
+import urls
 
 from os.path import dirname, abspath, join, isfile, isdir
 from warnings import warn
@@ -17,11 +18,6 @@ import string
         
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
-
-map_download_url = "http://zakandrewking.github.io/escher/maps/v0.4/"
-map_download_display_url = "http://zakandrewking.github.io/escher/"
-D3_URL = "http://d3js.org/d3.v3.min.js"
-ESCHER_URL = "http://zakandrewking.github.io/escher/escher.js"
 
 def get_maps_cache_dir():
     cache_dir = appdirs.user_cache_dir('escher', appauthor="Zachary King")
@@ -96,8 +92,8 @@ class Builder(Plot):
         self.always_make_standalone = always_make_standalone
         self.map_json = None
         
-        self.css_path = "http://zakandrewking.github.io/escher/css/builder.css"
-        self.embed_css_path = "https://raw.githubusercontent.com/zakandrewking/escher/master/css/builder-embed.css"
+        self.css_path = urls.builder_css
+        self.embed_css_url = urls.builder_embed_css
 
     def load_map(self):
         map_name = self.map_name
@@ -110,15 +106,15 @@ class Builder(Plot):
         map_filename = join(maps_cache_dir, map_name + ".json")
         if not isfile(map_filename):
             map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
-                (map_name, map_download_display_url)
+                (map_name, urls.escher_home)
             warn(map_not_cached)
             try:
-                download = urlopen(map_download_url + map_name + ".json")
+                download = urlopen(urls.map_download + map_name + ".json")
                 with open(map_filename, "w") as outfile:
                     outfile.write(download.read())
             except HTTPError:
                 raise ValueError("No map named %s found in cache or at %s" % \
-                                     (map_name, map_download_display_url))
+                                     (map_name, urls.escher_home))
         with open(map_filename) as f:
             self.map_json = f.read()
     
@@ -138,7 +134,7 @@ class Builder(Plot):
         """ % the_id
 
     def _embed_style(self):
-        download = urlopen(self.embed_css_path)
+        download = urlopen(self.embed_css_url)
         return unicode(download.read().replace('\n', ' '))
     
     def embedded_html(self):
@@ -149,8 +145,8 @@ class Builder(Plot):
                               css_path=self.css_path,
                               initialize_js=self._initialize_javascript(),
                               draw_js=self._draw_js(an_id),
-                              d3_url=D3_URL,
-                              escher_url=ESCHER_URL)
+                              d3_url=urls.d3,
+                              escher_url=urls.escher)
         return html
 
     def standalone_html(self):

@@ -1,8 +1,7 @@
-"""
-A Simple server used to show mpld3 images.
+""" The following code has been adapted from mpld3. Modifications (c) 2014,
+Zachary King.
 
-http://mpld3.github.io/
-
+mpld3, http://mpld3.github.io/, A Simple server used to show mpld3 images.
 Copyright (c) 2013, Jake Vanderplas
 All rights reserved.
 
@@ -40,11 +39,7 @@ import itertools
 import random
 
 IPYTHON_WARNING = """
-Note: if you're in the IPython notebook, mpld3.show() is not the best command
-      to use. Consider using mpld3.display(), or mpld3.enable_notebook().
-      See more information at http://mpld3.github.io/quickstart.html.
-
-You must interrupt the kernel to end this command
+Note: You must interrupt the kernel to end this command
 """
 
 try:
@@ -53,7 +48,6 @@ try:
 except ImportError:
     # Python 3.x
     from http import server
-
 
 def generate_handler(html, files=None):
     if files is None:
@@ -67,7 +61,7 @@ def generate_handler(html, files=None):
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
                 self.wfile.write("<html><head>"
-                                 "<title>mpld3 plot</title>"
+                                 "<title>Escher map</title>"
                                  "</head><body>\n")
                 self.wfile.write(html)
                 self.wfile.write("</body></html>")
@@ -82,7 +76,6 @@ def generate_handler(html, files=None):
 
     return MyHandler
 
-
 def find_open_port(ip, port, n=50):
     """Find an open port near the specified port"""
     ports = itertools.chain((port + i for i in range(n)),
@@ -95,7 +88,6 @@ def find_open_port(ip, port, n=50):
         if result != 0:
             return port
     raise ValueError("no open ports found")
-
 
 def serve_and_open(html, ip='127.0.0.1', port=8888, n_retries=50, files=None,
                    ipython_warning=True):

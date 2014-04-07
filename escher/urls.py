@@ -1,0 +1,8 @@
+builder_embed_css = "http://zakandrewking.github.io/escher/css/builder-embed.css"
+builder_css = "http://zakandrewking.github.io/escher/css/builder.css"
+map_download = "http://zakandrewking.github.io/escher/maps/v1/"
+escher_home = "http://zakandrewking.github.io/escher/"
+d3_min = "http://d3js.org/d3.v3.min.js"
+d3 = "http://d3js.org/d3.v3.js"
+escher = "http://zakandrewking.github.io/escher/escher.js"
+escher_min = "http://zakandrewking.github.io/escher/escher.min.js"
