@@ -18,14 +18,13 @@ import string
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
 
-def get_maps_cache_dir():
+def get_cache_dir():
     cache_dir = appdirs.user_cache_dir('escher', appauthor="Zachary King")
-    map_cache_dir = join(cache_dir, "map_cache", "")
     try:
-        os.makedirs(map_cache_dir)
+        os.makedirs(cache_dir)
     except OSError:
         pass
-    return map_cache_dir
+    return cache_dir
 
 def get_an_id():
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
@@ -76,31 +75,56 @@ class Builder(Plot):
     can be viewed as a standalone html inside a browswer. Alternately, the
     respresentation inside an IPython notebook will also display the map.
 
-    Maps are stored in json files and are stored in a map_cache directory. Maps
+    Maps are stored in json files and are stored in a cache directory. Maps
     which are not found will be downloaded from a map repository if found.
     
     """
-    def __init__(self, map_name=None, reaction_data=None, metabolite_data=None,
-                 height=800, always_make_standalone=False, **kwargs):
+    def __init__(self, map_name=None, map_json=None, model_name=None,
+                 model_json=None, reaction_data=None, metabolite_data=None,
+                 height=800, **kwargs):
         self.map_name = map_name
+        self.map_json = map_json
         if map_name:
-            self.load_map()
+            if map_json:
+                warn('map_json overrides map_name')
+            else:
+                self.load_map()
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
         self.height = height
-        self.always_make_standalone = always_make_standalone
         self.map_json = None
         self.options = kwargs
 
+    def load_model(self):
+        model_name = self.model_name   
+        if model_name is None: return 
+        model_name = model_name.replace(".json", "")
+
+        # if the file is not present attempt to download
+        cache_dir = get_cache_dir()
+        model_filename = join(cache_dir, model_name + ".json")
+        if not isfile(model_filename):
+            model_not_cached = 'Model "%s" not in cache. Attempting download from %s' % \
+                (model_name, urls.escher_home)
+            warn(model_not_cached)
+            try:
+                download = urlopen(urls.model_download + model_name + ".json")
+                with open(model_filename, "w") as outfile:
+                    outfile.write(download.read())
+            except HTTPError:
+                raise ValueError("No model named %s found in cache or at %s" % \
+                                     (model_name, urls.escher_home))
+        with open(model_filename) as f:
+            self.model_json = f.read()
+        
     def load_map(self):
         map_name = self.map_name
         if map_name is None: return
-        
         map_name = map_name.replace(".json", "")
 
         # if the file is not present attempt to download
-        maps_cache_dir = get_maps_cache_dir()
-        map_filename = join(maps_cache_dir, map_name + ".json")
+        cache_dir = get_cache_dir()
+        map_filename = join(cache_dir, map_name + ".json")
         if not isfile(map_filename):
             map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
                 (map_name, urls.escher_home)

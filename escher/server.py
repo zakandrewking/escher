@@ -36,20 +36,6 @@ def stop():
     tornado.ioloop.IOLoop.instance().stop()
 
 class BaseHandler(tornado.web.RequestHandler):
-    def path_redirection(self, directory, path):
-        if any([a.startswith(".") for a in path.split("/")]):
-            raise tornado.web.HTTPError(404)
-        path = join(directory, path.strip('/'))
-        for base_dir in ['js', 'css', 'data']:
-            if '/%s/' % base_dir in path:
-                path = join(directory, base_dir, path.split("/%s/" % base_dir)[1].strip('/'))
-                continue
-        if os.path.commonprefix([os.path.abspath(path), directory]) != directory:
-            print 'trying to reach illegal path'
-            raise tornado.web.HTTPError(404)
-        print 'requesting %s' % path
-        return path
-
     def serve_path(self, path):
         # make sure the path exists
         if not os.path.isfile(path):
@@ -66,24 +52,6 @@ class BaseHandler(tornado.web.RequestHandler):
             self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
         self.write(data)
 
-class MainDataHandler(BaseHandler):
-    @tornado.web.asynchronous
-    def get(self, path, *args, **kwargs):
-        try:
-            new_path = self.path_redirection(directory, path) 
-            # get the file to serve
-            print new_path
-            self.serve_path(new_path) 
-            self.finish()
-        except tornado.web.HTTPError:
-            path = self.path_redirection(directory, path)
-            rel_path = os.path.relpath(path, directory)
-            json_files = [join(rel_path, f) for f in os.listdir(path) if re.search(r'.json$', f)]
-            json_response = json.dumps({'data': json_files})
-            self.write(json_response)
-            self.set_header("Content-Type", "application/json")
-            self.finish()
-        
 class IndexHandler(BaseHandler):
     def get(self):
         template = env.get_template('index.html')
@@ -133,7 +101,6 @@ class StaticHandler(BaseHandler):
 settings = {"debug": "False"}
 
 application = tornado.web.Application([
-    (r".*(/data/.*)", MainDataHandler),
     (r".*/knockout-map/(.*)", koHandler),
     (r".*/lib/(.*)", LibHandler),
     (r".*/(js/.*)", StaticHandler),
