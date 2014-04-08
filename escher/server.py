@@ -58,28 +58,17 @@ class IndexHandler(BaseHandler):
         data = template.render()
         self.set_header("Content-Type", "text/html")
         self.serve(data)
-        
-class BuilderHandler(BaseHandler):
-    def get(self, path):
-        kwargs = {}
-        for a in ['starting_reaction']:
-            args = self.get_arguments(a)
-            if len(args)==1:
-                kwargs[a] = args[0]
-        builder = Builder(**kwargs)
-        self.set_header("Content-Type", "text/html")
-        self.serve(builder.standalone_html())
   
-class DevBuilderHandler(BaseHandler):
-    def get(self, path):
+class BuilderHandler(BaseHandler):
+    def get(self, dev, path):
         kwargs = {}
-        for a in ['starting_reaction']:
+        for a in ['starting_reaction', 'model_name', 'map_name']:
             args = self.get_arguments(a)
             if len(args)==1:
                 kwargs[a] = args[0]
         builder = Builder(**kwargs)
         self.set_header("Content-Type", "text/html")
-        self.serve(builder.standalone_html(dev=True))
+        self.serve(builder.standalone_html(dev=(dev is not None)))
 
 class LibHandler(BaseHandler):
     def get(self, path):
@@ -105,8 +94,7 @@ application = tornado.web.Application([
     (r".*/lib/(.*)", LibHandler),
     (r".*/(js/.*)", StaticHandler),
     (r".*/(css/.*)", StaticHandler),
-    (r"/builder(.*)", BuilderHandler),
-    (r"/dev/builder(.*)", DevBuilderHandler),
+    (r"/(dev/)?builder(.*)", BuilderHandler),
     (r"/", IndexHandler),
 ], **settings)
  

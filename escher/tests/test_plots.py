@@ -7,6 +7,6 @@ def test_get_cache_dir():
     assert os.path.isdir(d)
 
 def test_Builder():
-    b = Builder()
+    b = Builder(map_json="ccc", model_json="asss")
     b.embedded_html()
     b.standalone_html()

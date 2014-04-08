@@ -89,10 +89,16 @@ class Builder(Plot):
                 warn('map_json overrides map_name')
             else:
                 self.load_map()
+        self.model_name = model_name
+        self.model_json = model_json
+        if model_name:
+            if model_json:
+                warn('model_json overrides model_name')
+            else:
+                self.load_model()
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
         self.height = height
-        self.map_json = None
         self.options = kwargs
 
     def load_model(self):
@@ -108,12 +114,13 @@ class Builder(Plot):
                 (model_name, urls.escher_home)
             warn(model_not_cached)
             try:
-                download = urlopen(urls.model_download + model_name + ".json")
+                url = urls.model_download + model_name + ".json"
+                download = urlopen(url)
                 with open(model_filename, "w") as outfile:
                     outfile.write(download.read())
             except HTTPError:
                 raise ValueError("No model named %s found in cache or at %s" % \
-                                     (model_name, urls.escher_home))
+                                     (model_name, url))
         with open(model_filename) as f:
             self.model_json = f.read()
         
@@ -130,17 +137,19 @@ class Builder(Plot):
                 (map_name, urls.escher_home)
             warn(map_not_cached)
             try:
-                download = urlopen(urls.map_download + map_name + ".json")
+                url = urls.map_download + map_name + ".json"
+                download = urlopen(url)
                 with open(map_filename, "w") as outfile:
                     outfile.write(download.read())
             except HTTPError:
                 raise ValueError("No map named %s found in cache or at %s" % \
-                                     (map_name, urls.escher_home))
+                                     (map_name, url))
         with open(map_filename) as f:
             self.map_json = f.read()
     
     def _initialize_javascript(self):
         javascript = u"\n".join([u"var map_data = %s;" % (self.map_json if self.map_json else u'{}'),
+                                 u"var cobra_model = %s;" % (self.model_json if self.model_json else u'{}'),
                                  u"var reaction_data = %s;" % json.dumps(self.reaction_data),
                                  u"var metabolite_data = %s;" % json.dumps(self.metabolite_data),
                                  u"var css_string = '%s';" % self._embed_style()])
@@ -148,54 +157,48 @@ class Builder(Plot):
 
     def _options_string(self):
         return ' '.join(",\n %s: '%s'"%(k,v) for k,v in self.options.iteritems())
-    
-    def _draw_js(self, the_id):
-        draw = """escher.Builder({ selection: d3.select('#%s'),
-		                   map_data: map_data,
-		                   flux: reaction_data,
-		                   node_data: metabolite_data,
-		                   css: css_string%s });
-        """ % (the_id, self._options_string())
-        return draw
 
-    def _draw_js_dev(self, the_id):
-        draw = """require(["Builder"], function(Builder) {
-                      Builder({  selection: d3.select('#%s'),
-                                 fill_screen: true,
-                                 css_path: '%s'%s, });
-                  });
-        """ % (the_id, urls.builder_embed_css_local, self._options_string())
+    def _draw_js(self, the_id, enable_editing, dev, fill_screen):
+        draw = """Builder({ selection: d3.select('#%s'),
+                            enable_editing: %s,
+                            fill_screen: %s,
+                            map: map_data,
+                            cobra_model: cobra_model,
+		            flux: reaction_data,
+		            node_data: metabolite_data,
+                            css: css_string%s, });
+        """ % (the_id, json.dumps(enable_editing), json.dumps(fill_screen),
+               self._options_string())
+        if dev:
+            draw = 'require(["Builder"], function(Builder) {\n%s\n});' % draw
+        else:
+            draw = 'escher.%s' % draw
         return draw
-
 
     def _embed_style(self):
         download = urlopen(urls.builder_embed_css)
         return unicode(download.read().replace('\n', ' '))
     
-    def _get_html(self, dev=False, wrapper=False):
+    def _get_html(self, dev=False, wrapper=False, enable_editing=True, fill_screen=False):
         an_id = unicode(get_an_id())
         if dev:
             content = env.get_template('dev_content.html')
-            html = content.render(id=an_id,
-                                  height=unicode(self.height),
-                                  css_path=urls.builder_css_local,
-                                  draw_js=self._draw_js_dev(an_id),
-                                  d3_url=urls.d3,
-                                  wrapper=wrapper)
         else:
             content = env.get_template('content.html')
-            html = content.render(id=an_id,
-                                  height=unicode(self.height),
-                                  css_path=urls.builder_css,
-                                  initialize_js=self._initialize_javascript(),
-                                  draw_js=self._draw_js(an_id),
-                                  d3_url=urls.d3,
-                                  escher_url=urls.escher,
-                                  wrapper=wrapper)
+        html = content.render(id=an_id,
+                              height=unicode(self.height),
+                              css_path=urls.builder_css,
+                              initialize_js=self._initialize_javascript(),
+                              draw_js=self._draw_js(an_id, enable_editing, dev, fill_screen),
+                              d3_url=urls.d3,
+                              escher_url=urls.escher,
+                              wrapper=wrapper)
         return html
 
-    def embedded_html(self, dev=False):
-        return self._get_html(dev=dev, wrapper=False)
+    def embedded_html(self, dev=False, enable_editing=False, fill_screen=False):
+        return self._get_html(dev=dev, wrapper=False, enable_editing=enable_editing,
+                              fill_screen=fill_screen)
     
-    def standalone_html(self, dev=False):
-        return self._get_html(dev=dev, wrapper=True)
+    def standalone_html(self, dev=False, enable_editing=True, fill_screen=True):
+        return self._get_html(dev=dev, wrapper=True, enable_editing=enable_editing,
+                              fill_screen=fill_screen)

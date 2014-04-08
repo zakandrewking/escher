@@ -45,6 +45,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    debug: false,
 	    starting_reaction: 'GLCtex',
 	    reaction_arrow_displacement: 35 });
+	
+	// TODO make each option is neither {}, undefined, nor null
+	// for all cases, set to null to boolean(option) === false
+
 
 	if (o.selection_is_svg) {
 	    // TODO fix this
@@ -106,7 +110,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 
 	// Check the cobra model
 	var cobra_model = null;
-	if (this.o.cobra_model) {
+	if (this.o.cobra_model) {	    
 	    // TODO better checks
 	    cobra_model = CobraModel(this.o.cobra_model.reactions, this.o.cobra_model.cofactors);
 	} else {
