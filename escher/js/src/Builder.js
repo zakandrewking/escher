@@ -27,7 +27,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    selection_is_svg: false,
 	    fillScreen: false,
 	    enable_editing: true,
-	    on_load: function() {},
+	    on_load: null,
 	    map_path: null,
 	    map: null,
 	    cobra_model_path: null,
@@ -40,10 +40,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    flux2: null,
 	    node_data: null,
 	    node_data_path: null,
-	    node_data_style: 'ColorSize',
+	    node_data_style: 'ColorSize', // empty value: null
 	    show_beziers: false,
 	    debug: false,
-	    starting_reaction: 'GLCtex',
+	    starting_reaction: 'GLCtex', // empty value: null
 	    reaction_arrow_displacement: 35 });
 	
 	// TODO make each option is neither {}, undefined, nor null
@@ -110,7 +110,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 
 	// Check the cobra model
 	var cobra_model = null;
-	if (this.o.cobra_model) {	    
+	if (this.o.cobra_model!==null) {	    
 	    // TODO better checks
 	    cobra_model = CobraModel(this.o.cobra_model.reactions, this.o.cobra_model.cofactors);
 	} else {
@@ -135,7 +135,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
 	var max_w = width, max_h = height, scale;
-	if (this.o.map_data) {
+	if (this.o.map_data!==null) {
 	    // import map
 	    this.map = Map.from_data(this.o.map_data, zoomed_sel, defs, this.zoom_container,
 				height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
@@ -171,11 +171,11 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.map.key_manager.update();
 	
 	// setup selection box
-	if (this.o.map_data) {
+	if (this.o.map_data!==null) {
 	    this.map.draw_everything();
 	    this.map.zoom_extent_canvas();
 	} else {
-	    if (this.o.starting_reaction) {
+	    if (this.o.starting_reaction!==null) {
 		// Draw default reaction if no map is provided
 		var start_coords = { x: this.map.scale.x.invert(width/2),
 				     y: this.map.scale.x.invert(height/4) };
@@ -199,7 +199,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	d3.select('#loading').style("display", "none");
 
 	// run the load callback
-	this.o.on_load();
+	if (this.o.on_load!==null)
+	    this.o.on_load();
     }
     function brush_mode() {
 	this.brush.toggle(true);

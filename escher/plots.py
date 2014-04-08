@@ -148,10 +148,10 @@ class Builder(Plot):
             self.map_json = f.read()
     
     def _initialize_javascript(self):
-        javascript = u"\n".join([u"var map_data = %s;" % (self.map_json if self.map_json else u'{}'),
-                                 u"var cobra_model = %s;" % (self.model_json if self.model_json else u'{}'),
-                                 u"var reaction_data = %s;" % json.dumps(self.reaction_data),
-                                 u"var metabolite_data = %s;" % json.dumps(self.metabolite_data),
+        javascript = u"\n".join([u"var map_data = %s;" % (self.map_json if self.map_json else u'null'),
+                                 u"var cobra_model = %s;" % (self.model_json if self.model_json else u'null'),
+                                 u"var reaction_data = %s;" % (json.dumps(self.reaction_data) if self.reaction_data else u'null'),
+                                 u"var metabolite_data = %s;" % (json.dumps(self.metabolite_data) if self.metabolite_data else u'null'),
                                  u"var css_string = '%s';" % self._embed_style()])
         return javascript
 
