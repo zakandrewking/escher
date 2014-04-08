@@ -43,9 +43,14 @@ define(["lib/vkbeautify"], function(vkbeautify) {
     function set_options(options, defaults) {
         if (options===undefined) return defaults;
         var i = -1,
-            out = defaults,
-            keys = window.Object.keys(options);
-        while (++i < keys.length) out[keys[i]] = options[keys[i]];
+            out = defaults;
+	for (var key in options) {
+	    var val = options[key];
+	    if (val===undefined) {
+		val = null;
+	    }
+	    out[key] = val;
+	}
         return out;
     };
     function setup_svg(selection, selection_is_svg, margins, fill_screen) {

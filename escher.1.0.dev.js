@@ -829,9 +829,14 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
     function set_options(options, defaults) {
         if (options===undefined) return defaults;
         var i = -1,
-            out = defaults,
-            keys = window.Object.keys(options);
-        while (++i < keys.length) out[keys[i]] = options[keys[i]];
+            out = defaults;
+	for (var key in options) {
+	    var val = options[key];
+	    if (val===undefined) {
+		val = null;
+	    }
+	    out[key] = val;
+	}
         return out;
     };
     function setup_svg(selection, selection_is_svg, margins, fill_screen) {
@@ -5562,6 +5567,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    debug: false,
 	    starting_reaction: 'GLCtex',
 	    reaction_arrow_displacement: 35 });
+	
+	// TODO make each option is neither {}, undefined, nor null
+	// for all cases, set to null to boolean(option) === false
+
 
 	if (o.selection_is_svg) {
 	    // TODO fix this
@@ -5623,7 +5632,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 
 	// Check the cobra model
 	var cobra_model = null;
-	if (this.o.cobra_model) {
+	if (this.o.cobra_model) {	    
 	    // TODO better checks
 	    cobra_model = CobraModel(this.o.cobra_model.reactions, this.o.cobra_model.cofactors);
 	} else {
@@ -5999,14 +6008,15 @@ define('DataMenu',["utils"], function(utils) {
     };
 });
 
-define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack"],
-       function(bu, mp, bh, km, dm, us) {
+define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "utils"],
+       function(bu, mp, bh, km, dm, us, ut) {
            return { Builder: bu,
 		    Map: mp,
 		    Behavior: bh,
 		    KeyManager: km,
 		    DataMenu: dm,
-		    UndoStack: us };
+		    UndoStack: us,
+		    utils: ut };
        });
 
     //The modules for your project will be inlined above
