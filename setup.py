@@ -6,19 +6,22 @@ try:
 except:
     from distutils.core import setup
 
+version = __import__('escher').__version__
+escher = 'escher.%s.js'%version
+escher_min = 'escher.%s.min.js'%version
+    
 if 'clean' in argv:
-    call(['rm', 'escher.js'])
-    call(['rm', 'escher.min.js'])
+    call(['rm', escher])
+    call(['rm', escher_min])
     call(['rm', '-r', 'build'])
     call(['rm', '-r', 'Escher.egg-info'])
     print 'done cleaning'
     
 if 'build' in argv or 'install' in argv:
-    version = __import__('escher').__version__
     call(['bin/r.js', '-o', 'escher/js/build/build.js',
-          'out=escher.%s.js'%version, 'optimize=none'])
+          'out=%s'%escher, 'optimize=none'])
     call(['bin/r.js', '-o', 'escher/js/build/build.js',
-          'out=escher.%s.min.js'%version, 'optimize=uglify'])
+          'out=%s'%escher_min, 'optimize=uglify'])
     print 'done building'
 
 if 'install' in argv:
@@ -28,5 +31,5 @@ if 'install' in argv:
           url='http://zakandrewking.github.io/escher/',
           packages=['escher'],
           package_data={'escher': ['css/*', 'templates/*', 'example_data/*']},
-          data_files=[('escher/lib', ['escher.js', 'escher.min.js',
+          data_files=[('escher/lib', [escher, escher_min,
                                       'lib/d3.v3.js', 'lib/d3.v3.min.js'])])
