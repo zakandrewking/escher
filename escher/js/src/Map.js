@@ -87,7 +87,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	// defaults
 	var default_angle = 90; // degrees
 	this.reaction_arrow_displacement = 35;
-	this.default_reaction_color = '#505050',
+	this.default_reaction_color = '#334E75',
 
 	// make the canvas
 	this.canvas = new Canvas(selection, canvas_size_and_loc);
@@ -179,8 +179,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	map.map_info.largest_ids.segments = largest_segment_id;
 
 	// flux onto existing map reactions
-	if (flux) map.apply_flux_to_map();
-	if (node_data) map.apply_node_data_to_map();
+	map.apply_flux_to_map();
+	map.apply_node_data_to_map();
 
 	return map;
 
@@ -270,20 +270,30 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.callback_manager.run('set_status', status);
     }
     function set_flux(flux) {
+	/** Set a new reaction data, and redraw the map.
+
+	 Pass null to reset the map and draw without reaction data.
+
+	 */
 	this.flux = flux;
 	this.apply_flux_to_map();
 	this.draw_all_reactions();
     }
     function set_node_data(node_data) {
+	/** Set a new metabolite data, and redraw the map.
+
+	 Pass null to reset the map and draw without metabolite data.
+
+	 */
 	this.node_data = node_data;
 	this.apply_node_data_to_map();
 	this.draw_all_nodes();
     }
     function has_flux() {
-	return Boolean(this.flux);
+	return (this.flux!==null);
     }
     function has_node_data() {
-	return Boolean(this.node_data);
+	return (this.node_data!==null);
     }
     function draw_everything() {
         /** Draw the reactions and membranes
@@ -481,15 +491,16 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     function apply_flux_to_reactions(reactions) {
 	for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id];
-	    if (reaction.abbreviation in this.flux) {
+	    if (this.flux!==null && reaction.abbreviation in this.flux) {
 		var flux = parseFloat(this.flux[reaction.abbreviation]);
+		if (isNaN(flux)) flux = null;
 		reaction.flux = flux;
 		for (var segment_id in reaction.segments) {
 		    var segment = reaction.segments[segment_id];
 		    segment.flux = flux;
 		}
 	    } else {
-		var flux = 0.0;
+		var flux = null;
 		reaction.flux = flux;
 		for (var segment_id in reaction.segments) {
 		    var segment = reaction.segments[segment_id];
@@ -505,18 +516,17 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var vals = [];
 	for (var node_id in nodes) {
 	    var node = nodes[node_id], data = 0.0;
-	    if (node.bigg_id_compartmentalized in this.node_data) {
+	    if (this.node_data!==null && node.bigg_id_compartmentalized in this.node_data) {
 		data = parseFloat(this.node_data[node.bigg_id_compartmentalized]);
-	    }
-	    if (isNaN(data)) {
-		node.data = 0;
-	    } else {
-		vals.push(data);
+		if (isNaN(data)) data = null;
+		else vals.push(data);
 		node.data = data;
+	    } else {
+		node.data = null;
 	    }
-		
 	}
-	var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+	var min = Math.min.apply(null, vals),
+	    max = Math.max.apply(null, vals);
 	this.scale.node_size.domain([min, max]);
 	this.scale.node_color.domain([min, max]);
     }

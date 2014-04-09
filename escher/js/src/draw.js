@@ -94,7 +94,7 @@ define(["utils"], function(utils) {
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
             var t = d.abbreviation;
-            if (d.flux) t += " ("+decimal_format(d.flux)+")";
+            if (d.flux!==null) t += " ("+decimal_format(d.flux)+")";
             else if (has_flux) t += " (0)";
             return t;
 	}).attr('transform', function(d) {
@@ -184,7 +184,7 @@ define(["utils"], function(utils) {
             })
             .style('stroke', function(d) {
 		if (has_flux) 
-		    return d.flux ? scale.flux_color(Math.abs(d.flux)) : scale.flux_color(0);
+		    return d.flux!==null ? scale.flux_color(Math.abs(d.flux)) : scale.flux_color(0);
 		else
 		    return default_reaction_color;
 	    })
@@ -304,7 +304,7 @@ define(["utils"], function(utils) {
 		.attr('r', function(d) {
 		    if (d.node_type == 'metabolite') {
 			if (has_node_data && node_data_style.indexOf('Size')!==1) {
-			    return scale.size(scale.node_size(d.data));
+			    return scale.size(scale.node_size(d.data!==null ? d.data : 0));
 			} else {
 			    return scale.size(d.node_is_primary ? 15 : 10); 
 			}
@@ -315,7 +315,7 @@ define(["utils"], function(utils) {
 		.style('fill', function(d) {
 		    if (d.node_type=='metabolite') {
 			if (has_node_data && node_data_style.indexOf('Color')!==1) {
-			    return scale.node_color(d.data);
+			    return scale.node_color(d.data!==null ? d.data : 0);
 			} else {
 			    return 'rgb(224, 134, 91)';
 			}
@@ -336,7 +336,7 @@ define(["utils"], function(utils) {
             .text(function(d) {	
 		var decimal_format = d3.format('.4g');
 		var t = d.bigg_id_compartmentalized;
-		if (d.data) t += " ("+decimal_format(d.data)+")";
+		if (d.data!==null) t += " ("+decimal_format(d.data)+")";
 		else if (has_node_data) t += " (0)";
 		return t;
 	    })

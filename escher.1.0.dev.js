@@ -1812,7 +1812,7 @@ define('draw',["utils"], function(utils) {
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
             var t = d.abbreviation;
-            if (d.flux) t += " ("+decimal_format(d.flux)+")";
+            if (d.flux!==null) t += " ("+decimal_format(d.flux)+")";
             else if (has_flux) t += " (0)";
             return t;
 	}).attr('transform', function(d) {
@@ -1902,7 +1902,7 @@ define('draw',["utils"], function(utils) {
             })
             .style('stroke', function(d) {
 		if (has_flux) 
-		    return d.flux ? scale.flux_color(Math.abs(d.flux)) : scale.flux_color(0);
+		    return d.flux!==null ? scale.flux_color(Math.abs(d.flux)) : scale.flux_color(0);
 		else
 		    return default_reaction_color;
 	    })
@@ -2022,7 +2022,7 @@ define('draw',["utils"], function(utils) {
 		.attr('r', function(d) {
 		    if (d.node_type == 'metabolite') {
 			if (has_node_data && node_data_style.indexOf('Size')!==1) {
-			    return scale.size(scale.node_size(d.data));
+			    return scale.size(scale.node_size(d.data!==null ? d.data : 0));
 			} else {
 			    return scale.size(d.node_is_primary ? 15 : 10); 
 			}
@@ -2033,7 +2033,7 @@ define('draw',["utils"], function(utils) {
 		.style('fill', function(d) {
 		    if (d.node_type=='metabolite') {
 			if (has_node_data && node_data_style.indexOf('Color')!==1) {
-			    return scale.node_color(d.data);
+			    return scale.node_color(d.data!==null ? d.data : 0);
 			} else {
 			    return 'rgb(224, 134, 91)';
 			}
@@ -2054,7 +2054,7 @@ define('draw',["utils"], function(utils) {
             .text(function(d) {	
 		var decimal_format = d3.format('.4g');
 		var t = d.bigg_id_compartmentalized;
-		if (d.data) t += " ("+decimal_format(d.data)+")";
+		if (d.data!==null) t += " ("+decimal_format(d.data)+")";
 		else if (has_node_data) t += " (0)";
 		return t;
 	    })
@@ -3695,7 +3695,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	// defaults
 	var default_angle = 90; // degrees
 	this.reaction_arrow_displacement = 35;
-	this.default_reaction_color = '#505050',
+	this.default_reaction_color = '#334E75',
 
 	// make the canvas
 	this.canvas = new Canvas(selection, canvas_size_and_loc);
@@ -3787,8 +3787,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	map.map_info.largest_ids.segments = largest_segment_id;
 
 	// flux onto existing map reactions
-	if (flux) map.apply_flux_to_map();
-	if (node_data) map.apply_node_data_to_map();
+	map.apply_flux_to_map();
+	map.apply_node_data_to_map();
 
 	return map;
 
@@ -3878,20 +3878,30 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.callback_manager.run('set_status', status);
     }
     function set_flux(flux) {
+	/** Set a new reaction data, and redraw the map.
+
+	 Pass null to reset the map and draw without reaction data.
+
+	 */
 	this.flux = flux;
 	this.apply_flux_to_map();
 	this.draw_all_reactions();
     }
     function set_node_data(node_data) {
+	/** Set a new metabolite data, and redraw the map.
+
+	 Pass null to reset the map and draw without metabolite data.
+
+	 */
 	this.node_data = node_data;
 	this.apply_node_data_to_map();
 	this.draw_all_nodes();
     }
     function has_flux() {
-	return Boolean(this.flux);
+	return (this.flux!==null);
     }
     function has_node_data() {
-	return Boolean(this.node_data);
+	return (this.node_data!==null);
     }
     function draw_everything() {
         /** Draw the reactions and membranes
@@ -4089,15 +4099,16 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     function apply_flux_to_reactions(reactions) {
 	for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id];
-	    if (reaction.abbreviation in this.flux) {
+	    if (this.flux!==null && reaction.abbreviation in this.flux) {
 		var flux = parseFloat(this.flux[reaction.abbreviation]);
+		if (isNaN(flux)) flux = null;
 		reaction.flux = flux;
 		for (var segment_id in reaction.segments) {
 		    var segment = reaction.segments[segment_id];
 		    segment.flux = flux;
 		}
 	    } else {
-		var flux = 0.0;
+		var flux = null;
 		reaction.flux = flux;
 		for (var segment_id in reaction.segments) {
 		    var segment = reaction.segments[segment_id];
@@ -4113,18 +4124,17 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	var vals = [];
 	for (var node_id in nodes) {
 	    var node = nodes[node_id], data = 0.0;
-	    if (node.bigg_id_compartmentalized in this.node_data) {
+	    if (this.node_data!==null && node.bigg_id_compartmentalized in this.node_data) {
 		data = parseFloat(this.node_data[node.bigg_id_compartmentalized]);
-	    }
-	    if (isNaN(data)) {
-		node.data = 0;
-	    } else {
-		vals.push(data);
+		if (isNaN(data)) data = null;
+		else vals.push(data);
 		node.data = data;
+	    } else {
+		node.data = null;
 	    }
-		
 	}
-	var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+	var min = Math.min.apply(null, vals),
+	    max = Math.max.apply(null, vals);
 	this.scale.node_size.domain([min, max]);
 	this.scale.node_color.domain([min, max]);
     }
@@ -5170,6 +5180,10 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	    });
 	this.selection = new_sel;
 	this.completely = c;
+	// close button
+	var self = this;
+	new_sel.append('button').attr('class', "button input-close-button")
+	    .text("×").on('click', function() { self.hide(); });;
 
 	if (map instanceof Map) {
 	    this.map = map;
@@ -5544,12 +5558,12 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
     function init(options) {
 	// set defaults
 	var o = utils.set_options(options, {
-	    margins: {top: 0, right: 0, bottom: 0, left: 0},
+	    margins: {top: 5, right: 5, bottom: 5, left: 5},
 	    selection: d3.select("body").append("div"),
 	    selection_is_svg: false,
 	    fillScreen: false,
 	    enable_editing: true,
-	    on_load: function() {},
+	    on_load: null,
 	    map_path: null,
 	    map: null,
 	    cobra_model_path: null,
@@ -5562,10 +5576,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    flux2: null,
 	    node_data: null,
 	    node_data_path: null,
-	    node_data_style: 'ColorSize',
+	    node_data_style: 'ColorSize', // empty value: null
 	    show_beziers: false,
 	    debug: false,
-	    starting_reaction: 'GLCtex',
+	    starting_reaction: 'GLCtex', // empty value: null
 	    reaction_arrow_displacement: 35 });
 	
 	// TODO make each option is neither {}, undefined, nor null
@@ -5632,7 +5646,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 
 	// Check the cobra model
 	var cobra_model = null;
-	if (this.o.cobra_model) {	    
+	if (this.o.cobra_model!==null) {	    
 	    // TODO better checks
 	    cobra_model = CobraModel(this.o.cobra_model.reactions, this.o.cobra_model.cofactors);
 	} else {
@@ -5657,7 +5671,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
 	var max_w = width, max_h = height, scale;
-	if (this.o.map_data) {
+	if (this.o.map_data!==null) {
 	    // import map
 	    this.map = Map.from_data(this.o.map_data, zoomed_sel, defs, this.zoom_container,
 				height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
@@ -5693,11 +5707,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.map.key_manager.update();
 	
 	// setup selection box
-	if (this.o.map_data) {
+	if (this.o.map_data!==null) {
 	    this.map.draw_everything();
 	    this.map.zoom_extent_canvas();
 	} else {
-	    if (this.o.starting_reaction) {
+	    if (this.o.starting_reaction!==null) {
 		// Draw default reaction if no map is provided
 		var start_coords = { x: this.map.scale.x.invert(width/2),
 				     y: this.map.scale.x.invert(height/4) };
@@ -5721,7 +5735,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	d3.select('#loading').style("display", "none");
 
 	// run the load callback
-	this.o.on_load();
+	if (this.o.on_load!==null)
+	    this.o.on_load();
     }
     function brush_mode() {
 	this.brush.toggle(true);
@@ -5739,9 +5754,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	new_button(sel, keys.save, "Save (^s)");
 	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
 	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load (^o)");
-	key_manager.assigned_keys.load_flux.fn = new_input(sel, load_flux_for_file, this, "Load flux (^f)");
-	new_input(sel, load_node_data_for_file, this, "Load node data");
-
+	key_manager.assigned_keys.load_flux.fn = new_input(sel, load_flux_for_file, this, "Load reaction data (^f)");
+	new_button(sel, keys.clear_reaction_data, "Clear reaction data");
+	new_input(sel, load_node_data_for_file, this, "Load metabolite data");
+	new_button(sel, keys.clear_metabolite_data, "Clear metabolite data");
 	var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
 	map.callback_manager
 	    .set('toggle_beziers.button', function(on_off) {
@@ -5762,10 +5778,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	new_button(sel, keys.extent_canvas, "Zoom to canvas (^1)");
 	new_button(sel, keys.make_primary, "Make primary metabolite (p)");
 	new_button(sel, keys.cycle_primary, "Cycle primary metabolite (c)");
-	new_button(sel, keys.direction_arrow_left, "<");
-	new_button(sel, keys.direction_arrow_up, "^");
-	new_button(sel, keys.direction_arrow_down, "v");
-	new_button(sel, keys.direction_arrow_right, ">");
+	new_button(sel, keys.direction_arrow_left, "←");
+	new_button(sel, keys.direction_arrow_up, "↑");
+	new_button(sel, keys.direction_arrow_down, "↓");
+	new_button(sel, keys.direction_arrow_right, "→");
 	new_button(sel, keys.undo, "Undo (^z)");
 	new_button(sel, keys.redo, "Redo (^Shift z)");
 	return sel;
@@ -5785,7 +5801,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    this.map.set_node_data(data);
 	}
 	function new_button(s, key, name, id) {
-	    var button = s.append("button").attr("class", "command-button");
+	    var button = s.append("button").attr("class", "button command-button");
 	    if (id !== undefined) button.attr('id', id);
 	    return set_button(button, key, name);
 	}
@@ -5805,7 +5821,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		    .style("display", "none")
 		    .on("change", function() { utils.load_json(this.files[0], fn, target); });
 	    s.append("button")
-		.attr("class", "command-button")
+		.attr("class", "button command-button")
 		.text(name)
 		.on('click', function(e) {
 	    	    input.node().click();
@@ -5858,6 +5874,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		    fn: null }, // defined by button
 	    load_flux: { key: 70, modifiers: { control: true }, // ctrl-f
 			 fn: null }, // defined by button
+	    clear_reaction_data: { target: map,
+			  fn: function() { this.set_flux(null); }},
+	    clear_metabolite_data: { target: map,
+			  fn: function() { this.set_node_data(null); }},
 	    toggle_beziers: { key: 66,
 			      target: map,
 			      fn: map.toggle_beziers,

@@ -22,7 +22,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
     function init(options) {
 	// set defaults
 	var o = utils.set_options(options, {
-	    margins: {top: 0, right: 0, bottom: 0, left: 0},
+	    margins: {top: 5, right: 5, bottom: 5, left: 5},
 	    selection: d3.select("body").append("div"),
 	    selection_is_svg: false,
 	    fillScreen: false,
@@ -218,9 +218,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	new_button(sel, keys.save, "Save (^s)");
 	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
 	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load (^o)");
-	key_manager.assigned_keys.load_flux.fn = new_input(sel, load_flux_for_file, this, "Load flux (^f)");
-	new_input(sel, load_node_data_for_file, this, "Load node data");
-
+	key_manager.assigned_keys.load_flux.fn = new_input(sel, load_flux_for_file, this, "Load reaction data (^f)");
+	new_button(sel, keys.clear_reaction_data, "Clear reaction data");
+	new_input(sel, load_node_data_for_file, this, "Load metabolite data");
+	new_button(sel, keys.clear_metabolite_data, "Clear metabolite data");
 	var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
 	map.callback_manager
 	    .set('toggle_beziers.button', function(on_off) {
@@ -337,6 +338,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		    fn: null }, // defined by button
 	    load_flux: { key: 70, modifiers: { control: true }, // ctrl-f
 			 fn: null }, // defined by button
+	    clear_reaction_data: { target: map,
+			  fn: function() { this.set_flux(null); }},
+	    clear_metabolite_data: { target: map,
+			  fn: function() { this.set_node_data(null); }},
 	    toggle_beziers: { key: 66,
 			      target: map,
 			      fn: map.toggle_beziers,
