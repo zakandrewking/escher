@@ -18,7 +18,7 @@
     text-align: center;
     background-color: #f5f5f5;
 }
-.button:hover {
+.command-button:hover {
     background-color: #e5e5e5;    
 }
 .command-button {
@@ -32,11 +32,15 @@
     position: absolute;
     right: 0px;
     width: 18px;
-    height: 100%;
-    top: 0px;
+    bottom: 0px;
     padding: 0px;
     border-width: 0px;
     margin: 0px;
     background: none;
     font-size: 16px;
+    font-weight: normal;
+}
+.input-close-button:hover {
+    color: #ff3333;
+    font-weight: bold;
 }
