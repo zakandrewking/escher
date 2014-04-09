@@ -11,8 +11,7 @@
     left: 10px;
     top: 10px;
 }
-.command-button {
-    float: left;
+.button {
     font-size: 14px;
     color: #444;
     padding: 2px 3px;
@@ -23,6 +22,17 @@
     border-radius: 3px;
     border-width: 1px;
 }
-.command-button:hover {
+.button:hover {
     background-color: #e5e5e5;    
+}
+.command-button {
+    float: left;
+}
+.input-close-button {
+    position: absolute;
+    right: 0px;
+    width: 18px;
+    height: 100%;
+    top: 0px;
+    padding: 0px;
 }

@@ -264,7 +264,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    this.map.set_node_data(data);
 	}
 	function new_button(s, key, name, id) {
-	    var button = s.append("button").attr("class", "command-button");
+	    var button = s.append("button").attr("class", "button command-button");
 	    if (id !== undefined) button.attr('id', id);
 	    return set_button(button, key, name);
 	}
@@ -284,7 +284,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		    .style("display", "none")
 		    .on("change", function() { utils.load_json(this.files[0], fn, target); });
 	    s.append("button")
-		.attr("class", "command-button")
+		.attr("class", "button command-button")
 		.text(name)
 		.on('click', function(e) {
 	    	    input.node().click();

@@ -34,6 +34,10 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 	    });
 	this.selection = new_sel;
 	this.completely = c;
+	// close button
+	var self = this;
+	new_sel.append('button').attr('class', "button input-close-button")
+	    .text("×").on('click', function() { self.hide(); });;
 
 	if (map instanceof Map) {
 	    this.map = map;

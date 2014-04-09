@@ -187,7 +187,7 @@ class Builder(Plot):
             content = env.get_template('content.html')
         html = content.render(id=an_id,
                               height=unicode(self.height),
-                              css_path=urls.builder_css,
+                              css_path=(urls.builder_css_local if dev else urls.builder_css),
                               initialize_js=self._initialize_javascript(),
                               draw_js=self._draw_js(an_id, enable_editing, dev, fill_screen),
                               d3_url=urls.d3,
