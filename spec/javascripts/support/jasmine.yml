@@ -12,9 +12,9 @@
 #   - dist/**/*.js
 #
 src_files:
-    - js/lib/d3.v3.js
-    - js/escher-1.0.dev.js
-    - js/lib/jquery-2.1.0.js
+    - lib/d3.v3.js
+    - escher.1.0.dev.js
+    - lib/jquery-2.1.0.min.js
 
 # stylesheets
 #
@@ -54,7 +54,6 @@ helpers:
 #
 spec_files:
   - "**/*[Ss]pec.js"
-  - "**/**/*[Ss]pec.js"
 
 
 # src_dir
