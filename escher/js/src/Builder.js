@@ -241,10 +241,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	new_button(sel, keys.extent_canvas, "Zoom to canvas (^1)");
 	new_button(sel, keys.make_primary, "Make primary metabolite (p)");
 	new_button(sel, keys.cycle_primary, "Cycle primary metabolite (c)");
-	new_button(sel, keys.direction_arrow_left, "<");
-	new_button(sel, keys.direction_arrow_up, "^");
-	new_button(sel, keys.direction_arrow_down, "v");
-	new_button(sel, keys.direction_arrow_right, ">");
+	new_button(sel, keys.direction_arrow_left, "←");
+	new_button(sel, keys.direction_arrow_up, "↑");
+	new_button(sel, keys.direction_arrow_down, "↓");
+	new_button(sel, keys.direction_arrow_right, "→");
 	new_button(sel, keys.undo, "Undo (^z)");
 	new_button(sel, keys.redo, "Redo (^Shift z)");
 	return sel;
