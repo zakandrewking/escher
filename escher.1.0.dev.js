@@ -4520,6 +4520,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
         // definitions
 	function extend_and_draw_metabolite(new_nodes, selected_node_id) {
+	    this.apply_node_data_to_nodes(new_nodes);
 	    utils.extend(this.nodes, new_nodes);
 	    this.draw_these_nodes([selected_node_id]);
 	}
@@ -4592,6 +4593,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    // remove the selected node so it can be updated
 	    delete this.nodes[selected_node_id];
 	    utils.extend(this.nodes, new_nodes);
+
+	    // apply the reaction and node data
+	    this.apply_node_data_to_nodes(new_nodes);
+	    this.apply_flux_to_reactions(new_reactions);
 
 	    // draw new reaction and (TODO) select new metabolite
 	    this.draw_these_nodes(Object.keys(new_nodes));
