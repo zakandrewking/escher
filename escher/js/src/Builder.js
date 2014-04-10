@@ -358,10 +358,14 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		      target: map,
 		      fn: map.rotate_selected_nodes,
 		      ignore_with_input: true },
-	    delete: { key: 8, modifiers: { control: true }, // ctrl-del
+	    delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
 		      target: map,
 		      fn: map.delete_selected,
 		      ignore_with_input: true },
+	    delete_del: { key: 46, modifiers: { control: true }, // ctrl-del
+			  target: map,
+			  fn: map.delete_selected,
+			  ignore_with_input: true },
 	    extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
 			    target: map,
 			    fn: map.zoom_extent_nodes },
