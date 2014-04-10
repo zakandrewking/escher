@@ -166,6 +166,11 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
         this.completely.input.blur();
         this.completely.repaint(); //put in place()?
 
+	if (this.map.cobra_model===null) {
+	    this.completely.setText('Cannot add: No model.');
+	    return;
+	}
+
         // Find selected reaction
         var suggestions = [],
 	    cobra_reactions = this.map.cobra_model.reactions,

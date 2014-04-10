@@ -20,6 +20,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	reset_containers: reset_containers,
 	// appearance
 	set_status: set_status,
+	set_model: set_model,
 	set_flux: set_flux,
 	set_node_data: set_node_data,
 	// selection
@@ -268,6 +269,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     function set_status(status) {
 	this.status = status;
 	this.callback_manager.run('set_status', status);
+    }
+    function set_model(model) {
+	/** Change the cobra model for the map.
+
+	 */
+	this.cobra_model = model;
     }
     function set_flux(flux) {
 	/** Set a new reaction data, and redraw the map.

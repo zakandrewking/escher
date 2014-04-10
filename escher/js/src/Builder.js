@@ -149,7 +149,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	}
 
 	// set up the reaction input with complete.ly
-	var reaction_input = Input(this.o.selection, this.map, this.zoom_container);
+	this.reaction_input = Input(this.o.selection, this.map, this.zoom_container);
 
 	if (this.o.enable_editing) {
 	    // setup the Brush
@@ -159,14 +159,14 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    this._setup_modes(this.map, this.brush, this.zoom_container);
 	
 	    // make key manager
-	    var keys = this._get_keys(this.map, reaction_input, this.brush);
+	    var keys = this._get_keys(this.map, this.reaction_input, this.brush);
 	    this.map.key_manager.assigned_keys = keys;
 	    // set up menu and status bars
 	    var menu = this._setup_menu(this.o.selection, this.map, this.zoom_container, this.map.key_manager, keys),
 		status = this._setup_status(this.o.selection, this.map);
 	}
 	// tell the key manager about the reaction input
-	this.map.key_manager.reaction_input = reaction_input;
+	this.map.key_manager.reaction_input = this.reaction_input;
 	// make sure the key manager remembers all those changes
 	this.map.key_manager.update();
 	
@@ -218,6 +218,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	new_button(sel, keys.save, "Save (^s)");
 	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
 	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load (^o)");
+	key_manager.assigned_keys.load_model.fn = new_input(sel, load_model_for_file, this, "Load model (^m)");
 	key_manager.assigned_keys.load_flux.fn = new_input(sel, load_flux_for_file, this, "Load reaction data (^f)");
 	new_button(sel, keys.clear_reaction_data, "Clear reaction data");
 	new_input(sel, load_node_data_for_file, this, "Load metabolite data");
@@ -255,6 +256,12 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    if (error) console.warn(error);
 	    this.o.map_data = map_data;
 	    this.reload_builder();
+	}
+	function load_model_for_file(error, data) {
+	    if (error) console.warn(error);
+	    var cobra_model = CobraModel(data.reactions, data.cofactors);
+	    this.map.set_model(cobra_model);
+	    this.reaction_input.toggle(false);
 	}
 	function load_flux_for_file(error, data) {
 	    if (error) console.warn(error);
@@ -336,6 +343,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			fn: map.save_svg },
             load: { key: 79, modifiers: { control: true }, // ctrl-o
 		    fn: null }, // defined by button
+            load_model: { key: 77, modifiers: { control: true }, // ctrl-m
+			  fn: null }, // defined by button
 	    load_flux: { key: 70, modifiers: { control: true }, // ctrl-f
 			 fn: null }, // defined by button
 	    clear_reaction_data: { target: map,
