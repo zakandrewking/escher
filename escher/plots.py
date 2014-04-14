@@ -5,9 +5,10 @@ import urls
 
 from os.path import dirname, abspath, join, isfile, isdir
 from warnings import warn
-from urllib2 import urlopen, HTTPError
+from urllib2 import urlopen, HTTPError, URLError
 import json
 import os
+import shutil
 import appdirs
 import re
 from jinja2 import Environment, PackageLoader, Template
@@ -26,8 +27,47 @@ def get_cache_dir():
         pass
     return cache_dir
 
+def clear_cache():
+    cache_dir = get_cache_dir()
+    for root, dirs, files in os.walk(cache_dir):
+        for f in files:
+            os.unlink(join(root, f))
+        for d in dirs:
+            shutil.rmtree(join(root, d))
+        
 def get_an_id():
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
+
+def load_resource(resource, name):
+    """Load a resource that could be a file, URL, or json string
+
+    """        
+    # if it's a url, download it
+    if resource.startswith('http://') or resource.startswith('https://'):
+        try:
+            download = urlopen(resource)
+        except URLError as err:
+            raise err
+        else:
+            return download.read()
+    # if it's a filepath, load it
+    if os.path.exists(resource):
+        try:
+            with open(resource, 'r') as f:
+                loaded_resource = f.read()
+            _ = json.loads(loaded_resource)
+        except ValueError as err:
+            raise ValueError('%s not a valid json file' % name)
+        else:
+            return loaded_resource
+    # try to validate the json
+    try:
+        _ = json.loads(resource)
+    except ValueError as err:
+        raise ValueError('Could not load %s. Not valid json, url, or filepath' % name)
+    else:
+        return resource
+    raise Exception('Could not load %s.' % name)
 
 class Plot(object):
     def standalone_html(self):
@@ -35,14 +75,14 @@ class Plot(object):
     def embed_html(self):
         raise NotImplemented()
     
-    def display_in_notebook(self):
+    def display_in_notebook(self, height=500):
         """Display the plot in the notebook.
 
         """
         # import here, in case users don't have requirements installed
         from IPython.display import HTML
         import matplotlib.pyplot as plt
-        return HTML(self.embedded_html())
+        return HTML(self.embedded_html(height=height))
 
     def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50):
         """Launch a web browser to view the map.
@@ -77,82 +117,120 @@ class Builder(Plot):
 
     Maps are stored in json files and are stored in a cache directory. Maps
     which are not found will be downloaded from a map repository if found.
+
+    Arguments
+    ---------
+    map_name: a string specifying a map to be downloaded from the Escher web server.
     
+    map_json: a json string, or a file path to a json file, or a URL specifying
+    a json file to be downloaded.
+
+    model_name: a string specifying a model to be downloaded from the Escher web
+    server.
+    
+    model_json: a json string, or a file path to a json file, or a URL
+    specifying a json file to be downloaded.
+
+    reaction_data: a dictionary with keys that correspond to reaction ids
+    and values that will be mapped to reaction arrows and labels.
+
+    reaction_data: a dictionary with keys that correspond to metabolite ids and
+    values that will be mapped to metabolite nodes and labels.
+
     """
     def __init__(self, map_name=None, map_json=None, model_name=None,
                  model_json=None, reaction_data=None, metabolite_data=None,
-                 height=800, **kwargs):
+                 **kwargs):
+        # load the map
         self.map_name = map_name
         self.map_json = map_json
-        if map_name:
-            if map_json:
-                warn('map_json overrides map_name')
-            else:
-                self.load_map()
+        self.loaded_map_json = None
+        if map_name and map_json:
+            warn('map_json overrides map_name')
+        self.load_map()
+        # load the model
         self.model_name = model_name
         self.model_json = model_json
-        if model_name:
-            if model_json:
-                warn('model_json overrides model_name')
-            else:
-                self.load_model()
+        self.loaded_model_json = None
+        if model_name and model_json:
+            warn('model_json overrides model_name')
+        self.load_model()
+        # set the args
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
-        self.height = height
         self.options = kwargs
-
-    def load_model(self):
-        model_name = self.model_name   
-        if model_name is None: return 
-        model_name = model_name.replace(".json", "")
-
-        # if the file is not present attempt to download
-        cache_dir = get_cache_dir()
-        model_filename = join(cache_dir, model_name + ".json")
-        if not isfile(model_filename):
-            model_not_cached = 'Model "%s" not in cache. Attempting download from %s' % \
-                (model_name, urls.escher_home)
-            warn(model_not_cached)
-            try:
-                url = urls.model_download + model_name + ".json"
-                download = urlopen(url)
-                with open(model_filename, "w") as outfile:
-                    outfile.write(download.read())
-            except HTTPError:
-                raise ValueError("No model named %s found in cache or at %s" % \
-                                     (model_name, url))
-        with open(model_filename) as f:
-            self.model_json = f.read()
         
-    def load_map(self):
-        map_name = self.map_name
-        if map_name is None: return
-        map_name = map_name.replace(".json", "")
+    def load_model(self):
+        """Load the model from input model_json using load_resource, or, secondarily,
+           from model_name.
 
-        # if the file is not present attempt to download
-        cache_dir = get_cache_dir()
-        map_filename = join(cache_dir, map_name + ".json")
-        if not isfile(map_filename):
-            map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
-                (map_name, urls.escher_home)
-            warn(map_not_cached)
-            try:
-                url = urls.map_download + map_name + ".json"
-                download = urlopen(url)
-                with open(map_filename, "w") as outfile:
-                    outfile.write(download.read())
-            except HTTPError:
-                raise ValueError("No map named %s found in cache or at %s" % \
+        """
+        model_json = self.model_json
+        if model_json is not None:
+            self.loaded_model_json = load_resource(self.model_json, 'model_json')
+        elif self.model_name is not None:
+            # get the name
+            model_name = self.model_name  
+            model_name = model_name.replace(".json", "")
+            # if the file is not present attempt to download
+            cache_dir = get_cache_dir()
+            model_filename = join(cache_dir, model_name + ".json")
+            if not isfile(model_filename):
+                model_not_cached = 'Model "%s" not in cache. Attempting download from %s' % \
+                    (model_name, urls.escher_home)
+                warn(model_not_cached)
+                try:
+                    url = urls.model_download + model_name + ".json"
+                    download = urlopen(url)
+                    with open(model_filename, "w") as outfile:
+                        outfile.write(download.read())
+                except HTTPError:
+                    raise ValueError("No model named %s found in cache or at %s" % \
+                                     (model_name, url))
+            with open(model_filename) as f:
+                self.loaded_model_json = f.read()
+    
+    def load_map(self):
+        """Load the map from input map_json using load_resource, or, secondarily,
+           from map_name.
+
+        """
+        map_json = self.map_json
+        if map_json is not None:
+            self.loaded_map_json = load_resource(self.map_json, 'map_json')
+        elif self.map_name is not None:
+            # get the name
+            map_name = self.map_name  
+            map_name = map_name.replace(".json", "")
+            # if the file is not present attempt to download
+            cache_dir = get_cache_dir()
+            map_filename = join(cache_dir, map_name + ".json")
+            if not isfile(map_filename):
+                map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
+                    (map_name, urls.escher_home)
+                warn(map_not_cached)
+                try:
+                    url = urls.map_download + map_name + ".json"
+                    download = urlopen(url)
+                    with open(map_filename, "w") as outfile:
+                        outfile.write(download.read())
+                except HTTPError:
+                    raise ValueError("No map named %s found in cache or at %s" % \
                                      (map_name, url))
-        with open(map_filename) as f:
-            self.map_json = f.read()
+            with open(map_filename) as f:
+                self.loaded_map_json = f.read()
     
     def _initialize_javascript(self):
-        javascript = u"\n".join([u"var map_data = %s;" % (self.map_json if self.map_json else u'null'),
-                                 u"var cobra_model = %s;" % (self.model_json if self.model_json else u'null'),
-                                 u"var reaction_data = %s;" % (json.dumps(self.reaction_data) if self.reaction_data else u'null'),
-                                 u"var metabolite_data = %s;" % (json.dumps(self.metabolite_data) if self.metabolite_data else u'null'),
-                                 u"var css_string = '%s';" % self._embed_style()])
+        javascript = u"\n".join(
+            [u"var map_data = %s;" % (self.loaded_map_json if
+                                      self.loaded_map_json else u'null'),
+             u"var cobra_model = %s;" % (self.loaded_model_json if
+                                         self.loaded_model_json else u'null'),
+             u"var reaction_data = %s;" % (json.dumps(self.reaction_data) if
+                                           self.reaction_data else u'null'),
+             u"var metabolite_data = %s;" % (json.dumps(self.metabolite_data) if
+                                             self.metabolite_data else u'null'),
+             u"var css_string = '%s';" % self._embed_style()])
         return javascript
 
     def _options_string(self):
@@ -179,14 +257,15 @@ class Builder(Plot):
         download = urlopen(urls.builder_embed_css)
         return unicode(download.read().replace('\n', ' '))
     
-    def _get_html(self, dev=False, wrapper=False, enable_editing=True, fill_screen=False):
+    def _get_html(self, dev=False, wrapper=False, enable_editing=True,
+                  fill_screen=False, height=800):
         an_id = unicode(get_an_id())
         if dev:
             content = env.get_template('dev_content.html')
         else:
             content = env.get_template('content.html')
         html = content.render(id=an_id,
-                              height=unicode(self.height),
+                              height=unicode(height),
                               css_path=(urls.builder_css_local if dev else urls.builder_css),
                               initialize_js=self._initialize_javascript(),
                               draw_js=self._draw_js(an_id, enable_editing, dev, fill_screen),
@@ -195,10 +274,10 @@ class Builder(Plot):
                               wrapper=wrapper)
         return html
 
-    def embedded_html(self, dev=False, enable_editing=False, fill_screen=False):
+    def embedded_html(self, dev=False, enable_editing=False, height=800):
         return self._get_html(dev=dev, wrapper=False, enable_editing=enable_editing,
-                              fill_screen=fill_screen)
+                              fill_screen=False, height=height)
     
-    def standalone_html(self, dev=False, enable_editing=True, fill_screen=True):
+    def standalone_html(self, dev=False, enable_editing=True):
         return self._get_html(dev=dev, wrapper=True, enable_editing=enable_editing,
-                              fill_screen=fill_screen)
+                              fill_screen=True)
