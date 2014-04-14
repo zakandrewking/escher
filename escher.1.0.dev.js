@@ -5734,8 +5734,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 
 	// Check the cobra model
 	var cobra_model_obj = null;
-	if (this.o.cobra_model!==null) {	    
-	    // TODO better checks
+	if (this.o.cobra_model!==null) {
 	    cobra_model_obj = CobraModel(this.o.cobra_model);
 	} else {
 	    console.warn('No cobra model was loaded.');
@@ -5799,7 +5798,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    this.map.draw_everything();
 	    this.map.zoom_extent_canvas();
 	} else {
-	    if (this.o.starting_reaction!==null) {
+	    if (this.o.starting_reaction!==null && cobra_model_obj!==null) {
 		// Draw default reaction if no map is provided
 		var start_coords = { x: this.map.scale.x.invert(width/2),
 				     y: this.map.scale.x.invert(height/4) };
