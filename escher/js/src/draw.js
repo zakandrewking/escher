@@ -303,7 +303,7 @@ define(["utils"], function(utils) {
                 })
 		.attr('r', function(d) {
 		    if (d.node_type == 'metabolite') {
-			if (has_node_data && node_data_style.indexOf('Size')!==1) {
+			if (has_node_data && node_data_style.indexOf('Size')!==-1) {
 			    return scale.size(scale.node_size(d.data!==null ? d.data : 0));
 			} else {
 			    return scale.size(d.node_is_primary ? 15 : 10); 
@@ -314,7 +314,7 @@ define(["utils"], function(utils) {
 		})
 		.style('fill', function(d) {
 		    if (d.node_type=='metabolite') {
-			if (has_node_data && node_data_style.indexOf('Color')!==1) {
+			if (has_node_data && node_data_style.indexOf('Color')!==-1) {
 			    return scale.node_color(d.data!==null ? d.data : 0);
 			} else {
 			    return 'rgb(224, 134, 91)';
