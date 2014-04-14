@@ -2321,7 +2321,7 @@ define('build',["utils"], function(utils) {
 					   x: met_loc.circle.x,
 					   y: met_loc.circle.y,
 					   node_is_primary: metabolite.is_primary,
-					   compartment_name: metabolite.compartment,
+					   compartment_id: metabolite.compartment_id,
 					   label_x: met_loc.circle.x + label_d.x,
 					   label_y: met_loc.circle.y + label_d.y,
 					   metabolite_name: metabolite.name,
@@ -3628,6 +3628,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	reset_containers: reset_containers,
 	// appearance
 	set_status: set_status,
+	set_model: set_model,
 	set_flux: set_flux,
 	set_node_data: set_node_data,
 	// selection
@@ -3876,6 +3877,12 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     function set_status(status) {
 	this.status = status;
 	this.callback_manager.run('set_status', status);
+    }
+    function set_model(model) {
+	/** Change the cobra model for the map.
+
+	 */
+	this.cobra_model = model;
     }
     function set_flux(flux) {
 	/** Set a new reaction data, and redraw the map.
@@ -4480,7 +4487,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 				      x: coords.x,
 				      y: coords.y,
 				      node_is_primary: true,
-				      compartment_name: metabolite.compartment,
+				      compartment_id: metabolite.compartment_id,
 				      label_x: coords.x + label_d.x,
 				      label_y: coords.y + label_d.y,
 				      metabolite_name: metabolite.name,
@@ -5317,6 +5324,11 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
         this.completely.input.blur();
         this.completely.repaint(); //put in place()?
 
+	if (this.map.cobra_model===null) {
+	    this.completely.setText('Cannot add: No model.');
+	    return;
+	}
+
         // Find selected reaction
         var suggestions = [],
 	    cobra_reactions = this.map.cobra_model.reactions,
@@ -5449,14 +5461,83 @@ define('CobraModel',["utils"], function(utils) {
      */
 
     var CobraModel = utils.make_class();
+    // class methods
+    CobraModel.separate_compartments = separate_compartments;
     // instance methods
     CobraModel.prototype = { init: init };
 
     return CobraModel;
 
-    function init(reactions, cofactors) {
-	this.reactions = reactions;
-	this.cofactors = cofactors;
+    // class methods
+    function separate_compartments(reactions, metabolites) {
+	/** Convert id to bigg_id and bigg_id_compartmentalized.
+	 
+	 */
+	var new_reactions = {};
+	for (var reaction_id in reactions) {
+	    var new_reaction = utils.clone(reactions[reaction_id]);
+	    new_reaction['bigg_id_compartmentalized'] = reaction_id;
+	    var out = no_compartment(reaction_id);
+	    if (out===null) out = [reaction_id, null];
+	    new_reaction['bigg_id'] = out[0];
+	    new_reaction['compartment_id'] = out[1];
+	    for (var metabolite_id in new_reaction.metabolites) {
+		var coefficient = new_reaction.metabolites[metabolite_id],
+		    new_met;
+		if (metabolite_id in metabolites) {
+		    new_met = utils.clone(metabolites[metabolite_id]);
+		} else {
+		    // console.warn('Could not find metabolite.');
+		    new_met = {};
+		}
+		new_met.coefficient = coefficient;
+		new_met['bigg_id_compartmentalized'] = metabolite_id;
+		var out = no_compartment(metabolite_id);
+		if (out===null) out = [metabolite_id, null];
+		new_met['bigg_id'] = out[0];
+		new_met['compartment_id'] = out[1];
+		new_reaction.metabolites[metabolite_id] = new_met;
+	    }
+	    new_reactions[reaction_id] = new_reaction;
+	}
+	return new_reactions;
+
+	// definitions
+	function no_compartment(id) {
+	    /** Returns an array of [uncompartmentalized id, compartment id].
+
+	     Matches compartment ids with length 1 or 2.
+
+	     Return null if no match is found.
+
+	     */
+            var reg = /(.*)_([a-z0-9]{1,2})$/,
+		result = reg.exec(id);
+	    if (result===null) return null;
+	    return result.slice(1,3);
+	}
+    }
+
+    // instance methods
+    function init(model_data) {
+	// reactions
+	if (!(model_data.reactions instanceof Object || 
+	     model_data.metabolites instanceof Object)) {
+	    console.error('Bad model data');
+	}
+	this.reactions = separate_compartments(model_data.reactions, 
+					       model_data.metabolites);
+	// metabolites currently unused
+	if ('cofactors' in model_data) {
+	    if (model_data.cofactors instanceof Array) {
+		this.cofactors = model_data.cofactors;
+	    } else {
+		console.warn('model_data.cofactors should be an array. Ignoring it');
+		this.cofactors = [];
+	    }
+	} else {
+	    this.cofactors = [];
+	}
     }
 });
 
@@ -5650,10 +5731,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.callback_manager = CallbackManager();
 
 	// Check the cobra model
-	var cobra_model = null;
+	var cobra_model_obj = null;
 	if (this.o.cobra_model!==null) {	    
 	    // TODO better checks
-	    cobra_model = CobraModel(this.o.cobra_model.reactions, this.o.cobra_model.cofactors);
+	    cobra_model_obj = CobraModel(this.o.cobra_model);
 	} else {
 	    console.warn('No cobra model was loaded.');
 	}
@@ -5680,17 +5761,17 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    // import map
 	    this.map = Map.from_data(this.o.map_data, zoomed_sel, defs, this.zoom_container,
 				height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
-				cobra_model);
+				cobra_model_obj);
 	    this.zoom_container.reset();
 	} else {
 	    // new map
 	    this.map = new Map(zoomed_sel, defs, this.zoom_container,
 			  height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
-			  cobra_model);
+			  cobra_model_obj);
 	}
 
 	// set up the reaction input with complete.ly
-	var reaction_input = Input(this.o.selection, this.map, this.zoom_container);
+	this.reaction_input = Input(this.o.selection, this.map, this.zoom_container);
 
 	if (this.o.enable_editing) {
 	    // setup the Brush
@@ -5700,14 +5781,14 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    this._setup_modes(this.map, this.brush, this.zoom_container);
 	
 	    // make key manager
-	    var keys = this._get_keys(this.map, reaction_input, this.brush);
+	    var keys = this._get_keys(this.map, this.reaction_input, this.brush);
 	    this.map.key_manager.assigned_keys = keys;
 	    // set up menu and status bars
 	    var menu = this._setup_menu(this.o.selection, this.map, this.zoom_container, this.map.key_manager, keys),
 		status = this._setup_status(this.o.selection, this.map);
 	}
 	// tell the key manager about the reaction input
-	this.map.key_manager.reaction_input = reaction_input;
+	this.map.key_manager.reaction_input = this.reaction_input;
 	// make sure the key manager remembers all those changes
 	this.map.key_manager.update();
 	
@@ -5759,6 +5840,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	new_button(sel, keys.save, "Save (^s)");
 	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
 	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load (^o)");
+	key_manager.assigned_keys.load_model.fn = new_input(sel, load_model_for_file, this, "Load model (^m)");
 	key_manager.assigned_keys.load_flux.fn = new_input(sel, load_flux_for_file, this, "Load reaction data (^f)");
 	new_button(sel, keys.clear_reaction_data, "Clear reaction data");
 	new_input(sel, load_node_data_for_file, this, "Load metabolite data");
@@ -5796,6 +5878,12 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    if (error) console.warn(error);
 	    this.o.map_data = map_data;
 	    this.reload_builder();
+	}
+	function load_model_for_file(error, data) {
+	    if (error) console.warn(error);
+	    var cobra_model_obj = CobraModel(data);
+	    this.map.set_model(cobra_model_obj);
+	    this.reaction_input.toggle(false);
 	}
 	function load_flux_for_file(error, data) {
 	    if (error) console.warn(error);
@@ -5877,6 +5965,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			fn: map.save_svg },
             load: { key: 79, modifiers: { control: true }, // ctrl-o
 		    fn: null }, // defined by button
+            load_model: { key: 77, modifiers: { control: true }, // ctrl-m
+			  fn: null }, // defined by button
 	    load_flux: { key: 70, modifiers: { control: true }, // ctrl-f
 			 fn: null }, // defined by button
 	    clear_reaction_data: { target: map,
@@ -5899,10 +5989,14 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		      target: map,
 		      fn: map.rotate_selected_nodes,
 		      ignore_with_input: true },
-	    delete: { key: 8, modifiers: { control: true }, // ctrl-del
+	    delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
 		      target: map,
 		      fn: map.delete_selected,
 		      ignore_with_input: true },
+	    delete_del: { key: 46, modifiers: { control: true }, // ctrl-del
+			  target: map,
+			  fn: map.delete_selected,
+			  ignore_with_input: true },
 	    extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
 			    target: map,
 			    fn: map.zoom_extent_nodes },
@@ -6033,14 +6127,15 @@ define('DataMenu',["utils"], function(utils) {
     };
 });
 
-define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "utils"],
-       function(bu, mp, bh, km, dm, us, ut) {
+define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils"],
+       function(bu, mp, bh, km, dm, us, cm, ut) {
            return { Builder: bu,
 		    Map: mp,
 		    Behavior: bh,
 		    KeyManager: km,
 		    DataMenu: dm,
 		    UndoStack: us,
+		    CobraModel: cm,
 		    utils: ut };
        });
 

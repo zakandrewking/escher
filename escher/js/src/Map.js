@@ -858,12 +858,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	for (var reaction_id in this.reactions) {
 	    if (this.reactions[reaction_id].abbreviation == starting_reaction) {             
 		console.warn('reaction is already drawn');
-                return;
+                return null;
 	    }
         }
 
 	// If there is no cobra model, error
-	if (!this.cobra_model) console.error('No CobraModel. Cannot build new reaction');
+	if (!this.cobra_model) return console.error('No CobraModel. Cannot build new reaction');
 
         // set reaction coordinates and angle
         // be sure to copy the reaction recursively
@@ -879,7 +879,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 				      x: coords.x,
 				      y: coords.y,
 				      node_is_primary: true,
-				      compartment_name: metabolite.compartment,
+				      compartment_id: metabolite.compartment_id,
 				      label_x: coords.x + label_d.x,
 				      label_y: coords.y + label_d.y,
 				      metabolite_name: metabolite.name,
@@ -916,6 +916,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	
 	// draw the reaction
 	this.new_reaction_for_metabolite(starting_reaction, selected_node_id);
+	
+	return null;
 
         // definitions
 	function extend_and_draw_metabolite(new_nodes, selected_node_id) {

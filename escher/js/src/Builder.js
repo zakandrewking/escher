@@ -109,10 +109,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.callback_manager = CallbackManager();
 
 	// Check the cobra model
-	var cobra_model = null;
+	var cobra_model_obj = null;
 	if (this.o.cobra_model!==null) {	    
 	    // TODO better checks
-	    cobra_model = CobraModel(this.o.cobra_model.reactions, this.o.cobra_model.cofactors);
+	    cobra_model_obj = CobraModel(this.o.cobra_model);
 	} else {
 	    console.warn('No cobra model was loaded.');
 	}
@@ -139,13 +139,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    // import map
 	    this.map = Map.from_data(this.o.map_data, zoomed_sel, defs, this.zoom_container,
 				height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
-				cobra_model);
+				cobra_model_obj);
 	    this.zoom_container.reset();
 	} else {
 	    // new map
 	    this.map = new Map(zoomed_sel, defs, this.zoom_container,
 			  height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
-			  cobra_model);
+			  cobra_model_obj);
 	}
 
 	// set up the reaction input with complete.ly
@@ -259,8 +259,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	}
 	function load_model_for_file(error, data) {
 	    if (error) console.warn(error);
-	    var cobra_model = CobraModel(data.reactions, data.cofactors);
-	    this.map.set_model(cobra_model);
+	    var cobra_model_obj = CobraModel(data);
+	    this.map.set_model(cobra_model_obj);
 	    this.reaction_input.toggle(false);
 	}
 	function load_flux_for_file(error, data) {

@@ -179,7 +179,7 @@ define(["utils"], function(utils) {
 					   x: met_loc.circle.x,
 					   y: met_loc.circle.y,
 					   node_is_primary: metabolite.is_primary,
-					   compartment_name: metabolite.compartment,
+					   compartment_id: metabolite.compartment_id,
 					   label_x: met_loc.circle.x + label_d.x,
 					   label_y: met_loc.circle.y + label_d.y,
 					   metabolite_name: metabolite.name,
