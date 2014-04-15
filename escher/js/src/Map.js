@@ -87,7 +87,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	// defaults
 	var default_angle = 90; // degrees
-	this.reaction_arrow_displacement = 35;
+	this.reaction_arrow_displacement = 25;
 	this.default_reaction_color = '#334E75',
 
 	// make the canvas
@@ -871,8 +871,9 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	// create the first node
 	for (var metabolite_id in cobra_reaction.metabolites) {
-	    var metabolite = cobra_reaction.metabolites[metabolite_id];
-	    if (metabolite.coefficient < 0) {
+	    var coefficient = cobra_reaction.metabolites[metabolite_id],
+		metabolite = this.cobra_model.metabolites[metabolite_id];
+	    if (coefficient < 0) {
 		var selected_node_id = ++this.map_info.largest_ids.nodes,
 		    label_d = { x: 30, y: 10 },
 		    selected_node = { connected_segments: [],
@@ -947,10 +948,10 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
         // set reaction coordinates and angle
         // be sure to copy the reaction recursively
-        var cobra_reaction = utils.clone(this.cobra_model.reactions[reaction_abbreviation]);
+        var cobra_reaction = this.cobra_model.reactions[reaction_abbreviation];
 
 	// build the new reaction
-	var out = build.new_reaction(reaction_abbreviation, cobra_reaction,
+	var out = build.new_reaction(cobra_reaction, this.cobra_model.metabolites,
 				     selected_node_id, utils.clone(selected_node),
 				     this.map_info.largest_ids, this.cobra_model.cofactors,
 				     this.direction_arrow.get_rotation()),

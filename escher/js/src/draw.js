@@ -93,7 +93,7 @@ define(["utils"], function(utils) {
 	
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
-            var t = d.abbreviation;
+            var t = d.bigg_id_compartmentalized;
             if (d.flux!==null) t += " ("+decimal_format(d.flux)+")";
             else if (has_flux) t += " (0)";
             return t;
@@ -399,7 +399,7 @@ define(["utils"], function(utils) {
                 refY = markerWidth/2,
                 d;
 
-            if (is_end) refX = 0;
+            if (is_end) refX = 2;
             else        refX = markerHeight;
             if (is_end) d = 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
             else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';

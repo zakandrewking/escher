@@ -1811,7 +1811,7 @@ define('draw',["utils"], function(utils) {
 	
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
-            var t = d.abbreviation;
+            var t = d.bigg_id_compartmentalized;
             if (d.flux!==null) t += " ("+decimal_format(d.flux)+")";
             else if (has_flux) t += " (0)";
             return t;
@@ -2117,7 +2117,7 @@ define('draw',["utils"], function(utils) {
                 refY = markerWidth/2,
                 d;
 
-            if (is_end) refX = 0;
+            if (is_end) refX = 2;
             else        refX = markerHeight;
             if (is_end) d = 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
             else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
@@ -2146,7 +2146,7 @@ define('build',["utils"], function(utils) {
 	     move_node_and_dependents: move_node_and_dependents };
     
     // definitions
-    function new_reaction(reaction_abbreviation, cobra_reaction,
+    function new_reaction(cobra_reaction, cobra_metabolites,
 			  selected_node_id, selected_node,
 			  largest_ids, cofactors, angle) {
         /** New reaction.
@@ -2181,13 +2181,13 @@ define('build',["utils"], function(utils) {
 	var anchor_distance = 20;
 
 	// new reaction structure
-	var new_reaction = { abbreviation: reaction_abbreviation,
+	var new_reaction = { bigg_id_compartmentalized: cobra_reaction.bigg_id_compartmentalized,
 			     reversibility: cobra_reaction.reversibility,
-			     metabolites: cobra_reaction.metabolites,
+			     metabolites: utils.clone(cobra_reaction.metabolites),
 			     label_x: center.x + label_d.x,
 			     label_y: center.y + label_d.y,
 			     name: cobra_reaction.name,
-			     segments: {} };	
+			     segments: {} };
 
         // set primary metabolites and count reactants/products
 
@@ -2195,29 +2195,36 @@ define('build',["utils"], function(utils) {
 	var reactant_ranks = [], product_ranks = [], 
             reactant_count = 0, product_count = 0,
 	    reaction_is_reversed = false;
-        for (var metabolite_abbreviation in cobra_reaction.metabolites) {
-            var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
-	    if (metabolite.coefficient < 0) {
-                metabolite.index = reactant_count;
+        for (var metabolite_abbreviation in new_reaction.metabolites) {	
+	    // make the metabolites into objects
+            var metabolite = cobra_metabolites[metabolite_abbreviation],
+		coefficient = new_reaction.metabolites[metabolite_abbreviation],
+		new_metabolite = { coefficient: coefficient,
+				   formula: metabolite.formula,
+				   bigg_id: metabolite.bigg_id,
+				   bigg_id_compartmentalized: metabolite.bigg_id_compartmentalized };
+	    if (coefficient < 0) {
+                new_metabolite.index = reactant_count;
 		// score the metabolites. Infinity == selected, >= 1 == carbon containing
-		var carbons = /C([0-9]+)/.exec(metabolite.formula);
-		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized) {
-		    reactant_ranks.push([metabolite.index, Infinity]);
-		} else if (carbons && cofactors.indexOf(metabolite.bigg_id)==-1) {
-		    reactant_ranks.push([metabolite.index, parseInt(carbons[1])]);
+		var carbons = /C([0-9]+)/.exec(new_metabolite.formula);
+		if (selected_node.bigg_id_compartmentalized==new_metabolite.bigg_id_compartmentalized) {
+		    reactant_ranks.push([new_metabolite.index, Infinity]);
+		} else if (carbons && cofactors.indexOf(new_metabolite.bigg_id)==-1) {
+		    reactant_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
 		}
                 reactant_count++;
 	    } else {
-                metabolite.index = product_count;
-		var carbons = /C([0-9]+)/.exec(metabolite.formula);
-		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized) {
-		    product_ranks.push([metabolite.index, Infinity]);
+                new_metabolite.index = product_count;
+		var carbons = /C([0-9]+)/.exec(new_metabolite.formula);
+		if (selected_node.bigg_id_compartmentalized==new_metabolite.bigg_id_compartmentalized) {
+		    product_ranks.push([new_metabolite.index, Infinity]);
 		    reaction_is_reversed = true;
-		} else if (carbons && cofactors.indexOf(metabolite.bigg_id)==-1) {
-		    product_ranks.push([metabolite.index, parseInt(carbons[1])]);
+		} else if (carbons && cofactors.indexOf(new_metabolite.bigg_id)==-1) {
+		    product_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
 		}
                 product_count++;
 	    }
+	    new_reaction.metabolites[metabolite_abbreviation] = new_metabolite;
 	}
 
 	// get the rank with the highest score
@@ -2226,8 +2233,8 @@ define('build',["utils"], function(utils) {
             primary_product_index = product_ranks.reduce(max_rank, [0,0])[0];
 
 	// set primary metabolites, and keep track of the total counts
-        for (var metabolite_abbreviation in cobra_reaction.metabolites) {
-            var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
+        for (var metabolite_abbreviation in new_reaction.metabolites) {
+            var metabolite = new_reaction.metabolites[metabolite_abbreviation];
             if (metabolite.coefficient < 0) {
                 if (metabolite.index==primary_reactant_index) metabolite.is_primary = true;
 		metabolite.count = reactant_count + 1;
@@ -2273,9 +2280,9 @@ define('build',["utils"], function(utils) {
 
         // Add the metabolites, keeping track of total reactants and products.
 	var new_nodes = new_anchors;
-        for (var metabolite_abbreviation in cobra_reaction.metabolites) {
-            metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
-            var primary_index, from_node_id;
+        for (var metabolite_abbreviation in new_reaction.metabolites) {
+            var metabolite = new_reaction.metabolites[metabolite_abbreviation],
+		primary_index, from_node_id;
             if (metabolite.coefficient < 0) {
                 // metabolite.count = reactant_count + 1;
                 primary_index = primary_reactant_index;
@@ -2346,7 +2353,7 @@ define('build',["utils"], function(utils) {
 	// add the selected node for rotation, and return it as a new (updated) node
 	new_nodes[selected_node_id] = selected_node;
 	var updated = rotate_nodes(new_nodes, new_reactions,
-					    angle, selected_node_coords);
+				   angle, selected_node_coords);
 
 	return { new_reactions: new_reactions,
 		 new_nodes: new_nodes };
@@ -3701,7 +3708,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
 	// defaults
 	var default_angle = 90; // degrees
-	this.reaction_arrow_displacement = 35;
+	this.reaction_arrow_displacement = 25;
 	this.default_reaction_color = '#334E75',
 
 	// make the canvas
@@ -4485,8 +4492,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
 	// create the first node
 	for (var metabolite_id in cobra_reaction.metabolites) {
-	    var metabolite = cobra_reaction.metabolites[metabolite_id];
-	    if (metabolite.coefficient < 0) {
+	    var coefficient = cobra_reaction.metabolites[metabolite_id],
+		metabolite = this.cobra_model.metabolites[metabolite_id];
+	    if (coefficient < 0) {
 		var selected_node_id = ++this.map_info.largest_ids.nodes,
 		    label_d = { x: 30, y: 10 },
 		    selected_node = { connected_segments: [],
@@ -4561,10 +4569,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
         // set reaction coordinates and angle
         // be sure to copy the reaction recursively
-        var cobra_reaction = utils.clone(this.cobra_model.reactions[reaction_abbreviation]);
+        var cobra_reaction = this.cobra_model.reactions[reaction_abbreviation];
 
 	// build the new reaction
-	var out = build.new_reaction(reaction_abbreviation, cobra_reaction,
+	var out = build.new_reaction(cobra_reaction, this.cobra_model.metabolites,
 				     selected_node_id, utils.clone(selected_node),
 				     this.map_info.largest_ids, this.cobra_model.cofactors,
 				     this.direction_arrow.get_rotation()),
@@ -5340,6 +5348,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
         // Find selected reaction
         var suggestions = [],
 	    cobra_reactions = this.map.cobra_model.reactions,
+	    cobra_metabolites = this.map.cobra_model.metabolites,
 	    reactions = this.map.reactions,
 	    has_flux = this.map.has_flux(),
 	    flux = this.map.flux;
@@ -5351,7 +5360,8 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 
 	    // check segments for match to selected metabolite
 	    for (var metabolite_id in reaction.metabolites) {
-		var metabolite = reaction.metabolites[metabolite_id]; 
+		var metabolite = [metabolite_id],
+		    coefficient = reaction.metabolites[metabolite_id];
 		// if starting with a selected metabolite, check for that id
 		if (!starting_from_scratch && selected_node.bigg_id_compartmentalized!=metabolite_id) continue;
 		// don't add suggestions twice
@@ -5360,7 +5370,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 		var this_flux, this_string;
 		if (has_flux) {
 		    if (reaction_abbreviation in flux) 
-			this_flux = flux[reaction_abbreviation] * (metabolite.coefficient < 1 ? 1 : -1);
+			this_flux = flux[reaction_abbreviation] * (coefficient < 1 ? 1 : -1);
 		    else
 			this_flux = 0;
 		    this_string = string_for_flux(reaction_abbreviation, this_flux, decimal_format);
@@ -5411,7 +5421,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	//definitions
 	function already_drawn(cobra_id, reactions) {
             for (var drawn_id in reactions) {
-		if (reactions[drawn_id].abbreviation==cobra_id) 
+		if (reactions[drawn_id].bigg_id_compartmentalized==cobra_id) 
 		    return true;
 	    }
             return false;
@@ -5510,14 +5520,14 @@ define('CobraModel',["utils"], function(utils) {
     // instance methods
     function init(model_data) {
 	// reactions and metabolites
-	if (!(model_data.reactions instanceof Object || 
-	      model_data.metabolites instanceof Object)) {
-	    console.error('Bad model data');
+	if (!(model_data.reactions && model_data.metabolites)) {
+	    throw new Error('Bad model data.');
+	    return;
 	}
 	this.reactions = utils.clone(model_data.reactions);
 	this.metabolites = utils.clone(model_data.metabolites);
-	this.separate_compartments(this.reactions);
-	this.separate_compartments(this.metabolites);
+	CobraModel.separate_compartments(this.reactions);
+	CobraModel.separate_compartments(this.metabolites);
 
 	// get cofactors if preset
 	if ('cofactors' in model_data) {

@@ -44,14 +44,14 @@ define(["utils"], function(utils) {
     // instance methods
     function init(model_data) {
 	// reactions and metabolites
-	if (!(model_data.reactions instanceof Object || 
-	      model_data.metabolites instanceof Object)) {
-	    console.error('Bad model data');
+	if (!(model_data.reactions && model_data.metabolites)) {
+	    throw new Error('Bad model data.');
+	    return;
 	}
 	this.reactions = utils.clone(model_data.reactions);
 	this.metabolites = utils.clone(model_data.metabolites);
-	this.separate_compartments(this.reactions);
-	this.separate_compartments(this.metabolites);
+	CobraModel.separate_compartments(this.reactions);
+	CobraModel.separate_compartments(this.metabolites);
 
 	// get cofactors if preset
 	if ('cofactors' in model_data) {

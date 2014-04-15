@@ -174,6 +174,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
         // Find selected reaction
         var suggestions = [],
 	    cobra_reactions = this.map.cobra_model.reactions,
+	    cobra_metabolites = this.map.cobra_model.metabolites,
 	    reactions = this.map.reactions,
 	    has_flux = this.map.has_flux(),
 	    flux = this.map.flux;
@@ -185,7 +186,8 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 
 	    // check segments for match to selected metabolite
 	    for (var metabolite_id in reaction.metabolites) {
-		var metabolite = reaction.metabolites[metabolite_id]; 
+		var metabolite = [metabolite_id],
+		    coefficient = reaction.metabolites[metabolite_id];
 		// if starting with a selected metabolite, check for that id
 		if (!starting_from_scratch && selected_node.bigg_id_compartmentalized!=metabolite_id) continue;
 		// don't add suggestions twice
@@ -194,7 +196,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 		var this_flux, this_string;
 		if (has_flux) {
 		    if (reaction_abbreviation in flux) 
-			this_flux = flux[reaction_abbreviation] * (metabolite.coefficient < 1 ? 1 : -1);
+			this_flux = flux[reaction_abbreviation] * (coefficient < 1 ? 1 : -1);
 		    else
 			this_flux = 0;
 		    this_string = string_for_flux(reaction_abbreviation, this_flux, decimal_format);
@@ -245,7 +247,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 	//definitions
 	function already_drawn(cobra_id, reactions) {
             for (var drawn_id in reactions) {
-		if (reactions[drawn_id].abbreviation==cobra_id) 
+		if (reactions[drawn_id].bigg_id_compartmentalized==cobra_id) 
 		    return true;
 	    }
             return false;

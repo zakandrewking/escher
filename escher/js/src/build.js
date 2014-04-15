@@ -4,7 +4,7 @@ define(["utils"], function(utils) {
 	     move_node_and_dependents: move_node_and_dependents };
     
     // definitions
-    function new_reaction(reaction_abbreviation, cobra_reaction,
+    function new_reaction(cobra_reaction, cobra_metabolites,
 			  selected_node_id, selected_node,
 			  largest_ids, cofactors, angle) {
         /** New reaction.
@@ -39,13 +39,13 @@ define(["utils"], function(utils) {
 	var anchor_distance = 20;
 
 	// new reaction structure
-	var new_reaction = { abbreviation: reaction_abbreviation,
+	var new_reaction = { bigg_id_compartmentalized: cobra_reaction.bigg_id_compartmentalized,
 			     reversibility: cobra_reaction.reversibility,
-			     metabolites: cobra_reaction.metabolites,
+			     metabolites: utils.clone(cobra_reaction.metabolites),
 			     label_x: center.x + label_d.x,
 			     label_y: center.y + label_d.y,
 			     name: cobra_reaction.name,
-			     segments: {} };	
+			     segments: {} };
 
         // set primary metabolites and count reactants/products
 
@@ -53,29 +53,36 @@ define(["utils"], function(utils) {
 	var reactant_ranks = [], product_ranks = [], 
             reactant_count = 0, product_count = 0,
 	    reaction_is_reversed = false;
-        for (var metabolite_abbreviation in cobra_reaction.metabolites) {
-            var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
-	    if (metabolite.coefficient < 0) {
-                metabolite.index = reactant_count;
+        for (var metabolite_abbreviation in new_reaction.metabolites) {	
+	    // make the metabolites into objects
+            var metabolite = cobra_metabolites[metabolite_abbreviation],
+		coefficient = new_reaction.metabolites[metabolite_abbreviation],
+		new_metabolite = { coefficient: coefficient,
+				   formula: metabolite.formula,
+				   bigg_id: metabolite.bigg_id,
+				   bigg_id_compartmentalized: metabolite.bigg_id_compartmentalized };
+	    if (coefficient < 0) {
+                new_metabolite.index = reactant_count;
 		// score the metabolites. Infinity == selected, >= 1 == carbon containing
-		var carbons = /C([0-9]+)/.exec(metabolite.formula);
-		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized) {
-		    reactant_ranks.push([metabolite.index, Infinity]);
-		} else if (carbons && cofactors.indexOf(metabolite.bigg_id)==-1) {
-		    reactant_ranks.push([metabolite.index, parseInt(carbons[1])]);
+		var carbons = /C([0-9]+)/.exec(new_metabolite.formula);
+		if (selected_node.bigg_id_compartmentalized==new_metabolite.bigg_id_compartmentalized) {
+		    reactant_ranks.push([new_metabolite.index, Infinity]);
+		} else if (carbons && cofactors.indexOf(new_metabolite.bigg_id)==-1) {
+		    reactant_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
 		}
                 reactant_count++;
 	    } else {
-                metabolite.index = product_count;
-		var carbons = /C([0-9]+)/.exec(metabolite.formula);
-		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized) {
-		    product_ranks.push([metabolite.index, Infinity]);
+                new_metabolite.index = product_count;
+		var carbons = /C([0-9]+)/.exec(new_metabolite.formula);
+		if (selected_node.bigg_id_compartmentalized==new_metabolite.bigg_id_compartmentalized) {
+		    product_ranks.push([new_metabolite.index, Infinity]);
 		    reaction_is_reversed = true;
-		} else if (carbons && cofactors.indexOf(metabolite.bigg_id)==-1) {
-		    product_ranks.push([metabolite.index, parseInt(carbons[1])]);
+		} else if (carbons && cofactors.indexOf(new_metabolite.bigg_id)==-1) {
+		    product_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
 		}
                 product_count++;
 	    }
+	    new_reaction.metabolites[metabolite_abbreviation] = new_metabolite;
 	}
 
 	// get the rank with the highest score
@@ -84,8 +91,8 @@ define(["utils"], function(utils) {
             primary_product_index = product_ranks.reduce(max_rank, [0,0])[0];
 
 	// set primary metabolites, and keep track of the total counts
-        for (var metabolite_abbreviation in cobra_reaction.metabolites) {
-            var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
+        for (var metabolite_abbreviation in new_reaction.metabolites) {
+            var metabolite = new_reaction.metabolites[metabolite_abbreviation];
             if (metabolite.coefficient < 0) {
                 if (metabolite.index==primary_reactant_index) metabolite.is_primary = true;
 		metabolite.count = reactant_count + 1;
@@ -131,9 +138,9 @@ define(["utils"], function(utils) {
 
         // Add the metabolites, keeping track of total reactants and products.
 	var new_nodes = new_anchors;
-        for (var metabolite_abbreviation in cobra_reaction.metabolites) {
-            metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
-            var primary_index, from_node_id;
+        for (var metabolite_abbreviation in new_reaction.metabolites) {
+            var metabolite = new_reaction.metabolites[metabolite_abbreviation],
+		primary_index, from_node_id;
             if (metabolite.coefficient < 0) {
                 // metabolite.count = reactant_count + 1;
                 primary_index = primary_reactant_index;
@@ -204,7 +211,7 @@ define(["utils"], function(utils) {
 	// add the selected node for rotation, and return it as a new (updated) node
 	new_nodes[selected_node_id] = selected_node;
 	var updated = rotate_nodes(new_nodes, new_reactions,
-					    angle, selected_node_coords);
+				   angle, selected_node_coords);
 
 	return { new_reactions: new_reactions,
 		 new_nodes: new_nodes };
