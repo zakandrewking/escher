@@ -5,6 +5,7 @@ describe('CobraModel', function() {
 			  cofactors: []},
 	    model = escher.CobraModel(model_data);
 	expect(model.reactions).toEqual({});
+	expect(model.metabolites).toEqual({});
 	expect(model.cofactors).toEqual([]);
     });
     it("Compartments", function () {
@@ -12,26 +13,29 @@ describe('CobraModel', function() {
 								    acc_p: -1 }
 						   } },
 			   metabolites: { acc_c: { formula: 'C3H2' },
-					  acc_p: { formula: 'C3H2' } } };
+					  acc_p: { formula: 'C3H2' } } },
+	    model_data_copy = utils.clone(model_data);
 	var model = escher.CobraModel(model_data);
 	expect(model.reactions).toEqual(
 	    { acc_tpp_e: { bigg_id: 'acc_tpp',
 			   bigg_id_compartmentalized: 'acc_tpp_e',
 			   compartment_id: 'e',
-			   metabolites: { acc_c: { coefficient: 1,
-						   formula: 'C3H2',
-						   bigg_id_compartmentalized : 'acc_c',
-						   bigg_id : 'acc',
-						   compartment_id : 'c' },
-					  acc_p: { coefficient: -1,
-						   formula: 'C3H2',
-						   bigg_id_compartmentalized : 'acc_p',
-						   bigg_id : 'acc',
-						   compartment_id : 'p' }
-					}
-			 }
-	    }
-	);
+			   metabolites: { acc_c: 1, 
+					  acc_p: -1 }
+			 } 
+	    });
+	expect(model.metabolites).toEqual(
+	    { acc_c: { formula: 'C3H2',
+		       bigg_id_compartmentalized : 'acc_c',
+		       bigg_id : 'acc',
+		       compartment_id : 'c' },
+	      acc_p: { formula: 'C3H2',
+		       bigg_id_compartmentalized : 'acc_p',
+		       bigg_id : 'acc',
+		       compartment_id : 'p' }
+	    });
+	// make sure data is not modified by the CobraModel
+	expect(model_data).toEqual(model_data_copy);
     });
     it("Compartments_l2", function () {
 	var model_data = { reactions: { acc_tpp_e0: { metabolites: { acc_c: 1, 
@@ -44,20 +48,20 @@ describe('CobraModel', function() {
 	    { acc_tpp_e0: { bigg_id: 'acc_tpp',
 			    bigg_id_compartmentalized: 'acc_tpp_e0',
 			    compartment_id: 'e0',
-			    metabolites: { acc_c: { coefficient: 1,
-						    formula: 'C3H2',
-						    bigg_id_compartmentalized : 'acc_c',
-						    bigg_id : 'acc',
-						    compartment_id : 'c' },
-					   acc_p: { coefficient: -1,
-						    formula: 'C3H2',
-						    bigg_id_compartmentalized : 'acc_p',
-						    bigg_id : 'acc',
-						    compartment_id : 'p' }
-					 }
+			    metabolites: { acc_c: 1, 
+					   acc_p: -1 }
 			  }
-	    }
-	);
+	    });
+	expect(model.metabolites).toEqual(
+	    { acc_c: { formula: 'C3H2',
+		       bigg_id_compartmentalized : 'acc_c',
+		       bigg_id : 'acc',
+		       compartment_id : 'c' },
+	      acc_p: { formula: 'C3H2',
+		       bigg_id_compartmentalized : 'acc_p',
+		       bigg_id : 'acc',
+		       compartment_id : 'p' } 
+	    });
     });
     it("Compartments_no_match", function () {
 	var model_data = { reactions: { acc_tpp: {} } };

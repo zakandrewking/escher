@@ -1882,7 +1882,7 @@ define('draw',["utils"], function(utils) {
             }) // TODO replace with d3.curve or equivalent
             .attr("marker-start", function (d) {
 		var start = drawn_nodes[d.from_node_id];
-		if (start['node_type']=='metabolite') {
+		if (start.node_type=='metabolite' && (d.reversibility || start.coefficient > 0)) {
 		    var c = d.flux ? scale.flux_color(Math.abs(d.flux)) :
 			    default_reaction_color;
 		    // generate arrowhead for specific color
@@ -1892,7 +1892,7 @@ define('draw',["utils"], function(utils) {
             })     
 	    .attr("marker-end", function (d) {
 		var end = drawn_nodes[d.to_node_id];
-		if (end['node_type']=='metabolite') {
+		if (end.node_type=='metabolite' && (d.reversibility || end.coefficient > 0)) {
 		    var c = d.flux ? scale.flux_color(Math.abs(d.flux)) :
 			    default_reaction_color;
 		    // generate arrowhead for specific color
@@ -2181,9 +2181,9 @@ define('build',["utils"], function(utils) {
 	var anchor_distance = 20;
 
 	// new reaction structure
-	var direction = cobra_reaction.reversibility ? 'Reversible' : 'Irreversible',
-	    new_reaction = { abbreviation: reaction_abbreviation,
-			     direction: direction,
+	var new_reaction = { abbreviation: reaction_abbreviation,
+			     reversibility: cobra_reaction.reversibility,
+			     metabolites: cobra_reaction.metabolites,
 			     label_x: center.x + label_d.x,
 			     label_y: center.y + label_d.y,
 			     name: cobra_reaction.name,
@@ -2327,10 +2327,16 @@ define('build',["utils"], function(utils) {
 					   metabolite_name: metabolite.name,
 					   bigg_id: metabolite.bigg_id,
 					   bigg_id_compartmentalized: metabolite.bigg_id_compartmentalized,
+					   coefficient: metabolite.coefficient,
 					   node_type: 'metabolite' };
 		new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
 								  reaction_id: new_reaction_id });
 	    }
+	}
+
+	// apply the reversibility to all segments
+	for (var segment_id in new_reaction.segments) {
+	    new_reaction.segments[segment_id].reversibility = new_reaction.reversibility;
 	}
 
 	// new_reactions object
@@ -5471,38 +5477,19 @@ define('CobraModel',["utils"], function(utils) {
     return CobraModel;
 
     // class methods
-    function separate_compartments(reactions, metabolites) {
-	/** Convert id to bigg_id and bigg_id_compartmentalized.
+    function separate_compartments(obj) {
+	/** Convert ids to bigg_id and bigg_id_compartmentalized.
 	 
 	 */
-	var new_reactions = {};
-	for (var reaction_id in reactions) {
-	    var new_reaction = utils.clone(reactions[reaction_id]);
-	    new_reaction['bigg_id_compartmentalized'] = reaction_id;
-	    var out = no_compartment(reaction_id);
-	    if (out===null) out = [reaction_id, null];
-	    new_reaction['bigg_id'] = out[0];
-	    new_reaction['compartment_id'] = out[1];
-	    for (var metabolite_id in new_reaction.metabolites) {
-		var coefficient = new_reaction.metabolites[metabolite_id],
-		    new_met;
-		if (metabolite_id in metabolites) {
-		    new_met = utils.clone(metabolites[metabolite_id]);
-		} else {
-		    // console.warn('Could not find metabolite.');
-		    new_met = {};
-		}
-		new_met.coefficient = coefficient;
-		new_met['bigg_id_compartmentalized'] = metabolite_id;
-		var out = no_compartment(metabolite_id);
-		if (out===null) out = [metabolite_id, null];
-		new_met['bigg_id'] = out[0];
-		new_met['compartment_id'] = out[1];
-		new_reaction.metabolites[metabolite_id] = new_met;
-	    }
-	    new_reactions[reaction_id] = new_reaction;
+	// component ids
+	for (var component_id in obj) {
+	    var component = obj[component_id];
+	    component['bigg_id_compartmentalized'] = component_id;
+	    var out = no_compartment(component_id);
+	    if (out===null) out = [component_id, null];
+	    component['bigg_id'] = out[0];
+	    component['compartment_id'] = out[1];
 	}
-	return new_reactions;
 
 	// definitions
 	function no_compartment(id) {
@@ -5522,14 +5509,17 @@ define('CobraModel',["utils"], function(utils) {
 
     // instance methods
     function init(model_data) {
-	// reactions
+	// reactions and metabolites
 	if (!(model_data.reactions instanceof Object || 
-	     model_data.metabolites instanceof Object)) {
+	      model_data.metabolites instanceof Object)) {
 	    console.error('Bad model data');
 	}
-	this.reactions = separate_compartments(model_data.reactions, 
-					       model_data.metabolites);
-	// metabolites currently unused
+	this.reactions = utils.clone(model_data.reactions);
+	this.metabolites = utils.clone(model_data.metabolites);
+	this.separate_compartments(this.reactions);
+	this.separate_compartments(this.metabolites);
+
+	// get cofactors if preset
 	if ('cofactors' in model_data) {
 	    if (model_data.cofactors instanceof Array) {
 		this.cofactors = model_data.cofactors;

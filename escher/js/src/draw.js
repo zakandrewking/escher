@@ -164,7 +164,7 @@ define(["utils"], function(utils) {
             }) // TODO replace with d3.curve or equivalent
             .attr("marker-start", function (d) {
 		var start = drawn_nodes[d.from_node_id];
-		if (start['node_type']=='metabolite') {
+		if (start.node_type=='metabolite' && (d.reversibility || start.coefficient > 0)) {
 		    var c = d.flux ? scale.flux_color(Math.abs(d.flux)) :
 			    default_reaction_color;
 		    // generate arrowhead for specific color
@@ -174,7 +174,7 @@ define(["utils"], function(utils) {
             })     
 	    .attr("marker-end", function (d) {
 		var end = drawn_nodes[d.to_node_id];
-		if (end['node_type']=='metabolite') {
+		if (end.node_type=='metabolite' && (d.reversibility || end.coefficient > 0)) {
 		    var c = d.flux ? scale.flux_color(Math.abs(d.flux)) :
 			    default_reaction_color;
 		    // generate arrowhead for specific color

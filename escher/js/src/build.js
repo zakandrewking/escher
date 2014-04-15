@@ -39,9 +39,9 @@ define(["utils"], function(utils) {
 	var anchor_distance = 20;
 
 	// new reaction structure
-	var direction = cobra_reaction.reversibility ? 'Reversible' : 'Irreversible',
-	    new_reaction = { abbreviation: reaction_abbreviation,
-			     direction: direction,
+	var new_reaction = { abbreviation: reaction_abbreviation,
+			     reversibility: cobra_reaction.reversibility,
+			     metabolites: cobra_reaction.metabolites,
 			     label_x: center.x + label_d.x,
 			     label_y: center.y + label_d.y,
 			     name: cobra_reaction.name,
@@ -185,10 +185,16 @@ define(["utils"], function(utils) {
 					   metabolite_name: metabolite.name,
 					   bigg_id: metabolite.bigg_id,
 					   bigg_id_compartmentalized: metabolite.bigg_id_compartmentalized,
+					   coefficient: metabolite.coefficient,
 					   node_type: 'metabolite' };
 		new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
 								  reaction_id: new_reaction_id });
 	    }
+	}
+
+	// apply the reversibility to all segments
+	for (var segment_id in new_reaction.segments) {
+	    new_reaction.segments[segment_id].reversibility = new_reaction.reversibility;
 	}
 
 	// new_reactions object
