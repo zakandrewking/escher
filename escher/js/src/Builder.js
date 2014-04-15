@@ -43,8 +43,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    node_data_style: 'ColorSize', // empty value: null
 	    show_beziers: false,
 	    debug: false,
-	    starting_reaction: 'GLCtex', // empty value: null
-	    reaction_arrow_displacement: 35 });
+	    starting_reaction: 'GLCtex' // empty value: null
+	});
 	
 	// TODO make each option is neither {}, undefined, nor null
 	// for all cases, set to null to boolean(option) === false

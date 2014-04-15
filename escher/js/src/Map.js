@@ -87,7 +87,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	// defaults
 	var default_angle = 90; // degrees
-	this.reaction_arrow_displacement = 25;
 	this.default_reaction_color = '#334E75',
 
 	// make the canvas
@@ -311,7 +310,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    reactions = this.reactions,
 	    nodes = this.nodes,
 	    text_labels = this.text_labels,
-	    arrow_displacement = this.reaction_arrow_displacement,
 	    defs = this.defs,
 	    arrowheads = this.arrowheads_generated,
 	    default_reaction_color = this.default_reaction_color,
@@ -336,7 +334,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 			     function(sel) { return draw.update_reaction(sel, scale, 
 									 nodes,
 									 beziers_enabled, 
-									 arrow_displacement,
 									 defs, arrowheads,
 									 default_reaction_color,
 									 has_flux,
@@ -369,7 +366,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var scale = this.scale,
 	    reactions = this.reactions,
 	    nodes = this.nodes,
-	    arrow_displacement = this.reaction_arrow_displacement,
 	    defs = this.defs,
 	    arrowheads = this.arrowheads_generated,
 	    default_reaction_color = this.default_reaction_color,
@@ -402,7 +398,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         sel.call(function(sel) { return draw.update_reaction(sel, scale, 
 							     nodes,
 							     beziers_enabled, 
-							     arrow_displacement,
 							     defs, arrowheads,
 							     default_reaction_color,
 							     has_flux,

@@ -129,7 +129,10 @@ define(["utils"], function(utils) {
 	    new_reaction.segments[new_segment_id] =  { b1: null,
 						       b2: null,
 						       from_node_id: from_id,
-						       to_node_id: to_id };
+						       to_node_id: to_id,
+						       from_node_coefficient: null,
+						       to_node_coefficient: null,
+						       reversibility: new_reaction.reversibility };
 	    new_anchors[from_id].connected_segments.push({ segment_id: new_segment_id,
 							   reaction_id: new_reaction_id });
 	    new_anchors[to_id].connected_segments.push({ segment_id: new_segment_id,
@@ -163,10 +166,13 @@ define(["utils"], function(utils) {
 	    if (metabolite.bigg_id_compartmentalized==
 		selected_node.bigg_id_compartmentalized) {
 		var new_segment_id = String(++largest_ids.segments);
-		new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
+		new_reaction.segments[new_segment_id] = { b1: met_loc.b1,
+							  b2: met_loc.b2,
+							  from_node_id: from_node_id,
 							  to_node_id: selected_node_id,
-							  b1: met_loc.b1,
-							  b2: met_loc.b2 };
+							  from_node_coefficient: null,
+							  to_node_coefficient: metabolite.coefficient,
+							  reversibility: new_reaction.reversibility };
 		// update the existing node
 		selected_node.connected_segments.push({ segment_id: new_segment_id,
 							reaction_id: new_reaction_id });
@@ -176,10 +182,13 @@ define(["utils"], function(utils) {
 		// save new metabolite
 		var new_segment_id = String(++largest_ids.segments),
 		    new_node_id = String(++largest_ids.nodes);
-		new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
+		new_reaction.segments[new_segment_id] = { b1: met_loc.b1,
+							  b2: met_loc.b2,
+							  from_node_id: from_node_id,
 							  to_node_id: new_node_id,
-							  b1: met_loc.b1,
-							  b2: met_loc.b2 };
+							  from_node_coefficient: null,
+							  to_node_coefficient: metabolite.coefficient,
+							  reversibility: new_reaction.reversibility };
 		// save new node
 		new_nodes[new_node_id] = { connected_segments: [{ segment_id: new_segment_id,
 								  reaction_id: new_reaction_id }],
@@ -192,16 +201,10 @@ define(["utils"], function(utils) {
 					   metabolite_name: metabolite.name,
 					   bigg_id: metabolite.bigg_id,
 					   bigg_id_compartmentalized: metabolite.bigg_id_compartmentalized,
-					   coefficient: metabolite.coefficient,
 					   node_type: 'metabolite' };
 		new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
 								  reaction_id: new_reaction_id });
 	    }
-	}
-
-	// apply the reversibility to all segments
-	for (var segment_id in new_reaction.segments) {
-	    new_reaction.segments[segment_id].reversibility = new_reaction.reversibility;
 	}
 
 	// new_reactions object

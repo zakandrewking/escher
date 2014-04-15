@@ -46,11 +46,11 @@ define(["utils"], function(utils) {
     }
 
     function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
-			     arrow_displacement, defs, arrowheads,
+			     defs, arrowheads,
 			     default_reaction_color, has_flux, bezier_drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
-			       'arrow_displacement', 'defs', 'arrowheads',
+			       'defs', 'arrowheads',
 			       'default_reaction_color', 'has_flux',
 			       'bezier_drag_behavior', 'label_drag_behavior']);
 
@@ -70,7 +70,7 @@ define(["utils"], function(utils) {
 
         // update segments
         sel.call(function(sel) { 
-	    return update_segment(sel, scale, drawn_nodes, show_beziers, arrow_displacement, defs, arrowheads, 
+	    return update_segment(sel, scale, drawn_nodes, show_beziers, defs, arrowheads, 
 				  default_reaction_color, has_flux, bezier_drag_behavior);
 
 	});
@@ -124,10 +124,10 @@ define(["utils"], function(utils) {
     }
     
     function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
-			    arrow_displacement, defs, arrowheads, default_reaction_color,
+			    defs, arrowheads, default_reaction_color,
 			    has_flux, bezier_drag_behavior) {
 	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
-					  'show_beziers', 'arrow_displacement', 'defs',
+					  'show_beziers', 'defs',
 					  'arrowheads', 'default_reaction_color',
 					  'has_flux', 'bezier_drag_behavior']);
 
@@ -146,11 +146,16 @@ define(["utils"], function(utils) {
 		    b1 = d.b1,
 		    b2 = d.b2;
 		// if metabolite, then displace the arrow
+		var get_disp = function(reversibility, coefficient) {
+		    return (reversibility || coefficient > 0) ? 32 : 20;
+		};
 		if (start['node_type']=='metabolite') {
-		    start = displaced_coords(arrow_displacement, start, b1, 'start');
+		    var disp = get_disp(d.reversibility, d.from_node_coefficient);
+		    start = displaced_coords(disp, start, b1, 'start');
 		}
 		if (end['node_type']=='metabolite') {
-		    end = displaced_coords(arrow_displacement, b2, end, 'end');
+		    var disp = get_disp(d.reversibility, d.to_node_coefficient);
+		    end = displaced_coords(disp, b2, end, 'end');
 		}
 		if (d.b1==null || d.b2==null) {
 		    return 'M'+scale.x(start.x)+','+scale.y(start.y)+' '+
@@ -161,10 +166,10 @@ define(["utils"], function(utils) {
                         scale.x(b2.x)+','+scale.y(b2.y)+' '+
                         scale.x(end.x)+','+scale.y(end.y);
 		}
-            }) // TODO replace with d3.curve or equivalent
+            })
             .attr("marker-start", function (d) {
 		var start = drawn_nodes[d.from_node_id];
-		if (start.node_type=='metabolite' && (d.reversibility || start.coefficient > 0)) {
+		if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
 		    var c = d.flux ? scale.flux_color(Math.abs(d.flux)) :
 			    default_reaction_color;
 		    // generate arrowhead for specific color
@@ -174,7 +179,7 @@ define(["utils"], function(utils) {
             })     
 	    .attr("marker-end", function (d) {
 		var end = drawn_nodes[d.to_node_id];
-		if (end.node_type=='metabolite' && (d.reversibility || end.coefficient > 0)) {
+		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
 		    var c = d.flux ? scale.flux_color(Math.abs(d.flux)) :
 			    default_reaction_color;
 		    // generate arrowhead for specific color
@@ -399,7 +404,7 @@ define(["utils"], function(utils) {
                 refY = markerWidth/2,
                 d;
 
-            if (is_end) refX = 2;
+            if (is_end) refX = 0.5;
             else        refX = markerHeight;
             if (is_end) d = 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
             else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
