@@ -150,7 +150,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.info = {};
 
 	// performs some extra checks
-	this.debug = false;
+	this.debug = true;
     };
 
     // -------------------------------------------------------------------------
@@ -209,8 +209,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	 * The returned value will be this.reactions.
 	 */
 	if (this.debug) {
-	    var required_node_props = ['node_type', 'x', 'y',
-				       'connected_segments'],
+	    var required_node_props = ['node_type', 'x', 'y', 'connected_segments'],
 		required_reaction_props = ["segments", 'name', 'direction', 'bigg_id'],
 		required_segment_props = ['from_node_id', 'to_node_id'],
 		required_text_label_props = ['text', 'x', 'y'];
@@ -547,11 +546,9 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	if (this.metabolite_data===null) return;
 	var vals = [];
 	for (var node_id in nodes) {
-	    var node = nodes[node_id], data = 0.0,
-		bigg_id_c = utils.compartmentalize(node.bigg_id,
-						   node.compartment_id);
-	    if (bigg_id_c in this.metabolite_data) {
-		data = parseFloat(this.metabolite_data[node.bigg_id_c]);
+	    var node = nodes[node_id], data = 0.0;
+	    if (node.bigg_id in this.metabolite_data) {
+		data = parseFloat(this.metabolite_data[node.bigg_id]);
 		if (isNaN(data)) data = null;
 		else vals.push(data);
 		node.data = data;
@@ -920,11 +917,10 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 				      x: coords.x,
 				      y: coords.y,
 				      node_is_primary: true,
-				      compartment_id: metabolite.compartment_id,
 				      label_x: coords.x + label_d.x,
 				      label_y: coords.y + label_d.y,
 				      metabolite_name: metabolite.name,
-				      bigg_id: metabolite.bigg_id,
+				      bigg_id: metabolite_id,
 				      node_type: 'metabolite' },
 		    new_nodes = {};
 		new_nodes[selected_node_id] = selected_node;
@@ -990,9 +986,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         var cobra_reaction = this.cobra_model.reactions[reaction_bigg_id];
 
 	// build the new reaction
-	var out = build.new_reaction(cobra_reaction, this.cobra_model.metabolites,
-				     selected_node_id, utils.clone(selected_node),
-				     this.map_info.largest_ids, this.cobra_model.cofactors,
+	var out = build.new_reaction(reaction_bigg_id, cobra_reaction,
+				     this.cobra_model.metabolites,
+				     selected_node_id,
+				     utils.clone(selected_node),
+				     this.map_info.largest_ids,
+				     this.cobra_model.cofactors,
 				     this.direction_arrow.get_rotation()),
 	    new_nodes = out.new_nodes,
 	    new_reactions = out.new_reactions;

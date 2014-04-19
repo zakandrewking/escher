@@ -28,7 +28,8 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     to_degrees: to_degrees,
 	     distance: distance,
 	     check_undefined: check_undefined,
-	     compartmentalize: compartmentalize};
+	     compartmentalize: compartmentalize,
+	     decompartmentalize: decompartmentalize };
 
     // definitions
     function height_width_style(selection, margins) {
@@ -526,5 +527,31 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 
     function compartmentalize(bigg_id, compartment_id) {
 	return bigg_id + '_' + compartment_id;
+    }
+
+
+    // definitions
+    function decompartmentalize(id) {
+	/** Convert ids to bigg_id and compartment_id.
+	 
+	 */
+	var out = no_compartment(id);
+	if (out===null) out = [id, null];
+	return out;
+
+	// definitions
+	function no_compartment(id) {
+	    /** Returns an array of [bigg_id, compartment id].
+
+	     Matches compartment ids with length 1 or 2.
+
+	     Return null if no match is found.
+
+	     */
+	    var reg = /(.*)_([a-z0-9]{1,2})$/,
+		result = reg.exec(id);
+	    if (result===null) return null;
+	    return result.slice(1,3);
+	}
     }
 });

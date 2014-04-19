@@ -182,16 +182,14 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
             var reaction = cobra_reactions[reaction_id];
 
             // ignore drawn reactions
-            if (already_drawn(reaction.bigg_id, reactions)) continue;
+            if (already_drawn(reaction_id, reactions)) continue;
 
 	    // check segments for match to selected metabolite
 	    for (var metabolite_id in reaction.metabolites) {
 		var coefficient = reaction.metabolites[metabolite_id];
 
 		// if starting with a selected metabolite, check for that id
-		if (starting_from_scratch || 
-		    metabolite_id==utils.compartmentalize(selected_node.bigg_id,
-							  selected_node.compartment_id)) {
+		if (starting_from_scratch || metabolite_id==selected_node.bigg_id) {
 		    // don't add suggestions twice
 		    if (reaction_id in suggestions) continue;
 		    // reverse for production

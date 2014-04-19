@@ -814,7 +814,8 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	     to_degrees: to_degrees,
 	     distance: distance,
 	     check_undefined: check_undefined,
-	     compartmentalize: compartmentalize};
+	     compartmentalize: compartmentalize,
+	     decompartmentalize: decompartmentalize };
 
     // definitions
     function height_width_style(selection, margins) {
@@ -1312,6 +1313,32 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 
     function compartmentalize(bigg_id, compartment_id) {
 	return bigg_id + '_' + compartment_id;
+    }
+
+
+    // definitions
+    function decompartmentalize(id) {
+	/** Convert ids to bigg_id and compartment_id.
+	 
+	 */
+	var out = no_compartment(id);
+	if (out===null) out = [id, null];
+	return out;
+
+	// definitions
+	function no_compartment(id) {
+	    /** Returns an array of [bigg_id, compartment id].
+
+	     Matches compartment ids with length 1 or 2.
+
+	     Return null if no match is found.
+
+	     */
+	    var reg = /(.*)_([a-z0-9]{1,2})$/,
+		result = reg.exec(id);
+	    if (result===null) return null;
+	    return result.slice(1,3);
+	}
     }
 });
 
@@ -2077,9 +2104,7 @@ define('draw',["utils"], function(utils) {
             })
             .text(function(d) {	
 		var decimal_format = d3.format('.4g'),
-		    t;
-		if (d.compartment_id===null) t = d.bigg_id;
-		else t = utils.compartmentalize(d.bigg_id, d.compartment_id);
+		    t = d.bigg_id;
 		if (has_metabolite_data) {
 		    if (d.data!==null) t += " ("+decimal_format(d.data)+")";
 		    else if (has_metabolite_data) t += " (0)";
@@ -2174,7 +2199,7 @@ define('build',["utils"], function(utils) {
 	     move_node_and_dependents: move_node_and_dependents };
     
     // definitions
-    function new_reaction(cobra_reaction, cobra_metabolites,
+    function new_reaction(bigg_id, cobra_reaction, cobra_metabolites,
 			  selected_node_id, selected_node,
 			  largest_ids, cofactors, angle) {
         /** New reaction.
@@ -2209,7 +2234,7 @@ define('build',["utils"], function(utils) {
 	var anchor_distance = 20;
 
 	// new reaction structure
-	var new_reaction = { bigg_id: cobra_reaction.bigg_id,
+	var new_reaction = { bigg_id: bigg_id,
 			     reversibility: cobra_reaction.reversibility,
 			     metabolites: utils.clone(cobra_reaction.metabolites),
 			     label_x: center.x + label_d.x,
@@ -2223,38 +2248,35 @@ define('build',["utils"], function(utils) {
 	var reactant_ranks = [], product_ranks = [], 
             reactant_count = 0, product_count = 0,
 	    reaction_is_reversed = false;
-        for (var metabolite_abbreviation in new_reaction.metabolites) {	
+        for (var met_bigg_id in new_reaction.metabolites) {	
 	    // make the metabolites into objects
-            var metabolite = cobra_metabolites[metabolite_abbreviation],
-		coefficient = new_reaction.metabolites[metabolite_abbreviation],
+            var metabolite = cobra_metabolites[met_bigg_id],
+		coefficient = new_reaction.metabolites[met_bigg_id],
 		new_metabolite = { coefficient: coefficient,
 				   formula: metabolite.formula,
-				   bigg_id: metabolite.bigg_id,
-				   compartment_id: metabolite.compartment_id };
+				   bigg_id: met_bigg_id };
 	    if (coefficient < 0) {
                 new_metabolite.index = reactant_count;
 		// score the metabolites. Infinity == selected, >= 1 == carbon containing
 		var carbons = /C([0-9]+)/.exec(new_metabolite.formula);
-		if (selected_node.bigg_id==new_metabolite.bigg_id &&
-		    selected_node.compartment_id==new_metabolite.compartment_id) {
+		if (selected_node.bigg_id==new_metabolite.bigg_id) {
 		    reactant_ranks.push([new_metabolite.index, Infinity]);
-		} else if (carbons && cofactors.indexOf(new_metabolite.bigg_id)==-1) {
+		} else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0])==-1) {
 		    reactant_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
 		}
                 reactant_count++;
 	    } else {
                 new_metabolite.index = product_count;
 		var carbons = /C([0-9]+)/.exec(new_metabolite.formula);
-		if (selected_node.bigg_id==new_metabolite.bigg_id &&
-		    selected_node.compartment_id==new_metabolite.compartment_id) {
+		if (selected_node.bigg_id==new_metabolite.bigg_id) {
 		    product_ranks.push([new_metabolite.index, Infinity]);
 		    reaction_is_reversed = true;
-		} else if (carbons && cofactors.indexOf(new_metabolite.bigg_id)==-1) {
+		} else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0])==-1) {
 		    product_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
 		}
                 product_count++;
 	    }
-	    new_reaction.metabolites[metabolite_abbreviation] = new_metabolite;
+	    new_reaction.metabolites[met_bigg_id] = new_metabolite;
 	}
 
 	// get the rank with the highest score
@@ -2263,8 +2285,8 @@ define('build',["utils"], function(utils) {
             primary_product_index = product_ranks.reduce(max_rank, [0,0])[0];
 
 	// set primary metabolites, and keep track of the total counts
-        for (var metabolite_abbreviation in new_reaction.metabolites) {
-            var metabolite = new_reaction.metabolites[metabolite_abbreviation];
+        for (var met_bigg_id in new_reaction.metabolites) {
+            var metabolite = new_reaction.metabolites[met_bigg_id];
             if (metabolite.coefficient < 0) {
                 if (metabolite.index==primary_reactant_index) metabolite.is_primary = true;
 		metabolite.count = reactant_count + 1;
@@ -2313,8 +2335,8 @@ define('build',["utils"], function(utils) {
 
         // Add the metabolites, keeping track of total reactants and products.
 	var new_nodes = new_anchors;
-        for (var metabolite_abbreviation in new_reaction.metabolites) {
-            var metabolite = new_reaction.metabolites[metabolite_abbreviation],
+        for (var met_bigg_id in new_reaction.metabolites) {
+            var metabolite = new_reaction.metabolites[met_bigg_id],
 		primary_index, from_node_id;
             if (metabolite.coefficient < 0) {
                 // metabolite.count = reactant_count + 1;
@@ -2335,8 +2357,7 @@ define('build',["utils"], function(utils) {
 							       reaction_is_reversed);
 
 	    // if this is the existing metabolite
-	    if (selected_node.bigg_id==metabolite.bigg_id &&
-		selected_node.compartment_id==metabolite.compartment_id) {
+	    if (selected_node.bigg_id==metabolite.bigg_id) {
 		var new_segment_id = String(++largest_ids.segments);
 		new_reaction.segments[new_segment_id] = { b1: met_loc.b1,
 							  b2: met_loc.b2,
@@ -2367,7 +2388,6 @@ define('build',["utils"], function(utils) {
 					   x: met_loc.circle.x,
 					   y: met_loc.circle.y,
 					   node_is_primary: metabolite.is_primary,
-					   compartment_id: metabolite.compartment_id,
 					   label_x: met_loc.circle.x + label_d.x,
 					   label_y: met_loc.circle.y + label_d.y,
 					   metabolite_name: metabolite.name,
@@ -2716,7 +2736,6 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    // Note that dragstart is called even for a click event
 	    var data = this.parentNode.__data__,
 		bigg_id = data.bigg_id,
-		compartment_id = data.compartment_id,
 		node_group = this.parentNode;
 	    // silence other listeners
 	    d3.event.sourceEvent.stopPropagation();
@@ -2732,13 +2751,12 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    // prepare to combine metabolites
 	    d3.selectAll('.metabolite-circle')
 		.on('mouseover.combine', function(d) {
-		    if (d.bigg_id==bigg_id && d.compartment_id==compartment_id &&
-			d.node_id!=data.node_id) {
+		    if (d.bigg_id==bigg_id && d.node_id!=data.node_id) {
 			d3.select(this).style('stroke-width', String(map.scale.size(12))+'px')
 			    .classed('node-to-combine', true);
 		    }
 		}).on('mouseout.combine', function(d) {
-		    if (d.bigg_id==bigg_id && d.compartment_id==compartment_id) {
+		    if (d.bigg_id==bigg_id) {
 			d3.selectAll('.node-to-combine').style('stroke-width', String(map.scale.size(2))+'px')
 			    .classed('node-to-combine', false);
 		    }
@@ -3795,7 +3813,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.info = {};
 
 	// performs some extra checks
-	this.debug = false;
+	this.debug = true;
     };
 
     // -------------------------------------------------------------------------
@@ -3854,8 +3872,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	 * The returned value will be this.reactions.
 	 */
 	if (this.debug) {
-	    var required_node_props = ['node_type', 'x', 'y',
-				       'connected_segments'],
+	    var required_node_props = ['node_type', 'x', 'y', 'connected_segments'],
 		required_reaction_props = ["segments", 'name', 'direction', 'bigg_id'],
 		required_segment_props = ['from_node_id', 'to_node_id'],
 		required_text_label_props = ['text', 'x', 'y'];
@@ -4192,11 +4209,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	if (this.metabolite_data===null) return;
 	var vals = [];
 	for (var node_id in nodes) {
-	    var node = nodes[node_id], data = 0.0,
-		bigg_id_c = utils.compartmentalize(node.bigg_id,
-						   node.compartment_id);
-	    if (bigg_id_c in this.metabolite_data) {
-		data = parseFloat(this.metabolite_data[node.bigg_id_c]);
+	    var node = nodes[node_id], data = 0.0;
+	    if (node.bigg_id in this.metabolite_data) {
+		data = parseFloat(this.metabolite_data[node.bigg_id]);
 		if (isNaN(data)) data = null;
 		else vals.push(data);
 		node.data = data;
@@ -4565,11 +4580,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 				      x: coords.x,
 				      y: coords.y,
 				      node_is_primary: true,
-				      compartment_id: metabolite.compartment_id,
 				      label_x: coords.x + label_d.x,
 				      label_y: coords.y + label_d.y,
 				      metabolite_name: metabolite.name,
-				      bigg_id: metabolite.bigg_id,
+				      bigg_id: metabolite_id,
 				      node_type: 'metabolite' },
 		    new_nodes = {};
 		new_nodes[selected_node_id] = selected_node;
@@ -4635,9 +4649,12 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
         var cobra_reaction = this.cobra_model.reactions[reaction_bigg_id];
 
 	// build the new reaction
-	var out = build.new_reaction(cobra_reaction, this.cobra_model.metabolites,
-				     selected_node_id, utils.clone(selected_node),
-				     this.map_info.largest_ids, this.cobra_model.cofactors,
+	var out = build.new_reaction(reaction_bigg_id, cobra_reaction,
+				     this.cobra_model.metabolites,
+				     selected_node_id,
+				     utils.clone(selected_node),
+				     this.map_info.largest_ids,
+				     this.cobra_model.cofactors,
 				     this.direction_arrow.get_rotation()),
 	    new_nodes = out.new_nodes,
 	    new_reactions = out.new_reactions;
@@ -5419,16 +5436,14 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
             var reaction = cobra_reactions[reaction_id];
 
             // ignore drawn reactions
-            if (already_drawn(reaction.bigg_id, reactions)) continue;
+            if (already_drawn(reaction_id, reactions)) continue;
 
 	    // check segments for match to selected metabolite
 	    for (var metabolite_id in reaction.metabolites) {
 		var coefficient = reaction.metabolites[metabolite_id];
 
 		// if starting with a selected metabolite, check for that id
-		if (starting_from_scratch || 
-		    metabolite_id==utils.compartmentalize(selected_node.bigg_id,
-							  selected_node.compartment_id)) {
+		if (starting_from_scratch || metabolite_id==selected_node.bigg_id) {
 		    // don't add suggestions twice
 		    if (reaction_id in suggestions) continue;
 		    // reverse for production
@@ -5562,8 +5577,6 @@ define('CobraModel',["utils"], function(utils) {
 	}
 	this.reactions = utils.clone(model_data.reactions);
 	this.metabolites = utils.clone(model_data.metabolites);
-	add_bigg_id_attribute(this.reactions);
-	separate_compartments(this.metabolites);
 
 	// get cofactors if preset
 	if ('cofactors' in model_data) {
@@ -5576,47 +5589,6 @@ define('CobraModel',["utils"], function(utils) {
 	} else {
 	    this.cofactors = [];
 	}
-
-
-	// definitions
-	function separate_compartments(obj) {
-	    /** Convert ids to bigg_id and compartment_id.
-	     
-	     */
-	    // component ids
-	    for (var component_id in obj) {
-		var component = obj[component_id];
-		var out = no_compartment(component_id);
-		if (out===null) out = [component_id, null];
-		component['bigg_id'] = out[0];
-		component['compartment_id'] = out[1];
-	    }
-
-	    // definitions
-	    function no_compartment(id) {
-		/** Returns an array of [bigg_id, compartment id].
-
-		 Matches compartment ids with length 1 or 2.
-
-		 Return null if no match is found.
-
-		 */
-		var reg = /(.*)_([a-z0-9]{1,2})$/,
-		    result = reg.exec(id);
-		if (result===null) return null;
-		return result.slice(1,3);
-	    }
-	}
-	function add_bigg_id_attribute(obj) {
-	    /** Save id as bigg_id.
-	     
-	     */
-	    // component ids
-	    for (var component_id in obj) {
-		obj[component_id].bigg_id = component_id;
-	    }
-	}
-
     }
 });
 

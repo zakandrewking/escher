@@ -135,7 +135,6 @@ define(["utils", "build"], function(utils, build) {
 	    // Note that dragstart is called even for a click event
 	    var data = this.parentNode.__data__,
 		bigg_id = data.bigg_id,
-		compartment_id = data.compartment_id,
 		node_group = this.parentNode;
 	    // silence other listeners
 	    d3.event.sourceEvent.stopPropagation();
@@ -151,13 +150,12 @@ define(["utils", "build"], function(utils, build) {
 	    // prepare to combine metabolites
 	    d3.selectAll('.metabolite-circle')
 		.on('mouseover.combine', function(d) {
-		    if (d.bigg_id==bigg_id && d.compartment_id==compartment_id &&
-			d.node_id!=data.node_id) {
+		    if (d.bigg_id==bigg_id && d.node_id!=data.node_id) {
 			d3.select(this).style('stroke-width', String(map.scale.size(12))+'px')
 			    .classed('node-to-combine', true);
 		    }
 		}).on('mouseout.combine', function(d) {
-		    if (d.bigg_id==bigg_id && d.compartment_id==compartment_id) {
+		    if (d.bigg_id==bigg_id) {
 			d3.selectAll('.node-to-combine').style('stroke-width', String(map.scale.size(2))+'px')
 			    .classed('node-to-combine', false);
 		    }

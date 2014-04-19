@@ -354,9 +354,7 @@ define(["utils"], function(utils) {
             })
             .text(function(d) {	
 		var decimal_format = d3.format('.4g'),
-		    t;
-		if (d.compartment_id===null) t = d.bigg_id;
-		else t = utils.compartmentalize(d.bigg_id, d.compartment_id);
+		    t = d.bigg_id;
 		if (has_metabolite_data) {
 		    if (d.data!==null) t += " ("+decimal_format(d.data)+")";
 		    else if (has_metabolite_data) t += " (0)";
