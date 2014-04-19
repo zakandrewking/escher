@@ -16,6 +16,11 @@ if 'clean' in argv:
     call(['rm', '-r', 'build'])
     call(['rm', '-r', 'Escher.egg-info'])
     print 'done cleaning'
+
+if 'test' in argv:
+    call(['bin/r.js', '-o', 'escher/js/build/build.js',
+          'out=%s'%escher, 'optimize=none'])
+    call(['jasmine'])
     
 if 'build' in argv or 'install' in argv:
     call(['bin/r.js', '-o', 'escher/js/build/build.js',

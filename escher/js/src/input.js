@@ -176,44 +176,50 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 	    cobra_reactions = this.map.cobra_model.reactions,
 	    cobra_metabolites = this.map.cobra_model.metabolites,
 	    reactions = this.map.reactions,
-	    has_flux = this.map.has_flux(),
-	    flux = this.map.flux;
-        for (var reaction_abbreviation in cobra_reactions) {
-            var reaction = cobra_reactions[reaction_abbreviation];
+	    has_reaction_data = this.map.has_reaction_data(),
+	    reaction_data = this.map.reaction_data;
+        for (var reaction_id in cobra_reactions) {
+            var reaction = cobra_reactions[reaction_id];
 
             // ignore drawn reactions
-            if (already_drawn(reaction_abbreviation, reactions)) continue;
+            if (already_drawn(reaction.bigg_id, reactions)) continue;
 
 	    // check segments for match to selected metabolite
 	    for (var metabolite_id in reaction.metabolites) {
-		var metabolite = [metabolite_id],
-		    coefficient = reaction.metabolites[metabolite_id];
+		var coefficient = reaction.metabolites[metabolite_id];
+
 		// if starting with a selected metabolite, check for that id
-		if (!starting_from_scratch && selected_node.bigg_id_compartmentalized!=metabolite_id) continue;
-		// don't add suggestions twice
-		if (reaction_abbreviation in suggestions) continue;
-		// reverse for production
-		var this_flux, this_string;
-		if (has_flux) {
-		    if (reaction_abbreviation in flux) 
-			this_flux = flux[reaction_abbreviation] * (coefficient < 1 ? 1 : -1);
-		    else
-			this_flux = 0;
-		    this_string = string_for_flux(reaction_abbreviation, this_flux, decimal_format);
-	    	    suggestions[reaction_abbreviation] = { flux: this_flux,
-							   string: this_string };
-		} else {
-	    	    suggestions[reaction_abbreviation] = { string: reaction_abbreviation };
+		if (starting_from_scratch || 
+		    metabolite_id==utils.compartmentalize(selected_node.bigg_id,
+							  selected_node.compartment_id)) {
+		    // don't add suggestions twice
+		    if (reaction_id in suggestions) continue;
+		    // reverse for production
+		    var this_reaction_data, this_string;
+		    if (has_reaction_data) {
+			if (reaction_id in reaction_data) {
+			    this_reaction_data = (reaction_data[reaction_id] *
+						  (coefficient < 1 ? 1 : -1));
+			} else {
+			    this_reaction_data = 0;
+			}
+			this_string = string_for_reaction_data(reaction_id,
+							       this_reaction_data,
+							       decimal_format);
+	    		suggestions[reaction_id] = { reaction_data: this_reaction_data,
+						     string: this_string };
+		    } else {
+	    		suggestions[reaction_id] = { string: reaction_id };
+		    }
 		}
-		
 	    }
         }
 
         // Generate the array of reactions to suggest and sort it
 	var strings_to_display = [],
 	    suggestions_array = utils.make_array(suggestions, 'reaction_abbreviation');
-	if (has_flux)
-	    suggestions_array.sort(function(x, y) { return Math.abs(y.flux) - Math.abs(x.flux); });
+	if (has_reaction_data)
+	    suggestions_array.sort(function(x, y) { return Math.abs(y.reaction_data) - Math.abs(x.reaction_data); });
 	suggestions_array.forEach(function(x) {
 	    strings_to_display.push(x.string);
 	});
@@ -245,15 +251,15 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
         this.completely.input.focus();
 
 	//definitions
-	function already_drawn(cobra_id, reactions) {
+	function already_drawn(bigg_id, reactions) {
             for (var drawn_id in reactions) {
-		if (reactions[drawn_id].bigg_id_compartmentalized==cobra_id) 
+		if (reactions[drawn_id].bigg_id==bigg_id) 
 		    return true;
 	    }
             return false;
 	};
-	function string_for_flux(reaction_abbreviation, flux, decimal_format) {
-	    return reaction_abbreviation + ": " + decimal_format(flux);
+	function string_for_reaction_data(reaction_abbreviation, reaction_data, decimal_format) {
+	    return reaction_abbreviation + ": " + decimal_format(reaction_data);
 	}
     }
     function toggle_start_reaction_listener(on_off) {

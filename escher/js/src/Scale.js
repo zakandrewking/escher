@@ -10,10 +10,10 @@ define(["utils"], function(utils) {
     // definitions
     function init(map_w, map_h, w, h, options) {
 	var sc = utils.set_options(options, 
-				      { flux_color: d3.scale.linear()
-					.domain([0, 0.000001, 1, 8, 50])
-					.range(["rgb(200,200,200)", "rgb(190,190,255)", 
-						"rgb(100,100,255)", "blue", "red"])});
+				   { reaction_color: d3.scale.linear()
+				     .domain([0, 0.000001, 1, 8, 50])
+				     .range(["rgb(200,200,200)", "rgb(190,190,255)", 
+					     "rgb(100,100,255)", "blue", "red"])});
 
         var factor = Math.min(w/map_w, h/map_h);
         sc.x = d3.scale.linear()
@@ -31,22 +31,13 @@ define(["utils"], function(utils) {
         sc.size = d3.scale.linear()
             .domain([0, 1])
             .range([0, factor]),
-        sc.flux = d3.scale.linear()
+        sc.reaction_size = d3.scale.linear()
             .domain([0, 40])
             .range([6, 6]),
-        sc.flux_fill = d3.scale.linear()
-            .domain([0, 40, 200])
-            .range([1, 1, 1]),
-	sc.node_size = d3.scale.linear()
-	    .range([5,25]),
-	sc.node_color = d3.scale.linear()
+	sc.metabolite_size = d3.scale.linear()
+	    .range([8,15]),
+	sc.metabolite_color = d3.scale.linear()
 	    .range(["white", "red"]),
-        sc.metabolite_concentration = d3.scale.linear()
-            .domain([0, 10])
-            .range([15, 200]),
-        sc.metabolite_color = d3.scale.linear()
-            .domain([0, 1.2])
-            .range(["#FEF0D9", "#B30000"]);
         sc.scale_path = function(path) {
             var x_fn = sc.x, y_fn = sc.y;
             // TODO: scale arrow width

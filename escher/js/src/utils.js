@@ -27,7 +27,8 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     get_angle: get_angle,
 	     to_degrees: to_degrees,
 	     distance: distance,
-	     check_undefined: check_undefined };
+	     check_undefined: check_undefined,
+	     compartmentalize: compartmentalize};
 
     // definitions
     function height_width_style(selection, margins) {
@@ -521,5 +522,9 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 		console.error('Argument is undefined: '+String(names[i]));
 	    }
 	});
+    }
+
+    function compartmentalize(bigg_id, compartment_id) {
+	return bigg_id + '_' + compartment_id;
     }
 });

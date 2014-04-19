@@ -47,16 +47,21 @@ define(["utils"], function(utils) {
 
     function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
 			     defs, arrowheads,
-			     default_reaction_color, has_flux, bezier_drag_behavior, label_drag_behavior) {
+			     default_reaction_color, has_reaction_data,
+			     reaction_data_styles,
+			     bezier_drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
 			       'defs', 'arrowheads',
-			       'default_reaction_color', 'has_flux',
+			       'default_reaction_color', 'has_reaction_data',
+			       'reaction_data_styles',
 			       'bezier_drag_behavior', 'label_drag_behavior']);
 
         // update reaction label
         update_selection.select('.reaction-label')
-            .call(function(sel) { return update_reaction_label(sel, scale, has_flux, label_drag_behavior); });
+            .call(function(sel) { return update_reaction_label(sel, scale, has_reaction_data, 
+							       reaction_data_styles,
+							       label_drag_behavior); });
 
         // select segments
         var sel = update_selection
@@ -70,9 +75,10 @@ define(["utils"], function(utils) {
 
         // update segments
         sel.call(function(sel) { 
-	    return update_segment(sel, scale, drawn_nodes, show_beziers, defs, arrowheads, 
-				  default_reaction_color, has_flux, bezier_drag_behavior);
-
+	    return update_segment(sel, scale, drawn_nodes, show_beziers, defs,
+				  arrowheads, default_reaction_color,
+				  has_reaction_data, reaction_data_styles,
+				  bezier_drag_behavior);
 	});
 
         // old segments
@@ -88,14 +94,19 @@ define(["utils"], function(utils) {
 	    .style('cursor', 'default');
     }
 
-    function update_reaction_label(sel, scale, has_flux, label_drag_behavior) {
-	utils.check_undefined(arguments, ['sel', 'scale', 'has_flux', 'label_drag_behavior']);
+    function update_reaction_label(sel, scale, has_reaction_data, 
+				   reaction_data_styles,
+				   label_drag_behavior) {
+	utils.check_undefined(arguments, ['sel', 'scale',
+					  'has_reaction_data',
+					  'reaction_data_styles',
+					  'label_drag_behavior']);
 	
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
-            var t = d.bigg_id_compartmentalized;
-            if (d.flux!==null) t += " ("+decimal_format(d.flux)+")";
-            else if (has_flux) t += " (0)";
+            var t = d.bigg_id;
+            if (d.data!==null) t += " ("+decimal_format(d.data)+")";
+            else if (has_reaction_data) t += " (0)";
             return t;
 	}).attr('transform', function(d) {
             return 'translate('+scale.x(d.label_x)+','+scale.y(d.label_y)+')';
@@ -125,11 +136,14 @@ define(["utils"], function(utils) {
     
     function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
 			    defs, arrowheads, default_reaction_color,
-			    has_flux, bezier_drag_behavior) {
+			    has_reaction_data, reaction_data_styles,
+			    bezier_drag_behavior) {
 	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
 					  'show_beziers', 'defs',
 					  'arrowheads', 'default_reaction_color',
-					  'has_flux', 'bezier_drag_behavior']);
+					  'has_reaction_data',
+					  'reaction_data_styles',
+					  'bezier_drag_behavior']);
 
         // update segment attributes
         // update arrows
@@ -170,7 +184,7 @@ define(["utils"], function(utils) {
             .attr("marker-start", function (d) {
 		var start = drawn_nodes[d.from_node_id];
 		if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
-		    var c = d.flux ? scale.flux_color(Math.abs(d.flux)) :
+		    var c = d.data ? scale.reaction_color(Math.abs(d.data)) :
 			    default_reaction_color;
 		    // generate arrowhead for specific color
 		    var arrow_id = generate_arrowhead_for_color(defs, arrowheads, c, false);
@@ -180,7 +194,7 @@ define(["utils"], function(utils) {
 	    .attr("marker-end", function (d) {
 		var end = drawn_nodes[d.to_node_id];
 		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
-		    var c = d.flux ? scale.flux_color(Math.abs(d.flux)) :
+		    var c = d.data ? scale.reaction_color(Math.abs(d.data)) :
 			    default_reaction_color;
 		    // generate arrowhead for specific color
 		    var arrow_id = generate_arrowhead_for_color(defs, arrowheads, c, true);
@@ -188,14 +202,14 @@ define(["utils"], function(utils) {
 		} else { return null; };
             })
             .style('stroke', function(d) {
-		if (has_flux) 
-		    return d.flux!==null ? scale.flux_color(Math.abs(d.flux)) : scale.flux_color(0);
+		if (has_reaction_data) 
+		    return d.data!==null ? scale.reaction_color(Math.abs(d.data)) : scale.reaction_color(0);
 		else
 		    return default_reaction_color;
 	    })
 	    .style('stroke-width', function(d) {
-		return d.flux ? scale.size(scale.flux(Math.abs(d.flux))) :
-		    scale.size(scale.flux(1));
+	    	return d.data!==null ? scale.size(scale.reaction_size(Math.abs(d.data))) :
+	    	    scale.size(scale.reaction_size(1));
             });
 
 	// new bezier points
@@ -293,11 +307,11 @@ define(["utils"], function(utils) {
 	    .style('cursor', 'default');
     }
 
-    function update_node(update_selection, scale, has_node_data, node_data_style,
+    function update_node(update_selection, scale, has_metabolite_data, metabolite_data_style,
 			 click_fn, drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
-			      ['update_selection', 'scale', 'has_node_data',
-			       'node_data_style', 'click_fn',
+			      ['update_selection', 'scale', 'has_metabolite_data',
+			       'metabolite_data_style', 'click_fn',
 			       'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
@@ -308,8 +322,8 @@ define(["utils"], function(utils) {
                 })
 		.attr('r', function(d) {
 		    if (d.node_type == 'metabolite') {
-			if (has_node_data && node_data_style.indexOf('Size')!==-1) {
-			    return scale.size(scale.node_size(d.data!==null ? d.data : 0));
+			if (has_metabolite_data && metabolite_data_style.indexOf('Size')!==-1) {
+			    return scale.size(scale.metabolite_size(d.data!==null ? d.data : 0));
 			} else {
 			    return scale.size(d.node_is_primary ? 15 : 10); 
 			}
@@ -319,8 +333,8 @@ define(["utils"], function(utils) {
 		})
 		.style('fill', function(d) {
 		    if (d.node_type=='metabolite') {
-			if (has_node_data && node_data_style.indexOf('Color')!==-1) {
-			    return scale.node_color(d.data!==null ? d.data : 0);
+			if (has_metabolite_data && metabolite_data_style.indexOf('Color')!==-1) {
+			    return scale.metabolite_color(d.data!==null ? d.data : 0);
 			} else {
 			    return 'rgb(224, 134, 91)';
 			}
@@ -339,10 +353,14 @@ define(["utils"], function(utils) {
 		return String(scale.size(20))+"px";
             })
             .text(function(d) {	
-		var decimal_format = d3.format('.4g');
-		var t = d.bigg_id_compartmentalized;
-		if (d.data!==null) t += " ("+decimal_format(d.data)+")";
-		else if (has_node_data) t += " (0)";
+		var decimal_format = d3.format('.4g'),
+		    t;
+		if (d.compartment_id===null) t = d.bigg_id;
+		else t = utils.compartmentalize(d.bigg_id, d.compartment_id);
+		if (has_metabolite_data) {
+		    if (d.data!==null) t += " ("+decimal_format(d.data)+")";
+		    else if (has_metabolite_data) t += " (0)";
+		}
 		return t;
 	    })
 	    .call(turn_off_drag)

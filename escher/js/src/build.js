@@ -39,7 +39,7 @@ define(["utils"], function(utils) {
 	var anchor_distance = 20;
 
 	// new reaction structure
-	var new_reaction = { bigg_id_compartmentalized: cobra_reaction.bigg_id_compartmentalized,
+	var new_reaction = { bigg_id: cobra_reaction.bigg_id,
 			     reversibility: cobra_reaction.reversibility,
 			     metabolites: utils.clone(cobra_reaction.metabolites),
 			     label_x: center.x + label_d.x,
@@ -60,12 +60,13 @@ define(["utils"], function(utils) {
 		new_metabolite = { coefficient: coefficient,
 				   formula: metabolite.formula,
 				   bigg_id: metabolite.bigg_id,
-				   bigg_id_compartmentalized: metabolite.bigg_id_compartmentalized };
+				   compartment_id: metabolite.compartment_id };
 	    if (coefficient < 0) {
                 new_metabolite.index = reactant_count;
 		// score the metabolites. Infinity == selected, >= 1 == carbon containing
 		var carbons = /C([0-9]+)/.exec(new_metabolite.formula);
-		if (selected_node.bigg_id_compartmentalized==new_metabolite.bigg_id_compartmentalized) {
+		if (selected_node.bigg_id==new_metabolite.bigg_id &&
+		    selected_node.compartment_id==new_metabolite.compartment_id) {
 		    reactant_ranks.push([new_metabolite.index, Infinity]);
 		} else if (carbons && cofactors.indexOf(new_metabolite.bigg_id)==-1) {
 		    reactant_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
@@ -74,7 +75,8 @@ define(["utils"], function(utils) {
 	    } else {
                 new_metabolite.index = product_count;
 		var carbons = /C([0-9]+)/.exec(new_metabolite.formula);
-		if (selected_node.bigg_id_compartmentalized==new_metabolite.bigg_id_compartmentalized) {
+		if (selected_node.bigg_id==new_metabolite.bigg_id &&
+		    selected_node.compartment_id==new_metabolite.compartment_id) {
 		    product_ranks.push([new_metabolite.index, Infinity]);
 		    reaction_is_reversed = true;
 		} else if (carbons && cofactors.indexOf(new_metabolite.bigg_id)==-1) {
@@ -163,8 +165,8 @@ define(["utils"], function(utils) {
 							       reaction_is_reversed);
 
 	    // if this is the existing metabolite
-	    if (metabolite.bigg_id_compartmentalized==
-		selected_node.bigg_id_compartmentalized) {
+	    if (selected_node.bigg_id==metabolite.bigg_id &&
+		selected_node.compartment_id==metabolite.compartment_id) {
 		var new_segment_id = String(++largest_ids.segments);
 		new_reaction.segments[new_segment_id] = { b1: met_loc.b1,
 							  b2: met_loc.b2,
@@ -200,7 +202,6 @@ define(["utils"], function(utils) {
 					   label_y: met_loc.circle.y + label_d.y,
 					   metabolite_name: metabolite.name,
 					   bigg_id: metabolite.bigg_id,
-					   bigg_id_compartmentalized: metabolite.bigg_id_compartmentalized,
 					   node_type: 'metabolite' };
 		new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
 								  reaction_id: new_reaction_id });
