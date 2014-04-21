@@ -666,6 +666,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    coords = { x: d.x, y: d.y };
 	    count++;
 	});
+	console.log(coords);
 	if (count == 1) {
 	    this.direction_arrow.set_location(coords);
 	    this.direction_arrow.show();
@@ -1204,6 +1205,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    reactions = this.reactions,
 	    nodes = this.nodes,
 	    end_function = function() {
+		console.log('end_rotation');
 		self.callback_manager.run('end_rotation');
 	    };
 
@@ -1271,8 +1273,9 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		set_status('');
 		escape_listener.clear();
 		// find the point on the background node where the user clicked
-		var center = { x: scale.x_size.invert(d3.mouse(this)[0]), 
-			       y: scale.y_size.invert(d3.mouse(this)[1]) };
+		var center = { x: d3.mouse(self.sel.node())[0], 
+			       y: d3.mouse(self.sel.node())[1] };
+		console.log(center, this);
 		callback(center); 
 	    });
 	}
