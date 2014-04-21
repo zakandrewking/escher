@@ -84,7 +84,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		  reaction_data_styles, metabolite_data, metabolite_data_styles,
 		  cobra_model, canvas_size_and_loc) {
 	if (canvas_size_and_loc===undefined || canvas_size_and_loc===null) {
-	    canvas_size_and_loc = {x: 0, y: 0, width: width, height: height};
+	    canvas_size_and_loc = {x: -width/4, y: -width/4,
+				   width: width*3/2, height: height*3/2};
 	}
 
 	// defaults
@@ -109,14 +110,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.metabolite_data_styles = metabolite_data_styles;
 	this.cobra_model = cobra_model;
 
-	this.map_info = { max_map_w: width * 10, max_map_h: height * 10 };
-	this.map_info.largest_ids = { reactions: -1,
-				      nodes: -1,
-				      segments: -1 };
+	this.largest_ids = { reactions: -1,
+			     nodes: -1,
+			     segments: -1 };
 
 	// make the scale
-	this.scale = new Scale(this.map_info.max_map_w, this.map_info.max_map_h,
-			       width, height);
+	this.scale = new Scale(); //this.canvas.width, this.canvas.height, width, height);
 
 	// make the undo/redo stack
 	this.undo_stack = new UndoStack();
@@ -187,7 +186,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		    console.warn(error);
 		    return;
 		}
-		check_r(map_data, spec.spec, spec.can_be_none);
+		utils.check_r(map_data, spec.spec, spec.can_be_none);
 	    });
 	}
 	
@@ -205,11 +204,11 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		segment.reversibility = reaction.reversibility;
 		var from_node_bigg_id = this.nodes[segment.from_node_id].bigg_id;
 		if (from_node_bigg_id in reaction.metabolites) {
-		    segment.from_node_coefficient = reaction.metabolites[from_node_bigg_id];
+		    segment.from_node_coefficient = reaction.metabolites[from_node_bigg_id].coefficient;
 		}
 		var to_node_bigg_id = this.nodes[segment.to_node_id].bigg_id;
 		if (to_node_bigg_id in reaction.metabolites) {
-		    segment.to_node_coefficient = reaction.metabolites[to_node_bigg_id];
+		    segment.to_node_coefficient = reaction.metabolites[to_node_bigg_id].coefficient;
 		}
 		// if metabolite without beziers, then add them
 		var start = this.nodes[segment.from_node_id],
@@ -225,16 +224,16 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	// get largest ids for adding new reactions, nodes, text labels, and
 	// segments
-	this.map_info.largest_ids.reactions = get_largest_id(this.reactions);
-	this.map_info.largest_ids.nodes = get_largest_id(this.nodes);
-	this.map_info.largest_ids.text_labels = get_largest_id(this.text_labels);
+	this.largest_ids.reactions = get_largest_id(this.reactions);
+	this.largest_ids.nodes = get_largest_id(this.nodes);
+	this.largest_ids.text_labels = get_largest_id(this.text_labels);
 
 	var largest_segment_id = 0;
 	for (var id in this.reactions) {
 	    largest_segment_id = get_largest_id(this.reactions[id].segments,
 						largest_segment_id);
 	}
-	this.map_info.largest_ids.segments = largest_segment_id;
+	this.largest_ids.segments = largest_segment_id;
 
 	// reaction_data onto existing map reactions
 	this.apply_reaction_data_to_map();
@@ -249,49 +248,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    return Math.max.apply(null, Object.keys(obj).map(function(x) {
 		return parseInt(x);
 	    }).concat([current_largest]));
-	}
-
-	function check_r(o, spec, can_be_none) {
-	    if (typeof spec == "string") {
-		var the_type;
-		if (spec=='String') {
-		    the_type = function(x) { return typeof x == "string"; };
-		} else if (spec=="Float") {
-		    the_type = function(x) { return typeof x == "number"; };
-		} else if (spec=="Integer") {
-		    the_type = function(x) { return (typeof x == "number") &&
-					     (parseFloat(x,10) == parseInt(x,10)); };
-		} else if (spec=="Boolean") {
-		    the_type = function(x) { return typeof x == "boolean"; };
-		} else if (spec!="*") {
-		    throw Error("Bad spec string: " + spec);
-		}
-		if (!the_type(o)) {
-		    throw Error('Bad type: '+String(o)+' should be '+spec);
-		}
-	    } else if (spec instanceof Array) {
-		o.forEach(function(x) {
-		    check_r(x, spec[0], can_be_none);
-		});
-	    } else { // dictionary/object
-		var key = Object.keys(spec)[0];
-		if (key == "*") {
-		    for (var k in o) {
-			if (o[k]===null && can_be_none.indexOf(k)!=-1) 
-			    continue;
-			check_r(o[k], spec[key], can_be_none);
-		    }
-		} else {
-		    for (var k in spec) {
-			if (!(k in o)) {
-			    throw Error('Missing key: %s' % k);
-			};
-			if (o[k]===null && can_be_none.indexOf(k)!=-1) 
-			    continue;
-			check_r(o[k], spec[k], can_be_none);
-		    }
-		}
-	    }
 	}
     }
 
@@ -964,7 +920,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    var coefficient = cobra_reaction.metabolites[metabolite_id],
 		metabolite = this.cobra_model.metabolites[metabolite_id];
 	    if (coefficient < 0) {
-		var selected_node_id = ++this.map_info.largest_ids.nodes,
+		var selected_node_id = String(++this.largest_ids.nodes),
 		    label_d = { x: 30, y: 10 },
 		    selected_node = { connected_segments: [],
 				      x: coords.x,
@@ -972,7 +928,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 				      node_is_primary: true,
 				      label_x: coords.x + label_d.x,
 				      label_y: coords.y + label_d.y,
-				      metabolite_name: metabolite.name,
+				      name: metabolite.name,
 				      bigg_id: metabolite_id,
 				      node_type: 'metabolite' },
 		    new_nodes = {};
@@ -1043,7 +999,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 				     this.cobra_model.metabolites,
 				     selected_node_id,
 				     utils.clone(selected_node),
-				     this.map_info.largest_ids,
+				     this.largest_ids,
 				     this.cobra_model.cofactors,
 				     this.direction_arrow.get_rotation()),
 	    new_nodes = out.new_nodes,
@@ -1505,6 +1461,17 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	for (var n_id in out.nodes) {
 	    delete out.nodes[n_id].data;
 	}
+
+	if (this.debug) {
+	    d3.json('map_spec.json', function(error, spec) {
+		if (error) {
+		    console.warn(error);
+		    return;
+		}
+		utils.check_r(out, spec.spec, spec.can_be_none);
+	    });
+	}
+
 	return out;
     }
     function save_svg() {

@@ -8,29 +8,34 @@ define(["utils"], function(utils) {
     return Scale;
 
     // definitions
-    function init(map_w, map_h, w, h, options) {
+    function init(options) { //map_w, map_h, w, h, options) {
 	var sc = utils.set_options(options, 
 				   { reaction_color: d3.scale.linear()
 				     .domain([0, 0.000001, 1, 8, 50])
 				     .range(["rgb(200,200,200)", "rgb(190,190,255)", 
 					     "rgb(100,100,255)", "blue", "red"])});
 
-        var factor = Math.min(w/map_w, h/map_h);
-        sc.x = d3.scale.linear()
-            .domain([0, map_w])
-            .range([(w - map_w*factor)/2, map_w*factor + (w - map_w*factor)/2]),
-        sc.y = d3.scale.linear()
-            .domain([0, map_h])
-            .range([(h - map_h*factor)/2, map_h*factor + (h - map_h*factor)/2]),
-        sc.x_size = d3.scale.linear()
-            .domain([0, map_w])
-            .range([0, map_w*factor]),
-        sc.y_size = d3.scale.linear()
-            .domain([0, map_h])
-            .range([0, map_h*factor]),
-        sc.size = d3.scale.linear()
-            .domain([0, 1])
-            .range([0, factor]),
+        // var factor = Math.min(w/map_w, h/map_h);
+        // sc.x = d3.scale.linear()
+        //     .domain([0, map_w])
+        //     .range([(w - map_w*factor)/2, map_w*factor + (w - map_w*factor)/2]),
+        // sc.y = d3.scale.linear()
+        //     .domain([0, map_h])
+        //     .range([(h - map_h*factor)/2, map_h*factor + (h - map_h*factor)/2]),
+        // sc.x_size = d3.scale.linear()
+        //     .domain([0, map_w])
+        //     .range([0, map_w*factor]),
+        // sc.y_size = d3.scale.linear()
+        //     .domain([0, map_h])
+        //     .range([0, map_h*factor]),
+        // sc.size = d3.scale.linear()
+        //     .domain([0, 1])
+        //     .range([0, factor]),
+	sc.x = d3.scale.linear();
+	sc.y = d3.scale.linear();
+	sc.x_size = d3.scale.linear();
+	sc.y_size = d3.scale.linear();
+	sc.size = d3.scale.linear();
         sc.reaction_size = d3.scale.linear()
             .domain([0, 40])
             .range([6, 6]),

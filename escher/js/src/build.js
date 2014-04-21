@@ -116,7 +116,12 @@ define(["utils"], function(utils) {
 	    new_anchors[new_id] = { node_type: n.node_type,
 				    x: center.x + n.dis.x,
 				    y: center.y + n.dis.y,
-				    connected_segments: [] };
+				    connected_segments: [],
+				    name: null,
+				    bigg_id: null,
+				    label_x: null,
+				    label_y: null,
+				    node_is_primary: null };
 	    anchor_ids[n.node_type] = new_id;
 	});
 
@@ -193,7 +198,7 @@ define(["utils"], function(utils) {
 								  reaction_id: new_reaction_id }],
 					   x: met_loc.circle.x,
 					   y: met_loc.circle.y,
-					   node_is_primary: metabolite.is_primary,
+					   node_is_primary: Boolean(metabolite.is_primary),
 					   label_x: met_loc.circle.x + label_d.x,
 					   label_y: met_loc.circle.y + label_d.y,
 					   name: metabolite.name,
@@ -206,7 +211,9 @@ define(["utils"], function(utils) {
 
 	// now take out the extra reaction details
 	for (var bigg_id in new_reaction.metabolites) {
-	    new_reaction.metabolites[bigg_id] = new_reaction.metabolites[bigg_id].coefficient;
+	    new_reaction.metabolites[bigg_id] = {
+		coefficient: new_reaction.metabolites[bigg_id].coefficient
+	    };
 	}
 
 	// new_reactions object

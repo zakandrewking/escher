@@ -21,9 +21,11 @@
 	  "text_labels": {"*": {"x": "Float",
 				"y": "Float",
 				"text": "String"}},
-	  "info": {
-	      "max_map_w": "Float",
-	      "max_map_h": "Float"
+	  "canvas": {
+	      "x": "Float",
+	      "y": "Float",
+	      "width": "Float",
+	      "height": "Float"
 	  }
 	 },
- "can_be_none": ["b1", "b2"]}
+ "can_be_none": ["b1", "b2", "name", "bigg_id", "label_x", "label_y", "node_is_primary"]}

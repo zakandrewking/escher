@@ -198,6 +198,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    // turn off the behaviors
 	    this.map.behavior.turn_everything_off();
 	    this.map.draw_everything();
+	    this.map.canvas.toggle_resize(false);
 	}
 
 	// turn off loading message
@@ -210,11 +211,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
     function brush_mode() {
 	this.brush.toggle(true);
 	this.zoom_container.toggle_zoom(false);
+	this.map.canvas.toggle_resize(false);
 	this.callback_manager.run('brush_mode');
     }
     function zoom_mode() {
 	this.brush.toggle(false);
 	this.zoom_container.toggle_zoom(true);
+	this.map.canvas.toggle_resize(true);
 	this.callback_manager.run('zoom_mode');
     }
     function _setup_menu(selection, map, zoom_container, key_manager, keys) {

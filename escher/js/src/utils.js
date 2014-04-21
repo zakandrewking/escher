@@ -29,7 +29,8 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     distance: distance,
 	     check_undefined: check_undefined,
 	     compartmentalize: compartmentalize,
-	     decompartmentalize: decompartmentalize };
+	     decompartmentalize: decompartmentalize,
+	     check_r: check_r };
 
     // definitions
     function height_width_style(selection, margins) {
@@ -552,6 +553,49 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 		result = reg.exec(id);
 	    if (result===null) return null;
 	    return result.slice(1,3);
+	}
+    }
+
+    function check_r(o, spec, can_be_none) {
+	if (typeof spec == "string") {
+	    var the_type;
+	    if (spec=='String') {
+		the_type = function(x) { return typeof x == "string"; };
+	    } else if (spec=="Float") {
+		the_type = function(x) { return typeof x == "number"; };
+	    } else if (spec=="Integer") {
+		the_type = function(x) { return (typeof x == "number") &&
+					 (parseFloat(x,10) == parseInt(x,10)); };
+	    } else if (spec=="Boolean") {
+		the_type = function(x) { return typeof x == "boolean"; };
+	    } else if (spec!="*") {
+		throw Error("Bad spec string: " + spec);
+	    }
+	    if (!the_type(o)) {
+		throw Error('Bad type: '+String(o)+' should be '+spec);
+	    }
+	} else if (spec instanceof Array) {
+	    o.forEach(function(x) {
+		check_r(x, spec[0], can_be_none);
+	    });
+	} else { // dictionary/object
+	    var key = Object.keys(spec)[0];
+	    if (key == "*") {
+		for (var k in o) {
+		    if (o[k]===null && can_be_none.indexOf(k)!=-1) 
+			continue;
+		    check_r(o[k], spec[key], can_be_none);
+		}
+	    } else {
+		for (var k in spec) {
+		    if (!(k in o)) {
+			throw Error('Missing key: %s' % k);
+		    };
+		    if (o[k]===null && can_be_none.indexOf(k)!=-1) 
+			continue;
+		    check_r(o[k], spec[k], can_be_none);
+		}
+	    }
 	}
     }
 });
