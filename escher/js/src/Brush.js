@@ -53,8 +53,7 @@ define(["utils"], function(utils) {
 	    height = size_and_location.height,
 	    x = size_and_location.x,
 	    y = size_and_location.y,
-	    node_ids = [],
-	    scale = this.map.scale;
+	    node_ids = [];
 	node_selection.each(function(d) { node_ids.push(d.node_id); });
 	var brush_fn = d3.svg.brush()
 		.x(d3.scale.identity().domain([x, x+width]))
@@ -63,7 +62,7 @@ define(["utils"], function(utils) {
 		    var extent = d3.event.target.extent();
 		    node_selection
 			.classed("selected", function(d) { 
-			    var sx = scale.x(d.x), sy = scale.y(d.y);
+			    var sx = d.x, sy = d.y;
 			    return extent[0][0] <= sx && sx < extent[1][0]
 				&& extent[0][1] <= sy && sy < extent[1][1];
 			});

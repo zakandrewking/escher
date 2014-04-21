@@ -61,14 +61,14 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
     }
     function setup_map_callbacks() {
 	var self = this;
-	this.map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, scaled_coords) {
-	    if (self.is_visible) self.reload(selected_node, scaled_coords, false);
+	this.map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
+	    if (self.is_visible) self.reload(selected_node, coords, false);
 	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	});
-	this.map.callback_manager.set('select_metabolite.input', function(count, selected_node, scaled_coords) {
+	this.map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
 	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-	    if (count == 1 && self.is_visible && scaled_coords) {
-		self.reload(selected_node, scaled_coords, false);
+	    if (count == 1 && self.is_visible && coords) {
+		self.reload(selected_node, coords, false);
 	    } else {
 		self.hide();
 	    }
@@ -113,15 +113,13 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 
 	// get the selected node
 	this.map.deselect_text_labels();
-	var selected_node = this.map.select_single_node(),
-	    scale = this.map.scale;
+	var selected_node = this.map.select_single_node();
 	if (selected_node==null) return;
-	var coords = { x: scale.x(selected_node.x), y: scale.y(selected_node.y) };
+	var coords = { x: selected_node.x, y: selected_node.y };
 	this.place(coords);
     }
     function place(coords) {
 	var d = {x: 200, y: 0},
-	    scale = this.map.scale,
 	    window_translate = this.map.zoom_container.window_translate,
 	    window_scale = this.map.zoom_container.window_scale;
         var left = Math.max(20,
@@ -143,14 +141,13 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
          */
 	// get the selected node
 	this.map.deselect_text_labels();
-	var selected_node = this.map.select_single_node(),
-	    scale = this.map.scale;
+	var selected_node = this.map.select_single_node();
 	if (selected_node==null) return;
-	var scaled_coords = { x: scale.x(selected_node.x), y: scale.y(selected_node.y) };
+	var coords = { x: selected_node.x, y: selected_node.y };
 	// reload the reaction input
-	this.reload(selected_node, scaled_coords, false);
+	this.reload(selected_node, coords, false);
     }
-    function reload(selected_node, scaled_coords, starting_from_scratch) {
+    function reload(selected_node, coords, starting_from_scratch) {
         /** Reload data for autocomplete box and redraw box at the new
          coordinates.
 	 
@@ -161,7 +158,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 
 	var decimal_format = d3.format('.3g');
 
-	this.place(scaled_coords);
+	this.place(coords);
         // blur
         this.completely.input.blur();
         this.completely.repaint(); //put in place()?
@@ -225,8 +222,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
         // set up the box with data, searching for first num results
         var num = 20,
             complete = this.completely,
-	    self = this,
-	    scale = this.map.scale;
+	    self = this;
         complete.options = strings_to_display;
         if (strings_to_display.length==1) complete.setText(strings_to_display[0]);
         else complete.setText("");
@@ -236,8 +232,8 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 	    suggestions_array.map(function(x) {
 		if (x.string==text) {
 		    if (starting_from_scratch) {
-			var coords = { x: scale.x.invert(scaled_coords.x),
-				       y: scale.y.invert(scaled_coords.y) };
+			var coords = { x: coords.x,
+				       y: coords.y };
 			self.map.new_reaction_from_scratch(x.reaction_abbreviation, coords);
 		    } else {
 			self.map.new_reaction_for_metabolite(x.reaction_abbreviation, selected_node.node_id);
@@ -273,26 +269,25 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
         
         if (this.start_reaction_listener) {
 	    var self = this,
-		map = this.map,
-		scale = map.scale;
+		map = this.map;
             map.sel.on('click.start_reaction', function() {
                 console.log('clicked for new reaction');
                 // reload the reaction input
-                var scaled_coords = { x: scale.x(scale.x_size.invert(d3.mouse(this)[0])),
-				      y: scale.y(scale.y_size.invert(d3.mouse(this)[1])) };
+                var coords = { x: d3.mouse(this)[0],
+			       y: d3.mouse(this)[1] };
                 // unselect metabolites
 		map.deselect_nodes();
 		map.deselect_text_labels();
 		// reload the reactin input
-                self.reload(null, scaled_coords, true);
+                self.reload(null, coords, true);
 		// generate the target symbol
                 var s = map.sel.selectAll('.start-reaction-target').data([12, 5]);
                 s.enter().append('circle')
                     .classed('start-reaction-target', true)
-                    .attr('r', function(d) { return scale.size(d); })
-                    .style('stroke-width', scale.size(4));
+                    .attr('r', function(d) { return d; })
+                    .style('stroke-width', 4);
                 s.style('visibility', 'visible')
-                    .attr('transform', 'translate('+scaled_coords.x+','+scaled_coords.y+')');
+                    .attr('transform', 'translate('+coords.x+','+coords.y+')');
             });
             map.sel.classed('start-reaction-cursor', true);
         } else {

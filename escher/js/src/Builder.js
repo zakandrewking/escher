@@ -127,7 +127,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.zoom_container = new ZoomContainer(svg, width, height, [0.05, 15]);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
-	var max_w = width, max_h = height, scale;
+	var max_w = width, max_h = height;
 	if (this.o.map_data!==null) {
 	    // import map
 	    this.map = Map.from_data(this.o.map_data,
@@ -182,8 +182,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	} else {
 	    if (this.o.starting_reaction!==null && cobra_model_obj!==null) {
 		// Draw default reaction if no map is provided
-		var start_coords = { x: this.map.scale.x.invert(width/2),
-				     y: this.map.scale.x.invert(height/4) };
+		var start_coords = { x: width/2,
+				     y: height/4 };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
 		this.map.zoom_extent_nodes(300, 'nodes');
 	    } else {

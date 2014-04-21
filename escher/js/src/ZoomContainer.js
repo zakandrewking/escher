@@ -43,7 +43,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
         };
 	var zoom_container = this;
 	this.zoom_behavior = d3.behavior.zoom()
-	    // .scaleExtent(scale_extent)
+	// .scaleExtent(scale_extent)
 	    .on("zoom", function() {
 		zoom(zoom_container, d3.event);
 	    });
@@ -104,7 +104,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	return null;
     }			    
 
-    function translate_off_screen(coords, x_scale, y_scale) {
+    function translate_off_screen(coords) {
         // shift window if new reaction will draw off the screen
         // TODO BUG not accounting for scale correctly
         var margin = 80, // pixels
@@ -116,22 +116,22 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 			     margin / this.window_scale,
 			     'max': - this.window_translate.y / this.window_scale +
 			     (this.height-margin) / this.window_scale } };
-        if (x_scale(coords.x) < current.x.min) {
+        if (coords.x < current.x.min) {
             this.window_translate.x = this.window_translate.x -
-		(x_scale(coords.x) - current.x.min) * this.window_scale;
+		(coords.x - current.x.min) * this.window_scale;
             this.go_to(this.window_scale, this.window_translate);
-        } else if (x_scale(coords.x) > current.x.max) {
+        } else if (coords.x > current.x.max) {
             this.window_translate.x = this.window_translate.x -
-		(x_scale(coords.x) - current.x.max) * this.window_scale;
+		(coords.x - current.x.max) * this.window_scale;
             this.go_to(this.window_scale, this.window_translate);
         }
-        if (y_scale(coords.y) < current.y.min) {
+        if (coords.y < current.y.min) {
             this.window_translate.y = this.window_translate.y -
-		(y_scale(coords.y) - current.y.min) * this.window_scale;
+		(coords.y - current.y.min) * this.window_scale;
             this.go_to(this.window_scale, this.window_translate);
-        } else if (y_scale(coords.y) > current.y.max) {
+        } else if (coords.y > current.y.max) {
             this.window_translate.y = this.window_translate.y -
-		(y_scale(coords.y) - current.y.max) * this.window_scale;
+		(coords.y - current.y.max) * this.window_scale;
             this.go_to(this.window_scale, this.window_translate);
         }
     }

@@ -23,15 +23,15 @@ define(["utils"], function(utils) {
 	    .attr('class', 'membrane');
     }
 
-    function update_membrane(update_selection, scale) {
-	utils.check_undefined(arguments, ['enter_selection', 'scale']);
+    function update_membrane(update_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
         update_selection
-            .attr("width", function(d){ return scale.x_size(d.width); })
-            .attr("height", function(d){ return scale.y_size(d.height); })
-            .attr("transform", function(d){return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";})
-            .style("stroke-width", function(d) { return scale.size(10); })
-            .attr('rx', function(d){ return scale.x_size(20); })
-            .attr('ry', function(d){ return scale.x_size(20); });
+            .attr("width", function(d){ return d.width; })
+            .attr("height", function(d){ return d.height; })
+            .attr("transform", function(d){return "translate("+d.x+","+d.y+")";})
+            .style("stroke-width", function(d) { return 10; })
+            .attr('rx', function(d){ return 20; })
+            .attr('ry', function(d){ return 20; });
     }
 
     function create_reaction(enter_selection) {
@@ -59,7 +59,7 @@ define(["utils"], function(utils) {
 
         // update reaction label
         update_selection.select('.reaction-label')
-            .call(function(sel) { return update_reaction_label(sel, scale, has_reaction_data, 
+            .call(function(sel) { return update_reaction_label(sel, has_reaction_data, 
 							       reaction_data_styles,
 							       label_drag_behavior); });
 
@@ -94,10 +94,10 @@ define(["utils"], function(utils) {
 	    .style('cursor', 'default');
     }
 
-    function update_reaction_label(sel, scale, has_reaction_data, 
+    function update_reaction_label(sel, has_reaction_data, 
 				   reaction_data_styles,
 				   label_drag_behavior) {
-	utils.check_undefined(arguments, ['sel', 'scale',
+	utils.check_undefined(arguments, ['sel',
 					  'has_reaction_data',
 					  'reaction_data_styles',
 					  'label_drag_behavior']);
@@ -109,9 +109,9 @@ define(["utils"], function(utils) {
             else if (has_reaction_data) t += " (0)";
             return t;
 	}).attr('transform', function(d) {
-            return 'translate('+scale.x(d.label_x)+','+scale.y(d.label_y)+')';
+            return 'translate('+d.label_x+','+d.label_y+')';
 	}).style("font-size", function(d) {
-	    return String(scale.size(30))+"px";
+	    return String(30)+"px";
         })
 	    .call(turn_off_drag)
 	    .call(label_drag_behavior);
@@ -173,12 +173,12 @@ define(["utils"], function(utils) {
 		    var direction = (b2 === null) ? start : b2;
 		    end = displaced_coords(disp, direction, end, 'end');
 		}
-		var curve = ('M'+scale.x(start.x)+','+scale.y(start.y)+' ');
+		var curve = ('M'+start.x+','+start.y+' ');
 		if (b1 !== null && b2 !== null) {
-		    curve += ('C'+scale.x(b1.x)+','+scale.y(b1.y)+' '+
-                              scale.x(b2.x)+','+scale.y(b2.y)+' ');
+		    curve += ('C'+b1.x+','+b1.y+' '+
+                              b2.x+','+b2.y+' ');
 		}
-		curve += (scale.x(end.x)+','+scale.y(end.y));
+		curve += (end.x+','+end.y);
 		return curve;
             })
             .attr("marker-start", function (d) {
@@ -208,8 +208,8 @@ define(["utils"], function(utils) {
 		    return default_reaction_color;
 	    })
 	    .style('stroke-width', function(d) {
-	    	return d.data!==null ? scale.size(scale.reaction_size(Math.abs(d.data))) :
-	    	    scale.size(scale.reaction_size(1));
+	    	return d.data!==null ? scale.reaction_size(Math.abs(d.data)) :
+	    	    scale.reaction_size(1);
             });
 
 	// new bezier points
@@ -247,13 +247,13 @@ define(["utils"], function(utils) {
 
 	    enter_selection.append('circle')
 	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
-	    	.style('stroke-width', String(scale.size(1))+'px')	
-    		.attr('r', String(scale.size(5))+'px')
+	    	.style('stroke-width', String(1)+'px')	
+    		.attr('r', String(5)+'px')
 		.on("mouseover", function(d) {
-		    d3.select(this).style('stroke-width', String(scale.size(3))+'px');
+		    d3.select(this).style('stroke-width', String(3)+'px');
 		})
 		.on("mouseout", function(d) {
-		    d3.select(this).style('stroke-width', String(scale.size(1))+'px');
+		    d3.select(this).style('stroke-width', String(1)+'px');
 		});
 	}
 	function update_bezier(update_selection, show_beziers, drag_behavior) {
@@ -268,7 +268,7 @@ define(["utils"], function(utils) {
 		    .attr('visibility', 'visible')
 		    .attr('transform', function(d) {
 	    		if (d.x==null || d.y==null) return ""; 
-			return 'translate('+scale.x(d.x)+','+scale.y(d.y)+')';
+			return 'translate('+d.x+','+d.y+')';
 		    });
 	    } else {
 	    	update_selection.attr('visibility', 'hidden');
@@ -276,9 +276,9 @@ define(["utils"], function(utils) {
 	}
     }
 
-    function create_node(enter_selection, scale, drawn_nodes, drawn_reactions) {
+    function create_node(enter_selection, drawn_nodes, drawn_reactions) {
 	utils.check_undefined(arguments,
-			      ['enter_selection', 'scale', 'drawn_nodes',
+			      ['enter_selection', 'drawn_nodes',
 			       'drawn_reactions']);
 
         // create nodes
@@ -293,12 +293,12 @@ define(["utils"], function(utils) {
 		if (d.node_type=='metabolite') return 'node-circle metabolite-circle';
 		else return 'node-circle';
 	    })		
-            .style('stroke-width', String(scale.size(2))+'px')
+            .style('stroke-width', String(2)+'px')
 	    .on("mouseover", function(d) {
-		d3.select(this).style('stroke-width', String(scale.size(3))+'px');
+		d3.select(this).style('stroke-width', String(3)+'px');
 	    })
 	    .on("mouseout", function(d) {
-		d3.select(this).style('stroke-width', String(scale.size(2))+'px');
+		d3.select(this).style('stroke-width', String(2)+'px');
 	    });
 
         g.filter(function(d) { return d.node_type=='metabolite'; })
@@ -318,17 +318,17 @@ define(["utils"], function(utils) {
         var mg = update_selection
                 .select('.node-circle')
                 .attr('transform', function(d) {
-                    return 'translate('+scale.x(d.x)+','+scale.y(d.y)+')';
+                    return 'translate('+d.x+','+d.y+')';
                 })
 		.attr('r', function(d) {
 		    if (d.node_type == 'metabolite') {
 			if (has_metabolite_data && metabolite_data_style.indexOf('Size')!==-1) {
-			    return scale.size(scale.metabolite_size(d.data!==null ? d.data : 0));
+			    return scale.metabolite_size(d.data!==null ? d.data : 0);
 			} else {
-			    return scale.size(d.node_is_primary ? 15 : 10); 
+			    return d.node_is_primary ? 15 : 10; 
 			}
 		    } else {
-			return scale.size(5);
+			return 5;
 		    }
 		})
 		.style('fill', function(d) {
@@ -347,10 +347,10 @@ define(["utils"], function(utils) {
         update_selection
             .select('.node-label')
             .attr('transform', function(d) {
-                return 'translate('+scale.x(d.label_x)+','+scale.y(d.label_y)+')';
+                return 'translate('+d.label_x+','+d.label_y+')';
             })
             .style("font-size", function(d) {
-		return String(scale.size(20))+"px";
+		return String(20)+"px";
             })
             .text(function(d) {	
 		var decimal_format = d3.format('.4g'),
@@ -374,11 +374,11 @@ define(["utils"], function(utils) {
 	    .text(function(d) { return d.text; });
     }
 
-    function update_text_label(update_selection, scale, label_click, label_drag_behavior) {
-	utils.check_undefined(arguments, ['update_selection', 'scale', 'label_click', 'label_drag_behavior']);
+    function update_text_label(update_selection, label_click, label_drag_behavior) {
+	utils.check_undefined(arguments, ['update_selection', 'label_click', 'label_drag_behavior']);
 
         update_selection
-            .attr("transform", function(d) { return "translate("+scale.x(d.x)+","+scale.y(d.y)+")";})
+            .attr("transform", function(d) { return "translate("+d.x+","+d.y+")";})
 	    .on('click', label_click)
 	    .call(turn_off_drag)
 	    .call(label_drag_behavior);

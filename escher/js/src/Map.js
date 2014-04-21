@@ -343,13 +343,15 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    metabolite_data_styles = this.metabolite_data_styles,
 	    beziers_enabled = this.beziers_enabled;
 
-	utils.draw_an_array('#membranes' ,'.membrane', membranes, draw.create_membrane,
-			    function(sel) { return draw.update_membrane(sel, scale); });
+	utils.draw_an_array('#membranes' ,'.membrane', membranes,
+			    draw.create_membrane,
+			    draw.update_membrane);
 
 	utils.draw_an_object('#reactions', '.reaction', reactions,
 			     'reaction_id',
-			     function(sel) { return draw.create_reaction(sel); }, 
-			     function(sel) { return draw.update_reaction(sel, scale, 
+			     draw.create_reaction, 
+			     function(sel) { return draw.update_reaction(sel,
+									 scale, 
 									 nodes,
 									 beziers_enabled, 
 									 defs, arrowheads,
@@ -360,15 +362,18 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 									 reaction_label_drag); });
 
 	utils.draw_an_object('#nodes', '.node', nodes, 'node_id', 
-			     function(sel) { return draw.create_node(sel, scale, nodes, reactions); },
-			     function(sel) { return draw.update_node(sel, scale, has_metabolite_data, metabolite_data_styles,
-								     node_click_fn, node_drag_behavior,
+			     function(sel) { return draw.create_node(sel, nodes, reactions); },
+			     function(sel) { return draw.update_node(sel, scale,
+								     has_metabolite_data,
+								     metabolite_data_styles,
+								     node_click_fn,
+								     node_drag_behavior,
 								     node_label_drag); });
 
 	utils.draw_an_object('#text-labels', '.text-label', text_labels,
 			     'text_label_id',
 			     function(sel) { return draw.create_text_label(sel); }, 
-			     function(sel) { return draw.update_text_label(sel, scale,
+			     function(sel) { return draw.update_text_label(sel,
 									   text_label_click,
 									   text_label_drag); });
 
@@ -463,7 +468,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		      function(d) { return d.node_id; });
 
         // enter: generate and place node
-        sel.enter().call(function(sel) { return draw.create_node(sel, scale, nodes, reactions); });
+        sel.enter().call(function(sel) { return draw.create_node(sel, nodes, reactions); });
 
         // update: update when necessary
         sel.call(function(sel) { return draw.update_node(sel, scale, has_metabolite_data, metabolite_data_styles, 
@@ -474,8 +479,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         sel.exit();
     }
     function draw_these_text_labels(text_label_ids) {
-	var scale = this.scale,
-	    text_labels = this.text_labels,
+	var text_labels = this.text_labels,
 	    text_label_click = this.behavior.text_label_click,
 	    text_label_drag = this.behavior.text_label_drag;
 
@@ -502,7 +506,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
         // update: update when necessary
         sel.call(function(sel) {
-	    return draw.update_text_label(sel, scale, text_label_click, text_label_drag);
+	    return draw.update_text_label(sel, text_label_click, text_label_drag);
 	});
 
         // exit
@@ -627,21 +631,20 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.deselect_text_labels();
 
 	var node_selection = this.sel.select('#nodes').selectAll('.node'),
-	    scaled_coords,
-	    scale = this.scale,
+	    coords,
 	    selected_node;
 	node_selection.classed("selected", function(d) {
 	    var selected = String(d.node_id) == String(node_id);
 	    if (selected) {
 		selected_node = d;
-		scaled_coords = { x: scale.x(d.x), y: scale.y(d.y) };
+		coords = { x: d.x, y: d.y };
 	    }
 	    return selected;
 	});
-	this.direction_arrow.set_location(scaled_coords);
+	this.direction_arrow.set_location(coords);
 	this.direction_arrow.show();
 	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-	this.callback_manager.run('select_metabolite_with_id', selected_node, scaled_coords);
+	this.callback_manager.run('select_metabolite_with_id', selected_node, coords);
     }
     function select_metabolite(sel, d) {
 	// deselect all text labels
@@ -656,21 +659,20 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         else node_selection.classed("selected", function(p) { return d === p; });
 	var selected_nodes = d3.select('#nodes').selectAll('.selected'),
 	    count = 0,
-	    scaled_coords,
-	    scale = this.scale,
+	    coords,
 	    selected_node;
 	selected_nodes.each(function(d) {
 	    selected_node = d;
-	    scaled_coords = { x: scale.x(d.x), y: scale.y(d.y) };
+	    coords = { x: d.x, y: d.y };
 	    count++;
 	});
 	if (count == 1) {
-	    this.direction_arrow.set_location(scaled_coords);
+	    this.direction_arrow.set_location(coords);
 	    this.direction_arrow.show();
 	} else {
 	    this.direction_arrow.hide();
 	}
-	this.callback_manager.run('select_metabolite', count, selected_node, scaled_coords);
+	this.callback_manager.run('select_metabolite', count, selected_node, coords);
     }
     function select_single_node() {
 	/** Unselect all but one selected node, and return the node.
@@ -703,10 +705,9 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
 	text_label_selection.classed("selected", function(p) { return d === p; });
 	var selected_text_labels = d3.select('#text-labels').selectAll('.selected'),
-	    coords,
-	    scale = this.scale;
+	    coords;
 	selected_text_labels.each(function(d) {
-	    coords = { x: scale.x(d.x), y: scale.y(d.y) };
+	    coords = { x: d.x, y: d.y };
 	});
 	this.callback_manager.run('select_text_label');
     }
@@ -1058,7 +1059,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		    this.select_metabolite_with_id(node_id);
 		    var new_coords = { x: node.x, y: node.y };
 		    if (this.zoom_container)
-			this.zoom_container.translate_off_screen(new_coords, this.scale.x, this.scale.y);
+			this.zoom_container.translate_off_screen(new_coords);
 		}
 	    }
 	}
@@ -1242,7 +1243,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    set_status('Choose a node or point to rotate around.');
 	    var selection_node = d3.selectAll('.node-circle'),
 		selection_background = d3.selectAll('#mouse-node'),
-		scale = this.scale,
 		escape_listener = this.key_manager.add_escape_listener(function() {
 		    console.log('choose_center escape');
 		    selection_node.on('mousedown.center', null);
@@ -1283,7 +1283,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    var angle = Math.PI/2,
 		selection = d3.selectAll('#mouse-node'),
 		drag = d3.behavior.drag(),
-		scale = this.scale,
 		escape_listener = this.key_manager.add_escape_listener(function() {
 		    console.log('listen_for_rotation escape');
 		    drag.on('drag.rotate', null);
@@ -1293,10 +1292,10 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		});
 	    // drag.origin(function() { return point_of_grab; });
 	    drag.on("drag.rotate", function() { 
-		callback(angle_for_event({ dx: scale.x_size.invert(d3.event.dx), 
-					   dy: scale.y_size.invert(d3.event.dy) },
-					 { x: scale.x_size.invert(d3.mouse(this)[0]),
-					   y: scale.y_size.invert(d3.mouse(this)[1]) },
+		callback(angle_for_event({ dx: d3.event.dx, 
+					   dy: d3.event.dy },
+					 { x: d3.mouse(this)[0],
+					   y: d3.mouse(this)[1] },
 					 center));
 	    }).on("dragend.rotate", function() {
 		console.log('dragend.rotate');
@@ -1404,15 +1403,15 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		max = { x: null, y: null }; 
 	    for (var node_id in this.nodes) {
 		var node = this.nodes[node_id];
-		if (min.x===null) min.x = this.scale.x(node.x);
-		if (min.y===null) min.y = this.scale.y(node.y);
-		if (max.x===null) max.x = this.scale.x(node.x);
-		if (max.y===null) max.y = this.scale.y(node.y);
+		if (min.x===null) min.x = node.x;
+		if (min.y===null) min.y = node.y;
+		if (max.x===null) max.x = node.x;
+		if (max.y===null) max.y = node.y;
 
-		min.x = Math.min(min.x, this.scale.x(node.x));
-		min.y = Math.min(min.y, this.scale.y(node.y));
-		max.x = Math.max(max.x, this.scale.x(node.x));
-		max.y = Math.max(max.y, this.scale.y(node.y));
+		min.x = Math.min(min.x, node.x);
+		min.y = Math.min(min.y, node.y);
+		max.x = Math.max(max.x, node.x);
+		max.y = Math.max(max.y, node.y);
 	    }
 	    // set the zoom
 	    new_zoom = Math.min((this.width - margin*2) / (max.x - min.x),
