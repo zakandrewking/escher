@@ -211,6 +211,15 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		if (to_node_bigg_id in reaction.metabolites) {
 		    segment.to_node_coefficient = reaction.metabolites[to_node_bigg_id];
 		}
+		// if metabolite without beziers, then add them
+		var start = this.nodes[segment.from_node_id],
+		    end = this.nodes[segment.to_node_id];
+		if (start['node_type']=='metabolite' || end['node_type']=='metabolite') {
+		    var midpoint = utils.c_plus_c(start, utils.c_times_scalar(utils.c_minus_c(end, start), 0.5));
+		    if (segment.b1 === null) segment.b1 = midpoint;
+		    if (segment.b2 === null) segment.b2 = midpoint;
+		}
+
 	    }
 	}
 

@@ -163,23 +163,23 @@ define(["utils"], function(utils) {
 		var get_disp = function(reversibility, coefficient) {
 		    return (reversibility || coefficient > 0) ? 32 : 20;
 		};
-		if (start['node_type']=='metabolite') {
+		if (start['node_type']=='metabolite' && b1!==null) {
 		    var disp = get_disp(d.reversibility, d.from_node_coefficient);
-		    start = displaced_coords(disp, start, b1, 'start');
+		    var direction = (b1 === null) ? end : b1;
+		    start = displaced_coords(disp, start, direction, 'start');
 		}
 		if (end['node_type']=='metabolite') {
 		    var disp = get_disp(d.reversibility, d.to_node_coefficient);
-		    end = displaced_coords(disp, b2, end, 'end');
+		    var direction = (b2 === null) ? start : b2;
+		    end = displaced_coords(disp, direction, end, 'end');
 		}
-		if (d.b1==null || d.b2==null) {
-		    return 'M'+scale.x(start.x)+','+scale.y(start.y)+' '+
-			scale.x(end.x)+','+scale.y(end.y);
-		} else {
-		    return 'M'+scale.x(start.x)+','+scale.y(start.y)+
-                        'C'+scale.x(b1.x)+','+scale.y(b1.y)+' '+
-                        scale.x(b2.x)+','+scale.y(b2.y)+' '+
-                        scale.x(end.x)+','+scale.y(end.y);
+		var curve = ('M'+scale.x(start.x)+','+scale.y(start.y)+' ');
+		if (b1 !== null && b2 !== null) {
+		    curve += ('C'+scale.x(b1.x)+','+scale.y(b1.y)+' '+
+                              scale.x(b2.x)+','+scale.y(b2.y)+' ');
 		}
+		curve += (scale.x(end.x)+','+scale.y(end.y));
+		return curve;
             })
             .attr("marker-start", function (d) {
 		var start = drawn_nodes[d.from_node_id];
