@@ -232,11 +232,10 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 	    suggestions_array.map(function(x) {
 		if (x.string==text) {
 		    if (starting_from_scratch) {
-			var coords = { x: coords.x,
-				       y: coords.y };
 			self.map.new_reaction_from_scratch(x.reaction_abbreviation, coords);
 		    } else {
-			self.map.new_reaction_for_metabolite(x.reaction_abbreviation, selected_node.node_id);
+			self.map.new_reaction_for_metabolite(x.reaction_abbreviation,
+							     selected_node.node_id);
 		    }
 		}
 	    });

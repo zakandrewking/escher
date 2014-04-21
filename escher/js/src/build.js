@@ -112,8 +112,9 @@ define(["utils"], function(utils) {
 			  dis: { x: anchor_distance * (reaction_is_reversed ? -1 : 1), y: 0 } } ],
 	    anchor_ids = {};
 	anchors.map(function(n) {
-	    var new_id = String(++largest_ids.nodes);
-	    new_anchors[new_id] = { node_type: n.node_type,
+	    var new_id = String(++largest_ids.nodes),
+		general_node_type = (n.node_type=='center' ? 'midmarker' : 'multimarker');
+	    new_anchors[new_id] = { node_type: general_node_type,
 				    x: center.x + n.dis.x,
 				    y: center.y + n.dis.y,
 				    connected_segments: [],
@@ -326,7 +327,7 @@ define(["utils"], function(utils) {
 		updated_reaction_ids.push(segment_obj.reaction_id);
 
 		// update reaction label (but only once per reaction
-		if (node.node_type == 'center') {
+		if (node.node_type == 'midmarker') {
 		    reaction.label_x = reaction.label_x + displacement.x;
 		    reaction.label_y = reaction.label_y + displacement.y;
 		}

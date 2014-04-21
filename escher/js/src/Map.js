@@ -17,7 +17,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	init: init,
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
-	import_map_data: import_map_data,
 	// appearance
 	set_status: set_status,
 	set_model: set_model,
@@ -150,7 +149,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.info = {};
 
 	// performs some extra checks
-	this.debug = true;
+	this.debug = false;
     };
 
     // -------------------------------------------------------------------------
@@ -159,26 +158,14 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     function from_data(map_data, svg, css, selection, zoom_container, height, width,
 		       reaction_data, reaction_data_styles,
 		       metabolite_data, metabolite_data_styles, cobra_model) {
+	/** Load a json map and add necessary fields for rendering.
+	 
+	 */
 	utils.check_undefined(arguments, ['map_data', 'svg', 'css', 'selection',
 					  'zoom_container', 'height', 'width',
 					  'reaction_data', 'reaction_data_styles',
-					  'metabolite_data', 'metabolite_data_styles', 'cobra_model']);
-	var canvas;
-	if (map_data.canvas) canvas = map_data.canvas;
-	var map = new Map(svg, css, selection, zoom_container, height, width,
-			  reaction_data, reaction_data_styles, metabolite_data,
-			  metabolite_data_styles, cobra_model, canvas);
-
-	map.import_map_data(map_data);
-	return map;
-    }
-
-    function import_map_data(map_data) {
-	/*
-	 * Load a json map and add necessary fields for rendering.
-	 *
-	 * The returned value will be this.reactions.
-	 */
+					  'metabolite_data', 'metabolite_data_styles',
+					  'cobra_model']);
 
 	if (this.debug) {
 	    d3.json('map_spec.json', function(error, spec) {
@@ -190,29 +177,36 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    });
 	}
 	
-	this.reactions = map_data.reactions;
-	this.nodes = map_data.nodes;
-	this.membranes = map_data.membranes;
-	this.text_labels = map_data.text_labels;
-	this.info = map_data.info;
+	var canvas = map_data.canvas,
+	    map = new Map(svg, css, selection, zoom_container, height, width,
+			  reaction_data, reaction_data_styles, metabolite_data,
+			  metabolite_data_styles, cobra_model, canvas);
+
+	console.log(map.canvas.size_and_location());
+
+	map.reactions = map_data.reactions;
+	map.nodes = map_data.nodes;
+	map.membranes = map_data.membranes;
+	map.text_labels = map_data.text_labels;
+	map.info = map_data.info;
 
 	// propogate coefficients and reversbility
-	for (var r_id in this.reactions) {
-	    var reaction = this.reactions[r_id];
+	for (var r_id in map.reactions) {
+	    var reaction = map.reactions[r_id];
 	    for (var s_id in reaction.segments) {
 		var segment = reaction.segments[s_id];
 		segment.reversibility = reaction.reversibility;
-		var from_node_bigg_id = this.nodes[segment.from_node_id].bigg_id;
+		var from_node_bigg_id = map.nodes[segment.from_node_id].bigg_id;
 		if (from_node_bigg_id in reaction.metabolites) {
 		    segment.from_node_coefficient = reaction.metabolites[from_node_bigg_id].coefficient;
 		}
-		var to_node_bigg_id = this.nodes[segment.to_node_id].bigg_id;
+		var to_node_bigg_id = map.nodes[segment.to_node_id].bigg_id;
 		if (to_node_bigg_id in reaction.metabolites) {
 		    segment.to_node_coefficient = reaction.metabolites[to_node_bigg_id].coefficient;
 		}
 		// if metabolite without beziers, then add them
-		var start = this.nodes[segment.from_node_id],
-		    end = this.nodes[segment.to_node_id];
+		var start = map.nodes[segment.from_node_id],
+		    end = map.nodes[segment.to_node_id];
 		if (start['node_type']=='metabolite' || end['node_type']=='metabolite') {
 		    var midpoint = utils.c_plus_c(start, utils.c_times_scalar(utils.c_minus_c(end, start), 0.5));
 		    if (segment.b1 === null) segment.b1 = midpoint;
@@ -224,21 +218,22 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	// get largest ids for adding new reactions, nodes, text labels, and
 	// segments
-	this.largest_ids.reactions = get_largest_id(this.reactions);
-	this.largest_ids.nodes = get_largest_id(this.nodes);
-	this.largest_ids.text_labels = get_largest_id(this.text_labels);
+	map.largest_ids.reactions = get_largest_id(map.reactions);
+	map.largest_ids.nodes = get_largest_id(map.nodes);
+	map.largest_ids.text_labels = get_largest_id(map.text_labels);
 
 	var largest_segment_id = 0;
-	for (var id in this.reactions) {
-	    largest_segment_id = get_largest_id(this.reactions[id].segments,
+	for (var id in map.reactions) {
+	    largest_segment_id = get_largest_id(map.reactions[id].segments,
 						largest_segment_id);
 	}
-	this.largest_ids.segments = largest_segment_id;
+	map.largest_ids.segments = largest_segment_id;
 
 	// reaction_data onto existing map reactions
-	this.apply_reaction_data_to_map();
-	this.apply_metabolite_data_to_map();
-	return map_data;
+	map.apply_reaction_data_to_map();
+	map.apply_metabolite_data_to_map();
+
+	return map;
 
 	// definitions
 	function get_largest_id(obj, current_largest) {
