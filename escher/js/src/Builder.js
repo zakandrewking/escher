@@ -138,7 +138,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 				     this.o.reaction_data,
 				     this.o.reaction_data_styles,
 				     this.o.metabolite_data,
-				     this.o.metabolite_data_style,
+				     this.o.metabolite_data_styles,
 				     cobra_model_obj);
 	    this.zoom_container.reset();
 	} else {

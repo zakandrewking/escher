@@ -62,15 +62,16 @@ class IndexHandler(BaseHandler):
 class BuilderHandler(BaseHandler):
     def get(self, dev_path, kind, path):
         kwargs = {}
-        for a in ['starting_reaction', 'model_name', 'map_name']:
+        for a in ['starting_reaction', 'model_name', 'map_name', 'map_json']:
             args = self.get_arguments(a)
             if len(args)==1:
                 kwargs[a] = args[0]
         enable_editing = (kind=='builder')
         dev = (dev_path is not None)
-        builder = Builder(**kwargs)
+        builder = Builder(safe=True, **kwargs)
         self.set_header("Content-Type", "text/html")
-        html = builder.standalone_html(dev=dev, enable_editing=enable_editing)
+        html = builder.standalone_html(dev=dev,
+                                       enable_editing=enable_editing)
         self.serve(html)
         
 class LibHandler(BaseHandler):
@@ -88,6 +89,7 @@ class LibHandler(BaseHandler):
 class StaticHandler(BaseHandler):
     def get(self, path):
         path = join(directory, 'escher', path)
+        print path
         self.serve_path(path)
         
 settings = {"debug": "False"}
@@ -98,6 +100,7 @@ application = tornado.web.Application([
     (r".*/(js/.*)", StaticHandler),
     (r".*/(css/.*)", StaticHandler),
     (r"/(dev/)?(builder|viewer)(.*)", BuilderHandler),
+    (r".*/(map_spec.json)", StaticHandler),
     (r"/", IndexHandler),
 ], **settings)
  

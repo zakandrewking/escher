@@ -59,7 +59,8 @@ define(["utils"], function(utils) {
 		coefficient = new_reaction.metabolites[met_bigg_id],
 		formula = metabolite.formula,
 		new_metabolite = { coefficient: coefficient,
-				   bigg_id: met_bigg_id };
+				   bigg_id: met_bigg_id,
+				   name: metabolite.name };
 	    if (coefficient < 0) {
                 new_metabolite.index = reactant_count;
 		// score the metabolites. Infinity == selected, >= 1 == carbon containing
@@ -195,12 +196,17 @@ define(["utils"], function(utils) {
 					   node_is_primary: metabolite.is_primary,
 					   label_x: met_loc.circle.x + label_d.x,
 					   label_y: met_loc.circle.y + label_d.y,
-					   metabolite_name: metabolite.name,
+					   name: metabolite.name,
 					   bigg_id: metabolite.bigg_id,
 					   node_type: 'metabolite' };
 		new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
 								  reaction_id: new_reaction_id });
 	    }
+	}
+
+	// now take out the extra reaction details
+	for (var bigg_id in new_reaction.metabolites) {
+	    new_reaction.metabolites[bigg_id] = new_reaction.metabolites[bigg_id].coefficient;
 	}
 
 	// new_reactions object

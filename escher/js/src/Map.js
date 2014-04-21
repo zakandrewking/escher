@@ -17,6 +17,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	init: init,
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
+	import_map_data: import_map_data,
 	// appearance
 	set_status: set_status,
 	set_model: set_model,
@@ -163,83 +164,126 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 					  'zoom_container', 'height', 'width',
 					  'reaction_data', 'reaction_data_styles',
 					  'metabolite_data', 'metabolite_data_styles', 'cobra_model']);
-	map_data = check_map_data(map_data);
-
 	var canvas;
 	if (map_data.canvas) canvas = map_data.canvas;
 	var map = new Map(svg, css, selection, zoom_container, height, width,
 			  reaction_data, reaction_data_styles, metabolite_data,
 			  metabolite_data_styles, cobra_model, canvas);
-	if (map_data.reactions) map.reactions = map_data.reactions;
-	if (map_data.nodes) map.nodes = map_data.nodes;
-	if (map_data.membranes) map.membranes = map_data.membranes;
-	if (map_data.text_labels) map.text_labels = map_data.text_labels;
-	if (map_data.info) map.info = map_data.info;
 
-	// get largest ids for adding new reactions, nodes, text labels, and segments
-	map.map_info.largest_ids.reactions = get_largest_id(map.reactions);
-	map.map_info.largest_ids.nodes = get_largest_id(map.nodes);
-	map.map_info.largest_ids.text_labels = get_largest_id(map.text_labels);
+	map.import_map_data(map_data);
+	return map;
+    }
+
+    function import_map_data(map_data) {
+	/*
+	 * Load a json map and add necessary fields for rendering.
+	 *
+	 * The returned value will be this.reactions.
+	 */
+
+	if (this.debug) {
+	    d3.json('map_spec.json', function(error, spec) {
+		if (error) {
+		    console.warn(error);
+		    return;
+		}
+		check_r(map_data, spec.spec, spec.can_be_none);
+	    });
+	}
+	
+	this.reactions = map_data.reactions;
+	this.nodes = map_data.nodes;
+	this.membranes = map_data.membranes;
+	this.text_labels = map_data.text_labels;
+	this.info = map_data.info;
+
+	// propogate coefficients and reversbility
+	for (var r_id in this.reactions) {
+	    var reaction = this.reactions[r_id];
+	    for (var s_id in reaction.segments) {
+		var segment = reaction.segments[s_id];
+		segment.reversibility = reaction.reversibility;
+		var from_node_bigg_id = this.nodes[segment.from_node_id].bigg_id;
+		if (from_node_bigg_id in reaction.metabolites) {
+		    segment.from_node_coefficient = reaction.metabolites[from_node_bigg_id];
+		}
+		var to_node_bigg_id = this.nodes[segment.to_node_id].bigg_id;
+		if (to_node_bigg_id in reaction.metabolites) {
+		    segment.to_node_coefficient = reaction.metabolites[to_node_bigg_id];
+		}
+	    }
+	}
+
+	// get largest ids for adding new reactions, nodes, text labels, and
+	// segments
+	this.map_info.largest_ids.reactions = get_largest_id(this.reactions);
+	this.map_info.largest_ids.nodes = get_largest_id(this.nodes);
+	this.map_info.largest_ids.text_labels = get_largest_id(this.text_labels);
 
 	var largest_segment_id = 0;
-	for (var id in map.reactions) {
-	    largest_segment_id = get_largest_id(map.reactions[id].segments, largest_segment_id);
+	for (var id in this.reactions) {
+	    largest_segment_id = get_largest_id(this.reactions[id].segments,
+						largest_segment_id);
 	}
-	map.map_info.largest_ids.segments = largest_segment_id;
+	this.map_info.largest_ids.segments = largest_segment_id;
 
 	// reaction_data onto existing map reactions
-	map.apply_reaction_data_to_map();
-	map.apply_metabolite_data_to_map();
-
-	return map;
+	this.apply_reaction_data_to_map();
+	this.apply_metabolite_data_to_map();
+	return map_data;
 
 	// definitions
 	function get_largest_id(obj, current_largest) {
 	    /** Return the largest integer key in obj, or current_largest, whichever is bigger. */
 	    if (current_largest===undefined) current_largest = 0;
 	    if (obj===undefined) return current_largest;
-	    return Math.max.apply(null, Object.keys(obj).map(function(x) { return parseInt(x); }).concat([current_largest]));
+	    return Math.max.apply(null, Object.keys(obj).map(function(x) {
+		return parseInt(x);
+	    }).concat([current_largest]));
 	}
-    }
 
-    function check_map_data(map_data) {
-	/*
-	 * Load a json map and add necessary fields for rendering.
-	 *
-	 * The returned value will be this.reactions.
-	 */
-	if (this.debug) {
-	    var required_node_props = ['node_type', 'x', 'y', 'connected_segments'],
-		required_reaction_props = ["segments", 'name', 'direction', 'bigg_id'],
-		required_segment_props = ['from_node_id', 'to_node_id'],
-		required_text_label_props = ['text', 'x', 'y'];
-	    for (var node_id in map_data.nodes) {
-		var node = map_data.nodes[node_id];
-		node.selected = false; node.previously_selected = false;
-		required_node_props.map(function(req) {
-		    if (!node.hasOwnProperty(req)) console.error("Missing property " + req);
+	function check_r(o, spec, can_be_none) {
+	    if (typeof spec == "string") {
+		var the_type;
+		if (spec=='String') {
+		    the_type = function(x) { return typeof x == "string"; };
+		} else if (spec=="Float") {
+		    the_type = function(x) { return typeof x == "number"; };
+		} else if (spec=="Integer") {
+		    the_type = function(x) { return (typeof x == "number") &&
+					     (parseFloat(x,10) == parseInt(x,10)); };
+		} else if (spec=="Boolean") {
+		    the_type = function(x) { return typeof x == "boolean"; };
+		} else if (spec!="*") {
+		    throw Error("Bad spec string: " + spec);
+		}
+		if (!the_type(o)) {
+		    throw Error('Bad type: '+String(o)+' should be '+spec);
+		}
+	    } else if (spec instanceof Array) {
+		o.forEach(function(x) {
+		    check_r(x, spec[0], can_be_none);
 		});
-	    }
-	    for (var reaction_id in map_data.reactions) {
-		var reaction = map_data.reactions[reaction_id];
-		required_reaction_props.map(function(req) {
-		    if (!reaction.hasOwnProperty(req)) console.error("Missing property " + req);
-		});
-		for (var segment_id in reaction.segments) {
-		    var metabolite = reaction.segments[segment_id];
-		    required_segment_props.map(function(req) {
-			if (!metabolite.hasOwnProperty(req)) console.error("Missing property " + req);
-		    });
+	    } else { // dictionary/object
+		var key = Object.keys(spec)[0];
+		if (key == "*") {
+		    for (var k in o) {
+			if (o[k]===null && can_be_none.indexOf(k)!=-1) 
+			    continue;
+			check_r(o[k], spec[key], can_be_none);
+		    }
+		} else {
+		    for (var k in spec) {
+			if (!(k in o)) {
+			    throw Error('Missing key: %s' % k);
+			};
+			if (o[k]===null && can_be_none.indexOf(k)!=-1) 
+			    continue;
+			check_r(o[k], spec[k], can_be_none);
+		    }
 		}
 	    }
-	    for (var text_label_id in map_data.text_labels) {
-		var text_label = map_data.text_labels[text_label_id];
-		required_text_label_props.map(function(req) {
-		    if (!text_label.hasOwnProperty(req)) console.error("Missing property " + req);
-		});
-	    }
 	}
-	return map_data;
     }
 
     // ---------------------------------------------------------------------
@@ -247,27 +291,27 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
     function setup_containers(sel) {
         sel.append('g')
-            .attr('id', 'membranes');
+	    .attr('id', 'membranes');
         sel.append('g')
-            .attr('id', 'reactions');
+	    .attr('id', 'reactions');
         sel.append('g')
-            .attr('id', 'nodes');
+	    .attr('id', 'nodes');
         sel.append('g')
-            .attr('id', 'text-labels');
+	    .attr('id', 'text-labels');
     }
     function reset_containers() {
 	d3.select('#membranes')
-            .selectAll('.membrane')
-            .remove();
+	    .selectAll('.membrane')
+	    .remove();
 	d3.select('#reactions')
-            .selectAll('.reaction')
-            .remove();
+	    .selectAll('.reaction')
+	    .remove();
 	d3.select('#nodes')
-            .selectAll('.node')
-            .remove();
+	    .selectAll('.node')
+	    .remove();
 	d3.select('#text-labels')
-            .selectAll('.text-label')
-            .remove();
+	    .selectAll('.text-label')
+	    .remove();
     }
 
     // -------------------------------------------------------------------------
@@ -387,12 +431,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
         // find reactions for reaction_ids
         var reaction_subset = {},
-            i = -1;
+	    i = -1;
         while (++i<reaction_ids.length) {
-            reaction_subset[reaction_ids[i]] = utils.clone(reactions[reaction_ids[i]]);
+	    reaction_subset[reaction_ids[i]] = utils.clone(reactions[reaction_ids[i]]);
         }
         if (reaction_ids.length != Object.keys(reaction_subset).length) {
-            console.warn('did not find correct reaction subset');
+	    console.warn('did not find correct reaction subset');
         }
 
         // generate reactions for o.drawn_reactions
@@ -400,7 +444,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         var sel = d3.select('#reactions')
                 .selectAll('.reaction')
                 .data(utils.make_array(reaction_subset, 'reaction_id'),
-                      function(d) { return d.reaction_id; });
+		      function(d) { return d.reaction_id; });
 
         // enter: generate and place reaction
         sel.enter().call(draw.create_reaction);
@@ -438,12 +482,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	// find nodes for node_ids
         var node_subset = {},
-            i = -1;
+	    i = -1;
         while (++i<node_ids.length) {
-            node_subset[node_ids[i]] = utils.clone(nodes[node_ids[i]]);
+	    node_subset[node_ids[i]] = utils.clone(nodes[node_ids[i]]);
         }
         if (node_ids.length != Object.keys(node_subset).length) {
-            console.warn('did not find correct node subset');
+	    console.warn('did not find correct node subset');
         }
 
         // generate nodes for o.drawn_nodes
@@ -451,7 +495,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         var sel = d3.select('#nodes')
                 .selectAll('.node')
                 .data(utils.make_array(node_subset, 'node_id'),
-                      function(d) { return d.node_id; });
+		      function(d) { return d.node_id; });
 
         // enter: generate and place node
         sel.enter().call(function(sel) { return draw.create_node(sel, scale, nodes, reactions); });
@@ -472,19 +516,19 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	// find text labels for text_label_ids
         var text_label_subset = {},
-            i = -1;
+	    i = -1;
         while (++i<text_label_ids.length) {
-            text_label_subset[text_label_ids[i]] = utils.clone(text_labels[text_label_ids[i]]);
+	    text_label_subset[text_label_ids[i]] = utils.clone(text_labels[text_label_ids[i]]);
         }
         if (text_label_ids.length != Object.keys(text_label_subset).length) {
-            console.warn('did not find correct text label subset');
+	    console.warn('did not find correct text label subset');
         }
 
         // generate text for this.text_labels
         var sel = d3.select('#text-labels')
                 .selectAll('.text-label')
                 .data(utils.make_array(text_label_subset, 'text_label_id'),
-                      function(d) { return d.text_label_id; });
+		      function(d) { return d.text_label_id; });
 
         // enter: generate and place label
         sel.enter().call(function(sel) {
@@ -580,7 +624,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     
     function get_coords_for_node(node_id) {
         var node = this.nodes[node_id],
-            coords = {'x': node.x, 'y': node.y};
+	    coords = {'x': node.x, 'y': node.y};
         return coords;
     }
     function get_selected_node_ids() {
@@ -1348,8 +1392,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         // TODO put this in js/metabolic-map/utils.js
         var t = d3.select('body').select('#status');
         if (t.empty()) t = d3.select('body')
-            .append('text')
-            .attr('id', 'status');
+	    .append('text')
+	    .attr('id', 'status');
         t.text(status);
         return this;
     }
@@ -1406,7 +1450,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		max.y = Math.max(max.y, this.scale.y(node.y));
 	    }
 	    // set the zoom
-            new_zoom = Math.min((this.width - margin*2) / (max.x - min.x),
+	    new_zoom = Math.min((this.width - margin*2) / (max.x - min.x),
 				(this.height - margin*2) / (max.y - min.y));
 	    new_pos = { x: - (min.x * new_zoom) + margin + ((this.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
 			y: - (min.y * new_zoom) + margin + ((this.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
@@ -1431,11 +1475,28 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         utils.download_json(this.map_for_export(), "saved_map");
     }
     function map_for_export() {
-	return { reactions: this.reactions,
-		 nodes: this.nodes,
-		 membranes: this.membranes,
-		 text_labels: this.text_labels,
-		 canvas: this.canvas.size_and_location() };
+	var out = { reactions: utils.clone(this.reactions),
+		    nodes: utils.clone(this.nodes),
+		    membranes: utils.clone(this.membranes),
+		    text_labels: utils.clone(this.text_labels),
+		    canvas: this.canvas.size_and_location() };
+
+	// remove extra data
+	for (var r_id in out.reactions) {
+	    var reaction = out.reactions[r_id];
+	    delete reaction.data;
+	    for (var s_id in reaction.segments) {
+		var segment = reaction.segments[s_id];
+		delete segment.reversibility;
+		delete segment.from_node_coefficient;
+		delete segment.to_node_coefficient;
+		delete segment.data;
+	    }
+	}
+	for (var n_id in out.nodes) {
+	    delete out.nodes[n_id].data;
+	}
+	return out;
     }
     function save_svg() {
         console.log("Exporting SVG");

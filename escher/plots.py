@@ -38,10 +38,10 @@ def clear_cache():
 def get_an_id():
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
 
-def load_resource(resource, name):
+def load_resource(resource, name, safe=False):
     """Load a resource that could be a file, URL, or json string
 
-    """        
+    """
     # if it's a url, download it
     if resource.startswith('http://') or resource.startswith('https://'):
         try:
@@ -52,6 +52,8 @@ def load_resource(resource, name):
             return download.read()
     # if it's a filepath, load it
     if os.path.exists(resource):
+        if (safe):
+            raise Exception('Cannot load resource from file with safe mode enabled.')
         try:
             with open(resource, 'r') as f:
                 loaded_resource = f.read()
@@ -137,10 +139,14 @@ class Builder(Plot):
     reaction_data: a dictionary with keys that correspond to metabolite ids and
     values that will be mapped to metabolite nodes and labels.
 
+    safe: if True, then loading files from the filesytem is not allowed. This is
+    to ensure the safety of using Builder with a web server.
+
     """
     def __init__(self, map_name=None, map_json=None, model_name=None,
                  model_json=None, reaction_data=None, metabolite_data=None,
-                 **kwargs):
+                 safe=False, **kwargs):
+        self.safe = safe
         # load the map
         self.map_name = map_name
         self.map_json = map_json
@@ -167,7 +173,9 @@ class Builder(Plot):
         """
         model_json = self.model_json
         if model_json is not None:
-            self.loaded_model_json = load_resource(self.model_json, 'model_json')
+            self.loaded_model_json = load_resource(self.model_json,
+                                                   'model_json',
+                                                   safe=self.safe)
         elif self.model_name is not None:
             # get the name
             model_name = self.model_name  
@@ -197,7 +205,9 @@ class Builder(Plot):
         """
         map_json = self.map_json
         if map_json is not None:
-            self.loaded_map_json = load_resource(self.map_json, 'map_json')
+            self.loaded_map_json = load_resource(self.map_json,
+                                                 'map_json',
+                                                 safe=self.safe)
         elif self.map_name is not None:
             # get the name
             map_name = self.map_name  
