@@ -8,4 +8,9 @@ describe('utils', function() {
 	    expect(options[x]).toBe(null);
 	}
     });
+
+    it("compare arrays", function() {
+	expect(utils.compare_arrays([1,2], [1,2])).toBe(true);
+	expect(utils.compare_arrays([1,2], [3,2])).toBe(false);
+    });
 });

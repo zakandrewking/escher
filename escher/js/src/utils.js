@@ -11,6 +11,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     draw_an_array: draw_an_array,
 	     draw_an_object: draw_an_object,
 	     make_array: make_array,
+	     compare_arrays: compare_arrays,
 	     clone: clone,
 	     extend: extend,
 	     unique_concat: unique_concat,
@@ -259,6 +260,21 @@ define(["lib/vkbeautify"], function(vkbeautify) {
             array.push(it);
         }
         return array;
+    }
+
+    function compare_arrays(a1, a2) {
+	/** Compares two simple (not-nested) arrays.
+
+	 */
+	if (!a1 || !a2) return false;
+	if (a1.length != a2.length) return false;
+	for (var i = 0, l=a1.length; i < l; i++) {
+            if (a1[i] != a2[i]) {
+		// Warning - two different object instances will never be equal: {x:20} != {x:20}
+		return false;
+            }
+	}
+	return true;
     }
 
     function clone(obj) {

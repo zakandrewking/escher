@@ -36,10 +36,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    css: null,
 	    reaction_data_path: null,
 	    reaction_data: null,
-	    reaction_data_styles: 'Color, Diff',
+	    reaction_data_styles: ['Abs', 'Color', 'Diff'],
 	    metabolite_data: null,
 	    metabolite_data_path: null,
-	    metabolite_data_styles: 'Color, Size, Diff',
+	    metabolite_data_styles: ['Color', 'Size', 'Diff'],
 	    show_beziers: false,
 	    debug: false,
 	    starting_reaction: 'GLCtex'

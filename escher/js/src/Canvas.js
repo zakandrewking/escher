@@ -112,7 +112,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 					  d.y - (dragbar_width/2) ]+')';
 		})
 		.attr("height", dragbar_width)
-		.attr("id", "dragleft")
+		.attr("id", "dragtop")
 		.attr("width", this.width - dragbar_width)
 		.attr("cursor", "ns-resize")
 		.classed('resize-rect', true)
@@ -124,7 +124,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 		    return 'translate('+[ d.x + (dragbar_width/2),
 					  d.y + self.height - (dragbar_width/2) ]+')';
 		})
-		.attr("id", "dragright")
+		.attr("id", "dragbottom")
 		.attr("height", dragbar_width)
 		.attr("width", this.width - dragbar_width)
 		.attr("cursor", "ns-resize")

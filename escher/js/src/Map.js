@@ -83,8 +83,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		  reaction_data_styles, metabolite_data, metabolite_data_styles,
 		  cobra_model, canvas_size_and_loc) {
 	if (canvas_size_and_loc===undefined || canvas_size_and_loc===null) {
-	    canvas_size_and_loc = {x: -width/4, y: -width/4,
-				   width: width*3/2, height: height*3/2};
+	    canvas_size_and_loc = {x: -width, y: -height,
+				   width: width*3, height: height*3};
 	}
 
 	// defaults
@@ -181,8 +181,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    map = new Map(svg, css, selection, zoom_container, height, width,
 			  reaction_data, reaction_data_styles, metabolite_data,
 			  metabolite_data_styles, cobra_model, canvas);
-
-	console.log(map.canvas.size_and_location());
 
 	map.reactions = map_data.reactions;
 	map.nodes = map_data.nodes;
@@ -508,12 +506,29 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         sel.exit();
     }
     function apply_reaction_data_to_map() {
-	this.apply_reaction_data_to_reactions(this.reactions);
+	/**  Returns True if the scale has changed.
+
+	 */
+	return this.apply_reaction_data_to_reactions(this.reactions);
     }
     function apply_reaction_data_to_reactions(reactions) {
+	/**  Returns True if the scale has changed.
+
+	 */
+	if (!this.has_reaction_data()) {
+	    for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id];
+		reaction.data = null;
+		for (var segment_id in reaction.segments) {
+		    var segment = reaction.segments[segment_id];
+		    segment.data = null;
+		}
+	    }
+	    return false;
+	}
 	for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id];
-	    if (this.reaction_data!==null && reaction.bigg_id in this.reaction_data) {
+	    if (reaction.bigg_id in this.reaction_data) {
 		var data = parseFloat(this.reaction_data[reaction.bigg_id]);
 		if (isNaN(data)) data = null;
 		reaction.data = data;
@@ -530,28 +545,63 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		}
 	    }
 	}
-	this.update_reaction_data_domain();
+	return this.update_reaction_data_domain();
     }
     function update_reaction_data_domain() {
-	if (this.reaction_data===null) return;
+	/**  Returns True if the scale has changed.
+
+	 */
 	// default min and max
-	var min = 0, max = 0, vals = [];
+	var vals = [];
 	for (var reaction_id in this.reactions) {
 	    var reaction = this.reactions[reaction_id];
 	    if (reaction.data!==null)
 		vals.push(reaction.data);
 	}
-	if (vals.length > 0) {
-	    min = Math.min.apply(null, vals),
-	    max = Math.max.apply(null, vals);
-	} 
-	this.scale.reaction_color.domain([min, max]);
+	
+	var old_domain = this.scale.reaction_color.domain(),
+	    new_domain, new_range;
+	    
+	if (this.reaction_data_styles.indexOf('Abs') != -1) {
+	    var min = 0, max = 0;
+	    if (vals.length > 0) {
+		vals = vals.map(function(x) { return Math.abs(x); });
+		min = Math.min.apply(null, vals),
+		max = Math.max.apply(null, vals);
+	    } 
+	    if (min==max) min = max/2;
+	    new_domain = [-max, -min, 0, min, max];
+	    new_range = ["red", "blue", "rgb(190,190,255)", "blue", "red"];
+	} else {
+	    var min = 0, max = 0;
+	    vals.push(0);
+	    if (vals.length > 0) {
+		min = Math.min.apply(null, vals),
+		max = Math.max.apply(null, vals);
+	    }
+	    new_domain = [min, max];
+	    new_range = ["blue", "red"];
+	}
+	this.scale.reaction_color.domain(new_domain).range(new_range);
+	// compare arrays
+	return !utils.compare_arrays(old_domain, new_domain);
     }
     function apply_metabolite_data_to_map() {
-	this.apply_metabolite_data_to_nodes(this.nodes);
+	/**  Returns True if the scale has changed.
+
+	 */
+	return this.apply_metabolite_data_to_nodes(this.nodes);
     }
     function apply_metabolite_data_to_nodes(nodes) {
-	if (this.metabolite_data===null) return;
+	/**  Returns True if the scale has changed.
+
+	 */
+	if (!this.has_metabolite_data()) {
+	    for (var node_id in nodes) {
+		nodes[node_id].data = null;
+	    }
+	    return false;
+	}
 	var vals = [];
 	for (var node_id in nodes) {
 	    var node = nodes[node_id], data = 0.0;
@@ -564,10 +614,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		node.data = null;
 	    }
 	}
-	this.update_metabolite_data_domain();
+	return this.update_metabolite_data_domain();
     }
     function update_metabolite_data_domain() {
-	if (this.metabolite_data===null) return;
+	/**  Returns True if the scale has changed.
+
+	 */
 	// default min and max
 	var min = 0, max = 0, vals = [];
 	for (var node_id in this.nodes) {
@@ -579,8 +631,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    min = Math.min.apply(null, vals),
 	    max = Math.max.apply(null, vals);
 	} 
-	this.scale.metabolite_size.domain([min, max]);
-	this.scale.metabolite_color.domain([min, max]);
+	var old_domain = this.scale.metabolite_size.domain(),
+	    new_domain = [min, max];
+        this.scale.metabolite_size.domain(new_domain);
+	this.scale.metabolite_color.domain(new_domain);
+	// compare arrays
+	return !utils.compare_arrays(old_domain, new_domain);
     }
 
     // ---------------------------------------------------------------------
@@ -661,7 +717,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    coords = { x: d.x, y: d.y };
 	    count++;
 	});
-	console.log(coords);
 	if (count == 1) {
 	    this.direction_arrow.set_location(coords);
 	    this.direction_arrow.show();
@@ -963,9 +1018,14 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
         // definitions
 	function extend_and_draw_metabolite(new_nodes, selected_node_id) {
-	    this.apply_metabolite_data_to_nodes(new_nodes);
 	    utils.extend(this.nodes, new_nodes);
-	    this.draw_these_nodes([selected_node_id]);
+	    if (this.has_metabolite_data()) {
+		var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
+		if (scale_changed) this.draw_all_nodes();
+		else this.draw_these_nodes([selected_node_id]);
+	    } else {
+		this.draw_these_nodes([selected_node_id]);
+	    }
 	}
     }
     
@@ -1002,10 +1062,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    new_nodes = out.new_nodes,
 	    new_reactions = out.new_reactions;
 
-	// add the reaction_data
-	if (this.reaction_data !== null) this.apply_reaction_data_to_reactions(new_reactions);
-	if (this.metabolite_data !== null) this.apply_metabolite_data_to_nodes(new_nodes);
-
 	// draw
 	extend_and_draw_reaction.apply(this, [new_nodes, new_reactions, selected_node_id]);
 
@@ -1041,12 +1097,21 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    utils.extend(this.nodes, new_nodes);
 
 	    // apply the reaction and node data
-	    this.apply_reaction_data_to_reactions(new_reactions);
-	    this.apply_metabolite_data_to_nodes(new_nodes);
-
-	    // draw new reaction and (TODO) select new metabolite
-	    this.draw_these_nodes(Object.keys(new_nodes));
-	    this.draw_these_reactions(Object.keys(new_reactions));
+	    // if the scale changes, redraw everything
+	    if (this.has_reaction_data()) {
+		var scale_changed = this.apply_reaction_data_to_reactions(new_reactions);
+		if (scale_changed) this.draw_all_reactions();
+		else this.draw_these_reactions(Object.keys(new_reactions));
+	    } else {
+		this.draw_these_reactions(Object.keys(new_reactions));
+	    }		
+	    if (this.has_metabolite_data()) {
+		var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
+		if (scale_changed) this.draw_all_nodes();
+		else this.draw_these_nodes(Object.keys(new_nodes));
+	    } else {
+		this.draw_these_nodes(Object.keys(new_nodes));
+	    }
 
 	    // select new primary metabolite
 	    for (var node_id in new_nodes) {
@@ -1270,7 +1335,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		// find the point on the background node where the user clicked
 		var center = { x: d3.mouse(self.sel.node())[0], 
 			       y: d3.mouse(self.sel.node())[1] };
-		console.log(center, this);
 		callback(center); 
 	    });
 	}
