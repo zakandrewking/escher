@@ -183,7 +183,6 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 
 	    // check segments for match to selected metabolite
 	    for (var metabolite_id in reaction.metabolites) {
-		var coefficient = reaction.metabolites[metabolite_id];
 
 		// if starting with a selected metabolite, check for that id
 		if (starting_from_scratch || metabolite_id==selected_node.bigg_id) {
@@ -193,8 +192,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 		    var this_reaction_data, this_string;
 		    if (has_reaction_data) {
 			if (reaction_id in reaction_data) {
-			    this_reaction_data = (reaction_data[reaction_id] *
-						  (coefficient < 1 ? 1 : -1));
+			    this_reaction_data = reaction_data[reaction_id];
 			} else {
 			    this_reaction_data = 0;
 			}

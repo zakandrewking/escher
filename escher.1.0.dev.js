@@ -1827,7 +1827,7 @@ define('draw',["utils"], function(utils) {
             var t = d.bigg_id;
 	    if (has_reaction_data) {
 		if (d.data!==null) t += " ("+decimal_format(d.data)+")";
-		else t += " (0)";
+		else t += " (nd)";
 	    }
             return t;
 	}).attr('transform', function(d) {
@@ -1906,8 +1906,9 @@ define('draw',["utils"], function(utils) {
             .attr("marker-start", function (d) {
 		var start = drawn_nodes[d.from_node_id];
 		if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
-		    var c = d.data ? scale.reaction_color(d.data) :
-			    default_reaction_color;
+		    var c = default_reaction_color;
+		    if (has_reaction_data)
+			c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
 		    // generate arrowhead for specific color
 		    var arrow_id = generate_arrowhead_for_color(defs, arrowheads, c, false);
 		    return "url(#" + arrow_id + ")";
@@ -1916,8 +1917,9 @@ define('draw',["utils"], function(utils) {
 	    .attr("marker-end", function (d) {
 		var end = drawn_nodes[d.to_node_id];
 		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
-		    var c = d.data ? scale.reaction_color(d.data) :
-			    default_reaction_color;
+		    var c = default_reaction_color;
+		    if (has_reaction_data)
+			c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
 		    // generate arrowhead for specific color
 		    var arrow_id = generate_arrowhead_for_color(defs, arrowheads, c, true);
 		    return "url(#" + arrow_id + ")";
@@ -2082,7 +2084,7 @@ define('draw',["utils"], function(utils) {
 		    t = d.bigg_id;
 		if (has_metabolite_data) {
 		    if (d.data!==null) t += " ("+decimal_format(d.data)+")";
-		    else if (has_metabolite_data) t += " (0)";
+		    else if (has_metabolite_data) t += " (nd)";
 		}
 		return t;
 	    })
@@ -4259,9 +4261,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 		min = Math.min.apply(null, vals),
 		max = Math.max.apply(null, vals);
 	    } 
+	    if (max==0) max = min = 10;
 	    if (min==max) min = max/2;
 	    new_domain = [-max, -min, 0, min, max];
-	    new_range = ["red", "blue", "rgb(190,190,255)", "blue", "red"];
+	    new_range = ["red", "blue", "rgb(200,200,200)", "blue", "red"];
 	} else {
 	    var min = 0, max = 0;
 	    vals.push(0);
@@ -4273,6 +4276,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    new_range = ["blue", "red"];
 	}
 	this.scale.reaction_color.domain(new_domain).range(new_range);
+	// run the callback
+	this.callback_manager.run('update_reaction_data_domain');
 	// compare arrays
 	return !utils.compare_arrays(old_domain, new_domain);
     }
@@ -4325,6 +4330,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    new_domain = [min, max];
         this.scale.metabolite_size.domain(new_domain);
 	this.scale.metabolite_color.domain(new_domain);
+	// run the callback
+	this.callback_manager.run('update_metabolite_data_domain');
 	// compare arrays
 	return !utils.compare_arrays(old_domain, new_domain);
     }
@@ -4975,7 +4982,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    // undo
 	    var these_nodes = {};
 	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-	    var updated = build.rotate_selected_nodes(these_nodes, reactions,
+	    var updated = build.rotate_nodes(these_nodes, reactions,
 						      -total_angle, saved_center);
 	    self.draw_these_nodes(updated.node_ids);
 	    self.draw_these_reactions(updated.reaction_ids);
@@ -4983,7 +4990,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    // redo
 	    var these_nodes = {};
 	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-	    var updated = build.rotate_selected_nodes(these_nodes, reactions,
+	    var updated = build.rotate_nodes(these_nodes, reactions,
 						      total_angle, saved_center);
 	    self.draw_these_nodes(updated.node_ids);
 	    self.draw_these_reactions(updated.reaction_ids);
@@ -5562,7 +5569,6 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 
 	    // check segments for match to selected metabolite
 	    for (var metabolite_id in reaction.metabolites) {
-		var coefficient = reaction.metabolites[metabolite_id];
 
 		// if starting with a selected metabolite, check for that id
 		if (starting_from_scratch || metabolite_id==selected_node.bigg_id) {
@@ -5572,8 +5578,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 		    var this_reaction_data, this_string;
 		    if (has_reaction_data) {
 			if (reaction_id in reaction_data) {
-			    this_reaction_data = (reaction_data[reaction_id] *
-						  (coefficient < 1 ? 1 : -1));
+			    this_reaction_data = reaction_data[reaction_id];
 			} else {
 			    this_reaction_data = 0;
 			}

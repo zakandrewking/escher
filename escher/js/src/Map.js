@@ -569,9 +569,10 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		min = Math.min.apply(null, vals),
 		max = Math.max.apply(null, vals);
 	    } 
+	    if (max==0) max = min = 10;
 	    if (min==max) min = max/2;
 	    new_domain = [-max, -min, 0, min, max];
-	    new_range = ["red", "blue", "rgb(190,190,255)", "blue", "red"];
+	    new_range = ["red", "blue", "rgb(200,200,200)", "blue", "red"];
 	} else {
 	    var min = 0, max = 0;
 	    vals.push(0);
@@ -583,6 +584,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    new_range = ["blue", "red"];
 	}
 	this.scale.reaction_color.domain(new_domain).range(new_range);
+	// run the callback
+	this.callback_manager.run('update_reaction_data_domain');
 	// compare arrays
 	return !utils.compare_arrays(old_domain, new_domain);
     }
@@ -635,6 +638,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    new_domain = [min, max];
         this.scale.metabolite_size.domain(new_domain);
 	this.scale.metabolite_color.domain(new_domain);
+	// run the callback
+	this.callback_manager.run('update_metabolite_data_domain');
 	// compare arrays
 	return !utils.compare_arrays(old_domain, new_domain);
     }
@@ -1285,7 +1290,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    // undo
 	    var these_nodes = {};
 	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-	    var updated = build.rotate_selected_nodes(these_nodes, reactions,
+	    var updated = build.rotate_nodes(these_nodes, reactions,
 						      -total_angle, saved_center);
 	    self.draw_these_nodes(updated.node_ids);
 	    self.draw_these_reactions(updated.reaction_ids);
@@ -1293,7 +1298,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    // redo
 	    var these_nodes = {};
 	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-	    var updated = build.rotate_selected_nodes(these_nodes, reactions,
+	    var updated = build.rotate_nodes(these_nodes, reactions,
 						      total_angle, saved_center);
 	    self.draw_these_nodes(updated.node_ids);
 	    self.draw_these_reactions(updated.reaction_ids);

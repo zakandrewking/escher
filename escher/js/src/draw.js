@@ -107,7 +107,7 @@ define(["utils"], function(utils) {
             var t = d.bigg_id;
 	    if (has_reaction_data) {
 		if (d.data!==null) t += " ("+decimal_format(d.data)+")";
-		else t += " (0)";
+		else t += " (nd)";
 	    }
             return t;
 	}).attr('transform', function(d) {
@@ -186,8 +186,9 @@ define(["utils"], function(utils) {
             .attr("marker-start", function (d) {
 		var start = drawn_nodes[d.from_node_id];
 		if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
-		    var c = d.data ? scale.reaction_color(d.data) :
-			    default_reaction_color;
+		    var c = default_reaction_color;
+		    if (has_reaction_data)
+			c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
 		    // generate arrowhead for specific color
 		    var arrow_id = generate_arrowhead_for_color(defs, arrowheads, c, false);
 		    return "url(#" + arrow_id + ")";
@@ -196,8 +197,9 @@ define(["utils"], function(utils) {
 	    .attr("marker-end", function (d) {
 		var end = drawn_nodes[d.to_node_id];
 		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
-		    var c = d.data ? scale.reaction_color(d.data) :
-			    default_reaction_color;
+		    var c = default_reaction_color;
+		    if (has_reaction_data)
+			c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
 		    // generate arrowhead for specific color
 		    var arrow_id = generate_arrowhead_for_color(defs, arrowheads, c, true);
 		    return "url(#" + arrow_id + ")";
@@ -362,7 +364,7 @@ define(["utils"], function(utils) {
 		    t = d.bigg_id;
 		if (has_metabolite_data) {
 		    if (d.data!==null) t += " ("+decimal_format(d.data)+")";
-		    else if (has_metabolite_data) t += " (0)";
+		    else if (has_metabolite_data) t += " (nd)";
 		}
 		return t;
 	    })
