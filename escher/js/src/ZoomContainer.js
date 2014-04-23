@@ -82,7 +82,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     }
 
     // functions to scale and translate
-    function go_to(scale, translate) { 
+    function go_to(scale, translate, dont_transition) { 
 	if (!scale) return console.error('Bad scale value');
 	if (!translate || !('x' in translate) || !('y' in translate))
 	    return console.error('Bad translate value');
@@ -96,9 +96,9 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
         this.window_translate = translate;
 	if (this.saved_translate !== null) this.saved_translate = translate_array;
 
-        this.zoomed_sel
-	    .transition()
-            .attr('transform',
+	var move_this = (dont_transition ? this.zoomed_sel :
+			 this.zoomed_sel.transition());
+        move_this.attr('transform',
 		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
 		  'scale('+this.window_scale+')');
 	return null;

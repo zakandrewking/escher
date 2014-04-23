@@ -91,6 +91,10 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var default_angle = 90; // degrees
 	this.default_reaction_color = '#334E75',
 
+	// set up the defs
+	this.svg = svg;
+	this.defs = utils.setup_defs(svg, css);
+
 	// make the canvas
 	this.canvas = new Canvas(selection, canvas_size_and_loc);
 
@@ -99,9 +103,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.zoom_container = zoom_container;
 	this.height = height;
 	this.width = width;
-
-	// set up the defs
-	this.defs = utils.setup_defs(svg, css);
 
 	this.reaction_data = reaction_data;
 	this.reaction_data_styles = reaction_data_styles;
@@ -138,9 +139,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
-
-	// these will be filled
-	this.arrowheads_generated = [];
 	
 	this.nodes = {};
 	this.reactions = {};
@@ -321,7 +319,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    nodes = this.nodes,
 	    text_labels = this.text_labels,
 	    defs = this.defs,
-	    arrowheads = this.arrowheads_generated,
 	    default_reaction_color = this.default_reaction_color,
 	    bezier_drag_behavior = this.behavior.bezier_drag,
 	    node_click_fn = this.behavior.node_click,
@@ -347,7 +344,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 									 scale, 
 									 nodes,
 									 beziers_enabled, 
-									 defs, arrowheads,
+									 defs,
 									 default_reaction_color,
 									 has_reaction_data,
 									 reaction_data_styles,
@@ -384,7 +381,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    reactions = this.reactions,
 	    nodes = this.nodes,
 	    defs = this.defs,
-	    arrowheads = this.arrowheads_generated,
 	    default_reaction_color = this.default_reaction_color,
 	    bezier_drag_behavior = this.behavior.bezier_drag,
 	    reaction_label_drag = this.behavior.reaction_label_drag,
@@ -416,7 +412,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         sel.call(function(sel) { return draw.update_reaction(sel, scale, 
 							     nodes,
 							     beziers_enabled, 
-							     defs, arrowheads,
+							     defs,
 							     default_reaction_color,
 							     has_reaction_data,
 							     reaction_data_styles,
@@ -1545,7 +1541,19 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	// o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');	    
 	// o.direction_arrow.hide();
 	this.callback_manager.run('before_svg_export');
-        utils.export_svg("saved_map", "svg");
+	// turn of zoom and translate so that illustrator likes the map
+	var window_scale = this.zoom_container.window_scale,
+	    window_translate = this.zoom_container.window_translate,
+	    svg_width = this.svg.attr('width'),
+	    svg_height = this.svg.attr('height'),
+	    canvas_size_and_loc = this.canvas.size_and_location();
+	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, true);
+	this.svg.attr('width', canvas_size_and_loc.width);
+	this.svg.attr('height', canvas_size_and_loc.height);
+        utils.export_svg("saved_map", "svg", true);
+	this.zoom_container.go_to(window_scale, window_translate, true);
+	svg_width = this.svg.attr('width', svg_width);
+	svg_height = this.svg.attr('height', svg_height);
 	this.callback_manager.run('after_svg_export');
     }
 });

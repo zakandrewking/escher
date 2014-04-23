@@ -1766,13 +1766,13 @@ define('draw',["utils"], function(utils) {
     }
 
     function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
-			     defs, arrowheads,
+			     defs,
 			     default_reaction_color, has_reaction_data,
 			     reaction_data_styles,
 			     bezier_drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
-			       'defs', 'arrowheads',
+			       'defs',
 			       'default_reaction_color', 'has_reaction_data',
 			       'reaction_data_styles',
 			       'bezier_drag_behavior', 'label_drag_behavior']);
@@ -1796,7 +1796,7 @@ define('draw',["utils"], function(utils) {
         // update segments
         sel.call(function(sel) { 
 	    return update_segment(sel, scale, drawn_nodes, show_beziers, defs,
-				  arrowheads, default_reaction_color,
+				  default_reaction_color,
 				  has_reaction_data, reaction_data_styles,
 				  bezier_drag_behavior);
 	});
@@ -1853,21 +1853,27 @@ define('draw',["utils"], function(utils) {
             .attr('class', 'segment');
 
 	g.append('g')
+	    .attr('class', 'arrowheads');
+
+	g.append('g')
 	    .attr('class', 'beziers');
     }
     
     function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
-			    defs, arrowheads, default_reaction_color,
+			    defs, default_reaction_color,
 			    has_reaction_data, reaction_data_styles,
 			    bezier_drag_behavior) {
 	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
 					  'show_beziers', 'defs',
-					  'arrowheads', 'default_reaction_color',
+					  'default_reaction_color',
 					  'has_reaction_data',
 					  'reaction_data_styles',
 					  'bezier_drag_behavior']);
 
         // update segment attributes
+	var get_disp = function(reversibility, coefficient) {
+	    return (reversibility || coefficient > 0) ? 32 : 20;
+	};
         // update arrows
         update_selection
             .selectAll('.segment')
@@ -1882,9 +1888,6 @@ define('draw',["utils"], function(utils) {
 		    b1 = d.b1,
 		    b2 = d.b2;
 		// if metabolite, then displace the arrow
-		var get_disp = function(reversibility, coefficient) {
-		    return (reversibility || coefficient > 0) ? 32 : 20;
-		};
 		if (start['node_type']=='metabolite' && b1!==null) {
 		    var disp = get_disp(d.reversibility, d.from_node_coefficient);
 		    var direction = (b1 === null) ? end : b1;
@@ -1903,28 +1906,6 @@ define('draw',["utils"], function(utils) {
 		curve += (end.x+','+end.y);
 		return curve;
             })
-            .attr("marker-start", function (d) {
-		var start = drawn_nodes[d.from_node_id];
-		if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
-		    var c = default_reaction_color;
-		    if (has_reaction_data)
-			c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
-		    // generate arrowhead for specific color
-		    var arrow_id = generate_arrowhead_for_color(defs, arrowheads, c, false);
-		    return "url(#" + arrow_id + ")";
-		} else { return null; };
-            })     
-	    .attr("marker-end", function (d) {
-		var end = drawn_nodes[d.to_node_id];
-		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
-		    var c = default_reaction_color;
-		    if (has_reaction_data)
-			c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
-		    // generate arrowhead for specific color
-		    var arrow_id = generate_arrowhead_for_color(defs, arrowheads, c, true);
-		    return "url(#" + arrow_id + ")";
-		} else { return null; };
-            })
             .style('stroke', function(d) {
 		if (has_reaction_data) 
 		    return d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
@@ -1938,6 +1919,57 @@ define('draw',["utils"], function(utils) {
 		else
 		    return scale.reaction_size(1);
             });
+
+	// new arrowheads
+	var arrowheads = update_selection.select('.arrowheads')
+	    .selectAll('.arrowhead')
+	    .data(function (d) {
+		var arrowheads = [],
+		    reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
+		    segment_id = this.parentNode.parentNode.__data__.segment_id;		
+		var start = drawn_nodes[d.from_node_id],
+		    b1 = d.b1;
+		if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
+		    var disp = get_disp(d.reversibility, d.from_node_coefficient),
+			direction = (b1 === null) ? end : b1;
+		    var rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90;
+		    start = displaced_coords(disp, start, direction, 'start');
+		    arrowheads.push({ data: d.data,
+				      x: start.x,
+				      y: start.y,
+				      rotation: rotation });
+		}
+		var end = drawn_nodes[d.to_node_id],
+		    b2 = d.b2;
+		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
+		    var disp = get_disp(d.reversibility, d.to_node_coefficient),
+			direction = (b2 === null) ? start : b2;
+		    var rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
+		    end = displaced_coords(disp, direction, end, 'end');
+		    arrowheads.push({ data: d.data,
+				      x: end.x,
+				      y: end.y,
+				      rotation: rotation });
+		}
+		return arrowheads;
+	    });
+	arrowheads.enter().append('path')
+	    .classed('arrowhead', true)
+	    .attr("d", function(d) {
+		var markerWidth = 15, markerHeight = 10;
+		return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
+	    });
+	// update bezier points
+	arrowheads.attr('transform', function(d) {
+	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
+	}).attr('fill', function(d) {
+	    var c = default_reaction_color;
+	    if (has_reaction_data)
+		c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
+	    return c;
+	});
+	// remove
+	arrowheads.exit().remove();
 
 	// new bezier points
 	var bez = update_selection.select('.beziers')
@@ -2128,45 +2160,45 @@ define('draw',["utils"], function(utils) {
 	return {x: new_x, y: new_y};
     }
 
-    function generate_arrowhead_for_color(defs, arrowheads_generated, color, is_end) {
-	utils.check_undefined(arguments, ['defs', 'arrowheads_generated', 'color', 'is_end']);
+    // function generate_arrowhead_for_color(defs, arrowheads_generated, color, is_end) {
+    // 	utils.check_undefined(arguments, ['defs', 'arrowheads_generated', 'color', 'is_end']);
 
-	var pref = is_end ? 'start-' : 'end-';
+    // 	var pref = is_end ? 'start-' : 'end-';
 
-        var id = 'm'+String(color).replace('#', pref);
-        if (arrowheads_generated.indexOf(id) < 0) {
-            arrowheads_generated.push(id);
+    //     var id = 'm'+String(color).replace('#', pref);
+    //     if (arrowheads_generated.indexOf(id) < 0) {
+    //         arrowheads_generated.push(id);
 
-            var markerWidth = 5,
-                markerHeight = 5,
-                // cRadius = 0, // play with the cRadius value
-                // refX = cRadius + (markerWidth * 2),
-                // refY = -Math.sqrt(cRadius),
-                // drSub = cRadius + refY;
-                refX,
-                refY = markerWidth/2,
-                d;
+    //         var markerWidth = 5,
+    //             markerHeight = 5,
+    //             // cRadius = 0, // play with the cRadius value
+    //             // refX = cRadius + (markerWidth * 2),
+    //             // refY = -Math.sqrt(cRadius),
+    //             // drSub = cRadius + refY;
+    //             refX,
+    //             refY = markerWidth/2,
+    //             d;
 
-            if (is_end) refX = 0.5;
-            else        refX = markerHeight;
-            if (is_end) d = 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
-            else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
+    //         if (is_end) refX = 0.5;
+    //         else        refX = markerHeight;
+    //         if (is_end) d = 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
+    //         else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
 
-            // make the marker
-            defs.append("svg:marker")
-                .attr("id", id)
-                .attr("class", "arrowhead")
-                .attr("refX", refX)
-                .attr("refY", refY)
-                .attr("markerWidth", markerWidth)
-                .attr("markerHeight", markerHeight)
-                .attr("orient", "auto")
-                .append("svg:path")
-                .attr("d", d)
-                .style("fill", color);
-        }
-        return id;
-    }
+    //         // make the marker
+    //         defs.append("svg:marker")
+    //             .attr("id", id)
+    //             .attr("class", "arrowhead")
+    //             .attr("refX", refX)
+    //             .attr("refY", refY)
+    //             .attr("markerWidth", markerWidth)
+    //             .attr("markerHeight", markerHeight)
+    //             .attr("orient", "auto")
+    //             .append("svg:path")
+    //             .attr("d", d)
+    //             .style("fill", color);
+    //     }
+    //     return id;
+    // }
 
 });
 
@@ -3783,6 +3815,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	var default_angle = 90; // degrees
 	this.default_reaction_color = '#334E75',
 
+	// set up the defs
+	this.svg = svg;
+	this.defs = utils.setup_defs(svg, css);
+
 	// make the canvas
 	this.canvas = new Canvas(selection, canvas_size_and_loc);
 
@@ -3791,9 +3827,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.zoom_container = zoom_container;
 	this.height = height;
 	this.width = width;
-
-	// set up the defs
-	this.defs = utils.setup_defs(svg, css);
 
 	this.reaction_data = reaction_data;
 	this.reaction_data_styles = reaction_data_styles;
@@ -3830,9 +3863,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
-
-	// these will be filled
-	this.arrowheads_generated = [];
 	
 	this.nodes = {};
 	this.reactions = {};
@@ -4013,7 +4043,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    nodes = this.nodes,
 	    text_labels = this.text_labels,
 	    defs = this.defs,
-	    arrowheads = this.arrowheads_generated,
 	    default_reaction_color = this.default_reaction_color,
 	    bezier_drag_behavior = this.behavior.bezier_drag,
 	    node_click_fn = this.behavior.node_click,
@@ -4039,7 +4068,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 									 scale, 
 									 nodes,
 									 beziers_enabled, 
-									 defs, arrowheads,
+									 defs,
 									 default_reaction_color,
 									 has_reaction_data,
 									 reaction_data_styles,
@@ -4076,7 +4105,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    reactions = this.reactions,
 	    nodes = this.nodes,
 	    defs = this.defs,
-	    arrowheads = this.arrowheads_generated,
 	    default_reaction_color = this.default_reaction_color,
 	    bezier_drag_behavior = this.behavior.bezier_drag,
 	    reaction_label_drag = this.behavior.reaction_label_drag,
@@ -4108,7 +4136,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
         sel.call(function(sel) { return draw.update_reaction(sel, scale, 
 							     nodes,
 							     beziers_enabled, 
-							     defs, arrowheads,
+							     defs,
 							     default_reaction_color,
 							     has_reaction_data,
 							     reaction_data_styles,
@@ -5237,7 +5265,19 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	// o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');	    
 	// o.direction_arrow.hide();
 	this.callback_manager.run('before_svg_export');
-        utils.export_svg("saved_map", "svg");
+	// turn of zoom and translate so that illustrator likes the map
+	var window_scale = this.zoom_container.window_scale,
+	    window_translate = this.zoom_container.window_translate,
+	    svg_width = this.svg.attr('width'),
+	    svg_height = this.svg.attr('height'),
+	    canvas_size_and_loc = this.canvas.size_and_location();
+	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, true);
+	this.svg.attr('width', canvas_size_and_loc.width);
+	this.svg.attr('height', canvas_size_and_loc.height);
+        utils.export_svg("saved_map", "svg", true);
+	this.zoom_container.go_to(window_scale, window_translate, true);
+	svg_width = this.svg.attr('width', svg_width);
+	svg_height = this.svg.attr('height', svg_height);
 	this.callback_manager.run('after_svg_export');
     }
 });
@@ -5326,7 +5366,7 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     }
 
     // functions to scale and translate
-    function go_to(scale, translate) { 
+    function go_to(scale, translate, dont_transition) { 
 	if (!scale) return console.error('Bad scale value');
 	if (!translate || !('x' in translate) || !('y' in translate))
 	    return console.error('Bad translate value');
@@ -5340,9 +5380,9 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
         this.window_translate = translate;
 	if (this.saved_translate !== null) this.saved_translate = translate_array;
 
-        this.zoomed_sel
-	    .transition()
-            .attr('transform',
+	var move_this = (dont_transition ? this.zoomed_sel :
+			 this.zoomed_sel.transition());
+        move_this.attr('transform',
 		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
 		  'scale('+this.window_scale+')');
 	return null;

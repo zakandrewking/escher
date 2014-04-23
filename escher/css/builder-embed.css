@@ -16,12 +16,15 @@
     stroke: none;
     text-rendering: optimizelegibility;
 }
-.label .reaction-label {
+.reaction-label {
     fill: rgb(32, 32, 120);
     text-rendering: optimizelegibility;
 }
+.text-label {
+    font-size: 50px;
+}
 .node-circle {
-    fill: rgba(255,255,255,0.0);	
+    fill: none;	
     stroke: rgb(50, 50, 50);
 }
 .selected .node-circle{
@@ -35,12 +38,6 @@
 }
 .selected .metabolite-circle {
     stroke: rgb(5, 2, 0);
-}
-#misc-labels{
-    font-family: sans-serif; font-weight: bold; fill: rgb(120,120,120); text-rendering: optimizelegibility;
-}
-.line-arrow{
-    fill: none; 
 }
 .segment {
     stroke: grey;

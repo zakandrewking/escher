@@ -145,7 +145,7 @@ class Builder(Plot):
     """
     def __init__(self, map_name=None, map_json=None, model_name=None,
                  model_json=None, reaction_data=None, metabolite_data=None,
-                 safe=False, **kwargs):
+                 css=None, safe=False, **kwargs):
         self.safe = safe
         # load the map
         self.map_name = map_name
@@ -164,6 +164,7 @@ class Builder(Plot):
         # set the args
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
+        self.css = css
         self.options = kwargs
         
     def load_model(self):
@@ -264,6 +265,8 @@ class Builder(Plot):
         return draw
 
     def _embed_style(self):
+        if self.css is not None:
+            return unicode(self.css)
         download = urlopen(urls.builder_embed_css)
         return unicode(download.read().replace('\n', ' '))
     

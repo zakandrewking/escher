@@ -46,13 +46,13 @@ define(["utils"], function(utils) {
     }
 
     function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
-			     defs, arrowheads,
+			     defs,
 			     default_reaction_color, has_reaction_data,
 			     reaction_data_styles,
 			     bezier_drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
-			       'defs', 'arrowheads',
+			       'defs',
 			       'default_reaction_color', 'has_reaction_data',
 			       'reaction_data_styles',
 			       'bezier_drag_behavior', 'label_drag_behavior']);
@@ -76,7 +76,7 @@ define(["utils"], function(utils) {
         // update segments
         sel.call(function(sel) { 
 	    return update_segment(sel, scale, drawn_nodes, show_beziers, defs,
-				  arrowheads, default_reaction_color,
+				  default_reaction_color,
 				  has_reaction_data, reaction_data_styles,
 				  bezier_drag_behavior);
 	});
@@ -133,21 +133,27 @@ define(["utils"], function(utils) {
             .attr('class', 'segment');
 
 	g.append('g')
+	    .attr('class', 'arrowheads');
+
+	g.append('g')
 	    .attr('class', 'beziers');
     }
     
     function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
-			    defs, arrowheads, default_reaction_color,
+			    defs, default_reaction_color,
 			    has_reaction_data, reaction_data_styles,
 			    bezier_drag_behavior) {
 	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
 					  'show_beziers', 'defs',
-					  'arrowheads', 'default_reaction_color',
+					  'default_reaction_color',
 					  'has_reaction_data',
 					  'reaction_data_styles',
 					  'bezier_drag_behavior']);
 
         // update segment attributes
+	var get_disp = function(reversibility, coefficient) {
+	    return (reversibility || coefficient > 0) ? 32 : 20;
+	};
         // update arrows
         update_selection
             .selectAll('.segment')
@@ -162,9 +168,6 @@ define(["utils"], function(utils) {
 		    b1 = d.b1,
 		    b2 = d.b2;
 		// if metabolite, then displace the arrow
-		var get_disp = function(reversibility, coefficient) {
-		    return (reversibility || coefficient > 0) ? 32 : 20;
-		};
 		if (start['node_type']=='metabolite' && b1!==null) {
 		    var disp = get_disp(d.reversibility, d.from_node_coefficient);
 		    var direction = (b1 === null) ? end : b1;
@@ -183,28 +186,6 @@ define(["utils"], function(utils) {
 		curve += (end.x+','+end.y);
 		return curve;
             })
-            .attr("marker-start", function (d) {
-		var start = drawn_nodes[d.from_node_id];
-		if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
-		    var c = default_reaction_color;
-		    if (has_reaction_data)
-			c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
-		    // generate arrowhead for specific color
-		    var arrow_id = generate_arrowhead_for_color(defs, arrowheads, c, false);
-		    return "url(#" + arrow_id + ")";
-		} else { return null; };
-            })     
-	    .attr("marker-end", function (d) {
-		var end = drawn_nodes[d.to_node_id];
-		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
-		    var c = default_reaction_color;
-		    if (has_reaction_data)
-			c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
-		    // generate arrowhead for specific color
-		    var arrow_id = generate_arrowhead_for_color(defs, arrowheads, c, true);
-		    return "url(#" + arrow_id + ")";
-		} else { return null; };
-            })
             .style('stroke', function(d) {
 		if (has_reaction_data) 
 		    return d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
@@ -218,6 +199,57 @@ define(["utils"], function(utils) {
 		else
 		    return scale.reaction_size(1);
             });
+
+	// new arrowheads
+	var arrowheads = update_selection.select('.arrowheads')
+	    .selectAll('.arrowhead')
+	    .data(function (d) {
+		var arrowheads = [],
+		    reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
+		    segment_id = this.parentNode.parentNode.__data__.segment_id;		
+		var start = drawn_nodes[d.from_node_id],
+		    b1 = d.b1;
+		if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
+		    var disp = get_disp(d.reversibility, d.from_node_coefficient),
+			direction = (b1 === null) ? end : b1;
+		    var rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90;
+		    start = displaced_coords(disp, start, direction, 'start');
+		    arrowheads.push({ data: d.data,
+				      x: start.x,
+				      y: start.y,
+				      rotation: rotation });
+		}
+		var end = drawn_nodes[d.to_node_id],
+		    b2 = d.b2;
+		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
+		    var disp = get_disp(d.reversibility, d.to_node_coefficient),
+			direction = (b2 === null) ? start : b2;
+		    var rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
+		    end = displaced_coords(disp, direction, end, 'end');
+		    arrowheads.push({ data: d.data,
+				      x: end.x,
+				      y: end.y,
+				      rotation: rotation });
+		}
+		return arrowheads;
+	    });
+	arrowheads.enter().append('path')
+	    .classed('arrowhead', true)
+	    .attr("d", function(d) {
+		var markerWidth = 15, markerHeight = 10;
+		return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
+	    });
+	// update bezier points
+	arrowheads.attr('transform', function(d) {
+	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
+	}).attr('fill', function(d) {
+	    var c = default_reaction_color;
+	    if (has_reaction_data)
+		c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
+	    return c;
+	});
+	// remove
+	arrowheads.exit().remove();
 
 	// new bezier points
 	var bez = update_selection.select('.beziers')
@@ -408,44 +440,44 @@ define(["utils"], function(utils) {
 	return {x: new_x, y: new_y};
     }
 
-    function generate_arrowhead_for_color(defs, arrowheads_generated, color, is_end) {
-	utils.check_undefined(arguments, ['defs', 'arrowheads_generated', 'color', 'is_end']);
+    // function generate_arrowhead_for_color(defs, arrowheads_generated, color, is_end) {
+    // 	utils.check_undefined(arguments, ['defs', 'arrowheads_generated', 'color', 'is_end']);
 
-	var pref = is_end ? 'start-' : 'end-';
+    // 	var pref = is_end ? 'start-' : 'end-';
 
-        var id = 'm'+String(color).replace('#', pref);
-        if (arrowheads_generated.indexOf(id) < 0) {
-            arrowheads_generated.push(id);
+    //     var id = 'm'+String(color).replace('#', pref);
+    //     if (arrowheads_generated.indexOf(id) < 0) {
+    //         arrowheads_generated.push(id);
 
-            var markerWidth = 5,
-                markerHeight = 5,
-                // cRadius = 0, // play with the cRadius value
-                // refX = cRadius + (markerWidth * 2),
-                // refY = -Math.sqrt(cRadius),
-                // drSub = cRadius + refY;
-                refX,
-                refY = markerWidth/2,
-                d;
+    //         var markerWidth = 5,
+    //             markerHeight = 5,
+    //             // cRadius = 0, // play with the cRadius value
+    //             // refX = cRadius + (markerWidth * 2),
+    //             // refY = -Math.sqrt(cRadius),
+    //             // drSub = cRadius + refY;
+    //             refX,
+    //             refY = markerWidth/2,
+    //             d;
 
-            if (is_end) refX = 0.5;
-            else        refX = markerHeight;
-            if (is_end) d = 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
-            else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
+    //         if (is_end) refX = 0.5;
+    //         else        refX = markerHeight;
+    //         if (is_end) d = 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
+    //         else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
 
-            // make the marker
-            defs.append("svg:marker")
-                .attr("id", id)
-                .attr("class", "arrowhead")
-                .attr("refX", refX)
-                .attr("refY", refY)
-                .attr("markerWidth", markerWidth)
-                .attr("markerHeight", markerHeight)
-                .attr("orient", "auto")
-                .append("svg:path")
-                .attr("d", d)
-                .style("fill", color);
-        }
-        return id;
-    }
+    //         // make the marker
+    //         defs.append("svg:marker")
+    //             .attr("id", id)
+    //             .attr("class", "arrowhead")
+    //             .attr("refX", refX)
+    //             .attr("refY", refY)
+    //             .attr("markerWidth", markerWidth)
+    //             .attr("markerHeight", markerHeight)
+    //             .attr("orient", "auto")
+    //             .append("svg:path")
+    //             .attr("d", d)
+    //             .style("fill", color);
+    //     }
+    //     return id;
+    // }
 
 });
