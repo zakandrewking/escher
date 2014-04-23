@@ -211,8 +211,15 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
         // Generate the array of reactions to suggest and sort it
 	var strings_to_display = [],
 	    suggestions_array = utils.make_array(suggestions, 'reaction_abbreviation');
-	if (has_reaction_data)
-	    suggestions_array.sort(function(x, y) { return Math.abs(y.reaction_data) - Math.abs(x.reaction_data); });
+	if (has_reaction_data) {
+	    suggestions_array.sort(function(x, y) {
+		return Math.abs(y.reaction_data) - Math.abs(x.reaction_data);
+	    });
+	} else {
+	    suggestions_array.sort(function(x, y) {
+		return (x.string.toLowerCase() < y.string.toLowerCase() ? -1 : 1);
+	    });
+	}
 	suggestions_array.forEach(function(x) {
 	    strings_to_display.push(x.string);
 	});
@@ -224,13 +231,28 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
         complete.options = strings_to_display;
         if (strings_to_display.length==1) complete.setText(strings_to_display[0]);
         else complete.setText("");
+	complete.onChange = function(txt) {
+	    if (txt.length==0) {
+		complete.options = strings_to_display;
+		complete.repaint();
+		return;
+	    }
+	    var v = strings_to_display.map(function(x) {
+		if (x.toLowerCase().indexOf(txt.toLowerCase())==0)
+		    return txt+x.slice(txt.length);
+		else return null;
+	    }).filter(function(x) { return x!==null; });
+	    complete.options = v;
+	    complete.repaint();
+	};
         complete.onEnter = function() {
 	    var text = this.getText();
 	    this.setText("");
-	    suggestions_array.map(function(x) {
-		if (x.string==text) {
+	    suggestions_array.forEach(function(x) {
+		if (x.string.toLowerCase()==text.toLowerCase()) {
 		    if (starting_from_scratch) {
-			self.map.new_reaction_from_scratch(x.reaction_abbreviation, coords);
+			self.map.new_reaction_from_scratch(x.reaction_abbreviation,
+							   coords);
 		    } else {
 			self.map.new_reaction_for_metabolite(x.reaction_abbreviation,
 							     selected_node.node_id);
