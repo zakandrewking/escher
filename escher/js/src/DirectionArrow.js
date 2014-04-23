@@ -24,7 +24,7 @@ define(["utils"], function(utils) {
 	    .classed('direction-arrow', true)
 	    .attr('d', path_for_arrow())
 	    .style('visibility', 'hidden')
-	    .attr('transform', 'translate(2,0)scale(0.15)');
+	    .attr('transform', 'translate(20,0)scale(1.5)');
 
 	// definitions
 	function path_for_arrow() {

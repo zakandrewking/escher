@@ -236,7 +236,7 @@ define(["utils"], function(utils) {
 	arrowheads.enter().append('path')
 	    .classed('arrowhead', true)
 	    .attr("d", function(d) {
-		var markerWidth = 15, markerHeight = 10;
+		var markerWidth = 20, markerHeight = 13;
 		return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
 	    });
 	// update bezier points
@@ -439,45 +439,4 @@ define(["utils"], function(utils) {
 	} else { console.error('bad displace value: ' + displace); }
 	return {x: new_x, y: new_y};
     }
-
-    // function generate_arrowhead_for_color(defs, arrowheads_generated, color, is_end) {
-    // 	utils.check_undefined(arguments, ['defs', 'arrowheads_generated', 'color', 'is_end']);
-
-    // 	var pref = is_end ? 'start-' : 'end-';
-
-    //     var id = 'm'+String(color).replace('#', pref);
-    //     if (arrowheads_generated.indexOf(id) < 0) {
-    //         arrowheads_generated.push(id);
-
-    //         var markerWidth = 5,
-    //             markerHeight = 5,
-    //             // cRadius = 0, // play with the cRadius value
-    //             // refX = cRadius + (markerWidth * 2),
-    //             // refY = -Math.sqrt(cRadius),
-    //             // drSub = cRadius + refY;
-    //             refX,
-    //             refY = markerWidth/2,
-    //             d;
-
-    //         if (is_end) refX = 0.5;
-    //         else        refX = markerHeight;
-    //         if (is_end) d = 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
-    //         else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
-
-    //         // make the marker
-    //         defs.append("svg:marker")
-    //             .attr("id", id)
-    //             .attr("class", "arrowhead")
-    //             .attr("refX", refX)
-    //             .attr("refY", refY)
-    //             .attr("markerWidth", markerWidth)
-    //             .attr("markerHeight", markerHeight)
-    //             .attr("orient", "auto")
-    //             .append("svg:path")
-    //             .attr("d", d)
-    //             .style("fill", color);
-    //     }
-    //     return id;
-    // }
-
 });

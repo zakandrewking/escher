@@ -133,13 +133,29 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	// hide beziers
 	this.beziers_enabled = false;
 
-	// set up the reaction direction arrow
-	this.direction_arrow = new DirectionArrow(selection);
-	this.direction_arrow.set_rotation(default_angle);
-
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
 	
+	// set up the reaction direction arrow
+	var direction_arrow = new DirectionArrow(selection);
+	direction_arrow.set_rotation(default_angle);
+	this.callback_manager.set('select_metabolite_with_id', function(_, coords) {
+	    direction_arrow.set_location(coords);
+	    direction_arrow.show();
+	});
+	this.callback_manager.set('select_metabolite', function(count, _, coords) {
+	    if (count == 1) {
+		direction_arrow.set_location(coords);
+		direction_arrow.show();
+	    } else {
+		direction_arrow.hide();
+	    }
+	});
+	this.callback_manager.set('before_svg_export', function() {
+	    direction_arrow.hide();
+	});
+	this.direction_arrow = direction_arrow;
+
 	this.nodes = {};
 	this.reactions = {};
 	this.membranes = [];
@@ -693,8 +709,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    }
 	    return selected;
 	});
-	this.direction_arrow.set_location(coords);
-	this.direction_arrow.show();
 	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	this.callback_manager.run('select_metabolite_with_id', selected_node, coords);
     }
@@ -718,12 +732,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    coords = { x: d.x, y: d.y };
 	    count++;
 	});
-	if (count == 1) {
-	    this.direction_arrow.set_location(coords);
-	    this.direction_arrow.show();
-	} else {
-	    this.direction_arrow.hide();
-	}
 	this.callback_manager.run('select_metabolite', count, selected_node, coords);
     }
     function select_single_node() {
@@ -1538,8 +1546,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     }
     function save_svg() {
         console.log("Exporting SVG");
-	// o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');	    
-	// o.direction_arrow.hide();
 	this.callback_manager.run('before_svg_export');
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,

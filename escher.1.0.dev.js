@@ -1956,7 +1956,7 @@ define('draw',["utils"], function(utils) {
 	arrowheads.enter().append('path')
 	    .classed('arrowhead', true)
 	    .attr("d", function(d) {
-		var markerWidth = 15, markerHeight = 10;
+		var markerWidth = 20, markerHeight = 13;
 		return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
 	    });
 	// update bezier points
@@ -2159,47 +2159,6 @@ define('draw',["utils"], function(utils) {
 	} else { console.error('bad displace value: ' + displace); }
 	return {x: new_x, y: new_y};
     }
-
-    // function generate_arrowhead_for_color(defs, arrowheads_generated, color, is_end) {
-    // 	utils.check_undefined(arguments, ['defs', 'arrowheads_generated', 'color', 'is_end']);
-
-    // 	var pref = is_end ? 'start-' : 'end-';
-
-    //     var id = 'm'+String(color).replace('#', pref);
-    //     if (arrowheads_generated.indexOf(id) < 0) {
-    //         arrowheads_generated.push(id);
-
-    //         var markerWidth = 5,
-    //             markerHeight = 5,
-    //             // cRadius = 0, // play with the cRadius value
-    //             // refX = cRadius + (markerWidth * 2),
-    //             // refY = -Math.sqrt(cRadius),
-    //             // drSub = cRadius + refY;
-    //             refX,
-    //             refY = markerWidth/2,
-    //             d;
-
-    //         if (is_end) refX = 0.5;
-    //         else        refX = markerHeight;
-    //         if (is_end) d = 'M0,0 V'+markerWidth+' L'+markerHeight/2+','+markerWidth/2+' Z';
-    //         else        d = 'M'+markerHeight+',0 V'+markerWidth+' L'+(markerHeight/2)+','+markerWidth/2+' Z';
-
-    //         // make the marker
-    //         defs.append("svg:marker")
-    //             .attr("id", id)
-    //             .attr("class", "arrowhead")
-    //             .attr("refX", refX)
-    //             .attr("refY", refY)
-    //             .attr("markerWidth", markerWidth)
-    //             .attr("markerHeight", markerHeight)
-    //             .attr("orient", "auto")
-    //             .append("svg:path")
-    //             .attr("d", d)
-    //             .style("fill", color);
-    //     }
-    //     return id;
-    // }
-
 });
 
 define('build',["utils"], function(utils) {
@@ -3191,7 +3150,7 @@ define('DirectionArrow',["utils"], function(utils) {
 	    .classed('direction-arrow', true)
 	    .attr('d', path_for_arrow())
 	    .style('visibility', 'hidden')
-	    .attr('transform', 'translate(2,0)scale(0.15)');
+	    .attr('transform', 'translate(20,0)scale(1.5)');
 
 	// definitions
 	function path_for_arrow() {
@@ -3857,13 +3816,29 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	// hide beziers
 	this.beziers_enabled = false;
 
-	// set up the reaction direction arrow
-	this.direction_arrow = new DirectionArrow(selection);
-	this.direction_arrow.set_rotation(default_angle);
-
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
 	
+	// set up the reaction direction arrow
+	var direction_arrow = new DirectionArrow(selection);
+	direction_arrow.set_rotation(default_angle);
+	this.callback_manager.set('select_metabolite_with_id', function(_, coords) {
+	    direction_arrow.set_location(coords);
+	    direction_arrow.show();
+	});
+	this.callback_manager.set('select_metabolite', function(count, _, coords) {
+	    if (count == 1) {
+		direction_arrow.set_location(coords);
+		direction_arrow.show();
+	    } else {
+		direction_arrow.hide();
+	    }
+	});
+	this.callback_manager.set('before_svg_export', function() {
+	    direction_arrow.hide();
+	});
+	this.direction_arrow = direction_arrow;
+
 	this.nodes = {};
 	this.reactions = {};
 	this.membranes = [];
@@ -4417,8 +4392,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    }
 	    return selected;
 	});
-	this.direction_arrow.set_location(coords);
-	this.direction_arrow.show();
 	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	this.callback_manager.run('select_metabolite_with_id', selected_node, coords);
     }
@@ -4442,12 +4415,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    coords = { x: d.x, y: d.y };
 	    count++;
 	});
-	if (count == 1) {
-	    this.direction_arrow.set_location(coords);
-	    this.direction_arrow.show();
-	} else {
-	    this.direction_arrow.hide();
-	}
 	this.callback_manager.run('select_metabolite', count, selected_node, coords);
     }
     function select_single_node() {
@@ -5262,8 +5229,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     }
     function save_svg() {
         console.log("Exporting SVG");
-	// o.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');	    
-	// o.direction_arrow.hide();
 	this.callback_manager.run('before_svg_export');
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,
