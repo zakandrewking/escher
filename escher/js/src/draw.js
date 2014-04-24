@@ -8,7 +8,10 @@ define(["utils"], function(utils) {
 	     create_text_label: create_text_label,
 	     update_text_label: update_text_label,
 	     create_membrane: create_membrane,
-	     update_membrane: update_membrane
+	     update_membrane: update_membrane,
+	     check_data_style: check_data_style,
+	     text_for_data: text_for_data,
+	     float_for_data: float_for_data
 	   };
 
     // definitions
@@ -105,10 +108,8 @@ define(["utils"], function(utils) {
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
             var t = d.bigg_id;
-	    if (has_reaction_data) {
-		if (d.data!==null) t += " ("+decimal_format(d.data)+")";
-		else t += " (nd)";
-	    }
+	    if (has_reaction_data)
+		t += ' ' + text_for_data(d.data, reaction_data_styles);
             return t;
 	}).attr('transform', function(d) {
             return 'translate('+d.label_x+','+d.label_y+')';
@@ -187,17 +188,20 @@ define(["utils"], function(utils) {
 		return curve;
             })
             .style('stroke', function(d) {
-		if (has_reaction_data) 
-		    return d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
-		else
+		if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
+		    var f = float_for_data(d.data, reaction_data_styles);
+		    return scale.reaction_color(f===null ? 0 : f);
+		} else {
 		    return default_reaction_color;
+		}
 	    })
 	    .style('stroke-width', function(d) {
-		if (has_reaction_data)
-	    	    return (d.data!==null ? scale.reaction_size(d.data) :
-	    		    scale.reaction_size(1));
-		else
-		    return scale.reaction_size(1);
+		if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
+		    var f = float_for_data(d.data, reaction_data_styles);
+		    return scale.reaction_size(f===null ? 0 : f);
+		} else {
+		    return scale.reaction_size(0);
+		}
             });
 
 	// new arrowheads
@@ -237,15 +241,23 @@ define(["utils"], function(utils) {
 	    .classed('arrowhead', true)
 	    .attr("d", function(d) {
 		var markerWidth = 20, markerHeight = 13;
+		if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
+		    var f = float_for_data(d.data, reaction_data_styles);
+		    markerWidth += (scale.reaction_size(f) - scale.reaction_size(0));
+		}		    
 		return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
 	    });
 	// update bezier points
 	arrowheads.attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
 	}).attr('fill', function(d) {
-	    var c = default_reaction_color;
-	    if (has_reaction_data)
-		c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
+	    var c;
+	    if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
+		var f = float_for_data(d.data, reaction_data_styles);
+		c = scale.reaction_color(f===null ? 0 : f);
+	    } else {
+		c = default_reaction_color;
+	    }
 	    return c;
 	});
 	// remove
@@ -346,11 +358,11 @@ define(["utils"], function(utils) {
 	    .style('cursor', 'default');
     }
 
-    function update_node(update_selection, scale, has_metabolite_data, metabolite_data_style,
+    function update_node(update_selection, scale, has_metabolite_data, metabolite_data_styles,
 			 click_fn, drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'has_metabolite_data',
-			       'metabolite_data_style', 'click_fn',
+			       'metabolite_data_styles', 'click_fn',
 			       'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
@@ -361,8 +373,9 @@ define(["utils"], function(utils) {
                 })
 		.attr('r', function(d) {
 		    if (d.node_type == 'metabolite') {
-			if (has_metabolite_data && metabolite_data_style.indexOf('Size')!==-1) {
-			    return scale.metabolite_size(d.data!==null ? d.data : 0);
+			if (has_metabolite_data && metabolite_data_styles.indexOf('Size')!==-1) {
+			    var f = float_for_data(d.data, metabolite_data_styles);
+			    return scale.metabolite_size(f===null ? 0 : f);
 			} else {
 			    return d.node_is_primary ? 15 : 10; 
 			}
@@ -372,12 +385,14 @@ define(["utils"], function(utils) {
 		})
 		.style('fill', function(d) {
 		    if (d.node_type=='metabolite') {
-			if (has_metabolite_data && metabolite_data_style.indexOf('Color')!==-1) {
-			    return scale.metabolite_color(d.data!==null ? d.data : 0);
+			if (has_metabolite_data && metabolite_data_styles.indexOf('Color')!==-1) {
+			    var f = float_for_data(d.data, metabolite_data_styles);
+			    return scale.metabolite_color(f===null ? 0 : f);
 			} else {
 			    return 'rgb(224, 134, 91)';
 			}
 		    }
+		    return null;
 		})
 		.call(turn_off_drag)
 		.call(drag_behavior)
@@ -392,12 +407,9 @@ define(["utils"], function(utils) {
 		return String(20)+"px";
             })
             .text(function(d) {	
-		var decimal_format = d3.format('.4g'),
-		    t = d.bigg_id;
-		if (has_metabolite_data) {
-		    if (d.data!==null) t += " ("+decimal_format(d.data)+")";
-		    else if (has_metabolite_data) t += " (nd)";
-		}
+		var t = d.bigg_id;
+		if (has_metabolite_data)
+		    t += ' ' + text_for_data(d.data, metabolite_data_styles);
 		return t;
 	    })
 	    .call(turn_off_drag)
@@ -438,5 +450,51 @@ define(["utils"], function(utils) {
 	    new_y = end.y - length * (end.y - start.y) / hyp;
 	} else { console.error('bad displace value: ' + displace); }
 	return {x: new_x, y: new_y};
+    }
+
+    function check_data_style(data, styles, name) {
+	if (data.length==1)
+	    return null;
+	if (data.length==2 && styles.indexOf('Diff')!=-1)
+	    return null;
+	return console.warn('Bad data style: '+name);
+    }
+
+    function float_for_data(d, styles, ignore_abs) {
+	if (ignore_abs===undefined) ignore_abs = false;
+	if (d===null) return null;
+	var f = null;
+	if (d.length==1) f = d[0];
+	if (d.length==2 && styles.indexOf('Diff')!=-1) { // abs
+	    if (d[0]===null || d[1]===null) return null;
+	    else f = d[1] - d[0];
+	}
+	if (styles.indexOf('Abs')!=-1 && !ignore_abs) {
+	    f = Math.abs(f);
+	}
+	return f;
+    }
+
+    function text_for_data(d, styles) {
+	if (d===null)
+	    return null_or_d(null);
+	var f = float_for_data(d, styles);
+	if (d.length==1) {
+	    var format = d3.format('.4g');
+	    return null_or_d(f, format);
+	}
+	if (d.length==2 && styles.indexOf('Diff')!=-1) {
+	    var format = d3.format('.3g'),
+		t = null_or_d(d[0], format);
+	    t += ', ' + null_or_d(d[1], format);
+	    t += ': ' + null_or_d(f, format);
+	    return t;
+	}
+	return '';
+
+	// definitions
+	function null_or_d(d, format) {
+	    return d===null ? '(nd)' : format(d);
+	}
     }
 });

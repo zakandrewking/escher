@@ -538,11 +538,28 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    }
 	    return false;
 	}
+	// make the data an array, if it isn't already
+	var reaction_data = this.reaction_data;
+	if (!(reaction_data instanceof Array)) {
+	    reaction_data = [reaction_data];
+	}
+	// make sure the data and styles are OK
+	draw.check_data_style(reaction_data,
+			      this.reaction_data_styles,
+			      'reaction_data');
+	// make an object with the individual data arrays
+	var reaction_obj = utils.array_to_object(reaction_data);
+	// apply the datasets to the reactions	
 	for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id];
-	    if (reaction.bigg_id in this.reaction_data) {
-		var data = parseFloat(this.reaction_data[reaction.bigg_id]);
-		if (isNaN(data)) data = null;
+	    if (reaction.bigg_id in reaction_obj) {
+		var data_a = reaction_obj[reaction.bigg_id],
+		    data = [];
+		for (var i=0, l=data_a.length; i<l; i++) {
+		    var d = parseFloat(data_a[i]);
+		    if (isNaN(d)) d = null;
+		    data.push(d);
+		}
 		reaction.data = data;
 		for (var segment_id in reaction.segments) {
 		    var segment = reaction.segments[segment_id];
@@ -567,8 +584,11 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var vals = [];
 	for (var reaction_id in this.reactions) {
 	    var reaction = this.reactions[reaction_id];
-	    if (reaction.data!==null)
-		vals.push(reaction.data);
+	    if (reaction.data!==null) {
+		reaction.data.forEach(function(d) {
+		    if (d!==null) vals.push(d);
+		});
+	    }
 	}
 	
 	var old_domain = this.scale.reaction_color.domain(),
@@ -617,13 +637,27 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    }
 	    return false;
 	}
-	var vals = [];
+	// make the data an array, if it isn't already
+	var metabolite_data = this.metabolite_data;
+	if (!(metabolite_data instanceof Array)) {
+	    metabolite_data = [metabolite_data];
+	}
+	// make sure the data and styles are OK
+	draw.check_data_style(metabolite_data,
+			      this.metabolite_data_styles,
+			      'metabolite_data');
+	// make an object with the individual data arrays
+	var metabolite_obj = utils.array_to_object(metabolite_data);
 	for (var node_id in nodes) {
-	    var node = nodes[node_id], data = 0.0;
-	    if (node.bigg_id in this.metabolite_data) {
-		data = parseFloat(this.metabolite_data[node.bigg_id]);
-		if (isNaN(data)) data = null;
-		else vals.push(data);
+	    var node = nodes[node_id];
+	    if (node.bigg_id in metabolite_obj) {
+		var data_a = metabolite_obj[node.bigg_id],
+		    data = [];
+		for (var i=0, l=data_a.length; i<l; i++) {
+		    var d = parseFloat(data_a[i]);
+		    if (isNaN(d)) d = null;
+		    data.push(d);
+		}
 		node.data = data;
 	    } else {
 		node.data = null;
@@ -639,8 +673,11 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var min = 0, max = 0, vals = [];
 	for (var node_id in this.nodes) {
 	    var node = this.nodes[node_id];
-	    if (node.data!==null)
-		vals.push(node.data);
+	    if (node.data!==null) {
+		node.data.forEach(function(d) {
+		    if (d!==null) vals.push(d);
+		});
+	    }
 	}
 	if (vals.length > 0) {
 	    min = Math.min.apply(null, vals),

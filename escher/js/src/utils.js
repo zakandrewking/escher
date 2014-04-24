@@ -12,6 +12,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     draw_an_object: draw_an_object,
 	     make_array: make_array,
 	     compare_arrays: compare_arrays,
+	     array_to_object: array_to_object,
 	     clone: clone,
 	     extend: extend,
 	     unique_concat: unique_concat,
@@ -275,6 +276,33 @@ define(["lib/vkbeautify"], function(vkbeautify) {
             }
 	}
 	return true;
+    }
+
+    function array_to_object(arr) {
+	var obj = {};
+	for (var i=0, l=arr.length; i<l; i++) { // 0
+	    var a = arr[i];
+	    for (var id in a) {
+		if (id in obj) {
+		    obj[id][i] = a[id];
+		} else {
+		    var n = [];
+		    // fill leading spaces with null
+		    for (var j=0; j<i; j++) {
+			n[j] = null;
+		    }
+		    n[i] = a[id];
+		    obj[id] = n;
+		}
+	    }
+	    // fill trailing spaces with null
+	    for (var id in obj) {
+		for (var j=obj[id].length; j<=i; j++) {
+		    obj[id][j] = null;
+		}
+	    }
+	}
+	return obj;
     }
 
     function clone(obj) {

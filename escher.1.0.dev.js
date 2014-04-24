@@ -798,6 +798,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	     draw_an_object: draw_an_object,
 	     make_array: make_array,
 	     compare_arrays: compare_arrays,
+	     array_to_object: array_to_object,
 	     clone: clone,
 	     extend: extend,
 	     unique_concat: unique_concat,
@@ -1061,6 +1062,33 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
             }
 	}
 	return true;
+    }
+
+    function array_to_object(arr) {
+	var obj = {};
+	for (var i=0, l=arr.length; i<l; i++) { // 0
+	    var a = arr[i];
+	    for (var id in a) {
+		if (id in obj) {
+		    obj[id][i] = a[id];
+		} else {
+		    var n = [];
+		    // fill leading spaces with null
+		    for (var j=0; j<i; j++) {
+			n[j] = null;
+		    }
+		    n[i] = a[id];
+		    obj[id] = n;
+		}
+	    }
+	    // fill trailing spaces with null
+	    for (var id in obj) {
+		for (var j=obj[id].length; j<=i; j++) {
+		    obj[id][j] = null;
+		}
+	    }
+	}
+	return obj;
     }
 
     function clone(obj) {
@@ -1728,7 +1756,10 @@ define('draw',["utils"], function(utils) {
 	     create_text_label: create_text_label,
 	     update_text_label: update_text_label,
 	     create_membrane: create_membrane,
-	     update_membrane: update_membrane
+	     update_membrane: update_membrane,
+	     check_data_style: check_data_style,
+	     text_for_data: text_for_data,
+	     float_for_data: float_for_data
 	   };
 
     // definitions
@@ -1825,10 +1856,8 @@ define('draw',["utils"], function(utils) {
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
             var t = d.bigg_id;
-	    if (has_reaction_data) {
-		if (d.data!==null) t += " ("+decimal_format(d.data)+")";
-		else t += " (nd)";
-	    }
+	    if (has_reaction_data)
+		t += ' ' + text_for_data(d.data, reaction_data_styles);
             return t;
 	}).attr('transform', function(d) {
             return 'translate('+d.label_x+','+d.label_y+')';
@@ -1907,17 +1936,20 @@ define('draw',["utils"], function(utils) {
 		return curve;
             })
             .style('stroke', function(d) {
-		if (has_reaction_data) 
-		    return d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
-		else
+		if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
+		    var f = float_for_data(d.data, reaction_data_styles);
+		    return scale.reaction_color(f===null ? 0 : f);
+		} else {
 		    return default_reaction_color;
+		}
 	    })
 	    .style('stroke-width', function(d) {
-		if (has_reaction_data)
-	    	    return (d.data!==null ? scale.reaction_size(d.data) :
-	    		    scale.reaction_size(1));
-		else
-		    return scale.reaction_size(1);
+		if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
+		    var f = float_for_data(d.data, reaction_data_styles);
+		    return scale.reaction_size(f===null ? 0 : f);
+		} else {
+		    return scale.reaction_size(0);
+		}
             });
 
 	// new arrowheads
@@ -1957,15 +1989,23 @@ define('draw',["utils"], function(utils) {
 	    .classed('arrowhead', true)
 	    .attr("d", function(d) {
 		var markerWidth = 20, markerHeight = 13;
+		if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
+		    var f = float_for_data(d.data, reaction_data_styles);
+		    markerWidth += (scale.reaction_size(f) - scale.reaction_size(0));
+		}		    
 		return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
 	    });
 	// update bezier points
 	arrowheads.attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
 	}).attr('fill', function(d) {
-	    var c = default_reaction_color;
-	    if (has_reaction_data)
-		c = d.data!==null ? scale.reaction_color(d.data) : scale.reaction_color(0);
+	    var c;
+	    if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
+		var f = float_for_data(d.data, reaction_data_styles);
+		c = scale.reaction_color(f===null ? 0 : f);
+	    } else {
+		c = default_reaction_color;
+	    }
 	    return c;
 	});
 	// remove
@@ -2066,11 +2106,11 @@ define('draw',["utils"], function(utils) {
 	    .style('cursor', 'default');
     }
 
-    function update_node(update_selection, scale, has_metabolite_data, metabolite_data_style,
+    function update_node(update_selection, scale, has_metabolite_data, metabolite_data_styles,
 			 click_fn, drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'has_metabolite_data',
-			       'metabolite_data_style', 'click_fn',
+			       'metabolite_data_styles', 'click_fn',
 			       'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
@@ -2081,8 +2121,9 @@ define('draw',["utils"], function(utils) {
                 })
 		.attr('r', function(d) {
 		    if (d.node_type == 'metabolite') {
-			if (has_metabolite_data && metabolite_data_style.indexOf('Size')!==-1) {
-			    return scale.metabolite_size(d.data!==null ? d.data : 0);
+			if (has_metabolite_data && metabolite_data_styles.indexOf('Size')!==-1) {
+			    var f = float_for_data(d.data, metabolite_data_styles);
+			    return scale.metabolite_size(f===null ? 0 : f);
 			} else {
 			    return d.node_is_primary ? 15 : 10; 
 			}
@@ -2092,12 +2133,14 @@ define('draw',["utils"], function(utils) {
 		})
 		.style('fill', function(d) {
 		    if (d.node_type=='metabolite') {
-			if (has_metabolite_data && metabolite_data_style.indexOf('Color')!==-1) {
-			    return scale.metabolite_color(d.data!==null ? d.data : 0);
+			if (has_metabolite_data && metabolite_data_styles.indexOf('Color')!==-1) {
+			    var f = float_for_data(d.data, metabolite_data_styles);
+			    return scale.metabolite_color(f===null ? 0 : f);
 			} else {
 			    return 'rgb(224, 134, 91)';
 			}
 		    }
+		    return null;
 		})
 		.call(turn_off_drag)
 		.call(drag_behavior)
@@ -2112,12 +2155,9 @@ define('draw',["utils"], function(utils) {
 		return String(20)+"px";
             })
             .text(function(d) {	
-		var decimal_format = d3.format('.4g'),
-		    t = d.bigg_id;
-		if (has_metabolite_data) {
-		    if (d.data!==null) t += " ("+decimal_format(d.data)+")";
-		    else if (has_metabolite_data) t += " (nd)";
-		}
+		var t = d.bigg_id;
+		if (has_metabolite_data)
+		    t += ' ' + text_for_data(d.data, metabolite_data_styles);
 		return t;
 	    })
 	    .call(turn_off_drag)
@@ -2158,6 +2198,52 @@ define('draw',["utils"], function(utils) {
 	    new_y = end.y - length * (end.y - start.y) / hyp;
 	} else { console.error('bad displace value: ' + displace); }
 	return {x: new_x, y: new_y};
+    }
+
+    function check_data_style(data, styles, name) {
+	if (data.length==1)
+	    return null;
+	if (data.length==2 && styles.indexOf('Diff')!=-1)
+	    return null;
+	return console.warn('Bad data style: '+name);
+    }
+
+    function float_for_data(d, styles, ignore_abs) {
+	if (ignore_abs===undefined) ignore_abs = false;
+	if (d===null) return null;
+	var f = null;
+	if (d.length==1) f = d[0];
+	if (d.length==2 && styles.indexOf('Diff')!=-1) { // abs
+	    if (d[0]===null || d[1]===null) return null;
+	    else f = d[1] - d[0];
+	}
+	if (styles.indexOf('Abs')!=-1 && !ignore_abs) {
+	    f = Math.abs(f);
+	}
+	return f;
+    }
+
+    function text_for_data(d, styles) {
+	if (d===null)
+	    return null_or_d(null);
+	var f = float_for_data(d, styles);
+	if (d.length==1) {
+	    var format = d3.format('.4g');
+	    return null_or_d(f, format);
+	}
+	if (d.length==2 && styles.indexOf('Diff')!=-1) {
+	    var format = d3.format('.3g'),
+		t = null_or_d(d[0], format);
+	    t += ', ' + null_or_d(d[1], format);
+	    t += ': ' + null_or_d(f, format);
+	    return t;
+	}
+	return '';
+
+	// definitions
+	function null_or_d(d, format) {
+	    return d===null ? '(nd)' : format(d);
+	}
     }
 });
 
@@ -3065,22 +3151,6 @@ define('Scale',["utils"], function(utils) {
 				     .range(["rgb(200,200,200)", "rgb(190,190,255)", 
 					     "rgb(100,100,255)", "blue", "red"])});
 
-        // var factor = Math.min(w/map_w, h/map_h);
-        // sc.x = d3.scale.linear()
-        //     .domain([0, map_w])
-        //     .range([(w - map_w*factor)/2, map_w*factor + (w - map_w*factor)/2]),
-        // sc.y = d3.scale.linear()
-        //     .domain([0, map_h])
-        //     .range([(h - map_h*factor)/2, map_h*factor + (h - map_h*factor)/2]),
-        // sc.x_size = d3.scale.linear()
-        //     .domain([0, map_w])
-        //     .range([0, map_w*factor]),
-        // sc.y_size = d3.scale.linear()
-        //     .domain([0, map_h])
-        //     .range([0, map_h*factor]),
-        // sc.size = d3.scale.linear()
-        //     .domain([0, 1])
-        //     .range([0, factor]),
 	sc.x = d3.scale.linear();
 	sc.y = d3.scale.linear();
 	sc.x_size = d3.scale.linear();
@@ -3088,7 +3158,7 @@ define('Scale',["utils"], function(utils) {
 	sc.size = d3.scale.linear();
         sc.reaction_size = d3.scale.linear()
             .domain([0, 40])
-            .range([6, 6]),
+            .range([6, 12]),
 	sc.metabolite_size = d3.scale.linear()
 	    .range([8,15]),
 	sc.metabolite_color = d3.scale.linear()
@@ -4221,11 +4291,28 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    }
 	    return false;
 	}
+	// make the data an array, if it isn't already
+	var reaction_data = this.reaction_data;
+	if (!(reaction_data instanceof Array)) {
+	    reaction_data = [reaction_data];
+	}
+	// make sure the data and styles are OK
+	draw.check_data_style(reaction_data,
+			      this.reaction_data_styles,
+			      'reaction_data');
+	// make an object with the individual data arrays
+	var reaction_obj = utils.array_to_object(reaction_data);
+	// apply the datasets to the reactions	
 	for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id];
-	    if (reaction.bigg_id in this.reaction_data) {
-		var data = parseFloat(this.reaction_data[reaction.bigg_id]);
-		if (isNaN(data)) data = null;
+	    if (reaction.bigg_id in reaction_obj) {
+		var data_a = reaction_obj[reaction.bigg_id],
+		    data = [];
+		for (var i=0, l=data_a.length; i<l; i++) {
+		    var d = parseFloat(data_a[i]);
+		    if (isNaN(d)) d = null;
+		    data.push(d);
+		}
 		reaction.data = data;
 		for (var segment_id in reaction.segments) {
 		    var segment = reaction.segments[segment_id];
@@ -4250,8 +4337,11 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	var vals = [];
 	for (var reaction_id in this.reactions) {
 	    var reaction = this.reactions[reaction_id];
-	    if (reaction.data!==null)
-		vals.push(reaction.data);
+	    if (reaction.data!==null) {
+		reaction.data.forEach(function(d) {
+		    if (d!==null) vals.push(d);
+		});
+	    }
 	}
 	
 	var old_domain = this.scale.reaction_color.domain(),
@@ -4300,13 +4390,27 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    }
 	    return false;
 	}
-	var vals = [];
+	// make the data an array, if it isn't already
+	var metabolite_data = this.metabolite_data;
+	if (!(metabolite_data instanceof Array)) {
+	    metabolite_data = [metabolite_data];
+	}
+	// make sure the data and styles are OK
+	draw.check_data_style(metabolite_data,
+			      this.metabolite_data_styles,
+			      'metabolite_data');
+	// make an object with the individual data arrays
+	var metabolite_obj = utils.array_to_object(metabolite_data);
 	for (var node_id in nodes) {
-	    var node = nodes[node_id], data = 0.0;
-	    if (node.bigg_id in this.metabolite_data) {
-		data = parseFloat(this.metabolite_data[node.bigg_id]);
-		if (isNaN(data)) data = null;
-		else vals.push(data);
+	    var node = nodes[node_id];
+	    if (node.bigg_id in metabolite_obj) {
+		var data_a = metabolite_obj[node.bigg_id],
+		    data = [];
+		for (var i=0, l=data_a.length; i<l; i++) {
+		    var d = parseFloat(data_a[i]);
+		    if (isNaN(d)) d = null;
+		    data.push(d);
+		}
 		node.data = data;
 	    } else {
 		node.data = null;
@@ -4322,8 +4426,11 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	var min = 0, max = 0, vals = [];
 	for (var node_id in this.nodes) {
 	    var node = this.nodes[node_id];
-	    if (node.data!==null)
-		vals.push(node.data);
+	    if (node.data!==null) {
+		node.data.forEach(function(d) {
+		    if (d!==null) vals.push(d);
+		});
+	    }
 	}
 	if (vals.length > 0) {
 	    min = Math.min.apply(null, vals),
@@ -5389,7 +5496,7 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     }
 });
 
-define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"], function(utils, completely, Map, ZoomContainer, CallbackManager) {
+define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", "draw"], function(utils, completely, Map, ZoomContainer, CallbackManager, draw) {
     /**
      */
 
@@ -5547,8 +5654,6 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	if (selected_node===undefined && !starting_from_scratch)
 	    console.error('No selected node, and not starting from scratch');
 
-	var decimal_format = d3.format('.3g');
-
 	this.place(coords);
         // blur
         this.completely.input.blur();
@@ -5565,7 +5670,8 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	    cobra_metabolites = this.map.cobra_model.metabolites,
 	    reactions = this.map.reactions,
 	    has_reaction_data = this.map.has_reaction_data(),
-	    reaction_data = this.map.reaction_data;
+	    reaction_data = this.map.reaction_data,
+	    reaction_data_styles = this.map.reaction_data_styles;
         for (var reaction_id in cobra_reactions) {
             var reaction = cobra_reactions[reaction_id];
 
@@ -5580,16 +5686,22 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 		    // don't add suggestions twice
 		    if (reaction_id in suggestions) continue;
 		    // reverse for production
-		    var this_reaction_data, this_string;
+		    var this_reaction_data,
+			this_string = reaction_id;
 		    if (has_reaction_data) {
-			if (reaction_id in reaction_data) {
-			    this_reaction_data = reaction_data[reaction_id];
+			if (!(reaction_data instanceof Array))
+			    reaction_data = [reaction_data];
+			var r_data_obj = utils.array_to_object(reaction_data);
+			if (reaction_id in r_data_obj) {
+			    var d = r_data_obj[reaction_id],
+				f = draw.float_for_data(d, reaction_data_styles),
+				s = draw.text_for_data(d, reaction_data_styles);
+			    this_reaction_data = (f===null ? '' : f);
+			    this_string += ': ' + s;
 			} else {
-			    this_reaction_data = 0;
+			    this_reaction_data = '';
+			    this_string += ': nd';
 			}
-			this_string = string_for_reaction_data(reaction_id,
-							       this_reaction_data,
-							       decimal_format);
 	    		suggestions[reaction_id] = { reaction_data: this_reaction_data,
 						     string: this_string };
 		    } else {
@@ -5662,9 +5774,6 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	    }
             return false;
 	};
-	function string_for_reaction_data(reaction_abbreviation, reaction_data, decimal_format) {
-	    return reaction_abbreviation + ": " + decimal_format(reaction_data);
-	}
     }
     function toggle_start_reaction_listener(on_off) {
 	/** Toggle listening for a click to place a new reaction on the canvas.
@@ -5861,7 +5970,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    css: null,
 	    reaction_data_path: null,
 	    reaction_data: null,
-	    reaction_data_styles: ['Abs', 'Color', 'Diff'],
+	    reaction_data_styles: ['Color', 'Size', 'Abs', 'Diff'],
 	    metabolite_data: null,
 	    metabolite_data_path: null,
 	    metabolite_data_styles: ['Color', 'Size', 'Diff'],

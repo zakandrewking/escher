@@ -15,22 +15,6 @@ define(["utils"], function(utils) {
 				     .range(["rgb(200,200,200)", "rgb(190,190,255)", 
 					     "rgb(100,100,255)", "blue", "red"])});
 
-        // var factor = Math.min(w/map_w, h/map_h);
-        // sc.x = d3.scale.linear()
-        //     .domain([0, map_w])
-        //     .range([(w - map_w*factor)/2, map_w*factor + (w - map_w*factor)/2]),
-        // sc.y = d3.scale.linear()
-        //     .domain([0, map_h])
-        //     .range([(h - map_h*factor)/2, map_h*factor + (h - map_h*factor)/2]),
-        // sc.x_size = d3.scale.linear()
-        //     .domain([0, map_w])
-        //     .range([0, map_w*factor]),
-        // sc.y_size = d3.scale.linear()
-        //     .domain([0, map_h])
-        //     .range([0, map_h*factor]),
-        // sc.size = d3.scale.linear()
-        //     .domain([0, 1])
-        //     .range([0, factor]),
 	sc.x = d3.scale.linear();
 	sc.y = d3.scale.linear();
 	sc.x_size = d3.scale.linear();
@@ -38,7 +22,7 @@ define(["utils"], function(utils) {
 	sc.size = d3.scale.linear();
         sc.reaction_size = d3.scale.linear()
             .domain([0, 40])
-            .range([6, 6]),
+            .range([6, 12]),
 	sc.metabolite_size = d3.scale.linear()
 	    .range([8,15]),
 	sc.metabolite_color = d3.scale.linear()

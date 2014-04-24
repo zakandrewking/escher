@@ -38,7 +38,7 @@ describe('Map', function() {
 	for (var id in map.reactions) {
 	    var reaction = map.reactions[id];
 	    if (reaction.bigg_id=='GLCtex')
-		expect(reaction.data).toBe(100);
+		expect(reaction.data).toEqual([100]);
 	    else
 		expect(reaction.data).toBe(null);
 	}

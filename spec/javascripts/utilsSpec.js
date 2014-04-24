@@ -13,4 +13,11 @@ describe('utils', function() {
 	expect(utils.compare_arrays([1,2], [1,2])).toBe(true);
 	expect(utils.compare_arrays([1,2], [3,2])).toBe(false);
     });
+
+    it("array to object", function() {
+	var a = [{a:1, b:2}, {b:3, c:4}];
+	expect(utils.array_to_object(a)).toEqual({ a: [1, null],
+						   b: [2, 3],
+						   c: [null, 4] });
+    });
 });

@@ -1,4 +1,4 @@
-define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"], function(utils, completely, Map, ZoomContainer, CallbackManager) {
+define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", "draw"], function(utils, completely, Map, ZoomContainer, CallbackManager, draw) {
     /**
      */
 
@@ -156,8 +156,6 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 	if (selected_node===undefined && !starting_from_scratch)
 	    console.error('No selected node, and not starting from scratch');
 
-	var decimal_format = d3.format('.3g');
-
 	this.place(coords);
         // blur
         this.completely.input.blur();
@@ -174,7 +172,8 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 	    cobra_metabolites = this.map.cobra_model.metabolites,
 	    reactions = this.map.reactions,
 	    has_reaction_data = this.map.has_reaction_data(),
-	    reaction_data = this.map.reaction_data;
+	    reaction_data = this.map.reaction_data,
+	    reaction_data_styles = this.map.reaction_data_styles;
         for (var reaction_id in cobra_reactions) {
             var reaction = cobra_reactions[reaction_id];
 
@@ -189,16 +188,22 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 		    // don't add suggestions twice
 		    if (reaction_id in suggestions) continue;
 		    // reverse for production
-		    var this_reaction_data, this_string;
+		    var this_reaction_data,
+			this_string = reaction_id;
 		    if (has_reaction_data) {
-			if (reaction_id in reaction_data) {
-			    this_reaction_data = reaction_data[reaction_id];
+			if (!(reaction_data instanceof Array))
+			    reaction_data = [reaction_data];
+			var r_data_obj = utils.array_to_object(reaction_data);
+			if (reaction_id in r_data_obj) {
+			    var d = r_data_obj[reaction_id],
+				f = draw.float_for_data(d, reaction_data_styles),
+				s = draw.text_for_data(d, reaction_data_styles);
+			    this_reaction_data = (f===null ? '' : f);
+			    this_string += ': ' + s;
 			} else {
-			    this_reaction_data = 0;
+			    this_reaction_data = '';
+			    this_string += ': nd';
 			}
-			this_string = string_for_reaction_data(reaction_id,
-							       this_reaction_data,
-							       decimal_format);
 	    		suggestions[reaction_id] = { reaction_data: this_reaction_data,
 						     string: this_string };
 		    } else {
@@ -271,9 +276,6 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager"],
 	    }
             return false;
 	};
-	function string_for_reaction_data(reaction_abbreviation, reaction_data, decimal_format) {
-	    return reaction_abbreviation + ": " + decimal_format(reaction_data);
-	}
     }
     function toggle_start_reaction_listener(on_off) {
 	/** Toggle listening for a click to place a new reaction on the canvas.
