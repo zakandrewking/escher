@@ -2226,7 +2226,7 @@ define('draw',["utils"], function(utils) {
     function text_for_data(d, styles) {
 	if (d===null)
 	    return null_or_d(null);
-	var f = float_for_data(d, styles);
+	var f = float_for_data(d, styles, true);
 	if (d.length==1) {
 	    var format = d3.format('.4g');
 	    return null_or_d(f, format);
