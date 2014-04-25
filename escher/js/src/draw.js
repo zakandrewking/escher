@@ -238,7 +238,9 @@ define(["utils"], function(utils) {
 		return arrowheads;
 	    });
 	arrowheads.enter().append('path')
-	    .classed('arrowhead', true)
+	    .classed('arrowhead', true);
+	// update bezier points
+	arrowheads
 	    .attr("d", function(d) {
 		var markerWidth = 20, markerHeight = 13;
 		if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
@@ -246,9 +248,7 @@ define(["utils"], function(utils) {
 		    markerWidth += (scale.reaction_size(f) - scale.reaction_size(0));
 		}		    
 		return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
-	    });
-	// update bezier points
-	arrowheads.attr('transform', function(d) {
+	    }).attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
 	}).attr('fill', function(d) {
 	    var c;
