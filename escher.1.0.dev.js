@@ -1746,9 +1746,75 @@ return function(container, config) {
 }
 });
 
+define('data_styles',["utils"], function(utils) {
+    return { import_and_check: import_and_check,
+	     text_for_data: text_for_data,
+	     float_for_data: float_for_data
+	   };
+
+    function import_and_check(data, styles, name) {
+	if (data===null) return null;
+	// make array
+	if (!(data instanceof Array)) {
+	    data = [data];
+	}
+	// check data
+	var check = function() {
+	    if (data===null)
+		return null;
+	    if (data.length==1)
+		return null;
+	    if (data.length==2 && styles.indexOf('Diff')!=-1)
+		return null;
+	    return console.warn('Bad data style: '+name);
+	};
+	check();
+	data = utils.array_to_object(data);
+	return data;
+    }
+
+    function float_for_data(d, styles, ignore_abs) {
+	if (ignore_abs===undefined) ignore_abs = false;
+	if (d===null) return null;
+	var f = null;
+	if (d.length==1) f = d[0];
+	if (d.length==2 && styles.indexOf('Diff')!=-1) { // abs
+	    if (d[0]===null || d[1]===null) return null;
+	    else f = d[1] - d[0];
+	}
+	if (styles.indexOf('Abs')!=-1 && !ignore_abs) {
+	    f = Math.abs(f);
+	}
+	return f;
+    }
+
+    function text_for_data(d, styles) {
+	if (d===null)
+	    return null_or_d(null);
+	var f = float_for_data(d, styles, true);
+	if (d.length==1) {
+	    var format = d3.format('.4g');
+	    return null_or_d(f, format);
+	}
+	if (d.length==2 && styles.indexOf('Diff')!=-1) {
+	    var format = d3.format('.3g'),
+		t = null_or_d(d[0], format);
+	    t += ', ' + null_or_d(d[1], format);
+	    t += ': ' + null_or_d(f, format);
+	    return t;
+	}
+	return '';
+
+	// definitions
+	function null_or_d(d, format) {
+	    return d===null ? '(nd)' : format(d);
+	}
+    }
+});
 
 
-define('draw',["utils"], function(utils) {
+
+define('draw',["utils", "data_styles"], function(utils, data_styles) {
     return { create_reaction: create_reaction,
 	     update_reaction: update_reaction,
 	     create_node: create_node,
@@ -1756,10 +1822,7 @@ define('draw',["utils"], function(utils) {
 	     create_text_label: create_text_label,
 	     update_text_label: update_text_label,
 	     create_membrane: create_membrane,
-	     update_membrane: update_membrane,
-	     check_data_style: check_data_style,
-	     text_for_data: text_for_data,
-	     float_for_data: float_for_data
+	     update_membrane: update_membrane
 	   };
 
     // definitions
@@ -1857,7 +1920,7 @@ define('draw',["utils"], function(utils) {
 	sel.text(function(d) { 
             var t = d.bigg_id;
 	    if (has_reaction_data)
-		t += ' ' + text_for_data(d.data, reaction_data_styles);
+		t += ' ' + d.data_string;
             return t;
 	}).attr('transform', function(d) {
             return 'translate('+d.label_x+','+d.label_y+')';
@@ -1937,7 +2000,7 @@ define('draw',["utils"], function(utils) {
             })
             .style('stroke', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
-		    var f = float_for_data(d.data, reaction_data_styles);
+		    var f = d.data;
 		    return scale.reaction_color(f===null ? 0 : f);
 		} else {
 		    return default_reaction_color;
@@ -1945,7 +2008,7 @@ define('draw',["utils"], function(utils) {
 	    })
 	    .style('stroke-width', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
-		    var f = float_for_data(d.data, reaction_data_styles);
+		    var f = d.data;
 		    return scale.reaction_size(f===null ? 0 : f);
 		} else {
 		    return scale.reaction_size(0);
@@ -1986,22 +2049,21 @@ define('draw',["utils"], function(utils) {
 		return arrowheads;
 	    });
 	arrowheads.enter().append('path')
-	    .classed('arrowhead', true)
-	    .attr("d", function(d) {
-		var markerWidth = 20, markerHeight = 13;
-		if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
-		    var f = float_for_data(d.data, reaction_data_styles);
-		    markerWidth += (scale.reaction_size(f) - scale.reaction_size(0));
-		}		    
-		return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
-	    });
+	    .classed('arrowhead', true);
 	// update bezier points
-	arrowheads.attr('transform', function(d) {
+	arrowheads.attr("d", function(d) {
+	    var markerWidth = 20, markerHeight = 13;
+	    if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
+		var f = d.data;
+		markerWidth += (scale.reaction_size(f) - scale.reaction_size(0));
+	    }		    
+	    return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
+	}).attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
 	}).attr('fill', function(d) {
 	    var c;
 	    if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
-		var f = float_for_data(d.data, reaction_data_styles);
+		var f = d.data;
 		c = scale.reaction_color(f===null ? 0 : f);
 	    } else {
 		c = default_reaction_color;
@@ -2122,7 +2184,7 @@ define('draw',["utils"], function(utils) {
 		.attr('r', function(d) {
 		    if (d.node_type == 'metabolite') {
 			if (has_metabolite_data && metabolite_data_styles.indexOf('Size')!==-1) {
-			    var f = float_for_data(d.data, metabolite_data_styles);
+			    var f = d.data;
 			    return scale.metabolite_size(f===null ? 0 : f);
 			} else {
 			    return d.node_is_primary ? 15 : 10; 
@@ -2134,7 +2196,7 @@ define('draw',["utils"], function(utils) {
 		.style('fill', function(d) {
 		    if (d.node_type=='metabolite') {
 			if (has_metabolite_data && metabolite_data_styles.indexOf('Color')!==-1) {
-			    var f = float_for_data(d.data, metabolite_data_styles);
+			    var f = d.data;
 			    return scale.metabolite_color(f===null ? 0 : f);
 			} else {
 			    return 'rgb(224, 134, 91)';
@@ -2157,7 +2219,7 @@ define('draw',["utils"], function(utils) {
             .text(function(d) {	
 		var t = d.bigg_id;
 		if (has_metabolite_data)
-		    t += ' ' + text_for_data(d.data, metabolite_data_styles);
+		    t += ' ' + d.data_string;
 		return t;
 	    })
 	    .call(turn_off_drag)
@@ -2198,52 +2260,6 @@ define('draw',["utils"], function(utils) {
 	    new_y = end.y - length * (end.y - start.y) / hyp;
 	} else { console.error('bad displace value: ' + displace); }
 	return {x: new_x, y: new_y};
-    }
-
-    function check_data_style(data, styles, name) {
-	if (data.length==1)
-	    return null;
-	if (data.length==2 && styles.indexOf('Diff')!=-1)
-	    return null;
-	return console.warn('Bad data style: '+name);
-    }
-
-    function float_for_data(d, styles, ignore_abs) {
-	if (ignore_abs===undefined) ignore_abs = false;
-	if (d===null) return null;
-	var f = null;
-	if (d.length==1) f = d[0];
-	if (d.length==2 && styles.indexOf('Diff')!=-1) { // abs
-	    if (d[0]===null || d[1]===null) return null;
-	    else f = d[1] - d[0];
-	}
-	if (styles.indexOf('Abs')!=-1 && !ignore_abs) {
-	    f = Math.abs(f);
-	}
-	return f;
-    }
-
-    function text_for_data(d, styles) {
-	if (d===null)
-	    return null_or_d(null);
-	var f = float_for_data(d, styles, true);
-	if (d.length==1) {
-	    var format = d3.format('.4g');
-	    return null_or_d(f, format);
-	}
-	if (d.length==2 && styles.indexOf('Diff')!=-1) {
-	    var format = d3.format('.3g'),
-		t = null_or_d(d[0], format);
-	    t += ', ' + null_or_d(d[1], format);
-	    t += ': ' + null_or_d(f, format);
-	    return t;
-	}
-	return '';
-
-	// definitions
-	function null_or_d(d, format) {
-	    return d===null ? '(nd)' : format(d);
-	}
     }
 });
 
@@ -3751,7 +3767,7 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
     }
 });
 
-define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas) {
+define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -3857,11 +3873,18 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.height = height;
 	this.width = width;
 
-	this.reaction_data = reaction_data;
+	// check and load data
+	this.reaction_data_object = data_styles.import_and_check(reaction_data,
+								 reaction_data_styles,
+								 'reaction_data');
 	this.reaction_data_styles = reaction_data_styles;
-	this.metabolite_data = metabolite_data;
+	this.metabolite_data_object = data_styles.import_and_check(metabolite_data,
+								   metabolite_data_styles,
+								   'metabolite_data');
 	this.metabolite_data_styles = metabolite_data_styles;
-	this.cobra_model = cobra_model;
+
+	// set the model AFTER loading the datasets
+	this.set_model(cobra_model);
 
 	this.largest_ids = { reactions: -1,
 			     nodes: -1,
@@ -4051,6 +4074,12 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
 	 */
 	this.cobra_model = model;
+	if (this.cobra_model !== null) {
+	    this.cobra_model.apply_reaction_data(this.reaction_data_object,
+						 this.reaction_data_styles);
+	    this.cobra_model.apply_metabolite_data(this.metabolite_data_object,
+						   this.metabolite_data_styles);
+	}
     }
     function set_reaction_data(reaction_data) {
 	/** Set a new reaction data, and redraw the map.
@@ -4058,8 +4087,12 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	 Pass null to reset the map and draw without reaction data.
 
 	 */
-	this.reaction_data = reaction_data;
+	this.reaction_data_object = data_styles.import_and_check(reaction_data,
+								 this.reaction_data_styles,
+								 'reaction_data');
 	this.apply_reaction_data_to_map();
+	this.cobra_model.apply_reaction_data(this.reaction_data_object,
+					     this.reaction_data_styles);
 	this.draw_all_reactions();
     }
     function set_metabolite_data(metabolite_data) {
@@ -4068,15 +4101,19 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	 Pass null to reset the map and draw without metabolite data.
 
 	 */
-	this.metabolite_data = metabolite_data;
+	this.metabolite_data_object = data_styles.import_and_check(metabolite_data,
+								   this.metabolite_data_styles,
+								   'metabolite_data');
 	this.apply_metabolite_data_to_map();
+	this.cobra_model.apply_metabolite_data(this.metabolite_data,
+					       this.metabolite_data_styles);
 	this.draw_all_nodes();
     }
     function has_reaction_data() {
-	return (this.reaction_data!==null);
+	return (this.reaction_data_object!==null);
     }
     function has_metabolite_data() {
-	return (this.metabolite_data!==null);
+	return (this.metabolite_data_object!==null);
     }
     function draw_everything() {
         /** Draw the reactions and membranes
@@ -4284,6 +4321,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id];
 		reaction.data = null;
+		reaction.data_string = '';
 		for (var segment_id in reaction.segments) {
 		    var segment = reaction.segments[segment_id];
 		    segment.data = null;
@@ -4291,40 +4329,21 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    }
 	    return false;
 	}
-	// make the data an array, if it isn't already
-	var reaction_data = this.reaction_data;
-	if (!(reaction_data instanceof Array)) {
-	    reaction_data = [reaction_data];
-	}
-	// make sure the data and styles are OK
-	draw.check_data_style(reaction_data,
-			      this.reaction_data_styles,
-			      'reaction_data');
-	// make an object with the individual data arrays
-	var reaction_obj = utils.array_to_object(reaction_data);
+	// grab the data
+	var data = this.reaction_data_object,
+	    styles = this.reaction_data_styles;
 	// apply the datasets to the reactions	
 	for (var reaction_id in reactions) {
-	    var reaction = reactions[reaction_id];
-	    if (reaction.bigg_id in reaction_obj) {
-		var data_a = reaction_obj[reaction.bigg_id],
-		    data = [];
-		for (var i=0, l=data_a.length; i<l; i++) {
-		    var d = parseFloat(data_a[i]);
-		    if (isNaN(d)) d = null;
-		    data.push(d);
-		}
-		reaction.data = data;
-		for (var segment_id in reaction.segments) {
-		    var segment = reaction.segments[segment_id];
-		    segment.data = data;
-		}
-	    } else {
-		var data = null;
-		reaction.data = data;
-		for (var segment_id in reaction.segments) {
-		    var segment = reaction.segments[segment_id];
-		    segment.data = data;
-		}
+	    var reaction = reactions[reaction_id],
+		d = (reaction.bigg_id in data ? data[reaction.bigg_id] : null),
+		f = data_styles.float_for_data(d, styles),
+		s = data_styles.text_for_data(d, styles);
+	    reaction.data = f;
+	    reaction.data_string = s;
+	    // apply to the segments
+	    for (var segment_id in reaction.segments) {
+		var segment = reaction.segments[segment_id];
+		segment.data = f;
 	    }
 	}
 	return this.update_reaction_data_domain();
@@ -4338,14 +4357,12 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	for (var reaction_id in this.reactions) {
 	    var reaction = this.reactions[reaction_id];
 	    if (reaction.data!==null) {
-		reaction.data.forEach(function(d) {
-		    if (d!==null) vals.push(d);
-		});
+		vals.push(reaction.data);
 	    }
 	}
 	
 	var old_domain = this.scale.reaction_color.domain(),
-	    new_domain, new_range;
+	    new_domain, new_color_range, new_size_range;
 	    
 	if (this.reaction_data_styles.indexOf('Abs') != -1) {
 	    var min = 0, max = 0;
@@ -4357,7 +4374,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    if (max==0) max = min = 10;
 	    if (min==max) min = max/2;
 	    new_domain = [-max, -min, 0, min, max];
-	    new_range = ["red", "blue", "rgb(200,200,200)", "blue", "red"];
+	    new_color_range = ["red", "blue", "rgb(200,200,200)", "blue", "red"];
+	    new_size_range = [12, 6, 6, 6, 12];
 	} else {
 	    var min = 0, max = 0;
 	    vals.push(0);
@@ -4366,9 +4384,11 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 		max = Math.max.apply(null, vals);
 	    }
 	    new_domain = [min, max];
-	    new_range = ["blue", "red"];
+	    new_color_range = ["blue", "red"];
+	    new_size_range = [6, 12];
 	}
-	this.scale.reaction_color.domain(new_domain).range(new_range);
+	this.scale.reaction_color.domain(new_domain).range(new_color_range);
+	this.scale.reaction_size.domain(new_domain).range(new_size_range);
 	// run the callback
 	this.callback_manager.run('update_reaction_data_domain');
 	// compare arrays
@@ -4387,34 +4407,20 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	if (!this.has_metabolite_data()) {
 	    for (var node_id in nodes) {
 		nodes[node_id].data = null;
+		nodes[node_id].data_string = '';
 	    }
 	    return false;
 	}
-	// make the data an array, if it isn't already
-	var metabolite_data = this.metabolite_data;
-	if (!(metabolite_data instanceof Array)) {
-	    metabolite_data = [metabolite_data];
-	}
-	// make sure the data and styles are OK
-	draw.check_data_style(metabolite_data,
-			      this.metabolite_data_styles,
-			      'metabolite_data');
-	// make an object with the individual data arrays
-	var metabolite_obj = utils.array_to_object(metabolite_data);
+	// grab the data
+	var data = this.metabolite_data_object,
+	    styles = this.metabolite_data_styles;
 	for (var node_id in nodes) {
-	    var node = nodes[node_id];
-	    if (node.bigg_id in metabolite_obj) {
-		var data_a = metabolite_obj[node.bigg_id],
-		    data = [];
-		for (var i=0, l=data_a.length; i<l; i++) {
-		    var d = parseFloat(data_a[i]);
-		    if (isNaN(d)) d = null;
-		    data.push(d);
-		}
-		node.data = data;
-	    } else {
-		node.data = null;
-	    }
+	    var node = nodes[node_id],
+		d = (node.bigg_id in data ? data[node.bigg_id] : null),
+		f = data_styles.float_for_data(d, styles),
+		s = data_styles.text_for_data(d, styles);
+	    node.data = f;
+	    node.data_string = s;
 	}
 	return this.update_metabolite_data_domain();
     }
@@ -4426,20 +4432,41 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	var min = 0, max = 0, vals = [];
 	for (var node_id in this.nodes) {
 	    var node = this.nodes[node_id];
-	    if (node.data!==null) {
-		node.data.forEach(function(d) {
-		    if (d!==null) vals.push(d);
-		});
-	    }
+	    if (node.data!==null)
+		vals.push(node.data);
 	}
 	if (vals.length > 0) {
 	    min = Math.min.apply(null, vals),
 	    max = Math.max.apply(null, vals);
 	} 
 	var old_domain = this.scale.metabolite_size.domain(),
+	    new_domain, new_color_range, new_size_range;
+
+	if (this.metabolite_data_styles.indexOf('Abs') != -1) {
+	    var min = 0, max = 0;
+	    if (vals.length > 0) {
+		vals = vals.map(function(x) { return Math.abs(x); });
+		min = Math.min.apply(null, vals),
+		max = Math.max.apply(null, vals);
+	    } 
+	    if (max==0) max = min = 10;
+	    if (min==max) min = max/2;
+	    new_domain = [-max, -min, 0, min, max];
+	    new_color_range = ["red", "white", "white", "white", "red"];
+	    new_size_range = [15, 8, 8, 8, 18];
+	} else {
+	    var min = 0, max = 0;
+	    vals.push(0);
+	    if (vals.length > 0) {
+		min = Math.min.apply(null, vals),
+		max = Math.max.apply(null, vals);
+	    }
 	    new_domain = [min, max];
-        this.scale.metabolite_size.domain(new_domain);
-	this.scale.metabolite_color.domain(new_domain);
+	    new_color_range = ["white", "red"];
+	    new_size_range = [8, 15];
+	}
+	this.scale.metabolite_color.domain(new_domain).range(new_color_range);
+	this.scale.metabolite_size.domain(new_domain).range(new_size_range);
 	// run the callback
 	this.callback_manager.run('update_metabolite_data_domain');
 	// compare arrays
@@ -5310,6 +5337,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	for (var r_id in out.reactions) {
 	    var reaction = out.reactions[r_id];
 	    delete reaction.data;
+	    delete reaction.data_string;
 	    for (var s_id in reaction.segments) {
 		var segment = reaction.segments[s_id];
 		delete segment.reversibility;
@@ -5319,7 +5347,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    }
 	}
 	for (var n_id in out.nodes) {
-	    delete out.nodes[n_id].data;
+	    var node = out.nodes[n_id];
+	    delete node.data;
+	    delete node.data_string;
 	}
 
 	if (this.debug) {
@@ -5685,25 +5715,10 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 		if (starting_from_scratch || metabolite_id==selected_node.bigg_id) {
 		    // don't add suggestions twice
 		    if (reaction_id in suggestions) continue;
-		    // reverse for production
-		    var this_reaction_data,
-			this_string = reaction_id;
 		    if (has_reaction_data) {
-			if (!(reaction_data instanceof Array))
-			    reaction_data = [reaction_data];
-			var r_data_obj = utils.array_to_object(reaction_data);
-			if (reaction_id in r_data_obj) {
-			    var d = r_data_obj[reaction_id],
-				f = draw.float_for_data(d, reaction_data_styles),
-				s = draw.text_for_data(d, reaction_data_styles);
-			    this_reaction_data = (f===null ? '' : f);
-			    this_string += ': ' + s;
-			} else {
-			    this_reaction_data = '';
-			    this_string += ': nd';
-			}
-	    		suggestions[reaction_id] = { reaction_data: this_reaction_data,
-						     string: this_string };
+			suggestions[reaction_id] = { reaction_data: reaction.data,
+						     string: (reaction_id + ': ' +
+							      reaction.data_string) };
 		    } else {
 	    		suggestions[reaction_id] = { string: reaction_id };
 		    }
@@ -5818,13 +5833,15 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 
 });
 
-define('CobraModel',["utils"], function(utils) {
+define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
     /**
      */
 
     var CobraModel = utils.make_class();
     // instance methods
-    CobraModel.prototype = { init: init };
+    CobraModel.prototype = { init: init,
+			     apply_reaction_data: apply_reaction_data,
+			     apply_metabolite_data: apply_metabolite_data };
 
     return CobraModel;
 
@@ -5835,8 +5852,8 @@ define('CobraModel',["utils"], function(utils) {
 	    throw new Error('Bad model data.');
 	    return;
 	}
-	this.reactions = utils.clone(model_data.reactions);
-	this.metabolites = utils.clone(model_data.metabolites);
+	this.reactions = model_data.reactions;
+	this.metabolites = model_data.metabolites;
 
 	// get cofactors if preset
 	if ('cofactors' in model_data) {
@@ -5848,6 +5865,40 @@ define('CobraModel',["utils"], function(utils) {
 	    }
 	} else {
 	    this.cofactors = [];
+	}
+    }
+
+    function apply_reaction_data(reaction_data, styles) {
+	for (var reaction_id in this.reactions) {
+	    var reaction = this.reactions[reaction_id];
+	    if (reaction_data===null) {
+		reaction.data = null;
+		reaction.data_string = '';
+	    } else {
+		var d = (reaction_id in reaction_data ?
+			 reaction_data[reaction_id] : null),
+		    f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		reaction.data = f;
+		reaction.data_string = s;
+	    }
+	}
+    }
+
+    function apply_metabolite_data(metabolite_data, styles) {
+	for (var metabolite_id in this.metabolites) {
+	    var metabolite = this.metabolites[metabolite_id];
+	    if (metabolite_data===null) {
+		metabolite.data = null;
+		metabolite.data_string = '';
+	    } else {
+		var d = (metabolite_id in metabolite_data ?
+			 metabolite_data[metabolite_id] : null),
+		    f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		metabolite.data = f;
+		metabolite.data_string = s;
+	    }
 	}
     }
 });

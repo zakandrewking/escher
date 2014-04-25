@@ -187,25 +187,10 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 		if (starting_from_scratch || metabolite_id==selected_node.bigg_id) {
 		    // don't add suggestions twice
 		    if (reaction_id in suggestions) continue;
-		    // reverse for production
-		    var this_reaction_data,
-			this_string = reaction_id;
 		    if (has_reaction_data) {
-			if (!(reaction_data instanceof Array))
-			    reaction_data = [reaction_data];
-			var r_data_obj = utils.array_to_object(reaction_data);
-			if (reaction_id in r_data_obj) {
-			    var d = r_data_obj[reaction_id],
-				f = draw.float_for_data(d, reaction_data_styles),
-				s = draw.text_for_data(d, reaction_data_styles);
-			    this_reaction_data = (f===null ? '' : f);
-			    this_string += ': ' + s;
-			} else {
-			    this_reaction_data = '';
-			    this_string += ': nd';
-			}
-	    		suggestions[reaction_id] = { reaction_data: this_reaction_data,
-						     string: this_string };
+			suggestions[reaction_id] = { reaction_data: reaction.data,
+						     string: (reaction_id + ': ' +
+							      reaction.data_string) };
 		    } else {
 	    		suggestions[reaction_id] = { string: reaction_id };
 		    }

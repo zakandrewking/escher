@@ -1,4 +1,4 @@
-define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas) {
+define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -104,11 +104,18 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.height = height;
 	this.width = width;
 
-	this.reaction_data = reaction_data;
+	// check and load data
+	this.reaction_data_object = data_styles.import_and_check(reaction_data,
+								 reaction_data_styles,
+								 'reaction_data');
 	this.reaction_data_styles = reaction_data_styles;
-	this.metabolite_data = metabolite_data;
+	this.metabolite_data_object = data_styles.import_and_check(metabolite_data,
+								   metabolite_data_styles,
+								   'metabolite_data');
 	this.metabolite_data_styles = metabolite_data_styles;
-	this.cobra_model = cobra_model;
+
+	// set the model AFTER loading the datasets
+	this.set_model(cobra_model);
 
 	this.largest_ids = { reactions: -1,
 			     nodes: -1,
@@ -298,6 +305,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	 */
 	this.cobra_model = model;
+	if (this.cobra_model !== null) {
+	    this.cobra_model.apply_reaction_data(this.reaction_data_object,
+						 this.reaction_data_styles);
+	    this.cobra_model.apply_metabolite_data(this.metabolite_data_object,
+						   this.metabolite_data_styles);
+	}
     }
     function set_reaction_data(reaction_data) {
 	/** Set a new reaction data, and redraw the map.
@@ -305,8 +318,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	 Pass null to reset the map and draw without reaction data.
 
 	 */
-	this.reaction_data = reaction_data;
+	this.reaction_data_object = data_styles.import_and_check(reaction_data,
+								 this.reaction_data_styles,
+								 'reaction_data');
 	this.apply_reaction_data_to_map();
+	this.cobra_model.apply_reaction_data(this.reaction_data_object,
+					     this.reaction_data_styles);
 	this.draw_all_reactions();
     }
     function set_metabolite_data(metabolite_data) {
@@ -315,15 +332,19 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	 Pass null to reset the map and draw without metabolite data.
 
 	 */
-	this.metabolite_data = metabolite_data;
+	this.metabolite_data_object = data_styles.import_and_check(metabolite_data,
+								   this.metabolite_data_styles,
+								   'metabolite_data');
 	this.apply_metabolite_data_to_map();
+	this.cobra_model.apply_metabolite_data(this.metabolite_data,
+					       this.metabolite_data_styles);
 	this.draw_all_nodes();
     }
     function has_reaction_data() {
-	return (this.reaction_data!==null);
+	return (this.reaction_data_object!==null);
     }
     function has_metabolite_data() {
-	return (this.metabolite_data!==null);
+	return (this.metabolite_data_object!==null);
     }
     function draw_everything() {
         /** Draw the reactions and membranes
@@ -531,6 +552,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id];
 		reaction.data = null;
+		reaction.data_string = '';
 		for (var segment_id in reaction.segments) {
 		    var segment = reaction.segments[segment_id];
 		    segment.data = null;
@@ -538,40 +560,21 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    }
 	    return false;
 	}
-	// make the data an array, if it isn't already
-	var reaction_data = this.reaction_data;
-	if (!(reaction_data instanceof Array)) {
-	    reaction_data = [reaction_data];
-	}
-	// make sure the data and styles are OK
-	draw.check_data_style(reaction_data,
-			      this.reaction_data_styles,
-			      'reaction_data');
-	// make an object with the individual data arrays
-	var reaction_obj = utils.array_to_object(reaction_data);
+	// grab the data
+	var data = this.reaction_data_object,
+	    styles = this.reaction_data_styles;
 	// apply the datasets to the reactions	
 	for (var reaction_id in reactions) {
-	    var reaction = reactions[reaction_id];
-	    if (reaction.bigg_id in reaction_obj) {
-		var data_a = reaction_obj[reaction.bigg_id],
-		    data = [];
-		for (var i=0, l=data_a.length; i<l; i++) {
-		    var d = parseFloat(data_a[i]);
-		    if (isNaN(d)) d = null;
-		    data.push(d);
-		}
-		reaction.data = data;
-		for (var segment_id in reaction.segments) {
-		    var segment = reaction.segments[segment_id];
-		    segment.data = data;
-		}
-	    } else {
-		var data = null;
-		reaction.data = data;
-		for (var segment_id in reaction.segments) {
-		    var segment = reaction.segments[segment_id];
-		    segment.data = data;
-		}
+	    var reaction = reactions[reaction_id],
+		d = (reaction.bigg_id in data ? data[reaction.bigg_id] : null),
+		f = data_styles.float_for_data(d, styles),
+		s = data_styles.text_for_data(d, styles);
+	    reaction.data = f;
+	    reaction.data_string = s;
+	    // apply to the segments
+	    for (var segment_id in reaction.segments) {
+		var segment = reaction.segments[segment_id];
+		segment.data = f;
 	    }
 	}
 	return this.update_reaction_data_domain();
@@ -585,14 +588,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	for (var reaction_id in this.reactions) {
 	    var reaction = this.reactions[reaction_id];
 	    if (reaction.data!==null) {
-		reaction.data.forEach(function(d) {
-		    if (d!==null) vals.push(d);
-		});
+		vals.push(reaction.data);
 	    }
 	}
 	
 	var old_domain = this.scale.reaction_color.domain(),
-	    new_domain, new_range;
+	    new_domain, new_color_range, new_size_range;
 	    
 	if (this.reaction_data_styles.indexOf('Abs') != -1) {
 	    var min = 0, max = 0;
@@ -604,7 +605,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    if (max==0) max = min = 10;
 	    if (min==max) min = max/2;
 	    new_domain = [-max, -min, 0, min, max];
-	    new_range = ["red", "blue", "rgb(200,200,200)", "blue", "red"];
+	    new_color_range = ["red", "blue", "rgb(200,200,200)", "blue", "red"];
+	    new_size_range = [12, 6, 6, 6, 12];
 	} else {
 	    var min = 0, max = 0;
 	    vals.push(0);
@@ -613,9 +615,11 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		max = Math.max.apply(null, vals);
 	    }
 	    new_domain = [min, max];
-	    new_range = ["blue", "red"];
+	    new_color_range = ["blue", "red"];
+	    new_size_range = [6, 12];
 	}
-	this.scale.reaction_color.domain(new_domain).range(new_range);
+	this.scale.reaction_color.domain(new_domain).range(new_color_range);
+	this.scale.reaction_size.domain(new_domain).range(new_size_range);
 	// run the callback
 	this.callback_manager.run('update_reaction_data_domain');
 	// compare arrays
@@ -634,34 +638,20 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	if (!this.has_metabolite_data()) {
 	    for (var node_id in nodes) {
 		nodes[node_id].data = null;
+		nodes[node_id].data_string = '';
 	    }
 	    return false;
 	}
-	// make the data an array, if it isn't already
-	var metabolite_data = this.metabolite_data;
-	if (!(metabolite_data instanceof Array)) {
-	    metabolite_data = [metabolite_data];
-	}
-	// make sure the data and styles are OK
-	draw.check_data_style(metabolite_data,
-			      this.metabolite_data_styles,
-			      'metabolite_data');
-	// make an object with the individual data arrays
-	var metabolite_obj = utils.array_to_object(metabolite_data);
+	// grab the data
+	var data = this.metabolite_data_object,
+	    styles = this.metabolite_data_styles;
 	for (var node_id in nodes) {
-	    var node = nodes[node_id];
-	    if (node.bigg_id in metabolite_obj) {
-		var data_a = metabolite_obj[node.bigg_id],
-		    data = [];
-		for (var i=0, l=data_a.length; i<l; i++) {
-		    var d = parseFloat(data_a[i]);
-		    if (isNaN(d)) d = null;
-		    data.push(d);
-		}
-		node.data = data;
-	    } else {
-		node.data = null;
-	    }
+	    var node = nodes[node_id],
+		d = (node.bigg_id in data ? data[node.bigg_id] : null),
+		f = data_styles.float_for_data(d, styles),
+		s = data_styles.text_for_data(d, styles);
+	    node.data = f;
+	    node.data_string = s;
 	}
 	return this.update_metabolite_data_domain();
     }
@@ -673,20 +663,41 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var min = 0, max = 0, vals = [];
 	for (var node_id in this.nodes) {
 	    var node = this.nodes[node_id];
-	    if (node.data!==null) {
-		node.data.forEach(function(d) {
-		    if (d!==null) vals.push(d);
-		});
-	    }
+	    if (node.data!==null)
+		vals.push(node.data);
 	}
 	if (vals.length > 0) {
 	    min = Math.min.apply(null, vals),
 	    max = Math.max.apply(null, vals);
 	} 
 	var old_domain = this.scale.metabolite_size.domain(),
+	    new_domain, new_color_range, new_size_range;
+
+	if (this.metabolite_data_styles.indexOf('Abs') != -1) {
+	    var min = 0, max = 0;
+	    if (vals.length > 0) {
+		vals = vals.map(function(x) { return Math.abs(x); });
+		min = Math.min.apply(null, vals),
+		max = Math.max.apply(null, vals);
+	    } 
+	    if (max==0) max = min = 10;
+	    if (min==max) min = max/2;
+	    new_domain = [-max, -min, 0, min, max];
+	    new_color_range = ["red", "white", "white", "white", "red"];
+	    new_size_range = [15, 8, 8, 8, 18];
+	} else {
+	    var min = 0, max = 0;
+	    vals.push(0);
+	    if (vals.length > 0) {
+		min = Math.min.apply(null, vals),
+		max = Math.max.apply(null, vals);
+	    }
 	    new_domain = [min, max];
-        this.scale.metabolite_size.domain(new_domain);
-	this.scale.metabolite_color.domain(new_domain);
+	    new_color_range = ["white", "red"];
+	    new_size_range = [8, 15];
+	}
+	this.scale.metabolite_color.domain(new_domain).range(new_color_range);
+	this.scale.metabolite_size.domain(new_domain).range(new_size_range);
 	// run the callback
 	this.callback_manager.run('update_metabolite_data_domain');
 	// compare arrays
@@ -1557,6 +1568,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	for (var r_id in out.reactions) {
 	    var reaction = out.reactions[r_id];
 	    delete reaction.data;
+	    delete reaction.data_string;
 	    for (var s_id in reaction.segments) {
 		var segment = reaction.segments[s_id];
 		delete segment.reversibility;
@@ -1566,7 +1578,9 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    }
 	}
 	for (var n_id in out.nodes) {
-	    delete out.nodes[n_id].data;
+	    var node = out.nodes[n_id];
+	    delete node.data;
+	    delete node.data_string;
 	}
 
 	if (this.debug) {

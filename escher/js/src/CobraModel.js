@@ -1,10 +1,12 @@
-define(["utils"], function(utils) {
+define(["utils", "data_styles"], function(utils, data_styles) {
     /**
      */
 
     var CobraModel = utils.make_class();
     // instance methods
-    CobraModel.prototype = { init: init };
+    CobraModel.prototype = { init: init,
+			     apply_reaction_data: apply_reaction_data,
+			     apply_metabolite_data: apply_metabolite_data };
 
     return CobraModel;
 
@@ -15,8 +17,8 @@ define(["utils"], function(utils) {
 	    throw new Error('Bad model data.');
 	    return;
 	}
-	this.reactions = utils.clone(model_data.reactions);
-	this.metabolites = utils.clone(model_data.metabolites);
+	this.reactions = model_data.reactions;
+	this.metabolites = model_data.metabolites;
 
 	// get cofactors if preset
 	if ('cofactors' in model_data) {
@@ -28,6 +30,40 @@ define(["utils"], function(utils) {
 	    }
 	} else {
 	    this.cofactors = [];
+	}
+    }
+
+    function apply_reaction_data(reaction_data, styles) {
+	for (var reaction_id in this.reactions) {
+	    var reaction = this.reactions[reaction_id];
+	    if (reaction_data===null) {
+		reaction.data = null;
+		reaction.data_string = '';
+	    } else {
+		var d = (reaction_id in reaction_data ?
+			 reaction_data[reaction_id] : null),
+		    f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		reaction.data = f;
+		reaction.data_string = s;
+	    }
+	}
+    }
+
+    function apply_metabolite_data(metabolite_data, styles) {
+	for (var metabolite_id in this.metabolites) {
+	    var metabolite = this.metabolites[metabolite_id];
+	    if (metabolite_data===null) {
+		metabolite.data = null;
+		metabolite.data_string = '';
+	    } else {
+		var d = (metabolite_id in metabolite_data ?
+			 metabolite_data[metabolite_id] : null),
+		    f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		metabolite.data = f;
+		metabolite.data_string = s;
+	    }
 	}
     }
 });
