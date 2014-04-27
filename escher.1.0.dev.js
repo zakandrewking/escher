@@ -2280,7 +2280,7 @@ define('build',["utils"], function(utils) {
 	
 	// rotate the new reaction around the selected metabolite
 	// convert to radians
-	angle = Math.PI / 180 * angle; // default angle
+	angle = Math.PI / 180 * angle;
 
 	// generate a new integer id
 	var new_reaction_id = String(++largest_ids.reactions);
@@ -2298,7 +2298,13 @@ define('build',["utils"], function(utils) {
                        'y': (main_axis[0].y + main_axis[1].y)/2 };
 	    
 	// relative label location
-	var label_d = { x: 30, y: 10 };
+	var label_d;
+	if (Math.abs(angle) < Math.PI/4 ||
+	    Math.abs(angle - Math.PI) < Math.PI/4 ) {
+	    label_d = { x: -50, y: -40 };
+	} else {
+	    label_d = { x: 30, y: 10 };
+	}
 
 	// relative anchor node distance
 	var anchor_distance = 20;
