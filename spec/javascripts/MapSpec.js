@@ -37,10 +37,12 @@ describe('Map', function() {
 	expect(map.has_reaction_data()).toBe(true);
 	for (var id in map.reactions) {
 	    var reaction = map.reactions[id];
-	    if (reaction.bigg_id=='GLCtex')
-		expect(reaction.data).toEqual([100]);
-	    else
+	    if (reaction.bigg_id=='GLCtex') {
+		expect(reaction.data).toEqual(100);
+		expect(reaction.data_string).toEqual('100.0');
+	    } else {
 		expect(reaction.data).toBe(null);
+	    }
 	}
 
 	expect(map.has_metabolite_data()).toBe(true);
