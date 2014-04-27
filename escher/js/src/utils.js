@@ -6,13 +6,13 @@ define(["lib/vkbeautify"], function(vkbeautify) {
              load_css: load_css,
              load_files: load_files,
              load_the_file: load_the_file,
-	     scale_and_axes: scale_and_axes,
-	     add_generic_axis: add_generic_axis,
 	     make_class: make_class,
 	     setup_defs: setup_defs,
 	     draw_an_array: draw_an_array,
 	     draw_an_object: draw_an_object,
 	     make_array: make_array,
+	     compare_arrays: compare_arrays,
+	     array_to_object: array_to_object,
 	     clone: clone,
 	     extend: extend,
 	     unique_concat: unique_concat,
@@ -27,7 +27,10 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     get_angle: get_angle,
 	     to_degrees: to_degrees,
 	     distance: distance,
-	     check_undefined: check_undefined };
+	     check_undefined: check_undefined,
+	     compartmentalize: compartmentalize,
+	     decompartmentalize: decompartmentalize,
+	     check_r: check_r };
 
     // definitions
     function height_width_style(selection, margins) {
@@ -170,7 +173,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
         function ends_with(str, suffix) {
 	    return str.indexOf(suffix, str.length - suffix.length) !== -1;
 	}
-    };
+    }
     function load_files(t, files_to_load, final_callback) {
         // load multiple files asynchronously
         // Takes a list of objects: { file: a_filename.json, callback: a_callback_fn }
@@ -186,94 +189,6 @@ define(["lib/vkbeautify"], function(vkbeautify) {
                           },
                           files_to_load[i].value);
         }
-    };
-    function scale_and_axes(x_domain, y_domain, width, height, options) {
-	/* Generate generic x and y scales and axes for plots.
-
-	 Returns object with keys x, y, x_axis, and y_axis.
-	 */
-	var o = set_options(options, {
-	    padding: { left:0, right:0, top:0, bottom:0 },
-	    x_is_log: false,
-	    y_is_log: false,
-	    y_ticks: null,
-	    x_ticks: null,
-	    x_nice: false,
-	    y_nice: false,
-	    x_tick_format: null,
-	    y_tick_format: null }),
-	    out = {};
-	
-	// x scale
-	if (o.x_is_log) out.x = d3.scale.log();
-	else out.x = d3.scale.linear();
-	out.x.range([o.padding.left, (width - o.padding.right)])
-	    .domain(x_domain);
-
-	if (y_domain) {
-	    // y scale
-	    if (o.y_is_log) out.y = d3.scale.log();
-	    else out.y = d3.scale.linear();
-	    out.y.range([(height - o.padding.bottom), 1+o.padding.top])
-		.domain(y_domain);
-	} else out.y = null;
-
-	if (x_domain) {
-	    // x axis
-            out.x_axis = d3.svg.axis()
-		.scale(out.x)
-		.orient("bottom");
-	    if (o.x_nice) out.x_axis.nice();
-	    if (o.x_ticks) out.x_axis.ticks(o.x_ticks);
-	    if (o.x_tick_format) out.x_axis.tickFormat(o.x_tick_format);
-	} else out.x = null;
-
-	// y axis
-        out.y_axis = d3.svg.axis()
-            .scale(out.y)
-            .orient("left");
-	if (o.y_nice) out.y_axis.nice();
-	if (o.y_ticks) out.y_axis.ticks(o.y_ticks);
-	if (o.y_tick_format) out.y_axis.tickFormat(o.y_tick_format);
-
-	return out;
-    }
-    function add_generic_axis(type, text, sel, axis, width, height, padding) {
-	/* Append a generic axis to /sel/, a d3 selection of an svg element
-
-	 */
-	var cls, translate, label_x, label_y, dx, dy, label_rotate;
-	if (type=='x') {
-	    cls = "x axis";
-	    translate = [0, height - padding.bottom];
-	    label_x = width;
-	    label_y = -6;
-	    label_rotate = 0,
-	    dx = 0,
-	    dy = 0;
-	} else if (type=='y') {
-	    cls = "y axis";
-	    translate = [padding.left, 0],
-	    label_x = 0;
-	    label_y = 6;
-	    label_rotate = -90;
-	    dx = 0;
-	    dy = ".71em";
-	} else console.warn('Bad axis type');
-	
-        return sel.append("g")
-	    .attr("class", cls)
-	    .attr("transform", "translate("+translate+")")
-	    .call(axis)
-	    .append("text")
-	    .attr("class", "label")
-	    .attr("transform", "rotate("+label_rotate+")")
-	    .attr("x", label_x)
-	    .attr("y", label_y)
-	    .attr("dx", dx)
-	    .attr("dy", dy)
-	    .style("text-anchor", "end")
-	    .text(text);
     }
     // makeClass - By Hubert Kauker (MIT Licensed)
     // original by John Resig (MIT Licensed).
@@ -346,6 +261,48 @@ define(["lib/vkbeautify"], function(vkbeautify) {
             array.push(it);
         }
         return array;
+    }
+
+    function compare_arrays(a1, a2) {
+	/** Compares two simple (not-nested) arrays.
+
+	 */
+	if (!a1 || !a2) return false;
+	if (a1.length != a2.length) return false;
+	for (var i = 0, l=a1.length; i < l; i++) {
+            if (a1[i] != a2[i]) {
+		// Warning - two different object instances will never be equal: {x:20} != {x:20}
+		return false;
+            }
+	}
+	return true;
+    }
+
+    function array_to_object(arr) {
+	var obj = {};
+	for (var i=0, l=arr.length; i<l; i++) { // 0
+	    var a = arr[i];
+	    for (var id in a) {
+		if (id in obj) {
+		    obj[id][i] = a[id];
+		} else {
+		    var n = [];
+		    // fill leading spaces with null
+		    for (var j=0; j<i; j++) {
+			n[j] = null;
+		    }
+		    n[i] = a[id];
+		    obj[id] = n;
+		}
+	    }
+	    // fill trailing spaces with null
+	    for (var id in obj) {
+		for (var j=obj[id].length; j<=i; j++) {
+		    obj[id][j] = null;
+		}
+	    }
+	}
+	return obj;
     }
 
     function clone(obj) {
@@ -521,5 +478,78 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 		console.error('Argument is undefined: '+String(names[i]));
 	    }
 	});
+    }
+
+    function compartmentalize(bigg_id, compartment_id) {
+	return bigg_id + '_' + compartment_id;
+    }
+
+
+    // definitions
+    function decompartmentalize(id) {
+	/** Convert ids to bigg_id and compartment_id.
+	 
+	 */
+	var out = no_compartment(id);
+	if (out===null) out = [id, null];
+	return out;
+
+	// definitions
+	function no_compartment(id) {
+	    /** Returns an array of [bigg_id, compartment id].
+
+	     Matches compartment ids with length 1 or 2.
+
+	     Return null if no match is found.
+
+	     */
+	    var reg = /(.*)_([a-z0-9]{1,2})$/,
+		result = reg.exec(id);
+	    if (result===null) return null;
+	    return result.slice(1,3);
+	}
+    }
+
+    function check_r(o, spec, can_be_none) {
+	if (typeof spec == "string") {
+	    var the_type;
+	    if (spec=='String') {
+		the_type = function(x) { return typeof x == "string"; };
+	    } else if (spec=="Float") {
+		the_type = function(x) { return typeof x == "number"; };
+	    } else if (spec=="Integer") {
+		the_type = function(x) { return (typeof x == "number") &&
+					 (parseFloat(x,10) == parseInt(x,10)); };
+	    } else if (spec=="Boolean") {
+		the_type = function(x) { return typeof x == "boolean"; };
+	    } else if (spec!="*") {
+		throw Error("Bad spec string: " + spec);
+	    }
+	    if (!the_type(o)) {
+		throw Error('Bad type: '+String(o)+' should be '+spec);
+	    }
+	} else if (spec instanceof Array) {
+	    o.forEach(function(x) {
+		check_r(x, spec[0], can_be_none);
+	    });
+	} else { // dictionary/object
+	    var key = Object.keys(spec)[0];
+	    if (key == "*") {
+		for (var k in o) {
+		    if (o[k]===null && can_be_none.indexOf(k)!=-1) 
+			continue;
+		    check_r(o[k], spec[key], can_be_none);
+		}
+	    } else {
+		for (var k in spec) {
+		    if (!(k in o)) {
+			throw Error('Missing key: %s' % k);
+		    };
+		    if (o[k]===null && can_be_none.indexOf(k)!=-1) 
+			continue;
+		    check_r(o[k], spec[k], can_be_none);
+		}
+	    }
+	}
     }
 });

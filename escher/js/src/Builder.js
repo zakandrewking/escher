@@ -34,17 +34,16 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    cobra_model: null,
 	    css_path: null,
 	    css: null,
-	    flux_path: null,
-	    flux: null,
-	    flux2_path: null,
-	    flux2: null,
-	    node_data: null,
-	    node_data_path: null,
-	    node_data_style: 'ColorSize', // empty value: null
+	    reaction_data_path: null,
+	    reaction_data: null,
+	    reaction_data_styles: ['Color', 'Size', 'Abs', 'Diff'],
+	    metabolite_data: null,
+	    metabolite_data_path: null,
+	    metabolite_data_styles: ['Color', 'Size', 'Diff'],
 	    show_beziers: false,
 	    debug: false,
-	    starting_reaction: 'GLCtex', // empty value: null
-	    reaction_arrow_displacement: 35 });
+	    starting_reaction: 'GLCtex'
+	});
 	
 	// TODO make each option is neither {}, undefined, nor null
 	// for all cases, set to null to boolean(option) === false
@@ -53,7 +52,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	if (o.selection_is_svg) {
 	    // TODO fix this
 	    console.error("Builder does not support placement within svg elements");
-	    return null;
+	    return;
 	}
 
 	this.o = o;
@@ -63,13 +62,12 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			       callback: set_cobra_model },
 			     { file: o.css_path, value: o.css,
 			       callback: set_css },
-			     { file: o.flux_path, value: o.flux,
-			       callback: function(e, f) { set_flux.call(this, e, f, 0); } },
-			     { file: o.flux2_path, value: o.flux2,
-			       callback: function(e, f) { set_flux.call(this, e, f, 1); } },
-			     { file: o.node_data_path, value: o.node_data,
-			       callback: set_node_data } ];
+			     { file: o.reaction_data_path, value: o.reaction_data,
+			       callback: set_reaction_data },
+			     { file: o.metabolite_data_path, value: o.metabolite_data,
+			       callback: set_metabolite_data } ];
 	utils.load_files(this, files_to_load, reload_builder);
+	return;
 
 	// definitions
 	function set_map_data(error, map_data) {
@@ -84,14 +82,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    if (error) console.warn(error);
 	    this.o.css = css;
 	}
-	function set_flux(error, flux, index) {
+	function set_reaction_data(error, data) {
 	    if (error) console.warn(error);
-	    if (index==0) this.o.flux = flux;
-	    else if (index==1) this.o.flux2 = flux;
+	    this.o.reaction_data = data;
 	}
-	function set_node_data(error, data) {
+	function set_metabolite_data(error, data) {
 	    if (error) console.warn(error);
-	    this.o.node_data = data;
+	    this.o.metabolite_data = data;
 	}
     }
 
@@ -102,7 +99,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	 */
 
 	// Begin with some definitions
-	var metabolite_click_enabled = true,
+	var node_click_enabled = true,
 	    shift_key_on = false;
 
 	// set up this callback manager
@@ -126,25 +123,34 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    height = out.height,
 	    width = out.width;
 
-	// set up the defs
-	var defs = utils.setup_defs(svg, this.o.css);
-
 	// se up the zoom container
 	this.zoom_container = new ZoomContainer(svg, width, height, [0.05, 15]);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
-	var max_w = width, max_h = height, scale;
+	var max_w = width, max_h = height;
 	if (this.o.map_data!==null) {
 	    // import map
-	    this.map = Map.from_data(this.o.map_data, zoomed_sel, defs, this.zoom_container,
-				height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
-				cobra_model_obj);
+	    this.map = Map.from_data(this.o.map_data,
+				     svg, this.o.css,
+				     zoomed_sel,
+				     this.zoom_container,
+				     height, width,
+				     this.o.reaction_data,
+				     this.o.reaction_data_styles,
+				     this.o.metabolite_data,
+				     this.o.metabolite_data_styles,
+				     cobra_model_obj);
 	    this.zoom_container.reset();
 	} else {
 	    // new map
-	    this.map = new Map(zoomed_sel, defs, this.zoom_container,
-			  height, width, this.o.flux, this.o.node_data, this.o.node_data_style,
-			  cobra_model_obj);
+	    this.map = new Map(svg, this.o.css, zoomed_sel,
+			       this.zoom_container,
+			       height, width,
+			       this.o.reaction_data,
+			       this.o.reaction_data_styles,
+			       this.o.metabolite_data,
+			       this.o.metabolite_data_styles,
+			       cobra_model_obj);
 	}
 
 	// set up the reaction input with complete.ly
@@ -176,8 +182,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	} else {
 	    if (this.o.starting_reaction!==null && cobra_model_obj!==null) {
 		// Draw default reaction if no map is provided
-		var start_coords = { x: this.map.scale.x.invert(width/2),
-				     y: this.map.scale.x.invert(height/4) };
+		var start_coords = { x: width/2,
+				     y: height/4 };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
 		this.map.zoom_extent_nodes(300, 'nodes');
 	    } else {
@@ -192,6 +198,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    // turn off the behaviors
 	    this.map.behavior.turn_everything_off();
 	    this.map.draw_everything();
+	    this.map.canvas.toggle_resize(false);
 	}
 
 	// turn off loading message
@@ -204,11 +211,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
     function brush_mode() {
 	this.brush.toggle(true);
 	this.zoom_container.toggle_zoom(false);
+	this.map.canvas.toggle_resize(false);
 	this.callback_manager.run('brush_mode');
     }
     function zoom_mode() {
 	this.brush.toggle(false);
 	this.zoom_container.toggle_zoom(true);
+	this.map.canvas.toggle_resize(true);
 	this.callback_manager.run('zoom_mode');
     }
     function _setup_menu(selection, map, zoom_container, key_manager, keys) {
@@ -218,9 +227,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
 	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load (^o)");
 	key_manager.assigned_keys.load_model.fn = new_input(sel, load_model_for_file, this, "Load model (^m)");
-	key_manager.assigned_keys.load_flux.fn = new_input(sel, load_flux_for_file, this, "Load reaction data (^f)");
+	key_manager.assigned_keys.load_reaction_data.fn = new_input(sel, load_reaction_data_for_file, this, "Load reaction data (^f)");
 	new_button(sel, keys.clear_reaction_data, "Clear reaction data");
-	new_input(sel, load_node_data_for_file, this, "Load metabolite data");
+	new_input(sel, load_metabolite_data_for_file, this, "Load metabolite data");
 	new_button(sel, keys.clear_metabolite_data, "Clear metabolite data");
 	var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
 	map.callback_manager
@@ -262,13 +271,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    this.map.set_model(cobra_model_obj);
 	    this.reaction_input.toggle(false);
 	}
-	function load_flux_for_file(error, data) {
+	function load_reaction_data_for_file(error, data) {
 	    if (error) console.warn(error);
-	    this.map.set_flux(data);
+	    this.map.set_reaction_data(data);
 	}
-	function load_node_data_for_file(error, data) {
+	function load_metabolite_data_for_file(error, data) {
 	    if (error) console.warn(error);
-	    this.map.set_node_data(data);
+	    this.map.set_metabolite_data(data);
 	}
 	function new_button(s, key, name, id) {
 	    var button = s.append("button").attr("class", "button command-button");
@@ -344,12 +353,12 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		    fn: null }, // defined by button
             load_model: { key: 77, modifiers: { control: true }, // ctrl-m
 			  fn: null }, // defined by button
-	    load_flux: { key: 70, modifiers: { control: true }, // ctrl-f
+	    load_reaction_data: { key: 70, modifiers: { control: true }, // ctrl-f
 			 fn: null }, // defined by button
 	    clear_reaction_data: { target: map,
-			  fn: function() { this.set_flux(null); }},
+			  fn: function() { this.set_reaction_data(null); }},
 	    clear_metabolite_data: { target: map,
-			  fn: function() { this.set_node_data(null); }},
+			  fn: function() { this.set_metabolite_data(null); }},
 	    toggle_beziers: { key: 66,
 			      target: map,
 			      fn: map.toggle_beziers,

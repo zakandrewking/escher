@@ -4,7 +4,7 @@ define(["utils"], function(utils) {
 	     move_node_and_dependents: move_node_and_dependents };
     
     // definitions
-    function new_reaction(reaction_abbreviation, cobra_reaction,
+    function new_reaction(bigg_id, cobra_reaction, cobra_metabolites,
 			  selected_node_id, selected_node,
 			  largest_ids, cofactors, angle) {
         /** New reaction.
@@ -15,7 +15,7 @@ define(["utils"], function(utils) {
 	
 	// rotate the new reaction around the selected metabolite
 	// convert to radians
-	angle = Math.PI / 180 * angle; // default angle
+	angle = Math.PI / 180 * angle;
 
 	// generate a new integer id
 	var new_reaction_id = String(++largest_ids.reactions);
@@ -33,19 +33,25 @@ define(["utils"], function(utils) {
                        'y': (main_axis[0].y + main_axis[1].y)/2 };
 	    
 	// relative label location
-	var label_d = { x: 30, y: 10 };
+	var label_d;
+	if (Math.abs(angle) < Math.PI/4 ||
+	    Math.abs(angle - Math.PI) < Math.PI/4 ) {
+	    label_d = { x: -50, y: -40 };
+	} else {
+	    label_d = { x: 30, y: 10 };
+	}
 
 	// relative anchor node distance
 	var anchor_distance = 20;
 
 	// new reaction structure
-	var direction = cobra_reaction.reversibility ? 'Reversible' : 'Irreversible',
-	    new_reaction = { abbreviation: reaction_abbreviation,
-			     direction: direction,
+	var new_reaction = { bigg_id: bigg_id,
+			     reversibility: cobra_reaction.reversibility,
+			     metabolites: utils.clone(cobra_reaction.metabolites),
 			     label_x: center.x + label_d.x,
 			     label_y: center.y + label_d.y,
 			     name: cobra_reaction.name,
-			     segments: {} };	
+			     segments: {} };
 
         // set primary metabolites and count reactants/products
 
@@ -53,29 +59,36 @@ define(["utils"], function(utils) {
 	var reactant_ranks = [], product_ranks = [], 
             reactant_count = 0, product_count = 0,
 	    reaction_is_reversed = false;
-        for (var metabolite_abbreviation in cobra_reaction.metabolites) {
-            var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
-	    if (metabolite.coefficient < 0) {
-                metabolite.index = reactant_count;
+        for (var met_bigg_id in new_reaction.metabolites) {	
+	    // make the metabolites into objects
+            var metabolite = cobra_metabolites[met_bigg_id],
+		coefficient = new_reaction.metabolites[met_bigg_id],
+		formula = metabolite.formula,
+		new_metabolite = { coefficient: coefficient,
+				   bigg_id: met_bigg_id,
+				   name: metabolite.name };
+	    if (coefficient < 0) {
+                new_metabolite.index = reactant_count;
 		// score the metabolites. Infinity == selected, >= 1 == carbon containing
-		var carbons = /C([0-9]+)/.exec(metabolite.formula);
-		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized) {
-		    reactant_ranks.push([metabolite.index, Infinity]);
-		} else if (carbons && cofactors.indexOf(metabolite.bigg_id)==-1) {
-		    reactant_ranks.push([metabolite.index, parseInt(carbons[1])]);
+		var carbons = /C([0-9]+)/.exec(formula);
+		if (selected_node.bigg_id==new_metabolite.bigg_id) {
+		    reactant_ranks.push([new_metabolite.index, Infinity]);
+		} else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0])==-1) {
+		    reactant_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
 		}
                 reactant_count++;
 	    } else {
-                metabolite.index = product_count;
-		var carbons = /C([0-9]+)/.exec(metabolite.formula);
-		if (selected_node.bigg_id_compartmentalized==metabolite.bigg_id_compartmentalized) {
-		    product_ranks.push([metabolite.index, Infinity]);
+                new_metabolite.index = product_count;
+		var carbons = /C([0-9]+)/.exec(formula);
+		if (selected_node.bigg_id==new_metabolite.bigg_id) {
+		    product_ranks.push([new_metabolite.index, Infinity]);
 		    reaction_is_reversed = true;
-		} else if (carbons && cofactors.indexOf(metabolite.bigg_id)==-1) {
-		    product_ranks.push([metabolite.index, parseInt(carbons[1])]);
+		} else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0])==-1) {
+		    product_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
 		}
                 product_count++;
 	    }
+	    new_reaction.metabolites[met_bigg_id] = new_metabolite;
 	}
 
 	// get the rank with the highest score
@@ -84,8 +97,8 @@ define(["utils"], function(utils) {
             primary_product_index = product_ranks.reduce(max_rank, [0,0])[0];
 
 	// set primary metabolites, and keep track of the total counts
-        for (var metabolite_abbreviation in cobra_reaction.metabolites) {
-            var metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
+        for (var met_bigg_id in new_reaction.metabolites) {
+            var metabolite = new_reaction.metabolites[met_bigg_id];
             if (metabolite.coefficient < 0) {
                 if (metabolite.index==primary_reactant_index) metabolite.is_primary = true;
 		metabolite.count = reactant_count + 1;
@@ -105,11 +118,17 @@ define(["utils"], function(utils) {
 			  dis: { x: anchor_distance * (reaction_is_reversed ? -1 : 1), y: 0 } } ],
 	    anchor_ids = {};
 	anchors.map(function(n) {
-	    var new_id = String(++largest_ids.nodes);
-	    new_anchors[new_id] = { node_type: n.node_type,
+	    var new_id = String(++largest_ids.nodes),
+		general_node_type = (n.node_type=='center' ? 'midmarker' : 'multimarker');
+	    new_anchors[new_id] = { node_type: general_node_type,
 				    x: center.x + n.dis.x,
 				    y: center.y + n.dis.y,
-				    connected_segments: [] };
+				    connected_segments: [],
+				    name: null,
+				    bigg_id: null,
+				    label_x: null,
+				    label_y: null,
+				    node_is_primary: null };
 	    anchor_ids[n.node_type] = new_id;
 	});
 
@@ -122,7 +141,10 @@ define(["utils"], function(utils) {
 	    new_reaction.segments[new_segment_id] =  { b1: null,
 						       b2: null,
 						       from_node_id: from_id,
-						       to_node_id: to_id };
+						       to_node_id: to_id,
+						       from_node_coefficient: null,
+						       to_node_coefficient: null,
+						       reversibility: new_reaction.reversibility };
 	    new_anchors[from_id].connected_segments.push({ segment_id: new_segment_id,
 							   reaction_id: new_reaction_id });
 	    new_anchors[to_id].connected_segments.push({ segment_id: new_segment_id,
@@ -131,9 +153,9 @@ define(["utils"], function(utils) {
 
         // Add the metabolites, keeping track of total reactants and products.
 	var new_nodes = new_anchors;
-        for (var metabolite_abbreviation in cobra_reaction.metabolites) {
-            metabolite = cobra_reaction.metabolites[metabolite_abbreviation];
-            var primary_index, from_node_id;
+        for (var met_bigg_id in new_reaction.metabolites) {
+            var metabolite = new_reaction.metabolites[met_bigg_id],
+		primary_index, from_node_id;
             if (metabolite.coefficient < 0) {
                 // metabolite.count = reactant_count + 1;
                 primary_index = primary_reactant_index;
@@ -153,13 +175,15 @@ define(["utils"], function(utils) {
 							       reaction_is_reversed);
 
 	    // if this is the existing metabolite
-	    if (metabolite.bigg_id_compartmentalized==
-		selected_node.bigg_id_compartmentalized) {
+	    if (selected_node.bigg_id==metabolite.bigg_id) {
 		var new_segment_id = String(++largest_ids.segments);
-		new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
+		new_reaction.segments[new_segment_id] = { b1: met_loc.b1,
+							  b2: met_loc.b2,
+							  from_node_id: from_node_id,
 							  to_node_id: selected_node_id,
-							  b1: met_loc.b1,
-							  b2: met_loc.b2 };
+							  from_node_coefficient: null,
+							  to_node_coefficient: metabolite.coefficient,
+							  reversibility: new_reaction.reversibility };
 		// update the existing node
 		selected_node.connected_segments.push({ segment_id: new_segment_id,
 							reaction_id: new_reaction_id });
@@ -169,26 +193,34 @@ define(["utils"], function(utils) {
 		// save new metabolite
 		var new_segment_id = String(++largest_ids.segments),
 		    new_node_id = String(++largest_ids.nodes);
-		new_reaction.segments[new_segment_id] = { from_node_id: from_node_id,
+		new_reaction.segments[new_segment_id] = { b1: met_loc.b1,
+							  b2: met_loc.b2,
+							  from_node_id: from_node_id,
 							  to_node_id: new_node_id,
-							  b1: met_loc.b1,
-							  b2: met_loc.b2 };
+							  from_node_coefficient: null,
+							  to_node_coefficient: metabolite.coefficient,
+							  reversibility: new_reaction.reversibility };
 		// save new node
 		new_nodes[new_node_id] = { connected_segments: [{ segment_id: new_segment_id,
 								  reaction_id: new_reaction_id }],
 					   x: met_loc.circle.x,
 					   y: met_loc.circle.y,
-					   node_is_primary: metabolite.is_primary,
-					   compartment_id: metabolite.compartment_id,
+					   node_is_primary: Boolean(metabolite.is_primary),
 					   label_x: met_loc.circle.x + label_d.x,
 					   label_y: met_loc.circle.y + label_d.y,
-					   metabolite_name: metabolite.name,
+					   name: metabolite.name,
 					   bigg_id: metabolite.bigg_id,
-					   bigg_id_compartmentalized: metabolite.bigg_id_compartmentalized,
 					   node_type: 'metabolite' };
 		new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
 								  reaction_id: new_reaction_id });
 	    }
+	}
+
+	// now take out the extra reaction details
+	for (var bigg_id in new_reaction.metabolites) {
+	    new_reaction.metabolites[bigg_id] = {
+		coefficient: new_reaction.metabolites[bigg_id].coefficient
+	    };
 	}
 
 	// new_reactions object
@@ -198,7 +230,7 @@ define(["utils"], function(utils) {
 	// add the selected node for rotation, and return it as a new (updated) node
 	new_nodes[selected_node_id] = selected_node;
 	var updated = rotate_nodes(new_nodes, new_reactions,
-					    angle, selected_node_coords);
+				   angle, selected_node_coords);
 
 	return { new_reactions: new_reactions,
 		 new_nodes: new_nodes };
@@ -301,7 +333,7 @@ define(["utils"], function(utils) {
 		updated_reaction_ids.push(segment_obj.reaction_id);
 
 		// update reaction label (but only once per reaction
-		if (node.node_type == 'center') {
+		if (node.node_type == 'midmarker') {
 		    reaction.label_x = reaction.label_x + displacement.x;
 		    reaction.label_y = reaction.label_y + displacement.y;
 		}

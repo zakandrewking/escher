@@ -18,7 +18,9 @@ def test_clear_cache():
     
 def test_load_resource(tmpdir):
     assert load_resource('{"r": "val"}', 'name') == '{"r": "val"}'
-    assert load_resource('example.json', 'name').strip() == '{"r": "val"}'
+    
+    directory = os.path.abspath(os.path.dirname(__file__))
+    assert load_resource(join(directory, 'example.json'), 'name').strip() == '{"r": "val"}'
     
     url = "https://zakandrewking.github.io/escher/maps/v1/glycolysis_tca.json"
     _ = json.loads(load_resource(url, 'name'))

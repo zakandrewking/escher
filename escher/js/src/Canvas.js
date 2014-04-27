@@ -1,4 +1,4 @@
-define(["utils"], function(utils) {
+define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     /** Defines a canvas that accepts drag/zoom events and can be resized.
 
      Canvas(selection, x, y, width, height)
@@ -9,6 +9,7 @@ define(["utils"], function(utils) {
 
     var Canvas = utils.make_class();
     Canvas.prototype = { init: init,
+			 toggle_resize: toggle_resize,
 			 setup: setup,
 			 size_and_location: size_and_location };
 
@@ -21,8 +22,29 @@ define(["utils"], function(utils) {
 	this.width = size_and_location.width;
 	this.height = size_and_location.height;
 
+	// enable by default
+	this.resize_enabled = true;
+
+	// set up the callbacks
+	this.callback_manager = new CallbackManager();
+
 	this.setup();
     }
+
+    function toggle_resize(on_off) {
+	/** Turn the resize on or off
+
+	 */
+	if (on_off===undefined) on_off = !this.resize_enabled;
+
+	if (on_off) {
+	    this.selection.selectAll('.drag-rect')
+		.style('pointer-events', 'auto');
+	} else {
+	    this.selection.selectAll('.drag-rect')
+		.style('pointer-events', 'none');
+	}
+    }	
 
     function setup() {	
 	var self = this,
@@ -58,6 +80,7 @@ define(["utils"], function(utils) {
 		.on("drag", bdragresize);
 
 	var left = new_sel.append("rect")
+		.classed('drag-rect', true)
 		.attr('transform', function(d) {
 		    return 'translate('+[ d.x - (dragbar_width/2),
 					  d.y + (dragbar_width/2) ]+')';
@@ -70,6 +93,7 @@ define(["utils"], function(utils) {
 		.call(drag_left);
 	
 	var right = new_sel.append("rect")
+		.classed('drag-rect', true)
 		.attr('transform', function(d) {
 		    return 'translate('+[ d.x + self.width - (dragbar_width/2),
 					  d.y + (dragbar_width/2) ]+')';
@@ -82,23 +106,25 @@ define(["utils"], function(utils) {
 		.call(drag_right);
 	
 	var top = new_sel.append("rect")
+		.classed('drag-rect', true)
 		.attr('transform', function(d) {
 		    return 'translate('+[ d.x + (dragbar_width/2),
 					  d.y - (dragbar_width/2) ]+')';
 		})
 		.attr("height", dragbar_width)
-		.attr("id", "dragleft")
+		.attr("id", "dragtop")
 		.attr("width", this.width - dragbar_width)
 		.attr("cursor", "ns-resize")
 		.classed('resize-rect', true)
 		.call(drag_top);
 	
 	var bottom = new_sel.append("rect")
+		.classed('drag-rect', true)
 		.attr('transform', function(d) {
 		    return 'translate('+[ d.x + (dragbar_width/2),
 					  d.y + self.height - (dragbar_width/2) ]+')';
 		})
-		.attr("id", "dragright")
+		.attr("id", "dragbottom")
 		.attr("height", dragbar_width)
 		.attr("width", this.width - dragbar_width)
 		.attr("cursor", "ns-resize")
@@ -133,6 +159,8 @@ define(["utils"], function(utils) {
 	    bottom.attr("transform", function(d) {
 		return transform_string(d.x + (dragbar_width/2), null, bottom.attr('transform'));
 	    }).attr("width", self.width - dragbar_width);
+
+	    self.callback_manager.run('resize');
 	}
 
 	function rdragresize(d) {
@@ -149,6 +177,8 @@ define(["utils"], function(utils) {
 	    rect.attr("width", self.width);
 	    top.attr("width", self.width - dragbar_width);
 	    bottom.attr("width", self.width - dragbar_width);
+
+	    self.callback_manager.run('resize');
 	}
 
 	function tdragresize(d) {
@@ -169,6 +199,8 @@ define(["utils"], function(utils) {
 	    right.attr("transform", function(d) {
 		return transform_string(null, d.y + (dragbar_width/2), right.attr('transform'));
 	    }).attr("height", self.height - dragbar_width);
+
+	    self.callback_manager.run('resize');
 	}
 
 	function bdragresize(d) {
@@ -185,6 +217,8 @@ define(["utils"], function(utils) {
 	    rect.attr("height", self.height);
 	    left.attr("height", self.height - dragbar_width);
 	    right.attr("height", self.height - dragbar_width);
+
+	    self.callback_manager.run('resize');
 	}
     }
 

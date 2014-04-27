@@ -15,6 +15,7 @@ define(["utils"], function(utils) {
 
     return Brush;
 
+    // definitions
     function init(selection, is_enabled, map, insert_after) {
 	this.brush_sel = selection.append('g')
 	    .attr('id', 'brush-container');
@@ -43,25 +44,25 @@ define(["utils"], function(utils) {
 	} else {
 	    this.brush_sel.selectAll('.brush').remove();
 	}
-    }
-    
-    // definitions
+    }	
     function setup_selection_brush() {
 	var selection = this.brush_sel, 
 	    node_selection = d3.select('#nodes').selectAll('.node'),
-	    width = this.map.width,
-	    height = this.map.height,
-	    node_ids = [],
-	    scale = this.map.scale;
+	    size_and_location = this.map.canvas.size_and_location(),
+	    width = size_and_location.width,
+	    height = size_and_location.height,
+	    x = size_and_location.x,
+	    y = size_and_location.y,
+	    node_ids = [];
 	node_selection.each(function(d) { node_ids.push(d.node_id); });
 	var brush_fn = d3.svg.brush()
-		.x(d3.scale.identity().domain([0, width]))
-		.y(d3.scale.identity().domain([0, height]))
+		.x(d3.scale.identity().domain([x, x+width]))
+		.y(d3.scale.identity().domain([y, y+height]))
 		.on("brush", function() {
 		    var extent = d3.event.target.extent();
 		    node_selection
 			.classed("selected", function(d) { 
-			    var sx = scale.x(d.x), sy = scale.y(d.y);
+			    var sx = d.x, sy = d.y;
 			    return extent[0][0] <= sx && sx < extent[1][0]
 				&& extent[0][1] <= sy && sy < extent[1][1];
 			});

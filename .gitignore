@@ -1,5 +1,3 @@
-*.json
-*.json.gz
 *.csv
 *.log
 .DS_Store

@@ -113,9 +113,9 @@ define(["utils", "build"], function(utils, build) {
 	 */
 	if (on_off===undefined) on_off = this.label_drag===this.empty_behavior;
 	if (on_off) {
-	    this.reaction_label_drag = this.get_reaction_label_drag(this.map, this.scale);
-	    this.node_label_drag = this.get_node_label_drag(this.map, this.scale);
-	    this.text_label_drag = this.get_text_label_drag(this.map, this.scale);
+	    this.reaction_label_drag = this.get_reaction_label_drag(this.map);
+	    this.node_label_drag = this.get_node_label_drag(this.map);
+	    this.text_label_drag = this.get_text_label_drag(this.map);
 	} else {
 	    this.reaction_label_drag = this.empty_behavior;
 	    this.node_label_drag = this.empty_behavior;
@@ -134,7 +134,7 @@ define(["utils", "build"], function(utils, build) {
         behavior.on("dragstart", function () { 
 	    // Note that dragstart is called even for a click event
 	    var data = this.parentNode.__data__,
-		bigg_id_compartmentalized = data.bigg_id_compartmentalized,
+		bigg_id = data.bigg_id,
 		node_group = this.parentNode;
 	    // silence other listeners
 	    d3.event.sourceEvent.stopPropagation();
@@ -150,14 +150,13 @@ define(["utils", "build"], function(utils, build) {
 	    // prepare to combine metabolites
 	    d3.selectAll('.metabolite-circle')
 		.on('mouseover.combine', function(d) {
-		    if (d.bigg_id_compartmentalized==bigg_id_compartmentalized &&
-			d.node_id!=data.node_id) {
-			d3.select(this).style('stroke-width', String(map.scale.size(12))+'px')
+		    if (d.bigg_id==bigg_id && d.node_id!=data.node_id) {
+			d3.select(this).style('stroke-width', String(12)+'px')
 			    .classed('node-to-combine', true);
 		    }
 		}).on('mouseout.combine', function(d) {
-		    if (d.bigg_id_compartmentalized==bigg_id_compartmentalized) {
-			d3.selectAll('.node-to-combine').style('stroke-width', String(map.scale.size(2))+'px')
+		    if (d.bigg_id==bigg_id) {
+			d3.selectAll('.node-to-combine').style('stroke-width', String(2)+'px')
 			    .classed('node-to-combine', false);
 		    }
 		});
@@ -176,8 +175,8 @@ define(["utils", "build"], function(utils, build) {
 	    nodes_to_drag.forEach(function(node_id) {
 		// update data
 		var node = map.nodes[node_id],
-		    displacement = { x: map.scale.x_size.invert(d3.event.dx),
-				     y: map.scale.y_size.invert(d3.event.dy) },
+		    displacement = { x: d3.event.dx,
+				     y: d3.event.dy },
 		    updated = build.move_node_and_dependents(node, node_id, map.reactions, displacement);
 		reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids]);
 		// remember the displacements
@@ -313,7 +312,7 @@ define(["utils", "build"], function(utils, build) {
 	    return updated_segment_objs;
 	}
     }
-    function get_bezier_drag(map, undo_stack) {
+    function get_bezier_drag(map) {
 	var move_bezier = function(reaction_id, segment_id, bezier, displacement) {
 	    var segment = map.reactions[reaction_id].segments[segment_id];
 	    segment['b'+bezier] = utils.c_plus_c(segment['b'+bezier], displacement);
@@ -338,7 +337,7 @@ define(["utils", "build"], function(utils, build) {
 	    };
 	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
     }
-    function get_reaction_label_drag(map, undo_stack) {
+    function get_reaction_label_drag(map) {
 	var move_label = function(reaction_id, displacement) {
 	    var reaction = map.reactions[reaction_id];
 	    reaction.label_x = reaction.label_x + displacement.x;
@@ -363,7 +362,7 @@ define(["utils", "build"], function(utils, build) {
 	    };
 	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
     }
-    function get_node_label_drag(map, undo_stack) {
+    function get_node_label_drag(map) {
 	var move_label = function(node_id, displacement) {
 	    var node = map.nodes[node_id];
 	    node.label_x = node.label_x + displacement.x;
@@ -388,7 +387,7 @@ define(["utils", "build"], function(utils, build) {
 	    };
 	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
     }
-    function get_text_label_drag(map, undo_stack) {
+    function get_text_label_drag(map) {
 	var move_label = function(text_label_id, displacement) {
 	    var text_label = map.text_labels[text_label_id];
 	    text_label.x = text_label.x + displacement.x;
@@ -432,7 +431,6 @@ define(["utils", "build"], function(utils, build) {
 	// define some variables
 	var behavior = d3.behavior.drag(),
 	    total_displacement,
-	    scale = this.map.scale,
 	    undo_stack = this.undo_stack;
 
         behavior.on("dragstart", function (d) {
@@ -443,8 +441,8 @@ define(["utils", "build"], function(utils, build) {
 	});
         behavior.on("drag", function(d) {
 	    // update data
-	    var displacement = { x: scale.x_size.invert(d3.event.dx),
-				 y: scale.y_size.invert(d3.event.dy) };
+	    var displacement = { x: d3.event.dx,
+				 y: d3.event.dy };
 	    // remember the displacement
 	    total_displacement = utils.c_plus_c(total_displacement, displacement);
 	    drag_fn(d, displacement, total_displacement);

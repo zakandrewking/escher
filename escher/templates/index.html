@@ -1,5 +1,84 @@
 {% extends "standalone.html" %}
 {% block title %}Escher{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/journal/bootstrap.min.css">
+<link href="css/index.css" rel="stylesheet" type="text/css" media="all">
+{% endblock %}
 {% block content %}
-<a href="dev/builder.html?model_name=iJO1366&map_name=glycolysis_tca">Builder</a>
+<main>
+  <div class="container">
+    <h1>Escher</h1>
+    <div class="row" style="margin-top: 50px">
+      <div class="col-sm-3">
+	<h3>Model</h3>
+	<select id="model" class="form-control">
+	  <option value="iJO1366">iJO1366</option>
+	  <option value="none">None</option>
+	</select>
+      </div>
+      <div class="col-sm-3">
+	<h3>Map</h3>
+	<select id="map" class="form-control">
+	  <option value="empty">Emtpy builder</option>
+	  <option value="iJO1366_central_metabolism">iJO1366 central metabolism</option>
+	</select>
+      </div>
+      <div class="col-sm-3">
+	<h3>Options</h3>
+	<select id="options" class="form-control">
+	  <option value="builder">builder</option>
+	  <option value="viewer">viewer</option>
+	  <option value="dev">dev</option>
+	</select>
+      </div>
+      <div class="col-sm-3">
+	<button type="button" class="btn btn-primary column-button" onClick="submit()">
+	  Submit
+	</button>
+      </div>
+    </div>
+  </div>
+  <div id="push"></div>
+</main>
+<footer>
+  <div class="container">
+    <p class="more">
+      Learn more about <a href="http://zakandrewking.github.io/escher">Escher</a>.
+    </p>
+  </div>
+</footer>
+
+<script type="application/javascript">
+ function get_value(id) {
+   var a = document.getElementById(id);
+   return a.options[a.selectedIndex].value
+ }
+
+ function submit() {
+   var map_value = get_value('map'),
+   model_value = get_value('model'),
+   options_value = get_value('options'),
+   add = [];
+   if (model_value!='none')
+   add.push('model_name=' + model_value);	 
+   if (map_value!='empty')
+   add.push('map_name=' + map_value);
+
+   if (options_value=='dev') {
+     url = 'dev/builder.html';
+   } else if (options_value=='viewer') {
+     url = 'viewer.html';
+   } else {
+     url = 'builder.html';
+   }
+
+   url += '?';
+   for (var i=0, l=add.length; i < l; i++) {
+     if (i > 0) url += '&';
+     url += add[i];
+   }
+   window.location.href = url;
+ }
+</script>
 {% endblock %}
