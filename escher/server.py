@@ -118,6 +118,7 @@ application = Application([
     (r".*/lib/(.*)", LibHandler),
     (r".*/(js/.*)", StaticHandler),
     (r".*/(css/.*)", StaticHandler),
+    (r".*/(resources/.*)", StaticHandler),
     (r"/(dev/)?(builder|viewer)(.*)", BuilderHandler),
     (r".*/(map_spec.json)", StaticHandler),
     (r"/", IndexHandler),
