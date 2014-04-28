@@ -4097,8 +4097,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 								 this.reaction_data_styles,
 								 'reaction_data');
 	this.apply_reaction_data_to_map();
-	this.cobra_model.apply_reaction_data(this.reaction_data_object,
-					     this.reaction_data_styles);
+	if (this.cobra_model !== null) {
+	    this.cobra_model.apply_reaction_data(this.reaction_data_object,
+						 this.reaction_data_styles);
+	}
 	this.draw_all_reactions();
     }
     function set_metabolite_data(metabolite_data) {
@@ -4111,8 +4113,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 								   this.metabolite_data_styles,
 								   'metabolite_data');
 	this.apply_metabolite_data_to_map();
-	this.cobra_model.apply_metabolite_data(this.metabolite_data,
-					       this.metabolite_data_styles);
+	if (this.cobra_model !== null) {
+	    this.cobra_model.apply_metabolite_data(this.metabolite_data,
+						   this.metabolite_data_styles);
+	}
 	this.draw_all_nodes();
     }
     function has_reaction_data() {
@@ -5287,7 +5291,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	 */
 
 	// optional args
-	if (margin===undefined) margin = 100;
+	if (margin===undefined) margin = 0;
 	if (mode===undefined) mode = 'canvas';
 
 	var new_zoom, new_pos;
