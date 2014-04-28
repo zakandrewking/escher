@@ -1,6 +1,7 @@
 html,
 body {
     height: 100%;
+    background-color: #FCFCFC;
 /* The html and body elements cannot have any padding or margin. */
 }
 
@@ -20,7 +21,11 @@ main {
 }
 footer {
     height: 60px;
-    background-color: #f5f5f5;
+    background-color: #291E1E;
+    color: #eee;
+}
+footer a, a:hover, a:focus, a:visited {
+    color: #FFA09D;
 }
 @media (max-width: 768px) {
     #footer {
@@ -43,10 +48,11 @@ footer {
     margin-top: 35px;
 }
 #title {
-    color: #414042;
-    font-size: 100px;
-    font-family: serif;
-    font-style: italic;
+    color: #291E1E;
+    font-size: 160px;
+    font-family: tulpen-one, serif;
+    font-weight: 400;
+    /* font-style: italic; */
     text-align: center;
 }
 #logo {
@@ -60,14 +66,15 @@ footer {
 	margin-bottom: 50px;
     }
     #title {
-	font-size: 140px;
+	font-size: 230px;
 	text-align: left;
 	display: inline;
 	top: 100px;
-	left: 20px;
 	position: relative;
     }
     #logo {
+	position: relative;
+	left: -20px;
 	display: inline;
     }
 }
