@@ -168,7 +168,7 @@ class Builder(Plot):
     """
     def __init__(self, map_name=None, map_json=None, model_name=None,
                  model_json=None, reaction_data=None, metabolite_data=None,
-                 css=None, safe=False, **kwargs):
+                 css=None, safe=False):
         self.safe = safe
         # load the map
         self.map_name = map_name
@@ -188,7 +188,6 @@ class Builder(Plot):
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
         self.css = css
-        self.options = kwargs
         
     def load_model(self):
         """Load the model from input model_json using load_resource, or, secondarily,
@@ -267,20 +266,16 @@ class Builder(Plot):
              u"var css_string = '%s';" % self._embed_style()])
         return javascript
 
-    def _options_string(self):
-        return ' '.join(",\n %s: '%s'"%(k,v) for k,v in self.options.iteritems())
-
     def _draw_js(self, the_id, enable_editing, dev, fill_screen):
         draw = """Builder({ selection: d3.select('#%s'),
                             enable_editing: %s,
                             fill_screen: %s,
                             map: map_data,
                             cobra_model: cobra_model,
-		            flux: reaction_data,
-		            node_data: metabolite_data,
-                            css: css_string%s, });
-        """ % (the_id, json.dumps(enable_editing), json.dumps(fill_screen),
-               self._options_string())
+		            reaction_data: reaction_data,
+		            metabolite_data: metabolite_data,
+                            css: css_string });
+        """ % (the_id, json.dumps(enable_editing), json.dumps(fill_screen))
         if dev:
             draw = 'require(["Builder"], function(Builder) {\n%s\n});' % draw
         else:

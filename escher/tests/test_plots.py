@@ -1,3 +1,4 @@
+import escher.server
 from escher import (Builder, get_cache_dir, clear_cache, list_cached_maps,
                     list_cached_models)
 from escher.plots import load_resource
@@ -66,3 +67,9 @@ def test_Builder():
     b.embedded_html(dev=True, enable_editing=True, height=100)
     b.standalone_html(dev=True)
     b.display_in_notebook(height=200)
+
+    # data
+    b = Builder(map_name='iJO1366_central_metabolism', model_name='iJO1366',
+                reaction_data=[{'GAPD': 123}, {'GAPD': 123}])
+    b = Builder(map_name='iJO1366_central_metabolism', model_name='iJO1366',
+                metabolite_data=[{'nadh_c': 123}, {'nadh_c': 123}])
