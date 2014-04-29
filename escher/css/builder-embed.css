@@ -1,6 +1,7 @@
 .canvas {
-    stroke: #333;
-    fill: none;
+    stroke: #ccc;
+    stroke-width: 7px;
+    fill: white;
 }
 .resize-rect {
     fill: black;

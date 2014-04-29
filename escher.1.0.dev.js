@@ -864,6 +864,9 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 
         // run
         var out;
+	// set the selection class
+	selection.classed('escher-container', true);
+	// make the svg
         if (selection_is_svg) {
             out = height_width_attr(selection, margins);
             out.svg = selection;
@@ -6017,7 +6020,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
     function init(options) {
 	// set defaults
 	var o = utils.set_options(options, {
-	    margins: {top: 5, right: 5, bottom: 5, left: 5},
+	    margins: {top: 0, right: 0, bottom: 0, left: 0},
 	    selection: d3.select("body").append("div"),
 	    selection_is_svg: false,
 	    fillScreen: false,

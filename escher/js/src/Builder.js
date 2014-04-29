@@ -22,7 +22,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
     function init(options) {
 	// set defaults
 	var o = utils.set_options(options, {
-	    margins: {top: 5, right: 5, bottom: 5, left: 5},
+	    margins: {top: 0, right: 0, bottom: 0, left: 0},
 	    selection: d3.select("body").append("div"),
 	    selection_is_svg: false,
 	    fillScreen: false,

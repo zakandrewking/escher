@@ -78,6 +78,9 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 
         // run
         var out;
+	// set the selection class
+	selection.classed('escher-container', true);
+	// make the svg
         if (selection_is_svg) {
             out = height_width_attr(selection, margins);
             out.svg = selection;

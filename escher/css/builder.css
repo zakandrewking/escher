@@ -1,3 +1,6 @@
+.escher-container {
+    background-color: #F3F3F3;
+}
 #status {
     position:absolute;
     bottom:10px;
