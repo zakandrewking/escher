@@ -185,7 +185,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		var start_coords = { x: width/2,
 				     y: height/4 };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
-		this.map.zoom_extent_nodes(300, 'nodes');
+		this.map.zoom_extent_nodes(0.1, 'nodes');
 	    } else {
 		this.map.zoom_extent_canvas();
 	    }
@@ -344,9 +344,11 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
             save: { key: 83, modifiers: { control: true }, // ctrl-s
 		    target: map,
 		    fn: map.save },
-            // save_cmd: { key: 83, modifiers: { command: true }, // command-s
+	    // command-s
+            // save_cmd: { key: 83, modifiers: { command: true },
 	    // 		       fn: save },
-            save_svg: { key: 83, modifiers: { control: true, shift: true }, // ctrl-Shift-s
+	    // ctrl-Shift-s
+            save_svg: { key: 83, modifiers: { control: true, shift: true },
 			target: map,
 			fn: map.save_svg },
             load: { key: 79, modifiers: { control: true }, // ctrl-o

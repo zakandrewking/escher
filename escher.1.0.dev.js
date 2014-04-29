@@ -5266,7 +5266,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     function zoom_extent_nodes(margin) {
 	/** Zoom to fit all the nodes.
 
-	 margin: optional argument to set the margins.
+	 margin: optional argument to set the margins as a percent of width.
 
 	 Returns error if one is raised.
 
@@ -5276,7 +5276,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     function zoom_extent_canvas(margin) {
 	/** Zoom to fit the canvas.
 
-	 margin: optional argument to set the margins.
+	 margin: optional argument to set the margins as a percent of width.
 
 	 Returns error if one is raised.
 
@@ -5294,10 +5294,13 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	 */
 
 	// optional args
-	if (margin===undefined) margin = 0;
+	if (margin===undefined) margin = mode=='nodes' ? 0.1 : 0;
 	if (mode===undefined) mode = 'canvas';
 
 	var new_zoom, new_pos;
+	// scale margin to window size
+	margin = margin * this.width;
+
 	if (mode=='nodes') {
 	    // get the extent of the nodes
 	    var min = { x: null, y: null }, // TODO make infinity?
@@ -6183,7 +6186,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		var start_coords = { x: width/2,
 				     y: height/4 };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
-		this.map.zoom_extent_nodes(300, 'nodes');
+		this.map.zoom_extent_nodes(0.1, 'nodes');
 	    } else {
 		this.map.zoom_extent_canvas();
 	    }
@@ -6342,9 +6345,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
             save: { key: 83, modifiers: { control: true }, // ctrl-s
 		    target: map,
 		    fn: map.save },
-            // save_cmd: { key: 83, modifiers: { command: true }, // command-s
+	    // command-s
+            // save_cmd: { key: 83, modifiers: { command: true },
 	    // 		       fn: save },
-            save_svg: { key: 83, modifiers: { control: true, shift: true }, // ctrl-Shift-s
+	    // ctrl-Shift-s
+            save_svg: { key: 83, modifiers: { control: true, shift: true },
 			target: map,
 			fn: map.save_svg },
             load: { key: 79, modifiers: { control: true }, // ctrl-o
