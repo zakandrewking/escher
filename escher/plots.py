@@ -19,8 +19,15 @@ import string
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
 
-def get_cache_dir():
-    cache_dir = appdirs.user_cache_dir('escher', appauthor="Zachary King")
+def get_cache_dir(name=None):
+    """ Get the cache dir as a string.
+
+    name: an optional subdirectory within the cache
+
+    """
+    cache_dir = join(appdirs.user_cache_dir('escher', appauthor="Zachary King"))
+    if name is not None:
+        cache_dir = join(cache_dir, name)
     try:
         os.makedirs(cache_dir)
     except OSError:
@@ -28,20 +35,35 @@ def get_cache_dir():
     return cache_dir
 
 def clear_cache():
+    """Empty the contents of the cache directory."""
     cache_dir = get_cache_dir()
     for root, dirs, files in os.walk(cache_dir):
         for f in files:
             os.unlink(join(root, f))
         for d in dirs:
             shutil.rmtree(join(root, d))
+
+def list_cached_maps():
+    """Return a list of all cached maps."""
+    try:
+        return [x.replace('.json', '') for x in os.listdir(get_cache_dir(name='maps'))]
+    except OSError:
+        print 'No cached maps'
+        return None
+
+def list_cached_models():
+    """Return a list of all cached models."""
+    try:
+        return [x.replace('.json', '') for x in os.listdir(get_cache_dir(name='models'))]
+    except OSError:
+        print 'No cached maps'
+        return None
         
 def get_an_id():
     return ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
 
 def load_resource(resource, name, safe=False):
-    """Load a resource that could be a file, URL, or json string
-
-    """
+    """Load a resource that could be a file, URL, or json string."""
     # if it's a url, download it
     if resource.startswith('http://') or resource.startswith('https://'):
         try:
@@ -72,6 +94,7 @@ def load_resource(resource, name, safe=False):
     raise Exception('Could not load %s.' % name)
 
 class Plot(object):
+    """Parent class for all plots."""
     def standalone_html(self):
         raise NotImplemented()
     def embed_html(self):
@@ -182,7 +205,7 @@ class Builder(Plot):
             model_name = self.model_name  
             model_name = model_name.replace(".json", "")
             # if the file is not present attempt to download
-            cache_dir = get_cache_dir()
+            cache_dir = get_cache_dir(name='models')
             model_filename = join(cache_dir, model_name + ".json")
             if not isfile(model_filename):
                 model_not_cached = 'Model "%s" not in cache. Attempting download from %s' % \
@@ -214,7 +237,7 @@ class Builder(Plot):
             map_name = self.map_name  
             map_name = map_name.replace(".json", "")
             # if the file is not present attempt to download
-            cache_dir = get_cache_dir()
+            cache_dir = get_cache_dir(name='maps')
             map_filename = join(cache_dir, map_name + ".json")
             if not isfile(map_filename):
                 map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
