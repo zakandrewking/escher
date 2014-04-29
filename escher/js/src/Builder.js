@@ -185,7 +185,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		var start_coords = { x: width/2,
 				     y: height/4 };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
-		this.map.zoom_extent_nodes(0.1, 'nodes');
+		this.map.zoom_extent_nodes();
 	    } else {
 		this.map.zoom_extent_canvas();
 	    }

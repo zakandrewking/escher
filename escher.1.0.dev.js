@@ -4117,7 +4117,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 								   'metabolite_data');
 	this.apply_metabolite_data_to_map();
 	if (this.cobra_model !== null) {
-	    this.cobra_model.apply_metabolite_data(this.metabolite_data,
+	    this.cobra_model.apply_metabolite_data(this.metabolite_data_object,
 						   this.metabolite_data_styles);
 	}
 	this.draw_all_nodes();
@@ -5266,7 +5266,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     function zoom_extent_nodes(margin) {
 	/** Zoom to fit all the nodes.
 
-	 margin: optional argument to set the margins as a percent of width.
+	 margin: optional argument to set the margins as a fraction of height.
 
 	 Returns error if one is raised.
 
@@ -5276,7 +5276,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     function zoom_extent_canvas(margin) {
 	/** Zoom to fit the canvas.
 
-	 margin: optional argument to set the margins as a percent of width.
+	 margin: optional argument to set the margins as a fraction of height.
 
 	 Returns error if one is raised.
 
@@ -5294,12 +5294,12 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	 */
 
 	// optional args
-	if (margin===undefined) margin = mode=='nodes' ? 0.1 : 0;
+	if (margin===undefined) margin = mode=='nodes' ? 0.2 : 0;
 	if (mode===undefined) mode = 'canvas';
 
 	var new_zoom, new_pos;
 	// scale margin to window size
-	margin = margin * this.width;
+	margin = margin * this.height;
 
 	if (mode=='nodes') {
 	    // get the extent of the nodes
@@ -6186,7 +6186,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		var start_coords = { x: width/2,
 				     y: height/4 };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
-		this.map.zoom_extent_nodes(0.1, 'nodes');
+		this.map.zoom_extent_nodes();
 	    } else {
 		this.map.zoom_extent_canvas();
 	    }
