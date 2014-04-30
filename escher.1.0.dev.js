@@ -5868,8 +5868,16 @@ define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
 	    throw new Error('Bad model data.');
 	    return;
 	}
-	this.reactions = model_data.reactions;
-	this.metabolites = model_data.metabolites;
+	this.reactions = {};
+	for (var i=0, l=model_data.reactions.length; i<l; i++) {
+	    var r = model_data.reactions[i];
+	    this.reactions[r.id] = r;
+	}
+	this.metabolites = {};
+	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
+	    var r = model_data.metabolites[i];
+	    this.metabolites[r.id] = r;
+	}
 
 	// get cofactors if preset
 	if ('cofactors' in model_data) {

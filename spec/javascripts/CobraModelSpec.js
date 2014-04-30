@@ -6,11 +6,16 @@ describe('CobraModel', function() {
 	    .toThrow(new Error("Bad model data."));
     });
     it("Formulas", function () {
-	var model_data = { reactions: { acc_tpp: { metabolites: { acc_c: 1, 
-								  acc_p: -1 }
-						 } },
-			   metabolites: { acc_c: { formula: 'C3H2' },
-					  acc_p: { formula: 'C3H2' } } },
+	var model_data = { reactions: [ { id: 'acc_tpp',
+					  { metabolites: { acc_c: 1, acc_p: -1 } }
+					}
+				      ],
+			   metabolites: [ { id: 'acc_c',
+					    formula: 'C3H2' },
+					  { id: 'acc_p',
+					    formula: 'C3H2' }
+					]
+			 };
 	    model_data_copy = escher.utils.clone(model_data);
 	var model = escher.CobraModel(model_data);
 	expect(model.reactions).toEqual(
