@@ -2845,7 +2845,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    map.sel.selectAll('.metabolite-circle')
 		.on('mouseover.combine', function(d) {
 		    if (d.bigg_id==bigg_id && d.node_id!=data.node_id) {
-			map.sel.select(this).style('stroke-width', String(12)+'px')
+			d3.select(this).style('stroke-width', String(12)+'px')
 			    .classed('node-to-combine', true);
 		    }
 		}).on('mouseout.combine', function(d) {
