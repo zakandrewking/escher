@@ -6000,7 +6000,7 @@ define('Brush',["utils"], function(utils) {
 		})        
 		.on("brushend", function() {
 		    d3.event.target.clear();
-		    this.map.sel.select(this).call(d3.event.target);
+		    d3.select(this).call(d3.event.target);
 		}),
 	    brush = selection.append("g")
 		.attr("class", "brush")
