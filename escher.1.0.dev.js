@@ -6186,7 +6186,6 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	
 	// setup selection box
 	if (this.o.map_data!==null) {
-	    this.map.draw_everything();
 	    this.map.zoom_extent_canvas();
 	} else {
 	    if (this.o.starting_reaction!==null && cobra_model_obj!==null) {
@@ -6206,9 +6205,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	} else {
 	    // turn off the behaviors
 	    this.map.behavior.turn_everything_off();
-	    this.map.draw_everything();
 	    this.map.canvas.toggle_resize(false);
 	}
+
+	// draw
+	this.map.draw_everything();
 
 	// turn off loading message
 	d3.select('#loading').style("display", "none");
