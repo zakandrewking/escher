@@ -354,7 +354,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         /** Draw the reactions and membranes
 
          */
-	var membranes = this.membranes,
+	var sel = this.sel,
+	    membranes = this.membranes,
 	    scale = this.scale,
 	    reactions = this.reactions,
 	    nodes = this.nodes,
@@ -374,11 +375,11 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    metabolite_data_styles = this.metabolite_data_styles,
 	    beziers_enabled = this.beziers_enabled;
 
-	utils.draw_an_array('#membranes' ,'.membrane', membranes,
+	utils.draw_an_array(sel, '#membranes' ,'.membrane', membranes,
 			    draw.create_membrane,
 			    draw.update_membrane);
 
-	utils.draw_an_object('#reactions', '.reaction', reactions,
+	utils.draw_an_object(sel, '#reactions', '.reaction', reactions,
 			     'reaction_id',
 			     draw.create_reaction, 
 			     function(sel) { return draw.update_reaction(sel,
@@ -392,7 +393,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 									 bezier_drag_behavior,
 									 reaction_label_drag); });
 
-	utils.draw_an_object('#nodes', '.node', nodes, 'node_id', 
+	utils.draw_an_object(sel, '#nodes', '.node', nodes, 'node_id', 
 			     function(sel) { return draw.create_node(sel, nodes, reactions); },
 			     function(sel) { return draw.update_node(sel, scale,
 								     has_metabolite_data,
@@ -401,7 +402,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 								     node_drag_behavior,
 								     node_label_drag); });
 
-	utils.draw_an_object('#text-labels', '.text-label', text_labels,
+	utils.draw_an_object(sel, '#text-labels', '.text-label', text_labels,
 			     'text_label_id',
 			     function(sel) { return draw.create_text_label(sel); }, 
 			     function(sel) { return draw.update_text_label(sel,
