@@ -6,3 +6,4 @@
 TAGS
 dist/
 Escher.egg-info/
+.ipynb_checkpoints/
