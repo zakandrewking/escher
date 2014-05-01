@@ -202,9 +202,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	// draw
 	this.map.draw_everything();
 
-	// turn off loading message
-	d3.select('#loading').style("display", "none");
-
 	// run the load callback
 	if (this.o.on_load!==null)
 	    this.o.on_load();

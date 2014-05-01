@@ -1009,12 +1009,12 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
         return defs;
     }
 
-    function draw_an_array(sel_parent_node, sel_children, array, 
-			   create_function, update_function) {
+    function draw_an_array(container_sel, parent_node_selector, children_selector,
+			   array, create_function, update_function) {
 	/** Run through the d3 data binding steps for an array.
 	 */
-	var sel = d3.select(sel_parent_node)
-		.selectAll(sel_children)
+	var sel = container_sel.select(parent_node_selector)
+		.selectAll(children_selector)
 		.data(array);
 	// enter: generate and place reaction
 	sel.enter().call(create_function);
@@ -1024,12 +1024,12 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	sel.exit().remove();
     }
 
-    function draw_an_object(sel_parent_node, sel_children, object, 
-			    id_key, create_function, update_function) {
+    function draw_an_object(container_sel, parent_node_selector, children_selector,
+			    object, id_key, create_function, update_function) {
 	/** Run through the d3 data binding steps for an object.
 	 */
-	var sel = d3.select(sel_parent_node)
-		.selectAll(sel_children)
+	var sel = container_sel.select(parent_node_selector)
+		.selectAll(children_selector)
 		.data(make_array(object, id_key), function(d) { return d[id_key]; });
 	// enter: generate and place reaction
 	sel.enter().call(create_function);
@@ -1164,7 +1164,6 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
     function download_json(json, name) {
         var a = document.createElement('a');
         a.download = name+'.json'; // file name
-        // xml = (new XMLSerializer()).serializeToString(d3.select(selection).node()); // convert node to xml string;
 	var j = JSON.stringify(json);
         a.setAttribute("href-lang", "text/json");
         a.href = 'data:image/svg+xml;base64,' + utf8_to_b64(j); // create data uri
@@ -1197,10 +1196,11 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	reader.readAsText(f);
     }
 
-    function export_svg(name, selection, do_beautify) {
+    function export_svg(container_sel, name, selector, do_beautify) {
         var a = document.createElement('a'), xml, ev;
         a.download = name+'.svg'; // file name
-        xml = (new XMLSerializer()).serializeToString(d3.select(selection).node()); // convert node to xml string
+	// convert node to xml string
+        xml = (new XMLSerializer()).serializeToString(container_sel.select(selector).node()); 
         if (do_beautify) xml = vkbeautify.xml(xml);
         xml = '<?xml version="1.0" encoding="utf-8"?>\n \
             <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n \
@@ -2842,15 +2842,15 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		node_group.parentNode.insertBefore(node_group,node_group.parentNode.firstChild);
 	    }, 200);
 	    // prepare to combine metabolites
-	    d3.selectAll('.metabolite-circle')
+	    map.sel.selectAll('.metabolite-circle')
 		.on('mouseover.combine', function(d) {
 		    if (d.bigg_id==bigg_id && d.node_id!=data.node_id) {
-			d3.select(this).style('stroke-width', String(12)+'px')
+			map.sel.select(this).style('stroke-width', String(12)+'px')
 			    .classed('node-to-combine', true);
 		    }
 		}).on('mouseout.combine', function(d) {
 		    if (d.bigg_id==bigg_id) {
-			d3.selectAll('.node-to-combine').style('stroke-width', String(2)+'px')
+			map.sel.selectAll('.node-to-combine').style('stroke-width', String(2)+'px')
 			    .classed('node-to-combine', false);
 		    }
 		});
@@ -2893,7 +2893,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    }
 	    // look for mets to combine
 	    var node_to_combine_array = [];
-	    d3.selectAll('.node-to-combine').each(function(d) {
+	    map.sel.selectAll('.node-to-combine').each(function(d) {
 		node_to_combine_array.push(d.node_id);
 	    });
 	    if (node_to_combine_array.length==1) {
@@ -2964,7 +2964,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    }
 
 	    // stop combining metabolites
-	    d3.selectAll('.metabolite-circle')
+	    map.sel.selectAll('.metabolite-circle')
 		.on('mouseover.combine', null)
 		.on('mouseout.combine', null);
 
@@ -2999,7 +2999,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    to_delete[dragged_node_id] = dragged_node;
 	    map.delete_node_data(to_delete);
 	    // turn off the class
-	    d3.selectAll('.node-to-combine').classed('node-to-combine', false);
+	    map.sel.selectAll('.node-to-combine').classed('node-to-combine', false);
 	    // draw
 	    map.draw_everything();
 	    // return for undo
@@ -4057,16 +4057,16 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    .attr('id', 'text-labels');
     }
     function reset_containers() {
-	d3.select('#membranes')
+	this.sel.select('#membranes')
 	    .selectAll('.membrane')
 	    .remove();
-	d3.select('#reactions')
+	this.sel.select('#reactions')
 	    .selectAll('.reaction')
 	    .remove();
-	d3.select('#nodes')
+	this.sel.select('#nodes')
 	    .selectAll('.node')
 	    .remove();
-	d3.select('#text-labels')
+	this.sel.select('#text-labels')
 	    .selectAll('.text-label')
 	    .remove();
     }
@@ -4219,7 +4219,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
         // generate reactions for o.drawn_reactions
         // assure constancy with cobra_id
-        var sel = d3.select('#reactions')
+        var sel = this.sel.select('#reactions')
                 .selectAll('.reaction')
                 .data(utils.make_array(reaction_subset, 'reaction_id'),
 		      function(d) { return d.reaction_id; });
@@ -4270,7 +4270,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
         // generate nodes for o.drawn_nodes
         // assure constancy with cobra_id
-        var sel = d3.select('#nodes')
+        var sel = this.sel.select('#nodes')
                 .selectAll('.node')
                 .data(utils.make_array(node_subset, 'node_id'),
 		      function(d) { return d.node_id; });
@@ -4302,7 +4302,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
         }
 
         // generate text for this.text_labels
-        var sel = d3.select('#text-labels')
+        var sel = this.sel.select('#text-labels')
                 .selectAll('.text-label')
                 .data(utils.make_array(text_label_subset, 'text_label_id'),
 		      function(d) { return d.text_label_id; });
@@ -4496,7 +4496,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     }
     function get_selected_node_ids() {
 	var selected_node_ids = [];
-	d3.select('#nodes')
+	this.sel.select('#nodes')
 	    .selectAll('.selected')
 	    .each(function(d) { selected_node_ids.push(d.node_id); });
 	return selected_node_ids;
@@ -4504,14 +4504,14 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     function get_selected_nodes() {
 	var selected_nodes = {},
 	    self = this;
-	d3.select('#nodes')
+	this.sel.select('#nodes')
 	    .selectAll('.selected')
 	    .each(function(d) { selected_nodes[d.node_id] = self.nodes[d.node_id]; });
 	return selected_nodes;
     }	
     function get_selected_text_label_ids() {
 	var selected_text_label_ids = [];
-	d3.select('#text-labels')
+	this.sel.select('#text-labels')
 	    .selectAll('.selected')
 	    .each(function(d) { selected_text_label_ids.push(d.text_label_id); });
 	return selected_text_label_ids;
@@ -4519,7 +4519,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     function get_selected_text_labels() {
 	var selected_text_labels = {},
 	    self = this;
-	d3.select('#text-labels')
+	this.sel.select('#text-labels')
 	    .selectAll('.selected')
 	    .each(function(d) { selected_text_labels[d.text_label_id] = self.text_labels[d.text_label_id]; });
 	return selected_text_labels;
@@ -4549,11 +4549,11 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	var node_selection = this.sel.select('#nodes').selectAll('.node'), 
 	    shift_key_on = this.key_manager.held_keys.shift;
 	if (shift_key_on) {
-	    d3.select(sel.parentNode)
-		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
+	    this.sel.select(sel.parentNode)
+		.classed("selected", !this.sel.select(sel.parentNode).classed("selected"));
 	}
         else node_selection.classed("selected", function(p) { return d === p; });
-	var selected_nodes = d3.select('#nodes').selectAll('.selected'),
+	var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),
 	    count = 0,
 	    coords,
 	    selected_node;
@@ -4594,7 +4594,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	// Ignore shift key and only allow single selection for now
 	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
 	text_label_selection.classed("selected", function(p) { return d === p; });
-	var selected_text_labels = d3.select('#text-labels').selectAll('.selected'),
+	var selected_text_labels = this.sel.select('#text-labels').selectAll('.selected'),
 	    coords;
 	selected_text_labels.each(function(d) {
 	    coords = { x: d.x, y: d.y };
@@ -5142,8 +5142,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	function choose_center(callback, callback_canceled) {
 	    console.log('Choose center');
 	    set_status('Choose a node or point to rotate around.');
-	    var selection_node = d3.selectAll('.node-circle'),
-		selection_background = d3.selectAll('#mouse-node'),
+	    var selection_node = this.sel.selectAll('.node-circle'),
+		selection_background = this.sel.selectAll('#mouse-node'),
 		escape_listener = this.key_manager.add_escape_listener(function() {
 		    console.log('choose_center escape');
 		    selection_node.on('mousedown.center', null);
@@ -5182,7 +5182,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    this.set_status('Drag to rotate.');
 	    this.zoom_container.toggle_zoom(false);
 	    var angle = Math.PI/2,
-		selection = d3.selectAll('#mouse-node'),
+		selection = this.sel.selectAll('#mouse-node'),
 		drag = d3.behavior.drag(),
 		escape_listener = this.key_manager.add_escape_listener(function() {
 		    console.log('listen_for_rotation escape');
@@ -5254,7 +5254,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	return { segment_objs_w_segments: segment_objs_w_segments, reactions: these_reactions };
     }
     function set_status(status) {
-        // TODO put this in js/metabolic-map/utils.js
+        // TODO make this a class, and take out d3.select('body')
         var t = d3.select('body').select('#status');
         if (t.empty()) t = d3.select('body')
 	    .append('text')
@@ -5960,7 +5960,7 @@ define('Brush',["utils"], function(utils) {
 	/** Returns a boolean for the on/off status of the brush
 
 	 */
-	return d3.select('.brush').empty();
+	return this.map.sel.select('.brush').empty();
     }
     function toggle(on_off) {
 	/** Turn the brush on or off
@@ -5976,8 +5976,9 @@ define('Brush',["utils"], function(utils) {
     }	
     function setup_selection_brush() {
 	var selection = this.brush_sel, 
-	    node_selection = d3.select('#nodes').selectAll('.node'),
+	    node_selection = this.map.sel.select('#nodes').selectAll('.node'),
 	    size_and_location = this.map.canvas.size_and_location(),
+	    map = this.map,
 	    width = size_and_location.width,
 	    height = size_and_location.height,
 	    x = size_and_location.x,
@@ -5998,7 +5999,7 @@ define('Brush',["utils"], function(utils) {
 		})        
 		.on("brushend", function() {
 		    d3.event.target.clear();
-		    d3.select(this).call(d3.event.target);
+		    this.map.sel.select(this).call(d3.event.target);
 		}),
 	    brush = selection.append("g")
 		.attr("class", "brush")
@@ -6210,9 +6211,6 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 
 	// draw
 	this.map.draw_everything();
-
-	// turn off loading message
-	d3.select('#loading').style("display", "none");
 
 	// run the load callback
 	if (this.o.on_load!==null)
@@ -6438,11 +6436,14 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 define('DataMenu',["utils"], function(utils) {
     return function(options) {
         var o = utils.set_options(options, {
-            selection: d3.select("body"),
+            selection: null,
             getdatafiles: null,
             datafiles: null,
             update_callback: null,
 	    target: null});
+
+	if (selection===null)
+	    throw Error('No selection provided for DataMenu');
 
         // setup dropdown menu
         // Append menu if it doesn't exist

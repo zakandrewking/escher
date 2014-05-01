@@ -148,15 +148,15 @@ define(["utils", "build"], function(utils, build) {
 		node_group.parentNode.insertBefore(node_group,node_group.parentNode.firstChild);
 	    }, 200);
 	    // prepare to combine metabolites
-	    d3.selectAll('.metabolite-circle')
+	    map.sel.selectAll('.metabolite-circle')
 		.on('mouseover.combine', function(d) {
 		    if (d.bigg_id==bigg_id && d.node_id!=data.node_id) {
-			d3.select(this).style('stroke-width', String(12)+'px')
+			map.sel.select(this).style('stroke-width', String(12)+'px')
 			    .classed('node-to-combine', true);
 		    }
 		}).on('mouseout.combine', function(d) {
 		    if (d.bigg_id==bigg_id) {
-			d3.selectAll('.node-to-combine').style('stroke-width', String(2)+'px')
+			map.sel.selectAll('.node-to-combine').style('stroke-width', String(2)+'px')
 			    .classed('node-to-combine', false);
 		    }
 		});
@@ -199,7 +199,7 @@ define(["utils", "build"], function(utils, build) {
 	    }
 	    // look for mets to combine
 	    var node_to_combine_array = [];
-	    d3.selectAll('.node-to-combine').each(function(d) {
+	    map.sel.selectAll('.node-to-combine').each(function(d) {
 		node_to_combine_array.push(d.node_id);
 	    });
 	    if (node_to_combine_array.length==1) {
@@ -270,7 +270,7 @@ define(["utils", "build"], function(utils, build) {
 	    }
 
 	    // stop combining metabolites
-	    d3.selectAll('.metabolite-circle')
+	    map.sel.selectAll('.metabolite-circle')
 		.on('mouseover.combine', null)
 		.on('mouseout.combine', null);
 
@@ -305,7 +305,7 @@ define(["utils", "build"], function(utils, build) {
 	    to_delete[dragged_node_id] = dragged_node;
 	    map.delete_node_data(to_delete);
 	    // turn off the class
-	    d3.selectAll('.node-to-combine').classed('node-to-combine', false);
+	    map.sel.selectAll('.node-to-combine').classed('node-to-combine', false);
 	    // draw
 	    map.draw_everything();
 	    // return for undo

@@ -279,16 +279,16 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    .attr('id', 'text-labels');
     }
     function reset_containers() {
-	d3.select('#membranes')
+	this.sel.select('#membranes')
 	    .selectAll('.membrane')
 	    .remove();
-	d3.select('#reactions')
+	this.sel.select('#reactions')
 	    .selectAll('.reaction')
 	    .remove();
-	d3.select('#nodes')
+	this.sel.select('#nodes')
 	    .selectAll('.node')
 	    .remove();
-	d3.select('#text-labels')
+	this.sel.select('#text-labels')
 	    .selectAll('.text-label')
 	    .remove();
     }
@@ -441,7 +441,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
         // generate reactions for o.drawn_reactions
         // assure constancy with cobra_id
-        var sel = d3.select('#reactions')
+        var sel = this.sel.select('#reactions')
                 .selectAll('.reaction')
                 .data(utils.make_array(reaction_subset, 'reaction_id'),
 		      function(d) { return d.reaction_id; });
@@ -492,7 +492,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
         // generate nodes for o.drawn_nodes
         // assure constancy with cobra_id
-        var sel = d3.select('#nodes')
+        var sel = this.sel.select('#nodes')
                 .selectAll('.node')
                 .data(utils.make_array(node_subset, 'node_id'),
 		      function(d) { return d.node_id; });
@@ -524,7 +524,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         }
 
         // generate text for this.text_labels
-        var sel = d3.select('#text-labels')
+        var sel = this.sel.select('#text-labels')
                 .selectAll('.text-label')
                 .data(utils.make_array(text_label_subset, 'text_label_id'),
 		      function(d) { return d.text_label_id; });
@@ -718,7 +718,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     }
     function get_selected_node_ids() {
 	var selected_node_ids = [];
-	d3.select('#nodes')
+	this.sel.select('#nodes')
 	    .selectAll('.selected')
 	    .each(function(d) { selected_node_ids.push(d.node_id); });
 	return selected_node_ids;
@@ -726,14 +726,14 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     function get_selected_nodes() {
 	var selected_nodes = {},
 	    self = this;
-	d3.select('#nodes')
+	this.sel.select('#nodes')
 	    .selectAll('.selected')
 	    .each(function(d) { selected_nodes[d.node_id] = self.nodes[d.node_id]; });
 	return selected_nodes;
     }	
     function get_selected_text_label_ids() {
 	var selected_text_label_ids = [];
-	d3.select('#text-labels')
+	this.sel.select('#text-labels')
 	    .selectAll('.selected')
 	    .each(function(d) { selected_text_label_ids.push(d.text_label_id); });
 	return selected_text_label_ids;
@@ -741,7 +741,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     function get_selected_text_labels() {
 	var selected_text_labels = {},
 	    self = this;
-	d3.select('#text-labels')
+	this.sel.select('#text-labels')
 	    .selectAll('.selected')
 	    .each(function(d) { selected_text_labels[d.text_label_id] = self.text_labels[d.text_label_id]; });
 	return selected_text_labels;
@@ -771,11 +771,11 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var node_selection = this.sel.select('#nodes').selectAll('.node'), 
 	    shift_key_on = this.key_manager.held_keys.shift;
 	if (shift_key_on) {
-	    d3.select(sel.parentNode)
-		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
+	    this.sel.select(sel.parentNode)
+		.classed("selected", !this.sel.select(sel.parentNode).classed("selected"));
 	}
         else node_selection.classed("selected", function(p) { return d === p; });
-	var selected_nodes = d3.select('#nodes').selectAll('.selected'),
+	var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),
 	    count = 0,
 	    coords,
 	    selected_node;
@@ -816,7 +816,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	// Ignore shift key and only allow single selection for now
 	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
 	text_label_selection.classed("selected", function(p) { return d === p; });
-	var selected_text_labels = d3.select('#text-labels').selectAll('.selected'),
+	var selected_text_labels = this.sel.select('#text-labels').selectAll('.selected'),
 	    coords;
 	selected_text_labels.each(function(d) {
 	    coords = { x: d.x, y: d.y };
@@ -1364,8 +1364,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	function choose_center(callback, callback_canceled) {
 	    console.log('Choose center');
 	    set_status('Choose a node or point to rotate around.');
-	    var selection_node = d3.selectAll('.node-circle'),
-		selection_background = d3.selectAll('#mouse-node'),
+	    var selection_node = this.sel.selectAll('.node-circle'),
+		selection_background = this.sel.selectAll('#mouse-node'),
 		escape_listener = this.key_manager.add_escape_listener(function() {
 		    console.log('choose_center escape');
 		    selection_node.on('mousedown.center', null);
@@ -1404,7 +1404,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    this.set_status('Drag to rotate.');
 	    this.zoom_container.toggle_zoom(false);
 	    var angle = Math.PI/2,
-		selection = d3.selectAll('#mouse-node'),
+		selection = this.sel.selectAll('#mouse-node'),
 		drag = d3.behavior.drag(),
 		escape_listener = this.key_manager.add_escape_listener(function() {
 		    console.log('listen_for_rotation escape');
@@ -1476,7 +1476,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	return { segment_objs_w_segments: segment_objs_w_segments, reactions: these_reactions };
     }
     function set_status(status) {
-        // TODO put this in js/metabolic-map/utils.js
+        // TODO make this a class, and take out d3.select('body')
         var t = d3.select('body').select('#status');
         if (t.empty()) t = d3.select('body')
 	    .append('text')

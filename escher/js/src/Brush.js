@@ -31,7 +31,7 @@ define(["utils"], function(utils) {
 	/** Returns a boolean for the on/off status of the brush
 
 	 */
-	return d3.select('.brush').empty();
+	return this.map.sel.select('.brush').empty();
     }
     function toggle(on_off) {
 	/** Turn the brush on or off
@@ -47,8 +47,9 @@ define(["utils"], function(utils) {
     }	
     function setup_selection_brush() {
 	var selection = this.brush_sel, 
-	    node_selection = d3.select('#nodes').selectAll('.node'),
+	    node_selection = this.map.sel.select('#nodes').selectAll('.node'),
 	    size_and_location = this.map.canvas.size_and_location(),
+	    map = this.map,
 	    width = size_and_location.width,
 	    height = size_and_location.height,
 	    x = size_and_location.x,
@@ -69,7 +70,7 @@ define(["utils"], function(utils) {
 		})        
 		.on("brushend", function() {
 		    d3.event.target.clear();
-		    d3.select(this).call(d3.event.target);
+		    this.map.sel.select(this).call(d3.event.target);
 		}),
 	    brush = selection.append("g")
 		.attr("class", "brush")

@@ -1,11 +1,14 @@
 define(["utils"], function(utils) {
     return function(options) {
         var o = utils.set_options(options, {
-            selection: d3.select("body"),
+            selection: null,
             getdatafiles: null,
             datafiles: null,
             update_callback: null,
 	    target: null});
+
+	if (selection===null)
+	    throw Error('No selection provided for DataMenu');
 
         // setup dropdown menu
         // Append menu if it doesn't exist

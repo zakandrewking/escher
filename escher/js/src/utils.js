@@ -223,12 +223,12 @@ define(["lib/vkbeautify"], function(vkbeautify) {
         return defs;
     }
 
-    function draw_an_array(sel_parent_node, sel_children, array, 
-			   create_function, update_function) {
+    function draw_an_array(container_sel, parent_node_selector, children_selector,
+			   array, create_function, update_function) {
 	/** Run through the d3 data binding steps for an array.
 	 */
-	var sel = d3.select(sel_parent_node)
-		.selectAll(sel_children)
+	var sel = container_sel.select(parent_node_selector)
+		.selectAll(children_selector)
 		.data(array);
 	// enter: generate and place reaction
 	sel.enter().call(create_function);
@@ -238,12 +238,12 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	sel.exit().remove();
     }
 
-    function draw_an_object(sel_parent_node, sel_children, object, 
-			    id_key, create_function, update_function) {
+    function draw_an_object(container_sel, parent_node_selector, children_selector,
+			    object, id_key, create_function, update_function) {
 	/** Run through the d3 data binding steps for an object.
 	 */
-	var sel = d3.select(sel_parent_node)
-		.selectAll(sel_children)
+	var sel = container_sel.select(parent_node_selector)
+		.selectAll(children_selector)
 		.data(make_array(object, id_key), function(d) { return d[id_key]; });
 	// enter: generate and place reaction
 	sel.enter().call(create_function);
@@ -378,7 +378,6 @@ define(["lib/vkbeautify"], function(vkbeautify) {
     function download_json(json, name) {
         var a = document.createElement('a');
         a.download = name+'.json'; // file name
-        // xml = (new XMLSerializer()).serializeToString(d3.select(selection).node()); // convert node to xml string;
 	var j = JSON.stringify(json);
         a.setAttribute("href-lang", "text/json");
         a.href = 'data:image/svg+xml;base64,' + utf8_to_b64(j); // create data uri
@@ -411,10 +410,11 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	reader.readAsText(f);
     }
 
-    function export_svg(name, selection, do_beautify) {
+    function export_svg(container_sel, name, selector, do_beautify) {
         var a = document.createElement('a'), xml, ev;
         a.download = name+'.svg'; // file name
-        xml = (new XMLSerializer()).serializeToString(d3.select(selection).node()); // convert node to xml string
+	// convert node to xml string
+        xml = (new XMLSerializer()).serializeToString(container_sel.select(selector).node()); 
         if (do_beautify) xml = vkbeautify.xml(xml);
         xml = '<?xml version="1.0" encoding="utf-8"?>\n \
             <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n \
