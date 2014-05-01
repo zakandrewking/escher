@@ -7,7 +7,7 @@ define(["utils"], function(utils) {
             update_callback: null,
 	    target: null});
 
-	if (selection===null)
+	if (o.selection===null)
 	    throw Error('No selection provided for DataMenu');
 
         // setup dropdown menu
