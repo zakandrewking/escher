@@ -60,7 +60,8 @@ def list_cached_models():
         return None
         
 def get_an_id():
-    return ''.join(random.choice(string.ascii_lowercase) for _ in range(10))
+    return unicode(''.join(random.choice(string.ascii_lowercase)
+                           for _ in range(10)))
 
 def load_resource(resource, name, safe=False):
     """Load a resource that could be a file, URL, or json string."""
@@ -188,6 +189,10 @@ class Builder(Plot):
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
         self.css = css
+        self.generate_id()
+
+    def generate_id(self):
+        self.the_id = get_an_id()
         
     def load_model(self):
         """Load the model from input model_json using load_resource, or, secondarily,
@@ -254,28 +259,35 @@ class Builder(Plot):
                 self.loaded_map_json = f.read()
     
     def _initialize_javascript(self):
-        javascript = u"\n".join(
-            [u"var map_data = %s;" % (self.loaded_map_json if
-                                      self.loaded_map_json else u'null'),
-             u"var cobra_model = %s;" % (self.loaded_model_json if
-                                         self.loaded_model_json else u'null'),
-             u"var reaction_data = %s;" % (json.dumps(self.reaction_data) if
-                                           self.reaction_data else u'null'),
-             u"var metabolite_data = %s;" % (json.dumps(self.metabolite_data) if
-                                             self.metabolite_data else u'null'),
-             u"var css_string = '%s';" % self._embed_style()])
+        javascript = (u"var map_data_{the_id} = {map_data};"
+                      u"var cobra_model_{the_id} = {cobra_model};"
+                      u"var reaction_data_{the_id} = {reaction_data};"
+                      u"var metabolite_data_{the_id} = {metabolite_data};"
+                      u"var css_string_{the_id} = '{style}';").format(
+                          the_id=self.the_id,
+                          map_data=(self.loaded_map_json if
+                                    self.loaded_map_json else u'null'),
+                          cobra_model=(self.loaded_model_json if
+                                       self.loaded_model_json else u'null'),
+                          reaction_data=(json.dumps(self.reaction_data) if
+                                         self.reaction_data else u'null'),
+                          metabolite_data=(json.dumps(self.metabolite_data) if
+                                           self.metabolite_data else u'null'),
+                          style=self._embed_style())
         return javascript
 
     def _draw_js(self, the_id, enable_editing, dev, fill_screen):
-        draw = """Builder({ selection: d3.select('#%s'),
-                            enable_editing: %s,
-                            fill_screen: %s,
-                            map: map_data,
-                            cobra_model: cobra_model,
-		            reaction_data: reaction_data,
-		            metabolite_data: metabolite_data,
-                            css: css_string });
-        """ % (the_id, json.dumps(enable_editing), json.dumps(fill_screen))
+        draw = (u"Builder({{ selection: d3.select('#{the_id}'),"
+                u"enable_editing: {enable_editing},"
+                u"fill_screen: {fill_screen},"
+                u"map: map_data_{the_id},"
+                u"cobra_model: cobra_model_{the_id},"
+                u"reaction_data: reaction_data_{the_id},"
+		u"metabolite_data: metabolite_data_{the_id},"
+                u"css: css_string_{the_id} }});").format(
+                    the_id=the_id,
+                    enable_editing=json.dumps(enable_editing),
+                    fill_screen=json.dumps(fill_screen))
         if dev:
             draw = 'require(["Builder"], function(Builder) {\n%s\n});' % draw
         else:
@@ -290,16 +302,15 @@ class Builder(Plot):
     
     def _get_html(self, dev=False, wrapper=False, enable_editing=True,
                   fill_screen=False, height=800):
-        an_id = unicode(get_an_id())
         if dev:
             content = env.get_template('dev_content.html')
         else:
             content = env.get_template('content.html')
-        html = content.render(id=an_id,
+        html = content.render(id=self.the_id,
                               height=unicode(height),
                               css_path=(urls.builder_css_local if dev else urls.builder_css),
                               initialize_js=self._initialize_javascript(),
-                              draw_js=self._draw_js(an_id, enable_editing, dev, fill_screen),
+                              draw_js=self._draw_js(self.the_id, enable_editing, dev, fill_screen),
                               d3_url=urls.d3,
                               escher_url=urls.escher,
                               wrapper=wrapper)

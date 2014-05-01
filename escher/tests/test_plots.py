@@ -73,3 +73,6 @@ def test_Builder():
                 reaction_data=[{'GAPD': 123}, {'GAPD': 123}])
     b = Builder(map_name='iJO1366_central_metabolism', model_name='iJO1366',
                 metabolite_data=[{'nadh_c': 123}, {'nadh_c': 123}])
+
+    assert type(b.the_id) is unicode
+    assert len(b.the_id) == 10
