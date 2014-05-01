@@ -1,8 +1,8 @@
 from version import __version__
 
-builder_embed_css = "https://zakandrewking.github.io/escher/css/builder-embed.css"
+builder_embed_css = "https://zakandrewking.github.io/escher/escher/css/builder-embed.css"
 builder_embed_css_local = "css/builder-embed.css"
-builder_css = "https://zakandrewking.github.io/escher/css/builder.css"
+builder_css = "https://zakandrewking.github.io/escher/escher/css/builder.css"
 builder_css_local = "css/builder.css"
 map_download = "https://zakandrewking.github.io/escher/maps/v1/"
 model_download = "https://zakandrewking.github.io/escher/models/v1/"
