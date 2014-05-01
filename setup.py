@@ -1,5 +1,7 @@
 from sys import argv
 from subprocess import call
+import threading
+import webbrowser
 
 try:
     from setuptools import setup
@@ -9,6 +11,7 @@ except:
 version = __import__('escher').__version__
 escher = 'escher.%s.js'%version
 escher_min = 'escher.%s.min.js'%version
+port = 8789
     
 if 'clean' in argv:
     call(['rm', escher])
@@ -37,5 +40,5 @@ if 'install' in argv:
                                       'lib/d3.v3.js', 'lib/d3.v3.min.js'])])
 
 if 'test' in argv:
-    call(['jasmine'])
-    
+    call(['py.test'])
+    call(['jasmine', '--port=%d' % port])
