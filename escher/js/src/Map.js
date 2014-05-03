@@ -22,6 +22,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	set_model: set_model,
 	set_reaction_data: set_reaction_data,
 	set_metabolite_data: set_metabolite_data,
+	clear_map: clear_map,
 	// selection
 	select_metabolite: select_metabolite,
 	select_metabolite_with_id: select_metabolite_with_id,
@@ -343,6 +344,16 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 						   this.metabolite_data_styles);
 	}
 	this.draw_all_nodes();
+    }
+    function clear_map() {
+	this.reactions = {};
+	this.nodes = {};
+	this.membranes = [];
+	this.text_labels = {};
+	// reaction_data onto existing map reactions
+	this.apply_reaction_data_to_map();
+	this.apply_metabolite_data_to_map();
+	this.draw_everything();
     }
     function has_reaction_data() {
 	return (this.reaction_data_object!==null);
@@ -1615,7 +1626,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, true);
 	this.svg.attr('width', canvas_size_and_loc.width);
 	this.svg.attr('height', canvas_size_and_loc.height);
-        utils.export_svg("saved_map", "svg", true);
+        utils.export_svg("saved_map", this.svg, true);
 	this.zoom_container.go_to(window_scale, window_translate, true);
 	svg_width = this.svg.attr('width', svg_width);
 	svg_height = this.svg.attr('height', svg_height);

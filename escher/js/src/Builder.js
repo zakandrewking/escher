@@ -223,7 +223,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	new_button(sel, keys.toggle_input, "New reaction (/)");
 	new_button(sel, keys.save, "Save (^s)");
 	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
-	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load (^o)");
+	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load map (^o)");
+	new_button(sel, keys.clear_map, "Clear map");
 	key_manager.assigned_keys.load_model.fn = new_input(sel, load_model_for_file, this, "Load model (^m)");
 	key_manager.assigned_keys.load_reaction_data.fn = new_input(sel, load_reaction_data_for_file, this, "Load reaction data (^f)");
 	new_button(sel, keys.clear_reaction_data, "Clear reaction data");
@@ -351,6 +352,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			fn: map.save_svg },
             load: { key: 79, modifiers: { control: true }, // ctrl-o
 		    fn: null }, // defined by button
+	    clear_map: { target: map,
+			 fn: function() { this.clear_map(); }},
             load_model: { key: 77, modifiers: { control: true }, // ctrl-m
 			  fn: null }, // defined by button
 	    load_reaction_data: { key: 70, modifiers: { control: true }, // ctrl-f

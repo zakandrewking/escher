@@ -410,11 +410,11 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	reader.readAsText(f);
     }
 
-    function export_svg(container_sel, name, selector, do_beautify) {
+    function export_svg(name, svg_sel, do_beautify) {
         var a = document.createElement('a'), xml, ev;
         a.download = name+'.svg'; // file name
 	// convert node to xml string
-        xml = (new XMLSerializer()).serializeToString(container_sel.select(selector).node()); 
+        xml = (new XMLSerializer()).serializeToString(svg_sel.node()); 
         if (do_beautify) xml = vkbeautify.xml(xml);
         xml = '<?xml version="1.0" encoding="utf-8"?>\n \
             <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n \

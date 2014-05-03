@@ -1196,11 +1196,11 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	reader.readAsText(f);
     }
 
-    function export_svg(container_sel, name, selector, do_beautify) {
+    function export_svg(name, svg_sel, do_beautify) {
         var a = document.createElement('a'), xml, ev;
         a.download = name+'.svg'; // file name
 	// convert node to xml string
-        xml = (new XMLSerializer()).serializeToString(container_sel.select(selector).node()); 
+        xml = (new XMLSerializer()).serializeToString(svg_sel.node()); 
         if (do_beautify) xml = vkbeautify.xml(xml);
         xml = '<?xml version="1.0" encoding="utf-8"?>\n \
             <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n \
@@ -3800,6 +3800,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	set_model: set_model,
 	set_reaction_data: set_reaction_data,
 	set_metabolite_data: set_metabolite_data,
+	clear_map: clear_map,
 	// selection
 	select_metabolite: select_metabolite,
 	select_metabolite_with_id: select_metabolite_with_id,
@@ -4121,6 +4122,16 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 						   this.metabolite_data_styles);
 	}
 	this.draw_all_nodes();
+    }
+    function clear_map() {
+	this.reactions = {};
+	this.nodes = {};
+	this.membranes = [];
+	this.text_labels = {};
+	// reaction_data onto existing map reactions
+	this.apply_reaction_data_to_map();
+	this.apply_metabolite_data_to_map();
+	this.draw_everything();
     }
     function has_reaction_data() {
 	return (this.reaction_data_object!==null);
@@ -5393,7 +5404,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, true);
 	this.svg.attr('width', canvas_size_and_loc.width);
 	this.svg.attr('height', canvas_size_and_loc.height);
-        utils.export_svg("saved_map", "svg", true);
+        utils.export_svg("saved_map", this.svg, true);
 	this.zoom_container.go_to(window_scale, window_translate, true);
 	svg_width = this.svg.attr('width', svg_width);
 	svg_height = this.svg.attr('height', svg_height);
@@ -6234,7 +6245,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	new_button(sel, keys.toggle_input, "New reaction (/)");
 	new_button(sel, keys.save, "Save (^s)");
 	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
-	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load (^o)");
+	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load map (^o)");
+	new_button(sel, keys.clear_map, "Clear map");
 	key_manager.assigned_keys.load_model.fn = new_input(sel, load_model_for_file, this, "Load model (^m)");
 	key_manager.assigned_keys.load_reaction_data.fn = new_input(sel, load_reaction_data_for_file, this, "Load reaction data (^f)");
 	new_button(sel, keys.clear_reaction_data, "Clear reaction data");
@@ -6362,6 +6374,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			fn: map.save_svg },
             load: { key: 79, modifiers: { control: true }, // ctrl-o
 		    fn: null }, // defined by button
+	    clear_map: { target: map,
+			 fn: function() { this.clear_map(); }},
             load_model: { key: 77, modifiers: { control: true }, // ctrl-m
 			  fn: null }, // defined by button
 	    load_reaction_data: { key: 70, modifiers: { control: true }, // ctrl-f
