@@ -7,8 +7,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
     Input.prototype = { init: init,
 			setup_map_callbacks: setup_map_callbacks,
 			setup_zoom_callbacks: setup_zoom_callbacks,
-			show: show,
-			hide: hide,
+			is_visible: is_visible,
 			toggle: toggle,
 			place_at_selected: place_at_selected,
 			place: place,
@@ -37,7 +36,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	// close button
 	var self = this;
 	new_sel.append('button').attr('class', "button input-close-button")
-	    .text("×").on('click', function() { self.hide(); });;
+	    .text("×").on('click', function() { self.toggle(false); });;
 
 	if (map instanceof Map) {
 	    this.map = map;
@@ -57,41 +56,38 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	this.callback_manager = new CallbackManager();
 
 	// toggle off
-	this.hide();
+	this.toggle(false);
     }
     function setup_map_callbacks() {
 	var self = this;
 	this.map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
-	    if (self.is_visible) self.reload(selected_node, coords, false);
+	    if (self.is_active) self.reload(selected_node, coords, false);
 	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	});
 	this.map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
 	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-	    if (count == 1 && self.is_visible && coords) {
+	    if (count == 1 && self.is_active && coords) {
 		self.reload(selected_node, coords, false);
 	    } else {
-		self.hide();
+		self.toggle(false);
 	    }
 	});
     }
     function setup_zoom_callbacks() {
 	var self = this;
 	this.zoom_container.callback_manager.set('zoom.input', function() {
-	    if (self.is_visible) {
+	    if (self.is_active) {
 		self.place_at_selected();
 	    }
 	});
     }
-    function show() {
-	this.toggle(true);
-    }
-    function hide() {
-	this.toggle(false);
+    function is_visible() {
+	return this.selection.style('display') != 'none';
     }
     function toggle(on_off) {
-	if (on_off===undefined) this.is_visible = !this.is_visible;
-	else this.is_visible = on_off;
-	if (this.is_visible) {
+	if (on_off===undefined) this.is_active = !this.is_active;
+	else this.is_active = on_off;
+	if (this.is_active) {
 	    this.toggle_start_reaction_listener(true);
 	    this.reload_at_selected();
 	    this.map.set_status('Click on the canvas or an existing metabolite');

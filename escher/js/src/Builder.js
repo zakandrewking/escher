@@ -9,6 +9,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
 			  reload_builder: reload_builder,
+			  set_mode: set_mode,
+			  build_mode: build_mode,
 			  brush_mode: brush_mode,
 			  zoom_mode: zoom_mode,
 			  _setup_menu: _setup_menu,
@@ -206,21 +208,50 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	if (this.o.on_load!==null)
 	    this.o.on_load();
     }
+    function set_mode(mode) {
+	this.reaction_input.toggle(mode=='build');
+	this.brush.toggle(mode=='brush');
+	this.zoom_container.toggle_zoom(mode=='zoom');
+	this.map.canvas.toggle_resize(mode=='zoom');
+	
+	this.callback_manager.run('set_mode', mode);
+    }
+    function build_mode() {
+	this.set_mode('build');
+	this.callback_manager.run('build_mode');
+    }	
     function brush_mode() {
-	this.brush.toggle(true);
-	this.zoom_container.toggle_zoom(false);
-	this.map.canvas.toggle_resize(false);
+	this.set_mode('brush');
 	this.callback_manager.run('brush_mode');
     }
     function zoom_mode() {
-	this.brush.toggle(false);
-	this.zoom_container.toggle_zoom(true);
-	this.map.canvas.toggle_resize(true);
+	this.set_mode('zoom');
 	this.callback_manager.run('zoom_mode');
     }
     function _setup_menu(selection, map, zoom_container, key_manager, keys) {
 	var sel = selection.append("div").attr("id", "menu");
-	new_button(sel, keys.toggle_input, "New reaction (/)");
+	radio_button_group(sel)
+	    .button({ key: keys.build_mode,
+		      id: 'build-mode-button',
+		      icon: "glyphicon glyphicon-plus" })
+	    .button({ key: keys.zoom_mode,
+		      id: 'zoom-mode-button',
+		      icon: "glyphicon glyphicon-move" })
+	    .button({ key: keys.brush_mode,
+		      id: 'brush-mode-button',
+		      icon: "glyphicon glyphicon-hand-up" });
+	// set up mode callbacks
+	this.callback_manager.set('build_mode', function() {
+	    $('#build-mode-button').button('toggle');
+	});
+	this.callback_manager.set('zoom_mode', function() {
+	    $('#zoom-mode-button').button('toggle');
+	});
+	this.callback_manager.set('brush_mode', function() {
+	    $('#brush-mode-button').button('toggle');
+	});
+
+	// new_button(sel, keys.toggle_input, "New reaction (/)");
 	new_button(sel, keys.save, "Save (^s)");
 	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
 	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load map (^o)");
@@ -236,13 +267,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		b.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
 	    });
 
-	var z = new_button(sel, keys.brush_mode, "Enable select (v)", 'zoom-button');
-	this.callback_manager
-	    .set('zoom_mode', function() {
-		set_button(z, keys.brush_mode, "Enable select (v)");
-	    }).set('brush_mode', function() {
-		set_button(z, keys.zoom_mode, "Enable pan+zoom (z)");
-	    });
+	// var z = new_button(sel, keys.brush_mode, "Enable select (v)", 'zoom-button');
+	// this.callback_manager
+	//     .set('zoom_mode', function() {
+	// 	set_button(z, keys.brush_mode, "Enable select (v)");
+	//     }).set('brush_mode', function() {
+	// 	set_button(z, keys.zoom_mode, "Enable pan+zoom (z)");
+	//     });
 
 	new_button(sel, keys.rotate, "Rotate (r)");
 	new_button(sel, keys.delete, "Delete (^del)");
@@ -278,16 +309,36 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    if (error) console.warn(error);
 	    this.map.set_metabolite_data(data);
 	}
-	function new_button(s, key, name, id) {
-	    var button = s.append("button").attr("class", "button command-button");
-	    if (id !== undefined) button.attr('id', id);
-	    return set_button(button, key, name);
+	function radio_button_group(s, buttons) {
+	    var s2 = s.append('div')
+		    .attr('class', 'btn-group')
+		    .attr('data-toggle', 'buttons');
+	    return { button: function(button) {
+		var b = s2.append("label")
+			.attr("class", "btn btn-default");
+		b.append('input').attr('type', 'radio');
+		var c = b.append("span");
+		if (button.id !== undefined) b.attr('id', button.id);
+		if (button.text !== undefined) c.text(button.text);
+		if (button.icon !== undefined) c.classed(button.icon, true);
+		if (button.key !== undefined) b = set_button(b, button.key);
+		return this;
+	    }};
 	}
-	function set_button(button, key, name) {
-	    button.text(name).on("click", function() {
+	function new_button(s, button) {
+	    var b = s.append("button").attr("class", "btn btn-default");
+	    if (button.id !== undefined) b.attr('id', button.id);
+	    if (button.name !== undefined) b.text(button.name);
+	    if (button.icon !== undefined) b.classed(button.icon, true);
+	    if (button.key !== undefined) b = set_button(b, button.key);
+	    return b;
+	}
+	function set_button(b, key, name) {
+	    if (name !== undefined) b.text(name);
+	    b.on("click", function() {
 		key.fn.call(key.target);
 	    });
-	    return button;
+	    return b;
 	}
 	function new_input(s, fn, target, name) {
 	    /* 
@@ -337,9 +388,17 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 
     function _get_keys(map, input, brush) {
 	return {
-            toggle_input: { key: 191, // forward slash '/'
-			    target: input,
-			    fn: input.toggle },
+            build_mode: { key: 191, // forward slash '/'
+			  target: this,
+			  fn: this.build_mode },
+	    zoom_mode: { key: 90, // z 
+			 target: this,
+			 fn: this.zoom_mode,
+			 ignore_with_input: true },
+	    brush_mode: { key: 86, // v
+			  target: this,
+			  fn: this.brush_mode,
+			  ignore_with_input: true },
             save: { key: 83, modifiers: { control: true }, // ctrl-s
 		    target: map,
 		    fn: map.save },
@@ -366,14 +425,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			      target: map,
 			      fn: map.toggle_beziers,
 			      ignore_with_input: true  }, // b
-	    zoom_mode: { key: 90, // z 
-			 target: this,
-			 fn: this.zoom_mode,
-			 ignore_with_input: true },
-	    brush_mode: { key: 86, // v
-			  target: this,
-			  fn: this.brush_mode,
-			  ignore_with_input: true },
 	    rotate: { key: 82, // r
 		      target: map,
 		      fn: map.rotate_selected_nodes,

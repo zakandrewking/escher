@@ -1,24 +1,26 @@
 {% if wrapper %}{% extends 'standalone.html' %}{% endif -%}
 
 {% block head %}
-<script src="{{d3_url}}"></script>
-<script src="lib/require.js"></script>
-<link rel="stylesheet" href="{{css_path}}"/>
+  {{ super() }}
+  <script src="{{d3_url}}"></script>
+  <script src="lib/require.js"></script>
+  <link rel="stylesheet" href="{{css_path}}"/>
 {% endblock %}
 
 {% block content %}
-<div id="{{id}}"></div>
+  {{ super() }}
+  <div id="{{id}}"></div>
 
-<script>
- requirejs.config({
-   baseUrl: '/js/src',
-   paths: {
-     lib: '../../lib',
-   }
- });
- {{ initialize_js }}
-</script>
-<script>
- {{ draw_js }}
-</script>
+  <script>
+   requirejs.config({
+     baseUrl: '/js/src',
+     paths: {
+       lib: '../../lib',
+     }
+   });
+   {{ initialize_js }}
+  </script>
+  <script>
+   {{ draw_js }}
+  </script>
 {% endblock %}

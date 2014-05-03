@@ -52,7 +52,7 @@ define(["utils"], function(utils) {
         d3.select(window).on("keydown.key_manager", function() {
             var kc = d3.event.keyCode,
                 reaction_input_visible = self.reaction_input ?
-		    self.reaction_input.is_visible : false,
+		    self.reaction_input.is_visible() : false,
 		meaningless = true;
             toggle_modifiers(modifier_keys, held_keys, kc, true);
 	    for (var key_id in keys) {

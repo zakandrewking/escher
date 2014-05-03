@@ -1,43 +1,46 @@
 {% if wrapper %}{% extends 'standalone.html' %}{% endif -%}
 
+{% block head %}
+  {{ super() }}
+  <div style="height: {{height}}px; width: 100%;" id="{{id}}"></div>
+  <link rel="stylesheet" href="{{css_path}}"/>
+{% endblock %}
+
 {% block content %}
-<div style="height: {{height}}px; width: 100%;" id="{{id}}"></div>
-<link rel="stylesheet" href="{{css_path}}"/>
+  <script>
+   {{ initialize_js }}
+  </script>
+  <script>
+   function escher_load_lib(url, callback){
+     var s = document.createElement('script');
+     s.src = url;
+     s.async = true;
+     s.onreadystatechange = s.onload = callback;
+     s.onerror = function() { console.warn("failed to load library " + url); };
+     document.getElementsByTagName("head")[0].appendChild(s);
+   }
 
-<script>
- {{ initialize_js }}
-</script>
-<script>
- function escher_load_lib(url, callback){
-   var s = document.createElement('script');
-   s.src = url;
-   s.async = true;
-   s.onreadystatechange = s.onload = callback;
-   s.onerror = function() { console.warn("failed to load library " + url); };
-   document.getElementsByTagName("head")[0].appendChild(s);
- }
-
- if (typeof(escher) !== "undefined") {
-   // already loaded: just create the figure
-   !function(escher) {
-     {{ draw_js }}
-   }(escher);
- } else if (typeof define === "function" && define.amd) {
-   // require.js is available: use it to load d3/mpld3
-   require.config({paths: { d3: "{{ d3_url[:-3] }}",
-			    escher: "{{ escher_url[:-3] }}" }});
-   require(["d3", "escher"], function(d3, escher) {
-     window.d3 = d3;
-     window.escher = escher;
-     {{ draw_js }}
-   });
- } else {
-   // require.js not available: dynamically load d3 & mpld3
-   escher_load_lib("{{ d3_url }}", function(){
-     escher_load_lib("{{ escher_url }}", function(){
+   if (typeof(escher) !== "undefined") {
+     // already loaded: just create the figure
+     !function(escher) {
        {{ draw_js }}
-     })
-   });
- }
-</script>
+     }(escher);
+   } else if (typeof define === "function" && define.amd) {
+     // require.js is available: use it to load d3/mpld3
+     require.config({paths: { d3: "{{ d3_url[:-3] }}",
+			      escher: "{{ escher_url[:-3] }}" }});
+     require(["d3", "escher"], function(d3, escher) {
+       window.d3 = d3;
+       window.escher = escher;
+       {{ draw_js }}
+     });
+   } else {
+     // require.js not available: dynamically load d3 & mpld3
+     escher_load_lib("{{ d3_url }}", function(){
+       escher_load_lib("{{ escher_url }}", function(){
+	 {{ draw_js }}
+       })
+     });
+   }
+  </script>
 {% endblock %}
