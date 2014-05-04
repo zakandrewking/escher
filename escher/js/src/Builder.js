@@ -330,7 +330,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 					     tooltip: "Delete (Ctrl del)" });
 	ui.individual_button(button_panel, { key: keys.zoom_in,
 					     icon: "glyphicon glyphicon-zoom-in",
-					     tooltip: "Zoom out (Ctrl +)" });
+					     tooltip: "Zoom in (Ctrl +)" });
 	ui.individual_button(button_panel, { key: keys.zoom_out,
 					     icon: "glyphicon glyphicon-zoom-out",
 					     tooltip: "Zoom out (Ctrl -)" });
@@ -483,10 +483,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  target: map,
 			  fn: map.delete_selected,
 			  ignore_with_input: true },
-	    zoom_in: { key: 197, modifiers: { control: true }, // ctrl +
+	    zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
 		       target: this.zoom_container,
 		       fn: this.zoom_container.zoom_in },
-	    zoom_out: { key: 190, modifiers: { control: true }, // ctrl -
+	    zoom_out: { key: 189, modifiers: { control: true }, // ctrl -
 		       target: this.zoom_container,
 		       fn: this.zoom_container.zoom_out },
 	    extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
