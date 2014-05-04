@@ -13,6 +13,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  build_mode: build_mode,
 			  brush_mode: brush_mode,
 			  zoom_mode: zoom_mode,
+			  rotate_mode: rotate_mode,
 			  _setup_menu: _setup_menu,
 			  _setup_status: _setup_status,
 			  _setup_modes: _setup_modes,
@@ -213,7 +214,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.brush.toggle(mode=='brush');
 	this.zoom_container.toggle_zoom(mode=='zoom');
 	this.map.canvas.toggle_resize(mode=='zoom');
-	
+	if (mode=='rotate') this.map.rotate_selected_nodes();
 	this.callback_manager.run('set_mode', mode);
     }
     function build_mode() {
@@ -228,18 +229,32 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.set_mode('zoom');
 	this.callback_manager.run('zoom_mode');
     }
+    function rotate_mode() {
+	this.set_mode('rotate');
+	this.callback_manager.run('rotate_mode');
+    }	
     function _setup_menu(selection, map, zoom_container, key_manager, keys) {
-	var sel = selection.append("div").attr("id", "menu");
+	var sel = selection.append("ul")
+		.attr("class", "nav nav-pills")
+		.attr('id', 'menu');
+	// mode buttons
 	radio_button_group(sel)
 	    .button({ key: keys.build_mode,
 		      id: 'build-mode-button',
-		      icon: "glyphicon glyphicon-plus" })
+		      icon: "glyphicon glyphicon-plus",
+		      tooltip: "Build mode (/)" })
 	    .button({ key: keys.zoom_mode,
 		      id: 'zoom-mode-button',
-		      icon: "glyphicon glyphicon-move" })
+		      icon: "glyphicon glyphicon-move",
+		      tooltip: "Zoom + Pan mode (z)" })
 	    .button({ key: keys.brush_mode,
 		      id: 'brush-mode-button',
-		      icon: "glyphicon glyphicon-hand-up" });
+		      icon: "glyphicon glyphicon-hand-up",
+		      tooltip: "Select mode (v)" })
+	    .button({ key: keys.rotate_mode,
+		      id: 'rotate-mode-button',
+		      icon: "glyphicon glyphicon-repeat",
+		      tooltip: "Rotate mode (r)" });
 	// set up mode callbacks
 	this.callback_manager.set('build_mode', function() {
 	    $('#build-mode-button').button('toggle');
@@ -250,43 +265,76 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.callback_manager.set('brush_mode', function() {
 	    $('#brush-mode-button').button('toggle');
 	});
+	this.callback_manager.set('rotate_mode', function() {
+	    $('#rotate-mode-button').button('toggle');
+	});
 
-	// new_button(sel, keys.toggle_input, "New reaction (/)");
-	new_button(sel, keys.save, "Save (^s)");
-	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
-	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load map (^o)");
-	new_button(sel, keys.clear_map, "Clear map");
-	key_manager.assigned_keys.load_model.fn = new_input(sel, load_model_for_file, this, "Load model (^m)");
-	key_manager.assigned_keys.load_reaction_data.fn = new_input(sel, load_reaction_data_for_file, this, "Load reaction data (^f)");
-	new_button(sel, keys.clear_reaction_data, "Clear reaction data");
-	new_input(sel, load_metabolite_data_for_file, this, "Load metabolite data");
-	new_button(sel, keys.clear_metabolite_data, "Clear metabolite data");
-	var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
-	map.callback_manager
-	    .set('toggle_beziers.button', function(on_off) {
-		b.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
-	    });
+	// buttons
+	individual_button(sel, { key: keys.delete,
+				 icon: "glyphicon glyphicon-trash",
+				 tooltip: "Delete (Ctrl-del)" });
 
-	// var z = new_button(sel, keys.brush_mode, "Enable select (v)", 'zoom-button');
-	// this.callback_manager
-	//     .set('zoom_mode', function() {
-	// 	set_button(z, keys.brush_mode, "Enable select (v)");
-	//     }).set('brush_mode', function() {
-	// 	set_button(z, keys.zoom_mode, "Enable pan+zoom (z)");
+	// map dropdown
+	dropdown_menu(sel, 'Map')
+	    .button({ key: keys.ave,
+		      text: "Save as JSON (Ctrl-s)" })
+	    .button({ text: "Load map JSON (Ctrl-o)",
+		      input: { assign: key_manager.assigned_keys.load,
+			       key: 'fn',
+			       fn: load_map_for_file,
+			       target: this }
+		    })
+	    .button({ key: keys.save_svg,
+		      text: "Export as SVG (Ctrl-S)" })
+	    .button({ key: keys.clear_map,
+		      text: "Clear map" });
+	// model dropdown
+	dropdown_menu(sel, 'Model')
+	    .button({ text: 'Load COBRA model JSON (Ctrl-m)',
+		      input: { assign: key_manager.assigned_keys.load_model,
+			       key: 'fn',
+			       fn: load_model_for_file,
+			       target: this }
+		    });
+	// data dropdown
+	dropdown_menu(sel, 'Data');
+
+	// view dropdown
+	dropdown_menu(sel, 'View')
+	    .button({ key: keys.extent_nodes,
+		      //icon: "glyphicon glyphicon-resize-small",
+		      text: "Zoom to nodes (Ctrl-0)"
+		    })
+	    .button({ key: keys.extent_canvas,
+		      //icon: "glyphicon glyphicon-resize-full",
+		      text: "Zoom to canvas (Ctrl-1)" });
+	
+	// edit dropdown
+	dropdown_menu(sel, 'Edit')
+	    .button({ key: keys.undo, 
+		      text: "Undo (Ctrl-z)" })
+	    .button({ key: keys.redo,
+		      text: "Redo (Ctrl-Shift-z)" }) 
+	    .button({ key: keys.make_primary,
+		      text: "Make primary metabolite (p)" })
+	    .button({ key: keys.cycle_primary,
+		      text: "Cycle primary metabolite (c)" });
+
+	// key_manager.assigned_keys.load_model.fn = new_input(sel, load_model_for_file, this, "Load model (^m)");
+	// key_manager.assigned_keys.load_reaction_data.fn = new_input(sel, load_reaction_data_for_file, this, "Load reaction data (^f)");
+	// new_button(sel, keys.clear_reaction_data, "Clear reaction data");
+	// new_input(sel, load_metabolite_data_for_file, this, "Load metabolite data");
+	// new_button(sel, keys.clear_metabolite_data, "Clear metabolite data");
+	// var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
+	// map.callback_manager
+	//     .set('toggle_beziers.button', function(on_off) {
+	// 	b.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
 	//     });
 
-	new_button(sel, keys.rotate, "Rotate (r)");
-	new_button(sel, keys.delete, "Delete (^del)");
-	new_button(sel, keys.extent_nodes, "Zoom to nodes (^0)");
-	new_button(sel, keys.extent_canvas, "Zoom to canvas (^1)");
-	new_button(sel, keys.make_primary, "Make primary metabolite (p)");
-	new_button(sel, keys.cycle_primary, "Cycle primary metabolite (c)");
-	new_button(sel, keys.direction_arrow_left, "←");
-	new_button(sel, keys.direction_arrow_up, "↑");
-	new_button(sel, keys.direction_arrow_down, "↓");
-	new_button(sel, keys.direction_arrow_right, "→");
-	new_button(sel, keys.undo, "Undo (^z)");
-	new_button(sel, keys.redo, "Redo (^Shift z)");
+	// new_button(sel, keys.direction_arrow_left, "←");
+	// new_button(sel, keys.direction_arrow_up, "↑");
+	// new_button(sel, keys.direction_arrow_down, "↓");
+	// new_button(sel, keys.direction_arrow_right, "→");
 	return sel;
 
 	// definitions
@@ -309,8 +357,18 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    if (error) console.warn(error);
 	    this.map.set_metabolite_data(data);
 	}
-	function radio_button_group(s, buttons) {
-	    var s2 = s.append('div')
+	function individual_button(s, button) {
+	    var b = s.append('li')
+		    .append('button').attr('class', 'btn btn-default');
+	    if ('id' in button) b.attr('id', button.id);
+	    if ('text' in button) b.text(button.text);
+	    if ('icon' in button) b.classed(button.icon, true);
+	    if ('key' in button) set_button(b, button.key);
+	    // if ('tooltip' in button) 
+	    b.attr('title', button.tooltip);
+	}
+	function radio_button_group(s) {
+	    var s2 = s.append('li')
 		    .attr('class', 'btn-group')
 		    .attr('data-toggle', 'buttons');
 	    return { button: function(button) {
@@ -318,43 +376,59 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			.attr("class", "btn btn-default");
 		b.append('input').attr('type', 'radio');
 		var c = b.append("span");
-		if (button.id !== undefined) b.attr('id', button.id);
-		if (button.text !== undefined) c.text(button.text);
-		if (button.icon !== undefined) c.classed(button.icon, true);
-		if (button.key !== undefined) b = set_button(b, button.key);
+		if ('id' in button) b.attr('id', button.id);
+		if ('text' in button) c.text(button.text);
+		if ('icon' in button) c.classed(button.icon, true);
+		if ('key' in button) set_button(b, button.key);
+		if ('tooltip' in button) b.attr('title', button.tooltip);
 		return this;
 	    }};
 	}
-	function new_button(s, button) {
-	    var b = s.append("button").attr("class", "btn btn-default");
-	    if (button.id !== undefined) b.attr('id', button.id);
-	    if (button.name !== undefined) b.text(button.name);
-	    if (button.icon !== undefined) b.classed(button.icon, true);
-	    if (button.key !== undefined) b = set_button(b, button.key);
-	    return b;
+	function dropdown_menu(s, name) {
+	    var s2 = s.append('li')
+		    .attr('class', 'dropdown');
+	    s2.append('a').text(name)
+		.attr('href', '#')
+		.attr('data-toggle', 'dropdown')
+		.append('b').attr('class', 'caret');
+	    var ul = s2.append('ul')
+		    .attr('class', 'dropdown-menu')
+		    .attr('role', 'menu')
+		    .attr('aria-labelledby', 'dLabel');
+	    return {
+		button: function(button) {
+		    var li = ul.append("li")
+			    .attr('role', 'presentation');
+		    var link = li.append("a")
+			    .attr('href', '#');
+		    if ('id' in button) link.attr('id', button.id);
+		    if ('text' in button) link.text(button.text);
+		    if ('icon' in button) link.classed(button.icon, true);
+		    
+		    if ('key' in button) {
+			set_button(link, button.key);
+		    } else if ('input' in button) {
+			var input = button.input;
+			input.assign[input.key] = set_input_button(link, li, input.fn, input.target);
+		    }
+		    return this;
+		}
+	    };
 	}
 	function set_button(b, key, name) {
 	    if (name !== undefined) b.text(name);
 	    b.on("click", function() {
 		key.fn.call(key.target);
 	    });
-	    return b;
 	}
-	function new_input(s, fn, target, name) {
-	    /* 
-	     * Returns a function that can be called to programmatically
-	     * load files.
-	     */
+	function set_input_button(b, s, fn, target) {
 	    var input = s.append("input")
 		    .attr("type", "file")
 		    .style("display", "none")
 		    .on("change", function() { utils.load_json(this.files[0], fn, target); });
-	    s.append("button")
-		.attr("class", "button command-button")
-		.text(name)
-		.on('click', function(e) {
-	    	    input.node().click();
-		});
+	    b.on('click', function(e) {
+		input.node().click();
+	    });
 	    return function() { input.node().click(); };
 	}
     }
@@ -399,6 +473,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  target: this,
 			  fn: this.brush_mode,
 			  ignore_with_input: true },
+	    rotate_mode: { key: 82, // r
+			   target: this,
+			   fn: this.rotate_mode,
+			   ignore_with_input: true },
             save: { key: 83, modifiers: { control: true }, // ctrl-s
 		    target: map,
 		    fn: map.save },
@@ -425,10 +503,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			      target: map,
 			      fn: map.toggle_beziers,
 			      ignore_with_input: true  }, // b
-	    rotate: { key: 82, // r
-		      target: map,
-		      fn: map.rotate_selected_nodes,
-		      ignore_with_input: true },
 	    delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
 		      target: map,
 		      fn: map.delete_selected,
