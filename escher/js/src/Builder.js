@@ -1,4 +1,4 @@
-define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager) {
+define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui) {
     // NOTE
     // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
     // only necessary for selectAll()
@@ -234,11 +234,62 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.callback_manager.run('rotate_mode');
     }	
     function _setup_menu(selection, map, zoom_container, key_manager, keys) {
-	var sel = selection.append("ul")
+	var menus = selection.append('div').attr('id', 'menus');
+	var menu = menus.append("ul")
 		.attr("class", "nav nav-pills")
 		.attr('id', 'menu');
+	// map dropdown
+	ui.dropdown_menu(menu, 'Map')
+	    .button({ key: keys.ave,
+		      text: "Save as JSON (Ctrl-s)" })
+	    .button({ text: "Load map JSON (Ctrl-o)",
+		      input: { assign: key_manager.assigned_keys.load,
+			       key: 'fn',
+			       fn: load_map_for_file,
+			       target: this }
+		    })
+	    .button({ key: keys.save_svg,
+		      text: "Export as SVG (Ctrl-S)" })
+	    .button({ key: keys.clear_map,
+		      text: "Clear map" });
+	// model dropdown
+	ui.dropdown_menu(menu, 'Model')
+	    .button({ text: 'Load COBRA model JSON (Ctrl-m)',
+		      input: { assign: key_manager.assigned_keys.load_model,
+			       key: 'fn',
+			       fn: load_model_for_file,
+			       target: this }
+		    });
+	// data dropdown
+	ui.dropdown_menu(menu, 'Data');
+
+	// view dropdown
+	ui.dropdown_menu(menu, 'View', true)
+	    .button({ key: keys.extent_nodes,
+		      //icon: "glyphicon glyphicon-resize-small",
+		      text: "Zoom to nodes (Ctrl-0)"
+		    })
+	    .button({ key: keys.extent_canvas,
+		      //icon: "glyphicon glyphicon-resize-full",
+		      text: "Zoom to canvas (Ctrl-1)" });
+	
+	// edit dropdown
+	ui.dropdown_menu(menu, 'Edit', true)
+	    .button({ key: keys.undo, 
+		      text: "Undo (Ctrl-z)" })
+	    .button({ key: keys.redo,
+		      text: "Redo (Ctrl-Shift-z)" }) 
+	    .button({ key: keys.make_primary,
+		      text: "Make primary metabolite (p)" })
+	    .button({ key: keys.cycle_primary,
+		      text: "Cycle primary metabolite (c)" });
+
+	var button_panel = menus.append("ul")
+		.attr("class", "nav nav-pills nav-stacked")
+		.attr('id', 'button-panel');
+
 	// mode buttons
-	radio_button_group(sel)
+	ui.radio_button_group(button_panel)
 	    .button({ key: keys.build_mode,
 		      id: 'build-mode-button',
 		      icon: "glyphicon glyphicon-plus",
@@ -270,55 +321,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	});
 
 	// buttons
-	individual_button(sel, { key: keys.delete,
+	ui.individual_button(button_panel, { key: keys.delete,
 				 icon: "glyphicon glyphicon-trash",
 				 tooltip: "Delete (Ctrl-del)" });
 
-	// map dropdown
-	dropdown_menu(sel, 'Map')
-	    .button({ key: keys.ave,
-		      text: "Save as JSON (Ctrl-s)" })
-	    .button({ text: "Load map JSON (Ctrl-o)",
-		      input: { assign: key_manager.assigned_keys.load,
-			       key: 'fn',
-			       fn: load_map_for_file,
-			       target: this }
-		    })
-	    .button({ key: keys.save_svg,
-		      text: "Export as SVG (Ctrl-S)" })
-	    .button({ key: keys.clear_map,
-		      text: "Clear map" });
-	// model dropdown
-	dropdown_menu(sel, 'Model')
-	    .button({ text: 'Load COBRA model JSON (Ctrl-m)',
-		      input: { assign: key_manager.assigned_keys.load_model,
-			       key: 'fn',
-			       fn: load_model_for_file,
-			       target: this }
-		    });
-	// data dropdown
-	dropdown_menu(sel, 'Data');
-
-	// view dropdown
-	dropdown_menu(sel, 'View')
-	    .button({ key: keys.extent_nodes,
-		      //icon: "glyphicon glyphicon-resize-small",
-		      text: "Zoom to nodes (Ctrl-0)"
-		    })
-	    .button({ key: keys.extent_canvas,
-		      //icon: "glyphicon glyphicon-resize-full",
-		      text: "Zoom to canvas (Ctrl-1)" });
-	
-	// edit dropdown
-	dropdown_menu(sel, 'Edit')
-	    .button({ key: keys.undo, 
-		      text: "Undo (Ctrl-z)" })
-	    .button({ key: keys.redo,
-		      text: "Redo (Ctrl-Shift-z)" }) 
-	    .button({ key: keys.make_primary,
-		      text: "Make primary metabolite (p)" })
-	    .button({ key: keys.cycle_primary,
-		      text: "Cycle primary metabolite (c)" });
 
 	// key_manager.assigned_keys.load_model.fn = new_input(sel, load_model_for_file, this, "Load model (^m)");
 	// key_manager.assigned_keys.load_reaction_data.fn = new_input(sel, load_reaction_data_for_file, this, "Load reaction data (^f)");
@@ -335,7 +341,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	// new_button(sel, keys.direction_arrow_up, "↑");
 	// new_button(sel, keys.direction_arrow_down, "↓");
 	// new_button(sel, keys.direction_arrow_right, "→");
-	return sel;
 
 	// definitions
 	function load_map_for_file(error, map_data) {
@@ -356,80 +361,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	function load_metabolite_data_for_file(error, data) {
 	    if (error) console.warn(error);
 	    this.map.set_metabolite_data(data);
-	}
-	function individual_button(s, button) {
-	    var b = s.append('li')
-		    .append('button').attr('class', 'btn btn-default');
-	    if ('id' in button) b.attr('id', button.id);
-	    if ('text' in button) b.text(button.text);
-	    if ('icon' in button) b.classed(button.icon, true);
-	    if ('key' in button) set_button(b, button.key);
-	    // if ('tooltip' in button) 
-	    b.attr('title', button.tooltip);
-	}
-	function radio_button_group(s) {
-	    var s2 = s.append('li')
-		    .attr('class', 'btn-group')
-		    .attr('data-toggle', 'buttons');
-	    return { button: function(button) {
-		var b = s2.append("label")
-			.attr("class", "btn btn-default");
-		b.append('input').attr('type', 'radio');
-		var c = b.append("span");
-		if ('id' in button) b.attr('id', button.id);
-		if ('text' in button) c.text(button.text);
-		if ('icon' in button) c.classed(button.icon, true);
-		if ('key' in button) set_button(b, button.key);
-		if ('tooltip' in button) b.attr('title', button.tooltip);
-		return this;
-	    }};
-	}
-	function dropdown_menu(s, name) {
-	    var s2 = s.append('li')
-		    .attr('class', 'dropdown');
-	    s2.append('a').text(name)
-		.attr('href', '#')
-		.attr('data-toggle', 'dropdown')
-		.append('b').attr('class', 'caret');
-	    var ul = s2.append('ul')
-		    .attr('class', 'dropdown-menu')
-		    .attr('role', 'menu')
-		    .attr('aria-labelledby', 'dLabel');
-	    return {
-		button: function(button) {
-		    var li = ul.append("li")
-			    .attr('role', 'presentation');
-		    var link = li.append("a")
-			    .attr('href', '#');
-		    if ('id' in button) link.attr('id', button.id);
-		    if ('text' in button) link.text(button.text);
-		    if ('icon' in button) link.classed(button.icon, true);
-		    
-		    if ('key' in button) {
-			set_button(link, button.key);
-		    } else if ('input' in button) {
-			var input = button.input;
-			input.assign[input.key] = set_input_button(link, li, input.fn, input.target);
-		    }
-		    return this;
-		}
-	    };
-	}
-	function set_button(b, key, name) {
-	    if (name !== undefined) b.text(name);
-	    b.on("click", function() {
-		key.fn.call(key.target);
-	    });
-	}
-	function set_input_button(b, s, fn, target) {
-	    var input = s.append("input")
-		    .attr("type", "file")
-		    .style("display", "none")
-		    .on("change", function() { utils.load_json(this.files[0], fn, target); });
-	    b.on('click', function(e) {
-		input.node().click();
-	    });
-	    return function() { input.node().click(); };
 	}
     }
 

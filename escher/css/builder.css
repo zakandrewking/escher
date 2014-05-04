@@ -9,13 +9,20 @@
     background-color: white;
     font-size: 16px
 }
-#menu {
+#menus {
     position: absolute;
     left: 10px;
     top: 10px;
+    width: 100%;
 }
-.btn-group {
-    margin-right: 15px;
+#menu {
+    margin: 0 auto;
+    max-width: 600px;
+}
+.dropdown-button, .dropdown-button:hover {
+    background-color: rgba(255, 255, 255, 0.85);
+}
+#button-panel {
 }
 .input-close-button {
     position: absolute;
