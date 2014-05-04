@@ -263,6 +263,30 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	// data dropdown
 	ui.dropdown_menu(menu, 'Data');
 
+	// edit dropdown
+	ui.dropdown_menu(menu, 'Edit', true)	
+	    .button({ key: keys.build_mode,
+		      id: 'build-mode-menu-button',
+		      text: "Build mode (/)" })
+	    .button({ key: keys.zoom_mode,
+		      id: 'zoom-mode-menu-button',
+		      text: "Zoom + Pan mode (z)" })
+	    .button({ key: keys.brush_mode,
+		      id: 'brush-mode-menu-button',
+		      text: "Select mode (v)" })
+	    .button({ key: keys.rotate_mode,
+		      id: 'rotate-mode-menu-button',
+		      text: "Rotate mode (r)" })
+	    .divider()
+	    .button({ key: keys.undo, 
+		      text: "Undo (Ctrl-z)" })
+	    .button({ key: keys.redo,
+		      text: "Redo (Ctrl-Shift-z)" }) 
+	    .button({ key: keys.make_primary,
+		      text: "Make primary metabolite (p)" })
+	    .button({ key: keys.cycle_primary,
+		      text: "Cycle primary metabolite (c)" });
+
 	// view dropdown
 	ui.dropdown_menu(menu, 'View', true)
 	    .button({ key: keys.extent_nodes,
@@ -273,17 +297,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		      //icon: "glyphicon glyphicon-resize-full",
 		      text: "Zoom to canvas (Ctrl-1)" });
 	
-	// edit dropdown
-	ui.dropdown_menu(menu, 'Edit', true)
-	    .button({ key: keys.undo, 
-		      text: "Undo (Ctrl-z)" })
-	    .button({ key: keys.redo,
-		      text: "Redo (Ctrl-Shift-z)" }) 
-	    .button({ key: keys.make_primary,
-		      text: "Make primary metabolite (p)" })
-	    .button({ key: keys.cycle_primary,
-		      text: "Cycle primary metabolite (c)" });
-
 	var button_panel = menus.append("ul")
 		.attr("class", "nav nav-pills nav-stacked")
 		.attr('id', 'button-panel');
@@ -307,17 +320,34 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		      icon: "glyphicon glyphicon-repeat",
 		      tooltip: "Rotate mode (r)" });
 	// set up mode callbacks
+	var select_menu_button = function(id) {
+	    var ids = ['#build-mode-menu-button',
+		       '#zoom-mode-menu-button',
+		       '#brush-mode-menu-button',
+		       '#rotate-mode-menu-button'];
+	    for (var i=0, l=ids.length; i<l; i++) {
+		var the_id = ids[i];
+		d3.select(the_id)
+		    .select('span')
+		    .classed('glyphicon', the_id==id)
+		    .classed('glyphicon-ok', the_id==id);
+	    }
+	};
 	this.callback_manager.set('build_mode', function() {
 	    $('#build-mode-button').button('toggle');
+	    select_menu_button('#build-mode-menu-button');
 	});
 	this.callback_manager.set('zoom_mode', function() {
 	    $('#zoom-mode-button').button('toggle');
+	    select_menu_button('#zoom-mode-menu-button');
 	});
 	this.callback_manager.set('brush_mode', function() {
 	    $('#brush-mode-button').button('toggle');
+	    select_menu_button('#brush-mode-menu-button');
 	});
 	this.callback_manager.set('rotate_mode', function() {
 	    $('#rotate-mode-button').button('toggle');
+	    select_menu_button('#rotate-mode-menu-button');
 	});
 
 	// buttons

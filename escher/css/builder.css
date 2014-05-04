@@ -11,18 +11,30 @@
 }
 #menus {
     position: absolute;
-    left: 10px;
-    top: 10px;
+    left: 0px;
+    top: 0px;
     width: 100%;
 }
 #menu {
-    margin: 0 auto;
-    max-width: 600px;
-}
-.dropdown-button, .dropdown-button:hover {
-    background-color: rgba(255, 255, 255, 0.85);
+    margin: 5px auto 0 auto;
+    width: 318px;
+    border-radius: 2px;
+    border: 1px solid #ddd;
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 0px;
 }
 #button-panel {
+    margin: 10px 0 0 4px;
+}
+/* .dropdown-button, .dropdown-button:hover, .dropdown-button:active, .dropdown-button:focus { */
+/* } */
+@media (min-width: 768px) {
+    #menu {
+	width: 378px;
+    }
+    .dropdown-button {
+	font-size: 18px;
+    }
 }
 .input-close-button {
     position: absolute;

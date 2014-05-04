@@ -39,7 +39,7 @@ define(["utils"], function(utils) {
 	var s2 = s.append('li')
 		.attr('class', 'dropdown');
 	s2.append('button').text(name+" ")
-	    .attr('class', 'btn btn-link dropdown-button')
+	    .attr('class', 'btn btn-link btn-sm dropdown-button')
 	    .attr('data-toggle', 'dropdown')
 	    .append('b').attr('class', 'caret');
 	var ul = s2.append('ul')
@@ -50,12 +50,14 @@ define(["utils"], function(utils) {
 	return {
 	    button: function(button) {
 		var li = ul.append("li")
-			.attr('role', 'presentation');
-		var link = li.append("a")
-			.attr('href', '#');
-		if ('id' in button) link.attr('id', button.id);
-		if ('text' in button) link.text(button.text);
-		if ('icon' in button) link.classed(button.icon, true);
+			.attr('role', 'presentation'),
+		    link = li.append("a")
+			.attr('href', '#'),
+		    icon = link.append('span'),
+		    text = link.append('span');
+		if ('id' in button) li.attr('id', button.id);
+		if ('text' in button) text.text(" "+button.text);
+		if ('icon' in button) icon.classed(button.icon, true);
 		
 		if ('key' in button) {
 		    set_button(link, button.key);
@@ -63,6 +65,12 @@ define(["utils"], function(utils) {
 		    var input = button.input;
 		    input.assign[input.key] = set_input_button(link, li, input.fn, input.target);
 		}
+		return this;
+	    },
+	    divider: function() {
+		ul.append("li")
+		    .attr('role', 'presentation')
+		    .attr('class', 'divider');
 		return this;
 	    }
 	};
