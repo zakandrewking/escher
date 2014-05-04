@@ -241,20 +241,20 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	// map dropdown
 	ui.dropdown_menu(menu, 'Map')
 	    .button({ key: keys.ave,
-		      text: "Save as JSON (Ctrl-s)" })
-	    .button({ text: "Load map JSON (Ctrl-o)",
+		      text: "Save as JSON (Ctrl s)" })
+	    .button({ text: "Load map JSON (Ctrl o)",
 		      input: { assign: key_manager.assigned_keys.load,
 			       key: 'fn',
 			       fn: load_map_for_file,
 			       target: this }
 		    })
 	    .button({ key: keys.save_svg,
-		      text: "Export as SVG (Ctrl-S)" })
+		      text: "Export as SVG (Ctrl Shift s)" })
 	    .button({ key: keys.clear_map,
 		      text: "Clear map" });
 	// model dropdown
 	ui.dropdown_menu(menu, 'Model')
-	    .button({ text: 'Load COBRA model JSON (Ctrl-m)',
+	    .button({ text: 'Load COBRA model JSON (Ctrl m)',
 		      input: { assign: key_manager.assigned_keys.load_model,
 			       key: 'fn',
 			       fn: load_model_for_file,
@@ -279,9 +279,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		      text: "Rotate mode (r)" })
 	    .divider()
 	    .button({ key: keys.undo, 
-		      text: "Undo (Ctrl-z)" })
+		      text: "Undo (Ctrl z)" })
 	    .button({ key: keys.redo,
-		      text: "Redo (Ctrl-Shift-z)" }) 
+		      text: "Redo (Ctrl Shift z)" }) 
 	    .button({ key: keys.make_primary,
 		      text: "Make primary metabolite (p)" })
 	    .button({ key: keys.cycle_primary,
@@ -289,13 +289,17 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 
 	// view dropdown
 	ui.dropdown_menu(menu, 'View', true)
+	    .button({ key: keys.zoom_in,
+		      text: "Zoom out (Ctrl +)" })
+	    .button({ key: keys.zoom_out,
+		      text: "Zoom out (Ctrl -)" })
 	    .button({ key: keys.extent_nodes,
 		      //icon: "glyphicon glyphicon-resize-small",
-		      text: "Zoom to nodes (Ctrl-0)"
+		      text: "Zoom to nodes (Ctrl 0)"
 		    })
 	    .button({ key: keys.extent_canvas,
 		      //icon: "glyphicon glyphicon-resize-full",
-		      text: "Zoom to canvas (Ctrl-1)" });
+		      text: "Zoom to canvas (Ctrl 1)" });
 	
 	var button_panel = menus.append("ul")
 		.attr("class", "nav nav-pills nav-stacked")
@@ -319,6 +323,18 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		      id: 'rotate-mode-button',
 		      icon: "glyphicon glyphicon-repeat",
 		      tooltip: "Rotate mode (r)" });
+
+	// buttons
+	ui.individual_button(button_panel, { key: keys.delete,
+					     icon: "glyphicon glyphicon-trash",
+					     tooltip: "Delete (Ctrl del)" });
+	ui.individual_button(button_panel, { key: keys.zoom_in,
+					     icon: "glyphicon glyphicon-zoom-in",
+					     tooltip: "Zoom out (Ctrl +)" });
+	ui.individual_button(button_panel, { key: keys.zoom_out,
+					     icon: "glyphicon glyphicon-zoom-out",
+					     tooltip: "Zoom out (Ctrl -)" });
+
 	// set up mode callbacks
 	var select_menu_button = function(id) {
 	    var ids = ['#build-mode-menu-button',
@@ -349,11 +365,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    $('#rotate-mode-button').button('toggle');
 	    select_menu_button('#rotate-mode-menu-button');
 	});
-
-	// buttons
-	ui.individual_button(button_panel, { key: keys.delete,
-				 icon: "glyphicon glyphicon-trash",
-				 tooltip: "Delete (Ctrl-del)" });
 
 
 	// key_manager.assigned_keys.load_model.fn = new_input(sel, load_model_for_file, this, "Load model (^m)");
@@ -472,6 +483,12 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  target: map,
 			  fn: map.delete_selected,
 			  ignore_with_input: true },
+	    zoom_in: { key: 197, modifiers: { control: true }, // ctrl +
+		       target: this.zoom_container,
+		       fn: this.zoom_container.zoom_in },
+	    zoom_out: { key: 190, modifiers: { control: true }, // ctrl -
+		       target: this.zoom_container,
+		       fn: this.zoom_container.zoom_out },
 	    extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
 			    target: map,
 			    fn: map.zoom_extent_nodes },

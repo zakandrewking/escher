@@ -8,6 +8,9 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     ZoomContainer.prototype = { init: init,
 				toggle_zoom: toggle_zoom,
 				go_to: go_to,
+				zoom_by: zoom_by,
+				zoom_in: zoom_in,
+				zoom_out: zoom_out,
 				translate_off_screen: translate_off_screen,
 				reset: reset };
     return ZoomContainer;
@@ -102,7 +105,22 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
 		  'scale('+this.window_scale+')');
 	return null;
-    }			    
+    }
+
+    function zoom_by(amount) {
+	var shift = { x: this.width/2 - ((this.width/2 - this.window_translate.x) * amount +
+					 this.window_translate.x),
+	 	      y: this.height/2 - ((this.height/2 - this.window_translate.y) * amount +
+					  this.window_translate.y) };
+	this.go_to(this.window_scale*amount,
+		   utils.c_plus_c(this.window_translate, shift));
+    }
+    function zoom_in() {
+	this.zoom_by(1.5);
+    }
+    function zoom_out() {
+	this.zoom_by(0.667);
+    } 
 
     function translate_off_screen(coords) {
         // shift window if new reaction will draw off the screen

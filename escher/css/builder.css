@@ -28,6 +28,11 @@
 }
 /* .dropdown-button, .dropdown-button:hover, .dropdown-button:active, .dropdown-button:focus { */
 /* } */
+@media (max-width: 768px) {
+    .dropdown-button {
+	padding: 5px 9px;
+    }
+}
 @media (min-width: 768px) {
     #menu {
 	width: 378px;
