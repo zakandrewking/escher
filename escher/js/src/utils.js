@@ -62,13 +62,13 @@ define(["lib/vkbeautify"], function(vkbeautify) {
             if (f) {
                 d3.select("body").classed('fill-screen-body', true);
 		s.classed('fill-screen-div', true);
-                s.style('height', (window.innerHeight-m.top)+'px');
-                s.style('width', (window.innerWidth-m.left)+'px');
+                // s.style('height', (window.innerHeight-m.top)+'px');
+                // s.style('width', (window.innerWidth-m.left)+'px');
             }
             var out = height_width_style(s, m);
             out.svg = s.append('svg')
-                .attr("width", out.width)
-                .attr("height", out.height)
+                // .attr("width", out.width)
+                // .attr("height", out.height)
 		.attr("class", "escher-svg")
                 .attr('xmlns', "http://www.w3.org/2000/svg");
             return out;
