@@ -8,6 +8,7 @@ define(["utils"], function(utils) {
     // instance methods
     KeyManager.prototype = { init: init,
 			     update: update,
+			     toggle: toggle,
 			     add_escape_listener: add_escape_listener };
 
     return KeyManager;
@@ -33,6 +34,8 @@ define(["utils"], function(utils) {
 	this.held_keys = {};
 	reset_held_keys(this.held_keys);
 
+	this.enabled = true;
+
 	this.update();
     }
 
@@ -48,6 +51,8 @@ define(["utils"], function(utils) {
 
         d3.select(window).on("keydown.key_manager", null);
         d3.select(window).on("keyup.key_manager", null);
+
+	if (!(this.enabled)) return;
 
         d3.select(window).on("keydown.key_manager", function() {
             var kc = d3.event.keyCode,
@@ -100,6 +105,14 @@ define(["utils"], function(utils) {
             return true;
         }
     }
+    function toggle(on_off) {
+	/** Turn the brush on or off
+
+	 */
+	if (on_off===undefined) on_off = !this.enabled;
+
+	this.update();
+    }	
     function add_escape_listener(callback) {
 	/** Call the callback when the escape key is pressed, then
 	 unregisters the listener.

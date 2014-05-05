@@ -30,6 +30,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    selection_is_svg: false,
 	    fillScreen: false,
 	    enable_editing: true,
+	    enable_menu: true,
+	    enable_keys: true,
 	    on_load: null,
 	    map_path: null,
 	    map: null,
@@ -160,24 +162,37 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.reaction_input = Input(this.o.selection, this.map, this.zoom_container);
 
 	if (this.o.enable_editing) {
-	    // setup the Brush
+	    // set up the Brush
 	    this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
 
-	    // setup the modes
+	    // set up the modes
 	    this._setup_modes(this.map, this.brush, this.zoom_container);
-	
-	    // make key manager
-	    var keys = this._get_keys(this.map, this.reaction_input, this.brush);
-	    this.map.key_manager.assigned_keys = keys;
-	    // set up menu and status bars
-	    var menu = this._setup_menu(this.o.selection, this.map, this.zoom_container, this.map.key_manager, keys),
-		status = this._setup_status(this.o.selection, this.map);
+
+	    // start in zoom mode
+	    this.zoom_mode();
+	} else {
+	    // turn off the behaviors
+	    this.map.behavior.turn_everything_off();
+	    this.map.canvas.toggle_resize(false);
 	}
+	
+	// set up key manager
+	var keys = this._get_keys(this.map, this.reaction_input, this.brush, this.o.enable_editing);
+	this.map.key_manager.assigned_keys = keys;
 	// tell the key manager about the reaction input
 	this.map.key_manager.reaction_input = this.reaction_input;
 	// make sure the key manager remembers all those changes
 	this.map.key_manager.update();
+	// turn it on/off
+	this.map.key_manager.toggle(this.o.enable_keys);
 	
+	// set up menu and status bars
+	if (this.o.enable_menu) {
+	    this._setup_menu(this.o.selection, this.map, this.zoom_container, this.map.key_manager, keys,
+			     this.o.enable_editing);
+	}
+	var status = this._setup_status(this.o.selection, this.map);
+
 	// setup selection box
 	if (this.o.map_data!==null) {
 	    this.map.zoom_extent_canvas();
@@ -191,15 +206,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    } else {
 		this.map.zoom_extent_canvas();
 	    }
-	}
-
-	if (this.o.enable_editing) {
-	    // start in zoom mode
-	    this.zoom_mode();
-	} else {
-	    // turn off the behaviors
-	    this.map.behavior.turn_everything_off();
-	    this.map.canvas.toggle_resize(false);
 	}
 
 	// draw
@@ -233,14 +239,15 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.set_mode('rotate');
 	this.callback_manager.run('rotate_mode');
     }	
-    function _setup_menu(selection, map, zoom_container, key_manager, keys) {
+    function _setup_menu(selection, map, zoom_container, key_manager, keys,
+			 enable_editing) {
 	var menu = selection
 		.append("span").attr('id', 'menu')
 		.append("ul")
 		.attr("class", "nav nav-pills");
 	// map dropdown
 	ui.dropdown_menu(menu, 'Map')
-	    .button({ key: keys.ave,
+	    .button({ key: keys.save,
 		      text: "Save as JSON (Ctrl s)" })
 	    .button({ text: "Load map JSON (Ctrl o)",
 		      input: { assign: key_manager.assigned_keys.load,
@@ -262,83 +269,89 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		    });
 
 	// data dropdown
-	ui.dropdown_menu(menu, 'Data')
-	    .button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
-			       key: 'fn',
-			       fn: load_reaction_data_for_file,
-			       target: this },
-		      text: "Load reaction data (Ctrl f)" })
-	    .button({ key: keys.clear_reaction_data,
-		      text: "Clear reaction data" })
-	    .button({ input: { fn: load_metabolite_data_for_file,
-			       target: this },
-		      text: "Load metabolite data" })
-	    .button({ key: keys.clear_metabolite_data,
-		      text: "Clear metabolite data" });
+	var data_menu = ui.dropdown_menu(menu, 'Data')
+		.button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
+				   key: 'fn',
+				   fn: load_reaction_data_for_file,
+				   target: this },
+			  text: "Load reaction data (Ctrl f)" })
+		.button({ key: keys.clear_reaction_data,
+			  text: "Clear reaction data" })
+		.button({ input: { fn: load_metabolite_data_for_file,
+				   target: this },
+			  text: "Load metabolite data" })
+		.button({ key: keys.clear_metabolite_data,
+			  text: "Clear metabolite data" });
 	
 	// edit dropdown
-	ui.dropdown_menu(menu, 'Edit', true)	
-	    .button({ key: keys.build_mode,
-		      id: 'build-mode-menu-button',
-		      text: "Build mode (/)" })
-	    .button({ key: keys.zoom_mode,
-		      id: 'zoom-mode-menu-button',
-		      text: "Zoom + Pan mode (z)" })
-	    .button({ key: keys.brush_mode,
-		      id: 'brush-mode-menu-button',
-		      text: "Select mode (v)" })
-	    .button({ key: keys.rotate_mode,
-		      id: 'rotate-mode-menu-button',
-		      text: "Rotate mode (r)" })
-	    .divider()
-	    .button({ key: keys.delete,
-		      // icon: "glyphicon glyphicon-trash",
-		      text: "Delete (Ctrl del)" })
-	    .button({ key: keys.undo, 
-		      text: "Undo (Ctrl z)" })
-	    .button({ key: keys.redo,
-		      text: "Redo (Ctrl Shift z)" }) 
-	    .button({ key: keys.make_primary,
-		      text: "Make primary metabolite (p)" })
-	    .button({ key: keys.cycle_primary,
-		      text: "Cycle primary metabolite (c)" });
+	if (enable_editing) {	    
+	    var edit_menu = ui.dropdown_menu(menu, 'Edit', true)	
+		    .button({ key: keys.build_mode,
+			      id: 'build-mode-menu-button',
+			      text: "Build mode (/)" })
+		    .button({ key: keys.zoom_mode,
+			      id: 'zoom-mode-menu-button',
+			      text: "Zoom + Pan mode (z)" })
+		    .button({ key: keys.brush_mode,
+			      id: 'brush-mode-menu-button',
+			      text: "Select mode (v)" })
+		    .button({ key: keys.rotate_mode,
+			      id: 'rotate-mode-menu-button',
+			      text: "Rotate mode (r)" })
+		    .divider()
+		    .button({ key: keys.delete,
+			      // icon: "glyphicon glyphicon-trash",
+			      text: "Delete (Ctrl del)" })
+		    .button({ key: keys.undo, 
+			      text: "Undo (Ctrl z)" })
+		    .button({ key: keys.redo,
+			      text: "Redo (Ctrl Shift z)" }) 
+		    .button({ key: keys.make_primary,
+			      text: "Make primary metabolite (p)" })
+		    .button({ key: keys.cycle_primary,
+			      text: "Cycle primary metabolite (c)" });
+	}
 
 	// view dropdown
-	ui.dropdown_menu(menu, 'View', true)
-	    .button({ key: keys.zoom_in,
-		      text: "Zoom out (Ctrl +)" })
-	    .button({ key: keys.zoom_out,
-		      text: "Zoom out (Ctrl -)" })
-	    .button({ key: keys.extent_nodes,
-		      //icon: "glyphicon glyphicon-resize-small",
-		      text: "Zoom to nodes (Ctrl 0)"
-		    })
-	    .button({ key: keys.extent_canvas,
-		      //icon: "glyphicon glyphicon-resize-full",
-		      text: "Zoom to canvas (Ctrl 1)" });
+	var view_menu = ui.dropdown_menu(menu, 'View', true)
+		.button({ key: keys.zoom_in,
+			  text: "Zoom in (Ctrl +)" })
+		.button({ key: keys.zoom_out,
+			  text: "Zoom out (Ctrl -)" })
+		.button({ key: keys.extent_nodes,
+			  //icon: "glyphicon glyphicon-resize-small",
+			  text: "Zoom to nodes (Ctrl 0)"
+			})
+		.button({ key: keys.extent_canvas,
+			  //icon: "glyphicon glyphicon-resize-full",
+			  text: "Zoom to canvas (Ctrl 1)" });
+
+
 	
 	var button_panel = selection.append("ul")
 		.attr("class", "nav nav-pills nav-stacked")
 		.attr('id', 'button-panel');
 
 	// mode buttons
-	ui.radio_button_group(button_panel)
-	    .button({ key: keys.build_mode,
-		      id: 'build-mode-button',
-		      icon: "glyphicon glyphicon-plus",
-		      tooltip: "Build mode (/)" })
-	    .button({ key: keys.zoom_mode,
-		      id: 'zoom-mode-button',
-		      icon: "glyphicon glyphicon-move",
-		      tooltip: "Zoom + Pan mode (z)" })
-	    .button({ key: keys.brush_mode,
-		      id: 'brush-mode-button',
-		      icon: "glyphicon glyphicon-hand-up",
-		      tooltip: "Select mode (v)" })
-	    .button({ key: keys.rotate_mode,
-		      id: 'rotate-mode-button',
-		      icon: "glyphicon glyphicon-repeat",
-		      tooltip: "Rotate mode (r)" });
+	if (enable_editing) {
+	    ui.radio_button_group(button_panel)
+		.button({ key: keys.build_mode,
+			  id: 'build-mode-button',
+			  icon: "glyphicon glyphicon-plus",
+			  tooltip: "Build mode (/)" })
+		.button({ key: keys.zoom_mode,
+			  id: 'zoom-mode-button',
+			  icon: "glyphicon glyphicon-move",
+			  tooltip: "Zoom + Pan mode (z)" })
+		.button({ key: keys.brush_mode,
+			  id: 'brush-mode-button',
+			  icon: "glyphicon glyphicon-screenshot",
+			  tooltip: "Select mode (v)" })
+		.button({ key: keys.rotate_mode,
+			  id: 'rotate-mode-button',
+			  icon: "glyphicon glyphicon-repeat",
+			  tooltip: "Rotate mode (r)" });
+	}
 
 	// buttons
 	ui.individual_button(button_panel, { key: keys.zoom_in,
@@ -443,30 +456,11 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	});
     }
 
-    function _get_keys(map, input, brush) {
-	return {
-            build_mode: { key: 191, // forward slash '/'
-			  target: this,
-			  fn: this.build_mode },
-	    zoom_mode: { key: 90, // z 
-			 target: this,
-			 fn: this.zoom_mode,
-			 ignore_with_input: true },
-	    brush_mode: { key: 86, // v
-			  target: this,
-			  fn: this.brush_mode,
-			  ignore_with_input: true },
-	    rotate_mode: { key: 82, // r
-			   target: this,
-			   fn: this.rotate_mode,
-			   ignore_with_input: true },
+    function _get_keys(map, input, brush, enable_editing) {
+	var keys = {
             save: { key: 83, modifiers: { control: true }, // ctrl-s
 		    target: map,
 		    fn: map.save },
-	    // command-s
-            // save_cmd: { key: 83, modifiers: { command: true },
-	    // 		       fn: save },
-	    // ctrl-Shift-s
             save_svg: { key: 83, modifiers: { control: true, shift: true },
 			target: map,
 			fn: map.save_svg },
@@ -479,65 +473,85 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    load_reaction_data: { key: 70, modifiers: { control: true }, // ctrl-f
 				  fn: null }, // defined by button
 	    clear_reaction_data: { target: map,
-			  fn: function() { this.set_reaction_data(null); }},
+				   fn: function() { this.set_reaction_data(null); }},
 	    load_metabolite_data: { key: 70, modifiers: { control: true }, // ctrl-m
 				    fn: null }, // defined by button
 	    clear_metabolite_data: { target: map,
-			  fn: function() { this.set_metabolite_data(null); }},
-	    toggle_beziers: { key: 66,
-			      target: map,
-			      fn: map.toggle_beziers,
-			      ignore_with_input: true  }, // b
-	    delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
-		      target: map,
-		      fn: map.delete_selected,
-		      ignore_with_input: true },
-	    delete_del: { key: 46, modifiers: { control: true }, // ctrl-del
-			  target: map,
-			  fn: map.delete_selected,
-			  ignore_with_input: true },
+				     fn: function() { this.set_metabolite_data(null); }},
 	    zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
 		       target: this.zoom_container,
 		       fn: this.zoom_container.zoom_in },
 	    zoom_out: { key: 189, modifiers: { control: true }, // ctrl -
-		       target: this.zoom_container,
-		       fn: this.zoom_container.zoom_out },
+			target: this.zoom_container,
+			fn: this.zoom_container.zoom_out },
 	    extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
 			    target: map,
 			    fn: map.zoom_extent_nodes },
 	    extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
 			     target: map,
-			     fn: map.zoom_extent_canvas },
-	    make_primary: { key: 80, // p
-			    target: map,
-			    fn: map.make_selected_node_primary,
-			    ignore_with_input: true },
-	    cycle_primary: { key: 67, // c
-			     target: map,
-			     fn: map.cycle_primary_node,
-			     ignore_with_input: true },
-	    direction_arrow_right: { key: 39, // right
-				     target: map.direction_arrow,
-				     fn: map.direction_arrow.right,
-				     ignore_with_input: true },
-	    direction_arrow_down: { key: 40, // down
-				    target: map.direction_arrow,
-				    fn: map.direction_arrow.down,
-				    ignore_with_input: true },
-	    direction_arrow_left: { key: 37, // left
-				    target: map.direction_arrow,
-				    fn: map.direction_arrow.left,
-				    ignore_with_input: true },
-	    direction_arrow_up: { key: 38, // up
-				  target: map.direction_arrow,
-				  fn: map.direction_arrow.up,
-				  ignore_with_input: true },
-	    undo: { key: 90, modifiers: { control: true },
-		    target: map.undo_stack,
-		    fn: map.undo_stack.undo },
-	    redo: { key: 90, modifiers: { control: true, shift: true },
-		    target: map.undo_stack,
-		    fn: map.undo_stack.redo }
+			     fn: map.zoom_extent_canvas }
 	};
+	if (enable_editing) {
+	    utils.extend(keys, {
+		build_mode: { key: 191, // forward slash '/'
+			      target: this,
+			      fn: this.build_mode },
+		zoom_mode: { key: 90, // z 
+			     target: this,
+			     fn: this.zoom_mode,
+			     ignore_with_input: true },
+		brush_mode: { key: 86, // v
+			      target: this,
+			      fn: this.brush_mode,
+			      ignore_with_input: true },
+		rotate_mode: { key: 82, // r
+			       target: this,
+			       fn: this.rotate_mode,
+			       ignore_with_input: true },
+		toggle_beziers: { key: 66,
+				  target: map,
+				  fn: map.toggle_beziers,
+				  ignore_with_input: true  }, // b
+		delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
+			  target: map,
+			  fn: map.delete_selected,
+			  ignore_with_input: true },
+		delete_del: { key: 46, modifiers: { control: true }, // ctrl-del
+			      target: map,
+			      fn: map.delete_selected,
+			      ignore_with_input: true },
+		make_primary: { key: 80, // p
+				target: map,
+				fn: map.make_selected_node_primary,
+				ignore_with_input: true },
+		cycle_primary: { key: 67, // c
+				 target: map,
+				 fn: map.cycle_primary_node,
+				 ignore_with_input: true },
+		direction_arrow_right: { key: 39, // right
+					 target: map.direction_arrow,
+					 fn: map.direction_arrow.right,
+					 ignore_with_input: true },
+		direction_arrow_down: { key: 40, // down
+					target: map.direction_arrow,
+					fn: map.direction_arrow.down,
+					ignore_with_input: true },
+		direction_arrow_left: { key: 37, // left
+					target: map.direction_arrow,
+					fn: map.direction_arrow.left,
+					ignore_with_input: true },
+		direction_arrow_up: { key: 38, // up
+				      target: map.direction_arrow,
+				      fn: map.direction_arrow.up,
+				      ignore_with_input: true },
+		undo: { key: 90, modifiers: { control: true },
+			target: map.undo_stack,
+			fn: map.undo_stack.undo },
+		redo: { key: 90, modifiers: { control: true, shift: true },
+			target: map.undo_stack,
+			fn: map.undo_stack.redo }
+	    });
+	}
+	return keys;
     }
 });

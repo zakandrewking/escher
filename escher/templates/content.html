@@ -1,12 +1,13 @@
 {% if wrapper %}{% extends 'standalone.html' %}{% endif -%}
 
 {% block head %}
-  {{ super() }}
+{% if wrapper %}{{ super() }}{% endif -%}
   <div style="height: {{height}}px; width: 100%;" id="{{id}}"></div>
   <link rel="stylesheet" href="{{css_path}}"/>
 {% endblock %}
 
 {% block content %}
+{% if wrapper %}{{ super() }}{% endif -%}
   <script>
    {{ initialize_js }}
   </script>

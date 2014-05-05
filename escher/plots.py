@@ -276,9 +276,10 @@ class Builder(Plot):
                           style=self._embed_style())
         return javascript
 
-    def _draw_js(self, the_id, enable_editing, dev, fill_screen):
+    def _draw_js(self, the_id, enable_editing, enable_keys, dev, fill_screen):
         draw = (u"Builder({{ selection: d3.select('#{the_id}'),"
                 u"enable_editing: {enable_editing},"
+                u"enable_keys: {enable_keys},"
                 u"fill_screen: {fill_screen},"
                 u"map: map_data_{the_id},"
                 u"cobra_model: cobra_model_{the_id},"
@@ -287,6 +288,7 @@ class Builder(Plot):
                 u"css: css_string_{the_id} }});").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
+                    enable_keys=json.dumps(enable_keys),
                     fill_screen=json.dumps(fill_screen))
         if dev:
             draw = 'require(["Builder"], function(Builder) {\n%s\n});' % draw
@@ -301,7 +303,7 @@ class Builder(Plot):
         return unicode(download.read().replace('\n', ' '))
     
     def _get_html(self, dev=False, wrapper=False, enable_editing=True,
-                  fill_screen=False, height=800):
+                  enable_keys=True, fill_screen=False, height=800):
         if dev:
             content = env.get_template('dev_content.html')
         else:
@@ -310,13 +312,14 @@ class Builder(Plot):
                               height=unicode(height),
                               css_path=(urls.builder_css_local if dev else urls.builder_css),
                               initialize_js=self._initialize_javascript(),
-                              draw_js=self._draw_js(self.the_id, enable_editing, dev, fill_screen),
+                              draw_js=self._draw_js(self.the_id, enable_editing, enable_keys,
+                                                    dev, fill_screen),
                               d3_url=urls.d3,
                               escher_url=urls.escher,
                               wrapper=wrapper)
         return html
 
-    def embedded_html(self, dev=False, enable_editing=False, height=800):
+    def embedded_html(self, dev=False, enable_editing=False, enable_keys=False, height=800):
         return self._get_html(dev=dev, wrapper=False, enable_editing=enable_editing,
                               fill_screen=False, height=height)
     
