@@ -1,11 +1,12 @@
-.escher-container {
-    background-color: #F3F3F3;
-}
 .fill-screen-body {
     height: 100%;
     overflow: hidden;
     margin: 0;
     padding: 0;
+}
+.escher-container {
+    background-color: #F3F3F3;
+    text-align: center;
 }
 .fill-screen-div {
     margin: 0;
@@ -28,12 +29,23 @@
     font-size: 16px
 }
 #menu {
-    position: relative;
+    display: inline-block;
     margin: 5px auto 0 auto;
-    width: 318px;
     border: 1px solid #ddd;
     background-color: rgba(255, 255, 255, 0.95);
     border-radius: 0px;
+}
+.dropdown-menu {
+    border: 1px solid #ddd;
+    background-color: rgba(255, 255, 255, 0.95);
+    border-radius: 0px;
+    margin: 0;
+}
+.dropdown-menu>li>a {
+    font-size: 15px;
+}
+.dropdown {
+    background-color: rgba(255, 255, 255, 0.95);
 }
 #button-panel {
     position: absolute;
@@ -48,9 +60,6 @@
     }
 }
 @media (min-width: 768px) {
-    #menu {
-	width: 380px;
-    }
     .dropdown-button {
 	font-size: 18px;
     }

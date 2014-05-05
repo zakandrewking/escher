@@ -19,7 +19,6 @@ define(["utils"], function(utils) {
     function radio_button_group(s) {
 	var s2 = s.append('li')
 		.attr('class', 'btn-group-vertical')
-		.style('width', '41px')
 		.attr('data-toggle', 'buttons');
 	return { button: function(button) {
 	    var b = s2.append("label")
@@ -62,8 +61,10 @@ define(["utils"], function(utils) {
 		if ('key' in button) {
 		    set_button(link, button.key);
 		} else if ('input' in button) {
-		    var input = button.input;
-		    input.assign[input.key] = set_input_button(link, li, input.fn, input.target);
+		    var input = button.input,
+			out = set_input_button(link, li, input.fn, input.target);
+		    if ('assign' in input && 'key' in input)
+			input.assign[input.key] = out;
 		}
 		return this;
 	    },

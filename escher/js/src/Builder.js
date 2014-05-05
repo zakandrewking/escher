@@ -234,9 +234,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.callback_manager.run('rotate_mode');
     }	
     function _setup_menu(selection, map, zoom_container, key_manager, keys) {
-	var menu = selection.append("ul")
-		.attr("class", "nav nav-pills")
-		.attr('id', 'menu');
+	var menu = selection
+		.append("span").attr('id', 'menu')
+		.append("ul")
+		.attr("class", "nav nav-pills");
 	// map dropdown
 	ui.dropdown_menu(menu, 'Map')
 	    .button({ key: keys.ave,
@@ -259,9 +260,22 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			       fn: load_model_for_file,
 			       target: this }
 		    });
-	// data dropdown
-	ui.dropdown_menu(menu, 'Data');
 
+	// data dropdown
+	ui.dropdown_menu(menu, 'Data')
+	    .button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
+			       key: 'fn',
+			       fn: load_reaction_data_for_file,
+			       target: this },
+		      text: "Load reaction data (Ctrl f)" })
+	    .button({ key: keys.clear_reaction_data,
+		      text: "Clear reaction data" })
+	    .button({ input: { fn: load_metabolite_data_for_file,
+			       target: this },
+		      text: "Load metabolite data" })
+	    .button({ key: keys.clear_metabolite_data,
+		      text: "Clear metabolite data" });
+	
 	// edit dropdown
 	ui.dropdown_menu(menu, 'Edit', true)	
 	    .button({ key: keys.build_mode,
@@ -277,6 +291,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		      id: 'rotate-mode-menu-button',
 		      text: "Rotate mode (r)" })
 	    .divider()
+	    .button({ key: keys.delete,
+		      // icon: "glyphicon glyphicon-trash",
+		      text: "Delete (Ctrl del)" })
 	    .button({ key: keys.undo, 
 		      text: "Undo (Ctrl z)" })
 	    .button({ key: keys.redo,
@@ -324,15 +341,15 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		      tooltip: "Rotate mode (r)" });
 
 	// buttons
-	ui.individual_button(button_panel, { key: keys.delete,
-					     icon: "glyphicon glyphicon-trash",
-					     tooltip: "Delete (Ctrl del)" });
 	ui.individual_button(button_panel, { key: keys.zoom_in,
 					     icon: "glyphicon glyphicon-zoom-in",
 					     tooltip: "Zoom in (Ctrl +)" });
 	ui.individual_button(button_panel, { key: keys.zoom_out,
 					     icon: "glyphicon glyphicon-zoom-out",
 					     tooltip: "Zoom out (Ctrl -)" });
+	ui.individual_button(button_panel, { key: keys.extent_canvas,
+					     icon: "glyphicon glyphicon-resize-full",
+					     tooltip: "Zoom to canvas (Ctrl 1)" });
 
 	// set up mode callbacks
 	var select_menu_button = function(id) {
@@ -366,11 +383,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	});
 
 
-	// key_manager.assigned_keys.load_model.fn = new_input(sel, load_model_for_file, this, "Load model (^m)");
-	// key_manager.assigned_keys.load_reaction_data.fn = new_input(sel, load_reaction_data_for_file, this, "Load reaction data (^f)");
-	// new_button(sel, keys.clear_reaction_data, "Clear reaction data");
-	// new_input(sel, load_metabolite_data_for_file, this, "Load metabolite data");
-	// new_button(sel, keys.clear_metabolite_data, "Clear metabolite data");
 	// var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
 	// map.callback_manager
 	//     .set('toggle_beziers.button', function(on_off) {
@@ -465,9 +477,11 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
             load_model: { key: 77, modifiers: { control: true }, // ctrl-m
 			  fn: null }, // defined by button
 	    load_reaction_data: { key: 70, modifiers: { control: true }, // ctrl-f
-			 fn: null }, // defined by button
+				  fn: null }, // defined by button
 	    clear_reaction_data: { target: map,
 			  fn: function() { this.set_reaction_data(null); }},
+	    load_metabolite_data: { key: 70, modifiers: { control: true }, // ctrl-m
+				    fn: null }, // defined by button
 	    clear_metabolite_data: { target: map,
 			  fn: function() { this.set_metabolite_data(null); }},
 	    toggle_beziers: { key: 66,
