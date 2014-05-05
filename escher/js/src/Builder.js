@@ -234,8 +234,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.callback_manager.run('rotate_mode');
     }	
     function _setup_menu(selection, map, zoom_container, key_manager, keys) {
-	var menus = selection.append('div').attr('id', 'menus');
-	var menu = menus.append("ul")
+	var menu = selection.append("ul")
 		.attr("class", "nav nav-pills")
 		.attr('id', 'menu');
 	// map dropdown
@@ -301,7 +300,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		      //icon: "glyphicon glyphicon-resize-full",
 		      text: "Zoom to canvas (Ctrl 1)" });
 	
-	var button_panel = menus.append("ul")
+	var button_panel = selection.append("ul")
 		.attr("class", "nav nav-pills nav-stacked")
 		.attr('id', 'button-panel');
 

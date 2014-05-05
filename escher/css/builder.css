@@ -1,6 +1,24 @@
 .escher-container {
     background-color: #F3F3F3;
 }
+.fill-screen-body {
+    height: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+.fill-screen-div {
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+.escher-svg {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
 #status {
     position:absolute;
     bottom:10px;
@@ -9,22 +27,18 @@
     background-color: white;
     font-size: 16px
 }
-#menus {
-    position: absolute;
-    left: 0px;
-    top: 0px;
-    width: 100%;
-}
 #menu {
+    position: relative;
     margin: 5px auto 0 auto;
     width: 318px;
-    border-radius: 2px;
     border: 1px solid #ddd;
     background-color: rgba(255, 255, 255, 0.95);
     border-radius: 0px;
 }
 #button-panel {
-    margin: 10px 0 0 4px;
+    position: absolute;
+    left: 4px;
+    top: 50px;
 }
 /* .dropdown-button, .dropdown-button:hover, .dropdown-button:active, .dropdown-button:focus { */
 /* } */
@@ -35,7 +49,7 @@
 }
 @media (min-width: 768px) {
     #menu {
-	width: 378px;
+	width: 380px;
     }
     .dropdown-button {
 	font-size: 18px;

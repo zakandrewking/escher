@@ -60,18 +60,16 @@ define(["lib/vkbeautify"], function(vkbeautify) {
         // sub selection places the graph in an existing svg environment
         var add_svg = function(f, s, m) {
             if (f) {
-                d3.select("body")
-                    .style("margin", "0")
-                    .style("padding", "0");
+                d3.select("body").classed('fill-screen-body', true);
+		s.classed('fill-screen-div', true);
                 s.style('height', (window.innerHeight-m.top)+'px');
                 s.style('width', (window.innerWidth-m.left)+'px');
-                s.style("margin-left", m.left+"px");
-                s.style("margin-top", m.top+"px");
             }
             var out = height_width_style(s, m);
             out.svg = s.append('svg')
                 .attr("width", out.width)
                 .attr("height", out.height)
+		.attr("class", "escher-svg")
                 .attr('xmlns', "http://www.w3.org/2000/svg");
             return out;
         };
