@@ -29,7 +29,8 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     check_undefined: check_undefined,
 	     compartmentalize: compartmentalize,
 	     decompartmentalize: decompartmentalize,
-	     check_r: check_r };
+	     check_r: check_r,
+	     mean: mean };
 
     // definitions
     function set_options(options, defaults) {
@@ -500,5 +501,11 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 		}
 	    }
 	}
+    }
+
+    function mean(array) {
+	var sum = array.reduce(function(a, b) { return a + b; });
+	var avg = sum / array.length;
+	return avg;
     }
 });

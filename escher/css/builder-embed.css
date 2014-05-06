@@ -78,3 +78,7 @@
     fill: none;
     opacity: 0.5;
 }
+.rotation-center-line {
+    stroke: red;
+    stroke-width: 2px;
+}

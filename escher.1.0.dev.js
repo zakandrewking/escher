@@ -5476,9 +5476,13 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     }
 
     // functions to scale and translate
-    function go_to(scale, translate, dont_transition) { 
+    function go_to(scale, translate, show_transition) {
+	utils.check_undefined(arguments, ['scale', 'translate']);
+	if (show_transition===undefined) show_transition = true;
+
 	if (!scale) return console.error('Bad scale value');
-	if (!translate || !('x' in translate) || !('y' in translate))
+	if (!translate || !('x' in translate) || !('y' in translate) ||
+	    isNaN(translate.x) || isNaN(translate.y))
 	    return console.error('Bad translate value');
 
 	this.zoom_behavior.scale(scale);
@@ -5490,8 +5494,9 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
         this.window_translate = translate;
 	if (this.saved_translate !== null) this.saved_translate = translate_array;
 
-	var move_this = (dont_transition ? this.zoomed_sel :
-			 this.zoomed_sel.transition());
+	var move_this = (show_transition ?
+			 this.zoomed_sel.transition() :
+			 this.zoomed_sel);
         move_this.attr('transform',
 		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
 		  'scale('+this.window_scale+')');
@@ -5499,12 +5504,14 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     }
 
     function zoom_by(amount) {
-	var shift = { x: this.width/2 - ((this.width/2 - this.window_translate.x) * amount +
+	var size = this.get_size(),
+	    shift = { x: size.width/2 - ((size.width/2 - this.window_translate.x) * amount +
 					 this.window_translate.x),
-	 	      y: this.height/2 - ((this.height/2 - this.window_translate.y) * amount +
+	 	      y: size.height/2 - ((size.height/2 - this.window_translate.y) * amount +
 					  this.window_translate.y) };
 	this.go_to(this.window_scale*amount,
-		   utils.c_plus_c(this.window_translate, shift));
+		   utils.c_plus_c(this.window_translate, shift),
+		   true);
     }
     function zoom_in() {
 	this.zoom_by(1.5);

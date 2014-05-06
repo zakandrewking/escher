@@ -161,9 +161,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 
 	    // set up the modes
 	    this._setup_modes(this.map, this.brush, this.zoom_container);
-
-	    // start in zoom mode
-	    this.zoom_mode();
 	} else {
 	    // turn off the behaviors
 	    this.map.behavior.turn_everything_off();
@@ -205,6 +202,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 
 	// draw
 	this.map.draw_everything();
+	// start in zoom mode
+	this.zoom_mode();
 
 	// run the load callback
 	if (this.o.on_load!==null)
@@ -215,7 +214,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.brush.toggle(mode=='brush');
 	this.zoom_container.toggle_zoom(mode=='zoom');
 	this.map.canvas.toggle_resize(mode=='zoom');
-	if (mode=='rotate') this.map.rotate_selected_nodes();
+	this.map.behavior.toggle_rotation_mode(mode=='rotate');
 	this.callback_manager.run('set_mode', mode);
     }
     function build_mode() {
