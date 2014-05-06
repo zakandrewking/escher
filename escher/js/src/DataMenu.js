@@ -19,8 +19,6 @@ define(["utils"], function(utils) {
         }
         var select_sel = menu.append('form')
             .append('select').attr('class','dropdown-menu');
-        // TODO move this somewhere sensible
-        // menu.append('div').style('width','100%').text("Press 's' to freeze tooltip");
 
         if (o.getdatafiles) {
             if (o.datafiles) {

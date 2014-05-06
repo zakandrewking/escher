@@ -122,24 +122,19 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	utils.remove_child_nodes(this.o.selection);
 
 	// set up the svg
-	var out = utils.setup_svg(this.o.selection, this.o.selection_is_svg,
-				  this.o.margins, this.o.fill_screen),
-	    svg = out.svg,
-	    height = out.height,
-	    width = out.width;
-
+	var svg = utils.setup_svg(this.o.selection, this.o.selection_is_svg,
+				  this.o.margins, this.o.fill_screen);
+	
 	// se up the zoom container
-	this.zoom_container = new ZoomContainer(svg, width, height, [0.05, 15]);
+	this.zoom_container = new ZoomContainer(svg, this.o.selection);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
-	var max_w = width, max_h = height;
 	if (this.o.map_data!==null) {
 	    // import map
 	    this.map = Map.from_data(this.o.map_data,
 				     svg, this.o.css,
 				     zoomed_sel,
 				     this.zoom_container,
-				     height, width,
 				     this.o.reaction_data,
 				     this.o.reaction_data_styles,
 				     this.o.metabolite_data,
@@ -150,7 +145,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    // new map
 	    this.map = new Map(svg, this.o.css, zoomed_sel,
 			       this.zoom_container,
-			       height, width,
 			       this.o.reaction_data,
 			       this.o.reaction_data_styles,
 			       this.o.metabolite_data,
@@ -199,8 +193,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	} else {
 	    if (this.o.starting_reaction!==null && cobra_model_obj!==null) {
 		// Draw default reaction if no map is provided
-		var start_coords = { x: width/2,
-				     y: height/4 };
+		var size = this.zoom_container.get_size();
+		var start_coords = { x: size.width / 2,
+				     y: size.height / 4 };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
 		this.map.zoom_extent_nodes();
 	    } else {

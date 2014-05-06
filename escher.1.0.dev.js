@@ -787,7 +787,6 @@ define('lib/vkbeautify',[],function() {
 define('utils',["lib/vkbeautify"], function(vkbeautify) {
     return { set_options: set_options,
              setup_svg: setup_svg,
-	     resize_svg: resize_svg,
 	     remove_child_nodes: remove_child_nodes,
              load_css: load_css,
              load_files: load_files,
@@ -819,16 +818,6 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	     check_r: check_r };
 
     // definitions
-    function height_width_style(selection, margins) {
-        var width = parseFloat(selection.style('width')) - margins.left - margins.right,
-            height = parseFloat(selection.style('height')) - margins.top - margins.bottom;
-        return {'width': width, 'height': height};
-    };
-    function height_width_attr(selection, margins) {
-        var width = parseFloat(selection.attr('width')) - margins.left - margins.right,
-            height = parseFloat(selection.attr('height')) - margins.top - margins.bottom;
-        return {'width': width, 'height': height};
-    };
     function set_options(options, defaults) {
         if (options===undefined) return defaults;
         var i = -1,
@@ -841,23 +830,19 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	    out[key] = val;
 	}
         return out;
-    };
+    }
+
     function setup_svg(selection, selection_is_svg, margins, fill_screen) {
         // sub selection places the graph in an existing svg environment
         var add_svg = function(f, s, m) {
             if (f) {
                 d3.select("body").classed('fill-screen-body', true);
 		s.classed('fill-screen-div', true);
-                // s.style('height', (window.innerHeight-m.top)+'px');
-                // s.style('width', (window.innerWidth-m.left)+'px');
             }
-            var out = height_width_style(s, m);
-            out.svg = s.append('svg')
-                // .attr("width", out.width)
-                // .attr("height", out.height)
-		.attr("class", "escher-svg")
-                .attr('xmlns', "http://www.w3.org/2000/svg");
-            return out;
+            var svg = s.append('svg')
+		    .attr("class", "escher-svg")
+                    .attr('xmlns', "http://www.w3.org/2000/svg");
+	    return svg;
         };
 
         // run
@@ -866,50 +851,13 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	selection.classed('escher-container', true);
 	// make the svg
         if (selection_is_svg) {
-            out = height_width_attr(selection, margins);
-            out.svg = selection;
+            return selection;
         } else if (selection) {
-            out = add_svg(fill_screen, selection, margins);
+            return add_svg(fill_screen, selection, margins);
         } else {
-            out = add_svg(fill_screen, d3.select('body').append('div'), margins);
+            throw Error('No selection');
         }
-        if (out.height <= 0 || out.width <= 0) {
-            console.warn("Container has invalid height or \
-			 width. Try setting styles for height \
-			 and width, or use the 'fill_screen' option.");
-        }
-        return out;
-    };
-
-    function resize_svg(selection, selection_is_svg, margins, fill_screen) {
-        /** resize_svg(selection, selection_is_svg, margins, fill_screen)
-
-	 Returns object with new 'height' and 'width' keys.
-
-	 */
-        var out;
-        if (selection_is_svg) {
-            out = height_width_attr(selection, margins);
-        } else if (selection) {
-            out = resize(fill_screen, selection, margins);
-	} else console.warn('No selection');
-        return out;
-
-	// definitions
-        function resize(f, s, m) {
-            if (f) {
-                s.style('height', (window.innerHeight-m.top)+'px');
-                s.style('width', (window.innerWidth-m.left)+'px');
-                s.style("margin-left", m.left+"px");
-                s.style("margin-top", m.top+"px");
-            }
-            var out = height_width_style(s, margins);
-	    s.select("svg")
-		.attr("height", out.height)
-		.attr("width", out.width);
-            return out;
-        };
-    };
+    }
 
     function remove_child_nodes(selection) {
 	/** Removes all child nodes from a d3 selection
@@ -3861,6 +3809,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
 	_zoom_extent: _zoom_extent,
+	get_size: get_size,
 	// io
 	save: save,
 	map_for_export: map_for_export,
@@ -3869,12 +3818,13 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
     return Map;
 
-    function init(svg, css, selection, zoom_container, height, width, reaction_data,
+    function init(svg, css, selection, zoom_container, reaction_data,
 		  reaction_data_styles, metabolite_data, metabolite_data_styles,
 		  cobra_model, canvas_size_and_loc) {
 	if (canvas_size_and_loc===undefined || canvas_size_and_loc===null) {
-	    canvas_size_and_loc = {x: -width, y: -height,
-				   width: width*3, height: height*3};
+	    var size = zoom_container.get_size();
+	    canvas_size_and_loc = {x: -size.width, y: -size.height,
+				   width: size.width*3, height: size.height*3};
 	}
 
 	// defaults
@@ -3891,8 +3841,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.setup_containers(selection);
 	this.sel = selection;
 	this.zoom_container = zoom_container;
-	this.height = height;
-	this.width = width;
 
 	// check and load data
 	this.reaction_data_object = data_styles.import_and_check(reaction_data,
@@ -3911,8 +3859,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 			     nodes: -1,
 			     segments: -1 };
 
-	// make the scale
-	this.scale = new Scale(); //this.canvas.width, this.canvas.height, width, height);
+	// make the scales
+	this.scale = new Scale();
 
 	// make the undo/redo stack
 	this.undo_stack = new UndoStack();
@@ -3966,14 +3914,14 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     // -------------------------------------------------------------------------
     // Import
 
-    function from_data(map_data, svg, css, selection, zoom_container, height, width,
+    function from_data(map_data, svg, css, selection, zoom_container,
 		       reaction_data, reaction_data_styles,
 		       metabolite_data, metabolite_data_styles, cobra_model) {
 	/** Load a json map and add necessary fields for rendering.
 	 
 	 */
 	utils.check_undefined(arguments, ['map_data', 'svg', 'css', 'selection',
-					  'zoom_container', 'height', 'width',
+					  'zoom_container',
 					  'reaction_data', 'reaction_data_styles',
 					  'metabolite_data', 'metabolite_data_styles',
 					  'cobra_model']);
@@ -3989,7 +3937,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	}
 	
 	var canvas = map_data.canvas,
-	    map = new Map(svg, css, selection, zoom_container, height, width,
+	    map = new Map(svg, css, selection, zoom_container,
 			  reaction_data, reaction_data_styles, metabolite_data,
 			  metabolite_data_styles, cobra_model, canvas);
 
@@ -5317,17 +5265,18 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	 */
 
 	// optional args
-	if (margin===undefined) margin = mode=='nodes' ? 0.2 : 0;
+	if (margin===undefined) margin = (mode=='nodes' ? 0.2 : 0);
 	if (mode===undefined) mode = 'canvas';
 
-	var new_zoom, new_pos;
+	var new_zoom, new_pos,
+	    size = this.get_size();
 	// scale margin to window size
-	margin = margin * this.height;
+	margin = margin * size.height;
 
 	if (mode=='nodes') {
 	    // get the extent of the nodes
 	    var min = { x: null, y: null }, // TODO make infinity?
-		max = { x: null, y: null }; 
+		max = { x: null, y: null };
 	    for (var node_id in this.nodes) {
 		var node = this.nodes[node_id];
 		if (min.x===null) min.x = node.x;
@@ -5341,21 +5290,25 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 		max.y = Math.max(max.y, node.y);
 	    }
 	    // set the zoom
-	    new_zoom = Math.min((this.width - margin*2) / (max.x - min.x),
-				(this.height - margin*2) / (max.y - min.y));
-	    new_pos = { x: - (min.x * new_zoom) + margin + ((this.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
-			y: - (min.y * new_zoom) + margin + ((this.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
+	    new_zoom = Math.min((size.width - margin*2) / (max.x - min.x),
+				(size.height - margin*2) / (max.y - min.y));
+	    new_pos = { x: - (min.x * new_zoom) + margin + ((size.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
+			y: - (min.y * new_zoom) + margin + ((size.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
 	} else if (mode=='canvas') {
 	    // center the canvas
-	    new_zoom =  Math.min((this.width - margin*2) / (this.canvas.width),
-				 (this.height - margin*2) / (this.canvas.height));
-	    new_pos = { x: - (this.canvas.x * new_zoom) + margin + ((this.width - margin*2 - this.canvas.width*new_zoom) / 2),
-			y: - (this.canvas.y * new_zoom) + margin + ((this.height - margin*2 - this.canvas.height*new_zoom) / 2) };
+	    new_zoom =  Math.min((size.width - margin*2) / (this.canvas.width),
+				 (size.height - margin*2) / (this.canvas.height));
+	    new_pos = { x: - (this.canvas.x * new_zoom) + margin + ((size.width - margin*2 - this.canvas.width*new_zoom) / 2),
+			y: - (this.canvas.y * new_zoom) + margin + ((size.height - margin*2 - this.canvas.height*new_zoom) / 2) };
 	} else {
 	    return console.error('Did not recognize mode');
 	}
 	this.zoom_container.go_to(new_zoom, new_pos);
 	return null;
+    }
+
+    function get_size() {
+	return this.zoom_container.get_size();
     }
 
     // -------------------------------------------------------------------------
@@ -5409,16 +5362,18 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,
 	    window_translate = this.zoom_container.window_translate,
-	    svg_width = this.svg.attr('width'),
-	    svg_height = this.svg.attr('height'),
+	//     svg_width = this.svg.attr('width'),
+	//     svg_height = this.svg.attr('height'),
 	    canvas_size_and_loc = this.canvas.size_and_location();
+	// console.log('Check that these are not null:');
+	// console.log(svg_width, svg_height);
 	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, true);
 	this.svg.attr('width', canvas_size_and_loc.width);
 	this.svg.attr('height', canvas_size_and_loc.height);
         utils.export_svg("saved_map", this.svg, true);
 	this.zoom_container.go_to(window_scale, window_translate, true);
-	svg_width = this.svg.attr('width', svg_width);
-	svg_height = this.svg.attr('height', svg_height);
+	this.svg.attr('width', null);
+	this.svg.attr('height', null);
 	this.callback_manager.run('after_svg_export');
     }
 });
@@ -5436,21 +5391,33 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 				zoom_by: zoom_by,
 				zoom_in: zoom_in,
 				zoom_out: zoom_out,
+				get_size: get_size,
 				translate_off_screen: translate_off_screen,
 				reset: reset };
     return ZoomContainer;
 
     // definitions
-    function init(selection, w, h, scale_extent) {
+    function init(selection, size_container) {
+	/** Make a container that will manage panning and zooming.
+
+	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
+	 container in.
+
+	 size_container: A d3 selection of a 'div' node that has defined width
+	 and height.
+
+	 */
+
 	this.zoom_on = true;
 	this.initial_zoom = 1.0;
 	this.window_translate = {x: 0, y: 0};
 	this.window_scale = 1.0;
-	this.width = w;
-	this.height = h;
 
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
+
+	// save the size_container
+	this.size_container = size_container;
 
         // set up the container
         selection.select("#zoom-container").remove();
@@ -5471,7 +5438,6 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
         };
 	var zoom_container = this;
 	this.zoom_behavior = d3.behavior.zoom()
-	// .scaleExtent(scale_extent)
 	    .on("zoom", function() {
 		zoom(zoom_container, d3.event);
 	    });
@@ -5545,7 +5511,12 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     }
     function zoom_out() {
 	this.zoom_by(0.667);
-    } 
+    }
+
+    function get_size() {
+	return { width: parseInt(this.size_container.style('width'), 10),
+		 height: parseInt(this.size_container.style('height'), 10) };
+    }
 
     function translate_off_screen(coords) {
         // shift window if new reaction will draw off the screen
@@ -5702,12 +5673,13 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
     function place(coords) {
 	var d = {x: 200, y: 0},
 	    window_translate = this.map.zoom_container.window_translate,
-	    window_scale = this.map.zoom_container.window_scale;
+	    window_scale = this.map.zoom_container.window_scale,
+	    map_size = this.map.get_size();
         var left = Math.max(20,
-			    Math.min(this.map.width - 270,
+			    Math.min(map_size.width - 270,
 				     (window_scale * coords.x + window_translate.x - d.x)));
         var top = Math.max(20,
-			   Math.min(this.map.height - 40,
+			   Math.min(map_size.height - 40,
 				    (window_scale * coords.y + window_translate.y - d.y)));
         this.selection.style('position', 'absolute')
             .style('display', 'block')
@@ -6266,24 +6238,19 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	utils.remove_child_nodes(this.o.selection);
 
 	// set up the svg
-	var out = utils.setup_svg(this.o.selection, this.o.selection_is_svg,
-				  this.o.margins, this.o.fill_screen),
-	    svg = out.svg,
-	    height = out.height,
-	    width = out.width;
-
+	var svg = utils.setup_svg(this.o.selection, this.o.selection_is_svg,
+				  this.o.margins, this.o.fill_screen);
+	
 	// se up the zoom container
-	this.zoom_container = new ZoomContainer(svg, width, height, [0.05, 15]);
+	this.zoom_container = new ZoomContainer(svg, this.o.selection);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
-	var max_w = width, max_h = height;
 	if (this.o.map_data!==null) {
 	    // import map
 	    this.map = Map.from_data(this.o.map_data,
 				     svg, this.o.css,
 				     zoomed_sel,
 				     this.zoom_container,
-				     height, width,
 				     this.o.reaction_data,
 				     this.o.reaction_data_styles,
 				     this.o.metabolite_data,
@@ -6294,7 +6261,6 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    // new map
 	    this.map = new Map(svg, this.o.css, zoomed_sel,
 			       this.zoom_container,
-			       height, width,
 			       this.o.reaction_data,
 			       this.o.reaction_data_styles,
 			       this.o.metabolite_data,
@@ -6343,8 +6309,9 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	} else {
 	    if (this.o.starting_reaction!==null && cobra_model_obj!==null) {
 		// Draw default reaction if no map is provided
-		var start_coords = { x: width/2,
-				     y: height/4 };
+		var size = this.zoom_container.get_size();
+		var start_coords = { x: size.width / 2,
+				     y: size.height / 4 };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
 		this.map.zoom_extent_nodes();
 	    } else {
@@ -6721,8 +6688,6 @@ define('DataMenu',["utils"], function(utils) {
         }
         var select_sel = menu.append('form')
             .append('select').attr('class','dropdown-menu');
-        // TODO move this somewhere sensible
-        // menu.append('div').style('width','100%').text("Press 's' to freeze tooltip");
 
         if (o.getdatafiles) {
             if (o.datafiles) {

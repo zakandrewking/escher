@@ -117,12 +117,13 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
     function place(coords) {
 	var d = {x: 200, y: 0},
 	    window_translate = this.map.zoom_container.window_translate,
-	    window_scale = this.map.zoom_container.window_scale;
+	    window_scale = this.map.zoom_container.window_scale,
+	    map_size = this.map.get_size();
         var left = Math.max(20,
-			    Math.min(this.map.width - 270,
+			    Math.min(map_size.width - 270,
 				     (window_scale * coords.x + window_translate.x - d.x)));
         var top = Math.max(20,
-			   Math.min(this.map.height - 40,
+			   Math.min(map_size.height - 40,
 				    (window_scale * coords.y + window_translate.y - d.y)));
         this.selection.style('position', 'absolute')
             .style('display', 'block')

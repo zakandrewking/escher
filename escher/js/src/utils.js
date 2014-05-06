@@ -1,7 +1,6 @@
 define(["lib/vkbeautify"], function(vkbeautify) {
     return { set_options: set_options,
              setup_svg: setup_svg,
-	     resize_svg: resize_svg,
 	     remove_child_nodes: remove_child_nodes,
              load_css: load_css,
              load_files: load_files,
@@ -33,16 +32,6 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     check_r: check_r };
 
     // definitions
-    function height_width_style(selection, margins) {
-        var width = parseFloat(selection.style('width')) - margins.left - margins.right,
-            height = parseFloat(selection.style('height')) - margins.top - margins.bottom;
-        return {'width': width, 'height': height};
-    };
-    function height_width_attr(selection, margins) {
-        var width = parseFloat(selection.attr('width')) - margins.left - margins.right,
-            height = parseFloat(selection.attr('height')) - margins.top - margins.bottom;
-        return {'width': width, 'height': height};
-    };
     function set_options(options, defaults) {
         if (options===undefined) return defaults;
         var i = -1,
@@ -55,23 +44,19 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	    out[key] = val;
 	}
         return out;
-    };
+    }
+
     function setup_svg(selection, selection_is_svg, margins, fill_screen) {
         // sub selection places the graph in an existing svg environment
         var add_svg = function(f, s, m) {
             if (f) {
                 d3.select("body").classed('fill-screen-body', true);
 		s.classed('fill-screen-div', true);
-                // s.style('height', (window.innerHeight-m.top)+'px');
-                // s.style('width', (window.innerWidth-m.left)+'px');
             }
-            var out = height_width_style(s, m);
-            out.svg = s.append('svg')
-                // .attr("width", out.width)
-                // .attr("height", out.height)
-		.attr("class", "escher-svg")
-                .attr('xmlns', "http://www.w3.org/2000/svg");
-            return out;
+            var svg = s.append('svg')
+		    .attr("class", "escher-svg")
+                    .attr('xmlns', "http://www.w3.org/2000/svg");
+	    return svg;
         };
 
         // run
@@ -80,50 +65,13 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	selection.classed('escher-container', true);
 	// make the svg
         if (selection_is_svg) {
-            out = height_width_attr(selection, margins);
-            out.svg = selection;
+            return selection;
         } else if (selection) {
-            out = add_svg(fill_screen, selection, margins);
+            return add_svg(fill_screen, selection, margins);
         } else {
-            out = add_svg(fill_screen, d3.select('body').append('div'), margins);
+            throw Error('No selection');
         }
-        if (out.height <= 0 || out.width <= 0) {
-            console.warn("Container has invalid height or \
-			 width. Try setting styles for height \
-			 and width, or use the 'fill_screen' option.");
-        }
-        return out;
-    };
-
-    function resize_svg(selection, selection_is_svg, margins, fill_screen) {
-        /** resize_svg(selection, selection_is_svg, margins, fill_screen)
-
-	 Returns object with new 'height' and 'width' keys.
-
-	 */
-        var out;
-        if (selection_is_svg) {
-            out = height_width_attr(selection, margins);
-        } else if (selection) {
-            out = resize(fill_screen, selection, margins);
-	} else console.warn('No selection');
-        return out;
-
-	// definitions
-        function resize(f, s, m) {
-            if (f) {
-                s.style('height', (window.innerHeight-m.top)+'px');
-                s.style('width', (window.innerWidth-m.left)+'px');
-                s.style("margin-left", m.left+"px");
-                s.style("margin-top", m.top+"px");
-            }
-            var out = height_width_style(s, margins);
-	    s.select("svg")
-		.attr("height", out.height)
-		.attr("width", out.width);
-            return out;
-        };
-    };
+    }
 
     function remove_child_nodes(selection) {
 	/** Removes all child nodes from a d3 selection

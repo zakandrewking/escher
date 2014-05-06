@@ -72,6 +72,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
 	_zoom_extent: _zoom_extent,
+	get_size: get_size,
 	// io
 	save: save,
 	map_for_export: map_for_export,
@@ -80,12 +81,13 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
     return Map;
 
-    function init(svg, css, selection, zoom_container, height, width, reaction_data,
+    function init(svg, css, selection, zoom_container, reaction_data,
 		  reaction_data_styles, metabolite_data, metabolite_data_styles,
 		  cobra_model, canvas_size_and_loc) {
 	if (canvas_size_and_loc===undefined || canvas_size_and_loc===null) {
-	    canvas_size_and_loc = {x: -width, y: -height,
-				   width: width*3, height: height*3};
+	    var size = zoom_container.get_size();
+	    canvas_size_and_loc = {x: -size.width, y: -size.height,
+				   width: size.width*3, height: size.height*3};
 	}
 
 	// defaults
@@ -102,8 +104,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.setup_containers(selection);
 	this.sel = selection;
 	this.zoom_container = zoom_container;
-	this.height = height;
-	this.width = width;
 
 	// check and load data
 	this.reaction_data_object = data_styles.import_and_check(reaction_data,
@@ -122,8 +122,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 			     nodes: -1,
 			     segments: -1 };
 
-	// make the scale
-	this.scale = new Scale(); //this.canvas.width, this.canvas.height, width, height);
+	// make the scales
+	this.scale = new Scale();
 
 	// make the undo/redo stack
 	this.undo_stack = new UndoStack();
@@ -177,14 +177,14 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     // -------------------------------------------------------------------------
     // Import
 
-    function from_data(map_data, svg, css, selection, zoom_container, height, width,
+    function from_data(map_data, svg, css, selection, zoom_container,
 		       reaction_data, reaction_data_styles,
 		       metabolite_data, metabolite_data_styles, cobra_model) {
 	/** Load a json map and add necessary fields for rendering.
 	 
 	 */
 	utils.check_undefined(arguments, ['map_data', 'svg', 'css', 'selection',
-					  'zoom_container', 'height', 'width',
+					  'zoom_container',
 					  'reaction_data', 'reaction_data_styles',
 					  'metabolite_data', 'metabolite_data_styles',
 					  'cobra_model']);
@@ -200,7 +200,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	}
 	
 	var canvas = map_data.canvas,
-	    map = new Map(svg, css, selection, zoom_container, height, width,
+	    map = new Map(svg, css, selection, zoom_container,
 			  reaction_data, reaction_data_styles, metabolite_data,
 			  metabolite_data_styles, cobra_model, canvas);
 
@@ -1528,17 +1528,18 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	 */
 
 	// optional args
-	if (margin===undefined) margin = mode=='nodes' ? 0.2 : 0;
+	if (margin===undefined) margin = (mode=='nodes' ? 0.2 : 0);
 	if (mode===undefined) mode = 'canvas';
 
-	var new_zoom, new_pos;
+	var new_zoom, new_pos,
+	    size = this.get_size();
 	// scale margin to window size
-	margin = margin * this.height;
+	margin = margin * size.height;
 
 	if (mode=='nodes') {
 	    // get the extent of the nodes
 	    var min = { x: null, y: null }, // TODO make infinity?
-		max = { x: null, y: null }; 
+		max = { x: null, y: null };
 	    for (var node_id in this.nodes) {
 		var node = this.nodes[node_id];
 		if (min.x===null) min.x = node.x;
@@ -1552,21 +1553,25 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		max.y = Math.max(max.y, node.y);
 	    }
 	    // set the zoom
-	    new_zoom = Math.min((this.width - margin*2) / (max.x - min.x),
-				(this.height - margin*2) / (max.y - min.y));
-	    new_pos = { x: - (min.x * new_zoom) + margin + ((this.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
-			y: - (min.y * new_zoom) + margin + ((this.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
+	    new_zoom = Math.min((size.width - margin*2) / (max.x - min.x),
+				(size.height - margin*2) / (max.y - min.y));
+	    new_pos = { x: - (min.x * new_zoom) + margin + ((size.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
+			y: - (min.y * new_zoom) + margin + ((size.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
 	} else if (mode=='canvas') {
 	    // center the canvas
-	    new_zoom =  Math.min((this.width - margin*2) / (this.canvas.width),
-				 (this.height - margin*2) / (this.canvas.height));
-	    new_pos = { x: - (this.canvas.x * new_zoom) + margin + ((this.width - margin*2 - this.canvas.width*new_zoom) / 2),
-			y: - (this.canvas.y * new_zoom) + margin + ((this.height - margin*2 - this.canvas.height*new_zoom) / 2) };
+	    new_zoom =  Math.min((size.width - margin*2) / (this.canvas.width),
+				 (size.height - margin*2) / (this.canvas.height));
+	    new_pos = { x: - (this.canvas.x * new_zoom) + margin + ((size.width - margin*2 - this.canvas.width*new_zoom) / 2),
+			y: - (this.canvas.y * new_zoom) + margin + ((size.height - margin*2 - this.canvas.height*new_zoom) / 2) };
 	} else {
 	    return console.error('Did not recognize mode');
 	}
 	this.zoom_container.go_to(new_zoom, new_pos);
 	return null;
+    }
+
+    function get_size() {
+	return this.zoom_container.get_size();
     }
 
     // -------------------------------------------------------------------------
@@ -1620,16 +1625,18 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,
 	    window_translate = this.zoom_container.window_translate,
-	    svg_width = this.svg.attr('width'),
-	    svg_height = this.svg.attr('height'),
+	//     svg_width = this.svg.attr('width'),
+	//     svg_height = this.svg.attr('height'),
 	    canvas_size_and_loc = this.canvas.size_and_location();
+	// console.log('Check that these are not null:');
+	// console.log(svg_width, svg_height);
 	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, true);
 	this.svg.attr('width', canvas_size_and_loc.width);
 	this.svg.attr('height', canvas_size_and_loc.height);
         utils.export_svg("saved_map", this.svg, true);
 	this.zoom_container.go_to(window_scale, window_translate, true);
-	svg_width = this.svg.attr('width', svg_width);
-	svg_height = this.svg.attr('height', svg_height);
+	this.svg.attr('width', null);
+	this.svg.attr('height', null);
 	this.callback_manager.run('after_svg_export');
     }
 });

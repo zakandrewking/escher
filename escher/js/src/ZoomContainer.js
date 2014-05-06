@@ -11,21 +11,33 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 				zoom_by: zoom_by,
 				zoom_in: zoom_in,
 				zoom_out: zoom_out,
+				get_size: get_size,
 				translate_off_screen: translate_off_screen,
 				reset: reset };
     return ZoomContainer;
 
     // definitions
-    function init(selection, w, h, scale_extent) {
+    function init(selection, size_container) {
+	/** Make a container that will manage panning and zooming.
+
+	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
+	 container in.
+
+	 size_container: A d3 selection of a 'div' node that has defined width
+	 and height.
+
+	 */
+
 	this.zoom_on = true;
 	this.initial_zoom = 1.0;
 	this.window_translate = {x: 0, y: 0};
 	this.window_scale = 1.0;
-	this.width = w;
-	this.height = h;
 
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
+
+	// save the size_container
+	this.size_container = size_container;
 
         // set up the container
         selection.select("#zoom-container").remove();
@@ -46,7 +58,6 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
         };
 	var zoom_container = this;
 	this.zoom_behavior = d3.behavior.zoom()
-	// .scaleExtent(scale_extent)
 	    .on("zoom", function() {
 		zoom(zoom_container, d3.event);
 	    });
@@ -85,9 +96,13 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     }
 
     // functions to scale and translate
-    function go_to(scale, translate, dont_transition) { 
+    function go_to(scale, translate, show_transition) {
+	utils.check_undefined(arguments, ['scale', 'translate']);
+	if (show_transition===undefined) show_transition = true;
+
 	if (!scale) return console.error('Bad scale value');
-	if (!translate || !('x' in translate) || !('y' in translate))
+	if (!translate || !('x' in translate) || !('y' in translate) ||
+	    isNaN(translate.x) || isNaN(translate.y))
 	    return console.error('Bad translate value');
 
 	this.zoom_behavior.scale(scale);
@@ -99,8 +114,9 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
         this.window_translate = translate;
 	if (this.saved_translate !== null) this.saved_translate = translate_array;
 
-	var move_this = (dont_transition ? this.zoomed_sel :
-			 this.zoomed_sel.transition());
+	var move_this = (show_transition ?
+			 this.zoomed_sel.transition() :
+			 this.zoomed_sel);
         move_this.attr('transform',
 		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
 		  'scale('+this.window_scale+')');
@@ -108,19 +124,26 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     }
 
     function zoom_by(amount) {
-	var shift = { x: this.width/2 - ((this.width/2 - this.window_translate.x) * amount +
+	var size = this.get_size(),
+	    shift = { x: size.width/2 - ((size.width/2 - this.window_translate.x) * amount +
 					 this.window_translate.x),
-	 	      y: this.height/2 - ((this.height/2 - this.window_translate.y) * amount +
+	 	      y: size.height/2 - ((size.height/2 - this.window_translate.y) * amount +
 					  this.window_translate.y) };
 	this.go_to(this.window_scale*amount,
-		   utils.c_plus_c(this.window_translate, shift));
+		   utils.c_plus_c(this.window_translate, shift),
+		   true);
     }
     function zoom_in() {
 	this.zoom_by(1.5);
     }
     function zoom_out() {
 	this.zoom_by(0.667);
-    } 
+    }
+
+    function get_size() {
+	return { width: parseInt(this.size_container.style('width'), 10),
+		 height: parseInt(this.size_container.style('height'), 10) };
+    }
 
     function translate_off_screen(coords) {
         // shift window if new reaction will draw off the screen
