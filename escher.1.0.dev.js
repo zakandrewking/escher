@@ -815,7 +815,8 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	     check_undefined: check_undefined,
 	     compartmentalize: compartmentalize,
 	     decompartmentalize: decompartmentalize,
-	     check_r: check_r };
+	     check_r: check_r,
+	     mean: mean };
 
     // definitions
     function set_options(options, defaults) {
@@ -1286,6 +1287,12 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 		}
 	    }
 	}
+    }
+
+    function mean(array) {
+	var sum = array.reduce(function(a, b) { return a + b; });
+	var avg = sum / array.length;
+	return avg;
     }
 });
 
@@ -2652,6 +2659,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 
     var Behavior = utils.make_class();
     Behavior.prototype = { init: init,
+			   toggle_rotation_mode: toggle_rotation_mode,
 			   turn_everything_on: turn_everything_on,
 			   turn_everything_off: turn_everything_off,
 			   toggle_node_click: toggle_node_click,
@@ -2675,6 +2683,10 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	// make an empty function that can be called as a behavior and does nothing
 	this.empty_behavior = function() {};
 
+	// rotation mode operates separately from the rest
+	this.rotation_mode_enabled = false;
+	this.rotation_drag = d3.behavior.drag();
+
 	// init empty
 	this.node_click = null;
 	this.node_drag = this.empty_behavior;
@@ -2686,17 +2698,190 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	this.turn_everything_on();
     }
     function turn_everything_on() {
+	/** Toggle everything except rotation mode.
+
+	 */
 	this.toggle_node_click(true);
 	this.toggle_node_drag(true);
 	this.toggle_text_label_click(true);
 	this.toggle_label_drag(true);
     }
     function turn_everything_off() {
+	/** Toggle everything except rotation mode.
+
+	 */
 	this.toggle_node_click(false);
 	this.toggle_node_drag(false);
 	this.toggle_text_label_click(false);
 	this.toggle_label_drag(false);
     }
+
+    function toggle_rotation_mode(on_off) {
+	/** Listen for rotation, and rotate selected nodes.
+
+	 */
+	if (on_off===undefined) {
+	    this.rotation_mode_enabled = !this.rotation_mode_enabled;
+	} else {
+	    this.rotation_mode_enabled = on_off;
+	}
+	if (this.rotation_mode_enabled) {
+	    this.map.callback_manager.run('start_rotation');
+	    
+	    var selected_nodes = this.map.get_selected_nodes(),
+		loc = average_location(selected_nodes);
+	    
+	    // show center
+	    show_center(this.map.sel, loc);
+	    
+	    var saved_center, total_angle = 0,
+		selected_node_ids = Object.keys(selected_nodes),
+		reactions = this.map.reactions,
+		nodes = this.map.nodes;
+
+	    choose_center.call(this, function(center) {
+		saved_center = center;
+		listen_for_rotation.call(this, center, function(angle) {
+		    total_angle += angle;
+		    var updated = build.rotate_nodes(selected_nodes, reactions,
+						     angle, center);
+		    this.map.draw_these_nodes(updated.node_ids);
+		    this.map.draw_these_reactions(updated.reaction_ids);
+		}.bind(this));
+	    }.bind(this));
+
+	    // add to undo/redo stack
+	    this.undo_stack.push(function() {
+		// undo
+		var these_nodes = {};
+		selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+		var updated = build.rotate_nodes(these_nodes, reactions,
+						 -total_angle, saved_center);
+		self.draw_these_nodes(updated.node_ids);
+		self.draw_these_reactions(updated.reaction_ids);
+	    }, function () {
+		// redo
+		var these_nodes = {};
+		selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+		var updated = build.rotate_nodes(these_nodes, reactions,
+						 total_angle, saved_center);
+		self.draw_these_nodes(updated.node_ids);
+		self.draw_these_reactions(updated.reaction_ids);
+	    });
+
+	} else {
+	    // turn off all listeners
+	    hide_center(this.map.sel);
+	    this.map.sel.selectAll('.node-circle').on('mousedown.center', null);
+	    this.rotation_drag.on('dragstart.rotate', null);
+	    this.rotation_drag.on('drag.rotate', null);
+	    this.rotation_drag.on('dragend.rotate', null);
+	}
+
+	// definitions
+	function show_center(sel, loc) {
+	    var s = sel.selectAll('#rotation-center')
+		    .data([0]),
+		enter = s.enter()
+		    .append('g').attr('id', 'rotation-center');
+	   
+	    enter.append('path').attr('d', 'M-22 0 L22 0')
+		.attr('class', 'rotation-center-line');
+	    enter.append('path').attr('d', 'M0 -22 L0 22')
+		.attr('class', 'rotation-center-line');
+
+	    s.attr('transform', 'translate('+loc.x+','+loc.y+')')
+		.attr('visibility', 'visible');
+
+	    s.call(d3.behavior.drag()
+		       .on('drag', function() {
+			   var cur = d3.transform(this.attr('transform')),
+			       new_loc = [d3.event.dx + cur.translate[0],
+					  d3.event.dy + cur.translate[1]];
+			   this.attr('transform', 'translate('+new_loc+')');
+		       }.bind(s)));
+	    s.on('mouseover', function() {
+		this.selectAll('path').style('stroke-width', '4px');
+	    }.bind(s));
+	    s.on('mouseout', function() {
+		this.selectAll('path').style('stroke-width', '3px');
+	    }.bind(s));
+	}
+	function hide_center(sel) {
+	    sel.select('#rotation-center')
+		.attr('visibility', 'hidden');
+	}
+	function average_location(nodes) {
+	    var xs = [], ys = [];
+	    for (var node_id in nodes) {
+		var node = nodes[node_id];
+		if (node.x !== undefined)
+		    xs.push(node.x);
+		if (node.y !== undefined)
+		    ys.push(node.y);
+	    }
+	    return { x: utils.mean(xs),
+		     y: utils.mean(ys) };
+	}			       
+	function choose_center(callback) {
+	    // set_status('Choose a node or point to rotate around.');
+	    var selection_node = this.map.sel.selectAll('.node-circle'),
+		selection_background = this.map.sel.selectAll('#mouse-node');
+	    // if the user clicks a metabolite node
+	    selection_node.on('mousedown.center', function(d) {		    
+		console.log('mousedown.center');
+		// turn off the click listeners to prepare for drag
+		selection_node.on('mousedown.center', null);
+		selection_background.on('mousedown.center', null);
+		// set_status('');
+		// find the location of the clicked metabolite
+		var center = { x: d.x, y: d.y };
+		callback(center); 
+	    });
+	    // if the user clicks a point
+	    selection_background.on('mousedown.center', function() {
+		console.log('mousedown.center');
+		// turn off the click listeners to prepare for drag
+		selection_node.on('mousedown.center', null);
+		selection_background.on('mousedown.center', null);
+		// set_status('');
+		// find the point on the background node where the user clicked
+		var center = { x: d3.mouse(this.map.sel.node())[0], 
+			       y: d3.mouse(this.map.sel.node())[1] };
+		callback(center); 
+	    }.bind(this));
+	}
+	function listen_for_rotation(center, callback) {
+	    // this.set_status('Drag to rotate.');
+	    var angle = Math.PI/2,
+		selection = this.map.sel.selectAll('#mouse-node'),
+		drag = this.rotation_drag;
+	    // drag.origin(function() { return point_of_grab; });
+	    drag.on("drag.rotate", function() { 
+		callback(angle_for_event({ dx: d3.event.dx, 
+					   dy: d3.event.dy },
+					 { x: d3.mouse(this)[0],
+					   y: d3.mouse(this)[1] },
+					 center));
+	    }).on("dragend.rotate", function() {
+		console.log('dragend.rotate');
+		drag.on('drag.rotate', null);
+		drag.on('dragend.rotate', null);
+		// set_status('');
+	    });
+	    selection.call(drag);
+
+	    // definitions
+	    function angle_for_event(displacement, point, center) {
+		var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
+		    beta = Math.atan2((point.x - center.x + displacement.dx), 
+				      (center.y - point.y - displacement.dy)),
+		    angle = beta - gamma;
+		return angle;
+	    }
+	}
+    }
+
     function toggle_node_click(on_off) {
 	/** With no argument, toggle the node click on or off.
 
@@ -3772,7 +3957,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	new_reaction_for_metabolite: new_reaction_for_metabolite,
 	cycle_primary_node: cycle_primary_node,
 	make_selected_node_primary: make_selected_node_primary,
-	rotate_selected_nodes: rotate_selected_nodes,
 	// delete
 	delete_selected: delete_selected,
 	delete_nodes: delete_nodes,
@@ -3906,6 +4090,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.membranes = [];
 	this.text_labels = {};
 	this.info = {};
+
+	// rotation mode off
+	this.rotation_on = false;
 
 	// performs some extra checks
 	this.debug = false;
@@ -5060,136 +5247,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.draw_these_nodes(nodes_to_draw);
     }
 
-    function rotate_selected_nodes() {
-	/** Request a center, then listen for rotation, and rotate nodes.
-
-	 */
-	this.callback_manager.run('start_rotation');
-	
-	var selected_nodes = this.get_selected_nodes();
-	if (selected_nodes.length < 1) return console.warn('No nodes selected');
-	
-	var saved_center, total_angle = 0,
-	    selected_node_ids = Object.keys(selected_nodes),
-	    self = this,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    end_function = function() {
-		console.log('end_rotation');
-		self.callback_manager.run('end_rotation');
-	    };
-
-	choose_center.call(this, function(center) {
-	    saved_center = center;
-	    listen_for_rotation.call(self, center, function(angle) {
-		total_angle += angle;
-		var updated = build.rotate_nodes(selected_nodes, reactions,
-						 angle, center);
-		self.draw_these_nodes(updated.node_ids);
-		self.draw_these_reactions(updated.reaction_ids);
-	    }, end_function, end_function);
-	}, end_function);
-
-	// add to undo/redo stack
-	this.undo_stack.push(function() {
-	    // undo
-	    var these_nodes = {};
-	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-	    var updated = build.rotate_nodes(these_nodes, reactions,
-						      -total_angle, saved_center);
-	    self.draw_these_nodes(updated.node_ids);
-	    self.draw_these_reactions(updated.reaction_ids);
-	}, function () {
-	    // redo
-	    var these_nodes = {};
-	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-	    var updated = build.rotate_nodes(these_nodes, reactions,
-						      total_angle, saved_center);
-	    self.draw_these_nodes(updated.node_ids);
-	    self.draw_these_reactions(updated.reaction_ids);
-	});
-
-	// definitions
-	function choose_center(callback, callback_canceled) {
-	    console.log('Choose center');
-	    set_status('Choose a node or point to rotate around.');
-	    var selection_node = this.sel.selectAll('.node-circle'),
-		selection_background = this.sel.selectAll('#mouse-node'),
-		escape_listener = this.key_manager.add_escape_listener(function() {
-		    console.log('choose_center escape');
-		    selection_node.on('mousedown.center', null);
-		    selection_background.on('mousedown.center', null);
-		    set_status('');
-		    callback_canceled();
-		});
-	    // if the user clicks a metabolite node
-	    selection_node.on('mousedown.center', function(d) {		    
-		console.log('mousedown.center');
-		// turn off the click listeners to prepare for drag
-		selection_node.on('mousedown.center', null);
-		selection_background.on('mousedown.center', null);
-		set_status('');
-		escape_listener.clear();
-		// find the location of the clicked metabolite
-		var center = { x: d.x, y: d.y };
-		callback(center); 
-	    });
-	    // if the user clicks a point
-	    selection_background.on('mousedown.center', function() {
-		console.log('mousedown.center');
-		// turn off the click listeners to prepare for drag
-		selection_node.on('mousedown.center', null);
-		selection_background.on('mousedown.center', null);
-		set_status('');
-		escape_listener.clear();
-		// find the point on the background node where the user clicked
-		var center = { x: d3.mouse(self.sel.node())[0], 
-			       y: d3.mouse(self.sel.node())[1] };
-		callback(center); 
-	    });
-	}
-	function listen_for_rotation(center, callback, callback_finished, 
-				     callback_canceled) {
-	    this.set_status('Drag to rotate.');
-	    this.zoom_container.toggle_zoom(false);
-	    var angle = Math.PI/2,
-		selection = this.sel.selectAll('#mouse-node'),
-		drag = d3.behavior.drag(),
-		escape_listener = this.key_manager.add_escape_listener(function() {
-		    console.log('listen_for_rotation escape');
-		    drag.on('drag.rotate', null);
-		    drag.on('dragend.rotate', null);
-		    set_status('');
-		    callback_canceled();
-		});
-	    // drag.origin(function() { return point_of_grab; });
-	    drag.on("drag.rotate", function() { 
-		callback(angle_for_event({ dx: d3.event.dx, 
-					   dy: d3.event.dy },
-					 { x: d3.mouse(this)[0],
-					   y: d3.mouse(this)[1] },
-					 center));
-	    }).on("dragend.rotate", function() {
-		console.log('dragend.rotate');
-		drag.on('drag.rotate', null);
-		drag.on('dragend.rotate', null);
-		set_status('');
-		escape_listener.clear();
-		callback_finished();
-	    });
-	    selection.call(drag);
-
-	    // definitions
-	    function angle_for_event(displacement, point, center) {
-		var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
-		    beta = Math.atan2((point.x - center.x + displacement.dx), 
-				      (center.y - point.y - displacement.dy)),
-		    angle = beta - gamma;
-		return angle;
-	    }
-	}
-    }
-
     function segments_and_reactions_for_nodes(nodes) {
 	/** Get segments and reactions that should be deleted with node deletions
 	 */
@@ -6078,8 +6135,10 @@ define('ui',["utils"], function(utils) {
 			.attr('role', 'presentation'),
 		    link = li.append("a")
 			.attr('href', '#'),
-		    icon = link.append('span'),
-		    text = link.append('span');
+		    icon = link.append('span')
+			.attr('class', 'dropdown-button-icon'),
+		    text = link.append('span')
+			.attr('class', 'dropdown-button-text');
 		if ('id' in button) li.attr('id', button.id);
 		if ('text' in button) text.text(" "+button.text);
 		if ('icon' in button) icon.classed(button.icon, true);
@@ -6133,6 +6192,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
     Builder.prototype = { init: init,
 			  reload_builder: reload_builder,
 			  set_mode: set_mode,
+			  view_mode: view_mode,
 			  build_mode: build_mode,
 			  brush_mode: brush_mode,
 			  zoom_mode: zoom_mode,
@@ -6278,20 +6338,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	// set up the reaction input with complete.ly
 	this.reaction_input = Input(this.o.selection, this.map, this.zoom_container);
 
-	if (this.o.enable_editing) {
-	    // set up the Brush
-	    this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
+	// set up the Brush
+	this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
 
-	    // set up the modes
-	    this._setup_modes(this.map, this.brush, this.zoom_container);
-
-	    // start in zoom mode
-	    this.zoom_mode();
-	} else {
-	    // turn off the behaviors
-	    this.map.behavior.turn_everything_off();
-	    this.map.canvas.toggle_resize(false);
-	}
+	// set up the modes
+	this._setup_modes(this.map, this.brush, this.zoom_container);
 	
 	// set up key manager
 	var keys = this._get_keys(this.map, this.reaction_input, this.brush, this.o.enable_editing);
@@ -6326,6 +6377,12 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    }
 	}
 
+	// start in zoom mode for builder, view mode for viewer
+	if (this.o.enable_editing)
+	    this.zoom_mode();
+	else
+	    this.view_mode();
+
 	// draw
 	this.map.draw_everything();
 
@@ -6336,26 +6393,33 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
     function set_mode(mode) {
 	this.reaction_input.toggle(mode=='build');
 	this.brush.toggle(mode=='brush');
-	this.zoom_container.toggle_zoom(mode=='zoom');
-	this.map.canvas.toggle_resize(mode=='zoom');
-	if (mode=='rotate') this.map.rotate_selected_nodes();
-	this.callback_manager.run('set_mode', mode);
+	this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
+	this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
+	this.map.behavior.toggle_rotation_mode(mode=='rotate');
+	if (mode=='brush') this.map.behavior.turn_everything_on();
+	else this.map.behavior.turn_everything_off();
+	this.map.draw_everything();
+	// this.callback_manager.run('set_mode', mode);
+    }
+    function view_mode() {
+	this.callback_manager.run('view_mode');
+	this.set_mode('view');
     }
     function build_mode() {
-	this.set_mode('build');
 	this.callback_manager.run('build_mode');
+	this.set_mode('build');
     }	
     function brush_mode() {
-	this.set_mode('brush');
 	this.callback_manager.run('brush_mode');
+	this.set_mode('brush');
     }
     function zoom_mode() {
-	this.set_mode('zoom');
 	this.callback_manager.run('zoom_mode');
+	this.set_mode('zoom');
     }
     function rotate_mode() {
-	this.set_mode('rotate');
 	this.callback_manager.run('rotate_mode');
+	this.set_mode('rotate');
     }	
     function _setup_menu(selection, map, zoom_container, key_manager, keys,
 			 enable_editing) {
@@ -6442,9 +6506,15 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			})
 		.button({ key: keys.extent_canvas,
 			  //icon: "glyphicon glyphicon-resize-full",
-			  text: "Zoom to canvas (Ctrl 1)" });
-
-
+			  text: "Zoom to canvas (Ctrl 1)" })
+		.button({ key: keys.toggle_beziers,
+			  id: "bezier-button",
+			  text: "Show control points (b)"});
+	map.callback_manager
+	    .set('toggle_beziers.button', function(on_off) {
+		menu.select('#bezier-button').select('.dropdown-button-text')
+		    .text((on_off ? 'Hide' : 'Show') + ' control points (b)');
+	    });
 	
 	var button_panel = selection.append("ul")
 		.attr("class", "nav nav-pills nav-stacked")
@@ -6514,11 +6584,6 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	});
 
 
-	// var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
-	// map.callback_manager
-	//     .set('toggle_beziers.button', function(on_off) {
-	// 	b.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
-	//     });
 
 	// new_button(sel, keys.direction_arrow_left, "←");
 	// new_button(sel, keys.direction_arrow_up, "↑");

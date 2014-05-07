@@ -52,8 +52,10 @@ define(["utils"], function(utils) {
 			.attr('role', 'presentation'),
 		    link = li.append("a")
 			.attr('href', '#'),
-		    icon = link.append('span'),
-		    text = link.append('span');
+		    icon = link.append('span')
+			.attr('class', 'dropdown-button-icon'),
+		    text = link.append('span')
+			.attr('class', 'dropdown-button-text');
 		if ('id' in button) li.attr('id', button.id);
 		if ('text' in button) text.text(" "+button.text);
 		if ('icon' in button) icon.classed(button.icon, true);

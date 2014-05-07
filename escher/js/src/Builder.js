@@ -10,6 +10,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
     Builder.prototype = { init: init,
 			  reload_builder: reload_builder,
 			  set_mode: set_mode,
+			  view_mode: view_mode,
 			  build_mode: build_mode,
 			  brush_mode: brush_mode,
 			  zoom_mode: zoom_mode,
@@ -155,17 +156,11 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	// set up the reaction input with complete.ly
 	this.reaction_input = Input(this.o.selection, this.map, this.zoom_container);
 
-	if (this.o.enable_editing) {
-	    // set up the Brush
-	    this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
+	// set up the Brush
+	this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
 
-	    // set up the modes
-	    this._setup_modes(this.map, this.brush, this.zoom_container);
-	} else {
-	    // turn off the behaviors
-	    this.map.behavior.turn_everything_off();
-	    this.map.canvas.toggle_resize(false);
-	}
+	// set up the modes
+	this._setup_modes(this.map, this.brush, this.zoom_container);
 	
 	// set up key manager
 	var keys = this._get_keys(this.map, this.reaction_input, this.brush, this.o.enable_editing);
@@ -200,10 +195,14 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    }
 	}
 
+	// start in zoom mode for builder, view mode for viewer
+	if (this.o.enable_editing)
+	    this.zoom_mode();
+	else
+	    this.view_mode();
+
 	// draw
 	this.map.draw_everything();
-	// start in zoom mode
-	this.zoom_mode();
 
 	// run the load callback
 	if (this.o.on_load!==null)
@@ -212,26 +211,33 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
     function set_mode(mode) {
 	this.reaction_input.toggle(mode=='build');
 	this.brush.toggle(mode=='brush');
-	this.zoom_container.toggle_zoom(mode=='zoom');
-	this.map.canvas.toggle_resize(mode=='zoom');
+	this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
+	this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
 	this.map.behavior.toggle_rotation_mode(mode=='rotate');
-	this.callback_manager.run('set_mode', mode);
+	if (mode=='brush') this.map.behavior.turn_everything_on();
+	else this.map.behavior.turn_everything_off();
+	this.map.draw_everything();
+	// this.callback_manager.run('set_mode', mode);
+    }
+    function view_mode() {
+	this.callback_manager.run('view_mode');
+	this.set_mode('view');
     }
     function build_mode() {
-	this.set_mode('build');
 	this.callback_manager.run('build_mode');
+	this.set_mode('build');
     }	
     function brush_mode() {
-	this.set_mode('brush');
 	this.callback_manager.run('brush_mode');
+	this.set_mode('brush');
     }
     function zoom_mode() {
-	this.set_mode('zoom');
 	this.callback_manager.run('zoom_mode');
+	this.set_mode('zoom');
     }
     function rotate_mode() {
-	this.set_mode('rotate');
 	this.callback_manager.run('rotate_mode');
+	this.set_mode('rotate');
     }	
     function _setup_menu(selection, map, zoom_container, key_manager, keys,
 			 enable_editing) {
@@ -318,9 +324,15 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			})
 		.button({ key: keys.extent_canvas,
 			  //icon: "glyphicon glyphicon-resize-full",
-			  text: "Zoom to canvas (Ctrl 1)" });
-
-
+			  text: "Zoom to canvas (Ctrl 1)" })
+		.button({ key: keys.toggle_beziers,
+			  id: "bezier-button",
+			  text: "Show control points (b)"});
+	map.callback_manager
+	    .set('toggle_beziers.button', function(on_off) {
+		menu.select('#bezier-button').select('.dropdown-button-text')
+		    .text((on_off ? 'Hide' : 'Show') + ' control points (b)');
+	    });
 	
 	var button_panel = selection.append("ul")
 		.attr("class", "nav nav-pills nav-stacked")
@@ -390,11 +402,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	});
 
 
-	// var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
-	// map.callback_manager
-	//     .set('toggle_beziers.button', function(on_off) {
-	// 	b.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
-	//     });
 
 	// new_button(sel, keys.direction_arrow_left, "←");
 	// new_button(sel, keys.direction_arrow_up, "↑");
