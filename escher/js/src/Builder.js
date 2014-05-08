@@ -214,8 +214,12 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
 	this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
 	this.map.behavior.toggle_rotation_mode(mode=='rotate');
-	if (mode=='brush') this.map.behavior.turn_everything_on();
-	else this.map.behavior.turn_everything_off();
+	this.map.behavior.toggle_node_click(mode=='build' || mode=='brush');
+	this.map.behavior.toggle_node_drag(mode=='brush');
+	this.map.behavior.toggle_text_label_click(mode=='brush');
+	this.map.behavior.toggle_label_drag(mode=='brush');
+	if (mode=='view')
+	    this.map.select_none();
 	this.map.draw_everything();
 	// this.callback_manager.run('set_mode', mode);
     }
@@ -301,7 +305,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		    .divider()
 		    .button({ key: keys.delete,
 			      // icon: "glyphicon glyphicon-trash",
-			      text: "Delete (Ctrl del)" })
+			      text: "Delete (Ctrl Del)" })
 		    .button({ key: keys.undo, 
 			      text: "Undo (Ctrl z)" })
 		    .button({ key: keys.redo,
@@ -309,7 +313,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		    .button({ key: keys.make_primary,
 			      text: "Make primary metabolite (p)" })
 		    .button({ key: keys.cycle_primary,
-			      text: "Cycle primary metabolite (c)" });
+			      text: "Cycle primary metabolite (c)" })
+		    .button({ key: keys.select_none,
+			      text: "Select none (Ctrl Shift a)" });
 	}
 
 	// view dropdown
@@ -550,7 +556,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			fn: map.undo_stack.undo },
 		redo: { key: 90, modifiers: { control: true, shift: true },
 			target: map.undo_stack,
-			fn: map.undo_stack.redo }
+			fn: map.undo_stack.redo },
+		select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
+			       target: map,
+			       fn: map.select_none }
 	    });
 	}
 	return keys;

@@ -42,6 +42,8 @@ define(["utils", "build"], function(utils, build) {
 
 	// init empty
 	this.node_click = null;
+	this.node_mouseover = null;
+	this.node_mouseout = null;
 	this.node_drag = this.empty_behavior;
 	this.bezier_drag = this.empty_behavior;
 	this.reaction_label_drag = this.empty_behavior;
@@ -248,8 +250,20 @@ define(["utils", "build"], function(utils, build) {
 		map.select_metabolite(this, d);
 		d3.event.stopPropagation();
 	    };
+	    this.node_mouseover = function(d) {	   
+		d3.select(this).style('stroke-width', null);
+		var current = parseFloat(d3.select(this).style('stroke-width'));
+		d3.select(this).style('stroke-width', current*2+'px');
+	    };
+	    this.node_mouseout = function(d) {
+		d3.select(this).style('stroke-width', null);
+	    };
 	} else {
 	    this.node_click = null;
+	    this.node_mouseover = null;
+	    this.node_mouseout = null;
+	    this.map.sel.select('#nodes')
+		.selectAll('.node-circle').style('stroke-width', null);
 	}
     }
     function toggle_text_label_click(on_off) {

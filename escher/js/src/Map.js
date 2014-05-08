@@ -24,6 +24,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	set_metabolite_data: set_metabolite_data,
 	clear_map: clear_map,
 	// selection
+	select_none: select_none,
 	select_metabolite: select_metabolite,
 	select_metabolite_with_id: select_metabolite_with_id,
 	select_single_node: select_single_node,
@@ -377,6 +378,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    default_reaction_color = this.default_reaction_color,
 	    bezier_drag_behavior = this.behavior.bezier_drag,
 	    node_click_fn = this.behavior.node_click,
+	    node_mouseover_fn = this.behavior.node_mouseover,
+	    node_mouseout_fn = this.behavior.node_mouseout,
 	    node_drag_behavior = this.behavior.node_drag,
 	    reaction_label_drag = this.behavior.reaction_label_drag,
 	    node_label_drag = this.behavior.node_label_drag,
@@ -412,6 +415,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 								     has_metabolite_data,
 								     metabolite_data_styles,
 								     node_click_fn,
+								     node_mouseover_fn,
+								     node_mouseout_fn,
 								     node_drag_behavior,
 								     node_label_drag); });
 
@@ -489,6 +494,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    reactions = this.reactions,
 	    nodes = this.nodes,
 	    node_click_fn = this.behavior.node_click,
+	    node_mouseover_fn = this.behavior.node_mouseover,
+	    node_mouseout_fn = this.behavior.node_mouseout,
 	    node_drag_behavior = this.behavior.node_drag,
 	    node_label_drag = this.behavior.node_label_drag,
 	    metabolite_data_styles = this.metabolite_data_styles,
@@ -516,7 +523,10 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
         // update: update when necessary
         sel.call(function(sel) { return draw.update_node(sel, scale, has_metabolite_data, metabolite_data_styles, 
-							 node_click_fn, node_drag_behavior,
+							 node_click_fn,
+							 node_mouseover_fn,
+							 node_mouseout_fn,
+							 node_drag_behavior,
 							 node_label_drag); });
 
         // exit
@@ -760,6 +770,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    .each(function(d) { selected_text_labels[d.text_label_id] = self.text_labels[d.text_label_id]; });
 	return selected_text_labels;
     }	
+
+    function select_none() {
+	this.sel.selectAll('.selected')
+	    .classed('selected', false);
+    }
+
     function select_metabolite_with_id(node_id) {
 	// deselect all text labels
 	this.deselect_text_labels();
@@ -785,8 +801,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var node_selection = this.sel.select('#nodes').selectAll('.node'), 
 	    shift_key_on = this.key_manager.held_keys.shift;
 	if (shift_key_on) {
-	    this.sel.select(sel.parentNode)
-		.classed("selected", !this.sel.select(sel.parentNode).classed("selected"));
+	    d3.select(sel.parentNode)
+		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
 	}
         else node_selection.classed("selected", function(p) { return d === p; });
 	var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),

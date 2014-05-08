@@ -25,10 +25,12 @@
     font-size: 50px;
 }
 .node-circle {
+    stroke-width: 2px;
     fill: none;	
     stroke: rgb(50, 50, 50);
 }
 .selected .node-circle{
+    stroke-width: 3px;
     stroke: rgb(20, 113, 199);
 }
 .selected.text-label {

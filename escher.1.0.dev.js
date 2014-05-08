@@ -2109,14 +2109,8 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	    .attr('class', function(d) {
 		if (d.node_type=='metabolite') return 'node-circle metabolite-circle';
 		else return 'node-circle';
-	    })		
-            .style('stroke-width', String(2)+'px')
-	    .on("mouseover", function(d) {
-		d3.select(this).style('stroke-width', String(3)+'px');
-	    })
-	    .on("mouseout", function(d) {
-		d3.select(this).style('stroke-width', String(2)+'px');
 	    });
+            // .style('stroke-width', '2px');
 
         g.filter(function(d) { return d.node_type=='metabolite'; })
 	    .append('text')
@@ -2125,10 +2119,10 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
     }
 
     function update_node(update_selection, scale, has_metabolite_data, metabolite_data_styles,
-			 click_fn, drag_behavior, label_drag_behavior) {
+			 click_fn, mouseover_fn, mouseout_fn, drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'has_metabolite_data',
-			       'metabolite_data_styles', 'click_fn',
+			       'metabolite_data_styles', 'click_fn', 'mouseover_fn', 'mouseout_fn',
 			       'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
@@ -2162,7 +2156,9 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 		})
 		.call(turn_off_drag)
 		.call(drag_behavior)
-		.on("click", click_fn);
+		.on("click", click_fn)
+		.on('mouseover', mouseover_fn)
+		.on('mouseout', mouseout_fn);
 
         update_selection
             .select('.node-label')
@@ -2689,6 +2685,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
 
 	// init empty
 	this.node_click = null;
+	this.node_mouseover = null;
+	this.node_mouseout = null;
 	this.node_drag = this.empty_behavior;
 	this.bezier_drag = this.empty_behavior;
 	this.reaction_label_drag = this.empty_behavior;
@@ -2895,8 +2893,20 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		map.select_metabolite(this, d);
 		d3.event.stopPropagation();
 	    };
+	    this.node_mouseover = function(d) {	   
+		d3.select(this).style('stroke-width', null);
+		var current = parseFloat(d3.select(this).style('stroke-width'));
+		d3.select(this).style('stroke-width', current*2+'px');
+	    };
+	    this.node_mouseout = function(d) {
+		d3.select(this).style('stroke-width', null);
+	    };
 	} else {
 	    this.node_click = null;
+	    this.node_mouseover = null;
+	    this.node_mouseout = null;
+	    this.map.sel.select('#nodes')
+		.selectAll('.node-circle').style('stroke-width', null);
 	}
     }
     function toggle_text_label_click(on_off) {
@@ -3946,6 +3956,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	set_metabolite_data: set_metabolite_data,
 	clear_map: clear_map,
 	// selection
+	select_none: select_none,
 	select_metabolite: select_metabolite,
 	select_metabolite_with_id: select_metabolite_with_id,
 	select_single_node: select_single_node,
@@ -4299,6 +4310,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    default_reaction_color = this.default_reaction_color,
 	    bezier_drag_behavior = this.behavior.bezier_drag,
 	    node_click_fn = this.behavior.node_click,
+	    node_mouseover_fn = this.behavior.node_mouseover,
+	    node_mouseout_fn = this.behavior.node_mouseout,
 	    node_drag_behavior = this.behavior.node_drag,
 	    reaction_label_drag = this.behavior.reaction_label_drag,
 	    node_label_drag = this.behavior.node_label_drag,
@@ -4334,6 +4347,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 								     has_metabolite_data,
 								     metabolite_data_styles,
 								     node_click_fn,
+								     node_mouseover_fn,
+								     node_mouseout_fn,
 								     node_drag_behavior,
 								     node_label_drag); });
 
@@ -4411,6 +4426,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    reactions = this.reactions,
 	    nodes = this.nodes,
 	    node_click_fn = this.behavior.node_click,
+	    node_mouseover_fn = this.behavior.node_mouseover,
+	    node_mouseout_fn = this.behavior.node_mouseout,
 	    node_drag_behavior = this.behavior.node_drag,
 	    node_label_drag = this.behavior.node_label_drag,
 	    metabolite_data_styles = this.metabolite_data_styles,
@@ -4438,7 +4455,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
         // update: update when necessary
         sel.call(function(sel) { return draw.update_node(sel, scale, has_metabolite_data, metabolite_data_styles, 
-							 node_click_fn, node_drag_behavior,
+							 node_click_fn,
+							 node_mouseover_fn,
+							 node_mouseout_fn,
+							 node_drag_behavior,
 							 node_label_drag); });
 
         // exit
@@ -4682,6 +4702,12 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    .each(function(d) { selected_text_labels[d.text_label_id] = self.text_labels[d.text_label_id]; });
 	return selected_text_labels;
     }	
+
+    function select_none() {
+	this.sel.selectAll('.selected')
+	    .classed('selected', false);
+    }
+
     function select_metabolite_with_id(node_id) {
 	// deselect all text labels
 	this.deselect_text_labels();
@@ -4707,8 +4733,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	var node_selection = this.sel.select('#nodes').selectAll('.node'), 
 	    shift_key_on = this.key_manager.held_keys.shift;
 	if (shift_key_on) {
-	    this.sel.select(sel.parentNode)
-		.classed("selected", !this.sel.select(sel.parentNode).classed("selected"));
+	    d3.select(sel.parentNode)
+		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
 	}
         else node_selection.classed("selected", function(p) { return d === p; });
 	var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),
@@ -5943,13 +5969,17 @@ define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
 	}
 	this.reactions = {};
 	for (var i=0, l=model_data.reactions.length; i<l; i++) {
-	    var r = model_data.reactions[i];
-	    this.reactions[r.id] = r;
+	    var r = model_data.reactions[i],
+		the_id = r.id; 
+	    delete r.id;
+	    this.reactions[the_id] = r;
 	}
 	this.metabolites = {};
 	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
-	    var r = model_data.metabolites[i];
-	    this.metabolites[r.id] = r;
+	    var r = model_data.metabolites[i],
+		the_id = r.id;
+	    delete r.id;
+	    this.metabolites[the_id] = r;
 	}
 
 	// get cofactors if preset
@@ -6049,27 +6079,32 @@ define('Brush',["utils"], function(utils) {
     }	
     function setup_selection_brush() {
 	var selection = this.brush_sel, 
-	    node_selection = this.map.sel.select('#nodes').selectAll('.node'),
+	    nodes_selection = this.map.sel.select('#nodes'),
 	    size_and_location = this.map.canvas.size_and_location(),
-	    map = this.map,
 	    width = size_and_location.width,
 	    height = size_and_location.height,
 	    x = size_and_location.x,
-	    y = size_and_location.y,
-	    node_ids = [];
-	node_selection.each(function(d) { node_ids.push(d.node_id); });
+	    y = size_and_location.y;
 	var brush_fn = d3.svg.brush()
 		.x(d3.scale.identity().domain([x, x+width]))
 		.y(d3.scale.identity().domain([y, y+height]))
-		.on("brush", function() {
-		    var extent = d3.event.target.extent();
-		    node_selection
-			.classed("selected", function(d) { 
-			    var sx = d.x, sy = d.y;
-			    return extent[0][0] <= sx && sx < extent[1][0]
-				&& extent[0][1] <= sy && sy < extent[1][1];
-			});
-		})        
+		.on("brush", function(key_manager) {	    
+		    var shift_key_on = key_manager.held_keys.shift,
+			extent = d3.event.target.extent(),
+			selection;
+		    if (shift_key_on) {
+			// when shift is pressed, ignore the currently selected nodes
+			selection = nodes_selection.selectAll('.node:not(.selected)');
+		    } else {
+			// otherwise, brush all nodes
+			selection = nodes_selection.selectAll('.node');
+		    }
+		    selection.classed("selected", function(d) { 
+			var sx = d.x, sy = d.y;
+			return extent[0][0] <= sx && sx < extent[1][0]
+			    && extent[0][1] <= sy && sy < extent[1][1];
+		    });
+		}.bind(null, this.map.key_manager))
 		.on("brushend", function() {
 		    d3.event.target.clear();
 		    d3.select(this).call(d3.event.target);
@@ -6396,8 +6431,12 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
 	this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
 	this.map.behavior.toggle_rotation_mode(mode=='rotate');
-	if (mode=='brush') this.map.behavior.turn_everything_on();
-	else this.map.behavior.turn_everything_off();
+	this.map.behavior.toggle_node_click(mode=='build' || mode=='brush');
+	this.map.behavior.toggle_node_drag(mode=='brush');
+	this.map.behavior.toggle_text_label_click(mode=='brush');
+	this.map.behavior.toggle_label_drag(mode=='brush');
+	if (mode=='view')
+	    this.map.select_none();
 	this.map.draw_everything();
 	// this.callback_manager.run('set_mode', mode);
     }
@@ -6483,7 +6522,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		    .divider()
 		    .button({ key: keys.delete,
 			      // icon: "glyphicon glyphicon-trash",
-			      text: "Delete (Ctrl del)" })
+			      text: "Delete (Ctrl Del)" })
 		    .button({ key: keys.undo, 
 			      text: "Undo (Ctrl z)" })
 		    .button({ key: keys.redo,
@@ -6491,7 +6530,9 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		    .button({ key: keys.make_primary,
 			      text: "Make primary metabolite (p)" })
 		    .button({ key: keys.cycle_primary,
-			      text: "Cycle primary metabolite (c)" });
+			      text: "Cycle primary metabolite (c)" })
+		    .button({ key: keys.select_none,
+			      text: "Select none (Ctrl Shift a)" });
 	}
 
 	// view dropdown
@@ -6732,7 +6773,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			fn: map.undo_stack.undo },
 		redo: { key: 90, modifiers: { control: true, shift: true },
 			target: map.undo_stack,
-			fn: map.undo_stack.redo }
+			fn: map.undo_stack.redo },
+		select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
+			       target: map,
+			       fn: map.select_none }
 	    });
 	}
 	return keys;
