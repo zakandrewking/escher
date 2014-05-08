@@ -1,11 +1,11 @@
 define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui) {
-    // NOTE
-    // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
-    // only necessary for selectAll()
-    // .datum(function() {
-    //     return this.parentNode.__data__;
-    // })
+    /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
+     Builder(options)
+
+     options: An object.
+
+     */
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
 			  reload_builder: reload_builder,
@@ -28,7 +28,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	var o = utils.set_options(options, {
 	    margins: {top: 0, right: 0, bottom: 0, left: 0},
 	    selection: d3.select("body").append("div"),
-	    selection_is_svg: false,
 	    fillScreen: false,
 	    enable_editing: true,
 	    enable_menu: true,
@@ -50,15 +49,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    debug: false,
 	    starting_reaction: 'GLCtex'
 	});
-	
-	// TODO make each option is neither {}, undefined, nor null
-	// for all cases, set to null to boolean(option) === false
 
-
-	if (o.selection_is_svg) {
-	    // TODO fix this
-	    console.error("Builder does not support placement within svg elements");
-	    return;
+	if (utils.check_for_parent_tag(o.selection, 'svg')) {
+	    throw Error("Builder cannot be placed within an svg node "+
+			"becuase UI elements are html-based.");
 	}
 
 	this.o = o;

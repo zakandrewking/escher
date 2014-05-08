@@ -30,7 +30,8 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     compartmentalize: compartmentalize,
 	     decompartmentalize: decompartmentalize,
 	     check_r: check_r,
-	     mean: mean };
+	     mean: mean,
+	     check_for_parent_tag: check_for_parent_tag };
 
     // definitions
     function set_options(options, defaults) {
@@ -507,5 +508,25 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	var sum = array.reduce(function(a, b) { return a + b; });
 	var avg = sum / array.length;
 	return avg;
+    }
+
+    function check_for_parent_tag(el, tag) {
+	/** Check that the selection has the given parent tag.
+
+	 el: A d3 selection or node.
+
+	 tag: A tag name (case insensitive)
+
+	 */
+	// make sure it is a node
+	if (el instanceof Array)
+	    el = el.node();
+	while (el.parentNode !== null) {
+	    el = el.parentNode;
+	    if (el.tagName === undefined) continue;
+	    if (el.tagName.toLowerCase() === tag.toLowerCase())
+		return true;
+	}
+	return false;
     }
 });

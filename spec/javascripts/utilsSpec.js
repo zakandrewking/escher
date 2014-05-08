@@ -20,4 +20,11 @@ describe('utils', function() {
 						   b: [2, 3],
 						   c: [null, 4] });
     });
+
+    it("check_for_parent_tag", function() {
+	var sel = d3.select('body').append('div');
+	expect(utils.check_for_parent_tag(sel, 'body')).toBe(true);
+	expect(utils.check_for_parent_tag(sel, 'BODY')).toBe(true);
+	expect(utils.check_for_parent_tag(sel, 'svg')).toBe(false);
+    });
 });

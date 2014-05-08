@@ -816,7 +816,8 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	     compartmentalize: compartmentalize,
 	     decompartmentalize: decompartmentalize,
 	     check_r: check_r,
-	     mean: mean };
+	     mean: mean,
+	     check_for_parent_tag: check_for_parent_tag };
 
     // definitions
     function set_options(options, defaults) {
@@ -1293,6 +1294,26 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	var sum = array.reduce(function(a, b) { return a + b; });
 	var avg = sum / array.length;
 	return avg;
+    }
+
+    function check_for_parent_tag(el, tag) {
+	/** Check that the selection has the given parent tag.
+
+	 el: A d3 selection or node.
+
+	 tag: A tag name (case insensitive)
+
+	 */
+	// make sure it is a node
+	if (el instanceof Array)
+	    el = el.node();
+	while (el.parentNode !== null) {
+	    el = el.parentNode;
+	    if (el.tagName === undefined) continue;
+	    if (el.tagName.toLowerCase() === tag.toLowerCase())
+		return true;
+	}
+	return false;
     }
 });
 
@@ -6216,13 +6237,13 @@ define('ui',["utils"], function(utils) {
 
 
 define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui) {
-    // NOTE
-    // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
-    // only necessary for selectAll()
-    // .datum(function() {
-    //     return this.parentNode.__data__;
-    // })
+    /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
+     Builder(options)
+
+     options: An object.
+
+     */
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
 			  reload_builder: reload_builder,
@@ -6245,7 +6266,6 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	var o = utils.set_options(options, {
 	    margins: {top: 0, right: 0, bottom: 0, left: 0},
 	    selection: d3.select("body").append("div"),
-	    selection_is_svg: false,
 	    fillScreen: false,
 	    enable_editing: true,
 	    enable_menu: true,
@@ -6267,15 +6287,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    debug: false,
 	    starting_reaction: 'GLCtex'
 	});
-	
-	// TODO make each option is neither {}, undefined, nor null
-	// for all cases, set to null to boolean(option) === false
 
-
-	if (o.selection_is_svg) {
-	    // TODO fix this
-	    console.error("Builder does not support placement within svg elements");
-	    return;
+	if (utils.check_for_parent_tag(o.selection, 'svg')) {
+	    throw Error("Builder cannot be placed within an svg node "+
+			"becuase UI elements are html-based.");
 	}
 
 	this.o = o;

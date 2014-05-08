@@ -20,7 +20,7 @@ if 'clean' in argv:
     call(['rm', '-r', 'Escher.egg-info'])
     print 'done cleaning'
 
-if 'test' in argv or 'build' in argv or 'install' in argv:
+if 'test' in argv or 'build' in argv or 'install' in argv or 'jasmine' in argv:
     call(['bin/r.js', '-o', 'escher/js/build/build.js',
           'out=%s'%escher, 'optimize=none'])
     
@@ -39,6 +39,7 @@ if 'install' in argv:
           data_files=[('escher/lib', [escher, escher_min,
                                       'lib/d3.v3.js', 'lib/d3.v3.min.js'])])
 
-if 'test' in argv:
+if 'test' in argv or 'pytest' in argv:
     call(['py.test'])
+if 'test' in argv or 'jasmine' in argv:
     call(['jasmine', '--port=%d' % port])
