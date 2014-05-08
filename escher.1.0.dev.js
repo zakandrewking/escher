@@ -1634,12 +1634,12 @@ return function(container, config) {
         if (keyCode == 33) { return; } // page up (do nothing)
         if (keyCode == 34) { return; } // page down (do nothing);
         
-        if (keyCode == 27) { //escape
-            dropDownController.hide();
-            txtHint.value = txtInput.value; // ensure that no hint is left.
-            txtInput.focus(); 
-            return; 
-        }
+        // if (keyCode == 27) { //escape
+        //     dropDownController.hide();
+        //     txtHint.value = txtInput.value; // ensure that no hint is left.
+        //     txtInput.focus(); 
+        //     return; 
+        // }
         
         if (keyCode == 39 || keyCode == 35 || keyCode == 9) { // right,  end, tab  (autocomplete triggered)
         	if (keyCode == 9) { // for tabs we need to ensure that we override the default behaviour: move to the next focusable HTML-element 
@@ -3712,7 +3712,6 @@ define('KeyManager',["utils"], function(utils) {
 	selection.on('keydown.esc', function() {
 	    if (d3.event.keyCode==27) { // esc
 		callback();
-		selection.on('keydown.esc', null);
 	    }
 	});
 	return { clear: function() { selection.on('keydown.esc', null); } };
@@ -5676,6 +5675,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 			setup_zoom_callbacks: setup_zoom_callbacks,
 			is_visible: is_visible,
 			toggle: toggle,
+			hide_dropdown: hide_dropdown,
 			place_at_selected: place_at_selected,
 			place: place,
 			reload_at_selected: reload_at_selected,
@@ -5693,7 +5693,8 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	d3.select(c.input)
 	// .attr('placeholder', 'Reaction ID -- Flux')
 	    .on('input', function() {
-		this.value = this.value.replace("/","")
+		this.value = this.value
+		    // .replace("/","")
 		    .replace(" ","")
 		    .replace("\\","")
 		    .replace("<","");
@@ -5703,7 +5704,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	// close button
 	var self = this;
 	new_sel.append('button').attr('class', "button input-close-button")
-	    .text("×").on('click', function() { self.toggle(false); });;
+	    .text("×").on('click', function() { this.hide_dropdown(); }.bind(this));
 
 	if (map instanceof Map) {
 	    this.map = map;
@@ -5759,6 +5760,9 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	    this.reload_at_selected();
 	    this.map.set_status('Click on the canvas or an existing metabolite');
 	    this.callback_manager.run('show_reaction_input');
+	    // escape key
+	    this.escape = this.map.key_manager
+		.add_escape_listener(function() { this.hide_dropdown(); }.bind(this));
 	} else {
 	    this.toggle_start_reaction_listener(false);
 	    this.selection.style("display", "none");
@@ -5766,9 +5770,16 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
             this.completely.hideDropDown();
 	    this.map.set_status(null);
 	    this.callback_manager.run('hide_reaction_input');
+	    if (this.escape)
+		this.escape.clear();
+	    this.escape = null;
 	}
     }
-
+    function hide_dropdown() {
+	this.selection.style("display", "none");
+        this.completely.hideDropDown();
+        this.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+    }
     function place_at_selected() {
         /** Place autocomplete box at the first selected node.
 	 
@@ -6524,7 +6535,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    var edit_menu = ui.dropdown_menu(menu, 'Edit', true)	
 		    .button({ key: keys.build_mode,
 			      id: 'build-mode-menu-button',
-			      text: "Build mode (/)" })
+			      text: "Build mode (n)" })
 		    .button({ key: keys.zoom_mode,
 			      id: 'zoom-mode-menu-button',
 			      text: "Zoom + Pan mode (z)" })
@@ -6582,7 +6593,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.button({ key: keys.build_mode,
 			  id: 'build-mode-button',
 			  icon: "glyphicon glyphicon-plus",
-			  tooltip: "Build mode (/)" })
+			  tooltip: "Build mode (n)" })
 		.button({ key: keys.zoom_mode,
 			  id: 'zoom-mode-button',
 			  icon: "glyphicon glyphicon-move",
@@ -6732,9 +6743,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	};
 	if (enable_editing) {
 	    utils.extend(keys, {
-		build_mode: { key: 191, // forward slash '/'
+		build_mode: { key: 78, // n
 			      target: this,
-			      fn: this.build_mode },
+			      fn: this.build_mode,
+			      ignore_with_input: true },
 		zoom_mode: { key: 90, // z 
 			     target: this,
 			     fn: this.zoom_mode,

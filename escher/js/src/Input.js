@@ -9,6 +9,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 			setup_zoom_callbacks: setup_zoom_callbacks,
 			is_visible: is_visible,
 			toggle: toggle,
+			hide_dropdown: hide_dropdown,
 			place_at_selected: place_at_selected,
 			place: place,
 			reload_at_selected: reload_at_selected,
@@ -26,7 +27,8 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	d3.select(c.input)
 	// .attr('placeholder', 'Reaction ID -- Flux')
 	    .on('input', function() {
-		this.value = this.value.replace("/","")
+		this.value = this.value
+		    // .replace("/","")
 		    .replace(" ","")
 		    .replace("\\","")
 		    .replace("<","");
@@ -36,7 +38,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	// close button
 	var self = this;
 	new_sel.append('button').attr('class', "button input-close-button")
-	    .text("×").on('click', function() { self.toggle(false); });;
+	    .text("×").on('click', function() { this.hide_dropdown(); }.bind(this));
 
 	if (map instanceof Map) {
 	    this.map = map;
@@ -92,6 +94,9 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	    this.reload_at_selected();
 	    this.map.set_status('Click on the canvas or an existing metabolite');
 	    this.callback_manager.run('show_reaction_input');
+	    // escape key
+	    this.escape = this.map.key_manager
+		.add_escape_listener(function() { this.hide_dropdown(); }.bind(this));
 	} else {
 	    this.toggle_start_reaction_listener(false);
 	    this.selection.style("display", "none");
@@ -99,9 +104,16 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
             this.completely.hideDropDown();
 	    this.map.set_status(null);
 	    this.callback_manager.run('hide_reaction_input');
+	    if (this.escape)
+		this.escape.clear();
+	    this.escape = null;
 	}
     }
-
+    function hide_dropdown() {
+	this.selection.style("display", "none");
+        this.completely.hideDropDown();
+        this.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+    }
     function place_at_selected() {
         /** Place autocomplete box at the first selected node.
 	 

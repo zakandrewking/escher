@@ -122,7 +122,6 @@ define(["utils"], function(utils) {
 	selection.on('keydown.esc', function() {
 	    if (d3.event.keyCode==27) { // esc
 		callback();
-		selection.on('keydown.esc', null);
 	    }
 	});
 	return { clear: function() { selection.on('keydown.esc', null); } };

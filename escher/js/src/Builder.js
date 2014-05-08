@@ -286,7 +286,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    var edit_menu = ui.dropdown_menu(menu, 'Edit', true)	
 		    .button({ key: keys.build_mode,
 			      id: 'build-mode-menu-button',
-			      text: "Build mode (/)" })
+			      text: "Build mode (n)" })
 		    .button({ key: keys.zoom_mode,
 			      id: 'zoom-mode-menu-button',
 			      text: "Zoom + Pan mode (z)" })
@@ -344,7 +344,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		.button({ key: keys.build_mode,
 			  id: 'build-mode-button',
 			  icon: "glyphicon glyphicon-plus",
-			  tooltip: "Build mode (/)" })
+			  tooltip: "Build mode (n)" })
 		.button({ key: keys.zoom_mode,
 			  id: 'zoom-mode-button',
 			  icon: "glyphicon glyphicon-move",
@@ -494,9 +494,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	};
 	if (enable_editing) {
 	    utils.extend(keys, {
-		build_mode: { key: 191, // forward slash '/'
+		build_mode: { key: 78, // n
 			      target: this,
-			      fn: this.build_mode },
+			      fn: this.build_mode,
+			      ignore_with_input: true },
 		zoom_mode: { key: 90, // z 
 			     target: this,
 			     fn: this.zoom_mode,
