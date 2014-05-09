@@ -2775,13 +2775,6 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		    var angle = angle_for_event(displacement,
 						location,
 						this.center);
-		    console.log('');
-		    console.log(displacement);
-		    console.log(total_displacement);
-		    console.log(location);
-		    console.log(this.center);
-		    console.log(angle);
-
 		    var updated = build.rotate_nodes(selected_nodes, reactions,
 						     angle, this.center);
 		    map.draw_these_nodes(updated.node_ids);
@@ -3607,7 +3600,7 @@ define('KeyManager',["utils"], function(utils) {
 	h.shift = false;
     }
     // instance methods
-    function init(assigned_keys, reaction_input) {
+    function init(assigned_keys, reaction_input, ctrl_equals_cmd) {
 	/** Assign keys for commands.
 
 	 */
@@ -3616,6 +3609,9 @@ define('KeyManager',["utils"], function(utils) {
 	else this.assigned_keys = assigned_keys;
 	if (reaction_input===undefined) this.reaction_input = null;
 	else this.reaction_input = reaction_input;
+
+	if (ctrl_equals_cmd===undefined) ctrl_equals_cmd = true;
+	this.ctrl_equals_cmd = ctrl_equals_cmd;
 
 	this.held_keys = {};
 	reset_held_keys(this.held_keys);
@@ -3631,6 +3627,7 @@ define('KeyManager',["utils"], function(utils) {
 	    self = this;
 
         var modifier_keys = { command: 91,
+			      command_right: 93,
                               control: 17,
                               option: 18,
                               shift: 16 };
@@ -3640,15 +3637,15 @@ define('KeyManager',["utils"], function(utils) {
 
 	if (!(this.enabled)) return;
 
-        d3.select(window).on("keydown.key_manager", function() {
+        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, reaction_input) {
             var kc = d3.event.keyCode,
-                reaction_input_visible = self.reaction_input ?
-		    self.reaction_input.is_visible() : false,
+                reaction_input_visible = reaction_input ?
+		    reaction_input.is_visible() : false,
 		meaningless = true;
             toggle_modifiers(modifier_keys, held_keys, kc, true);
 	    for (var key_id in keys) {
 		var assigned_key = keys[key_id];
-		if (check_key(assigned_key, kc, held_keys)) {
+		if (check_key(assigned_key, kc, held_keys, ctrl_equals_cmd)) {
 		    meaningless = false;
 		    if (!(assigned_key.ignore_with_input && reaction_input_visible)) {
 			if (assigned_key.fn) {
@@ -3667,7 +3664,8 @@ define('KeyManager',["utils"], function(utils) {
 		if (modifier_keys[k] == kc) meaningless = false;
 	    if (meaningless) 
 		reset_held_keys(held_keys);
-        }).on("keyup.key_manager", function() {
+        }.bind(null, this.ctrl_equals_cmd, this.reaction_input))
+	    .on("keyup.key_manager", function() {
             toggle_modifiers(modifier_keys, held_keys,
 			     d3.event.keyCode, false);
         });
@@ -3676,15 +3674,21 @@ define('KeyManager',["utils"], function(utils) {
                 if (mod[k] == kc)
                     held[k] = on_off;
         }
-        function check_key(key, pressed, held) {
+        function check_key(key, pressed, held, ctrl_equals_cmd) {
             if (key.key != pressed) return false;
-            var mod = key.modifiers;
+            var mod = utils.clone(key.modifiers);
             if (mod === undefined)
                 mod = { control: false,
                         command: false,
                         option: false,
                         shift: false };
             for (var k in held) {
+		if (ctrl_equals_cmd &&
+		    mod['control'] &&
+		    (k=='command' || k=='command_right' || k=='control') &&
+		    (held['command'] || held['command_right'] || held['control'])) {
+		    continue;
+		}
                 if (mod[k] === undefined) mod[k] = false;
                 if (mod[k] != held[k]) return false;
             }
@@ -5492,11 +5496,12 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 				zoom_out: zoom_out,
 				get_size: get_size,
 				translate_off_screen: translate_off_screen,
-				reset: reset };
+				reset: reset,
+				new_wheel_listener: new_wheel_listener };
     return ZoomContainer;
 
     // definitions
-    function init(selection, size_container) {
+    function init(selection, size_container, use_mousewheel_for_panning) {
 	/** Make a container that will manage panning and zooming.
 
 	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
@@ -5506,6 +5511,9 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 	 and height.
 
 	 */
+
+	if (use_mousewheel_for_panning===undefined)
+	    use_mousewheel_for_panning = true;
 
 	this.zoom_on = true;
 	this.initial_zoom = 1.0;
@@ -5541,6 +5549,27 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 		zoom(zoom_container, d3.event);
 	    });
 	container.call(this.zoom_behavior);
+	
+	if (use_mousewheel_for_panning) {
+	    container.on("mousewheel.zoom", null)
+		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
+		.on("wheel.zoom", null) // disables newer versions of Firefox
+		.on('dblclick.zoom', null);
+	    // add the wheel listener
+	    var wheel_fn = function() {
+		var ev = d3.event,
+		    sensitivity = 0.5;
+		this.go_to(this.window_scale,
+			   { x: this.window_translate.x -
+			     (ev.wheelDeltaX!==undefined ? -ev.wheelDeltaX/1.5 : ev.deltaX) * sensitivity,
+			     y: this.window_translate.y -
+			     (ev.wheelDeltaY!==undefined ? -ev.wheelDeltaY/1.5 : ev.deltaY) * sensitivity },
+			   false);
+	    }.bind(this);
+	    container.on('mousewheel.escher', wheel_fn);
+	    container.on('DOMMouseScroll.escher', wheel_fn);
+	    container.on('wheel.escher', wheel_fn);
+	}
 
 	this.saved_scale = null;
 	this.saved_translate = null;
@@ -5657,6 +5686,70 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     }
     function reset() {
 	this.go_to(1.0, {x: 0.0, y: 0.0});
+    }
+
+    function new_wheel_listener(sel, callback) {
+	// creates a global "addWheelListener" method
+	// example: addWheelListener( elem, function( e ) { console.log( e.deltaY ); e.preventDefault(); } );
+
+	var prefix = "", _addEventListener, onwheel, support,
+	    useCapture = true,
+	    elem = sel.node();
+
+	// detect event model
+	if ( window.addEventListener ) {
+            _addEventListener = "addEventListener";
+	} else {
+            _addEventListener = "attachEvent";
+            prefix = "on";
+	}
+
+	// detect available wheel event
+	support = "onwheel" in document.createElement("div") ? "wheel" : // Modern browsers support "wheel"
+            document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
+            "DOMMouseScroll"; // let's assume that remaining browsers are older Firefox
+
+        _addWheelListener( elem, support, callback, useCapture );
+
+        // handle MozMousePixelScroll in older Firefox
+        if( support == "DOMMouseScroll" ) {
+	    _addWheelListener( elem, "MozMousePixelScroll", callback, useCapture );
+        }
+
+	function _addWheelListener( elem, eventName, callback, useCapture ) {
+            elem[ _addEventListener ]( prefix + eventName, support == "wheel" ? callback : function( originalEvent ) {
+		!originalEvent && ( originalEvent = window.event );
+
+		// create a normalized event object
+		var event = {
+                    // keep a ref to the original event object
+                    originalEvent: originalEvent,
+                    target: originalEvent.target || originalEvent.srcElement,
+                    type: "wheel",
+                    deltaMode: originalEvent.type == "MozMousePixelScroll" ? 0 : 1,
+                    deltaX: 0,
+                    delatZ: 0,
+                    preventDefault: function() {
+			originalEvent.preventDefault ?
+                            originalEvent.preventDefault() :
+                            originalEvent.returnValue = false;
+                    }
+		};
+		
+		// calculate deltaY (and deltaX) according to the event
+		if ( support == "mousewheel" ) {
+                    event.deltaY = - 1/40 * originalEvent.wheelDelta;
+                    // Webkit also support wheelDeltaX
+                    originalEvent.wheelDeltaX && ( event.deltaX = - 1/40 * originalEvent.wheelDeltaX );
+		} else {
+                    event.deltaY = originalEvent.detail;
+		}
+
+		// it's time to fire the callback
+		return callback( event );
+
+            }, useCapture || false );
+	}
     }
 });
 

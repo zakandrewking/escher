@@ -21,7 +21,7 @@ define(["utils"], function(utils) {
 	h.shift = false;
     }
     // instance methods
-    function init(assigned_keys, reaction_input) {
+    function init(assigned_keys, reaction_input, ctrl_equals_cmd) {
 	/** Assign keys for commands.
 
 	 */
@@ -30,6 +30,9 @@ define(["utils"], function(utils) {
 	else this.assigned_keys = assigned_keys;
 	if (reaction_input===undefined) this.reaction_input = null;
 	else this.reaction_input = reaction_input;
+
+	if (ctrl_equals_cmd===undefined) ctrl_equals_cmd = true;
+	this.ctrl_equals_cmd = ctrl_equals_cmd;
 
 	this.held_keys = {};
 	reset_held_keys(this.held_keys);
@@ -45,6 +48,7 @@ define(["utils"], function(utils) {
 	    self = this;
 
         var modifier_keys = { command: 91,
+			      command_right: 93,
                               control: 17,
                               option: 18,
                               shift: 16 };
@@ -54,15 +58,15 @@ define(["utils"], function(utils) {
 
 	if (!(this.enabled)) return;
 
-        d3.select(window).on("keydown.key_manager", function() {
+        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, reaction_input) {
             var kc = d3.event.keyCode,
-                reaction_input_visible = self.reaction_input ?
-		    self.reaction_input.is_visible() : false,
+                reaction_input_visible = reaction_input ?
+		    reaction_input.is_visible() : false,
 		meaningless = true;
             toggle_modifiers(modifier_keys, held_keys, kc, true);
 	    for (var key_id in keys) {
 		var assigned_key = keys[key_id];
-		if (check_key(assigned_key, kc, held_keys)) {
+		if (check_key(assigned_key, kc, held_keys, ctrl_equals_cmd)) {
 		    meaningless = false;
 		    if (!(assigned_key.ignore_with_input && reaction_input_visible)) {
 			if (assigned_key.fn) {
@@ -81,7 +85,8 @@ define(["utils"], function(utils) {
 		if (modifier_keys[k] == kc) meaningless = false;
 	    if (meaningless) 
 		reset_held_keys(held_keys);
-        }).on("keyup.key_manager", function() {
+        }.bind(null, this.ctrl_equals_cmd, this.reaction_input))
+	    .on("keyup.key_manager", function() {
             toggle_modifiers(modifier_keys, held_keys,
 			     d3.event.keyCode, false);
         });
@@ -90,15 +95,21 @@ define(["utils"], function(utils) {
                 if (mod[k] == kc)
                     held[k] = on_off;
         }
-        function check_key(key, pressed, held) {
+        function check_key(key, pressed, held, ctrl_equals_cmd) {
             if (key.key != pressed) return false;
-            var mod = key.modifiers;
+            var mod = utils.clone(key.modifiers);
             if (mod === undefined)
                 mod = { control: false,
                         command: false,
                         option: false,
                         shift: false };
             for (var k in held) {
+		if (ctrl_equals_cmd &&
+		    mod['control'] &&
+		    (k=='command' || k=='command_right' || k=='control') &&
+		    (held['command'] || held['command_right'] || held['control'])) {
+		    continue;
+		}
                 if (mod[k] === undefined) mod[k] = false;
                 if (mod[k] != held[k]) return false;
             }
