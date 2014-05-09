@@ -80,90 +80,123 @@ define(["utils", "build"], function(utils, build) {
 	} else {
 	    this.rotation_mode_enabled = on_off;
 	}
+
+	var selection_node = this.map.sel.selectAll('.node-circle'),
+	    selection_background = this.map.sel.selectAll('#mouse-node');
+
 	if (this.rotation_mode_enabled) {
 	    this.map.callback_manager.run('start_rotation');
 	    
-	    var selected_nodes = this.map.get_selected_nodes(),
-		loc = average_location(selected_nodes);
+	    var selected_nodes = this.map.get_selected_nodes();
+	    if (Object.keys(selected_nodes).length == 0) {
+		console.log('No selected nodes');
+		return;
+	    }
 	    
 	    // show center
-	    show_center(this.map.sel, loc);
-	    
-	    var saved_center, total_angle = 0,
+	    this.center = average_location(selected_nodes);
+	    show_center.call(this);
+
+	    // this.set_status('Drag to rotate.');
+	    var map = this.map,
 		selected_node_ids = Object.keys(selected_nodes),
 		reactions = this.map.reactions,
 		nodes = this.map.nodes;
 
-	    choose_center.call(this, function(center) {
-		saved_center = center;
-		listen_for_rotation.call(this, center, function(angle) {
-		    total_angle += angle;
+	    var start_fn = function(d) {
+		// silence other listeners
+		d3.event.sourceEvent.stopPropagation();
+	    },
+		drag_fn = function(d, displacement, total_displacement, location) {
+		    var angle = angle_for_event(displacement,
+						location,
+						this.center);
 		    var updated = build.rotate_nodes(selected_nodes, reactions,
-						     angle, center);
-		    this.map.draw_these_nodes(updated.node_ids);
-		    this.map.draw_these_reactions(updated.reaction_ids);
-		}.bind(this));
-	    }.bind(this));
+						     angle, this.center);
+		    map.draw_these_nodes(updated.node_ids);
+		    map.draw_these_reactions(updated.reaction_ids);
+		}.bind(this),
+		end_fn = function(d) {},
+		undo_fn = function(d, displacement, location) {
+		    // undo
+		    var total_angle = angle_for_event(displacement,
+						      location,
+						      this.center);
 
-	    // add to undo/redo stack
-	    this.undo_stack.push(function() {
-		// undo
-		var these_nodes = {};
-		selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-		var updated = build.rotate_nodes(these_nodes, reactions,
-						 -total_angle, saved_center);
-		self.draw_these_nodes(updated.node_ids);
-		self.draw_these_reactions(updated.reaction_ids);
-	    }, function () {
-		// redo
-		var these_nodes = {};
-		selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-		var updated = build.rotate_nodes(these_nodes, reactions,
-						 total_angle, saved_center);
-		self.draw_these_nodes(updated.node_ids);
-		self.draw_these_reactions(updated.reaction_ids);
-	    });
+		    var these_nodes = {};
+		    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+		    var updated = build.rotate_nodes(these_nodes, reactions,
+						     -total_angle, utils.clone(this.center));
+		    self.draw_these_nodes(updated.node_ids);
+		    self.draw_these_reactions(updated.reaction_ids);
+		}.bind(this),
+		redo_fn = function(d, displacement, location) {
+		    // redo
+		    var total_angle = angle_for_event(displacement,
+						      location,
+						      this.center),
+			these_nodes = {};
+		    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+		    var updated = build.rotate_nodes(these_nodes, reactions,
+						     total_angle, utils.clone(this.center));
+		    self.draw_these_nodes(updated.node_ids);
+		    self.draw_these_reactions(updated.reaction_ids);
+		}.bind(this);
+	    this.rotation_drag = this.get_generic_drag(start_fn, drag_fn, end_fn,
+						       undo_fn, redo_fn, this.map.sel);
+	    selection_background.call(this.rotation_drag);
+
 
 	} else {
 	    // turn off all listeners
-	    hide_center(this.map.sel);
-	    this.map.sel.selectAll('.node-circle').on('mousedown.center', null);
-	    this.rotation_drag.on('dragstart.rotate', null);
-	    this.rotation_drag.on('drag.rotate', null);
-	    this.rotation_drag.on('dragend.rotate', null);
+	    hide_center.call(this);
+	    selection_node.on('mousedown.center', null);
+	    selection_background.on('mousedown.center', null);
+	    selection_background.on('mousedown.drag', null);
+	    selection_background.on('touchstart.drag', null);
+	    this.rotation_drag = null;
 	}
 
 	// definitions
-	function show_center(sel, loc) {
-	    var s = sel.selectAll('#rotation-center')
+	function angle_for_event(displacement, point, center) {
+	    var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
+		beta = Math.atan2((point.x - center.x + displacement.x), 
+				  (center.y - point.y - displacement.y)),
+		angle = beta - gamma;
+	    return angle;
+	}
+	function show_center() {
+	    var s = this.map.sel.selectAll('#rotation-center')
 		    .data([0]),
 		enter = s.enter()
 		    .append('g').attr('id', 'rotation-center');
-	   
+	    
 	    enter.append('path').attr('d', 'M-22 0 L22 0')
 		.attr('class', 'rotation-center-line');
 	    enter.append('path').attr('d', 'M0 -22 L0 22')
 		.attr('class', 'rotation-center-line');
 
-	    s.attr('transform', 'translate('+loc.x+','+loc.y+')')
+	    s.attr('transform', 'translate('+this.center.x+','+this.center.y+')')
 		.attr('visibility', 'visible');
 
 	    s.call(d3.behavior.drag()
-		       .on('drag', function() {
-			   var cur = d3.transform(this.attr('transform')),
-			       new_loc = [d3.event.dx + cur.translate[0],
-					  d3.event.dy + cur.translate[1]];
-			   this.attr('transform', 'translate('+new_loc+')');
-		       }.bind(s)));
+		   .on('drag', function(sel) {
+		       var cur = d3.transform(sel.attr('transform')),
+			   new_loc = [d3.event.dx + cur.translate[0],
+				      d3.event.dy + cur.translate[1]];
+		       sel.attr('transform', 'translate('+new_loc+')');
+		       this.center = { x: new_loc[0], y: new_loc[1] };
+		   }.bind(this, s)));
 	    s.on('mouseover', function() {
-		this.selectAll('path').style('stroke-width', '4px');
+		var current = parseFloat(this.selectAll('path').style('stroke-width'));
+		this.selectAll('path').style('stroke-width', current*2+'px');
 	    }.bind(s));
 	    s.on('mouseout', function() {
-		this.selectAll('path').style('stroke-width', '3px');
+		this.selectAll('path').style('stroke-width', null);
 	    }.bind(s));
 	}
 	function hide_center(sel) {
-	    sel.select('#rotation-center')
+	    this.map.sel.select('#rotation-center')
 		.attr('visibility', 'hidden');
 	}
 	function average_location(nodes) {
@@ -177,64 +210,7 @@ define(["utils", "build"], function(utils, build) {
 	    }
 	    return { x: utils.mean(xs),
 		     y: utils.mean(ys) };
-	}			       
-	function choose_center(callback) {
-	    // set_status('Choose a node or point to rotate around.');
-	    var selection_node = this.map.sel.selectAll('.node-circle'),
-		selection_background = this.map.sel.selectAll('#mouse-node');
-	    // if the user clicks a metabolite node
-	    selection_node.on('mousedown.center', function(d) {		    
-		console.log('mousedown.center');
-		// turn off the click listeners to prepare for drag
-		selection_node.on('mousedown.center', null);
-		selection_background.on('mousedown.center', null);
-		// set_status('');
-		// find the location of the clicked metabolite
-		var center = { x: d.x, y: d.y };
-		callback(center); 
-	    });
-	    // if the user clicks a point
-	    selection_background.on('mousedown.center', function() {
-		console.log('mousedown.center');
-		// turn off the click listeners to prepare for drag
-		selection_node.on('mousedown.center', null);
-		selection_background.on('mousedown.center', null);
-		// set_status('');
-		// find the point on the background node where the user clicked
-		var center = { x: d3.mouse(this.map.sel.node())[0], 
-			       y: d3.mouse(this.map.sel.node())[1] };
-		callback(center); 
-	    }.bind(this));
-	}
-	function listen_for_rotation(center, callback) {
-	    // this.set_status('Drag to rotate.');
-	    var angle = Math.PI/2,
-		selection = this.map.sel.selectAll('#mouse-node'),
-		drag = this.rotation_drag;
-	    // drag.origin(function() { return point_of_grab; });
-	    drag.on("drag.rotate", function() { 
-		callback(angle_for_event({ dx: d3.event.dx, 
-					   dy: d3.event.dy },
-					 { x: d3.mouse(this)[0],
-					   y: d3.mouse(this)[1] },
-					 center));
-	    }).on("dragend.rotate", function() {
-		console.log('dragend.rotate');
-		drag.on('drag.rotate', null);
-		drag.on('dragend.rotate', null);
-		// set_status('');
-	    });
-	    selection.call(drag);
-
-	    // definitions
-	    function angle_for_event(displacement, point, center) {
-		var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
-		    beta = Math.atan2((point.x - center.x + displacement.dx), 
-				      (center.y - point.y - displacement.dy)),
-		    angle = beta - gamma;
-		return angle;
-	    }
-	}
+	}	
     }
 
     function toggle_node_click(on_off) {
@@ -527,7 +503,8 @@ define(["utils", "build"], function(utils, build) {
 		move_bezier(d.reaction_id, d.segment_id, d.bezier, displacement);
 		map.draw_these_reactions([d.reaction_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
+	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				     redo_fn, this.map.sel);
     }
     function get_reaction_label_drag(map) {
 	var move_label = function(reaction_id, displacement) {
@@ -552,7 +529,8 @@ define(["utils", "build"], function(utils, build) {
 		move_label(d.reaction_id, displacement);
 		map.draw_these_reactions([d.reaction_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
+	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				     redo_fn, this.map.sel);
     }
     function get_node_label_drag(map) {
 	var move_label = function(node_id, displacement) {
@@ -577,7 +555,8 @@ define(["utils", "build"], function(utils, build) {
 		move_label(d.node_id, displacement);
 		map.draw_these_nodes([d.node_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
+	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				     redo_fn, this.map.sel);
     }
     function get_text_label_drag(map) {
 	var move_label = function(text_label_id, displacement) {
@@ -602,9 +581,10 @@ define(["utils", "build"], function(utils, build) {
 		move_label(d.text_label_id, displacement);
 		map.draw_these_text_labels([d.text_label_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
+	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				     redo_fn, this.map.sel);
     }
-    function get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn) {
+    function get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, relative_to_selection) {
 	/** Make a generic drag behavior, with undo/redo.
 
 	 start_fn: function(d) Called at dragstart.
@@ -618,12 +598,15 @@ define(["utils", "build"], function(utils, build) {
 
 	 redo_fn
 
+	 relative_to_selection: a d3 selection that the locations are calculated against.
+
 	 */
-	 
+	
 	// define some variables
 	var behavior = d3.behavior.drag(),
 	    total_displacement,
-	    undo_stack = this.undo_stack;
+	    undo_stack = this.undo_stack,
+	    rel = relative_to_selection.node();
 
         behavior.on("dragstart", function (d) {
 	    // silence other listeners
@@ -634,22 +617,28 @@ define(["utils", "build"], function(utils, build) {
         behavior.on("drag", function(d) {
 	    // update data
 	    var displacement = { x: d3.event.dx,
-				 y: d3.event.dy };
+				 y: d3.event.dy },
+		location = { x: d3.mouse(rel)[0],
+			     y: d3.mouse(rel)[1] };
+
 	    // remember the displacement
 	    total_displacement = utils.c_plus_c(total_displacement, displacement);
-	    drag_fn(d, displacement, total_displacement);
+	    drag_fn(d, displacement, total_displacement, location);
 	});
 	behavior.on("dragend", function(d) {			  
 	    // add to undo/redo stack
 	    // remember the displacement, dragged nodes, and reactions
 	    var saved_d = utils.clone(d),
-		saved_displacement = utils.clone(total_displacement); // BUG TODO this variable disappears!
+		saved_displacement = utils.clone(total_displacement), // BUG TODO this variable disappears!
+		saved_location = { x: d3.mouse(rel)[0],
+				   y: d3.mouse(rel)[1] };
+
 	    undo_stack.push(function() {
 		// undo
-		undo_fn(saved_d, saved_displacement);
+		undo_fn(saved_d, saved_displacement, saved_location);
 	    }, function () {
 		// redo
-		redo_fn(saved_d, saved_displacement);
+		redo_fn(saved_d, saved_displacement, saved_location);
 	    });
 	    end_fn(d);
 	});
