@@ -8,7 +8,7 @@ define(["utils"], function(utils) {
 	    target: null});
 
 	if (o.selection===null)
-	    throw Error('No selection provided for DataMenu');
+	    throw new Error('No selection provided for DataMenu');
 
         // setup dropdown menu
         // Append menu if it doesn't exist

@@ -71,7 +71,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
         } else if (selection) {
             return add_svg(fill_screen, selection, margins);
         } else {
-            throw Error('No selection');
+            throw new Error('No selection');
         }
     }
 
@@ -474,10 +474,10 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	    } else if (spec=="Boolean") {
 		the_type = function(x) { return typeof x == "boolean"; };
 	    } else if (spec!="*") {
-		throw Error("Bad spec string: " + spec);
+		throw new Error("Bad spec string: " + spec);
 	    }
 	    if (!the_type(o)) {
-		throw Error('Bad type: '+String(o)+' should be '+spec);
+		throw new Error('Bad type: '+String(o)+' should be '+spec);
 	    }
 	} else if (spec instanceof Array) {
 	    o.forEach(function(x) {
@@ -494,7 +494,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	    } else {
 		for (var k in spec) {
 		    if (!(k in o)) {
-			throw Error('Missing key: %s' % k);
+			throw new Error('Missing key: %s' % k);
 		    };
 		    if (o[k]===null && can_be_none.indexOf(k)!=-1) 
 			continue;

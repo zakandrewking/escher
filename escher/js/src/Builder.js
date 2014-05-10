@@ -51,7 +51,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	});
 
 	if (utils.check_for_parent_tag(o.selection, 'svg')) {
-	    throw Error("Builder cannot be placed within an svg node "+
+	    throw new Error("Builder cannot be placed within an svg node "+
 			"becuase UI elements are html-based.");
 	}
 

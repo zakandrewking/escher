@@ -857,7 +857,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
         } else if (selection) {
             return add_svg(fill_screen, selection, margins);
         } else {
-            throw Error('No selection');
+            throw new Error('No selection');
         }
     }
 
@@ -1260,10 +1260,10 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	    } else if (spec=="Boolean") {
 		the_type = function(x) { return typeof x == "boolean"; };
 	    } else if (spec!="*") {
-		throw Error("Bad spec string: " + spec);
+		throw new Error("Bad spec string: " + spec);
 	    }
 	    if (!the_type(o)) {
-		throw Error('Bad type: '+String(o)+' should be '+spec);
+		throw new Error('Bad type: '+String(o)+' should be '+spec);
 	    }
 	} else if (spec instanceof Array) {
 	    o.forEach(function(x) {
@@ -1280,7 +1280,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	    } else {
 		for (var k in spec) {
 		    if (!(k in o)) {
-			throw Error('Missing key: %s' % k);
+			throw new Error('Missing key: %s' % k);
 		    };
 		    if (o[k]===null && can_be_none.indexOf(k)!=-1) 
 			continue;
@@ -6389,7 +6389,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	});
 
 	if (utils.check_for_parent_tag(o.selection, 'svg')) {
-	    throw Error("Builder cannot be placed within an svg node "+
+	    throw new Error("Builder cannot be placed within an svg node "+
 			"becuase UI elements are html-based.");
 	}
 
@@ -6909,7 +6909,7 @@ define('DataMenu',["utils"], function(utils) {
 	    target: null});
 
 	if (o.selection===null)
-	    throw Error('No selection provided for DataMenu');
+	    throw new Error('No selection provided for DataMenu');
 
         // setup dropdown menu
         // Append menu if it doesn't exist
@@ -6990,8 +6990,90 @@ define('DataMenu',["utils"], function(utils) {
     };
 });
 
-define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils"],
-       function(bu, mp, bh, km, dm, us, cm, ut) {
+define('SearchIndex',["utils"], function(utils) {
+    /** Define an index for searching for reaction and metabolites in the map.
+
+     The index is stored in SearchIndex.index, an object of id/record pairs.
+
+     */
+
+    var SearchIndex = utils.make_class();
+    SearchIndex.prototype = { init: init,
+			      insert: insert,
+			      remove: remove,
+			      find: find };
+
+    return SearchIndex;
+
+    // definitions
+    function init() {
+	this.index = {};
+    }
+
+    function insert(id, record, overwrite, check_record) {
+	/** Insert a record into the index.
+
+	 id: A unique string id.
+
+	 record: Records have the form:
+
+	 { 'name': '',
+	   'data': {} }
+
+	 Search is performed on substrings of the name.
+
+	 overwrite: (Default false) For faster performance, make overwrite true,
+	 and records will be inserted without checking for an existing record.
+
+	 check_record: (Default false) For faster performance, make check_record
+	 false. If true, records will be checked to make sure they have name and
+	 data attributes.
+
+	 Returns undefined.
+
+	 */
+	if (!overwrite && (id in this.index))
+	    throw new Error("id is already in the index");
+	if (check_record && !(('name' in record) && ('data' in record)))
+	    throw new Error("malformed record");
+	this.index[id] = record;
+    }
+
+    function remove(record_id) {
+	/** Remove the matching record.
+
+	 Returns true is a record is found, or false if no match is found.
+
+	 */
+	if (record_id in this.index) {
+	    delete this.index[record_id];
+	    return true;
+	} else {
+	    return false;
+	}
+    }
+
+    function find(substring) {
+	/** Find a record that matches the substring.
+
+	 Returns an array of data from matching records.
+
+	 */
+
+	var re = RegExp(substring),
+	    matches = [];
+	for (var id in this.index) {
+	    var record = this.index[id];
+	    if (re.exec(record.name))
+		matches.push(record.data);
+	}
+	return matches;
+	    
+    }
+});
+
+define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex"],
+       function(bu, mp, bh, km, dm, us, cm, ut, si) {
            return { Builder: bu,
 		    Map: mp,
 		    Behavior: bh,
@@ -6999,7 +7081,8 @@ define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStac
 		    DataMenu: dm,
 		    UndoStack: us,
 		    CobraModel: cm,
-		    utils: ut };
+		    utils: ut,
+		    SearchIndex: si };
        });
 
     //The modules for your project will be inlined above
