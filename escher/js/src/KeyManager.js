@@ -9,7 +9,9 @@ define(["utils"], function(utils) {
     KeyManager.prototype = { init: init,
 			     update: update,
 			     toggle: toggle,
-			     add_escape_listener: add_escape_listener };
+			     add_escape_listener: add_escape_listener,
+			     add_enter_listener: add_enter_listener,
+			     add_key_listener: add_key_listener };
 
     return KeyManager;
 
@@ -126,17 +128,31 @@ define(["utils"], function(utils) {
 
 	this.update();
     }	
+    function add_enter_listener(callback) {
+	/** Call the callback when the enter key is pressed, then
+	 unregisters the listener.
+
+	 */
+	this.add_key_listener(callback, 13);
+    }
     function add_escape_listener(callback) {
 	/** Call the callback when the escape key is pressed, then
 	 unregisters the listener.
 
 	 */
+	this.add_key_listener(callback, 27);
+    }
+    function add_key_listener(callback, kc) {
+	/** Call the callback when the key is pressed, then unregisters the
+	 listener.
+
+	 */
 	var selection = d3.select(window);
-	selection.on('keydown.esc', function() {
-	    if (d3.event.keyCode==27) { // esc
+	selection.on('keydown.'+kc, function() {
+	    if (d3.event.keyCode==kc) {
 		callback();
 	    }
 	});
-	return { clear: function() { selection.on('keydown.esc', null); } };
+	return { clear: function() { selection.on('keydown.'+kc, null); } };
     }
 });

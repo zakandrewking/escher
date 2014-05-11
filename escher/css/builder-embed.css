@@ -84,3 +84,6 @@
     stroke: red;
     stroke-width: 2px;
 }
+.highlight {
+    fill: #106F94;
+}

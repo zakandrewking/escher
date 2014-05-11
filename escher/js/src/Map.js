@@ -69,10 +69,16 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	toggle_beziers: toggle_beziers,
 	hide_beziers: hide_beziers,
 	show_beziers: show_beziers,
+	// zoom
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
 	_zoom_extent: _zoom_extent,
 	get_size: get_size,
+	zoom_to_reaction: zoom_to_reaction,
+	zoom_to_node: zoom_to_node,
+	highlight_reaction: highlight_reaction,
+	highlight_node: highlight_node,
+	highlight: highlight,
 	// io
 	save: save,
 	map_for_export: map_for_export,
@@ -1405,6 +1411,9 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         return this;
     }
 
+    // -------------------------------------------------------------------------
+    // Zoom
+
     function zoom_extent_nodes(margin) {
 	/** Zoom to fit all the nodes.
 
@@ -1480,6 +1489,37 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
     function get_size() {
 	return this.zoom_container.get_size();
+    }
+
+    function zoom_to_reaction(reaction_id) {
+	var reaction = this.reactions[reaction_id],
+	    new_zoom = 0.6,
+	    size = this.get_size(),
+	    new_pos = { x: - reaction.label_x * new_zoom + size.width/2,
+			y: - reaction.label_y * new_zoom + size.height/2 };
+	this.zoom_container.go_to(new_zoom, new_pos);
+    }
+
+    function zoom_to_node(node_id) {
+	var node = this.nodes[node_id],
+	    new_zoom = 0.6,
+	    new_pos = { x: - node.label_x * new_zoom,
+			y: - node.label_y * new_zoom };
+	this.zoom_container.go_to(new_zoom, new_pos);
+    }
+
+    function highlight_reaction(reaction_id) {
+	this.highlight(this.sel.selectAll('#r'+reaction_id).selectAll('text'));
+    }
+    function highlight_node(node_id) {
+	this.highlight(this.sel.selectAll('#n'+node_id).selectAll('text'));
+    }
+    function highlight(sel) {
+	this.sel.selectAll('.highlight')
+	    .classed('highlight', false);
+	if (sel!==null) {
+	    sel.classed('highlight', true);
+	}
     }
 
     // -------------------------------------------------------------------------

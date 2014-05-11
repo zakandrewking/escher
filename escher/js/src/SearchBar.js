@@ -53,7 +53,6 @@ define(["utils"], function(utils) {
 	if (on_off===undefined) this.is_active = !this.is_active;
 	else this.is_active = on_off;
 
-	
 	if (this.is_active) {
 	    this.selection.style('display', null);
 	    this.counter.text("");
@@ -62,20 +61,41 @@ define(["utils"], function(utils) {
 	    // escape key
 	    this.escape = this.map.key_manager
 		.add_escape_listener(function() { this.toggle(false); }.bind(this));
+	    // enter key
+	    this.escape = this.map.key_manager
+		.add_enter_listener(function() { this.next(); }.bind(this));
 	} else {
+	    this.map.highlight(null);
 	    this.selection.style("display", "none");
 	    this.results = null;
-	    if (this.escape)
-		this.escape.clear();
+	    if (this.escape) this.escape.clear();
 	    this.escape = null;
+	    if (this.enter) this.enter.clear();
+	    this.enter = null;
 	}
     }
     function update() {
-	if (this.results == null)
+	if (this.results == null) {
 	    this.counter.text("");
-	else
-	    this.counter.text(this.results.length==0 ? "0 / 0" :
-			      this.current + " / " + this.results.length);
+	    this.map.zoom_extent_canvas();
+	    this.map.highlight(null);
+	} else if (this.results.length == 0) {
+	    this.counter.text("0 / 0");
+	    this.map.zoom_extent_canvas();
+	    this.map.highlight(null);
+	} else {
+	    this.counter.text(this.current + " / " + this.results.length);
+	    var r = this.results[this.current - 1];
+	    if (r.type=='reaction') {		
+		this.map.zoom_to_reaction(r.reaction_id);
+		this.map.highlight_reaction(r.reaction_id);
+	    } else if (r.type=='metabolite') {
+		this.map.zoom_to_node(r.node_id);
+		this.map.highlight_node(r.node_id);
+	    } else {
+		throw new Error('Bad search index data type: ' + r.type);
+	    }
+	}
     }
     function next() {
 	if (this.results == null) return;

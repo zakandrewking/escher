@@ -74,6 +74,7 @@
     display: inline-block;
     border: 1px solid #DDD;
     margin-right: 4px;
+    width: 114px;
 }
 .search-counter {
     display: inline-block;

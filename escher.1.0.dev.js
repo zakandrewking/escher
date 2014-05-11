@@ -3588,7 +3588,9 @@ define('KeyManager',["utils"], function(utils) {
     KeyManager.prototype = { init: init,
 			     update: update,
 			     toggle: toggle,
-			     add_escape_listener: add_escape_listener };
+			     add_escape_listener: add_escape_listener,
+			     add_enter_listener: add_enter_listener,
+			     add_key_listener: add_key_listener };
 
     return KeyManager;
 
@@ -3705,18 +3707,32 @@ define('KeyManager',["utils"], function(utils) {
 
 	this.update();
     }	
+    function add_enter_listener(callback) {
+	/** Call the callback when the enter key is pressed, then
+	 unregisters the listener.
+
+	 */
+	this.add_key_listener(callback, 13);
+    }
     function add_escape_listener(callback) {
 	/** Call the callback when the escape key is pressed, then
 	 unregisters the listener.
 
 	 */
+	this.add_key_listener(callback, 27);
+    }
+    function add_key_listener(callback, kc) {
+	/** Call the callback when the key is pressed, then unregisters the
+	 listener.
+
+	 */
 	var selection = d3.select(window);
-	selection.on('keydown.esc', function() {
-	    if (d3.event.keyCode==27) { // esc
+	selection.on('keydown.'+kc, function() {
+	    if (d3.event.keyCode==kc) {
 		callback();
 	    }
 	});
-	return { clear: function() { selection.on('keydown.esc', null); } };
+	return { clear: function() { selection.on('keydown.'+kc, null); } };
     }
 });
 
@@ -4105,10 +4121,16 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	toggle_beziers: toggle_beziers,
 	hide_beziers: hide_beziers,
 	show_beziers: show_beziers,
+	// zoom
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
 	_zoom_extent: _zoom_extent,
 	get_size: get_size,
+	zoom_to_reaction: zoom_to_reaction,
+	zoom_to_node: zoom_to_node,
+	highlight_reaction: highlight_reaction,
+	highlight_node: highlight_node,
+	highlight: highlight,
 	// io
 	save: save,
 	map_for_export: map_for_export,
@@ -5441,6 +5463,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
         return this;
     }
 
+    // -------------------------------------------------------------------------
+    // Zoom
+
     function zoom_extent_nodes(margin) {
 	/** Zoom to fit all the nodes.
 
@@ -5516,6 +5541,37 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
     function get_size() {
 	return this.zoom_container.get_size();
+    }
+
+    function zoom_to_reaction(reaction_id) {
+	var reaction = this.reactions[reaction_id],
+	    new_zoom = 0.6,
+	    size = this.get_size(),
+	    new_pos = { x: - reaction.label_x * new_zoom + size.width/2,
+			y: - reaction.label_y * new_zoom + size.height/2 };
+	this.zoom_container.go_to(new_zoom, new_pos);
+    }
+
+    function zoom_to_node(node_id) {
+	var node = this.nodes[node_id],
+	    new_zoom = 0.6,
+	    new_pos = { x: - node.label_x * new_zoom,
+			y: - node.label_y * new_zoom };
+	this.zoom_container.go_to(new_zoom, new_pos);
+    }
+
+    function highlight_reaction(reaction_id) {
+	this.highlight(this.sel.selectAll('#r'+reaction_id).selectAll('text'));
+    }
+    function highlight_node(node_id) {
+	this.highlight(this.sel.selectAll('#n'+node_id).selectAll('text'));
+    }
+    function highlight(sel) {
+	this.sel.selectAll('.highlight')
+	    .classed('highlight', false);
+	if (sel!==null) {
+	    sel.classed('highlight', true);
+	}
     }
 
     // -------------------------------------------------------------------------
@@ -6495,7 +6551,6 @@ define('SearchBar',["utils"], function(utils) {
 	if (on_off===undefined) this.is_active = !this.is_active;
 	else this.is_active = on_off;
 
-	
 	if (this.is_active) {
 	    this.selection.style('display', null);
 	    this.counter.text("");
@@ -6504,20 +6559,41 @@ define('SearchBar',["utils"], function(utils) {
 	    // escape key
 	    this.escape = this.map.key_manager
 		.add_escape_listener(function() { this.toggle(false); }.bind(this));
+	    // enter key
+	    this.escape = this.map.key_manager
+		.add_enter_listener(function() { this.next(); }.bind(this));
 	} else {
+	    this.map.highlight(null);
 	    this.selection.style("display", "none");
 	    this.results = null;
-	    if (this.escape)
-		this.escape.clear();
+	    if (this.escape) this.escape.clear();
 	    this.escape = null;
+	    if (this.enter) this.enter.clear();
+	    this.enter = null;
 	}
     }
     function update() {
-	if (this.results == null)
+	if (this.results == null) {
 	    this.counter.text("");
-	else
-	    this.counter.text(this.results.length==0 ? "0 / 0" :
-			      this.current + " / " + this.results.length);
+	    this.map.zoom_extent_canvas();
+	    this.map.highlight(null);
+	} else if (this.results.length == 0) {
+	    this.counter.text("0 / 0");
+	    this.map.zoom_extent_canvas();
+	    this.map.highlight(null);
+	} else {
+	    this.counter.text(this.current + " / " + this.results.length);
+	    var r = this.results[this.current - 1];
+	    if (r.type=='reaction') {		
+		this.map.zoom_to_reaction(r.reaction_id);
+		this.map.highlight_reaction(r.reaction_id);
+	    } else if (r.type=='metabolite') {
+		this.map.zoom_to_node(r.node_id);
+		this.map.highlight_node(r.node_id);
+	    } else {
+		throw new Error('Bad search index data type: ' + r.type);
+	    }
+	}
     }
     function next() {
 	if (this.results == null) return;
@@ -6835,35 +6911,39 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.button({ key: keys.clear_metabolite_data,
 			  text: "Clear metabolite data" });
 	
-	// edit dropdown
-	if (enable_editing) {	    
-	    var edit_menu = ui.dropdown_menu(menu, 'Edit', true)	
-		    .button({ key: keys.build_mode,
-			      id: 'build-mode-menu-button',
-			      text: "Build mode (n)" })
-		    .button({ key: keys.zoom_mode,
-			      id: 'zoom-mode-menu-button',
-			      text: "Zoom + Pan mode (z)" })
-		    .button({ key: keys.brush_mode,
-			      id: 'brush-mode-menu-button',
-			      text: "Select mode (v)" })
-		    .button({ key: keys.rotate_mode,
-			      id: 'rotate-mode-menu-button',
-			      text: "Rotate mode (r)" })
-		    .divider()
-		    .button({ key: keys.delete,
-			      // icon: "glyphicon glyphicon-trash",
-			      text: "Delete (Ctrl Del)" })
-		    .button({ key: keys.undo, 
-			      text: "Undo (Ctrl z)" })
-		    .button({ key: keys.redo,
-			      text: "Redo (Ctrl Shift z)" }) 
-		    .button({ key: keys.make_primary,
-			      text: "Make primary metabolite (p)" })
-		    .button({ key: keys.cycle_primary,
-			      text: "Cycle primary metabolite (c)" })
-		    .button({ key: keys.select_none,
-			      text: "Select none (Ctrl Shift a)" });
+	// edit dropdown 
+	var edit_menu = ui.dropdown_menu(menu, 'Edit', true);
+	if (enable_editing) {	   
+	    edit_menu.button({ key: keys.build_mode,
+			       id: 'build-mode-menu-button',
+			       text: "Build mode (n)" })
+		.button({ key: keys.zoom_mode,
+			  id: 'zoom-mode-menu-button',
+			  text: "Zoom + Pan mode (z)" })
+		.button({ key: keys.brush_mode,
+			  id: 'brush-mode-menu-button',
+			  text: "Select mode (v)" })
+		.button({ key: keys.rotate_mode,
+			  id: 'rotate-mode-menu-button',
+			  text: "Rotate mode (r)" })
+		.divider()
+		.button({ key: keys.delete,
+			  // icon: "glyphicon glyphicon-trash",
+			  text: "Delete (Ctrl Del)" })
+		.button({ key: keys.undo, 
+			  text: "Undo (Ctrl z)" })
+		.button({ key: keys.redo,
+			  text: "Redo (Ctrl Shift z)" }) 
+		.button({ key: keys.make_primary,
+			  text: "Make primary metabolite (p)" })
+		.button({ key: keys.cycle_primary,
+			  text: "Cycle primary metabolite (c)" })
+		.button({ key: keys.select_none,
+			  text: "Select none (Ctrl Shift a)" });
+	} else {
+	    edit_menu.button({ key: keys.view_mode,
+			       id: 'view-mode-menu-button',
+			       text: "View mode" });
 	}
 
 	// view dropdown
@@ -6933,7 +7013,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    var ids = ['#build-mode-menu-button',
 		       '#zoom-mode-menu-button',
 		       '#brush-mode-menu-button',
-		       '#rotate-mode-menu-button'];
+		       '#rotate-mode-menu-button',
+		       '#view-mode-menu-button'];
 	    for (var i=0, l=ids.length; i<l; i++) {
 		var the_id = ids[i];
 		d3.select(the_id)
@@ -6958,13 +7039,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    $('#rotate-mode-button').button('toggle');
 	    select_menu_button('#rotate-mode-menu-button');
 	});
-
-
-
-	// new_button(sel, keys.direction_arrow_left, "←");
-	// new_button(sel, keys.direction_arrow_up, "↑");
-	// new_button(sel, keys.direction_arrow_down, "↓");
-	// new_button(sel, keys.direction_arrow_right, "→");
+	this.callback_manager.set('view_mode', function() {
+	    $('#view-mode-button').button('toggle');
+	    select_menu_button('#view-mode-menu-button');
+	});
 
 	// definitions
 	function load_map_for_file(error, map_data) {
@@ -7048,7 +7126,9 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			     target: map,
 			     fn: map.zoom_extent_canvas },
 	    search: { key: 70, modifiers: { control: true }, // ctrl-f
-		      fn: search_bar.toggle.bind(search_bar, true) }
+		      fn: search_bar.toggle.bind(search_bar, true) },
+	    view_mode: { fn: this.view_mode.bind(this),
+			 ignore_with_input: true }
 	};
 	if (enable_editing) {
 	    utils.extend(keys, {

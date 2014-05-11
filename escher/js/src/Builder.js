@@ -296,35 +296,39 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		.button({ key: keys.clear_metabolite_data,
 			  text: "Clear metabolite data" });
 	
-	// edit dropdown
-	if (enable_editing) {	    
-	    var edit_menu = ui.dropdown_menu(menu, 'Edit', true)	
-		    .button({ key: keys.build_mode,
-			      id: 'build-mode-menu-button',
-			      text: "Build mode (n)" })
-		    .button({ key: keys.zoom_mode,
-			      id: 'zoom-mode-menu-button',
-			      text: "Zoom + Pan mode (z)" })
-		    .button({ key: keys.brush_mode,
-			      id: 'brush-mode-menu-button',
-			      text: "Select mode (v)" })
-		    .button({ key: keys.rotate_mode,
-			      id: 'rotate-mode-menu-button',
-			      text: "Rotate mode (r)" })
-		    .divider()
-		    .button({ key: keys.delete,
-			      // icon: "glyphicon glyphicon-trash",
-			      text: "Delete (Ctrl Del)" })
-		    .button({ key: keys.undo, 
-			      text: "Undo (Ctrl z)" })
-		    .button({ key: keys.redo,
-			      text: "Redo (Ctrl Shift z)" }) 
-		    .button({ key: keys.make_primary,
-			      text: "Make primary metabolite (p)" })
-		    .button({ key: keys.cycle_primary,
-			      text: "Cycle primary metabolite (c)" })
-		    .button({ key: keys.select_none,
-			      text: "Select none (Ctrl Shift a)" });
+	// edit dropdown 
+	var edit_menu = ui.dropdown_menu(menu, 'Edit', true);
+	if (enable_editing) {	   
+	    edit_menu.button({ key: keys.build_mode,
+			       id: 'build-mode-menu-button',
+			       text: "Build mode (n)" })
+		.button({ key: keys.zoom_mode,
+			  id: 'zoom-mode-menu-button',
+			  text: "Zoom + Pan mode (z)" })
+		.button({ key: keys.brush_mode,
+			  id: 'brush-mode-menu-button',
+			  text: "Select mode (v)" })
+		.button({ key: keys.rotate_mode,
+			  id: 'rotate-mode-menu-button',
+			  text: "Rotate mode (r)" })
+		.divider()
+		.button({ key: keys.delete,
+			  // icon: "glyphicon glyphicon-trash",
+			  text: "Delete (Ctrl Del)" })
+		.button({ key: keys.undo, 
+			  text: "Undo (Ctrl z)" })
+		.button({ key: keys.redo,
+			  text: "Redo (Ctrl Shift z)" }) 
+		.button({ key: keys.make_primary,
+			  text: "Make primary metabolite (p)" })
+		.button({ key: keys.cycle_primary,
+			  text: "Cycle primary metabolite (c)" })
+		.button({ key: keys.select_none,
+			  text: "Select none (Ctrl Shift a)" });
+	} else {
+	    edit_menu.button({ key: keys.view_mode,
+			       id: 'view-mode-menu-button',
+			       text: "View mode" });
 	}
 
 	// view dropdown
@@ -394,7 +398,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    var ids = ['#build-mode-menu-button',
 		       '#zoom-mode-menu-button',
 		       '#brush-mode-menu-button',
-		       '#rotate-mode-menu-button'];
+		       '#rotate-mode-menu-button',
+		       '#view-mode-menu-button'];
 	    for (var i=0, l=ids.length; i<l; i++) {
 		var the_id = ids[i];
 		d3.select(the_id)
@@ -419,13 +424,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    $('#rotate-mode-button').button('toggle');
 	    select_menu_button('#rotate-mode-menu-button');
 	});
-
-
-
-	// new_button(sel, keys.direction_arrow_left, "←");
-	// new_button(sel, keys.direction_arrow_up, "↑");
-	// new_button(sel, keys.direction_arrow_down, "↓");
-	// new_button(sel, keys.direction_arrow_right, "→");
+	this.callback_manager.set('view_mode', function() {
+	    $('#view-mode-button').button('toggle');
+	    select_menu_button('#view-mode-menu-button');
+	});
 
 	// definitions
 	function load_map_for_file(error, map_data) {
@@ -509,7 +511,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			     target: map,
 			     fn: map.zoom_extent_canvas },
 	    search: { key: 70, modifiers: { control: true }, // ctrl-f
-		      fn: search_bar.toggle.bind(search_bar, true) }
+		      fn: search_bar.toggle.bind(search_bar, true) },
+	    view_mode: { fn: this.view_mode.bind(this),
+			 ignore_with_input: true }
 	};
 	if (enable_editing) {
 	    utils.extend(keys, {
