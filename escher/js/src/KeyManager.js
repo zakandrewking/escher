@@ -21,7 +21,7 @@ define(["utils"], function(utils) {
 	h.shift = false;
     }
     // instance methods
-    function init(assigned_keys, reaction_input, search_input, ctrl_equals_cmd) {
+    function init(assigned_keys, reaction_input, search_bar, ctrl_equals_cmd) {
 	/** Assign keys for commands.
 
 	 */
@@ -30,6 +30,8 @@ define(["utils"], function(utils) {
 	else this.assigned_keys = assigned_keys;
 	if (reaction_input===undefined) this.reaction_input = null;
 	else this.reaction_input = reaction_input;
+	if (search_bar===undefined) this.search_bar = null;
+	else this.search_bar = search_bar;
 
 	if (ctrl_equals_cmd===undefined) ctrl_equals_cmd = true;
 	this.ctrl_equals_cmd = ctrl_equals_cmd;
@@ -58,17 +60,17 @@ define(["utils"], function(utils) {
 
 	if (!(this.enabled)) return;
 
-        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, reaction_input) {
+        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, reaction_input, search_bar) {
             var kc = d3.event.keyCode,
-                reaction_input_visible = reaction_input ?
-		    reaction_input.is_visible() : false,
+                input_visible = ((reaction_input ? reaction_input.is_visible() : false) ||
+				 (search_bar ? search_bar.is_visible() : false)),
 		meaningless = true;
             toggle_modifiers(modifier_keys, held_keys, kc, true);
 	    for (var key_id in keys) {
 		var assigned_key = keys[key_id];
 		if (check_key(assigned_key, kc, held_keys, ctrl_equals_cmd)) {
 		    meaningless = false;
-		    if (!(assigned_key.ignore_with_input && reaction_input_visible)) {
+		    if (!(assigned_key.ignore_with_input && input_visible)) {
 			if (assigned_key.fn) {
 			    assigned_key.fn.call(assigned_key.target);
 			} else {
@@ -85,7 +87,7 @@ define(["utils"], function(utils) {
 		if (modifier_keys[k] == kc) meaningless = false;
 	    if (meaningless) 
 		reset_held_keys(held_keys);
-        }.bind(null, this.ctrl_equals_cmd, this.reaction_input))
+        }.bind(null, this.ctrl_equals_cmd, this.reaction_input, this.search_bar))
 	    .on("keyup.key_manager", function() {
             toggle_modifiers(modifier_keys, held_keys,
 			     d3.event.keyCode, false);

@@ -136,8 +136,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	// make the search index
 	this.enable_search = enable_search;
-	if (enable_search)
-	    this.search_index = new SearchIndex();
+	this.search_index = new SearchIndex();
 
 	// deal with the window
 	var window_translate = {'x': 0, 'y': 0},

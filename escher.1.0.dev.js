@@ -3600,7 +3600,7 @@ define('KeyManager',["utils"], function(utils) {
 	h.shift = false;
     }
     // instance methods
-    function init(assigned_keys, reaction_input, search_input, ctrl_equals_cmd) {
+    function init(assigned_keys, reaction_input, search_bar, ctrl_equals_cmd) {
 	/** Assign keys for commands.
 
 	 */
@@ -3609,6 +3609,8 @@ define('KeyManager',["utils"], function(utils) {
 	else this.assigned_keys = assigned_keys;
 	if (reaction_input===undefined) this.reaction_input = null;
 	else this.reaction_input = reaction_input;
+	if (search_bar===undefined) this.search_bar = null;
+	else this.search_bar = search_bar;
 
 	if (ctrl_equals_cmd===undefined) ctrl_equals_cmd = true;
 	this.ctrl_equals_cmd = ctrl_equals_cmd;
@@ -3637,17 +3639,17 @@ define('KeyManager',["utils"], function(utils) {
 
 	if (!(this.enabled)) return;
 
-        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, reaction_input) {
+        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, reaction_input, search_bar) {
             var kc = d3.event.keyCode,
-                reaction_input_visible = reaction_input ?
-		    reaction_input.is_visible() : false,
+                input_visible = ((reaction_input ? reaction_input.is_visible() : false) ||
+				 (search_bar ? search_bar.is_visible() : false)),
 		meaningless = true;
             toggle_modifiers(modifier_keys, held_keys, kc, true);
 	    for (var key_id in keys) {
 		var assigned_key = keys[key_id];
 		if (check_key(assigned_key, kc, held_keys, ctrl_equals_cmd)) {
 		    meaningless = false;
-		    if (!(assigned_key.ignore_with_input && reaction_input_visible)) {
+		    if (!(assigned_key.ignore_with_input && input_visible)) {
 			if (assigned_key.fn) {
 			    assigned_key.fn.call(assigned_key.target);
 			} else {
@@ -3664,7 +3666,7 @@ define('KeyManager',["utils"], function(utils) {
 		if (modifier_keys[k] == kc) meaningless = false;
 	    if (meaningless) 
 		reset_held_keys(held_keys);
-        }.bind(null, this.ctrl_equals_cmd, this.reaction_input))
+        }.bind(null, this.ctrl_equals_cmd, this.reaction_input, this.search_bar))
 	    .on("keyup.key_manager", function() {
             toggle_modifiers(modifier_keys, held_keys,
 			     d3.event.keyCode, false);
@@ -4170,8 +4172,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
 	// make the search index
 	this.enable_search = enable_search;
-	if (enable_search)
-	    this.search_index = new SearchIndex();
+	this.search_index = new SearchIndex();
 
 	// deal with the window
 	var window_translate = {'x': 0, 'y': 0},
@@ -6446,35 +6447,94 @@ define('SearchBar',["utils"], function(utils) {
     var SearchBar = utils.make_class();
     // instance methods
     SearchBar.prototype = { init: init,
-			    set_index: set_index };
+			    is_visible: is_visible,
+			    toggle: toggle,
+			    update: update,
+			    next: next,
+			    previous: previous };
 
     return SearchBar;
 
     // instance methods
-    function init(selection, search_index) {
-	var container = selection.append('div')
-		.attr('class', 'search-container');
+    function init(sel, search_index, map) {
+	var container = sel.attr('class', 'search-container')
+		.style('display', 'none');
 	this.input = container.append('input')
 	    .attr('class', 'search-bar');
 	container.append('button')
-	    .attr('class', "button search-close-button")
-	    .text('×');
+	    .attr("class", "btn-sm btn-default glyphicon glyphicon-chevron-left")
+	    .on('click', this.previous.bind(this));
+	container.append('button')
+	    .attr("class", "btn-sm btn-default glyphicon glyphicon-chevron-right")
+	    .on('click', this.next.bind(this));
 	this.counter = container.append('div')
 	    .attr('class', 'search-counter');
+	container.append('button')
+	    .attr("class", "btn-sm btn-default glyphicon glyphicon-remove search-close-button")
+	    .on('click', function() {
+		this.toggle(false);
+	    }.bind(this));
+	
+	this.selection = container;
+	this.map = map;
+	this.search_index = search_index;
 
-	if (search_index!==undefined)
-	    this.set_index(search_index);
-    }
+	this.current = 1;
+	this.results = null;
 
-    function set_index(search_index) {
-	this.input.on('input', function(counter, index) {
-	    var results = index.find(this.value);
-	    if (this.value=="")
-		counter.text("");
-	    else
-		counter.text(results.length + " results");
-	}.bind(this.input.node(), this.counter, search_index));
+	this.input.on('input', function(input) {
+	    this.current = 1;
+	    this.results = this.search_index.find(input.value);
+	    this.update();
+	}.bind(this, this.input.node()));
     }
+    function is_visible() {
+	return this.selection.style('display') != 'none';
+    }
+    function toggle(on_off) {
+	if (on_off===undefined) this.is_active = !this.is_active;
+	else this.is_active = on_off;
+
+	
+	if (this.is_active) {
+	    this.selection.style('display', null);
+	    this.counter.text("");
+	    this.input.node().value = "";
+	    this.input.node().focus();
+	    // escape key
+	    this.escape = this.map.key_manager
+		.add_escape_listener(function() { this.toggle(false); }.bind(this));
+	} else {
+	    this.selection.style("display", "none");
+	    this.results = null;
+	    if (this.escape)
+		this.escape.clear();
+	    this.escape = null;
+	}
+    }
+    function update() {
+	if (this.results == null)
+	    this.counter.text("");
+	else
+	    this.counter.text(this.results.length==0 ? "0 / 0" :
+			      this.current + " / " + this.results.length);
+    }
+    function next() {
+	if (this.results == null) return;
+	if (this.current==this.results.length)
+	    this.current = 1;
+	else
+	    this.current += 1;
+	this.update();
+    }
+    function previous() {
+	if (this.results == null) return;
+	if (this.current==1)
+	    this.current = this.results.length;
+	else
+	    this.current -= 1;
+	this.update();
+    } 
 });
 
 define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui", "SearchBar"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar) {
@@ -6637,17 +6697,23 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 
 	// set up the modes
 	this._setup_modes(this.map, this.brush, this.zoom_container);
-	
+
+	var s = this.o.selection
+		.append('div').attr('class', 'search-menu-container')
+		.append('div').attr('class', 'search-menu-container-inline'),
+	    menu_div = s.append('div'),
+	    search_bar_div = s.append('div'),
+	    button_div = this.o.selection.append('div');
+
 	// set up the search bar
-	if (this.o.enable_search)
-	    this.search_input = SearchBar(this.o.selection, this.map.search_index);
+	this.search_bar = SearchBar(search_bar_div, this.map.search_index, this.map);
 
 	// set up key manager
-	var keys = this._get_keys(this.map, this.reaction_input, this.search_input,
-				  this.brush, this.o.enable_editing);
+	var keys = this._get_keys(this.map, this.zoom_container, this.search_bar, this.o.enable_editing);
 	this.map.key_manager.assigned_keys = keys;
-	// tell the key manager about the reaction input
+	// tell the key manager about the reaction input and search bar
 	this.map.key_manager.reaction_input = this.reaction_input;
+	this.map.key_manager.search_bar = this.search_bar;
 	// make sure the key manager remembers all those changes
 	this.map.key_manager.update();
 	// turn it on/off
@@ -6655,7 +6721,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	
 	// set up menu and status bars
 	if (this.o.enable_menu) {
-	    this._setup_menu(this.o.selection, this.map, this.zoom_container, this.map.key_manager, keys,
+	    this._setup_menu(menu_div, button_div, this.map, this.zoom_container, this.map.key_manager, keys,
 			     this.o.enable_editing);
 	}
 	var status = this._setup_status(this.o.selection, this.map);
@@ -6690,6 +6756,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    this.o.on_load();
     }
     function set_mode(mode) {
+	this.search_bar.toggle(false);
+
 	this.reaction_input.toggle(mode=='build');
 	this.brush.toggle(mode=='brush');
 	this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
@@ -6724,10 +6792,9 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.callback_manager.run('rotate_mode');
 	this.set_mode('rotate');
     }	
-    function _setup_menu(selection, map, zoom_container, key_manager, keys,
-			 enable_editing) {
-	var menu = selection
-		.append("span").attr('id', 'menu')
+    function _setup_menu(menu_selection, button_selection, map, zoom_container,
+			 key_manager, keys, enable_editing) {
+	var menu = menu_selection.attr('id', 'menu')
 		.append("ul")
 		.attr("class", "nav nav-pills");
 	// map dropdown
@@ -6759,7 +6826,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 				   key: 'fn',
 				   fn: load_reaction_data_for_file,
 				   target: this },
-			  text: "Load reaction data (Ctrl f)" })
+			  text: "Load reaction data" })
 		.button({ key: keys.clear_reaction_data,
 			  text: "Clear reaction data" })
 		.button({ input: { fn: load_metabolite_data_for_file,
@@ -6811,7 +6878,9 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			})
 		.button({ key: keys.extent_canvas,
 			  //icon: "glyphicon glyphicon-resize-full",
-			  text: "Zoom to canvas (Ctrl 1)" });
+			  text: "Zoom to canvas (Ctrl 1)" })
+		.button({ key: keys.search,
+			  text: "Search (Ctrl f)" });
 	if (enable_editing) {
 	    view_menu.button({ key: keys.toggle_beziers,
 			       id: "bezier-button",
@@ -6823,7 +6892,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		});
 	}
 	
-	var button_panel = selection.append("ul")
+	var button_panel = button_selection.append("ul")
 		.attr("class", "nav nav-pills nav-stacked")
 		.attr('id', 'button-panel');
 
@@ -6946,7 +7015,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	});
     }
 
-    function _get_keys(map, input, brush, enable_editing) {
+    function _get_keys(map, zoom_container, search_bar, enable_editing) {
 	var keys = {
             save: { key: 83, modifiers: { control: true }, // ctrl-s
 		    target: map,
@@ -6960,26 +7029,26 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			 fn: function() { this.clear_map(); }},
             load_model: { key: 77, modifiers: { control: true }, // ctrl-m
 			  fn: null }, // defined by button
-	    load_reaction_data: { key: 70, modifiers: { control: true }, // ctrl-f
-				  fn: null }, // defined by button
+	    load_reaction_data: { fn: null }, // defined by button
 	    clear_reaction_data: { target: map,
 				   fn: function() { this.set_reaction_data(null); }},
-	    load_metabolite_data: { key: 70, modifiers: { control: true }, // ctrl-m
-				    fn: null }, // defined by button
+	    load_metabolite_data: { fn: null }, // defined by button
 	    clear_metabolite_data: { target: map,
 				     fn: function() { this.set_metabolite_data(null); }},
 	    zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
-		       target: this.zoom_container,
-		       fn: this.zoom_container.zoom_in },
+		       target: zoom_container,
+		       fn: zoom_container.zoom_in },
 	    zoom_out: { key: 189, modifiers: { control: true }, // ctrl -
-			target: this.zoom_container,
-			fn: this.zoom_container.zoom_out },
+			target: zoom_container,
+			fn: zoom_container.zoom_out },
 	    extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
 			    target: map,
 			    fn: map.zoom_extent_nodes },
 	    extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
 			     target: map,
-			     fn: map.zoom_extent_canvas }
+			     fn: map.zoom_extent_canvas },
+	    search: { key: 70, modifiers: { control: true }, // ctrl-f
+		      fn: search_bar.toggle.bind(search_bar, true) }
 	};
 	if (enable_editing) {
 	    utils.extend(keys, {

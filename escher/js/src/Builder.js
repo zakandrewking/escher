@@ -158,17 +158,23 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 
 	// set up the modes
 	this._setup_modes(this.map, this.brush, this.zoom_container);
-	
+
+	var s = this.o.selection
+		.append('div').attr('class', 'search-menu-container')
+		.append('div').attr('class', 'search-menu-container-inline'),
+	    menu_div = s.append('div'),
+	    search_bar_div = s.append('div'),
+	    button_div = this.o.selection.append('div');
+
 	// set up the search bar
-	if (this.o.enable_search)
-	    this.search_input = SearchBar(this.o.selection, this.map.search_index);
+	this.search_bar = SearchBar(search_bar_div, this.map.search_index, this.map);
 
 	// set up key manager
-	var keys = this._get_keys(this.map, this.reaction_input, this.search_input,
-				  this.brush, this.o.enable_editing);
+	var keys = this._get_keys(this.map, this.zoom_container, this.search_bar, this.o.enable_editing);
 	this.map.key_manager.assigned_keys = keys;
-	// tell the key manager about the reaction input
+	// tell the key manager about the reaction input and search bar
 	this.map.key_manager.reaction_input = this.reaction_input;
+	this.map.key_manager.search_bar = this.search_bar;
 	// make sure the key manager remembers all those changes
 	this.map.key_manager.update();
 	// turn it on/off
@@ -176,7 +182,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	
 	// set up menu and status bars
 	if (this.o.enable_menu) {
-	    this._setup_menu(this.o.selection, this.map, this.zoom_container, this.map.key_manager, keys,
+	    this._setup_menu(menu_div, button_div, this.map, this.zoom_container, this.map.key_manager, keys,
 			     this.o.enable_editing);
 	}
 	var status = this._setup_status(this.o.selection, this.map);
@@ -211,6 +217,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    this.o.on_load();
     }
     function set_mode(mode) {
+	this.search_bar.toggle(false);
+
 	this.reaction_input.toggle(mode=='build');
 	this.brush.toggle(mode=='brush');
 	this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
@@ -245,10 +253,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.callback_manager.run('rotate_mode');
 	this.set_mode('rotate');
     }	
-    function _setup_menu(selection, map, zoom_container, key_manager, keys,
-			 enable_editing) {
-	var menu = selection
-		.append("span").attr('id', 'menu')
+    function _setup_menu(menu_selection, button_selection, map, zoom_container,
+			 key_manager, keys, enable_editing) {
+	var menu = menu_selection.attr('id', 'menu')
 		.append("ul")
 		.attr("class", "nav nav-pills");
 	// map dropdown
@@ -280,7 +287,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 				   key: 'fn',
 				   fn: load_reaction_data_for_file,
 				   target: this },
-			  text: "Load reaction data (Ctrl f)" })
+			  text: "Load reaction data" })
 		.button({ key: keys.clear_reaction_data,
 			  text: "Clear reaction data" })
 		.button({ input: { fn: load_metabolite_data_for_file,
@@ -332,7 +339,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			})
 		.button({ key: keys.extent_canvas,
 			  //icon: "glyphicon glyphicon-resize-full",
-			  text: "Zoom to canvas (Ctrl 1)" });
+			  text: "Zoom to canvas (Ctrl 1)" })
+		.button({ key: keys.search,
+			  text: "Search (Ctrl f)" });
 	if (enable_editing) {
 	    view_menu.button({ key: keys.toggle_beziers,
 			       id: "bezier-button",
@@ -344,7 +353,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		});
 	}
 	
-	var button_panel = selection.append("ul")
+	var button_panel = button_selection.append("ul")
 		.attr("class", "nav nav-pills nav-stacked")
 		.attr('id', 'button-panel');
 
@@ -467,7 +476,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	});
     }
 
-    function _get_keys(map, input, brush, enable_editing) {
+    function _get_keys(map, zoom_container, search_bar, enable_editing) {
 	var keys = {
             save: { key: 83, modifiers: { control: true }, // ctrl-s
 		    target: map,
@@ -481,26 +490,26 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			 fn: function() { this.clear_map(); }},
             load_model: { key: 77, modifiers: { control: true }, // ctrl-m
 			  fn: null }, // defined by button
-	    load_reaction_data: { key: 70, modifiers: { control: true }, // ctrl-f
-				  fn: null }, // defined by button
+	    load_reaction_data: { fn: null }, // defined by button
 	    clear_reaction_data: { target: map,
 				   fn: function() { this.set_reaction_data(null); }},
-	    load_metabolite_data: { key: 70, modifiers: { control: true }, // ctrl-m
-				    fn: null }, // defined by button
+	    load_metabolite_data: { fn: null }, // defined by button
 	    clear_metabolite_data: { target: map,
 				     fn: function() { this.set_metabolite_data(null); }},
 	    zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
-		       target: this.zoom_container,
-		       fn: this.zoom_container.zoom_in },
+		       target: zoom_container,
+		       fn: zoom_container.zoom_in },
 	    zoom_out: { key: 189, modifiers: { control: true }, // ctrl -
-			target: this.zoom_container,
-			fn: this.zoom_container.zoom_out },
+			target: zoom_container,
+			fn: zoom_container.zoom_out },
 	    extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
 			    target: map,
 			    fn: map.zoom_extent_nodes },
 	    extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
 			     target: map,
-			     fn: map.zoom_extent_canvas }
+			     fn: map.zoom_extent_canvas },
+	    search: { key: 70, modifiers: { control: true }, // ctrl-f
+		      fn: search_bar.toggle.bind(search_bar, true) }
 	};
 	if (enable_editing) {
 	    utils.extend(keys, {

@@ -1,5 +1,9 @@
 describe('SearchIndex', function() {
-    var index = escher.SearchIndex();
+    var index;
+
+    beforeEach(function() {
+	index = escher.SearchIndex();
+    });
 
     it("Insert", function () {
 	expect(function() { index.insert('123', {}, false, true); })
