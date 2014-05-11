@@ -147,6 +147,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			       this.o.metabolite_data,
 			       this.o.metabolite_data_styles,
 			       cobra_model_obj,
+			       null,
 			       this.o.enable_search);
 	}
 

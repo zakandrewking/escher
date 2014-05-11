@@ -75,6 +75,8 @@
     border: 1px solid #DDD;
     margin-right: 4px;
     width: 114px;
+    height: 29px;
+    border-radius: 3px;
 }
 .search-counter {
     display: inline-block;
@@ -86,7 +88,7 @@
 #button-panel {
     position: absolute;
     left: 4px;
-    top: 78px;
+    top: 81px;
 }
 .input-close-button {
     position: absolute;

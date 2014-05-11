@@ -174,14 +174,15 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
         // shift window if new reaction will draw off the screen
         // TODO BUG not accounting for scale correctly
         var margin = 80, // pixels
+	    size = this.get_size(),
 	    current = {'x': {'min': - this.window_translate.x / this.window_scale +
 			     margin / this.window_scale,
 			     'max': - this.window_translate.x / this.window_scale +
-			     (this.width-margin) / this.window_scale },
+			     (size.width-margin) / this.window_scale },
 		       'y': {'min': - this.window_translate.y / this.window_scale +
 			     margin / this.window_scale,
 			     'max': - this.window_translate.y / this.window_scale +
-			     (this.height-margin) / this.window_scale } };
+			     (size.height-margin) / this.window_scale } };
         if (coords.x < current.x.min) {
             this.window_translate.x = this.window_translate.x -
 		(coords.x - current.x.min) * this.window_scale;

@@ -4083,6 +4083,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     Map.prototype = {
 	// setup
 	init: init,
+	// more setup
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
 	// appearance
@@ -4104,6 +4105,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	new_reaction_for_metabolite: new_reaction_for_metabolite,
 	cycle_primary_node: cycle_primary_node,
 	make_selected_node_primary: make_selected_node_primary,
+	extend_nodes: extend_nodes,
+	extend_reactions: extend_reactions,
 	// delete
 	delete_selected: delete_selected,
 	delete_nodes: delete_nodes,
@@ -4155,10 +4158,13 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
     return Map;
 
+    // -------------------------------------------------------------------------
+    // setup
+
     function init(svg, css, selection, zoom_container, reaction_data,
 		  reaction_data_styles, metabolite_data, metabolite_data_styles,
 		  cobra_model, canvas_size_and_loc, enable_search) {
-	if (canvas_size_and_loc===undefined || canvas_size_and_loc===null) {
+	if (canvas_size_and_loc===null) {
 	    var size = zoom_container.get_size();
 	    canvas_size_and_loc = {x: -size.width, y: -size.height,
 				   width: size.width*3, height: size.height*3};
@@ -4327,7 +4333,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    for (var node_id in map.nodes) {
 		var node = map.nodes[node_id];
 		if (node.node_type!='metabolite') continue;
-		map.search_index.insert('m'+node_id, { 'name': node.bigg_id,
+		map.search_index.insert('n'+node_id, { 'name': node.bigg_id,
 						       'data': { type: 'metabolite',
 								 node_id: node_id }});
 	    }
@@ -4363,7 +4369,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     }
 
     // ---------------------------------------------------------------------
-    // Drawing
+    // more setup
 
     function setup_containers(sel) {
         sel.append('g')
@@ -4982,16 +4988,15 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	var saved_nodes = utils.clone(selected_nodes),
 	    saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments),
 	    saved_reactions = utils.clone(reactions),
-	    self = this,
 	    delete_and_draw = function(nodes, reactions, segment_objs) {
 		// delete nodes, segments, and reactions with no segments
-  		self.delete_node_data(selected_nodes);
-		self.delete_segment_data(segment_objs);
-		self.delete_reaction_data(reactions);
+  		this.delete_node_data(Object.keys(selected_nodes));
+		this.delete_segment_data(segment_objs);
+		this.delete_reaction_data(Object.keys(reactions));
 		// redraw
 		// TODO just redraw these nodes and segments
-		self.draw_everything();
-	    };
+		this.draw_everything();
+	    }.bind(this);
 
 	// delete
 	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
@@ -5000,36 +5005,38 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.undo_stack.push(function() {
 	    // undo
 	    // redraw the saved nodes, reactions, and segments
-	    utils.extend(self.nodes, saved_nodes);
-	    utils.extend(self.reactions, saved_reactions);
+
+	    this.extend_nodes(saved_nodes);
+	    this.extend_reactions(saved_reactions);
 	    var reactions_to_draw = Object.keys(saved_reactions);
 	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
 		var segment = segment_obj.segment;
-		self.reactions[segment_obj.reaction_id]
+		this.reactions[segment_obj.reaction_id]
 		    .segments[segment_obj.segment_id] = segment;
 
 		// updated connected nodes
 		[segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
 		    // not necessary for the deleted nodes
 		    if (node_id in saved_nodes) return;
-		    var node = self.nodes[node_id];
+		    var node = this.nodes[node_id];
 		    node.connected_segments.push({ reaction_id: segment_obj.reaction_id,
 						   segment_id: segment_obj.segment_id });
-		});
+		}.bind(this));
 
-		reactions_to_draw.push(segment_obj.reaction_id);
-	    });
-	    self.draw_these_nodes(Object.keys(saved_nodes));
-	    self.draw_these_reactions(reactions_to_draw);
+		if (reactions_to_draw.indexOf(segment_obj.reaction_id)==-1)
+		    reactions_to_draw.push(segment_obj.reaction_id);
+	    }.bind(this));
+	    this.draw_these_nodes(Object.keys(saved_nodes));
+	    this.draw_these_reactions(reactions_to_draw);
 	    // copy nodes to re-delete
 	    selected_nodes = utils.clone(saved_nodes);
 	    segment_objs_w_segments = utils.clone(saved_segment_objs_w_segments);
 	    reactions = utils.clone(saved_reactions);
-	}, function () {
+	}.bind(this), function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
 	    delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
-	});
+	}.bind(this));
     }
     function delete_text_labels(selected_text_labels) {
 	/** Delete the text_labels.
@@ -5042,7 +5049,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    self = this,
 	    delete_and_draw = function(text_labels) {
 		// delete text_labels, segments, and reactions with no segments
-  		self.delete_text_label_data(selected_text_labels);
+  		self.delete_text_label_data(Object.keys(selected_text_labels));
 		// redraw
 		// TODO just redraw these text_labels
 		self.draw_everything();
@@ -5063,12 +5070,17 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    delete_and_draw(selected_text_labels);
 	});
     }
-    function delete_node_data(nodes) {
-	/** Simply delete nodes.
+    function delete_node_data(node_ids) {
+	/** Delete nodes, and remove from search index.
 	 */
-	for (var node_id in nodes) {
+	node_ids.forEach(function(node_id) {
+	    if (this.enable_search && this.nodes[node_id].node_type=='metabolite') {
+		var found = this.search_index.remove('n'+node_id);
+		if (!found)
+		    console.warn('Could not find deleted metabolite in search index');
+	    }
 	    delete this.nodes[node_id];
-	}
+	}.bind(this));
     }
     function delete_segment_data(segment_objs) {
 	/** Delete segments, and update connected_segments in nodes. Also
@@ -5077,10 +5089,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	 segment_objs: Array of objects with { reaction_id: "123", segment_id: "456" }
 	 
 	 */
-	var reactions = this.reactions,
-	    nodes = this.nodes;
 	segment_objs.forEach(function(segment_obj) {
-	    var reaction = reactions[segment_obj.reaction_id];
+	    var reaction = this.reactions[segment_obj.reaction_id];
 
 	    // segment already deleted
 	    if (!(segment_obj.segment_id in reaction.segments)) return;
@@ -5088,29 +5098,33 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    var segment = reaction.segments[segment_obj.segment_id];
 	    // updated connected nodes
 	    [segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
-		if (!(node_id in nodes)) return;
-		var node = nodes[node_id];
+		if (!(node_id in this.nodes)) return;
+		var node = this.nodes[node_id];
 		node.connected_segments = node.connected_segments.filter(function(so) {
 		    return so.segment_id != segment_obj.segment_id;				
 		});
-	    });
+	    }.bind(this));
 
 	    delete reaction.segments[segment_obj.segment_id];
-	});
+	}.bind(this));
     }
-    function delete_reaction_data(reactions) {
-	/** delete reactions
+    function delete_reaction_data(reaction_ids) {
+	/** Delete reactions and remove from search index.
+	 
 	 */
-	for (var reaction_id in reactions) {
+	reaction_ids.forEach(function(reaction_id) {
 	    delete this.reactions[reaction_id];
-	}
+	    var found = this.search_index.remove('r'+reaction_id);
+	    if (!found)
+		console.warn('Could not find deleted reaction in search index');
+	}.bind(this));
     }
-    function delete_text_label_data(text_labels) {
+    function delete_text_label_data(text_label_ids) {
 	/** delete text labels for an array of ids
 	 */
-	for (var text_label_id in text_labels) {
+	text_label_ids.forEach(function(text_label_id) {
 	    delete this.text_labels[text_label_id];
-	}
+	}.bind(this));
     }
     function show_beziers() {
 	this.toggle_beziers(true);
@@ -5184,7 +5198,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.undo_stack.push(function() {
 	    // undo
 	    // get the nodes to delete
-	    map.delete_node_data(new_nodes);
+	    map.delete_node_data(Object.keys(new_nodes));
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    // draw
@@ -5202,7 +5216,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
         // definitions
 	function extend_and_draw_metabolite(new_nodes, selected_node_id) {
-	    utils.extend(this.nodes, new_nodes);
+	    this.extend_nodes(new_nodes);
 	    if (this.has_metabolite_data()) {
 		var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
 		if (scale_changed) this.draw_all_nodes();
@@ -5213,6 +5227,36 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	}
     }
     
+    function extend_nodes(new_nodes) {
+	/** Add new nodes to data and search index.
+
+	 */
+	if (this.enable_search) {
+	    for (var node_id in new_nodes) {
+		var node = new_nodes[node_id];
+		if (node.node_type!='metabolite') continue;
+		this.search_index.insert('n'+node_id, { 'name': node.bigg_id,
+							'data': { type: 'metabolite',
+								  node_id: node_id }});
+	    }
+	}
+	utils.extend(this.nodes, new_nodes);
+    }
+    function extend_reactions(new_reactions) {
+	/** Add new reactions to data and search index.
+
+	 */
+	for (var r_id in new_reactions) {
+	    var reaction = new_reactions[r_id];
+	    if (this.enable_search) {
+		this.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
+						     'data': { type: 'reaction',
+							       reaction_id: r_id }});
+	    }
+	}
+	utils.extend(this.reactions, new_reactions);
+    }
+
     function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id) {
 	/** Build a new reaction starting with selected_met.
 
@@ -5259,8 +5303,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    // undo
 	    // get the nodes to delete
 	    delete new_nodes[selected_node_id];
-	    map.delete_node_data(new_nodes);
-	    map.delete_reaction_data(new_reactions);
+	    map.delete_node_data(Object.keys(new_nodes));
+	    map.delete_reaction_data(Object.keys(new_reactions));
 	    select_metabolite_with_id.apply(map, [selected_node_id]);
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
@@ -5275,10 +5319,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
 	// definitions
 	function extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id) {
-	    utils.extend(this.reactions, new_reactions);
+	    this.extend_reactions(new_reactions);
 	    // remove the selected node so it can be updated
-	    delete this.nodes[selected_node_id];
-	    utils.extend(this.nodes, new_nodes);
+	    this.delete_node_data([selected_node_id]); // TODO this is a hack. fix
+	    this.extend_nodes(new_nodes);
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
@@ -5838,14 +5882,15 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
         // shift window if new reaction will draw off the screen
         // TODO BUG not accounting for scale correctly
         var margin = 80, // pixels
+	    size = this.get_size(),
 	    current = {'x': {'min': - this.window_translate.x / this.window_scale +
 			     margin / this.window_scale,
 			     'max': - this.window_translate.x / this.window_scale +
-			     (this.width-margin) / this.window_scale },
+			     (size.width-margin) / this.window_scale },
 		       'y': {'min': - this.window_translate.y / this.window_scale +
 			     margin / this.window_scale,
 			     'max': - this.window_translate.y / this.window_scale +
-			     (this.height-margin) / this.window_scale } };
+			     (size.height-margin) / this.window_scale } };
         if (coords.x < current.x.min) {
             this.window_translate.x = this.window_translate.x -
 		(coords.x - current.x.min) * this.window_scale;
@@ -6538,19 +6583,23 @@ define('SearchBar',["utils"], function(utils) {
 		.style('display', 'none');
 	this.input = container.append('input')
 	    .attr('class', 'search-bar');
-	container.append('button')
-	    .attr("class", "btn-sm btn-default glyphicon glyphicon-chevron-left")
-	    .on('click', this.previous.bind(this));
-	container.append('button')
-	    .attr("class", "btn-sm btn-default glyphicon glyphicon-chevron-right")
-	    .on('click', this.next.bind(this));
+	var group = container.append('div').attr('class', 'btn-group btn-group-sm');
+	group.append('button')
+	    .attr("class", "btn btn-default")
+	    .on('click', this.previous.bind(this))
+	    .append('span').attr('class', "glyphicon glyphicon-chevron-left");
+	group.append('button')
+	    .attr("class", "btn btn-default")
+	    .on('click', this.next.bind(this))
+	    .append('span').attr('class', "glyphicon glyphicon-chevron-right");
 	this.counter = container.append('div')
 	    .attr('class', 'search-counter');
 	container.append('button')
-	    .attr("class", "btn-sm btn-default glyphicon glyphicon-remove search-close-button")
+	    .attr("class", "btn btn-sm btn-default search-close-button")
 	    .on('click', function() {
 		this.toggle(false);
-	    }.bind(this));
+	    }.bind(this))
+	    .append("span").attr("class",  "glyphicon glyphicon-remove");
 	
 	this.selection = container;
 	this.map = map;
@@ -6783,6 +6832,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			       this.o.metabolite_data,
 			       this.o.metabolite_data_styles,
 			       cobra_model_obj,
+			       null,
 			       this.o.enable_search);
 	}
 

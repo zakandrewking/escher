@@ -19,19 +19,23 @@ define(["utils"], function(utils) {
 		.style('display', 'none');
 	this.input = container.append('input')
 	    .attr('class', 'search-bar');
-	container.append('button')
-	    .attr("class", "btn-sm btn-default glyphicon glyphicon-chevron-left")
-	    .on('click', this.previous.bind(this));
-	container.append('button')
-	    .attr("class", "btn-sm btn-default glyphicon glyphicon-chevron-right")
-	    .on('click', this.next.bind(this));
+	var group = container.append('div').attr('class', 'btn-group btn-group-sm');
+	group.append('button')
+	    .attr("class", "btn btn-default")
+	    .on('click', this.previous.bind(this))
+	    .append('span').attr('class', "glyphicon glyphicon-chevron-left");
+	group.append('button')
+	    .attr("class", "btn btn-default")
+	    .on('click', this.next.bind(this))
+	    .append('span').attr('class', "glyphicon glyphicon-chevron-right");
 	this.counter = container.append('div')
 	    .attr('class', 'search-counter');
 	container.append('button')
-	    .attr("class", "btn-sm btn-default glyphicon glyphicon-remove search-close-button")
+	    .attr("class", "btn btn-sm btn-default search-close-button")
 	    .on('click', function() {
 		this.toggle(false);
-	    }.bind(this));
+	    }.bind(this))
+	    .append("span").attr("class",  "glyphicon glyphicon-remove");
 	
 	this.selection = container;
 	this.map = map;
