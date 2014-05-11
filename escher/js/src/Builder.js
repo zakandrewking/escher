@@ -345,7 +345,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  //icon: "glyphicon glyphicon-resize-full",
 			  text: "Zoom to canvas (Ctrl 1)" })
 		.button({ key: keys.search,
-			  text: "Search (Ctrl f)" });
+			  text: "Find (Ctrl f)" });
 	if (enable_editing) {
 	    view_menu.button({ key: keys.toggle_beziers,
 			       id: "bezier-button",

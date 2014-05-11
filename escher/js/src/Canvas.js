@@ -50,17 +50,25 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	var self = this,
 	    extent = {"x": this.width, "y": this.height},
 	    dragbar_width = 20,
+	    mouse_node_mult = 10,
 	    new_sel = this.selection.append('g')
 		.classed('canvas-group', true)
 		.data([{x: this.x, y: this.y}]);
 	
-	var rect = new_sel.append('rect')
+	var mouse_node = new_sel.append('rect')
 		.attr('id', 'mouse-node')
+		.attr("width", this.width*mouse_node_mult)
+		.attr("height", this.height*mouse_node_mult)
+		.attr("transform", "translate("+[self.x - this.width*mouse_node_mult/2,
+						 self.y - this.height*mouse_node_mult/2]+")")
+		.attr('pointer-events', 'all');
+	this.mouse_node = mouse_node;
+	
+	var rect = new_sel.append('rect')
+		.attr('id', 'canvas')
 		.attr("width", this.width)
 		.attr("height", this.height)
-		.attr("transform", "translate("+[self.x, self.y]+")")
-		.attr('class', 'canvas')
-		.attr('pointer-events', 'all');
+		.attr("transform", "translate("+[self.x, self.y]+")");
 
 	var drag_right = d3.behavior.drag()
 		.origin(Object)
@@ -150,6 +158,9 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    left.attr("transform", function(d) {
 		return transform_string(d.x - (dragbar_width / 2), null, left.attr('transform'));
 	    });
+	    mouse_node.attr("transform", function(d) {
+		return transform_string(d.x, null, mouse_node.attr('transform'));
+	    }).attr("width", self.width*mouse_node_mult);
 	    rect.attr("transform", function(d) {
 		return transform_string(d.x, null, rect.attr('transform'));
 	    }).attr("width", self.width);
@@ -174,6 +185,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    });
 	    //resize the drag rectangle
 	    //as we are only resizing from the right, the x coordinate does not need to change
+	    mouse_node.attr("width", self.width*mouse_node_mult);
 	    rect.attr("width", self.width);
 	    top.attr("width", self.width - dragbar_width);
 	    bottom.attr("width", self.width - dragbar_width);
@@ -190,6 +202,9 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    top.attr("transform", function(d) {
 		return transform_string(null, d.y - (dragbar_width / 2), top.attr('transform'));
 	    });
+	    mouse_node.attr("transform", function(d) {
+		return transform_string(null, d.y, mouse_node.attr('transform'));
+	    }).attr("width", self.height*mouse_node_mult);
 	    rect.attr("transform", function(d) {
 		return transform_string(null, d.y, rect.attr('transform'));
 	    }).attr("height", self.height);
@@ -214,6 +229,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    });
 	    //resize the drag rectangle
 	    //as we are only resizing from the right, the x coordinate does not need to change
+	    mouse_node.attr("height", self.height*mouse_node_mult);
 	    rect.attr("height", self.height);
 	    left.attr("height", self.height - dragbar_width);
 	    right.attr("height", self.height - dragbar_width);

@@ -256,15 +256,14 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    }
 	}
 	if (enable_search) {
-	    for (var node_id in map.metabolites) {
+	    for (var node_id in map.nodes) {
 		var node = map.nodes[node_id];
-		if (node.node_type=='metabolite') continue;
+		if (node.node_type!='metabolite') continue;
 		map.search_index.insert('m'+node_id, { 'name': node.bigg_id,
 						       'data': { type: 'metabolite',
 								 node_id: node_id }});
 	    }
 	}
-
 	// get largest ids for adding new reactions, nodes, text labels, and
 	// segments
 	map.largest_ids.reactions = get_largest_id(map.reactions);
@@ -1503,8 +1502,9 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     function zoom_to_node(node_id) {
 	var node = this.nodes[node_id],
 	    new_zoom = 0.6,
-	    new_pos = { x: - node.label_x * new_zoom,
-			y: - node.label_y * new_zoom };
+	    size = this.get_size(),
+	    new_pos = { x: - node.label_x * new_zoom + size.width/2,
+			y: - node.label_y * new_zoom + size.height/2 };
 	this.zoom_container.go_to(new_zoom, new_pos);
     }
 
@@ -1573,18 +1573,23 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,
 	    window_translate = this.zoom_container.window_translate,
-	//     svg_width = this.svg.attr('width'),
-	//     svg_height = this.svg.attr('height'),
-	    canvas_size_and_loc = this.canvas.size_and_location();
-	// console.log('Check that these are not null:');
-	// console.log(svg_width, svg_height);
-	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, true);
+	    canvas_size_and_loc = this.canvas.size_and_location(),
+	    mouse_node_size_and_trans = { w: this.canvas.mouse_node.attr('width'),
+					  h: this.canvas.mouse_node.attr('height'),
+				          transform:  this.canvas.mouse_node.attr('transform')};
+	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, false);
 	this.svg.attr('width', canvas_size_and_loc.width);
 	this.svg.attr('height', canvas_size_and_loc.height);
+	this.canvas.mouse_node.attr('width', '0px');
+	this.canvas.mouse_node.attr('height', '0px');
+	this.canvas.mouse_node.attr('transform', null);
         utils.export_svg("saved_map", this.svg, true);
-	this.zoom_container.go_to(window_scale, window_translate, true);
+	this.zoom_container.go_to(window_scale, window_translate, false);
 	this.svg.attr('width', null);
 	this.svg.attr('height', null);
+	this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
+	this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
+	this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
 	this.callback_manager.run('after_svg_export');
     }
 });

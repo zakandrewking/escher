@@ -82,7 +82,7 @@ define(["utils", "build"], function(utils, build) {
 	}
 
 	var selection_node = this.map.sel.selectAll('.node-circle'),
-	    selection_background = this.map.sel.selectAll('#mouse-node');
+	    selection_background = this.map.sel.selectAll('#canvas');
 
 	if (this.rotation_mode_enabled) {
 	    this.map.callback_manager.run('start_rotation');

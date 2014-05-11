@@ -2746,7 +2746,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	}
 
 	var selection_node = this.map.sel.selectAll('.node-circle'),
-	    selection_background = this.map.sel.selectAll('#mouse-node');
+	    selection_background = this.map.sel.selectAll('#canvas');
 
 	if (this.rotation_mode_enabled) {
 	    this.map.callback_manager.run('start_rotation');
@@ -3788,17 +3788,25 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
 	var self = this,
 	    extent = {"x": this.width, "y": this.height},
 	    dragbar_width = 20,
+	    mouse_node_mult = 10,
 	    new_sel = this.selection.append('g')
 		.classed('canvas-group', true)
 		.data([{x: this.x, y: this.y}]);
 	
-	var rect = new_sel.append('rect')
+	var mouse_node = new_sel.append('rect')
 		.attr('id', 'mouse-node')
+		.attr("width", this.width*mouse_node_mult)
+		.attr("height", this.height*mouse_node_mult)
+		.attr("transform", "translate("+[self.x - this.width*mouse_node_mult/2,
+						 self.y - this.height*mouse_node_mult/2]+")")
+		.attr('pointer-events', 'all');
+	this.mouse_node = mouse_node;
+	
+	var rect = new_sel.append('rect')
+		.attr('id', 'canvas')
 		.attr("width", this.width)
 		.attr("height", this.height)
-		.attr("transform", "translate("+[self.x, self.y]+")")
-		.attr('class', 'canvas')
-		.attr('pointer-events', 'all');
+		.attr("transform", "translate("+[self.x, self.y]+")");
 
 	var drag_right = d3.behavior.drag()
 		.origin(Object)
@@ -3888,6 +3896,9 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    left.attr("transform", function(d) {
 		return transform_string(d.x - (dragbar_width / 2), null, left.attr('transform'));
 	    });
+	    mouse_node.attr("transform", function(d) {
+		return transform_string(d.x, null, mouse_node.attr('transform'));
+	    }).attr("width", self.width*mouse_node_mult);
 	    rect.attr("transform", function(d) {
 		return transform_string(d.x, null, rect.attr('transform'));
 	    }).attr("width", self.width);
@@ -3912,6 +3923,7 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    });
 	    //resize the drag rectangle
 	    //as we are only resizing from the right, the x coordinate does not need to change
+	    mouse_node.attr("width", self.width*mouse_node_mult);
 	    rect.attr("width", self.width);
 	    top.attr("width", self.width - dragbar_width);
 	    bottom.attr("width", self.width - dragbar_width);
@@ -3928,6 +3940,9 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    top.attr("transform", function(d) {
 		return transform_string(null, d.y - (dragbar_width / 2), top.attr('transform'));
 	    });
+	    mouse_node.attr("transform", function(d) {
+		return transform_string(null, d.y, mouse_node.attr('transform'));
+	    }).attr("width", self.height*mouse_node_mult);
 	    rect.attr("transform", function(d) {
 		return transform_string(null, d.y, rect.attr('transform'));
 	    }).attr("height", self.height);
@@ -3952,6 +3967,7 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    });
 	    //resize the drag rectangle
 	    //as we are only resizing from the right, the x coordinate does not need to change
+	    mouse_node.attr("height", self.height*mouse_node_mult);
 	    rect.attr("height", self.height);
 	    left.attr("height", self.height - dragbar_width);
 	    right.attr("height", self.height - dragbar_width);
@@ -4308,15 +4324,14 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    }
 	}
 	if (enable_search) {
-	    for (var node_id in map.metabolites) {
+	    for (var node_id in map.nodes) {
 		var node = map.nodes[node_id];
-		if (node.node_type=='metabolite') continue;
+		if (node.node_type!='metabolite') continue;
 		map.search_index.insert('m'+node_id, { 'name': node.bigg_id,
 						       'data': { type: 'metabolite',
 								 node_id: node_id }});
 	    }
 	}
-
 	// get largest ids for adding new reactions, nodes, text labels, and
 	// segments
 	map.largest_ids.reactions = get_largest_id(map.reactions);
@@ -5555,8 +5570,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     function zoom_to_node(node_id) {
 	var node = this.nodes[node_id],
 	    new_zoom = 0.6,
-	    new_pos = { x: - node.label_x * new_zoom,
-			y: - node.label_y * new_zoom };
+	    size = this.get_size(),
+	    new_pos = { x: - node.label_x * new_zoom + size.width/2,
+			y: - node.label_y * new_zoom + size.height/2 };
 	this.zoom_container.go_to(new_zoom, new_pos);
     }
 
@@ -5625,18 +5641,23 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,
 	    window_translate = this.zoom_container.window_translate,
-	//     svg_width = this.svg.attr('width'),
-	//     svg_height = this.svg.attr('height'),
-	    canvas_size_and_loc = this.canvas.size_and_location();
-	// console.log('Check that these are not null:');
-	// console.log(svg_width, svg_height);
-	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, true);
+	    canvas_size_and_loc = this.canvas.size_and_location(),
+	    mouse_node_size_and_trans = { w: this.canvas.mouse_node.attr('width'),
+					  h: this.canvas.mouse_node.attr('height'),
+				          transform:  this.canvas.mouse_node.attr('transform')};
+	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, false);
 	this.svg.attr('width', canvas_size_and_loc.width);
 	this.svg.attr('height', canvas_size_and_loc.height);
+	this.canvas.mouse_node.attr('width', '0px');
+	this.canvas.mouse_node.attr('height', '0px');
+	this.canvas.mouse_node.attr('transform', null);
         utils.export_svg("saved_map", this.svg, true);
-	this.zoom_container.go_to(window_scale, window_translate, true);
+	this.zoom_container.go_to(window_scale, window_translate, false);
 	this.svg.attr('width', null);
 	this.svg.attr('height', null);
+	this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
+	this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
+	this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
 	this.callback_manager.run('after_svg_export');
     }
 });
@@ -6960,7 +6981,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			  //icon: "glyphicon glyphicon-resize-full",
 			  text: "Zoom to canvas (Ctrl 1)" })
 		.button({ key: keys.search,
-			  text: "Search (Ctrl f)" });
+			  text: "Find (Ctrl f)" });
 	if (enable_editing) {
 	    view_menu.button({ key: keys.toggle_beziers,
 			       id: "bezier-button",

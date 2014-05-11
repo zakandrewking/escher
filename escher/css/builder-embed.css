@@ -1,4 +1,7 @@
-.canvas {
+#mouse-node {
+    fill: none;
+}
+#canvas {
     stroke: #ccc;
     stroke-width: 7px;
     fill: white;
