@@ -21,7 +21,7 @@ define(["utils"], function(utils) {
 	h.shift = false;
     }
     // instance methods
-    function init(assigned_keys, reaction_input, ctrl_equals_cmd) {
+    function init(assigned_keys, reaction_input, search_input, ctrl_equals_cmd) {
 	/** Assign keys for commands.
 
 	 */

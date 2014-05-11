@@ -1,4 +1,4 @@
-define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles) {
+define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -83,7 +83,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
     function init(svg, css, selection, zoom_container, reaction_data,
 		  reaction_data_styles, metabolite_data, metabolite_data_styles,
-		  cobra_model, canvas_size_and_loc) {
+		  cobra_model, canvas_size_and_loc, enable_search) {
 	if (canvas_size_and_loc===undefined || canvas_size_and_loc===null) {
 	    var size = zoom_container.get_size();
 	    canvas_size_and_loc = {x: -size.width, y: -size.height,
@@ -134,6 +134,11 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	// make a key manager
 	this.key_manager = new KeyManager();
 
+	// make the search index
+	this.enable_search = enable_search;
+	if (enable_search)
+	    this.search_index = new SearchIndex();
+
 	// deal with the window
 	var window_translate = {'x': 0, 'y': 0},
 	    window_scale = 1;
@@ -182,7 +187,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
     function from_data(map_data, svg, css, selection, zoom_container,
 		       reaction_data, reaction_data_styles,
-		       metabolite_data, metabolite_data_styles, cobra_model) {
+		       metabolite_data, metabolite_data_styles, cobra_model,
+		       enable_search) {
 	/** Load a json map and add necessary fields for rendering.
 	 
 	 */
@@ -190,7 +196,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 					  'zoom_container',
 					  'reaction_data', 'reaction_data_styles',
 					  'metabolite_data', 'metabolite_data_styles',
-					  'cobra_model']);
+					  'cobra_model', 'enable_search']);
 
 	if (this.debug) {
 	    d3.json('map_spec.json', function(error, spec) {
@@ -205,7 +211,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var canvas = map_data.canvas,
 	    map = new Map(svg, css, selection, zoom_container,
 			  reaction_data, reaction_data_styles, metabolite_data,
-			  metabolite_data_styles, cobra_model, canvas);
+			  metabolite_data_styles, cobra_model, canvas,
+			  enable_search);
 
 	map.reactions = map_data.reactions;
 	map.nodes = map_data.nodes;
@@ -213,9 +220,14 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	map.text_labels = map_data.text_labels;
 	map.info = map_data.info;
 
-	// propogate coefficients and reversbility
+	// propogate coefficients and reversbility, and populate the search index
 	for (var r_id in map.reactions) {
 	    var reaction = map.reactions[r_id];
+	    if (enable_search) {
+		map.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
+						    'data': { type: 'reaction',
+							      reaction_id: r_id }});
+	    }
 	    for (var s_id in reaction.segments) {
 		var segment = reaction.segments[s_id];
 		segment.reversibility = reaction.reversibility;
@@ -236,6 +248,15 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		    if (segment.b2 === null) segment.b2 = midpoint;
 		}
 
+	    }
+	}
+	if (enable_search) {
+	    for (var node_id in map.metabolites) {
+		var node = map.nodes[node_id];
+		if (node.node_type=='metabolite') continue;
+		map.search_index.insert('m'+node_id, { 'name': node.bigg_id,
+						       'data': { type: 'metabolite',
+								 node_id: node_id }});
 	    }
 	}
 

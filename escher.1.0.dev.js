@@ -3600,7 +3600,7 @@ define('KeyManager',["utils"], function(utils) {
 	h.shift = false;
     }
     // instance methods
-    function init(assigned_keys, reaction_input, ctrl_equals_cmd) {
+    function init(assigned_keys, reaction_input, search_input, ctrl_equals_cmd) {
 	/** Assign keys for commands.
 
 	 */
@@ -3950,7 +3950,89 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
     }
 });
 
-define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles) {
+define('SearchIndex',["utils"], function(utils) {
+    /** Define an index for searching for reaction and metabolites in the map.
+
+     The index is stored in SearchIndex.index, an object of id/record pairs.
+
+     */
+
+    var SearchIndex = utils.make_class();
+    SearchIndex.prototype = { init: init,
+			      insert: insert,
+			      remove: remove,
+			      find: find };
+
+    return SearchIndex;
+
+    // definitions
+    function init() {
+	this.index = {};
+    }
+
+    function insert(id, record, overwrite, check_record) {
+	/** Insert a record into the index.
+
+	 id: A unique string id.
+
+	 record: Records have the form:
+
+	 { 'name': '',
+	   'data': {} }
+
+	 Search is performed on substrings of the name.
+
+	 overwrite: (Default false) For faster performance, make overwrite true,
+	 and records will be inserted without checking for an existing record.
+
+	 check_record: (Default false) For faster performance, make check_record
+	 false. If true, records will be checked to make sure they have name and
+	 data attributes.
+
+	 Returns undefined.
+
+	 */
+	if (!overwrite && (id in this.index))
+	    throw new Error("id is already in the index");
+	if (check_record && !(('name' in record) && ('data' in record)))
+	    throw new Error("malformed record");
+	this.index[id] = record;
+    }
+
+    function remove(record_id) {
+	/** Remove the matching record.
+
+	 Returns true is a record is found, or false if no match is found.
+
+	 */
+	if (record_id in this.index) {
+	    delete this.index[record_id];
+	    return true;
+	} else {
+	    return false;
+	}
+    }
+
+    function find(substring) {
+	/** Find a record that matches the substring.
+
+	 Returns an array of data from matching records.
+
+	 */
+
+	var re = RegExp(substring, "i"), // ignore case
+	    matches = [];
+	for (var id in this.index) {
+	    var record = this.index[id];
+	    if (re.exec(record.name))
+		matches.push(record.data);
+	}
+	return matches;
+	    
+    }
+});
+
+define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -4035,7 +4117,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
     function init(svg, css, selection, zoom_container, reaction_data,
 		  reaction_data_styles, metabolite_data, metabolite_data_styles,
-		  cobra_model, canvas_size_and_loc) {
+		  cobra_model, canvas_size_and_loc, enable_search) {
 	if (canvas_size_and_loc===undefined || canvas_size_and_loc===null) {
 	    var size = zoom_container.get_size();
 	    canvas_size_and_loc = {x: -size.width, y: -size.height,
@@ -4086,6 +4168,11 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	// make a key manager
 	this.key_manager = new KeyManager();
 
+	// make the search index
+	this.enable_search = enable_search;
+	if (enable_search)
+	    this.search_index = new SearchIndex();
+
 	// deal with the window
 	var window_translate = {'x': 0, 'y': 0},
 	    window_scale = 1;
@@ -4134,7 +4221,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
     function from_data(map_data, svg, css, selection, zoom_container,
 		       reaction_data, reaction_data_styles,
-		       metabolite_data, metabolite_data_styles, cobra_model) {
+		       metabolite_data, metabolite_data_styles, cobra_model,
+		       enable_search) {
 	/** Load a json map and add necessary fields for rendering.
 	 
 	 */
@@ -4142,7 +4230,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 					  'zoom_container',
 					  'reaction_data', 'reaction_data_styles',
 					  'metabolite_data', 'metabolite_data_styles',
-					  'cobra_model']);
+					  'cobra_model', 'enable_search']);
 
 	if (this.debug) {
 	    d3.json('map_spec.json', function(error, spec) {
@@ -4157,7 +4245,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	var canvas = map_data.canvas,
 	    map = new Map(svg, css, selection, zoom_container,
 			  reaction_data, reaction_data_styles, metabolite_data,
-			  metabolite_data_styles, cobra_model, canvas);
+			  metabolite_data_styles, cobra_model, canvas,
+			  enable_search);
 
 	map.reactions = map_data.reactions;
 	map.nodes = map_data.nodes;
@@ -4165,9 +4254,14 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	map.text_labels = map_data.text_labels;
 	map.info = map_data.info;
 
-	// propogate coefficients and reversbility
+	// propogate coefficients and reversbility, and populate the search index
 	for (var r_id in map.reactions) {
 	    var reaction = map.reactions[r_id];
+	    if (enable_search) {
+		map.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
+						    'data': { type: 'reaction',
+							      reaction_id: r_id }});
+	    }
 	    for (var s_id in reaction.segments) {
 		var segment = reaction.segments[s_id];
 		segment.reversibility = reaction.reversibility;
@@ -4188,6 +4282,15 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 		    if (segment.b2 === null) segment.b2 = midpoint;
 		}
 
+	    }
+	}
+	if (enable_search) {
+	    for (var node_id in map.metabolites) {
+		var node = map.nodes[node_id];
+		if (node.node_type=='metabolite') continue;
+		map.search_index.insert('m'+node_id, { 'name': node.bigg_id,
+						       'data': { type: 'metabolite',
+								 node_id: node_id }});
 	    }
 	}
 
@@ -6336,7 +6439,45 @@ define('ui',["utils"], function(utils) {
 });
 
 
-define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui) {
+define('SearchBar',["utils"], function(utils) {
+    /** 
+     */
+
+    var SearchBar = utils.make_class();
+    // instance methods
+    SearchBar.prototype = { init: init,
+			    set_index: set_index };
+
+    return SearchBar;
+
+    // instance methods
+    function init(selection, search_index) {
+	var container = selection.append('div')
+		.attr('class', 'search-container');
+	this.input = container.append('input')
+	    .attr('class', 'search-bar');
+	container.append('button')
+	    .attr('class', "button search-close-button")
+	    .text('×');
+	this.counter = container.append('div')
+	    .attr('class', 'search-counter');
+
+	if (search_index!==undefined)
+	    this.set_index(search_index);
+    }
+
+    function set_index(search_index) {
+	this.input.on('input', function(counter, index) {
+	    var results = index.find(this.value);
+	    if (this.value=="")
+		counter.text("");
+	    else
+		counter.text(results.length + " results");
+	}.bind(this.input.node(), this.counter, search_index));
+    }
+});
+
+define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui", "SearchBar"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Builder(options)
@@ -6370,6 +6511,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    enable_editing: true,
 	    enable_menu: true,
 	    enable_keys: true,
+	    enable_search: true,
 	    on_load: null,
 	    map_path: null,
 	    map: null,
@@ -6472,7 +6614,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 				     this.o.reaction_data_styles,
 				     this.o.metabolite_data,
 				     this.o.metabolite_data_styles,
-				     cobra_model_obj);
+				     cobra_model_obj,
+				     this.o.enable_search);
 	    this.zoom_container.reset();
 	} else {
 	    // new map
@@ -6482,7 +6625,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			       this.o.reaction_data_styles,
 			       this.o.metabolite_data,
 			       this.o.metabolite_data_styles,
-			       cobra_model_obj);
+			       cobra_model_obj,
+			       this.o.enable_search);
 	}
 
 	// set up the reaction input with complete.ly
@@ -6494,8 +6638,13 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	// set up the modes
 	this._setup_modes(this.map, this.brush, this.zoom_container);
 	
+	// set up the search bar
+	if (this.o.enable_search)
+	    this.search_input = SearchBar(this.o.selection, this.map.search_index);
+
 	// set up key manager
-	var keys = this._get_keys(this.map, this.reaction_input, this.brush, this.o.enable_editing);
+	var keys = this._get_keys(this.map, this.reaction_input, this.search_input,
+				  this.brush, this.o.enable_editing);
 	this.map.key_manager.assigned_keys = keys;
 	// tell the key manager about the reaction input
 	this.map.key_manager.reaction_input = this.reaction_input;
@@ -6662,15 +6811,17 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			})
 		.button({ key: keys.extent_canvas,
 			  //icon: "glyphicon glyphicon-resize-full",
-			  text: "Zoom to canvas (Ctrl 1)" })
-		.button({ key: keys.toggle_beziers,
-			  id: "bezier-button",
-			  text: "Show control points (b)"});
-	map.callback_manager
-	    .set('toggle_beziers.button', function(on_off) {
-		menu.select('#bezier-button').select('.dropdown-button-text')
-		    .text((on_off ? 'Hide' : 'Show') + ' control points (b)');
-	    });
+			  text: "Zoom to canvas (Ctrl 1)" });
+	if (enable_editing) {
+	    view_menu.button({ key: keys.toggle_beziers,
+			       id: "bezier-button",
+			       text: "Show control points (b)"});	    
+	    map.callback_manager
+		.set('toggle_beziers.button', function(on_off) {
+		    menu.select('#bezier-button').select('.dropdown-button-text')
+			.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
+		});
+	}
 	
 	var button_panel = selection.append("ul")
 		.attr("class", "nav nav-pills nav-stacked")
@@ -6988,88 +7139,6 @@ define('DataMenu',["utils"], function(utils) {
             return o.data;
         };
     };
-});
-
-define('SearchIndex',["utils"], function(utils) {
-    /** Define an index for searching for reaction and metabolites in the map.
-
-     The index is stored in SearchIndex.index, an object of id/record pairs.
-
-     */
-
-    var SearchIndex = utils.make_class();
-    SearchIndex.prototype = { init: init,
-			      insert: insert,
-			      remove: remove,
-			      find: find };
-
-    return SearchIndex;
-
-    // definitions
-    function init() {
-	this.index = {};
-    }
-
-    function insert(id, record, overwrite, check_record) {
-	/** Insert a record into the index.
-
-	 id: A unique string id.
-
-	 record: Records have the form:
-
-	 { 'name': '',
-	   'data': {} }
-
-	 Search is performed on substrings of the name.
-
-	 overwrite: (Default false) For faster performance, make overwrite true,
-	 and records will be inserted without checking for an existing record.
-
-	 check_record: (Default false) For faster performance, make check_record
-	 false. If true, records will be checked to make sure they have name and
-	 data attributes.
-
-	 Returns undefined.
-
-	 */
-	if (!overwrite && (id in this.index))
-	    throw new Error("id is already in the index");
-	if (check_record && !(('name' in record) && ('data' in record)))
-	    throw new Error("malformed record");
-	this.index[id] = record;
-    }
-
-    function remove(record_id) {
-	/** Remove the matching record.
-
-	 Returns true is a record is found, or false if no match is found.
-
-	 */
-	if (record_id in this.index) {
-	    delete this.index[record_id];
-	    return true;
-	} else {
-	    return false;
-	}
-    }
-
-    function find(substring) {
-	/** Find a record that matches the substring.
-
-	 Returns an array of data from matching records.
-
-	 */
-
-	var re = RegExp(substring),
-	    matches = [];
-	for (var id in this.index) {
-	    var record = this.index[id];
-	    if (re.exec(record.name))
-		matches.push(record.data);
-	}
-	return matches;
-	    
-    }
 });
 
 define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex"],

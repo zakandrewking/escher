@@ -1,4 +1,4 @@
-define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui) {
+define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui", "SearchBar"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Builder(options)
@@ -32,6 +32,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    enable_editing: true,
 	    enable_menu: true,
 	    enable_keys: true,
+	    enable_search: true,
 	    on_load: null,
 	    map_path: null,
 	    map: null,
@@ -134,7 +135,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 				     this.o.reaction_data_styles,
 				     this.o.metabolite_data,
 				     this.o.metabolite_data_styles,
-				     cobra_model_obj);
+				     cobra_model_obj,
+				     this.o.enable_search);
 	    this.zoom_container.reset();
 	} else {
 	    // new map
@@ -144,7 +146,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			       this.o.reaction_data_styles,
 			       this.o.metabolite_data,
 			       this.o.metabolite_data_styles,
-			       cobra_model_obj);
+			       cobra_model_obj,
+			       this.o.enable_search);
 	}
 
 	// set up the reaction input with complete.ly
@@ -156,8 +159,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	// set up the modes
 	this._setup_modes(this.map, this.brush, this.zoom_container);
 	
+	// set up the search bar
+	if (this.o.enable_search)
+	    this.search_input = SearchBar(this.o.selection, this.map.search_index);
+
 	// set up key manager
-	var keys = this._get_keys(this.map, this.reaction_input, this.brush, this.o.enable_editing);
+	var keys = this._get_keys(this.map, this.reaction_input, this.search_input,
+				  this.brush, this.o.enable_editing);
 	this.map.key_manager.assigned_keys = keys;
 	// tell the key manager about the reaction input
 	this.map.key_manager.reaction_input = this.reaction_input;
@@ -324,15 +332,17 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			})
 		.button({ key: keys.extent_canvas,
 			  //icon: "glyphicon glyphicon-resize-full",
-			  text: "Zoom to canvas (Ctrl 1)" })
-		.button({ key: keys.toggle_beziers,
-			  id: "bezier-button",
-			  text: "Show control points (b)"});
-	map.callback_manager
-	    .set('toggle_beziers.button', function(on_off) {
-		menu.select('#bezier-button').select('.dropdown-button-text')
-		    .text((on_off ? 'Hide' : 'Show') + ' control points (b)');
-	    });
+			  text: "Zoom to canvas (Ctrl 1)" });
+	if (enable_editing) {
+	    view_menu.button({ key: keys.toggle_beziers,
+			       id: "bezier-button",
+			       text: "Show control points (b)"});	    
+	    map.callback_manager
+		.set('toggle_beziers.button', function(on_off) {
+		    menu.select('#bezier-button').select('.dropdown-button-text')
+			.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
+		});
+	}
 	
 	var button_panel = selection.append("ul")
 		.attr("class", "nav nav-pills nav-stacked")

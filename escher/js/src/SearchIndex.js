@@ -68,7 +68,7 @@ define(["utils"], function(utils) {
 
 	 */
 
-	var re = RegExp(substring),
+	var re = RegExp(substring, "i"), // ignore case
 	    matches = [];
 	for (var id in this.index) {
 	    var record = this.index[id];
