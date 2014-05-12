@@ -19,13 +19,17 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	}
 	this.reactions = {};
 	for (var i=0, l=model_data.reactions.length; i<l; i++) {
-	    var r = model_data.reactions[i];
-	    this.reactions[r.id] = r;
+	    var r = model_data.reactions[i],
+		the_id = r.id; 
+	    delete r.id;
+	    this.reactions[the_id] = r;
 	}
 	this.metabolites = {};
 	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
-	    var r = model_data.metabolites[i];
-	    this.metabolites[r.id] = r;
+	    var r = model_data.metabolites[i],
+		the_id = r.id;
+	    delete r.id;
+	    this.metabolites[the_id] = r;
 	}
 
 	// get cofactors if preset

@@ -1,4 +1,4 @@
-define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles) {
+define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -15,6 +15,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     Map.prototype = {
 	// setup
 	init: init,
+	// more setup
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
 	// appearance
@@ -24,6 +25,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	set_metabolite_data: set_metabolite_data,
 	clear_map: clear_map,
 	// selection
+	select_none: select_none,
 	select_metabolite: select_metabolite,
 	select_metabolite_with_id: select_metabolite_with_id,
 	select_single_node: select_single_node,
@@ -35,7 +37,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	new_reaction_for_metabolite: new_reaction_for_metabolite,
 	cycle_primary_node: cycle_primary_node,
 	make_selected_node_primary: make_selected_node_primary,
-	rotate_selected_nodes: rotate_selected_nodes,
+	extend_nodes: extend_nodes,
+	extend_reactions: extend_reactions,
 	// delete
 	delete_selected: delete_selected,
 	delete_nodes: delete_nodes,
@@ -69,9 +72,16 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	toggle_beziers: toggle_beziers,
 	hide_beziers: hide_beziers,
 	show_beziers: show_beziers,
+	// zoom
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
 	_zoom_extent: _zoom_extent,
+	get_size: get_size,
+	zoom_to_reaction: zoom_to_reaction,
+	zoom_to_node: zoom_to_node,
+	highlight_reaction: highlight_reaction,
+	highlight_node: highlight_node,
+	highlight: highlight,
 	// io
 	save: save,
 	map_for_export: map_for_export,
@@ -80,12 +90,16 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
     return Map;
 
-    function init(svg, css, selection, zoom_container, height, width, reaction_data,
+    // -------------------------------------------------------------------------
+    // setup
+
+    function init(svg, css, selection, zoom_container, reaction_data,
 		  reaction_data_styles, metabolite_data, metabolite_data_styles,
-		  cobra_model, canvas_size_and_loc) {
-	if (canvas_size_and_loc===undefined || canvas_size_and_loc===null) {
-	    canvas_size_and_loc = {x: -width, y: -height,
-				   width: width*3, height: height*3};
+		  cobra_model, canvas_size_and_loc, enable_search) {
+	if (canvas_size_and_loc===null) {
+	    var size = zoom_container.get_size();
+	    canvas_size_and_loc = {x: -size.width, y: -size.height,
+				   width: size.width*3, height: size.height*3};
 	}
 
 	// defaults
@@ -102,8 +116,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.setup_containers(selection);
 	this.sel = selection;
 	this.zoom_container = zoom_container;
-	this.height = height;
-	this.width = width;
 
 	// check and load data
 	this.reaction_data_object = data_styles.import_and_check(reaction_data,
@@ -122,8 +134,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 			     nodes: -1,
 			     segments: -1 };
 
-	// make the scale
-	this.scale = new Scale(); //this.canvas.width, this.canvas.height, width, height);
+	// make the scales
+	this.scale = new Scale();
 
 	// make the undo/redo stack
 	this.undo_stack = new UndoStack();
@@ -133,6 +145,10 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	// make a key manager
 	this.key_manager = new KeyManager();
+
+	// make the search index
+	this.enable_search = enable_search;
+	this.search_index = new SearchIndex();
 
 	// deal with the window
 	var window_translate = {'x': 0, 'y': 0},
@@ -170,6 +186,9 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.text_labels = {};
 	this.info = {};
 
+	// rotation mode off
+	this.rotation_on = false;
+
 	// performs some extra checks
 	this.debug = false;
     };
@@ -177,17 +196,18 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     // -------------------------------------------------------------------------
     // Import
 
-    function from_data(map_data, svg, css, selection, zoom_container, height, width,
+    function from_data(map_data, svg, css, selection, zoom_container,
 		       reaction_data, reaction_data_styles,
-		       metabolite_data, metabolite_data_styles, cobra_model) {
+		       metabolite_data, metabolite_data_styles, cobra_model,
+		       enable_search) {
 	/** Load a json map and add necessary fields for rendering.
 	 
 	 */
 	utils.check_undefined(arguments, ['map_data', 'svg', 'css', 'selection',
-					  'zoom_container', 'height', 'width',
+					  'zoom_container',
 					  'reaction_data', 'reaction_data_styles',
 					  'metabolite_data', 'metabolite_data_styles',
-					  'cobra_model']);
+					  'cobra_model', 'enable_search']);
 
 	if (this.debug) {
 	    d3.json('map_spec.json', function(error, spec) {
@@ -200,9 +220,10 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	}
 	
 	var canvas = map_data.canvas,
-	    map = new Map(svg, css, selection, zoom_container, height, width,
+	    map = new Map(svg, css, selection, zoom_container,
 			  reaction_data, reaction_data_styles, metabolite_data,
-			  metabolite_data_styles, cobra_model, canvas);
+			  metabolite_data_styles, cobra_model, canvas,
+			  enable_search);
 
 	map.reactions = map_data.reactions;
 	map.nodes = map_data.nodes;
@@ -210,9 +231,14 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	map.text_labels = map_data.text_labels;
 	map.info = map_data.info;
 
-	// propogate coefficients and reversbility
+	// propogate coefficients and reversbility, and populate the search index
 	for (var r_id in map.reactions) {
 	    var reaction = map.reactions[r_id];
+	    if (enable_search) {
+		map.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
+						    'data': { type: 'reaction',
+							      reaction_id: r_id }});
+	    }
 	    for (var s_id in reaction.segments) {
 		var segment = reaction.segments[s_id];
 		segment.reversibility = reaction.reversibility;
@@ -235,7 +261,15 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	    }
 	}
-
+	if (enable_search) {
+	    for (var node_id in map.nodes) {
+		var node = map.nodes[node_id];
+		if (node.node_type!='metabolite') continue;
+		map.search_index.insert('n'+node_id, { 'name': node.bigg_id,
+						       'data': { type: 'metabolite',
+								 node_id: node_id }});
+	    }
+	}
 	// get largest ids for adding new reactions, nodes, text labels, and
 	// segments
 	map.largest_ids.reactions = get_largest_id(map.reactions);
@@ -267,7 +301,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     }
 
     // ---------------------------------------------------------------------
-    // Drawing
+    // more setup
 
     function setup_containers(sel) {
         sel.append('g')
@@ -375,6 +409,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    default_reaction_color = this.default_reaction_color,
 	    bezier_drag_behavior = this.behavior.bezier_drag,
 	    node_click_fn = this.behavior.node_click,
+	    node_mouseover_fn = this.behavior.node_mouseover,
+	    node_mouseout_fn = this.behavior.node_mouseout,
 	    node_drag_behavior = this.behavior.node_drag,
 	    reaction_label_drag = this.behavior.reaction_label_drag,
 	    node_label_drag = this.behavior.node_label_drag,
@@ -410,6 +446,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 								     has_metabolite_data,
 								     metabolite_data_styles,
 								     node_click_fn,
+								     node_mouseover_fn,
+								     node_mouseout_fn,
 								     node_drag_behavior,
 								     node_label_drag); });
 
@@ -487,6 +525,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    reactions = this.reactions,
 	    nodes = this.nodes,
 	    node_click_fn = this.behavior.node_click,
+	    node_mouseover_fn = this.behavior.node_mouseover,
+	    node_mouseout_fn = this.behavior.node_mouseout,
 	    node_drag_behavior = this.behavior.node_drag,
 	    node_label_drag = this.behavior.node_label_drag,
 	    metabolite_data_styles = this.metabolite_data_styles,
@@ -514,7 +554,10 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
         // update: update when necessary
         sel.call(function(sel) { return draw.update_node(sel, scale, has_metabolite_data, metabolite_data_styles, 
-							 node_click_fn, node_drag_behavior,
+							 node_click_fn,
+							 node_mouseover_fn,
+							 node_mouseout_fn,
+							 node_drag_behavior,
 							 node_label_drag); });
 
         // exit
@@ -758,6 +801,12 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    .each(function(d) { selected_text_labels[d.text_label_id] = self.text_labels[d.text_label_id]; });
 	return selected_text_labels;
     }	
+
+    function select_none() {
+	this.sel.selectAll('.selected')
+	    .classed('selected', false);
+    }
+
     function select_metabolite_with_id(node_id) {
 	// deselect all text labels
 	this.deselect_text_labels();
@@ -783,8 +832,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var node_selection = this.sel.select('#nodes').selectAll('.node'), 
 	    shift_key_on = this.key_manager.held_keys.shift;
 	if (shift_key_on) {
-	    this.sel.select(sel.parentNode)
-		.classed("selected", !this.sel.select(sel.parentNode).classed("selected"));
+	    d3.select(sel.parentNode)
+		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
 	}
         else node_selection.classed("selected", function(p) { return d === p; });
 	var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),
@@ -871,16 +920,15 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	var saved_nodes = utils.clone(selected_nodes),
 	    saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments),
 	    saved_reactions = utils.clone(reactions),
-	    self = this,
 	    delete_and_draw = function(nodes, reactions, segment_objs) {
 		// delete nodes, segments, and reactions with no segments
-  		self.delete_node_data(selected_nodes);
-		self.delete_segment_data(segment_objs);
-		self.delete_reaction_data(reactions);
+  		this.delete_node_data(Object.keys(selected_nodes));
+		this.delete_segment_data(segment_objs);
+		this.delete_reaction_data(Object.keys(reactions));
 		// redraw
 		// TODO just redraw these nodes and segments
-		self.draw_everything();
-	    };
+		this.draw_everything();
+	    }.bind(this);
 
 	// delete
 	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
@@ -889,36 +937,38 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.undo_stack.push(function() {
 	    // undo
 	    // redraw the saved nodes, reactions, and segments
-	    utils.extend(self.nodes, saved_nodes);
-	    utils.extend(self.reactions, saved_reactions);
+
+	    this.extend_nodes(saved_nodes);
+	    this.extend_reactions(saved_reactions);
 	    var reactions_to_draw = Object.keys(saved_reactions);
 	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
 		var segment = segment_obj.segment;
-		self.reactions[segment_obj.reaction_id]
+		this.reactions[segment_obj.reaction_id]
 		    .segments[segment_obj.segment_id] = segment;
 
 		// updated connected nodes
 		[segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
 		    // not necessary for the deleted nodes
 		    if (node_id in saved_nodes) return;
-		    var node = self.nodes[node_id];
+		    var node = this.nodes[node_id];
 		    node.connected_segments.push({ reaction_id: segment_obj.reaction_id,
 						   segment_id: segment_obj.segment_id });
-		});
+		}.bind(this));
 
-		reactions_to_draw.push(segment_obj.reaction_id);
-	    });
-	    self.draw_these_nodes(Object.keys(saved_nodes));
-	    self.draw_these_reactions(reactions_to_draw);
+		if (reactions_to_draw.indexOf(segment_obj.reaction_id)==-1)
+		    reactions_to_draw.push(segment_obj.reaction_id);
+	    }.bind(this));
+	    this.draw_these_nodes(Object.keys(saved_nodes));
+	    this.draw_these_reactions(reactions_to_draw);
 	    // copy nodes to re-delete
 	    selected_nodes = utils.clone(saved_nodes);
 	    segment_objs_w_segments = utils.clone(saved_segment_objs_w_segments);
 	    reactions = utils.clone(saved_reactions);
-	}, function () {
+	}.bind(this), function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
 	    delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
-	});
+	}.bind(this));
     }
     function delete_text_labels(selected_text_labels) {
 	/** Delete the text_labels.
@@ -931,7 +981,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    self = this,
 	    delete_and_draw = function(text_labels) {
 		// delete text_labels, segments, and reactions with no segments
-  		self.delete_text_label_data(selected_text_labels);
+  		self.delete_text_label_data(Object.keys(selected_text_labels));
 		// redraw
 		// TODO just redraw these text_labels
 		self.draw_everything();
@@ -952,12 +1002,17 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    delete_and_draw(selected_text_labels);
 	});
     }
-    function delete_node_data(nodes) {
-	/** Simply delete nodes.
+    function delete_node_data(node_ids) {
+	/** Delete nodes, and remove from search index.
 	 */
-	for (var node_id in nodes) {
+	node_ids.forEach(function(node_id) {
+	    if (this.enable_search && this.nodes[node_id].node_type=='metabolite') {
+		var found = this.search_index.remove('n'+node_id);
+		if (!found)
+		    console.warn('Could not find deleted metabolite in search index');
+	    }
 	    delete this.nodes[node_id];
-	}
+	}.bind(this));
     }
     function delete_segment_data(segment_objs) {
 	/** Delete segments, and update connected_segments in nodes. Also
@@ -966,10 +1021,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	 segment_objs: Array of objects with { reaction_id: "123", segment_id: "456" }
 	 
 	 */
-	var reactions = this.reactions,
-	    nodes = this.nodes;
 	segment_objs.forEach(function(segment_obj) {
-	    var reaction = reactions[segment_obj.reaction_id];
+	    var reaction = this.reactions[segment_obj.reaction_id];
 
 	    // segment already deleted
 	    if (!(segment_obj.segment_id in reaction.segments)) return;
@@ -977,29 +1030,33 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    var segment = reaction.segments[segment_obj.segment_id];
 	    // updated connected nodes
 	    [segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
-		if (!(node_id in nodes)) return;
-		var node = nodes[node_id];
+		if (!(node_id in this.nodes)) return;
+		var node = this.nodes[node_id];
 		node.connected_segments = node.connected_segments.filter(function(so) {
 		    return so.segment_id != segment_obj.segment_id;				
 		});
-	    });
+	    }.bind(this));
 
 	    delete reaction.segments[segment_obj.segment_id];
-	});
+	}.bind(this));
     }
-    function delete_reaction_data(reactions) {
-	/** delete reactions
+    function delete_reaction_data(reaction_ids) {
+	/** Delete reactions and remove from search index.
+	 
 	 */
-	for (var reaction_id in reactions) {
+	reaction_ids.forEach(function(reaction_id) {
 	    delete this.reactions[reaction_id];
-	}
+	    var found = this.search_index.remove('r'+reaction_id);
+	    if (!found)
+		console.warn('Could not find deleted reaction in search index');
+	}.bind(this));
     }
-    function delete_text_label_data(text_labels) {
+    function delete_text_label_data(text_label_ids) {
 	/** delete text labels for an array of ids
 	 */
-	for (var text_label_id in text_labels) {
+	text_label_ids.forEach(function(text_label_id) {
 	    delete this.text_labels[text_label_id];
-	}
+	}.bind(this));
     }
     function show_beziers() {
 	this.toggle_beziers(true);
@@ -1073,7 +1130,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.undo_stack.push(function() {
 	    // undo
 	    // get the nodes to delete
-	    map.delete_node_data(new_nodes);
+	    map.delete_node_data(Object.keys(new_nodes));
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    // draw
@@ -1091,7 +1148,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
         // definitions
 	function extend_and_draw_metabolite(new_nodes, selected_node_id) {
-	    utils.extend(this.nodes, new_nodes);
+	    this.extend_nodes(new_nodes);
 	    if (this.has_metabolite_data()) {
 		var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
 		if (scale_changed) this.draw_all_nodes();
@@ -1102,6 +1159,36 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	}
     }
     
+    function extend_nodes(new_nodes) {
+	/** Add new nodes to data and search index.
+
+	 */
+	if (this.enable_search) {
+	    for (var node_id in new_nodes) {
+		var node = new_nodes[node_id];
+		if (node.node_type!='metabolite') continue;
+		this.search_index.insert('n'+node_id, { 'name': node.bigg_id,
+							'data': { type: 'metabolite',
+								  node_id: node_id }});
+	    }
+	}
+	utils.extend(this.nodes, new_nodes);
+    }
+    function extend_reactions(new_reactions) {
+	/** Add new reactions to data and search index.
+
+	 */
+	for (var r_id in new_reactions) {
+	    var reaction = new_reactions[r_id];
+	    if (this.enable_search) {
+		this.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
+						     'data': { type: 'reaction',
+							       reaction_id: r_id }});
+	    }
+	}
+	utils.extend(this.reactions, new_reactions);
+    }
+
     function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id) {
 	/** Build a new reaction starting with selected_met.
 
@@ -1148,8 +1235,8 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	    // undo
 	    // get the nodes to delete
 	    delete new_nodes[selected_node_id];
-	    map.delete_node_data(new_nodes);
-	    map.delete_reaction_data(new_reactions);
+	    map.delete_node_data(Object.keys(new_nodes));
+	    map.delete_reaction_data(Object.keys(new_reactions));
 	    select_metabolite_with_id.apply(map, [selected_node_id]);
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
@@ -1164,10 +1251,10 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 
 	// definitions
 	function extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id) {
-	    utils.extend(this.reactions, new_reactions);
+	    this.extend_reactions(new_reactions);
 	    // remove the selected node so it can be updated
-	    delete this.nodes[selected_node_id];
-	    utils.extend(this.nodes, new_nodes);
+	    this.delete_node_data([selected_node_id]); // TODO this is a hack. fix
+	    this.extend_nodes(new_nodes);
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
@@ -1323,136 +1410,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	this.draw_these_nodes(nodes_to_draw);
     }
 
-    function rotate_selected_nodes() {
-	/** Request a center, then listen for rotation, and rotate nodes.
-
-	 */
-	this.callback_manager.run('start_rotation');
-	
-	var selected_nodes = this.get_selected_nodes();
-	if (selected_nodes.length < 1) return console.warn('No nodes selected');
-	
-	var saved_center, total_angle = 0,
-	    selected_node_ids = Object.keys(selected_nodes),
-	    self = this,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    end_function = function() {
-		console.log('end_rotation');
-		self.callback_manager.run('end_rotation');
-	    };
-
-	choose_center.call(this, function(center) {
-	    saved_center = center;
-	    listen_for_rotation.call(self, center, function(angle) {
-		total_angle += angle;
-		var updated = build.rotate_nodes(selected_nodes, reactions,
-						 angle, center);
-		self.draw_these_nodes(updated.node_ids);
-		self.draw_these_reactions(updated.reaction_ids);
-	    }, end_function, end_function);
-	}, end_function);
-
-	// add to undo/redo stack
-	this.undo_stack.push(function() {
-	    // undo
-	    var these_nodes = {};
-	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-	    var updated = build.rotate_nodes(these_nodes, reactions,
-						      -total_angle, saved_center);
-	    self.draw_these_nodes(updated.node_ids);
-	    self.draw_these_reactions(updated.reaction_ids);
-	}, function () {
-	    // redo
-	    var these_nodes = {};
-	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-	    var updated = build.rotate_nodes(these_nodes, reactions,
-						      total_angle, saved_center);
-	    self.draw_these_nodes(updated.node_ids);
-	    self.draw_these_reactions(updated.reaction_ids);
-	});
-
-	// definitions
-	function choose_center(callback, callback_canceled) {
-	    console.log('Choose center');
-	    set_status('Choose a node or point to rotate around.');
-	    var selection_node = this.sel.selectAll('.node-circle'),
-		selection_background = this.sel.selectAll('#mouse-node'),
-		escape_listener = this.key_manager.add_escape_listener(function() {
-		    console.log('choose_center escape');
-		    selection_node.on('mousedown.center', null);
-		    selection_background.on('mousedown.center', null);
-		    set_status('');
-		    callback_canceled();
-		});
-	    // if the user clicks a metabolite node
-	    selection_node.on('mousedown.center', function(d) {		    
-		console.log('mousedown.center');
-		// turn off the click listeners to prepare for drag
-		selection_node.on('mousedown.center', null);
-		selection_background.on('mousedown.center', null);
-		set_status('');
-		escape_listener.clear();
-		// find the location of the clicked metabolite
-		var center = { x: d.x, y: d.y };
-		callback(center); 
-	    });
-	    // if the user clicks a point
-	    selection_background.on('mousedown.center', function() {
-		console.log('mousedown.center');
-		// turn off the click listeners to prepare for drag
-		selection_node.on('mousedown.center', null);
-		selection_background.on('mousedown.center', null);
-		set_status('');
-		escape_listener.clear();
-		// find the point on the background node where the user clicked
-		var center = { x: d3.mouse(self.sel.node())[0], 
-			       y: d3.mouse(self.sel.node())[1] };
-		callback(center); 
-	    });
-	}
-	function listen_for_rotation(center, callback, callback_finished, 
-				     callback_canceled) {
-	    this.set_status('Drag to rotate.');
-	    this.zoom_container.toggle_zoom(false);
-	    var angle = Math.PI/2,
-		selection = this.sel.selectAll('#mouse-node'),
-		drag = d3.behavior.drag(),
-		escape_listener = this.key_manager.add_escape_listener(function() {
-		    console.log('listen_for_rotation escape');
-		    drag.on('drag.rotate', null);
-		    drag.on('dragend.rotate', null);
-		    set_status('');
-		    callback_canceled();
-		});
-	    // drag.origin(function() { return point_of_grab; });
-	    drag.on("drag.rotate", function() { 
-		callback(angle_for_event({ dx: d3.event.dx, 
-					   dy: d3.event.dy },
-					 { x: d3.mouse(this)[0],
-					   y: d3.mouse(this)[1] },
-					 center));
-	    }).on("dragend.rotate", function() {
-		console.log('dragend.rotate');
-		drag.on('drag.rotate', null);
-		drag.on('dragend.rotate', null);
-		set_status('');
-		escape_listener.clear();
-		callback_finished();
-	    });
-	    selection.call(drag);
-
-	    // definitions
-	    function angle_for_event(displacement, point, center) {
-		var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
-		    beta = Math.atan2((point.x - center.x + displacement.dx), 
-				      (center.y - point.y - displacement.dy)),
-		    angle = beta - gamma;
-		return angle;
-	    }
-	}
-    }
-
     function segments_and_reactions_for_nodes(nodes) {
 	/** Get segments and reactions that should be deleted with node deletions
 	 */
@@ -1497,6 +1454,9 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
         return this;
     }
 
+    // -------------------------------------------------------------------------
+    // Zoom
+
     function zoom_extent_nodes(margin) {
 	/** Zoom to fit all the nodes.
 
@@ -1528,17 +1488,18 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	 */
 
 	// optional args
-	if (margin===undefined) margin = mode=='nodes' ? 0.2 : 0;
+	if (margin===undefined) margin = (mode=='nodes' ? 0.2 : 0);
 	if (mode===undefined) mode = 'canvas';
 
-	var new_zoom, new_pos;
+	var new_zoom, new_pos,
+	    size = this.get_size();
 	// scale margin to window size
-	margin = margin * this.height;
+	margin = margin * size.height;
 
 	if (mode=='nodes') {
 	    // get the extent of the nodes
 	    var min = { x: null, y: null }, // TODO make infinity?
-		max = { x: null, y: null }; 
+		max = { x: null, y: null };
 	    for (var node_id in this.nodes) {
 		var node = this.nodes[node_id];
 		if (min.x===null) min.x = node.x;
@@ -1552,21 +1513,57 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 		max.y = Math.max(max.y, node.y);
 	    }
 	    // set the zoom
-	    new_zoom = Math.min((this.width - margin*2) / (max.x - min.x),
-				(this.height - margin*2) / (max.y - min.y));
-	    new_pos = { x: - (min.x * new_zoom) + margin + ((this.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
-			y: - (min.y * new_zoom) + margin + ((this.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
+	    new_zoom = Math.min((size.width - margin*2) / (max.x - min.x),
+				(size.height - margin*2) / (max.y - min.y));
+	    new_pos = { x: - (min.x * new_zoom) + margin + ((size.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
+			y: - (min.y * new_zoom) + margin + ((size.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
 	} else if (mode=='canvas') {
 	    // center the canvas
-	    new_zoom =  Math.min((this.width - margin*2) / (this.canvas.width),
-				 (this.height - margin*2) / (this.canvas.height));
-	    new_pos = { x: - (this.canvas.x * new_zoom) + margin + ((this.width - margin*2 - this.canvas.width*new_zoom) / 2),
-			y: - (this.canvas.y * new_zoom) + margin + ((this.height - margin*2 - this.canvas.height*new_zoom) / 2) };
+	    new_zoom =  Math.min((size.width - margin*2) / (this.canvas.width),
+				 (size.height - margin*2) / (this.canvas.height));
+	    new_pos = { x: - (this.canvas.x * new_zoom) + margin + ((size.width - margin*2 - this.canvas.width*new_zoom) / 2),
+			y: - (this.canvas.y * new_zoom) + margin + ((size.height - margin*2 - this.canvas.height*new_zoom) / 2) };
 	} else {
 	    return console.error('Did not recognize mode');
 	}
 	this.zoom_container.go_to(new_zoom, new_pos);
 	return null;
+    }
+
+    function get_size() {
+	return this.zoom_container.get_size();
+    }
+
+    function zoom_to_reaction(reaction_id) {
+	var reaction = this.reactions[reaction_id],
+	    new_zoom = 0.6,
+	    size = this.get_size(),
+	    new_pos = { x: - reaction.label_x * new_zoom + size.width/2,
+			y: - reaction.label_y * new_zoom + size.height/2 };
+	this.zoom_container.go_to(new_zoom, new_pos);
+    }
+
+    function zoom_to_node(node_id) {
+	var node = this.nodes[node_id],
+	    new_zoom = 0.6,
+	    size = this.get_size(),
+	    new_pos = { x: - node.label_x * new_zoom + size.width/2,
+			y: - node.label_y * new_zoom + size.height/2 };
+	this.zoom_container.go_to(new_zoom, new_pos);
+    }
+
+    function highlight_reaction(reaction_id) {
+	this.highlight(this.sel.selectAll('#r'+reaction_id).selectAll('text'));
+    }
+    function highlight_node(node_id) {
+	this.highlight(this.sel.selectAll('#n'+node_id).selectAll('text'));
+    }
+    function highlight(sel) {
+	this.sel.selectAll('.highlight')
+	    .classed('highlight', false);
+	if (sel!==null) {
+	    sel.classed('highlight', true);
+	}
     }
 
     // -------------------------------------------------------------------------
@@ -1620,16 +1617,23 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,
 	    window_translate = this.zoom_container.window_translate,
-	    svg_width = this.svg.attr('width'),
-	    svg_height = this.svg.attr('height'),
-	    canvas_size_and_loc = this.canvas.size_and_location();
-	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, true);
+	    canvas_size_and_loc = this.canvas.size_and_location(),
+	    mouse_node_size_and_trans = { w: this.canvas.mouse_node.attr('width'),
+					  h: this.canvas.mouse_node.attr('height'),
+				          transform:  this.canvas.mouse_node.attr('transform')};
+	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, false);
 	this.svg.attr('width', canvas_size_and_loc.width);
 	this.svg.attr('height', canvas_size_and_loc.height);
+	this.canvas.mouse_node.attr('width', '0px');
+	this.canvas.mouse_node.attr('height', '0px');
+	this.canvas.mouse_node.attr('transform', null);
         utils.export_svg("saved_map", this.svg, true);
-	this.zoom_container.go_to(window_scale, window_translate, true);
-	svg_width = this.svg.attr('width', svg_width);
-	svg_height = this.svg.attr('height', svg_height);
+	this.zoom_container.go_to(window_scale, window_translate, false);
+	this.svg.attr('width', null);
+	this.svg.attr('height', null);
+	this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
+	this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
+	this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
 	this.callback_manager.run('after_svg_export');
     }
 });

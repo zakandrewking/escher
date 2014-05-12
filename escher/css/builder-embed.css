@@ -1,4 +1,7 @@
-.canvas {
+#mouse-node {
+    fill: none;
+}
+#canvas {
     stroke: #ccc;
     stroke-width: 7px;
     fill: white;
@@ -25,10 +28,12 @@
     font-size: 50px;
 }
 .node-circle {
+    stroke-width: 2px;
     fill: none;	
     stroke: rgb(50, 50, 50);
 }
 .selected .node-circle{
+    stroke-width: 3px;
     stroke: rgb(20, 113, 199);
 }
 .selected.text-label {
@@ -77,4 +82,11 @@
     stroke: rgb(100,100,100);
     fill: none;
     opacity: 0.5;
+}
+.rotation-center-line {
+    stroke: red;
+    stroke-width: 2px;
+}
+.highlight {
+    fill: #106F94;
 }

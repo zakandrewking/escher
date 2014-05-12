@@ -339,14 +339,8 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	    .attr('class', function(d) {
 		if (d.node_type=='metabolite') return 'node-circle metabolite-circle';
 		else return 'node-circle';
-	    })		
-            .style('stroke-width', String(2)+'px')
-	    .on("mouseover", function(d) {
-		d3.select(this).style('stroke-width', String(3)+'px');
-	    })
-	    .on("mouseout", function(d) {
-		d3.select(this).style('stroke-width', String(2)+'px');
 	    });
+            // .style('stroke-width', '2px');
 
         g.filter(function(d) { return d.node_type=='metabolite'; })
 	    .append('text')
@@ -355,10 +349,10 @@ define(["utils", "data_styles"], function(utils, data_styles) {
     }
 
     function update_node(update_selection, scale, has_metabolite_data, metabolite_data_styles,
-			 click_fn, drag_behavior, label_drag_behavior) {
+			 click_fn, mouseover_fn, mouseout_fn, drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'has_metabolite_data',
-			       'metabolite_data_styles', 'click_fn',
+			       'metabolite_data_styles', 'click_fn', 'mouseover_fn', 'mouseout_fn',
 			       'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
@@ -392,7 +386,9 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		})
 		.call(turn_off_drag)
 		.call(drag_behavior)
-		.on("click", click_fn);
+		.on("click", click_fn)
+		.on('mouseover', mouseover_fn)
+		.on('mouseout', mouseout_fn);
 
         update_selection
             .select('.node-label')

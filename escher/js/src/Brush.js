@@ -47,27 +47,32 @@ define(["utils"], function(utils) {
     }	
     function setup_selection_brush() {
 	var selection = this.brush_sel, 
-	    node_selection = this.map.sel.select('#nodes').selectAll('.node'),
+	    nodes_selection = this.map.sel.select('#nodes'),
 	    size_and_location = this.map.canvas.size_and_location(),
-	    map = this.map,
 	    width = size_and_location.width,
 	    height = size_and_location.height,
 	    x = size_and_location.x,
-	    y = size_and_location.y,
-	    node_ids = [];
-	node_selection.each(function(d) { node_ids.push(d.node_id); });
+	    y = size_and_location.y;
 	var brush_fn = d3.svg.brush()
 		.x(d3.scale.identity().domain([x, x+width]))
 		.y(d3.scale.identity().domain([y, y+height]))
-		.on("brush", function() {
-		    var extent = d3.event.target.extent();
-		    node_selection
-			.classed("selected", function(d) { 
-			    var sx = d.x, sy = d.y;
-			    return extent[0][0] <= sx && sx < extent[1][0]
-				&& extent[0][1] <= sy && sy < extent[1][1];
-			});
-		})        
+		.on("brush", function(key_manager) {	    
+		    var shift_key_on = key_manager.held_keys.shift,
+			extent = d3.event.target.extent(),
+			selection;
+		    if (shift_key_on) {
+			// when shift is pressed, ignore the currently selected nodes
+			selection = nodes_selection.selectAll('.node:not(.selected)');
+		    } else {
+			// otherwise, brush all nodes
+			selection = nodes_selection.selectAll('.node');
+		    }
+		    selection.classed("selected", function(d) { 
+			var sx = d.x, sy = d.y;
+			return extent[0][0] <= sx && sx < extent[1][0]
+			    && extent[0][1] <= sy && sy < extent[1][1];
+		    });
+		}.bind(null, this.map.key_manager))
 		.on("brushend", function() {
 		    d3.event.target.clear();
 		    d3.select(this).call(d3.event.target);

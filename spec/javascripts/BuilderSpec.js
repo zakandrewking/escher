@@ -19,4 +19,12 @@ describe('Builder', function() {
 	    sel.remove();
 	});
     });
+
+    it("SVG selection error", function () {
+	var sel = d3.select('body').append('svg').append('g');
+	expect(function () {
+	    escher.Builder({ selection: sel });
+	}).toThrow(new Error("Builder cannot be placed within an svg node "+
+			     "becuase UI elements are html-based."));
+    });
 });

@@ -787,7 +787,6 @@ define('lib/vkbeautify',[],function() {
 define('utils',["lib/vkbeautify"], function(vkbeautify) {
     return { set_options: set_options,
              setup_svg: setup_svg,
-	     resize_svg: resize_svg,
 	     remove_child_nodes: remove_child_nodes,
              load_css: load_css,
              load_files: load_files,
@@ -816,19 +815,11 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	     check_undefined: check_undefined,
 	     compartmentalize: compartmentalize,
 	     decompartmentalize: decompartmentalize,
-	     check_r: check_r };
+	     check_r: check_r,
+	     mean: mean,
+	     check_for_parent_tag: check_for_parent_tag };
 
     // definitions
-    function height_width_style(selection, margins) {
-        var width = parseFloat(selection.style('width')) - margins.left - margins.right,
-            height = parseFloat(selection.style('height')) - margins.top - margins.bottom;
-        return {'width': width, 'height': height};
-    };
-    function height_width_attr(selection, margins) {
-        var width = parseFloat(selection.attr('width')) - margins.left - margins.right,
-            height = parseFloat(selection.attr('height')) - margins.top - margins.bottom;
-        return {'width': width, 'height': height};
-    };
     function set_options(options, defaults) {
         if (options===undefined) return defaults;
         var i = -1,
@@ -841,25 +832,19 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	    out[key] = val;
 	}
         return out;
-    };
+    }
+
     function setup_svg(selection, selection_is_svg, margins, fill_screen) {
         // sub selection places the graph in an existing svg environment
         var add_svg = function(f, s, m) {
             if (f) {
-                d3.select("body")
-                    .style("margin", "0")
-                    .style("padding", "0");
-                s.style('height', (window.innerHeight-m.top)+'px');
-                s.style('width', (window.innerWidth-m.left)+'px');
-                s.style("margin-left", m.left+"px");
-                s.style("margin-top", m.top+"px");
+                d3.select("body").classed('fill-screen-body', true);
+		s.classed('fill-screen-div', true);
             }
-            var out = height_width_style(s, m);
-            out.svg = s.append('svg')
-                .attr("width", out.width)
-                .attr("height", out.height)
-                .attr('xmlns', "http://www.w3.org/2000/svg");
-            return out;
+            var svg = s.append('svg')
+		    .attr("class", "escher-svg")
+                    .attr('xmlns', "http://www.w3.org/2000/svg");
+	    return svg;
         };
 
         // run
@@ -868,50 +853,13 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	selection.classed('escher-container', true);
 	// make the svg
         if (selection_is_svg) {
-            out = height_width_attr(selection, margins);
-            out.svg = selection;
+            return selection;
         } else if (selection) {
-            out = add_svg(fill_screen, selection, margins);
+            return add_svg(fill_screen, selection, margins);
         } else {
-            out = add_svg(fill_screen, d3.select('body').append('div'), margins);
+            throw new Error('No selection');
         }
-        if (out.height <= 0 || out.width <= 0) {
-            console.warn("Container has invalid height or \
-			 width. Try setting styles for height \
-			 and width, or use the 'fill_screen' option.");
-        }
-        return out;
-    };
-
-    function resize_svg(selection, selection_is_svg, margins, fill_screen) {
-        /** resize_svg(selection, selection_is_svg, margins, fill_screen)
-
-	 Returns object with new 'height' and 'width' keys.
-
-	 */
-        var out;
-        if (selection_is_svg) {
-            out = height_width_attr(selection, margins);
-        } else if (selection) {
-            out = resize(fill_screen, selection, margins);
-	} else console.warn('No selection');
-        return out;
-
-	// definitions
-        function resize(f, s, m) {
-            if (f) {
-                s.style('height', (window.innerHeight-m.top)+'px');
-                s.style('width', (window.innerWidth-m.left)+'px');
-                s.style("margin-left", m.left+"px");
-                s.style("margin-top", m.top+"px");
-            }
-            var out = height_width_style(s, margins);
-	    s.select("svg")
-		.attr("height", out.height)
-		.attr("width", out.width);
-            return out;
-        };
-    };
+    }
 
     function remove_child_nodes(selection) {
 	/** Removes all child nodes from a d3 selection
@@ -1312,10 +1260,10 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	    } else if (spec=="Boolean") {
 		the_type = function(x) { return typeof x == "boolean"; };
 	    } else if (spec!="*") {
-		throw Error("Bad spec string: " + spec);
+		throw new Error("Bad spec string: " + spec);
 	    }
 	    if (!the_type(o)) {
-		throw Error('Bad type: '+String(o)+' should be '+spec);
+		throw new Error('Bad type: '+String(o)+' should be '+spec);
 	    }
 	} else if (spec instanceof Array) {
 	    o.forEach(function(x) {
@@ -1332,7 +1280,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	    } else {
 		for (var k in spec) {
 		    if (!(k in o)) {
-			throw Error('Missing key: %s' % k);
+			throw new Error('Missing key: %s' % k);
 		    };
 		    if (o[k]===null && can_be_none.indexOf(k)!=-1) 
 			continue;
@@ -1340,6 +1288,32 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 		}
 	    }
 	}
+    }
+
+    function mean(array) {
+	var sum = array.reduce(function(a, b) { return a + b; });
+	var avg = sum / array.length;
+	return avg;
+    }
+
+    function check_for_parent_tag(el, tag) {
+	/** Check that the selection has the given parent tag.
+
+	 el: A d3 selection or node.
+
+	 tag: A tag name (case insensitive)
+
+	 */
+	// make sure it is a node
+	if (el instanceof Array)
+	    el = el.node();
+	while (el.parentNode !== null) {
+	    el = el.parentNode;
+	    if (el.tagName === undefined) continue;
+	    if (el.tagName.toLowerCase() === tag.toLowerCase())
+		return true;
+	}
+	return false;
     }
 });
 
@@ -1660,12 +1634,12 @@ return function(container, config) {
         if (keyCode == 33) { return; } // page up (do nothing)
         if (keyCode == 34) { return; } // page down (do nothing);
         
-        if (keyCode == 27) { //escape
-            dropDownController.hide();
-            txtHint.value = txtInput.value; // ensure that no hint is left.
-            txtInput.focus(); 
-            return; 
-        }
+        // if (keyCode == 27) { //escape
+        //     dropDownController.hide();
+        //     txtHint.value = txtInput.value; // ensure that no hint is left.
+        //     txtInput.focus(); 
+        //     return; 
+        // }
         
         if (keyCode == 39 || keyCode == 35 || keyCode == 9) { // right,  end, tab  (autocomplete triggered)
         	if (keyCode == 9) { // for tabs we need to ensure that we override the default behaviour: move to the next focusable HTML-element 
@@ -2156,14 +2130,8 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	    .attr('class', function(d) {
 		if (d.node_type=='metabolite') return 'node-circle metabolite-circle';
 		else return 'node-circle';
-	    })		
-            .style('stroke-width', String(2)+'px')
-	    .on("mouseover", function(d) {
-		d3.select(this).style('stroke-width', String(3)+'px');
-	    })
-	    .on("mouseout", function(d) {
-		d3.select(this).style('stroke-width', String(2)+'px');
 	    });
+            // .style('stroke-width', '2px');
 
         g.filter(function(d) { return d.node_type=='metabolite'; })
 	    .append('text')
@@ -2172,10 +2140,10 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
     }
 
     function update_node(update_selection, scale, has_metabolite_data, metabolite_data_styles,
-			 click_fn, drag_behavior, label_drag_behavior) {
+			 click_fn, mouseover_fn, mouseout_fn, drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'has_metabolite_data',
-			       'metabolite_data_styles', 'click_fn',
+			       'metabolite_data_styles', 'click_fn', 'mouseover_fn', 'mouseout_fn',
 			       'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
@@ -2209,7 +2177,9 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 		})
 		.call(turn_off_drag)
 		.call(drag_behavior)
-		.on("click", click_fn);
+		.on("click", click_fn)
+		.on('mouseover', mouseover_fn)
+		.on('mouseout', mouseout_fn);
 
         update_selection
             .select('.node-label')
@@ -2706,6 +2676,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 
     var Behavior = utils.make_class();
     Behavior.prototype = { init: init,
+			   toggle_rotation_mode: toggle_rotation_mode,
 			   turn_everything_on: turn_everything_on,
 			   turn_everything_off: turn_everything_off,
 			   toggle_node_click: toggle_node_click,
@@ -2729,8 +2700,14 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	// make an empty function that can be called as a behavior and does nothing
 	this.empty_behavior = function() {};
 
+	// rotation mode operates separately from the rest
+	this.rotation_mode_enabled = false;
+	this.rotation_drag = d3.behavior.drag();
+
 	// init empty
 	this.node_click = null;
+	this.node_mouseover = null;
+	this.node_mouseout = null;
 	this.node_drag = this.empty_behavior;
 	this.bezier_drag = this.empty_behavior;
 	this.reaction_label_drag = this.empty_behavior;
@@ -2740,17 +2717,166 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	this.turn_everything_on();
     }
     function turn_everything_on() {
+	/** Toggle everything except rotation mode.
+
+	 */
 	this.toggle_node_click(true);
 	this.toggle_node_drag(true);
 	this.toggle_text_label_click(true);
 	this.toggle_label_drag(true);
     }
     function turn_everything_off() {
+	/** Toggle everything except rotation mode.
+
+	 */
 	this.toggle_node_click(false);
 	this.toggle_node_drag(false);
 	this.toggle_text_label_click(false);
 	this.toggle_label_drag(false);
     }
+
+    function toggle_rotation_mode(on_off) {
+	/** Listen for rotation, and rotate selected nodes.
+
+	 */
+	if (on_off===undefined) {
+	    this.rotation_mode_enabled = !this.rotation_mode_enabled;
+	} else {
+	    this.rotation_mode_enabled = on_off;
+	}
+
+	var selection_node = this.map.sel.selectAll('.node-circle'),
+	    selection_background = this.map.sel.selectAll('#canvas');
+
+	if (this.rotation_mode_enabled) {
+	    this.map.callback_manager.run('start_rotation');
+	    
+	    var selected_nodes = this.map.get_selected_nodes();
+	    if (Object.keys(selected_nodes).length == 0) {
+		console.log('No selected nodes');
+		return;
+	    }
+	    
+	    // show center
+	    this.center = average_location(selected_nodes);
+	    show_center.call(this);
+
+	    // this.set_status('Drag to rotate.');
+	    var map = this.map,
+		selected_node_ids = Object.keys(selected_nodes),
+		reactions = this.map.reactions,
+		nodes = this.map.nodes;
+
+	    var start_fn = function(d) {
+		// silence other listeners
+		d3.event.sourceEvent.stopPropagation();
+	    },
+		drag_fn = function(d, displacement, total_displacement, location) {
+		    var angle = angle_for_event(displacement,
+						location,
+						this.center);
+		    var updated = build.rotate_nodes(selected_nodes, reactions,
+						     angle, this.center);
+		    map.draw_these_nodes(updated.node_ids);
+		    map.draw_these_reactions(updated.reaction_ids);
+		}.bind(this),
+		end_fn = function(d) {},
+		undo_fn = function(d, displacement, location) {
+		    // undo
+		    var total_angle = angle_for_event(displacement,
+						      location,
+						      this.center);
+
+		    var these_nodes = {};
+		    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+		    var updated = build.rotate_nodes(these_nodes, reactions,
+						     -total_angle, utils.clone(this.center));
+		    self.draw_these_nodes(updated.node_ids);
+		    self.draw_these_reactions(updated.reaction_ids);
+		}.bind(this),
+		redo_fn = function(d, displacement, location) {
+		    // redo
+		    var total_angle = angle_for_event(displacement,
+						      location,
+						      this.center),
+			these_nodes = {};
+		    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+		    var updated = build.rotate_nodes(these_nodes, reactions,
+						     total_angle, utils.clone(this.center));
+		    self.draw_these_nodes(updated.node_ids);
+		    self.draw_these_reactions(updated.reaction_ids);
+		}.bind(this);
+	    this.rotation_drag = this.get_generic_drag(start_fn, drag_fn, end_fn,
+						       undo_fn, redo_fn, this.map.sel);
+	    selection_background.call(this.rotation_drag);
+
+
+	} else {
+	    // turn off all listeners
+	    hide_center.call(this);
+	    selection_node.on('mousedown.center', null);
+	    selection_background.on('mousedown.center', null);
+	    selection_background.on('mousedown.drag', null);
+	    selection_background.on('touchstart.drag', null);
+	    this.rotation_drag = null;
+	}
+
+	// definitions
+	function angle_for_event(displacement, point, center) {
+	    var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
+		beta = Math.atan2((point.x - center.x + displacement.x), 
+				  (center.y - point.y - displacement.y)),
+		angle = beta - gamma;
+	    return angle;
+	}
+	function show_center() {
+	    var s = this.map.sel.selectAll('#rotation-center')
+		    .data([0]),
+		enter = s.enter()
+		    .append('g').attr('id', 'rotation-center');
+	    
+	    enter.append('path').attr('d', 'M-22 0 L22 0')
+		.attr('class', 'rotation-center-line');
+	    enter.append('path').attr('d', 'M0 -22 L0 22')
+		.attr('class', 'rotation-center-line');
+
+	    s.attr('transform', 'translate('+this.center.x+','+this.center.y+')')
+		.attr('visibility', 'visible');
+
+	    s.call(d3.behavior.drag()
+		   .on('drag', function(sel) {
+		       var cur = d3.transform(sel.attr('transform')),
+			   new_loc = [d3.event.dx + cur.translate[0],
+				      d3.event.dy + cur.translate[1]];
+		       sel.attr('transform', 'translate('+new_loc+')');
+		       this.center = { x: new_loc[0], y: new_loc[1] };
+		   }.bind(this, s)));
+	    s.on('mouseover', function() {
+		var current = parseFloat(this.selectAll('path').style('stroke-width'));
+		this.selectAll('path').style('stroke-width', current*2+'px');
+	    }.bind(s));
+	    s.on('mouseout', function() {
+		this.selectAll('path').style('stroke-width', null);
+	    }.bind(s));
+	}
+	function hide_center(sel) {
+	    this.map.sel.select('#rotation-center')
+		.attr('visibility', 'hidden');
+	}
+	function average_location(nodes) {
+	    var xs = [], ys = [];
+	    for (var node_id in nodes) {
+		var node = nodes[node_id];
+		if (node.x !== undefined)
+		    xs.push(node.x);
+		if (node.y !== undefined)
+		    ys.push(node.y);
+	    }
+	    return { x: utils.mean(xs),
+		     y: utils.mean(ys) };
+	}	
+    }
+
     function toggle_node_click(on_off) {
 	/** With no argument, toggle the node click on or off.
 
@@ -2764,8 +2890,20 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		map.select_metabolite(this, d);
 		d3.event.stopPropagation();
 	    };
+	    this.node_mouseover = function(d) {	   
+		d3.select(this).style('stroke-width', null);
+		var current = parseFloat(d3.select(this).style('stroke-width'));
+		d3.select(this).style('stroke-width', current*2+'px');
+	    };
+	    this.node_mouseout = function(d) {
+		d3.select(this).style('stroke-width', null);
+	    };
 	} else {
 	    this.node_click = null;
+	    this.node_mouseover = null;
+	    this.node_mouseout = null;
+	    this.map.sel.select('#nodes')
+		.selectAll('.node-circle').style('stroke-width', null);
 	}
     }
     function toggle_text_label_click(on_off) {
@@ -3029,7 +3167,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		move_bezier(d.reaction_id, d.segment_id, d.bezier, displacement);
 		map.draw_these_reactions([d.reaction_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
+	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				     redo_fn, this.map.sel);
     }
     function get_reaction_label_drag(map) {
 	var move_label = function(reaction_id, displacement) {
@@ -3054,7 +3193,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		move_label(d.reaction_id, displacement);
 		map.draw_these_reactions([d.reaction_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
+	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				     redo_fn, this.map.sel);
     }
     function get_node_label_drag(map) {
 	var move_label = function(node_id, displacement) {
@@ -3079,7 +3219,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		move_label(d.node_id, displacement);
 		map.draw_these_nodes([d.node_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
+	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				     redo_fn, this.map.sel);
     }
     function get_text_label_drag(map) {
 	var move_label = function(text_label_id, displacement) {
@@ -3104,9 +3245,10 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		move_label(d.text_label_id, displacement);
 		map.draw_these_text_labels([d.text_label_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn);
+	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				     redo_fn, this.map.sel);
     }
-    function get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn) {
+    function get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, relative_to_selection) {
 	/** Make a generic drag behavior, with undo/redo.
 
 	 start_fn: function(d) Called at dragstart.
@@ -3120,12 +3262,15 @@ define('Behavior',["utils", "build"], function(utils, build) {
 
 	 redo_fn
 
+	 relative_to_selection: a d3 selection that the locations are calculated against.
+
 	 */
-	 
+	
 	// define some variables
 	var behavior = d3.behavior.drag(),
 	    total_displacement,
-	    undo_stack = this.undo_stack;
+	    undo_stack = this.undo_stack,
+	    rel = relative_to_selection.node();
 
         behavior.on("dragstart", function (d) {
 	    // silence other listeners
@@ -3136,22 +3281,28 @@ define('Behavior',["utils", "build"], function(utils, build) {
         behavior.on("drag", function(d) {
 	    // update data
 	    var displacement = { x: d3.event.dx,
-				 y: d3.event.dy };
+				 y: d3.event.dy },
+		location = { x: d3.mouse(rel)[0],
+			     y: d3.mouse(rel)[1] };
+
 	    // remember the displacement
 	    total_displacement = utils.c_plus_c(total_displacement, displacement);
-	    drag_fn(d, displacement, total_displacement);
+	    drag_fn(d, displacement, total_displacement, location);
 	});
 	behavior.on("dragend", function(d) {			  
 	    // add to undo/redo stack
 	    // remember the displacement, dragged nodes, and reactions
 	    var saved_d = utils.clone(d),
-		saved_displacement = utils.clone(total_displacement); // BUG TODO this variable disappears!
+		saved_displacement = utils.clone(total_displacement), // BUG TODO this variable disappears!
+		saved_location = { x: d3.mouse(rel)[0],
+				   y: d3.mouse(rel)[1] };
+
 	    undo_stack.push(function() {
 		// undo
-		undo_fn(saved_d, saved_displacement);
+		undo_fn(saved_d, saved_displacement, saved_location);
 	    }, function () {
 		// redo
-		redo_fn(saved_d, saved_displacement);
+		redo_fn(saved_d, saved_displacement, saved_location);
 	    });
 	    end_fn(d);
 	});
@@ -3436,7 +3587,10 @@ define('KeyManager',["utils"], function(utils) {
     // instance methods
     KeyManager.prototype = { init: init,
 			     update: update,
-			     add_escape_listener: add_escape_listener };
+			     toggle: toggle,
+			     add_escape_listener: add_escape_listener,
+			     add_enter_listener: add_enter_listener,
+			     add_key_listener: add_key_listener };
 
     return KeyManager;
 
@@ -3448,7 +3602,7 @@ define('KeyManager',["utils"], function(utils) {
 	h.shift = false;
     }
     // instance methods
-    function init(assigned_keys, reaction_input) {
+    function init(assigned_keys, reaction_input, search_bar, ctrl_equals_cmd) {
 	/** Assign keys for commands.
 
 	 */
@@ -3457,9 +3611,16 @@ define('KeyManager',["utils"], function(utils) {
 	else this.assigned_keys = assigned_keys;
 	if (reaction_input===undefined) this.reaction_input = null;
 	else this.reaction_input = reaction_input;
+	if (search_bar===undefined) this.search_bar = null;
+	else this.search_bar = search_bar;
+
+	if (ctrl_equals_cmd===undefined) ctrl_equals_cmd = true;
+	this.ctrl_equals_cmd = ctrl_equals_cmd;
 
 	this.held_keys = {};
 	reset_held_keys(this.held_keys);
+
+	this.enabled = true;
 
 	this.update();
     }
@@ -3470,6 +3631,7 @@ define('KeyManager',["utils"], function(utils) {
 	    self = this;
 
         var modifier_keys = { command: 91,
+			      command_right: 93,
                               control: 17,
                               option: 18,
                               shift: 16 };
@@ -3477,17 +3639,19 @@ define('KeyManager',["utils"], function(utils) {
         d3.select(window).on("keydown.key_manager", null);
         d3.select(window).on("keyup.key_manager", null);
 
-        d3.select(window).on("keydown.key_manager", function() {
+	if (!(this.enabled)) return;
+
+        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, reaction_input, search_bar) {
             var kc = d3.event.keyCode,
-                reaction_input_visible = self.reaction_input ?
-		    self.reaction_input.is_visible : false,
+                input_visible = ((reaction_input ? reaction_input.is_visible() : false) ||
+				 (search_bar ? search_bar.is_visible() : false)),
 		meaningless = true;
             toggle_modifiers(modifier_keys, held_keys, kc, true);
 	    for (var key_id in keys) {
 		var assigned_key = keys[key_id];
-		if (check_key(assigned_key, kc, held_keys)) {
+		if (check_key(assigned_key, kc, held_keys, ctrl_equals_cmd)) {
 		    meaningless = false;
-		    if (!(assigned_key.ignore_with_input && reaction_input_visible)) {
+		    if (!(assigned_key.ignore_with_input && input_visible)) {
 			if (assigned_key.fn) {
 			    assigned_key.fn.call(assigned_key.target);
 			} else {
@@ -3504,7 +3668,8 @@ define('KeyManager',["utils"], function(utils) {
 		if (modifier_keys[k] == kc) meaningless = false;
 	    if (meaningless) 
 		reset_held_keys(held_keys);
-        }).on("keyup.key_manager", function() {
+        }.bind(null, this.ctrl_equals_cmd, this.reaction_input, this.search_bar))
+	    .on("keyup.key_manager", function() {
             toggle_modifiers(modifier_keys, held_keys,
 			     d3.event.keyCode, false);
         });
@@ -3513,34 +3678,61 @@ define('KeyManager',["utils"], function(utils) {
                 if (mod[k] == kc)
                     held[k] = on_off;
         }
-        function check_key(key, pressed, held) {
+        function check_key(key, pressed, held, ctrl_equals_cmd) {
             if (key.key != pressed) return false;
-            var mod = key.modifiers;
+            var mod = utils.clone(key.modifiers);
             if (mod === undefined)
                 mod = { control: false,
                         command: false,
                         option: false,
                         shift: false };
             for (var k in held) {
+		if (ctrl_equals_cmd &&
+		    mod['control'] &&
+		    (k=='command' || k=='command_right' || k=='control') &&
+		    (held['command'] || held['command_right'] || held['control'])) {
+		    continue;
+		}
                 if (mod[k] === undefined) mod[k] = false;
                 if (mod[k] != held[k]) return false;
             }
             return true;
         }
     }
+    function toggle(on_off) {
+	/** Turn the brush on or off
+
+	 */
+	if (on_off===undefined) on_off = !this.enabled;
+
+	this.update();
+    }	
+    function add_enter_listener(callback) {
+	/** Call the callback when the enter key is pressed, then
+	 unregisters the listener.
+
+	 */
+	this.add_key_listener(callback, 13);
+    }
     function add_escape_listener(callback) {
 	/** Call the callback when the escape key is pressed, then
 	 unregisters the listener.
 
 	 */
+	this.add_key_listener(callback, 27);
+    }
+    function add_key_listener(callback, kc) {
+	/** Call the callback when the key is pressed, then unregisters the
+	 listener.
+
+	 */
 	var selection = d3.select(window);
-	selection.on('keydown.esc', function() {
-	    if (d3.event.keyCode==27) { // esc
+	selection.on('keydown.'+kc, function() {
+	    if (d3.event.keyCode==kc) {
 		callback();
-		selection.on('keydown.esc', null);
 	    }
 	});
-	return { clear: function() { selection.on('keydown.esc', null); } };
+	return { clear: function() { selection.on('keydown.'+kc, null); } };
     }
 });
 
@@ -3596,17 +3788,25 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
 	var self = this,
 	    extent = {"x": this.width, "y": this.height},
 	    dragbar_width = 20,
+	    mouse_node_mult = 10,
 	    new_sel = this.selection.append('g')
 		.classed('canvas-group', true)
 		.data([{x: this.x, y: this.y}]);
 	
-	var rect = new_sel.append('rect')
+	var mouse_node = new_sel.append('rect')
 		.attr('id', 'mouse-node')
+		.attr("width", this.width*mouse_node_mult)
+		.attr("height", this.height*mouse_node_mult)
+		.attr("transform", "translate("+[self.x - this.width*mouse_node_mult/2,
+						 self.y - this.height*mouse_node_mult/2]+")")
+		.attr('pointer-events', 'all');
+	this.mouse_node = mouse_node;
+	
+	var rect = new_sel.append('rect')
+		.attr('id', 'canvas')
 		.attr("width", this.width)
 		.attr("height", this.height)
-		.attr("transform", "translate("+[self.x, self.y]+")")
-		.attr('class', 'canvas')
-		.attr('pointer-events', 'all');
+		.attr("transform", "translate("+[self.x, self.y]+")");
 
 	var drag_right = d3.behavior.drag()
 		.origin(Object)
@@ -3696,6 +3896,9 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    left.attr("transform", function(d) {
 		return transform_string(d.x - (dragbar_width / 2), null, left.attr('transform'));
 	    });
+	    mouse_node.attr("transform", function(d) {
+		return transform_string(d.x, null, mouse_node.attr('transform'));
+	    }).attr("width", self.width*mouse_node_mult);
 	    rect.attr("transform", function(d) {
 		return transform_string(d.x, null, rect.attr('transform'));
 	    }).attr("width", self.width);
@@ -3720,6 +3923,7 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    });
 	    //resize the drag rectangle
 	    //as we are only resizing from the right, the x coordinate does not need to change
+	    mouse_node.attr("width", self.width*mouse_node_mult);
 	    rect.attr("width", self.width);
 	    top.attr("width", self.width - dragbar_width);
 	    bottom.attr("width", self.width - dragbar_width);
@@ -3736,6 +3940,9 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    top.attr("transform", function(d) {
 		return transform_string(null, d.y - (dragbar_width / 2), top.attr('transform'));
 	    });
+	    mouse_node.attr("transform", function(d) {
+		return transform_string(null, d.y, mouse_node.attr('transform'));
+	    }).attr("width", self.height*mouse_node_mult);
 	    rect.attr("transform", function(d) {
 		return transform_string(null, d.y, rect.attr('transform'));
 	    }).attr("height", self.height);
@@ -3760,6 +3967,7 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    });
 	    //resize the drag rectangle
 	    //as we are only resizing from the right, the x coordinate does not need to change
+	    mouse_node.attr("height", self.height*mouse_node_mult);
 	    rect.attr("height", self.height);
 	    left.attr("height", self.height - dragbar_width);
 	    right.attr("height", self.height - dragbar_width);
@@ -3776,7 +3984,89 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
     }
 });
 
-define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles) {
+define('SearchIndex',["utils"], function(utils) {
+    /** Define an index for searching for reaction and metabolites in the map.
+
+     The index is stored in SearchIndex.index, an object of id/record pairs.
+
+     */
+
+    var SearchIndex = utils.make_class();
+    SearchIndex.prototype = { init: init,
+			      insert: insert,
+			      remove: remove,
+			      find: find };
+
+    return SearchIndex;
+
+    // definitions
+    function init() {
+	this.index = {};
+    }
+
+    function insert(id, record, overwrite, check_record) {
+	/** Insert a record into the index.
+
+	 id: A unique string id.
+
+	 record: Records have the form:
+
+	 { 'name': '',
+	   'data': {} }
+
+	 Search is performed on substrings of the name.
+
+	 overwrite: (Default false) For faster performance, make overwrite true,
+	 and records will be inserted without checking for an existing record.
+
+	 check_record: (Default false) For faster performance, make check_record
+	 false. If true, records will be checked to make sure they have name and
+	 data attributes.
+
+	 Returns undefined.
+
+	 */
+	if (!overwrite && (id in this.index))
+	    throw new Error("id is already in the index");
+	if (check_record && !(('name' in record) && ('data' in record)))
+	    throw new Error("malformed record");
+	this.index[id] = record;
+    }
+
+    function remove(record_id) {
+	/** Remove the matching record.
+
+	 Returns true is a record is found, or false if no match is found.
+
+	 */
+	if (record_id in this.index) {
+	    delete this.index[record_id];
+	    return true;
+	} else {
+	    return false;
+	}
+    }
+
+    function find(substring) {
+	/** Find a record that matches the substring.
+
+	 Returns an array of data from matching records.
+
+	 */
+
+	var re = RegExp(substring, "i"), // ignore case
+	    matches = [];
+	for (var id in this.index) {
+	    var record = this.index[id];
+	    if (re.exec(record.name))
+		matches.push(record.data);
+	}
+	return matches;
+	    
+    }
+});
+
+define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -3793,6 +4083,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     Map.prototype = {
 	// setup
 	init: init,
+	// more setup
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
 	// appearance
@@ -3802,6 +4093,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	set_metabolite_data: set_metabolite_data,
 	clear_map: clear_map,
 	// selection
+	select_none: select_none,
 	select_metabolite: select_metabolite,
 	select_metabolite_with_id: select_metabolite_with_id,
 	select_single_node: select_single_node,
@@ -3813,7 +4105,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	new_reaction_for_metabolite: new_reaction_for_metabolite,
 	cycle_primary_node: cycle_primary_node,
 	make_selected_node_primary: make_selected_node_primary,
-	rotate_selected_nodes: rotate_selected_nodes,
+	extend_nodes: extend_nodes,
+	extend_reactions: extend_reactions,
 	// delete
 	delete_selected: delete_selected,
 	delete_nodes: delete_nodes,
@@ -3847,9 +4140,16 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	toggle_beziers: toggle_beziers,
 	hide_beziers: hide_beziers,
 	show_beziers: show_beziers,
+	// zoom
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
 	_zoom_extent: _zoom_extent,
+	get_size: get_size,
+	zoom_to_reaction: zoom_to_reaction,
+	zoom_to_node: zoom_to_node,
+	highlight_reaction: highlight_reaction,
+	highlight_node: highlight_node,
+	highlight: highlight,
 	// io
 	save: save,
 	map_for_export: map_for_export,
@@ -3858,12 +4158,16 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
     return Map;
 
-    function init(svg, css, selection, zoom_container, height, width, reaction_data,
+    // -------------------------------------------------------------------------
+    // setup
+
+    function init(svg, css, selection, zoom_container, reaction_data,
 		  reaction_data_styles, metabolite_data, metabolite_data_styles,
-		  cobra_model, canvas_size_and_loc) {
-	if (canvas_size_and_loc===undefined || canvas_size_and_loc===null) {
-	    canvas_size_and_loc = {x: -width, y: -height,
-				   width: width*3, height: height*3};
+		  cobra_model, canvas_size_and_loc, enable_search) {
+	if (canvas_size_and_loc===null) {
+	    var size = zoom_container.get_size();
+	    canvas_size_and_loc = {x: -size.width, y: -size.height,
+				   width: size.width*3, height: size.height*3};
 	}
 
 	// defaults
@@ -3880,8 +4184,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.setup_containers(selection);
 	this.sel = selection;
 	this.zoom_container = zoom_container;
-	this.height = height;
-	this.width = width;
 
 	// check and load data
 	this.reaction_data_object = data_styles.import_and_check(reaction_data,
@@ -3900,8 +4202,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 			     nodes: -1,
 			     segments: -1 };
 
-	// make the scale
-	this.scale = new Scale(); //this.canvas.width, this.canvas.height, width, height);
+	// make the scales
+	this.scale = new Scale();
 
 	// make the undo/redo stack
 	this.undo_stack = new UndoStack();
@@ -3911,6 +4213,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
 	// make a key manager
 	this.key_manager = new KeyManager();
+
+	// make the search index
+	this.enable_search = enable_search;
+	this.search_index = new SearchIndex();
 
 	// deal with the window
 	var window_translate = {'x': 0, 'y': 0},
@@ -3948,6 +4254,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.text_labels = {};
 	this.info = {};
 
+	// rotation mode off
+	this.rotation_on = false;
+
 	// performs some extra checks
 	this.debug = false;
     };
@@ -3955,17 +4264,18 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     // -------------------------------------------------------------------------
     // Import
 
-    function from_data(map_data, svg, css, selection, zoom_container, height, width,
+    function from_data(map_data, svg, css, selection, zoom_container,
 		       reaction_data, reaction_data_styles,
-		       metabolite_data, metabolite_data_styles, cobra_model) {
+		       metabolite_data, metabolite_data_styles, cobra_model,
+		       enable_search) {
 	/** Load a json map and add necessary fields for rendering.
 	 
 	 */
 	utils.check_undefined(arguments, ['map_data', 'svg', 'css', 'selection',
-					  'zoom_container', 'height', 'width',
+					  'zoom_container',
 					  'reaction_data', 'reaction_data_styles',
 					  'metabolite_data', 'metabolite_data_styles',
-					  'cobra_model']);
+					  'cobra_model', 'enable_search']);
 
 	if (this.debug) {
 	    d3.json('map_spec.json', function(error, spec) {
@@ -3978,9 +4288,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	}
 	
 	var canvas = map_data.canvas,
-	    map = new Map(svg, css, selection, zoom_container, height, width,
+	    map = new Map(svg, css, selection, zoom_container,
 			  reaction_data, reaction_data_styles, metabolite_data,
-			  metabolite_data_styles, cobra_model, canvas);
+			  metabolite_data_styles, cobra_model, canvas,
+			  enable_search);
 
 	map.reactions = map_data.reactions;
 	map.nodes = map_data.nodes;
@@ -3988,9 +4299,14 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	map.text_labels = map_data.text_labels;
 	map.info = map_data.info;
 
-	// propogate coefficients and reversbility
+	// propogate coefficients and reversbility, and populate the search index
 	for (var r_id in map.reactions) {
 	    var reaction = map.reactions[r_id];
+	    if (enable_search) {
+		map.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
+						    'data': { type: 'reaction',
+							      reaction_id: r_id }});
+	    }
 	    for (var s_id in reaction.segments) {
 		var segment = reaction.segments[s_id];
 		segment.reversibility = reaction.reversibility;
@@ -4013,7 +4329,15 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
 	    }
 	}
-
+	if (enable_search) {
+	    for (var node_id in map.nodes) {
+		var node = map.nodes[node_id];
+		if (node.node_type!='metabolite') continue;
+		map.search_index.insert('n'+node_id, { 'name': node.bigg_id,
+						       'data': { type: 'metabolite',
+								 node_id: node_id }});
+	    }
+	}
 	// get largest ids for adding new reactions, nodes, text labels, and
 	// segments
 	map.largest_ids.reactions = get_largest_id(map.reactions);
@@ -4045,7 +4369,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     }
 
     // ---------------------------------------------------------------------
-    // Drawing
+    // more setup
 
     function setup_containers(sel) {
         sel.append('g')
@@ -4153,6 +4477,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    default_reaction_color = this.default_reaction_color,
 	    bezier_drag_behavior = this.behavior.bezier_drag,
 	    node_click_fn = this.behavior.node_click,
+	    node_mouseover_fn = this.behavior.node_mouseover,
+	    node_mouseout_fn = this.behavior.node_mouseout,
 	    node_drag_behavior = this.behavior.node_drag,
 	    reaction_label_drag = this.behavior.reaction_label_drag,
 	    node_label_drag = this.behavior.node_label_drag,
@@ -4188,6 +4514,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 								     has_metabolite_data,
 								     metabolite_data_styles,
 								     node_click_fn,
+								     node_mouseover_fn,
+								     node_mouseout_fn,
 								     node_drag_behavior,
 								     node_label_drag); });
 
@@ -4265,6 +4593,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    reactions = this.reactions,
 	    nodes = this.nodes,
 	    node_click_fn = this.behavior.node_click,
+	    node_mouseover_fn = this.behavior.node_mouseover,
+	    node_mouseout_fn = this.behavior.node_mouseout,
 	    node_drag_behavior = this.behavior.node_drag,
 	    node_label_drag = this.behavior.node_label_drag,
 	    metabolite_data_styles = this.metabolite_data_styles,
@@ -4292,7 +4622,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
         // update: update when necessary
         sel.call(function(sel) { return draw.update_node(sel, scale, has_metabolite_data, metabolite_data_styles, 
-							 node_click_fn, node_drag_behavior,
+							 node_click_fn,
+							 node_mouseover_fn,
+							 node_mouseout_fn,
+							 node_drag_behavior,
 							 node_label_drag); });
 
         // exit
@@ -4536,6 +4869,12 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    .each(function(d) { selected_text_labels[d.text_label_id] = self.text_labels[d.text_label_id]; });
 	return selected_text_labels;
     }	
+
+    function select_none() {
+	this.sel.selectAll('.selected')
+	    .classed('selected', false);
+    }
+
     function select_metabolite_with_id(node_id) {
 	// deselect all text labels
 	this.deselect_text_labels();
@@ -4561,8 +4900,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	var node_selection = this.sel.select('#nodes').selectAll('.node'), 
 	    shift_key_on = this.key_manager.held_keys.shift;
 	if (shift_key_on) {
-	    this.sel.select(sel.parentNode)
-		.classed("selected", !this.sel.select(sel.parentNode).classed("selected"));
+	    d3.select(sel.parentNode)
+		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
 	}
         else node_selection.classed("selected", function(p) { return d === p; });
 	var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),
@@ -4649,16 +4988,15 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	var saved_nodes = utils.clone(selected_nodes),
 	    saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments),
 	    saved_reactions = utils.clone(reactions),
-	    self = this,
 	    delete_and_draw = function(nodes, reactions, segment_objs) {
 		// delete nodes, segments, and reactions with no segments
-  		self.delete_node_data(selected_nodes);
-		self.delete_segment_data(segment_objs);
-		self.delete_reaction_data(reactions);
+  		this.delete_node_data(Object.keys(selected_nodes));
+		this.delete_segment_data(segment_objs);
+		this.delete_reaction_data(Object.keys(reactions));
 		// redraw
 		// TODO just redraw these nodes and segments
-		self.draw_everything();
-	    };
+		this.draw_everything();
+	    }.bind(this);
 
 	// delete
 	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
@@ -4667,36 +5005,38 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.undo_stack.push(function() {
 	    // undo
 	    // redraw the saved nodes, reactions, and segments
-	    utils.extend(self.nodes, saved_nodes);
-	    utils.extend(self.reactions, saved_reactions);
+
+	    this.extend_nodes(saved_nodes);
+	    this.extend_reactions(saved_reactions);
 	    var reactions_to_draw = Object.keys(saved_reactions);
 	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
 		var segment = segment_obj.segment;
-		self.reactions[segment_obj.reaction_id]
+		this.reactions[segment_obj.reaction_id]
 		    .segments[segment_obj.segment_id] = segment;
 
 		// updated connected nodes
 		[segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
 		    // not necessary for the deleted nodes
 		    if (node_id in saved_nodes) return;
-		    var node = self.nodes[node_id];
+		    var node = this.nodes[node_id];
 		    node.connected_segments.push({ reaction_id: segment_obj.reaction_id,
 						   segment_id: segment_obj.segment_id });
-		});
+		}.bind(this));
 
-		reactions_to_draw.push(segment_obj.reaction_id);
-	    });
-	    self.draw_these_nodes(Object.keys(saved_nodes));
-	    self.draw_these_reactions(reactions_to_draw);
+		if (reactions_to_draw.indexOf(segment_obj.reaction_id)==-1)
+		    reactions_to_draw.push(segment_obj.reaction_id);
+	    }.bind(this));
+	    this.draw_these_nodes(Object.keys(saved_nodes));
+	    this.draw_these_reactions(reactions_to_draw);
 	    // copy nodes to re-delete
 	    selected_nodes = utils.clone(saved_nodes);
 	    segment_objs_w_segments = utils.clone(saved_segment_objs_w_segments);
 	    reactions = utils.clone(saved_reactions);
-	}, function () {
+	}.bind(this), function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
 	    delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
-	});
+	}.bind(this));
     }
     function delete_text_labels(selected_text_labels) {
 	/** Delete the text_labels.
@@ -4709,7 +5049,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    self = this,
 	    delete_and_draw = function(text_labels) {
 		// delete text_labels, segments, and reactions with no segments
-  		self.delete_text_label_data(selected_text_labels);
+  		self.delete_text_label_data(Object.keys(selected_text_labels));
 		// redraw
 		// TODO just redraw these text_labels
 		self.draw_everything();
@@ -4730,12 +5070,17 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    delete_and_draw(selected_text_labels);
 	});
     }
-    function delete_node_data(nodes) {
-	/** Simply delete nodes.
+    function delete_node_data(node_ids) {
+	/** Delete nodes, and remove from search index.
 	 */
-	for (var node_id in nodes) {
+	node_ids.forEach(function(node_id) {
+	    if (this.enable_search && this.nodes[node_id].node_type=='metabolite') {
+		var found = this.search_index.remove('n'+node_id);
+		if (!found)
+		    console.warn('Could not find deleted metabolite in search index');
+	    }
 	    delete this.nodes[node_id];
-	}
+	}.bind(this));
     }
     function delete_segment_data(segment_objs) {
 	/** Delete segments, and update connected_segments in nodes. Also
@@ -4744,10 +5089,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	 segment_objs: Array of objects with { reaction_id: "123", segment_id: "456" }
 	 
 	 */
-	var reactions = this.reactions,
-	    nodes = this.nodes;
 	segment_objs.forEach(function(segment_obj) {
-	    var reaction = reactions[segment_obj.reaction_id];
+	    var reaction = this.reactions[segment_obj.reaction_id];
 
 	    // segment already deleted
 	    if (!(segment_obj.segment_id in reaction.segments)) return;
@@ -4755,29 +5098,33 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    var segment = reaction.segments[segment_obj.segment_id];
 	    // updated connected nodes
 	    [segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
-		if (!(node_id in nodes)) return;
-		var node = nodes[node_id];
+		if (!(node_id in this.nodes)) return;
+		var node = this.nodes[node_id];
 		node.connected_segments = node.connected_segments.filter(function(so) {
 		    return so.segment_id != segment_obj.segment_id;				
 		});
-	    });
+	    }.bind(this));
 
 	    delete reaction.segments[segment_obj.segment_id];
-	});
+	}.bind(this));
     }
-    function delete_reaction_data(reactions) {
-	/** delete reactions
+    function delete_reaction_data(reaction_ids) {
+	/** Delete reactions and remove from search index.
+	 
 	 */
-	for (var reaction_id in reactions) {
+	reaction_ids.forEach(function(reaction_id) {
 	    delete this.reactions[reaction_id];
-	}
+	    var found = this.search_index.remove('r'+reaction_id);
+	    if (!found)
+		console.warn('Could not find deleted reaction in search index');
+	}.bind(this));
     }
-    function delete_text_label_data(text_labels) {
+    function delete_text_label_data(text_label_ids) {
 	/** delete text labels for an array of ids
 	 */
-	for (var text_label_id in text_labels) {
+	text_label_ids.forEach(function(text_label_id) {
 	    delete this.text_labels[text_label_id];
-	}
+	}.bind(this));
     }
     function show_beziers() {
 	this.toggle_beziers(true);
@@ -4851,7 +5198,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.undo_stack.push(function() {
 	    // undo
 	    // get the nodes to delete
-	    map.delete_node_data(new_nodes);
+	    map.delete_node_data(Object.keys(new_nodes));
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    // draw
@@ -4869,7 +5216,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
         // definitions
 	function extend_and_draw_metabolite(new_nodes, selected_node_id) {
-	    utils.extend(this.nodes, new_nodes);
+	    this.extend_nodes(new_nodes);
 	    if (this.has_metabolite_data()) {
 		var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
 		if (scale_changed) this.draw_all_nodes();
@@ -4880,6 +5227,36 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	}
     }
     
+    function extend_nodes(new_nodes) {
+	/** Add new nodes to data and search index.
+
+	 */
+	if (this.enable_search) {
+	    for (var node_id in new_nodes) {
+		var node = new_nodes[node_id];
+		if (node.node_type!='metabolite') continue;
+		this.search_index.insert('n'+node_id, { 'name': node.bigg_id,
+							'data': { type: 'metabolite',
+								  node_id: node_id }});
+	    }
+	}
+	utils.extend(this.nodes, new_nodes);
+    }
+    function extend_reactions(new_reactions) {
+	/** Add new reactions to data and search index.
+
+	 */
+	for (var r_id in new_reactions) {
+	    var reaction = new_reactions[r_id];
+	    if (this.enable_search) {
+		this.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
+						     'data': { type: 'reaction',
+							       reaction_id: r_id }});
+	    }
+	}
+	utils.extend(this.reactions, new_reactions);
+    }
+
     function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id) {
 	/** Build a new reaction starting with selected_met.
 
@@ -4926,8 +5303,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	    // undo
 	    // get the nodes to delete
 	    delete new_nodes[selected_node_id];
-	    map.delete_node_data(new_nodes);
-	    map.delete_reaction_data(new_reactions);
+	    map.delete_node_data(Object.keys(new_nodes));
+	    map.delete_reaction_data(Object.keys(new_reactions));
 	    select_metabolite_with_id.apply(map, [selected_node_id]);
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
@@ -4942,10 +5319,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 
 	// definitions
 	function extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id) {
-	    utils.extend(this.reactions, new_reactions);
+	    this.extend_reactions(new_reactions);
 	    // remove the selected node so it can be updated
-	    delete this.nodes[selected_node_id];
-	    utils.extend(this.nodes, new_nodes);
+	    this.delete_node_data([selected_node_id]); // TODO this is a hack. fix
+	    this.extend_nodes(new_nodes);
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
@@ -5101,136 +5478,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	this.draw_these_nodes(nodes_to_draw);
     }
 
-    function rotate_selected_nodes() {
-	/** Request a center, then listen for rotation, and rotate nodes.
-
-	 */
-	this.callback_manager.run('start_rotation');
-	
-	var selected_nodes = this.get_selected_nodes();
-	if (selected_nodes.length < 1) return console.warn('No nodes selected');
-	
-	var saved_center, total_angle = 0,
-	    selected_node_ids = Object.keys(selected_nodes),
-	    self = this,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    end_function = function() {
-		console.log('end_rotation');
-		self.callback_manager.run('end_rotation');
-	    };
-
-	choose_center.call(this, function(center) {
-	    saved_center = center;
-	    listen_for_rotation.call(self, center, function(angle) {
-		total_angle += angle;
-		var updated = build.rotate_nodes(selected_nodes, reactions,
-						 angle, center);
-		self.draw_these_nodes(updated.node_ids);
-		self.draw_these_reactions(updated.reaction_ids);
-	    }, end_function, end_function);
-	}, end_function);
-
-	// add to undo/redo stack
-	this.undo_stack.push(function() {
-	    // undo
-	    var these_nodes = {};
-	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-	    var updated = build.rotate_nodes(these_nodes, reactions,
-						      -total_angle, saved_center);
-	    self.draw_these_nodes(updated.node_ids);
-	    self.draw_these_reactions(updated.reaction_ids);
-	}, function () {
-	    // redo
-	    var these_nodes = {};
-	    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
-	    var updated = build.rotate_nodes(these_nodes, reactions,
-						      total_angle, saved_center);
-	    self.draw_these_nodes(updated.node_ids);
-	    self.draw_these_reactions(updated.reaction_ids);
-	});
-
-	// definitions
-	function choose_center(callback, callback_canceled) {
-	    console.log('Choose center');
-	    set_status('Choose a node or point to rotate around.');
-	    var selection_node = this.sel.selectAll('.node-circle'),
-		selection_background = this.sel.selectAll('#mouse-node'),
-		escape_listener = this.key_manager.add_escape_listener(function() {
-		    console.log('choose_center escape');
-		    selection_node.on('mousedown.center', null);
-		    selection_background.on('mousedown.center', null);
-		    set_status('');
-		    callback_canceled();
-		});
-	    // if the user clicks a metabolite node
-	    selection_node.on('mousedown.center', function(d) {		    
-		console.log('mousedown.center');
-		// turn off the click listeners to prepare for drag
-		selection_node.on('mousedown.center', null);
-		selection_background.on('mousedown.center', null);
-		set_status('');
-		escape_listener.clear();
-		// find the location of the clicked metabolite
-		var center = { x: d.x, y: d.y };
-		callback(center); 
-	    });
-	    // if the user clicks a point
-	    selection_background.on('mousedown.center', function() {
-		console.log('mousedown.center');
-		// turn off the click listeners to prepare for drag
-		selection_node.on('mousedown.center', null);
-		selection_background.on('mousedown.center', null);
-		set_status('');
-		escape_listener.clear();
-		// find the point on the background node where the user clicked
-		var center = { x: d3.mouse(self.sel.node())[0], 
-			       y: d3.mouse(self.sel.node())[1] };
-		callback(center); 
-	    });
-	}
-	function listen_for_rotation(center, callback, callback_finished, 
-				     callback_canceled) {
-	    this.set_status('Drag to rotate.');
-	    this.zoom_container.toggle_zoom(false);
-	    var angle = Math.PI/2,
-		selection = this.sel.selectAll('#mouse-node'),
-		drag = d3.behavior.drag(),
-		escape_listener = this.key_manager.add_escape_listener(function() {
-		    console.log('listen_for_rotation escape');
-		    drag.on('drag.rotate', null);
-		    drag.on('dragend.rotate', null);
-		    set_status('');
-		    callback_canceled();
-		});
-	    // drag.origin(function() { return point_of_grab; });
-	    drag.on("drag.rotate", function() { 
-		callback(angle_for_event({ dx: d3.event.dx, 
-					   dy: d3.event.dy },
-					 { x: d3.mouse(this)[0],
-					   y: d3.mouse(this)[1] },
-					 center));
-	    }).on("dragend.rotate", function() {
-		console.log('dragend.rotate');
-		drag.on('drag.rotate', null);
-		drag.on('dragend.rotate', null);
-		set_status('');
-		escape_listener.clear();
-		callback_finished();
-	    });
-	    selection.call(drag);
-
-	    // definitions
-	    function angle_for_event(displacement, point, center) {
-		var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
-		    beta = Math.atan2((point.x - center.x + displacement.dx), 
-				      (center.y - point.y - displacement.dy)),
-		    angle = beta - gamma;
-		return angle;
-	    }
-	}
-    }
-
     function segments_and_reactions_for_nodes(nodes) {
 	/** Get segments and reactions that should be deleted with node deletions
 	 */
@@ -5275,6 +5522,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
         return this;
     }
 
+    // -------------------------------------------------------------------------
+    // Zoom
+
     function zoom_extent_nodes(margin) {
 	/** Zoom to fit all the nodes.
 
@@ -5306,17 +5556,18 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	 */
 
 	// optional args
-	if (margin===undefined) margin = mode=='nodes' ? 0.2 : 0;
+	if (margin===undefined) margin = (mode=='nodes' ? 0.2 : 0);
 	if (mode===undefined) mode = 'canvas';
 
-	var new_zoom, new_pos;
+	var new_zoom, new_pos,
+	    size = this.get_size();
 	// scale margin to window size
-	margin = margin * this.height;
+	margin = margin * size.height;
 
 	if (mode=='nodes') {
 	    // get the extent of the nodes
 	    var min = { x: null, y: null }, // TODO make infinity?
-		max = { x: null, y: null }; 
+		max = { x: null, y: null };
 	    for (var node_id in this.nodes) {
 		var node = this.nodes[node_id];
 		if (min.x===null) min.x = node.x;
@@ -5330,21 +5581,57 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 		max.y = Math.max(max.y, node.y);
 	    }
 	    // set the zoom
-	    new_zoom = Math.min((this.width - margin*2) / (max.x - min.x),
-				(this.height - margin*2) / (max.y - min.y));
-	    new_pos = { x: - (min.x * new_zoom) + margin + ((this.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
-			y: - (min.y * new_zoom) + margin + ((this.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
+	    new_zoom = Math.min((size.width - margin*2) / (max.x - min.x),
+				(size.height - margin*2) / (max.y - min.y));
+	    new_pos = { x: - (min.x * new_zoom) + margin + ((size.width - margin*2 - (max.x - min.x)*new_zoom) / 2),
+			y: - (min.y * new_zoom) + margin + ((size.height - margin*2 - (max.y - min.y)*new_zoom) / 2) };
 	} else if (mode=='canvas') {
 	    // center the canvas
-	    new_zoom =  Math.min((this.width - margin*2) / (this.canvas.width),
-				 (this.height - margin*2) / (this.canvas.height));
-	    new_pos = { x: - (this.canvas.x * new_zoom) + margin + ((this.width - margin*2 - this.canvas.width*new_zoom) / 2),
-			y: - (this.canvas.y * new_zoom) + margin + ((this.height - margin*2 - this.canvas.height*new_zoom) / 2) };
+	    new_zoom =  Math.min((size.width - margin*2) / (this.canvas.width),
+				 (size.height - margin*2) / (this.canvas.height));
+	    new_pos = { x: - (this.canvas.x * new_zoom) + margin + ((size.width - margin*2 - this.canvas.width*new_zoom) / 2),
+			y: - (this.canvas.y * new_zoom) + margin + ((size.height - margin*2 - this.canvas.height*new_zoom) / 2) };
 	} else {
 	    return console.error('Did not recognize mode');
 	}
 	this.zoom_container.go_to(new_zoom, new_pos);
 	return null;
+    }
+
+    function get_size() {
+	return this.zoom_container.get_size();
+    }
+
+    function zoom_to_reaction(reaction_id) {
+	var reaction = this.reactions[reaction_id],
+	    new_zoom = 0.6,
+	    size = this.get_size(),
+	    new_pos = { x: - reaction.label_x * new_zoom + size.width/2,
+			y: - reaction.label_y * new_zoom + size.height/2 };
+	this.zoom_container.go_to(new_zoom, new_pos);
+    }
+
+    function zoom_to_node(node_id) {
+	var node = this.nodes[node_id],
+	    new_zoom = 0.6,
+	    size = this.get_size(),
+	    new_pos = { x: - node.label_x * new_zoom + size.width/2,
+			y: - node.label_y * new_zoom + size.height/2 };
+	this.zoom_container.go_to(new_zoom, new_pos);
+    }
+
+    function highlight_reaction(reaction_id) {
+	this.highlight(this.sel.selectAll('#r'+reaction_id).selectAll('text'));
+    }
+    function highlight_node(node_id) {
+	this.highlight(this.sel.selectAll('#n'+node_id).selectAll('text'));
+    }
+    function highlight(sel) {
+	this.sel.selectAll('.highlight')
+	    .classed('highlight', false);
+	if (sel!==null) {
+	    sel.classed('highlight', true);
+	}
     }
 
     // -------------------------------------------------------------------------
@@ -5398,16 +5685,23 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,
 	    window_translate = this.zoom_container.window_translate,
-	    svg_width = this.svg.attr('width'),
-	    svg_height = this.svg.attr('height'),
-	    canvas_size_and_loc = this.canvas.size_and_location();
-	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, true);
+	    canvas_size_and_loc = this.canvas.size_and_location(),
+	    mouse_node_size_and_trans = { w: this.canvas.mouse_node.attr('width'),
+					  h: this.canvas.mouse_node.attr('height'),
+				          transform:  this.canvas.mouse_node.attr('transform')};
+	this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, false);
 	this.svg.attr('width', canvas_size_and_loc.width);
 	this.svg.attr('height', canvas_size_and_loc.height);
+	this.canvas.mouse_node.attr('width', '0px');
+	this.canvas.mouse_node.attr('height', '0px');
+	this.canvas.mouse_node.attr('transform', null);
         utils.export_svg("saved_map", this.svg, true);
-	this.zoom_container.go_to(window_scale, window_translate, true);
-	svg_width = this.svg.attr('width', svg_width);
-	svg_height = this.svg.attr('height', svg_height);
+	this.zoom_container.go_to(window_scale, window_translate, false);
+	this.svg.attr('width', null);
+	this.svg.attr('height', null);
+	this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
+	this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
+	this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
 	this.callback_manager.run('after_svg_export');
     }
 });
@@ -5422,21 +5716,40 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     ZoomContainer.prototype = { init: init,
 				toggle_zoom: toggle_zoom,
 				go_to: go_to,
+				zoom_by: zoom_by,
+				zoom_in: zoom_in,
+				zoom_out: zoom_out,
+				get_size: get_size,
 				translate_off_screen: translate_off_screen,
-				reset: reset };
+				reset: reset,
+				new_wheel_listener: new_wheel_listener };
     return ZoomContainer;
 
     // definitions
-    function init(selection, w, h, scale_extent) {
+    function init(selection, size_container, use_mousewheel_for_panning) {
+	/** Make a container that will manage panning and zooming.
+
+	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
+	 container in.
+
+	 size_container: A d3 selection of a 'div' node that has defined width
+	 and height.
+
+	 */
+
+	if (use_mousewheel_for_panning===undefined)
+	    use_mousewheel_for_panning = true;
+
 	this.zoom_on = true;
 	this.initial_zoom = 1.0;
 	this.window_translate = {x: 0, y: 0};
 	this.window_scale = 1.0;
-	this.width = w;
-	this.height = h;
 
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
+
+	// save the size_container
+	this.size_container = size_container;
 
         // set up the container
         selection.select("#zoom-container").remove();
@@ -5457,11 +5770,31 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
         };
 	var zoom_container = this;
 	this.zoom_behavior = d3.behavior.zoom()
-	// .scaleExtent(scale_extent)
 	    .on("zoom", function() {
 		zoom(zoom_container, d3.event);
 	    });
 	container.call(this.zoom_behavior);
+	
+	if (use_mousewheel_for_panning) {
+	    container.on("mousewheel.zoom", null)
+		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
+		.on("wheel.zoom", null) // disables newer versions of Firefox
+		.on('dblclick.zoom', null);
+	    // add the wheel listener
+	    var wheel_fn = function() {
+		var ev = d3.event,
+		    sensitivity = 0.5;
+		this.go_to(this.window_scale,
+			   { x: this.window_translate.x -
+			     (ev.wheelDeltaX!==undefined ? -ev.wheelDeltaX/1.5 : ev.deltaX) * sensitivity,
+			     y: this.window_translate.y -
+			     (ev.wheelDeltaY!==undefined ? -ev.wheelDeltaY/1.5 : ev.deltaY) * sensitivity },
+			   false);
+	    }.bind(this);
+	    container.on('mousewheel.escher', wheel_fn);
+	    container.on('DOMMouseScroll.escher', wheel_fn);
+	    container.on('wheel.escher', wheel_fn);
+	}
 
 	this.saved_scale = null;
 	this.saved_translate = null;
@@ -5496,9 +5829,13 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     }
 
     // functions to scale and translate
-    function go_to(scale, translate, dont_transition) { 
+    function go_to(scale, translate, show_transition) {
+	utils.check_undefined(arguments, ['scale', 'translate']);
+	if (show_transition===undefined) show_transition = true;
+
 	if (!scale) return console.error('Bad scale value');
-	if (!translate || !('x' in translate) || !('y' in translate))
+	if (!translate || !('x' in translate) || !('y' in translate) ||
+	    isNaN(translate.x) || isNaN(translate.y))
 	    return console.error('Bad translate value');
 
 	this.zoom_behavior.scale(scale);
@@ -5510,26 +5847,50 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
         this.window_translate = translate;
 	if (this.saved_translate !== null) this.saved_translate = translate_array;
 
-	var move_this = (dont_transition ? this.zoomed_sel :
-			 this.zoomed_sel.transition());
+	var move_this = (show_transition ?
+			 this.zoomed_sel.transition() :
+			 this.zoomed_sel);
         move_this.attr('transform',
 		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
 		  'scale('+this.window_scale+')');
 	return null;
-    }			    
+    }
+
+    function zoom_by(amount) {
+	var size = this.get_size(),
+	    shift = { x: size.width/2 - ((size.width/2 - this.window_translate.x) * amount +
+					 this.window_translate.x),
+	 	      y: size.height/2 - ((size.height/2 - this.window_translate.y) * amount +
+					  this.window_translate.y) };
+	this.go_to(this.window_scale*amount,
+		   utils.c_plus_c(this.window_translate, shift),
+		   true);
+    }
+    function zoom_in() {
+	this.zoom_by(1.5);
+    }
+    function zoom_out() {
+	this.zoom_by(0.667);
+    }
+
+    function get_size() {
+	return { width: parseInt(this.size_container.style('width'), 10),
+		 height: parseInt(this.size_container.style('height'), 10) };
+    }
 
     function translate_off_screen(coords) {
         // shift window if new reaction will draw off the screen
         // TODO BUG not accounting for scale correctly
         var margin = 80, // pixels
+	    size = this.get_size(),
 	    current = {'x': {'min': - this.window_translate.x / this.window_scale +
 			     margin / this.window_scale,
 			     'max': - this.window_translate.x / this.window_scale +
-			     (this.width-margin) / this.window_scale },
+			     (size.width-margin) / this.window_scale },
 		       'y': {'min': - this.window_translate.y / this.window_scale +
 			     margin / this.window_scale,
 			     'max': - this.window_translate.y / this.window_scale +
-			     (this.height-margin) / this.window_scale } };
+			     (size.height-margin) / this.window_scale } };
         if (coords.x < current.x.min) {
             this.window_translate.x = this.window_translate.x -
 		(coords.x - current.x.min) * this.window_scale;
@@ -5552,6 +5913,70 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     function reset() {
 	this.go_to(1.0, {x: 0.0, y: 0.0});
     }
+
+    function new_wheel_listener(sel, callback) {
+	// creates a global "addWheelListener" method
+	// example: addWheelListener( elem, function( e ) { console.log( e.deltaY ); e.preventDefault(); } );
+
+	var prefix = "", _addEventListener, onwheel, support,
+	    useCapture = true,
+	    elem = sel.node();
+
+	// detect event model
+	if ( window.addEventListener ) {
+            _addEventListener = "addEventListener";
+	} else {
+            _addEventListener = "attachEvent";
+            prefix = "on";
+	}
+
+	// detect available wheel event
+	support = "onwheel" in document.createElement("div") ? "wheel" : // Modern browsers support "wheel"
+            document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
+            "DOMMouseScroll"; // let's assume that remaining browsers are older Firefox
+
+        _addWheelListener( elem, support, callback, useCapture );
+
+        // handle MozMousePixelScroll in older Firefox
+        if( support == "DOMMouseScroll" ) {
+	    _addWheelListener( elem, "MozMousePixelScroll", callback, useCapture );
+        }
+
+	function _addWheelListener( elem, eventName, callback, useCapture ) {
+            elem[ _addEventListener ]( prefix + eventName, support == "wheel" ? callback : function( originalEvent ) {
+		!originalEvent && ( originalEvent = window.event );
+
+		// create a normalized event object
+		var event = {
+                    // keep a ref to the original event object
+                    originalEvent: originalEvent,
+                    target: originalEvent.target || originalEvent.srcElement,
+                    type: "wheel",
+                    deltaMode: originalEvent.type == "MozMousePixelScroll" ? 0 : 1,
+                    deltaX: 0,
+                    delatZ: 0,
+                    preventDefault: function() {
+			originalEvent.preventDefault ?
+                            originalEvent.preventDefault() :
+                            originalEvent.returnValue = false;
+                    }
+		};
+		
+		// calculate deltaY (and deltaX) according to the event
+		if ( support == "mousewheel" ) {
+                    event.deltaY = - 1/40 * originalEvent.wheelDelta;
+                    // Webkit also support wheelDeltaX
+                    originalEvent.wheelDeltaX && ( event.deltaX = - 1/40 * originalEvent.wheelDeltaX );
+		} else {
+                    event.deltaY = originalEvent.detail;
+		}
+
+		// it's time to fire the callback
+		return callback( event );
+
+            }, useCapture || false );
+	}
+    }
 });
 
 define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", "draw"], function(utils, completely, Map, ZoomContainer, CallbackManager, draw) {
@@ -5563,9 +5988,9 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
     Input.prototype = { init: init,
 			setup_map_callbacks: setup_map_callbacks,
 			setup_zoom_callbacks: setup_zoom_callbacks,
-			show: show,
-			hide: hide,
+			is_visible: is_visible,
 			toggle: toggle,
+			hide_dropdown: hide_dropdown,
 			place_at_selected: place_at_selected,
 			place: place,
 			reload_at_selected: reload_at_selected,
@@ -5583,7 +6008,8 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	d3.select(c.input)
 	// .attr('placeholder', 'Reaction ID -- Flux')
 	    .on('input', function() {
-		this.value = this.value.replace("/","")
+		this.value = this.value
+		    // .replace("/","")
 		    .replace(" ","")
 		    .replace("\\","")
 		    .replace("<","");
@@ -5593,7 +6019,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	// close button
 	var self = this;
 	new_sel.append('button').attr('class', "button input-close-button")
-	    .text("×").on('click', function() { self.hide(); });;
+	    .text("×").on('click', function() { this.hide_dropdown(); }.bind(this));
 
 	if (map instanceof Map) {
 	    this.map = map;
@@ -5613,45 +6039,45 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	this.callback_manager = new CallbackManager();
 
 	// toggle off
-	this.hide();
+	this.toggle(false);
     }
     function setup_map_callbacks() {
 	var self = this;
 	this.map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
-	    if (self.is_visible) self.reload(selected_node, coords, false);
+	    if (self.is_active) self.reload(selected_node, coords, false);
 	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	});
 	this.map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
 	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-	    if (count == 1 && self.is_visible && coords) {
+	    if (count == 1 && self.is_active && coords) {
 		self.reload(selected_node, coords, false);
 	    } else {
-		self.hide();
+		self.toggle(false);
 	    }
 	});
     }
     function setup_zoom_callbacks() {
 	var self = this;
 	this.zoom_container.callback_manager.set('zoom.input', function() {
-	    if (self.is_visible) {
+	    if (self.is_active) {
 		self.place_at_selected();
 	    }
 	});
     }
-    function show() {
-	this.toggle(true);
-    }
-    function hide() {
-	this.toggle(false);
+    function is_visible() {
+	return this.selection.style('display') != 'none';
     }
     function toggle(on_off) {
-	if (on_off===undefined) this.is_visible = !this.is_visible;
-	else this.is_visible = on_off;
-	if (this.is_visible) {
+	if (on_off===undefined) this.is_active = !this.is_active;
+	else this.is_active = on_off;
+	if (this.is_active) {
 	    this.toggle_start_reaction_listener(true);
 	    this.reload_at_selected();
 	    this.map.set_status('Click on the canvas or an existing metabolite');
 	    this.callback_manager.run('show_reaction_input');
+	    // escape key
+	    this.escape = this.map.key_manager
+		.add_escape_listener(function() { this.hide_dropdown(); }.bind(this));
 	} else {
 	    this.toggle_start_reaction_listener(false);
 	    this.selection.style("display", "none");
@@ -5659,9 +6085,16 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
             this.completely.hideDropDown();
 	    this.map.set_status(null);
 	    this.callback_manager.run('hide_reaction_input');
+	    if (this.escape)
+		this.escape.clear();
+	    this.escape = null;
 	}
     }
-
+    function hide_dropdown() {
+	this.selection.style("display", "none");
+        this.completely.hideDropDown();
+        this.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+    }
     function place_at_selected() {
         /** Place autocomplete box at the first selected node.
 	 
@@ -5677,12 +6110,13 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
     function place(coords) {
 	var d = {x: 200, y: 0},
 	    window_translate = this.map.zoom_container.window_translate,
-	    window_scale = this.map.zoom_container.window_scale;
+	    window_scale = this.map.zoom_container.window_scale,
+	    map_size = this.map.get_size();
         var left = Math.max(20,
-			    Math.min(this.map.width - 270,
+			    Math.min(map_size.width - 270,
 				     (window_scale * coords.x + window_translate.x - d.x)));
         var top = Math.max(20,
-			   Math.min(this.map.height - 40,
+			   Math.min(map_size.height - 40,
 				    (window_scale * coords.y + window_translate.y - d.y)));
         this.selection.style('position', 'absolute')
             .style('display', 'block')
@@ -5882,13 +6316,17 @@ define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
 	}
 	this.reactions = {};
 	for (var i=0, l=model_data.reactions.length; i<l; i++) {
-	    var r = model_data.reactions[i];
-	    this.reactions[r.id] = r;
+	    var r = model_data.reactions[i],
+		the_id = r.id; 
+	    delete r.id;
+	    this.reactions[the_id] = r;
 	}
 	this.metabolites = {};
 	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
-	    var r = model_data.metabolites[i];
-	    this.metabolites[r.id] = r;
+	    var r = model_data.metabolites[i],
+		the_id = r.id;
+	    delete r.id;
+	    this.metabolites[the_id] = r;
 	}
 
 	// get cofactors if preset
@@ -5988,27 +6426,32 @@ define('Brush',["utils"], function(utils) {
     }	
     function setup_selection_brush() {
 	var selection = this.brush_sel, 
-	    node_selection = this.map.sel.select('#nodes').selectAll('.node'),
+	    nodes_selection = this.map.sel.select('#nodes'),
 	    size_and_location = this.map.canvas.size_and_location(),
-	    map = this.map,
 	    width = size_and_location.width,
 	    height = size_and_location.height,
 	    x = size_and_location.x,
-	    y = size_and_location.y,
-	    node_ids = [];
-	node_selection.each(function(d) { node_ids.push(d.node_id); });
+	    y = size_and_location.y;
 	var brush_fn = d3.svg.brush()
 		.x(d3.scale.identity().domain([x, x+width]))
 		.y(d3.scale.identity().domain([y, y+height]))
-		.on("brush", function() {
-		    var extent = d3.event.target.extent();
-		    node_selection
-			.classed("selected", function(d) { 
-			    var sx = d.x, sy = d.y;
-			    return extent[0][0] <= sx && sx < extent[1][0]
-				&& extent[0][1] <= sy && sy < extent[1][1];
-			});
-		})        
+		.on("brush", function(key_manager) {	    
+		    var shift_key_on = key_manager.held_keys.shift,
+			extent = d3.event.target.extent(),
+			selection;
+		    if (shift_key_on) {
+			// when shift is pressed, ignore the currently selected nodes
+			selection = nodes_selection.selectAll('.node:not(.selected)');
+		    } else {
+			// otherwise, brush all nodes
+			selection = nodes_selection.selectAll('.node');
+		    }
+		    selection.classed("selected", function(d) { 
+			var sx = d.x, sy = d.y;
+			return extent[0][0] <= sx && sx < extent[1][0]
+			    && extent[0][1] <= sy && sy < extent[1][1];
+		    });
+		}.bind(null, this.map.key_manager))
 		.on("brushend", function() {
 		    d3.event.target.clear();
 		    d3.select(this).call(d3.event.target);
@@ -6020,19 +6463,243 @@ define('Brush',["utils"], function(utils) {
     }
 });
 
-define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager) {
-    // NOTE
-    // see this thread: https://groups.google.com/forum/#!topic/d3-js/Not1zyWJUlg
-    // only necessary for selectAll()
-    // .datum(function() {
-    //     return this.parentNode.__data__;
-    // })
+define('ui',["utils"], function(utils) {
+    return { individual_button: individual_button,
+	     radio_button_group: radio_button_group,
+	     dropdown_menu: dropdown_menu,
+	     set_button: set_button,
+	     set_input_button: set_input_button };
 
+    function individual_button(s, button) {
+	var b = s.append('li')
+		.append('button').attr('class', 'btn btn-default'),
+	    c = b.append('span');
+	if ('id' in button) b.attr('id', button.id);
+	if ('text' in button) c.text(button.text);
+	if ('icon' in button) c.classed(button.icon, true);
+	if ('key' in button) set_button(b, button.key);
+	// if ('tooltip' in button) 
+	b.attr('title', button.tooltip);
+    }
+    function radio_button_group(s) {
+	var s2 = s.append('li')
+		.attr('class', 'btn-group-vertical')
+		.attr('data-toggle', 'buttons');
+	return { button: function(button) {
+	    var b = s2.append("label")
+		    .attr("class", "btn btn-default");
+	    b.append('input').attr('type', 'radio');
+	    var c = b.append("span");
+	    if ('id' in button) b.attr('id', button.id);
+	    if ('text' in button) c.text(button.text);
+	    if ('icon' in button) c.classed(button.icon, true);
+	    if ('key' in button) set_button(b, button.key);
+	    if ('tooltip' in button) b.attr('title', button.tooltip);
+	    return this;
+	}};
+    }
+    function dropdown_menu(s, name, pull_right) {
+	if (pull_right === undefined) pull_right = false;
+	var s2 = s.append('li')
+		.attr('class', 'dropdown');
+	s2.append('button').text(name+" ")
+	    .attr('class', 'btn btn-link btn-sm dropdown-button')
+	    .attr('data-toggle', 'dropdown')
+	    .append('b').attr('class', 'caret');
+	var ul = s2.append('ul')
+		.attr('class', 'dropdown-menu')
+		.classed('pull-right', pull_right)
+		.attr('role', 'menu')
+		.attr('aria-labelledby', 'dLabel');
+	return {
+	    button: function(button) {
+		var li = ul.append("li")
+			.attr('role', 'presentation'),
+		    link = li.append("a")
+			.attr('href', '#'),
+		    icon = link.append('span')
+			.attr('class', 'dropdown-button-icon'),
+		    text = link.append('span')
+			.attr('class', 'dropdown-button-text');
+		if ('id' in button) li.attr('id', button.id);
+		if ('text' in button) text.text(" "+button.text);
+		if ('icon' in button) icon.classed(button.icon, true);
+		
+		if ('key' in button) {
+		    set_button(link, button.key);
+		} else if ('input' in button) {
+		    var input = button.input,
+			out = set_input_button(link, li, input.fn, input.target);
+		    if ('assign' in input && 'key' in input)
+			input.assign[input.key] = out;
+		}
+		return this;
+	    },
+	    divider: function() {
+		ul.append("li")
+		    .attr('role', 'presentation')
+		    .attr('class', 'divider');
+		return this;
+	    }
+	};
+    }
+    function set_button(b, key, name) {
+	if (name !== undefined) b.text(name);
+	b.on("click", function() {
+	    key.fn.call(key.target);
+	});
+    }
+    function set_input_button(b, s, fn, target) {
+	var input = s.append("input")
+		.attr("type", "file")
+		.style("display", "none")
+		.on("change", function() { utils.load_json(this.files[0], fn, target); });
+	b.on('click', function(e) {
+	    input.node().click();
+	});
+	return function() { input.node().click(); };
+    }
+});
+
+
+define('SearchBar',["utils"], function(utils) {
+    /** 
+     */
+
+    var SearchBar = utils.make_class();
+    // instance methods
+    SearchBar.prototype = { init: init,
+			    is_visible: is_visible,
+			    toggle: toggle,
+			    update: update,
+			    next: next,
+			    previous: previous };
+
+    return SearchBar;
+
+    // instance methods
+    function init(sel, search_index, map) {
+	var container = sel.attr('class', 'search-container')
+		.style('display', 'none');
+	this.input = container.append('input')
+	    .attr('class', 'search-bar');
+	var group = container.append('div').attr('class', 'btn-group btn-group-sm');
+	group.append('button')
+	    .attr("class", "btn btn-default")
+	    .on('click', this.previous.bind(this))
+	    .append('span').attr('class', "glyphicon glyphicon-chevron-left");
+	group.append('button')
+	    .attr("class", "btn btn-default")
+	    .on('click', this.next.bind(this))
+	    .append('span').attr('class', "glyphicon glyphicon-chevron-right");
+	this.counter = container.append('div')
+	    .attr('class', 'search-counter');
+	container.append('button')
+	    .attr("class", "btn btn-sm btn-default search-close-button")
+	    .on('click', function() {
+		this.toggle(false);
+	    }.bind(this))
+	    .append("span").attr("class",  "glyphicon glyphicon-remove");
+	
+	this.selection = container;
+	this.map = map;
+	this.search_index = search_index;
+
+	this.current = 1;
+	this.results = null;
+
+	this.input.on('input', function(input) {
+	    this.current = 1;
+	    this.results = this.search_index.find(input.value);
+	    this.update();
+	}.bind(this, this.input.node()));
+    }
+    function is_visible() {
+	return this.selection.style('display') != 'none';
+    }
+    function toggle(on_off) {
+	if (on_off===undefined) this.is_active = !this.is_active;
+	else this.is_active = on_off;
+
+	if (this.is_active) {
+	    this.selection.style('display', null);
+	    this.counter.text("");
+	    this.input.node().value = "";
+	    this.input.node().focus();
+	    // escape key
+	    this.escape = this.map.key_manager
+		.add_escape_listener(function() { this.toggle(false); }.bind(this));
+	    // enter key
+	    this.escape = this.map.key_manager
+		.add_enter_listener(function() { this.next(); }.bind(this));
+	} else {
+	    this.map.highlight(null);
+	    this.selection.style("display", "none");
+	    this.results = null;
+	    if (this.escape) this.escape.clear();
+	    this.escape = null;
+	    if (this.enter) this.enter.clear();
+	    this.enter = null;
+	}
+    }
+    function update() {
+	if (this.results == null) {
+	    this.counter.text("");
+	    this.map.zoom_extent_canvas();
+	    this.map.highlight(null);
+	} else if (this.results.length == 0) {
+	    this.counter.text("0 / 0");
+	    this.map.zoom_extent_canvas();
+	    this.map.highlight(null);
+	} else {
+	    this.counter.text(this.current + " / " + this.results.length);
+	    var r = this.results[this.current - 1];
+	    if (r.type=='reaction') {		
+		this.map.zoom_to_reaction(r.reaction_id);
+		this.map.highlight_reaction(r.reaction_id);
+	    } else if (r.type=='metabolite') {
+		this.map.zoom_to_node(r.node_id);
+		this.map.highlight_node(r.node_id);
+	    } else {
+		throw new Error('Bad search index data type: ' + r.type);
+	    }
+	}
+    }
+    function next() {
+	if (this.results == null) return;
+	if (this.current==this.results.length)
+	    this.current = 1;
+	else
+	    this.current += 1;
+	this.update();
+    }
+    function previous() {
+	if (this.results == null) return;
+	if (this.current==1)
+	    this.current = this.results.length;
+	else
+	    this.current -= 1;
+	this.update();
+    } 
+});
+
+define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui", "SearchBar"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar) {
+    /** A Builder object contains all the ui and logic to generate a map builder or viewer.
+
+     Builder(options)
+
+     options: An object.
+
+     */
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
 			  reload_builder: reload_builder,
+			  set_mode: set_mode,
+			  view_mode: view_mode,
+			  build_mode: build_mode,
 			  brush_mode: brush_mode,
 			  zoom_mode: zoom_mode,
+			  rotate_mode: rotate_mode,
 			  _setup_menu: _setup_menu,
 			  _setup_status: _setup_status,
 			  _setup_modes: _setup_modes,
@@ -6046,9 +6713,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	var o = utils.set_options(options, {
 	    margins: {top: 0, right: 0, bottom: 0, left: 0},
 	    selection: d3.select("body").append("div"),
-	    selection_is_svg: false,
 	    fillScreen: false,
 	    enable_editing: true,
+	    enable_menu: true,
+	    enable_keys: true,
+	    enable_search: true,
 	    on_load: null,
 	    map_path: null,
 	    map: null,
@@ -6066,15 +6735,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    debug: false,
 	    starting_reaction: 'GLCtex'
 	});
-	
-	// TODO make each option is neither {}, undefined, nor null
-	// for all cases, set to null to boolean(option) === false
 
-
-	if (o.selection_is_svg) {
-	    // TODO fix this
-	    console.error("Builder does not support placement within svg elements");
-	    return;
+	if (utils.check_for_parent_tag(o.selection, 'svg')) {
+	    throw new Error("Builder cannot be placed within an svg node "+
+			"becuase UI elements are html-based.");
 	}
 
 	this.o = o;
@@ -6139,72 +6803,85 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	utils.remove_child_nodes(this.o.selection);
 
 	// set up the svg
-	var out = utils.setup_svg(this.o.selection, this.o.selection_is_svg,
-				  this.o.margins, this.o.fill_screen),
-	    svg = out.svg,
-	    height = out.height,
-	    width = out.width;
-
+	var svg = utils.setup_svg(this.o.selection, this.o.selection_is_svg,
+				  this.o.margins, this.o.fill_screen);
+	
 	// se up the zoom container
-	this.zoom_container = new ZoomContainer(svg, width, height, [0.05, 15]);
+	this.zoom_container = new ZoomContainer(svg, this.o.selection);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
-	var max_w = width, max_h = height;
 	if (this.o.map_data!==null) {
 	    // import map
 	    this.map = Map.from_data(this.o.map_data,
 				     svg, this.o.css,
 				     zoomed_sel,
 				     this.zoom_container,
-				     height, width,
 				     this.o.reaction_data,
 				     this.o.reaction_data_styles,
 				     this.o.metabolite_data,
 				     this.o.metabolite_data_styles,
-				     cobra_model_obj);
+				     cobra_model_obj,
+				     this.o.enable_search);
 	    this.zoom_container.reset();
 	} else {
 	    // new map
 	    this.map = new Map(svg, this.o.css, zoomed_sel,
 			       this.zoom_container,
-			       height, width,
 			       this.o.reaction_data,
 			       this.o.reaction_data_styles,
 			       this.o.metabolite_data,
 			       this.o.metabolite_data_styles,
-			       cobra_model_obj);
+			       cobra_model_obj,
+			       null,
+			       this.o.enable_search);
 	}
 
 	// set up the reaction input with complete.ly
 	this.reaction_input = Input(this.o.selection, this.map, this.zoom_container);
 
-	if (this.o.enable_editing) {
-	    // setup the Brush
-	    this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
+	// set up the Brush
+	this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
 
-	    // setup the modes
-	    this._setup_modes(this.map, this.brush, this.zoom_container);
-	
-	    // make key manager
-	    var keys = this._get_keys(this.map, this.reaction_input, this.brush);
-	    this.map.key_manager.assigned_keys = keys;
-	    // set up menu and status bars
-	    var menu = this._setup_menu(this.o.selection, this.map, this.zoom_container, this.map.key_manager, keys),
-		status = this._setup_status(this.o.selection, this.map);
-	}
-	// tell the key manager about the reaction input
+	// set up the modes
+	this._setup_modes(this.map, this.brush, this.zoom_container);
+
+	var s = this.o.selection
+		.append('div').attr('class', 'search-menu-container')
+		.append('div').attr('class', 'search-menu-container-inline'),
+	    menu_div = s.append('div'),
+	    search_bar_div = s.append('div'),
+	    button_div = this.o.selection.append('div');
+
+	// set up the search bar
+	this.search_bar = SearchBar(search_bar_div, this.map.search_index, this.map);
+
+	// set up key manager
+	var keys = this._get_keys(this.map, this.zoom_container, this.search_bar, this.o.enable_editing);
+	this.map.key_manager.assigned_keys = keys;
+	// tell the key manager about the reaction input and search bar
 	this.map.key_manager.reaction_input = this.reaction_input;
+	this.map.key_manager.search_bar = this.search_bar;
 	// make sure the key manager remembers all those changes
 	this.map.key_manager.update();
+	// turn it on/off
+	this.map.key_manager.toggle(this.o.enable_keys);
 	
+	// set up menu and status bars
+	if (this.o.enable_menu) {
+	    this._setup_menu(menu_div, button_div, this.map, this.zoom_container, this.map.key_manager, keys,
+			     this.o.enable_editing);
+	}
+	var status = this._setup_status(this.o.selection, this.map);
+
 	// setup selection box
 	if (this.o.map_data!==null) {
 	    this.map.zoom_extent_canvas();
 	} else {
 	    if (this.o.starting_reaction!==null && cobra_model_obj!==null) {
 		// Draw default reaction if no map is provided
-		var start_coords = { x: width/2,
-				     y: height/4 };
+		var size = this.zoom_container.get_size();
+		var start_coords = { x: size.width / 2,
+				     y: size.height / 4 };
 		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
 		this.map.zoom_extent_nodes();
 	    } else {
@@ -6212,14 +6889,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    }
 	}
 
-	if (this.o.enable_editing) {
-	    // start in zoom mode
+	// start in zoom mode for builder, view mode for viewer
+	if (this.o.enable_editing)
 	    this.zoom_mode();
-	} else {
-	    // turn off the behaviors
-	    this.map.behavior.turn_everything_off();
-	    this.map.canvas.toggle_resize(false);
-	}
+	else
+	    this.view_mode();
 
 	// draw
 	this.map.draw_everything();
@@ -6228,57 +6902,218 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	if (this.o.on_load!==null)
 	    this.o.on_load();
     }
+    function set_mode(mode) {
+	this.search_bar.toggle(false);
+
+	this.reaction_input.toggle(mode=='build');
+	this.brush.toggle(mode=='brush');
+	this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
+	this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
+	this.map.behavior.toggle_rotation_mode(mode=='rotate');
+	this.map.behavior.toggle_node_click(mode=='build' || mode=='brush');
+	this.map.behavior.toggle_node_drag(mode=='brush');
+	this.map.behavior.toggle_text_label_click(mode=='brush');
+	this.map.behavior.toggle_label_drag(mode=='brush');
+	if (mode=='view')
+	    this.map.select_none();
+	this.map.draw_everything();
+	// this.callback_manager.run('set_mode', mode);
+    }
+    function view_mode() {
+	this.callback_manager.run('view_mode');
+	this.set_mode('view');
+    }
+    function build_mode() {
+	this.callback_manager.run('build_mode');
+	this.set_mode('build');
+    }	
     function brush_mode() {
-	this.brush.toggle(true);
-	this.zoom_container.toggle_zoom(false);
-	this.map.canvas.toggle_resize(false);
 	this.callback_manager.run('brush_mode');
+	this.set_mode('brush');
     }
     function zoom_mode() {
-	this.brush.toggle(false);
-	this.zoom_container.toggle_zoom(true);
-	this.map.canvas.toggle_resize(true);
 	this.callback_manager.run('zoom_mode');
+	this.set_mode('zoom');
     }
-    function _setup_menu(selection, map, zoom_container, key_manager, keys) {
-	var sel = selection.append("div").attr("id", "menu");
-	new_button(sel, keys.toggle_input, "New reaction (/)");
-	new_button(sel, keys.save, "Save (^s)");
-	new_button(sel, keys.save_svg, "Export SVG (^Shift s)");
-	key_manager.assigned_keys.load.fn = new_input(sel, load_map_for_file, this, "Load map (^o)");
-	new_button(sel, keys.clear_map, "Clear map");
-	key_manager.assigned_keys.load_model.fn = new_input(sel, load_model_for_file, this, "Load model (^m)");
-	key_manager.assigned_keys.load_reaction_data.fn = new_input(sel, load_reaction_data_for_file, this, "Load reaction data (^f)");
-	new_button(sel, keys.clear_reaction_data, "Clear reaction data");
-	new_input(sel, load_metabolite_data_for_file, this, "Load metabolite data");
-	new_button(sel, keys.clear_metabolite_data, "Clear metabolite data");
-	var b = new_button(sel, keys.toggle_beziers, "Hide control points (b)", 'bezier-button');
-	map.callback_manager
-	    .set('toggle_beziers.button', function(on_off) {
-		b.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
-	    });
+    function rotate_mode() {
+	this.callback_manager.run('rotate_mode');
+	this.set_mode('rotate');
+    }	
+    function _setup_menu(menu_selection, button_selection, map, zoom_container,
+			 key_manager, keys, enable_editing) {
+	var menu = menu_selection.attr('id', 'menu')
+		.append("ul")
+		.attr("class", "nav nav-pills");
+	// map dropdown
+	ui.dropdown_menu(menu, 'Map')
+	    .button({ key: keys.save,
+		      text: "Save as JSON (Ctrl s)" })
+	    .button({ text: "Load map JSON (Ctrl o)",
+		      input: { assign: key_manager.assigned_keys.load,
+			       key: 'fn',
+			       fn: load_map_for_file,
+			       target: this }
+		    })
+	    .button({ key: keys.save_svg,
+		      text: "Export as SVG (Ctrl Shift s)" })
+	    .button({ key: keys.clear_map,
+		      text: "Clear map" });
+	// model dropdown
+	ui.dropdown_menu(menu, 'Model')
+	    .button({ text: 'Load COBRA model JSON (Ctrl m)',
+		      input: { assign: key_manager.assigned_keys.load_model,
+			       key: 'fn',
+			       fn: load_model_for_file,
+			       target: this }
+		    });
 
-	var z = new_button(sel, keys.brush_mode, "Enable select (v)", 'zoom-button');
-	this.callback_manager
-	    .set('zoom_mode', function() {
-		set_button(z, keys.brush_mode, "Enable select (v)");
-	    }).set('brush_mode', function() {
-		set_button(z, keys.zoom_mode, "Enable pan+zoom (z)");
-	    });
+	// data dropdown
+	var data_menu = ui.dropdown_menu(menu, 'Data')
+		.button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
+				   key: 'fn',
+				   fn: load_reaction_data_for_file,
+				   target: this },
+			  text: "Load reaction data" })
+		.button({ key: keys.clear_reaction_data,
+			  text: "Clear reaction data" })
+		.button({ input: { fn: load_metabolite_data_for_file,
+				   target: this },
+			  text: "Load metabolite data" })
+		.button({ key: keys.clear_metabolite_data,
+			  text: "Clear metabolite data" });
+	
+	// edit dropdown 
+	var edit_menu = ui.dropdown_menu(menu, 'Edit', true);
+	if (enable_editing) {	   
+	    edit_menu.button({ key: keys.build_mode,
+			       id: 'build-mode-menu-button',
+			       text: "Build mode (n)" })
+		.button({ key: keys.zoom_mode,
+			  id: 'zoom-mode-menu-button',
+			  text: "Zoom + Pan mode (z)" })
+		.button({ key: keys.brush_mode,
+			  id: 'brush-mode-menu-button',
+			  text: "Select mode (v)" })
+		.button({ key: keys.rotate_mode,
+			  id: 'rotate-mode-menu-button',
+			  text: "Rotate mode (r)" })
+		.divider()
+		.button({ key: keys.delete,
+			  // icon: "glyphicon glyphicon-trash",
+			  text: "Delete (Ctrl Del)" })
+		.button({ key: keys.undo, 
+			  text: "Undo (Ctrl z)" })
+		.button({ key: keys.redo,
+			  text: "Redo (Ctrl Shift z)" }) 
+		.button({ key: keys.make_primary,
+			  text: "Make primary metabolite (p)" })
+		.button({ key: keys.cycle_primary,
+			  text: "Cycle primary metabolite (c)" })
+		.button({ key: keys.select_none,
+			  text: "Select none (Ctrl Shift a)" });
+	} else {
+	    edit_menu.button({ key: keys.view_mode,
+			       id: 'view-mode-menu-button',
+			       text: "View mode" });
+	}
 
-	new_button(sel, keys.rotate, "Rotate (r)");
-	new_button(sel, keys.delete, "Delete (^del)");
-	new_button(sel, keys.extent_nodes, "Zoom to nodes (^0)");
-	new_button(sel, keys.extent_canvas, "Zoom to canvas (^1)");
-	new_button(sel, keys.make_primary, "Make primary metabolite (p)");
-	new_button(sel, keys.cycle_primary, "Cycle primary metabolite (c)");
-	new_button(sel, keys.direction_arrow_left, "←");
-	new_button(sel, keys.direction_arrow_up, "↑");
-	new_button(sel, keys.direction_arrow_down, "↓");
-	new_button(sel, keys.direction_arrow_right, "→");
-	new_button(sel, keys.undo, "Undo (^z)");
-	new_button(sel, keys.redo, "Redo (^Shift z)");
-	return sel;
+	// view dropdown
+	var view_menu = ui.dropdown_menu(menu, 'View', true)
+		.button({ key: keys.zoom_in,
+			  text: "Zoom in (Ctrl +)" })
+		.button({ key: keys.zoom_out,
+			  text: "Zoom out (Ctrl -)" })
+		.button({ key: keys.extent_nodes,
+			  //icon: "glyphicon glyphicon-resize-small",
+			  text: "Zoom to nodes (Ctrl 0)"
+			})
+		.button({ key: keys.extent_canvas,
+			  //icon: "glyphicon glyphicon-resize-full",
+			  text: "Zoom to canvas (Ctrl 1)" })
+		.button({ key: keys.search,
+			  text: "Find (Ctrl f)" });
+	if (enable_editing) {
+	    view_menu.button({ key: keys.toggle_beziers,
+			       id: "bezier-button",
+			       text: "Show control points (b)"});	    
+	    map.callback_manager
+		.set('toggle_beziers.button', function(on_off) {
+		    menu.select('#bezier-button').select('.dropdown-button-text')
+			.text((on_off ? 'Hide' : 'Show') + ' control points (b)');
+		});
+	}
+	
+	var button_panel = button_selection.append("ul")
+		.attr("class", "nav nav-pills nav-stacked")
+		.attr('id', 'button-panel');
+
+	// mode buttons
+	if (enable_editing) {
+	    ui.radio_button_group(button_panel)
+		.button({ key: keys.build_mode,
+			  id: 'build-mode-button',
+			  icon: "glyphicon glyphicon-plus",
+			  tooltip: "Build mode (n)" })
+		.button({ key: keys.zoom_mode,
+			  id: 'zoom-mode-button',
+			  icon: "glyphicon glyphicon-move",
+			  tooltip: "Zoom + Pan mode (z)" })
+		.button({ key: keys.brush_mode,
+			  id: 'brush-mode-button',
+			  icon: "glyphicon glyphicon-screenshot",
+			  tooltip: "Select mode (v)" })
+		.button({ key: keys.rotate_mode,
+			  id: 'rotate-mode-button',
+			  icon: "glyphicon glyphicon-repeat",
+			  tooltip: "Rotate mode (r)" });
+	}
+
+	// buttons
+	ui.individual_button(button_panel, { key: keys.zoom_in,
+					     icon: "glyphicon glyphicon-zoom-in",
+					     tooltip: "Zoom in (Ctrl +)" });
+	ui.individual_button(button_panel, { key: keys.zoom_out,
+					     icon: "glyphicon glyphicon-zoom-out",
+					     tooltip: "Zoom out (Ctrl -)" });
+	ui.individual_button(button_panel, { key: keys.extent_canvas,
+					     icon: "glyphicon glyphicon-resize-full",
+					     tooltip: "Zoom to canvas (Ctrl 1)" });
+
+	// set up mode callbacks
+	var select_menu_button = function(id) {
+	    var ids = ['#build-mode-menu-button',
+		       '#zoom-mode-menu-button',
+		       '#brush-mode-menu-button',
+		       '#rotate-mode-menu-button',
+		       '#view-mode-menu-button'];
+	    for (var i=0, l=ids.length; i<l; i++) {
+		var the_id = ids[i];
+		d3.select(the_id)
+		    .select('span')
+		    .classed('glyphicon', the_id==id)
+		    .classed('glyphicon-ok', the_id==id);
+	    }
+	};
+	this.callback_manager.set('build_mode', function() {
+	    $('#build-mode-button').button('toggle');
+	    select_menu_button('#build-mode-menu-button');
+	});
+	this.callback_manager.set('zoom_mode', function() {
+	    $('#zoom-mode-button').button('toggle');
+	    select_menu_button('#zoom-mode-menu-button');
+	});
+	this.callback_manager.set('brush_mode', function() {
+	    $('#brush-mode-button').button('toggle');
+	    select_menu_button('#brush-mode-menu-button');
+	});
+	this.callback_manager.set('rotate_mode', function() {
+	    $('#rotate-mode-button').button('toggle');
+	    select_menu_button('#rotate-mode-menu-button');
+	});
+	this.callback_manager.set('view_mode', function() {
+	    $('#view-mode-button').button('toggle');
+	    select_menu_button('#view-mode-menu-button');
+	});
 
 	// definitions
 	function load_map_for_file(error, map_data) {
@@ -6299,34 +7134,6 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	function load_metabolite_data_for_file(error, data) {
 	    if (error) console.warn(error);
 	    this.map.set_metabolite_data(data);
-	}
-	function new_button(s, key, name, id) {
-	    var button = s.append("button").attr("class", "button command-button");
-	    if (id !== undefined) button.attr('id', id);
-	    return set_button(button, key, name);
-	}
-	function set_button(button, key, name) {
-	    button.text(name).on("click", function() {
-		key.fn.call(key.target);
-	    });
-	    return button;
-	}
-	function new_input(s, fn, target, name) {
-	    /* 
-	     * Returns a function that can be called to programmatically
-	     * load files.
-	     */
-	    var input = s.append("input")
-		    .attr("type", "file")
-		    .style("display", "none")
-		    .on("change", function() { utils.load_json(this.files[0], fn, target); });
-	    s.append("button")
-		.attr("class", "button command-button")
-		.text(name)
-		.on('click', function(e) {
-	    	    input.node().click();
-		});
-	    return function() { input.node().click(); };
 	}
     }
 
@@ -6357,18 +7164,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	});
     }
 
-    function _get_keys(map, input, brush) {
-	return {
-            toggle_input: { key: 191, // forward slash '/'
-			    target: input,
-			    fn: input.toggle },
+    function _get_keys(map, zoom_container, search_bar, enable_editing) {
+	var keys = {
             save: { key: 83, modifiers: { control: true }, // ctrl-s
 		    target: map,
 		    fn: map.save },
-	    // command-s
-            // save_cmd: { key: 83, modifiers: { command: true },
-	    // 		       fn: save },
-	    // ctrl-Shift-s
             save_svg: { key: 83, modifiers: { control: true, shift: true },
 			target: map,
 			fn: map.save_svg },
@@ -6378,73 +7178,95 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			 fn: function() { this.clear_map(); }},
             load_model: { key: 77, modifiers: { control: true }, // ctrl-m
 			  fn: null }, // defined by button
-	    load_reaction_data: { key: 70, modifiers: { control: true }, // ctrl-f
-			 fn: null }, // defined by button
+	    load_reaction_data: { fn: null }, // defined by button
 	    clear_reaction_data: { target: map,
-			  fn: function() { this.set_reaction_data(null); }},
+				   fn: function() { this.set_reaction_data(null); }},
+	    load_metabolite_data: { fn: null }, // defined by button
 	    clear_metabolite_data: { target: map,
-			  fn: function() { this.set_metabolite_data(null); }},
-	    toggle_beziers: { key: 66,
-			      target: map,
-			      fn: map.toggle_beziers,
-			      ignore_with_input: true  }, // b
-	    zoom_mode: { key: 90, // z 
-			 target: this,
-			 fn: this.zoom_mode,
-			 ignore_with_input: true },
-	    brush_mode: { key: 86, // v
-			  target: this,
-			  fn: this.brush_mode,
-			  ignore_with_input: true },
-	    rotate: { key: 82, // r
-		      target: map,
-		      fn: map.rotate_selected_nodes,
-		      ignore_with_input: true },
-	    delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
-		      target: map,
-		      fn: map.delete_selected,
-		      ignore_with_input: true },
-	    delete_del: { key: 46, modifiers: { control: true }, // ctrl-del
-			  target: map,
-			  fn: map.delete_selected,
-			  ignore_with_input: true },
+				     fn: function() { this.set_metabolite_data(null); }},
+	    zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
+		       target: zoom_container,
+		       fn: zoom_container.zoom_in },
+	    zoom_out: { key: 189, modifiers: { control: true }, // ctrl -
+			target: zoom_container,
+			fn: zoom_container.zoom_out },
 	    extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
 			    target: map,
 			    fn: map.zoom_extent_nodes },
 	    extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
 			     target: map,
 			     fn: map.zoom_extent_canvas },
-	    make_primary: { key: 80, // p
-			    target: map,
-			    fn: map.make_selected_node_primary,
-			    ignore_with_input: true },
-	    cycle_primary: { key: 67, // c
-			     target: map,
-			     fn: map.cycle_primary_node,
-			     ignore_with_input: true },
-	    direction_arrow_right: { key: 39, // right
-				     target: map.direction_arrow,
-				     fn: map.direction_arrow.right,
-				     ignore_with_input: true },
-	    direction_arrow_down: { key: 40, // down
-				    target: map.direction_arrow,
-				    fn: map.direction_arrow.down,
-				    ignore_with_input: true },
-	    direction_arrow_left: { key: 37, // left
-				    target: map.direction_arrow,
-				    fn: map.direction_arrow.left,
-				    ignore_with_input: true },
-	    direction_arrow_up: { key: 38, // up
-				  target: map.direction_arrow,
-				  fn: map.direction_arrow.up,
-				  ignore_with_input: true },
-	    undo: { key: 90, modifiers: { control: true },
-		    target: map.undo_stack,
-		    fn: map.undo_stack.undo },
-	    redo: { key: 90, modifiers: { control: true, shift: true },
-		    target: map.undo_stack,
-		    fn: map.undo_stack.redo }
+	    search: { key: 70, modifiers: { control: true }, // ctrl-f
+		      fn: search_bar.toggle.bind(search_bar, true) },
+	    view_mode: { fn: this.view_mode.bind(this),
+			 ignore_with_input: true }
 	};
+	if (enable_editing) {
+	    utils.extend(keys, {
+		build_mode: { key: 78, // n
+			      target: this,
+			      fn: this.build_mode,
+			      ignore_with_input: true },
+		zoom_mode: { key: 90, // z 
+			     target: this,
+			     fn: this.zoom_mode,
+			     ignore_with_input: true },
+		brush_mode: { key: 86, // v
+			      target: this,
+			      fn: this.brush_mode,
+			      ignore_with_input: true },
+		rotate_mode: { key: 82, // r
+			       target: this,
+			       fn: this.rotate_mode,
+			       ignore_with_input: true },
+		toggle_beziers: { key: 66,
+				  target: map,
+				  fn: map.toggle_beziers,
+				  ignore_with_input: true  }, // b
+		delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
+			  target: map,
+			  fn: map.delete_selected,
+			  ignore_with_input: true },
+		delete_del: { key: 46, modifiers: { control: true }, // ctrl-del
+			      target: map,
+			      fn: map.delete_selected,
+			      ignore_with_input: true },
+		make_primary: { key: 80, // p
+				target: map,
+				fn: map.make_selected_node_primary,
+				ignore_with_input: true },
+		cycle_primary: { key: 67, // c
+				 target: map,
+				 fn: map.cycle_primary_node,
+				 ignore_with_input: true },
+		direction_arrow_right: { key: 39, // right
+					 target: map.direction_arrow,
+					 fn: map.direction_arrow.right,
+					 ignore_with_input: true },
+		direction_arrow_down: { key: 40, // down
+					target: map.direction_arrow,
+					fn: map.direction_arrow.down,
+					ignore_with_input: true },
+		direction_arrow_left: { key: 37, // left
+					target: map.direction_arrow,
+					fn: map.direction_arrow.left,
+					ignore_with_input: true },
+		direction_arrow_up: { key: 38, // up
+				      target: map.direction_arrow,
+				      fn: map.direction_arrow.up,
+				      ignore_with_input: true },
+		undo: { key: 90, modifiers: { control: true },
+			target: map.undo_stack,
+			fn: map.undo_stack.undo },
+		redo: { key: 90, modifiers: { control: true, shift: true },
+			target: map.undo_stack,
+			fn: map.undo_stack.redo },
+		select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
+			       target: map,
+			       fn: map.select_none }
+	    });
+	}
+	return keys;
     }
 });
 
@@ -6458,7 +7280,7 @@ define('DataMenu',["utils"], function(utils) {
 	    target: null});
 
 	if (o.selection===null)
-	    throw Error('No selection provided for DataMenu');
+	    throw new Error('No selection provided for DataMenu');
 
         // setup dropdown menu
         // Append menu if it doesn't exist
@@ -6469,8 +7291,6 @@ define('DataMenu',["utils"], function(utils) {
         }
         var select_sel = menu.append('form')
             .append('select').attr('class','dropdown-menu');
-        // TODO move this somewhere sensible
-        // menu.append('div').style('width','100%').text("Press 's' to freeze tooltip");
 
         if (o.getdatafiles) {
             if (o.datafiles) {
@@ -6541,8 +7361,8 @@ define('DataMenu',["utils"], function(utils) {
     };
 });
 
-define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils"],
-       function(bu, mp, bh, km, dm, us, cm, ut) {
+define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex"],
+       function(bu, mp, bh, km, dm, us, cm, ut, si) {
            return { Builder: bu,
 		    Map: mp,
 		    Behavior: bh,
@@ -6550,7 +7370,8 @@ define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStac
 		    DataMenu: dm,
 		    UndoStack: us,
 		    CobraModel: cm,
-		    utils: ut };
+		    utils: ut,
+		    SearchIndex: si };
        });
 
     //The modules for your project will be inlined above

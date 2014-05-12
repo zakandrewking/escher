@@ -60,7 +60,7 @@ footer a, a:hover, a:focus, a:visited {
 }
 @media (min-width: 768px) { /*@screen-sm-min) { */
     .column-button {
-	margin-top: 59px;
+	margin-top: 56px;
     }
     header {
 	margin-bottom: 50px;

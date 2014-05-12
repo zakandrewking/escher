@@ -8,7 +8,10 @@ define(["utils"], function(utils) {
     // instance methods
     KeyManager.prototype = { init: init,
 			     update: update,
-			     add_escape_listener: add_escape_listener };
+			     toggle: toggle,
+			     add_escape_listener: add_escape_listener,
+			     add_enter_listener: add_enter_listener,
+			     add_key_listener: add_key_listener };
 
     return KeyManager;
 
@@ -20,7 +23,7 @@ define(["utils"], function(utils) {
 	h.shift = false;
     }
     // instance methods
-    function init(assigned_keys, reaction_input) {
+    function init(assigned_keys, reaction_input, search_bar, ctrl_equals_cmd) {
 	/** Assign keys for commands.
 
 	 */
@@ -29,9 +32,16 @@ define(["utils"], function(utils) {
 	else this.assigned_keys = assigned_keys;
 	if (reaction_input===undefined) this.reaction_input = null;
 	else this.reaction_input = reaction_input;
+	if (search_bar===undefined) this.search_bar = null;
+	else this.search_bar = search_bar;
+
+	if (ctrl_equals_cmd===undefined) ctrl_equals_cmd = true;
+	this.ctrl_equals_cmd = ctrl_equals_cmd;
 
 	this.held_keys = {};
 	reset_held_keys(this.held_keys);
+
+	this.enabled = true;
 
 	this.update();
     }
@@ -42,6 +52,7 @@ define(["utils"], function(utils) {
 	    self = this;
 
         var modifier_keys = { command: 91,
+			      command_right: 93,
                               control: 17,
                               option: 18,
                               shift: 16 };
@@ -49,17 +60,19 @@ define(["utils"], function(utils) {
         d3.select(window).on("keydown.key_manager", null);
         d3.select(window).on("keyup.key_manager", null);
 
-        d3.select(window).on("keydown.key_manager", function() {
+	if (!(this.enabled)) return;
+
+        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, reaction_input, search_bar) {
             var kc = d3.event.keyCode,
-                reaction_input_visible = self.reaction_input ?
-		    self.reaction_input.is_visible : false,
+                input_visible = ((reaction_input ? reaction_input.is_visible() : false) ||
+				 (search_bar ? search_bar.is_visible() : false)),
 		meaningless = true;
             toggle_modifiers(modifier_keys, held_keys, kc, true);
 	    for (var key_id in keys) {
 		var assigned_key = keys[key_id];
-		if (check_key(assigned_key, kc, held_keys)) {
+		if (check_key(assigned_key, kc, held_keys, ctrl_equals_cmd)) {
 		    meaningless = false;
-		    if (!(assigned_key.ignore_with_input && reaction_input_visible)) {
+		    if (!(assigned_key.ignore_with_input && input_visible)) {
 			if (assigned_key.fn) {
 			    assigned_key.fn.call(assigned_key.target);
 			} else {
@@ -76,7 +89,8 @@ define(["utils"], function(utils) {
 		if (modifier_keys[k] == kc) meaningless = false;
 	    if (meaningless) 
 		reset_held_keys(held_keys);
-        }).on("keyup.key_manager", function() {
+        }.bind(null, this.ctrl_equals_cmd, this.reaction_input, this.search_bar))
+	    .on("keyup.key_manager", function() {
             toggle_modifiers(modifier_keys, held_keys,
 			     d3.event.keyCode, false);
         });
@@ -85,33 +99,60 @@ define(["utils"], function(utils) {
                 if (mod[k] == kc)
                     held[k] = on_off;
         }
-        function check_key(key, pressed, held) {
+        function check_key(key, pressed, held, ctrl_equals_cmd) {
             if (key.key != pressed) return false;
-            var mod = key.modifiers;
+            var mod = utils.clone(key.modifiers);
             if (mod === undefined)
                 mod = { control: false,
                         command: false,
                         option: false,
                         shift: false };
             for (var k in held) {
+		if (ctrl_equals_cmd &&
+		    mod['control'] &&
+		    (k=='command' || k=='command_right' || k=='control') &&
+		    (held['command'] || held['command_right'] || held['control'])) {
+		    continue;
+		}
                 if (mod[k] === undefined) mod[k] = false;
                 if (mod[k] != held[k]) return false;
             }
             return true;
         }
     }
+    function toggle(on_off) {
+	/** Turn the brush on or off
+
+	 */
+	if (on_off===undefined) on_off = !this.enabled;
+
+	this.update();
+    }	
+    function add_enter_listener(callback) {
+	/** Call the callback when the enter key is pressed, then
+	 unregisters the listener.
+
+	 */
+	this.add_key_listener(callback, 13);
+    }
     function add_escape_listener(callback) {
 	/** Call the callback when the escape key is pressed, then
 	 unregisters the listener.
 
 	 */
+	this.add_key_listener(callback, 27);
+    }
+    function add_key_listener(callback, kc) {
+	/** Call the callback when the key is pressed, then unregisters the
+	 listener.
+
+	 */
 	var selection = d3.select(window);
-	selection.on('keydown.esc', function() {
-	    if (d3.event.keyCode==27) { // esc
+	selection.on('keydown.'+kc, function() {
+	    if (d3.event.keyCode==kc) {
 		callback();
-		selection.on('keydown.esc', null);
 	    }
 	});
-	return { clear: function() { selection.on('keydown.esc', null); } };
+	return { clear: function() { selection.on('keydown.'+kc, null); } };
     }
 });

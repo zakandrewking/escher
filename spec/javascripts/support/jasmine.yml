@@ -15,6 +15,7 @@ src_files:
     - lib/d3.v3.js
     - escher.1.0.dev.js
     - lib/jquery-2.1.0.min.js
+    - lib/bootstrap-3.1.1.min.js
 
 # stylesheets
 #

@@ -8,21 +8,40 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     ZoomContainer.prototype = { init: init,
 				toggle_zoom: toggle_zoom,
 				go_to: go_to,
+				zoom_by: zoom_by,
+				zoom_in: zoom_in,
+				zoom_out: zoom_out,
+				get_size: get_size,
 				translate_off_screen: translate_off_screen,
-				reset: reset };
+				reset: reset,
+				new_wheel_listener: new_wheel_listener };
     return ZoomContainer;
 
     // definitions
-    function init(selection, w, h, scale_extent) {
+    function init(selection, size_container, use_mousewheel_for_panning) {
+	/** Make a container that will manage panning and zooming.
+
+	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
+	 container in.
+
+	 size_container: A d3 selection of a 'div' node that has defined width
+	 and height.
+
+	 */
+
+	if (use_mousewheel_for_panning===undefined)
+	    use_mousewheel_for_panning = true;
+
 	this.zoom_on = true;
 	this.initial_zoom = 1.0;
 	this.window_translate = {x: 0, y: 0};
 	this.window_scale = 1.0;
-	this.width = w;
-	this.height = h;
 
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
+
+	// save the size_container
+	this.size_container = size_container;
 
         // set up the container
         selection.select("#zoom-container").remove();
@@ -43,11 +62,31 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
         };
 	var zoom_container = this;
 	this.zoom_behavior = d3.behavior.zoom()
-	// .scaleExtent(scale_extent)
 	    .on("zoom", function() {
 		zoom(zoom_container, d3.event);
 	    });
 	container.call(this.zoom_behavior);
+	
+	if (use_mousewheel_for_panning) {
+	    container.on("mousewheel.zoom", null)
+		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
+		.on("wheel.zoom", null) // disables newer versions of Firefox
+		.on('dblclick.zoom', null);
+	    // add the wheel listener
+	    var wheel_fn = function() {
+		var ev = d3.event,
+		    sensitivity = 0.5;
+		this.go_to(this.window_scale,
+			   { x: this.window_translate.x -
+			     (ev.wheelDeltaX!==undefined ? -ev.wheelDeltaX/1.5 : ev.deltaX) * sensitivity,
+			     y: this.window_translate.y -
+			     (ev.wheelDeltaY!==undefined ? -ev.wheelDeltaY/1.5 : ev.deltaY) * sensitivity },
+			   false);
+	    }.bind(this);
+	    container.on('mousewheel.escher', wheel_fn);
+	    container.on('DOMMouseScroll.escher', wheel_fn);
+	    container.on('wheel.escher', wheel_fn);
+	}
 
 	this.saved_scale = null;
 	this.saved_translate = null;
@@ -82,9 +121,13 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     }
 
     // functions to scale and translate
-    function go_to(scale, translate, dont_transition) { 
+    function go_to(scale, translate, show_transition) {
+	utils.check_undefined(arguments, ['scale', 'translate']);
+	if (show_transition===undefined) show_transition = true;
+
 	if (!scale) return console.error('Bad scale value');
-	if (!translate || !('x' in translate) || !('y' in translate))
+	if (!translate || !('x' in translate) || !('y' in translate) ||
+	    isNaN(translate.x) || isNaN(translate.y))
 	    return console.error('Bad translate value');
 
 	this.zoom_behavior.scale(scale);
@@ -96,26 +139,50 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
         this.window_translate = translate;
 	if (this.saved_translate !== null) this.saved_translate = translate_array;
 
-	var move_this = (dont_transition ? this.zoomed_sel :
-			 this.zoomed_sel.transition());
+	var move_this = (show_transition ?
+			 this.zoomed_sel.transition() :
+			 this.zoomed_sel);
         move_this.attr('transform',
 		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
 		  'scale('+this.window_scale+')');
 	return null;
-    }			    
+    }
+
+    function zoom_by(amount) {
+	var size = this.get_size(),
+	    shift = { x: size.width/2 - ((size.width/2 - this.window_translate.x) * amount +
+					 this.window_translate.x),
+	 	      y: size.height/2 - ((size.height/2 - this.window_translate.y) * amount +
+					  this.window_translate.y) };
+	this.go_to(this.window_scale*amount,
+		   utils.c_plus_c(this.window_translate, shift),
+		   true);
+    }
+    function zoom_in() {
+	this.zoom_by(1.5);
+    }
+    function zoom_out() {
+	this.zoom_by(0.667);
+    }
+
+    function get_size() {
+	return { width: parseInt(this.size_container.style('width'), 10),
+		 height: parseInt(this.size_container.style('height'), 10) };
+    }
 
     function translate_off_screen(coords) {
         // shift window if new reaction will draw off the screen
         // TODO BUG not accounting for scale correctly
         var margin = 80, // pixels
+	    size = this.get_size(),
 	    current = {'x': {'min': - this.window_translate.x / this.window_scale +
 			     margin / this.window_scale,
 			     'max': - this.window_translate.x / this.window_scale +
-			     (this.width-margin) / this.window_scale },
+			     (size.width-margin) / this.window_scale },
 		       'y': {'min': - this.window_translate.y / this.window_scale +
 			     margin / this.window_scale,
 			     'max': - this.window_translate.y / this.window_scale +
-			     (this.height-margin) / this.window_scale } };
+			     (size.height-margin) / this.window_scale } };
         if (coords.x < current.x.min) {
             this.window_translate.x = this.window_translate.x -
 		(coords.x - current.x.min) * this.window_scale;
@@ -137,5 +204,69 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     }
     function reset() {
 	this.go_to(1.0, {x: 0.0, y: 0.0});
+    }
+
+    function new_wheel_listener(sel, callback) {
+	// creates a global "addWheelListener" method
+	// example: addWheelListener( elem, function( e ) { console.log( e.deltaY ); e.preventDefault(); } );
+
+	var prefix = "", _addEventListener, onwheel, support,
+	    useCapture = true,
+	    elem = sel.node();
+
+	// detect event model
+	if ( window.addEventListener ) {
+            _addEventListener = "addEventListener";
+	} else {
+            _addEventListener = "attachEvent";
+            prefix = "on";
+	}
+
+	// detect available wheel event
+	support = "onwheel" in document.createElement("div") ? "wheel" : // Modern browsers support "wheel"
+            document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
+            "DOMMouseScroll"; // let's assume that remaining browsers are older Firefox
+
+        _addWheelListener( elem, support, callback, useCapture );
+
+        // handle MozMousePixelScroll in older Firefox
+        if( support == "DOMMouseScroll" ) {
+	    _addWheelListener( elem, "MozMousePixelScroll", callback, useCapture );
+        }
+
+	function _addWheelListener( elem, eventName, callback, useCapture ) {
+            elem[ _addEventListener ]( prefix + eventName, support == "wheel" ? callback : function( originalEvent ) {
+		!originalEvent && ( originalEvent = window.event );
+
+		// create a normalized event object
+		var event = {
+                    // keep a ref to the original event object
+                    originalEvent: originalEvent,
+                    target: originalEvent.target || originalEvent.srcElement,
+                    type: "wheel",
+                    deltaMode: originalEvent.type == "MozMousePixelScroll" ? 0 : 1,
+                    deltaX: 0,
+                    delatZ: 0,
+                    preventDefault: function() {
+			originalEvent.preventDefault ?
+                            originalEvent.preventDefault() :
+                            originalEvent.returnValue = false;
+                    }
+		};
+		
+		// calculate deltaY (and deltaX) according to the event
+		if ( support == "mousewheel" ) {
+                    event.deltaY = - 1/40 * originalEvent.wheelDelta;
+                    // Webkit also support wheelDeltaX
+                    originalEvent.wheelDeltaX && ( event.deltaX = - 1/40 * originalEvent.wheelDeltaX );
+		} else {
+                    event.deltaY = originalEvent.detail;
+		}
+
+		// it's time to fire the callback
+		return callback( event );
+
+            }, useCapture || false );
+	}
     }
 });

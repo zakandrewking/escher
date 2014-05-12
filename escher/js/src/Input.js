@@ -7,9 +7,9 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
     Input.prototype = { init: init,
 			setup_map_callbacks: setup_map_callbacks,
 			setup_zoom_callbacks: setup_zoom_callbacks,
-			show: show,
-			hide: hide,
+			is_visible: is_visible,
 			toggle: toggle,
+			hide_dropdown: hide_dropdown,
 			place_at_selected: place_at_selected,
 			place: place,
 			reload_at_selected: reload_at_selected,
@@ -27,7 +27,8 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	d3.select(c.input)
 	// .attr('placeholder', 'Reaction ID -- Flux')
 	    .on('input', function() {
-		this.value = this.value.replace("/","")
+		this.value = this.value
+		    // .replace("/","")
 		    .replace(" ","")
 		    .replace("\\","")
 		    .replace("<","");
@@ -37,7 +38,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	// close button
 	var self = this;
 	new_sel.append('button').attr('class', "button input-close-button")
-	    .text("×").on('click', function() { self.hide(); });;
+	    .text("×").on('click', function() { this.hide_dropdown(); }.bind(this));
 
 	if (map instanceof Map) {
 	    this.map = map;
@@ -57,45 +58,45 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	this.callback_manager = new CallbackManager();
 
 	// toggle off
-	this.hide();
+	this.toggle(false);
     }
     function setup_map_callbacks() {
 	var self = this;
 	this.map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
-	    if (self.is_visible) self.reload(selected_node, coords, false);
+	    if (self.is_active) self.reload(selected_node, coords, false);
 	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	});
 	this.map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
 	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-	    if (count == 1 && self.is_visible && coords) {
+	    if (count == 1 && self.is_active && coords) {
 		self.reload(selected_node, coords, false);
 	    } else {
-		self.hide();
+		self.toggle(false);
 	    }
 	});
     }
     function setup_zoom_callbacks() {
 	var self = this;
 	this.zoom_container.callback_manager.set('zoom.input', function() {
-	    if (self.is_visible) {
+	    if (self.is_active) {
 		self.place_at_selected();
 	    }
 	});
     }
-    function show() {
-	this.toggle(true);
-    }
-    function hide() {
-	this.toggle(false);
+    function is_visible() {
+	return this.selection.style('display') != 'none';
     }
     function toggle(on_off) {
-	if (on_off===undefined) this.is_visible = !this.is_visible;
-	else this.is_visible = on_off;
-	if (this.is_visible) {
+	if (on_off===undefined) this.is_active = !this.is_active;
+	else this.is_active = on_off;
+	if (this.is_active) {
 	    this.toggle_start_reaction_listener(true);
 	    this.reload_at_selected();
 	    this.map.set_status('Click on the canvas or an existing metabolite');
 	    this.callback_manager.run('show_reaction_input');
+	    // escape key
+	    this.escape = this.map.key_manager
+		.add_escape_listener(function() { this.hide_dropdown(); }.bind(this));
 	} else {
 	    this.toggle_start_reaction_listener(false);
 	    this.selection.style("display", "none");
@@ -103,9 +104,16 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
             this.completely.hideDropDown();
 	    this.map.set_status(null);
 	    this.callback_manager.run('hide_reaction_input');
+	    if (this.escape)
+		this.escape.clear();
+	    this.escape = null;
 	}
     }
-
+    function hide_dropdown() {
+	this.selection.style("display", "none");
+        this.completely.hideDropDown();
+        this.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+    }
     function place_at_selected() {
         /** Place autocomplete box at the first selected node.
 	 
@@ -121,12 +129,13 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
     function place(coords) {
 	var d = {x: 200, y: 0},
 	    window_translate = this.map.zoom_container.window_translate,
-	    window_scale = this.map.zoom_container.window_scale;
+	    window_scale = this.map.zoom_container.window_scale,
+	    map_size = this.map.get_size();
         var left = Math.max(20,
-			    Math.min(this.map.width - 270,
+			    Math.min(map_size.width - 270,
 				     (window_scale * coords.x + window_translate.x - d.x)));
         var top = Math.max(20,
-			   Math.min(this.map.height - 40,
+			   Math.min(map_size.height - 40,
 				    (window_scale * coords.y + window_translate.y - d.y)));
         this.selection.style('position', 'absolute')
             .style('display', 'block')
