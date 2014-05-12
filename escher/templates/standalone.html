@@ -17,5 +17,16 @@
     {% block content %}
       {{content}}
     {% endblock %}
+
+    <script>
+     // temporary fixes for mobile browsers (currently iOS)
+     if (navigator.userAgent.match(/.*OS 7_\d/i)) {
+       $(".fill-screen-div").css('height', window.innerHeight +"px");
+       $(window).resize(function(){
+	 $(".fill-screen-div").css('height', window.innerHeight +"px");
+	 document.body.scrollTop = 0;
+       })
+     }
+    </script>
   </body>
 </html>
