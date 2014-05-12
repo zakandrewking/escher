@@ -57,6 +57,7 @@ footer a, a:hover, a:focus, a:visited {
 }
 #logo {
     display: none;
+    width: 250px;
 }
 @media (min-width: 768px) { /*@screen-sm-min) { */
     .column-button {
