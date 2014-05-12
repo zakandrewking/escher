@@ -284,7 +284,7 @@ class Builder(Plot):
                 u"map: map_data_{the_id},"
                 u"cobra_model: cobra_model_{the_id},"
                 u"reaction_data: reaction_data_{the_id},"
-		u"metabolite_data: metabolite_data_{the_id},"
+                u"metabolite_data: metabolite_data_{the_id},"
                 u"css: css_string_{the_id} }});").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
