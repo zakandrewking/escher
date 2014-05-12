@@ -303,11 +303,15 @@ class Builder(Plot):
         return unicode(download.read().replace('\n', ' '))
     
     def _get_html(self, dev=False, wrapper=False, enable_editing=True,
-                  enable_keys=True, fill_screen=False, height=800):
+                  enable_keys=True, fill_screen=False, height="800px"):
         if dev:
             content = env.get_template('dev_content.html')
         else:
             content = env.get_template('content.html')
+        if type(height) is int:
+            height = "%dpx" % height
+        elif type(height) is float:
+            height = "%fpx" % height
         html = content.render(id=self.the_id,
                               height=unicode(height),
                               css_path=(urls.builder_css_local if dev else urls.builder_css),
@@ -325,4 +329,4 @@ class Builder(Plot):
     
     def standalone_html(self, dev=False, enable_editing=True):
         return self._get_html(dev=dev, wrapper=True, enable_editing=enable_editing,
-                              fill_screen=True)
+                              fill_screen=True, height="100%")
