@@ -1,4 +1,4 @@
-define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex) {
+define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex"], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -103,7 +103,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	}
 
 	// defaults
-	var default_angle = 90; // degrees
 	this.default_reaction_color = '#334E75',
 
 	// set up the defs
@@ -160,26 +159,6 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
 	
-	// set up the reaction direction arrow
-	var direction_arrow = new DirectionArrow(selection);
-	direction_arrow.set_rotation(default_angle);
-	this.callback_manager.set('select_metabolite_with_id', function(_, coords) {
-	    direction_arrow.set_location(coords);
-	    direction_arrow.show();
-	});
-	this.callback_manager.set('select_metabolite', function(count, _, coords) {
-	    if (count == 1) {
-		direction_arrow.set_location(coords);
-		direction_arrow.show();
-	    } else {
-		direction_arrow.hide();
-	    }
-	});
-	this.callback_manager.set('before_svg_export', function() {
-	    direction_arrow.hide();
-	});
-	this.direction_arrow = direction_arrow;
-
 	this.nodes = {};
 	this.reactions = {};
 	this.membranes = [];
@@ -1074,7 +1053,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
     // ---------------------------------------------------------------------
     // Building
 
-    function new_reaction_from_scratch(starting_reaction, coords) {
+    function new_reaction_from_scratch(starting_reaction, coords, direction) {
 	/** Draw a reaction on a blank canvas.
 
 	 starting_reaction: bigg_id for a reaction to draw.
@@ -1142,7 +1121,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	});
 	
 	// draw the reaction
-	this.new_reaction_for_metabolite(starting_reaction, selected_node_id);
+	this.new_reaction_for_metabolite(starting_reaction, selected_node_id, direction);
 	
 	return null;
 
@@ -1189,7 +1168,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 	utils.extend(this.reactions, new_reactions);
     }
 
-    function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id) {
+    function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id, direction) {
 	/** Build a new reaction starting with selected_met.
 
 	 Undoable
@@ -1218,7 +1197,7 @@ define(["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoSt
 				     utils.clone(selected_node),
 				     this.largest_ids,
 				     this.cobra_model.cofactors,
-				     this.direction_arrow.get_rotation()),
+				     direction),
 	    new_nodes = out.new_nodes,
 	    new_reactions = out.new_reactions;
 

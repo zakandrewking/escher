@@ -35,8 +35,7 @@ define(["utils"], function(utils) {
 	}};
     }
     function button_group(s) {
-	var s2 = s.append('li')
-		.attr('class', 'btn-group-vertical');
+	var s2 = s.attr('class', 'btn-group-vertical');
 	return { button: function(button) {
 	    var b = s2.append("button")
 		    .attr("class", "btn btn-default");

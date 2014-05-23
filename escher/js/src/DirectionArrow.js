@@ -7,6 +7,7 @@ define(["utils"], function(utils) {
 				 set_location: set_location,
 				 set_rotation: set_rotation,
 				 get_rotation: get_rotation,
+				 toggle: toggle,
 				 show: show,
 				 hide: hide,
 				 right: right,
@@ -25,6 +26,9 @@ define(["utils"], function(utils) {
 	    .attr('d', path_for_arrow())
 	    .style('visibility', 'hidden')
 	    .attr('transform', 'translate(20,0)scale(1.5)');
+
+	this.is_visible = false;
+	this.show();
 
 	// definitions
 	function path_for_arrow() {
@@ -50,11 +54,16 @@ define(["utils"], function(utils) {
 	 */
 	return d3.transform(this.arrow_container.attr('transform')).rotate;
     }
+    function toggle(on_off) {
+	if (on_off===undefined) this.is_visible = !this.is_visible;
+	else this.is_visible = on_off;
+	this.arrow.style('visibility', this.is_visible ? 'visible' : 'hidden');
+    }
     function show() {
-	this.arrow.style('visibility', 'visible');
+	this.toggle(true);
     }
     function hide() {
-	this.arrow.style('visibility', 'hidden');
+	this.toggle(false);
     }
     function right() {
 	this.set_rotation(0);

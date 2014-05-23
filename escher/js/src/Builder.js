@@ -15,6 +15,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  brush_mode: brush_mode,
 			  zoom_mode: zoom_mode,
 			  rotate_mode: rotate_mode,
+			  _toggle_direction_buttons: _toggle_direction_buttons,
 			  _setup_menu: _setup_menu,
 			  _setup_status: _setup_status,
 			  _setup_modes: _setup_modes,
@@ -219,11 +220,17 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
     }
     function set_mode(mode) {
 	this.search_bar.toggle(false);
-
+	// input
 	this.reaction_input.toggle(mode=='build');
+	this.reaction_input.direction_arrow.toggle(mode=='build');
+	this._toggle_direction_buttons(mode=='build');
+	// brush
 	this.brush.toggle(mode=='brush');
+	// zoom
 	this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
+	// resize canvas
 	this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
+	// behavior
 	this.map.behavior.toggle_rotation_mode(mode=='rotate');
 	this.map.behavior.toggle_node_click(mode=='build' || mode=='brush');
 	this.map.behavior.toggle_node_drag(mode=='brush');
@@ -232,7 +239,6 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	if (mode=='view')
 	    this.map.select_none();
 	this.map.draw_everything();
-	// this.callback_manager.run('set_mode', mode);
     }
     function view_mode() {
 	this.callback_manager.run('view_mode');
@@ -363,19 +369,22 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		.attr('id', 'button-panel');
 
 	// buttons
-	ui.individual_button(button_panel, { key: keys.zoom_in,
-					     icon: "glyphicon glyphicon-plus-sign",
-					     tooltip: "Zoom in (Ctrl +)" });
-	ui.individual_button(button_panel, { key: keys.zoom_out,
-					     icon: "glyphicon glyphicon-minus-sign",
-					     tooltip: "Zoom out (Ctrl -)" });
-	ui.individual_button(button_panel, { key: keys.extent_canvas,
-					     icon: "glyphicon glyphicon-resize-full",
-					     tooltip: "Zoom to canvas (Ctrl 1)" });
+	ui.individual_button(button_panel.append('li'),
+			     { key: keys.zoom_in,
+			       icon: "glyphicon glyphicon-plus-sign",
+			       tooltip: "Zoom in (Ctrl +)" });
+	ui.individual_button(button_panel.append('li'),
+			     { key: keys.zoom_out,
+			       icon: "glyphicon glyphicon-minus-sign",
+			       tooltip: "Zoom out (Ctrl -)" });
+	ui.individual_button(button_panel.append('li'),
+			     { key: keys.extent_canvas,
+			       icon: "glyphicon glyphicon-resize-full",
+			       tooltip: "Zoom to canvas (Ctrl 1)" });
 
 	// mode buttons
 	if (enable_editing) {
-	    ui.radio_button_group(button_panel)
+	    ui.radio_button_group(button_panel.append('li'))
 		.button({ key: keys.build_mode,
 			  id: 'build-mode-button',
 			  icon: "glyphicon glyphicon-plus",
@@ -394,19 +403,20 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  tooltip: "Rotate mode (r)" });
 
 	    // arrow buttons
-	    ui.button_group(button_panel)
-		.button({ key: keys.direction_arrow_left,
-			  icon: "glyphicon glyphicon-arrow-left",
-			  tooltip: "Direction arrow (←)" })
-		.button({ key: keys.direction_arrow_right,
-			  icon: "glyphicon glyphicon-arrow-right",
-			  tooltip: "Direction arrow (→)" })
-		.button({ key: keys.direction_arrow_up,
-			  icon: "glyphicon glyphicon-arrow-up",
-			  tooltip: "Direction arrow (↑)" })
-		.button({ key: keys.direction_arrow_down,
-			  icon: "glyphicon glyphicon-arrow-down",
-			  tooltip: "Direction arrow (↓)" });
+	    this.direction_buttons = button_panel.append('li');
+	    var o = ui.button_group(this.direction_buttons)
+		    .button({ key: keys.direction_arrow_left,
+			      icon: "glyphicon glyphicon-arrow-left",
+			      tooltip: "Direction arrow (←)" })
+		    .button({ key: keys.direction_arrow_right,
+			      icon: "glyphicon glyphicon-arrow-right",
+			      tooltip: "Direction arrow (→)" })
+		    .button({ key: keys.direction_arrow_up,
+			      icon: "glyphicon glyphicon-arrow-up",
+			      tooltip: "Direction arrow (↑)" })
+		    .button({ key: keys.direction_arrow_down,
+			      icon: "glyphicon glyphicon-arrow-down",
+			      tooltip: "Direction arrow (↓)" });
 	}
 
 	// set up mode callbacks
@@ -465,6 +475,12 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    if (error) console.warn(error);
 	    this.map.set_metabolite_data(data);
 	}
+    }
+
+    function _toggle_direction_buttons(on_off) {
+	if (on_off===undefined)
+	    on_off = !this.direction_buttons.style('visibility')=='visible';
+	this.direction_buttons.style('visibility', on_off ? 'visible' : 'hidden');
     }
 
     function _setup_status(selection, map) {
@@ -570,20 +586,20 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 				 fn: map.cycle_primary_node,
 				 ignore_with_input: true },
 		direction_arrow_right: { key: 39, // right
-					 target: map.direction_arrow,
-					 fn: map.direction_arrow.right,
+					 fn: this.reaction_input.direction_arrow.right
+					 .bind(this.reaction_input.direction_arrow),
 					 ignore_with_input: true },
 		direction_arrow_down: { key: 40, // down
-					target: map.direction_arrow,
-					fn: map.direction_arrow.down,
+					fn: this.reaction_input.direction_arrow.down
+					.bind(this.reaction_input.direction_arrow),
 					ignore_with_input: true },
 		direction_arrow_left: { key: 37, // left
-					target: map.direction_arrow,
-					fn: map.direction_arrow.left,
+					fn: this.reaction_input.direction_arrow.left
+					.bind(this.reaction_input.direction_arrow),
 					ignore_with_input: true },
 		direction_arrow_up: { key: 38, // up
-				      target: map.direction_arrow,
-				      fn: map.direction_arrow.up,
+				      fn: this.reaction_input.direction_arrow.up
+				      .bind(this.reaction_input.direction_arrow),
 				      ignore_with_input: true },
 		undo: { key: 90, modifiers: { control: true },
 			target: map.undo_stack,

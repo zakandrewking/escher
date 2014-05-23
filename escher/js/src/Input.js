@@ -1,4 +1,4 @@
-define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", "draw"], function(utils, completely, Map, ZoomContainer, CallbackManager, draw) {
+define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", "draw", "DirectionArrow"], function(utils, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow) {
     /**
      */
 
@@ -42,7 +42,13 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 
 	if (map instanceof Map) {
 	    this.map = map;
-	    this.setup_map_callbacks();
+
+	    // set up the reaction direction arrow
+	    var default_angle = 90; // degrees
+	    this.direction_arrow = new DirectionArrow(map.sel);
+	    this.direction_arrow.set_rotation(default_angle);
+
+	    this.setup_map_callbacks(map);
 	} else {
 	    console.error('Cannot set the map. It is not an instance of builder/Map');
 	}
@@ -60,20 +66,26 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	// toggle off
 	this.toggle(false);
     }
-    function setup_map_callbacks() {
-	var self = this;
-	this.map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
-	    if (self.is_active) self.reload(selected_node, coords, false);
-	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-	});
-	this.map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
-	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-	    if (count == 1 && self.is_active && coords) {
-		self.reload(selected_node, coords, false);
+    function setup_map_callbacks(map) {
+	// input
+	map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
+	    if (this.is_active) this.reload(selected_node, coords, false);
+	    map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	}.bind(this));
+	map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
+	    map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	    if (count == 1 && this.is_active && coords) {
+		this.reload(selected_node, coords, false);
 	    } else {
-		self.toggle(false);
+		this.toggle(false);
 	    }
-	});
+	}.bind(this));
+
+	// svg export
+	map.callback_manager.set('before_svg_export', function() {
+	    this.direction_arrow.hide();
+            this.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	}.bind(this));
     }
     function setup_zoom_callbacks() {
 	var self = this;
@@ -93,7 +105,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	    this.toggle_start_reaction_listener(true);
 	    this.reload_at_selected();
 	    this.map.set_status('Click on the canvas or an existing metabolite');
-	    this.callback_manager.run('show_reaction_input');
+	    this.direction_arrow.show();
 	    // escape key
 	    this.escape = this.map.key_manager
 		.add_escape_listener(function() { this.hide_dropdown(); }.bind(this));
@@ -103,7 +115,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
             this.completely.input.blur();
             this.completely.hideDropDown();
 	    this.map.set_status(null);
-	    this.callback_manager.run('hide_reaction_input');
+	    this.direction_arrow.hide();
 	    if (this.escape)
 		this.escape.clear();
 	    this.escape = null;
@@ -113,6 +125,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	this.selection.style("display", "none");
         this.completely.hideDropDown();
         this.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	this.direction_arrow.hide();
     }
     function place_at_selected() {
         /** Place autocomplete box at the first selected node.
@@ -127,7 +140,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	this.place(coords);
     }
     function place(coords) {
-	var d = {x: 200, y: 0},
+	var d = {x: 240, y: 0},
 	    window_translate = this.map.zoom_container.window_translate,
 	    window_scale = this.map.zoom_container.window_scale,
 	    map_size = this.map.get_size();
@@ -141,6 +154,9 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
             .style('display', 'block')
             .style('left',left+'px')
             .style('top',top+'px');
+
+	this.direction_arrow.set_location(coords);
+	this.direction_arrow.show();
     }
 
     function reload_at_selected() {
@@ -244,6 +260,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	    complete.options = v;
 	    complete.repaint();
 	};
+	var direction_arrow = this.direction_arrow;
         complete.onEnter = function() {
 	    var text = this.getText();
 	    this.setText("");
@@ -251,10 +268,12 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 		if (x.string.toLowerCase()==text.toLowerCase()) {
 		    if (starting_from_scratch) {
 			self.map.new_reaction_from_scratch(x.reaction_abbreviation,
-							   coords);
+							   coords,
+							   direction_arrow.get_rotation());
 		    } else {
 			self.map.new_reaction_for_metabolite(x.reaction_abbreviation,
-							     selected_node.node_id);
+							     selected_node.node_id,
+							     direction_arrow.get_rotation());
 		    }
 		}
 	    });
