@@ -13,8 +13,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 				zoom_out: zoom_out,
 				get_size: get_size,
 				translate_off_screen: translate_off_screen,
-				reset: reset,
-				new_wheel_listener: new_wheel_listener };
+				reset: reset };
     return ZoomContainer;
 
     // definitions
@@ -110,13 +109,28 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 		this.zoom_behavior.translate(this.saved_translate);
 		this.saved_translate = null;
 	    }
+
+	    // turn on the hand
+	    this.zoomed_sel.style('cursor', '-webkit-grab');
+	    this.zoomed_sel
+		.on('mousedown.cursor', function(sel) {
+		    sel.style('cursor', '-webkit-grabbing');
+		}.bind(null, this.zoomed_sel))
+		.on('mouseup.cursor', function(sel) {
+		    sel.style('cursor', '-webkit-grab');
+		}.bind(null, this.zoomed_sel));
 	} else {
 	    if (this.saved_scale === null){
 		this.saved_scale = utils.clone(this.zoom_behavior.scale());
 	    }
 	    if (this.saved_translate === null){
 		this.saved_translate = utils.clone(this.zoom_behavior.translate());
-	    }      
+	    }
+
+	    // turn on the hand
+	    this.zoomed_sel.style('cursor', null);     
+	    this.zoomed_sel.on('mousedown.cursor', null);
+	    this.zoomed_sel.on('mouseup.cursor', null);
 	}
     }
 
@@ -204,69 +218,5 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     }
     function reset() {
 	this.go_to(1.0, {x: 0.0, y: 0.0});
-    }
-
-    function new_wheel_listener(sel, callback) {
-	// creates a global "addWheelListener" method
-	// example: addWheelListener( elem, function( e ) { console.log( e.deltaY ); e.preventDefault(); } );
-
-	var prefix = "", _addEventListener, onwheel, support,
-	    useCapture = true,
-	    elem = sel.node();
-
-	// detect event model
-	if ( window.addEventListener ) {
-            _addEventListener = "addEventListener";
-	} else {
-            _addEventListener = "attachEvent";
-            prefix = "on";
-	}
-
-	// detect available wheel event
-	support = "onwheel" in document.createElement("div") ? "wheel" : // Modern browsers support "wheel"
-            document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
-            "DOMMouseScroll"; // let's assume that remaining browsers are older Firefox
-
-        _addWheelListener( elem, support, callback, useCapture );
-
-        // handle MozMousePixelScroll in older Firefox
-        if( support == "DOMMouseScroll" ) {
-	    _addWheelListener( elem, "MozMousePixelScroll", callback, useCapture );
-        }
-
-	function _addWheelListener( elem, eventName, callback, useCapture ) {
-            elem[ _addEventListener ]( prefix + eventName, support == "wheel" ? callback : function( originalEvent ) {
-		!originalEvent && ( originalEvent = window.event );
-
-		// create a normalized event object
-		var event = {
-                    // keep a ref to the original event object
-                    originalEvent: originalEvent,
-                    target: originalEvent.target || originalEvent.srcElement,
-                    type: "wheel",
-                    deltaMode: originalEvent.type == "MozMousePixelScroll" ? 0 : 1,
-                    deltaX: 0,
-                    delatZ: 0,
-                    preventDefault: function() {
-			originalEvent.preventDefault ?
-                            originalEvent.preventDefault() :
-                            originalEvent.returnValue = false;
-                    }
-		};
-		
-		// calculate deltaY (and deltaX) according to the event
-		if ( support == "mousewheel" ) {
-                    event.deltaY = - 1/40 * originalEvent.wheelDelta;
-                    // Webkit also support wheelDeltaX
-                    originalEvent.wheelDeltaX && ( event.deltaX = - 1/40 * originalEvent.wheelDeltaX );
-		} else {
-                    event.deltaY = originalEvent.detail;
-		}
-
-		// it's time to fire the callback
-		return callback( event );
-
-            }, useCapture || false );
-	}
     }
 });

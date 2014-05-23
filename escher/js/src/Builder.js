@@ -53,7 +53,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 
 	if (utils.check_for_parent_tag(o.selection, 'svg')) {
 	    throw new Error("Builder cannot be placed within an svg node "+
-			"becuase UI elements are html-based.");
+			    "becuase UI elements are html-based.");
 	}
 
 	this.o = o;
@@ -305,7 +305,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			       text: "Build mode (n)" })
 		.button({ key: keys.zoom_mode,
 			  id: 'zoom-mode-menu-button',
-			  text: "Zoom + Pan mode (z)" })
+			  text: "Pan mode (z)" })
 		.button({ key: keys.brush_mode,
 			  id: 'brush-mode-menu-button',
 			  text: "Select mode (v)" })
@@ -362,6 +362,17 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		.attr("class", "nav nav-pills nav-stacked")
 		.attr('id', 'button-panel');
 
+	// buttons
+	ui.individual_button(button_panel, { key: keys.zoom_in,
+					     icon: "glyphicon glyphicon-plus-sign",
+					     tooltip: "Zoom in (Ctrl +)" });
+	ui.individual_button(button_panel, { key: keys.zoom_out,
+					     icon: "glyphicon glyphicon-minus-sign",
+					     tooltip: "Zoom out (Ctrl -)" });
+	ui.individual_button(button_panel, { key: keys.extent_canvas,
+					     icon: "glyphicon glyphicon-resize-full",
+					     tooltip: "Zoom to canvas (Ctrl 1)" });
+
 	// mode buttons
 	if (enable_editing) {
 	    ui.radio_button_group(button_panel)
@@ -372,7 +383,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		.button({ key: keys.zoom_mode,
 			  id: 'zoom-mode-button',
 			  icon: "glyphicon glyphicon-move",
-			  tooltip: "Zoom + Pan mode (z)" })
+			  tooltip: "Pan mode (z)" })
 		.button({ key: keys.brush_mode,
 			  id: 'brush-mode-button',
 			  icon: "glyphicon glyphicon-screenshot",
@@ -381,18 +392,22 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  id: 'rotate-mode-button',
 			  icon: "glyphicon glyphicon-repeat",
 			  tooltip: "Rotate mode (r)" });
-	}
 
-	// buttons
-	ui.individual_button(button_panel, { key: keys.zoom_in,
-					     icon: "glyphicon glyphicon-zoom-in",
-					     tooltip: "Zoom in (Ctrl +)" });
-	ui.individual_button(button_panel, { key: keys.zoom_out,
-					     icon: "glyphicon glyphicon-zoom-out",
-					     tooltip: "Zoom out (Ctrl -)" });
-	ui.individual_button(button_panel, { key: keys.extent_canvas,
-					     icon: "glyphicon glyphicon-resize-full",
-					     tooltip: "Zoom to canvas (Ctrl 1)" });
+	    // arrow buttons
+	    ui.button_group(button_panel)
+		.button({ key: keys.direction_arrow_left,
+			  icon: "glyphicon glyphicon-arrow-left",
+			  tooltip: "Direction arrow (←)" })
+		.button({ key: keys.direction_arrow_right,
+			  icon: "glyphicon glyphicon-arrow-right",
+			  tooltip: "Direction arrow (→)" })
+		.button({ key: keys.direction_arrow_up,
+			  icon: "glyphicon glyphicon-arrow-up",
+			  tooltip: "Direction arrow (↑)" })
+		.button({ key: keys.direction_arrow_down,
+			  icon: "glyphicon glyphicon-arrow-down",
+			  tooltip: "Direction arrow (↓)" });
+	}
 
 	// set up mode callbacks
 	var select_menu_button = function(id) {
