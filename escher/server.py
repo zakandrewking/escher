@@ -75,7 +75,14 @@ class BuilderHandler(BaseHandler):
             args = self.get_arguments(a)
             if len(args)==1:
                 kwargs[a] = args[0]
+                
         enable_editing = (kind=='builder')
+        try:
+            self.get_arguments('disable_menu')[0]
+        except IndexError:
+            enable_menu = True
+        else:
+            enable_menu = False
         dev = (dev_path is not None)
         # get the local version of builder-embed
         if dev:
@@ -91,7 +98,8 @@ class BuilderHandler(BaseHandler):
         builder = Builder(safe=True, **kwargs)
         self.set_header("Content-Type", "text/html")
         html = builder.standalone_html(dev=dev,
-                                       enable_editing=enable_editing)
+                                       enable_editing=enable_editing,
+                                       enable_menu=enable_menu)
         self.serve(html)
         
 class LibHandler(BaseHandler):
@@ -116,11 +124,13 @@ settings = {"debug": "False"}
 application = Application([
     (r".*/knockout-map/(.*)", koHandler),
     (r".*/lib/(.*)", LibHandler),
+    (r".*/(fonts/.*)", LibHandler),
     (r".*/(js/.*)", StaticHandler),
     (r".*/(css/.*)", StaticHandler),
     (r".*/(resources/.*)", StaticHandler),
     (r"/(dev/)?(builder|viewer)(.*)", BuilderHandler),
     (r".*/(map_spec.json)", StaticHandler),
+    (r"escher[~/]*js", StaticHandler),
     (r"/", IndexHandler),
 ], **settings)
  

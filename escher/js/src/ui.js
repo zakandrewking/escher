@@ -1,6 +1,7 @@
 define(["utils"], function(utils) {
     return { individual_button: individual_button,
 	     radio_button_group: radio_button_group,
+	     button_group: button_group,
 	     dropdown_menu: dropdown_menu,
 	     set_button: set_button,
 	     set_input_button: set_input_button };
@@ -24,6 +25,20 @@ define(["utils"], function(utils) {
 	    var b = s2.append("label")
 		    .attr("class", "btn btn-default");
 	    b.append('input').attr('type', 'radio');
+	    var c = b.append("span");
+	    if ('id' in button) b.attr('id', button.id);
+	    if ('text' in button) c.text(button.text);
+	    if ('icon' in button) c.classed(button.icon, true);
+	    if ('key' in button) set_button(b, button.key);
+	    if ('tooltip' in button) b.attr('title', button.tooltip);
+	    return this;
+	}};
+    }
+    function button_group(s) {
+	var s2 = s.attr('class', 'btn-group-vertical');
+	return { button: function(button) {
+	    var b = s2.append("button")
+		    .attr("class", "btn btn-default");
 	    var c = b.append("span");
 	    if ('id' in button) b.attr('id', button.id);
 	    if ('text' in button) c.text(button.text);

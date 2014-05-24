@@ -70,10 +70,10 @@
     stroke: blue;
 }
 .direction-arrow {
-    stroke: grey;
+    stroke: black;
     stroke-width: 1px;
-    fill: none;
-    opacity: 0.5;
+    fill: white;
+    opacity: 0.3;
 }
 .start-reaction-cursor {
     cursor: pointer;
@@ -89,4 +89,12 @@
 }
 .highlight {
     fill: #106F94;
+}
+.cursor-grab {
+    cursor: grab;
+    cursor: -webkit-grab;
+}
+.cursor-grabbing {
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
 }

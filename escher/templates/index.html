@@ -1,10 +1,9 @@
 {% extends "standalone.html" %}
 {% block title %}Escher{% endblock %}
 {% block head %}
-  {{ super() }}
-  <!-- <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"> -->
-  <!-- <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/journal/bootstrap.min.css"> -->
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/simplex/bootstrap.min.css">
   <script src="//use.edgefonts.net/tulpen-one.js"></script>
+
   <link href="css/index.css" rel="stylesheet" type="text/css" media="all">
 {% endblock %}
 {% block content %}
@@ -36,7 +35,8 @@
 	  <select id="options" class="form-control">
 	    <option value="viewer">Viewer</option>
 	    <option value="builder">Builder</option>
-	    <option value="dev">Dev</option>
+	    <option value="dev_viewer">Viewer (Dev)</option>
+	    <option value="dev_builder">Builder (Dev)</option>
 	  </select>
 	</div>
 	<div class="col-sm-3">
@@ -72,7 +72,9 @@
      if (map_value!='empty')
      add.push('map_name=' + map_value);
 
-     if (options_value=='dev') {
+     if (options_value=='dev_viewer') {
+       url = 'dev/viewer.html';
+     } else if (options_value=='dev_builder') {
        url = 'dev/builder.html';
      } else if (options_value=='viewer') {
        url = 'viewer.html';

@@ -80,6 +80,13 @@ define(["utils"], function(utils) {
 	    brush = selection.append("g")
 		.attr("class", "brush")
 		.call(brush_fn);
+
+	// turn off the mouse crosshair
+	selection.selectAll('.background')
+	    .classed('cursor-grab', false)
+	    .classed('cursor-grabbing', false)
+	    .style('cursor', null);
+
 	return brush;
     }
 });

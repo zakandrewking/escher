@@ -2,6 +2,10 @@
     background-color: #F3F3F3;
     text-align: center;
 }
+.fill-screen-body {
+    /* Stop Chrome from showing scroll-end animation */
+    overflow: hidden;
+}
 .fill-screen-div {
     margin: 0;
     padding: 0;
