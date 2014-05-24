@@ -5728,13 +5728,14 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 	    }
 
 	    // turn on the hand
-	    this.zoomed_sel.style('cursor', '-webkit-grab');
+	    this.zoomed_sel
+		.classed('cursor-grab', true).classed('cursor-grabbing', false);
 	    this.zoomed_sel
 		.on('mousedown.cursor', function(sel) {
-		    sel.style('cursor', '-webkit-grabbing');
+		    sel.classed('cursor-grab', false).classed('cursor-grabbing', true);
 		}.bind(null, this.zoomed_sel))
 		.on('mouseup.cursor', function(sel) {
-		    sel.style('cursor', '-webkit-grab');
+		    sel.classed('cursor-grab', true).classed('cursor-grabbing', false);
 		}.bind(null, this.zoomed_sel));
 	} else {
 	    if (this.saved_scale === null){
@@ -5745,7 +5746,9 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 	    }
 
 	    // turn off the hand
-	    this.zoomed_sel.style('cursor', null);     
+	    this.zoomed_sel.style('cursor', null)
+		.classed('cursor-grab', false)
+		.classed('cursor-grabbing', false);
 	    this.zoomed_sel.on('mousedown.cursor', null);
 	    this.zoomed_sel.on('mouseup.cursor', null);
 	}
@@ -6480,7 +6483,10 @@ define('Brush',["utils"], function(utils) {
 		.call(brush_fn);
 
 	// turn off the mouse crosshair
-	selection.selectAll('.background').style('cursor', null);
+	selection.selectAll('.background')
+	    .classed('cursor-grab', false)
+	    .classed('cursor-grabbing', false)
+	    .style('cursor', null);
 
 	return brush;
     }
@@ -6946,7 +6952,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	// input
 	this.reaction_input.toggle(mode=='build');
 	this.reaction_input.direction_arrow.toggle(mode=='build');
-	if (this.enable_menu)
+	if (this.o.enable_menu && this.o.enable_editing)
 	    this._toggle_direction_buttons(mode=='build');
 	// brush
 	this.brush.toggle(mode=='brush');
