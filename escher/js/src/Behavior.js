@@ -108,7 +108,7 @@ define(["utils", "build"], function(utils, build) {
 		d3.event.sourceEvent.stopPropagation();
 	    },
 		drag_fn = function(d, displacement, total_displacement, location) {
-		    var angle = angle_for_event(displacement,
+		    var angle = utils.angle_for_event(displacement,
 						location,
 						this.center);
 		    var updated = build.rotate_nodes(selected_nodes, reactions,
@@ -119,7 +119,7 @@ define(["utils", "build"], function(utils, build) {
 		end_fn = function(d) {},
 		undo_fn = function(d, displacement, location) {
 		    // undo
-		    var total_angle = angle_for_event(displacement,
+		    var total_angle = utils.angle_for_event(displacement,
 						      location,
 						      this.center);
 
@@ -132,7 +132,7 @@ define(["utils", "build"], function(utils, build) {
 		}.bind(this),
 		redo_fn = function(d, displacement, location) {
 		    // redo
-		    var total_angle = angle_for_event(displacement,
+		    var total_angle = utils.angle_for_event(displacement,
 						      location,
 						      this.center),
 			these_nodes = {};
@@ -158,13 +158,6 @@ define(["utils", "build"], function(utils, build) {
 	}
 
 	// definitions
-	function angle_for_event(displacement, point, center) {
-	    var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
-		beta = Math.atan2((point.x - center.x + displacement.x), 
-				  (center.y - point.y - displacement.y)),
-		angle = beta - gamma;
-	    return angle;
-	}
 	function show_center() {
 	    var s = this.map.sel.selectAll('#rotation-center')
 		    .data([0]),

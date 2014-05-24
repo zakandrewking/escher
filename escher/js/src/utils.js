@@ -25,6 +25,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     rotate_coords: rotate_coords,
 	     get_angle: get_angle,
 	     to_degrees: to_degrees,
+	     angle_for_event: angle_for_event,
 	     distance: distance,
 	     check_undefined: check_undefined,
 	     compartmentalize: compartmentalize,
@@ -414,6 +415,14 @@ define(["lib/vkbeautify"], function(vkbeautify) {
     }
 
     function to_degrees(radians) { return radians*180/Math.PI; }
+
+    function angle_for_event(displacement, point, center) {
+	var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
+	    beta = Math.atan2((point.x - center.x + displacement.x), 
+			      (center.y - point.y - displacement.y)),
+	    angle = beta - gamma;
+	return angle;
+    }
 
     function distance(start, end) { return Math.sqrt(Math.pow(end.y-start.y, 2) + Math.pow(end.x-start.x, 2)); }
 

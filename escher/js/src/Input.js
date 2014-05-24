@@ -9,12 +9,15 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 			setup_zoom_callbacks: setup_zoom_callbacks,
 			is_visible: is_visible,
 			toggle: toggle,
+			show_dropdown: show_dropdown,
 			hide_dropdown: hide_dropdown,
 			place_at_selected: place_at_selected,
 			place: place,
 			reload_at_selected: reload_at_selected,
 			reload: reload,
-			toggle_start_reaction_listener: toggle_start_reaction_listener };
+			toggle_start_reaction_listener: toggle_start_reaction_listener,
+			hide_target: hide_target,
+			show_target: show_target };
 
     return Input;
 
@@ -36,7 +39,6 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	this.selection = new_sel;
 	this.completely = c;
 	// close button
-	var self = this;
 	new_sel.append('button').attr('class', "button input-close-button")
 	    .text("×").on('click', function() { this.hide_dropdown(); }.bind(this));
 
@@ -65,15 +67,16 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 
 	// toggle off
 	this.toggle(false);
+	this.target_coords = null;
     }
     function setup_map_callbacks(map) {
 	// input
 	map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
 	    if (this.is_active) this.reload(selected_node, coords, false);
-	    map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	    this.hide_target();
 	}.bind(this));
 	map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
-	    map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	    this.hide_target();
 	    if (count == 1 && this.is_active && coords) {
 		this.reload(selected_node, coords, false);
 	    } else {
@@ -84,16 +87,15 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	// svg export
 	map.callback_manager.set('before_svg_export', function() {
 	    this.direction_arrow.hide();
-            this.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	    this.hide_target();
 	}.bind(this));
     }
     function setup_zoom_callbacks() {
-	var self = this;
 	this.zoom_container.callback_manager.set('zoom.input', function() {
-	    if (self.is_active) {
-		self.place_at_selected();
+	    if (this.is_active) {
+		this.place_at_selected();
 	    }
-	});
+	}.bind(this));
     }
     function is_visible() {
 	return this.selection.style('display') != 'none';
@@ -103,7 +105,8 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	else this.is_active = on_off;
 	if (this.is_active) {
 	    this.toggle_start_reaction_listener(true);
-	    this.reload_at_selected();
+	    if (this.target_coords!==null) this.show_dropdown(this.target_coords);
+	    else this.reload_at_selected();
 	    this.map.set_status('Click on the canvas or an existing metabolite');
 	    this.direction_arrow.show();
 	    // escape key
@@ -121,11 +124,16 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	    this.escape = null;
 	}
     }
+    function show_dropdown(coords) {
+	this.selection.style("display", "block");
+        this.completely.input.blur();
+	this.completely.repaint();
+	this.completely.setText("");
+        this.completely.input.focus();
+    }
     function hide_dropdown() {
 	this.selection.style("display", "none");
         this.completely.hideDropDown();
-        this.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-	this.direction_arrow.hide();
     }
     function place_at_selected() {
         /** Place autocomplete box at the first selected node.
@@ -167,10 +175,11 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	// get the selected node
 	this.map.deselect_text_labels();
 	var selected_node = this.map.select_single_node();
-	if (selected_node==null) return;
+	if (selected_node==null) return false;
 	var coords = { x: selected_node.x, y: selected_node.y };
 	// reload the reaction input
 	this.reload(selected_node, coords, false);
+	return true;
     }
     function reload(selected_node, coords, starting_from_scratch) {
         /** Reload data for autocomplete box and redraw box at the new
@@ -182,6 +191,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	    console.error('No selected node, and not starting from scratch');
 
 	this.place(coords);
+
         // blur
         this.completely.input.blur();
         this.completely.repaint(); //put in place()?
@@ -241,8 +251,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 
         // set up the box with data, searching for first num results
         var num = 20,
-            complete = this.completely,
-	    self = this;
+            complete = this.completely;
         complete.options = strings_to_display;
         if (strings_to_display.length==1) complete.setText(strings_to_display[0]);
         else complete.setText("");
@@ -260,18 +269,19 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	    complete.options = v;
 	    complete.repaint();
 	};
-	var direction_arrow = this.direction_arrow;
+	var direction_arrow = this.direction_arrow,
+	    map = this.map;
         complete.onEnter = function() {
 	    var text = this.getText();
 	    this.setText("");
 	    suggestions_array.forEach(function(x) {
 		if (x.string.toLowerCase()==text.toLowerCase()) {
 		    if (starting_from_scratch) {
-			self.map.new_reaction_from_scratch(x.reaction_abbreviation,
+			map.new_reaction_from_scratch(x.reaction_abbreviation,
 							   coords,
 							   direction_arrow.get_rotation());
 		    } else {
-			self.map.new_reaction_for_metabolite(x.reaction_abbreviation,
+			map.new_reaction_for_metabolite(x.reaction_abbreviation,
 							     selected_node.node_id,
 							     direction_arrow.get_rotation());
 		    }
@@ -301,34 +311,42 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
         else
             this.start_reaction_listener = on_off;
         
-        if (this.start_reaction_listener) {
-	    var self = this,
-		map = this.map;
-            map.sel.on('click.start_reaction', function() {
-                console.log('clicked for new reaction');
+        if (this.start_reaction_listener) {;
+            this.map.sel.on('click.start_reaction', function(node) {
+		// TODO fix this hack
+		if (this.direction_arrow.dragging) return;
                 // reload the reaction input
-                var coords = { x: d3.mouse(this)[0],
-			       y: d3.mouse(this)[1] };
+                var coords = { x: d3.mouse(node)[0],
+			       y: d3.mouse(node)[1] };
                 // unselect metabolites
-		map.deselect_nodes();
-		map.deselect_text_labels();
-		// reload the reactin input
-                self.reload(null, coords, true);
+		this.map.deselect_nodes();
+		this.map.deselect_text_labels();
+		// reload the reaction input
+                this.reload(null, coords, true);
 		// generate the target symbol
-                var s = map.sel.selectAll('.start-reaction-target').data([12, 5]);
-                s.enter().append('circle')
-                    .classed('start-reaction-target', true)
-                    .attr('r', function(d) { return d; })
-                    .style('stroke-width', 4);
-                s.style('visibility', 'visible')
-                    .attr('transform', 'translate('+coords.x+','+coords.y+')');
-            });
-            map.sel.classed('start-reaction-cursor', true);
+		this.show_target(this.map, coords);
+            }.bind(this, this.map.sel.node()));
+            this.map.sel.classed('start-reaction-cursor', true);
         } else {
             this.map.sel.on('click.start_reaction', null);
             this.map.sel.classed('start-reaction-cursor', false);
-            this.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	    this.hide_target();
         }
     }
 
+    function hide_target() {
+	if (this.target_coords)
+	    this.map.sel.selectAll('.start-reaction-target').remove();
+	this.target_coords = null;
+    }
+    function show_target(map, coords) {
+        var s = map.sel.selectAll('.start-reaction-target').data([12, 5]);
+        s.enter().append('circle')
+            .classed('start-reaction-target', true)
+            .attr('r', function(d) { return d; })
+            .style('stroke-width', 4);
+        s.style('visibility', 'visible')
+            .attr('transform', 'translate('+coords.x+','+coords.y+')');
+	this.target_coords = coords;
+    }
 });

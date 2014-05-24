@@ -1,14 +1,16 @@
-{% if wrapper %}{% extends 'standalone.html' %}{% endif -%}
+{% if wrapper %}{% extends 'standalone.html' %}{% endif %}
 
 {% block head %}
-{% if wrapper %}{{ super() }}{% endif -%}
-  <script src="{{d3_url}}"></script>
   <script src="lib/require.js"></script>
-  <link rel="stylesheet" href="{{css_path}}"/>
+  <script src="{{jquery}}"></script>
+  <script src="{{boot_js}}"></script>
+  <script src="{{d3}}"></script>
+
+  <link rel="stylesheet" href="{{boot_css}}">
+  <link rel="stylesheet" href="{{escher_css}}"/>
 {% endblock %}
 
 {% block content %}
-{% if wrapper %}{{ super() }}{% endif -%}
   <div id="{{id}}"></div>
 
   <script>

@@ -811,6 +811,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	     rotate_coords: rotate_coords,
 	     get_angle: get_angle,
 	     to_degrees: to_degrees,
+	     angle_for_event: angle_for_event,
 	     distance: distance,
 	     check_undefined: check_undefined,
 	     compartmentalize: compartmentalize,
@@ -1200,6 +1201,14 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
     }
 
     function to_degrees(radians) { return radians*180/Math.PI; }
+
+    function angle_for_event(displacement, point, center) {
+	var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
+	    beta = Math.atan2((point.x - center.x + displacement.x), 
+			      (center.y - point.y - displacement.y)),
+	    angle = beta - gamma;
+	return angle;
+    }
 
     function distance(start, end) { return Math.sqrt(Math.pow(end.y-start.y, 2) + Math.pow(end.x-start.x, 2)); }
 
@@ -2772,7 +2781,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		d3.event.sourceEvent.stopPropagation();
 	    },
 		drag_fn = function(d, displacement, total_displacement, location) {
-		    var angle = angle_for_event(displacement,
+		    var angle = utils.angle_for_event(displacement,
 						location,
 						this.center);
 		    var updated = build.rotate_nodes(selected_nodes, reactions,
@@ -2783,7 +2792,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		end_fn = function(d) {},
 		undo_fn = function(d, displacement, location) {
 		    // undo
-		    var total_angle = angle_for_event(displacement,
+		    var total_angle = utils.angle_for_event(displacement,
 						      location,
 						      this.center);
 
@@ -2796,7 +2805,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		}.bind(this),
 		redo_fn = function(d, displacement, location) {
 		    // redo
-		    var total_angle = angle_for_event(displacement,
+		    var total_angle = utils.angle_for_event(displacement,
 						      location,
 						      this.center),
 			these_nodes = {};
@@ -2822,13 +2831,6 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	}
 
 	// definitions
-	function angle_for_event(displacement, point, center) {
-	    var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
-		beta = Math.atan2((point.x - center.x + displacement.x), 
-				  (center.y - point.y - displacement.y)),
-		angle = beta - gamma;
-	    return angle;
-	}
 	function show_center() {
 	    var s = this.map.sel.selectAll('#rotation-center')
 		    .data([0]),
@@ -3367,78 +3369,6 @@ define('Scale',["utils"], function(utils) {
 	// assign sc to this
 	var keys = window.Object.keys(sc), i = -1;
         while (++i < keys.length) this[keys[i]] = sc[keys[i]];
-    }
-});
-
-define('DirectionArrow',["utils"], function(utils) {
-    /** DirectionArrow returns a constructor for an arrow that can be rotated
-     and dragged, and supplies its direction.
-     */
-    var DirectionArrow = utils.make_class();
-    DirectionArrow.prototype = { init: init,
-				 set_location: set_location,
-				 set_rotation: set_rotation,
-				 get_rotation: get_rotation,
-				 show: show,
-				 hide: hide,
-				 right: right,
-				 left: left,
-				 up: up,
-				 down: down };
-    return DirectionArrow;
-
-    // definitions
-    function init(sel) {
-	this.arrow_container = sel.append('g')
-	    .attr('id', 'direction-arrow-container')
-	    .attr('transform', 'translate(0,0)rotate(0)');
-	this.arrow = this.arrow_container.append('path')
-	    .classed('direction-arrow', true)
-	    .attr('d', path_for_arrow())
-	    .style('visibility', 'hidden')
-	    .attr('transform', 'translate(20,0)scale(1.5)');
-
-	// definitions
-	function path_for_arrow() {
-	    return "M0 -5 L0 5 L20 5 L20 10 L30 0 L20 -10 L20 -5 Z";
-	}
-    }
-    function set_location(coords) {
-	/** Move the arrow to coords.
-	 */
-	var transform = d3.transform(this.arrow_container.attr('transform'));
-	this.arrow_container.attr('transform',
-				  'translate('+coords.x+','+coords.y+')rotate('+transform.rotate+')');
-    }
-    function set_rotation(rotation) {
-	/** Rotate the arrow to rotation.
-	 */
-	var transform = d3.transform(this.arrow_container.attr('transform'));
-	this.arrow_container.attr('transform',
-				  'translate('+transform.translate+')rotate('+rotation+')');
-    }
-    function get_rotation() {
-	/** Returns the arrow rotation.
-	 */
-	return d3.transform(this.arrow_container.attr('transform')).rotate;
-    }
-    function show() {
-	this.arrow.style('visibility', 'visible');
-    }
-    function hide() {
-	this.arrow.style('visibility', 'hidden');
-    }
-    function right() {
-	this.set_rotation(0);
-    }
-    function down() {
-	this.set_rotation(90);
-    }
-    function left() {
-	this.set_rotation(180);
-    }
-    function up() {
-	this.set_rotation(270);
     }
 });
 
@@ -4066,7 +3996,7 @@ define('SearchIndex',["utils"], function(utils) {
     }
 });
 
-define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex"], function(utils, draw, Behavior, Scale, DirectionArrow, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex) {
+define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex"], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -4171,7 +4101,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	}
 
 	// defaults
-	var default_angle = 90; // degrees
 	this.default_reaction_color = '#334E75',
 
 	// set up the defs
@@ -4228,26 +4157,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
 	
-	// set up the reaction direction arrow
-	var direction_arrow = new DirectionArrow(selection);
-	direction_arrow.set_rotation(default_angle);
-	this.callback_manager.set('select_metabolite_with_id', function(_, coords) {
-	    direction_arrow.set_location(coords);
-	    direction_arrow.show();
-	});
-	this.callback_manager.set('select_metabolite', function(count, _, coords) {
-	    if (count == 1) {
-		direction_arrow.set_location(coords);
-		direction_arrow.show();
-	    } else {
-		direction_arrow.hide();
-	    }
-	});
-	this.callback_manager.set('before_svg_export', function() {
-	    direction_arrow.hide();
-	});
-	this.direction_arrow = direction_arrow;
-
 	this.nodes = {};
 	this.reactions = {};
 	this.membranes = [];
@@ -5142,7 +5051,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
     // ---------------------------------------------------------------------
     // Building
 
-    function new_reaction_from_scratch(starting_reaction, coords) {
+    function new_reaction_from_scratch(starting_reaction, coords, direction) {
 	/** Draw a reaction on a blank canvas.
 
 	 starting_reaction: bigg_id for a reaction to draw.
@@ -5210,7 +5119,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	});
 	
 	// draw the reaction
-	this.new_reaction_for_metabolite(starting_reaction, selected_node_id);
+	this.new_reaction_for_metabolite(starting_reaction, selected_node_id, direction);
 	
 	return null;
 
@@ -5257,7 +5166,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 	utils.extend(this.reactions, new_reactions);
     }
 
-    function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id) {
+    function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id, direction) {
 	/** Build a new reaction starting with selected_met.
 
 	 Undoable
@@ -5286,7 +5195,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "DirectionArrow", "build", "
 				     utils.clone(selected_node),
 				     this.largest_ids,
 				     this.cobra_model.cofactors,
-				     this.direction_arrow.get_rotation()),
+				     direction),
 	    new_nodes = out.new_nodes,
 	    new_reactions = out.new_reactions;
 
@@ -5721,8 +5630,7 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 				zoom_out: zoom_out,
 				get_size: get_size,
 				translate_off_screen: translate_off_screen,
-				reset: reset,
-				new_wheel_listener: new_wheel_listener };
+				reset: reset };
     return ZoomContainer;
 
     // definitions
@@ -5818,13 +5726,28 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 		this.zoom_behavior.translate(this.saved_translate);
 		this.saved_translate = null;
 	    }
+
+	    // turn on the hand
+	    this.zoomed_sel.style('cursor', '-webkit-grab');
+	    this.zoomed_sel
+		.on('mousedown.cursor', function(sel) {
+		    sel.style('cursor', '-webkit-grabbing');
+		}.bind(null, this.zoomed_sel))
+		.on('mouseup.cursor', function(sel) {
+		    sel.style('cursor', '-webkit-grab');
+		}.bind(null, this.zoomed_sel));
 	} else {
 	    if (this.saved_scale === null){
 		this.saved_scale = utils.clone(this.zoom_behavior.scale());
 	    }
 	    if (this.saved_translate === null){
 		this.saved_translate = utils.clone(this.zoom_behavior.translate());
-	    }      
+	    }
+
+	    // turn off the hand
+	    this.zoomed_sel.style('cursor', null);     
+	    this.zoomed_sel.on('mousedown.cursor', null);
+	    this.zoomed_sel.on('mouseup.cursor', null);
 	}
     }
 
@@ -5881,7 +5804,7 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     function translate_off_screen(coords) {
         // shift window if new reaction will draw off the screen
         // TODO BUG not accounting for scale correctly
-        var margin = 80, // pixels
+        var margin = 120, // pixels
 	    size = this.get_size(),
 	    current = {'x': {'min': - this.window_translate.x / this.window_scale +
 			     margin / this.window_scale,
@@ -5913,73 +5836,132 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     function reset() {
 	this.go_to(1.0, {x: 0.0, y: 0.0});
     }
+});
 
-    function new_wheel_listener(sel, callback) {
-	// creates a global "addWheelListener" method
-	// example: addWheelListener( elem, function( e ) { console.log( e.deltaY ); e.preventDefault(); } );
+define('DirectionArrow',["utils"], function(utils) {
+    /** DirectionArrow returns a constructor for an arrow that can be rotated
+     and dragged, and supplies its direction.
+     */
+    var DirectionArrow = utils.make_class();
+    DirectionArrow.prototype = { init: init,
+				 set_location: set_location,
+				 set_rotation: set_rotation,
+				 displace_rotation: displace_rotation,
+				 get_rotation: get_rotation,
+				 toggle: toggle,
+				 show: show,
+				 hide: hide,
+				 right: right,
+				 left: left,
+				 up: up,
+				 down: down,
+				 _setup_drag: _setup_drag };
+    return DirectionArrow;
 
-	var prefix = "", _addEventListener, onwheel, support,
-	    useCapture = true,
-	    elem = sel.node();
+    // definitions
+    function init(sel) {
+	this.arrow_container = sel.append('g')
+	    .attr('id', 'direction-arrow-container')
+	    .attr('transform', 'translate(0,0)rotate(0)');
+	this.arrow = this.arrow_container.append('path')
+	    .classed('direction-arrow', true)
+	    .attr('d', path_for_arrow())
+	    .style('visibility', 'hidden')
+	    .attr('transform', 'translate(30,0)scale(2.5)');
 
-	// detect event model
-	if ( window.addEventListener ) {
-            _addEventListener = "addEventListener";
-	} else {
-            _addEventListener = "attachEvent";
-            prefix = "on";
+	this.sel = sel;
+	this.center = { x: 0, y: 0 };
+
+	this._setup_drag();
+	this.dragging = false;
+
+	this.is_visible = false;
+	this.show();
+
+	// definitions
+	function path_for_arrow() {
+	    return "M0 -5 L0 5 L20 5 L20 10 L30 0 L20 -10 L20 -5 Z";
 	}
-
-	// detect available wheel event
-	support = "onwheel" in document.createElement("div") ? "wheel" : // Modern browsers support "wheel"
-            document.onmousewheel !== undefined ? "mousewheel" : // Webkit and IE support at least "mousewheel"
-            "DOMMouseScroll"; // let's assume that remaining browsers are older Firefox
-
-        _addWheelListener( elem, support, callback, useCapture );
-
-        // handle MozMousePixelScroll in older Firefox
-        if( support == "DOMMouseScroll" ) {
-	    _addWheelListener( elem, "MozMousePixelScroll", callback, useCapture );
-        }
-
-	function _addWheelListener( elem, eventName, callback, useCapture ) {
-            elem[ _addEventListener ]( prefix + eventName, support == "wheel" ? callback : function( originalEvent ) {
-		!originalEvent && ( originalEvent = window.event );
-
-		// create a normalized event object
-		var event = {
-                    // keep a ref to the original event object
-                    originalEvent: originalEvent,
-                    target: originalEvent.target || originalEvent.srcElement,
-                    type: "wheel",
-                    deltaMode: originalEvent.type == "MozMousePixelScroll" ? 0 : 1,
-                    deltaX: 0,
-                    delatZ: 0,
-                    preventDefault: function() {
-			originalEvent.preventDefault ?
-                            originalEvent.preventDefault() :
-                            originalEvent.returnValue = false;
-                    }
-		};
-		
-		// calculate deltaY (and deltaX) according to the event
-		if ( support == "mousewheel" ) {
-                    event.deltaY = - 1/40 * originalEvent.wheelDelta;
-                    // Webkit also support wheelDeltaX
-                    originalEvent.wheelDeltaX && ( event.deltaX = - 1/40 * originalEvent.wheelDeltaX );
-		} else {
-                    event.deltaY = originalEvent.detail;
-		}
-
-		// it's time to fire the callback
-		return callback( event );
-
-            }, useCapture || false );
-	}
+    }
+    function set_location(coords) {
+	/** Move the arrow to coords.
+	 */
+	this.center = coords;
+	var transform = d3.transform(this.arrow_container.attr('transform'));
+	this.arrow_container.attr('transform',
+				  'translate('+coords.x+','+coords.y+')rotate('+transform.rotate+')');
+    }
+    function set_rotation(rotation) {
+	/** Rotate the arrow to rotation.
+	 */
+	var transform = d3.transform(this.arrow_container.attr('transform'));
+	this.arrow_container.attr('transform',
+				  'translate('+transform.translate+')rotate('+rotation+')');
+    }
+    function displace_rotation(d_rotation) {
+	/** Displace the arrow rotation by a set amount.
+	 */
+	var transform = d3.transform(this.arrow_container.attr('transform'));
+	this.arrow_container.attr('transform',
+				  'translate('+transform.translate+')'+
+				  'rotate('+(transform.rotate+d_rotation)+')');
+    }
+    function get_rotation() {
+	/** Returns the arrow rotation.
+	 */
+	return d3.transform(this.arrow_container.attr('transform')).rotate;
+    }
+    function toggle(on_off) {
+	if (on_off===undefined) this.is_visible = !this.is_visible;
+	else this.is_visible = on_off;
+	this.arrow.style('visibility', this.is_visible ? 'visible' : 'hidden');
+    }
+    function show() {
+	this.toggle(true);
+    }
+    function hide() {
+	this.toggle(false);
+    }
+    function right() {
+	this.set_rotation(0);
+    }
+    function down() {
+	this.set_rotation(90);
+    }
+    function left() {
+	this.set_rotation(180);
+    }
+    function up() {
+	this.set_rotation(270);
+    }
+    
+    function _setup_drag() {
+	var b = d3.behavior.drag()
+		.on("dragstart", function(d) {
+		    // silence other listeners
+		    d3.event.sourceEvent.stopPropagation();
+		    this.dragging = true;
+		}.bind(this))
+		.on("drag.direction_arrow", function(d) {
+		    var displacement = { x: d3.event.dx,
+					 y: d3.event.dy },
+			location = { x: d3.mouse(this.sel.node())[0],
+				     y: d3.mouse(this.sel.node())[1] },
+			d_angle = utils.angle_for_event(displacement,
+							location,
+							this.center);
+		    this.displace_rotation(utils.to_degrees(d_angle));
+		}.bind(this))
+		.on("dragend", function(d) {
+		    window.setTimeout(function() {
+			this.dragging = false;
+		    }.bind(this), 200);
+		}.bind(this));
+	this.arrow_container.call(b);
     }
 });
 
-define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", "draw"], function(utils, completely, Map, ZoomContainer, CallbackManager, draw) {
+define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", "draw", "DirectionArrow"], function(utils, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow) {
     /**
      */
 
@@ -5990,12 +5972,15 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 			setup_zoom_callbacks: setup_zoom_callbacks,
 			is_visible: is_visible,
 			toggle: toggle,
+			show_dropdown: show_dropdown,
 			hide_dropdown: hide_dropdown,
 			place_at_selected: place_at_selected,
 			place: place,
 			reload_at_selected: reload_at_selected,
 			reload: reload,
-			toggle_start_reaction_listener: toggle_start_reaction_listener };
+			toggle_start_reaction_listener: toggle_start_reaction_listener,
+			hide_target: hide_target,
+			show_target: show_target };
 
     return Input;
 
@@ -6017,13 +6002,18 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	this.selection = new_sel;
 	this.completely = c;
 	// close button
-	var self = this;
 	new_sel.append('button').attr('class', "button input-close-button")
 	    .text("×").on('click', function() { this.hide_dropdown(); }.bind(this));
 
 	if (map instanceof Map) {
 	    this.map = map;
-	    this.setup_map_callbacks();
+
+	    // set up the reaction direction arrow
+	    var default_angle = 90; // degrees
+	    this.direction_arrow = new DirectionArrow(map.sel);
+	    this.direction_arrow.set_rotation(default_angle);
+
+	    this.setup_map_callbacks(map);
 	} else {
 	    console.error('Cannot set the map. It is not an instance of builder/Map');
 	}
@@ -6040,29 +6030,35 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 
 	// toggle off
 	this.toggle(false);
+	this.target_coords = null;
     }
-    function setup_map_callbacks() {
-	var self = this;
-	this.map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
-	    if (self.is_active) self.reload(selected_node, coords, false);
-	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-	});
-	this.map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
-	    self.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-	    if (count == 1 && self.is_active && coords) {
-		self.reload(selected_node, coords, false);
+    function setup_map_callbacks(map) {
+	// input
+	map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
+	    if (this.is_active) this.reload(selected_node, coords, false);
+	    this.hide_target();
+	}.bind(this));
+	map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
+	    this.hide_target();
+	    if (count == 1 && this.is_active && coords) {
+		this.reload(selected_node, coords, false);
 	    } else {
-		self.toggle(false);
+		this.toggle(false);
 	    }
-	});
+	}.bind(this));
+
+	// svg export
+	map.callback_manager.set('before_svg_export', function() {
+	    this.direction_arrow.hide();
+	    this.hide_target();
+	}.bind(this));
     }
     function setup_zoom_callbacks() {
-	var self = this;
 	this.zoom_container.callback_manager.set('zoom.input', function() {
-	    if (self.is_active) {
-		self.place_at_selected();
+	    if (this.is_active) {
+		this.place_at_selected();
 	    }
-	});
+	}.bind(this));
     }
     function is_visible() {
 	return this.selection.style('display') != 'none';
@@ -6072,9 +6068,10 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	else this.is_active = on_off;
 	if (this.is_active) {
 	    this.toggle_start_reaction_listener(true);
-	    this.reload_at_selected();
+	    if (this.target_coords!==null) this.show_dropdown(this.target_coords);
+	    else this.reload_at_selected();
 	    this.map.set_status('Click on the canvas or an existing metabolite');
-	    this.callback_manager.run('show_reaction_input');
+	    this.direction_arrow.show();
 	    // escape key
 	    this.escape = this.map.key_manager
 		.add_escape_listener(function() { this.hide_dropdown(); }.bind(this));
@@ -6084,16 +6081,22 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
             this.completely.input.blur();
             this.completely.hideDropDown();
 	    this.map.set_status(null);
-	    this.callback_manager.run('hide_reaction_input');
+	    this.direction_arrow.hide();
 	    if (this.escape)
 		this.escape.clear();
 	    this.escape = null;
 	}
     }
+    function show_dropdown(coords) {
+	this.selection.style("display", "block");
+        this.completely.input.blur();
+	this.completely.repaint();
+	this.completely.setText("");
+        this.completely.input.focus();
+    }
     function hide_dropdown() {
 	this.selection.style("display", "none");
         this.completely.hideDropDown();
-        this.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
     }
     function place_at_selected() {
         /** Place autocomplete box at the first selected node.
@@ -6108,7 +6111,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	this.place(coords);
     }
     function place(coords) {
-	var d = {x: 200, y: 0},
+	var d = {x: 240, y: 0},
 	    window_translate = this.map.zoom_container.window_translate,
 	    window_scale = this.map.zoom_container.window_scale,
 	    map_size = this.map.get_size();
@@ -6122,6 +6125,9 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
             .style('display', 'block')
             .style('left',left+'px')
             .style('top',top+'px');
+
+	this.direction_arrow.set_location(coords);
+	this.direction_arrow.show();
     }
 
     function reload_at_selected() {
@@ -6132,10 +6138,11 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	// get the selected node
 	this.map.deselect_text_labels();
 	var selected_node = this.map.select_single_node();
-	if (selected_node==null) return;
+	if (selected_node==null) return false;
 	var coords = { x: selected_node.x, y: selected_node.y };
 	// reload the reaction input
 	this.reload(selected_node, coords, false);
+	return true;
     }
     function reload(selected_node, coords, starting_from_scratch) {
         /** Reload data for autocomplete box and redraw box at the new
@@ -6147,6 +6154,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	    console.error('No selected node, and not starting from scratch');
 
 	this.place(coords);
+
         // blur
         this.completely.input.blur();
         this.completely.repaint(); //put in place()?
@@ -6206,8 +6214,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 
         // set up the box with data, searching for first num results
         var num = 20,
-            complete = this.completely,
-	    self = this;
+            complete = this.completely;
         complete.options = strings_to_display;
         if (strings_to_display.length==1) complete.setText(strings_to_display[0]);
         else complete.setText("");
@@ -6225,17 +6232,21 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	    complete.options = v;
 	    complete.repaint();
 	};
+	var direction_arrow = this.direction_arrow,
+	    map = this.map;
         complete.onEnter = function() {
 	    var text = this.getText();
 	    this.setText("");
 	    suggestions_array.forEach(function(x) {
 		if (x.string.toLowerCase()==text.toLowerCase()) {
 		    if (starting_from_scratch) {
-			self.map.new_reaction_from_scratch(x.reaction_abbreviation,
-							   coords);
+			map.new_reaction_from_scratch(x.reaction_abbreviation,
+							   coords,
+							   direction_arrow.get_rotation());
 		    } else {
-			self.map.new_reaction_for_metabolite(x.reaction_abbreviation,
-							     selected_node.node_id);
+			map.new_reaction_for_metabolite(x.reaction_abbreviation,
+							     selected_node.node_id,
+							     direction_arrow.get_rotation());
 		    }
 		}
 	    });
@@ -6263,36 +6274,44 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
         else
             this.start_reaction_listener = on_off;
         
-        if (this.start_reaction_listener) {
-	    var self = this,
-		map = this.map;
-            map.sel.on('click.start_reaction', function() {
-                console.log('clicked for new reaction');
+        if (this.start_reaction_listener) {;
+            this.map.sel.on('click.start_reaction', function(node) {
+		// TODO fix this hack
+		if (this.direction_arrow.dragging) return;
                 // reload the reaction input
-                var coords = { x: d3.mouse(this)[0],
-			       y: d3.mouse(this)[1] };
+                var coords = { x: d3.mouse(node)[0],
+			       y: d3.mouse(node)[1] };
                 // unselect metabolites
-		map.deselect_nodes();
-		map.deselect_text_labels();
-		// reload the reactin input
-                self.reload(null, coords, true);
+		this.map.deselect_nodes();
+		this.map.deselect_text_labels();
+		// reload the reaction input
+                this.reload(null, coords, true);
 		// generate the target symbol
-                var s = map.sel.selectAll('.start-reaction-target').data([12, 5]);
-                s.enter().append('circle')
-                    .classed('start-reaction-target', true)
-                    .attr('r', function(d) { return d; })
-                    .style('stroke-width', 4);
-                s.style('visibility', 'visible')
-                    .attr('transform', 'translate('+coords.x+','+coords.y+')');
-            });
-            map.sel.classed('start-reaction-cursor', true);
+		this.show_target(this.map, coords);
+            }.bind(this, this.map.sel.node()));
+            this.map.sel.classed('start-reaction-cursor', true);
         } else {
             this.map.sel.on('click.start_reaction', null);
             this.map.sel.classed('start-reaction-cursor', false);
-            this.map.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
+	    this.hide_target();
         }
     }
 
+    function hide_target() {
+	if (this.target_coords)
+	    this.map.sel.selectAll('.start-reaction-target').remove();
+	this.target_coords = null;
+    }
+    function show_target(map, coords) {
+        var s = map.sel.selectAll('.start-reaction-target').data([12, 5]);
+        s.enter().append('circle')
+            .classed('start-reaction-target', true)
+            .attr('r', function(d) { return d; })
+            .style('stroke-width', 4);
+        s.style('visibility', 'visible')
+            .attr('transform', 'translate('+coords.x+','+coords.y+')');
+	this.target_coords = coords;
+    }
 });
 
 define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
@@ -6459,6 +6478,10 @@ define('Brush',["utils"], function(utils) {
 	    brush = selection.append("g")
 		.attr("class", "brush")
 		.call(brush_fn);
+
+	// turn off the mouse crosshair
+	selection.selectAll('.background').style('cursor', null);
+
 	return brush;
     }
 });
@@ -6466,6 +6489,7 @@ define('Brush',["utils"], function(utils) {
 define('ui',["utils"], function(utils) {
     return { individual_button: individual_button,
 	     radio_button_group: radio_button_group,
+	     button_group: button_group,
 	     dropdown_menu: dropdown_menu,
 	     set_button: set_button,
 	     set_input_button: set_input_button };
@@ -6489,6 +6513,20 @@ define('ui',["utils"], function(utils) {
 	    var b = s2.append("label")
 		    .attr("class", "btn btn-default");
 	    b.append('input').attr('type', 'radio');
+	    var c = b.append("span");
+	    if ('id' in button) b.attr('id', button.id);
+	    if ('text' in button) c.text(button.text);
+	    if ('icon' in button) c.classed(button.icon, true);
+	    if ('key' in button) set_button(b, button.key);
+	    if ('tooltip' in button) b.attr('title', button.tooltip);
+	    return this;
+	}};
+    }
+    function button_group(s) {
+	var s2 = s.attr('class', 'btn-group-vertical');
+	return { button: function(button) {
+	    var b = s2.append("button")
+		    .attr("class", "btn btn-default");
 	    var c = b.append("span");
 	    if ('id' in button) b.attr('id', button.id);
 	    if ('text' in button) c.text(button.text);
@@ -6700,6 +6738,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			  brush_mode: brush_mode,
 			  zoom_mode: zoom_mode,
 			  rotate_mode: rotate_mode,
+			  _toggle_direction_buttons: _toggle_direction_buttons,
 			  _setup_menu: _setup_menu,
 			  _setup_status: _setup_status,
 			  _setup_modes: _setup_modes,
@@ -6738,7 +6777,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 
 	if (utils.check_for_parent_tag(o.selection, 'svg')) {
 	    throw new Error("Builder cannot be placed within an svg node "+
-			"becuase UI elements are html-based.");
+			    "becuase UI elements are html-based.");
 	}
 
 	this.o = o;
@@ -6882,7 +6921,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		var size = this.zoom_container.get_size();
 		var start_coords = { x: size.width / 2,
 				     y: size.height / 4 };
-		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
+		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords, 90);
 		this.map.zoom_extent_nodes();
 	    } else {
 		this.map.zoom_extent_canvas();
@@ -6904,11 +6943,18 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
     }
     function set_mode(mode) {
 	this.search_bar.toggle(false);
-
+	// input
 	this.reaction_input.toggle(mode=='build');
+	this.reaction_input.direction_arrow.toggle(mode=='build');
+	if (this.enable_menu)
+	    this._toggle_direction_buttons(mode=='build');
+	// brush
 	this.brush.toggle(mode=='brush');
+	// zoom
 	this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
+	// resize canvas
 	this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
+	// behavior
 	this.map.behavior.toggle_rotation_mode(mode=='rotate');
 	this.map.behavior.toggle_node_click(mode=='build' || mode=='brush');
 	this.map.behavior.toggle_node_drag(mode=='brush');
@@ -6917,7 +6963,6 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	if (mode=='view')
 	    this.map.select_none();
 	this.map.draw_everything();
-	// this.callback_manager.run('set_mode', mode);
     }
     function view_mode() {
 	this.callback_manager.run('view_mode');
@@ -6990,7 +7035,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			       text: "Build mode (n)" })
 		.button({ key: keys.zoom_mode,
 			  id: 'zoom-mode-menu-button',
-			  text: "Zoom + Pan mode (z)" })
+			  text: "Pan mode (z)" })
 		.button({ key: keys.brush_mode,
 			  id: 'brush-mode-menu-button',
 			  text: "Select mode (v)" })
@@ -7047,9 +7092,23 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.attr("class", "nav nav-pills nav-stacked")
 		.attr('id', 'button-panel');
 
+	// buttons
+	ui.individual_button(button_panel.append('li'),
+			     { key: keys.zoom_in,
+			       icon: "glyphicon glyphicon-plus-sign",
+			       tooltip: "Zoom in (Ctrl +)" });
+	ui.individual_button(button_panel.append('li'),
+			     { key: keys.zoom_out,
+			       icon: "glyphicon glyphicon-minus-sign",
+			       tooltip: "Zoom out (Ctrl -)" });
+	ui.individual_button(button_panel.append('li'),
+			     { key: keys.extent_canvas,
+			       icon: "glyphicon glyphicon-resize-full",
+			       tooltip: "Zoom to canvas (Ctrl 1)" });
+
 	// mode buttons
 	if (enable_editing) {
-	    ui.radio_button_group(button_panel)
+	    ui.radio_button_group(button_panel.append('li'))
 		.button({ key: keys.build_mode,
 			  id: 'build-mode-button',
 			  icon: "glyphicon glyphicon-plus",
@@ -7057,7 +7116,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.button({ key: keys.zoom_mode,
 			  id: 'zoom-mode-button',
 			  icon: "glyphicon glyphicon-move",
-			  tooltip: "Zoom + Pan mode (z)" })
+			  tooltip: "Pan mode (z)" })
 		.button({ key: keys.brush_mode,
 			  id: 'brush-mode-button',
 			  icon: "glyphicon glyphicon-screenshot",
@@ -7066,18 +7125,23 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			  id: 'rotate-mode-button',
 			  icon: "glyphicon glyphicon-repeat",
 			  tooltip: "Rotate mode (r)" });
-	}
 
-	// buttons
-	ui.individual_button(button_panel, { key: keys.zoom_in,
-					     icon: "glyphicon glyphicon-zoom-in",
-					     tooltip: "Zoom in (Ctrl +)" });
-	ui.individual_button(button_panel, { key: keys.zoom_out,
-					     icon: "glyphicon glyphicon-zoom-out",
-					     tooltip: "Zoom out (Ctrl -)" });
-	ui.individual_button(button_panel, { key: keys.extent_canvas,
-					     icon: "glyphicon glyphicon-resize-full",
-					     tooltip: "Zoom to canvas (Ctrl 1)" });
+	    // arrow buttons
+	    this.direction_buttons = button_panel.append('li');
+	    var o = ui.button_group(this.direction_buttons)
+		    .button({ key: keys.direction_arrow_left,
+			      icon: "glyphicon glyphicon-arrow-left",
+			      tooltip: "Direction arrow (←)" })
+		    .button({ key: keys.direction_arrow_right,
+			      icon: "glyphicon glyphicon-arrow-right",
+			      tooltip: "Direction arrow (→)" })
+		    .button({ key: keys.direction_arrow_up,
+			      icon: "glyphicon glyphicon-arrow-up",
+			      tooltip: "Direction arrow (↑)" })
+		    .button({ key: keys.direction_arrow_down,
+			      icon: "glyphicon glyphicon-arrow-down",
+			      tooltip: "Direction arrow (↓)" });
+	}
 
 	// set up mode callbacks
 	var select_menu_button = function(id) {
@@ -7135,6 +7199,12 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    if (error) console.warn(error);
 	    this.map.set_metabolite_data(data);
 	}
+    }
+
+    function _toggle_direction_buttons(on_off) {
+	if (on_off===undefined)
+	    on_off = !this.direction_buttons.style('visibility')=='visible';
+	this.direction_buttons.style('visibility', on_off ? 'visible' : 'hidden');
     }
 
     function _setup_status(selection, map) {
@@ -7240,20 +7310,20 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 				 fn: map.cycle_primary_node,
 				 ignore_with_input: true },
 		direction_arrow_right: { key: 39, // right
-					 target: map.direction_arrow,
-					 fn: map.direction_arrow.right,
+					 fn: this.reaction_input.direction_arrow.right
+					 .bind(this.reaction_input.direction_arrow),
 					 ignore_with_input: true },
 		direction_arrow_down: { key: 40, // down
-					target: map.direction_arrow,
-					fn: map.direction_arrow.down,
+					fn: this.reaction_input.direction_arrow.down
+					.bind(this.reaction_input.direction_arrow),
 					ignore_with_input: true },
 		direction_arrow_left: { key: 37, // left
-					target: map.direction_arrow,
-					fn: map.direction_arrow.left,
+					fn: this.reaction_input.direction_arrow.left
+					.bind(this.reaction_input.direction_arrow),
 					ignore_with_input: true },
 		direction_arrow_up: { key: 38, // up
-				      target: map.direction_arrow,
-				      fn: map.direction_arrow.up,
+				      fn: this.reaction_input.direction_arrow.up
+				      .bind(this.reaction_input.direction_arrow),
 				      ignore_with_input: true },
 		undo: { key: 90, modifiers: { control: true },
 			target: map.undo_stack,

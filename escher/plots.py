@@ -58,7 +58,7 @@ def list_cached_models():
     except OSError:
         print 'No cached maps'
         return None
-        
+    
 def get_an_id():
     return unicode(''.join(random.choice(string.ascii_lowercase)
                            for _ in range(10)))
@@ -258,7 +258,7 @@ class Builder(Plot):
             with open(map_filename) as f:
                 self.loaded_map_json = f.read()
     
-    def _initialize_javascript(self):
+    def _initialize_javascript(self, dev=False):
         javascript = (u"var map_data_{the_id} = {map_data};"
                       u"var cobra_model_{the_id} = {cobra_model};"
                       u"var reaction_data_{the_id} = {reaction_data};"
@@ -273,13 +273,15 @@ class Builder(Plot):
                                          self.reaction_data else u'null'),
                           metabolite_data=(json.dumps(self.metabolite_data) if
                                            self.metabolite_data else u'null'),
-                          style=self._embed_style())
+                          style=self._embed_style(dev=dev))
         return javascript
 
-    def _draw_js(self, the_id, enable_editing, enable_keys, dev, fill_screen):
+    def _draw_js(self, the_id, enable_editing, enable_menu, enable_keys, dev,
+                 fill_screen):
         draw = (u"Builder({{ selection: d3.select('#{the_id}'),"
                 u"enable_editing: {enable_editing},"
                 u"enable_keys: {enable_keys},"
+                u"enable_menu: {enable_menu},"
                 u"fill_screen: {fill_screen},"
                 u"map: map_data_{the_id},"
                 u"cobra_model: cobra_model_{the_id},"
@@ -288,6 +290,7 @@ class Builder(Plot):
                 u"css: css_string_{the_id} }});").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
+                    enable_menu=json.dumps(enable_menu),
                     enable_keys=json.dumps(enable_keys),
                     fill_screen=json.dumps(fill_screen))
         if dev:
@@ -296,13 +299,13 @@ class Builder(Plot):
             draw = 'escher.%s' % draw
         return draw
 
-    def _embed_style(self):
+    def _embed_style(self, dev=False):
         if self.css is not None:
             return unicode(self.css)
-        download = urlopen(urls.builder_embed_css)
+        download = urlopen(urls.builder_embed_css_local if dev else urls.builder_embed_css)
         return unicode(download.read().replace('\n', ' '))
     
-    def _get_html(self, dev=False, wrapper=False, enable_editing=True,
+    def _get_html(self, dev=False, wrapper=False, enable_editing=True, enable_menu=True,
                   enable_keys=True, fill_screen=False, height="800px"):
         if dev:
             content = env.get_template('dev_content.html')
@@ -314,19 +317,26 @@ class Builder(Plot):
             height = "%fpx" % height
         html = content.render(id=self.the_id,
                               height=unicode(height),
-                              css_path=(urls.builder_css_local if dev else urls.builder_css),
-                              initialize_js=self._initialize_javascript(),
-                              draw_js=self._draw_js(self.the_id, enable_editing, enable_keys,
-                                                    dev, fill_screen),
-                              d3_url=urls.d3,
-                              escher_url=urls.escher,
+                              escher_css=(urls.builder_css_local if dev else urls.builder_css),
+                              initialize_js=self._initialize_javascript(dev=dev),
+                              draw_js=self._draw_js(self.the_id, enable_editing, enable_menu,
+                                                    enable_keys, dev, fill_screen),
+                              d3=(urls.d3_local if dev else urls.d3),
+                              escher=(urls.escher_local if dev else urls.escher_min),
+                              jquery=((urls.jquery_local if dev else urls.jquery) if
+                                      enable_menu else ""),
+                              boot_css=((urls.boot_css_local if dev else urls.boot_css) if
+                                        enable_menu else ""),
+                              boot_js=((urls.boot_js_local if dev else urls.boot_js) if
+                                       enable_menu else ""),
                               wrapper=wrapper)
         return html
 
-    def embedded_html(self, dev=False, enable_editing=False, enable_keys=False, height=800):
+    def embedded_html(self, dev=False, enable_editing=False, enable_menu=True,
+                      enable_keys=False, height=800):
         return self._get_html(dev=dev, wrapper=False, enable_editing=enable_editing,
-                              fill_screen=False, height=height)
+                              enable_menu=enable_menu, fill_screen=False, height=height)
     
-    def standalone_html(self, dev=False, enable_editing=True):
+    def standalone_html(self, dev=False, enable_editing=True, enable_menu=True):
         return self._get_html(dev=dev, wrapper=True, enable_editing=enable_editing,
-                              fill_screen=True, height="100%")
+                              enable_menu=enable_menu, fill_screen=True, height="100%")

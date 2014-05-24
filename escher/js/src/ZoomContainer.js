@@ -127,7 +127,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 		this.saved_translate = utils.clone(this.zoom_behavior.translate());
 	    }
 
-	    // turn on the hand
+	    // turn off the hand
 	    this.zoomed_sel.style('cursor', null);     
 	    this.zoomed_sel.on('mousedown.cursor', null);
 	    this.zoomed_sel.on('mouseup.cursor', null);
@@ -187,7 +187,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     function translate_off_screen(coords) {
         // shift window if new reaction will draw off the screen
         // TODO BUG not accounting for scale correctly
-        var margin = 80, // pixels
+        var margin = 120, // pixels
 	    size = this.get_size(),
 	    current = {'x': {'min': - this.window_translate.x / this.window_scale +
 			     margin / this.window_scale,

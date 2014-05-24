@@ -198,7 +198,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		var size = this.zoom_container.get_size();
 		var start_coords = { x: size.width / 2,
 				     y: size.height / 4 };
-		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords);
+		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords, 90);
 		this.map.zoom_extent_nodes();
 	    } else {
 		this.map.zoom_extent_canvas();
@@ -223,7 +223,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	// input
 	this.reaction_input.toggle(mode=='build');
 	this.reaction_input.direction_arrow.toggle(mode=='build');
-	this._toggle_direction_buttons(mode=='build');
+	if (this.enable_menu)
+	    this._toggle_direction_buttons(mode=='build');
 	// brush
 	this.brush.toggle(mode=='brush');
 	// zoom
