@@ -111,13 +111,14 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    }
 
 	    // turn on the hand
-	    this.zoomed_sel.style('cursor', '-webkit-grab');
+	    this.zoomed_sel
+		.classed('cursor-grab', true).classed('cursor-grabbing', false);
 	    this.zoomed_sel
 		.on('mousedown.cursor', function(sel) {
-		    sel.style('cursor', '-webkit-grabbing');
+		    sel.classed('cursor-grab', false).classed('cursor-grabbing', true);
 		}.bind(null, this.zoomed_sel))
 		.on('mouseup.cursor', function(sel) {
-		    sel.style('cursor', '-webkit-grab');
+		    sel.classed('cursor-grab', true).classed('cursor-grabbing', false);
 		}.bind(null, this.zoomed_sel));
 	} else {
 	    if (this.saved_scale === null){
@@ -128,7 +129,9 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    }
 
 	    // turn off the hand
-	    this.zoomed_sel.style('cursor', null);     
+	    this.zoomed_sel.style('cursor', null)
+		.classed('cursor-grab', false)
+		.classed('cursor-grabbing', false);
 	    this.zoomed_sel.on('mousedown.cursor', null);
 	    this.zoomed_sel.on('mouseup.cursor', null);
 	}

@@ -90,3 +90,11 @@
 .highlight {
     fill: #106F94;
 }
+.cursor-grab {
+    cursor: grab;
+    cursor: -webkit-grab;
+}
+.cursor-grabbing {
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
+}
