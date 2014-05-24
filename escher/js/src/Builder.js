@@ -223,7 +223,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	// input
 	this.reaction_input.toggle(mode=='build');
 	this.reaction_input.direction_arrow.toggle(mode=='build');
-	if (this.o.enable_menu)
+	if (this.o.enable_menu && this.o.enable_editing)
 	    this._toggle_direction_buttons(mode=='build');
 	// brush
 	this.brush.toggle(mode=='brush');

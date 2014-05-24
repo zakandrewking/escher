@@ -19,7 +19,7 @@ When you open the [live demo](http://zak.ucsd.edu:7778), you will see a few opti
 - Options:
     1. The Viewer allows you to pan and zoom the map, and to assign data to reactions and metabolites.
     2. The Builder, in addition to the Viewer features, allows you to add reactions, move and rotate existing reactions, and adjust the map canvas.
-    3. The Dev mode utilizes local javascript files and is useful if you are editing the Escher source code.
+    3. The Dev modes utilizes local javascript files and are useful (a) if you are editing/developing the Escher source code, or (b) if you want to try using Escher offline.
 
 ## Supported browsers
 
