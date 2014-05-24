@@ -332,11 +332,14 @@ class Builder(Plot):
                               wrapper=wrapper)
         return html
 
-    def embedded_html(self, dev=False, enable_editing=False, enable_menu=True,
+    def embedded_html(self, dev=False, enable_editing=False, enable_menu=False,
                       enable_keys=False, height=800):
         return self._get_html(dev=dev, wrapper=False, enable_editing=enable_editing,
-                              enable_menu=enable_menu, fill_screen=False, height=height)
+                              enable_menu=enable_menu, enable_keys=enable_keys,
+                              fill_screen=False, height=height)
     
-    def standalone_html(self, dev=False, enable_editing=True, enable_menu=True):
+    def standalone_html(self, dev=False, enable_editing=True, enable_menu=True,
+                        enable_keys=True):
         return self._get_html(dev=dev, wrapper=True, enable_editing=enable_editing,
-                              enable_menu=enable_menu, fill_screen=True, height="100%")
+                              enable_menu=enable_menu, enable_keys=enable_keys,
+                              fill_screen=True, height="100%")
