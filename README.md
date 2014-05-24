@@ -21,6 +21,12 @@ When you open the [live demo](http://zak.ucsd.edu:7778), you will see a few opti
     2. The Builder, in addition to the Viewer features, allows you to add reactions, move and rotate existing reactions, and adjust the map canvas.
     3. The Dev mode utilizes local javascript files and is useful if you are editing the Escher source code.
 
+## Supported browsers
+
+We test Escher on the latest versions of Chrome, Firefox, and Safari on Mac and Windows, and Safari on iOS. Other modern browsers should mostly work.
+
+We recommend using Chrome for optimal performance and consistency.
+
 ## Uploading a custom model
 
 Generating COBRA models that can be imported into Escher requires a specific, pre-release version of COBRApy which can be found here:
