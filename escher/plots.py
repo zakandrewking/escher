@@ -163,14 +163,17 @@ class Builder(Plot):
     reaction_data: a dictionary with keys that correspond to metabolite ids and
     values that will be mapped to metabolite nodes and labels.
 
+    css: a string containing css to embed. 
+    
     safe: if True, then loading files from the filesytem is not allowed. This is
     to ensure the safety of using Builder with a web server.
 
     """
     def __init__(self, map_name=None, map_json=None, model_name=None,
                  model_json=None, reaction_data=None, metabolite_data=None,
-                 css=None, safe=False):
+                 embedded_css=None, safe=False):
         self.safe = safe
+        
         # load the map
         self.map_name = map_name
         self.map_json = map_json
@@ -188,7 +191,8 @@ class Builder(Plot):
         # set the args
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
-        self.css = css
+        self.embedded_css = embedded_css
+        # make the unique id
         self.generate_id()
 
     def generate_id(self):
@@ -300,13 +304,16 @@ class Builder(Plot):
         return draw
 
     def _embed_style(self, dev=False):
-        if self.css is not None:
-            return unicode(self.css)
-        download = urlopen(urls.builder_embed_css_local if dev else urls.builder_embed_css)
+        if self.embedded_css is not None:
+            return unicode(self.embedded_css)
+        if dev:
+            raise Exception(('Embedded CSS string must be provided in dev mode, '
+                             'becuase the css cannot be loaded dynamically.'))
+        download = urlopen(urls.builder_embed_css)
         return unicode(download.read().replace('\n', ' '))
     
     def _get_html(self, dev=False, wrapper=False, enable_editing=True, enable_menu=True,
-                  enable_keys=True, fill_screen=False, height="800px"):
+                  enable_keys=True, fill_screen=False, minified_js=True, height="800px"):
         if dev:
             content = env.get_template('dev_content.html')
         else:
@@ -315,31 +322,43 @@ class Builder(Plot):
             height = "%dpx" % height
         elif type(height) is float:
             height = "%fpx" % height
+        # set the proper urls 
+        d3_url = (urls.d3_local if dev else
+                  urls.d3)
+        escher_url = (None if dev else
+                      (urls.escher_min if minified_js else
+                       urls.escher))
+        jquery_url = ("" if not enable_menu else
+                      (urls.jquery_local if dev else
+                       urls.jquery))
+        boot_css_url = ("" if not enable_menu else
+                        (urls.boot_css_local if dev else 
+                         urls.boot_css))
+        boot_js_url = ("" if not enable_menu else
+                       (urls.boot_js_local if dev else
+                        urls.boot_js))
         html = content.render(id=self.the_id,
                               height=unicode(height),
                               escher_css=(urls.builder_css_local if dev else urls.builder_css),
                               initialize_js=self._initialize_javascript(dev=dev),
                               draw_js=self._draw_js(self.the_id, enable_editing, enable_menu,
                                                     enable_keys, dev, fill_screen),
-                              d3=(urls.d3_local if dev else urls.d3),
-                              escher=(urls.escher_local if dev else urls.escher_min),
-                              jquery=((urls.jquery_local if dev else urls.jquery) if
-                                      enable_menu else ""),
-                              boot_css=((urls.boot_css_local if dev else urls.boot_css) if
-                                        enable_menu else ""),
-                              boot_js=((urls.boot_js_local if dev else urls.boot_js) if
-                                       enable_menu else ""),
+                              d3=d3_url,
+                              escher=escher_url,
+                              jquery=jquery_url,
+                              boot_css=boot_css_url,
+                              boot_js=boot_js_url,
                               wrapper=wrapper)
         return html
 
     def embedded_html(self, dev=False, enable_editing=False, enable_menu=False,
-                      enable_keys=False, height=800):
+                      enable_keys=False, minified_js=True, height=800):
         return self._get_html(dev=dev, wrapper=False, enable_editing=enable_editing,
                               enable_menu=enable_menu, enable_keys=enable_keys,
-                              fill_screen=False, height=height)
+                              minified_js=minified_js, fill_screen=False, height=height)
     
     def standalone_html(self, dev=False, enable_editing=True, enable_menu=True,
-                        enable_keys=True):
+                        enable_keys=True, minified_js=True):
         return self._get_html(dev=dev, wrapper=True, enable_editing=enable_editing,
                               enable_menu=enable_menu, enable_keys=enable_keys,
-                              fill_screen=True, height="100%")
+                              minified_js=minified_js, fill_screen=True, height="100%")

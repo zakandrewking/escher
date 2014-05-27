@@ -70,20 +70,17 @@ class BuilderHandler(BaseHandler):
     @asynchronous
     @gen.engine
     def get(self, dev_path, kind, path):
-        kwargs = {}
+        # builder vs. viewer & dev vs. not dev
+        dev = (dev_path is not None)
+        enable_editing = (kind=='builder')
+        
+        # Builder options
+        builder_kwargs = {}
         for a in ['starting_reaction', 'model_name', 'map_name', 'map_json']:
             args = self.get_arguments(a)
             if len(args)==1:
-                kwargs[a] = args[0]
-                
-        enable_editing = (kind=='builder')
-        try:
-            self.get_arguments('disable_menu')[0]
-        except IndexError:
-            enable_menu = True
-        else:
-            enable_menu = False
-        dev = (dev_path is not None)
+                builder_kwargs[a] = args[0]
+
         # get the local version of builder-embed
         if dev:
             http_client = AsyncHTTPClient()
@@ -94,12 +91,27 @@ class BuilderHandler(BaseHandler):
                 data = None
             else:
                 data = response.body.replace('\n', ' ').replace('  ', ' ')
-            kwargs['css'] = data
-        builder = Builder(safe=True, **kwargs)
+            builder_kwargs['embedded_css'] = data
+
+        # make the builder
+        builder = Builder(safe=True, **builder_kwargs)
+            
+        # display options
+        display_kwargs = {}
+        for a, b in [('disable_menu', 'enable_menu'),
+                     ('unminified_js', 'minified_js')]:
+            args = self.get_arguments(a)
+            if len(args)==1:
+                display_kwargs[b] = False
+            args = self.get_arguments(b)
+            if len(args)==1:
+                display_kwargs[b] = True
+
+        # get the html
+        html = builder.standalone_html(dev=dev, enable_editing=enable_editing,
+                                       **display_kwargs)
+        
         self.set_header("Content-Type", "text/html")
-        html = builder.standalone_html(dev=dev,
-                                       enable_editing=enable_editing,
-                                       enable_menu=enable_menu)
         self.serve(html)
         
 class LibHandler(BaseHandler):

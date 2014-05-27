@@ -41,11 +41,11 @@ def test_load_resource(tmpdir):
     url = "https://zakandrewking.github.io/escher/maps/v1/iJO1366_central_metabolism.json"
     _ = json.loads(load_resource(url, 'name'))
         
-    with raises(URLError):
-        load_resource("http://asodivhowef", 'name')
+    # with raises(URLError):
+    #     load_resource("http://asodivhowef", 'name')
        
-    with raises(URLError):
-        load_resource("https://asodivhowef", 'name')
+    # with raises(URLError):
+    #     load_resource("https://asodivhowef", 'name')
 
     with raises(ValueError) as err:
         p = join(str(tmpdir), 'dummy')
@@ -56,16 +56,19 @@ def test_load_resource(tmpdir):
 
 def test_Builder():
     b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}')
-    b.embedded_html(dev=True, enable_editing=True, height=100)
-    b.standalone_html(dev=True)
+    #  cannot load dev version without an explicit css string property
+    with raises(Exception):
+        b.embedded_html(dev=True)
+    b.embedded_html(dev=False, enable_editing=True, height=100)
+    b.standalone_html(dev=False)
     b.display_in_notebook(height=200)
 
     # download
     b = Builder(map_name='iJO1366_central_metabolism', model_name='iJO1366')
     assert b.loaded_map_json is not None
     assert b.loaded_model_json is not None
-    b.embedded_html(dev=True, enable_editing=True, height=100)
-    b.standalone_html(dev=True)
+    b.embedded_html(enable_editing=True, height=100)
+    b.standalone_html()
     b.display_in_notebook(height=200)
 
     # data
