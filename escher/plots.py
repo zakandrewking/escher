@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from quick_server import serve_and_open
-import urls
+from escher.quick_server import serve_and_open
+from escher import urls
 
 from os.path import dirname, abspath, join, isfile, isdir
 from warnings import warn
@@ -15,7 +15,7 @@ from jinja2 import Environment, PackageLoader, Template
 import codecs
 import random
 import string
-        
+
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
 
@@ -107,7 +107,6 @@ class Plot(object):
         """
         # import here, in case users don't have requirements installed
         from IPython.display import HTML
-        import matplotlib.pyplot as plt
         return HTML(self.embedded_html(height=height))
 
     def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50):
@@ -302,7 +301,7 @@ class Builder(Plot):
     def _embed_style(self, dev=False):
         if self.css is not None:
             return unicode(self.css)
-        download = urlopen(urls.builder_embed_css_local if dev else urls.builder_embed_css)
+        download = urlopen(urls.builder_embed_css)
         return unicode(download.read().replace('\n', ' '))
     
     def _get_html(self, dev=False, wrapper=False, enable_editing=True, enable_menu=True,
