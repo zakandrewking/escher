@@ -117,3 +117,22 @@
 	width: 400px;
     }
 }
+/* settings */
+.settings-box {
+    position: absolute;
+    top: 5%;
+    left: 5%;
+    width: 90%;
+    height: 90%;
+    background-color: #1C2327;
+    border: 3px solid #343434;
+    text-align: left;
+    padding: 10%;
+    border-radius: 6px;
+}
+.settings-close {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+}
+    

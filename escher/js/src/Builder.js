@@ -1,4 +1,4 @@
-define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui", "SearchBar"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar) {
+define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui", "SearchBar", "Settings"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Builder(options)
@@ -171,8 +171,12 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	// set up the search bar
 	this.search_bar = SearchBar(search_bar_div, this.map.search_index, this.map);
 
+	// set up the settings
+	this.settings_page = Settings(this.o.selection);
+
 	// set up key manager
-	var keys = this._get_keys(this.map, this.zoom_container, this.search_bar, this.o.enable_editing);
+	var keys = this._get_keys(this.map, this.zoom_container, this.search_bar,
+				  this.settings_page, this.o.enable_editing);
 	this.map.key_manager.assigned_keys = keys;
 	// tell the key manager about the reaction input and search bar
 	this.map.key_manager.reaction_input = this.reaction_input;
@@ -302,7 +306,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 				   target: this },
 			  text: "Load metabolite data" })
 		.button({ key: keys.clear_metabolite_data,
-			  text: "Clear metabolite data" });
+			  text: "Clear metabolite data" })
+		.button({ key: keys.show_settings,
+			  text: "Settings" });
 	
 	// edit dropdown 
 	var edit_menu = ui.dropdown_menu(menu, 'Edit', true);
@@ -511,7 +517,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	});
     }
 
-    function _get_keys(map, zoom_container, search_bar, enable_editing) {
+    function _get_keys(map, zoom_container, search_bar, settings_page, enable_editing) {
 	var keys = {
             save: { key: 83, modifiers: { control: true }, // ctrl-s
 		    target: map,
@@ -610,7 +616,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			fn: map.undo_stack.redo },
 		select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
 			       target: map,
-			       fn: map.select_none }
+			       fn: map.select_none },
+		show_settings: { fn: settings_page.toggle.bind(settings_page) }
 	    });
 	}
 	return keys;
