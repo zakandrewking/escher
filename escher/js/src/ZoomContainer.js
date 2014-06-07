@@ -17,7 +17,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     return ZoomContainer;
 
     // definitions
-    function init(selection, size_container, use_mousewheel_for_panning) {
+    function init(selection, size_container, scroll_to_zoom) {
 	/** Make a container that will manage panning and zooming.
 
 	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
@@ -28,8 +28,8 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 
 	 */
 
-	if (use_mousewheel_for_panning===undefined)
-	    use_mousewheel_for_panning = true;
+	if (scroll_to_zoom===undefined)
+	    scroll_to_zoom = false;
 
 	this.zoom_on = true;
 	this.initial_zoom = 1.0;
@@ -66,7 +66,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    });
 	container.call(this.zoom_behavior);
 	
-	if (use_mousewheel_for_panning) {
+	if (!scroll_to_zoom) {
 	    container.on("mousewheel.zoom", null)
 		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
 		.on("wheel.zoom", null) // disables newer versions of Firefox
@@ -75,6 +75,11 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    var wheel_fn = function() {
 		var ev = d3.event,
 		    sensitivity = 0.5;
+		// stop scroll in parent elements
+		ev.stopPropagation();
+		ev.preventDefault();
+		ev.returnValue = false;
+		// change the location
 		this.go_to(this.window_scale,
 			   { x: this.window_translate.x -
 			     (ev.wheelDeltaX!==undefined ? -ev.wheelDeltaX/1.5 : ev.deltaX) * sensitivity,
@@ -142,7 +147,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	utils.check_undefined(arguments, ['scale', 'translate']);
 	if (show_transition===undefined) show_transition = true;
 
-	if (!scale) return console.error('Bad scale value');
+	if (!scale) throw new Error('Bad scale value');
 	if (!translate || !('x' in translate) || !('y' in translate) ||
 	    isNaN(translate.x) || isNaN(translate.y))
 	    return console.error('Bad translate value');

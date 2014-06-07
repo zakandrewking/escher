@@ -15,6 +15,10 @@ class TestBuilder(AsyncHTTPTestCase):
         response = self.fetch('/dev/builder.html')
         assert response.code==200
         
+    def test_offline_builder_request(self):
+        response = self.fetch('/offline/builder.html')
+        assert response.code==200
+        
 def test_server():
     tornado.ioloop.IOLoop.instance().add_timeout(100, escher.server.stop())
     escher.server.run(port = 8123)

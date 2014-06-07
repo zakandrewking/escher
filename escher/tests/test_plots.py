@@ -54,21 +54,20 @@ def test_load_resource(tmpdir):
         load_resource(p, 'name')
         assert 'not a valid json file' in err.value
 
-def test_Builder():
+def test_Builder(tmpdir):
     b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}')
     #  cannot load dev version without an explicit css string property
-    with raises(Exception):
-        b.embedded_html(dev=True)
-    b.embedded_html(dev=False, enable_editing=True, height=100)
-    b.standalone_html(dev=False)
+    b.display_in_notebook(js_source='dev')
+    b.display_in_notebook(js_source='web')
+    b.display_in_notebook(js_source='local')
     b.display_in_notebook(height=200)
+    # b.display_in_browser()
+    b.save_html(join(str(tmpdir), 'Builder.html'))
 
     # download
     b = Builder(map_name='iJO1366_central_metabolism', model_name='iJO1366')
     assert b.loaded_map_json is not None
     assert b.loaded_model_json is not None
-    b.embedded_html(enable_editing=True, height=100)
-    b.standalone_html()
     b.display_in_notebook(height=200)
 
     # data

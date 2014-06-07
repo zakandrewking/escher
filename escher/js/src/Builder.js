@@ -34,6 +34,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    enable_menu: true,
 	    enable_keys: true,
 	    enable_search: true,
+	    scroll_to_zoom: false,
 	    on_load: null,
 	    map_path: null,
 	    map: null,
@@ -123,7 +124,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 				  this.o.margins, this.o.fill_screen);
 	
 	// se up the zoom container
-	this.zoom_container = new ZoomContainer(svg, this.o.selection);
+	this.zoom_container = new ZoomContainer(svg, this.o.selection,
+						this.o.scroll_to_zoom);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
 	if (this.o.map_data!==null) {

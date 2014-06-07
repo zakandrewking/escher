@@ -69,9 +69,11 @@ class IndexHandler(BaseHandler):
 class BuilderHandler(BaseHandler):
     @asynchronous
     @gen.engine
-    def get(self, dev_path, kind, path):
+    def get(self, dev_path, offline_path, kind, path):
         # builder vs. viewer & dev vs. not dev
-        dev = (dev_path is not None)
+        js_source = ('dev' if (dev_path is not None) else
+                     ('local' if (offline_path is not None) else
+                      'web'))
         enable_editing = (kind=='builder')
         
         # Builder options
@@ -82,24 +84,27 @@ class BuilderHandler(BaseHandler):
                 builder_kwargs[a] = args[0]
 
         # get the local version of builder-embed
-        if dev:
-            http_client = AsyncHTTPClient()
-            request_url = ('http://localhost:%d/css/builder-embed.css' %
-                           (PORT))
-            response = yield gen.Task(http_client.fetch, request_url)
-            if response.code == 404:
-                data = None
-            else:
-                data = response.body.replace('\n', ' ').replace('  ', ' ')
-            builder_kwargs['embedded_css'] = data
+        # if dev:
+        #     http_client = AsyncHTTPClient()
+        #     request_url = ('http://localhost:%d/css/builder-embed.css' %
+        #                    (PORT))
+        #     response = yield gen.Task(http_client.fetch, request_url)
+        #     if response.code == 404:
+        #         data = None
+        #     else:
+        #         data = response.body.replace('\n', ' ').replace('  ', ' ')
+        #     builder_kwargs['embedded_css'] = data
 
         # make the builder
         builder = Builder(safe=True, **builder_kwargs)
             
         # display options
-        display_kwargs = {}
+        display_kwargs = {'enable_menu': True,
+                          'minified_js': True,
+                          'scroll_to_zoom': False}
         for a, b in [('disable_menu', 'enable_menu'),
-                     ('unminified_js', 'minified_js')]:
+                     ('unminified_js', 'minified_js'),
+                     ('scroll_to_pan', 'scroll_to_zoom')]:
             args = self.get_arguments(a)
             if len(args)==1:
                 display_kwargs[b] = False
@@ -108,8 +113,8 @@ class BuilderHandler(BaseHandler):
                 display_kwargs[b] = True
 
         # get the html
-        html = builder.standalone_html(dev=dev, enable_editing=enable_editing,
-                                       **display_kwargs)
+        html = builder._get_html(js_source=js_source, enable_editing=enable_editing,
+                                 height='100%', **display_kwargs)
         
         self.set_header("Content-Type", "text/html")
         self.serve(html)
@@ -129,6 +134,7 @@ class LibHandler(BaseHandler):
 class StaticHandler(BaseHandler):
     def get(self, path):
         path = join(directory, 'escher', path)
+        print 'getting path %s' % path
         self.serve_path(path)
         
 settings = {"debug": "False"}
@@ -140,9 +146,9 @@ application = Application([
     (r".*/(js/.*)", StaticHandler),
     (r".*/(css/.*)", StaticHandler),
     (r".*/(resources/.*)", StaticHandler),
-    (r"/(dev/)?(builder|viewer)(.*)", BuilderHandler),
+    (r"/(dev/)?(offline/)?(builder|viewer)(.*)", BuilderHandler),
     (r".*/(map_spec.json)", StaticHandler),
-    (r"escher[~/]*js", StaticHandler),
+    (r".*/(escher[^/]+js)", LibHandler),
     (r"/", IndexHandler),
 ], **settings)
  
