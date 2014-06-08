@@ -102,8 +102,8 @@ class BuilderHandler(BaseHandler):
 
         # get the html
         html = builder._get_html(js_source=js_source, enable_editing=enable_editing,
-                                 html_wrapper=True, fill_screen=True, height='100%',
-                                 **display_kwargs)
+                                 enable_keys=True, html_wrapper=True, fill_screen=True,
+                                 height='100%', **display_kwargs)
         
         self.set_header("Content-Type", "text/html")
         self.serve(html)

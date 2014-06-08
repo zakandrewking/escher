@@ -16,9 +16,9 @@
     height: 100%;
 }
 .escher-svg {
-    position: absolute;
-    top: 0px;
-    left: 0px;
+    /* position: absolute; */
+    /* top: 0px; */
+    /* left: 0px; */
     width: 100%;
     height: 100%;
 }
@@ -52,14 +52,16 @@
 }
 .search-menu-container {
     position: absolute;
-    width: 300px;
-    left: 0;
-    right: 0;
+    width: 100%;
+    top: 0px;
+    left: 0px;
     margin: 0 auto;
-    text-align: left;
+    text-align: center;
 }
 .search-menu-container-inline {
+    width: 300px;
     display: inline-block;
+    text-align: left;
 }    
 .search-container {
     display: block;
@@ -113,7 +115,7 @@
     .dropdown-button {
 	font-size: 18px;
     }
-    .search-menu-container {
+    .search-menu-container-inline {
 	width: 400px;
     }
 }
