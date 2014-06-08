@@ -7,3 +7,5 @@ TAGS
 dist/
 Escher.egg-info/
 .ipynb_checkpoints/
+build/*
+env/*

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from quick_server import serve_and_open
-import urls
+from escher.quick_server import serve_and_open
+from escher import urls
 
 import os
 from os.path import dirname, abspath, join, isfile, isdir
@@ -15,7 +15,7 @@ from jinja2 import Environment, PackageLoader, Template
 import codecs
 import random
 import string
-        
+
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
 

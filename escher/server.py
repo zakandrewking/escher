@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from ko_server import koHandler
-from plots import Builder
+from escher.ko_server import koHandler
+from escher.plots import Builder
 
 import os, subprocess
 from os.path import join
@@ -15,7 +15,7 @@ import json
 import re
 from jinja2 import Environment, PackageLoader
 from mimetypes import guess_type
-        
+
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
 

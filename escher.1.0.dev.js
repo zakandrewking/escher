@@ -3133,11 +3133,10 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		// moved segment_obj to fixed_node
 		fixed_node.connected_segments.push(segment_obj);
 		updated_segment_objs.push(utils.clone(segment_obj));
+		return null;
 	    });
 	    // delete the old node
-	    var to_delete = {};
-	    to_delete[dragged_node_id] = dragged_node;
-	    map.delete_node_data(to_delete);
+	    map.delete_node_data([dragged_node_id]);
 	    // turn off the class
 	    map.sel.selectAll('.node-to-combine').classed('node-to-combine', false);
 	    // draw

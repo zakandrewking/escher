@@ -5,6 +5,8 @@ A web-based tool to build, view, share, and embed metabolic maps.
 
 See the [wiki](https://github.com/zakandrewking/escher/wiki) for documentation, examples, and developer information.
 
+If you have questions, you can ask for help on Stack Overflow with the [Escher](http://stackoverflow.com/questions/tagged/escher) tag.
+
 **NOTE**: Escher is still a Beta release, so please be patient with the early version as you may encounter bugs and other unexpected behavior. The documentation is also unfinished. Feel free to submit bugs and feature requests as Issues, or, better yet, Pull Requests.
 
 The easiest way to use Escher it to try our [live demo](http://zak.ucsd.edu:7778). 
@@ -29,13 +31,13 @@ We recommend using Chrome for optimal performance and consistency.
 
 ## Uploading a custom model
 
-Generating COBRA models that can be imported into Escher requires a specific, pre-release version of COBRApy which can be found here:
+Generating COBRA models that can be imported into Escher requires the latest beta version of COBRApy which can be found here:
 
-https://github.com/aebrahim/cobrapy/tree/v0.3_dev
+https://github.com/opencobra/cobrapy/releases
 
-You can keep an eye on this [pull request](https://github.com/opencobra/cobrapy/pull/91) to follow the progress on the latest version of COBRApy, which will be release along with Escher v1.0.
+You can keep an eye on that GitHub repository to follow the progress on the latest version of COBRApy, which will be release along with Escher v1.0.
 
-Once you have COBRApy v0.3_dev installed, then you can generate a JSON model by following this example code:
+Once you have COBRApy v0.3.0b1 installed, then you can generate a JSON model by following this example code:
 
 http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/json_models_in_cobrapy.ipynb
 
