@@ -3635,6 +3635,7 @@ define('KeyManager',["utils"], function(utils) {
 	 */
 	if (on_off===undefined) on_off = !this.enabled;
 
+	this.enabled = on_off;
 	this.update();
     }	
     function add_enter_listener(callback) {
