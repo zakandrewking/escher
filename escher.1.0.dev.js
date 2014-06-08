@@ -6507,10 +6507,10 @@ define('ui',["utils"], function(utils) {
 	     set_input_button: set_input_button };
 
     function individual_button(s, button) {
-	var b = s.append('li')
-		.append('button').attr('class', 'btn btn-default'),
+	var b = s.append('button'),
 	    c = b.append('span');
 	if ('id' in button) b.attr('id', button.id);
+	if ('classes' in button) b.attr('class', button.classes);
 	if ('text' in button) c.text(button.text);
 	if ('icon' in button) c.classed(button.icon, true);
 	if ('key' in button) set_button(b, button.key);
@@ -6752,6 +6752,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			  rotate_mode: rotate_mode,
 			  _toggle_direction_buttons: _toggle_direction_buttons,
 			  _setup_menu: _setup_menu,
+			  _setup_simple_zoom_buttons: _setup_simple_zoom_buttons,
 			  _setup_status: _setup_status,
 			  _setup_modes: _setup_modes,
 			  _get_keys: _get_keys };
@@ -6762,11 +6763,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
     function init(options) {
 	// set defaults
 	var o = utils.set_options(options, {
+	    menu: 'all',
 	    margins: {top: 0, right: 0, bottom: 0, left: 0},
 	    selection: d3.select("body").append("div"),
 	    fillScreen: false,
 	    enable_editing: true,
-	    enable_menu: true,
 	    enable_keys: true,
 	    enable_search: true,
 	    scroll_to_zoom: false,
@@ -6920,9 +6921,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.map.key_manager.toggle(this.o.enable_keys);
 	
 	// set up menu and status bars
-	if (this.o.enable_menu) {
+	if (this.o.menu=='all') {
 	    this._setup_menu(menu_div, button_div, this.map, this.zoom_container, this.map.key_manager, keys,
 			     this.o.enable_editing);
+	} else if (this.o.menu=='zoom') {
+	    this._setup_simple_zoom_buttons(button_div, keys);
 	}
 	var status = this._setup_status(this.o.selection, this.map);
 
@@ -6960,7 +6963,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	// input
 	this.reaction_input.toggle(mode=='build');
 	this.reaction_input.direction_arrow.toggle(mode=='build');
-	if (this.o.enable_menu && this.o.enable_editing)
+	if (this.o.menu=='all' && this.o.enable_editing)
 	    this._toggle_direction_buttons(mode=='build');
 	// brush
 	this.brush.toggle(mode=='brush');
@@ -7110,14 +7113,17 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	ui.individual_button(button_panel.append('li'),
 			     { key: keys.zoom_in,
 			       icon: "glyphicon glyphicon-plus-sign",
+			       classes: 'btn btn-default',
 			       tooltip: "Zoom in (Ctrl +)" });
 	ui.individual_button(button_panel.append('li'),
 			     { key: keys.zoom_out,
 			       icon: "glyphicon glyphicon-minus-sign",
+			       classes: 'btn btn-default',
 			       tooltip: "Zoom out (Ctrl -)" });
 	ui.individual_button(button_panel.append('li'),
 			     { key: keys.extent_canvas,
 			       icon: "glyphicon glyphicon-resize-full",
+			       classes: 'btn btn-default',
 			       tooltip: "Zoom to canvas (Ctrl 1)" });
 
 	// mode buttons
@@ -7213,6 +7219,29 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    if (error) console.warn(error);
 	    this.map.set_metabolite_data(data);
 	}
+    }
+
+    function _setup_simple_zoom_buttons(button_selection, keys) {
+	var button_panel = button_selection.append("div")
+		.attr('id', 'simple-button-panel');
+
+	// buttons
+	ui.individual_button(button_panel.append('div'),
+			     { key: keys.zoom_in,
+			       text: "+",
+			       classes: "simple-button",
+			       tooltip: "Zoom in (Ctrl +)" });
+	ui.individual_button(button_panel.append('div'),
+			     { key: keys.zoom_out,
+			       text: "–",
+			       classes: "simple-button",
+			       tooltip: "Zoom out (Ctrl -)" });
+	ui.individual_button(button_panel.append('div'),
+			     { key: keys.extent_canvas,
+			       text: "↔",
+			       classes: "simple-button",
+			       tooltip: "Zoom to canvas (Ctrl 1)" });
+
     }
 
     function _toggle_direction_buttons(on_off) {

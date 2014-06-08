@@ -1,6 +1,7 @@
 .escher-container {
     background-color: #F3F3F3;
     text-align: center;
+    position: relative;
 }
 .fill-screen-body {
     /* Stop Chrome from showing scroll-end animation */
@@ -90,6 +91,11 @@
     left: 4px;
     top: 81px;
 }
+#simple-button-panel {
+    position: absolute;
+    left: 4px;
+    top: 20px;
+}
 .input-close-button {
     position: absolute;
     right: 0px;
@@ -101,6 +107,23 @@
     background: none;
     font-size: 16px;
     font-weight: normal;
+}
+.simple-button {
+    width: 40px;
+    height: 40px;
+    border: 1px solid #2E2F2F;
+    background-image: linear-gradient(#4F5151, #474949 6%, #3F4141);
+    color: #FFF;
+    background-color: #474949;
+    border-color: #474949;
+    padding: 0;
+    font-size: 17px;
+    line-height: 1.42857143;
+    border-radius: 4px;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    margin: 3px 0 0 0;
 }
 .input-close-button:hover {
     color: #ff3333;

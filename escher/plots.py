@@ -247,11 +247,11 @@ class Builder(object):
                           style=self._embedded_css(is_local))
         return javascript
 
-    def _draw_js(self, the_id, enable_editing, enable_menu, enable_keys, dev,
+    def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
                  fill_screen, scroll_to_zoom):
         draw = (u"Builder({{ selection: d3.select('#{the_id}'),"
                 u"enable_editing: {enable_editing},"
-                u"enable_menu: {enable_menu},"
+                u"menu: {menu},"
                 u"enable_keys: {enable_keys},"
                 u"scroll_to_zoom: {scroll_to_zoom},"
                 u"fill_screen: {fill_screen},"
@@ -262,7 +262,7 @@ class Builder(object):
                 u"css: css_string_{the_id} }});").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
-                    enable_menu=json.dumps(enable_menu),
+                    menu=json.dumps(menu),
                     enable_keys=json.dumps(enable_keys),
                     scroll_to_zoom=json.dumps(scroll_to_zoom),
                     fill_screen=json.dumps(fill_screen))
@@ -270,9 +270,9 @@ class Builder(object):
             draw = u'escher.%s' % draw
         return draw
     
-    def _get_html(self, js_source='web', html_wrapper=False, enable_editing=False,
-                  enable_menu=False, enable_keys=False, minified_js=True, scroll_to_zoom=False,
-                  fill_screen=False, height='800px'):
+    def _get_html(self, js_source='web', menu='none', html_wrapper=False,
+                  enable_editing=False, enable_keys=False, minified_js=True,
+                  scroll_to_zoom=False, fill_screen=False, height='800px'):
         """Generate the Escher HTML.
 
         Arguments
@@ -283,14 +283,17 @@ class Builder(object):
             'local' - use compiled js files in the local escher installation. Works offline.
             'dev' - use the local, uncompiled development files. Works offline.
 
+        menu: Menu bar options include:
+            'none' - No menu or buttons.
+            'zoom' - Just zoom buttons (does not require bootstrap).
+            'all' - Menu and button bar (requires bootstrap).
+
         minified_js: If True, use the minified version of js files. If
         js_source is 'dev', then this option is ignored.
             
         html_wrapper: If True, return a standalone html file.
 
         enable_editing: Enable the editing modes (build, rotate, etc.).
-
-        enable_menu: Enable the menu bar.
 
         enable_keys: Enable keyboard shortcuts.
 
@@ -324,13 +327,13 @@ class Builder(object):
                        (join(self.local_host, urls.escher_local) if is_local else
                         (urls.escher_min if minified_js else
                          urls.escher))))
-        jquery_url = ("" if not enable_menu else
+        jquery_url = ("" if not menu=='all' else
                       (join(self.local_host, urls.jquery_local) if is_local else
                        urls.jquery))
-        boot_css_url = ("" if not enable_menu else
+        boot_css_url = ("" if not menu=='all' else
                         (join(self.local_host, urls.boot_css_local) if is_local else 
                          urls.boot_css))
-        boot_js_url = ("" if not enable_menu else
+        boot_js_url = ("" if not menu=='all' else
                        (join(self.local_host, urls.boot_js_local) if is_local else
                         urls.boot_js))
         require_js_url = (urls.require_js_local if is_local else
@@ -350,11 +353,11 @@ class Builder(object):
                               host=self.local_host,
                               initialize_js=self._initialize_javascript(is_local),
                               draw_js=self._draw_js(self.the_id, enable_editing,
-                                                    enable_menu, enable_keys,
+                                                    menu, enable_keys,
                                                     is_dev, fill_screen, scroll_to_zoom),)
         return html
 
-    def display_in_notebook(self, js_source='web', enable_editing=False, enable_menu=False,
+    def display_in_notebook(self, js_source='web', menu='zoom', enable_editing=False,
                             enable_keys=False, minified_js=True, scroll_to_zoom=True,
                             height=500):
         """Display the plot in the notebook.
@@ -367,9 +370,12 @@ class Builder(object):
             'local' - use compiled js files in the local escher installation. Works offline.
             'dev' - use the local, uncompiled development files. Works offline.
 
-        enable_editing: Enable the editing modes (build, rotate, etc.).
+        menu: Menu bar options include:
+            'none' - No menu or buttons.
+            'zoom' - Just zoom buttons (does not require bootstrap).
+            'all' - Menu and button bar (requires bootstrap).
 
-        enable_menu: Enable the menu bar.
+        enable_editing: Enable the editing modes (build, rotate, etc.).
 
         enable_keys: Enable keyboard shortcuts.
 
@@ -382,8 +388,8 @@ class Builder(object):
         height: Height of the HTML container.
 
         """
-        html = self._get_html(js_source=js_source, html_wrapper=False, enable_editing=enable_editing,
-                              enable_menu=enable_menu, enable_keys=enable_keys,
+        html = self._get_html(js_source=js_source, menu=menu, html_wrapper=False,
+                              enable_editing=enable_editing, enable_keys=enable_keys,
                               minified_js=minified_js, scroll_to_zoom=scroll_to_zoom,
                               fill_screen=False, height=height)
         # import here, in case users don't have requirements installed
@@ -392,7 +398,7 @@ class Builder(object):
 
     
     def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50, js_source='web',
-                           enable_editing=True, enable_menu=True, enable_keys=True,
+                           menu='all', enable_editing=True, enable_keys=True,
                            minified_js=True, scroll_to_zoom=False):
         """Launch a web browser to view the map.
 
@@ -404,9 +410,12 @@ class Builder(object):
             'local' - use compiled js files in the local escher installation. Works offline.
             'dev' - use the local, uncompiled development files. Works offline.
 
-        enable_editing: Enable the editing modes (build, rotate, etc.).
+        menu: Menu bar options include:
+            'none' - No menu or buttons.
+            'zoom' - Just zoom buttons (does not require bootstrap).
+            'all' - Menu and button bar (requires bootstrap).
 
-        enable_menu: Enable the menu bar.
+        enable_editing: Enable the editing modes (build, rotate, etc.).
 
         enable_keys: Enable keyboard shortcuts.
 
@@ -419,14 +428,14 @@ class Builder(object):
         height: Height of the HTML container.
 
         """
-        html = self._get_html(js_source=js_source, html_wrapper=True, enable_editing=enable_editing,
-                              enable_menu=enable_menu, enable_keys=enable_keys,
+        html = self._get_html(js_source=js_source, menu=menu, html_wrapper=True,
+                              enable_editing=enable_editing, enable_keys=enable_keys,
                               minified_js=minified_js, scroll_to_zoom=scroll_to_zoom,
                               fill_screen=True, height="100%")
         serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
         
-    def save_html(self, filepath=None, js_source='web', enable_editing=True,
-                  enable_menu=True, enable_keys=True, minified_js=True,
+    def save_html(self, filepath=None, js_source='web', menu='all',
+                  enable_editing=True, enable_keys=True, minified_js=True,
                   scroll_to_zoom=False):
         """Save an HTML file containing the map.
 
@@ -438,9 +447,12 @@ class Builder(object):
             'local' - use compiled js files in the local escher installation. Works offline.
             'dev' - use the local, uncompiled development files. Works offline.
 
-        enable_editing: Enable the editing modes (build, rotate, etc.).
+        menu: Menu bar options include:
+            'none' - No menu or buttons.
+            'zoom' - Just zoom buttons (does not require bootstrap).
+            'all' - Menu and button bar (requires bootstrap).
 
-        enable_menu: Enable the menu bar.
+        enable_editing: Enable the editing modes (build, rotate, etc.).
 
         enable_keys: Enable keyboard shortcuts.
 
@@ -453,9 +465,10 @@ class Builder(object):
         height: Height of the HTML container.
 
         """
-        html = self._get_html(js_source=js_source, html_wrapper=True, enable_editing=enable_editing,
-                              enable_menu=enable_menu, enable_keys=enable_keys, minified_js=minified_js,
-                              scroll_to_zoom=scroll_to_zoom, fill_screen=True, height="100%")
+        html = self._get_html(js_source=js_source, menu=menu, html_wrapper=True,
+                              enable_editing=enable_editing, enable_keys=enable_keys,
+                              minified_js=minified_js, scroll_to_zoom=scroll_to_zoom,
+                              fill_screen=True, height="100%")
         if filepath is not None:
             with codecs.open(filepath, 'w', encoding='utf-8') as f:
                 f.write(html)

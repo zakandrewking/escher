@@ -87,11 +87,11 @@ class BuilderHandler(BaseHandler):
         builder = Builder(safe=True, **builder_kwargs)
             
         # display options
-        display_kwargs = {'enable_menu': True,
-                          'minified_js': True,
-                          'scroll_to_zoom': False}
-        for a, b in [('disable_menu', 'enable_menu'),
-                     ('unminified_js', 'minified_js'),
+        display_kwargs = {'minified_js': True,
+                          'scroll_to_zoom': False,
+                          'menu': 'all'}
+        # Boolean
+        for a, b in [('unminified_js', 'minified_js'),
                      ('scroll_to_pan', 'scroll_to_zoom')]:
             args = self.get_arguments(a)
             if len(args)==1:
@@ -99,6 +99,11 @@ class BuilderHandler(BaseHandler):
             args = self.get_arguments(b)
             if len(args)==1:
                 display_kwargs[b] = True
+        # keyword
+        for a in ['menu']:
+            args = self.get_arguments(a)
+            if len(args)==1:
+                display_kwargs[a] = args[0]
 
         # get the html
         html = builder._get_html(js_source=js_source, enable_editing=enable_editing,
