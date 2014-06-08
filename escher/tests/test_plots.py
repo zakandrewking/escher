@@ -64,6 +64,17 @@ def test_Builder(tmpdir):
     # b.display_in_browser()
     b.save_html(join(str(tmpdir), 'Builder.html'))
 
+    # test options
+    with raises(Exception):
+        b._get_html(js_source='devv')
+    with raises(Exception):
+        b._get_html(menu='')
+    with raises(Exception):
+        b._get_html(scroll_behavior='asdf')
+    b._get_html(js_source='local')
+    b._get_html(menu='all')
+    b._get_html(scroll_behavior='zoom')
+    
     # download
     b = Builder(map_name='iJO1366_central_metabolism', model_name='iJO1366')
     assert b.loaded_map_json is not None

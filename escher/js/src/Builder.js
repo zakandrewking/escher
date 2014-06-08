@@ -28,14 +28,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
     function init(options) {
 	// set defaults
 	var o = utils.set_options(options, {
-	    menu: 'all',
-	    margins: {top: 0, right: 0, bottom: 0, left: 0},
 	    selection: d3.select("body").append("div"),
-	    fillScreen: false,
+	    menu: 'all',
+	    scroll_behavior: 'pan',
 	    enable_editing: true,
 	    enable_keys: true,
 	    enable_search: true,
-	    scroll_to_zoom: false,
+	    fillScreen: false,
 	    on_load: null,
 	    map_path: null,
 	    map: null,
@@ -51,7 +50,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    metabolite_data_styles: ['Color', 'Size', 'Diff'],
 	    show_beziers: false,
 	    debug: false,
-	    starting_reaction: 'GLCtex'
+	    starting_reaction: 'GLCtex',
+	    margins: {top: 0, right: 0, bottom: 0, left: 0}
 	});
 
 	if (utils.check_for_parent_tag(o.selection, 'svg')) {
@@ -126,7 +126,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	
 	// se up the zoom container
 	this.zoom_container = new ZoomContainer(svg, this.o.selection,
-						this.o.scroll_to_zoom);
+						this.o.scroll_behavior);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
 	if (this.o.map_data!==null) {

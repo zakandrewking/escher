@@ -17,7 +17,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     return ZoomContainer;
 
     // definitions
-    function init(selection, size_container, scroll_to_zoom) {
+    function init(selection, size_container, scroll_behavior) {
 	/** Make a container that will manage panning and zooming.
 
 	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
@@ -27,9 +27,6 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	 and height.
 
 	 */
-
-	if (scroll_to_zoom===undefined)
-	    scroll_to_zoom = false;
 
 	this.zoom_on = true;
 	this.initial_zoom = 1.0;
@@ -64,14 +61,15 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    .on("zoom", function() {
 		zoom(zoom_container, d3.event);
 	    });
-	container.call(this.zoom_behavior);
-	
-	if (!scroll_to_zoom) {
+	container.call(this.zoom_behavior);	
+	if (scroll_behavior=='none' || scroll_behavior=='pan') {
 	    container.on("mousewheel.zoom", null)
 		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
 		.on("wheel.zoom", null) // disables newer versions of Firefox
 		.on('dblclick.zoom', null);
-	    // add the wheel listener
+	}
+	if (scroll_behavior=='pan') {
+	    // Add the wheel listener
 	    var wheel_fn = function() {
 		var ev = d3.event,
 		    sensitivity = 0.5;

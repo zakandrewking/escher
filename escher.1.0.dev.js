@@ -5635,7 +5635,7 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     return ZoomContainer;
 
     // definitions
-    function init(selection, size_container, scroll_to_zoom) {
+    function init(selection, size_container, scroll_behavior) {
 	/** Make a container that will manage panning and zooming.
 
 	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
@@ -5645,9 +5645,6 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 	 and height.
 
 	 */
-
-	if (scroll_to_zoom===undefined)
-	    scroll_to_zoom = false;
 
 	this.zoom_on = true;
 	this.initial_zoom = 1.0;
@@ -5682,14 +5679,15 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 	    .on("zoom", function() {
 		zoom(zoom_container, d3.event);
 	    });
-	container.call(this.zoom_behavior);
-	
-	if (!scroll_to_zoom) {
+	container.call(this.zoom_behavior);	
+	if (scroll_behavior=='none' || scroll_behavior=='pan') {
 	    container.on("mousewheel.zoom", null)
 		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
 		.on("wheel.zoom", null) // disables newer versions of Firefox
 		.on('dblclick.zoom', null);
-	    // add the wheel listener
+	}
+	if (scroll_behavior=='pan') {
+	    // Add the wheel listener
 	    var wheel_fn = function() {
 		var ev = d3.event,
 		    sensitivity = 0.5;
@@ -6763,14 +6761,13 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
     function init(options) {
 	// set defaults
 	var o = utils.set_options(options, {
-	    menu: 'all',
-	    margins: {top: 0, right: 0, bottom: 0, left: 0},
 	    selection: d3.select("body").append("div"),
-	    fillScreen: false,
+	    menu: 'all',
+	    scroll_behavior: 'pan',
 	    enable_editing: true,
 	    enable_keys: true,
 	    enable_search: true,
-	    scroll_to_zoom: false,
+	    fillScreen: false,
 	    on_load: null,
 	    map_path: null,
 	    map: null,
@@ -6786,7 +6783,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    metabolite_data_styles: ['Color', 'Size', 'Diff'],
 	    show_beziers: false,
 	    debug: false,
-	    starting_reaction: 'GLCtex'
+	    starting_reaction: 'GLCtex',
+	    margins: {top: 0, right: 0, bottom: 0, left: 0}
 	});
 
 	if (utils.check_for_parent_tag(o.selection, 'svg')) {
@@ -6861,7 +6859,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	
 	// se up the zoom container
 	this.zoom_container = new ZoomContainer(svg, this.o.selection,
-						this.o.scroll_to_zoom);
+						this.o.scroll_behavior);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
 	if (this.o.map_data!==null) {

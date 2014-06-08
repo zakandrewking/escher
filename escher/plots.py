@@ -248,12 +248,12 @@ class Builder(object):
         return javascript
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
-                 fill_screen, scroll_to_zoom):
+                 fill_screen, scroll_behavior):
         draw = (u"Builder({{ selection: d3.select('#{the_id}'),"
                 u"enable_editing: {enable_editing},"
                 u"menu: {menu},"
                 u"enable_keys: {enable_keys},"
-                u"scroll_to_zoom: {scroll_to_zoom},"
+                u"scroll_behavior: {scroll_behavior},"
                 u"fill_screen: {fill_screen},"
                 u"map: map_data_{the_id},"
                 u"cobra_model: cobra_model_{the_id},"
@@ -264,29 +264,34 @@ class Builder(object):
                     enable_editing=json.dumps(enable_editing),
                     menu=json.dumps(menu),
                     enable_keys=json.dumps(enable_keys),
-                    scroll_to_zoom=json.dumps(scroll_to_zoom),
+                    scroll_behavior=json.dumps(scroll_behavior),
                     fill_screen=json.dumps(fill_screen))
         if not dev:
             draw = u'escher.%s' % draw
         return draw
     
-    def _get_html(self, js_source='web', menu='none', html_wrapper=False,
-                  enable_editing=False, enable_keys=False, minified_js=True,
-                  scroll_to_zoom=False, fill_screen=False, height='800px'):
+    def _get_html(self, js_source='web', menu='none', scroll_behavior='pan',
+                  html_wrapper=False, enable_editing=False, enable_keys=False,
+                  minified_js=True, fill_screen=False, height='800px'):
         """Generate the Escher HTML.
 
         Arguments
         --------
 
         js_source: Can be one of the following:
-            'web' (Default) - use js files from zakandrewking.github.io/escher.
+            'web' - (Default) use js files from zakandrewking.github.io/escher.
             'local' - use compiled js files in the local escher installation. Works offline.
             'dev' - use the local, uncompiled development files. Works offline.
 
         menu: Menu bar options include:
-            'none' - No menu or buttons.
+            'none' - (Default) No menu or buttons.
             'zoom' - Just zoom buttons (does not require bootstrap).
             'all' - Menu and button bar (requires bootstrap).
+
+        scroll_behavior: Scroll behavior options:
+            'pan' - (Default) Pan the map.
+            'zoom' - Zoom the map.
+            'none' - No scroll events.
 
         minified_js: If True, use the minified version of js files. If
         js_source is 'dev', then this option is ignored.
@@ -297,15 +302,18 @@ class Builder(object):
 
         enable_keys: Enable keyboard shortcuts.
 
-        scroll_to_zoom: If True, then scroll events will zoom. If False, then
-        scroll events will pan.
-
         height: The height of the HTML container.
 
         """
 
         if js_source not in ['web', 'local', 'dev']:
             raise Exception('Bad value for js_source: %s' % js_source)
+
+        if menu not in ['none', 'zoom', 'all']:
+            raise Exception('Bad value for menu: %s' % menu)
+
+        if scroll_behavior not in ['pan', 'zoom', 'none']:
+            raise Exception('Bad value for scroll_behavior: %s' % scroll_behavior)
         
         content = env.get_template('content.html')
 
@@ -354,11 +362,11 @@ class Builder(object):
                               initialize_js=self._initialize_javascript(is_local),
                               draw_js=self._draw_js(self.the_id, enable_editing,
                                                     menu, enable_keys,
-                                                    is_dev, fill_screen, scroll_to_zoom),)
+                                                    is_dev, fill_screen, scroll_behavior),)
         return html
 
-    def display_in_notebook(self, js_source='web', menu='zoom', enable_editing=False,
-                            enable_keys=False, minified_js=True, scroll_to_zoom=True,
+    def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',
+                            enable_editing=False, enable_keys=False, minified_js=True, 
                             height=500):
         """Display the plot in the notebook.
 
@@ -372,8 +380,13 @@ class Builder(object):
 
         menu: Menu bar options include:
             'none' - No menu or buttons.
-            'zoom' - Just zoom buttons (does not require bootstrap).
-            'all' - Menu and button bar (requires bootstrap).
+            'zoom' - Just zoom buttons.
+            Note: The 'all' menu option does not work in an IPython notebook.
+
+        scroll_behavior: Scroll behavior options:
+            'pan' - Pan the map.
+            'zoom' - Zoom the map.
+            'none' - (Default) No scroll events.
 
         enable_editing: Enable the editing modes (build, rotate, etc.).
 
@@ -382,24 +395,22 @@ class Builder(object):
         minified_js: If True, use the minified version of js files. If js_source
         is 'dev', then this option is ignored.
 
-        scroll_to_zoom: If True, then scroll events will zoom. If False, then
-        scroll events will pan.
-
         height: Height of the HTML container.
 
         """
-        html = self._get_html(js_source=js_source, menu=menu, html_wrapper=False,
-                              enable_editing=enable_editing, enable_keys=enable_keys,
-                              minified_js=minified_js, scroll_to_zoom=scroll_to_zoom,
-                              fill_screen=False, height=height)
+        html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
+                              html_wrapper=False, enable_editing=enable_editing, enable_keys=enable_keys,
+                              minified_js=minified_js, fill_screen=False, height=height)
+        if menu=='all':
+            raise Exception("The 'all' menu option cannot be used in an IPython notebook.")
         # import here, in case users don't have requirements installed
         from IPython.display import HTML
         return HTML(html)
 
     
     def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50, js_source='web',
-                           menu='all', enable_editing=True, enable_keys=True,
-                           minified_js=True, scroll_to_zoom=False):
+                           menu='all', scroll_behavior='pan', enable_editing=True, enable_keys=True,
+                           minified_js=True):
         """Launch a web browser to view the map.
 
         Arguments
@@ -415,6 +426,11 @@ class Builder(object):
             'zoom' - Just zoom buttons (does not require bootstrap).
             'all' - Menu and button bar (requires bootstrap).
 
+        scroll_behavior: Scroll behavior options:
+            'pan' - (Default) Pan the map.
+            'zoom' - Zoom the map.
+            'none' - No scroll events.
+            
         enable_editing: Enable the editing modes (build, rotate, etc.).
 
         enable_keys: Enable keyboard shortcuts.
@@ -422,21 +438,16 @@ class Builder(object):
         minified_js: If True, use the minified version of js files. If js_source
         is 'dev', then this option is ignored.
 
-        scroll_to_zoom: If True, then scroll events will zoom. If False, then
-        scroll events will pan.
-
         height: Height of the HTML container.
 
         """
-        html = self._get_html(js_source=js_source, menu=menu, html_wrapper=True,
-                              enable_editing=enable_editing, enable_keys=enable_keys,
-                              minified_js=minified_js, scroll_to_zoom=scroll_to_zoom,
-                              fill_screen=True, height="100%")
+        html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
+                              html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
+                              minified_js=minified_js, fill_screen=True, height="100%")
         serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
         
-    def save_html(self, filepath=None, js_source='web', menu='all',
-                  enable_editing=True, enable_keys=True, minified_js=True,
-                  scroll_to_zoom=False):
+    def save_html(self, filepath=None, js_source='web', menu='all', scroll_behavior='pan',
+                  enable_editing=True, enable_keys=True, minified_js=True):
         """Save an HTML file containing the map.
 
         Arguments
@@ -452,6 +463,11 @@ class Builder(object):
             'zoom' - Just zoom buttons (does not require bootstrap).
             'all' - Menu and button bar (requires bootstrap).
 
+        scroll_behavior: Scroll behavior options:
+            'pan' - (Default) Pan the map.
+            'zoom' - Zoom the map.
+            'none' - No scroll events.
+            
         enable_editing: Enable the editing modes (build, rotate, etc.).
 
         enable_keys: Enable keyboard shortcuts.
@@ -459,16 +475,12 @@ class Builder(object):
         minified_js: If True, use the minified version of js files. If js_source
         is 'dev', then this option is ignored.
 
-        scroll_to_zoom: If True, then scroll events will zoom. If False, then
-        scroll events will pan.
-
         height: Height of the HTML container.
 
         """
-        html = self._get_html(js_source=js_source, menu=menu, html_wrapper=True,
-                              enable_editing=enable_editing, enable_keys=enable_keys,
-                              minified_js=minified_js, scroll_to_zoom=scroll_to_zoom,
-                              fill_screen=True, height="100%")
+        html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
+                              html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
+                              minified_js=minified_js, fill_screen=True, height="100%")
         if filepath is not None:
             with codecs.open(filepath, 'w', encoding='utf-8') as f:
                 f.write(html)

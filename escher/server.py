@@ -88,19 +88,10 @@ class BuilderHandler(BaseHandler):
             
         # display options
         display_kwargs = {'minified_js': True,
-                          'scroll_to_zoom': False,
+                          'scroll_behavior': 'pan',
                           'menu': 'all'}
-        # Boolean
-        for a, b in [('unminified_js', 'minified_js'),
-                     ('scroll_to_pan', 'scroll_to_zoom')]:
-            args = self.get_arguments(a)
-            if len(args)==1:
-                display_kwargs[b] = False
-            args = self.get_arguments(b)
-            if len(args)==1:
-                display_kwargs[b] = True
         # keyword
-        for a in ['menu']:
+        for a in ['menu', 'scroll_behavior', 'minified_js']:
             args = self.get_arguments(a)
             if len(args)==1:
                 display_kwargs[a] = args[0]
