@@ -17,6 +17,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  rotate_mode: rotate_mode,
 			  _toggle_direction_buttons: _toggle_direction_buttons,
 			  _setup_menu: _setup_menu,
+			  _setup_simple_zoom_buttons: _setup_simple_zoom_buttons,
 			  _setup_status: _setup_status,
 			  _setup_modes: _setup_modes,
 			  _get_keys: _get_keys };
@@ -27,13 +28,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
     function init(options) {
 	// set defaults
 	var o = utils.set_options(options, {
-	    margins: {top: 0, right: 0, bottom: 0, left: 0},
 	    selection: d3.select("body").append("div"),
-	    fillScreen: false,
+	    menu: 'all',
+	    scroll_behavior: 'pan',
 	    enable_editing: true,
-	    enable_menu: true,
 	    enable_keys: true,
 	    enable_search: true,
+	    fillScreen: false,
 	    on_load: null,
 	    map_path: null,
 	    map: null,
@@ -49,7 +50,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    metabolite_data_styles: ['Color', 'Size', 'Diff'],
 	    show_beziers: false,
 	    debug: false,
-	    starting_reaction: 'GLCtex'
+	    starting_reaction: 'GLCtex',
+	    margins: {top: 0, right: 0, bottom: 0, left: 0}
 	});
 
 	if (utils.check_for_parent_tag(o.selection, 'svg')) {
@@ -123,7 +125,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 				  this.o.margins, this.o.fill_screen);
 	
 	// se up the zoom container
-	this.zoom_container = new ZoomContainer(svg, this.o.selection);
+	this.zoom_container = new ZoomContainer(svg, this.o.selection,
+						this.o.scroll_behavior);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
 	if (this.o.map_data!==null) {
@@ -183,9 +186,11 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.map.key_manager.toggle(this.o.enable_keys);
 	
 	// set up menu and status bars
-	if (this.o.enable_menu) {
+	if (this.o.menu=='all') {
 	    this._setup_menu(menu_div, button_div, this.map, this.zoom_container, this.map.key_manager, keys,
 			     this.o.enable_editing);
+	} else if (this.o.menu=='zoom') {
+	    this._setup_simple_zoom_buttons(button_div, keys);
 	}
 	var status = this._setup_status(this.o.selection, this.map);
 
@@ -223,7 +228,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	// input
 	this.reaction_input.toggle(mode=='build');
 	this.reaction_input.direction_arrow.toggle(mode=='build');
-	if (this.o.enable_menu && this.o.enable_editing)
+	if (this.o.menu=='all' && this.o.enable_editing)
 	    this._toggle_direction_buttons(mode=='build');
 	// brush
 	this.brush.toggle(mode=='brush');
@@ -373,14 +378,17 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	ui.individual_button(button_panel.append('li'),
 			     { key: keys.zoom_in,
 			       icon: "glyphicon glyphicon-plus-sign",
+			       classes: 'btn btn-default',
 			       tooltip: "Zoom in (Ctrl +)" });
 	ui.individual_button(button_panel.append('li'),
 			     { key: keys.zoom_out,
 			       icon: "glyphicon glyphicon-minus-sign",
+			       classes: 'btn btn-default',
 			       tooltip: "Zoom out (Ctrl -)" });
 	ui.individual_button(button_panel.append('li'),
 			     { key: keys.extent_canvas,
 			       icon: "glyphicon glyphicon-resize-full",
+			       classes: 'btn btn-default',
 			       tooltip: "Zoom to canvas (Ctrl 1)" });
 
 	// mode buttons
@@ -476,6 +484,29 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    if (error) console.warn(error);
 	    this.map.set_metabolite_data(data);
 	}
+    }
+
+    function _setup_simple_zoom_buttons(button_selection, keys) {
+	var button_panel = button_selection.append("div")
+		.attr('id', 'simple-button-panel');
+
+	// buttons
+	ui.individual_button(button_panel.append('div'),
+			     { key: keys.zoom_in,
+			       text: "+",
+			       classes: "simple-button",
+			       tooltip: "Zoom in (Ctrl +)" });
+	ui.individual_button(button_panel.append('div'),
+			     { key: keys.zoom_out,
+			       text: "–",
+			       classes: "simple-button",
+			       tooltip: "Zoom out (Ctrl -)" });
+	ui.individual_button(button_panel.append('div'),
+			     { key: keys.extent_canvas,
+			       text: "↔",
+			       classes: "simple-button",
+			       tooltip: "Zoom to canvas (Ctrl 1)" });
+
     }
 
     function _toggle_direction_buttons(on_off) {
