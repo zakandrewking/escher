@@ -83,18 +83,6 @@ class BuilderHandler(BaseHandler):
             if len(args)==1:
                 builder_kwargs[a] = args[0]
 
-        # get the local version of builder-embed
-        # if dev:
-        #     http_client = AsyncHTTPClient()
-        #     request_url = ('http://localhost:%d/css/builder-embed.css' %
-        #                    (PORT))
-        #     response = yield gen.Task(http_client.fetch, request_url)
-        #     if response.code == 404:
-        #         data = None
-        #     else:
-        #         data = response.body.replace('\n', ' ').replace('  ', ' ')
-        #     builder_kwargs['embedded_css'] = data
-
         # make the builder
         builder = Builder(safe=True, **builder_kwargs)
             
@@ -114,7 +102,8 @@ class BuilderHandler(BaseHandler):
 
         # get the html
         html = builder._get_html(js_source=js_source, enable_editing=enable_editing,
-                                 height='100%', **display_kwargs)
+                                 html_wrapper=True, fill_screen=True, height='100%',
+                                 **display_kwargs)
         
         self.set_header("Content-Type", "text/html")
         self.serve(html)

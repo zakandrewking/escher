@@ -2,17 +2,16 @@
 <html lang="en">
   <head>
     <title>{% block title %}{{ title }}{% endblock %}</title>
-    {% block head %}
-      {{head}}
-    {% endblock %}
+    {% block head %}{% endblock %}
+    <!-- Require only loaded in standalone file. -->
+    <script src="{{require_js}}"></script>
+
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, height=device-height,
 	  initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui"/>
   </head>
   <body>
-    {% block content %}
-      {{content}}
-    {% endblock %}
+    {% block content %}{% endblock %}
 
     <script>
      // temporary fixes for mobile browsers (currently iOS)

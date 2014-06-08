@@ -3,11 +3,11 @@
 from quick_server import serve_and_open
 import urls
 
+import os
 from os.path import dirname, abspath, join, isfile, isdir
 from warnings import warn
 from urllib2 import urlopen, HTTPError, URLError
 import json
-import os
 import shutil
 import appdirs
 import re
@@ -152,7 +152,7 @@ class Builder(object):
         # set the args
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
-        self.local_host = local_host
+        self.local_host = local_host.strip(os.sep)
         # make the unique id
         self.generate_id()
 
@@ -266,10 +266,8 @@ class Builder(object):
                     enable_keys=json.dumps(enable_keys),
                     scroll_to_zoom=json.dumps(scroll_to_zoom),
                     fill_screen=json.dumps(fill_screen))
-        if dev:
-            draw = 'require(["Builder"], function(Builder) {\n%s\n});' % draw
-        else:
-            draw = 'escher.%s' % draw
+        if not dev:
+            draw = u'escher.%s' % draw
         return draw
     
     def _get_html(self, js_source='web', html_wrapper=False, enable_editing=False,
@@ -306,9 +304,7 @@ class Builder(object):
         if js_source not in ['web', 'local', 'dev']:
             raise Exception('Bad value for js_source: %s' % js_source)
         
-        content = (env.get_template('dev_content.html')
-                   if js_source=='dev' else
-                   env.get_template('content.html'))
+        content = env.get_template('content.html')
 
         # if height is not a string
         if type(height) is int:
@@ -337,20 +333,25 @@ class Builder(object):
         boot_js_url = ("" if not enable_menu else
                        (join(self.local_host, urls.boot_js_local) if is_local else
                         urls.boot_js))
-        html = content.render(id=self.the_id,
+        require_js_url = (urls.require_js_local if is_local else
+                          urls.require_js)
+        html = content.render(require_js=require_js_url,
+                              id=self.the_id,
                               height=height,
                               escher_css=(join(self.local_host, urls.builder_css_local) if is_local else
                                           urls.builder_css),
-                              initialize_js=self._initialize_javascript(is_local),
-                              draw_js=self._draw_js(self.the_id, enable_editing,
-                                                    enable_menu, enable_keys,
-                                                    is_dev, fill_screen, scroll_to_zoom),
+                              dev=is_dev,
                               d3=d3_url,
                               escher=escher_url,
                               jquery=jquery_url,
                               boot_css=boot_css_url,
                               boot_js=boot_js_url,
-                              wrapper=html_wrapper)
+                              wrapper=html_wrapper,
+                              host=self.local_host,
+                              initialize_js=self._initialize_javascript(is_local),
+                              draw_js=self._draw_js(self.the_id, enable_editing,
+                                                    enable_menu, enable_keys,
+                                                    is_dev, fill_screen, scroll_to_zoom),)
         return html
 
     def display_in_notebook(self, js_source='web', enable_editing=False, enable_menu=False,
