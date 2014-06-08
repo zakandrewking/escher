@@ -5,7 +5,7 @@ A web-based tool to build, view, share, and embed metabolic maps.
 
 See the [wiki](https://github.com/zakandrewking/escher/wiki) for documentation, examples, and developer information.
 
-If you have questions, you can ask for help on Stack Overflow with the [Escher](http://stackoverflow.com/questions/tagged/escher) tag.
+Follow [@zakandrewking](https://twitter.com/zakandrewking) for Escher updates, and ask for help on Stack Overflow with the [Escher](http://stackoverflow.com/questions/tagged/escher) tag.
 
 **NOTE**: Escher is still a Beta release, so please be patient with the early version as you may encounter bugs and other unexpected behavior. The documentation is also unfinished. Feel free to submit bugs and feature requests as Issues, or, better yet, Pull Requests.
 
