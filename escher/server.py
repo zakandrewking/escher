@@ -106,12 +106,9 @@ class BuilderHandler(BaseHandler):
         
 class LibHandler(BaseHandler):
     def get(self, path):
-        # try ./, lib/ and escher/lib
-        for d in ['.', 'lib', 'escher/lib']:
-            full_path = join(directory, d, path)
-            if os.path.isfile(full_path):
-                path = full_path
-                break
+        full_path = join(directory, 'escher', 'lib', path)
+        if os.path.isfile(full_path):
+            path = full_path
         else:
             raise HTTPError(404)
         self.serve_path(path)
