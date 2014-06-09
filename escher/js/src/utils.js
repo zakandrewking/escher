@@ -340,10 +340,10 @@ define(["lib/vkbeautify"], function(vkbeautify) {
         }
     }
 
-    function load_json(f, callback, target) {
+    function load_json(f, callback) {
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
-	    callback.call(target, "The File APIs are not fully supported in this browser.", null);
+	    callback("The File APIs are not fully supported in this browser.", null);
 
 	// The following is not a safe assumption.
 	// if (!f.type.match("application/json"))
@@ -353,7 +353,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	// Closure to capture the file information.
 	reader.onload = function(event) {
 	    var json = JSON.parse(event.target.result);
-	    callback.call(target, null, json);
+	    callback(null, json);
         };
 	// Read in the image file as a data URL.
 	reader.readAsText(f);

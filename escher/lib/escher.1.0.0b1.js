@@ -1126,10 +1126,10 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
         }
     }
 
-    function load_json(f, callback, target) {
+    function load_json(f, callback) {
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
-	    callback.call(target, "The File APIs are not fully supported in this browser.", null);
+	    callback("The File APIs are not fully supported in this browser.", null);
 
 	// The following is not a safe assumption.
 	// if (!f.type.match("application/json"))
@@ -1139,7 +1139,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	// Closure to capture the file information.
 	reader.onload = function(event) {
 	    var json = JSON.parse(event.target.result);
-	    callback.call(target, null, json);
+	    callback(null, json);
         };
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
@@ -6576,7 +6576,7 @@ define('ui',["utils"], function(utils) {
 		    set_button(link, button.key);
 		} else if ('input' in button) {
 		    var input = button.input,
-			out = set_input_button(link, li, input.fn, input.target);
+			out = set_input_button(link, li, input.fn);
 		    if ('assign' in input && 'key' in input)
 			input.assign[input.key] = out;
 		}
@@ -6596,11 +6596,16 @@ define('ui',["utils"], function(utils) {
 	    key.fn.call(key.target);
 	});
     }
-    function set_input_button(b, s, fn, target) {
+    function set_input_button(b, s, fn) {
 	var input = s.append("input")
 		.attr("type", "file")
 		.style("display", "none")
-		.on("change", function() { utils.load_json(this.files[0], fn, target); });
+		.on("change", function() { 
+		    utils.load_json(this.files[0], function(e, d) {
+			fn(e, d);
+			this.value = "";
+		    }.bind(this));
+		});
 	b.on('click', function(e) {
 	    input.node().click();
 	});
@@ -7055,8 +7060,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    .button({ text: "Load map JSON (Ctrl o)",
 		      input: { assign: key_manager.assigned_keys.load,
 			       key: 'fn',
-			       fn: load_map_for_file,
-			       target: this }
+			       fn: load_map_for_file.bind(this) }
 		    })
 	    .button({ key: keys.save_svg,
 		      text: "Export as SVG (Ctrl Shift s)" })
@@ -7067,21 +7071,18 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    .button({ text: 'Load COBRA model JSON (Ctrl m)',
 		      input: { assign: key_manager.assigned_keys.load_model,
 			       key: 'fn',
-			       fn: load_model_for_file,
-			       target: this }
+			       fn: load_model_for_file.bind(this) }
 		    });
 
 	// data dropdown
 	var data_menu = ui.dropdown_menu(menu, 'Data')
 		.button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
 				   key: 'fn',
-				   fn: load_reaction_data_for_file,
-				   target: this },
+				   fn: load_reaction_data_for_file.bind(this) },
 			  text: "Load reaction data" })
 		.button({ key: keys.clear_reaction_data,
 			  text: "Clear reaction data" })
-		.button({ input: { fn: load_metabolite_data_for_file,
-				   target: this },
+		.button({ input: { fn: load_metabolite_data_for_file.bind(this) },
 			  text: "Load metabolite data" })
 		.button({ key: keys.clear_metabolite_data,
 			  text: "Clear metabolite data" })

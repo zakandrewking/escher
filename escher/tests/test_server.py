@@ -10,13 +10,15 @@ class TestBuilder(AsyncHTTPTestCase):
     def test_builder_request(self):
         response = self.fetch('/builder.html')
         assert response.code==200
+        response = self.fetch('/web/builder.html')
+        assert response.code==200
         
     def test_dev_builder_request(self):
         response = self.fetch('/dev/builder.html')
         assert response.code==200
         
-    def test_offline_builder_request(self):
-        response = self.fetch('/offline/builder.html')
+    def test_local_builder_request(self):
+        response = self.fetch('/local/builder.html')
         assert response.code==200
         
 def test_server():

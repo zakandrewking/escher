@@ -12,10 +12,10 @@
 #   - dist/**/*.js
 #
 src_files:
-    - lib/d3.min.js
-    - escher.1.0.dev.js
-    - lib/jquery-2.1.0.min.js
-    - lib/bootstrap-3.1.1.min.js
+    - escher/lib/d3.min.js
+    - escher/lib/escher.1.0.0b1.js
+    - escher/lib/jquery-2.1.0.min.js
+    - escher/lib/bootstrap-3.1.1.min.js
 
 # stylesheets
 #

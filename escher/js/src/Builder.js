@@ -282,8 +282,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    .button({ text: "Load map JSON (Ctrl o)",
 		      input: { assign: key_manager.assigned_keys.load,
 			       key: 'fn',
-			       fn: load_map_for_file,
-			       target: this }
+			       fn: load_map_for_file.bind(this) }
 		    })
 	    .button({ key: keys.save_svg,
 		      text: "Export as SVG (Ctrl Shift s)" })
@@ -294,21 +293,18 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    .button({ text: 'Load COBRA model JSON (Ctrl m)',
 		      input: { assign: key_manager.assigned_keys.load_model,
 			       key: 'fn',
-			       fn: load_model_for_file,
-			       target: this }
+			       fn: load_model_for_file.bind(this) }
 		    });
 
 	// data dropdown
 	var data_menu = ui.dropdown_menu(menu, 'Data')
 		.button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
 				   key: 'fn',
-				   fn: load_reaction_data_for_file,
-				   target: this },
+				   fn: load_reaction_data_for_file.bind(this) },
 			  text: "Load reaction data" })
 		.button({ key: keys.clear_reaction_data,
 			  text: "Clear reaction data" })
-		.button({ input: { fn: load_metabolite_data_for_file,
-				   target: this },
+		.button({ input: { fn: load_metabolite_data_for_file.bind(this) },
 			  text: "Load metabolite data" })
 		.button({ key: keys.clear_metabolite_data,
 			  text: "Clear metabolite data" })

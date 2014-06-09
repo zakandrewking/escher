@@ -79,7 +79,7 @@ define(["utils"], function(utils) {
 		    set_button(link, button.key);
 		} else if ('input' in button) {
 		    var input = button.input,
-			out = set_input_button(link, li, input.fn, input.target);
+			out = set_input_button(link, li, input.fn);
 		    if ('assign' in input && 'key' in input)
 			input.assign[input.key] = out;
 		}
@@ -99,11 +99,16 @@ define(["utils"], function(utils) {
 	    key.fn.call(key.target);
 	});
     }
-    function set_input_button(b, s, fn, target) {
+    function set_input_button(b, s, fn) {
 	var input = s.append("input")
 		.attr("type", "file")
 		.style("display", "none")
-		.on("change", function() { utils.load_json(this.files[0], fn, target); });
+		.on("change", function() { 
+		    utils.load_json(this.files[0], function(e, d) {
+			fn(e, d);
+			this.value = "";
+		    }.bind(this));
+		});
 	b.on('click', function(e) {
 	    input.node().click();
 	});

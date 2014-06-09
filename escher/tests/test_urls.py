@@ -15,6 +15,5 @@ def test_urls():
         urlopen(make_http(u))
 
     # local
-    for u in [urls.d3_local, urls.escher_local,
-              urls.escher_min_local]:
+    for u in [urls.d3_local, urls.escher_local, urls.escher_min_local]:
         assert exists(join(directory, u))

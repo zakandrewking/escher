@@ -4,7 +4,7 @@ from escher.ko_server import koHandler
 from escher.plots import Builder
 
 import os, subprocess
-from os.path import join
+from os.path import join, dirname, realpath
 import tornado.ioloop
 from tornado.web import RequestHandler, asynchronous, HTTPError, Application
 from tornado.httpclient import AsyncHTTPClient
@@ -20,8 +20,7 @@ from mimetypes import guess_type
 env = Environment(loader=PackageLoader('escher', 'templates'))
 
 # set directory to server
-directory = os.path.abspath(os.path.dirname(__file__)).strip(os.pathsep)
-directory = re.sub(r'escher$', '', directory)
+directory = dirname(realpath(__file__))
 NO_CACHE = True
 PORT = 7778
 PUBLIC = False
@@ -106,7 +105,7 @@ class BuilderHandler(BaseHandler):
         
 class LibHandler(BaseHandler):
     def get(self, path):
-        full_path = join(directory, 'escher', 'lib', path)
+        full_path = join(directory, 'lib', path)
         if os.path.isfile(full_path):
             path = full_path
         else:
@@ -115,7 +114,7 @@ class LibHandler(BaseHandler):
 
 class StaticHandler(BaseHandler):
     def get(self, path):
-        path = join(directory, 'escher', path)
+        path = join(directory, path)
         print 'getting path %s' % path
         self.serve_path(path)
         
@@ -128,9 +127,8 @@ application = Application([
     (r".*/(js/.*)", StaticHandler),
     (r".*/(css/.*)", StaticHandler),
     (r".*/(resources/.*)", StaticHandler),
-    (r"/(dev/)?(offline/)?(builder|viewer)(.*)", BuilderHandler),
+    (r"/(dev/)?(local/)?(?:web/)?(builder|viewer)(.*)", BuilderHandler),
     (r".*/(map_spec.json)", StaticHandler),
-    (r".*/(escher[^/]+js)", LibHandler),
     (r"/", IndexHandler),
 ], **settings)
  
