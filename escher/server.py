@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from escher.ko_server import koHandler
 from escher.plots import Builder
 
 import os, subprocess
