@@ -1,3 +1,4 @@
+/* Containers */
 .escher-container {
     background-color: #F3F3F3;
     text-align: center;
@@ -23,6 +24,7 @@
     width: 100%;
     height: 100%;
 }
+/* Status */
 #status {
     position:absolute;
     bottom:10px;
@@ -31,6 +33,7 @@
     background-color: white;
     font-size: 16px
 }
+/* Menus */
 #menu {
     display: block;
     margin: 5px auto 0 auto;
@@ -51,6 +54,17 @@
 .dropdown {
     background-color: rgba(255, 255, 255, 0.95);
 }
+@media (max-width: 550px) {
+    .dropdown-button {
+	padding: 5px 9px;
+    }
+}
+@media (min-width: 550px) {
+    .dropdown-button {
+	font-size: 18px;
+    }
+}
+/* Search */
 .search-menu-container {
     position: absolute;
     width: 100%;
@@ -64,6 +78,11 @@
     display: inline-block;
     text-align: left;
 }    
+@media (min-width: 550px) {
+    .search-menu-container-inline {
+	width: 400px;
+    }
+}
 .search-container {
     display: block;
     background: rgba(255, 255, 255, 0.95);
@@ -83,9 +102,23 @@
     display: inline-block;
     padding: 0 8px;
 }
-.search-close-button {
+/* Settings */
+.settings-box {
+    display: block;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 3px;
+    border: 1px solid #DDD;
+    margin: 2px 0 0 0;
+    text-align: left;
+}
+.settings-section {
+    width: 90%
+}
+/* For Settings and Search */
+.close-button {
     float: right;
 }
+/* Button panel */
 #button-panel {
     position: absolute;
     left: 4px;
@@ -125,39 +158,8 @@
     cursor: pointer;
     margin: 3px 0 0 0;
 }
+/* Reaction input */
 .input-close-button:hover {
     color: #ff3333;
     font-weight: bold;
 }
-@media (max-width: 550px) {
-    .dropdown-button {
-	padding: 5px 9px;
-    }
-}
-@media (min-width: 550px) {
-    .dropdown-button {
-	font-size: 18px;
-    }
-    .search-menu-container-inline {
-	width: 400px;
-    }
-}
-/* settings */
-.settings-box {
-    position: absolute;
-    top: 5%;
-    left: 5%;
-    width: 90%;
-    height: 90%;
-    background-color: #1C2327;
-    border: 3px solid #343434;
-    text-align: left;
-    padding: 10%;
-    border-radius: 6px;
-}
-.settings-close {
-    position: absolute;
-    right: 8px;
-    top: 8px;
-}
-    

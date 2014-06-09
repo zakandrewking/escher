@@ -169,13 +169,20 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		.append('div').attr('class', 'search-menu-container-inline'),
 	    menu_div = s.append('div'),
 	    search_bar_div = s.append('div'),
+	    settings_div = s.append('div'),
 	    button_div = this.o.selection.append('div');
 
 	// set up the search bar
 	this.search_bar = SearchBar(search_bar_div, this.map.search_index, this.map);
-
 	// set up the settings
-	this.settings_page = Settings(this.o.selection);
+	this.settings_page = Settings(settings_div, this.map);
+	// set up the hide callbacks
+	this.search_bar.callback_manager.set('show', function() {
+	    this.settings_page.toggle(false);
+	}.bind(this));
+	this.settings_page.callback_manager.set('show', function() {
+	    this.search_bar.toggle(false);
+	}.bind(this));
 
 	// set up key manager
 	var keys = this._get_keys(this.map, this.zoom_container, this.search_bar,
@@ -309,7 +316,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		.button({ key: keys.clear_metabolite_data,
 			  text: "Clear metabolite data" })
 		.button({ key: keys.show_settings,
-			  text: "Settings" });
+			  text: "Settings (Ctrl ,)" });
 	
 	// edit dropdown 
 	var edit_menu = ui.dropdown_menu(menu, 'Edit', true);
@@ -644,7 +651,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
 			       target: map,
 			       fn: map.select_none },
-		show_settings: { fn: settings_page.toggle.bind(settings_page) }
+		show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
+				 fn: settings_page.toggle.bind(settings_page) }
 	    });
 	}
 	return keys;

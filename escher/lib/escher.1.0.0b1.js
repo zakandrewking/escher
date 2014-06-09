@@ -6614,7 +6614,7 @@ define('ui',["utils"], function(utils) {
 });
 
 
-define('SearchBar',["utils"], function(utils) {
+define('SearchBar',["utils", "CallbackManager"], function(utils, CallbackManager) {
     /** 
      */
 
@@ -6647,12 +6647,14 @@ define('SearchBar',["utils"], function(utils) {
 	this.counter = container.append('div')
 	    .attr('class', 'search-counter');
 	container.append('button')
-	    .attr("class", "btn btn-sm btn-default search-close-button")
+	    .attr("class", "btn btn-sm btn-default close-button")
 	    .on('click', function() {
 		this.toggle(false);
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-remove");
 	
+	this.callback_manager = new CallbackManager();
+
 	this.selection = container;
 	this.map = map;
 	this.search_index = search_index;
@@ -6684,6 +6686,8 @@ define('SearchBar',["utils"], function(utils) {
 	    // enter key
 	    this.escape = this.map.key_manager
 		.add_enter_listener(function() { this.next(); }.bind(this));
+	    // run the show callback
+	    this.callback_manager.run('show');
 	} else {
 	    this.map.highlight(null);
 	    this.selection.style("display", "none");
@@ -6692,6 +6696,8 @@ define('SearchBar',["utils"], function(utils) {
 	    this.escape = null;
 	    if (this.enter) this.enter.clear();
 	    this.enter = null;
+	    // run the hide callback
+	    this.callback_manager.run('hide');
 	}
     }
     function update() {
@@ -6735,7 +6741,7 @@ define('SearchBar',["utils"], function(utils) {
     } 
 });
 
-define('Settings',["utils", "ui"], function(utils, ui) {
+define('Settings',["utils", "ui", "CallbackManager"], function(utils, ui, CallbackManager) {
     /** 
      */
 
@@ -6747,22 +6753,33 @@ define('Settings',["utils", "ui"], function(utils, ui) {
     return SearchBar;
 
     // instance methods
-    function init(sel) {
+    function init(sel, map) {
 	this.is_visible = false;
 
-	var s = sel.append('div')
+	var container = sel.append('div')
 		.attr('class', 'settings-box')
 		.style('display', 'none');
 
-	s.append('button').attr('class', 'btn btn-default settings-close')
+	container.append('button')
+	    .attr("class", "btn btn-sm btn-default close-button")
 	    .on('click', function() {
 		this.toggle(false);
 	    }.bind(this))
-	    .append('span').attr('class', 'glyphicon glyphicon-remove');
+	    .append("span").attr("class",  "glyphicon glyphicon-remove");
+	
+	container.append('div').attr('class', 'settings-section')
+	    .text('Reaction color');
+	container.append('div').attr('class', 'settings-section')
+	    .text('Reaction size');
+	container.append('div').attr('class', 'settings-section')
+	    .text('Metabolite color');
+	container.append('div').attr('class', 'settings-section')
+	    .text('Metabolite size');
 
-	s.append('input');
+	this.callback_manager = new CallbackManager();
 
-	this.selection = s;
+	this.map = map;
+	this.selection = container;
     }
     function toggle(on_off) {
 	if (on_off===undefined) this.is_visible = !this.is_visible;
@@ -6770,8 +6787,17 @@ define('Settings',["utils", "ui"], function(utils, ui) {
 
 	if (this.is_visible) {
 	    this.selection.style("display", "block");
+	    // escape key
+	    this.escape = this.map.key_manager
+		.add_escape_listener(function() { this.toggle(false); }.bind(this));
+	    // run the show callback
+	    this.callback_manager.run('show');
 	} else {
-	    this.selection.style("display", "none");
+	    this.selection.style("display", "none");	    
+	    if (this.escape) this.escape.clear();
+	    this.escape = null;
+	    // run the hide callback
+	    this.callback_manager.run('hide');
 	}
     }
 });
@@ -6947,13 +6973,20 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.append('div').attr('class', 'search-menu-container-inline'),
 	    menu_div = s.append('div'),
 	    search_bar_div = s.append('div'),
+	    settings_div = s.append('div'),
 	    button_div = this.o.selection.append('div');
 
 	// set up the search bar
 	this.search_bar = SearchBar(search_bar_div, this.map.search_index, this.map);
-
 	// set up the settings
-	this.settings_page = Settings(this.o.selection);
+	this.settings_page = Settings(settings_div, this.map);
+	// set up the hide callbacks
+	this.search_bar.callback_manager.set('show', function() {
+	    this.settings_page.toggle(false);
+	}.bind(this));
+	this.settings_page.callback_manager.set('show', function() {
+	    this.search_bar.toggle(false);
+	}.bind(this));
 
 	// set up key manager
 	var keys = this._get_keys(this.map, this.zoom_container, this.search_bar,
@@ -7087,7 +7120,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.button({ key: keys.clear_metabolite_data,
 			  text: "Clear metabolite data" })
 		.button({ key: keys.show_settings,
-			  text: "Settings" });
+			  text: "Settings (Ctrl ,)" });
 	
 	// edit dropdown 
 	var edit_menu = ui.dropdown_menu(menu, 'Edit', true);
@@ -7422,7 +7455,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
 			       target: map,
 			       fn: map.select_none },
-		show_settings: { fn: settings_page.toggle.bind(settings_page) }
+		show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
+				 fn: settings_page.toggle.bind(settings_page) }
 	    });
 	}
 	return keys;
