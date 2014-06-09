@@ -3,11 +3,11 @@
 from escher.quick_server import serve_and_open
 from escher import urls
 
+import os
 from os.path import dirname, abspath, join, isfile, isdir
 from warnings import warn
 from urllib2 import urlopen, HTTPError, URLError
 import json
-import os
 import shutil
 import appdirs
 import re
@@ -94,46 +94,7 @@ def load_resource(resource, name, safe=False):
         return resource
     raise Exception('Could not load %s.' % name)
 
-class Plot(object):
-    """Parent class for all plots."""
-    def standalone_html(self):
-        raise NotImplemented()
-    def embed_html(self):
-        raise NotImplemented()
-    
-    def display_in_notebook(self, height=500):
-        """Display the plot in the notebook.
-
-        """
-        # import here, in case users don't have requirements installed
-        from IPython.display import HTML
-        return HTML(self.embedded_html(height=height))
-
-    def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50):
-        """Launch a web browser to view the map.
-
-        """
-        html = self.standalone_html()
-        serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
-
-    def save_html(self, filepath=None):
-        """Save an html file containing the map.
-
-        """
-        html = self.standalone_html()
-        if filepath is not None:
-            with codeds.open(filepath, 'w', encoding='utf-8') as f:
-                f.write(html)
-            return filepath
-        else:
-            from tempfile import mkstemp
-            from os import write, close
-            os_file, filename = mkstemp(suffix=".html")
-            write(os_file, unicode(html).encode('utf-8'))
-            close(os_file)
-            return filename
-    
-class Builder(Plot):
+class Builder(object):
     """Viewable metabolic map.
     
     This map will also show metabolic fluxes passed in during consruction.  It
@@ -162,14 +123,18 @@ class Builder(Plot):
     reaction_data: a dictionary with keys that correspond to metabolite ids and
     values that will be mapped to metabolite nodes and labels.
 
+    local_host: a hostname that will be used for any local files in dev
+    mode. Defaults to the current host.
+    
     safe: if True, then loading files from the filesytem is not allowed. This is
     to ensure the safety of using Builder with a web server.
 
     """
     def __init__(self, map_name=None, map_json=None, model_name=None,
                  model_json=None, reaction_data=None, metabolite_data=None,
-                 css=None, safe=False):
+                 local_host='', safe=False):
         self.safe = safe
+        
         # load the map
         self.map_name = map_name
         self.map_json = map_json
@@ -187,7 +152,8 @@ class Builder(Plot):
         # set the args
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
-        self.css = css
+        self.local_host = local_host.strip(os.sep)
+        # make the unique id
         self.generate_id()
 
     def generate_id(self):
@@ -256,31 +222,38 @@ class Builder(Plot):
                                      (map_name, url))
             with open(map_filename) as f:
                 self.loaded_map_json = f.read()
+
+    def _embedded_css(self, is_local):
+        loc = (join(self.local_host, urls.builder_embed_css_local) if is_local else
+               urls.builder_embed_css)
+        download = urlopen(urls.builder_embed_css)
+        return unicode(download.read().replace('\n', ' '))
     
-    def _initialize_javascript(self, dev=False):
+    def _initialize_javascript(self, is_local):
         javascript = (u"var map_data_{the_id} = {map_data};"
                       u"var cobra_model_{the_id} = {cobra_model};"
                       u"var reaction_data_{the_id} = {reaction_data};"
                       u"var metabolite_data_{the_id} = {metabolite_data};"
                       u"var css_string_{the_id} = '{style}';").format(
                           the_id=self.the_id,
-                          map_data=(self.loaded_map_json if
-                                    self.loaded_map_json else u'null'),
-                          cobra_model=(self.loaded_model_json if
-                                       self.loaded_model_json else u'null'),
-                          reaction_data=(json.dumps(self.reaction_data) if
-                                         self.reaction_data else u'null'),
-                          metabolite_data=(json.dumps(self.metabolite_data) if
-                                           self.metabolite_data else u'null'),
-                          style=self._embed_style(dev=dev))
+                          map_data=(self.loaded_map_json if self.loaded_map_json else
+                                    u'null'),
+                          cobra_model=(self.loaded_model_json if self.loaded_model_json else
+                                       u'null'),
+                          reaction_data=(json.dumps(self.reaction_data) if self.reaction_data else
+                                         u'null'),
+                          metabolite_data=(json.dumps(self.metabolite_data) if self.metabolite_data else
+                                           u'null'),
+                          style=self._embedded_css(is_local))
         return javascript
 
-    def _draw_js(self, the_id, enable_editing, enable_menu, enable_keys, dev,
-                 fill_screen):
+    def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
+                 fill_screen, scroll_behavior):
         draw = (u"Builder({{ selection: d3.select('#{the_id}'),"
                 u"enable_editing: {enable_editing},"
+                u"menu: {menu},"
                 u"enable_keys: {enable_keys},"
-                u"enable_menu: {enable_menu},"
+                u"scroll_behavior: {scroll_behavior},"
                 u"fill_screen: {fill_screen},"
                 u"map: map_data_{the_id},"
                 u"cobra_model: cobra_model_{the_id},"
@@ -289,53 +262,234 @@ class Builder(Plot):
                 u"css: css_string_{the_id} }});").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
-                    enable_menu=json.dumps(enable_menu),
+                    menu=json.dumps(menu),
                     enable_keys=json.dumps(enable_keys),
+                    scroll_behavior=json.dumps(scroll_behavior),
                     fill_screen=json.dumps(fill_screen))
-        if dev:
-            draw = 'require(["Builder"], function(Builder) {\n%s\n});' % draw
-        else:
-            draw = 'escher.%s' % draw
+        if not dev:
+            draw = u'escher.%s' % draw
         return draw
-
-    def _embed_style(self, dev=False):
-        if self.css is not None:
-            return unicode(self.css)
-        download = urlopen(urls.builder_embed_css)
-        return unicode(download.read().replace('\n', ' '))
     
-    def _get_html(self, dev=False, wrapper=False, enable_editing=True, enable_menu=True,
-                  enable_keys=True, fill_screen=False, height="800px"):
-        if dev:
-            content = env.get_template('dev_content.html')
-        else:
-            content = env.get_template('content.html')
+    def _get_html(self, js_source='web', menu='none', scroll_behavior='pan',
+                  html_wrapper=False, enable_editing=False, enable_keys=False,
+                  minified_js=True, fill_screen=False, height='800px'):
+        """Generate the Escher HTML.
+
+        Arguments
+        --------
+
+        js_source: Can be one of the following:
+            'web' - (Default) use js files from zakandrewking.github.io/escher.
+            'local' - use compiled js files in the local escher installation. Works offline.
+            'dev' - use the local, uncompiled development files. Works offline.
+
+        menu: Menu bar options include:
+            'none' - (Default) No menu or buttons.
+            'zoom' - Just zoom buttons (does not require bootstrap).
+            'all' - Menu and button bar (requires bootstrap).
+
+        scroll_behavior: Scroll behavior options:
+            'pan' - (Default) Pan the map.
+            'zoom' - Zoom the map.
+            'none' - No scroll events.
+
+        minified_js: If True, use the minified version of js files. If
+        js_source is 'dev', then this option is ignored.
+            
+        html_wrapper: If True, return a standalone html file.
+
+        enable_editing: Enable the editing modes (build, rotate, etc.).
+
+        enable_keys: Enable keyboard shortcuts.
+
+        height: The height of the HTML container.
+
+        """
+
+        if js_source not in ['web', 'local', 'dev']:
+            raise Exception('Bad value for js_source: %s' % js_source)
+
+        if menu not in ['none', 'zoom', 'all']:
+            raise Exception('Bad value for menu: %s' % menu)
+
+        if scroll_behavior not in ['pan', 'zoom', 'none']:
+            raise Exception('Bad value for scroll_behavior: %s' % scroll_behavior)
+        
+        content = env.get_template('content.html')
+
+        # if height is not a string
         if type(height) is int:
-            height = "%dpx" % height
+            height = u"%dpx" % height
         elif type(height) is float:
-            height = "%fpx" % height
-        html = content.render(id=self.the_id,
-                              height=unicode(height),
-                              escher_css=(urls.builder_css_local if dev else urls.builder_css),
-                              initialize_js=self._initialize_javascript(dev=dev),
-                              draw_js=self._draw_js(self.the_id, enable_editing, enable_menu,
-                                                    enable_keys, dev, fill_screen),
-                              d3=(urls.d3_local if dev else urls.d3),
-                              escher=(urls.escher_local if dev else urls.escher_min),
-                              jquery=((urls.jquery_local if dev else urls.jquery) if
-                                      enable_menu else ""),
-                              boot_css=((urls.boot_css_local if dev else urls.boot_css) if
-                                        enable_menu else ""),
-                              boot_js=((urls.boot_js_local if dev else urls.boot_js) if
-                                       enable_menu else ""),
-                              wrapper=wrapper)
+            height = u"%fpx" % height
+        elif type(height) is str:
+            height = unicode(height)
+            
+        # set the proper urls 
+        is_local = js_source=='local' or js_source=='dev'
+        is_dev = js_source=='dev'
+        d3_url = (join(self.local_host, urls.d3_local) if is_local else
+                  urls.d3)
+        escher_url = ("" if js_source=='dev' else
+                      (join(self.local_host, urls.escher_min_local) if is_local and minified_js else
+                       (join(self.local_host, urls.escher_local) if is_local else
+                        (urls.escher_min if minified_js else
+                         urls.escher))))
+        jquery_url = ("" if not menu=='all' else
+                      (join(self.local_host, urls.jquery_local) if is_local else
+                       urls.jquery))
+        boot_css_url = ("" if not menu=='all' else
+                        (join(self.local_host, urls.boot_css_local) if is_local else 
+                         urls.boot_css))
+        boot_js_url = ("" if not menu=='all' else
+                       (join(self.local_host, urls.boot_js_local) if is_local else
+                        urls.boot_js))
+        require_js_url = (urls.require_js_local if is_local else
+                          urls.require_js)
+        html = content.render(require_js=require_js_url,
+                              id=self.the_id,
+                              height=height,
+                              escher_css=(join(self.local_host, urls.builder_css_local) if is_local else
+                                          urls.builder_css),
+                              dev=is_dev,
+                              d3=d3_url,
+                              escher=escher_url,
+                              jquery=jquery_url,
+                              boot_css=boot_css_url,
+                              boot_js=boot_js_url,
+                              wrapper=html_wrapper,
+                              host=self.local_host,
+                              initialize_js=self._initialize_javascript(is_local),
+                              draw_js=self._draw_js(self.the_id, enable_editing,
+                                                    menu, enable_keys,
+                                                    is_dev, fill_screen, scroll_behavior),)
         return html
 
-    def embedded_html(self, dev=False, enable_editing=False, enable_menu=True,
-                      enable_keys=False, height=800):
-        return self._get_html(dev=dev, wrapper=False, enable_editing=enable_editing,
-                              enable_menu=enable_menu, fill_screen=False, height=height)
+    def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',
+                            enable_editing=False, enable_keys=False, minified_js=True, 
+                            height=500):
+        """Display the plot in the notebook.
+
+        Arguments
+        --------
+
+        js_source: Can be one of the following:
+            'web' (Default) - use js files from zakandrewking.github.io/escher.
+            'local' - use compiled js files in the local escher installation. Works offline.
+            'dev' - use the local, uncompiled development files. Works offline.
+
+        menu: Menu bar options include:
+            'none' - No menu or buttons.
+            'zoom' - Just zoom buttons.
+            Note: The 'all' menu option does not work in an IPython notebook.
+
+        scroll_behavior: Scroll behavior options:
+            'pan' - Pan the map.
+            'zoom' - Zoom the map.
+            'none' - (Default) No scroll events.
+
+        enable_editing: Enable the editing modes (build, rotate, etc.).
+
+        enable_keys: Enable keyboard shortcuts.
+
+        minified_js: If True, use the minified version of js files. If js_source
+        is 'dev', then this option is ignored.
+
+        height: Height of the HTML container.
+
+        """
+        html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
+                              html_wrapper=False, enable_editing=enable_editing, enable_keys=enable_keys,
+                              minified_js=minified_js, fill_screen=False, height=height)
+        if menu=='all':
+            raise Exception("The 'all' menu option cannot be used in an IPython notebook.")
+        # import here, in case users don't have requirements installed
+        from IPython.display import HTML
+        return HTML(html)
+
     
-    def standalone_html(self, dev=False, enable_editing=True, enable_menu=True):
-        return self._get_html(dev=dev, wrapper=True, enable_editing=enable_editing,
-                              enable_menu=enable_menu, fill_screen=True, height="100%")
+    def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50, js_source='web',
+                           menu='all', scroll_behavior='pan', enable_editing=True, enable_keys=True,
+                           minified_js=True):
+        """Launch a web browser to view the map.
+
+        Arguments
+        --------
+
+        js_source: Can be one of the following:
+            'web' - use js files from zakandrewking.github.io/escher.
+            'local' - use compiled js files in the local escher installation. Works offline.
+            'dev' - use the local, uncompiled development files. Works offline.
+
+        menu: Menu bar options include:
+            'none' - No menu or buttons.
+            'zoom' - Just zoom buttons (does not require bootstrap).
+            'all' - Menu and button bar (requires bootstrap).
+
+        scroll_behavior: Scroll behavior options:
+            'pan' - (Default) Pan the map.
+            'zoom' - Zoom the map.
+            'none' - No scroll events.
+            
+        enable_editing: Enable the editing modes (build, rotate, etc.).
+
+        enable_keys: Enable keyboard shortcuts.
+
+        minified_js: If True, use the minified version of js files. If js_source
+        is 'dev', then this option is ignored.
+
+        height: Height of the HTML container.
+
+        """
+        html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
+                              html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
+                              minified_js=minified_js, fill_screen=True, height="100%")
+        serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
+        
+    def save_html(self, filepath=None, js_source='web', menu='all', scroll_behavior='pan',
+                  enable_editing=True, enable_keys=True, minified_js=True):
+        """Save an HTML file containing the map.
+
+        Arguments
+        --------
+
+        js_source: Can be one of the following:
+            'web' - use js files from zakandrewking.github.io/escher.
+            'local' - use compiled js files in the local escher installation. Works offline.
+            'dev' - use the local, uncompiled development files. Works offline.
+
+        menu: Menu bar options include:
+            'none' - No menu or buttons.
+            'zoom' - Just zoom buttons (does not require bootstrap).
+            'all' - Menu and button bar (requires bootstrap).
+
+        scroll_behavior: Scroll behavior options:
+            'pan' - (Default) Pan the map.
+            'zoom' - Zoom the map.
+            'none' - No scroll events.
+            
+        enable_editing: Enable the editing modes (build, rotate, etc.).
+
+        enable_keys: Enable keyboard shortcuts.
+
+        minified_js: If True, use the minified version of js files. If js_source
+        is 'dev', then this option is ignored.
+
+        height: Height of the HTML container.
+
+        """
+        html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
+                              html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
+                              minified_js=minified_js, fill_screen=True, height="100%")
+        if filepath is not None:
+            with codecs.open(filepath, 'w', encoding='utf-8') as f:
+                f.write(html)
+            return filepath
+        else:
+            from tempfile import mkstemp
+            from os import write, close
+            os_file, filename = mkstemp(suffix=".html")
+            write(os_file, unicode(html).encode('utf-8'))
+            close(os_file)
+            return filename
+    

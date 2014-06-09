@@ -1,8 +1,10 @@
 {% if wrapper %}{% extends 'standalone.html' %}{% endif %}
 
 {% block head %}
+  <!-- These are not generally used within the notebook. -->
   <script src="{{jquery}}"></script>
   <script src="{{boot_js}}"></script>
+
   <link rel="stylesheet" href="{{boot_css}}">
   <link rel="stylesheet" href="{{escher_css}}"/>
 {% endblock %}
@@ -23,27 +25,42 @@
      document.getElementsByTagName("head")[0].appendChild(s);
    }
 
-   if (typeof(escher) !== "undefined") {
-     // already loaded: just create the figure
-     !function(escher) {
+   if (typeof define === "function" && define.amd) {
+     // require.js is available: use it to load d3 and escher
+     {% if dev %}
+     requirejs.config({
+       baseUrl: '{{host}}/js/src',
+       paths: {
+	 lib: '../../lib',
+	 d3: "{{ d3[:-3] }}",
+       }
+     });
+     require(["d3", "Builder"], function(d3, Builder) {
+       window.d3 = d3;
        {{ draw_js }}
-     }(escher);
-   } else if (typeof define === "function" && define.amd) {
-     // require.js is available: use it to load d3/mpld3
+     });
+     {% else %}
      require.config({paths: { d3: "{{ d3[:-3] }}",
 			      escher: "{{ escher[:-3] }}" }});
      require(["d3", "escher"], function(d3, escher) {
        window.d3 = d3;
-       window.escher = escher;
        {{ draw_js }}
      });
+     {% endif %}
    } else {
-     // require.js not available: dynamically load d3 & mpld3
-     escher_load_lib("{{ d3 }}", function(){
-       escher_load_lib("{{ escher }}", function(){
+     if (window.escher !== undefined && window.d3 !== undefined) {
+       // already loaded: just create the figure
+       !function(escher, d3) {
 	 {{ draw_js }}
-       })
-     });
+       }(window.escher, window.d3);
+     } else {
+       // require.js not available: dynamically load d3 & escher
+       escher_load_lib("{{ d3 }}", function() {
+	 escher_load_lib("{{ escher }}", function() {
+	   {{ draw_js }}
+	 })
+       });
+     }
    }
   </script>
 {% endblock %}

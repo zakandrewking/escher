@@ -41,11 +41,11 @@ def test_load_resource(tmpdir):
     url = "https://zakandrewking.github.io/escher/maps/v1/iJO1366_central_metabolism.json"
     _ = json.loads(load_resource(url, 'name'))
         
-    with raises(URLError):
-        load_resource("http://asodivhowef", 'name')
+    # with raises(URLError):
+    #     load_resource("http://asodivhowef", 'name')
        
-    with raises(URLError):
-        load_resource("https://asodivhowef", 'name')
+    # with raises(URLError):
+    #     load_resource("https://asodivhowef", 'name')
 
     with raises(ValueError) as err:
         p = join(str(tmpdir), 'dummy')
@@ -54,18 +54,31 @@ def test_load_resource(tmpdir):
         load_resource(p, 'name')
         assert 'not a valid json file' in err.value
 
-def test_Builder():
+def test_Builder(tmpdir):
     b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}')
-    b.embedded_html(dev=True, enable_editing=True, height=100)
-    b.standalone_html(dev=True)
+    #  cannot load dev version without an explicit css string property
+    b.display_in_notebook(js_source='dev')
+    b.display_in_notebook(js_source='web')
+    b.display_in_notebook(js_source='local')
     b.display_in_notebook(height=200)
+    # b.display_in_browser()
+    b.save_html(join(str(tmpdir), 'Builder.html'))
 
+    # test options
+    with raises(Exception):
+        b._get_html(js_source='devv')
+    with raises(Exception):
+        b._get_html(menu='')
+    with raises(Exception):
+        b._get_html(scroll_behavior='asdf')
+    b._get_html(js_source='local')
+    b._get_html(menu='all')
+    b._get_html(scroll_behavior='zoom')
+    
     # download
     b = Builder(map_name='iJO1366_central_metabolism', model_name='iJO1366')
     assert b.loaded_map_json is not None
     assert b.loaded_model_json is not None
-    b.embedded_html(dev=True, enable_editing=True, height=100)
-    b.standalone_html(dev=True)
     b.display_in_notebook(height=200)
 
     # data

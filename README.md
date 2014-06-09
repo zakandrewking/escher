@@ -5,7 +5,7 @@ A web-based tool to build, view, share, and embed metabolic maps.
 
 See the [wiki](https://github.com/zakandrewking/escher/wiki) for documentation, examples, and developer information.
 
-If you have questions, you can ask for help on Stack Overflow with the [Escher](http://stackoverflow.com/questions/tagged/escher) tag.
+Follow [@zakandrewking](https://twitter.com/zakandrewking) for Escher updates, and ask for help on Stack Overflow with the [Escher](http://stackoverflow.com/questions/tagged/escher) tag.
 
 **NOTE**: Escher is still a Beta release, so please be patient with the early version as you may encounter bugs and other unexpected behavior. The documentation is also unfinished. Feel free to submit bugs and feature requests as Issues, or, better yet, Pull Requests.
 
@@ -64,39 +64,47 @@ Once you have saved your data as a JSON file, you can load the files using the D
 2) Installing, and using Escher in the IPython Notebook
 ======
 
-You can download the source files and install by running:
+The Python package for _Escher_ can be installed using pip:
+
+```shell
+pip install escher --pre
+```
+
+Alternatively, one can download the [source files](https://github.com/zakandrewking/escher/releases) and install the package directly:
 
 ```shell
 python setup.py install
 ```
 
-(Soon, you will be able to download directly from pip).
-
 Once you have installed Escher locally, you can interact with Escher maps in an IPython Notebook. This example notebook outlines the basic idea:
 
 http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/multiple-maps.ipynb
 
+Dependencies:
+- [Jinja2](http://jinja.pocoo.org/)
+- [tornado](http://www.tornadoweb.org/en/stable/)
+- [COBRApy](https://github.com/opencobra/cobrapy), 0.3.0b1 or later
+
+
 3) Running a local server
 =======
 
-You can run your own local server if you want to modify the Escher code. To get started, go to the root escher directory and call:
-
-```shell
-python escher/server.py
-```
-
-Alternatively, you can launch the server from any directory by calling:
+You can run your own local server if you want to modify the Escher code, or use Escher offline. To get started, install the Python package and run from any directory by calling:
 
 ```shell
 python -m escher.server
 ```
 
-This start a server at [localhost:7778](http://localhost:7778).
+This starts a server at [localhost:7778](http://localhost:7778). You can also choose another port:
+
+```shell
+python -m escher.server --port=8005
+```
 
 4) Using the static javascript files
 =======
 
-You can include the escher-1.0.dev.js script in any html document. The only dependencies are [d3.js](http://d3js.org/) and [Twitter Bootstrap](http://getbootstrap.com).
+You can include the escher-1.0.dev.js script in any html document. The only dependencies are [d3.js](http://d3js.org/), and [Twitter Bootstrap](http://getbootstrap.com) if you are using the option menu='all'.
 
 5) Building and testing escher
 =======

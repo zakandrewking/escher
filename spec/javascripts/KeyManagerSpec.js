@@ -23,16 +23,22 @@ describe("KeySpy", function() {
 	spyOn(key, 'fn');
 	spyOn(key_shift, 'fn').and.callThrough();
 
-	__triggerKeyboardEvent(document.body, k);
-	__triggerKeyboardEvent(document.body, shift);
-	__triggerKeyboardEvent(document.body, k2);
     });
 
     it("Tests keys", function() {
+	__triggerKeyboardEvent(document.body, k);
 	expect(key.fn).toHaveBeenCalled();
     });
 
+    it("Tests disable keys", function() {
+	key_manager.toggle(false);
+	__triggerKeyboardEvent(document.body, k);
+	expect(key.fn).not.toHaveBeenCalled();
+    });
+
     it("Tests shift key", function() {
+	__triggerKeyboardEvent(document.body, shift);
+	__triggerKeyboardEvent(document.body, k2);
 	expect(key_shift.fn).toHaveBeenCalled();
 	expect(x).toEqual('hi');
     });

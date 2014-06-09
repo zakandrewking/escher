@@ -2,7 +2,7 @@
     baseUrl: '../src',
     name: "../build/almond",
     paths: {
-	lib: '../../../lib'
+	lib: '../../lib'
     },
     include: ["main"],
     wrap: {

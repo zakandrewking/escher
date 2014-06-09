@@ -7,10 +7,10 @@ define(["utils"], function(utils) {
 	     set_input_button: set_input_button };
 
     function individual_button(s, button) {
-	var b = s.append('li')
-		.append('button').attr('class', 'btn btn-default'),
+	var b = s.append('button'),
 	    c = b.append('span');
 	if ('id' in button) b.attr('id', button.id);
+	if ('classes' in button) b.attr('class', button.classes);
 	if ('text' in button) c.text(button.text);
 	if ('icon' in button) c.classed(button.icon, true);
 	if ('key' in button) set_button(b, button.key);

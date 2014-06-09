@@ -3634,6 +3634,7 @@ define('KeyManager',["utils"], function(utils) {
 	 */
 	if (on_off===undefined) on_off = !this.enabled;
 
+	this.enabled = on_off;
 	this.update();
     }	
     function add_enter_listener(callback) {
@@ -5633,7 +5634,7 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
     return ZoomContainer;
 
     // definitions
-    function init(selection, size_container, use_mousewheel_for_panning) {
+    function init(selection, size_container, scroll_behavior) {
 	/** Make a container that will manage panning and zooming.
 
 	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
@@ -5643,9 +5644,6 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 	 and height.
 
 	 */
-
-	if (use_mousewheel_for_panning===undefined)
-	    use_mousewheel_for_panning = true;
 
 	this.zoom_on = true;
 	this.initial_zoom = 1.0;
@@ -5680,17 +5678,23 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 	    .on("zoom", function() {
 		zoom(zoom_container, d3.event);
 	    });
-	container.call(this.zoom_behavior);
-	
-	if (use_mousewheel_for_panning) {
+	container.call(this.zoom_behavior);	
+	if (scroll_behavior=='none' || scroll_behavior=='pan') {
 	    container.on("mousewheel.zoom", null)
 		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
 		.on("wheel.zoom", null) // disables newer versions of Firefox
 		.on('dblclick.zoom', null);
-	    // add the wheel listener
+	}
+	if (scroll_behavior=='pan') {
+	    // Add the wheel listener
 	    var wheel_fn = function() {
 		var ev = d3.event,
 		    sensitivity = 0.5;
+		// stop scroll in parent elements
+		ev.stopPropagation();
+		ev.preventDefault();
+		ev.returnValue = false;
+		// change the location
 		this.go_to(this.window_scale,
 			   { x: this.window_translate.x -
 			     (ev.wheelDeltaX!==undefined ? -ev.wheelDeltaX/1.5 : ev.deltaX) * sensitivity,
@@ -5758,7 +5762,7 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 	utils.check_undefined(arguments, ['scale', 'translate']);
 	if (show_transition===undefined) show_transition = true;
 
-	if (!scale) return console.error('Bad scale value');
+	if (!scale) throw new Error('Bad scale value');
 	if (!translate || !('x' in translate) || !('y' in translate) ||
 	    isNaN(translate.x) || isNaN(translate.y))
 	    return console.error('Bad translate value');
@@ -6500,10 +6504,10 @@ define('ui',["utils"], function(utils) {
 	     set_input_button: set_input_button };
 
     function individual_button(s, button) {
-	var b = s.append('li')
-		.append('button').attr('class', 'btn btn-default'),
+	var b = s.append('button'),
 	    c = b.append('span');
 	if ('id' in button) b.attr('id', button.id);
+	if ('classes' in button) b.attr('class', button.classes);
 	if ('text' in button) c.text(button.text);
 	if ('icon' in button) c.classed(button.icon, true);
 	if ('key' in button) set_button(b, button.key);
@@ -6786,6 +6790,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			  rotate_mode: rotate_mode,
 			  _toggle_direction_buttons: _toggle_direction_buttons,
 			  _setup_menu: _setup_menu,
+			  _setup_simple_zoom_buttons: _setup_simple_zoom_buttons,
 			  _setup_status: _setup_status,
 			  _setup_modes: _setup_modes,
 			  _get_keys: _get_keys };
@@ -6796,13 +6801,13 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
     function init(options) {
 	// set defaults
 	var o = utils.set_options(options, {
-	    margins: {top: 0, right: 0, bottom: 0, left: 0},
 	    selection: d3.select("body").append("div"),
-	    fillScreen: false,
+	    menu: 'all',
+	    scroll_behavior: 'pan',
 	    enable_editing: true,
-	    enable_menu: true,
 	    enable_keys: true,
 	    enable_search: true,
+	    fillScreen: false,
 	    on_load: null,
 	    map_path: null,
 	    map: null,
@@ -6818,7 +6823,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    metabolite_data_styles: ['Color', 'Size', 'Diff'],
 	    show_beziers: false,
 	    debug: false,
-	    starting_reaction: 'GLCtex'
+	    starting_reaction: 'GLCtex',
+	    margins: {top: 0, right: 0, bottom: 0, left: 0}
 	});
 
 	if (utils.check_for_parent_tag(o.selection, 'svg')) {
@@ -6892,7 +6898,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 				  this.o.margins, this.o.fill_screen);
 	
 	// se up the zoom container
-	this.zoom_container = new ZoomContainer(svg, this.o.selection);
+	this.zoom_container = new ZoomContainer(svg, this.o.selection,
+						this.o.scroll_behavior);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
 	if (this.o.map_data!==null) {
@@ -6956,9 +6963,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.map.key_manager.toggle(this.o.enable_keys);
 	
 	// set up menu and status bars
-	if (this.o.enable_menu) {
+	if (this.o.menu=='all') {
 	    this._setup_menu(menu_div, button_div, this.map, this.zoom_container, this.map.key_manager, keys,
 			     this.o.enable_editing);
+	} else if (this.o.menu=='zoom') {
+	    this._setup_simple_zoom_buttons(button_div, keys);
 	}
 	var status = this._setup_status(this.o.selection, this.map);
 
@@ -6996,7 +7005,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	// input
 	this.reaction_input.toggle(mode=='build');
 	this.reaction_input.direction_arrow.toggle(mode=='build');
-	if (this.o.enable_menu && this.o.enable_editing)
+	if (this.o.menu=='all' && this.o.enable_editing)
 	    this._toggle_direction_buttons(mode=='build');
 	// brush
 	this.brush.toggle(mode=='brush');
@@ -7148,14 +7157,17 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	ui.individual_button(button_panel.append('li'),
 			     { key: keys.zoom_in,
 			       icon: "glyphicon glyphicon-plus-sign",
+			       classes: 'btn btn-default',
 			       tooltip: "Zoom in (Ctrl +)" });
 	ui.individual_button(button_panel.append('li'),
 			     { key: keys.zoom_out,
 			       icon: "glyphicon glyphicon-minus-sign",
+			       classes: 'btn btn-default',
 			       tooltip: "Zoom out (Ctrl -)" });
 	ui.individual_button(button_panel.append('li'),
 			     { key: keys.extent_canvas,
 			       icon: "glyphicon glyphicon-resize-full",
+			       classes: 'btn btn-default',
 			       tooltip: "Zoom to canvas (Ctrl 1)" });
 
 	// mode buttons
@@ -7251,6 +7263,29 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    if (error) console.warn(error);
 	    this.map.set_metabolite_data(data);
 	}
+    }
+
+    function _setup_simple_zoom_buttons(button_selection, keys) {
+	var button_panel = button_selection.append("div")
+		.attr('id', 'simple-button-panel');
+
+	// buttons
+	ui.individual_button(button_panel.append('div'),
+			     { key: keys.zoom_in,
+			       text: "+",
+			       classes: "simple-button",
+			       tooltip: "Zoom in (Ctrl +)" });
+	ui.individual_button(button_panel.append('div'),
+			     { key: keys.zoom_out,
+			       text: "–",
+			       classes: "simple-button",
+			       tooltip: "Zoom out (Ctrl -)" });
+	ui.individual_button(button_panel.append('div'),
+			     { key: keys.extent_canvas,
+			       text: "↔",
+			       classes: "simple-button",
+			       tooltip: "Zoom to canvas (Ctrl 1)" });
+
     }
 
     function _toggle_direction_buttons(on_off) {
