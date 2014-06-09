@@ -120,7 +120,6 @@ class StaticHandler(BaseHandler):
 settings = {"debug": "False"}
 
 application = Application([
-    (r".*/knockout-map/(.*)", koHandler),
     (r".*/lib/(.*)", LibHandler),
     (r".*/(fonts/.*)", LibHandler),
     (r".*/(js/.*)", StaticHandler),
