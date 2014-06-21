@@ -4,7 +4,8 @@ define(["utils"], function(utils) {
 	     button_group: button_group,
 	     dropdown_menu: dropdown_menu,
 	     set_button: set_button,
-	     set_input_button: set_input_button };
+	     set_input_button: set_input_button,
+	     scale_bar: scale_bar };
 
     function individual_button(s, button) {
 	var b = s.append('button'),
@@ -113,6 +114,26 @@ define(["utils"], function(utils) {
 	    input.node().click();
 	});
 	return function() { input.node().click(); };
+    }
+
+    function scale_bar(s, range, callback) {
+	/** A UI to edit any scale. */
+
+	s.append('span').text('low');
+	s.append('input').attr('class', 'scale-bar-input')
+	    .attr('value', range[0])
+	    .on('change', function() {
+		range[0] = this.value;
+		callback(range);
+	    });
+	s.append('span').text('high');
+	s.append('input').attr('class', 'scale-bar-input')
+	    .attr('value', range[1])
+	    .on('change', function() {
+		range[1] = this.value;
+		callback(range);
+	    });
+
     }
 });
 

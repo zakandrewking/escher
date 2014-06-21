@@ -49,9 +49,9 @@ define(["lib/vkbeautify"], function(vkbeautify) {
         return out;
     }
 
-    function setup_svg(selection, selection_is_svg, margins, fill_screen) {
+    function setup_svg(selection, selection_is_svg, fill_screen) {
         // sub selection places the graph in an existing svg environment
-        var add_svg = function(f, s, m) {
+        var add_svg = function(f, s) {
             if (f) {
                 d3.select("body").classed('fill-screen-body', true);
 		s.classed('fill-screen-div', true);
@@ -70,7 +70,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
         if (selection_is_svg) {
             return selection;
         } else if (selection) {
-            return add_svg(fill_screen, selection, margins);
+            return add_svg(fill_screen, selection);
         } else {
             throw new Error('No selection');
         }

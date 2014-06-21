@@ -8,18 +8,17 @@ define(["utils"], function(utils) {
     return Scale;
 
     // definitions
-    function init(options) { //map_w, map_h, w, h, options) {
-	var sc = utils.set_options(options, 
-				   { reaction_color: d3.scale.linear()
-				     .domain([0, 0.000001, 1, 8, 50])
-				     .range(["rgb(200,200,200)", "rgb(190,190,255)", 
-					     "rgb(100,100,255)", "blue", "red"])});
-
+    function init() { //map_w, map_h, w, h, options) {
+	var sc = {};
 	sc.x = d3.scale.linear();
 	sc.y = d3.scale.linear();
 	sc.x_size = d3.scale.linear();
 	sc.y_size = d3.scale.linear();
 	sc.size = d3.scale.linear();
+	sc.reaction_color = d3.scale.linear()
+	    .domain([0, 0.000001, 1, 8, 50])
+	    .range(["rgb(200,200,200)", "rgb(190,190,255)", 
+		    "rgb(100,100,255)", "blue", "red"]);
         sc.reaction_size = d3.scale.linear()
             .domain([0, 40])
             .range([6, 12]),

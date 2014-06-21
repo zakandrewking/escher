@@ -112,7 +112,12 @@
     text-align: left;
 }
 .settings-section {
-    width: 90%
+    width: 90%;
+}
+.scale-bar-input {
+    width: 70px;
+    text-align: left;
+    margin: 0 10px;
 }
 /* For Settings and Search */
 .close-button {

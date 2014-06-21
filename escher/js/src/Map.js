@@ -18,6 +18,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	// more setup
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
+	// scales
+	get_scale: get_scale,
+	set_scale: set_scale,
 	// appearance
 	set_status: set_status,
 	set_model: set_model,
@@ -93,9 +96,10 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     // -------------------------------------------------------------------------
     // setup
 
-    function init(svg, css, selection, zoom_container, reaction_data,
-		  reaction_data_styles, metabolite_data, metabolite_data_styles,
-		  cobra_model, canvas_size_and_loc, enable_search) {
+    function init(svg, css, selection, zoom_container, auto_set_data_domain,
+		  reaction_data, reaction_data_styles, metabolite_data,
+		  metabolite_data_styles, cobra_model, canvas_size_and_loc,
+		  enable_search) {
 	if (canvas_size_and_loc===null) {
 	    var size = zoom_container.get_size();
 	    canvas_size_and_loc = {x: -size.width, y: -size.height,
@@ -115,6 +119,8 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	this.setup_containers(selection);
 	this.sel = selection;
 	this.zoom_container = zoom_container;
+
+	this.auto_set_data_domain = auto_set_data_domain;
 
 	// check and load data
 	this.reaction_data_object = data_styles.import_and_check(reaction_data,
@@ -176,14 +182,14 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     // Import
 
     function from_data(map_data, svg, css, selection, zoom_container,
-		       reaction_data, reaction_data_styles,
+		       auto_set_data_domain, reaction_data, reaction_data_styles,
 		       metabolite_data, metabolite_data_styles, cobra_model,
 		       enable_search) {
 	/** Load a json map and add necessary fields for rendering.
 	 
 	 */
 	utils.check_undefined(arguments, ['map_data', 'svg', 'css', 'selection',
-					  'zoom_container',
+					  'zoom_container', 'auto_set_data_domain',
 					  'reaction_data', 'reaction_data_styles',
 					  'metabolite_data', 'metabolite_data_styles',
 					  'cobra_model', 'enable_search']);
@@ -199,7 +205,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	}
 	
 	var canvas = map_data.canvas,
-	    map = new Map(svg, css, selection, zoom_container,
+	    map = new Map(svg, css, selection, zoom_container, auto_set_data_domain,
 			  reaction_data, reaction_data_styles, metabolite_data,
 			  metabolite_data_styles, cobra_model, canvas,
 			  enable_search);
@@ -305,6 +311,76 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	this.sel.select('#text-labels')
 	    .selectAll('.text-label')
 	    .remove();
+    }
+
+    // -------------------------------------------------------------------------
+    // Scales
+
+    function get_scale(data, type) {
+	/** Get a reaction or metabolite scale.
+
+	 Arguments
+	 ---------
+	 
+	 data: The type of data. Options are 'reaction' or 'metabolite'.
+
+	 type: The type of scale to set. Options are 'size' and 'color'.
+
+	 */
+
+	if (data=='reaction' && type=='size') {
+	    return this.scale.reaction_size;
+	} else if (data=='reaction' && type=='color') {
+	    return this.scale.reaction_color;
+	} else if (data=='metabolite' && type=='size') {
+	    return this.scale.metabolite_size;
+	} else if (data=='metabolite' && type=='color') {
+	    return this.scale.metabolite_color;
+	} else {
+	    throw Error('Bad value for data or type: ' + data + ', ' + type);
+	}
+    }
+
+    function set_scale(data, type, domain, range) {
+	/** Set a reaction or metabolite scale.
+
+	 Arguments
+	 ---------
+	 
+	 data: The type of data. Options are 'reaction' or 'metabolite'.
+
+	 type: The type of scale to set. Options are 'size' and 'color'.
+
+	 domain: The new scale domain. If domain is *null*, then the existing
+	 domain is used. If *Builder.options.auto_set_data_domain* is true,
+	 then, this input is ignored.
+
+	 */
+
+	if (domain===undefined) domain = null;
+	if (range===undefined) range = null;
+
+	if (domain !== null && this.auto_set_data_domain==true) {
+	    console.warn('Cannot set domain manually if auto_set_data_domain is true');
+	    domain = null;
+	}
+
+	if (data=='reaction' && type=='size') {
+	    set_this_scale(this.scale.reaction_size, domain, range);
+	} else if (data=='reaction' && type=='color') {
+	    set_this_scale(this.scale.reaction_color, domain, range);
+	} else if (data=='metabolite' && type=='size') {
+	    set_this_scale(this.scale.metabolite_size, domain, range);
+	} else if (data=='metabolite' && type=='color') {
+	    set_this_scale(this.scale.metabolite_color, domain, range);
+	} else {
+	    throw Error('Bad value for data or type: ' + data + ', ' + type);
+	}
+
+	function set_this_scale(a_scale, a_domain, a_range) {
+	    if (a_domain !== null) a_scale.domain(a_domain);
+	    if (a_range !== null) a_scale.range(a_range);
+	}
     }
 
     // -------------------------------------------------------------------------
@@ -621,6 +697,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	/**  Returns True if the scale has changed.
 
 	 */
+
+	if (!this.auto_set_data_domain) return false;
+
 	// default min and max
 	var vals = [];
 	for (var reaction_id in this.reactions) {
@@ -697,6 +776,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	/**  Returns True if the scale has changed.
 
 	 */
+
+	if (!this.auto_set_data_domain) return false;
+
 	// default min and max
 	var min = 0, max = 0, vals = [];
 	for (var node_id in this.nodes) {
