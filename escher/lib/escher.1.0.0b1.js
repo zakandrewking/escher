@@ -835,9 +835,9 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
         return out;
     }
 
-    function setup_svg(selection, selection_is_svg, margins, fill_screen) {
+    function setup_svg(selection, selection_is_svg, fill_screen) {
         // sub selection places the graph in an existing svg environment
-        var add_svg = function(f, s, m) {
+        var add_svg = function(f, s) {
             if (f) {
                 d3.select("body").classed('fill-screen-body', true);
 		s.classed('fill-screen-div', true);
@@ -856,7 +856,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
         if (selection_is_svg) {
             return selection;
         } else if (selection) {
-            return add_svg(fill_screen, selection, margins);
+            return add_svg(fill_screen, selection);
         } else {
             throw new Error('No selection');
         }
@@ -3321,18 +3321,17 @@ define('Scale',["utils"], function(utils) {
     return Scale;
 
     // definitions
-    function init(options) { //map_w, map_h, w, h, options) {
-	var sc = utils.set_options(options, 
-				   { reaction_color: d3.scale.linear()
-				     .domain([0, 0.000001, 1, 8, 50])
-				     .range(["rgb(200,200,200)", "rgb(190,190,255)", 
-					     "rgb(100,100,255)", "blue", "red"])});
-
+    function init() { //map_w, map_h, w, h, options) {
+	var sc = {};
 	sc.x = d3.scale.linear();
 	sc.y = d3.scale.linear();
 	sc.x_size = d3.scale.linear();
 	sc.y_size = d3.scale.linear();
 	sc.size = d3.scale.linear();
+	sc.reaction_color = d3.scale.linear()
+	    .domain([0, 0.000001, 1, 8, 50])
+	    .range(["rgb(200,200,200)", "rgb(190,190,255)", 
+		    "rgb(100,100,255)", "blue", "red"]);
         sc.reaction_size = d3.scale.linear()
             .domain([0, 40])
             .range([6, 12]),
@@ -3531,17 +3530,15 @@ define('KeyManager',["utils"], function(utils) {
 	h.shift = false;
     }
     // instance methods
-    function init(assigned_keys, reaction_input, search_bar, ctrl_equals_cmd) {
+    function init(assigned_keys, input_list, ctrl_equals_cmd) {
 	/** Assign keys for commands.
 
 	 */
 
 	if (assigned_keys===undefined) this.assigned_keys = {};
 	else this.assigned_keys = assigned_keys;
-	if (reaction_input===undefined) this.reaction_input = null;
-	else this.reaction_input = reaction_input;
-	if (search_bar===undefined) this.search_bar = null;
-	else this.search_bar = search_bar;
+	if (input_list===undefined) this.input_list = [];
+	else this.input_list = input_list;
 
 	if (ctrl_equals_cmd===undefined) ctrl_equals_cmd = true;
 	this.ctrl_equals_cmd = ctrl_equals_cmd;
@@ -3570,11 +3567,14 @@ define('KeyManager',["utils"], function(utils) {
 
 	if (!(this.enabled)) return;
 
-        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, reaction_input, search_bar) {
+        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, input_list) {
             var kc = d3.event.keyCode,
-                input_visible = ((reaction_input ? reaction_input.is_visible() : false) ||
-				 (search_bar ? search_bar.is_visible() : false)),
 		meaningless = true;
+	    // check the inputs
+	    var input_visible = false;
+	    input_list.forEach(function(input) {
+		if (input.is_visible()) input_visible = true;
+	    });
             toggle_modifiers(modifier_keys, held_keys, kc, true);
 	    for (var key_id in keys) {
 		var assigned_key = keys[key_id];
@@ -3597,7 +3597,7 @@ define('KeyManager',["utils"], function(utils) {
 		if (modifier_keys[k] == kc) meaningless = false;
 	    if (meaningless) 
 		reset_held_keys(held_keys);
-        }.bind(null, this.ctrl_equals_cmd, this.reaction_input, this.search_bar))
+        }.bind(null, this.ctrl_equals_cmd, this.input_list))
 	    .on("keyup.key_manager", function() {
             toggle_modifiers(modifier_keys, held_keys,
 			     d3.event.keyCode, false);
@@ -4016,6 +4016,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	// more setup
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
+	// scales
+	get_scale: get_scale,
+	set_scale: set_scale,
 	// appearance
 	set_status: set_status,
 	set_model: set_model,
@@ -4091,9 +4094,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     // -------------------------------------------------------------------------
     // setup
 
-    function init(svg, css, selection, zoom_container, reaction_data,
-		  reaction_data_styles, metabolite_data, metabolite_data_styles,
-		  cobra_model, canvas_size_and_loc, enable_search) {
+    function init(svg, css, selection, zoom_container, auto_set_data_domain,
+		  reaction_data, reaction_data_styles, metabolite_data,
+		  metabolite_data_styles, cobra_model, canvas_size_and_loc,
+		  enable_search) {
 	if (canvas_size_and_loc===null) {
 	    var size = zoom_container.get_size();
 	    canvas_size_and_loc = {x: -size.width, y: -size.height,
@@ -4113,6 +4117,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	this.setup_containers(selection);
 	this.sel = selection;
 	this.zoom_container = zoom_container;
+
+	this.auto_set_data_domain = auto_set_data_domain;
 
 	// check and load data
 	this.reaction_data_object = data_styles.import_and_check(reaction_data,
@@ -4174,14 +4180,14 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     // Import
 
     function from_data(map_data, svg, css, selection, zoom_container,
-		       reaction_data, reaction_data_styles,
+		       auto_set_data_domain, reaction_data, reaction_data_styles,
 		       metabolite_data, metabolite_data_styles, cobra_model,
 		       enable_search) {
 	/** Load a json map and add necessary fields for rendering.
 	 
 	 */
 	utils.check_undefined(arguments, ['map_data', 'svg', 'css', 'selection',
-					  'zoom_container',
+					  'zoom_container', 'auto_set_data_domain',
 					  'reaction_data', 'reaction_data_styles',
 					  'metabolite_data', 'metabolite_data_styles',
 					  'cobra_model', 'enable_search']);
@@ -4197,7 +4203,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	}
 	
 	var canvas = map_data.canvas,
-	    map = new Map(svg, css, selection, zoom_container,
+	    map = new Map(svg, css, selection, zoom_container, auto_set_data_domain,
 			  reaction_data, reaction_data_styles, metabolite_data,
 			  metabolite_data_styles, cobra_model, canvas,
 			  enable_search);
@@ -4303,6 +4309,76 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	this.sel.select('#text-labels')
 	    .selectAll('.text-label')
 	    .remove();
+    }
+
+    // -------------------------------------------------------------------------
+    // Scales
+
+    function get_scale(data, type) {
+	/** Get a reaction or metabolite scale.
+
+	 Arguments
+	 ---------
+	 
+	 data: The type of data. Options are 'reaction' or 'metabolite'.
+
+	 type: The type of scale to set. Options are 'size' and 'color'.
+
+	 */
+
+	if (data=='reaction' && type=='size') {
+	    return this.scale.reaction_size;
+	} else if (data=='reaction' && type=='color') {
+	    return this.scale.reaction_color;
+	} else if (data=='metabolite' && type=='size') {
+	    return this.scale.metabolite_size;
+	} else if (data=='metabolite' && type=='color') {
+	    return this.scale.metabolite_color;
+	} else {
+	    throw Error('Bad value for data or type: ' + data + ', ' + type);
+	}
+    }
+
+    function set_scale(data, type, domain, range) {
+	/** Set a reaction or metabolite scale.
+
+	 Arguments
+	 ---------
+	 
+	 data: The type of data. Options are 'reaction' or 'metabolite'.
+
+	 type: The type of scale to set. Options are 'size' and 'color'.
+
+	 domain: The new scale domain. If domain is *null*, then the existing
+	 domain is used. If *Builder.options.auto_set_data_domain* is true,
+	 then, this input is ignored.
+
+	 */
+
+	if (domain===undefined) domain = null;
+	if (range===undefined) range = null;
+
+	if (domain !== null && this.auto_set_data_domain==true) {
+	    console.warn('Cannot set domain manually if auto_set_data_domain is true');
+	    domain = null;
+	}
+
+	if (data=='reaction' && type=='size') {
+	    set_this_scale(this.scale.reaction_size, domain, range);
+	} else if (data=='reaction' && type=='color') {
+	    set_this_scale(this.scale.reaction_color, domain, range);
+	} else if (data=='metabolite' && type=='size') {
+	    set_this_scale(this.scale.metabolite_size, domain, range);
+	} else if (data=='metabolite' && type=='color') {
+	    set_this_scale(this.scale.metabolite_color, domain, range);
+	} else {
+	    throw Error('Bad value for data or type: ' + data + ', ' + type);
+	}
+
+	function set_this_scale(a_scale, a_domain, a_range) {
+	    if (a_domain !== null) a_scale.domain(a_domain);
+	    if (a_range !== null) a_scale.range(a_range);
+	}
     }
 
     // -------------------------------------------------------------------------
@@ -4619,6 +4695,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	/**  Returns True if the scale has changed.
 
 	 */
+
+	if (!this.auto_set_data_domain) return false;
+
 	// default min and max
 	var vals = [];
 	for (var reaction_id in this.reactions) {
@@ -4695,6 +4774,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	/**  Returns True if the scale has changed.
 
 	 */
+
+	if (!this.auto_set_data_domain) return false;
+
 	// default min and max
 	var min = 0, max = 0, vals = [];
 	for (var node_id in this.nodes) {
@@ -6501,7 +6583,8 @@ define('ui',["utils"], function(utils) {
 	     button_group: button_group,
 	     dropdown_menu: dropdown_menu,
 	     set_button: set_button,
-	     set_input_button: set_input_button };
+	     set_input_button: set_input_button,
+	     scale_gui: scale_gui };
 
     function individual_button(s, button) {
 	var b = s.append('button'),
@@ -6610,6 +6693,45 @@ define('ui',["utils"], function(utils) {
 	    input.node().click();
 	});
 	return function() { input.node().click(); };
+    }
+
+    function scale_gui(s, count, range, callback) {
+	/** A UI to edit color and size scales. */
+
+	var t = s.append('table').attr('class', 'settings-section');
+
+	// numbers
+	var r = t.append('tr');
+	r.append('td');
+	for (var i=0; i<count; i++) {
+	    r.append('td').text(i).attr('class', 'settings-number');
+	}
+
+	// domain
+	r = t.append('tr');
+	r.append('td').text('domain');
+	for (var i=0; i<count; i++) {
+	    r.append('td').append('input')
+		.attr('class', 'scale-bar-input')
+		.attr('value', range[i])
+		.on('change', function() {
+		    range[i] = this.value;
+		    callback(range);
+		});
+	}
+	var z = r.append('td');
+	z.append('span').text('auto');
+	z.append('input').attr('type', 'checkbox');
+
+	// for (var i=0; i<count; i++) {
+	//     s.append('span').text(i);
+	//     s.append('input').attr('class', 'scale-bar-input')
+	// 	.attr('value', range[i])
+	// 	.on('change', function() {
+	// 	    range[i] = this.value;
+	// 	    callback(range);
+	// 	});
+	// }
     }
 });
 
@@ -6748,13 +6870,16 @@ define('Settings',["utils", "ui", "CallbackManager"], function(utils, ui, Callba
     var SearchBar = utils.make_class();
     // instance methods
     SearchBar.prototype = { init: init,
+			    is_visible: is_visible,
 			    toggle: toggle };
 
     return SearchBar;
 
     // instance methods
     function init(sel, map) {
-	this.is_visible = false;
+	this.changed = false;
+
+	// TODO make sure updated scales stay updated after loading a new dataset/map
 
 	var container = sel.append('div')
 		.attr('class', 'settings-box')
@@ -6765,10 +6890,24 @@ define('Settings',["utils", "ui", "CallbackManager"], function(utils, ui, Callba
 	    .on('click', function() {
 		this.toggle(false);
 	    }.bind(this))
-	    .append("span").attr("class",  "glyphicon glyphicon-remove");
+	    .append("span").attr("class",  "glyphicon glyphicon-ok");
 	
-	container.append('div').attr('class', 'settings-section')
-	    .text('Reaction color');
+	var r_color = container.append('div')
+	    .text('Reaction data scale');
+
+	var current = map.get_scale('reaction', 'color').range();
+	ui.scale_gui(container.append('div'), 3, current.slice(-3),
+		     function(new_range) {
+			 this.changed = true;
+			 // set the last two elements of the range
+			 var range_to_set = map.get_scale('reaction', 'color').range();
+			 console.log(range_to_set);
+			 range_to_set = range_to_set.slice(0, range_to_set.length-3)
+			     .concat(new_range);
+			 map.set_scale('reaction', 'color', null, range_to_set);
+			 console.log(range_to_set);
+		     }.bind(this));
+
 	container.append('div').attr('class', 'settings-section')
 	    .text('Reaction size');
 	container.append('div').attr('class', 'settings-section')
@@ -6781,18 +6920,25 @@ define('Settings',["utils", "ui", "CallbackManager"], function(utils, ui, Callba
 	this.map = map;
 	this.selection = container;
     }
+    function is_visible() {
+	return this.selection.style('display') != 'none';
+    }
     function toggle(on_off) {
-	if (on_off===undefined) this.is_visible = !this.is_visible;
-	else this.is_visible = on_off;
+	if (on_off===undefined) on_off = !this.is_visible();
 
-	if (this.is_visible) {
+	if (on_off) {
 	    this.selection.style("display", "block");
+	    this.selection.select('input').node().focus();
 	    // escape key
 	    this.escape = this.map.key_manager
 		.add_escape_listener(function() { this.toggle(false); }.bind(this));
 	    // run the show callback
 	    this.callback_manager.run('show');
 	} else {
+	    // draw on finish
+	    if (this.changed) this.map.draw_everything();
+	    this.changed = false;
+
 	    this.selection.style("display", "none");	    
 	    if (this.escape) this.escape.clear();
 	    this.escape = null;
@@ -6831,48 +6977,48 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
     // definitions
     function init(options) {
 	// set defaults
-	var o = utils.set_options(options, {
+	this.options = utils.set_options(options, {
+	    // location
 	    selection: d3.select("body").append("div"),
+	    // view options
 	    menu: 'all',
 	    scroll_behavior: 'pan',
 	    enable_editing: true,
 	    enable_keys: true,
 	    enable_search: true,
 	    fillScreen: false,
-	    on_load: null,
+	    // map, model, and styles
 	    map_path: null,
 	    map: null,
 	    cobra_model_path: null,
 	    cobra_model: null,
 	    css_path: null,
 	    css: null,
+	    starting_reaction: 'GLCtex',
+	    // applied data
+	    auto_set_data_domain: true,
 	    reaction_data_path: null,
 	    reaction_data: null,
 	    reaction_data_styles: ['Color', 'Size', 'Abs', 'Diff'],
 	    metabolite_data: null,
 	    metabolite_data_path: null,
-	    metabolite_data_styles: ['Color', 'Size', 'Diff'],
-	    show_beziers: false,
-	    debug: false,
-	    starting_reaction: 'GLCtex',
-	    margins: {top: 0, right: 0, bottom: 0, left: 0}
+	    metabolite_data_styles: ['Color', 'Size', 'Diff']
 	});
 
-	if (utils.check_for_parent_tag(o.selection, 'svg')) {
+	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
 	    throw new Error("Builder cannot be placed within an svg node "+
 			    "becuase UI elements are html-based.");
 	}
 
-	this.o = o;
-	var files_to_load = [{ file: o.map_path, value: o.map,
+	var files_to_load = [{ file: this.options.map_path, value: this.options.map,
 			       callback: set_map_data },
-			     { file: o.cobra_model_path, value: o.cobra_model,
+			     { file: this.options.cobra_model_path, value: this.options.cobra_model,
 			       callback: set_cobra_model },
-			     { file: o.css_path, value: o.css,
+			     { file: this.options.css_path, value: this.options.css,
 			       callback: set_css },
-			     { file: o.reaction_data_path, value: o.reaction_data,
+			     { file: this.options.reaction_data_path, value: this.options.reaction_data,
 			       callback: set_reaction_data },
-			     { file: o.metabolite_data_path, value: o.metabolite_data,
+			     { file: this.options.metabolite_data_path, value: this.options.metabolite_data,
 			       callback: set_metabolite_data } ];
 	utils.load_files(this, files_to_load, reload_builder);
 	return;
@@ -6880,23 +7026,23 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	// definitions
 	function set_map_data(error, map_data) {
 	    if (error) console.warn(error);
-	    this.o.map_data = map_data;
+	    this.options.map_data = map_data;
 	}
 	function set_cobra_model(error, cobra_model) {
 	    if (error) console.warn(error);
-	    this.o.cobra_model = cobra_model;
+	    this.options.cobra_model = cobra_model;
 	}
 	function set_css(error, css) {
 	    if (error) console.warn(error);
-	    this.o.css = css;
+	    this.options.css = css;
 	}
 	function set_reaction_data(error, data) {
 	    if (error) console.warn(error);
-	    this.o.reaction_data = data;
+	    this.options.reaction_data = data;
 	}
 	function set_metabolite_data(error, data) {
 	    if (error) console.warn(error);
-	    this.o.metabolite_data = data;
+	    this.options.metabolite_data = data;
 	}
     }
 
@@ -6915,52 +7061,54 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 
 	// Check the cobra model
 	var cobra_model_obj = null;
-	if (this.o.cobra_model!==null) {
-	    cobra_model_obj = CobraModel(this.o.cobra_model);
+	if (this.options.cobra_model!==null) {
+	    cobra_model_obj = CobraModel(this.options.cobra_model);
 	} else {
 	    console.warn('No cobra model was loaded.');
 	}
 
 	// remove the old builder
-	utils.remove_child_nodes(this.o.selection);
+	utils.remove_child_nodes(this.options.selection);
 
 	// set up the svg
-	var svg = utils.setup_svg(this.o.selection, this.o.selection_is_svg,
-				  this.o.margins, this.o.fill_screen);
+	var svg = utils.setup_svg(this.options.selection, this.options.selection_is_svg,
+				  this.options.fill_screen);
 	
 	// se up the zoom container
-	this.zoom_container = new ZoomContainer(svg, this.o.selection,
-						this.o.scroll_behavior);
+	this.zoom_container = new ZoomContainer(svg, this.options.selection,
+						this.options.scroll_behavior);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
 
-	if (this.o.map_data!==null) {
+	if (this.options.map_data!==null) {
 	    // import map
-	    this.map = Map.from_data(this.o.map_data,
-				     svg, this.o.css,
+	    this.map = Map.from_data(this.options.map_data,
+				     svg, this.options.css,
 				     zoomed_sel,
 				     this.zoom_container,
-				     this.o.reaction_data,
-				     this.o.reaction_data_styles,
-				     this.o.metabolite_data,
-				     this.o.metabolite_data_styles,
+				     this.options.auto_set_data_domain,
+				     this.options.reaction_data,
+				     this.options.reaction_data_styles,
+				     this.options.metabolite_data,
+				     this.options.metabolite_data_styles,
 				     cobra_model_obj,
-				     this.o.enable_search);
+				     this.options.enable_search);
 	    this.zoom_container.reset();
 	} else {
 	    // new map
-	    this.map = new Map(svg, this.o.css, zoomed_sel,
+	    this.map = new Map(svg, this.options.css, zoomed_sel,
 			       this.zoom_container,
-			       this.o.reaction_data,
-			       this.o.reaction_data_styles,
-			       this.o.metabolite_data,
-			       this.o.metabolite_data_styles,
+			       this.options.auto_set_data_domain,
+			       this.options.reaction_data,
+			       this.options.reaction_data_styles,
+			       this.options.metabolite_data,
+			       this.options.metabolite_data_styles,
 			       cobra_model_obj,
 			       null,
-			       this.o.enable_search);
+			       this.options.enable_search);
 	}
 
 	// set up the reaction input with complete.ly
-	this.reaction_input = Input(this.o.selection, this.map, this.zoom_container);
+	this.reaction_input = Input(this.options.selection, this.map, this.zoom_container);
 
 	// set up the Brush
 	this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
@@ -6968,13 +7116,13 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	// set up the modes
 	this._setup_modes(this.map, this.brush, this.zoom_container);
 
-	var s = this.o.selection
+	var s = this.options.selection
 		.append('div').attr('class', 'search-menu-container')
 		.append('div').attr('class', 'search-menu-container-inline'),
 	    menu_div = s.append('div'),
 	    search_bar_div = s.append('div'),
 	    settings_div = s.append('div'),
-	    button_div = this.o.selection.append('div');
+	    button_div = this.options.selection.append('div');
 
 	// set up the search bar
 	this.search_bar = SearchBar(search_bar_div, this.map.search_index, this.map);
@@ -6990,35 +7138,35 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 
 	// set up key manager
 	var keys = this._get_keys(this.map, this.zoom_container, this.search_bar,
-				  this.settings_page, this.o.enable_editing);
+				  this.settings_page, this.options.enable_editing);
 	this.map.key_manager.assigned_keys = keys;
 	// tell the key manager about the reaction input and search bar
-	this.map.key_manager.reaction_input = this.reaction_input;
-	this.map.key_manager.search_bar = this.search_bar;
+	this.map.key_manager.input_list = [this.reaction_input, this.search_bar,
+					   this.settings_page];
 	// make sure the key manager remembers all those changes
 	this.map.key_manager.update();
 	// turn it on/off
-	this.map.key_manager.toggle(this.o.enable_keys);
+	this.map.key_manager.toggle(this.options.enable_keys);
 	
 	// set up menu and status bars
-	if (this.o.menu=='all') {
+	if (this.options.menu=='all') {
 	    this._setup_menu(menu_div, button_div, this.map, this.zoom_container, this.map.key_manager, keys,
-			     this.o.enable_editing);
-	} else if (this.o.menu=='zoom') {
+			     this.options.enable_editing);
+	} else if (this.options.menu=='zoom') {
 	    this._setup_simple_zoom_buttons(button_div, keys);
 	}
-	var status = this._setup_status(this.o.selection, this.map);
+	var status = this._setup_status(this.options.selection, this.map);
 
 	// setup selection box
-	if (this.o.map_data!==null) {
+	if (this.options.map_data!==null) {
 	    this.map.zoom_extent_canvas();
 	} else {
-	    if (this.o.starting_reaction!==null && cobra_model_obj!==null) {
+	    if (this.options.starting_reaction!==null && cobra_model_obj!==null) {
 		// Draw default reaction if no map is provided
 		var size = this.zoom_container.get_size();
 		var start_coords = { x: size.width / 2,
 				     y: size.height / 4 };
-		this.map.new_reaction_from_scratch(this.o.starting_reaction, start_coords, 90);
+		this.map.new_reaction_from_scratch(this.options.starting_reaction, start_coords, 90);
 		this.map.zoom_extent_nodes();
 	    } else {
 		this.map.zoom_extent_canvas();
@@ -7026,24 +7174,21 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	}
 
 	// start in zoom mode for builder, view mode for viewer
-	if (this.o.enable_editing)
+	if (this.options.enable_editing)
 	    this.zoom_mode();
 	else
 	    this.view_mode();
 
 	// draw
 	this.map.draw_everything();
-
-	// run the load callback
-	if (this.o.on_load!==null)
-	    this.o.on_load();
     }
+
     function set_mode(mode) {
 	this.search_bar.toggle(false);
 	// input
 	this.reaction_input.toggle(mode=='build');
 	this.reaction_input.direction_arrow.toggle(mode=='build');
-	if (this.o.menu=='all' && this.o.enable_editing)
+	if (this.options.menu=='all' && this.options.enable_editing)
 	    this._toggle_direction_buttons(mode=='build');
 	// brush
 	this.brush.toggle(mode=='brush');
@@ -7127,7 +7272,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	if (enable_editing) {	   
 	    edit_menu.button({ key: keys.build_mode,
 			       id: 'build-mode-menu-button',
-			       text: "Build mode (n)" })
+			       text: "Add reaction mode (n)" })
 		.button({ key: keys.zoom_mode,
 			  id: 'zoom-mode-menu-button',
 			  text: "Pan mode (z)" })
@@ -7164,11 +7309,9 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.button({ key: keys.zoom_out,
 			  text: "Zoom out (Ctrl -)" })
 		.button({ key: keys.extent_nodes,
-			  //icon: "glyphicon glyphicon-resize-small",
 			  text: "Zoom to nodes (Ctrl 0)"
 			})
 		.button({ key: keys.extent_canvas,
-			  //icon: "glyphicon glyphicon-resize-full",
 			  text: "Zoom to canvas (Ctrl 1)" })
 		.button({ key: keys.search,
 			  text: "Find (Ctrl f)" });
@@ -7210,14 +7353,14 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.button({ key: keys.build_mode,
 			  id: 'build-mode-button',
 			  icon: "glyphicon glyphicon-plus",
-			  tooltip: "Build mode (n)" })
+			  tooltip: "Add reaction mode (n)" })
 		.button({ key: keys.zoom_mode,
 			  id: 'zoom-mode-button',
 			  icon: "glyphicon glyphicon-move",
 			  tooltip: "Pan mode (z)" })
 		.button({ key: keys.brush_mode,
 			  id: 'brush-mode-button',
-			  icon: "glyphicon glyphicon-screenshot",
+			  icon: "glyphicon glyphicon-hand-up",
 			  tooltip: "Select mode (v)" })
 		.button({ key: keys.rotate_mode,
 			  id: 'rotate-mode-button',
@@ -7280,7 +7423,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	// definitions
 	function load_map_for_file(error, map_data) {
 	    if (error) console.warn(error);
-	    this.o.map_data = map_data;
+	    this.options.map_data = map_data;
 	    this.reload_builder();
 	}
 	function load_model_for_file(error, data) {

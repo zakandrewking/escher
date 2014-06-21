@@ -5,7 +5,7 @@ define(["utils"], function(utils) {
 	     dropdown_menu: dropdown_menu,
 	     set_button: set_button,
 	     set_input_button: set_input_button,
-	     scale_bar: scale_bar };
+	     scale_gui: scale_gui };
 
     function individual_button(s, button) {
 	var b = s.append('button'),
@@ -116,24 +116,43 @@ define(["utils"], function(utils) {
 	return function() { input.node().click(); };
     }
 
-    function scale_bar(s, range, callback) {
-	/** A UI to edit any scale. */
+    function scale_gui(s, count, range, callback) {
+	/** A UI to edit color and size scales. */
 
-	s.append('span').text('low');
-	s.append('input').attr('class', 'scale-bar-input')
-	    .attr('value', range[0])
-	    .on('change', function() {
-		range[0] = this.value;
-		callback(range);
-	    });
-	s.append('span').text('high');
-	s.append('input').attr('class', 'scale-bar-input')
-	    .attr('value', range[1])
-	    .on('change', function() {
-		range[1] = this.value;
-		callback(range);
-	    });
+	var t = s.append('table').attr('class', 'settings-section');
 
+	// numbers
+	var r = t.append('tr');
+	r.append('td');
+	for (var i=0; i<count; i++) {
+	    r.append('td').text(i).attr('class', 'settings-number');
+	}
+
+	// domain
+	r = t.append('tr');
+	r.append('td').text('domain');
+	for (var i=0; i<count; i++) {
+	    r.append('td').append('input')
+		.attr('class', 'scale-bar-input')
+		.attr('value', range[i])
+		.on('change', function() {
+		    range[i] = this.value;
+		    callback(range);
+		});
+	}
+	var z = r.append('td');
+	z.append('span').text('auto');
+	z.append('input').attr('type', 'checkbox');
+
+	// for (var i=0; i<count; i++) {
+	//     s.append('span').text(i);
+	//     s.append('input').attr('class', 'scale-bar-input')
+	// 	.attr('value', range[i])
+	// 	.on('change', function() {
+	// 	    range[i] = this.value;
+	// 	    callback(range);
+	// 	});
+	// }
     }
 });
 

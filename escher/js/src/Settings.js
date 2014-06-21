@@ -27,17 +27,17 @@ define(["utils", "ui", "CallbackManager"], function(utils, ui, CallbackManager) 
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-ok");
 	
-	var r_color = container.append('div').attr('class', 'settings-section')
-	    .text('Reaction color');
+	var r_color = container.append('div')
+	    .text('Reaction data scale');
 
 	var current = map.get_scale('reaction', 'color').range();
-	ui.scale_bar(container.append('div'), current.slice(-2),
+	ui.scale_gui(container.append('div'), 3, current.slice(-3),
 		     function(new_range) {
 			 this.changed = true;
 			 // set the last two elements of the range
 			 var range_to_set = map.get_scale('reaction', 'color').range();
 			 console.log(range_to_set);
-			 range_to_set = range_to_set.slice(0, range_to_set.length-2)
+			 range_to_set = range_to_set.slice(0, range_to_set.length-3)
 			     .concat(new_range);
 			 map.set_scale('reaction', 'color', null, range_to_set);
 			 console.log(range_to_set);

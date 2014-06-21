@@ -114,6 +114,9 @@
 .settings-section {
     width: 90%;
 }
+.settings-number {
+    text-align: center;
+}
 .scale-bar-input {
     width: 70px;
     text-align: left;
