@@ -21,14 +21,14 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	for (var i=0, l=model_data.reactions.length; i<l; i++) {
 	    var r = model_data.reactions[i],
 		the_id = r.id;
-	    this.reactions[the_id] = r;
+	    this.reactions[the_id] = utils.clone(r);
 	    delete this.reactions[the_id].id;
 	}
 	this.metabolites = {};
 	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
 	    var r = model_data.metabolites[i],
 		the_id = r.id;
-	    this.metabolites[the_id] = r;
+	    this.metabolites[the_id] = utils.clone(r);
 	    delete this.metabolites[the_id].id;
 	}
 
