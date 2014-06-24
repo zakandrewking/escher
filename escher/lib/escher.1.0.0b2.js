@@ -6994,7 +6994,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    cobra_model: null,
 	    css_path: null,
 	    css: null,
-	    starting_reaction: 'GLCtex',
+	    starting_reaction: null,
 	    // applied data
 	    auto_set_data_domain: true,
 	    reaction_data_path: null,
