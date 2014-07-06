@@ -1,4 +1,4 @@
-define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui", "SearchBar", "Settings"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings) {
+define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui", "SearchBar", "Settings", "SettingsBar"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Builder(options)
@@ -55,20 +55,31 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    metabolite_data_styles: ['Color', 'Size', 'Diff']
 	});
 
+	// initialize the settings
+	this.settings = Settings(this.options.reaction_data_styles,
+				 this.options.auto_set_data_domain,
+				 this.options.metabolite_data_styles,
+				 this.options.auto_set_data_domain);
+
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
 	    throw new Error("Builder cannot be placed within an svg node "+
 			    "becuase UI elements are html-based.");
 	}
 
-	var files_to_load = [{ file: this.options.map_path, value: this.options.map,
+	var files_to_load = [{ file: this.options.map_path, 
+			       value: this.options.map,
 			       callback: set_map_data },
-			     { file: this.options.cobra_model_path, value: this.options.cobra_model,
+			     { file: this.options.cobra_model_path, 
+			       value: this.options.cobra_model,
 			       callback: set_cobra_model },
-			     { file: this.options.css_path, value: this.options.css,
+			     { file: this.options.css_path, 
+			       value: this.options.css,
 			       callback: set_css },
-			     { file: this.options.reaction_data_path, value: this.options.reaction_data,
+			     { file: this.options.reaction_data_path, 
+			       value: this.options.reaction_data,
 			       callback: set_reaction_data },
-			     { file: this.options.metabolite_data_path, value: this.options.metabolite_data,
+			     { file: this.options.metabolite_data_path, 
+			       value: this.options.metabolite_data,
 			       callback: set_metabolite_data } ];
 	utils.load_files(this, files_to_load, reload_builder);
 	return;
@@ -135,11 +146,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 				     svg, this.options.css,
 				     zoomed_sel,
 				     this.zoom_container,
-				     this.options.auto_set_data_domain,
+				     this.settings,
 				     this.options.reaction_data,
-				     this.options.reaction_data_styles,
 				     this.options.metabolite_data,
-				     this.options.metabolite_data_styles,
 				     cobra_model_obj,
 				     this.options.enable_search);
 	    this.zoom_container.reset();
@@ -147,18 +156,17 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    // new map
 	    this.map = new Map(svg, this.options.css, zoomed_sel,
 			       this.zoom_container,
-			       this.options.auto_set_data_domain,
+			       this.settings,
 			       this.options.reaction_data,
-			       this.options.reaction_data_styles,
 			       this.options.metabolite_data,
-			       this.options.metabolite_data_styles,
 			       cobra_model_obj,
 			       null,
 			       this.options.enable_search);
 	}
 
 	// set up the reaction input with complete.ly
-	this.reaction_input = Input(this.options.selection, this.map, this.zoom_container);
+	this.reaction_input = Input(this.options.selection, this.map,
+				    this.zoom_container);
 
 	// set up the Brush
 	this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
@@ -175,9 +183,11 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    button_div = this.options.selection.append('div');
 
 	// set up the search bar
-	this.search_bar = SearchBar(search_bar_div, this.map.search_index, this.map);
+	this.search_bar = SearchBar(search_bar_div, this.map.search_index, 
+				    this.map);
 	// set up the settings
-	this.settings_page = Settings(settings_div, this.map);
+	this.settings_page = SettingsBar(settings_div, this.settings, 
+					 this.map);
 	// set up the hide callbacks
 	this.search_bar.callback_manager.set('show', function() {
 	    this.settings_page.toggle(false);
@@ -187,8 +197,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	}.bind(this));
 
 	// set up key manager
-	var keys = this._get_keys(this.map, this.zoom_container, this.search_bar,
-				  this.settings_page, this.options.enable_editing);
+	var keys = this._get_keys(this.map, this.zoom_container,
+				  this.search_bar, this.settings_page,
+				  this.options.enable_editing);
 	this.map.key_manager.assigned_keys = keys;
 	// tell the key manager about the reaction input and search bar
 	this.map.key_manager.input_list = [this.reaction_input, this.search_bar,

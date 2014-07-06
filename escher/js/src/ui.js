@@ -4,8 +4,7 @@ define(["utils"], function(utils) {
 	     button_group: button_group,
 	     dropdown_menu: dropdown_menu,
 	     set_button: set_button,
-	     set_input_button: set_input_button,
-	     scale_gui: scale_gui };
+	     set_input_button: set_input_button };
 
     function individual_button(s, button) {
 	var b = s.append('button'),
@@ -114,45 +113,6 @@ define(["utils"], function(utils) {
 	    input.node().click();
 	});
 	return function() { input.node().click(); };
-    }
-
-    function scale_gui(s, count, range, callback) {
-	/** A UI to edit color and size scales. */
-
-	var t = s.append('table').attr('class', 'settings-section');
-
-	// numbers
-	var r = t.append('tr');
-	r.append('td');
-	for (var i=0; i<count; i++) {
-	    r.append('td').text(i).attr('class', 'settings-number');
-	}
-
-	// domain
-	r = t.append('tr');
-	r.append('td').text('domain');
-	for (var i=0; i<count; i++) {
-	    r.append('td').append('input')
-		.attr('class', 'scale-bar-input')
-		.attr('value', range[i])
-		.on('change', function() {
-		    range[i] = this.value;
-		    callback(range);
-		});
-	}
-	var z = r.append('td');
-	z.append('span').text('auto');
-	z.append('input').attr('type', 'checkbox');
-
-	// for (var i=0; i<count; i++) {
-	//     s.append('span').text(i);
-	//     s.append('input').attr('class', 'scale-bar-input')
-	// 	.attr('value', range[i])
-	// 	.on('change', function() {
-	// 	    range[i] = this.value;
-	// 	    callback(range);
-	// 	});
-	// }
     }
 });
 

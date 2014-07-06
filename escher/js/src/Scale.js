@@ -8,7 +8,7 @@ define(["utils"], function(utils) {
     return Scale;
 
     // definitions
-    function init() { //map_w, map_h, w, h, options) {
+    function init() {
 	var sc = {};
 	sc.x = d3.scale.linear();
 	sc.y = d3.scale.linear();
