@@ -15,17 +15,10 @@ define(["utils"], function(utils) {
 	sc.x_size = d3.scale.linear();
 	sc.y_size = d3.scale.linear();
 	sc.size = d3.scale.linear();
-	sc.reaction_color = d3.scale.linear()
-	    .domain([0, 0.000001, 1, 8, 50])
-	    .range(["rgb(200,200,200)", "rgb(190,190,255)", 
-		    "rgb(100,100,255)", "blue", "red"]);
-        sc.reaction_size = d3.scale.linear()
-            .domain([0, 40])
-            .range([6, 12]),
-	sc.metabolite_size = d3.scale.linear()
-	    .range([8,15]),
-	sc.metabolite_color = d3.scale.linear()
-	    .range(["white", "red"]),
+	sc.reaction_color = d3.scale.linear();
+        sc.reaction_size = d3.scale.linear();
+	sc.metabolite_size = d3.scale.linear();
+	sc.metabolite_color = d3.scale.linear();
         sc.scale_path = function(path) {
             var x_fn = sc.x, y_fn = sc.y;
             // TODO: scale arrow width

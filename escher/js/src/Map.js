@@ -707,6 +707,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    new_domain, new_color_range, new_size_range;
 	    
 	if (this.reaction_data_styles.indexOf('Abs') != -1) {
+	    // if using absolute value reaction style (TODO finish)
 	    var min = 0, max = 0;
 	    if (vals.length > 0) {
 		vals = vals.map(function(x) { return Math.abs(x); });
@@ -716,8 +717,6 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    if (max==0) max = min = 10;
 	    if (min==max) min = max/2;
 	    new_domain = [-max, -min, 0, min, max];
-	    new_color_range = ["red", "blue", "rgb(200,200,200)", "blue", "red"];
-	    new_size_range = [12, 6, 6, 6, 12];
 	} else {
 	    var min = 0, max = 0;
 	    vals.push(0);

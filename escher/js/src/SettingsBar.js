@@ -1,4 +1,4 @@
-define(["utils", "CallbackManager"], function(utils, CallbackManager) {
+define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManager, bacon) {
     /** 
      */
 
@@ -14,8 +14,8 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     return SearchBar;
 
     // instance methods
-    function init(sel, settings_manager, map) {
-	this.settings_manager = settings_manager;
+    function init(sel, settings, map) {
+	this.settings = settings;
 	this.changed = false;
 	this.saved_settings = null;
 
@@ -56,8 +56,9 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 		    map.set_scale('reaction', 'color', null, range_to_set);
 		    console.log(range_to_set);
 		}.bind(this);
-	    this.scale_gui(container.append('div'), 3, current.slice(-3),
-			   range_fn);
+	    this.scale_gui(container.append('div'),
+			   'reaction_domain',
+			   'reaction_data_styles');
 	}.bind(this))();
 
 	// metabolite data
@@ -75,7 +76,9 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 		    map.set_scale('metabolite', 'color', null, range_to_set);
 		    console.log(range_to_set);
 		}.bind(this);
-	    this.scale_gui(container.append('div'), 3, current.slice(-3), range_fn);
+	    this.scale_gui(container.append('div'),
+			   'metabolite_domain',
+			   'metabolite_data_styles');
 	}.bind(this))();
 
 	this.callback_manager = new CallbackManager();
@@ -115,18 +118,18 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	}
     }
     function record_state() {
-	this.saved_settings = this.settings_manager.get_state();
+	this.saved_settings = this.settings.get_state();
     }
     function abandon_changes() {
 	if (this.changed && this.saved_settings!==null) {
-	    this.settings_manager.set_state(this.saved_settings);
+	    this.settings.set_state(this.saved_settings);
 	}
 	this.changed = false;
     }
-    function scale_gui(s, count, range, callback) {
+    function scale_gui(s, domain_property, style_property) {
 	/** A UI to edit color and size scales. */
 
-	var t = s.append('table').attr('class', 'settings-section');
+	var t = s.append('table').attr('class', 'settings-table');
 
 	var size_domain = [], color_domain = [];
 
@@ -139,21 +142,40 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 	    .data([''].concat(columns))
 	    .enter()
 	    .append('td').attr('class', 'settings-number')
-	    .text(function (d) { return d; });
+	    .text(function (d) {
+		return d==='' ? d : ('— ' + d + ' —');
+	    });
 
 	// domain
-	(function() {
+	(function(settings) {
 	    var r = t.append('tr');
-	    r.append('td').text('domain');
+	    r.append('td').text('Domain:');
 	    var scale_bars = r.selectAll('.input-cell')
 		    .data(columns);
 	    scale_bars.enter()
 		.append('td').attr('class', 'input-cell')
 		.append('input').attr('class', 'scale-bar-input')
-		.attr('value', function(d) { return range[d]; })
-		.on('change', function(d) {
-		    range[d] = this.value;
-		    callback(range);
+		.each(function(ind) {
+		    // change the model when the value is changed
+		    var change_stream = bacon
+			    .fromEventTarget(this, 'change')
+			    .toProperty(null);
+		    var combined = settings[domain_property]
+			    .combine(change_stream,
+				     function(current, event) {
+					 if (event!==null)
+					     current[ind] = parseFloat(event.target.value);
+					 return current;
+		    		     });
+		    combined.onValue(function(x) { console.log('combined: ', x); });
+
+		    // subscribe to changes in the model
+		    combined.onValue(function (ar) {
+		    	this.value = ar[ind];
+		    }.bind(this));
+
+		    // save the new combined property
+		    settings[domain_property] = combined;
 		});
 	    
 	    var z = r.append('td');
@@ -166,12 +188,12 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 			scale_bars.selectAll('input').attr('disabled', null);
 		    }
 		});
-	})();
+	})(this.settings);
 	
 	// ranges
 	(function() {
 	    var r = t.append('tr');
-	    r.append('td').text('size');
+	    r.append('td').text('Size:');
 	    var scale_bars = r.selectAll('.input-cell')
 		.data(columns);
 	    scale_bars.enter()
@@ -180,13 +202,12 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 		.attr('value', function(d) { return size_domain[d]; })
 		.on('change', function(d) {
 		    size_domain[d] = this.value;
-		    callback(size_domain);
 		});
 	})();
 
 	(function() {
 	    var r = t.append('tr');
-	    r.append('td').text('color');
+	    r.append('td').text('Color:');
 	    var scale_bars = r.selectAll('.input-cell')
 		.data(columns);
 	    scale_bars.enter()
@@ -195,8 +216,56 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 		.attr('value', function(d) { return color_domain[d]; })
 		.on('change', function(d) {
 		    color_domain[d] = this.value;
-		    callback(color_domain);
 		});
 	})();
+
+	// styles
+	(function (settings) {
+	    var r = t.append('tr');
+	    r.append('td').text('Styles:');
+	    var cell = r.append('td')
+		    .attr('colspan', columns.length + 1);
+
+	    var styles = ['Abs', 'Size', 'Color', 'Text'],
+		style_cells = cell.selectAll('.style-span')
+		    .data(styles),
+	    s = style_cells.enter()
+		    .append('span')
+		    .attr('class', 'style-span');
+	    s.append('span').text(function(d) { return d; });
+
+	    // make the checkbox
+	    s.append('input').attr('type', 'checkbox')
+		.each(function(style) {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+			    .fromEventTarget(this, 'change')
+			    .toProperty(null);
+		    var combined = settings[style_property]
+			    .combine(change_stream,
+				     function(current, event) {
+					 if (event===null)
+					     return current;
+		    			 // add or remove the property from the stream
+		    			 // if it is checked, add the style
+		    			 if (event.target.checked && current.indexOf(style) == -1)
+		    			     return current.concat([style]);
+		    			 // if not, remove the style
+		    			 else if (!event.target.checked && current.indexOf(style) != -1)
+		    			     return current.filter(function(v) { return v != style; });
+		    			 // otherwise, return unchanged
+		    			 return current;
+		    		     });
+
+		    // subscribe to changes in the model
+		    combined.onValue(function (ar) {
+		    	// check the box if the style is present
+		    	this.checked = (ar.indexOf(style) != -1);
+		    }.bind(this));
+
+		    // save the new combined property
+		    settings[style_property] = combined;
+		});
+	})(this.settings);
     }
 });

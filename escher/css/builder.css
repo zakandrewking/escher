@@ -115,20 +115,31 @@
     font-weight: bold;
     margin-top: 15px;
 }
-.settings-section {
+.settings-table {
     width: 100%;
+}
+.settings-table td {
+    padding: 3px 5px;    
 }
 .settings-number {
     text-align: center;
+    color: #AAA;
+    font-style: italic;
 }
 .input-cell {
     width: 23%;
-    padding: 3px 5px;
+    /* padding: 3px 5px; */
     font-size: 13px;
 }
 .scale-bar-input {
     width: 100%;
     text-align: left;
+}
+.style-span {
+    margin: 0 4px;
+}
+.style-span span {
+    margin: 0 4px 0 0;
 }
 /* For Settings and Search */
 .close-button {

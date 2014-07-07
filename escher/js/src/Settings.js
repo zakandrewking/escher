@@ -1,4 +1,4 @@
-define(["utils"], function(utils) {
+define(["utils", "lib/bacon"], function(utils, bacon) {
     /** 
      */
 
@@ -13,14 +13,14 @@ define(["utils"], function(utils) {
     // instance methods
     function init(reaction_data_styles, auto_reaction_domain, 
 		  metabolite_data_styles, auto_metabolite_domain) {
-	this.reaction_data_styles = reaction_data_styles;
+	this.reaction_data_styles = bacon.constant(reaction_data_styles);
 	this.auto_reaction_domain = auto_reaction_domain;
-	this.reaction_domain = [-10, 0, 10];
+	this.reaction_domain = bacon.constant([-10, 0, 10]);
 	this.reaction_color_range = ['green', 'rgb(200,200,200)', 'red'];
 	this.reaction_size_range = [12, 6, 12];
-	this.metabolite_data_styles = metabolite_data_styles;
+	this.metabolite_data_styles = bacon.constant(metabolite_data_styles);
 	this.auto_metabolite_domain = auto_metabolite_domain;
-	this.metabolite_domain = [-10, 0, 10];
+	this.metabolite_domain = bacon.constant([-10, 0, 10]);
 	this.metabolite_color_range = ['green', 'white', 'red'];
 	this.metabolite_size_range = [15, 8, 15];
     }
