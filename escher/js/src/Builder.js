@@ -49,10 +49,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    auto_set_data_domain: true,
 	    reaction_data_path: null,
 	    reaction_data: null,
-	    reaction_data_styles: ['Color', 'Size', 'Abs', 'Diff'],
+	    reaction_data_styles: ['Color', 'Size', 'Abs', 'Text'],
 	    metabolite_data: null,
 	    metabolite_data_path: null,
-	    metabolite_data_styles: ['Color', 'Size', 'Diff']
+	    metabolite_data_styles: ['Color', 'Size', 'Text']
 	});
 
 	// initialize the settings

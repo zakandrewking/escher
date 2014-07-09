@@ -105,7 +105,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
             var t = d.bigg_id;
-	    if (has_reaction_data)
+	    if (has_reaction_data && reaction_data_styles.indexOf('Text') != -1)
 		t += ' ' + d.data_string;
             return t;
 	}).attr('transform', function(d) {
@@ -400,7 +400,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
             })
             .text(function(d) {	
 		var t = d.bigg_id;
-		if (has_metabolite_data)
+		if (has_metabolite_data && metabolite_data_styles.indexOf('Text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
 	    })

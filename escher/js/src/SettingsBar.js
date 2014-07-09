@@ -45,40 +45,14 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	(function() {	
 	    container.append('div')
 		.text('Reaction data').attr('class', 'settings-section-heading');
-	    var current = map.get_scale('reaction', 'color').range(),
-		range_fn = function(new_range) {
-		    this.changed = true;
-		    // set the last two elements of the range
-		    var range_to_set = map.get_scale('reaction', 'color').range();
-		    console.log(range_to_set);
-		    range_to_set = range_to_set.slice(0, range_to_set.length-3)
-			.concat(new_range);
-		    map.set_scale('reaction', 'color', null, range_to_set);
-		    console.log(range_to_set);
-		}.bind(this);
-	    this.scale_gui(container.append('div'),
-			   'reaction_domain',
-			   'reaction_data_styles');
+	    this.scale_gui(container.append('div'), 'reaction');
 	}.bind(this))();
 
 	// metabolite data
 	(function() {
 	    container.append('div').text('Metabolite data')
 		.attr('class', 'settings-section-heading');
-	    var current = map.get_scale('metabolite', 'color').range(),
-		range_fn = function(new_range) {
-		    this.changed = true;
-		    // set the last two elements of the range
-		    var range_to_set = map.get_scale('metabolite', 'color').range();
-		    console.log(range_to_set);
-		    range_to_set = range_to_set.slice(0, range_to_set.length-3)
-			.concat(new_range);
-		    map.set_scale('metabolite', 'color', null, range_to_set);
-		    console.log(range_to_set);
-		}.bind(this);
-	    this.scale_gui(container.append('div'),
-			   'metabolite_domain',
-			   'metabolite_data_styles');
+	    this.scale_gui(container.append('div'), 'metabolite');
 	}.bind(this))();
 
 	this.callback_manager = new CallbackManager();
@@ -93,12 +67,13 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	if (on_off===undefined) on_off = !this.is_visible();
 
 	if (on_off) {
+	    this.changed = true;
 	    this.selection.style("display", "block");
 	    this.selection.select('input').node().focus();
 	    // escape key
 	    this.escape = this.map.key_manager
-		.add_escape_listener(function() { 
-		    this.abandon_changes();
+		.add_escape_listener(function() {
+		    this.changed = false;
 		    this.toggle(false); 
 		}.bind(this));
 	    // record the state
@@ -118,15 +93,10 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	}
     }
     function record_state() {
-	this.saved_settings = this.settings.get_state();
     }
     function abandon_changes() {
-	if (this.changed && this.saved_settings!==null) {
-	    this.settings.set_state(this.saved_settings);
-	}
-	this.changed = false;
     }
-    function scale_gui(s, domain_property, style_property) {
+    function scale_gui(s, type) {
 	/** A UI to edit color and size scales. */
 
 	var t = s.append('table').attr('class', 'settings-table');
@@ -134,7 +104,8 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	var size_domain = [], color_domain = [];
 
 	// columns
-	var columns = [0, 1, 2];
+	var columns = [0, 1, 2],
+	    settings = this.settings;
 
 	// numbers
 	t.append('tr')
@@ -147,89 +118,78 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    });
 
 	// domain
-	(function(settings) {
-	    var r = t.append('tr');
+	t.append('tr').call(function(r) {
 	    r.append('td').text('Domain:');
+
 	    var scale_bars = r.selectAll('.input-cell')
 		    .data(columns);
 	    scale_bars.enter()
 		.append('td').attr('class', 'input-cell')
 		.append('input').attr('class', 'scale-bar-input')
-		.each(function(ind) {
-		    // change the model when the value is changed
-		    var change_stream = bacon
-			    .fromEventTarget(this, 'change')
-			    .toProperty(null);
-		    var combined = settings[domain_property]
-			    .combine(change_stream,
-				     function(current, event) {
-					 if (event!==null)
-					     current[ind] = parseFloat(event.target.value);
-					 return current;
-		    		     });
-		    combined.onValue(function(x) { console.log('combined: ', x); });
+		.each(function(column) {
+		    bacon.fromEventTarget(this, 'change')
+			.onValue(function(event) {
+			    settings.set_domain_value(type, column, event.target.value);
+			});
 
-		    // subscribe to changes in the model
-		    combined.onValue(function (ar) {
-		    	this.value = ar[ind];
+		    settings.domain_stream[type].onValue(function(ar) {
+			this.value = ar[column];
 		    }.bind(this));
+		});
 
-		    // save the new combined property
-		    settings[domain_property] = combined;
+	    // auto checkbox
+	    r.append('td').call(function(z) {
+		z.append('span').text('auto ');
+		z.append('input').attr('type', 'checkbox')
+		    .each(function() {
+			bacon.fromEventTarget(this, 'change')
+			    .onValue(function(event) {
+			    	settings.set_auto_domain(type, event.target.checked);
+			    });
+			
+			// subscribe to changes in the model
+			settings.auto_domain_stream[type].onValue(function(on_off) {
+			    // check the box if auto domain on
+			    this.checked = on_off;
+			    scale_bars.selectAll('input')
+				.attr('disabled', on_off ? 'true' : null);
+			}.bind(this));
+
+		    });
 		});
-	    
-	    var z = r.append('td');
-	    z.append('span').text('auto ');
-	    z.append('input').attr('type', 'checkbox')
-		.on('change', function() {
-		    if (this.checked) {
-			scale_bars.selectAll('input').attr('disabled', 'true');
-		    } else {
-			scale_bars.selectAll('input').attr('disabled', null);
-		    }
-		});
-	})(this.settings);
+	}.bind(this));
 	
 	// ranges
-	(function() {
+	[['size', 'Size'], ['color', 'Color']].forEach(function(range_type_ar) {
 	    var r = t.append('tr');
-	    r.append('td').text('Size:');
+	    r.append('td').text(range_type_ar[1] + ':');
 	    var scale_bars = r.selectAll('.input-cell')
-		.data(columns);
+		    .data(columns);
 	    scale_bars.enter()
 		.append('td').attr('class', 'input-cell')
 		.append('input').attr('class', 'scale-bar-input')
-		.attr('value', function(d) { return size_domain[d]; })
-		.on('change', function(d) {
-		    size_domain[d] = this.value;
-		});
-	})();
+		.each(function(column) {
+		    bacon.fromEventTarget(this, 'change')
+			.onValue(function(event) {
+			    settings.set_range_value(type, range_type_ar[0],
+						     column, event.target.value);
+			});
 
-	(function() {
-	    var r = t.append('tr');
-	    r.append('td').text('Color:');
-	    var scale_bars = r.selectAll('.input-cell')
-		.data(columns);
-	    scale_bars.enter()
-		.append('td').attr('class', 'input-cell')
-		.append('input').attr('class', 'scale-bar-input')
-		.attr('value', function(d) { return color_domain[d]; })
-		.on('change', function(d) {
-		    color_domain[d] = this.value;
+		    settings.range_stream[type][range_type_ar[0]].onValue(function(ar) {
+		    	this.value = ar[column];
+		    }.bind(this));
 		});
-	})();
+	});
 
 	// styles
-	(function (settings) {
-	    var r = t.append('tr');
+	t.append('tr').call(function(r) {
 	    r.append('td').text('Styles:');
-	    var cell = r.append('td')
-		    .attr('colspan', columns.length + 1);
+	    var cell = r.append('td').attr('colspan', columns.length + 1);
 
 	    var styles = ['Abs', 'Size', 'Color', 'Text'],
 		style_cells = cell.selectAll('.style-span')
 		    .data(styles),
-	    s = style_cells.enter()
+		s = style_cells.enter()
 		    .append('span')
 		    .attr('class', 'style-span');
 	    s.append('span').text(function(d) { return d; });
@@ -239,33 +199,18 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		.each(function(style) {
 		    // change the model when the box is changed
 		    var change_stream = bacon
-			    .fromEventTarget(this, 'change')
-			    .toProperty(null);
-		    var combined = settings[style_property]
-			    .combine(change_stream,
-				     function(current, event) {
-					 if (event===null)
-					     return current;
-		    			 // add or remove the property from the stream
-		    			 // if it is checked, add the style
-		    			 if (event.target.checked && current.indexOf(style) == -1)
-		    			     return current.concat([style]);
-		    			 // if not, remove the style
-		    			 else if (!event.target.checked && current.indexOf(style) != -1)
-		    			     return current.filter(function(v) { return v != style; });
-		    			 // otherwise, return unchanged
-		    			 return current;
-		    		     });
-
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+		    		settings.change_data_style(type, style,
+							   event.target.checked);
+		    	    });
+		    
 		    // subscribe to changes in the model
-		    combined.onValue(function (ar) {
-		    	// check the box if the style is present
-		    	this.checked = (ar.indexOf(style) != -1);
+		    settings.data_styles_stream[type].onValue(function(ar) {
+			// check the box if the style is present
+			this.checked = (ar.indexOf(style) != -1);
 		    }.bind(this));
-
-		    // save the new combined property
-		    settings[style_property] = combined;
 		});
-	})(this.settings);
+	});
     }
 });
