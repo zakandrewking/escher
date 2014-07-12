@@ -11,7 +11,10 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 			    set_auto_domain: set_auto_domain,
 			    set_domain_value: set_domain_value,
 			    set_domain: set_domain,
-			    set_range_value: set_range_value };
+			    set_range_value: set_range_value,
+			    hold_changes: hold_changes,
+			    abandon_changes: abandon_changes,
+			    accept_changes: accept_changes };
 
     return SearchBar;
 
@@ -37,6 +40,16 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	this.range_bus = {};
 	this.range_stream = {};
 
+	// manage accepting/abandoning changes
+	this.status_bus = new bacon.Bus();
+
+	// force an update of ui components
+	this.force_update_bus = new bacon.Bus();
+
+	// modify bacon.observable
+	bacon.Observable.prototype.convert_to_conditional_stream = convert_to_conditional_stream;
+	bacon.Observable.prototype.force_update_with_bus = force_update_with_bus;
+
 	var default_domain = { reaction: [-10, 0, 10],
 			       metabolite: [-10, 0, 10] },
 	    default_range = { reaction: { color: ['green', 'rgb(200,200,200)', 'red'],
@@ -47,17 +60,10 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	['metabolite', 'reaction'].forEach(function(type) {
 	    // set up the styles settings
 	    this.data_styles_bus[type] = new bacon.Bus();
-	    this.data_styles_stream[type] = bacon
-	    // make a new constant for the input array
-		.constant(type=='reaction' ? reaction_data_styles : metabolite_data_styles)
-	    // generate events for each element
-		.flatMap(function(ar) {
-		    return bacon.fromArray(ar.map(function(x) {
-			return { style: x, on_off: true };
-		    }));
-		})
-	    // merge with incoming events
-		.merge(this.data_styles_bus[type])
+	    // make the event stream
+	    this.data_styles_stream[type] = this.data_styles_bus[type]
+	    // conditionally accept changes
+		.convert_to_conditional_stream(this.status_bus)
 	    // combine into state array
 		.scan([], function(current, event) {
 		    if (event===null)
@@ -74,44 +80,62 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 		    }
 		    // otherwise, return unchanged
 		    return current;
-		});
+		})
+	    // force updates
+		.force_update_with_bus(this.force_update_bus);
+
 	    // get the latest
 	    this.data_styles_stream[type].onValue(function(v) {
 		this.data_styles[type] = v;
 	    }.bind(this));
 
+	    // push the defaults
+	    var def = (type=='reaction' ? reaction_data_styles : metabolite_data_styles);
+	    def.forEach(function(x) {
+	    	this.data_styles_bus[type].push({ style: x, on_off: true });
+	    }.bind(this));
+
 	    // set up the auto_domain settings
 	    this.auto_domain_bus[type] = new bacon.Bus();
 	    this.auto_domain_stream[type] = this.auto_domain_bus[type]
-	    // set the default value
-		.toProperty(type=='reaction' ? auto_reaction_domain : auto_metabolite_domain);
+	    // conditionally accept changes
+		.convert_to_conditional_stream(this.status_bus)
+	    // force updates
+		.force_update_with_bus(this.force_update_bus);
+
 	    // get the latest
 	    this.auto_domain_stream[type].onValue(function(v) {
 		this.auto_domain[type] = v;
 	    }.bind(this));
 
+	    // set the default
+	    var def = (type=='reaction' ? auto_reaction_domain : auto_metabolite_domain);
+	    this.auto_domain_bus[type].push(def);
+
 	    // set up the domain
 	    // make the bus
 	    this.domain_bus[type] = new bacon.Bus();
 	    // make a new constant for the input default
-	    this.domain_stream[type] = bacon
-		.constant(default_domain[type])
-	    // generate events for each element
-		.flatMap(function(ar) {
-		    return bacon.fromArray(ar.map(function(x, i) {
-			return { index: i, value: x };
-		    }));
-		})
-	    // merge with incoming events
-		.merge(this.domain_bus[type])
+	    this.domain_stream[type] = this.domain_bus[type]
+	    // conditionally accept changes
+		.convert_to_conditional_stream(this.status_bus)
 	    // combine into state array
 		.scan([], function(current, event) {
 		    current[event.index] = event.value;
 		    return current;
-		});
+		})
+	    // force updates
+		.force_update_with_bus(this.force_update_bus);
+
 	    // get the latest
 	    this.domain_stream[type].onValue(function(v) {
 		this.domain[type] = v;
+	    }.bind(this));
+
+	    // push the defaults
+	    var def = default_domain[type];
+	    def.forEach(function(x, i) { 
+		this.domain_bus[type].push({ index: i, value: x });
 	    }.bind(this));
 
 	    // set up the ranges
@@ -122,28 +146,82 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 		// make the bus
 		this.range_bus[type][range_type] = new bacon.Bus();
 		// make a new constant for the input default
-		this.range_stream[type][range_type] = bacon
-		    .constant(default_range[type][range_type])
-		// generate events for each element
-		    .flatMap(function(ar) {
-			return bacon.fromArray(ar.map(function(x, i) {
-			    return { index: i, value: x };
-			}));
-		    })
-		// merge with incoming events
-		    .merge(this.range_bus[type][range_type])
+		this.range_stream[type][range_type] = this.range_bus[type][range_type]
+		// conditionally accept changes
+		    .convert_to_conditional_stream(this.status_bus)
 		// combine into state array
 		    .scan([], function(current, event) {
 			current[event.index] = event.value;
 			return current;
-		    });
+		    })
+		// force updates
+		    .force_update_with_bus(this.force_update_bus);
+
 		// get the latest
 		this.range_stream[type][range_type].onValue(function(v) {
 		    this.range[type][range_type] = v;
 		}.bind(this));
 
+		// push the default
+		var def = default_range[type][range_type];
+		def.forEach(function(x, i) { 
+		    this.range_bus[type][range_type].push({ index: i, value: x });
+		}.bind(this));
+
 	    }.bind(this));
 	}.bind(this));
+
+	// definitions
+	function convert_to_conditional_stream(status_stream) {
+	    /** Hold on to event when hold_property is true, and only keep them
+	      if accept_property is true (when hold_property becomes false).
+
+	     */
+
+	    // true if hold is pressed
+	    var is_not_hold_event = status_stream
+		    .map(function(x) { return x=='hold'; })
+		    .not()
+		    .toProperty(true),
+		is_not_first_clear = status_stream
+		    .scan(false, function(c, x) {
+			// first clear only
+			return (c==false && x=='clear');
+		    }).not(),
+		combined = bacon.combineAsArray(this, status_stream),
+		held = combined
+		    .scan([], function(c, x) {
+			if (x[1]=='hold') {
+			    c.push(x[0]);
+			    return c;
+			} else if (x[1]=='accept') {
+			    return c;
+			} else if (x[1]=='reject') {
+			    return [];
+			} else if (x[1]=='clear') {
+			    return [x[0]];
+			} else {
+			    throw Error('bad status ' + x[1]);
+			}
+		    })
+	    // don't pass in events until the end of a hold
+		    .filter(is_not_hold_event)
+	    // ignore the event when clear is passed
+		    .filter(is_not_first_clear)
+		    .flatMap(function(ar) {
+			return bacon.fromArray(ar);
+		    }),
+		unheld = this.filter(is_not_hold_event);
+	    return unheld.merge(held);
+	}
+
+	function force_update_with_bus(bus) {	     
+	    return bacon
+		.combineAsArray(this, bus.toProperty(false))
+		.map(function(t) {
+		    return t[0];
+		});
+	}
     }
     function set_auto_domain(type, on_off) {	
 	/** Turn auto domain setting on or off.
@@ -220,5 +298,16 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	this.range_bus[type][range_type].push({ index: index,
 						   value: value });
     }
-
+    function hold_changes() {
+	this.status_bus.push('hold');
+    }
+    function abandon_changes() {
+	this.status_bus.push('reject');
+	this.status_bus.push('clear');
+	this.force_update_bus.push(true);
+    };
+    function accept_changes() {
+	this.status_bus.push('accept');
+	this.status_bus.push('clear');
+    };
 });

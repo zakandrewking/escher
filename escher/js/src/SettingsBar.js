@@ -7,8 +7,9 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
     SearchBar.prototype = { init: init,
 			    is_visible: is_visible,
 			    toggle: toggle,
-			    record_state: record_state,
+			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
+			    accept_changes: accept_changes,
 			    scale_gui: scale_gui };
 
     return SearchBar;
@@ -16,10 +17,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
     // instance methods
     function init(sel, settings, map) {
 	this.settings = settings;
-	this.changed = false;
-	this.saved_settings = null;
-
-	// TODO make sure updated scales stay updated after loading a new dataset/map
+	this.draw = false;
 
 	var container = sel.append('div')
 		.attr('class', 'settings-box')
@@ -29,7 +27,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	container.append('button')
 	    .attr("class", "btn btn-sm btn-default close-button")
 	    .on('click', function() {
-		this.toggle(false);
+		this.accept_changes();
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-ok");
 	// quit button
@@ -37,23 +35,18 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    .attr("class", "btn btn-sm btn-default close-button")
 	    .on('click', function() {
 		this.abandon_changes();
-		this.toggle(false);
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-remove");
 	
 	// reaction data
-	(function() {	
-	    container.append('div')
-		.text('Reaction data').attr('class', 'settings-section-heading');
-	    this.scale_gui(container.append('div'), 'reaction');
-	}.bind(this))();
+	container.append('div')
+	    .text('Reaction data').attr('class', 'settings-section-heading');
+	this.scale_gui(container.append('div'), 'reaction');
 
 	// metabolite data
-	(function() {
-	    container.append('div').text('Metabolite data')
-		.attr('class', 'settings-section-heading');
-	    this.scale_gui(container.append('div'), 'metabolite');
-	}.bind(this))();
+	container.append('div').text('Metabolite data')
+	    .attr('class', 'settings-section-heading');
+	this.scale_gui(container.append('div'), 'metabolite');
 
 	this.callback_manager = new CallbackManager();
 
@@ -67,34 +60,48 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	if (on_off===undefined) on_off = !this.is_visible();
 
 	if (on_off) {
-	    this.changed = true;
+	    // hold changes until accepting/abandoning
+	    this.hold_changes();
+	    // show the menu
 	    this.selection.style("display", "block");
 	    this.selection.select('input').node().focus();
 	    // escape key
 	    this.escape = this.map.key_manager
 		.add_escape_listener(function() {
-		    this.changed = false;
-		    this.toggle(false); 
+		    this.abandon_changes();
 		}.bind(this));
-	    // record the state
-	    this.record_state();
+	    // enter key
+	    this.enter = this.map.key_manager
+		.add_enter_listener(function() {
+		    this.accept_changes();
+		}.bind(this));
 	    // run the show callback
 	    this.callback_manager.run('show');
 	} else {
 	    // draw on finish
-	    if (this.changed) this.map.draw_everything();
-	    this.changed = false;
-
-	    this.selection.style("display", "none");	    
+	    if (this.draw) this.map.draw_everything();
+	    // hide the menu
+	    this.selection.style("display", "none");
 	    if (this.escape) this.escape.clear();
+	    if (this.enter) this.enter.clear();
 	    this.escape = null;
+	    this.enter = null;
 	    // run the hide callback
 	    this.callback_manager.run('hide');
 	}
     }
-    function record_state() {
+    function hold_changes() {
+	this.settings.hold_changes();
     }
     function abandon_changes() {
+	this.draw = false;
+	this.settings.abandon_changes();
+	this.toggle(false);
+    }
+    function accept_changes() {
+	this.draw = true;
+	this.settings.accept_changes();
+	this.toggle(false);
     }
     function scale_gui(s, type) {
 	/** A UI to edit color and size scales. */
@@ -144,13 +151,18 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		    .each(function() {
 			bacon.fromEventTarget(this, 'change')
 			    .onValue(function(event) {
-			    	settings.set_auto_domain(type, event.target.checked);
+				var on_off = event.target.checked;
+			    	settings.set_auto_domain(type, on_off);
+				// disable the domain boxes on ui check
+				scale_bars.selectAll('input')
+				    .attr('disabled', on_off ? 'true' : null);
 			    });
 			
 			// subscribe to changes in the model
 			settings.auto_domain_stream[type].onValue(function(on_off) {
 			    // check the box if auto domain on
 			    this.checked = on_off;
+			    // also disable the domain boxes on programmatic change
 			    scale_bars.selectAll('input')
 				.attr('disabled', on_off ? 'true' : null);
 			}.bind(this));
