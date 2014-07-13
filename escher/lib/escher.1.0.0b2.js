@@ -1750,7 +1750,7 @@ define('data_styles',["utils"], function(utils) {
 		return null;
 	    if (data.length==1)
 		return null;
-	    if (data.length==2 && styles.indexOf('Diff')!=-1)
+	    if (data.length==2) // && styles.indexOf('Diff')!=-1
 		return null;
 	    return console.warn('Bad data style: '+name);
 	};
@@ -1764,7 +1764,7 @@ define('data_styles',["utils"], function(utils) {
 	if (d===null) return null;
 	var f = null;
 	if (d.length==1) f = d[0];
-	if (d.length==2 && styles.indexOf('Diff')!=-1) { // abs
+	if (d.length==2) { // && styles.indexOf('Diff')!=-1) {
 	    if (d[0]===null || d[1]===null) return null;
 	    else f = d[1] - d[0];
 	}
@@ -1782,7 +1782,7 @@ define('data_styles',["utils"], function(utils) {
 	    var format = d3.format('.4g');
 	    return null_or_d(f, format);
 	}
-	if (d.length==2 && styles.indexOf('Diff')!=-1) {
+	if (d.length==2) { // && styles.indexOf('Diff')!=-1) {
 	    var format = d3.format('.3g'),
 		t = null_or_d(d[0], format);
 	    t += ', ' + null_or_d(d[1], format);
@@ -9799,7 +9799,10 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 			    set_auto_domain: set_auto_domain,
 			    set_domain_value: set_domain_value,
 			    set_domain: set_domain,
-			    set_range_value: set_range_value };
+			    set_range_value: set_range_value,
+			    hold_changes: hold_changes,
+			    abandon_changes: abandon_changes,
+			    accept_changes: accept_changes };
 
     return SearchBar;
 
@@ -9825,6 +9828,16 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.range_bus = {};
 	this.range_stream = {};
 
+	// manage accepting/abandoning changes
+	this.status_bus = new bacon.Bus();
+
+	// force an update of ui components
+	this.force_update_bus = new bacon.Bus();
+
+	// modify bacon.observable
+	bacon.Observable.prototype.convert_to_conditional_stream = convert_to_conditional_stream;
+	bacon.Observable.prototype.force_update_with_bus = force_update_with_bus;
+
 	var default_domain = { reaction: [-10, 0, 10],
 			       metabolite: [-10, 0, 10] },
 	    default_range = { reaction: { color: ['green', 'rgb(200,200,200)', 'red'],
@@ -9835,17 +9848,10 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	['metabolite', 'reaction'].forEach(function(type) {
 	    // set up the styles settings
 	    this.data_styles_bus[type] = new bacon.Bus();
-	    this.data_styles_stream[type] = bacon
-	    // make a new constant for the input array
-		.constant(type=='reaction' ? reaction_data_styles : metabolite_data_styles)
-	    // generate events for each element
-		.flatMap(function(ar) {
-		    return bacon.fromArray(ar.map(function(x) {
-			return { style: x, on_off: true };
-		    }));
-		})
-	    // merge with incoming events
-		.merge(this.data_styles_bus[type])
+	    // make the event stream
+	    this.data_styles_stream[type] = this.data_styles_bus[type]
+	    // conditionally accept changes
+		.convert_to_conditional_stream(this.status_bus)
 	    // combine into state array
 		.scan([], function(current, event) {
 		    if (event===null)
@@ -9862,44 +9868,62 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 		    }
 		    // otherwise, return unchanged
 		    return current;
-		});
+		})
+	    // force updates
+		.force_update_with_bus(this.force_update_bus);
+
 	    // get the latest
 	    this.data_styles_stream[type].onValue(function(v) {
 		this.data_styles[type] = v;
 	    }.bind(this));
 
+	    // push the defaults
+	    var def = (type=='reaction' ? reaction_data_styles : metabolite_data_styles);
+	    def.forEach(function(x) {
+	    	this.data_styles_bus[type].push({ style: x, on_off: true });
+	    }.bind(this));
+
 	    // set up the auto_domain settings
 	    this.auto_domain_bus[type] = new bacon.Bus();
 	    this.auto_domain_stream[type] = this.auto_domain_bus[type]
-	    // set the default value
-		.toProperty(type=='reaction' ? auto_reaction_domain : auto_metabolite_domain);
+	    // conditionally accept changes
+		.convert_to_conditional_stream(this.status_bus)
+	    // force updates
+		.force_update_with_bus(this.force_update_bus);
+
 	    // get the latest
 	    this.auto_domain_stream[type].onValue(function(v) {
 		this.auto_domain[type] = v;
 	    }.bind(this));
 
+	    // set the default
+	    var def = (type=='reaction' ? auto_reaction_domain : auto_metabolite_domain);
+	    this.auto_domain_bus[type].push(def);
+
 	    // set up the domain
 	    // make the bus
 	    this.domain_bus[type] = new bacon.Bus();
 	    // make a new constant for the input default
-	    this.domain_stream[type] = bacon
-		.constant(default_domain[type])
-	    // generate events for each element
-		.flatMap(function(ar) {
-		    return bacon.fromArray(ar.map(function(x, i) {
-			return { index: i, value: x };
-		    }));
-		})
-	    // merge with incoming events
-		.merge(this.domain_bus[type])
+	    this.domain_stream[type] = this.domain_bus[type]
+	    // conditionally accept changes
+		.convert_to_conditional_stream(this.status_bus)
 	    // combine into state array
 		.scan([], function(current, event) {
 		    current[event.index] = event.value;
 		    return current;
-		});
+		})
+	    // force updates
+		.force_update_with_bus(this.force_update_bus);
+
 	    // get the latest
 	    this.domain_stream[type].onValue(function(v) {
 		this.domain[type] = v;
+	    }.bind(this));
+
+	    // push the defaults
+	    var def = default_domain[type];
+	    def.forEach(function(x, i) { 
+		this.domain_bus[type].push({ index: i, value: x });
 	    }.bind(this));
 
 	    // set up the ranges
@@ -9910,28 +9934,82 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 		// make the bus
 		this.range_bus[type][range_type] = new bacon.Bus();
 		// make a new constant for the input default
-		this.range_stream[type][range_type] = bacon
-		    .constant(default_range[type][range_type])
-		// generate events for each element
-		    .flatMap(function(ar) {
-			return bacon.fromArray(ar.map(function(x, i) {
-			    return { index: i, value: x };
-			}));
-		    })
-		// merge with incoming events
-		    .merge(this.range_bus[type][range_type])
+		this.range_stream[type][range_type] = this.range_bus[type][range_type]
+		// conditionally accept changes
+		    .convert_to_conditional_stream(this.status_bus)
 		// combine into state array
 		    .scan([], function(current, event) {
 			current[event.index] = event.value;
 			return current;
-		    });
+		    })
+		// force updates
+		    .force_update_with_bus(this.force_update_bus);
+
 		// get the latest
 		this.range_stream[type][range_type].onValue(function(v) {
 		    this.range[type][range_type] = v;
 		}.bind(this));
 
+		// push the default
+		var def = default_range[type][range_type];
+		def.forEach(function(x, i) { 
+		    this.range_bus[type][range_type].push({ index: i, value: x });
+		}.bind(this));
+
 	    }.bind(this));
 	}.bind(this));
+
+	// definitions
+	function convert_to_conditional_stream(status_stream) {
+	    /** Hold on to event when hold_property is true, and only keep them
+	      if accept_property is true (when hold_property becomes false).
+
+	     */
+
+	    // true if hold is pressed
+	    var is_not_hold_event = status_stream
+		    .map(function(x) { return x=='hold'; })
+		    .not()
+		    .toProperty(true),
+		is_not_first_clear = status_stream
+		    .scan(false, function(c, x) {
+			// first clear only
+			return (c==false && x=='clear');
+		    }).not(),
+		combined = bacon.combineAsArray(this, status_stream),
+		held = combined
+		    .scan([], function(c, x) {
+			if (x[1]=='hold') {
+			    c.push(x[0]);
+			    return c;
+			} else if (x[1]=='accept') {
+			    return c;
+			} else if (x[1]=='reject') {
+			    return [];
+			} else if (x[1]=='clear') {
+			    return [x[0]];
+			} else {
+			    throw Error('bad status ' + x[1]);
+			}
+		    })
+	    // don't pass in events until the end of a hold
+		    .filter(is_not_hold_event)
+	    // ignore the event when clear is passed
+		    .filter(is_not_first_clear)
+		    .flatMap(function(ar) {
+			return bacon.fromArray(ar);
+		    }),
+		unheld = this.filter(is_not_hold_event);
+	    return unheld.merge(held);
+	}
+
+	function force_update_with_bus(bus) {	     
+	    return bacon
+		.combineAsArray(this, bus.toProperty(false))
+		.map(function(t) {
+		    return t[0];
+		});
+	}
     }
     function set_auto_domain(type, on_off) {	
 	/** Turn auto domain setting on or off.
@@ -10008,7 +10086,18 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.range_bus[type][range_type].push({ index: index,
 						   value: value });
     }
-
+    function hold_changes() {
+	this.status_bus.push('hold');
+    }
+    function abandon_changes() {
+	this.status_bus.push('reject');
+	this.status_bus.push('clear');
+	this.force_update_bus.push(true);
+    };
+    function accept_changes() {
+	this.status_bus.push('accept');
+	this.status_bus.push('clear');
+    };
 });
 
 define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManager, bacon) {
@@ -10020,19 +10109,18 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
     SearchBar.prototype = { init: init,
 			    is_visible: is_visible,
 			    toggle: toggle,
-			    record_state: record_state,
+			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
+			    accept_changes: accept_changes,
 			    scale_gui: scale_gui };
 
     return SearchBar;
 
     // instance methods
     function init(sel, settings, map) {
+	this.sel = sel;
 	this.settings = settings;
-	this.changed = false;
-	this.saved_settings = null;
-
-	// TODO make sure updated scales stay updated after loading a new dataset/map
+	this.draw = false;
 
 	var container = sel.append('div')
 		.attr('class', 'settings-box')
@@ -10042,7 +10130,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	container.append('button')
 	    .attr("class", "btn btn-sm btn-default close-button")
 	    .on('click', function() {
-		this.toggle(false);
+		this.accept_changes();
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-ok");
 	// quit button
@@ -10050,23 +10138,18 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    .attr("class", "btn btn-sm btn-default close-button")
 	    .on('click', function() {
 		this.abandon_changes();
-		this.toggle(false);
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-remove");
 	
 	// reaction data
-	(function() {	
-	    container.append('div')
-		.text('Reaction data').attr('class', 'settings-section-heading');
-	    this.scale_gui(container.append('div'), 'reaction');
-	}.bind(this))();
+	container.append('div')
+	    .text('Reaction data').attr('class', 'settings-section-heading');
+	this.scale_gui(container.append('div'), 'reaction');
 
 	// metabolite data
-	(function() {
-	    container.append('div').text('Metabolite data')
-		.attr('class', 'settings-section-heading');
-	    this.scale_gui(container.append('div'), 'metabolite');
-	}.bind(this))();
+	container.append('div').text('Metabolite data')
+	    .attr('class', 'settings-section-heading');
+	this.scale_gui(container.append('div'), 'metabolite');
 
 	this.callback_manager = new CallbackManager();
 
@@ -10080,34 +10163,51 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	if (on_off===undefined) on_off = !this.is_visible();
 
 	if (on_off) {
-	    this.changed = true;
+	    // hold changes until accepting/abandoning
+	    this.hold_changes();
+	    // show the menu
 	    this.selection.style("display", "block");
 	    this.selection.select('input').node().focus();
 	    // escape key
 	    this.escape = this.map.key_manager
 		.add_escape_listener(function() {
-		    this.changed = false;
-		    this.toggle(false); 
+		    this.abandon_changes();
 		}.bind(this));
-	    // record the state
-	    this.record_state();
+	    // enter key
+	    this.enter = this.map.key_manager
+		.add_enter_listener(function() {
+		    this.accept_changes();
+		}.bind(this));
 	    // run the show callback
 	    this.callback_manager.run('show');
 	} else {
 	    // draw on finish
-	    if (this.changed) this.map.draw_everything();
-	    this.changed = false;
-
-	    this.selection.style("display", "none");	    
+	    if (this.draw) this.map.draw_everything();
+	    // hide the menu
+	    this.selection.style("display", "none");
 	    if (this.escape) this.escape.clear();
+	    if (this.enter) this.enter.clear();
 	    this.escape = null;
+	    this.enter = null;
 	    // run the hide callback
 	    this.callback_manager.run('hide');
 	}
     }
-    function record_state() {
+    function hold_changes() {
+	this.settings.hold_changes();
     }
     function abandon_changes() {
+	this.draw = false;
+	this.settings.abandon_changes();
+	this.toggle(false);
+    }
+    function accept_changes() {
+	this.sel.selectAll('input').each(function (s) { 
+	    this.blur();
+	});
+	this.draw = true;
+	this.settings.accept_changes();
+	this.toggle(false);
     }
     function scale_gui(s, type) {
 	/** A UI to edit color and size scales. */
@@ -10157,13 +10257,18 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		    .each(function() {
 			bacon.fromEventTarget(this, 'change')
 			    .onValue(function(event) {
-			    	settings.set_auto_domain(type, event.target.checked);
+				var on_off = event.target.checked;
+			    	settings.set_auto_domain(type, on_off);
+				// disable the domain boxes on ui check
+				scale_bars.selectAll('input')
+				    .attr('disabled', on_off ? 'true' : null);
 			    });
 			
 			// subscribe to changes in the model
 			settings.auto_domain_stream[type].onValue(function(on_off) {
 			    // check the box if auto domain on
 			    this.checked = on_off;
+			    // also disable the domain boxes on programmatic change
 			    scale_bars.selectAll('input')
 				.attr('disabled', on_off ? 'true' : null);
 			}.bind(this));

@@ -16,6 +16,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 
     // instance methods
     function init(sel, settings, map) {
+	this.sel = sel;
 	this.settings = settings;
 	this.draw = false;
 
@@ -99,6 +100,9 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	this.toggle(false);
     }
     function accept_changes() {
+	this.sel.selectAll('input').each(function (s) { 
+	    this.blur();
+	});
 	this.draw = true;
 	this.settings.accept_changes();
 	this.toggle(false);
