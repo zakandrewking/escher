@@ -34,7 +34,7 @@ define(["utils"], function(utils) {
 	    if (d[0]===null || d[1]===null) return null;
 	    else f = d[1] - d[0];
 	}
-	if (styles.indexOf('Abs')!=-1 && !ignore_abs) {
+	if (styles.indexOf('abs')!=-1 && !ignore_abs) {
 	    f = Math.abs(f);
 	}
 	return f;

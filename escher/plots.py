@@ -159,6 +159,32 @@ class Builder(object):
         # make the unique id
         self.generate_id()
 
+        # set up the options
+        self.options = ['reaction_styles',
+                        'auto_reaction_domain',
+                        'reaction_domain',
+                        'reaction_color_range',
+                        'reaction_size_range',
+                        'metabolite_styles',
+                        'auto_metabolite_domain',
+                        'metabolite_domain',
+                        'metabolite_color_range',
+                        'metabolite_size_range']
+        def get_getter_setter(o):
+            """Use a closure."""
+            # create local fget and fset functions 
+            fget = lambda self: getattr(self, '_%s' % o)
+            fset = lambda self, value: setattr(self, '_%s' % o, value)
+            return fget, fset
+        for option in self.options:
+            fget, fset = get_getter_setter(option)
+            # make the setter
+            setattr(self.__class__, 'set_%s' % option, fset)
+            # add property to self
+            setattr(self.__class__, option, property(fget))
+            # add corresponding local variable
+            setattr(self, '_%s' % option, None)
+        
     def generate_id(self):
         self.the_id = get_an_id()
         
@@ -271,7 +297,7 @@ class Builder(object):
                 u"auto_set_data_domain: {auto_set_data_domain},"
                 u"reaction_data: reaction_data_{the_id},"
 		u"metabolite_data: metabolite_data_{the_id},"
-                u"css: css_string_{the_id} }});").format(
+                u"css: css_string_{the_id},").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
                     menu=json.dumps(menu),
@@ -279,6 +305,14 @@ class Builder(object):
                     scroll_behavior=json.dumps(scroll_behavior),
                     fill_screen=json.dumps(fill_screen),
                     auto_set_data_domain=json.dumps(auto_set_data_domain))
+        # Add the specified options
+        for option in self.options:
+            val = getattr(self, option)
+            if val is None: continue
+            draw = draw + u"{option}: {value},".format(
+                option=option,
+                value=json.dumps(val))
+        draw = draw + u"});"
         if not dev:
             draw = u'escher.%s' % draw
         return draw
@@ -361,7 +395,7 @@ class Builder(object):
         boot_js_url = ("" if not menu=='all' else
                        (join(self.local_host, urls.boot_js_local) if is_local else
                         urls.boot_js))
-        require_js_url = (urls.require_js_local if is_local else
+        require_js_url = (join(self.local_host, urls.require_js_local) if is_local else
                           urls.require_js)
         html = content.render(require_js=require_js_url,
                               id=self.the_id,

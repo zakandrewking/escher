@@ -1,7 +1,7 @@
 import escher.server
 from escher import (Builder, get_cache_dir, clear_cache, list_cached_maps,
                     list_cached_models)
-from escher.plots import load_resource
+from escher.plots import load_resource, check_data
 
 import os
 from os.path import join
@@ -54,6 +54,14 @@ def test_load_resource(tmpdir):
         load_resource(p, 'name')
         assert 'not a valid json file' in err.value
 
+def test_check_data():
+    x = {'a': 1, 'b': 2}
+    assert check_data(x) is x
+    check_data([{}, {}])
+    check_data(({}, {}))
+    with raises(Exception):
+        check_data(1)
+        
 def test_Builder(tmpdir):
     b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}')
     #  cannot load dev version without an explicit css string property

@@ -105,7 +105,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
             var t = d.bigg_id;
-	    if (has_reaction_data && reaction_data_styles.indexOf('Text') != -1)
+	    if (has_reaction_data && reaction_data_styles.indexOf('text') != -1)
 		t += ' ' + d.data_string;
             return t;
 	}).attr('transform', function(d) {
@@ -185,7 +185,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		return curve;
             })
             .style('stroke', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
+		if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		    var f = d.data;
 		    return scale.reaction_color(f===null ? 0 : f);
 		} else {
@@ -193,7 +193,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		}
 	    })
 	    .style('stroke-width', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
+		if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		    var f = d.data;
 		    return scale.reaction_size(f===null ? 0 : f);
 		} else {
@@ -239,7 +239,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	// update bezier points
 	arrowheads.attr("d", function(d) {
 	    var markerWidth = 20, markerHeight = 13;
-	    if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
+	    if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		var f = d.data;
 		markerWidth += (scale.reaction_size(f) - scale.reaction_size(0));
 	    }		    
@@ -248,7 +248,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
 	}).attr('fill', function(d) {
 	    var c;
-	    if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
+	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		var f = d.data;
 		c = scale.reaction_color(f===null ? 0 : f);
 	    } else {
@@ -363,7 +363,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
                 })
 		.attr('r', function(d) {
 		    if (d.node_type == 'metabolite') {
-			if (has_metabolite_data && metabolite_data_styles.indexOf('Size')!==-1) {
+			if (has_metabolite_data && metabolite_data_styles.indexOf('size')!==-1) {
 			    var f = d.data;
 			    return scale.metabolite_size(f===null ? 0 : f);
 			} else {
@@ -375,7 +375,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		})
 		.style('fill', function(d) {
 		    if (d.node_type=='metabolite') {
-			if (has_metabolite_data && metabolite_data_styles.indexOf('Color')!==-1) {
+			if (has_metabolite_data && metabolite_data_styles.indexOf('color')!==-1) {
 			    var f = d.data;
 			    return scale.metabolite_color(f===null ? 0 : f);
 			} else {
@@ -400,7 +400,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
             })
             .text(function(d) {	
 		var t = d.bigg_id;
-		if (has_metabolite_data && metabolite_data_styles.indexOf('Text') != -1)
+		if (has_metabolite_data && metabolite_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
 	    })

@@ -1768,7 +1768,7 @@ define('data_styles',["utils"], function(utils) {
 	    if (d[0]===null || d[1]===null) return null;
 	    else f = d[1] - d[0];
 	}
-	if (styles.indexOf('Abs')!=-1 && !ignore_abs) {
+	if (styles.indexOf('abs')!=-1 && !ignore_abs) {
 	    f = Math.abs(f);
 	}
 	return f;
@@ -1905,7 +1905,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
             var t = d.bigg_id;
-	    if (has_reaction_data && reaction_data_styles.indexOf('Text') != -1)
+	    if (has_reaction_data && reaction_data_styles.indexOf('text') != -1)
 		t += ' ' + d.data_string;
             return t;
 	}).attr('transform', function(d) {
@@ -1985,7 +1985,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 		return curve;
             })
             .style('stroke', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
+		if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		    var f = d.data;
 		    return scale.reaction_color(f===null ? 0 : f);
 		} else {
@@ -1993,7 +1993,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 		}
 	    })
 	    .style('stroke-width', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
+		if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		    var f = d.data;
 		    return scale.reaction_size(f===null ? 0 : f);
 		} else {
@@ -2039,7 +2039,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	// update bezier points
 	arrowheads.attr("d", function(d) {
 	    var markerWidth = 20, markerHeight = 13;
-	    if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
+	    if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		var f = d.data;
 		markerWidth += (scale.reaction_size(f) - scale.reaction_size(0));
 	    }		    
@@ -2048,7 +2048,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
 	}).attr('fill', function(d) {
 	    var c;
-	    if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
+	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		var f = d.data;
 		c = scale.reaction_color(f===null ? 0 : f);
 	    } else {
@@ -2163,7 +2163,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
                 })
 		.attr('r', function(d) {
 		    if (d.node_type == 'metabolite') {
-			if (has_metabolite_data && metabolite_data_styles.indexOf('Size')!==-1) {
+			if (has_metabolite_data && metabolite_data_styles.indexOf('size')!==-1) {
 			    var f = d.data;
 			    return scale.metabolite_size(f===null ? 0 : f);
 			} else {
@@ -2175,7 +2175,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 		})
 		.style('fill', function(d) {
 		    if (d.node_type=='metabolite') {
-			if (has_metabolite_data && metabolite_data_styles.indexOf('Color')!==-1) {
+			if (has_metabolite_data && metabolite_data_styles.indexOf('color')!==-1) {
 			    var f = d.data;
 			    return scale.metabolite_color(f===null ? 0 : f);
 			} else {
@@ -2200,7 +2200,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
             })
             .text(function(d) {	
 		var t = d.bigg_id;
-		if (has_metabolite_data && metabolite_data_styles.indexOf('Text') != -1)
+		if (has_metabolite_data && metabolite_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
 	    })
@@ -7707,7 +7707,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	var old_domain = this.settings.domain['reaction']['color'],
 	    new_domain, min, max;
 	if (vals.length > 0) {
-	    if (this.settings.data_styles['reaction'].indexOf('Abs') != -1) {
+	    if (this.settings.data_styles['reaction'].indexOf('abs') != -1) {
 		// if using absolute value reaction style
 		vals = vals.map(function(x) { return Math.abs(x); });
 	    }
@@ -7769,7 +7769,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	var old_domain = this.settings.domain['metabolite']['color'],
 	    new_domain, min, max;
 	if (vals.length > 0) {
-	    if (this.settings.data_styles['metabolite'].indexOf('Abs') != -1) {
+	    if (this.settings.data_styles['metabolite'].indexOf('abs') != -1) {
 		// if using absolute value reaction style
 		vals = vals.map(function(x) { return Math.abs(x); });
 	    }
@@ -9813,8 +9813,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
     }
 
     // instance methods
-    function init(reaction_data_styles, auto_reaction_domain, 
-		  metabolite_data_styles, auto_metabolite_domain) {
+    function init(def_styles, def_auto_domain, def_domain, def_range) {
 	this.data_styles = {};
 	this.data_styles_bus = {};
 	this.data_styles_stream = {};
@@ -9837,13 +9836,6 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	// modify bacon.observable
 	bacon.Observable.prototype.convert_to_conditional_stream = convert_to_conditional_stream;
 	bacon.Observable.prototype.force_update_with_bus = force_update_with_bus;
-
-	var default_domain = { reaction: [-10, 0, 10],
-			       metabolite: [-10, 0, 10] },
-	    default_range = { reaction: { color: ['green', 'rgb(200,200,200)', 'red'],
-					  size: [4, 6, 12] },
-			      metabolite: { color: ['green', 'white', 'red'],
-					    size: [6, 8, 10] } };
 
 	['metabolite', 'reaction'].forEach(function(type) {
 	    // set up the styles settings
@@ -9878,7 +9870,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	    }.bind(this));
 
 	    // push the defaults
-	    var def = (type=='reaction' ? reaction_data_styles : metabolite_data_styles);
+	    var def = def_styles[type];
 	    def.forEach(function(x) {
 	    	this.data_styles_bus[type].push({ style: x, on_off: true });
 	    }.bind(this));
@@ -9897,7 +9889,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	    }.bind(this));
 
 	    // set the default
-	    var def = (type=='reaction' ? auto_reaction_domain : auto_metabolite_domain);
+	    var def = def_auto_domain[type];
 	    this.auto_domain_bus[type].push(def);
 
 	    // set up the domain
@@ -9921,7 +9913,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	    }.bind(this));
 
 	    // push the defaults
-	    var def = default_domain[type];
+	    var def = def_domain[type];
 	    def.forEach(function(x, i) { 
 		this.domain_bus[type].push({ index: i, value: x });
 	    }.bind(this));
@@ -9951,7 +9943,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 		}.bind(this));
 
 		// push the default
-		var def = default_range[type][range_type];
+		var def = def_range[type][range_type];
 		def.forEach(function(x, i) { 
 		    this.range_bus[type][range_type].push({ index: i, value: x });
 		}.bind(this));
@@ -10304,7 +10296,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    r.append('td').text('Styles:');
 	    var cell = r.append('td').attr('colspan', columns.length + 1);
 
-	    var styles = ['Abs', 'Size', 'Color', 'Text'],
+	    var styles = ['abs', 'size', 'color', 'text'],
 		style_cells = cell.selectAll('.style-span')
 		    .data(styles),
 		s = style_cells.enter()
@@ -10381,20 +10373,33 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    css: null,
 	    starting_reaction: null,
 	    // applied data
-	    auto_set_data_domain: true,
+	    auto_reaction_domain: true,
 	    reaction_data_path: null,
 	    reaction_data: null,
-	    reaction_data_styles: ['Color', 'Size', 'Abs', 'Text'],
+	    reaction_styles: ['color', 'size', 'abs', 'text'],
+	    reaction_domain: [-10, 0, 10],
+	    reaction_color_range: ['green', 'rgb(200,200,200)', 'red'],
+	    reaction_size_range: [4, 6, 12],
 	    metabolite_data: null,
 	    metabolite_data_path: null,
-	    metabolite_data_styles: ['Color', 'Size', 'Text']
+	    metabolite_styles: ['color', 'size', 'text'],
+	    auto_metabolite_domain: true,
+	    metabolite_domain: [-10, 0, 10],
+	    metabolite_color_range: ['green', 'white', 'red'],
+	    metabolite_size_range: [6, 8, 10]
 	});
 
 	// initialize the settings
-	this.settings = Settings(this.options.reaction_data_styles,
-				 this.options.auto_set_data_domain,
-				 this.options.metabolite_data_styles,
-				 this.options.auto_set_data_domain);
+	this.settings = Settings({ reaction: this.options.reaction_styles,
+				   metabolite: this.options.metabolite_styles },
+				 { reaction: this.options.auto_reaction_domain,
+				   metabolite: this.options.auto_metabolite_domain },
+				 { reaction: this.options.reaction_domain,
+				   metabolite: this.options.metabolite_domain },
+				 { reaction: { color: this.options.reaction_color_range,
+					       size: this.options.reaction_size_range },
+				   metabolite: { color: this.options.metabolite_color_range,
+						 size: this.options.metabolite_size_range } });
 
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
 	    throw new Error("Builder cannot be placed within an svg node "+

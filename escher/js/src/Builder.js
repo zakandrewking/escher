@@ -46,20 +46,33 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    css: null,
 	    starting_reaction: null,
 	    // applied data
-	    auto_set_data_domain: true,
+	    auto_reaction_domain: true,
 	    reaction_data_path: null,
 	    reaction_data: null,
-	    reaction_data_styles: ['Color', 'Size', 'Abs', 'Text'],
+	    reaction_styles: ['color', 'size', 'abs', 'text'],
+	    reaction_domain: [-10, 0, 10],
+	    reaction_color_range: ['green', 'rgb(200,200,200)', 'red'],
+	    reaction_size_range: [4, 6, 12],
 	    metabolite_data: null,
 	    metabolite_data_path: null,
-	    metabolite_data_styles: ['Color', 'Size', 'Text']
+	    metabolite_styles: ['color', 'size', 'text'],
+	    auto_metabolite_domain: true,
+	    metabolite_domain: [-10, 0, 10],
+	    metabolite_color_range: ['green', 'white', 'red'],
+	    metabolite_size_range: [6, 8, 10]
 	});
 
 	// initialize the settings
-	this.settings = Settings(this.options.reaction_data_styles,
-				 this.options.auto_set_data_domain,
-				 this.options.metabolite_data_styles,
-				 this.options.auto_set_data_domain);
+	this.settings = Settings({ reaction: this.options.reaction_styles,
+				   metabolite: this.options.metabolite_styles },
+				 { reaction: this.options.auto_reaction_domain,
+				   metabolite: this.options.auto_metabolite_domain },
+				 { reaction: this.options.reaction_domain,
+				   metabolite: this.options.metabolite_domain },
+				 { reaction: { color: this.options.reaction_color_range,
+					       size: this.options.reaction_size_range },
+				   metabolite: { color: this.options.metabolite_color_range,
+						 size: this.options.metabolite_size_range } });
 
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
 	    throw new Error("Builder cannot be placed within an svg node "+

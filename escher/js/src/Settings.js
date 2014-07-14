@@ -25,8 +25,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     }
 
     // instance methods
-    function init(reaction_data_styles, auto_reaction_domain, 
-		  metabolite_data_styles, auto_metabolite_domain) {
+    function init(def_styles, def_auto_domain, def_domain, def_range) {
 	this.data_styles = {};
 	this.data_styles_bus = {};
 	this.data_styles_stream = {};
@@ -49,13 +48,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	// modify bacon.observable
 	bacon.Observable.prototype.convert_to_conditional_stream = convert_to_conditional_stream;
 	bacon.Observable.prototype.force_update_with_bus = force_update_with_bus;
-
-	var default_domain = { reaction: [-10, 0, 10],
-			       metabolite: [-10, 0, 10] },
-	    default_range = { reaction: { color: ['green', 'rgb(200,200,200)', 'red'],
-					  size: [4, 6, 12] },
-			      metabolite: { color: ['green', 'white', 'red'],
-					    size: [6, 8, 10] } };
 
 	['metabolite', 'reaction'].forEach(function(type) {
 	    // set up the styles settings
@@ -90,7 +82,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	    }.bind(this));
 
 	    // push the defaults
-	    var def = (type=='reaction' ? reaction_data_styles : metabolite_data_styles);
+	    var def = def_styles[type];
 	    def.forEach(function(x) {
 	    	this.data_styles_bus[type].push({ style: x, on_off: true });
 	    }.bind(this));
@@ -109,7 +101,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	    }.bind(this));
 
 	    // set the default
-	    var def = (type=='reaction' ? auto_reaction_domain : auto_metabolite_domain);
+	    var def = def_auto_domain[type];
 	    this.auto_domain_bus[type].push(def);
 
 	    // set up the domain
@@ -133,7 +125,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	    }.bind(this));
 
 	    // push the defaults
-	    var def = default_domain[type];
+	    var def = def_domain[type];
 	    def.forEach(function(x, i) { 
 		this.domain_bus[type].push({ index: i, value: x });
 	    }.bind(this));
@@ -163,7 +155,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 		}.bind(this));
 
 		// push the default
-		var def = default_range[type][range_type];
+		var def = def_range[type][range_type];
 		def.forEach(function(x, i) { 
 		    this.range_bus[type][range_type].push({ index: i, value: x });
 		}.bind(this));

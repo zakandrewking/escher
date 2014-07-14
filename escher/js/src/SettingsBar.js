@@ -202,7 +202,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    r.append('td').text('Styles:');
 	    var cell = r.append('td').attr('colspan', columns.length + 1);
 
-	    var styles = ['Abs', 'Size', 'Color', 'Text'],
+	    var styles = ['abs', 'size', 'color', 'text'],
 		style_cells = cell.selectAll('.style-span')
 		    .data(styles),
 		s = style_cells.enter()

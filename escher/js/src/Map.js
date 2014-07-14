@@ -715,7 +715,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	var old_domain = this.settings.domain['reaction']['color'],
 	    new_domain, min, max;
 	if (vals.length > 0) {
-	    if (this.settings.data_styles['reaction'].indexOf('Abs') != -1) {
+	    if (this.settings.data_styles['reaction'].indexOf('abs') != -1) {
 		// if using absolute value reaction style
 		vals = vals.map(function(x) { return Math.abs(x); });
 	    }
@@ -777,7 +777,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	var old_domain = this.settings.domain['metabolite']['color'],
 	    new_domain, min, max;
 	if (vals.length > 0) {
-	    if (this.settings.data_styles['metabolite'].indexOf('Abs') != -1) {
+	    if (this.settings.data_styles['metabolite'].indexOf('abs') != -1) {
 		// if using absolute value reaction style
 		vals = vals.map(function(x) { return Math.abs(x); });
 	    }

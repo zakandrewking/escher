@@ -60,9 +60,10 @@ def generate_handler(html, files=None):
                 self.send_response(200)
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
-                self.wfile.write("<html><head>"
-                                 "<title>Escher map</title>"
-                                 "</head><body>\n")
+                self.wfile.write('<!DOCTYPE html>'
+                                 '<html lang="en"><head>'
+                                 '<title>Escher map</title>'
+                                 '</head><body>\n')
                 self.wfile.write(html)
                 self.wfile.write("</body></html>")
             elif self.path in files:
