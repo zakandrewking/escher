@@ -180,7 +180,12 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 			// first clear only
 			return (c==false && x=='clear');
 		    }).not(),
-		combined = bacon.combineAsArray(this, status_stream),
+		is_not_first_hold = status_stream
+		    .scan(false, function(c, x) {
+			// first clear only
+			return (c==false && x=='hold');
+		    }).not(),
+		combined = bacon.combineAsArray(this, status_stream).log('combined'),
 		held = combined
 		    .scan([], function(c, x) {
 			if (x[1]=='hold') {
@@ -200,6 +205,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 		    .filter(is_not_hold_event)
 	    // ignore the event when clear is passed
 		    .filter(is_not_first_clear)
+	    // ignore the event when hold is passed
+		    .filter(is_not_first_hold).log('filtered')
 		    .flatMap(function(ar) {
 			return bacon.fromArray(ar);
 		    }),
