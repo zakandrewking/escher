@@ -9814,6 +9814,23 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
     // instance methods
     function init(def_styles, def_auto_domain, def_domain, def_range) {
+	// defaults
+	if (def_styles===undefined) 
+	    def_styles = { reaction: ['color', 'size', 'abs', 'text'],
+			   metabolite: ['color', 'size', 'text'] };
+	if (def_auto_domain===undefined)
+	    def_auto_domain = { reaction: true,
+				metabolite: true };
+	if (def_domain===undefined)
+	    def_domain = { reaction: [-10, 0, 10],
+			   metabolite: [-10, 0, 10] };
+	if (def_range===undefined)
+	    def_range = { reaction: { color: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
+				      size: [4, 8, 12] },
+			  metabolite: { color: ['green', 'white', 'red'],
+					size: [6, 8, 10] } };
+
+	// event streams
 	this.data_styles = {};
 	this.data_styles_bus = {};
 	this.data_styles_stream = {};
@@ -9968,6 +9985,11 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 			// first clear only
 			return (c==false && x=='clear');
 		    }).not(),
+		is_not_first_hold = status_stream
+		    .scan(false, function(c, x) {
+			// first clear only
+			return (c==false && x=='hold');
+		    }).not(),
 		combined = bacon.combineAsArray(this, status_stream),
 		held = combined
 		    .scan([], function(c, x) {
@@ -9988,6 +10010,8 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 		    .filter(is_not_hold_event)
 	    // ignore the event when clear is passed
 		    .filter(is_not_first_clear)
+	    // ignore the event when hold is passed
+		    .filter(is_not_first_hold)
 		    .flatMap(function(ar) {
 			return bacon.fromArray(ar);
 		    }),
@@ -10378,8 +10402,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    reaction_data: null,
 	    reaction_styles: ['color', 'size', 'abs', 'text'],
 	    reaction_domain: [-10, 0, 10],
-	    reaction_color_range: ['green', 'rgb(200,200,200)', 'red'],
-	    reaction_size_range: [4, 6, 12],
+	    reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
+	    reaction_size_range: [4, 8, 12],
 	    metabolite_data: null,
 	    metabolite_data_path: null,
 	    metabolite_styles: ['color', 'size', 'text'],
@@ -10390,16 +10414,18 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	});
 
 	// initialize the settings
-	this.settings = Settings({ reaction: this.options.reaction_styles,
-				   metabolite: this.options.metabolite_styles },
-				 { reaction: this.options.auto_reaction_domain,
-				   metabolite: this.options.auto_metabolite_domain },
-				 { reaction: this.options.reaction_domain,
-				   metabolite: this.options.metabolite_domain },
-				 { reaction: { color: this.options.reaction_color_range,
-					       size: this.options.reaction_size_range },
-				   metabolite: { color: this.options.metabolite_color_range,
-						 size: this.options.metabolite_size_range } });
+	this.settings = new Settings(
+	    { reaction: this.options.reaction_styles,
+	      metabolite: this.options.metabolite_styles },
+	    { reaction: this.options.auto_reaction_domain,
+	      metabolite: this.options.auto_metabolite_domain },
+	    { reaction: this.options.reaction_domain,
+	      metabolite: this.options.metabolite_domain },
+	    { reaction: { color: this.options.reaction_color_range,
+			  size: this.options.reaction_size_range },
+	      metabolite: { color: this.options.metabolite_color_range,
+			    size: this.options.metabolite_size_range } }
+	);
 
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
 	    throw new Error("Builder cannot be placed within an svg node "+
@@ -11098,8 +11124,8 @@ define('DataMenu',["utils"], function(utils) {
     };
 });
 
-define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex"],
-       function(bu, mp, bh, km, dm, us, cm, ut, si) {
+define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex", "Settings"],
+       function(bu, mp, bh, km, dm, us, cm, ut, si, se) {
            return { Builder: bu,
 		    Map: mp,
 		    Behavior: bh,
@@ -11108,7 +11134,8 @@ define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStac
 		    UndoStack: us,
 		    CobraModel: cm,
 		    utils: ut,
-		    SearchIndex: si };
+		    SearchIndex: si,
+		    Settings: se };
        });
 
     //The modules for your project will be inlined above

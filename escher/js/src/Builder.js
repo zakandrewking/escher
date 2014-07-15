@@ -63,16 +63,18 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	});
 
 	// initialize the settings
-	this.settings = Settings({ reaction: this.options.reaction_styles,
-				   metabolite: this.options.metabolite_styles },
-				 { reaction: this.options.auto_reaction_domain,
-				   metabolite: this.options.auto_metabolite_domain },
-				 { reaction: this.options.reaction_domain,
-				   metabolite: this.options.metabolite_domain },
-				 { reaction: { color: this.options.reaction_color_range,
-					       size: this.options.reaction_size_range },
-				   metabolite: { color: this.options.metabolite_color_range,
-						 size: this.options.metabolite_size_range } });
+	this.settings = new Settings(
+	    { reaction: this.options.reaction_styles,
+	      metabolite: this.options.metabolite_styles },
+	    { reaction: this.options.auto_reaction_domain,
+	      metabolite: this.options.auto_metabolite_domain },
+	    { reaction: this.options.reaction_domain,
+	      metabolite: this.options.metabolite_domain },
+	    { reaction: { color: this.options.reaction_color_range,
+			  size: this.options.reaction_size_range },
+	      metabolite: { color: this.options.metabolite_color_range,
+			    size: this.options.metabolite_size_range } }
+	);
 
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
 	    throw new Error("Builder cannot be placed within an svg node "+

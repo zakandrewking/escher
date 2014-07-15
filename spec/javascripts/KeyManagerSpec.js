@@ -1,8 +1,8 @@
 describe("KeyManager", function() {
 
     it("Makes a key manager", function() {
-	var key_manager = escher.KeyManager({}, 'empty');
-	expect(key_manager.reaction_input).toBe('empty');
+	var key_manager = escher.KeyManager({}, ['a', 'list']);
+	expect(key_manager.input_list).toEqual(['a', 'list']);
     });
 });
 

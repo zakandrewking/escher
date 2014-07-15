@@ -26,6 +26,23 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
     // instance methods
     function init(def_styles, def_auto_domain, def_domain, def_range) {
+	// defaults
+	if (def_styles===undefined) 
+	    def_styles = { reaction: ['color', 'size', 'abs', 'text'],
+			   metabolite: ['color', 'size', 'text'] };
+	if (def_auto_domain===undefined)
+	    def_auto_domain = { reaction: true,
+				metabolite: true };
+	if (def_domain===undefined)
+	    def_domain = { reaction: [-10, 0, 10],
+			   metabolite: [-10, 0, 10] };
+	if (def_range===undefined)
+	    def_range = { reaction: { color: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
+				      size: [4, 8, 12] },
+			  metabolite: { color: ['green', 'white', 'red'],
+					size: [6, 8, 10] } };
+
+	// event streams
 	this.data_styles = {};
 	this.data_styles_bus = {};
 	this.data_styles_stream = {};
@@ -185,7 +202,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 			// first clear only
 			return (c==false && x=='hold');
 		    }).not(),
-		combined = bacon.combineAsArray(this, status_stream).log('combined'),
+		combined = bacon.combineAsArray(this, status_stream),
 		held = combined
 		    .scan([], function(c, x) {
 			if (x[1]=='hold') {
@@ -206,7 +223,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	    // ignore the event when clear is passed
 		    .filter(is_not_first_clear)
 	    // ignore the event when hold is passed
-		    .filter(is_not_first_hold).log('filtered')
+		    .filter(is_not_first_hold)
 		    .flatMap(function(ar) {
 			return bacon.fromArray(ar);
 		    }),

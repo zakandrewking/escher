@@ -7,11 +7,13 @@ describe('Map', function() {
 				       null,
 				       sel,
 				       null,
+				       new escher.Settings(),
 				       {'GLCtex': 100},
-				       'Color, Diff',
 				       {'glc__D_p': 3},
-				       'Color',
-				       null);
+				       null,
+				       false);
+
+
 			     
 	// make sure ids are saved correctly
 	for (var id in map.reactions) {
@@ -74,7 +76,7 @@ describe('Map', function() {
 				       null,
 				       sel,
 				       null,
-				       null,
+				       new escher.Settings(),
 				       null,
 				       null,
 				       null,
