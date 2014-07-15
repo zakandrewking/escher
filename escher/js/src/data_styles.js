@@ -1,7 +1,8 @@
 define(["utils"], function(utils) {
     return { import_and_check: import_and_check,
 	     text_for_data: text_for_data,
-	     float_for_data: float_for_data
+	     float_for_data: float_for_data,
+	     reverse_flux_for_data: reverse_flux_for_data
 	   };
 
     function import_and_check(data, styles, name) {
@@ -38,6 +39,15 @@ define(["utils"], function(utils) {
 	    f = Math.abs(f);
 	}
 	return f;
+    }
+
+    function reverse_flux_for_data(d, styles) {
+	if (d===null) return null;
+	if (d.length==1)
+	    return (d[0] <= 0);
+	if (d.length==2) // && styles.indexOf('Diff')!=-1)
+	    return ((d[1] - d[0]) <= 0);
+	return true;
     }
 
     function text_for_data(d, styles) {

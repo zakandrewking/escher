@@ -1735,7 +1735,8 @@ return function(container, config) {
 define('data_styles',["utils"], function(utils) {
     return { import_and_check: import_and_check,
 	     text_for_data: text_for_data,
-	     float_for_data: float_for_data
+	     float_for_data: float_for_data,
+	     reverse_flux_for_data: reverse_flux_for_data
 	   };
 
     function import_and_check(data, styles, name) {
@@ -1772,6 +1773,15 @@ define('data_styles',["utils"], function(utils) {
 	    f = Math.abs(f);
 	}
 	return f;
+    }
+
+    function reverse_flux_for_data(d, styles) {
+	if (d===null) return null;
+	if (d.length==1)
+	    return (d[0] <= 0);
+	if (d.length==2) // && styles.indexOf('Diff')!=-1)
+	    return ((d[1] - d[0]) <= 0);
+	return true;
     }
 
     function text_for_data(d, styles) {
@@ -2016,19 +2026,25 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 		    arrowheads.push({ data: d.data,
 				      x: start.x,
 				      y: start.y,
-				      rotation: rotation });
+				      rotation: rotation,
+				      show_arrowhead_flux: (((d.from_node_coefficient < 0)==(d.reverse_flux))
+							    || d.data==0)
+				    });
 		}
 		var end = drawn_nodes[d.to_node_id],
 		    b2 = d.b2;
 		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
 		    var disp = get_disp(d.reversibility, d.to_node_coefficient),
-			direction = (b2 === null) ? start : b2;
-		    var rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
+			direction = (b2 === null) ? start : b2,
+			rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
 		    end = displaced_coords(disp, direction, end, 'end');
 		    arrowheads.push({ data: d.data,
 				      x: end.x,
 				      y: end.y,
-				      rotation: rotation });
+				      rotation: rotation,
+				      show_arrowhead_flux: (((d.to_node_coefficient < 0)==(d.reverse_flux))
+							    || d.data==0)
+				    });
 		}
 		return arrowheads;
 	    });
@@ -2045,15 +2061,27 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	}).attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
 	}).attr('fill', function(d) {
-	    var c;
 	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
-		var f = d.data;
-		c = scale.reaction_color(f===null ? 0 : f);
-	    } else {
-		c = default_reaction_color;
+		if (d.show_arrowhead_flux) {
+		    // show the flux
+		    var f = d.data;
+		    return scale.reaction_color(f===null ? 0 : f);
+		} else {
+		    // if the arrowhead is not filled because it is reversed
+		    return '#FFFFFF';
+		}
 	    }
-	    return c;
-	});
+	    // default fill color
+	    return default_reaction_color;
+	}).attr('stroke', function(d) {
+	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
+		// show the flux color in the stroke whether or not the fill is present
+		var f = d.data;
+		return scale.reaction_color(f===null ? 0 : f);
+	    }
+	    // default stroke color
+	    return default_reaction_color;
+	});;
 	// remove
 	arrowheads.exit().remove();
 
@@ -7675,13 +7703,16 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	    var reaction = reactions[reaction_id],
 		d = (reaction.bigg_id in data ? data[reaction.bigg_id] : null),
 		f = data_styles.float_for_data(d, styles),
+		r = data_styles.reverse_flux_for_data(d, styles),
 		s = data_styles.text_for_data(d, styles);
 	    reaction.data = f;
 	    reaction.data_string = s;
+	    reaction.reverse_flux = r;
 	    // apply to the segments
 	    for (var segment_id in reaction.segments) {
 		var segment = reaction.segments[segment_id];
-		segment.data = f;
+		segment.data = reaction.data;
+		segment.reverse_flux = reaction.reverse_flux;
 	    }
 	}
 	return this.update_reaction_data_domain();

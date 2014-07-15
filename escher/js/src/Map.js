@@ -685,13 +685,16 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    var reaction = reactions[reaction_id],
 		d = (reaction.bigg_id in data ? data[reaction.bigg_id] : null),
 		f = data_styles.float_for_data(d, styles),
+		r = data_styles.reverse_flux_for_data(d, styles),
 		s = data_styles.text_for_data(d, styles);
 	    reaction.data = f;
 	    reaction.data_string = s;
+	    reaction.reverse_flux = r;
 	    // apply to the segments
 	    for (var segment_id in reaction.segments) {
 		var segment = reaction.segments[segment_id];
-		segment.data = f;
+		segment.data = reaction.data;
+		segment.reverse_flux = reaction.reverse_flux;
 	    }
 	}
 	return this.update_reaction_data_domain();

@@ -216,19 +216,25 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		    arrowheads.push({ data: d.data,
 				      x: start.x,
 				      y: start.y,
-				      rotation: rotation });
+				      rotation: rotation,
+				      show_arrowhead_flux: (((d.from_node_coefficient < 0)==(d.reverse_flux))
+							    || d.data==0)
+				    });
 		}
 		var end = drawn_nodes[d.to_node_id],
 		    b2 = d.b2;
 		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
 		    var disp = get_disp(d.reversibility, d.to_node_coefficient),
-			direction = (b2 === null) ? start : b2;
-		    var rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
+			direction = (b2 === null) ? start : b2,
+			rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
 		    end = displaced_coords(disp, direction, end, 'end');
 		    arrowheads.push({ data: d.data,
 				      x: end.x,
 				      y: end.y,
-				      rotation: rotation });
+				      rotation: rotation,
+				      show_arrowhead_flux: (((d.to_node_coefficient < 0)==(d.reverse_flux))
+							    || d.data==0)
+				    });
 		}
 		return arrowheads;
 	    });
@@ -245,15 +251,27 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	}).attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
 	}).attr('fill', function(d) {
-	    var c;
 	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
-		var f = d.data;
-		c = scale.reaction_color(f===null ? 0 : f);
-	    } else {
-		c = default_reaction_color;
+		if (d.show_arrowhead_flux) {
+		    // show the flux
+		    var f = d.data;
+		    return scale.reaction_color(f===null ? 0 : f);
+		} else {
+		    // if the arrowhead is not filled because it is reversed
+		    return '#FFFFFF';
+		}
 	    }
-	    return c;
-	});
+	    // default fill color
+	    return default_reaction_color;
+	}).attr('stroke', function(d) {
+	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
+		// show the flux color in the stroke whether or not the fill is present
+		var f = d.data;
+		return scale.reaction_color(f===null ? 0 : f);
+	    }
+	    // default stroke color
+	    return default_reaction_color;
+	});;
 	// remove
 	arrowheads.exit().remove();
 
