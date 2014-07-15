@@ -2798,8 +2798,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
 		    var updated = build.rotate_nodes(these_nodes, reactions,
 						     -total_angle, utils.clone(this.center));
-		    self.draw_these_nodes(updated.node_ids);
-		    self.draw_these_reactions(updated.reaction_ids);
+		    map.draw_these_nodes(updated.node_ids);
+		    map.draw_these_reactions(updated.reaction_ids);
 		}.bind(this),
 		redo_fn = function(d, displacement, location) {
 		    // redo
@@ -2810,8 +2810,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
 		    var updated = build.rotate_nodes(these_nodes, reactions,
 						     total_angle, utils.clone(this.center));
-		    self.draw_these_nodes(updated.node_ids);
-		    self.draw_these_reactions(updated.reaction_ids);
+		    map.draw_these_nodes(updated.node_ids);
+		    map.draw_these_reactions(updated.reaction_ids);
 		}.bind(this);
 	    this.rotation_drag = this.get_generic_drag(start_fn, drag_fn, end_fn,
 						       undo_fn, redo_fn, this.map.sel);
