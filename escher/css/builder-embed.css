@@ -69,6 +69,9 @@
 .bezier2 {
     stroke: blue;
 }
+.bezier-line{ 
+    stroke: rgb(200,200,200);
+}
 .direction-arrow {
     stroke: black;
     stroke-width: 1px;

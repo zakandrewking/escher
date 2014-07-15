@@ -2050,7 +2050,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	    });
 	arrowheads.enter().append('path')
 	    .classed('arrowhead', true);
-	// update bezier points
+	// update arrowheads
 	arrowheads.attr("d", function(d) {
 	    var markerWidth = 20, markerHeight = 13;
 	    if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
@@ -2087,7 +2087,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 
 	// new bezier points
 	var bez = update_selection.select('.beziers')
-		.selectAll('.bezier')
+		.selectAll('.bezier-group')
 		.data(function(d) {
 		    var beziers = [],
 			reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
@@ -2111,40 +2111,92 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	    return create_bezier(sel);
 	});
 	// update bezier points
-	bez.call(function(sel) { return update_bezier(sel, show_beziers, bezier_drag_behavior); });
+	bez.call(function(sel) {
+	    return update_bezier(sel, show_beziers, bezier_drag_behavior, drawn_nodes);
+	});
 	// remove
 	bez.exit().remove();
 
+	// definitions
 	function create_bezier(enter_selection) {
 	    utils.check_undefined(arguments, ['enter_selection']);
 
-	    enter_selection.append('circle')
+	    var g = enter_selection.append('g')
+	    	.attr('class', function(d) { return 'bezier-group'; });
+	    g.append('circle')
 	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
 	    	.style('stroke-width', String(1)+'px')	
-    		.attr('r', String(5)+'px')
+    		.attr('r', String(7)+'px')
 		.on("mouseover", function(d) {
 		    d3.select(this).style('stroke-width', String(3)+'px');
+		    d3.select(this.parentNode.parentNode)
+			.selectAll('.bezier-line')
+			.attr('visibility', 'visible');
 		})
 		.on("mouseout", function(d) {
 		    d3.select(this).style('stroke-width', String(1)+'px');
+		    d3.select(this.parentNode.parentNode)
+			.selectAll('.bezier-line')
+			.attr('visibility', 'hidden');
 		});
 	}
-	function update_bezier(update_selection, show_beziers, drag_behavior) {
-	    utils.check_undefined(arguments, ['update_selection', 'show_beziers', 'drag_behavior']);
+	function update_bezier(update_selection, show_beziers, drag_behavior,
+			       drawn_nodes) {
+	    utils.check_undefined(arguments, ['update_selection', 'show_beziers',
+					      'drag_behavior', 'drawn_nodes']);
 	    
 	    update_selection
 		.call(turn_off_drag)
 		.call(drag_behavior);
-	    if (show_beziers) {
-	    	// draw bezier points
-		update_selection
-		    .attr('visibility', 'visible')
-		    .attr('transform', function(d) {
-	    		if (d.x==null || d.y==null) return ""; 
-			return 'translate('+d.x+','+d.y+')';
-		    });
-	    } else {
+	    if (!show_beziers) {
 	    	update_selection.attr('visibility', 'hidden');
+		return;
+	    }		
+	    
+	    // draw bezier points
+	    update_selection
+		.attr('visibility', 'visible')
+		.attr('transform', function(d) {
+	    	    if (d.x==null || d.y==null) return ""; 
+		    return 'translate('+d.x+','+d.y+')';
+		});
+
+	    // new bezier lines
+	    var bez_lines = update_selection
+		    .selectAll('.bezier-line')
+		    .data(function(d) {
+			var bezier_line, node,
+			    segment_d = this.parentNode.parentNode.parentNode.__data__;
+			node = (d.bezier==1 ? 
+				drawn_nodes[segment_d.from_node_id] : 
+				drawn_nodes[segment_d.to_node_id]);
+			bezier_line = { x: d.x,
+					y: d.y,
+					source_x: node.x,
+					source_y: node.y};
+			return [bezier_line];
+		    });
+	    bez_lines.enter().call(function(sel) {
+		return create_bezier_line(sel);
+	    });
+	    // update bezier lines
+	    bez_lines.call(function(sel) { return update_bezier_line(sel, show_beziers); });
+	    // remove
+	    bez_lines.exit().remove();
+
+	    // definitions
+	    function create_bezier_line(enter_selection) {
+		enter_selection.append('path')
+	    	    .attr('class', function(d) { return 'bezier-line'; })
+	    	    .attr('visibility', 'hidden');
+	    }
+	    function update_bezier_line(update_selection) {
+		update_selection
+	    	    .attr('d', function(d) {
+	    		if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
+	    		    return "";
+	    		return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
+	    	    });
 	    }
 	}
     }
