@@ -1846,16 +1846,14 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
     }
 
     function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
-			     defs,
-			     default_reaction_color, has_reaction_data,
-			     reaction_data_styles,
-			     bezier_drag_behavior, label_drag_behavior) {
+			     defs, default_reaction_color, has_reaction_data,
+			     reaction_data_styles, bezier_drag_behavior,
+			     label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
-			       'defs',
-			       'default_reaction_color', 'has_reaction_data',
-			       'reaction_data_styles',
-			       'bezier_drag_behavior', 'label_drag_behavior']);
+			       'defs', 'default_reaction_color', 'has_reaction_data',
+			       'reaction_data_styles', 'bezier_drag_behavior',
+			       'label_drag_behavior']);
 
         // update reaction label
         update_selection.select('.reaction-label')
@@ -7284,26 +7282,26 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 
     function setup_containers(sel) {
         sel.append('g')
-	    .attr('id', 'membranes');
+	    .attr('id', 'nodes');
         sel.append('g')
 	    .attr('id', 'reactions');
         sel.append('g')
-	    .attr('id', 'nodes');
-        sel.append('g')
 	    .attr('id', 'text-labels');
+        sel.append('g')
+	    .attr('id', 'membranes');
     }
     function reset_containers() {
-	this.sel.select('#membranes')
-	    .selectAll('.membrane')
+	this.sel.select('#nodes')
+	    .selectAll('.node')
 	    .remove();
 	this.sel.select('#reactions')
 	    .selectAll('.reaction')
 	    .remove();
-	this.sel.select('#nodes')
-	    .selectAll('.node')
-	    .remove();
 	this.sel.select('#text-labels')
 	    .selectAll('.text-label')
+	    .remove();
+	this.sel.select('#membranes')
+	    .selectAll('.membrane')
 	    .remove();
     }
 

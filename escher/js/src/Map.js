@@ -292,26 +292,26 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
     function setup_containers(sel) {
         sel.append('g')
-	    .attr('id', 'membranes');
+	    .attr('id', 'nodes');
         sel.append('g')
 	    .attr('id', 'reactions');
         sel.append('g')
-	    .attr('id', 'nodes');
-        sel.append('g')
 	    .attr('id', 'text-labels');
+        sel.append('g')
+	    .attr('id', 'membranes');
     }
     function reset_containers() {
-	this.sel.select('#membranes')
-	    .selectAll('.membrane')
+	this.sel.select('#nodes')
+	    .selectAll('.node')
 	    .remove();
 	this.sel.select('#reactions')
 	    .selectAll('.reaction')
 	    .remove();
-	this.sel.select('#nodes')
-	    .selectAll('.node')
-	    .remove();
 	this.sel.select('#text-labels')
 	    .selectAll('.text-label')
+	    .remove();
+	this.sel.select('#membranes')
+	    .selectAll('.membrane')
 	    .remove();
     }
 

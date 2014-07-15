@@ -46,16 +46,14 @@ define(["utils", "data_styles"], function(utils, data_styles) {
     }
 
     function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
-			     defs,
-			     default_reaction_color, has_reaction_data,
-			     reaction_data_styles,
-			     bezier_drag_behavior, label_drag_behavior) {
+			     defs, default_reaction_color, has_reaction_data,
+			     reaction_data_styles, bezier_drag_behavior,
+			     label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
-			       'defs',
-			       'default_reaction_color', 'has_reaction_data',
-			       'reaction_data_styles',
-			       'bezier_drag_behavior', 'label_drag_behavior']);
+			       'defs', 'default_reaction_color', 'has_reaction_data',
+			       'reaction_data_styles', 'bezier_drag_behavior',
+			       'label_drag_behavior']);
 
         // update reaction label
         update_selection.select('.reaction-label')
