@@ -125,6 +125,8 @@ class Builder(object):
 
     local_host: a hostname that will be used for any local files in dev
     mode. Defaults to the current host.
+
+    embedded_css: a css string to be embedded with the Escher SVG.
     
     safe: if True, then loading files from the filesytem is not allowed. This is
     to ensure the safety of using Builder with a web server.
@@ -132,7 +134,7 @@ class Builder(object):
     """
     def __init__(self, map_name=None, map_json=None, model_name=None,
                  model_json=None, reaction_data=None, metabolite_data=None,
-                 local_host='', safe=False):
+                 local_host='', embedded_css=None, safe=False):
         self.safe = safe
         
         # load the map
@@ -153,9 +155,36 @@ class Builder(object):
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
         self.local_host = local_host.strip(os.sep)
+        self.embedded_css = embedded_css
         # make the unique id
         self.generate_id()
 
+        # set up the options
+        self.options = ['reaction_styles',
+                        'auto_reaction_domain',
+                        'reaction_domain',
+                        'reaction_color_range',
+                        'reaction_size_range',
+                        'metabolite_styles',
+                        'auto_metabolite_domain',
+                        'metabolite_domain',
+                        'metabolite_color_range',
+                        'metabolite_size_range']
+        def get_getter_setter(o):
+            """Use a closure."""
+            # create local fget and fset functions 
+            fget = lambda self: getattr(self, '_%s' % o)
+            fset = lambda self, value: setattr(self, '_%s' % o, value)
+            return fget, fset
+        for option in self.options:
+            fget, fset = get_getter_setter(option)
+            # make the setter
+            setattr(self.__class__, 'set_%s' % option, fset)
+            # add property to self
+            setattr(self.__class__, option, property(fget))
+            # add corresponding local variable
+            setattr(self, '_%s' % option, None)
+        
     def generate_id(self):
         self.the_id = get_an_id()
         
@@ -224,9 +253,17 @@ class Builder(object):
                 self.loaded_map_json = f.read()
 
     def _embedded_css(self, is_local):
+        """Return a css string to be embedded in the SVG.
+
+        Returns self.embedded_css if it has been assigned. Otherwise, attempts
+        to download the css file.
+
+        """
+        if self.embedded_css is not None:
+            return self.embedded_css
         loc = (join(self.local_host, urls.builder_embed_css_local) if is_local else
                urls.builder_embed_css)
-        download = urlopen(urls.builder_embed_css)
+        download = urlopen(loc)
         return unicode(download.read().replace('\n', ' '))
     
     def _initialize_javascript(self, is_local):
@@ -248,7 +285,7 @@ class Builder(object):
         return javascript
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
-                 fill_screen, scroll_behavior):
+                 fill_screen, scroll_behavior, auto_set_data_domain):
         draw = (u"Builder({{ selection: d3.select('#{the_id}'),"
                 u"enable_editing: {enable_editing},"
                 u"menu: {menu},"
@@ -257,22 +294,33 @@ class Builder(object):
                 u"fill_screen: {fill_screen},"
                 u"map: map_data_{the_id},"
                 u"cobra_model: cobra_model_{the_id},"
+                u"auto_set_data_domain: {auto_set_data_domain},"
                 u"reaction_data: reaction_data_{the_id},"
 		u"metabolite_data: metabolite_data_{the_id},"
-                u"css: css_string_{the_id} }});").format(
+                u"css: css_string_{the_id},").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
                     menu=json.dumps(menu),
                     enable_keys=json.dumps(enable_keys),
                     scroll_behavior=json.dumps(scroll_behavior),
-                    fill_screen=json.dumps(fill_screen))
+                    fill_screen=json.dumps(fill_screen),
+                    auto_set_data_domain=json.dumps(auto_set_data_domain))
+        # Add the specified options
+        for option in self.options:
+            val = getattr(self, option)
+            if val is None: continue
+            draw = draw + u"{option}: {value},".format(
+                option=option,
+                value=json.dumps(val))
+        draw = draw + u"});"
         if not dev:
             draw = u'escher.%s' % draw
         return draw
     
     def _get_html(self, js_source='web', menu='none', scroll_behavior='pan',
                   html_wrapper=False, enable_editing=False, enable_keys=False,
-                  minified_js=True, fill_screen=False, height='800px'):
+                  minified_js=True, fill_screen=False, height='800px',
+                  auto_set_data_domain=True):
         """Generate the Escher HTML.
 
         Arguments
@@ -303,6 +351,9 @@ class Builder(object):
         enable_keys: Enable keyboard shortcuts.
 
         height: The height of the HTML container.
+
+        auto_set_data_domain: Automatically adjust the color and size scale
+        domains as new data is applied.
 
         """
 
@@ -344,7 +395,7 @@ class Builder(object):
         boot_js_url = ("" if not menu=='all' else
                        (join(self.local_host, urls.boot_js_local) if is_local else
                         urls.boot_js))
-        require_js_url = (urls.require_js_local if is_local else
+        require_js_url = (join(self.local_host, urls.require_js_local) if is_local else
                           urls.require_js)
         html = content.render(require_js=require_js_url,
                               id=self.the_id,
@@ -361,13 +412,14 @@ class Builder(object):
                               host=self.local_host,
                               initialize_js=self._initialize_javascript(is_local),
                               draw_js=self._draw_js(self.the_id, enable_editing,
-                                                    menu, enable_keys,
-                                                    is_dev, fill_screen, scroll_behavior),)
+                                                    menu, enable_keys, is_dev,
+                                                    fill_screen, scroll_behavior,
+                                                    auto_set_data_domain),)
         return html
 
     def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',
                             enable_editing=False, enable_keys=False, minified_js=True, 
-                            height=500):
+                            height=500, auto_set_data_domain=True):
         """Display the plot in the notebook.
 
         Arguments
@@ -397,10 +449,14 @@ class Builder(object):
 
         height: Height of the HTML container.
 
+        auto_set_data_domain: Automatically adjust the color and size scale
+        domains as new data is applied.
+
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
                               html_wrapper=False, enable_editing=enable_editing, enable_keys=enable_keys,
-                              minified_js=minified_js, fill_screen=False, height=height)
+                              minified_js=minified_js, fill_screen=False, height=height,
+                              auto_set_data_domain=auto_set_data_domain)
         if menu=='all':
             raise Exception("The 'all' menu option cannot be used in an IPython notebook.")
         # import here, in case users don't have requirements installed
@@ -410,7 +466,7 @@ class Builder(object):
     
     def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50, js_source='web',
                            menu='all', scroll_behavior='pan', enable_editing=True, enable_keys=True,
-                           minified_js=True):
+                           minified_js=True, auto_set_data_domain=True):
         """Launch a web browser to view the map.
 
         Arguments
@@ -440,14 +496,19 @@ class Builder(object):
 
         height: Height of the HTML container.
 
+        auto_set_data_domain: Automatically adjust the color and size scale
+        domains as new data is applied.
+
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
                               html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
-                              minified_js=minified_js, fill_screen=True, height="100%")
+                              minified_js=minified_js, fill_screen=True, height="100%",
+                              auto_set_data_domain=auto_set_data_domain)
         serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
         
     def save_html(self, filepath=None, js_source='web', menu='all', scroll_behavior='pan',
-                  enable_editing=True, enable_keys=True, minified_js=True):
+                  enable_editing=True, enable_keys=True, minified_js=True,
+                  auto_set_data_domain=True):
         """Save an HTML file containing the map.
 
         Arguments
@@ -477,10 +538,14 @@ class Builder(object):
 
         height: Height of the HTML container.
 
+        auto_set_data_domain: Automatically adjust the color and size scale
+        domains as new data is applied.
+
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
                               html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
-                              minified_js=minified_js, fill_screen=True, height="100%")
+                              minified_js=minified_js, fill_screen=True, height="100%",
+                              auto_set_data_domain=auto_set_data_domain)
         if filepath is not None:
             with codecs.open(filepath, 'w', encoding='utf-8') as f:
                 f.write(html)

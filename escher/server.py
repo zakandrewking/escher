@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
-from escher.ko_server import koHandler
 from escher.plots import Builder
+from escher import urls
 
 import os, subprocess
-from os.path import join
+from os.path import join, dirname, realpath
 import tornado.ioloop
 from tornado.web import RequestHandler, asynchronous, HTTPError, Application
 from tornado.httpclient import AsyncHTTPClient
@@ -20,8 +20,7 @@ from mimetypes import guess_type
 env = Environment(loader=PackageLoader('escher', 'templates'))
 
 # set directory to server
-directory = os.path.abspath(os.path.dirname(__file__)).strip(os.pathsep)
-directory = re.sub(r'escher$', '', directory)
+directory = dirname(realpath(__file__))
 NO_CACHE = True
 PORT = 7778
 PUBLIC = False
@@ -81,9 +80,20 @@ class BuilderHandler(BaseHandler):
         for a in ['starting_reaction', 'model_name', 'map_name', 'map_json']:
             args = self.get_arguments(a)
             if len(args)==1:
-                builder_kwargs[a] = args[0]
+                builder_kwargs[a] = (True if args[0].lower()=='true' else
+                                     (False if args[0].lower()=='false' else
+                                      args[0]))
 
-        # make the builder
+        # if the server is running locally, then the embedded css must be loaded
+        # asynchronously using the same server thread.
+        if js_source in ['dev', 'local']:  
+            global PORT          
+            response = yield gen.Task(AsyncHTTPClient().fetch,
+                                      join('http://localhost:%d' % PORT, urls.builder_embed_css_local))
+            print response
+            builder_kwargs['embedded_css'] = response.body.replace('\n', ' ')
+
+        # make the builder        
         builder = Builder(safe=True, **builder_kwargs)
             
         # display options
@@ -91,12 +101,13 @@ class BuilderHandler(BaseHandler):
                           'scroll_behavior': 'pan',
                           'menu': 'all'}
         # keyword
-        for a in ['menu', 'scroll_behavior', 'minified_js']:
+        for a in ['menu', 'scroll_behavior', 'minified_js', 'auto_set_data_domain']:
             args = self.get_arguments(a)
             if len(args)==1:
-                display_kwargs[a] = args[0]
+                display_kwargs[a] = (True if args[0].lower()=='true' else
+                                     (False if args[0].lower()=='false' else
+                                      args[0]))
 
-        # get the html
         html = builder._get_html(js_source=js_source, enable_editing=enable_editing,
                                  enable_keys=True, html_wrapper=True, fill_screen=True,
                                  height='100%', **display_kwargs)
@@ -106,7 +117,7 @@ class BuilderHandler(BaseHandler):
         
 class LibHandler(BaseHandler):
     def get(self, path):
-        full_path = join(directory, 'escher', 'lib', path)
+        full_path = join(directory, 'lib', path)
         if os.path.isfile(full_path):
             path = full_path
         else:
@@ -115,22 +126,20 @@ class LibHandler(BaseHandler):
 
 class StaticHandler(BaseHandler):
     def get(self, path):
-        path = join(directory, 'escher', path)
+        path = join(directory, path)
         print 'getting path %s' % path
         self.serve_path(path)
         
 settings = {"debug": "False"}
 
 application = Application([
-    (r".*/knockout-map/(.*)", koHandler),
     (r".*/lib/(.*)", LibHandler),
     (r".*/(fonts/.*)", LibHandler),
     (r".*/(js/.*)", StaticHandler),
     (r".*/(css/.*)", StaticHandler),
     (r".*/(resources/.*)", StaticHandler),
-    (r"/(dev/)?(offline/)?(builder|viewer)(.*)", BuilderHandler),
+    (r"/(dev/)?(local/)?(?:web/)?(builder|viewer)(.*)", BuilderHandler),
     (r".*/(map_spec.json)", StaticHandler),
-    (r".*/(escher[^/]+js)", LibHandler),
     (r"/", IndexHandler),
 ], **settings)
  

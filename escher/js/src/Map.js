@@ -1,4 +1,4 @@
-define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex"], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex) {
+define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex", "lib/bacon"], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -18,6 +18,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	// more setup
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
+	// scales
+	get_scale: get_scale,
+	set_scale: set_scale,
 	// appearance
 	set_status: set_status,
 	set_model: set_model,
@@ -93,9 +96,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     // -------------------------------------------------------------------------
     // setup
 
-    function init(svg, css, selection, zoom_container, reaction_data,
-		  reaction_data_styles, metabolite_data, metabolite_data_styles,
-		  cobra_model, canvas_size_and_loc, enable_search) {
+    function init(svg, css, selection, zoom_container, settings,
+		  reaction_data, metabolite_data, cobra_model, 
+		  canvas_size_and_loc, enable_search) {
 	if (canvas_size_and_loc===null) {
 	    var size = zoom_container.get_size();
 	    canvas_size_and_loc = {x: -size.width, y: -size.height,
@@ -116,15 +119,23 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	this.sel = selection;
 	this.zoom_container = zoom_container;
 
+	this.settings = settings;
+	this.settings.data_styles_stream['reaction']
+	    .onValue(function(val) {
+		this.apply_reaction_data_to_map();
+	    }.bind(this));
+	this.settings.data_styles_stream['metabolite']
+	    .onValue(function(val) {
+		this.apply_metabolite_data_to_map();
+	    }.bind(this));
+
 	// check and load data
 	this.reaction_data_object = data_styles.import_and_check(reaction_data,
-								 reaction_data_styles,
+								 settings.data_styles['reaction'],
 								 'reaction_data');
-	this.reaction_data_styles = reaction_data_styles;
 	this.metabolite_data_object = data_styles.import_and_check(metabolite_data,
-								   metabolite_data_styles,
+								   settings.data_styles['metabolite'],
 								   'metabolite_data');
-	this.metabolite_data_styles = metabolite_data_styles;
 
 	// set the model AFTER loading the datasets
 	this.set_model(cobra_model);
@@ -135,6 +146,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
 	// make the scales
 	this.scale = new Scale();
+	this.scale.connect_to_settings(this.settings);
 
 	// make the undo/redo stack
 	this.undo_stack = new UndoStack();
@@ -175,17 +187,14 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     // -------------------------------------------------------------------------
     // Import
 
-    function from_data(map_data, svg, css, selection, zoom_container,
-		       reaction_data, reaction_data_styles,
-		       metabolite_data, metabolite_data_styles, cobra_model,
-		       enable_search) {
+    function from_data(map_data, svg, css, selection, zoom_container, settings,
+		       reaction_data, metabolite_data, cobra_model, enable_search) {
 	/** Load a json map and add necessary fields for rendering.
 	 
 	 */
 	utils.check_undefined(arguments, ['map_data', 'svg', 'css', 'selection',
-					  'zoom_container',
-					  'reaction_data', 'reaction_data_styles',
-					  'metabolite_data', 'metabolite_data_styles',
+					  'zoom_container', 'settings',
+					  'reaction_data', 'metabolite_data',
 					  'cobra_model', 'enable_search']);
 
 	if (this.debug) {
@@ -199,10 +208,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	}
 	
 	var canvas = map_data.canvas,
-	    map = new Map(svg, css, selection, zoom_container,
-			  reaction_data, reaction_data_styles, metabolite_data,
-			  metabolite_data_styles, cobra_model, canvas,
-			  enable_search);
+	    map = new Map(svg, css, selection, zoom_container, settings, 
+			  reaction_data, metabolite_data, cobra_model, 
+			  canvas, enable_search);
 
 	map.reactions = map_data.reactions;
 	map.nodes = map_data.nodes;
@@ -284,27 +292,98 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
     function setup_containers(sel) {
         sel.append('g')
-	    .attr('id', 'membranes');
+	    .attr('id', 'nodes');
         sel.append('g')
 	    .attr('id', 'reactions');
         sel.append('g')
-	    .attr('id', 'nodes');
-        sel.append('g')
 	    .attr('id', 'text-labels');
+        sel.append('g')
+	    .attr('id', 'membranes');
     }
     function reset_containers() {
-	this.sel.select('#membranes')
-	    .selectAll('.membrane')
+	this.sel.select('#nodes')
+	    .selectAll('.node')
 	    .remove();
 	this.sel.select('#reactions')
 	    .selectAll('.reaction')
 	    .remove();
-	this.sel.select('#nodes')
-	    .selectAll('.node')
-	    .remove();
 	this.sel.select('#text-labels')
 	    .selectAll('.text-label')
 	    .remove();
+	this.sel.select('#membranes')
+	    .selectAll('.membrane')
+	    .remove();
+    }
+
+    // -------------------------------------------------------------------------
+    // Scales
+
+    function get_scale(data, type) {
+	/** Get a reaction or metabolite scale.
+
+	 Arguments
+	 ---------
+	 
+	 data: The type of data. Options are 'reaction' or 'metabolite'.
+
+	 type: The type of scale to set. Options are 'size' and 'color'.
+
+	 */
+
+	if (data=='reaction' && type=='size') {
+	    return this.scale.reaction_size;
+	} else if (data=='reaction' && type=='color') {
+	    return this.scale.reaction_color;
+	} else if (data=='metabolite' && type=='size') {
+	    return this.scale.metabolite_size;
+	} else if (data=='metabolite' && type=='color') {
+	    return this.scale.metabolite_color;
+	} else {
+	    throw Error('Bad value for data or type: ' + data + ', ' + type);
+	}
+    }
+
+    function set_scale(data, type, domain, range) {
+	/** Set a reaction or metabolite scale.
+
+	 Arguments
+	 ---------
+	 
+	 data: The type of data. Options are 'reaction' or 'metabolite'.
+
+	 type: The type of scale to set. Options are 'size' and 'color'.
+
+	 domain: The new scale domain. If domain is *null*, then the existing
+	 domain is used. If any settings.auto_*_domain is true, then, this input
+	 is ignored.
+
+	 */
+
+	if (domain===undefined) domain = null;
+	if (range===undefined) range = null;
+
+	if (domain !== null && (this.settings.auto_domain['reaction']==true ||
+				this.settings.auto_domain['metabolite']==true)) {
+	    console.warn('Cannot set domain manually if auto_*_domain is true');
+	    domain = null;
+	}
+
+	if (data=='reaction' && type=='size') {
+	    set_this_scale(this.scale.reaction_size, domain, range);
+	} else if (data=='reaction' && type=='color') {
+	    set_this_scale(this.scale.reaction_color, domain, range);
+	} else if (data=='metabolite' && type=='size') {
+	    set_this_scale(this.scale.metabolite_size, domain, range);
+	} else if (data=='metabolite' && type=='color') {
+	    set_this_scale(this.scale.metabolite_color, domain, range);
+	} else {
+	    throw Error('Bad value for data or type: ' + data + ', ' + type);
+	}
+
+	function set_this_scale(a_scale, a_domain, a_range) {
+	    if (a_domain !== null) a_scale.domain(a_domain);
+	    if (a_range !== null) a_scale.range(a_range);
+	}
     }
 
     // -------------------------------------------------------------------------
@@ -321,9 +400,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	this.cobra_model = model;
 	if (this.cobra_model !== null) {
 	    this.cobra_model.apply_reaction_data(this.reaction_data_object,
-						 this.reaction_data_styles);
+						 this.settings.data_styles['reaction']);
 	    this.cobra_model.apply_metabolite_data(this.metabolite_data_object,
-						   this.metabolite_data_styles);
+						   this.settings.data_styles['metabolite']);
 	}
     }
     function set_reaction_data(reaction_data) {
@@ -333,12 +412,12 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
 	 */
 	this.reaction_data_object = data_styles.import_and_check(reaction_data,
-								 this.reaction_data_styles,
+								 this.settings.data_styles['reaction'],
 								 'reaction_data');
 	this.apply_reaction_data_to_map();
 	if (this.cobra_model !== null) {
 	    this.cobra_model.apply_reaction_data(this.reaction_data_object,
-						 this.reaction_data_styles);
+						 this.settings.data_styles['metabolite']);
 	}
 	this.draw_all_reactions();
     }
@@ -349,12 +428,12 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
 	 */
 	this.metabolite_data_object = data_styles.import_and_check(metabolite_data,
-								   this.metabolite_data_styles,
+								   this.settings.data_styles['metabolite'],
 								   'metabolite_data');
 	this.apply_metabolite_data_to_map();
 	if (this.cobra_model !== null) {
 	    this.cobra_model.apply_metabolite_data(this.metabolite_data_object,
-						   this.metabolite_data_styles);
+						   this.settings.data_styles['metabolite']);
 	}
 	this.draw_all_nodes();
     }
@@ -396,9 +475,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    text_label_click = this.behavior.text_label_click,
 	    text_label_drag = this.behavior.text_label_drag,
 	    has_reaction_data = this.has_reaction_data(),
-	    reaction_data_styles = this.reaction_data_styles,
+	    reaction_data_styles = this.settings.data_styles['reaction'],
 	    has_metabolite_data = this.has_metabolite_data(),
-	    metabolite_data_styles = this.metabolite_data_styles,
+	    metabolite_data_styles = this.settings.data_styles['metabolite'],
 	    beziers_enabled = this.beziers_enabled;
 
 	utils.draw_an_array(sel, '#membranes' ,'.membrane', membranes,
@@ -455,7 +534,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    bezier_drag_behavior = this.behavior.bezier_drag,
 	    reaction_label_drag = this.behavior.reaction_label_drag,
 	    has_reaction_data = this.has_reaction_data(),
-	    reaction_data_styles = this.reaction_data_styles,
+	    reaction_data_styles = this.settings.data_styles['reaction'],
 	    beziers_enabled = this.beziers_enabled;
 
         // find reactions for reaction_ids
@@ -508,7 +587,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    node_mouseout_fn = this.behavior.node_mouseout,
 	    node_drag_behavior = this.behavior.node_drag,
 	    node_label_drag = this.behavior.node_label_drag,
-	    metabolite_data_styles = this.metabolite_data_styles,
+	    metabolite_data_styles = this.settings.data_styles['metabolite'],
 	    has_metabolite_data = this.has_metabolite_data();
 
 	// find nodes for node_ids
@@ -600,19 +679,22 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	}
 	// grab the data
 	var data = this.reaction_data_object,
-	    styles = this.reaction_data_styles;
+	    styles = this.settings.data_styles['reaction'];
 	// apply the datasets to the reactions	
 	for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id],
 		d = (reaction.bigg_id in data ? data[reaction.bigg_id] : null),
 		f = data_styles.float_for_data(d, styles),
+		r = data_styles.reverse_flux_for_data(d, styles),
 		s = data_styles.text_for_data(d, styles);
 	    reaction.data = f;
 	    reaction.data_string = s;
+	    reaction.reverse_flux = r;
 	    // apply to the segments
 	    for (var segment_id in reaction.segments) {
 		var segment = reaction.segments[segment_id];
-		segment.data = f;
+		segment.data = reaction.data;
+		segment.reverse_flux = reaction.reverse_flux;
 	    }
 	}
 	return this.update_reaction_data_domain();
@@ -621,6 +703,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	/**  Returns True if the scale has changed.
 
 	 */
+
+	if (!this.settings.auto_domain['reaction']) return false;
+
 	// default min and max
 	var vals = [];
 	for (var reaction_id in this.reactions) {
@@ -630,36 +715,21 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    }
 	}
 	
-	var old_domain = this.scale.reaction_color.domain(),
-	    new_domain, new_color_range, new_size_range;
-	    
-	if (this.reaction_data_styles.indexOf('Abs') != -1) {
-	    var min = 0, max = 0;
-	    if (vals.length > 0) {
+	var old_domain = this.settings.domain['reaction']['color'],
+	    new_domain, min, max;
+	if (vals.length > 0) {
+	    if (this.settings.data_styles['reaction'].indexOf('abs') != -1) {
+		// if using absolute value reaction style
 		vals = vals.map(function(x) { return Math.abs(x); });
-		min = Math.min.apply(null, vals),
-		max = Math.max.apply(null, vals);
-	    } 
-	    if (max==0) max = min = 10;
-	    if (min==max) min = max/2;
-	    new_domain = [-max, -min, 0, min, max];
-	    new_color_range = ["red", "blue", "rgb(200,200,200)", "blue", "red"];
-	    new_size_range = [12, 6, 6, 6, 12];
-	} else {
-	    var min = 0, max = 0;
-	    vals.push(0);
-	    if (vals.length > 0) {
-		min = Math.min.apply(null, vals),
-		max = Math.max.apply(null, vals);
 	    }
-	    new_domain = [min, max];
-	    new_color_range = ["blue", "red"];
-	    new_size_range = [6, 12];
+	    min = Math.min.apply(null, vals),
+	    max = Math.max.apply(null, vals);
+	} else {
+	    min = 0;
+	    max = 0;
 	}
-	this.scale.reaction_color.domain(new_domain).range(new_color_range);
-	this.scale.reaction_size.domain(new_domain).range(new_size_range);
-	// run the callback
-	this.callback_manager.run('update_reaction_data_domain');
+	new_domain = [0, min, max].sort();
+	this.settings.set_domain('reaction', new_domain);
 	// compare arrays
 	return !utils.compare_arrays(old_domain, new_domain);
     }
@@ -682,7 +752,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	}
 	// grab the data
 	var data = this.metabolite_data_object,
-	    styles = this.metabolite_data_styles;
+	    styles = this.settings.data_styles['metabolite'];
 	for (var node_id in nodes) {
 	    var node = nodes[node_id],
 		d = (node.bigg_id in data ? data[node.bigg_id] : null),
@@ -697,47 +767,31 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	/**  Returns True if the scale has changed.
 
 	 */
+
+	if (!this.settings.auto_domain['metabolite']) return false;
+
 	// default min and max
-	var min = 0, max = 0, vals = [];
+	var vals = [];
 	for (var node_id in this.nodes) {
 	    var node = this.nodes[node_id];
 	    if (node.data!==null)
 		vals.push(node.data);
-	}
+	} 
+	var old_domain = this.settings.domain['metabolite']['color'],
+	    new_domain, min, max;
 	if (vals.length > 0) {
+	    if (this.settings.data_styles['metabolite'].indexOf('abs') != -1) {
+		// if using absolute value reaction style
+		vals = vals.map(function(x) { return Math.abs(x); });
+	    }
 	    min = Math.min.apply(null, vals),
 	    max = Math.max.apply(null, vals);
-	} 
-	var old_domain = this.scale.metabolite_size.domain(),
-	    new_domain, new_color_range, new_size_range;
-
-	if (this.metabolite_data_styles.indexOf('Abs') != -1) {
-	    var min = 0, max = 0;
-	    if (vals.length > 0) {
-		vals = vals.map(function(x) { return Math.abs(x); });
-		min = Math.min.apply(null, vals),
-		max = Math.max.apply(null, vals);
-	    } 
-	    if (max==0) max = min = 10;
-	    if (min==max) min = max/2;
-	    new_domain = [-max, -min, 0, min, max];
-	    new_color_range = ["red", "white", "white", "white", "red"];
-	    new_size_range = [15, 8, 8, 8, 18];
 	} else {
-	    var min = 0, max = 0;
-	    vals.push(0);
-	    if (vals.length > 0) {
-		min = Math.min.apply(null, vals),
-		max = Math.max.apply(null, vals);
-	    }
-	    new_domain = [min, max];
-	    new_color_range = ["white", "red"];
-	    new_size_range = [8, 15];
+	    min = 0;
+	    max = 0;
 	}
-	this.scale.metabolite_color.domain(new_domain).range(new_color_range);
-	this.scale.metabolite_size.domain(new_domain).range(new_size_range);
-	// run the callback
-	this.callback_manager.run('update_metabolite_data_domain');
+	new_domain = [0, min, max].sort();
+	this.settings.set_domain('metabolite', new_domain);
 	// compare arrays
 	return !utils.compare_arrays(old_domain, new_domain);
     }
@@ -903,7 +957,14 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 		// delete nodes, segments, and reactions with no segments
   		this.delete_node_data(Object.keys(selected_nodes));
 		this.delete_segment_data(segment_objs);
-		this.delete_reaction_data(Object.keys(reactions));
+		this.delete_reaction_data(Object.keys(reactions));	   
+
+		// apply the reaction and node data
+		if (this.has_reaction_data()) 
+		    this.update_reaction_data_domain();
+		if (this.has_metabolite_data())
+		    this.apply_metabolite_data_domain();
+
 		// redraw
 		// TODO just redraw these nodes and segments
 		this.draw_everything();
@@ -937,8 +998,24 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 		if (reactions_to_draw.indexOf(segment_obj.reaction_id)==-1)
 		    reactions_to_draw.push(segment_obj.reaction_id);
 	    }.bind(this));
-	    this.draw_these_nodes(Object.keys(saved_nodes));
-	    this.draw_these_reactions(reactions_to_draw);
+
+	    // apply the reaction and node data
+	    // if the scale changes, redraw everything
+	    if (this.has_reaction_data()) {
+		var scale_changed = this.update_reaction_data_domain();
+		if (scale_changed) this.draw_all_reactions();
+		else this.draw_these_reactions(Object.keys(reactions_to_draw));
+	    } else {
+		this.draw_these_reactions(Object.keys(reactions_to_draw));
+	    }		
+	    if (this.has_metabolite_data()) {
+		var scale_changed = this.update_metabolite_data_domain();
+		if (scale_changed) this.draw_all_nodes();
+		else this.draw_these_nodes(Object.keys(saved_nodes));
+	    } else {
+		this.draw_these_nodes(Object.keys(saved_nodes));
+	    }
+
 	    // copy nodes to re-delete
 	    selected_nodes = utils.clone(saved_nodes);
 	    segment_objs_w_segments = utils.clone(saved_segment_objs_w_segments);

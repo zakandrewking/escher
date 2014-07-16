@@ -46,16 +46,14 @@ define(["utils", "data_styles"], function(utils, data_styles) {
     }
 
     function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
-			     defs,
-			     default_reaction_color, has_reaction_data,
-			     reaction_data_styles,
-			     bezier_drag_behavior, label_drag_behavior) {
+			     defs, default_reaction_color, has_reaction_data,
+			     reaction_data_styles, bezier_drag_behavior,
+			     label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
-			       'defs',
-			       'default_reaction_color', 'has_reaction_data',
-			       'reaction_data_styles',
-			       'bezier_drag_behavior', 'label_drag_behavior']);
+			       'defs', 'default_reaction_color', 'has_reaction_data',
+			       'reaction_data_styles', 'bezier_drag_behavior',
+			       'label_drag_behavior']);
 
         // update reaction label
         update_selection.select('.reaction-label')
@@ -83,20 +81,74 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 
         // old segments
         sel.exit().remove();
+
+
+	// new connect lines
+	// var lines = sel
+	// 	.selectAll('.connect-line')
+	// 	.data(function(d) {
+	// 	    var reaction_label_line, node,
+	// 		reaction_d = this.parentNode.parentNode.parentNode.__data__;
+	// 	    // node = (d.bezier==1 ? 
+	// 	    // 	    drawn_nodes[segment_d.from_node_id] : 
+	// 	    // 	    drawn_nodes[segment_d.to_node_id]);
+	// 	    reaction_label_line = { x: d.x,
+	// 				    y: d.y,
+	// 				    source_x: node.x,
+	// 				    source_y: node.y};
+	// 	    return [reaction_label_line];
+	// 	});
+	// lines.enter().call(function(sel) {
+	//     return create_reaction_label_line(sel);
+	// });
+	// // update reaction_label lines
+	// lines.call(function(sel) { return update_reaction_label_line(sel); });
+	// // remove
+	// lines.exit().remove();
+
+	// // definitions
+	// function create_reaction_label_line(enter_selection) {
+	//     enter_selection.append('path')
+	//     	.attr('class', function(d) { return 'connect-line'; })
+	//     	.attr('visibility', 'hidden');
+	// }
+	// function update_reaction_label_line(update_selection) {
+	//     update_selection
+	//     	.attr('d', function(d) {
+	//     	    if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
+	//     		return "";
+	//     	    return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
+	//     	});
+	// }
+
     }
 
     function create_reaction_label(sel) {
 	utils.check_undefined(arguments, ['sel']);
-        /* Draw reaction label for selection.
+        /** Draw reaction label for selection.
+
 	 */
+	
         sel.append('text')
             .attr('class', 'reaction-label label')
 	    .style('cursor', 'default');
+	    // .on("mouseover", function(d) {
+	    // 	d3.select(this).style('stroke-width', String(3)+'px');
+	    // 	d3.select(this.parentNode)
+	    // 	    .selectAll('.connect-line')
+	    // 	    .attr('visibility', 'visible');
+	    // })
+	    // .on("mouseout", function(d) {
+	    // 	d3.select(this).style('stroke-width', String(1)+'px');
+	    // 	d3.select(this.parentNode)
+	    // 	    .selectAll('.connect-line')
+	    // 	    .attr('visibility', 'hidden');
+	    // });
+
     }
 
-    function update_reaction_label(sel, has_reaction_data, 
-				   reaction_data_styles,
-				   label_drag_behavior) {
+    function update_reaction_label(sel, has_reaction_data, reaction_data_styles,
+				   label_drag_behavior, drawn_nodes) {
 	utils.check_undefined(arguments, ['sel',
 					  'has_reaction_data',
 					  'reaction_data_styles',
@@ -104,12 +156,12 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
-            var t = d.bigg_id;
-	    if (has_reaction_data)
+	    var t = d.bigg_id;
+	    if (has_reaction_data && reaction_data_styles.indexOf('text') != -1)
 		t += ' ' + d.data_string;
-            return t;
+	    return t;
 	}).attr('transform', function(d) {
-            return 'translate('+d.label_x+','+d.label_y+')';
+	    return 'translate('+d.label_x+','+d.label_y+')';
 	}).style("font-size", function(d) {
 	    return String(30)+"px";
         })
@@ -185,7 +237,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		return curve;
             })
             .style('stroke', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
+		if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		    var f = d.data;
 		    return scale.reaction_color(f===null ? 0 : f);
 		} else {
@@ -193,7 +245,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		}
 	    })
 	    .style('stroke-width', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
+		if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		    var f = d.data;
 		    return scale.reaction_size(f===null ? 0 : f);
 		} else {
@@ -218,28 +270,34 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		    arrowheads.push({ data: d.data,
 				      x: start.x,
 				      y: start.y,
-				      rotation: rotation });
+				      rotation: rotation,
+				      show_arrowhead_flux: (((d.from_node_coefficient < 0)==(d.reverse_flux))
+							    || d.data==0)
+				    });
 		}
 		var end = drawn_nodes[d.to_node_id],
 		    b2 = d.b2;
 		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
 		    var disp = get_disp(d.reversibility, d.to_node_coefficient),
-			direction = (b2 === null) ? start : b2;
-		    var rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
+			direction = (b2 === null) ? start : b2,
+			rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
 		    end = displaced_coords(disp, direction, end, 'end');
 		    arrowheads.push({ data: d.data,
 				      x: end.x,
 				      y: end.y,
-				      rotation: rotation });
+				      rotation: rotation,
+				      show_arrowhead_flux: (((d.to_node_coefficient < 0)==(d.reverse_flux))
+							    || d.data==0)
+				    });
 		}
 		return arrowheads;
 	    });
 	arrowheads.enter().append('path')
 	    .classed('arrowhead', true);
-	// update bezier points
+	// update arrowheads
 	arrowheads.attr("d", function(d) {
 	    var markerWidth = 20, markerHeight = 13;
-	    if (has_reaction_data && reaction_data_styles.indexOf('Size')!==-1) {
+	    if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		var f = d.data;
 		markerWidth += (scale.reaction_size(f) - scale.reaction_size(0));
 	    }		    
@@ -247,21 +305,33 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	}).attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
 	}).attr('fill', function(d) {
-	    var c;
-	    if (has_reaction_data && reaction_data_styles.indexOf('Color')!==-1) {
-		var f = d.data;
-		c = scale.reaction_color(f===null ? 0 : f);
-	    } else {
-		c = default_reaction_color;
+	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
+		if (d.show_arrowhead_flux) {
+		    // show the flux
+		    var f = d.data;
+		    return scale.reaction_color(f===null ? 0 : f);
+		} else {
+		    // if the arrowhead is not filled because it is reversed
+		    return '#FFFFFF';
+		}
 	    }
-	    return c;
-	});
+	    // default fill color
+	    return default_reaction_color;
+	}).attr('stroke', function(d) {
+	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
+		// show the flux color in the stroke whether or not the fill is present
+		var f = d.data;
+		return scale.reaction_color(f===null ? 0 : f);
+	    }
+	    // default stroke color
+	    return default_reaction_color;
+	});;
 	// remove
 	arrowheads.exit().remove();
 
 	// new bezier points
 	var bez = update_selection.select('.beziers')
-		.selectAll('.bezier')
+		.selectAll('.bezier-group')
 		.data(function(d) {
 		    var beziers = [],
 			reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
@@ -285,40 +355,92 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	    return create_bezier(sel);
 	});
 	// update bezier points
-	bez.call(function(sel) { return update_bezier(sel, show_beziers, bezier_drag_behavior); });
+	bez.call(function(sel) {
+	    return update_bezier(sel, show_beziers, bezier_drag_behavior, drawn_nodes);
+	});
 	// remove
 	bez.exit().remove();
 
+	// definitions
 	function create_bezier(enter_selection) {
 	    utils.check_undefined(arguments, ['enter_selection']);
 
-	    enter_selection.append('circle')
+	    var g = enter_selection.append('g')
+	    	.attr('class', function(d) { return 'bezier-group'; });
+	    g.append('circle')
 	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
 	    	.style('stroke-width', String(1)+'px')	
-    		.attr('r', String(5)+'px')
+    		.attr('r', String(7)+'px')
 		.on("mouseover", function(d) {
 		    d3.select(this).style('stroke-width', String(3)+'px');
+		    d3.select(this.parentNode.parentNode)
+			.selectAll('.connect-line')
+			.attr('visibility', 'visible');
 		})
 		.on("mouseout", function(d) {
 		    d3.select(this).style('stroke-width', String(1)+'px');
+		    d3.select(this.parentNode.parentNode)
+			.selectAll('.connect-line')
+			.attr('visibility', 'hidden');
 		});
 	}
-	function update_bezier(update_selection, show_beziers, drag_behavior) {
-	    utils.check_undefined(arguments, ['update_selection', 'show_beziers', 'drag_behavior']);
+	function update_bezier(update_selection, show_beziers, drag_behavior,
+			       drawn_nodes) {
+	    utils.check_undefined(arguments, ['update_selection', 'show_beziers',
+					      'drag_behavior', 'drawn_nodes']);
 	    
 	    update_selection
 		.call(turn_off_drag)
 		.call(drag_behavior);
-	    if (show_beziers) {
-	    	// draw bezier points
-		update_selection
-		    .attr('visibility', 'visible')
-		    .attr('transform', function(d) {
-	    		if (d.x==null || d.y==null) return ""; 
-			return 'translate('+d.x+','+d.y+')';
-		    });
-	    } else {
+	    if (!show_beziers) {
 	    	update_selection.attr('visibility', 'hidden');
+		return;
+	    }		
+	    
+	    // draw bezier points
+	    update_selection
+		.attr('visibility', 'visible')
+		.attr('transform', function(d) {
+	    	    if (d.x==null || d.y==null) return ""; 
+		    return 'translate('+d.x+','+d.y+')';
+		});
+
+	    // new bezier lines
+	    var bez_lines = update_selection
+		    .selectAll('.connect-line')
+		    .data(function(d) {
+			var bezier_line, node,
+			    segment_d = this.parentNode.parentNode.parentNode.__data__;
+			node = (d.bezier==1 ? 
+				drawn_nodes[segment_d.from_node_id] : 
+				drawn_nodes[segment_d.to_node_id]);
+			bezier_line = { x: d.x,
+					y: d.y,
+					source_x: node.x,
+					source_y: node.y};
+			return [bezier_line];
+		    });
+	    bez_lines.enter().call(function(sel) {
+		return create_bezier_line(sel);
+	    });
+	    // update bezier lines
+	    bez_lines.call(function(sel) { return update_bezier_line(sel); });
+	    // remove
+	    bez_lines.exit().remove();
+
+	    // definitions
+	    function create_bezier_line(enter_selection) {
+		enter_selection.append('path')
+	    	    .attr('class', function(d) { return 'connect-line'; })
+	    	    .attr('visibility', 'hidden');
+	    }
+	    function update_bezier_line(update_selection) {
+		update_selection
+	    	    .attr('d', function(d) {
+	    		if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
+	    		    return "";
+	    		return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
+	    	    });
 	    }
 	}
     }
@@ -363,7 +485,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
                 })
 		.attr('r', function(d) {
 		    if (d.node_type == 'metabolite') {
-			if (has_metabolite_data && metabolite_data_styles.indexOf('Size')!==-1) {
+			if (has_metabolite_data && metabolite_data_styles.indexOf('size')!==-1) {
 			    var f = d.data;
 			    return scale.metabolite_size(f===null ? 0 : f);
 			} else {
@@ -375,7 +497,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		})
 		.style('fill', function(d) {
 		    if (d.node_type=='metabolite') {
-			if (has_metabolite_data && metabolite_data_styles.indexOf('Color')!==-1) {
+			if (has_metabolite_data && metabolite_data_styles.indexOf('color')!==-1) {
 			    var f = d.data;
 			    return scale.metabolite_color(f===null ? 0 : f);
 			} else {
@@ -400,7 +522,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
             })
             .text(function(d) {	
 		var t = d.bigg_id;
-		if (has_metabolite_data)
+		if (has_metabolite_data && metabolite_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
 	    })

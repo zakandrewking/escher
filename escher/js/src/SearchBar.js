@@ -1,4 +1,4 @@
-define(["utils"], function(utils) {
+define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     /** 
      */
 
@@ -31,12 +31,14 @@ define(["utils"], function(utils) {
 	this.counter = container.append('div')
 	    .attr('class', 'search-counter');
 	container.append('button')
-	    .attr("class", "btn btn-sm btn-default search-close-button")
+	    .attr("class", "btn btn-sm btn-default close-button")
 	    .on('click', function() {
 		this.toggle(false);
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-remove");
 	
+	this.callback_manager = new CallbackManager();
+
 	this.selection = container;
 	this.map = map;
 	this.search_index = search_index;
@@ -68,6 +70,8 @@ define(["utils"], function(utils) {
 	    // enter key
 	    this.escape = this.map.key_manager
 		.add_enter_listener(function() { this.next(); }.bind(this));
+	    // run the show callback
+	    this.callback_manager.run('show');
 	} else {
 	    this.map.highlight(null);
 	    this.selection.style("display", "none");
@@ -76,6 +80,8 @@ define(["utils"], function(utils) {
 	    this.escape = null;
 	    if (this.enter) this.enter.clear();
 	    this.enter = null;
+	    // run the hide callback
+	    this.callback_manager.run('hide');
 	}
     }
     function update() {

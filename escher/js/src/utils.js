@@ -49,9 +49,9 @@ define(["lib/vkbeautify"], function(vkbeautify) {
         return out;
     }
 
-    function setup_svg(selection, selection_is_svg, margins, fill_screen) {
+    function setup_svg(selection, selection_is_svg, fill_screen) {
         // sub selection places the graph in an existing svg environment
-        var add_svg = function(f, s, m) {
+        var add_svg = function(f, s) {
             if (f) {
                 d3.select("body").classed('fill-screen-body', true);
 		s.classed('fill-screen-div', true);
@@ -70,7 +70,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
         if (selection_is_svg) {
             return selection;
         } else if (selection) {
-            return add_svg(fill_screen, selection, margins);
+            return add_svg(fill_screen, selection);
         } else {
             throw new Error('No selection');
         }
@@ -326,10 +326,10 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 
     function download_json(json, name) {
         var a = document.createElement('a');
-        a.download = name+'.json'; // file name
+        a.download = name + '.json'; // file name
 	var j = JSON.stringify(json);
-        a.setAttribute("href-lang", "text/json");
-        a.href = 'data:image/svg+xml;base64,' + utf8_to_b64(j); // create data uri
+        a.setAttribute("href-lang", "application/json");
+        a.href = 'data:application/json,' + j;
         // <a> constructed, simulate mouse click on it
         var ev = document.createEvent("MouseEvents");
         ev.initMouseEvent("click", true, false, self, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
@@ -340,10 +340,10 @@ define(["lib/vkbeautify"], function(vkbeautify) {
         }
     }
 
-    function load_json(f, callback, target) {
+    function load_json(f, callback) {
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
-	    callback.call(target, "The File APIs are not fully supported in this browser.", null);
+	    callback("The File APIs are not fully supported in this browser.", null);
 
 	// The following is not a safe assumption.
 	// if (!f.type.match("application/json"))
@@ -353,7 +353,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	// Closure to capture the file information.
 	reader.onload = function(event) {
 	    var json = JSON.parse(event.target.result);
-	    callback.call(target, null, json);
+	    callback(null, json);
         };
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
@@ -361,7 +361,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 
     function export_svg(name, svg_sel, do_beautify) {
         var a = document.createElement('a'), xml, ev;
-        a.download = name+'.svg'; // file name
+        a.download = name + '.svg'; // file name
 	// convert node to xml string
         xml = (new XMLSerializer()).serializeToString(svg_sel.node()); 
         if (do_beautify) xml = vkbeautify.xml(xml);

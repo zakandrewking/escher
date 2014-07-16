@@ -9,3 +9,4 @@ Escher.egg-info/
 .ipynb_checkpoints/
 build/*
 env/*
+envset/*

@@ -3,32 +3,24 @@ define(["utils"], function(utils) {
      */
 
     var Scale = utils.make_class();
-    Scale.prototype = { init: init };
+    Scale.prototype = { init: init,
+			connect_to_settings: connect_to_settings };
 
     return Scale;
 
     // definitions
-    function init(options) { //map_w, map_h, w, h, options) {
-	var sc = utils.set_options(options, 
-				   { reaction_color: d3.scale.linear()
-				     .domain([0, 0.000001, 1, 8, 50])
-				     .range(["rgb(200,200,200)", "rgb(190,190,255)", 
-					     "rgb(100,100,255)", "blue", "red"])});
-
-	sc.x = d3.scale.linear();
-	sc.y = d3.scale.linear();
-	sc.x_size = d3.scale.linear();
-	sc.y_size = d3.scale.linear();
-	sc.size = d3.scale.linear();
-        sc.reaction_size = d3.scale.linear()
-            .domain([0, 40])
-            .range([6, 12]),
-	sc.metabolite_size = d3.scale.linear()
-	    .range([8,15]),
-	sc.metabolite_color = d3.scale.linear()
-	    .range(["white", "red"]),
-        sc.scale_path = function(path) {
-            var x_fn = sc.x, y_fn = sc.y;
+    function init() {
+	this.x = d3.scale.linear();
+	this.y = d3.scale.linear();
+	this.x_size = d3.scale.linear();
+	this.y_size = d3.scale.linear();
+	this.size = d3.scale.linear();
+	this.reaction_color = d3.scale.linear();
+        this.reaction_size = d3.scale.linear();
+	this.metabolite_size = d3.scale.linear();
+	this.metabolite_color = d3.scale.linear();
+        this.scale_path = function(path) {
+            var x_fn = this.x, y_fn = this.y;
             // TODO: scale arrow width
             var str = d3.format(".2f"),
                 path = path.replace(/(M|L)([0-9-.]+),?\s*([0-9-.]+)/g, function (match, p0, p1, p2) {
@@ -43,17 +35,38 @@ define(["utils"], function(utils) {
                     [str(x_fn(parseFloat(p5)))+','+str(y_fn(parseFloat(p6)))];
             });
             return path;
-        };
-        sc.scale_decimals = function(path, scale_fn, precision) {
+        }.bind(this);
+        this.scale_decimals = function(path, scale_fn, precision) {
             var str = d3.format("."+String(precision)+"f");
             path = path.replace(/([0-9.]+)/g, function (match, p1) {
                 return str(scale_fn(parseFloat(p1)));
             });
             return path;
         };
+    }
 
-	// assign sc to this
-	var keys = window.Object.keys(sc), i = -1;
-        while (++i < keys.length) this[keys[i]] = sc[keys[i]];
+    function connect_to_settings(settings) {
+	// domains
+	settings.domain_stream['reaction'].onValue(function(s) {
+	    this.reaction_color.domain(s);
+	    this.reaction_size.domain(s);
+	}.bind(this));
+	settings.domain_stream['metabolite'].onValue(function(s) {
+	    this.metabolite_color.domain(s);
+	    this.metabolite_size.domain(s);
+	}.bind(this));
+	// ranges
+	settings.range_stream['reaction']['color'].onValue(function(s) {
+	    this.reaction_color.range(s);
+	}.bind(this));
+	settings.range_stream['reaction']['size'].onValue(function(s) {
+	    this.reaction_size.range(s);
+	}.bind(this));
+	settings.range_stream['metabolite']['color'].onValue(function(s) {
+	    this.metabolite_color.range(s);
+	}.bind(this));
+	settings.range_stream['metabolite']['size'].onValue(function(s) {
+	    this.metabolite_size.range(s);
+	}.bind(this));
     }
 });
