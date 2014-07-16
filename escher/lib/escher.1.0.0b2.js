@@ -8082,7 +8082,14 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 		// delete nodes, segments, and reactions with no segments
   		this.delete_node_data(Object.keys(selected_nodes));
 		this.delete_segment_data(segment_objs);
-		this.delete_reaction_data(Object.keys(reactions));
+		this.delete_reaction_data(Object.keys(reactions));	   
+
+		// apply the reaction and node data
+		if (this.has_reaction_data()) 
+		    this.update_reaction_data_domain();
+		if (this.has_metabolite_data())
+		    this.apply_metabolite_data_domain();
+
 		// redraw
 		// TODO just redraw these nodes and segments
 		this.draw_everything();
@@ -8116,8 +8123,24 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 		if (reactions_to_draw.indexOf(segment_obj.reaction_id)==-1)
 		    reactions_to_draw.push(segment_obj.reaction_id);
 	    }.bind(this));
-	    this.draw_these_nodes(Object.keys(saved_nodes));
-	    this.draw_these_reactions(reactions_to_draw);
+
+	    // apply the reaction and node data
+	    // if the scale changes, redraw everything
+	    if (this.has_reaction_data()) {
+		var scale_changed = this.update_reaction_data_domain();
+		if (scale_changed) this.draw_all_reactions();
+		else this.draw_these_reactions(Object.keys(reactions_to_draw));
+	    } else {
+		this.draw_these_reactions(Object.keys(reactions_to_draw));
+	    }		
+	    if (this.has_metabolite_data()) {
+		var scale_changed = this.update_metabolite_data_domain();
+		if (scale_changed) this.draw_all_nodes();
+		else this.draw_these_nodes(Object.keys(saved_nodes));
+	    } else {
+		this.draw_these_nodes(Object.keys(saved_nodes));
+	    }
+
 	    // copy nodes to re-delete
 	    selected_nodes = utils.clone(saved_nodes);
 	    segment_objs_w_segments = utils.clone(saved_segment_objs_w_segments);
