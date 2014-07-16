@@ -81,20 +81,74 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 
         // old segments
         sel.exit().remove();
+
+
+	// new connect lines
+	// var lines = sel
+	// 	.selectAll('.connect-line')
+	// 	.data(function(d) {
+	// 	    var reaction_label_line, node,
+	// 		reaction_d = this.parentNode.parentNode.parentNode.__data__;
+	// 	    // node = (d.bezier==1 ? 
+	// 	    // 	    drawn_nodes[segment_d.from_node_id] : 
+	// 	    // 	    drawn_nodes[segment_d.to_node_id]);
+	// 	    reaction_label_line = { x: d.x,
+	// 				    y: d.y,
+	// 				    source_x: node.x,
+	// 				    source_y: node.y};
+	// 	    return [reaction_label_line];
+	// 	});
+	// lines.enter().call(function(sel) {
+	//     return create_reaction_label_line(sel);
+	// });
+	// // update reaction_label lines
+	// lines.call(function(sel) { return update_reaction_label_line(sel); });
+	// // remove
+	// lines.exit().remove();
+
+	// // definitions
+	// function create_reaction_label_line(enter_selection) {
+	//     enter_selection.append('path')
+	//     	.attr('class', function(d) { return 'connect-line'; })
+	//     	.attr('visibility', 'hidden');
+	// }
+	// function update_reaction_label_line(update_selection) {
+	//     update_selection
+	//     	.attr('d', function(d) {
+	//     	    if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
+	//     		return "";
+	//     	    return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
+	//     	});
+	// }
+
     }
 
     function create_reaction_label(sel) {
 	utils.check_undefined(arguments, ['sel']);
-        /* Draw reaction label for selection.
+        /** Draw reaction label for selection.
+
 	 */
+	
         sel.append('text')
             .attr('class', 'reaction-label label')
 	    .style('cursor', 'default');
+	    // .on("mouseover", function(d) {
+	    // 	d3.select(this).style('stroke-width', String(3)+'px');
+	    // 	d3.select(this.parentNode)
+	    // 	    .selectAll('.connect-line')
+	    // 	    .attr('visibility', 'visible');
+	    // })
+	    // .on("mouseout", function(d) {
+	    // 	d3.select(this).style('stroke-width', String(1)+'px');
+	    // 	d3.select(this.parentNode)
+	    // 	    .selectAll('.connect-line')
+	    // 	    .attr('visibility', 'hidden');
+	    // });
+
     }
 
-    function update_reaction_label(sel, has_reaction_data, 
-				   reaction_data_styles,
-				   label_drag_behavior) {
+    function update_reaction_label(sel, has_reaction_data, reaction_data_styles,
+				   label_drag_behavior, drawn_nodes) {
 	utils.check_undefined(arguments, ['sel',
 					  'has_reaction_data',
 					  'reaction_data_styles',
@@ -102,12 +156,12 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	
 	var decimal_format = d3.format('.4g');
 	sel.text(function(d) { 
-            var t = d.bigg_id;
+	    var t = d.bigg_id;
 	    if (has_reaction_data && reaction_data_styles.indexOf('text') != -1)
 		t += ' ' + d.data_string;
-            return t;
+	    return t;
 	}).attr('transform', function(d) {
-            return 'translate('+d.label_x+','+d.label_y+')';
+	    return 'translate('+d.label_x+','+d.label_y+')';
 	}).style("font-size", function(d) {
 	    return String(30)+"px";
         })
@@ -320,13 +374,13 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		.on("mouseover", function(d) {
 		    d3.select(this).style('stroke-width', String(3)+'px');
 		    d3.select(this.parentNode.parentNode)
-			.selectAll('.bezier-line')
+			.selectAll('.connect-line')
 			.attr('visibility', 'visible');
 		})
 		.on("mouseout", function(d) {
 		    d3.select(this).style('stroke-width', String(1)+'px');
 		    d3.select(this.parentNode.parentNode)
-			.selectAll('.bezier-line')
+			.selectAll('.connect-line')
 			.attr('visibility', 'hidden');
 		});
 	}
@@ -353,7 +407,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 
 	    // new bezier lines
 	    var bez_lines = update_selection
-		    .selectAll('.bezier-line')
+		    .selectAll('.connect-line')
 		    .data(function(d) {
 			var bezier_line, node,
 			    segment_d = this.parentNode.parentNode.parentNode.__data__;
@@ -370,14 +424,14 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		return create_bezier_line(sel);
 	    });
 	    // update bezier lines
-	    bez_lines.call(function(sel) { return update_bezier_line(sel, show_beziers); });
+	    bez_lines.call(function(sel) { return update_bezier_line(sel); });
 	    // remove
 	    bez_lines.exit().remove();
 
 	    // definitions
 	    function create_bezier_line(enter_selection) {
 		enter_selection.append('path')
-	    	    .attr('class', function(d) { return 'bezier-line'; })
+	    	    .attr('class', function(d) { return 'connect-line'; })
 	    	    .attr('visibility', 'hidden');
 	    }
 	    function update_bezier_line(update_selection) {

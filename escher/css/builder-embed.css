@@ -69,7 +69,7 @@
 .bezier2 {
     stroke: blue;
 }
-.bezier-line{ 
+.connect-line{ 
     stroke: rgb(200,200,200);
 }
 .direction-arrow {

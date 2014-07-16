@@ -264,6 +264,7 @@ define(["utils", "build"], function(utils, build) {
 	    this.bezier_drag = this.get_bezier_drag(this.map, this.undo_stack);
 	} else {
 	    this.node_drag = this.empty_behavior;
+	    this.bezier_drag = this.empty_behavior;
 	}
     }
     function toggle_label_drag(on_off) {
