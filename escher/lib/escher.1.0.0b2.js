@@ -1112,10 +1112,10 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 
     function download_json(json, name) {
         var a = document.createElement('a');
-        a.download = name+'.json'; // file name
+        a.download = name + '.json'; // file name
 	var j = JSON.stringify(json);
-        a.setAttribute("href-lang", "text/json");
-        a.href = 'data:image/svg+xml;base64,' + utf8_to_b64(j); // create data uri
+        a.setAttribute("href-lang", "application/json");
+        a.href = 'data:application/json,' + j;
         // <a> constructed, simulate mouse click on it
         var ev = document.createEvent("MouseEvents");
         ev.initMouseEvent("click", true, false, self, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
@@ -1147,7 +1147,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 
     function export_svg(name, svg_sel, do_beautify) {
         var a = document.createElement('a'), xml, ev;
-        a.download = name+'.svg'; // file name
+        a.download = name + '.svg'; // file name
 	// convert node to xml string
         xml = (new XMLSerializer()).serializeToString(svg_sel.node()); 
         if (do_beautify) xml = vkbeautify.xml(xml);
