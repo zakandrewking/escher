@@ -78,7 +78,7 @@ python setup.py install
 
 Once you have installed Escher locally, you can interact with Escher maps in an IPython Notebook. This example notebook outlines the basic idea:
 
-http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/multiple-maps.ipynb
+http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/multiple_maps.ipynb
 
 Dependencies:
 - [Jinja2](http://jinja.pocoo.org/)
