@@ -32,7 +32,8 @@ setup(name='Escher',
       url='http://zakandrewking.github.io/escher/',
       packages=['escher'],
       package_data={'escher': ['css/*', 'templates/*', 'example_data/*',
-                               'lib/*.js', 'lib/*.css', 'lib/fonts/*']})
+                               'lib/*.js', 'lib/*.css', 'lib/fonts/*',
+                               'resources/*']})
 
 if 'test' in argv:
     call(['py.test'])
