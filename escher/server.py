@@ -93,6 +93,20 @@ class BuilderHandler(BaseHandler):
             print response
             builder_kwargs['embedded_css'] = response.body.replace('\n', ' ')
 
+        # example data
+        def load_data_file(rel_path):
+            """Load a JSON file with relative path."""
+            try:
+                with open(join(directory, rel_path), 'r') as f:
+                    return json.load(f)
+            except:
+                logging.warn('Could not load example_data file: %s' % rel_path)
+        if len(self.get_arguments('example_data')) > 0:
+            r_filepath = 'example_data/reaction_data_iJO1366.json'
+            builder_kwargs['reaction_data'] = load_data_file(r_filepath)
+            m_filepath = 'example_data/metabolite_data_iJO1366.json'
+            builder_kwargs['metabolite_data'] = load_data_file(m_filepath)
+            
         # make the builder        
         builder = Builder(safe=True, **builder_kwargs)
             
@@ -100,6 +114,7 @@ class BuilderHandler(BaseHandler):
         display_kwargs = {'minified_js': True,
                           'scroll_behavior': 'pan',
                           'menu': 'all'}
+            
         # keyword
         for a in ['menu', 'scroll_behavior', 'minified_js', 'auto_set_data_domain']:
             args = self.get_arguments(a)

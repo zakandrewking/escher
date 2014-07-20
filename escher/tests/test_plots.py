@@ -1,7 +1,7 @@
 import escher.server
 from escher import (Builder, get_cache_dir, clear_cache, list_cached_maps,
                     list_cached_models)
-from escher.plots import load_resource, check_data
+from escher.plots import load_resource
 
 import os
 from os.path import join
@@ -53,21 +53,16 @@ def test_load_resource(tmpdir):
             f.write('dummy')
         load_resource(p, 'name')
         assert 'not a valid json file' in err.value
-
-def test_check_data():
-    x = {'a': 1, 'b': 2}
-    assert check_data(x) is x
-    check_data([{}, {}])
-    check_data(({}, {}))
-    with raises(Exception):
-        check_data(1)
         
 def test_Builder(tmpdir):
     b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}')
-    #  cannot load dev version without an explicit css string property
-    b.display_in_notebook(js_source='dev')
+    # Cannot load dev/local version without an explicit css string property.
+    # TODO include a test where these do not raise.
+    with raises(Exception):
+        b.display_in_notebook(js_source='dev')
+    with raises(Exception):
+        b.display_in_notebook(js_source='local')
     b.display_in_notebook(js_source='web')
-    b.display_in_notebook(js_source='local')
     b.display_in_notebook(height=200)
     # b.display_in_browser()
     b.save_html(join(str(tmpdir), 'Builder.html'))
@@ -79,7 +74,7 @@ def test_Builder(tmpdir):
         b._get_html(menu='')
     with raises(Exception):
         b._get_html(scroll_behavior='asdf')
-    b._get_html(js_source='local')
+    b._get_html(js_source='web')
     b._get_html(menu='all')
     b._get_html(scroll_behavior='zoom')
     

@@ -126,7 +126,8 @@ class Builder(object):
     local_host: a hostname that will be used for any local files in dev
     mode. Defaults to the current host.
 
-    embedded_css: a css string to be embedded with the Escher SVG.
+    embedded_css: a css string to be embedded with the Escher SVG. Required for
+    js_source 'dev' or 'local'
     
     safe: if True, then loading files from the filesytem is not allowed. This is
     to ensure the safety of using Builder with a web server.
@@ -331,6 +332,8 @@ class Builder(object):
             'local' - use compiled js files in the local escher installation. Works offline.
             'dev' - use the local, uncompiled development files. Works offline.
 
+            'dev' and 'local' require Builder.embedded_css to be defined.
+
         menu: Menu bar options include:
             'none' - (Default) No menu or buttons.
             'zoom' - Just zoom buttons (does not require bootstrap).
@@ -360,6 +363,10 @@ class Builder(object):
         if js_source not in ['web', 'local', 'dev']:
             raise Exception('Bad value for js_source: %s' % js_source)
 
+        if js_source in ['local', 'dev'] and self.embedded_css is None:
+            raise Exception(("js_source values 'dev' and 'local' require "
+                             "Builder.embedded_css to be defined."))
+        
         if menu not in ['none', 'zoom', 'all']:
             raise Exception('Bad value for menu: %s' % menu)
 
