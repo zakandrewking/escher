@@ -3,8 +3,28 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
      Arguments
      ---------
-     selection: A d3 selection for a node to place the map inside. Should be an SVG element.
-     behavior: A Behavior object which defines the interactivity of the map.
+
+     svg:
+
+     css:
+
+     selection: A d3 selection for a node to place the map inside.
+
+     selection:
+
+     zoom_container:
+
+     settings:
+
+     reaction_data:
+
+     metabolite_data:
+
+     cobra_model:
+
+     canvas_size_and_loc:
+
+     enable_search:
 
      */
 
@@ -29,7 +49,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	clear_map: clear_map,
 	// selection
 	select_none: select_none,
-	select_metabolite: select_metabolite,
+	select_selectable: select_selectable,
 	select_metabolite_with_id: select_metabolite_with_id,
 	select_single_node: select_single_node,
 	deselect_nodes: deselect_nodes,
@@ -466,14 +486,14 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    defs = this.defs,
 	    default_reaction_color = this.default_reaction_color,
 	    bezier_drag_behavior = this.behavior.bezier_drag,
-	    node_click_fn = this.behavior.node_click,
+	    node_click_fn = this.behavior.selectable_click,
 	    node_mouseover_fn = this.behavior.node_mouseover,
 	    node_mouseout_fn = this.behavior.node_mouseout,
-	    node_drag_behavior = this.behavior.node_drag,
+	    node_drag_behavior = this.behavior.selectable_drag,
 	    reaction_label_drag = this.behavior.reaction_label_drag,
 	    node_label_drag = this.behavior.node_label_drag,
-	    text_label_click = this.behavior.text_label_click,
-	    text_label_drag = this.behavior.text_label_drag,
+	    text_label_click = this.behavior.selectable_click,
+	    text_label_drag = this.behavior.selectable_drag,
 	    has_reaction_data = this.has_reaction_data(),
 	    reaction_data_styles = this.settings.data_styles['reaction'],
 	    has_metabolite_data = this.has_metabolite_data(),
@@ -582,10 +602,10 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	var scale = this.scale,
 	    reactions = this.reactions,
 	    nodes = this.nodes,
-	    node_click_fn = this.behavior.node_click,
+	    node_click_fn = this.behavior.selectable_click,
 	    node_mouseover_fn = this.behavior.node_mouseover,
 	    node_mouseout_fn = this.behavior.node_mouseout,
-	    node_drag_behavior = this.behavior.node_drag,
+	    node_drag_behavior = this.behavior.selectable_drag,
 	    node_label_drag = this.behavior.node_label_drag,
 	    metabolite_data_styles = this.settings.data_styles['metabolite'],
 	    has_metabolite_data = this.has_metabolite_data();
@@ -623,8 +643,8 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     }
     function draw_these_text_labels(text_label_ids) {
 	var text_labels = this.text_labels,
-	    text_label_click = this.behavior.text_label_click,
-	    text_label_drag = this.behavior.text_label_drag;
+	    text_label_click = this.behavior.selectable_click,
+	    text_label_drag = this.behavior.selectable_drag;
 
 	// find text labels for text_label_ids
         var text_label_subset = {},
@@ -841,9 +861,10 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     }
 
     function select_metabolite_with_id(node_id) {
-	// deselect all text labels
-	this.deselect_text_labels();
+	/** Select a metabolite with the given id, and turn off the reaction
+	 target.
 
+	 */
 	var node_selection = this.sel.select('#nodes').selectAll('.node'),
 	    coords,
 	    selected_node;
@@ -858,27 +879,39 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	this.callback_manager.run('select_metabolite_with_id', selected_node, coords);
     }
-    function select_metabolite(sel, d) {
-	// deselect all text labels
-	this.deselect_text_labels();
-	
-	var node_selection = this.sel.select('#nodes').selectAll('.node'), 
-	    shift_key_on = this.key_manager.held_keys.shift;
-	if (shift_key_on) {
-	    d3.select(sel.parentNode)
-		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
+    function select_selectable(node, d) {
+	/** Select a metabolite or text label, and manage the shift key.
+
+	 */
+	var classable_selection = this.sel.selectAll('#nodes,#text-labels')
+		.selectAll('.node,.text-label'), 
+	    shift_key_on = this.key_manager.held_keys.shift,
+	    classable_node;
+	if (d3.select(node).attr('class').indexOf('text-label') == -1) {
+	    // node
+	    classable_node = node.parentNode;
+	} else {
+	    // text-label
+	    classable_node = node;
 	}
-        else node_selection.classed("selected", function(p) { return d === p; });
+	// toggle selection
+	if (shift_key_on) {
+	    d3.select(classable_node)
+		.classed("selected", !d3.select(classable_node).classed("selected"));
+	} else {
+	    classable_selection.classed("selected", function(p) { return d === p; });
+	}
+	// run the select_metabolite callback
 	var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),
-	    count = 0,
+	    node_count = 0,
 	    coords,
 	    selected_node;
 	selected_nodes.each(function(d) {
 	    selected_node = d;
 	    coords = { x: d.x, y: d.y };
-	    count++;
+	    node_count++;
 	});
-	this.callback_manager.run('select_metabolite', count, selected_node, coords);
+	this.callback_manager.run('select_selectable', node_count, selected_node, coords);
     }
     function select_single_node() {
 	/** Unselect all but one selected node, and return the node.
@@ -980,7 +1013,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
 	    this.extend_nodes(saved_nodes);
 	    this.extend_reactions(saved_reactions);
-	    var reactions_to_draw = Object.keys(saved_reactions);
+	    var reaction_ids_to_draw = Object.keys(saved_reactions);
 	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
 		var segment = segment_obj.segment;
 		this.reactions[segment_obj.reaction_id]
@@ -995,8 +1028,8 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 						   segment_id: segment_obj.segment_id });
 		}.bind(this));
 
-		if (reactions_to_draw.indexOf(segment_obj.reaction_id)==-1)
-		    reactions_to_draw.push(segment_obj.reaction_id);
+		if (reaction_ids_to_draw.indexOf(segment_obj.reaction_id)==-1)
+		    reaction_ids_to_draw.push(segment_obj.reaction_id);
 	    }.bind(this));
 
 	    // apply the reaction and node data
@@ -1004,9 +1037,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    if (this.has_reaction_data()) {
 		var scale_changed = this.update_reaction_data_domain();
 		if (scale_changed) this.draw_all_reactions();
-		else this.draw_these_reactions(Object.keys(reactions_to_draw));
+		else this.draw_these_reactions(reaction_ids_to_draw);
 	    } else {
-		this.draw_these_reactions(Object.keys(reactions_to_draw));
+		this.draw_these_reactions(reaction_ids_to_draw);
 	    }		
 	    if (this.has_metabolite_data()) {
 		var scale_changed = this.update_metabolite_data_domain();

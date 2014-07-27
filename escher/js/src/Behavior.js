@@ -4,10 +4,22 @@ define(["utils", "build"], function(utils, build) {
 
      Has the following attributes:
 
-     Behavior.node_click
-     Behavior.node_drag
-     Behavior.bezier_drag
-     Behavior.label_drag
+     Behavior.rotation_drag:
+
+     Behavior.selectable_click:
+
+     Behavior.node_mouseover:
+
+     Behavior.node_mouseout:
+
+     Behavior.selectable_drag:
+
+     Behavior.bezier_drag:
+
+     Behavior.reaction_label_drag:
+
+     Behavior.node_label_drag:
+
      */
 
     var Behavior = utils.make_class();
@@ -15,16 +27,15 @@ define(["utils", "build"], function(utils, build) {
 			   toggle_rotation_mode: toggle_rotation_mode,
 			   turn_everything_on: turn_everything_on,
 			   turn_everything_off: turn_everything_off,
-			   toggle_node_click: toggle_node_click,
-			   toggle_node_drag: toggle_node_drag,
-			   toggle_text_label_click: toggle_text_label_click,
+			   toggle_selectable_click: toggle_selectable_click,
+			   toggle_selectable_drag: toggle_selectable_drag,
 			   toggle_label_drag: toggle_label_drag,
-			   get_node_drag: get_node_drag,
+			   get_selectable_drag: get_selectable_drag,
 			   get_bezier_drag: get_bezier_drag,
 			   get_reaction_label_drag: get_reaction_label_drag,
 			   get_node_label_drag: get_node_label_drag,
-			   get_text_label_drag: get_text_label_drag,
-			   get_generic_drag: get_generic_drag };
+			   get_generic_drag: get_generic_drag,
+			   get_generic_angular_drag: get_generic_angular_drag };
 
     return Behavior;
 
@@ -41,33 +52,29 @@ define(["utils", "build"], function(utils, build) {
 	this.rotation_drag = d3.behavior.drag();
 
 	// init empty
-	this.node_click = null;
+	this.selectable_click = null;
 	this.node_mouseover = null;
 	this.node_mouseout = null;
-	this.node_drag = this.empty_behavior;
+	this.selectable_drag = this.empty_behavior;
 	this.bezier_drag = this.empty_behavior;
 	this.reaction_label_drag = this.empty_behavior;
 	this.node_label_drag = this.empty_behavior;
-	this.text_label_click = null;
-	this.text_label_drag = this.empty_behavior;
 	this.turn_everything_on();
     }
     function turn_everything_on() {
 	/** Toggle everything except rotation mode.
 
 	 */
-	this.toggle_node_click(true);
-	this.toggle_node_drag(true);
-	this.toggle_text_label_click(true);
+	this.toggle_selectable_click(true);
+	this.toggle_selectable_drag(true);
 	this.toggle_label_drag(true);
     }
     function turn_everything_off() {
 	/** Toggle everything except rotation mode.
 
 	 */
-	this.toggle_node_click(false);
-	this.toggle_node_drag(false);
-	this.toggle_text_label_click(false);
+	this.toggle_selectable_click(false);
+	this.toggle_selectable_drag(false);
 	this.toggle_label_drag(false);
     }
 
@@ -107,43 +114,41 @@ define(["utils", "build"], function(utils, build) {
 		// silence other listeners
 		d3.event.sourceEvent.stopPropagation();
 	    },
-		drag_fn = function(d, displacement, total_displacement, location) {
-		    var angle = utils.angle_for_event(displacement,
-						location,
-						this.center);
+		drag_fn = function(d, angle, total_angle, center) {
 		    var updated = build.rotate_nodes(selected_nodes, reactions,
-						     angle, this.center);
+						     angle, center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
-		}.bind(this),
+		},
 		end_fn = function(d) {},
-		undo_fn = function(d, displacement, location) {
+		undo_fn = function(d, total_angle, center) {
 		    // undo
-		    var total_angle = utils.angle_for_event(displacement,
-						      location,
-						      this.center);
-
 		    var these_nodes = {};
-		    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+		    selected_node_ids.forEach(function(id) { 
+			these_nodes[id] = nodes[id];
+		    });
 		    var updated = build.rotate_nodes(these_nodes, reactions,
-						     -total_angle, utils.clone(this.center));
+						     -total_angle, center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
-		}.bind(this),
-		redo_fn = function(d, displacement, location) {
+		},
+		redo_fn = function(d, total_angle, center) {
 		    // redo
-		    var total_angle = utils.angle_for_event(displacement,
-						      location,
-						      this.center),
-			these_nodes = {};
-		    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+		    var these_nodes = {};
+		    selected_node_ids.forEach(function(id) {
+			these_nodes[id] = nodes[id];
+		    });
 		    var updated = build.rotate_nodes(these_nodes, reactions,
-						     total_angle, utils.clone(this.center));
+						     total_angle, center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
+		},
+		center_fn = function() {
+		    return this.center;
 		}.bind(this);
-	    this.rotation_drag = this.get_generic_drag(start_fn, drag_fn, end_fn,
-						       undo_fn, redo_fn, this.map.sel);
+	    this.rotation_drag = this.get_generic_angular_drag(start_fn, drag_fn, end_fn,
+							       undo_fn, redo_fn, center_fn,
+							       this.map.sel);
 	    selection_background.call(this.rotation_drag);
 
 
@@ -206,17 +211,18 @@ define(["utils", "build"], function(utils, build) {
 	}	
     }
 
-    function toggle_node_click(on_off) {
+    function toggle_selectable_click(on_off) {
 	/** With no argument, toggle the node click on or off.
 
 	 Pass in a boolean argument to set the on/off state.
 
 	 */
-	if (on_off===undefined) on_off = this.node_click==null;
+	if (on_off===undefined) on_off = this.selectable_click==null;
 	if (on_off) {
 	    var map = this.map;
-	    this.node_click = function(d) {
-		map.select_metabolite(this, d);
+	    this.selectable_click = function(d) {
+		if (d3.event.defaultPrevented) return; // click suppressed
+		map.select_selectable(this, d);
 		d3.event.stopPropagation();
 	    };
 	    this.node_mouseover = function(d) {	   
@@ -228,42 +234,26 @@ define(["utils", "build"], function(utils, build) {
 		d3.select(this).style('stroke-width', null);
 	    };
 	} else {
-	    this.node_click = null;
+	    this.selectable_click = null;
 	    this.node_mouseover = null;
 	    this.node_mouseout = null;
 	    this.map.sel.select('#nodes')
 		.selectAll('.node-circle').style('stroke-width', null);
 	}
     }
-    function toggle_text_label_click(on_off) {
-	/** With no argument, toggle the node click on or off.
 
-	 Pass in a boolean argument to set the on/off state.
-
-	 */
-	if (on_off===undefined) on_off = this.text_label_click==null;
-	if (on_off) {
-	    var map = this.map;
-	    this.text_label_click = function(d) {
-		map.select_text_label(this, d);
-		d3.event.stopPropagation();
-	    };
-	} else {
-	    this.text_label_click = null;
-	}
-    }
-    function toggle_node_drag(on_off) {
+    function toggle_selectable_drag(on_off) {
 	/** With no argument, toggle the node drag & bezier drag on or off.
 
 	 Pass in a boolean argument to set the on/off state.
 
 	 */
-	if (on_off===undefined) on_off = this.node_drag===this.empty_behavior;
+	if (on_off===undefined) on_off = this.selectable_drag===this.empty_behavior;
 	if (on_off) {
-	    this.node_drag = this.get_node_drag(this.map, this.undo_stack);
+	    this.selectable_drag = this.get_selectable_drag(this.map, this.undo_stack);
 	    this.bezier_drag = this.get_bezier_drag(this.map, this.undo_stack);
 	} else {
-	    this.node_drag = this.empty_behavior;
+	    this.selectable_drag = this.empty_behavior;
 	    this.bezier_drag = this.empty_behavior;
 	}
     }
@@ -277,84 +267,125 @@ define(["utils", "build"], function(utils, build) {
 	if (on_off) {
 	    this.reaction_label_drag = this.get_reaction_label_drag(this.map);
 	    this.node_label_drag = this.get_node_label_drag(this.map);
-	    this.text_label_drag = this.get_text_label_drag(this.map);
 	} else {
 	    this.reaction_label_drag = this.empty_behavior;
 	    this.node_label_drag = this.empty_behavior;
-	    this.text_label_drag = this.empty_behavior;
 	}
     }
 
-    function get_node_drag(map, undo_stack) {
+    function get_selectable_drag(map, undo_stack) {
+	/** Drag the selected nodes and text labels.
+
+	 */
+
 	// define some variables
 	var behavior = d3.behavior.drag(),
+	    the_timeout = null,
 	    total_displacement = null,
-	    nodes_to_drag = null,
+	    // for nodes
+	    node_ids_to_drag = null,
 	    reaction_ids = null,
-	    the_timeout = null;
+	    // for text labels
+	    text_label_ids_to_drag = null,
+	    move_label = function(text_label_id, displacement) {
+    		var text_label = map.text_labels[text_label_id];
+    		text_label.x = text_label.x + displacement.x;
+    		text_label.y = text_label.y + displacement.y;
+    	    };
 
         behavior.on("dragstart", function () { 
-	    // Note that dragstart is called even for a click event
-	    var data = this.parentNode.__data__,
-		bigg_id = data.bigg_id,
-		node_group = this.parentNode;
 	    // silence other listeners
-	    d3.event.sourceEvent.stopPropagation();
+	    d3.event.sourceEvent.stopPropagation(); console.log('dragstart');
 	    // remember the total displacement for later
-	    total_displacement = {};
-	    // Move element to back (for the next step to work). Wait 200ms
-	    // before making the move, becuase otherwise the element will be
-	    // deleted before the click event gets called, and selection
-	    // will stop working.
-	    the_timeout = window.setTimeout(function() {
-		node_group.parentNode.insertBefore(node_group,node_group.parentNode.firstChild);
-	    }, 200);
-	    // prepare to combine metabolites
-	    map.sel.selectAll('.metabolite-circle')
-		.on('mouseover.combine', function(d) {
-		    if (d.bigg_id==bigg_id && d.node_id!=data.node_id) {
-			d3.select(this).style('stroke-width', String(12)+'px')
-			    .classed('node-to-combine', true);
-		    }
-		}).on('mouseout.combine', function(d) {
-		    if (d.bigg_id==bigg_id) {
-			map.sel.selectAll('.node-to-combine').style('stroke-width', String(2)+'px')
-			    .classed('node-to-combine', false);
-		    }
-		});
+	    // total_displacement = {};
+	    total_displacement = {x: 0, y: 0};
+
+	    // If a text label is selected, the rest is not necessary
+	    if (d3.select(this).attr('class').indexOf('text-label')==-1) {		
+		// Note that dragstart is called even for a click event
+		var data = this.parentNode.__data__,
+		    bigg_id = data.bigg_id,
+		    node_group = this.parentNode;
+		// Move element to back (for the next step to work). Wait 200ms
+		// before making the move, becuase otherwise the element will be
+		// deleted before the click event gets called, and selection
+		// will stop working.
+		the_timeout = window.setTimeout(function() {
+		    node_group.parentNode.insertBefore(node_group,node_group.parentNode.firstChild);
+		}, 200);
+		// prepare to combine metabolites
+		map.sel.selectAll('.metabolite-circle')
+		    .on('mouseover.combine', function(d) {
+			if (d.bigg_id==bigg_id && d.node_id!=data.node_id) {
+			    d3.select(this).style('stroke-width', String(12)+'px')
+				.classed('node-to-combine', true);
+			}
+		    }).on('mouseout.combine', function(d) {
+			if (d.bigg_id==bigg_id) {
+			    map.sel.selectAll('.node-to-combine').style('stroke-width', String(2)+'px')
+				.classed('node-to-combine', false);
+			}
+		    });
+	    }
 	});
         behavior.on("drag", function() {
-	    var grabbed_id = this.parentNode.__data__.node_id, 
-		selected_ids = map.get_selected_node_ids();
-	    nodes_to_drag = [];
-	    // choose the nodes to drag
-	    if (selected_ids.indexOf(grabbed_id)==-1) { 
-		nodes_to_drag.push(grabbed_id);
+	    // get the grabbed id
+	    var grabbed = {};
+	    if (d3.select(this).attr('class').indexOf('text-label')==-1) {
+		// if it is a node
+		grabbed['type'] = 'node';
+		grabbed['id'] = this.parentNode.__data__.node_id;
 	    } else {
-		nodes_to_drag = selected_ids;
+		// if it is a text label
+		grabbed['type'] = 'text-label';
+		grabbed['id'] = this.__data__.text_label_id;
+	    }
+
+	    var selected_node_ids = map.get_selected_node_ids(),
+		selected_text_label_ids = map.get_selected_text_label_ids();
+	    node_ids_to_drag = []; text_label_ids_to_drag = [];
+	    // choose the nodes and text labels to drag
+	    if (grabbed['type']=='node' && 
+		selected_node_ids.indexOf(grabbed['id'])==-1) { 
+		node_ids_to_drag.push(grabbed['id']);
+	    } else if (grabbed['type']=='text-label' && 
+		       selected_text_label_ids.indexOf(grabbed['id'])==-1) {
+		text_label_ids_to_drag.push(grabbed['id']);
+	    } else {
+		node_ids_to_drag = selected_node_ids;
+		text_label_ids_to_drag = selected_text_label_ids;
 	    }
 	    reaction_ids = [];
-	    nodes_to_drag.forEach(function(node_id) {
+	    var displacement = { x: d3.event.dx,
+				 y: d3.event.dy };
+	    total_displacement = utils.c_plus_c(total_displacement, displacement);
+	    node_ids_to_drag.forEach(function(node_id) {
 		// update data
 		var node = map.nodes[node_id],
-		    displacement = { x: d3.event.dx,
-				     y: d3.event.dy },
 		    updated = build.move_node_and_dependents(node, node_id, map.reactions, displacement);
 		reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids]);
 		// remember the displacements
-		if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 };
-		total_displacement[node_id] = utils.c_plus_c(total_displacement[node_id], displacement);
+		// if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 };
+		// total_displacement[node_id] = utils.c_plus_c(total_displacement[node_id], displacement);
+	    });
+	    text_label_ids_to_drag.forEach(function(text_label_id) {
+    		move_label(text_label_id, displacement);		
+		// remember the displacements
+		// if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 };
+		// total_displacement[node_id] = utils.c_plus_c(total_displacement[node_id], displacement);
 	    });
 	    // draw
-	    map.draw_these_nodes(nodes_to_drag);
+	    map.draw_these_nodes(node_ids_to_drag);
 	    map.draw_these_reactions(reaction_ids);
+    	    map.draw_these_text_labels(text_label_ids_to_drag);
 	});
 	behavior.on("dragend", function() {
-	    if (nodes_to_drag===null) {
+	    if (node_ids_to_drag===null) {
 		// Dragend can be called when drag has not been called. In this,
 		// case, do nothing.
 		total_displacement = null;
-		nodes_to_drag = null;
+		node_ids_to_drag = null;
+		text_label_ids_to_drag = null;
 		reaction_ids = null;
 		the_timeout = null;
 		return;
@@ -408,26 +439,36 @@ define(["utils", "build"], function(utils, build) {
 		var saved_displacement = utils.clone(total_displacement), 
 		    // BUG TODO this variable disappears!
 		    // Happens sometimes when you drag a node, then delete it, then undo twice
-		    saved_node_ids = utils.clone(nodes_to_drag),
+		    saved_node_ids = utils.clone(node_ids_to_drag),
+		    saved_text_label_ids = utils.clone(text_label_ids_to_drag),
 		    saved_reaction_ids = utils.clone(reaction_ids);
 		undo_stack.push(function() {
 		    // undo
 		    saved_node_ids.forEach(function(node_id) {
 			var node = map.nodes[node_id];
 			build.move_node_and_dependents(node, node_id, map.reactions,
-						       utils.c_times_scalar(saved_displacement[node_id], -1));
+						       utils.c_times_scalar(saved_displacement, -1));
+		    });
+		    saved_text_label_ids.forEach(function(text_label_id) {
+			move_label(text_label_id, 
+				   utils.c_times_scalar(saved_displacement, -1));
 		    });
 		    map.draw_these_nodes(saved_node_ids);
 		    map.draw_these_reactions(saved_reaction_ids);
+		    map.draw_these_text_labels(saved_text_label_ids);
 		}, function () {
 		    // redo
 		    saved_node_ids.forEach(function(node_id) {
 			var node = map.nodes[node_id];
 			build.move_node_and_dependents(node, node_id, map.reactions,
-						       saved_displacement[node_id]);
+						       saved_displacement);
+		    });		    
+		    saved_text_label_ids.forEach(function(text_label_id) {
+			move_label(text_label_id, saved_displacement);
 		    });
 		    map.draw_these_nodes(saved_node_ids);
 		    map.draw_these_reactions(saved_reaction_ids);
+		    map.draw_these_text_labels(saved_text_label_ids);
 		});
 	    }
 
@@ -441,7 +482,8 @@ define(["utils", "build"], function(utils, build) {
 
 	    // clear the shared variables
 	    total_displacement = null;
-	    nodes_to_drag = null;
+	    node_ids_to_drag = null;
+	    text_label_ids_to_drag = null;
 	    reaction_ids = null;
 	    the_timeout = null;
 	});
@@ -551,32 +593,7 @@ define(["utils", "build"], function(utils, build) {
 	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
 				     redo_fn, this.map.sel);
     }
-    function get_text_label_drag(map) {
-	var move_label = function(text_label_id, displacement) {
-	    var text_label = map.text_labels[text_label_id];
-	    text_label.x = text_label.x + displacement.x;
-	    text_label.y = text_label.y + displacement.y;
-	},
-	    start_fn = function(d) {
-	    },
-	    drag_fn = function(d, displacement, total_displacement) {
-		// draw
-		move_label(d.text_label_id, displacement);
-		map.draw_these_text_labels([d.text_label_id]);
-	    },
-	    end_fn = function(d) {
-	    },
-	    undo_fn = function(d, displacement) {
-		move_label(d.text_label_id, utils.c_times_scalar(displacement, -1));
-		map.draw_these_text_labels([d.text_label_id]);
-	    },
-	    redo_fn = function(d, displacement) {
-		move_label(d.text_label_id, displacement);
-		map.draw_these_text_labels([d.text_label_id]);
-	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-				     redo_fn, this.map.sel);
-    }
+
     function get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, relative_to_selection) {
 	/** Make a generic drag behavior, with undo/redo.
 
@@ -632,6 +649,73 @@ define(["utils", "build"], function(utils, build) {
 	    }, function () {
 		// redo
 		redo_fn(saved_d, saved_displacement, saved_location);
+	    });
+	    end_fn(d);
+	});
+	return behavior;
+    }
+
+    function get_generic_angular_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, 
+				      get_center, relative_to_selection) {
+	/** Make a generic drag behavior, with undo/redo. Supplies angles in
+	  place of displacements.
+
+	 start_fn: function(d) Called at dragstart.
+
+	 drag_fn: function(d, displacement, total_displacement) Called during
+	 drag.
+
+	 end_fn:
+
+	 undo_fn:
+
+	 redo_fn:
+
+	 get_center:
+
+	 relative_to_selection: a d3 selection that the locations are calculated against.
+
+	 */
+	
+	// define some variables
+	var behavior = d3.behavior.drag(),
+	    total_angle,
+	    undo_stack = this.undo_stack,
+	    rel = relative_to_selection.node();
+
+        behavior.on("dragstart", function (d) {
+	    // silence other listeners
+	    d3.event.sourceEvent.stopPropagation();
+	    total_angle = 0;
+	    start_fn(d);
+	});
+        behavior.on("drag", function(d) {
+	    // update data
+	    var displacement = { x: d3.event.dx,
+				 y: d3.event.dy },
+		location = { x: d3.mouse(rel)[0],
+			     y: d3.mouse(rel)[1] },
+		center = get_center(),
+		angle = utils.angle_for_event(displacement,
+					      location,
+					      center);
+	    // remember the displacement
+	    total_angle = total_angle + angle;
+	    drag_fn(d, angle, total_angle, center);
+	});
+	behavior.on("dragend", function(d) {			  
+	    // add to undo/redo stack
+	    // remember the displacement, dragged nodes, and reactions
+	    var saved_d = utils.clone(d),
+		saved_angle = total_angle,
+		saved_center = utils.clone(get_center());
+
+	    undo_stack.push(function() {
+		// undo
+		undo_fn(saved_d, saved_angle, saved_center);
+	    }, function () {
+		// redo
+		redo_fn(saved_d, saved_angle, saved_center);
 	    });
 	    end_fn(d);
 	});

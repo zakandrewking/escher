@@ -75,7 +75,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	    if (this.is_active) this.reload(selected_node, coords, false);
 	    this.hide_target();
 	}.bind(this));
-	map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
+	map.callback_manager.set('select_selectable.input', function(count, selected_node, coords) {
 	    this.hide_target();
 	    if (count == 1 && this.is_active && coords) {
 		this.reload(selected_node, coords, false);

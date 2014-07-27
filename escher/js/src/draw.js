@@ -1,6 +1,6 @@
-"use strict";
+'use strict';
 
-define(["utils", "data_styles"], function(utils, data_styles) {
+define(['utils', 'data_styles'], function(utils, data_styles) {
     return { create_reaction: create_reaction,
 	     update_reaction: update_reaction,
 	     create_node: create_node,
@@ -26,10 +26,10 @@ define(["utils", "data_styles"], function(utils, data_styles) {
     function update_membrane(update_selection) {
 	utils.check_undefined(arguments, ['enter_selection']);
         update_selection
-            .attr("width", function(d){ return d.width; })
-            .attr("height", function(d){ return d.height; })
-            .attr("transform", function(d){return "translate("+d.x+","+d.y+")";})
-            .style("stroke-width", function(d) { return 10; })
+            .attr('width', function(d){ return d.width; })
+            .attr('height', function(d){ return d.height; })
+            .attr('transform', function(d){return 'translate('+d.x+','+d.y+')';})
+            .style('stroke-width', function(d) { return 10; })
             .attr('rx', function(d){ return 20; })
             .attr('ry', function(d){ return 20; });
     }
@@ -116,7 +116,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	//     update_selection
 	//     	.attr('d', function(d) {
 	//     	    if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
-	//     		return "";
+	//     		return '';
 	//     	    return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
 	//     	});
 	// }
@@ -132,13 +132,13 @@ define(["utils", "data_styles"], function(utils, data_styles) {
         sel.append('text')
             .attr('class', 'reaction-label label')
 	    .style('cursor', 'default');
-	    // .on("mouseover", function(d) {
+	    // .on('mouseover', function(d) {
 	    // 	d3.select(this).style('stroke-width', String(3)+'px');
 	    // 	d3.select(this.parentNode)
 	    // 	    .selectAll('.connect-line')
 	    // 	    .attr('visibility', 'visible');
 	    // })
-	    // .on("mouseout", function(d) {
+	    // .on('mouseout', function(d) {
 	    // 	d3.select(this).style('stroke-width', String(1)+'px');
 	    // 	d3.select(this.parentNode)
 	    // 	    .selectAll('.connect-line')
@@ -162,8 +162,8 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	    return t;
 	}).attr('transform', function(d) {
 	    return 'translate('+d.label_x+','+d.label_y+')';
-	}).style("font-size", function(d) {
-	    return String(30)+"px";
+	}).style('font-size', function(d) {
+	    return String(30)+'px';
         })
 	    .call(turn_off_drag)
 	    .call(label_drag_behavior);
@@ -295,7 +295,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	arrowheads.enter().append('path')
 	    .classed('arrowhead', true);
 	// update arrowheads
-	arrowheads.attr("d", function(d) {
+	arrowheads.attr('d', function(d) {
 	    var markerWidth = 20, markerHeight = 13;
 	    if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		var f = d.data;
@@ -371,13 +371,13 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
 	    	.style('stroke-width', String(1)+'px')	
     		.attr('r', String(7)+'px')
-		.on("mouseover", function(d) {
+		.on('mouseover', function(d) {
 		    d3.select(this).style('stroke-width', String(3)+'px');
 		    d3.select(this.parentNode.parentNode)
 			.selectAll('.connect-line')
 			.attr('visibility', 'visible');
 		})
-		.on("mouseout", function(d) {
+		.on('mouseout', function(d) {
 		    d3.select(this).style('stroke-width', String(1)+'px');
 		    d3.select(this.parentNode.parentNode)
 			.selectAll('.connect-line')
@@ -401,7 +401,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	    update_selection
 		.attr('visibility', 'visible')
 		.attr('transform', function(d) {
-	    	    if (d.x==null || d.y==null) return ""; 
+	    	    if (d.x==null || d.y==null) return ''; 
 		    return 'translate('+d.x+','+d.y+')';
 		});
 
@@ -438,7 +438,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		update_selection
 	    	    .attr('d', function(d) {
 	    		if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
-	    		    return "";
+	    		    return '';
 	    		return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
 	    	    });
 	    }
@@ -508,7 +508,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		})
 		.call(turn_off_drag)
 		.call(drag_behavior)
-		.on("click", click_fn)
+		.on('click', click_fn)
 		.on('mouseover', mouseover_fn)
 		.on('mouseout', mouseout_fn);
 
@@ -517,8 +517,8 @@ define(["utils", "data_styles"], function(utils, data_styles) {
             .attr('transform', function(d) {
                 return 'translate('+d.label_x+','+d.label_y+')';
             })
-            .style("font-size", function(d) {
-		return String(20)+"px";
+            .style('font-size', function(d) {
+		return String(20)+'px';
             })
             .text(function(d) {	
 		var t = d.bigg_id;
@@ -543,7 +543,7 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	utils.check_undefined(arguments, ['update_selection', 'label_click', 'label_drag_behavior']);
 
         update_selection
-            .attr("transform", function(d) { return "translate("+d.x+","+d.y+")";})
+            .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
 	    .on('click', label_click)
 	    .call(turn_off_drag)
 	    .call(label_drag_behavior);

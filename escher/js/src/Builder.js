@@ -129,7 +129,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	 */
 
 	// Begin with some definitions
-	var node_click_enabled = true,
+	var selectable_click_enabled = true,
 	    shift_key_on = false;
 
 	// set up this callback manager
@@ -274,12 +274,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
 	// behavior
 	this.map.behavior.toggle_rotation_mode(mode=='rotate');
-	this.map.behavior.toggle_node_click(mode=='build' || mode=='brush');
-	this.map.behavior.toggle_node_drag(mode=='brush');
-	this.map.behavior.toggle_text_label_click(mode=='brush');
+	this.map.behavior.toggle_selectable_click(mode=='build' || mode=='brush' || mode=='rotate');
+	this.map.behavior.toggle_selectable_drag(mode=='brush' || mode=='rotate');
 	this.map.behavior.toggle_label_drag(mode=='brush');
 	if (mode=='view')
 	    this.map.select_none();
+	if (mode=='rotate')
+	    this.map.deselect_text_labels();
 	this.map.draw_everything();
     }
     function view_mode() {
@@ -563,13 +564,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    brush.toggle(false);
 	    was_enabled.zoom = zoom_container.zoom_on;
 	    zoom_container.toggle_zoom(false);
-	    was_enabled.node_click = map.behavior.node_click!=null;
-	    map.behavior.toggle_node_click(false);
+	    was_enabled.selectable_click = map.behavior.selectable_click!=null;
+	    map.behavior.toggle_selectable_click(false);
 	});
 	map.callback_manager.set('end_rotation', function() {
 	    brush.toggle(was_enabled.brush);
 	    zoom_container.toggle_zoom(was_enabled.zoom);
-	    map.behavior.toggle_node_click(was_enabled.node_click);
+	    map.behavior.toggle_selectable_click(was_enabled.selectable_click);
 	    was_enabled = {};
 	});
     }
