@@ -295,7 +295,7 @@ define(["utils", "build"], function(utils, build) {
 
         behavior.on("dragstart", function () { 
 	    // silence other listeners
-	    d3.event.sourceEvent.stopPropagation(); console.log('dragstart');
+	    d3.event.sourceEvent.stopPropagation();
 	    // remember the total displacement for later
 	    // total_displacement = {};
 	    total_displacement = {x: 0, y: 0};

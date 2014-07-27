@@ -48,7 +48,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	set_metabolite_data: set_metabolite_data,
 	clear_map: clear_map,
 	// selection
+	select_all: select_all,
 	select_none: select_none,
+	invert_selection: invert_selection,
 	select_selectable: select_selectable,
 	select_metabolite_with_id: select_metabolite_with_id,
 	select_single_node: select_single_node,
@@ -64,8 +66,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	extend_reactions: extend_reactions,
 	// delete
 	delete_selected: delete_selected,
-	delete_nodes: delete_nodes,
-	delete_text_labels: delete_text_labels,
+	delete_selectable: delete_selectable,
 	delete_node_data: delete_node_data,
 	delete_segment_data: delete_segment_data,
 	delete_reaction_data: delete_reaction_data,
@@ -836,7 +837,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    self = this;
 	this.sel.select('#nodes')
 	    .selectAll('.selected')
-	    .each(function(d) { selected_nodes[d.node_id] = self.nodes[d.node_id]; });
+	    .each(function(d) {
+		selected_nodes[d.node_id] = this.nodes[d.node_id];
+	    }.bind(this));
 	return selected_nodes;
     }	
     function get_selected_text_label_ids() {
@@ -851,13 +854,38 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    self = this;
 	this.sel.select('#text-labels')
 	    .selectAll('.selected')
-	    .each(function(d) { selected_text_labels[d.text_label_id] = self.text_labels[d.text_label_id]; });
+	    .each(function(d) {
+		selected_text_labels[d.text_label_id] = this.text_labels[d.text_label_id];
+	    }.bind(this));
 	return selected_text_labels;
     }	
 
+    function select_all() {
+	/** Select all nodes and text labels.
+
+	 */
+	this.sel.selectAll('#nodes,#text-labels')
+	    .selectAll('.node,.text-label')
+	    .classed('selected', true);
+    }
+
     function select_none() {
+	/** Deselect all nodes and text labels.
+
+	 */
 	this.sel.selectAll('.selected')
 	    .classed('selected', false);
+    }
+
+    function invert_selection() {
+	/** Invert selection of nodes and text labels.
+
+	 */
+	var selection = this.sel.selectAll('#nodes,#text-labels')
+	    .selectAll('.node,.text-label');
+	selection.classed('selected', function() {
+	    return !d3.select(this).classed('selected');
+	});
     }
 
     function select_metabolite_with_id(node_id) {
@@ -865,6 +893,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	 target.
 
 	 */
+	// deselect all text labels
+	this.deselect_text_labels();
+
 	var node_selection = this.sel.select('#nodes').selectAll('.node'),
 	    coords,
 	    selected_node;
@@ -964,15 +995,13 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	 Undoable.
 
 	 */
-	var selected_nodes = this.get_selected_nodes();
-	if (Object.keys(selected_nodes).length >= 1)
-	    this.delete_nodes(selected_nodes);
-	
-	var selected_text_labels = this.get_selected_text_labels();
-	if (Object.keys(selected_text_labels).length >= 1)
-	    this.delete_text_labels(selected_text_labels);
+	var selected_nodes = this.get_selected_nodes(),	
+	    selected_text_labels = this.get_selected_text_labels();
+	if (Object.keys(selected_nodes).length >= 1 ||
+	    Object.keys(selected_text_labels).length >= 1)
+	    this.delete_selectable(selected_nodes, selected_text_labels);
     }
-    function delete_nodes(selected_nodes) {
+    function delete_selectable(selected_nodes, selected_text_labels) {
 	/** Delete the nodes and associated segments and reactions.
 
 	 Undoable.
@@ -986,11 +1015,14 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	var saved_nodes = utils.clone(selected_nodes),
 	    saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments),
 	    saved_reactions = utils.clone(reactions),
-	    delete_and_draw = function(nodes, reactions, segment_objs) {
+	    saved_text_labels = utils.clone(selected_text_labels),
+	    delete_and_draw = function(nodes, reactions, segment_objs, 
+				       selected_text_labels) {
 		// delete nodes, segments, and reactions with no segments
   		this.delete_node_data(Object.keys(selected_nodes));
 		this.delete_segment_data(segment_objs);
 		this.delete_reaction_data(Object.keys(reactions));	   
+		this.delete_text_label_data(Object.keys(selected_text_labels));
 
 		// apply the reaction and node data
 		if (this.has_reaction_data()) 
@@ -999,12 +1031,12 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 		    this.apply_metabolite_data_domain();
 
 		// redraw
-		// TODO just redraw these nodes and segments
+		// TODO just redraw these nodes, segments, and labels
 		this.draw_everything();
 	    }.bind(this);
 
 	// delete
-	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
+	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments, selected_text_labels);
 
 	// add to undo/redo stack
 	this.undo_stack.push(function() {
@@ -1049,6 +1081,12 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 		this.draw_these_nodes(Object.keys(saved_nodes));
 	    }
 
+    	    // redraw the saved text_labels
+    	    utils.extend(this.text_labels, saved_text_labels);
+    	    this.draw_these_text_labels(Object.keys(saved_text_labels));
+    	    // copy text_labels to re-delete
+    	    selected_text_labels = utils.clone(saved_text_labels);
+
 	    // copy nodes to re-delete
 	    selected_nodes = utils.clone(saved_nodes);
 	    segment_objs_w_segments = utils.clone(saved_segment_objs_w_segments);
@@ -1056,41 +1094,11 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	}.bind(this), function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
-	    delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
+	    delete_and_draw(selected_nodes, reactions, segment_objs_w_segments, 
+			    selected_text_labels);
 	}.bind(this));
     }
-    function delete_text_labels(selected_text_labels) {
-	/** Delete the text_labels.
 
-	 Undoable.
-
-	 */
-	// copy text_labels to undelete
-	var saved_text_labels = utils.clone(selected_text_labels),
-	    self = this,
-	    delete_and_draw = function(text_labels) {
-		// delete text_labels, segments, and reactions with no segments
-  		self.delete_text_label_data(Object.keys(selected_text_labels));
-		// redraw
-		// TODO just redraw these text_labels
-		self.draw_everything();
-	    };
-
-	// delete
-	delete_and_draw(selected_text_labels);
-
-	// add to undo/redo stack
-	this.undo_stack.push(function() { // undo
-	    // redraw the saved text_labels, reactions, and segments
-	    utils.extend(self.text_labels, saved_text_labels);
-	    self.draw_these_text_labels(Object.keys(saved_text_labels));
-	    // copy text_labels to re-delete
-	    selected_text_labels = utils.clone(saved_text_labels);
-	}, function () { // redo
-	    // clone the text_labels
-	    delete_and_draw(selected_text_labels);
-	});
-    }
     function delete_node_data(node_ids) {
 	/** Delete nodes, and remove from search index.
 	 */
@@ -1103,6 +1111,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    delete this.nodes[node_id];
 	}.bind(this));
     }
+
     function delete_segment_data(segment_objs) {
 	/** Delete segments, and update connected_segments in nodes. Also
 	 deletes any reactions with 0 segments.
@@ -1460,6 +1469,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	this.draw_these_reactions(reactions_to_draw);
 	// 7. select the primary node
 	this.select_metabolite_with_id(primary_node_id);
+	return null;
     }
     function make_selected_node_primary() {
 	var selected_nodes = this.get_selected_nodes(),

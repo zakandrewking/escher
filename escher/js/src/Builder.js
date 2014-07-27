@@ -371,8 +371,12 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  text: "Make primary metabolite (p)" })
 		.button({ key: keys.cycle_primary,
 			  text: "Cycle primary metabolite (c)" })
+		.button({ key: keys.select_all,
+			  text: "Select all (Ctrl a)" })
 		.button({ key: keys.select_none,
-			  text: "Select none (Ctrl Shift a)" });
+			  text: "Select none (Ctrl Shift a)" })
+		.button({ key: keys.invert_selection,
+			  text: "Invert selection" });
 	} else {
 	    edit_menu.button({ key: keys.view_mode,
 			       id: 'view-mode-menu-button',
@@ -672,9 +676,11 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		redo: { key: 90, modifiers: { control: true, shift: true },
 			target: map.undo_stack,
 			fn: map.undo_stack.redo },
+		select_all: { key: 65, modifiers: { control: true }, // Ctrl Shift a
+			       fn: map.select_all.bind(map) },
 		select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
-			       target: map,
-			       fn: map.select_none },
+			       fn: map.select_none.bind(map) },
+		invert_selection: { fn: map.invert_selection.bind(map) },
 		show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
 				 fn: settings_page.toggle.bind(settings_page) }
 	    });
