@@ -32,17 +32,8 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	    delete this.metabolites[the_id].id;
 	}
 
-	// get cofactors if preset
-	if ('cofactors' in model_data) {
-	    if (model_data.cofactors instanceof Array) {
-		this.cofactors = model_data.cofactors;
-	    } else {
-		console.warn('model_data.cofactors should be an array. Ignoring it');
-		this.cofactors = [];
-	    }
-	} else {
-	    this.cofactors = [];
-	}
+	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
+			  'gdp', 'h'];
     }
 
     function apply_reaction_data(reaction_data, styles) {

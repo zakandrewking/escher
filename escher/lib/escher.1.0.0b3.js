@@ -1326,412 +1326,6 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
     }
 });
 
-/**
- * complete.ly 1.0.0
- * MIT Licensing
- * Copyright (c) 2013 Lorenzo Puccetti
- * 
- * This Software shall be used for doing good things, not bad things.
- * 
-**/  
-define('lib/complete.ly',[],function() {
-return function(container, config) {
-    config = config || {};
-    config.fontSize =                       config.fontSize   || '16px';
-    config.fontFamily =                     config.fontFamily || 'sans-serif';
-    config.promptInnerHTML =                config.promptInnerHTML || ''; 
-    config.color =                          config.color || '#333';
-    config.hintColor =                      config.hintColor || '#aaa';
-    config.backgroundColor =                config.backgroundColor || '#fff';
-    config.dropDownBorderColor =            config.dropDownBorderColor || '#aaa';
-    config.dropDownZIndex =                 config.dropDownZIndex || '100'; // to ensure we are in front of everybody
-    config.dropDownOnHoverBackgroundColor = config.dropDownOnHoverBackgroundColor || '#ddd';
-    
-    var txtInput = document.createElement('input');
-    txtInput.type ='text';
-    txtInput.spellcheck = false; 
-    txtInput.style.fontSize =        config.fontSize;
-    txtInput.style.fontFamily =      config.fontFamily;
-    txtInput.style.color =           config.color;
-    txtInput.style.backgroundColor = config.backgroundColor;
-    txtInput.style.width = '100%';
-    txtInput.style.outline = '0';
-    txtInput.style.border =  '0';
-    txtInput.style.margin =  '0';
-    txtInput.style.padding = '0';
-    
-    var txtHint = txtInput.cloneNode(); 
-    txtHint.disabled='';        
-    txtHint.style.position = 'absolute';
-    txtHint.style.top =  '0';
-    txtHint.style.left = '0';
-    txtHint.style.borderColor = 'transparent';
-    txtHint.style.boxShadow =   'none';
-    txtHint.style.color = config.hintColor;
-    
-    txtInput.style.backgroundColor ='transparent';
-    txtInput.style.verticalAlign = 'top';
-    txtInput.style.position = 'relative';
-    
-    var wrapper = document.createElement('div');
-    wrapper.style.position = 'relative';
-    wrapper.style.outline = '0';
-    wrapper.style.border =  '0';
-    wrapper.style.margin =  '0';
-    wrapper.style.padding = '0';
-    
-    var prompt = document.createElement('div');
-    prompt.style.position = 'absolute';
-    prompt.style.outline = '0';
-    prompt.style.margin =  '0';
-    prompt.style.padding = '0';
-    prompt.style.border =  '0';
-    prompt.style.fontSize =   config.fontSize;
-    prompt.style.fontFamily = config.fontFamily;
-    prompt.style.color =           config.color;
-    prompt.style.backgroundColor = config.backgroundColor;
-    prompt.style.top = '0';
-    prompt.style.left = '0';
-    prompt.style.overflow = 'hidden';
-    prompt.innerHTML = config.promptInnerHTML;
-    prompt.style.background = 'transparent';
-    if (document.body === undefined) {
-        throw 'document.body is undefined. The library was wired up incorrectly.';
-    }
-    document.body.appendChild(prompt);            
-    var w = prompt.getBoundingClientRect().right; // works out the width of the prompt.
-    wrapper.appendChild(prompt);
-    prompt.style.visibility = 'visible';
-    prompt.style.left = '-'+w+'px';
-    wrapper.style.marginLeft= w+'px';
-    
-    wrapper.appendChild(txtHint);
-    wrapper.appendChild(txtInput);
-    
-    var dropDown = document.createElement('div');
-    dropDown.style.position = 'absolute';
-    dropDown.style.visibility = 'hidden';
-    dropDown.style.outline = '0';
-    dropDown.style.margin =  '0';
-    dropDown.style.padding = '0';  
-    dropDown.style.textAlign = 'left';
-    dropDown.style.fontSize =   config.fontSize;      
-    dropDown.style.fontFamily = config.fontFamily;
-    dropDown.style.backgroundColor = config.backgroundColor;
-    dropDown.style.zIndex = config.dropDownZIndex; 
-    dropDown.style.cursor = 'default';
-    dropDown.style.borderStyle = 'solid';
-    dropDown.style.borderWidth = '1px';
-    dropDown.style.borderColor = config.dropDownBorderColor;
-    dropDown.style.overflowX= 'hidden';
-    dropDown.style.whiteSpace = 'pre';
-    dropDown.style.overflowY = 'scroll';  // note: this might be ugly when the scrollbar is not required. however in this way the width of the dropDown takes into account
-    
-    
-    var createDropDownController = function(elem) {
-        var rows = [];
-        var ix = 0;
-        var oldIndex = -1;
-        
-        var onMouseOver =  function() { this.style.outline = '1px solid #ddd'; }
-        var onMouseOut =   function() { this.style.outline = '0'; }
-        var onMouseDown =  function() { p.hide(); p.onmouseselection(this.__hint); }
-        
-        var p = {
-            hide :  function() { elem.style.visibility = 'hidden'; }, 
-            refresh : function(token, array) {
-                elem.style.visibility = 'hidden';
-                ix = 0;
-                elem.innerHTML ='';
-                var vph = (window.innerHeight || document.documentElement.clientHeight);
-                var rect = elem.parentNode.getBoundingClientRect();
-                var distanceToTop = rect.top - 6;                        // heuristic give 6px 
-                var distanceToBottom = vph - rect.bottom -6;  // distance from the browser border.
-                
-                rows = [];
-                for (var i=0;i<array.length;i++) {
-                    if (array[i].indexOf(token)!==0) { continue; }
-                    var divRow =document.createElement('div');
-                    divRow.style.color = config.color;
-                    divRow.onmouseover = onMouseOver; 
-                    divRow.onmouseout =  onMouseOut;
-                    divRow.onmousedown = onMouseDown; 
-                    divRow.__hint =    array[i];
-                    divRow.innerHTML = token+'<b>'+array[i].substring(token.length)+'</b>';
-                    rows.push(divRow);
-                    elem.appendChild(divRow);
-                }
-                if (rows.length===0) {
-                    return; // nothing to show.
-                }
-                if (rows.length===1 && token === rows[0].__hint) {
-                    return; // do not show the dropDown if it has only one element which matches what we have just displayed.
-                }
-                
-                if (rows.length<2) return; 
-                p.highlight(0);
-                
-                if (distanceToTop > distanceToBottom*3) {        // Heuristic (only when the distance to the to top is 4 times more than distance to the bottom
-                    elem.style.maxHeight =  distanceToTop+'px';  // we display the dropDown on the top of the input text
-                    elem.style.top ='';
-                    elem.style.bottom ='100%';
-                } else {
-                    elem.style.top = '100%';  
-                    elem.style.bottom = '';
-                    elem.style.maxHeight =  distanceToBottom+'px';
-                }
-                elem.style.visibility = 'visible';
-            },
-            highlight : function(index) {
-                if (oldIndex !=-1 && rows[oldIndex]) { 
-                    rows[oldIndex].style.backgroundColor = config.backgroundColor;
-                }
-                rows[index].style.backgroundColor = config.dropDownOnHoverBackgroundColor; // <-- should be config
-                oldIndex = index;
-            },
-            move : function(step) { // moves the selection either up or down (unless it's not possible) step is either +1 or -1.
-                if (elem.style.visibility === 'hidden')             return ''; // nothing to move if there is no dropDown. (this happens if the user hits escape and then down or up)
-                if (ix+step === -1 || ix+step === rows.length) return rows[ix].__hint; // NO CIRCULAR SCROLLING. 
-                ix+=step; 
-                p.highlight(ix);
-                return rows[ix].__hint;//txtShadow.value = uRows[uIndex].__hint ;
-            },
-            onmouseselection : function() {} // it will be overwritten. 
-        };
-        return p;
-    }
-    
-    var dropDownController = createDropDownController(dropDown);
-    
-    dropDownController.onmouseselection = function(text) {
-        txtInput.value = txtHint.value = leftSide+text; 
-        rs.onChange(txtInput.value); // <-- forcing it.
-        registerOnTextChangeOldValue = txtInput.value; // <-- ensure that mouse down will not show the dropDown now.
-        setTimeout(function() { txtInput.focus(); },0);  // <-- I need to do this for IE 
-    }
-    
-    wrapper.appendChild(dropDown);
-    container.appendChild(wrapper);
-    
-    var spacer; 
-    var leftSide; // <-- it will contain the leftSide part of the textfield (the bit that was already autocompleted)
-    
-    
-    function calculateWidthForText(text) {
-        if (spacer === undefined) { // on first call only.
-            spacer = document.createElement('span'); 
-            spacer.style.visibility = 'hidden';
-            spacer.style.position = 'fixed';
-            spacer.style.outline = '0';
-            spacer.style.margin =  '0';
-            spacer.style.padding = '0';
-            spacer.style.border =  '0';
-            spacer.style.left = '0';
-            spacer.style.whiteSpace = 'pre';
-            spacer.style.fontSize =   config.fontSize;
-            spacer.style.fontFamily = config.fontFamily;
-            spacer.style.fontWeight = 'normal';
-            document.body.appendChild(spacer);    
-        }        
-        
-        // Used to encode an HTML string into a plain text.
-        // taken from http://stackoverflow.com/questions/1219860/javascript-jquery-html-encoding
-        spacer.innerHTML = String(text).replace(/&/g, '&amp;')
-                                       .replace(/"/g, '&quot;')
-                                       .replace(/'/g, '&#39;')
-                                       .replace(/</g, '&lt;')
-                                       .replace(/>/g, '&gt;');
-        return spacer.getBoundingClientRect().right;
-    }
-    
-    
-    var rs = { 
-        onArrowDown : function() {},               // defaults to no action.
-        onArrowUp :   function() {},               // defaults to no action.
-        onEnter :     function() {},               // defaults to no action.
-        onTab :       function() {},               // defaults to no action.
-        onChange:     function() { rs.repaint() }, // defaults to repainting.
-        startFrom:    0,
-        options:      [],
-        wrapper : wrapper,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
-        input :  txtInput,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations) 
-        hint  :  txtHint,       // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
-        dropDown :  dropDown,         // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
-        prompt : prompt,
-        setText : function(text) {
-            txtHint.value = text;
-            txtInput.value = text; 
-        },
-        getText : function() {
-        	return txtInput.value; 
-        },
-        hideDropDown : function() {
-        	dropDownController.hide();
-        },
-        repaint : function() {
-            var text = txtInput.value;
-            var startFrom =  rs.startFrom; 
-            var options =    rs.options;
-            var optionsLength = options.length; 
-            
-            // breaking text in leftSide and token.
-            var token = text.substring(startFrom);
-            leftSide =  text.substring(0,startFrom);
-            
-            // updating the hint. 
-            txtHint.value ='';
-            for (var i=0;i<optionsLength;i++) {
-                var opt = options[i];
-                if (opt.indexOf(token)===0) {         // <-- how about upperCase vs. lowercase
-                    txtHint.value = leftSide +opt;
-                    break;
-                }
-            }
-            
-            // moving the dropDown and refreshing it.
-            dropDown.style.left = calculateWidthForText(leftSide)+'px';
-            dropDownController.refresh(token, rs.options);
-        }
-    };
-    
-    var registerOnTextChangeOldValue;
-
-    /**
-     * Register a callback function to detect changes to the content of the input-type-text.
-     * Those changes are typically followed by user's action: a key-stroke event but sometimes it might be a mouse click.
-    **/
-    var registerOnTextChange = function(txt, callback) {
-        registerOnTextChangeOldValue = txt.value;
-        var handler = function() {
-            var value = txt.value;
-            if (registerOnTextChangeOldValue !== value) {
-                registerOnTextChangeOldValue = value;
-                callback(value);
-            }
-        };
-
-        //  
-        // For user's actions, we listen to both input events and key up events
-        // It appears that input events are not enough so we defensively listen to key up events too.
-        // source: http://help.dottoro.com/ljhxklln.php
-        //
-        // The cost of listening to three sources should be negligible as the handler will invoke callback function
-        // only if the text.value was effectively changed. 
-        //  
-        // 
-        if (txt.addEventListener) {
-            txt.addEventListener("input",  handler, false);
-            txt.addEventListener('keyup',  handler, false);
-            txt.addEventListener('change', handler, false);
-        } else { // is this a fair assumption: that attachEvent will exist ?
-            txt.attachEvent('oninput', handler); // IE<9
-            txt.attachEvent('onkeyup', handler); // IE<9
-            txt.attachEvent('onchange',handler); // IE<9
-        }
-    };
-    
-    
-    registerOnTextChange(txtInput,function(text) { // note the function needs to be wrapped as API-users will define their onChange
-        rs.onChange(text);
-    });
-    
-    
-    var keyDownHandler = function(e) {
-        e = e || window.event;
-        var keyCode = e.keyCode;
-        
-        if (keyCode == 33) { return; } // page up (do nothing)
-        if (keyCode == 34) { return; } // page down (do nothing);
-        
-        // if (keyCode == 27) { //escape
-        //     dropDownController.hide();
-        //     txtHint.value = txtInput.value; // ensure that no hint is left.
-        //     txtInput.focus(); 
-        //     return; 
-        // }
-        
-        if (keyCode == 39 || keyCode == 35 || keyCode == 9) { // right,  end, tab  (autocomplete triggered)
-        	if (keyCode == 9) { // for tabs we need to ensure that we override the default behaviour: move to the next focusable HTML-element 
-           	    e.preventDefault();
-                e.stopPropagation();
-                if (txtHint.value.length == 0) {
-                	rs.onTab(); // tab was called with no action.
-                	            // users might want to re-enable its default behaviour or handle the call somehow.
-                }
-            }
-            if (txtHint.value.length > 0) { // if there is a hint
-                dropDownController.hide();
-                txtInput.value = txtHint.value;
-                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
-                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
-                                                          // for example imagine the array contains the following words: bee, beef, beetroot
-                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
-                if (hasTextChanged) {
-                    rs.onChange(txtInput.value); // <-- forcing it.
-                }
-            }
-            return; 
-        }
-        
-        if (keyCode == 13) {       // enter  (autocomplete triggered)
-            if (txtHint.value.length == 0) { // if there is a hint
-                rs.onEnter();
-            } else {
-                var wasDropDownHidden = (dropDown.style.visibility == 'hidden');
-                dropDownController.hide();
-                
-                if (wasDropDownHidden) {
-                    txtHint.value = txtInput.value; // ensure that no hint is left.
-                    txtInput.focus();
-                    rs.onEnter();    
-                    return; 
-                }
-                
-                txtInput.value = txtHint.value;
-                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
-                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
-                                                          // for example imagine the array contains the following words: bee, beef, beetroot
-                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
-                if (hasTextChanged) {
-                    rs.onChange(txtInput.value); // <-- forcing it.
-                }
-                
-            }
-            return; 
-        }
-        
-        if (keyCode == 40) {     // down
-            var m = dropDownController.move(+1);
-            if (m == '') { rs.onArrowDown(); }
-            txtHint.value = leftSide+m;
-            return; 
-        } 
-            
-        if (keyCode == 38 ) {    // up
-            var m = dropDownController.move(-1);
-            if (m == '') { rs.onArrowUp(); }
-            txtHint.value = leftSide+m;
-            e.preventDefault();
-            e.stopPropagation();
-            return; 
-        }
-            
-        // it's important to reset the txtHint on key down.
-        // think: user presses a letter (e.g. 'x') and never releases... you get (xxxxxxxxxxxxxxxxx)
-        // and you would see still the hint
-        txtHint.value =''; // resets the txtHint. (it might be updated onKeyUp)
-        
-    };
-    
-    if (txtInput.addEventListener) {
-        txtInput.addEventListener("keydown",  keyDownHandler, false);
-    } else { // is this a fair assumption: that attachEvent will exist ?
-        txtInput.attachEvent('onkeydown', keyDownHandler); // IE<9
-    }
-    return rs;
-}
-});
-
 define('data_styles',["utils"], function(utils) {
     return { import_and_check: import_and_check,
 	     text_for_data: text_for_data,
@@ -1940,8 +1534,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	 */
 	
         sel.append('text')
-            .attr('class', 'reaction-label label')
-	    .style('cursor', 'default');
+            .attr('class', 'reaction-label label');
 	    // .on('mouseover', function(d) {
 	    // 	d3.select(this).style('stroke-width', String(3)+'px');
 	    // 	d3.select(this.parentNode)
@@ -2276,8 +1869,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 
         g.filter(function(d) { return d.node_type=='metabolite'; })
 	    .append('text')
-	    .attr('class', 'node-label label')
-	    .style('cursor', 'default');
+	    .attr('class', 'node-label label');
     }
 
     function update_node(update_selection, scale, has_metabolite_data, metabolite_data_styles,
@@ -2343,9 +1935,10 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
     function create_text_label(enter_selection) {
 	utils.check_undefined(arguments, ['enter_selection']);
 
-	enter_selection.append('text')
-	    .attr('class', 'text-label label')
-	    .style('cursor', 'default')
+	enter_selection.append('g')
+	    .attr('class', 'text-label')
+	    .append('text')
+	    .attr('class', 'label')
 	    .text(function(d) { return d.text; });
     }
 
@@ -2353,6 +1946,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	utils.check_undefined(arguments, ['update_selection', 'label_click', 'label_drag_behavior']);
 
         update_selection
+	    .select('.label')
             .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
 	    .on('click', label_click)
 	    .call(turn_off_drag)
@@ -2832,9 +2426,12 @@ define('Behavior',["utils", "build"], function(utils, build) {
 			   toggle_rotation_mode: toggle_rotation_mode,
 			   turn_everything_on: turn_everything_on,
 			   turn_everything_off: turn_everything_off,
+			   // toggle
 			   toggle_selectable_click: toggle_selectable_click,
+			   toggle_text_label_edit: toggle_text_label_edit,
 			   toggle_selectable_drag: toggle_selectable_drag,
 			   toggle_label_drag: toggle_label_drag,
+			   // get drag behaviors
 			   get_selectable_drag: get_selectable_drag,
 			   get_bezier_drag: get_bezier_drag,
 			   get_reaction_label_drag: get_reaction_label_drag,
@@ -2856,26 +2453,27 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	this.rotation_mode_enabled = false;
 	this.rotation_drag = d3.behavior.drag();
 
-	// init empty
+	// behaviors to be applied
 	this.selectable_click = null;
+	this.text_label_click = null;
+	this.selectable_drag = this.empty_behavior;
 	this.node_mouseover = null;
 	this.node_mouseout = null;
-	this.selectable_drag = this.empty_behavior;
 	this.bezier_drag = this.empty_behavior;
 	this.reaction_label_drag = this.empty_behavior;
 	this.node_label_drag = this.empty_behavior;
 	this.turn_everything_on();
     }
     function turn_everything_on() {
-	/** Toggle everything except rotation mode.
-
+	/** Toggle everything except rotation mode and text mode.
+ 
 	 */
 	this.toggle_selectable_click(true);
 	this.toggle_selectable_drag(true);
 	this.toggle_label_drag(true);
     }
     function turn_everything_off() {
-	/** Toggle everything except rotation mode.
+	/** Toggle everything except rotation mode and text mode.
 
 	 */
 	this.toggle_selectable_click(false);
@@ -3044,6 +2642,37 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    this.node_mouseout = null;
 	    this.map.sel.select('#nodes')
 		.selectAll('.node-circle').style('stroke-width', null);
+	}
+    }
+
+    function toggle_text_label_edit(on_off) {
+	/** With no argument, toggle the text edit on click on/off.
+
+	 Pass in a boolean argument to set the on/off state.
+
+	 The backup state is equal to selectable_click.
+
+	 */
+	if (on_off===undefined) on_off = this.text_edit_click==null;
+	if (on_off) {
+	    var map = this.map,
+		selection = this.selection;
+	    this.text_label_click = function() {
+		if (d3.event.defaultPrevented) return; // click suppressed
+		// run the callback
+		var coords_a = d3.transform(d3.select(this).attr('transform')).translate,
+		    coords = {x: coords_a[0], y: coords_a[1]};
+		map.callback_manager.run('edit_text_label', coords);
+		d3.event.stopPropagation();
+	    };
+	    this.map.sel.select('#text-labels')
+		.selectAll('.label')
+		.classed('edit-text-cursor', true);
+	} else {
+	    this.text_label_click = this.selectable_click;
+	    this.map.sel.select('#text-labels')
+		.selectAll('.label')
+		.classed('edit-text-cursor', false);
 	}
     }
 
@@ -7702,7 +7331,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	    node_drag_behavior = this.behavior.selectable_drag,
 	    reaction_label_drag = this.behavior.reaction_label_drag,
 	    node_label_drag = this.behavior.node_label_drag,
-	    text_label_click = this.behavior.selectable_click,
+	    text_label_click = this.behavior.text_label_click,
 	    text_label_drag = this.behavior.selectable_drag,
 	    has_reaction_data = this.has_reaction_data(),
 	    reaction_data_styles = this.settings.data_styles['reaction'],
@@ -7853,7 +7482,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     }
     function draw_these_text_labels(text_label_ids) {
 	var text_labels = this.text_labels,
-	    text_label_click = this.behavior.selectable_click,
+	    text_label_click = this.behavior.text_label_click,
 	    text_label_drag = this.behavior.selectable_drag;
 
 	// find text labels for text_label_ids
@@ -8946,6 +8575,472 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     }
 });
 
+define('PlacedDiv',['utils', 'Map'], function(utils, Map) {
+    /** A container to position an html div to match the coordinates of a SVG element.
+
+     */
+
+    var PlacedDiv = utils.make_class();
+    // instance methods
+    PlacedDiv.prototype = { init: init,
+			    show: show,
+			    hide: hide,
+			    is_visible: is_visible,
+			    place: place };
+    return PlacedDiv;
+
+    // definitions
+    function init(div, map) {
+	// make the input box
+	this.div = div;
+
+	if (map instanceof Map) {
+	    this.map = map;
+	} else {
+	    console.error('Cannot set the map. It is not an instance of builder/Map');
+	}
+    }
+
+    function show() {
+	this.div.style('display', null);
+    }
+
+    function hide() {
+	this.div.style('display', 'none');
+    }
+
+    function is_visible() {
+	return this.div.style('display') != 'none';
+    }
+
+    function place(coords) {
+	/** Position the html div to match the given SVG coordinates.
+
+	 */
+	// move the new input
+	var d = {x: 240, y: 0},
+	    window_translate = this.map.zoom_container.window_translate,
+	    window_scale = this.map.zoom_container.window_scale,
+	    map_size = this.map.get_size(),
+	    left = Math.max(20,
+			    Math.min(map_size.width - 270,
+				     (window_scale * coords.x + window_translate.x - d.x))),
+	    top = Math.max(20,
+			   Math.min(map_size.height - 40,
+				    (window_scale * coords.y + window_translate.y - d.y)));
+	this.div.style('position', 'absolute')
+	    .style('display', 'block')
+	    .style('left', left+'px')
+	    .style('top', top+'px');
+    }
+});
+
+/**
+ * complete.ly 1.0.0
+ * MIT Licensing
+ * Copyright (c) 2013 Lorenzo Puccetti
+ * 
+ * This Software shall be used for doing good things, not bad things.
+ * 
+**/  
+define('lib/complete.ly',[],function() {
+return function(container, config) {
+    config = config || {};
+    config.fontSize =                       config.fontSize   || '16px';
+    config.fontFamily =                     config.fontFamily || 'sans-serif';
+    config.promptInnerHTML =                config.promptInnerHTML || ''; 
+    config.color =                          config.color || '#333';
+    config.hintColor =                      config.hintColor || '#aaa';
+    config.backgroundColor =                config.backgroundColor || '#fff';
+    config.dropDownBorderColor =            config.dropDownBorderColor || '#aaa';
+    config.dropDownZIndex =                 config.dropDownZIndex || '100'; // to ensure we are in front of everybody
+    config.dropDownOnHoverBackgroundColor = config.dropDownOnHoverBackgroundColor || '#ddd';
+    
+    var txtInput = document.createElement('input');
+    txtInput.type ='text';
+    txtInput.spellcheck = false; 
+    txtInput.style.fontSize =        config.fontSize;
+    txtInput.style.fontFamily =      config.fontFamily;
+    txtInput.style.color =           config.color;
+    txtInput.style.backgroundColor = config.backgroundColor;
+    txtInput.style.width = '100%';
+    txtInput.style.outline = '0';
+    txtInput.style.border =  '0';
+    txtInput.style.margin =  '0';
+    txtInput.style.padding = '0';
+    
+    var txtHint = txtInput.cloneNode(); 
+    txtHint.disabled='';        
+    txtHint.style.position = 'absolute';
+    txtHint.style.top =  '0';
+    txtHint.style.left = '0';
+    txtHint.style.borderColor = 'transparent';
+    txtHint.style.boxShadow =   'none';
+    txtHint.style.color = config.hintColor;
+    
+    txtInput.style.backgroundColor ='transparent';
+    txtInput.style.verticalAlign = 'top';
+    txtInput.style.position = 'relative';
+    
+    var wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    wrapper.style.outline = '0';
+    wrapper.style.border =  '0';
+    wrapper.style.margin =  '0';
+    wrapper.style.padding = '0';
+    
+    var prompt = document.createElement('div');
+    prompt.style.position = 'absolute';
+    prompt.style.outline = '0';
+    prompt.style.margin =  '0';
+    prompt.style.padding = '0';
+    prompt.style.border =  '0';
+    prompt.style.fontSize =   config.fontSize;
+    prompt.style.fontFamily = config.fontFamily;
+    prompt.style.color =           config.color;
+    prompt.style.backgroundColor = config.backgroundColor;
+    prompt.style.top = '0';
+    prompt.style.left = '0';
+    prompt.style.overflow = 'hidden';
+    prompt.innerHTML = config.promptInnerHTML;
+    prompt.style.background = 'transparent';
+    if (document.body === undefined) {
+        throw 'document.body is undefined. The library was wired up incorrectly.';
+    }
+    document.body.appendChild(prompt);            
+    var w = prompt.getBoundingClientRect().right; // works out the width of the prompt.
+    wrapper.appendChild(prompt);
+    prompt.style.visibility = 'visible';
+    prompt.style.left = '-'+w+'px';
+    wrapper.style.marginLeft= w+'px';
+    
+    wrapper.appendChild(txtHint);
+    wrapper.appendChild(txtInput);
+    
+    var dropDown = document.createElement('div');
+    dropDown.style.position = 'absolute';
+    dropDown.style.visibility = 'hidden';
+    dropDown.style.outline = '0';
+    dropDown.style.margin =  '0';
+    dropDown.style.padding = '0';  
+    dropDown.style.textAlign = 'left';
+    dropDown.style.fontSize =   config.fontSize;      
+    dropDown.style.fontFamily = config.fontFamily;
+    dropDown.style.backgroundColor = config.backgroundColor;
+    dropDown.style.zIndex = config.dropDownZIndex; 
+    dropDown.style.cursor = 'default';
+    dropDown.style.borderStyle = 'solid';
+    dropDown.style.borderWidth = '1px';
+    dropDown.style.borderColor = config.dropDownBorderColor;
+    dropDown.style.overflowX= 'hidden';
+    dropDown.style.whiteSpace = 'pre';
+    dropDown.style.overflowY = 'scroll';  // note: this might be ugly when the scrollbar is not required. however in this way the width of the dropDown takes into account
+    
+    
+    var createDropDownController = function(elem) {
+        var rows = [];
+        var ix = 0;
+        var oldIndex = -1;
+        
+        var onMouseOver =  function() { this.style.outline = '1px solid #ddd'; }
+        var onMouseOut =   function() { this.style.outline = '0'; }
+        var onMouseDown =  function() { p.hide(); p.onmouseselection(this.__hint); }
+        
+        var p = {
+            hide :  function() { elem.style.visibility = 'hidden'; }, 
+            refresh : function(token, array) {
+                elem.style.visibility = 'hidden';
+                ix = 0;
+                elem.innerHTML ='';
+                var vph = (window.innerHeight || document.documentElement.clientHeight);
+                var rect = elem.parentNode.getBoundingClientRect();
+                var distanceToTop = rect.top - 6;                        // heuristic give 6px 
+                var distanceToBottom = vph - rect.bottom -6;  // distance from the browser border.
+                
+                rows = [];
+                for (var i=0;i<array.length;i++) {
+                    if (array[i].indexOf(token)!==0) { continue; }
+                    var divRow =document.createElement('div');
+                    divRow.style.color = config.color;
+                    divRow.onmouseover = onMouseOver; 
+                    divRow.onmouseout =  onMouseOut;
+                    divRow.onmousedown = onMouseDown; 
+                    divRow.__hint =    array[i];
+                    divRow.innerHTML = token+'<b>'+array[i].substring(token.length)+'</b>';
+                    rows.push(divRow);
+                    elem.appendChild(divRow);
+                }
+                if (rows.length===0) {
+                    return; // nothing to show.
+                }
+                if (rows.length===1 && token === rows[0].__hint) {
+                    return; // do not show the dropDown if it has only one element which matches what we have just displayed.
+                }
+                
+                if (rows.length<2) return; 
+                p.highlight(0);
+                
+                if (distanceToTop > distanceToBottom*3) {        // Heuristic (only when the distance to the to top is 4 times more than distance to the bottom
+                    elem.style.maxHeight =  distanceToTop+'px';  // we display the dropDown on the top of the input text
+                    elem.style.top ='';
+                    elem.style.bottom ='100%';
+                } else {
+                    elem.style.top = '100%';  
+                    elem.style.bottom = '';
+                    elem.style.maxHeight =  distanceToBottom+'px';
+                }
+                elem.style.visibility = 'visible';
+            },
+            highlight : function(index) {
+                if (oldIndex !=-1 && rows[oldIndex]) { 
+                    rows[oldIndex].style.backgroundColor = config.backgroundColor;
+                }
+                rows[index].style.backgroundColor = config.dropDownOnHoverBackgroundColor; // <-- should be config
+                oldIndex = index;
+            },
+            move : function(step) { // moves the selection either up or down (unless it's not possible) step is either +1 or -1.
+                if (elem.style.visibility === 'hidden')             return ''; // nothing to move if there is no dropDown. (this happens if the user hits escape and then down or up)
+                if (ix+step === -1 || ix+step === rows.length) return rows[ix].__hint; // NO CIRCULAR SCROLLING. 
+                ix+=step; 
+                p.highlight(ix);
+                return rows[ix].__hint;//txtShadow.value = uRows[uIndex].__hint ;
+            },
+            onmouseselection : function() {} // it will be overwritten. 
+        };
+        return p;
+    }
+    
+    var dropDownController = createDropDownController(dropDown);
+    
+    dropDownController.onmouseselection = function(text) {
+        txtInput.value = txtHint.value = leftSide+text; 
+        rs.onChange(txtInput.value); // <-- forcing it.
+        registerOnTextChangeOldValue = txtInput.value; // <-- ensure that mouse down will not show the dropDown now.
+        setTimeout(function() { txtInput.focus(); },0);  // <-- I need to do this for IE 
+    }
+    
+    wrapper.appendChild(dropDown);
+    container.appendChild(wrapper);
+    
+    var spacer; 
+    var leftSide; // <-- it will contain the leftSide part of the textfield (the bit that was already autocompleted)
+    
+    
+    function calculateWidthForText(text) {
+        if (spacer === undefined) { // on first call only.
+            spacer = document.createElement('span'); 
+            spacer.style.visibility = 'hidden';
+            spacer.style.position = 'fixed';
+            spacer.style.outline = '0';
+            spacer.style.margin =  '0';
+            spacer.style.padding = '0';
+            spacer.style.border =  '0';
+            spacer.style.left = '0';
+            spacer.style.whiteSpace = 'pre';
+            spacer.style.fontSize =   config.fontSize;
+            spacer.style.fontFamily = config.fontFamily;
+            spacer.style.fontWeight = 'normal';
+            document.body.appendChild(spacer);    
+        }        
+        
+        // Used to encode an HTML string into a plain text.
+        // taken from http://stackoverflow.com/questions/1219860/javascript-jquery-html-encoding
+        spacer.innerHTML = String(text).replace(/&/g, '&amp;')
+                                       .replace(/"/g, '&quot;')
+                                       .replace(/'/g, '&#39;')
+                                       .replace(/</g, '&lt;')
+                                       .replace(/>/g, '&gt;');
+        return spacer.getBoundingClientRect().right;
+    }
+    
+    
+    var rs = { 
+        onArrowDown : function() {},               // defaults to no action.
+        onArrowUp :   function() {},               // defaults to no action.
+        onEnter :     function() {},               // defaults to no action.
+        onTab :       function() {},               // defaults to no action.
+        onChange:     function() { rs.repaint() }, // defaults to repainting.
+        startFrom:    0,
+        options:      [],
+        wrapper : wrapper,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        input :  txtInput,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations) 
+        hint  :  txtHint,       // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        dropDown :  dropDown,         // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        prompt : prompt,
+        setText : function(text) {
+            txtHint.value = text;
+            txtInput.value = text; 
+        },
+        getText : function() {
+        	return txtInput.value; 
+        },
+        hideDropDown : function() {
+        	dropDownController.hide();
+        },
+        repaint : function() {
+            var text = txtInput.value;
+            var startFrom =  rs.startFrom; 
+            var options =    rs.options;
+            var optionsLength = options.length; 
+            
+            // breaking text in leftSide and token.
+            var token = text.substring(startFrom);
+            leftSide =  text.substring(0,startFrom);
+            
+            // updating the hint. 
+            txtHint.value ='';
+            for (var i=0;i<optionsLength;i++) {
+                var opt = options[i];
+                if (opt.indexOf(token)===0) {         // <-- how about upperCase vs. lowercase
+                    txtHint.value = leftSide +opt;
+                    break;
+                }
+            }
+            
+            // moving the dropDown and refreshing it.
+            dropDown.style.left = calculateWidthForText(leftSide)+'px';
+            dropDownController.refresh(token, rs.options);
+        }
+    };
+    
+    var registerOnTextChangeOldValue;
+
+    /**
+     * Register a callback function to detect changes to the content of the input-type-text.
+     * Those changes are typically followed by user's action: a key-stroke event but sometimes it might be a mouse click.
+    **/
+    var registerOnTextChange = function(txt, callback) {
+        registerOnTextChangeOldValue = txt.value;
+        var handler = function() {
+            var value = txt.value;
+            if (registerOnTextChangeOldValue !== value) {
+                registerOnTextChangeOldValue = value;
+                callback(value);
+            }
+        };
+
+        //  
+        // For user's actions, we listen to both input events and key up events
+        // It appears that input events are not enough so we defensively listen to key up events too.
+        // source: http://help.dottoro.com/ljhxklln.php
+        //
+        // The cost of listening to three sources should be negligible as the handler will invoke callback function
+        // only if the text.value was effectively changed. 
+        //  
+        // 
+        if (txt.addEventListener) {
+            txt.addEventListener("input",  handler, false);
+            txt.addEventListener('keyup',  handler, false);
+            txt.addEventListener('change', handler, false);
+        } else { // is this a fair assumption: that attachEvent will exist ?
+            txt.attachEvent('oninput', handler); // IE<9
+            txt.attachEvent('onkeyup', handler); // IE<9
+            txt.attachEvent('onchange',handler); // IE<9
+        }
+    };
+    
+    
+    registerOnTextChange(txtInput,function(text) { // note the function needs to be wrapped as API-users will define their onChange
+        rs.onChange(text);
+    });
+    
+    
+    var keyDownHandler = function(e) {
+        e = e || window.event;
+        var keyCode = e.keyCode;
+        
+        if (keyCode == 33) { return; } // page up (do nothing)
+        if (keyCode == 34) { return; } // page down (do nothing);
+        
+        // if (keyCode == 27) { //escape
+        //     dropDownController.hide();
+        //     txtHint.value = txtInput.value; // ensure that no hint is left.
+        //     txtInput.focus(); 
+        //     return; 
+        // }
+        
+        if (keyCode == 39 || keyCode == 35 || keyCode == 9) { // right,  end, tab  (autocomplete triggered)
+        	if (keyCode == 9) { // for tabs we need to ensure that we override the default behaviour: move to the next focusable HTML-element 
+           	    e.preventDefault();
+                e.stopPropagation();
+                if (txtHint.value.length == 0) {
+                	rs.onTab(); // tab was called with no action.
+                	            // users might want to re-enable its default behaviour or handle the call somehow.
+                }
+            }
+            if (txtHint.value.length > 0) { // if there is a hint
+                dropDownController.hide();
+                txtInput.value = txtHint.value;
+                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
+                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
+                                                          // for example imagine the array contains the following words: bee, beef, beetroot
+                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
+                if (hasTextChanged) {
+                    rs.onChange(txtInput.value); // <-- forcing it.
+                }
+            }
+            return; 
+        }
+        
+        if (keyCode == 13) {       // enter  (autocomplete triggered)
+            if (txtHint.value.length == 0) { // if there is a hint
+                rs.onEnter();
+            } else {
+                var wasDropDownHidden = (dropDown.style.visibility == 'hidden');
+                dropDownController.hide();
+                
+                if (wasDropDownHidden) {
+                    txtHint.value = txtInput.value; // ensure that no hint is left.
+                    txtInput.focus();
+                    rs.onEnter();    
+                    return; 
+                }
+                
+                txtInput.value = txtHint.value;
+                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
+                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
+                                                          // for example imagine the array contains the following words: bee, beef, beetroot
+                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
+                if (hasTextChanged) {
+                    rs.onChange(txtInput.value); // <-- forcing it.
+                }
+                
+            }
+            return; 
+        }
+        
+        if (keyCode == 40) {     // down
+            var m = dropDownController.move(+1);
+            if (m == '') { rs.onArrowDown(); }
+            txtHint.value = leftSide+m;
+            return; 
+        } 
+            
+        if (keyCode == 38 ) {    // up
+            var m = dropDownController.move(-1);
+            if (m == '') { rs.onArrowUp(); }
+            txtHint.value = leftSide+m;
+            e.preventDefault();
+            e.stopPropagation();
+            return; 
+        }
+            
+        // it's important to reset the txtHint on key down.
+        // think: user presses a letter (e.g. 'x') and never releases... you get (xxxxxxxxxxxxxxxxx)
+        // and you would see still the hint
+        txtHint.value =''; // resets the txtHint. (it might be updated onKeyUp)
+        
+    };
+    
+    if (txtInput.addEventListener) {
+        txtInput.addEventListener("keydown",  keyDownHandler, false);
+    } else { // is this a fair assumption: that attachEvent will exist ?
+        txtInput.attachEvent('onkeydown', keyDownHandler); // IE<9
+    }
+    return rs;
+}
+});
+
 define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackManager) {
     /** ZoomContainer
 
@@ -9298,45 +9393,45 @@ define('DirectionArrow',["utils"], function(utils) {
     }
 });
 
-define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", "draw", "DirectionArrow"], function(utils, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow) {
+define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'CallbackManager', 'draw', 'DirectionArrow'], function(utils, PlacedDiv, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow) {
     /**
      */
 
-    var Input = utils.make_class();
+    var BuildInput = utils.make_class();
     // instance methods
-    Input.prototype = { init: init,
-			setup_map_callbacks: setup_map_callbacks,
-			setup_zoom_callbacks: setup_zoom_callbacks,
-			is_visible: is_visible,
-			toggle: toggle,
-			show_dropdown: show_dropdown,
-			hide_dropdown: hide_dropdown,
-			place_at_selected: place_at_selected,
-			place: place,
-			reload_at_selected: reload_at_selected,
-			reload: reload,
-			toggle_start_reaction_listener: toggle_start_reaction_listener,
-			hide_target: hide_target,
-			show_target: show_target };
+    BuildInput.prototype = { init: init,
+			     setup_map_callbacks: setup_map_callbacks,
+			     setup_zoom_callbacks: setup_zoom_callbacks,
+			     is_visible: is_visible,
+			     toggle: toggle,
+			     show_dropdown: show_dropdown,
+			     hide_dropdown: hide_dropdown,
+			     place_at_selected: place_at_selected,
+			     place: place,
+			     reload_at_selected: reload_at_selected,
+			     reload: reload,
+			     toggle_start_reaction_listener: toggle_start_reaction_listener,
+			     hide_target: hide_target,
+			     show_target: show_target };
 
-    return Input;
+    return BuildInput;
 
     // definitions
     function init(selection, map, zoom_container) {
 	// set up container
-	var new_sel = selection.append("div").attr("id", "rxn-input");
+	var new_sel = selection.append('div').attr('id', 'rxn-input');
+	this.placed_div = PlacedDiv(new_sel);
 	// set up complete.ly
-	var c = completely(new_sel.node(), { backgroundColor: "#eee" });
+	var c = completely(new_sel.node(), { backgroundColor: '#eee' });
 	d3.select(c.input)
 	// .attr('placeholder', 'Reaction ID -- Flux')
 	    .on('input', function() {
 		this.value = this.value
-		    // .replace("/","")
+		// .replace("/","")
 		    .replace(" ","")
 		    .replace("\\","")
 		    .replace("<","");
 	    });
-	this.selection = new_sel;
 	this.completely = c;
 	// close button
 	new_sel.append('button').attr('class', "button input-close-button")
@@ -9397,9 +9492,11 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	    }
 	}.bind(this));
     }
+
     function is_visible() {
-	return this.selection.style('display') != 'none';
+	return this.placed_div.is_visible();
     }
+
     function toggle(on_off) {
 	if (on_off===undefined) this.is_active = !this.is_active;
 	else this.is_active = on_off;
@@ -9414,7 +9511,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 		.add_escape_listener(function() { this.hide_dropdown(); }.bind(this));
 	} else {
 	    this.toggle_start_reaction_listener(false);
-	    this.selection.style("display", "none");
+	    this.placed_div.hide();
             this.completely.input.blur();
             this.completely.hideDropDown();
 	    this.map.set_status(null);
@@ -9425,14 +9522,14 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	}
     }
     function show_dropdown(coords) {
-	this.selection.style("display", "block");
+	this.placed_selection.show();
         this.completely.input.blur();
 	this.completely.repaint();
 	this.completely.setText("");
         this.completely.input.focus();
     }
     function hide_dropdown() {
-	this.selection.style("display", "none");
+	this.placed_selection.hide();
         this.completely.hideDropDown();
     }
     function place_at_selected() {
@@ -9448,20 +9545,21 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	this.place(coords);
     }
     function place(coords) {
-	var d = {x: 240, y: 0},
-	    window_translate = this.map.zoom_container.window_translate,
-	    window_scale = this.map.zoom_container.window_scale,
-	    map_size = this.map.get_size();
-        var left = Math.max(20,
-			    Math.min(map_size.width - 270,
-				     (window_scale * coords.x + window_translate.x - d.x)));
-        var top = Math.max(20,
-			   Math.min(map_size.height - 40,
-				    (window_scale * coords.y + window_translate.y - d.y)));
-        this.selection.style('position', 'absolute')
-            .style('display', 'block')
-            .style('left',left+'px')
-            .style('top',top+'px');
+	this.placed_selection.place(coords);
+	// var d = {x: 240, y: 0},
+	//     window_translate = this.map.zoom_container.window_translate,
+	//     window_scale = this.map.zoom_container.window_scale,
+	//     map_size = this.map.get_size();
+        // var left = Math.max(20,
+	// 		    Math.min(map_size.width - 270,
+	// 			     (window_scale * coords.x + window_translate.x - d.x)));
+        // var top = Math.max(20,
+	// 		   Math.min(map_size.height - 40,
+	// 			    (window_scale * coords.y + window_translate.y - d.y)));
+        // this.selection.style('position', 'absolute')
+        //     .style('display', 'block')
+        //     .style('left',left+'px')
+        //     .style('top',top+'px');
 
 	this.direction_arrow.set_location(coords);
 	this.direction_arrow.show();
@@ -9578,12 +9676,12 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 		if (x.string.toLowerCase()==text.toLowerCase()) {
 		    if (starting_from_scratch) {
 			map.new_reaction_from_scratch(x.reaction_abbreviation,
-							   coords,
-							   direction_arrow.get_rotation());
+						      coords,
+						      direction_arrow.get_rotation());
 		    } else {
 			map.new_reaction_for_metabolite(x.reaction_abbreviation,
-							     selected_node.node_id,
-							     direction_arrow.get_rotation());
+							selected_node.node_id,
+							direction_arrow.get_rotation());
 		    }
 		}
 	    });
@@ -9612,26 +9710,26 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
             this.start_reaction_listener = on_off;
         
         if (this.start_reaction_listener) {;
-            this.map.sel.on('click.start_reaction', function(node) {
-		// TODO fix this hack
-		if (this.direction_arrow.dragging) return;
-                // reload the reaction input
-                var coords = { x: d3.mouse(node)[0],
-			       y: d3.mouse(node)[1] };
-                // unselect metabolites
-		this.map.deselect_nodes();
-		this.map.deselect_text_labels();
-		// reload the reaction input
-                this.reload(null, coords, true);
-		// generate the target symbol
-		this.show_target(this.map, coords);
-            }.bind(this, this.map.sel.node()));
-            this.map.sel.classed('start-reaction-cursor', true);
-        } else {
-            this.map.sel.on('click.start_reaction', null);
-            this.map.sel.classed('start-reaction-cursor', false);
-	    this.hide_target();
-        }
+					   this.map.sel.on('click.start_reaction', function(node) {
+					       // TODO fix this hack
+					       if (this.direction_arrow.dragging) return;
+					       // reload the reaction input
+					       var coords = { x: d3.mouse(node)[0],
+							      y: d3.mouse(node)[1] };
+					       // unselect metabolites
+					       this.map.deselect_nodes();
+					       this.map.deselect_text_labels();
+					       // reload the reaction input
+					       this.reload(null, coords, true);
+					       // generate the target symbol
+					       this.show_target(this.map, coords);
+					   }.bind(this, this.map.sel.node()));
+					   this.map.sel.classed('start-reaction-cursor', true);
+					  } else {
+					      this.map.sel.on('click.start_reaction', null);
+					      this.map.sel.classed('start-reaction-cursor', false);
+					      this.hide_target();
+					  }
     }
 
     function hide_target() {
@@ -9685,17 +9783,8 @@ define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
 	    delete this.metabolites[the_id].id;
 	}
 
-	// get cofactors if preset
-	if ('cofactors' in model_data) {
-	    if (model_data.cofactors instanceof Array) {
-		this.cofactors = model_data.cofactors;
-	    } else {
-		console.warn('model_data.cofactors should be an array. Ignoring it');
-		this.cofactors = [];
-	    }
-	} else {
-	    this.cofactors = [];
-	}
+	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
+			  'gdp', 'h'];
     }
 
     function apply_reaction_data(reaction_data, styles) {
@@ -10644,7 +10733,31 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
     }
 });
 
-define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui", "SearchBar", "Settings", "SettingsBar"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar) {
+define('TextEditInput',['utils', 'PlacedDiv'], function(utils, PlacedDiv) {
+    /**
+     */
+
+    var TextEditInput = utils.make_class();
+    // instance methods
+    TextEditInput.prototype = { init: init,
+				is_visible: is_visible };
+
+    return TextEditInput;
+
+    // definitions
+    function init(selection, map, zoom_container) {
+	var div = selection.append('div')
+		.attr('id', 'text-edit-input');
+	this.placed_div = PlacedDiv(div);
+	div.append('input').style('display', 'none');
+    }
+
+    function is_visible() {
+	return this.placed_div.is_visible();
+    }
+});
+
+define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Builder(options)
@@ -10661,6 +10774,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			  brush_mode: brush_mode,
 			  zoom_mode: zoom_mode,
 			  rotate_mode: rotate_mode,
+			  text_mode: text_mode,
 			  _toggle_direction_buttons: _toggle_direction_buttons,
 			  _setup_menu: _setup_menu,
 			  _setup_simple_zoom_buttons: _setup_simple_zoom_buttons,
@@ -10826,8 +10940,12 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	}
 
 	// set up the reaction input with complete.ly
-	this.reaction_input = Input(this.options.selection, this.map,
-				    this.zoom_container);
+	this.reaction_input = BuildInput(this.options.selection, this.map,
+					 this.zoom_container);
+
+	// set up the text edit input
+	this.text_edit_input = TextEditInput(this.options.selection, this.map,
+					     this.zoom_container);
 
 	// set up the Brush
 	this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
@@ -10864,7 +10982,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.map.key_manager.assigned_keys = keys;
 	// tell the key manager about the reaction input and search bar
 	this.map.key_manager.input_list = [this.reaction_input, this.search_bar,
-					   this.settings_page];
+					   this.settings_page, this.text_edit_input];
 	// make sure the key manager remembers all those changes
 	this.map.key_manager.update();
 	// turn it on/off
@@ -10923,7 +11041,9 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.map.behavior.toggle_selectable_click(mode=='build' || mode=='brush' || mode=='rotate');
 	this.map.behavior.toggle_selectable_drag(mode=='brush' || mode=='rotate');
 	this.map.behavior.toggle_label_drag(mode=='brush');
-	if (mode=='view')
+	this.map.behavior.toggle_text_label_edit(mode=='text');
+	// edit selections
+	if (mode=='view' || mode=='text')
 	    this.map.select_none();
 	if (mode=='rotate')
 	    this.map.deselect_text_labels();
@@ -10948,6 +11068,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
     function rotate_mode() {
 	this.callback_manager.run('rotate_mode');
 	this.set_mode('rotate');
+    }
+    function text_mode() {
+	this.callback_manager.run('text_mode');
+	this.set_mode('text');
     }	
     function _setup_menu(menu_selection, button_selection, map, zoom_container,
 			 key_manager, keys, enable_editing) {
@@ -11005,6 +11129,9 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.button({ key: keys.rotate_mode,
 			  id: 'rotate-mode-menu-button',
 			  text: "Rotate mode (r)" })
+		.button({ key: keys.text_mode,
+			  id: 'text-mode-menu-button',
+			  text: "Text mode (t)" })
 		.divider()
 		.button({ key: keys.delete,
 			  // icon: "glyphicon glyphicon-trash",
@@ -11092,7 +11219,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.button({ key: keys.rotate_mode,
 			  id: 'rotate-mode-button',
 			  icon: "glyphicon glyphicon-repeat",
-			  tooltip: "Rotate mode (r)" });
+			  tooltip: "Rotate mode (r)" })
+		.button({ key: keys.text_mode,
+			  id: 'text-mode-button',
+			  icon: "glyphicon glyphicon-font",
+			  tooltip: "Text mode (r)" });
 
 	    // arrow buttons
 	    this.direction_buttons = button_panel.append('li');
@@ -11117,7 +11248,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		       '#zoom-mode-menu-button',
 		       '#brush-mode-menu-button',
 		       '#rotate-mode-menu-button',
-		       '#view-mode-menu-button'];
+		       '#view-mode-menu-button',
+		       '#text-mode-menu-button'];
 	    for (var i=0, l=ids.length; i<l; i++) {
 		var the_id = ids[i];
 		d3.select(the_id)
@@ -11145,6 +11277,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.callback_manager.set('view_mode', function() {
 	    $('#view-mode-button').button('toggle');
 	    select_menu_button('#view-mode-menu-button');
+	});
+	this.callback_manager.set('text_mode', function() {
+	    $('#text-mode-button').button('toggle');
+	    select_menu_button('#text-mode-menu-button');
 	});
 
 	// definitions
@@ -11265,21 +11401,20 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	if (enable_editing) {
 	    utils.extend(keys, {
 		build_mode: { key: 78, // n
-			      target: this,
-			      fn: this.build_mode,
+			      fn: this.build_mode.bind(this),
 			      ignore_with_input: true },
-		zoom_mode: { key: 90, // z 
-			     target: this,
-			     fn: this.zoom_mode,
+		zoom_mode: { key: 90, // z
+			     fn: this.zoom_mode.bind(this),
 			     ignore_with_input: true },
 		brush_mode: { key: 86, // v
-			      target: this,
-			      fn: this.brush_mode,
+			      fn: this.brush_mode.bind(this),
 			      ignore_with_input: true },
 		rotate_mode: { key: 82, // r
-			       target: this,
-			       fn: this.rotate_mode,
+			       fn: this.rotate_mode.bind(this),
 			       ignore_with_input: true },
+		text_mode: { key: 84, // t
+			     fn: this.text_mode.bind(this),
+			     ignore_with_input: true },
 		toggle_beziers: { key: 66,
 				  target: map,
 				  fn: map.toggle_beziers,

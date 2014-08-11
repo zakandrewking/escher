@@ -2,8 +2,10 @@ from sys import argv
 from subprocess import call
 import threading
 import webbrowser
+import os
 from os.path import join, dirname, realpath
-
+from glob import glob
+    
 try:
     from setuptools import setup
 except:
@@ -16,8 +18,8 @@ escher_min = 'escher.%s.min.js'%version
 port = 8789
     
 if 'clean' in argv:
-    call(['rm', join('escher/lib', escher)])
-    call(['rm', join('escher/lib', escher_min)])
+    for f in glob('escher/lib/escher.*.js'):
+        os.remove(f)
 
 if 'build' in argv:
     call([join(directory, 'bin/r.js'), '-o', 'escher/js/build/build.js',
