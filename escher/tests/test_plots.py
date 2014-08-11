@@ -15,22 +15,22 @@ def test_get_cache_dir():
     d = get_cache_dir(name='maps')
     assert os.path.isdir(d)
 
-def test_clear_cache():
-    clear_cache()
-    d = get_cache_dir(name='maps')
-    assert len(os.listdir(d)) == 0
-    d = get_cache_dir(name='models')
-    assert len(os.listdir(d)) == 0
+# def test_clear_cache():
+#     clear_cache()
+#     d = get_cache_dir(name='maps')
+#     assert len(os.listdir(d)) == 0
+#     d = get_cache_dir(name='models')
+#     assert len(os.listdir(d)) == 0
 
-def test_list_cached_maps():
-    clear_cache()
-    Builder(map_name='iJO1366_central_metabolism')
-    assert list_cached_maps() == ['iJO1366_central_metabolism']
+# def test_list_cached_maps():
+#     clear_cache()
+#     Builder(map_name='iJO1366_central_metabolism')
+#     assert list_cached_maps() == ['iJO1366_central_metabolism']
 
-def test_list_cached_models():
-    clear_cache()
-    Builder(model_name='iJO1366')
-    assert list_cached_models() == ['iJO1366']
+# def test_list_cached_models():
+#     clear_cache()
+#     Builder(model_name='iJO1366')
+#     assert list_cached_models() == ['iJO1366']
         
 def test_load_resource(tmpdir):
     assert load_resource('{"r": "val"}', 'name') == '{"r": "val"}'
