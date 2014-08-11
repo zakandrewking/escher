@@ -19,12 +19,16 @@
     fill: black; 
     stroke: none;
     text-rendering: optimizelegibility;
+    cursor: default;
 }
 .reaction-label {
     fill: rgb(32, 32, 120);
     text-rendering: optimizelegibility;
 }
-.text-label {
+.text-label .label {
+    font-size: 50px;
+}
+.text-label-input {
     font-size: 50px;
 }
 .node-circle {
@@ -100,4 +104,7 @@
 .cursor-grabbing {
     cursor: grabbing;
     cursor: -webkit-grabbing;
+}
+.edit-text-cursor {
+    cursor: text;
 }

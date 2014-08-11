@@ -27,9 +27,12 @@ define(["utils", "build"], function(utils, build) {
 			   toggle_rotation_mode: toggle_rotation_mode,
 			   turn_everything_on: turn_everything_on,
 			   turn_everything_off: turn_everything_off,
+			   // toggle
 			   toggle_selectable_click: toggle_selectable_click,
+			   toggle_text_label_edit: toggle_text_label_edit,
 			   toggle_selectable_drag: toggle_selectable_drag,
 			   toggle_label_drag: toggle_label_drag,
+			   // get drag behaviors
 			   get_selectable_drag: get_selectable_drag,
 			   get_bezier_drag: get_bezier_drag,
 			   get_reaction_label_drag: get_reaction_label_drag,
@@ -51,26 +54,27 @@ define(["utils", "build"], function(utils, build) {
 	this.rotation_mode_enabled = false;
 	this.rotation_drag = d3.behavior.drag();
 
-	// init empty
+	// behaviors to be applied
 	this.selectable_click = null;
+	this.text_label_click = null;
+	this.selectable_drag = this.empty_behavior;
 	this.node_mouseover = null;
 	this.node_mouseout = null;
-	this.selectable_drag = this.empty_behavior;
 	this.bezier_drag = this.empty_behavior;
 	this.reaction_label_drag = this.empty_behavior;
 	this.node_label_drag = this.empty_behavior;
 	this.turn_everything_on();
     }
     function turn_everything_on() {
-	/** Toggle everything except rotation mode.
-
+	/** Toggle everything except rotation mode and text mode.
+ 
 	 */
 	this.toggle_selectable_click(true);
 	this.toggle_selectable_drag(true);
 	this.toggle_label_drag(true);
     }
     function turn_everything_off() {
-	/** Toggle everything except rotation mode.
+	/** Toggle everything except rotation mode and text mode.
 
 	 */
 	this.toggle_selectable_click(false);
@@ -239,6 +243,37 @@ define(["utils", "build"], function(utils, build) {
 	    this.node_mouseout = null;
 	    this.map.sel.select('#nodes')
 		.selectAll('.node-circle').style('stroke-width', null);
+	}
+    }
+
+    function toggle_text_label_edit(on_off) {
+	/** With no argument, toggle the text edit on click on/off.
+
+	 Pass in a boolean argument to set the on/off state.
+
+	 The backup state is equal to selectable_click.
+
+	 */
+	if (on_off===undefined) on_off = this.text_edit_click==null;
+	if (on_off) {
+	    var map = this.map,
+		selection = this.selection;
+	    this.text_label_click = function() {
+		if (d3.event.defaultPrevented) return; // click suppressed
+		// run the callback
+		var coords_a = d3.transform(d3.select(this).attr('transform')).translate,
+		    coords = {x: coords_a[0], y: coords_a[1]};
+		map.callback_manager.run('edit_text_label', coords);
+		d3.event.stopPropagation();
+	    };
+	    this.map.sel.select('#text-labels')
+		.selectAll('.label')
+		.classed('edit-text-cursor', true);
+	} else {
+	    this.text_label_click = this.selectable_click;
+	    this.map.sel.select('#text-labels')
+		.selectAll('.label')
+		.classed('edit-text-cursor', false);
 	}
     }
 

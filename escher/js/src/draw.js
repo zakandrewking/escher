@@ -130,8 +130,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	 */
 	
         sel.append('text')
-            .attr('class', 'reaction-label label')
-	    .style('cursor', 'default');
+            .attr('class', 'reaction-label label');
 	    // .on('mouseover', function(d) {
 	    // 	d3.select(this).style('stroke-width', String(3)+'px');
 	    // 	d3.select(this.parentNode)
@@ -466,8 +465,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
         g.filter(function(d) { return d.node_type=='metabolite'; })
 	    .append('text')
-	    .attr('class', 'node-label label')
-	    .style('cursor', 'default');
+	    .attr('class', 'node-label label');
     }
 
     function update_node(update_selection, scale, has_metabolite_data, metabolite_data_styles,
@@ -533,9 +531,10 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     function create_text_label(enter_selection) {
 	utils.check_undefined(arguments, ['enter_selection']);
 
-	enter_selection.append('text')
-	    .attr('class', 'text-label label')
-	    .style('cursor', 'default')
+	enter_selection.append('g')
+	    .attr('class', 'text-label')
+	    .append('text')
+	    .attr('class', 'label')
 	    .text(function(d) { return d.text; });
     }
 
@@ -543,6 +542,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	utils.check_undefined(arguments, ['update_selection', 'label_click', 'label_drag_behavior']);
 
         update_selection
+	    .select('.label')
             .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
 	    .on('click', label_click)
 	    .call(turn_off_drag)

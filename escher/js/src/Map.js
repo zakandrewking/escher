@@ -493,7 +493,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    node_drag_behavior = this.behavior.selectable_drag,
 	    reaction_label_drag = this.behavior.reaction_label_drag,
 	    node_label_drag = this.behavior.node_label_drag,
-	    text_label_click = this.behavior.selectable_click,
+	    text_label_click = this.behavior.text_label_click,
 	    text_label_drag = this.behavior.selectable_drag,
 	    has_reaction_data = this.has_reaction_data(),
 	    reaction_data_styles = this.settings.data_styles['reaction'],
@@ -644,7 +644,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     }
     function draw_these_text_labels(text_label_ids) {
 	var text_labels = this.text_labels,
-	    text_label_click = this.behavior.selectable_click,
+	    text_label_click = this.behavior.text_label_click,
 	    text_label_drag = this.behavior.selectable_drag;
 
 	// find text labels for text_label_ids
