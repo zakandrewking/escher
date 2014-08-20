@@ -6,30 +6,25 @@ define(['utils', 'Map'], function(utils, Map) {
     var PlacedDiv = utils.make_class();
     // instance methods
     PlacedDiv.prototype = { init: init,
-			    show: show,
-			    hide: hide,
 			    is_visible: is_visible,
-			    place: place };
+			    place: place,
+			    hide: hide };
     return PlacedDiv;
 
     // definitions
-    function init(div, map) {
+    function init(div, map, displacement) {
 	// make the input box
 	this.div = div;
+
+	if (displacement===undefined)
+	    displacement = {x: 0, y: 0};
+	this.displacement = displacement;
 
 	if (map instanceof Map) {
 	    this.map = map;
 	} else {
-	    console.error('Cannot set the map. It is not an instance of builder/Map');
+	    throw new Error('Cannot set the map. It is not an instance of Map');
 	}
-    }
-
-    function show() {
-	this.div.style('display', null);
-    }
-
-    function hide() {
-	this.div.style('display', 'none');
     }
 
     function is_visible() {
@@ -40,20 +35,26 @@ define(['utils', 'Map'], function(utils, Map) {
 	/** Position the html div to match the given SVG coordinates.
 
 	 */
+	// show the input
+	this.div.style('display', null);
+
 	// move the new input
-	var d = {x: 240, y: 0},
-	    window_translate = this.map.zoom_container.window_translate,
+	var window_translate = this.map.zoom_container.window_translate,
 	    window_scale = this.map.zoom_container.window_scale,
 	    map_size = this.map.get_size(),
 	    left = Math.max(20,
 			    Math.min(map_size.width - 270,
-				     (window_scale * coords.x + window_translate.x - d.x))),
+				     (window_scale * coords.x + window_translate.x - this.displacement.x))),
 	    top = Math.max(20,
 			   Math.min(map_size.height - 40,
-				    (window_scale * coords.y + window_translate.y - d.y)));
+				    (window_scale * coords.y + window_translate.y - this.displacement.y)));
 	this.div.style('position', 'absolute')
 	    .style('display', 'block')
 	    .style('left', left+'px')
 	    .style('top', top+'px');
+    }
+
+    function hide() {
+	this.div.style('display', 'none');
     }
 });

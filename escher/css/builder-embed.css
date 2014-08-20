@@ -40,7 +40,7 @@
     stroke-width: 3px;
     stroke: rgb(20, 113, 199);
 }
-.selected.text-label {
+.selected .label {
     fill: rgb(20, 113, 199);
 }
 .metabolite-circle {

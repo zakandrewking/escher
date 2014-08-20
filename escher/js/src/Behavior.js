@@ -100,7 +100,7 @@ define(["utils", "build"], function(utils, build) {
 	    
 	    var selected_nodes = this.map.get_selected_nodes();
 	    if (Object.keys(selected_nodes).length == 0) {
-		console.log('No selected nodes');
+		console.warn('No selected nodes');
 		return;
 	    }
 	    
@@ -263,17 +263,25 @@ define(["utils", "build"], function(utils, build) {
 		// run the callback
 		var coords_a = d3.transform(d3.select(this).attr('transform')).translate,
 		    coords = {x: coords_a[0], y: coords_a[1]};
-		map.callback_manager.run('edit_text_label', coords);
+		map.callback_manager.run('edit_text_label', d3.select(this), coords);
 		d3.event.stopPropagation();
 	    };
 	    this.map.sel.select('#text-labels')
 		.selectAll('.label')
 		.classed('edit-text-cursor', true);
+	    // add the new-label listener
+	    this.map.sel.on('click.new_text_label', function(node) {
+		var coords = { x: d3.mouse(node)[0],
+			       y: d3.mouse(node)[1] };
+		this.map.callback_manager.run('new_text_label', coords);
+	    }.bind(this, this.map.sel.node()));
 	} else {
 	    this.text_label_click = this.selectable_click;
 	    this.map.sel.select('#text-labels')
 		.selectAll('.label')
 		.classed('edit-text-cursor', false);
+	    // remove the new-label listener
+	    this.map.sel.on('click.new_text_label', null);
 	}
     }
 
@@ -336,7 +344,7 @@ define(["utils", "build"], function(utils, build) {
 	    total_displacement = {x: 0, y: 0};
 
 	    // If a text label is selected, the rest is not necessary
-	    if (d3.select(this).attr('class').indexOf('text-label')==-1) {		
+	    if (d3.select(this).attr('class').indexOf('label')==-1) {		
 		// Note that dragstart is called even for a click event
 		var data = this.parentNode.__data__,
 		    bigg_id = data.bigg_id,
@@ -366,13 +374,13 @@ define(["utils", "build"], function(utils, build) {
         behavior.on("drag", function() {
 	    // get the grabbed id
 	    var grabbed = {};
-	    if (d3.select(this).attr('class').indexOf('text-label')==-1) {
+	    if (d3.select(this).attr('class').indexOf('label')==-1) {
 		// if it is a node
 		grabbed['type'] = 'node';
 		grabbed['id'] = this.parentNode.__data__.node_id;
 	    } else {
 		// if it is a text label
-		grabbed['type'] = 'text-label';
+		grabbed['type'] = 'label';
 		grabbed['id'] = this.__data__.text_label_id;
 	    }
 
@@ -383,7 +391,7 @@ define(["utils", "build"], function(utils, build) {
 	    if (grabbed['type']=='node' && 
 		selected_node_ids.indexOf(grabbed['id'])==-1) { 
 		node_ids_to_drag.push(grabbed['id']);
-	    } else if (grabbed['type']=='text-label' && 
+	    } else if (grabbed['type']=='label' && 
 		       selected_text_label_ids.indexOf(grabbed['id'])==-1) {
 		text_label_ids_to_drag.push(grabbed['id']);
 	    } else {

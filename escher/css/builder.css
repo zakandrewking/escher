@@ -191,3 +191,9 @@
     color: #ff3333;
     font-weight: bold;
 }
+/* text edit input */
+#text-edit-input input {
+    width: 500px;
+    border: none;
+    font-size: 22px;
+}

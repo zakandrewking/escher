@@ -1936,10 +1936,10 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	utils.check_undefined(arguments, ['enter_selection']);
 
 	enter_selection.append('g')
+	    .attr('id', function(d) { return 'l'+d.text_label_id; })
 	    .attr('class', 'text-label')
 	    .append('text')
-	    .attr('class', 'label')
-	    .text(function(d) { return d.text; });
+	    .attr('class', 'label');
     }
 
     function update_text_label(update_selection, label_click, label_drag_behavior) {
@@ -1947,6 +1947,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 
         update_selection
 	    .select('.label')
+	    .text(function(d) { return d.text; })
             .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
 	    .on('click', label_click)
 	    .call(turn_off_drag)
@@ -1974,7 +1975,8 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 define('build',["utils"], function(utils) {
     return { new_reaction: new_reaction,
 	     rotate_nodes: rotate_nodes,
-	     move_node_and_dependents: move_node_and_dependents };
+	     move_node_and_dependents: move_node_and_dependents,
+	     new_text_label: new_text_label };
     
     // definitions
     function new_reaction(bigg_id, cobra_reaction, cobra_metabolites,
@@ -2395,6 +2397,14 @@ define('build',["utils"], function(utils) {
 	loc.circle = utils.c_plus_c(displacement, circle);
         return loc;
     }
+
+    function new_text_label(largest_ids, text, coords) {
+	var new_id = String(++largest_ids.text_labels),
+	    new_label = { text: text,
+			  x: coords.x,
+			  y: coords.y };
+	return {id: new_id, label: new_label};
+    }
 });
 
 define('Behavior',["utils", "build"], function(utils, build) {
@@ -2499,7 +2509,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    
 	    var selected_nodes = this.map.get_selected_nodes();
 	    if (Object.keys(selected_nodes).length == 0) {
-		console.log('No selected nodes');
+		console.warn('No selected nodes');
 		return;
 	    }
 	    
@@ -2662,17 +2672,25 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		// run the callback
 		var coords_a = d3.transform(d3.select(this).attr('transform')).translate,
 		    coords = {x: coords_a[0], y: coords_a[1]};
-		map.callback_manager.run('edit_text_label', coords);
+		map.callback_manager.run('edit_text_label', d3.select(this), coords);
 		d3.event.stopPropagation();
 	    };
 	    this.map.sel.select('#text-labels')
 		.selectAll('.label')
 		.classed('edit-text-cursor', true);
+	    // add the new-label listener
+	    this.map.sel.on('click.new_text_label', function(node) {
+		var coords = { x: d3.mouse(node)[0],
+			       y: d3.mouse(node)[1] };
+		this.map.callback_manager.run('new_text_label', coords);
+	    }.bind(this, this.map.sel.node()));
 	} else {
 	    this.text_label_click = this.selectable_click;
 	    this.map.sel.select('#text-labels')
 		.selectAll('.label')
 		.classed('edit-text-cursor', false);
+	    // remove the new-label listener
+	    this.map.sel.on('click.new_text_label', null);
 	}
     }
 
@@ -2735,7 +2753,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    total_displacement = {x: 0, y: 0};
 
 	    // If a text label is selected, the rest is not necessary
-	    if (d3.select(this).attr('class').indexOf('text-label')==-1) {		
+	    if (d3.select(this).attr('class').indexOf('label')==-1) {		
 		// Note that dragstart is called even for a click event
 		var data = this.parentNode.__data__,
 		    bigg_id = data.bigg_id,
@@ -2765,13 +2783,13 @@ define('Behavior',["utils", "build"], function(utils, build) {
         behavior.on("drag", function() {
 	    // get the grabbed id
 	    var grabbed = {};
-	    if (d3.select(this).attr('class').indexOf('text-label')==-1) {
+	    if (d3.select(this).attr('class').indexOf('label')==-1) {
 		// if it is a node
 		grabbed['type'] = 'node';
 		grabbed['id'] = this.parentNode.__data__.node_id;
 	    } else {
 		// if it is a text label
-		grabbed['type'] = 'text-label';
+		grabbed['type'] = 'label';
 		grabbed['id'] = this.__data__.text_label_id;
 	    }
 
@@ -2782,7 +2800,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    if (grabbed['type']=='node' && 
 		selected_node_ids.indexOf(grabbed['id'])==-1) { 
 		node_ids_to_drag.push(grabbed['id']);
-	    } else if (grabbed['type']=='text-label' && 
+	    } else if (grabbed['type']=='label' && 
 		       selected_text_label_ids.indexOf(grabbed['id'])==-1) {
 		text_label_ids_to_drag.push(grabbed['id']);
 	    } else {
@@ -6902,6 +6920,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	make_selected_node_primary: make_selected_node_primary,
 	extend_nodes: extend_nodes,
 	extend_reactions: extend_reactions,
+	edit_text_label: edit_text_label,
 	// delete
 	delete_selected: delete_selected,
 	delete_selectable: delete_selectable,
@@ -7481,6 +7500,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
         sel.exit();
     }
     function draw_these_text_labels(text_label_ids) {
+	/** Draw labels with the given ids.
+
+	 */
 	var text_labels = this.text_labels,
 	    text_label_click = this.behavior.text_label_click,
 	    text_label_drag = this.behavior.selectable_drag;
@@ -7837,12 +7859,19 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	    selected_text_labels = this.get_selected_text_labels();
 	if (Object.keys(selected_nodes).length >= 1 ||
 	    Object.keys(selected_text_labels).length >= 1)
-	    this.delete_selectable(selected_nodes, selected_text_labels);
+	    this.delete_selectable(selected_nodes, selected_text_labels, true);
     }
-    function delete_selectable(selected_nodes, selected_text_labels) {
-	/** Delete the nodes and associated segments and reactions.
+    function delete_selectable(selected_nodes, selected_text_labels, should_draw) {
+	/** Delete the nodes and associated segments and reactions. Undoable.
 
-	 Undoable.
+	 Arguments
+	 ---------
+
+	 selected_nodes: An object that is a subset of map.nodes.
+
+	 selected_text_labels: An object that is a subset of map.text_labels.
+
+	 should_draw: A boolean argument to determine whether to draw the changes to the map.
 
 	 */
 	var out = this.segments_and_reactions_for_nodes(selected_nodes),
@@ -7870,7 +7899,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 
 		// redraw
 		// TODO just redraw these nodes, segments, and labels
-		this.draw_everything();
+		if (should_draw) this.draw_everything();
 	    }.bind(this);
 
 	// delete
@@ -7909,19 +7938,21 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 		if (scale_changed) this.draw_all_reactions();
 		else this.draw_these_reactions(reaction_ids_to_draw);
 	    } else {
-		this.draw_these_reactions(reaction_ids_to_draw);
+		if (should_draw) this.draw_these_reactions(reaction_ids_to_draw);
 	    }		
 	    if (this.has_metabolite_data()) {
 		var scale_changed = this.update_metabolite_data_domain();
-		if (scale_changed) this.draw_all_nodes();
-		else this.draw_these_nodes(Object.keys(saved_nodes));
+		if (should_draw) {
+		    if (scale_changed) this.draw_all_nodes();
+		    else this.draw_these_nodes(Object.keys(saved_nodes));
+		}
 	    } else {
-		this.draw_these_nodes(Object.keys(saved_nodes));
+		if (should_draw) this.draw_these_nodes(Object.keys(saved_nodes));
 	    }
 
     	    // redraw the saved text_labels
     	    utils.extend(this.text_labels, saved_text_labels);
-    	    this.draw_these_text_labels(Object.keys(saved_text_labels));
+    	    if (should_draw) this.draw_these_text_labels(Object.keys(saved_text_labels));
     	    // copy text_labels to re-delete
     	    selected_text_labels = utils.clone(saved_text_labels);
 
@@ -8123,6 +8154,26 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	    }
 	}
 	utils.extend(this.reactions, new_reactions);
+    }
+
+    function edit_text_label(text_label_id, new_value, should_draw) {
+	// save old value
+	var saved_value = this.text_labels[text_label_id].text,
+	    edit_and_draw = function(new_val, should_draw) {
+		// set the new value
+		this.text_labels[text_label_id].text = new_val;
+		if (should_draw) this.draw_these_text_labels([text_label_id]);
+	    }.bind(this);
+
+	// edit the label
+	edit_and_draw(new_value, should_draw);
+
+	// add to undo stack
+	this.undo_stack.push(function() {
+	    edit_and_draw(saved_value, should_draw);
+	}, function () {
+	    edit_and_draw(new_value, should_draw);
+	});
     }
 
     function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id, direction) {
@@ -8507,7 +8558,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     // IO
 
     function save() {
-        console.log("Saving");
         utils.download_json(this.map_for_export(), "saved_map");
     }
     function map_for_export() {
@@ -8549,7 +8599,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	return out;
     }
     function save_svg() {
-        console.log("Exporting SVG");
 	this.callback_manager.run('before_svg_export');
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,
@@ -8583,30 +8632,25 @@ define('PlacedDiv',['utils', 'Map'], function(utils, Map) {
     var PlacedDiv = utils.make_class();
     // instance methods
     PlacedDiv.prototype = { init: init,
-			    show: show,
-			    hide: hide,
 			    is_visible: is_visible,
-			    place: place };
+			    place: place,
+			    hide: hide };
     return PlacedDiv;
 
     // definitions
-    function init(div, map) {
+    function init(div, map, displacement) {
 	// make the input box
 	this.div = div;
+
+	if (displacement===undefined)
+	    displacement = {x: 0, y: 0};
+	this.displacement = displacement;
 
 	if (map instanceof Map) {
 	    this.map = map;
 	} else {
-	    console.error('Cannot set the map. It is not an instance of builder/Map');
+	    throw new Error('Cannot set the map. It is not an instance of Map');
 	}
-    }
-
-    function show() {
-	this.div.style('display', null);
-    }
-
-    function hide() {
-	this.div.style('display', 'none');
     }
 
     function is_visible() {
@@ -8617,21 +8661,27 @@ define('PlacedDiv',['utils', 'Map'], function(utils, Map) {
 	/** Position the html div to match the given SVG coordinates.
 
 	 */
+	// show the input
+	this.div.style('display', null);
+
 	// move the new input
-	var d = {x: 240, y: 0},
-	    window_translate = this.map.zoom_container.window_translate,
+	var window_translate = this.map.zoom_container.window_translate,
 	    window_scale = this.map.zoom_container.window_scale,
 	    map_size = this.map.get_size(),
 	    left = Math.max(20,
 			    Math.min(map_size.width - 270,
-				     (window_scale * coords.x + window_translate.x - d.x))),
+				     (window_scale * coords.x + window_translate.x - this.displacement.x))),
 	    top = Math.max(20,
 			   Math.min(map_size.height - 40,
-				    (window_scale * coords.y + window_translate.y - d.y)));
+				    (window_scale * coords.y + window_translate.y - this.displacement.y)));
 	this.div.style('position', 'absolute')
 	    .style('display', 'block')
 	    .style('left', left+'px')
 	    .style('top', top+'px');
+    }
+
+    function hide() {
+	this.div.style('display', 'none');
     }
 });
 
@@ -9208,6 +9258,8 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
         move_this.attr('transform',
 		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
 		  'scale('+this.window_scale+')');
+
+	this.callback_manager.run('go_to');
 	return null;
     }
 
@@ -9420,7 +9472,8 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContai
     function init(selection, map, zoom_container) {
 	// set up container
 	var new_sel = selection.append('div').attr('id', 'rxn-input');
-	this.placed_div = PlacedDiv(new_sel);
+	this.placed_div = PlacedDiv(new_sel, map, {x: 240, y: 0});
+	this.placed_div.hide();
 	// set up complete.ly
 	var c = completely(new_sel.node(), { backgroundColor: '#eee' });
 	d3.select(c.input)
@@ -9435,7 +9488,8 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContai
 	this.completely = c;
 	// close button
 	new_sel.append('button').attr('class', "button input-close-button")
-	    .text("×").on('click', function() { this.hide_dropdown(); }.bind(this));
+	    .text("×")
+	    .on('click', function() { this.hide_dropdown(); }.bind(this));
 
 	if (map instanceof Map) {
 	    this.map = map;
@@ -9447,23 +9501,22 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContai
 
 	    this.setup_map_callbacks(map);
 	} else {
-	    console.error('Cannot set the map. It is not an instance of builder/Map');
+	    throw new Error('Cannot set the map. It is not an instance of ' + 
+			    'Map');
 	}
 	if (zoom_container instanceof ZoomContainer) {
 	    this.zoom_container = zoom_container;
-	    this.setup_zoom_callbacks();
+	    this.setup_zoom_callbacks(zoom_container);
 	} else {
-	    console.error('Cannot set the zoom_container. It is not an instance of ' +
-			  'builder/ZoomContainer');
+	    throw new Error('Cannot set the zoom_container. It is not an ' +
+			    'instance of ZoomContainer');
 	}
-
-	// set up reaction input callbacks
-	this.callback_manager = new CallbackManager();
 
 	// toggle off
 	this.toggle(false);
 	this.target_coords = null;
     }
+
     function setup_map_callbacks(map) {
 	// input
 	map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
@@ -9485,8 +9538,9 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContai
 	    this.hide_target();
 	}.bind(this));
     }
-    function setup_zoom_callbacks() {
-	this.zoom_container.callback_manager.set('zoom.input', function() {
+
+    function setup_zoom_callbacks(zoom_container) {
+	zoom_container.callback_manager.set('zoom.input', function() {
 	    if (this.is_active) {
 		this.place_at_selected();
 	    }
@@ -10733,14 +10787,20 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
     }
 });
 
-define('TextEditInput',['utils', 'PlacedDiv'], function(utils, PlacedDiv) {
+define('TextEditInput',['utils', 'PlacedDiv', 'Map', 'ZoomContainer', 'CallbackManager', 'build'], function(utils, PlacedDiv, Map, ZoomContainer, CallbackManager, build) {
     /**
      */
 
     var TextEditInput = utils.make_class();
     // instance methods
     TextEditInput.prototype = { init: init,
-				is_visible: is_visible };
+				setup_map_callbacks: setup_map_callbacks,
+				setup_zoom_callbacks: setup_zoom_callbacks,
+				is_visible: is_visible,
+				show: show,
+				hide: hide,
+				_accept_changes: _accept_changes,
+				_add_and_edit: _add_and_edit };
 
     return TextEditInput;
 
@@ -10748,12 +10808,136 @@ define('TextEditInput',['utils', 'PlacedDiv'], function(utils, PlacedDiv) {
     function init(selection, map, zoom_container) {
 	var div = selection.append('div')
 		.attr('id', 'text-edit-input');
-	this.placed_div = PlacedDiv(div);
-	div.append('input').style('display', 'none');
+	this.placed_div = PlacedDiv(div, map);
+	this.placed_div.hide();
+	this.input = div.append('input');
+
+	if (map instanceof Map) {
+	    this.map = map;
+	    this.setup_map_callbacks(map);
+	} else {
+	    throw new Error('Cannot set the map. It is not an instance of ' + 
+			    'Map');
+	}
+	if (zoom_container instanceof ZoomContainer) {
+	    this.zoom_container = zoom_container;
+	    this.setup_zoom_callbacks(zoom_container);
+	} else {
+	    throw new Error('Cannot set the zoom_container. It is not an ' +
+			    'instance of ZoomContainer');
+	}
+    }
+
+    function setup_map_callbacks(map) {
+	// input
+	map.callback_manager.set('edit_text_label.text_edit_input', function(target, coords) {
+	    this.show(target, coords);
+	}.bind(this));
+
+	// new text_label
+	map.callback_manager.set('new_text_label.text_edit_input', function(coords) {
+	    if (this.active_target !== null)
+		this._accept_changes(this.active_target.target);
+	    this.hide();
+	    this._add_and_edit(coords);
+	}.bind(this));
+    }
+
+    function setup_zoom_callbacks(zoom_container) {
+	zoom_container.callback_manager.set('zoom.text_edit_input', function() {
+	    if (this.active_target)
+		this._accept_changes(this.active_target.target);
+	    this.hide();
+	}.bind(this));
+	zoom_container.callback_manager.set('go_to.text_edit_input', function() {
+	    if (this.active_target)
+		this._accept_changes(this.active_target.target);
+	    this.hide();
+	}.bind(this));
     }
 
     function is_visible() {
 	return this.placed_div.is_visible();
+    }
+
+    function show(target, coords) {
+	// save any existing edit
+	if (this.active_target) {
+	    this._accept_changes(this.active_target.target);
+	}
+
+	// set the current target
+	this.active_target = { target: target,
+			       coords: coords };
+
+	// set the new value
+	target.each(function(d) {
+	    this.input.node().value = d.text;
+	}.bind(this));
+
+	// place the input
+	this.placed_div.place(coords);
+	this.input.node().focus();
+
+	// escape key
+	this.escape = this.map.key_manager
+	    .add_escape_listener(function() {
+		this.hide();
+	    }.bind(this));
+	// enter key
+	this.enter = this.map.key_manager
+	    .add_enter_listener(function(target) {
+		this._accept_changes(target);
+		this.hide();
+	    }.bind(this, target));
+    }
+
+    function hide() {
+	// hide the input
+	this.placed_div.hide();
+
+	// clear the value
+	this.input.attr('value', '');
+	this.active_target = null;
+
+	// clear escape
+	if (this.escape)
+	    this.escape.clear();
+	this.escape = null;
+	// clear enter
+	if (this.enter)
+	    this.enter.clear();
+	this.enter = null;
+	// turn off click listener
+	// this.map.sel.on('click.', null);
+    }
+
+    function _accept_changes(target) {
+	if (this.input.node().value == '') {
+	    // delete the label
+	    target.each(function(d) {
+		var selected = {};
+		selected[d.text_label_id] = this.map.text_labels[d.text_label_id];
+		this.map.delete_selectable({}, selected, true);
+	    }.bind(this));
+	} else {
+	    // set the text
+	    var text_label_ids = [];
+	    target.each(function(d) {
+		this.map.edit_text_label(d.text_label_id, this.input.node().value, true);
+		text_label_ids.push(d.text_label_id);
+	    }.bind(this));
+	}
+    }
+
+    function _add_and_edit(coords) {
+	var out = build.new_text_label(this.map.largest_ids, '', coords);
+	this.map.text_labels[out.id] = out.label;
+	sel = this.map.draw_these_text_labels([out.id]);
+	// TODO wait here?
+	var sel = this.map.sel.select('#text-labels').selectAll('.text-label')
+		.filter(function(d) { return d.text_label_id==out.id; });
+	this.show(sel, coords);
     }
 });
 

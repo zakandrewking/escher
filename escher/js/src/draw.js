@@ -532,10 +532,10 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	utils.check_undefined(arguments, ['enter_selection']);
 
 	enter_selection.append('g')
+	    .attr('id', function(d) { return 'l'+d.text_label_id; })
 	    .attr('class', 'text-label')
 	    .append('text')
-	    .attr('class', 'label')
-	    .text(function(d) { return d.text; });
+	    .attr('class', 'label');
     }
 
     function update_text_label(update_selection, label_click, label_drag_behavior) {
@@ -543,6 +543,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
         update_selection
 	    .select('.label')
+	    .text(function(d) { return d.text; })
             .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
 	    .on('click', label_click)
 	    .call(turn_off_drag)

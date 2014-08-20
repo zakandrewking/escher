@@ -64,6 +64,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	make_selected_node_primary: make_selected_node_primary,
 	extend_nodes: extend_nodes,
 	extend_reactions: extend_reactions,
+	edit_text_label: edit_text_label,
 	// delete
 	delete_selected: delete_selected,
 	delete_selectable: delete_selectable,
@@ -643,6 +644,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
         sel.exit();
     }
     function draw_these_text_labels(text_label_ids) {
+	/** Draw labels with the given ids.
+
+	 */
 	var text_labels = this.text_labels,
 	    text_label_click = this.behavior.text_label_click,
 	    text_label_drag = this.behavior.selectable_drag;
@@ -999,12 +1003,19 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    selected_text_labels = this.get_selected_text_labels();
 	if (Object.keys(selected_nodes).length >= 1 ||
 	    Object.keys(selected_text_labels).length >= 1)
-	    this.delete_selectable(selected_nodes, selected_text_labels);
+	    this.delete_selectable(selected_nodes, selected_text_labels, true);
     }
-    function delete_selectable(selected_nodes, selected_text_labels) {
-	/** Delete the nodes and associated segments and reactions.
+    function delete_selectable(selected_nodes, selected_text_labels, should_draw) {
+	/** Delete the nodes and associated segments and reactions. Undoable.
 
-	 Undoable.
+	 Arguments
+	 ---------
+
+	 selected_nodes: An object that is a subset of map.nodes.
+
+	 selected_text_labels: An object that is a subset of map.text_labels.
+
+	 should_draw: A boolean argument to determine whether to draw the changes to the map.
 
 	 */
 	var out = this.segments_and_reactions_for_nodes(selected_nodes),
@@ -1032,7 +1043,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
 		// redraw
 		// TODO just redraw these nodes, segments, and labels
-		this.draw_everything();
+		if (should_draw) this.draw_everything();
 	    }.bind(this);
 
 	// delete
@@ -1071,19 +1082,21 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 		if (scale_changed) this.draw_all_reactions();
 		else this.draw_these_reactions(reaction_ids_to_draw);
 	    } else {
-		this.draw_these_reactions(reaction_ids_to_draw);
+		if (should_draw) this.draw_these_reactions(reaction_ids_to_draw);
 	    }		
 	    if (this.has_metabolite_data()) {
 		var scale_changed = this.update_metabolite_data_domain();
-		if (scale_changed) this.draw_all_nodes();
-		else this.draw_these_nodes(Object.keys(saved_nodes));
+		if (should_draw) {
+		    if (scale_changed) this.draw_all_nodes();
+		    else this.draw_these_nodes(Object.keys(saved_nodes));
+		}
 	    } else {
-		this.draw_these_nodes(Object.keys(saved_nodes));
+		if (should_draw) this.draw_these_nodes(Object.keys(saved_nodes));
 	    }
 
     	    // redraw the saved text_labels
     	    utils.extend(this.text_labels, saved_text_labels);
-    	    this.draw_these_text_labels(Object.keys(saved_text_labels));
+    	    if (should_draw) this.draw_these_text_labels(Object.keys(saved_text_labels));
     	    // copy text_labels to re-delete
     	    selected_text_labels = utils.clone(saved_text_labels);
 
@@ -1285,6 +1298,26 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    }
 	}
 	utils.extend(this.reactions, new_reactions);
+    }
+
+    function edit_text_label(text_label_id, new_value, should_draw) {
+	// save old value
+	var saved_value = this.text_labels[text_label_id].text,
+	    edit_and_draw = function(new_val, should_draw) {
+		// set the new value
+		this.text_labels[text_label_id].text = new_val;
+		if (should_draw) this.draw_these_text_labels([text_label_id]);
+	    }.bind(this);
+
+	// edit the label
+	edit_and_draw(new_value, should_draw);
+
+	// add to undo stack
+	this.undo_stack.push(function() {
+	    edit_and_draw(saved_value, should_draw);
+	}, function () {
+	    edit_and_draw(new_value, should_draw);
+	});
     }
 
     function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id, direction) {
@@ -1669,7 +1702,6 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     // IO
 
     function save() {
-        console.log("Saving");
         utils.download_json(this.map_for_export(), "saved_map");
     }
     function map_for_export() {
@@ -1711,7 +1743,6 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	return out;
     }
     function save_svg() {
-        console.log("Exporting SVG");
 	this.callback_manager.run('before_svg_export');
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,

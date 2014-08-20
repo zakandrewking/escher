@@ -25,7 +25,8 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
     function init(selection, map, zoom_container) {
 	// set up container
 	var new_sel = selection.append('div').attr('id', 'rxn-input');
-	this.placed_div = PlacedDiv(new_sel);
+	this.placed_div = PlacedDiv(new_sel, map, {x: 240, y: 0});
+	this.placed_div.hide();
 	// set up complete.ly
 	var c = completely(new_sel.node(), { backgroundColor: '#eee' });
 	d3.select(c.input)
@@ -40,7 +41,8 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
 	this.completely = c;
 	// close button
 	new_sel.append('button').attr('class', "button input-close-button")
-	    .text("×").on('click', function() { this.hide_dropdown(); }.bind(this));
+	    .text("×")
+	    .on('click', function() { this.hide_dropdown(); }.bind(this));
 
 	if (map instanceof Map) {
 	    this.map = map;
@@ -52,23 +54,22 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
 
 	    this.setup_map_callbacks(map);
 	} else {
-	    console.error('Cannot set the map. It is not an instance of builder/Map');
+	    throw new Error('Cannot set the map. It is not an instance of ' + 
+			    'Map');
 	}
 	if (zoom_container instanceof ZoomContainer) {
 	    this.zoom_container = zoom_container;
-	    this.setup_zoom_callbacks();
+	    this.setup_zoom_callbacks(zoom_container);
 	} else {
-	    console.error('Cannot set the zoom_container. It is not an instance of ' +
-			  'builder/ZoomContainer');
+	    throw new Error('Cannot set the zoom_container. It is not an ' +
+			    'instance of ZoomContainer');
 	}
-
-	// set up reaction input callbacks
-	this.callback_manager = new CallbackManager();
 
 	// toggle off
 	this.toggle(false);
 	this.target_coords = null;
     }
+
     function setup_map_callbacks(map) {
 	// input
 	map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
@@ -90,8 +91,9 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
 	    this.hide_target();
 	}.bind(this));
     }
-    function setup_zoom_callbacks() {
-	this.zoom_container.callback_manager.set('zoom.input', function() {
+
+    function setup_zoom_callbacks(zoom_container) {
+	zoom_container.callback_manager.set('zoom.input', function() {
 	    if (this.is_active) {
 		this.place_at_selected();
 	    }

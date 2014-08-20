@@ -1,7 +1,8 @@
 define(["utils"], function(utils) {
     return { new_reaction: new_reaction,
 	     rotate_nodes: rotate_nodes,
-	     move_node_and_dependents: move_node_and_dependents };
+	     move_node_and_dependents: move_node_and_dependents,
+	     new_text_label: new_text_label };
     
     // definitions
     function new_reaction(bigg_id, cobra_reaction, cobra_metabolites,
@@ -421,5 +422,13 @@ define(["utils"], function(utils) {
 	loc.b2 = utils.c_plus_c(displacement, b2);
 	loc.circle = utils.c_plus_c(displacement, circle);
         return loc;
+    }
+
+    function new_text_label(largest_ids, text, coords) {
+	var new_id = String(++largest_ids.text_labels),
+	    new_label = { text: text,
+			  x: coords.x,
+			  y: coords.y };
+	return {id: new_id, label: new_label};
     }
 });
