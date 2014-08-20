@@ -129,14 +129,14 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
 	}
     }
     function show_dropdown(coords) {
-	this.placed_selection.show();
+	this.placed_div.show();
         this.completely.input.blur();
 	this.completely.repaint();
 	this.completely.setText("");
         this.completely.input.focus();
     }
     function hide_dropdown() {
-	this.placed_selection.hide();
+	this.placed_div.hide();
         this.completely.hideDropDown();
     }
     function place_at_selected() {
@@ -152,22 +152,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
 	this.place(coords);
     }
     function place(coords) {
-	this.placed_selection.place(coords);
-	// var d = {x: 240, y: 0},
-	//     window_translate = this.map.zoom_container.window_translate,
-	//     window_scale = this.map.zoom_container.window_scale,
-	//     map_size = this.map.get_size();
-        // var left = Math.max(20,
-	// 		    Math.min(map_size.width - 270,
-	// 			     (window_scale * coords.x + window_translate.x - d.x)));
-        // var top = Math.max(20,
-	// 		   Math.min(map_size.height - 40,
-	// 			    (window_scale * coords.y + window_translate.y - d.y)));
-        // this.selection.style('position', 'absolute')
-        //     .style('display', 'block')
-        //     .style('left',left+'px')
-        //     .style('top',top+'px');
-
+	this.placed_div.place(coords);
 	this.direction_arrow.set_location(coords);
 	this.direction_arrow.show();
     }
