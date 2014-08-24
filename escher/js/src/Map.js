@@ -4,7 +4,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
      Arguments
      ---------
 
-     svg:
+     svg: The parent SVG container for the map.
 
      css:
 
@@ -79,24 +79,35 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	get_selected_text_labels: get_selected_text_labels,
 	segments_and_reactions_for_nodes: segments_and_reactions_for_nodes,
 	// draw
-	has_reaction_data: has_reaction_data,
-	has_metabolite_data: has_metabolite_data,
 	draw_everything: draw_everything,
+	// draw reactions
 	draw_all_reactions: draw_all_reactions,
 	draw_these_reactions: draw_these_reactions,
+	clear_deleted_reactions: clear_deleted_reactions,
+	// draw nodes
 	draw_all_nodes: draw_all_nodes,
 	draw_these_nodes: draw_these_nodes,
+	clear_deleted_nodes: clear_deleted_nodes,
+	// draw text_labels
+	draw_all_text_labels: draw_all_text_labels,
 	draw_these_text_labels: draw_these_text_labels,
+	clear_deleted_text_labels: clear_deleted_text_labels,
+	// draw beziers
+	draw_all_beziers: draw_all_beziers,
+	draw_these_beziers: draw_these_beziers,
+	clear_deleted_beziers: clear_deleted_beziers,
+	toggle_beziers: toggle_beziers,
+	hide_beziers: hide_beziers,
+	show_beziers: show_beziers,
+	// data
+	has_reaction_data: has_reaction_data,
+	has_metabolite_data: has_metabolite_data,
 	apply_reaction_data_to_map: apply_reaction_data_to_map,
 	apply_reaction_data_to_reactions: apply_reaction_data_to_reactions,
 	update_reaction_data_domain: update_reaction_data_domain,
 	apply_metabolite_data_to_map: apply_metabolite_data_to_map,
 	apply_metabolite_data_to_nodes: apply_metabolite_data_to_nodes,
 	update_metabolite_data_domain: update_metabolite_data_domain,
-	get_selected_node_ids: get_selected_node_ids,
-	toggle_beziers: toggle_beziers,
-	hide_beziers: hide_beziers,
-	show_beziers: show_beziers,
 	// zoom
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
@@ -195,6 +206,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	
 	this.nodes = {};
 	this.reactions = {};
+	this.beziers = {};
 	this.membranes = [];
 	this.text_labels = {};
 	this.info = {};
@@ -240,7 +252,8 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	map.text_labels = map_data.text_labels;
 	map.info = map_data.info;
 
-	// propogate coefficients and reversbility, and populate the search index
+	// Propogate coefficients and reversbility, and populate the reaction
+	// search index.
 	for (var r_id in map.reactions) {
 	    var reaction = map.reactions[r_id];
 	    if (enable_search) {
@@ -259,7 +272,8 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 		if (to_node_bigg_id in reaction.metabolites) {
 		    segment.to_node_coefficient = reaction.metabolites[to_node_bigg_id].coefficient;
 		}
-		// if metabolite without beziers, then add them
+
+		// If the metabolite has no bezier points, then add them.
 		var start = map.nodes[segment.from_node_id],
 		    end = map.nodes[segment.to_node_id];
 		if (start['node_type']=='metabolite' || end['node_type']=='metabolite') {
@@ -270,6 +284,8 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
 	    }
 	}
+
+	//  populate the nodes search index.
 	if (enable_search) {
 	    for (var node_id in map.nodes) {
 		var node = map.nodes[node_id];
@@ -279,6 +295,10 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 								 node_id: node_id }});
 	    }
 	}
+
+	// populate the beziers
+	map.beziers = build.beziers_for_reactions(map.reactions);
+
 	// get largest ids for adding new reactions, nodes, text labels, and
 	// segments
 	map.largest_ids.reactions = get_largest_id(map.reactions);
@@ -314,26 +334,26 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
     function setup_containers(sel) {
         sel.append('g')
-	    .attr('id', 'nodes');
-        sel.append('g')
 	    .attr('id', 'reactions');
         sel.append('g')
-	    .attr('id', 'text-labels');
+	    .attr('id', 'nodes');
         sel.append('g')
-	    .attr('id', 'membranes');
+	    .attr('id', 'beziers');
+        sel.append('g')
+	    .attr('id', 'text-labels');
     }
     function reset_containers() {
-	this.sel.select('#nodes')
-	    .selectAll('.node')
-	    .remove();
 	this.sel.select('#reactions')
 	    .selectAll('.reaction')
 	    .remove();
+	this.sel.select('#nodes')
+	    .selectAll('.node')
+	    .remove();
+	this.sel.select('#beziers')
+	    .selectAll('.bezier')
+	    .remove();
 	this.sel.select('#text-labels')
 	    .selectAll('.text-label')
-	    .remove();
-	this.sel.select('#membranes')
-	    .selectAll('.membrane')
 	    .remove();
     }
 
@@ -461,6 +481,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     }
     function clear_map() {
 	this.reactions = {};
+	this.beziers = {};
 	this.nodes = {};
 	this.membranes = [];
 	this.text_labels = {};
@@ -476,216 +497,257 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	return (this.metabolite_data_object!==null);
     }
     function draw_everything() {
-        /** Draw the reactions and membranes
+        /** Draw the all reactions, nodes, & text labels.
 
          */
-	var sel = this.sel,
-	    membranes = this.membranes,
-	    scale = this.scale,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    text_labels = this.text_labels,
-	    defs = this.defs,
-	    default_reaction_color = this.default_reaction_color,
-	    bezier_drag_behavior = this.behavior.bezier_drag,
-	    node_click_fn = this.behavior.selectable_click,
-	    node_mouseover_fn = this.behavior.node_mouseover,
-	    node_mouseout_fn = this.behavior.node_mouseout,
-	    node_drag_behavior = this.behavior.selectable_drag,
-	    reaction_label_drag = this.behavior.reaction_label_drag,
-	    node_label_drag = this.behavior.node_label_drag,
-	    text_label_click = this.behavior.text_label_click,
-	    text_label_drag = this.behavior.selectable_drag,
-	    has_reaction_data = this.has_reaction_data(),
-	    reaction_data_styles = this.settings.data_styles['reaction'],
-	    has_metabolite_data = this.has_metabolite_data(),
-	    metabolite_data_styles = this.settings.data_styles['metabolite'],
-	    beziers_enabled = this.beziers_enabled;
-
-	utils.draw_an_array(sel, '#membranes' ,'.membrane', membranes,
-			    draw.create_membrane,
-			    draw.update_membrane);
-
-	utils.draw_an_object(sel, '#reactions', '.reaction', reactions,
-			     'reaction_id',
-			     draw.create_reaction, 
-			     function(sel) { return draw.update_reaction(sel,
-									 scale, 
-									 nodes,
-									 beziers_enabled, 
-									 defs,
-									 default_reaction_color,
-									 has_reaction_data,
-									 reaction_data_styles,
-									 bezier_drag_behavior,
-									 reaction_label_drag); });
-
-	utils.draw_an_object(sel, '#nodes', '.node', nodes, 'node_id', 
-			     function(sel) { return draw.create_node(sel, nodes, reactions); },
-			     function(sel) { return draw.update_node(sel, scale,
-								     has_metabolite_data,
-								     metabolite_data_styles,
-								     node_click_fn,
-								     node_mouseover_fn,
-								     node_mouseout_fn,
-								     node_drag_behavior,
-								     node_label_drag); });
-
-	utils.draw_an_object(sel, '#text-labels', '.text-label', text_labels,
-			     'text_label_id',
-			     function(sel) { return draw.create_text_label(sel); }, 
-			     function(sel) { return draw.update_text_label(sel,
-									   text_label_click,
-									   text_label_drag); });
-
-
+	this.draw_all_reactions();
+	this.draw_all_nodes();
+	this.draw_all_text_labels();
     }
     function draw_all_reactions() {
+	/** Draw all reactions, and clear deleted reactions.
+
+	 */
+	// Draw all reactions.
 	var reaction_ids = [];
 	for (var reaction_id in this.reactions) {
 	    reaction_ids.push(reaction_id);
 	}
 	this.draw_these_reactions(reaction_ids);
+
+	// Clear all deleted reactions.
+	this.clear_deleted_reactions();
     }
+    
     function draw_these_reactions(reaction_ids) {
-	var scale = this.scale,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    defs = this.defs,
-	    default_reaction_color = this.default_reaction_color,
-	    bezier_drag_behavior = this.behavior.bezier_drag,
-	    reaction_label_drag = this.behavior.reaction_label_drag,
-	    has_reaction_data = this.has_reaction_data(),
-	    reaction_data_styles = this.settings.data_styles['reaction'],
-	    beziers_enabled = this.beziers_enabled;
+	/** Draw specific reactions.
 
+         Does nothing with exit selection. Use clear_deleted_reactions to remove
+         reactions from the DOM.
+
+	 Arguments
+	 ---------
+
+	 reactions_ids: An array of reaction_ids to update.
+
+	 */
         // find reactions for reaction_ids
-        var reaction_subset = {},
-	    i = -1;
-        while (++i<reaction_ids.length) {
-	    reaction_subset[reaction_ids[i]] = utils.clone(reactions[reaction_ids[i]]);
-        }
-        if (reaction_ids.length != Object.keys(reaction_subset).length) {
-	    console.warn('did not find correct reaction subset');
-        }
+	var reaction_subset = utils.object_slice_for_ids(this.reactions,
+							 reaction_ids);
 
-        // generate reactions for o.drawn_reactions
-        // assure constancy with cobra_id
-        var sel = this.sel.select('#reactions')
-                .selectAll('.reaction')
-                .data(utils.make_array(reaction_subset, 'reaction_id'),
-		      function(d) { return d.reaction_id; });
+	// function to update reactions
+	var update_fn = function(sel) {
+	    return draw.update_reaction(sel,
+					this.scale,
+					this.nodes,
+					this.defs,
+					this.default_reaction_color,
+					this.has_reaction_data(),
+					this.settings.data_styles['reaction'],
+					this.behavior.reaction_label_drag);
+	}.bind(this);
 
-        // enter: generate and place reaction
-        sel.enter().call(draw.create_reaction);
+	// draw the reactions
+	utils.draw_an_object(this.sel, '#reactions', '.reaction', reaction_subset,
+			     'reaction_id', draw.create_reaction, update_fn); 
+    } 
 
-        // update: update when necessary
-        sel.call(function(sel) { return draw.update_reaction(sel, scale, 
-							     nodes,
-							     beziers_enabled, 
-							     defs,
-							     default_reaction_color,
-							     has_reaction_data,
-							     reaction_data_styles,
-							     bezier_drag_behavior,
-							     reaction_label_drag); });
+    function clear_deleted_reactions() {
+	/** Remove any reactions that are not in *this.reactions*.
 
-        // exit
-        sel.exit();
+	 */
+	// remove deleted
+	utils.draw_an_object(this.sel, '#reactions', '.reaction', this.reactions,
+			     'reaction_id', null, null,
+			     function(sel) { sel.remove(); });
     }
+
     function draw_all_nodes() {
+	/** Draw all nodes, and clear deleted nodes.
+
+	 */
 	var node_ids = [];
 	for (var node_id in this.nodes) {
 	    node_ids.push(node_id);
 	}
 	this.draw_these_nodes(node_ids);
+
+	// clear the deleted nodes
+	this.clear_deleted_nodes();
     }
+
     function draw_these_nodes(node_ids) {
-	var scale = this.scale,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    node_click_fn = this.behavior.selectable_click,
-	    node_mouseover_fn = this.behavior.node_mouseover,
-	    node_mouseout_fn = this.behavior.node_mouseout,
-	    node_drag_behavior = this.behavior.selectable_drag,
-	    node_label_drag = this.behavior.node_label_drag,
-	    metabolite_data_styles = this.settings.data_styles['metabolite'],
-	    has_metabolite_data = this.has_metabolite_data();
+	/** Draw specific nodes.
 
-	// find nodes for node_ids
-        var node_subset = {},
-	    i = -1;
-        while (++i<node_ids.length) {
-	    node_subset[node_ids[i]] = utils.clone(nodes[node_ids[i]]);
-        }
-        if (node_ids.length != Object.keys(node_subset).length) {
-	    console.warn('did not find correct node subset');
-        }
+         Does nothing with exit selection. Use clear_deleted_nodes to remove
+         nodes from the DOM.
 
-        // generate nodes for o.drawn_nodes
-        // assure constancy with cobra_id
-        var sel = this.sel.select('#nodes')
-                .selectAll('.node')
-                .data(utils.make_array(node_subset, 'node_id'),
-		      function(d) { return d.node_id; });
+	 Arguments
+	 ---------
 
-        // enter: generate and place node
-        sel.enter().call(function(sel) { return draw.create_node(sel, nodes, reactions); });
-
-        // update: update when necessary
-        sel.call(function(sel) { return draw.update_node(sel, scale, has_metabolite_data, metabolite_data_styles, 
-							 node_click_fn,
-							 node_mouseover_fn,
-							 node_mouseout_fn,
-							 node_drag_behavior,
-							 node_label_drag); });
-
-        // exit
-        sel.exit();
-    }
-    function draw_these_text_labels(text_label_ids) {
-	/** Draw labels with the given ids.
+	 nodes_ids: An array of node_ids to update.
 
 	 */
-	var text_labels = this.text_labels,
-	    text_label_click = this.behavior.text_label_click,
-	    text_label_drag = this.behavior.selectable_drag;
+        // find reactions for reaction_ids
+	var node_subset = utils.object_slice_for_ids(this.nodes, node_ids);
 
-	// find text labels for text_label_ids
-        var text_label_subset = {},
-	    i = -1;
-        while (++i<text_label_ids.length) {
-	    text_label_subset[text_label_ids[i]] = utils.clone(text_labels[text_label_ids[i]]);
-        }
-        if (text_label_ids.length != Object.keys(text_label_subset).length) {
-	    console.warn('did not find correct text label subset');
-        }
+	// functions to create and update nodes
+	var create_fn = function(sel) {
+		return draw.create_node(sel,
+					this.nodes,
+					this.reactions);
+	    }.bind(this),
+	    update_fn = function(sel) {
+		return draw.update_node(sel,
+					this.scale,
+					this.has_metabolite_data(),
+					this.settings.data_styles['metabolite'],
+					this.behavior.selectable_click,
+					this.behavior.node_mouseover,
+					this.behavior.node_mouseout,
+					this.behavior.selectable_drag,
+					this.behavior.node_label_drag);
+	    }.bind(this);
 
-        // generate text for this.text_labels
-        var sel = this.sel.select('#text-labels')
-                .selectAll('.text-label')
-                .data(utils.make_array(text_label_subset, 'text_label_id'),
-		      function(d) { return d.text_label_id; });
-
-        // enter: generate and place label
-        sel.enter().call(function(sel) {
-	    return draw.create_text_label(sel);
-	});
-
-        // update: update when necessary
-        sel.call(function(sel) {
-	    return draw.update_text_label(sel, text_label_click, text_label_drag);
-	});
-
-        // exit
-        sel.exit();
+	// draw the nodes
+	utils.draw_an_object(this.sel, '#nodes', '.node', node_subset, 'node_id',
+			     create_fn, update_fn);			      
     }
+
+    function clear_deleted_nodes() {
+	/** Remove any nodes that are not in *this.nodes*.
+
+	 */
+	// run remove for exit selection
+	utils.draw_an_object(this.sel, '#nodes', '.node', this.nodes, 'node_id',
+			     null, null, function(sel) { sel.remove(); });
+    }
+
+    function draw_all_text_labels() {
+	// Draw all text_labels.
+	var text_label_ids = [];
+	for (var text_label_id in this.text_labels) {
+	    text_label_ids.push(text_label_id);
+	}
+	this.draw_these_text_labels(text_label_ids);
+
+	// Clear all deleted text_labels.
+	this.clear_deleted_text_labels();
+    }
+
+    function draw_these_text_labels(text_label_ids) {
+	/** Draw specific text_labels.
+
+         Does nothing with exit selection. Use clear_deleted_text_labels to remove
+         text_labels from the DOM.
+
+	 Arguments
+	 ---------
+
+	 text_labels_ids: An array of text_label_ids to update.
+	 
+	 */
+        // find reactions for reaction_ids
+	var text_label_subset = utils.object_slice_for_ids(this.text_labels, text_label_ids);
+
+	// function to update text_labels
+	var update_fn = function(sel) {
+	    return draw.update_text_label(sel,
+					  this.behavior.text_label_click,
+					  this.behavior.selectable_drag);
+	}.bind(this);
+
+	// draw the text_labels
+	utils.draw_an_object(this.sel, '#text-labels', '.text-label',
+			     text_label_subset, 'text_label_id',
+			     draw.create_text_label, update_fn);
+    }
+
+    function clear_deleted_text_labels() {
+	/** Remove any text_labels that are not in *this.text_labels*.
+
+	 */
+	// clear deleted
+	utils.draw_an_object(this.sel, '#text-labels', '.text-label',
+			     this.text_labels, 'text_label_id', null, null,
+			     function(sel) { sel.remove(); });
+    }
+
+    function draw_all_beziers() {
+	/** Draw all beziers, and clear deleted reactions.
+
+	 */
+	var bezier_ids = [];
+	for (var bezier_id in this.beziers) {
+	    bezier_ids.push(bezier_id);
+	}
+	this.draw_these_beziers(bezier_ids);
+
+	// clear delete beziers
+	this.clear_deleted_beziers();
+    }
+
+    function draw_these_beziers(bezier_ids) {
+	/** Draw specific beziers.
+
+         Does nothing with exit selection. Use clear_deleted_beziers to remove
+         beziers from the DOM.
+
+	 Arguments
+	 ---------
+
+	 beziers_ids: An array of bezier_ids to update.
+
+	 */
+        // find reactions for reaction_ids
+	var bezier_subset = utils.object_slice_for_ids(this.beziers, bezier_ids);
+
+	// function to update beziers
+	var update_fn = function(sel) {
+	    return draw.update_bezier(sel,
+				      this.beziers_enabled, 
+				      this.behavior.bezier_drag,
+				      this.nodes);
+	}.bind(this);
+
+	// draw the beziers
+	utils.draw_an_object(this.sel, '#beziers', '.bezier', bezier_subset,
+			     'bezier_id', draw.create_bezier, update_fn);
+    }
+
+    function clear_deleted_beziers() {
+	/** Remove any beziers that are not in *this.beziers*.
+
+	 */
+	// remove deleted
+	utils.draw_an_object(this.sel, '#beziers', '.bezier', this.beziers,
+			     'bezier_id', null, null,
+			     function(sel) { sel.remove(); });
+    }
+
+    function show_beziers() {
+	this.toggle_beziers(true);
+    }
+
+    function hide_beziers() {
+	this.toggle_beziers(false);
+    }
+
+    function toggle_beziers(on_off) {
+	if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
+	else this.beziers_enabled = on_off;
+	this.draw_all_beziers();
+	this.callback_manager.run('toggle_beziers', this.beziers_enabled);
+    }
+
+
     function apply_reaction_data_to_map() {
 	/**  Returns True if the scale has changed.
 
 	 */
 	return this.apply_reaction_data_to_reactions(this.reactions);
     }
+    
     function apply_reaction_data_to_reactions(reactions) {
 	/**  Returns True if the scale has changed.
 
@@ -1043,7 +1105,11 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
 		// redraw
 		// TODO just redraw these nodes, segments, and labels
-		if (should_draw) this.draw_everything();
+		if (should_draw) {
+		    this.clear_deleted_reactions();
+		    this.clear_deleted_nodes();
+		    this.clear_deleted_text_labels();
+		}
 	    }.bind(this);
 
 	// delete
@@ -1169,18 +1235,6 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    delete this.text_labels[text_label_id];
 	}.bind(this));
     }
-    function show_beziers() {
-	this.toggle_beziers(true);
-    }
-    function hide_beziers() {
-	this.toggle_beziers(false);
-    }
-    function toggle_beziers(on_off) {
-	if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
-	else this.beziers_enabled = on_off;
-	this.draw_everything();
-	this.callback_manager.run('toggle_beziers', this.beziers_enabled);
-    }
 
     // ---------------------------------------------------------------------
     // Building
@@ -1245,7 +1299,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    // draw
-	    map.draw_everything();
+	    map.clear_deleted_nodes();
 	}, function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
@@ -1358,27 +1412,27 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
 	// clone the nodes and reactions, to redo this action later
 	var saved_nodes = utils.clone(new_nodes),
-	    saved_reactions = utils.clone(new_reactions),
-	    map = this;
+	    saved_reactions = utils.clone(new_reactions);
 
 	// add to undo/redo stack
 	this.undo_stack.push(function() {
 	    // undo
 	    // get the nodes to delete
 	    delete new_nodes[selected_node_id];
-	    map.delete_node_data(Object.keys(new_nodes));
-	    map.delete_reaction_data(Object.keys(new_reactions));
-	    select_metabolite_with_id.apply(map, [selected_node_id]);
+	    this.delete_node_data(Object.keys(new_nodes));
+	    this.delete_reaction_data(Object.keys(new_reactions));
+	    select_metabolite_with_id.apply(this, [selected_node_id]);
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    new_reactions = utils.clone(saved_reactions);
 	    // draw
-	    map.draw_everything();
-	}, function () {
+	    this.clear_deleted_nodes();
+	    this.clear_deleted_reactions();
+	}.bind(this), function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
-	    extend_and_draw_reaction.apply(map, [new_nodes, new_reactions, selected_node_id]);
-	});
+	    extend_and_draw_reaction.apply(this, [new_nodes, new_reactions, selected_node_id]);
+	}.bind(this));
 
 	// definitions
 	function extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id) {

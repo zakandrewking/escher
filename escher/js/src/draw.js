@@ -3,6 +3,8 @@
 define(['utils', 'data_styles'], function(utils, data_styles) {
     return { create_reaction: create_reaction,
 	     update_reaction: update_reaction,
+	     create_bezier: create_bezier,
+	     update_bezier: update_bezier,
 	     create_node: create_node,
 	     update_node: update_node,
 	     create_text_label: create_text_label,
@@ -45,14 +47,14 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
         return;
     }
 
-    function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
+    function update_reaction(update_selection, scale, drawn_nodes, 
 			     defs, default_reaction_color, has_reaction_data,
-			     reaction_data_styles, bezier_drag_behavior,
+			     reaction_data_styles, 
 			     label_drag_behavior) {
 	utils.check_undefined(arguments,
-			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
+			      ['update_selection', 'scale', 'drawn_nodes', 
 			       'defs', 'default_reaction_color', 'has_reaction_data',
-			       'reaction_data_styles', 'bezier_drag_behavior',
+			       'reaction_data_styles',
 			       'label_drag_behavior']);
 
         // update reaction label
@@ -73,10 +75,9 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
         // update segments
         sel.call(function(sel) { 
-	    return update_segment(sel, scale, drawn_nodes, show_beziers, defs,
+	    return update_segment(sel, scale, drawn_nodes, defs,
 				  default_reaction_color,
-				  has_reaction_data, reaction_data_styles,
-				  bezier_drag_behavior);
+				  has_reaction_data, reaction_data_styles);
 	});
 
         // old segments
@@ -183,21 +184,16 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
 	g.append('g')
 	    .attr('class', 'arrowheads');
-
-	g.append('g')
-	    .attr('class', 'beziers');
     }
     
-    function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
+    function update_segment(update_selection, scale, drawn_nodes,
 			    defs, default_reaction_color,
-			    has_reaction_data, reaction_data_styles,
-			    bezier_drag_behavior) {
+			    has_reaction_data, reaction_data_styles) {
 	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
-					  'show_beziers', 'defs',
+					  'defs',
 					  'default_reaction_color',
 					  'has_reaction_data',
-					  'reaction_data_styles',
-					  'bezier_drag_behavior']);
+					  'reaction_data_styles']);
 
         // update segment attributes
 	var get_disp = function(reversibility, coefficient) {
@@ -326,121 +322,89 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    return default_reaction_color;
 	});;
 	// remove
-	arrowheads.exit().remove();
+	arrowheads.exit().remove();	
+    }
 
-	// new bezier points
-	var bez = update_selection.select('.beziers')
-		.selectAll('.bezier-group')
+    function create_bezier(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
+
+	var g = enter_selection.append('g')
+	    	.attr('class', function(d) { return 'bezier'; });
+	g.append('circle')
+	    .attr('class', function(d) { return 'bezier-circle bezier'+d.bezier; })
+	    .style('stroke-width', String(1)+'px')	
+    	    .attr('r', String(7)+'px')
+	    .on('mouseover', function(d) {
+		d3.select(this).style('stroke-width', String(3)+'px');
+		d3.select(this.parentNode.parentNode)
+		    .selectAll('.connect-line')
+		    .attr('visibility', 'visible');
+	    })
+	    .on('mouseout', function(d) {
+		d3.select(this).style('stroke-width', String(1)+'px');
+		d3.select(this.parentNode.parentNode)
+		    .selectAll('.connect-line')
+		    .attr('visibility', 'hidden');
+	    });
+    }
+
+    function update_bezier(update_selection, show_beziers, drag_behavior,
+			   drawn_nodes) {
+	utils.check_undefined(arguments, ['update_selection', 'show_beziers',
+					  'drag_behavior', 'drawn_nodes']);
+	
+	update_selection
+	    .call(turn_off_drag)
+	    .call(drag_behavior);
+	if (!show_beziers) {
+	    update_selection.attr('visibility', 'hidden');
+	    return;
+	}		
+	
+	// draw bezier points
+	update_selection
+	    .attr('visibility', 'visible')
+	    .attr('transform', function(d) {
+	    	if (d.x==null || d.y==null) return ''; 
+		return 'translate('+d.x+','+d.y+')';
+	    });
+
+	// new bezier lines
+	var bez_lines = update_selection
+		.selectAll('.connect-line')
 		.data(function(d) {
-		    var beziers = [],
-			reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
-			segment_id = this.parentNode.parentNode.__data__.segment_id;
-		    //TODO fix; this is a bit of a hack
-		    if (d.b1!=null && d.b1.x!=null && d.b1.y!=null)
-			beziers.push({bezier: 1,
-				      x: d.b1.x,
-				      y: d.b1.y,
-				      reaction_id: reaction_id,
-				      segment_id: segment_id });
-		    if (d.b2!=null && d.b2.x!=null && d.b2.y!=null)
-			beziers.push({bezier: 2,
-				      x: d.b2.x,
-				      y: d.b2.y,
-				      reaction_id: reaction_id,
-				      segment_id: segment_id });
-		    return beziers;
-		}, function(d) { return d.bezier; });
-	bez.enter().call(function(sel) {
-	    return create_bezier(sel);
+		    var bezier_line, node,
+			segment_d = this.parentNode.parentNode.parentNode.__data__;
+		    node = (d.bezier==1 ? 
+			    drawn_nodes[segment_d.from_node_id] : 
+			    drawn_nodes[segment_d.to_node_id]);
+		    bezier_line = { x: d.x,
+				    y: d.y,
+				    source_x: node.x,
+				    source_y: node.y};
+		    return [bezier_line];
+		});
+	bez_lines.enter().call(function(sel) {
+	    return create_bezier_line(sel);
 	});
-	// update bezier points
-	bez.call(function(sel) {
-	    return update_bezier(sel, show_beziers, bezier_drag_behavior, drawn_nodes);
-	});
+	// update bezier lines
+	bez_lines.call(function(sel) { return update_bezier_line(sel); });
 	// remove
-	bez.exit().remove();
+	bez_lines.exit().remove();
 
 	// definitions
-	function create_bezier(enter_selection) {
-	    utils.check_undefined(arguments, ['enter_selection']);
-
-	    var g = enter_selection.append('g')
-	    	.attr('class', function(d) { return 'bezier-group'; });
-	    g.append('circle')
-	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
-	    	.style('stroke-width', String(1)+'px')	
-    		.attr('r', String(7)+'px')
-		.on('mouseover', function(d) {
-		    d3.select(this).style('stroke-width', String(3)+'px');
-		    d3.select(this.parentNode.parentNode)
-			.selectAll('.connect-line')
-			.attr('visibility', 'visible');
-		})
-		.on('mouseout', function(d) {
-		    d3.select(this).style('stroke-width', String(1)+'px');
-		    d3.select(this.parentNode.parentNode)
-			.selectAll('.connect-line')
-			.attr('visibility', 'hidden');
-		});
+	function create_bezier_line(enter_selection) {
+	    enter_selection.append('path')
+	    	.attr('class', function(d) { return 'connect-line'; })
+	    	.attr('visibility', 'hidden');
 	}
-	function update_bezier(update_selection, show_beziers, drag_behavior,
-			       drawn_nodes) {
-	    utils.check_undefined(arguments, ['update_selection', 'show_beziers',
-					      'drag_behavior', 'drawn_nodes']);
-	    
+	function update_bezier_line(update_selection) {
 	    update_selection
-		.call(turn_off_drag)
-		.call(drag_behavior);
-	    if (!show_beziers) {
-	    	update_selection.attr('visibility', 'hidden');
-		return;
-	    }		
-	    
-	    // draw bezier points
-	    update_selection
-		.attr('visibility', 'visible')
-		.attr('transform', function(d) {
-	    	    if (d.x==null || d.y==null) return ''; 
-		    return 'translate('+d.x+','+d.y+')';
-		});
-
-	    // new bezier lines
-	    var bez_lines = update_selection
-		    .selectAll('.connect-line')
-		    .data(function(d) {
-			var bezier_line, node,
-			    segment_d = this.parentNode.parentNode.parentNode.__data__;
-			node = (d.bezier==1 ? 
-				drawn_nodes[segment_d.from_node_id] : 
-				drawn_nodes[segment_d.to_node_id]);
-			bezier_line = { x: d.x,
-					y: d.y,
-					source_x: node.x,
-					source_y: node.y};
-			return [bezier_line];
-		    });
-	    bez_lines.enter().call(function(sel) {
-		return create_bezier_line(sel);
-	    });
-	    // update bezier lines
-	    bez_lines.call(function(sel) { return update_bezier_line(sel); });
-	    // remove
-	    bez_lines.exit().remove();
-
-	    // definitions
-	    function create_bezier_line(enter_selection) {
-		enter_selection.append('path')
-	    	    .attr('class', function(d) { return 'connect-line'; })
-	    	    .attr('visibility', 'hidden');
-	    }
-	    function update_bezier_line(update_selection) {
-		update_selection
-	    	    .attr('d', function(d) {
-	    		if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
-	    		    return '';
-	    		return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
-	    	    });
-	    }
+	    	.attr('d', function(d) {
+	    	    if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
+	    		return '';
+	    	    return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
+	    	});
 	}
     }
 

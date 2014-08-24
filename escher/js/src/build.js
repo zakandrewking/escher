@@ -2,7 +2,8 @@ define(["utils"], function(utils) {
     return { new_reaction: new_reaction,
 	     rotate_nodes: rotate_nodes,
 	     move_node_and_dependents: move_node_and_dependents,
-	     new_text_label: new_text_label };
+	     new_text_label: new_text_label,
+	     beziers_for_reactions: beziers_for_reactions };
     
     // definitions
     function new_reaction(bigg_id, cobra_reaction, cobra_metabolites,
@@ -233,7 +234,11 @@ define(["utils"], function(utils) {
 	var updated = rotate_nodes(new_nodes, new_reactions,
 				   angle, selected_node_coords);
 
+	// new_beziers object
+	var new_beziers = beziers_for_reactions(new_reactions);
+
 	return { new_reactions: new_reactions,
+		 new_beziers: new_beziers,
 		 new_nodes: new_nodes };
     }
 
@@ -430,5 +435,44 @@ define(["utils"], function(utils) {
 			  x: coords.x,
 			  y: coords.y };
 	return {id: new_id, label: new_label};
+    }
+
+    function beziers_for_reactions(reactions) {
+	throw Error('Not Implemented');
+
+	var beziers = {};
+	return beziers;
+
+	// new bezier points
+	// var bez = update_selection.select('.beziers')
+	// 	.selectAll('.bezier-group')
+	// 	.data(function(d) {
+	// 	    var beziers = [],
+	// 		reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
+	// 		segment_id = this.parentNode.parentNode.__data__.segment_id;
+	// 	    //TODO fix; this is a bit of a hack
+	// 	    if (d.b1!=null && d.b1.x!=null && d.b1.y!=null)
+	// 		beziers.push({bezier: 1,
+	// 			      x: d.b1.x,
+	// 			      y: d.b1.y,
+	// 			      reaction_id: reaction_id,
+	// 			      segment_id: segment_id });
+	// 	    if (d.b2!=null && d.b2.x!=null && d.b2.y!=null)
+	// 		beziers.push({bezier: 2,
+	// 			      x: d.b2.x,
+	// 			      y: d.b2.y,
+	// 			      reaction_id: reaction_id,
+	// 			      segment_id: segment_id });
+	// 	    return beziers;
+	// 	}, function(d) { return d.bezier; });
+	// bez.enter().call(function(sel) {
+	//     return create_bezier(sel);
+	// });
+	// // update bezier points
+	// bez.call(function(sel) {
+	//     return update_bezier(sel, show_beziers, bezier_drag_behavior, drawn_nodes);
+	// });
+	// // remove
+	// bez.exit().remove();
     }
 });

@@ -7,7 +7,6 @@ define(["lib/vkbeautify"], function(vkbeautify) {
              load_the_file: load_the_file,
 	     make_class: make_class,
 	     setup_defs: setup_defs,
-	     draw_an_array: draw_an_array,
 	     draw_an_object: draw_an_object,
 	     make_array: make_array,
 	     compare_arrays: compare_arrays,
@@ -15,6 +14,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     clone: clone,
 	     extend: extend,
 	     unique_concat: unique_concat,
+	     object_slice_for_ids: object_slice_for_ids,
 	     c_plus_c: c_plus_c,
 	     c_minus_c: c_minus_c,
 	     c_times_scalar: c_times_scalar,
@@ -172,34 +172,24 @@ define(["lib/vkbeautify"], function(vkbeautify) {
         return defs;
     }
 
-    function draw_an_array(container_sel, parent_node_selector, children_selector,
-			   array, create_function, update_function) {
-	/** Run through the d3 data binding steps for an array.
-	 */
-	var sel = container_sel.select(parent_node_selector)
-		.selectAll(children_selector)
-		.data(array);
-	// enter: generate and place reaction
-	sel.enter().call(create_function);
-	// update: update when necessary
-	sel.call(update_function);
-	// exit
-	sel.exit().remove();
-    }
-
     function draw_an_object(container_sel, parent_node_selector, children_selector,
-			    object, id_key, create_function, update_function) {
+			    object, id_key, create_function, update_function,
+			    exit_function) {
 	/** Run through the d3 data binding steps for an object.
+
 	 */
 	var sel = container_sel.select(parent_node_selector)
 		.selectAll(children_selector)
 		.data(make_array(object, id_key), function(d) { return d[id_key]; });
 	// enter: generate and place reaction
-	sel.enter().call(create_function);
+	if (create_function)
+	    sel.enter().call(create_function);
 	// update: update when necessary
-	sel.call(update_function);
+	if (update_function)
+	    sel.call(update_function);
 	// exit
-	sel.exit().remove();
+	if (exit_function) 
+	    sel.exit().call(exit_function);
     }
 
     function make_array(obj, id_key) { // is this super slow?
@@ -302,6 +292,27 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	    });
 	});
 	return new_array;
+    }
+
+    function object_slice_for_ids(obj, ids) {
+	/** Return a copy of the object with just the given ids. 
+	 
+	 Arguments
+	 ---------
+
+	 obj: An object.
+
+	 ids: An array of id strings.
+
+	 */
+        var subset = {}, i = -1;
+        while (++i<ids.length) {
+	    subset[ids[i]] = clone(obj[ids[i]]);
+        }
+        if (ids.length != Object.keys(subset).length) {
+	    console.warn('did not find correct reaction subset');
+        }
+	return subset;
     }
 
     function c_plus_c(coords1, coords2) {
