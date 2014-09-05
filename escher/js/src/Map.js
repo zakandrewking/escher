@@ -1129,8 +1129,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	 */
 
 	// 8/29/14
-	// ALSO, move beziers (dependents) on rotate
-	// ALSO, L1466
+	// TODO, L1466
 	// ALSO, single node click is broken
 
 	var out = this.segments_and_reactions_for_nodes(selected_nodes),
@@ -1255,7 +1254,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
     function delete_segment_data(segment_objs) {
 	/** Delete segments, update connected_segments in nodes, and delete
-	 bezier points. Also deletes any reactions with 0 segments.
+	 bezier points.
 	 
 	 segment_objs: Object with values like { reaction_id: "123", segment_id: "456" }
 	 
@@ -1287,11 +1286,22 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	}
     }
     function delete_reaction_data(reaction_ids) {
-	/** Delete reactions and remove from search index.
+	/** Delete reactions, segments, and beziers, and remove reaction from
+	 search index.
 	 
 	 */
 	reaction_ids.forEach(function(reaction_id) {
+            // remove beziers
+	    var reaction = this.reactions[reaction_id];
+	    for (var segment_id in reaction.segments) {
+		['b1', 'b2'].forEach(function(bez) {
+		    var bez_id = build.bezier_id_for_segment_id(segment_id, bez);
+	    	    delete this.beziers[bez_id];
+		}.bind(this));
+	    }
+	    // delete reaction
 	    delete this.reactions[reaction_id];
+	    // remove from search index
 	    var found = this.search_index.remove('r'+reaction_id);
 	    if (!found)
 		console.warn('Could not find deleted reaction in search index');
@@ -1474,14 +1484,17 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 				     this.cobra_model.cofactors,
 				     direction),
 	    new_nodes = out.new_nodes,
-	    new_reactions = out.new_reactions; //TODO draw new beziers
+	    new_reactions = out.new_reactions,
+	    new_beziers = out.new_beziers;
 
 	// draw
-	extend_and_draw_reaction.apply(this, [new_nodes, new_reactions, selected_node_id]);
+	extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
+					      new_beziers, selected_node_id]);
 
 	// clone the nodes and reactions, to redo this action later
 	var saved_nodes = utils.clone(new_nodes),
-	    saved_reactions = utils.clone(new_reactions);
+	    saved_reactions = utils.clone(new_reactions),
+	    saved_beziers = utils.clone(new_beziers);
 
 	// add to undo/redo stack
 	this.undo_stack.push(function() {
@@ -1489,23 +1502,27 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    // get the nodes to delete
 	    delete new_nodes[selected_node_id];
 	    this.delete_node_data(Object.keys(new_nodes));
-	    this.delete_reaction_data(Object.keys(new_reactions));
+	    this.delete_reaction_data(Object.keys(new_reactions)); // also deletes beziers
 	    select_metabolite_with_id.apply(this, [selected_node_id]);
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    new_reactions = utils.clone(saved_reactions);
+	    new_beziers = utils.clone(saved_beziers);
 	    // draw
 	    this.clear_deleted_nodes();
-	    this.clear_deleted_reactions();
+	    this.clear_deleted_reactions(true); // also clears segments and beziers
 	}.bind(this), function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
-	    extend_and_draw_reaction.apply(this, [new_nodes, new_reactions, selected_node_id]);
+	    extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
+						  new_beziers, selected_node_id]);
 	}.bind(this));
 
 	// definitions
-	function extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id) {
+	function extend_and_draw_reaction(new_nodes, new_reactions, new_beziers,
+					  selected_node_id) {
 	    this.extend_reactions(new_reactions);
+	    utils.extend(this.beziers, new_beziers);
 	    // remove the selected node so it can be updated
 	    this.delete_node_data([selected_node_id]); // TODO this is a hack. fix
 	    this.extend_nodes(new_nodes);

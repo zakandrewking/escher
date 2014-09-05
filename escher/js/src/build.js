@@ -232,24 +232,25 @@ define(["utils"], function(utils) {
 	var new_reactions = {};
 	new_reactions[new_reaction_id] = new_reaction;
 	
-	// add the selected node for rotation, and return it as a new (updated) node
-	new_nodes[selected_node_id] = selected_node;
-	var updated = rotate_nodes(new_nodes, new_reactions,
-				   angle, selected_node_coords);
-
 	// new_beziers object
 	var new_beziers = new_beziers_for_reactions(new_reactions);
+
+	// add the selected node for rotation, and return it as a new (updated) node
+	new_nodes[selected_node_id] = selected_node;
+	rotate_nodes(new_nodes, new_reactions, new_beziers,
+		     angle, selected_node_coords);
 
 	return { new_reactions: new_reactions,
 		 new_beziers: new_beziers,
 		 new_nodes: new_nodes };
     }
 
-    function rotate_nodes(selected_nodes, reactions, angle, center) {
+    function rotate_nodes(selected_nodes, reactions, beziers, angle, center) {
 	/** Rotate the nodes around center.
 
 	 selected_nodes: Nodes to rotate.
 	 reactions: Only updates beziers for these reactions.
+	 beziers: Also update the bezier points.
 	 angle: Angle to rotate in radians.
 	 center: Point to rotate around.
 
@@ -278,13 +279,20 @@ define(["utils"], function(utils) {
 		if (reaction === undefined) return;
 
 		// rotate the beziers
-		var segment = reaction.segments[segment_obj.segment_id];
+		var segment_id = segment_obj.segment_id,
+		    segment = reaction.segments[segment_id];
 		if (segment.to_node_id==node_id && segment.b2) {
-		    var displacement = rotate_around(segment.b2);
+		    var displacement = rotate_around(segment.b2),
+			bez_id = bezier_id_for_segment_id(segment_id, 'b2');
 		    segment.b2 = utils.c_plus_c(segment.b2, displacement);
+		    beziers[bez_id].x = segment.b2.x;
+		    beziers[bez_id].y = segment.b2.y; 
 		} else if (segment.from_node_id==node_id && segment.b1) {
-		    var displacement = rotate_around(segment.b1);
+		    var displacement = rotate_around(segment.b1),
+			bez_id = bezier_id_for_segment_id(segment_id, 'b1');
 		    segment.b1 = utils.c_plus_c(segment.b1, displacement);
+		    beziers[bez_id].x = segment.b1.x;
+		    beziers[bez_id].y = segment.b1.y; 
 		}
 	    });
 

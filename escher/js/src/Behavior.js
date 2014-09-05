@@ -115,7 +115,8 @@ define(["utils", "build"], function(utils, build) {
 	    var map = this.map,
 		selected_node_ids = Object.keys(selected_nodes),
 		reactions = this.map.reactions,
-		nodes = this.map.nodes;
+		nodes = this.map.nodes,
+		beziers = this.map.beziers;
 
 	    var start_fn = function(d) {
 		// silence other listeners
@@ -123,7 +124,7 @@ define(["utils", "build"], function(utils, build) {
 	    },
 		drag_fn = function(d, angle, total_angle, center) {
 		    var updated = build.rotate_nodes(selected_nodes, reactions,
-						     angle, center);
+						     beziers, angle, center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
 		},
@@ -135,7 +136,8 @@ define(["utils", "build"], function(utils, build) {
 			these_nodes[id] = nodes[id];
 		    });
 		    var updated = build.rotate_nodes(these_nodes, reactions,
-						     -total_angle, center);
+						     beziers, -total_angle,
+						     center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
 		},
@@ -146,7 +148,8 @@ define(["utils", "build"], function(utils, build) {
 			these_nodes[id] = nodes[id];
 		    });
 		    var updated = build.rotate_nodes(these_nodes, reactions,
-						     total_angle, center);
+						     beziers, total_angle,
+						     center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
 		},
