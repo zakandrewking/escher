@@ -67,10 +67,10 @@
 .bezier-circle {
     fill: rgb(255,255,255);	
 }
-.bezier1 {
+.bezier-circle.b1 {
     stroke: red;
 }
-.bezier2 {
+.bezier-circle.b2 {
     stroke: blue;
 }
 .connect-line{ 

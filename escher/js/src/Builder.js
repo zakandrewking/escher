@@ -283,6 +283,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	this.map.behavior.toggle_selectable_drag(mode=='brush' || mode=='rotate');
 	this.map.behavior.toggle_label_drag(mode=='brush');
 	this.map.behavior.toggle_text_label_edit(mode=='text');
+	this.map.behavior.toggle_bezier_drag(mode=='brush');
 	// edit selections
 	if (mode=='view' || mode=='text')
 	    this.map.select_none();

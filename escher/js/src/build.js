@@ -3,7 +3,10 @@ define(["utils"], function(utils) {
 	     rotate_nodes: rotate_nodes,
 	     move_node_and_dependents: move_node_and_dependents,
 	     new_text_label: new_text_label,
-	     beziers_for_reactions: beziers_for_reactions };
+	     bezier_id_for_segment_id: bezier_id_for_segment_id,
+	     bezier_ids_for_reaction_ids: bezier_ids_for_reaction_ids,
+	     new_beziers_for_segments: new_beziers_for_segments,
+	     new_beziers_for_reactions: new_beziers_for_reactions };
     
     // definitions
     function new_reaction(bigg_id, cobra_reaction, cobra_metabolites,
@@ -235,7 +238,7 @@ define(["utils"], function(utils) {
 				   angle, selected_node_coords);
 
 	// new_beziers object
-	var new_beziers = beziers_for_reactions(new_reactions);
+	var new_beziers = new_beziers_for_reactions(new_reactions);
 
 	return { new_reactions: new_reactions,
 		 new_beziers: new_beziers,
@@ -294,7 +297,7 @@ define(["utils"], function(utils) {
 		 reaction_ids: updated_reaction_ids };
     }
     
-    function move_node_and_dependents(node, node_id, reactions, displacement) {
+    function move_node_and_dependents(node, node_id, reactions, beziers, displacement) {
 	/** Move the node and its labels and beziers.
 
 	 */
@@ -307,13 +310,19 @@ define(["utils"], function(utils) {
 	    if (reaction === undefined) return;
 
 	    // update beziers
-	    var segment = reaction.segments[segment_obj.segment_id];
-	    if (segment.from_node_id==node_id && segment.b1) {
-		segment.b1 = utils.c_plus_c(segment.b1, displacement);
-	    }
-	    if (segment.to_node_id==node_id && segment.b2) {
-		segment.b2 = utils.c_plus_c(segment.b2, displacement);
-	    }
+	    var segment_id = segment_obj.segment_id,
+		segment = reaction.segments[segment_id];
+	    [['b1', 'from_node_id'], ['b2', 'to_node_id']].forEach(function(c) {
+		var bez = c[0],
+		    node = c[1];
+		if (segment[node]==node_id && segment[bez]) {
+		    segment[bez] = utils.c_plus_c(segment[bez], displacement);
+		    var tbez = beziers[bezier_id_for_segment_id(segment_id, bez)];
+		    tbez.x = segment[bez].x;
+		    tbez.y = segment[bez].y;
+		}
+	    });
+	    
 	    // add to list of updated reaction ids if it isn't already there
 	    if (updated.reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
 	        updated.reaction_ids.push(segment_obj.reaction_id);
@@ -437,42 +446,85 @@ define(["utils"], function(utils) {
 	return {id: new_id, label: new_label};
     }
 
-    function beziers_for_reactions(reactions) {
-	throw Error('Not Implemented');
+    function bezier_id_for_segment_id(segment_id, bez) {
+	return segment_id+'_'+bez;
+    }
 
+    function bezier_ids_for_reaction_ids(reactions) {
+	/** Return an array of beziers ids for the array of reaction ids.
+
+	 Arguments
+	 ---------
+
+	 reactions: A reactions object, e.g. a subset of *escher.Map.reactions*.
+
+	 */ 
+	var bezier_ids = [];
+	for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id];
+
+	    for (var segment_id in reaction.segments) {
+		var segment = reaction.segments[segment_id];
+
+		['b1', 'b2'].forEach(function(bez) {
+		    var seg_bez = segment[bez];
+		    if (seg_bez !== null) {
+			bezier_ids.push(bezier_id_for_segment_id(segment_id, bez));
+		    }
+		});
+	    }
+	}
+	return bezier_ids;
+    }
+
+    function new_beziers_for_segments(segments, reaction_id) {
+	/** Return an object containing beziers for the segments object.
+
+	 Arguments
+	 ---------
+
+	 segments: A segments object, e.g. *escher.Map.segments*.
+
+	 reaction_id: The reaction id for the segments.
+
+	 */
 	var beziers = {};
-	return beziers;
+	for (var segment_id in segments) {
+	    var segment = segments[segment_id];
 
-	// new bezier points
-	// var bez = update_selection.select('.beziers')
-	// 	.selectAll('.bezier-group')
-	// 	.data(function(d) {
-	// 	    var beziers = [],
-	// 		reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
-	// 		segment_id = this.parentNode.parentNode.__data__.segment_id;
-	// 	    //TODO fix; this is a bit of a hack
-	// 	    if (d.b1!=null && d.b1.x!=null && d.b1.y!=null)
-	// 		beziers.push({bezier: 1,
-	// 			      x: d.b1.x,
-	// 			      y: d.b1.y,
-	// 			      reaction_id: reaction_id,
-	// 			      segment_id: segment_id });
-	// 	    if (d.b2!=null && d.b2.x!=null && d.b2.y!=null)
-	// 		beziers.push({bezier: 2,
-	// 			      x: d.b2.x,
-	// 			      y: d.b2.y,
-	// 			      reaction_id: reaction_id,
-	// 			      segment_id: segment_id });
-	// 	    return beziers;
-	// 	}, function(d) { return d.bezier; });
-	// bez.enter().call(function(sel) {
-	//     return create_bezier(sel);
-	// });
-	// // update bezier points
-	// bez.call(function(sel) {
-	//     return update_bezier(sel, show_beziers, bezier_drag_behavior, drawn_nodes);
-	// });
-	// // remove
-	// bez.exit().remove();
+	    ['b1', 'b2'].forEach(function(bez) {
+		var seg_bez = segment[bez];
+		if (seg_bez !== null) {
+		    var bezier_id = bezier_id_for_segment_id(segment_id, bez);
+		    beziers[bezier_id] = {
+			bezier: bez,
+	    		x: seg_bez.x,
+	    		y: seg_bez.y,
+	    		reaction_id: reaction_id,
+	    		segment_id: segment_id
+		    };
+		}
+	    });
+	}
+	return beziers;
+    }
+
+    function new_beziers_for_reactions(reactions) {
+	/** Return an object containing beziers for the reactions object.
+
+	 Arguments
+	 ---------
+
+	 reactions: A reactions object, e.g. *escher.Map.reactions*.
+
+	 */
+	var beziers = {};
+	for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id];
+
+	    var these = new_beziers_for_segments(reaction.segments, reaction_id);
+	    utils.extend(beziers, these);
+	}
+	return beziers;
     }
 });

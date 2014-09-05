@@ -32,13 +32,14 @@ define(["utils", "build"], function(utils, build) {
 			   toggle_text_label_edit: toggle_text_label_edit,
 			   toggle_selectable_drag: toggle_selectable_drag,
 			   toggle_label_drag: toggle_label_drag,
+			   toggle_bezier_drag: toggle_bezier_drag,
 			   // get drag behaviors
-			   get_selectable_drag: get_selectable_drag,
-			   get_bezier_drag: get_bezier_drag,
-			   get_reaction_label_drag: get_reaction_label_drag,
-			   get_node_label_drag: get_node_label_drag,
-			   get_generic_drag: get_generic_drag,
-			   get_generic_angular_drag: get_generic_angular_drag };
+			   _get_selectable_drag: _get_selectable_drag,
+			   _get_bezier_drag: _get_bezier_drag,
+			   _get_reaction_label_drag: _get_reaction_label_drag,
+			   _get_node_label_drag: _get_node_label_drag,
+			   _get_generic_drag: _get_generic_drag,
+			   _get_generic_angular_drag: _get_generic_angular_drag };
 
     return Behavior;
 
@@ -61,13 +62,15 @@ define(["utils", "build"], function(utils, build) {
 	this.node_mouseover = null;
 	this.node_mouseout = null;
 	this.bezier_drag = this.empty_behavior;
+	this.bezier_mouseover = null;
+	this.bezier_mouseout = null;
 	this.reaction_label_drag = this.empty_behavior;
 	this.node_label_drag = this.empty_behavior;
 	this.turn_everything_on();
     }
     function turn_everything_on() {
 	/** Toggle everything except rotation mode and text mode.
- 
+	 
 	 */
 	this.toggle_selectable_click(true);
 	this.toggle_selectable_drag(true);
@@ -150,9 +153,9 @@ define(["utils", "build"], function(utils, build) {
 		center_fn = function() {
 		    return this.center;
 		}.bind(this);
-	    this.rotation_drag = this.get_generic_angular_drag(start_fn, drag_fn, end_fn,
-							       undo_fn, redo_fn, center_fn,
-							       this.map.sel);
+	    this.rotation_drag = this._get_generic_angular_drag(start_fn, drag_fn, end_fn,
+								undo_fn, redo_fn, center_fn,
+								this.map.sel);
 	    selection_background.call(this.rotation_drag);
 
 
@@ -293,8 +296,8 @@ define(["utils", "build"], function(utils, build) {
 	 */
 	if (on_off===undefined) on_off = this.selectable_drag===this.empty_behavior;
 	if (on_off) {
-	    this.selectable_drag = this.get_selectable_drag(this.map, this.undo_stack);
-	    this.bezier_drag = this.get_bezier_drag(this.map, this.undo_stack);
+	    this.selectable_drag = this._get_selectable_drag(this.map, this.undo_stack);
+	    this.bezier_drag = this._get_bezier_drag(this.map, this.undo_stack);
 	} else {
 	    this.selectable_drag = this.empty_behavior;
 	    this.bezier_drag = this.empty_behavior;
@@ -308,15 +311,43 @@ define(["utils", "build"], function(utils, build) {
 	 */
 	if (on_off===undefined) on_off = this.label_drag===this.empty_behavior;
 	if (on_off) {
-	    this.reaction_label_drag = this.get_reaction_label_drag(this.map);
-	    this.node_label_drag = this.get_node_label_drag(this.map);
+	    this.reaction_label_drag = this._get_reaction_label_drag(this.map);
+	    this.node_label_drag = this._get_node_label_drag(this.map);
 	} else {
 	    this.reaction_label_drag = this.empty_behavior;
 	    this.node_label_drag = this.empty_behavior;
 	}
     }
 
-    function get_selectable_drag(map, undo_stack) {
+    function toggle_bezier_drag(on_off) {
+	/** With no argument, toggle the bezier drag on or off.
+
+	 Pass in a boolean argument to set the on/off state.
+
+	 */
+	if (on_off===undefined) on_off = this.bezier_drag===this.empty_behavior;
+	if (on_off) {
+	    this.bezier_drag = this._get_bezier_drag(this.map);
+	    this.bezier_mouseover = function(d) {
+		d3.select(this).style('stroke-width', String(3)+'px');
+		// d3.select(this.parentNode.parentNode)
+		//     .selectAll('.connect-line')
+		//     .attr('visibility', 'visible');
+	    };
+	    this.bezier_mouseout = function(d) {
+		d3.select(this).style('stroke-width', String(1)+'px');
+		// d3.select(this.parentNode.parentNode)
+		//     .selectAll('.connect-line')
+		//     .attr('visibility', 'hidden');
+	    };
+	} else {
+	    this.bezier_drag = this.empty_behavior;
+	    this.bezier_mouseover = null;
+	    this.bezier_mouseout = null;
+	}
+    }
+
+    function _get_selectable_drag(map, undo_stack) {
 	/** Drag the selected nodes and text labels.
 
 	 */
@@ -405,7 +436,10 @@ define(["utils", "build"], function(utils, build) {
 	    node_ids_to_drag.forEach(function(node_id) {
 		// update data
 		var node = map.nodes[node_id],
-		    updated = build.move_node_and_dependents(node, node_id, map.reactions, displacement);
+		    updated = build.move_node_and_dependents(node, node_id,
+							     map.reactions,
+							     map.beziers,
+							     displacement);
 		reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids]);
 		// remember the displacements
 		// if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 };
@@ -490,6 +524,7 @@ define(["utils", "build"], function(utils, build) {
 		    saved_node_ids.forEach(function(node_id) {
 			var node = map.nodes[node_id];
 			build.move_node_and_dependents(node, node_id, map.reactions,
+						       map.beziers,
 						       utils.c_times_scalar(saved_displacement, -1));
 		    });
 		    saved_text_label_ids.forEach(function(text_label_id) {
@@ -504,6 +539,7 @@ define(["utils", "build"], function(utils, build) {
 		    saved_node_ids.forEach(function(node_id) {
 			var node = map.nodes[node_id];
 			build.move_node_and_dependents(node, node_id, map.reactions,
+						       map.beziers,
 						       saved_displacement);
 		    });		    
 		    saved_text_label_ids.forEach(function(text_label_id) {
@@ -558,33 +594,42 @@ define(["utils", "build"], function(utils, build) {
 	    return updated_segment_objs;
 	}
     }
-    function get_bezier_drag(map) {
-	var move_bezier = function(reaction_id, segment_id, bezier, displacement) {
+    function _get_bezier_drag(map) {
+	var move_bezier = function(reaction_id, segment_id, bez, bezier_id, displacement) {
 	    var segment = map.reactions[reaction_id].segments[segment_id];
-	    segment['b'+bezier] = utils.c_plus_c(segment['b'+bezier], displacement);
+	    segment[bez] = utils.c_plus_c(segment[bez], displacement);
+	    map.beziers[bezier_id].x = segment[bez].x;
+	    map.beziers[bezier_id].y = segment[bez].y;
 	},
 	    start_fn = function(d) {
+		d.dragging = true;
 	    },
 	    drag_fn = function(d, displacement, total_displacement) {
 		// draw
-		move_bezier(d.reaction_id, d.segment_id, d.bezier, displacement);
-		map.draw_these_reactions([d.reaction_id]);
+		move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
+			    displacement);
+		map.draw_these_reactions([d.reaction_id], false);
+		map.draw_these_beziers([d.bezier_id]);
 	    },
 	    end_fn = function(d) {
+		d.dragging = false;
 	    },
 	    undo_fn = function(d, displacement) {
-		move_bezier(d.reaction_id, d.segment_id, d.bezier,
+		move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
 			    utils.c_times_scalar(displacement, -1));
-		map.draw_these_reactions([d.reaction_id]);
+		map.draw_these_reactions([d.reaction_id], false);
+		map.draw_these_beziers([d.bezier_id]);
 	    },
 	    redo_fn = function(d, displacement) {
-		move_bezier(d.reaction_id, d.segment_id, d.bezier, displacement);
-		map.draw_these_reactions([d.reaction_id]);
+		move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
+			    displacement);
+		map.draw_these_reactions([d.reaction_id], false);
+		map.draw_these_beziers([d.bezier_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-				     redo_fn, this.map.sel);
+	return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				      redo_fn, this.map.sel);
     }
-    function get_reaction_label_drag(map) {
+    function _get_reaction_label_drag(map) {
 	var move_label = function(reaction_id, displacement) {
 	    var reaction = map.reactions[reaction_id];
 	    reaction.label_x = reaction.label_x + displacement.x;
@@ -607,10 +652,10 @@ define(["utils", "build"], function(utils, build) {
 		move_label(d.reaction_id, displacement);
 		map.draw_these_reactions([d.reaction_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-				     redo_fn, this.map.sel);
+	return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				      redo_fn, this.map.sel);
     }
-    function get_node_label_drag(map) {
+    function _get_node_label_drag(map) {
 	var move_label = function(node_id, displacement) {
 	    var node = map.nodes[node_id];
 	    node.label_x = node.label_x + displacement.x;
@@ -633,11 +678,11 @@ define(["utils", "build"], function(utils, build) {
 		move_label(d.node_id, displacement);
 		map.draw_these_nodes([d.node_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-				     redo_fn, this.map.sel);
+	return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				      redo_fn, this.map.sel);
     }
 
-    function get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, relative_to_selection) {
+    function _get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, relative_to_selection) {
 	/** Make a generic drag behavior, with undo/redo.
 
 	 start_fn: function(d) Called at dragstart.
@@ -698,10 +743,10 @@ define(["utils", "build"], function(utils, build) {
 	return behavior;
     }
 
-    function get_generic_angular_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, 
-				      get_center, relative_to_selection) {
+    function _get_generic_angular_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, 
+				       get_center, relative_to_selection) {
 	/** Make a generic drag behavior, with undo/redo. Supplies angles in
-	  place of displacements.
+	 place of displacements.
 
 	 start_fn: function(d) Called at dragstart.
 

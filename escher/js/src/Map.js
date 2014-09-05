@@ -297,7 +297,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	}
 
 	// populate the beziers
-	map.beziers = build.beziers_for_reactions(map.reactions);
+	map.beziers = build.new_beziers_for_reactions(map.reactions);
 
 	// get largest ids for adding new reactions, nodes, text labels, and
 	// segments
@@ -500,26 +500,38 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
         /** Draw the all reactions, nodes, & text labels.
 
          */
-	this.draw_all_reactions();
+	this.draw_all_reactions(true); // also draw beziers
 	this.draw_all_nodes();
 	this.draw_all_text_labels();
     }
-    function draw_all_reactions() {
+    function draw_all_reactions(draw_beziers) {
 	/** Draw all reactions, and clear deleted reactions.
 
+	 Arguments
+	 ---------
+
+	 draw_beziers: (Boolean, default True) Whether to also draw the bezier
+	 control points.
+
 	 */
+	if (draw_beziers===undefined) draw_beziers = true;
+
 	// Draw all reactions.
 	var reaction_ids = [];
 	for (var reaction_id in this.reactions) {
 	    reaction_ids.push(reaction_id);
 	}
-	this.draw_these_reactions(reaction_ids);
+	// If draw_beziers is true, just draw them all, rather than deciding
+	// which ones to draw.
+	this.draw_these_reactions(reaction_ids, false);
+	if (draw_beziers)
+	    this.draw_all_beziers();
 
 	// Clear all deleted reactions.
-	this.clear_deleted_reactions();
+	this.clear_deleted_reactions(draw_beziers);
     }
     
-    function draw_these_reactions(reaction_ids) {
+    function draw_these_reactions(reaction_ids, draw_beziers) {
 	/** Draw specific reactions.
 
          Does nothing with exit selection. Use clear_deleted_reactions to remove
@@ -530,7 +542,12 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
 	 reactions_ids: An array of reaction_ids to update.
 
+	 draw_beziers: (Boolean, default True) Whether to also draw the bezier
+	 control points.
+
 	 */
+	if (draw_beziers===undefined) draw_beziers = true;
+
         // find reactions for reaction_ids
 	var reaction_subset = utils.object_slice_for_ids(this.reactions,
 							 reaction_ids);
@@ -549,17 +566,44 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
 	// draw the reactions
 	utils.draw_an_object(this.sel, '#reactions', '.reaction', reaction_subset,
-			     'reaction_id', draw.create_reaction, update_fn); 
+			     'reaction_id', draw.create_reaction, update_fn);
+	
+	if (draw_beziers) {
+	    // particular beziers to draw
+	    var bezier_ids = build.bezier_ids_for_reaction_ids(reaction_subset);
+	    this.draw_these_beziers(bezier_ids);
+	}
     } 
 
-    function clear_deleted_reactions() {
+    function clear_deleted_reactions(draw_beziers) {
 	/** Remove any reactions that are not in *this.reactions*.
 
+	 Arguments
+	 ---------
+
+	 draw_beziers: (Boolean, default True) Whether to also clear deleted
+	 bezier control points.
+
 	 */
-	// remove deleted
-	utils.draw_an_object(this.sel, '#reactions', '.reaction', this.reactions,
-			     'reaction_id', null, null,
+	if (draw_beziers===undefined) draw_beziers = true;
+	
+	// remove deleted reactions and segments
+	utils.draw_an_object(this.sel, '#reactions', '.reaction', this.reactions, 'reaction_id',
+			     null,
+			     clear_deleted_segments,
 			     function(sel) { sel.remove(); });
+
+	if (draw_beziers==true)
+	    this.clear_deleted_beziers();
+
+	// definitions
+	function clear_deleted_segments(update_selection) {
+	    // draw segments
+	    utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
+				       null,
+				       null,
+				       function(sel) { sel.remove(); });
+	};
     }
 
     function draw_all_nodes() {
@@ -705,9 +749,12 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	// function to update beziers
 	var update_fn = function(sel) {
 	    return draw.update_bezier(sel,
-				      this.beziers_enabled, 
+				      this.beziers_enabled,
 				      this.behavior.bezier_drag,
-				      this.nodes);
+				      this.behavior.bezier_mouseover,
+				      this.behavior.bezier_mouseout,
+				      this.nodes,
+				      this.reactions);
 	}.bind(this);
 
 	// draw the beziers
@@ -1080,9 +1127,15 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	 should_draw: A boolean argument to determine whether to draw the changes to the map.
 
 	 */
+
+	// 8/29/14
+	// ALSO, move beziers (dependents) on rotate
+	// ALSO, L1466
+	// ALSO, single node click is broken
+
 	var out = this.segments_and_reactions_for_nodes(selected_nodes),
-	    reactions = out.reactions,
-	    segment_objs_w_segments = out.segment_objs_w_segments;
+	    segment_objs_w_segments = out.segment_objs_w_segments, // TODO repeated values here
+	    reactions = out.reactions;
 
 	// copy nodes to undelete
 	var saved_nodes = utils.clone(selected_nodes),
@@ -1093,8 +1146,8 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 				       selected_text_labels) {
 		// delete nodes, segments, and reactions with no segments
   		this.delete_node_data(Object.keys(selected_nodes));
-		this.delete_segment_data(segment_objs);
-		this.delete_reaction_data(Object.keys(reactions));	   
+		this.delete_segment_data(segment_objs); // also deletes beziers
+		this.delete_reaction_data(Object.keys(reactions));
 		this.delete_text_label_data(Object.keys(selected_text_labels));
 
 		// apply the reaction and node data
@@ -1104,16 +1157,16 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 		    this.apply_metabolite_data_domain();
 
 		// redraw
-		// TODO just redraw these nodes, segments, and labels
 		if (should_draw) {
-		    this.clear_deleted_reactions();
+		    this.clear_deleted_reactions(); // also clears segments and beziers
 		    this.clear_deleted_nodes();
 		    this.clear_deleted_text_labels();
 		}
 	    }.bind(this);
 
 	// delete
-	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments, selected_text_labels);
+	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments,
+			selected_text_labels);
 
 	// add to undo/redo stack
 	this.undo_stack.push(function() {
@@ -1123,7 +1176,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	    this.extend_nodes(saved_nodes);
 	    this.extend_reactions(saved_reactions);
 	    var reaction_ids_to_draw = Object.keys(saved_reactions);
-	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
+	    for (var segment_id in saved_segment_objs_w_segments) {
+		var segment_obj = saved_segment_objs_w_segments[segment_id];
+		
 		var segment = segment_obj.segment;
 		this.reactions[segment_obj.reaction_id]
 		    .segments[segment_obj.segment_id] = segment;
@@ -1137,9 +1192,16 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 						   segment_id: segment_obj.segment_id });
 		}.bind(this));
 
+		// extend the beziers
+		var seg_id = segment_obj.segment_id,
+		    r_id = segment_obj.reaction_id,
+		    seg_o = {};
+		seg_o[seg_id] = segment_obj.segment;
+	    	utils.extend(this.beziers, build.new_beziers_for_segments(seg_o, r_id));
+
 		if (reaction_ids_to_draw.indexOf(segment_obj.reaction_id)==-1)
 		    reaction_ids_to_draw.push(segment_obj.reaction_id);
-	    }.bind(this));
+	    }
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
@@ -1192,13 +1254,14 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     }
 
     function delete_segment_data(segment_objs) {
-	/** Delete segments, and update connected_segments in nodes. Also
-	 deletes any reactions with 0 segments.
+	/** Delete segments, update connected_segments in nodes, and delete
+	 bezier points. Also deletes any reactions with 0 segments.
 	 
-	 segment_objs: Array of objects with { reaction_id: "123", segment_id: "456" }
+	 segment_objs: Object with values like { reaction_id: "123", segment_id: "456" }
 	 
 	 */
-	segment_objs.forEach(function(segment_obj) {
+	for (var segment_id in segment_objs) {
+	    var segment_obj = segment_objs[segment_id];
 	    var reaction = this.reactions[segment_obj.reaction_id];
 
 	    // segment already deleted
@@ -1214,8 +1277,14 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 		});
 	    }.bind(this));
 
+            // remove beziers
+	    ['b1', 'b2'].forEach(function(bez) {
+		var bez_id = build.bezier_id_for_segment_id(segment_obj.segment_id, bez);
+	    	delete this.beziers[bez_id];
+	    }.bind(this));
+
 	    delete reaction.segments[segment_obj.segment_id];
-	}.bind(this));
+	}
     }
     function delete_reaction_data(reaction_ids) {
 	/** Delete reactions and remove from search index.
@@ -1405,7 +1474,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 				     this.cobra_model.cofactors,
 				     direction),
 	    new_nodes = out.new_nodes,
-	    new_reactions = out.new_reactions;
+	    new_reactions = out.new_reactions; //TODO draw new beziers
 
 	// draw
 	extend_and_draw_reaction.apply(this, [new_nodes, new_reactions, selected_node_id]);
@@ -1598,8 +1667,9 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 
     function segments_and_reactions_for_nodes(nodes) {
 	/** Get segments and reactions that should be deleted with node deletions
+	 
 	 */
-	var segment_objs_w_segments = [],
+	var segment_objs_w_segments = {},
 	    these_reactions = {},
 	    segment_ids_for_reactions = {},
 	    reactions = this.reactions;
@@ -1612,7 +1682,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 		    segment = reaction.segments[segment_obj.segment_id],
 		    segment_obj_w_segment = utils.clone(segment_obj);
 		segment_obj_w_segment['segment'] = utils.clone(segment);
-		segment_objs_w_segments.push(segment_obj_w_segment);
+		segment_objs_w_segments[segment_obj.segment_id] = segment_obj_w_segment;
 		if (!(segment_obj.reaction_id in segment_ids_for_reactions))
 		    segment_ids_for_reactions[segment_obj.reaction_id] = [];
 		segment_ids_for_reactions[segment_obj.reaction_id].push(segment_obj.segment_id);

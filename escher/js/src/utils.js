@@ -8,6 +8,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     make_class: make_class,
 	     setup_defs: setup_defs,
 	     draw_an_object: draw_an_object,
+	     draw_a_nested_object: draw_a_nested_object,
 	     make_array: make_array,
 	     compare_arrays: compare_arrays,
 	     array_to_object: array_to_object,
@@ -177,10 +178,72 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 			    exit_function) {
 	/** Run through the d3 data binding steps for an object.
 
+	 Arguments
+	 ---------
+
+	 container_sel: A d3 selection containing all objects.
+
+	 parent_node_selector: A selector string for a subselection of
+	 container_sel.
+
+	 children_selector: A selector string for each DOM element to bind.
+
+	 object: An object to bind to the selection.
+
+	 id_key: The key that will be used to store object IDs in the bound data
+	 points.
+
+	 create_function: A function for enter selection.
+
+	 update_function: A function for update selection.
+
+	 exit_function: A function for exit selection.
+	 
 	 */
 	var sel = container_sel.select(parent_node_selector)
 		.selectAll(children_selector)
 		.data(make_array(object, id_key), function(d) { return d[id_key]; });
+	// enter: generate and place reaction
+	if (create_function)
+	    sel.enter().call(create_function);
+	// update: update when necessary
+	if (update_function)
+	    sel.call(update_function);
+	// exit
+	if (exit_function) 
+	    sel.exit().call(exit_function);
+    }
+
+    function draw_a_nested_object(container_sel, children_selector, object_data_key,
+				  id_key, create_function, update_function,
+				  exit_function) {
+	/** Run through the d3 data binding steps for an object that is nested
+	 within another element with d3 data.
+
+	 Arguments
+	 ---------
+
+	 container_sel: A d3 selection containing all objects.
+
+	 children_selector: A selector string for each DOM element to bind.
+
+	 object_data_key: A key for the parent object containing data for the
+	 new selection.
+
+	 id_key: The key that will be used to store object IDs in the bound data
+	 points.
+
+	 create_function: A function for enter selection.
+
+	 update_function: A function for update selection.
+
+	 exit_function: A function for exit selection.
+	 
+	 */
+	var sel = container_sel.selectAll(children_selector)
+	    .data(function(d) {
+		return make_array(d[object_data_key], id_key);
+	    }, function(d) { return d[id_key]; });
 	// enter: generate and place reaction
 	if (create_function)
 	    sel.enter().call(create_function);
