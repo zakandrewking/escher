@@ -7,7 +7,6 @@ describe('Builder', function() {
 		b = escher.Builder({ selection: sel,
 				     map: get_map() });
 	    expect(sel.select('svg').node()).toBe(b.map.svg.node());
-	    expect(sel.selectAll('#membranes')[0].length).toEqual(1);
 	    expect(sel.selectAll('#nodes')[0].length).toEqual(1);
 	    expect(sel.selectAll('.node')[0].length).toEqual(31);
 	    expect(sel.selectAll('#reactions')[0].length).toEqual(1);

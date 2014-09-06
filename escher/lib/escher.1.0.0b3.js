@@ -793,14 +793,15 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
              load_the_file: load_the_file,
 	     make_class: make_class,
 	     setup_defs: setup_defs,
-	     draw_an_array: draw_an_array,
 	     draw_an_object: draw_an_object,
+	     draw_a_nested_object: draw_a_nested_object,
 	     make_array: make_array,
 	     compare_arrays: compare_arrays,
 	     array_to_object: array_to_object,
 	     clone: clone,
 	     extend: extend,
 	     unique_concat: unique_concat,
+	     object_slice_for_ids: object_slice_for_ids,
 	     c_plus_c: c_plus_c,
 	     c_minus_c: c_minus_c,
 	     c_times_scalar: c_times_scalar,
@@ -958,34 +959,86 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
         return defs;
     }
 
-    function draw_an_array(container_sel, parent_node_selector, children_selector,
-			   array, create_function, update_function) {
-	/** Run through the d3 data binding steps for an array.
-	 */
-	var sel = container_sel.select(parent_node_selector)
-		.selectAll(children_selector)
-		.data(array);
-	// enter: generate and place reaction
-	sel.enter().call(create_function);
-	// update: update when necessary
-	sel.call(update_function);
-	// exit
-	sel.exit().remove();
-    }
-
     function draw_an_object(container_sel, parent_node_selector, children_selector,
-			    object, id_key, create_function, update_function) {
+			    object, id_key, create_function, update_function,
+			    exit_function) {
 	/** Run through the d3 data binding steps for an object.
+
+	 Arguments
+	 ---------
+
+	 container_sel: A d3 selection containing all objects.
+
+	 parent_node_selector: A selector string for a subselection of
+	 container_sel.
+
+	 children_selector: A selector string for each DOM element to bind.
+
+	 object: An object to bind to the selection.
+
+	 id_key: The key that will be used to store object IDs in the bound data
+	 points.
+
+	 create_function: A function for enter selection.
+
+	 update_function: A function for update selection.
+
+	 exit_function: A function for exit selection.
+	 
 	 */
 	var sel = container_sel.select(parent_node_selector)
 		.selectAll(children_selector)
 		.data(make_array(object, id_key), function(d) { return d[id_key]; });
 	// enter: generate and place reaction
-	sel.enter().call(create_function);
+	if (create_function)
+	    sel.enter().call(create_function);
 	// update: update when necessary
-	sel.call(update_function);
+	if (update_function)
+	    sel.call(update_function);
 	// exit
-	sel.exit().remove();
+	if (exit_function) 
+	    sel.exit().call(exit_function);
+    }
+
+    function draw_a_nested_object(container_sel, children_selector, object_data_key,
+				  id_key, create_function, update_function,
+				  exit_function) {
+	/** Run through the d3 data binding steps for an object that is nested
+	 within another element with d3 data.
+
+	 Arguments
+	 ---------
+
+	 container_sel: A d3 selection containing all objects.
+
+	 children_selector: A selector string for each DOM element to bind.
+
+	 object_data_key: A key for the parent object containing data for the
+	 new selection.
+
+	 id_key: The key that will be used to store object IDs in the bound data
+	 points.
+
+	 create_function: A function for enter selection.
+
+	 update_function: A function for update selection.
+
+	 exit_function: A function for exit selection.
+	 
+	 */
+	var sel = container_sel.selectAll(children_selector)
+	    .data(function(d) {
+		return make_array(d[object_data_key], id_key);
+	    }, function(d) { return d[id_key]; });
+	// enter: generate and place reaction
+	if (create_function)
+	    sel.enter().call(create_function);
+	// update: update when necessary
+	if (update_function)
+	    sel.call(update_function);
+	// exit
+	if (exit_function) 
+	    sel.exit().call(exit_function);
     }
 
     function make_array(obj, id_key) { // is this super slow?
@@ -1088,6 +1141,27 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	    });
 	});
 	return new_array;
+    }
+
+    function object_slice_for_ids(obj, ids) {
+	/** Return a copy of the object with just the given ids. 
+	 
+	 Arguments
+	 ---------
+
+	 obj: An object.
+
+	 ids: An array of id strings.
+
+	 */
+        var subset = {}, i = -1;
+        while (++i<ids.length) {
+	    subset[ids[i]] = clone(obj[ids[i]]);
+        }
+        if (ids.length != Object.keys(subset).length) {
+	    console.warn('did not find correct reaction subset');
+        }
+	return subset;
     }
 
     function c_plus_c(coords1, coords2) {
@@ -1407,6 +1481,8 @@ define('data_styles',["utils"], function(utils) {
 define('draw',['utils', 'data_styles'], function(utils, data_styles) {
     return { create_reaction: create_reaction,
 	     update_reaction: update_reaction,
+	     create_bezier: create_bezier,
+	     update_bezier: update_bezier,
 	     create_node: create_node,
 	     update_node: update_node,
 	     create_text_label: create_text_label,
@@ -1449,14 +1525,14 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
         return;
     }
 
-    function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
+    function update_reaction(update_selection, scale, drawn_nodes, 
 			     defs, default_reaction_color, has_reaction_data,
-			     reaction_data_styles, bezier_drag_behavior,
+			     reaction_data_styles, 
 			     label_drag_behavior) {
 	utils.check_undefined(arguments,
-			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
+			      ['update_selection', 'scale', 'drawn_nodes', 
 			       'defs', 'default_reaction_color', 'has_reaction_data',
-			       'reaction_data_styles', 'bezier_drag_behavior',
+			       'reaction_data_styles',
 			       'label_drag_behavior']);
 
         // update reaction label
@@ -1465,27 +1541,17 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 							       reaction_data_styles,
 							       label_drag_behavior); });
 
-        // select segments
-        var sel = update_selection
-                .selectAll('.segment-group')
-                .data(function(d) {
-                    return utils.make_array(d.segments, 'segment_id');
-                }, function(d) { return d.segment_id; });
-
-        // new segments
-        sel.enter().call(create_segment);
-
-        // update segments
-        sel.call(function(sel) { 
-	    return update_segment(sel, scale, drawn_nodes, show_beziers, defs,
-				  default_reaction_color,
-				  has_reaction_data, reaction_data_styles,
-				  bezier_drag_behavior);
-	});
-
-        // old segments
-        sel.exit().remove();
-
+	// draw segments
+	utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
+				   create_segment,
+				   function(sel) { 
+				       return update_segment(sel, scale, drawn_nodes, defs,
+							     default_reaction_color,
+							     has_reaction_data, reaction_data_styles);
+				   },
+				   function(sel) {
+				       sel.remove();
+				   });
 
 	// new connect lines
 	// var lines = sel
@@ -1587,21 +1653,16 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 
 	g.append('g')
 	    .attr('class', 'arrowheads');
-
-	g.append('g')
-	    .attr('class', 'beziers');
     }
     
-    function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
+    function update_segment(update_selection, scale, drawn_nodes,
 			    defs, default_reaction_color,
-			    has_reaction_data, reaction_data_styles,
-			    bezier_drag_behavior) {
+			    has_reaction_data, reaction_data_styles) {
 	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
-					  'show_beziers', 'defs',
+					  'defs',
 					  'default_reaction_color',
 					  'has_reaction_data',
-					  'reaction_data_styles',
-					  'bezier_drag_behavior']);
+					  'reaction_data_styles']);
 
         // update segment attributes
 	var get_disp = function(reversibility, coefficient) {
@@ -1730,122 +1791,61 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	    return default_reaction_color;
 	});;
 	// remove
-	arrowheads.exit().remove();
+	arrowheads.exit().remove();	
+    }
 
-	// new bezier points
-	var bez = update_selection.select('.beziers')
-		.selectAll('.bezier-group')
-		.data(function(d) {
-		    var beziers = [],
-			reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
-			segment_id = this.parentNode.parentNode.__data__.segment_id;
-		    //TODO fix; this is a bit of a hack
-		    if (d.b1!=null && d.b1.x!=null && d.b1.y!=null)
-			beziers.push({bezier: 1,
-				      x: d.b1.x,
-				      y: d.b1.y,
-				      reaction_id: reaction_id,
-				      segment_id: segment_id });
-		    if (d.b2!=null && d.b2.x!=null && d.b2.y!=null)
-			beziers.push({bezier: 2,
-				      x: d.b2.x,
-				      y: d.b2.y,
-				      reaction_id: reaction_id,
-				      segment_id: segment_id });
-		    return beziers;
-		}, function(d) { return d.bezier; });
-	bez.enter().call(function(sel) {
-	    return create_bezier(sel);
-	});
-	// update bezier points
-	bez.call(function(sel) {
-	    return update_bezier(sel, show_beziers, bezier_drag_behavior, drawn_nodes);
-	});
-	// remove
-	bez.exit().remove();
+    function create_bezier(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
 
-	// definitions
-	function create_bezier(enter_selection) {
-	    utils.check_undefined(arguments, ['enter_selection']);
+	var g = enter_selection.append('g')
+		.attr('id', function(d) { return d.bezier_id; })
+	    	.attr('class', function(d) { return 'bezier'; });
+	g.append('path')
+	    .attr('class', 'connect-line');
+	g.append('circle')
+	    .attr('class', function(d) { return 'bezier-circle '+d.bezier; })
+	    .style('stroke-width', String(1)+'px')	
+    	    .attr('r', String(7)+'px');
+    }
 
-	    var g = enter_selection.append('g')
-	    	.attr('class', function(d) { return 'bezier-group'; });
-	    g.append('circle')
-	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
-	    	.style('stroke-width', String(1)+'px')	
-    		.attr('r', String(7)+'px')
-		.on('mouseover', function(d) {
-		    d3.select(this).style('stroke-width', String(3)+'px');
-		    d3.select(this.parentNode.parentNode)
-			.selectAll('.connect-line')
-			.attr('visibility', 'visible');
-		})
-		.on('mouseout', function(d) {
-		    d3.select(this).style('stroke-width', String(1)+'px');
-		    d3.select(this.parentNode.parentNode)
-			.selectAll('.connect-line')
-			.attr('visibility', 'hidden');
-		});
+    function update_bezier(update_selection, show_beziers, drag_behavior,
+			   mouseover, mouseout, drawn_nodes, drawn_reactions) {
+	utils.check_undefined(arguments, ['update_selection', 'show_beziers',
+					  'drag_behavior', 'mouseover', 'mouseout',
+					  'drawn_nodes', 'drawn_reactions']);
+
+	if (!show_beziers) {
+	    update_selection.attr('visibility', 'hidden');
+	    return;
+	} else {
+	    update_selection.attr('visibility', 'visible');
 	}
-	function update_bezier(update_selection, show_beziers, drag_behavior,
-			       drawn_nodes) {
-	    utils.check_undefined(arguments, ['update_selection', 'show_beziers',
-					      'drag_behavior', 'drawn_nodes']);
-	    
-	    update_selection
-		.call(turn_off_drag)
-		.call(drag_behavior);
-	    if (!show_beziers) {
-	    	update_selection.attr('visibility', 'hidden');
-		return;
-	    }		
-	    
-	    // draw bezier points
-	    update_selection
-		.attr('visibility', 'visible')
-		.attr('transform', function(d) {
-	    	    if (d.x==null || d.y==null) return ''; 
-		    return 'translate('+d.x+','+d.y+')';
-		});
-
-	    // new bezier lines
-	    var bez_lines = update_selection
-		    .selectAll('.connect-line')
-		    .data(function(d) {
-			var bezier_line, node,
-			    segment_d = this.parentNode.parentNode.parentNode.__data__;
-			node = (d.bezier==1 ? 
-				drawn_nodes[segment_d.from_node_id] : 
-				drawn_nodes[segment_d.to_node_id]);
-			bezier_line = { x: d.x,
-					y: d.y,
-					source_x: node.x,
-					source_y: node.y};
-			return [bezier_line];
-		    });
-	    bez_lines.enter().call(function(sel) {
-		return create_bezier_line(sel);
+	
+	// draw bezier points
+	update_selection
+	    .select('.bezier-circle')
+	    .call(turn_off_drag)
+	    .call(drag_behavior)
+	    .on('mouseover', mouseover)
+	    .on('mouseout', mouseout)
+	    .attr('transform', function(d) {
+	    	if (d.x==null || d.y==null) return ''; 
+		return 'translate('+d.x+','+d.y+')';
 	    });
-	    // update bezier lines
-	    bez_lines.call(function(sel) { return update_bezier_line(sel); });
-	    // remove
-	    bez_lines.exit().remove();
 
-	    // definitions
-	    function create_bezier_line(enter_selection) {
-		enter_selection.append('path')
-	    	    .attr('class', function(d) { return 'connect-line'; })
-	    	    .attr('visibility', 'hidden');
-	    }
-	    function update_bezier_line(update_selection) {
-		update_selection
-	    	    .attr('d', function(d) {
-	    		if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
-	    		    return '';
-	    		return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
-	    	    });
-	    }
-	}
+	// update bezier line
+	update_selection
+	    .select('.connect-line')
+	    .attr('d', function(d) {
+		var node,
+		    segment_d = drawn_reactions[d.reaction_id].segments[d.segment_id];
+		node = (d.bezier=='b1' ? 
+			drawn_nodes[segment_d.from_node_id] : 
+			drawn_nodes[segment_d.to_node_id]);		
+	    	if (d.x==null || d.y==null || node.x==null || node.y==null)
+	    	    return '';
+	    	return 'M'+d.x+', '+d.y+' '+(node.x)+','+(node.y);
+	    });
     }
 
     function create_node(enter_selection, drawn_nodes, drawn_reactions) {
@@ -1976,7 +1976,11 @@ define('build',["utils"], function(utils) {
     return { new_reaction: new_reaction,
 	     rotate_nodes: rotate_nodes,
 	     move_node_and_dependents: move_node_and_dependents,
-	     new_text_label: new_text_label };
+	     new_text_label: new_text_label,
+	     bezier_id_for_segment_id: bezier_id_for_segment_id,
+	     bezier_ids_for_reaction_ids: bezier_ids_for_reaction_ids,
+	     new_beziers_for_segments: new_beziers_for_segments,
+	     new_beziers_for_reactions: new_beziers_for_reactions };
     
     // definitions
     function new_reaction(bigg_id, cobra_reaction, cobra_metabolites,
@@ -2202,20 +2206,25 @@ define('build',["utils"], function(utils) {
 	var new_reactions = {};
 	new_reactions[new_reaction_id] = new_reaction;
 	
+	// new_beziers object
+	var new_beziers = new_beziers_for_reactions(new_reactions);
+
 	// add the selected node for rotation, and return it as a new (updated) node
 	new_nodes[selected_node_id] = selected_node;
-	var updated = rotate_nodes(new_nodes, new_reactions,
-				   angle, selected_node_coords);
+	rotate_nodes(new_nodes, new_reactions, new_beziers,
+		     angle, selected_node_coords);
 
 	return { new_reactions: new_reactions,
+		 new_beziers: new_beziers,
 		 new_nodes: new_nodes };
     }
 
-    function rotate_nodes(selected_nodes, reactions, angle, center) {
+    function rotate_nodes(selected_nodes, reactions, beziers, angle, center) {
 	/** Rotate the nodes around center.
 
 	 selected_nodes: Nodes to rotate.
 	 reactions: Only updates beziers for these reactions.
+	 beziers: Also update the bezier points.
 	 angle: Angle to rotate in radians.
 	 center: Point to rotate around.
 
@@ -2244,13 +2253,20 @@ define('build',["utils"], function(utils) {
 		if (reaction === undefined) return;
 
 		// rotate the beziers
-		var segment = reaction.segments[segment_obj.segment_id];
+		var segment_id = segment_obj.segment_id,
+		    segment = reaction.segments[segment_id];
 		if (segment.to_node_id==node_id && segment.b2) {
-		    var displacement = rotate_around(segment.b2);
+		    var displacement = rotate_around(segment.b2),
+			bez_id = bezier_id_for_segment_id(segment_id, 'b2');
 		    segment.b2 = utils.c_plus_c(segment.b2, displacement);
+		    beziers[bez_id].x = segment.b2.x;
+		    beziers[bez_id].y = segment.b2.y; 
 		} else if (segment.from_node_id==node_id && segment.b1) {
-		    var displacement = rotate_around(segment.b1);
+		    var displacement = rotate_around(segment.b1),
+			bez_id = bezier_id_for_segment_id(segment_id, 'b1');
 		    segment.b1 = utils.c_plus_c(segment.b1, displacement);
+		    beziers[bez_id].x = segment.b1.x;
+		    beziers[bez_id].y = segment.b1.y; 
 		}
 	    });
 
@@ -2263,7 +2279,7 @@ define('build',["utils"], function(utils) {
 		 reaction_ids: updated_reaction_ids };
     }
     
-    function move_node_and_dependents(node, node_id, reactions, displacement) {
+    function move_node_and_dependents(node, node_id, reactions, beziers, displacement) {
 	/** Move the node and its labels and beziers.
 
 	 */
@@ -2276,13 +2292,19 @@ define('build',["utils"], function(utils) {
 	    if (reaction === undefined) return;
 
 	    // update beziers
-	    var segment = reaction.segments[segment_obj.segment_id];
-	    if (segment.from_node_id==node_id && segment.b1) {
-		segment.b1 = utils.c_plus_c(segment.b1, displacement);
-	    }
-	    if (segment.to_node_id==node_id && segment.b2) {
-		segment.b2 = utils.c_plus_c(segment.b2, displacement);
-	    }
+	    var segment_id = segment_obj.segment_id,
+		segment = reaction.segments[segment_id];
+	    [['b1', 'from_node_id'], ['b2', 'to_node_id']].forEach(function(c) {
+		var bez = c[0],
+		    node = c[1];
+		if (segment[node]==node_id && segment[bez]) {
+		    segment[bez] = utils.c_plus_c(segment[bez], displacement);
+		    var tbez = beziers[bezier_id_for_segment_id(segment_id, bez)];
+		    tbez.x = segment[bez].x;
+		    tbez.y = segment[bez].y;
+		}
+	    });
+	    
 	    // add to list of updated reaction ids if it isn't already there
 	    if (updated.reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
 	        updated.reaction_ids.push(segment_obj.reaction_id);
@@ -2405,6 +2427,88 @@ define('build',["utils"], function(utils) {
 			  y: coords.y };
 	return {id: new_id, label: new_label};
     }
+
+    function bezier_id_for_segment_id(segment_id, bez) {
+	return segment_id+'_'+bez;
+    }
+
+    function bezier_ids_for_reaction_ids(reactions) {
+	/** Return an array of beziers ids for the array of reaction ids.
+
+	 Arguments
+	 ---------
+
+	 reactions: A reactions object, e.g. a subset of *escher.Map.reactions*.
+
+	 */ 
+	var bezier_ids = [];
+	for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id];
+
+	    for (var segment_id in reaction.segments) {
+		var segment = reaction.segments[segment_id];
+
+		['b1', 'b2'].forEach(function(bez) {
+		    var seg_bez = segment[bez];
+		    if (seg_bez !== null) {
+			bezier_ids.push(bezier_id_for_segment_id(segment_id, bez));
+		    }
+		});
+	    }
+	}
+	return bezier_ids;
+    }
+
+    function new_beziers_for_segments(segments, reaction_id) {
+	/** Return an object containing beziers for the segments object.
+
+	 Arguments
+	 ---------
+
+	 segments: A segments object, e.g. *escher.Map.segments*.
+
+	 reaction_id: The reaction id for the segments.
+
+	 */
+	var beziers = {};
+	for (var segment_id in segments) {
+	    var segment = segments[segment_id];
+
+	    ['b1', 'b2'].forEach(function(bez) {
+		var seg_bez = segment[bez];
+		if (seg_bez !== null) {
+		    var bezier_id = bezier_id_for_segment_id(segment_id, bez);
+		    beziers[bezier_id] = {
+			bezier: bez,
+	    		x: seg_bez.x,
+	    		y: seg_bez.y,
+	    		reaction_id: reaction_id,
+	    		segment_id: segment_id
+		    };
+		}
+	    });
+	}
+	return beziers;
+    }
+
+    function new_beziers_for_reactions(reactions) {
+	/** Return an object containing beziers for the reactions object.
+
+	 Arguments
+	 ---------
+
+	 reactions: A reactions object, e.g. *escher.Map.reactions*.
+
+	 */
+	var beziers = {};
+	for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id];
+
+	    var these = new_beziers_for_segments(reaction.segments, reaction_id);
+	    utils.extend(beziers, these);
+	}
+	return beziers;
+    }
 });
 
 define('Behavior',["utils", "build"], function(utils, build) {
@@ -2441,13 +2545,14 @@ define('Behavior',["utils", "build"], function(utils, build) {
 			   toggle_text_label_edit: toggle_text_label_edit,
 			   toggle_selectable_drag: toggle_selectable_drag,
 			   toggle_label_drag: toggle_label_drag,
+			   toggle_bezier_drag: toggle_bezier_drag,
 			   // get drag behaviors
-			   get_selectable_drag: get_selectable_drag,
-			   get_bezier_drag: get_bezier_drag,
-			   get_reaction_label_drag: get_reaction_label_drag,
-			   get_node_label_drag: get_node_label_drag,
-			   get_generic_drag: get_generic_drag,
-			   get_generic_angular_drag: get_generic_angular_drag };
+			   _get_selectable_drag: _get_selectable_drag,
+			   _get_bezier_drag: _get_bezier_drag,
+			   _get_reaction_label_drag: _get_reaction_label_drag,
+			   _get_node_label_drag: _get_node_label_drag,
+			   _get_generic_drag: _get_generic_drag,
+			   _get_generic_angular_drag: _get_generic_angular_drag };
 
     return Behavior;
 
@@ -2470,13 +2575,15 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	this.node_mouseover = null;
 	this.node_mouseout = null;
 	this.bezier_drag = this.empty_behavior;
+	this.bezier_mouseover = null;
+	this.bezier_mouseout = null;
 	this.reaction_label_drag = this.empty_behavior;
 	this.node_label_drag = this.empty_behavior;
 	this.turn_everything_on();
     }
     function turn_everything_on() {
 	/** Toggle everything except rotation mode and text mode.
- 
+	 
 	 */
 	this.toggle_selectable_click(true);
 	this.toggle_selectable_drag(true);
@@ -2521,7 +2628,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    var map = this.map,
 		selected_node_ids = Object.keys(selected_nodes),
 		reactions = this.map.reactions,
-		nodes = this.map.nodes;
+		nodes = this.map.nodes,
+		beziers = this.map.beziers;
 
 	    var start_fn = function(d) {
 		// silence other listeners
@@ -2529,7 +2637,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    },
 		drag_fn = function(d, angle, total_angle, center) {
 		    var updated = build.rotate_nodes(selected_nodes, reactions,
-						     angle, center);
+						     beziers, angle, center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
 		},
@@ -2541,7 +2649,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
 			these_nodes[id] = nodes[id];
 		    });
 		    var updated = build.rotate_nodes(these_nodes, reactions,
-						     -total_angle, center);
+						     beziers, -total_angle,
+						     center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
 		},
@@ -2552,16 +2661,17 @@ define('Behavior',["utils", "build"], function(utils, build) {
 			these_nodes[id] = nodes[id];
 		    });
 		    var updated = build.rotate_nodes(these_nodes, reactions,
-						     total_angle, center);
+						     beziers, total_angle,
+						     center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
 		},
 		center_fn = function() {
 		    return this.center;
 		}.bind(this);
-	    this.rotation_drag = this.get_generic_angular_drag(start_fn, drag_fn, end_fn,
-							       undo_fn, redo_fn, center_fn,
-							       this.map.sel);
+	    this.rotation_drag = this._get_generic_angular_drag(start_fn, drag_fn, end_fn,
+								undo_fn, redo_fn, center_fn,
+								this.map.sel);
 	    selection_background.call(this.rotation_drag);
 
 
@@ -2702,8 +2812,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	 */
 	if (on_off===undefined) on_off = this.selectable_drag===this.empty_behavior;
 	if (on_off) {
-	    this.selectable_drag = this.get_selectable_drag(this.map, this.undo_stack);
-	    this.bezier_drag = this.get_bezier_drag(this.map, this.undo_stack);
+	    this.selectable_drag = this._get_selectable_drag(this.map, this.undo_stack);
+	    this.bezier_drag = this._get_bezier_drag(this.map, this.undo_stack);
 	} else {
 	    this.selectable_drag = this.empty_behavior;
 	    this.bezier_drag = this.empty_behavior;
@@ -2717,15 +2827,43 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	 */
 	if (on_off===undefined) on_off = this.label_drag===this.empty_behavior;
 	if (on_off) {
-	    this.reaction_label_drag = this.get_reaction_label_drag(this.map);
-	    this.node_label_drag = this.get_node_label_drag(this.map);
+	    this.reaction_label_drag = this._get_reaction_label_drag(this.map);
+	    this.node_label_drag = this._get_node_label_drag(this.map);
 	} else {
 	    this.reaction_label_drag = this.empty_behavior;
 	    this.node_label_drag = this.empty_behavior;
 	}
     }
 
-    function get_selectable_drag(map, undo_stack) {
+    function toggle_bezier_drag(on_off) {
+	/** With no argument, toggle the bezier drag on or off.
+
+	 Pass in a boolean argument to set the on/off state.
+
+	 */
+	if (on_off===undefined) on_off = this.bezier_drag===this.empty_behavior;
+	if (on_off) {
+	    this.bezier_drag = this._get_bezier_drag(this.map);
+	    this.bezier_mouseover = function(d) {
+		d3.select(this).style('stroke-width', String(3)+'px');
+		// d3.select(this.parentNode.parentNode)
+		//     .selectAll('.connect-line')
+		//     .attr('visibility', 'visible');
+	    };
+	    this.bezier_mouseout = function(d) {
+		d3.select(this).style('stroke-width', String(1)+'px');
+		// d3.select(this.parentNode.parentNode)
+		//     .selectAll('.connect-line')
+		//     .attr('visibility', 'hidden');
+	    };
+	} else {
+	    this.bezier_drag = this.empty_behavior;
+	    this.bezier_mouseover = null;
+	    this.bezier_mouseout = null;
+	}
+    }
+
+    function _get_selectable_drag(map, undo_stack) {
 	/** Drag the selected nodes and text labels.
 
 	 */
@@ -2814,7 +2952,10 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    node_ids_to_drag.forEach(function(node_id) {
 		// update data
 		var node = map.nodes[node_id],
-		    updated = build.move_node_and_dependents(node, node_id, map.reactions, displacement);
+		    updated = build.move_node_and_dependents(node, node_id,
+							     map.reactions,
+							     map.beziers,
+							     displacement);
 		reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids]);
 		// remember the displacements
 		// if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 };
@@ -2899,6 +3040,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		    saved_node_ids.forEach(function(node_id) {
 			var node = map.nodes[node_id];
 			build.move_node_and_dependents(node, node_id, map.reactions,
+						       map.beziers,
 						       utils.c_times_scalar(saved_displacement, -1));
 		    });
 		    saved_text_label_ids.forEach(function(text_label_id) {
@@ -2913,6 +3055,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		    saved_node_ids.forEach(function(node_id) {
 			var node = map.nodes[node_id];
 			build.move_node_and_dependents(node, node_id, map.reactions,
+						       map.beziers,
 						       saved_displacement);
 		    });		    
 		    saved_text_label_ids.forEach(function(text_label_id) {
@@ -2967,33 +3110,42 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    return updated_segment_objs;
 	}
     }
-    function get_bezier_drag(map) {
-	var move_bezier = function(reaction_id, segment_id, bezier, displacement) {
+    function _get_bezier_drag(map) {
+	var move_bezier = function(reaction_id, segment_id, bez, bezier_id, displacement) {
 	    var segment = map.reactions[reaction_id].segments[segment_id];
-	    segment['b'+bezier] = utils.c_plus_c(segment['b'+bezier], displacement);
+	    segment[bez] = utils.c_plus_c(segment[bez], displacement);
+	    map.beziers[bezier_id].x = segment[bez].x;
+	    map.beziers[bezier_id].y = segment[bez].y;
 	},
 	    start_fn = function(d) {
+		d.dragging = true;
 	    },
 	    drag_fn = function(d, displacement, total_displacement) {
 		// draw
-		move_bezier(d.reaction_id, d.segment_id, d.bezier, displacement);
-		map.draw_these_reactions([d.reaction_id]);
+		move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
+			    displacement);
+		map.draw_these_reactions([d.reaction_id], false);
+		map.draw_these_beziers([d.bezier_id]);
 	    },
 	    end_fn = function(d) {
+		d.dragging = false;
 	    },
 	    undo_fn = function(d, displacement) {
-		move_bezier(d.reaction_id, d.segment_id, d.bezier,
+		move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
 			    utils.c_times_scalar(displacement, -1));
-		map.draw_these_reactions([d.reaction_id]);
+		map.draw_these_reactions([d.reaction_id], false);
+		map.draw_these_beziers([d.bezier_id]);
 	    },
 	    redo_fn = function(d, displacement) {
-		move_bezier(d.reaction_id, d.segment_id, d.bezier, displacement);
-		map.draw_these_reactions([d.reaction_id]);
+		move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
+			    displacement);
+		map.draw_these_reactions([d.reaction_id], false);
+		map.draw_these_beziers([d.bezier_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-				     redo_fn, this.map.sel);
+	return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				      redo_fn, this.map.sel);
     }
-    function get_reaction_label_drag(map) {
+    function _get_reaction_label_drag(map) {
 	var move_label = function(reaction_id, displacement) {
 	    var reaction = map.reactions[reaction_id];
 	    reaction.label_x = reaction.label_x + displacement.x;
@@ -3016,10 +3168,10 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		move_label(d.reaction_id, displacement);
 		map.draw_these_reactions([d.reaction_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-				     redo_fn, this.map.sel);
+	return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				      redo_fn, this.map.sel);
     }
-    function get_node_label_drag(map) {
+    function _get_node_label_drag(map) {
 	var move_label = function(node_id, displacement) {
 	    var node = map.nodes[node_id];
 	    node.label_x = node.label_x + displacement.x;
@@ -3042,11 +3194,11 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		move_label(d.node_id, displacement);
 		map.draw_these_nodes([d.node_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-				     redo_fn, this.map.sel);
+	return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				      redo_fn, this.map.sel);
     }
 
-    function get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, relative_to_selection) {
+    function _get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, relative_to_selection) {
 	/** Make a generic drag behavior, with undo/redo.
 
 	 start_fn: function(d) Called at dragstart.
@@ -3107,10 +3259,10 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	return behavior;
     }
 
-    function get_generic_angular_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, 
-				      get_center, relative_to_selection) {
+    function _get_generic_angular_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, 
+				       get_center, relative_to_selection) {
 	/** Make a generic drag behavior, with undo/redo. Supplies angles in
-	  place of displacements.
+	 place of displacements.
 
 	 start_fn: function(d) Called at dragstart.
 
@@ -6854,13 +7006,13 @@ define('SearchIndex',["utils"], function(utils) {
 
 }).call(this);
 
-define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex", "lib/bacon"], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon) {
+define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackManager', 'KeyManager', 'Canvas', 'data_styles', 'SearchIndex', 'lib/bacon'], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
      ---------
 
-     svg:
+     svg: The parent SVG container for the map.
 
      css:
 
@@ -6935,24 +7087,35 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	get_selected_text_labels: get_selected_text_labels,
 	segments_and_reactions_for_nodes: segments_and_reactions_for_nodes,
 	// draw
-	has_reaction_data: has_reaction_data,
-	has_metabolite_data: has_metabolite_data,
 	draw_everything: draw_everything,
+	// draw reactions
 	draw_all_reactions: draw_all_reactions,
 	draw_these_reactions: draw_these_reactions,
+	clear_deleted_reactions: clear_deleted_reactions,
+	// draw nodes
 	draw_all_nodes: draw_all_nodes,
 	draw_these_nodes: draw_these_nodes,
+	clear_deleted_nodes: clear_deleted_nodes,
+	// draw text_labels
+	draw_all_text_labels: draw_all_text_labels,
 	draw_these_text_labels: draw_these_text_labels,
+	clear_deleted_text_labels: clear_deleted_text_labels,
+	// draw beziers
+	draw_all_beziers: draw_all_beziers,
+	draw_these_beziers: draw_these_beziers,
+	clear_deleted_beziers: clear_deleted_beziers,
+	toggle_beziers: toggle_beziers,
+	hide_beziers: hide_beziers,
+	show_beziers: show_beziers,
+	// data
+	has_reaction_data: has_reaction_data,
+	has_metabolite_data: has_metabolite_data,
 	apply_reaction_data_to_map: apply_reaction_data_to_map,
 	apply_reaction_data_to_reactions: apply_reaction_data_to_reactions,
 	update_reaction_data_domain: update_reaction_data_domain,
 	apply_metabolite_data_to_map: apply_metabolite_data_to_map,
 	apply_metabolite_data_to_nodes: apply_metabolite_data_to_nodes,
 	update_metabolite_data_domain: update_metabolite_data_domain,
-	get_selected_node_ids: get_selected_node_ids,
-	toggle_beziers: toggle_beziers,
-	hide_beziers: hide_beziers,
-	show_beziers: show_beziers,
 	// zoom
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
@@ -7051,6 +7214,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	
 	this.nodes = {};
 	this.reactions = {};
+	this.beziers = {};
 	this.membranes = [];
 	this.text_labels = {};
 	this.info = {};
@@ -7096,7 +7260,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	map.text_labels = map_data.text_labels;
 	map.info = map_data.info;
 
-	// propogate coefficients and reversbility, and populate the search index
+	// Propogate coefficients and reversbility, and populate the reaction
+	// search index.
 	for (var r_id in map.reactions) {
 	    var reaction = map.reactions[r_id];
 	    if (enable_search) {
@@ -7115,7 +7280,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 		if (to_node_bigg_id in reaction.metabolites) {
 		    segment.to_node_coefficient = reaction.metabolites[to_node_bigg_id].coefficient;
 		}
-		// if metabolite without beziers, then add them
+
+		// If the metabolite has no bezier points, then add them.
 		var start = map.nodes[segment.from_node_id],
 		    end = map.nodes[segment.to_node_id];
 		if (start['node_type']=='metabolite' || end['node_type']=='metabolite') {
@@ -7126,6 +7292,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 
 	    }
 	}
+
+	//  populate the nodes search index.
 	if (enable_search) {
 	    for (var node_id in map.nodes) {
 		var node = map.nodes[node_id];
@@ -7135,6 +7303,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 								 node_id: node_id }});
 	    }
 	}
+
+	// populate the beziers
+	map.beziers = build.new_beziers_for_reactions(map.reactions);
+
 	// get largest ids for adding new reactions, nodes, text labels, and
 	// segments
 	map.largest_ids.reactions = get_largest_id(map.reactions);
@@ -7170,26 +7342,26 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 
     function setup_containers(sel) {
         sel.append('g')
-	    .attr('id', 'nodes');
-        sel.append('g')
 	    .attr('id', 'reactions');
         sel.append('g')
-	    .attr('id', 'text-labels');
+	    .attr('id', 'nodes');
         sel.append('g')
-	    .attr('id', 'membranes');
+	    .attr('id', 'beziers');
+        sel.append('g')
+	    .attr('id', 'text-labels');
     }
     function reset_containers() {
-	this.sel.select('#nodes')
-	    .selectAll('.node')
-	    .remove();
 	this.sel.select('#reactions')
 	    .selectAll('.reaction')
 	    .remove();
+	this.sel.select('#nodes')
+	    .selectAll('.node')
+	    .remove();
+	this.sel.select('#beziers')
+	    .selectAll('.bezier')
+	    .remove();
 	this.sel.select('#text-labels')
 	    .selectAll('.text-label')
-	    .remove();
-	this.sel.select('#membranes')
-	    .selectAll('.membrane')
 	    .remove();
     }
 
@@ -7317,6 +7489,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     }
     function clear_map() {
 	this.reactions = {};
+	this.beziers = {};
 	this.nodes = {};
 	this.membranes = [];
 	this.text_labels = {};
@@ -7332,216 +7505,304 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	return (this.metabolite_data_object!==null);
     }
     function draw_everything() {
-        /** Draw the reactions and membranes
+        /** Draw the all reactions, nodes, & text labels.
 
          */
-	var sel = this.sel,
-	    membranes = this.membranes,
-	    scale = this.scale,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    text_labels = this.text_labels,
-	    defs = this.defs,
-	    default_reaction_color = this.default_reaction_color,
-	    bezier_drag_behavior = this.behavior.bezier_drag,
-	    node_click_fn = this.behavior.selectable_click,
-	    node_mouseover_fn = this.behavior.node_mouseover,
-	    node_mouseout_fn = this.behavior.node_mouseout,
-	    node_drag_behavior = this.behavior.selectable_drag,
-	    reaction_label_drag = this.behavior.reaction_label_drag,
-	    node_label_drag = this.behavior.node_label_drag,
-	    text_label_click = this.behavior.text_label_click,
-	    text_label_drag = this.behavior.selectable_drag,
-	    has_reaction_data = this.has_reaction_data(),
-	    reaction_data_styles = this.settings.data_styles['reaction'],
-	    has_metabolite_data = this.has_metabolite_data(),
-	    metabolite_data_styles = this.settings.data_styles['metabolite'],
-	    beziers_enabled = this.beziers_enabled;
-
-	utils.draw_an_array(sel, '#membranes' ,'.membrane', membranes,
-			    draw.create_membrane,
-			    draw.update_membrane);
-
-	utils.draw_an_object(sel, '#reactions', '.reaction', reactions,
-			     'reaction_id',
-			     draw.create_reaction, 
-			     function(sel) { return draw.update_reaction(sel,
-									 scale, 
-									 nodes,
-									 beziers_enabled, 
-									 defs,
-									 default_reaction_color,
-									 has_reaction_data,
-									 reaction_data_styles,
-									 bezier_drag_behavior,
-									 reaction_label_drag); });
-
-	utils.draw_an_object(sel, '#nodes', '.node', nodes, 'node_id', 
-			     function(sel) { return draw.create_node(sel, nodes, reactions); },
-			     function(sel) { return draw.update_node(sel, scale,
-								     has_metabolite_data,
-								     metabolite_data_styles,
-								     node_click_fn,
-								     node_mouseover_fn,
-								     node_mouseout_fn,
-								     node_drag_behavior,
-								     node_label_drag); });
-
-	utils.draw_an_object(sel, '#text-labels', '.text-label', text_labels,
-			     'text_label_id',
-			     function(sel) { return draw.create_text_label(sel); }, 
-			     function(sel) { return draw.update_text_label(sel,
-									   text_label_click,
-									   text_label_drag); });
-
-
+	this.draw_all_reactions(true); // also draw beziers
+	this.draw_all_nodes();
+	this.draw_all_text_labels();
     }
-    function draw_all_reactions() {
+    function draw_all_reactions(draw_beziers) {
+	/** Draw all reactions, and clear deleted reactions.
+
+	 Arguments
+	 ---------
+
+	 draw_beziers: (Boolean, default True) Whether to also draw the bezier
+	 control points.
+
+	 */
+	if (draw_beziers===undefined) draw_beziers = true;
+
+	// Draw all reactions.
 	var reaction_ids = [];
 	for (var reaction_id in this.reactions) {
 	    reaction_ids.push(reaction_id);
 	}
-	this.draw_these_reactions(reaction_ids);
+	// If draw_beziers is true, just draw them all, rather than deciding
+	// which ones to draw.
+	this.draw_these_reactions(reaction_ids, false);
+	if (draw_beziers)
+	    this.draw_all_beziers();
+
+	// Clear all deleted reactions.
+	this.clear_deleted_reactions(draw_beziers);
     }
-    function draw_these_reactions(reaction_ids) {
-	var scale = this.scale,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    defs = this.defs,
-	    default_reaction_color = this.default_reaction_color,
-	    bezier_drag_behavior = this.behavior.bezier_drag,
-	    reaction_label_drag = this.behavior.reaction_label_drag,
-	    has_reaction_data = this.has_reaction_data(),
-	    reaction_data_styles = this.settings.data_styles['reaction'],
-	    beziers_enabled = this.beziers_enabled;
+    
+    function draw_these_reactions(reaction_ids, draw_beziers) {
+	/** Draw specific reactions.
+
+         Does nothing with exit selection. Use clear_deleted_reactions to remove
+         reactions from the DOM.
+
+	 Arguments
+	 ---------
+
+	 reactions_ids: An array of reaction_ids to update.
+
+	 draw_beziers: (Boolean, default True) Whether to also draw the bezier
+	 control points.
+
+	 */
+	if (draw_beziers===undefined) draw_beziers = true;
 
         // find reactions for reaction_ids
-        var reaction_subset = {},
-	    i = -1;
-        while (++i<reaction_ids.length) {
-	    reaction_subset[reaction_ids[i]] = utils.clone(reactions[reaction_ids[i]]);
-        }
-        if (reaction_ids.length != Object.keys(reaction_subset).length) {
-	    console.warn('did not find correct reaction subset');
-        }
+	var reaction_subset = utils.object_slice_for_ids(this.reactions,
+							 reaction_ids);
 
-        // generate reactions for o.drawn_reactions
-        // assure constancy with cobra_id
-        var sel = this.sel.select('#reactions')
-                .selectAll('.reaction')
-                .data(utils.make_array(reaction_subset, 'reaction_id'),
-		      function(d) { return d.reaction_id; });
+	// function to update reactions
+	var update_fn = function(sel) {
+	    return draw.update_reaction(sel,
+					this.scale,
+					this.nodes,
+					this.defs,
+					this.default_reaction_color,
+					this.has_reaction_data(),
+					this.settings.data_styles['reaction'],
+					this.behavior.reaction_label_drag);
+	}.bind(this);
 
-        // enter: generate and place reaction
-        sel.enter().call(draw.create_reaction);
+	// draw the reactions
+	utils.draw_an_object(this.sel, '#reactions', '.reaction', reaction_subset,
+			     'reaction_id', draw.create_reaction, update_fn);
+	
+	if (draw_beziers) {
+	    // particular beziers to draw
+	    var bezier_ids = build.bezier_ids_for_reaction_ids(reaction_subset);
+	    this.draw_these_beziers(bezier_ids);
+	}
+    } 
 
-        // update: update when necessary
-        sel.call(function(sel) { return draw.update_reaction(sel, scale, 
-							     nodes,
-							     beziers_enabled, 
-							     defs,
-							     default_reaction_color,
-							     has_reaction_data,
-							     reaction_data_styles,
-							     bezier_drag_behavior,
-							     reaction_label_drag); });
+    function clear_deleted_reactions(draw_beziers) {
+	/** Remove any reactions that are not in *this.reactions*.
 
-        // exit
-        sel.exit();
+	 Arguments
+	 ---------
+
+	 draw_beziers: (Boolean, default True) Whether to also clear deleted
+	 bezier control points.
+
+	 */
+	if (draw_beziers===undefined) draw_beziers = true;
+	
+	// remove deleted reactions and segments
+	utils.draw_an_object(this.sel, '#reactions', '.reaction', this.reactions, 'reaction_id',
+			     null,
+			     clear_deleted_segments,
+			     function(sel) { sel.remove(); });
+
+	if (draw_beziers==true)
+	    this.clear_deleted_beziers();
+
+	// definitions
+	function clear_deleted_segments(update_selection) {
+	    // draw segments
+	    utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
+				       null,
+				       null,
+				       function(sel) { sel.remove(); });
+	};
     }
+
     function draw_all_nodes() {
+	/** Draw all nodes, and clear deleted nodes.
+
+	 */
 	var node_ids = [];
 	for (var node_id in this.nodes) {
 	    node_ids.push(node_id);
 	}
 	this.draw_these_nodes(node_ids);
+
+	// clear the deleted nodes
+	this.clear_deleted_nodes();
     }
+
     function draw_these_nodes(node_ids) {
-	var scale = this.scale,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    node_click_fn = this.behavior.selectable_click,
-	    node_mouseover_fn = this.behavior.node_mouseover,
-	    node_mouseout_fn = this.behavior.node_mouseout,
-	    node_drag_behavior = this.behavior.selectable_drag,
-	    node_label_drag = this.behavior.node_label_drag,
-	    metabolite_data_styles = this.settings.data_styles['metabolite'],
-	    has_metabolite_data = this.has_metabolite_data();
+	/** Draw specific nodes.
 
-	// find nodes for node_ids
-        var node_subset = {},
-	    i = -1;
-        while (++i<node_ids.length) {
-	    node_subset[node_ids[i]] = utils.clone(nodes[node_ids[i]]);
-        }
-        if (node_ids.length != Object.keys(node_subset).length) {
-	    console.warn('did not find correct node subset');
-        }
+         Does nothing with exit selection. Use clear_deleted_nodes to remove
+         nodes from the DOM.
 
-        // generate nodes for o.drawn_nodes
-        // assure constancy with cobra_id
-        var sel = this.sel.select('#nodes')
-                .selectAll('.node')
-                .data(utils.make_array(node_subset, 'node_id'),
-		      function(d) { return d.node_id; });
+	 Arguments
+	 ---------
 
-        // enter: generate and place node
-        sel.enter().call(function(sel) { return draw.create_node(sel, nodes, reactions); });
-
-        // update: update when necessary
-        sel.call(function(sel) { return draw.update_node(sel, scale, has_metabolite_data, metabolite_data_styles, 
-							 node_click_fn,
-							 node_mouseover_fn,
-							 node_mouseout_fn,
-							 node_drag_behavior,
-							 node_label_drag); });
-
-        // exit
-        sel.exit();
-    }
-    function draw_these_text_labels(text_label_ids) {
-	/** Draw labels with the given ids.
+	 nodes_ids: An array of node_ids to update.
 
 	 */
-	var text_labels = this.text_labels,
-	    text_label_click = this.behavior.text_label_click,
-	    text_label_drag = this.behavior.selectable_drag;
+        // find reactions for reaction_ids
+	var node_subset = utils.object_slice_for_ids(this.nodes, node_ids);
 
-	// find text labels for text_label_ids
-        var text_label_subset = {},
-	    i = -1;
-        while (++i<text_label_ids.length) {
-	    text_label_subset[text_label_ids[i]] = utils.clone(text_labels[text_label_ids[i]]);
-        }
-        if (text_label_ids.length != Object.keys(text_label_subset).length) {
-	    console.warn('did not find correct text label subset');
-        }
+	// functions to create and update nodes
+	var create_fn = function(sel) {
+		return draw.create_node(sel,
+					this.nodes,
+					this.reactions);
+	    }.bind(this),
+	    update_fn = function(sel) {
+		return draw.update_node(sel,
+					this.scale,
+					this.has_metabolite_data(),
+					this.settings.data_styles['metabolite'],
+					this.behavior.selectable_click,
+					this.behavior.node_mouseover,
+					this.behavior.node_mouseout,
+					this.behavior.selectable_drag,
+					this.behavior.node_label_drag);
+	    }.bind(this);
 
-        // generate text for this.text_labels
-        var sel = this.sel.select('#text-labels')
-                .selectAll('.text-label')
-                .data(utils.make_array(text_label_subset, 'text_label_id'),
-		      function(d) { return d.text_label_id; });
-
-        // enter: generate and place label
-        sel.enter().call(function(sel) {
-	    return draw.create_text_label(sel);
-	});
-
-        // update: update when necessary
-        sel.call(function(sel) {
-	    return draw.update_text_label(sel, text_label_click, text_label_drag);
-	});
-
-        // exit
-        sel.exit();
+	// draw the nodes
+	utils.draw_an_object(this.sel, '#nodes', '.node', node_subset, 'node_id',
+			     create_fn, update_fn);			      
     }
+
+    function clear_deleted_nodes() {
+	/** Remove any nodes that are not in *this.nodes*.
+
+	 */
+	// run remove for exit selection
+	utils.draw_an_object(this.sel, '#nodes', '.node', this.nodes, 'node_id',
+			     null, null, function(sel) { sel.remove(); });
+    }
+
+    function draw_all_text_labels() {
+	// Draw all text_labels.
+	var text_label_ids = [];
+	for (var text_label_id in this.text_labels) {
+	    text_label_ids.push(text_label_id);
+	}
+	this.draw_these_text_labels(text_label_ids);
+
+	// Clear all deleted text_labels.
+	this.clear_deleted_text_labels();
+    }
+
+    function draw_these_text_labels(text_label_ids) {
+	/** Draw specific text_labels.
+
+         Does nothing with exit selection. Use clear_deleted_text_labels to remove
+         text_labels from the DOM.
+
+	 Arguments
+	 ---------
+
+	 text_labels_ids: An array of text_label_ids to update.
+	 
+	 */
+        // find reactions for reaction_ids
+	var text_label_subset = utils.object_slice_for_ids(this.text_labels, text_label_ids);
+
+	// function to update text_labels
+	var update_fn = function(sel) {
+	    return draw.update_text_label(sel,
+					  this.behavior.text_label_click,
+					  this.behavior.selectable_drag);
+	}.bind(this);
+
+	// draw the text_labels
+	utils.draw_an_object(this.sel, '#text-labels', '.text-label',
+			     text_label_subset, 'text_label_id',
+			     draw.create_text_label, update_fn);
+    }
+
+    function clear_deleted_text_labels() {
+	/** Remove any text_labels that are not in *this.text_labels*.
+
+	 */
+	// clear deleted
+	utils.draw_an_object(this.sel, '#text-labels', '.text-label',
+			     this.text_labels, 'text_label_id', null, null,
+			     function(sel) { sel.remove(); });
+    }
+
+    function draw_all_beziers() {
+	/** Draw all beziers, and clear deleted reactions.
+
+	 */
+	var bezier_ids = [];
+	for (var bezier_id in this.beziers) {
+	    bezier_ids.push(bezier_id);
+	}
+	this.draw_these_beziers(bezier_ids);
+
+	// clear delete beziers
+	this.clear_deleted_beziers();
+    }
+
+    function draw_these_beziers(bezier_ids) {
+	/** Draw specific beziers.
+
+         Does nothing with exit selection. Use clear_deleted_beziers to remove
+         beziers from the DOM.
+
+	 Arguments
+	 ---------
+
+	 beziers_ids: An array of bezier_ids to update.
+
+	 */
+        // find reactions for reaction_ids
+	var bezier_subset = utils.object_slice_for_ids(this.beziers, bezier_ids);
+
+	// function to update beziers
+	var update_fn = function(sel) {
+	    return draw.update_bezier(sel,
+				      this.beziers_enabled,
+				      this.behavior.bezier_drag,
+				      this.behavior.bezier_mouseover,
+				      this.behavior.bezier_mouseout,
+				      this.nodes,
+				      this.reactions);
+	}.bind(this);
+
+	// draw the beziers
+	utils.draw_an_object(this.sel, '#beziers', '.bezier', bezier_subset,
+			     'bezier_id', draw.create_bezier, update_fn);
+    }
+
+    function clear_deleted_beziers() {
+	/** Remove any beziers that are not in *this.beziers*.
+
+	 */
+	// remove deleted
+	utils.draw_an_object(this.sel, '#beziers', '.bezier', this.beziers,
+			     'bezier_id', null, null,
+			     function(sel) { sel.remove(); });
+    }
+
+    function show_beziers() {
+	this.toggle_beziers(true);
+    }
+
+    function hide_beziers() {
+	this.toggle_beziers(false);
+    }
+
+    function toggle_beziers(on_off) {
+	if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
+	else this.beziers_enabled = on_off;
+	this.draw_all_beziers();
+	this.callback_manager.run('toggle_beziers', this.beziers_enabled);
+    }
+
+
     function apply_reaction_data_to_map() {
 	/**  Returns True if the scale has changed.
 
 	 */
 	return this.apply_reaction_data_to_reactions(this.reactions);
     }
+    
     function apply_reaction_data_to_reactions(reactions) {
 	/**  Returns True if the scale has changed.
 
@@ -7759,7 +8020,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	var node_selection = this.sel.select('#nodes').selectAll('.node'),
 	    coords,
 	    selected_node;
-	node_selection.classed("selected", function(d) {
+	node_selection.classed('selected', function(d) {
 	    var selected = String(d.node_id) == String(node_id);
 	    if (selected) {
 		selected_node = d;
@@ -7787,10 +8048,13 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	}
 	// toggle selection
 	if (shift_key_on) {
+	    // toggle this node
 	    d3.select(classable_node)
-		.classed("selected", !d3.select(classable_node).classed("selected"));
+		.classed('selected', !d3.select(classable_node).classed('selected'));
 	} else {
-	    classable_selection.classed("selected", function(p) { return d === p; });
+	    // unselect all other nodes, and select this one
+	    classable_selection.classed('selected', false);
+	    d3.select(classable_node).classed('selected', true);
 	}
 	// run the select_metabolite callback
 	var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),
@@ -7813,7 +8077,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	var out = null,
 	    self = this,
 	    node_selection = this.sel.select('#nodes').selectAll('.selected');
-	node_selection.classed("selected", function(d, i) {
+	node_selection.classed('selected', function(d, i) {
 	    if (i==0) {
 		out = d;
 		return true;
@@ -7825,7 +8089,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     }
     function deselect_nodes() {
 	var node_selection = this.sel.select('#nodes').selectAll('.node');
-	node_selection.classed("selected", false);
+	node_selection.classed('selected', false);
     }
     function select_text_label(sel, d) {
 	// deselect all nodes
@@ -7833,7 +8097,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	// find the new selection
 	// Ignore shift key and only allow single selection for now
 	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
-	text_label_selection.classed("selected", function(p) { return d === p; });
+	text_label_selection.classed('selected', function(p) { return d === p; });
 	var selected_text_labels = this.sel.select('#text-labels').selectAll('.selected'),
 	    coords;
 	selected_text_labels.each(function(d) {
@@ -7843,7 +8107,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     }
     function deselect_text_labels() {
 	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
-	text_label_selection.classed("selected", false);
+	text_label_selection.classed('selected', false);
     }
 
     // ---------------------------------------------------------------------
@@ -7874,9 +8138,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	 should_draw: A boolean argument to determine whether to draw the changes to the map.
 
 	 */
+
 	var out = this.segments_and_reactions_for_nodes(selected_nodes),
-	    reactions = out.reactions,
-	    segment_objs_w_segments = out.segment_objs_w_segments;
+	    segment_objs_w_segments = out.segment_objs_w_segments, // TODO repeated values here
+	    reactions = out.reactions;
 
 	// copy nodes to undelete
 	var saved_nodes = utils.clone(selected_nodes),
@@ -7887,8 +8152,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 				       selected_text_labels) {
 		// delete nodes, segments, and reactions with no segments
   		this.delete_node_data(Object.keys(selected_nodes));
-		this.delete_segment_data(segment_objs);
-		this.delete_reaction_data(Object.keys(reactions));	   
+		this.delete_segment_data(segment_objs); // also deletes beziers
+		this.delete_reaction_data(Object.keys(reactions));
 		this.delete_text_label_data(Object.keys(selected_text_labels));
 
 		// apply the reaction and node data
@@ -7898,12 +8163,16 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 		    this.apply_metabolite_data_domain();
 
 		// redraw
-		// TODO just redraw these nodes, segments, and labels
-		if (should_draw) this.draw_everything();
+		if (should_draw) {
+		    this.clear_deleted_reactions(); // also clears segments and beziers
+		    this.clear_deleted_nodes();
+		    this.clear_deleted_text_labels();
+		}
 	    }.bind(this);
 
 	// delete
-	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments, selected_text_labels);
+	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments,
+			selected_text_labels);
 
 	// add to undo/redo stack
 	this.undo_stack.push(function() {
@@ -7913,7 +8182,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	    this.extend_nodes(saved_nodes);
 	    this.extend_reactions(saved_reactions);
 	    var reaction_ids_to_draw = Object.keys(saved_reactions);
-	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
+	    for (var segment_id in saved_segment_objs_w_segments) {
+		var segment_obj = saved_segment_objs_w_segments[segment_id];
+		
 		var segment = segment_obj.segment;
 		this.reactions[segment_obj.reaction_id]
 		    .segments[segment_obj.segment_id] = segment;
@@ -7927,9 +8198,16 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 						   segment_id: segment_obj.segment_id });
 		}.bind(this));
 
+		// extend the beziers
+		var seg_id = segment_obj.segment_id,
+		    r_id = segment_obj.reaction_id,
+		    seg_o = {};
+		seg_o[seg_id] = segment_obj.segment;
+	    	utils.extend(this.beziers, build.new_beziers_for_segments(seg_o, r_id));
+
 		if (reaction_ids_to_draw.indexOf(segment_obj.reaction_id)==-1)
 		    reaction_ids_to_draw.push(segment_obj.reaction_id);
-	    }.bind(this));
+	    }
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
@@ -7982,13 +8260,14 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     }
 
     function delete_segment_data(segment_objs) {
-	/** Delete segments, and update connected_segments in nodes. Also
-	 deletes any reactions with 0 segments.
+	/** Delete segments, update connected_segments in nodes, and delete
+	 bezier points.
 	 
-	 segment_objs: Array of objects with { reaction_id: "123", segment_id: "456" }
+	 segment_objs: Object with values like { reaction_id: '123', segment_id: '456' }
 	 
 	 */
-	segment_objs.forEach(function(segment_obj) {
+	for (var segment_id in segment_objs) {
+	    var segment_obj = segment_objs[segment_id];
 	    var reaction = this.reactions[segment_obj.reaction_id];
 
 	    // segment already deleted
@@ -8004,15 +8283,32 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 		});
 	    }.bind(this));
 
+            // remove beziers
+	    ['b1', 'b2'].forEach(function(bez) {
+		var bez_id = build.bezier_id_for_segment_id(segment_obj.segment_id, bez);
+	    	delete this.beziers[bez_id];
+	    }.bind(this));
+
 	    delete reaction.segments[segment_obj.segment_id];
-	}.bind(this));
+	}
     }
     function delete_reaction_data(reaction_ids) {
-	/** Delete reactions and remove from search index.
+	/** Delete reactions, segments, and beziers, and remove reaction from
+	 search index.
 	 
 	 */
 	reaction_ids.forEach(function(reaction_id) {
+            // remove beziers
+	    var reaction = this.reactions[reaction_id];
+	    for (var segment_id in reaction.segments) {
+		['b1', 'b2'].forEach(function(bez) {
+		    var bez_id = build.bezier_id_for_segment_id(segment_id, bez);
+	    	    delete this.beziers[bez_id];
+		}.bind(this));
+	    }
+	    // delete reaction
 	    delete this.reactions[reaction_id];
+	    // remove from search index
 	    var found = this.search_index.remove('r'+reaction_id);
 	    if (!found)
 		console.warn('Could not find deleted reaction in search index');
@@ -8024,18 +8320,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	text_label_ids.forEach(function(text_label_id) {
 	    delete this.text_labels[text_label_id];
 	}.bind(this));
-    }
-    function show_beziers() {
-	this.toggle_beziers(true);
-    }
-    function hide_beziers() {
-	this.toggle_beziers(false);
-    }
-    function toggle_beziers(on_off) {
-	if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
-	else this.beziers_enabled = on_off;
-	this.draw_everything();
-	this.callback_manager.run('toggle_beziers', this.beziers_enabled);
     }
 
     // ---------------------------------------------------------------------
@@ -8101,7 +8385,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    // draw
-	    map.draw_everything();
+	    map.clear_deleted_nodes();
 	}, function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
@@ -8207,38 +8491,45 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 				     this.cobra_model.cofactors,
 				     direction),
 	    new_nodes = out.new_nodes,
-	    new_reactions = out.new_reactions;
+	    new_reactions = out.new_reactions,
+	    new_beziers = out.new_beziers;
 
 	// draw
-	extend_and_draw_reaction.apply(this, [new_nodes, new_reactions, selected_node_id]);
+	extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
+					      new_beziers, selected_node_id]);
 
 	// clone the nodes and reactions, to redo this action later
 	var saved_nodes = utils.clone(new_nodes),
 	    saved_reactions = utils.clone(new_reactions),
-	    map = this;
+	    saved_beziers = utils.clone(new_beziers);
 
 	// add to undo/redo stack
 	this.undo_stack.push(function() {
 	    // undo
 	    // get the nodes to delete
 	    delete new_nodes[selected_node_id];
-	    map.delete_node_data(Object.keys(new_nodes));
-	    map.delete_reaction_data(Object.keys(new_reactions));
-	    select_metabolite_with_id.apply(map, [selected_node_id]);
+	    this.delete_node_data(Object.keys(new_nodes));
+	    this.delete_reaction_data(Object.keys(new_reactions)); // also deletes beziers
+	    select_metabolite_with_id.apply(this, [selected_node_id]);
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    new_reactions = utils.clone(saved_reactions);
+	    new_beziers = utils.clone(saved_beziers);
 	    // draw
-	    map.draw_everything();
-	}, function () {
+	    this.clear_deleted_nodes();
+	    this.clear_deleted_reactions(true); // also clears segments and beziers
+	}.bind(this), function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
-	    extend_and_draw_reaction.apply(map, [new_nodes, new_reactions, selected_node_id]);
-	});
+	    extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
+						  new_beziers, selected_node_id]);
+	}.bind(this));
 
 	// definitions
-	function extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id) {
+	function extend_and_draw_reaction(new_nodes, new_reactions, new_beziers,
+					  selected_node_id) {
 	    this.extend_reactions(new_reactions);
+	    utils.extend(this.beziers, new_beziers);
 	    // remove the selected node so it can be updated
 	    this.delete_node_data([selected_node_id]); // TODO this is a hack. fix
 	    this.extend_nodes(new_nodes);
@@ -8400,8 +8691,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 
     function segments_and_reactions_for_nodes(nodes) {
 	/** Get segments and reactions that should be deleted with node deletions
+	 
 	 */
-	var segment_objs_w_segments = [],
+	var segment_objs_w_segments = {},
 	    these_reactions = {},
 	    segment_ids_for_reactions = {},
 	    reactions = this.reactions;
@@ -8414,7 +8706,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 		    segment = reaction.segments[segment_obj.segment_id],
 		    segment_obj_w_segment = utils.clone(segment_obj);
 		segment_obj_w_segment['segment'] = utils.clone(segment);
-		segment_objs_w_segments.push(segment_obj_w_segment);
+		segment_objs_w_segments[segment_obj.segment_id] = segment_obj_w_segment;
 		if (!(segment_obj.reaction_id in segment_ids_for_reactions))
 		    segment_ids_for_reactions[segment_obj.reaction_id] = [];
 		segment_ids_for_reactions[segment_obj.reaction_id].push(segment_obj.segment_id);
@@ -8558,7 +8850,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     // IO
 
     function save() {
-        utils.download_json(this.map_for_export(), "saved_map");
+        utils.download_json(this.map_for_export(), 'saved_map');
     }
     function map_for_export() {
 	var out = { reactions: utils.clone(this.reactions),
@@ -8613,7 +8905,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	this.canvas.mouse_node.attr('width', '0px');
 	this.canvas.mouse_node.attr('height', '0px');
 	this.canvas.mouse_node.attr('transform', null);
-        utils.export_svg("saved_map", this.svg, true);
+        utils.export_svg('saved_map', this.svg, true);
 	this.zoom_container.go_to(window_scale, window_translate, false);
 	this.svg.attr('width', null);
 	this.svg.attr('height', null);
@@ -11211,6 +11503,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	this.map.behavior.toggle_selectable_drag(mode=='brush' || mode=='rotate');
 	this.map.behavior.toggle_label_drag(mode=='brush');
 	this.map.behavior.toggle_text_label_edit(mode=='text');
+	this.map.behavior.toggle_bezier_drag(mode=='brush');
 	// edit selections
 	if (mode=='view' || mode=='text')
 	    this.map.select_none();

@@ -52,17 +52,26 @@ footer a, a:hover, a:focus, a:visited {
     width: 100%;
     margin-top: 35px;
 }
+#title-box {
+    display: inline-block;
+}
 #title {
     color: #291E1E;
     font-size: 160px;
-    font-family: tulpen-one, serif;
+    font-family: tulpen-one, Futura, serif;
     font-weight: 400;
-    /* font-style: italic; */
-    text-align: center;
 }
 #logo {
-    display: none;
-    width: 250px;
+    vertical-align: inherit;
+}
+@media (max-width: 768px) {
+    #title-box {
+	width: 100%;
+	text-align: center;
+    }
+    #logo {
+	display: none;
+    }
 }
 @media (min-width: 768px) { /*@screen-sm-min) { */
     .column-button {
@@ -71,16 +80,22 @@ footer a, a:hover, a:focus, a:visited {
     header {
 	margin-bottom: 50px;
     }
+    #title-box {
+	max-width: 400px;
+	overflow: hidden;
+    }
     #title {
+	position: relative;
+	top: 45px;
 	font-size: 230px;
 	text-align: left;
-	display: inline;
-	top: 100px;
-	position: relative;
     }
     #logo {
-	position: relative;
-	left: -20px;
-	display: inline;
+	width: 250px;
+	display: inline-block;
+	overflow: hidden;
+    }
+    #faq {
+	margin-top: 50px;
     }
 }

@@ -1,7 +1,8 @@
 {% extends "standalone.html" %}
 {% block title %}Escher{% endblock %}
 {% block head %}
-  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/simplex/bootstrap.min.css">
+  <!-- TODO use the CDN when possible -->
+  <link rel="stylesheet" href="lib/bootstrap-3.1.1.min.css"> 
   <script src="//use.edgefonts.net/tulpen-one.js"></script>
 
   <link href="css/index.css" rel="stylesheet" type="text/css" media="all">
@@ -12,7 +13,9 @@
       <header class="row">
 	<div class="col-sm-12">
 	  <img src="resources/escher-logo@2x.png" id="logo">
-	  <h1 id="title">ESCHER</h1>
+	  <div id="title-box">
+	    <h1 id="title">ESCHER</h1>
+	  </div>
 	</div>
       </header>
       <div class="row">
@@ -45,18 +48,20 @@
 	  </button>
 	</div>
       </div>
+      <!-- FAQ  -->
+      <div id="faq" class="row">
+	<div class="col-sm-12">
+	  <h2>FAQ</h2>
+	  <ol>
+	    <li><h4>How do I cite Escher?</h4>
+	      <p>Escher has not yet been published in a peer-review journal, but, in
+		the meantime, you can cite the code by DOI: [Fill in for release v1].</p>
+	    </li>
+	  </ol>
+	</div>
+      </div>
     </div>
     <div id="push"></div>
-    <!-- FAQ  -->
-    <div class="col-sm-12">
-      <h2>FAQ</h2>
-      <ol>
-	<li><h4>How do I cite Escher?</h4>
-	  <p>Escher has not yet been published in a peer-review journal, but, in
-	    the meantime, you can cite the code by DOI: [Fill in for release v1].</p>
-	</li>
-      </ol>
-    </div>
   </main>
   <footer>
     <div class="container">

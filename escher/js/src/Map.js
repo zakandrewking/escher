@@ -1,4 +1,4 @@
-define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex", "lib/bacon"], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon) {
+define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackManager', 'KeyManager', 'Canvas', 'data_styles', 'SearchIndex', 'lib/bacon'], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -1012,7 +1012,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	var node_selection = this.sel.select('#nodes').selectAll('.node'),
 	    coords,
 	    selected_node;
-	node_selection.classed("selected", function(d) {
+	node_selection.classed('selected', function(d) {
 	    var selected = String(d.node_id) == String(node_id);
 	    if (selected) {
 		selected_node = d;
@@ -1040,10 +1040,13 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	}
 	// toggle selection
 	if (shift_key_on) {
+	    // toggle this node
 	    d3.select(classable_node)
-		.classed("selected", !d3.select(classable_node).classed("selected"));
+		.classed('selected', !d3.select(classable_node).classed('selected'));
 	} else {
-	    classable_selection.classed("selected", function(p) { return d === p; });
+	    // unselect all other nodes, and select this one
+	    classable_selection.classed('selected', false);
+	    d3.select(classable_node).classed('selected', true);
 	}
 	// run the select_metabolite callback
 	var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),
@@ -1066,7 +1069,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	var out = null,
 	    self = this,
 	    node_selection = this.sel.select('#nodes').selectAll('.selected');
-	node_selection.classed("selected", function(d, i) {
+	node_selection.classed('selected', function(d, i) {
 	    if (i==0) {
 		out = d;
 		return true;
@@ -1078,7 +1081,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     }
     function deselect_nodes() {
 	var node_selection = this.sel.select('#nodes').selectAll('.node');
-	node_selection.classed("selected", false);
+	node_selection.classed('selected', false);
     }
     function select_text_label(sel, d) {
 	// deselect all nodes
@@ -1086,7 +1089,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	// find the new selection
 	// Ignore shift key and only allow single selection for now
 	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
-	text_label_selection.classed("selected", function(p) { return d === p; });
+	text_label_selection.classed('selected', function(p) { return d === p; });
 	var selected_text_labels = this.sel.select('#text-labels').selectAll('.selected'),
 	    coords;
 	selected_text_labels.each(function(d) {
@@ -1096,7 +1099,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     }
     function deselect_text_labels() {
 	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
-	text_label_selection.classed("selected", false);
+	text_label_selection.classed('selected', false);
     }
 
     // ---------------------------------------------------------------------
@@ -1127,10 +1130,6 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	 should_draw: A boolean argument to determine whether to draw the changes to the map.
 
 	 */
-
-	// 8/29/14
-	// TODO, L1466
-	// ALSO, single node click is broken
 
 	var out = this.segments_and_reactions_for_nodes(selected_nodes),
 	    segment_objs_w_segments = out.segment_objs_w_segments, // TODO repeated values here
@@ -1256,7 +1255,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	/** Delete segments, update connected_segments in nodes, and delete
 	 bezier points.
 	 
-	 segment_objs: Object with values like { reaction_id: "123", segment_id: "456" }
+	 segment_objs: Object with values like { reaction_id: '123', segment_id: '456' }
 	 
 	 */
 	for (var segment_id in segment_objs) {
@@ -1843,7 +1842,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
     // IO
 
     function save() {
-        utils.download_json(this.map_for_export(), "saved_map");
+        utils.download_json(this.map_for_export(), 'saved_map');
     }
     function map_for_export() {
 	var out = { reactions: utils.clone(this.reactions),
@@ -1898,7 +1897,7 @@ define(["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackMan
 	this.canvas.mouse_node.attr('width', '0px');
 	this.canvas.mouse_node.attr('height', '0px');
 	this.canvas.mouse_node.attr('transform', null);
-        utils.export_svg("saved_map", this.svg, true);
+        utils.export_svg('saved_map', this.svg, true);
 	this.zoom_container.go_to(window_scale, window_translate, false);
 	this.svg.attr('width', null);
 	this.svg.attr('height', null);
