@@ -135,6 +135,10 @@
     width: 100%;
     text-align: left;
 }
+.no-data-input {
+    width: 23%;
+    margin: 0 4px 0 4px;
+}
 .style-span {
     margin: 0 4px;
 }

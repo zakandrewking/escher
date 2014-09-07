@@ -1526,18 +1526,17 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
     }
 
     function update_reaction(update_selection, scale, drawn_nodes, 
-			     defs, default_reaction_color, has_reaction_data,
-			     reaction_data_styles, 
-			     label_drag_behavior) {
+			     defs, has_reaction_data,
+			     no_data_style, reaction_data_styles, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'drawn_nodes', 
-			       'defs', 'default_reaction_color', 'has_reaction_data',
-			       'reaction_data_styles',
+			       'defs', 'has_reaction_data',
+			       'no_data_style', 'reaction_data_styles',
 			       'label_drag_behavior']);
 
         // update reaction label
         update_selection.select('.reaction-label')
-            .call(function(sel) { return update_reaction_label(sel, has_reaction_data, 
+            .call(function(sel) { return update_reaction_label(sel, has_reaction_data,
 							       reaction_data_styles,
 							       label_drag_behavior); });
 
@@ -1546,8 +1545,8 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 				   create_segment,
 				   function(sel) { 
 				       return update_segment(sel, scale, drawn_nodes, defs,
-							     default_reaction_color,
-							     has_reaction_data, reaction_data_styles);
+							     has_reaction_data,
+							     no_data_style, reaction_data_styles);
 				   },
 				   function(sel) {
 				       sel.remove();
@@ -1656,12 +1655,12 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
     }
     
     function update_segment(update_selection, scale, drawn_nodes,
-			    defs, default_reaction_color,
-			    has_reaction_data, reaction_data_styles) {
+			    defs, has_reaction_data, no_data_style,
+			    reaction_data_styles) {
 	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
 					  'defs',
-					  'default_reaction_color',
 					  'has_reaction_data',
+					  'no_data_style',
 					  'reaction_data_styles']);
 
         // update segment attributes
@@ -1703,17 +1702,17 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
             .style('stroke', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		    var f = d.data;
-		    return scale.reaction_color(f===null ? 0 : f);
+		    return f===null ? no_data_style['color'] : scale.reaction_color(f);
 		} else {
-		    return default_reaction_color;
+		    return null;
 		}
 	    })
 	    .style('stroke-width', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		    var f = d.data;
-		    return scale.reaction_size(f===null ? 0 : f);
+		    return f===null ? no_data_style['size'] : scale.reaction_size(f);
 		} else {
-		    return scale.reaction_size(0);
+		    return null;
 		}
             });
 
@@ -1768,7 +1767,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	    return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
 	}).attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
-	}).attr('fill', function(d) {
+	}).style('fill', function(d) {
 	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		if (d.show_arrowhead_flux) {
 		    // show the flux
@@ -1780,16 +1779,16 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 		}
 	    }
 	    // default fill color
-	    return default_reaction_color;
-	}).attr('stroke', function(d) {
+	    return null;
+	}).style('stroke', function(d) {
 	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		// show the flux color in the stroke whether or not the fill is present
 		var f = d.data;
 		return scale.reaction_color(f===null ? 0 : f);
 	    }
 	    // default stroke color
-	    return default_reaction_color;
-	});;
+	    return null;
+	});
 	// remove
 	arrowheads.exit().remove();	
     }
@@ -3344,10 +3343,10 @@ define('Scale',["utils"], function(utils) {
 	this.x_size = d3.scale.linear();
 	this.y_size = d3.scale.linear();
 	this.size = d3.scale.linear();
-	this.reaction_color = d3.scale.linear();
-        this.reaction_size = d3.scale.linear();
-	this.metabolite_size = d3.scale.linear();
-	this.metabolite_color = d3.scale.linear();
+	this.reaction_color = d3.scale.linear().clamp(true);
+        this.reaction_size = d3.scale.linear().clamp(true);
+	this.metabolite_color = d3.scale.linear().clamp(true);
+	this.metabolite_size = d3.scale.linear().clamp(true);
         this.scale_path = function(path) {
             var x_fn = this.x, y_fn = this.y;
             // TODO: scale arrow width
@@ -7046,9 +7045,6 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	// more setup
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
-	// scales
-	get_scale: get_scale,
-	set_scale: set_scale,
 	// appearance
 	set_status: set_status,
 	set_model: set_model,
@@ -7145,9 +7141,6 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	    canvas_size_and_loc = {x: -size.width, y: -size.height,
 				   width: size.width*3, height: size.height*3};
 	}
-
-	// defaults
-	this.default_reaction_color = '#334E75',
 
 	// set up the defs
 	this.svg = svg;
@@ -7366,77 +7359,6 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     }
 
     // -------------------------------------------------------------------------
-    // Scales
-
-    function get_scale(data, type) {
-	/** Get a reaction or metabolite scale.
-
-	 Arguments
-	 ---------
-	 
-	 data: The type of data. Options are 'reaction' or 'metabolite'.
-
-	 type: The type of scale to set. Options are 'size' and 'color'.
-
-	 */
-
-	if (data=='reaction' && type=='size') {
-	    return this.scale.reaction_size;
-	} else if (data=='reaction' && type=='color') {
-	    return this.scale.reaction_color;
-	} else if (data=='metabolite' && type=='size') {
-	    return this.scale.metabolite_size;
-	} else if (data=='metabolite' && type=='color') {
-	    return this.scale.metabolite_color;
-	} else {
-	    throw Error('Bad value for data or type: ' + data + ', ' + type);
-	}
-    }
-
-    function set_scale(data, type, domain, range) {
-	/** Set a reaction or metabolite scale.
-
-	 Arguments
-	 ---------
-	 
-	 data: The type of data. Options are 'reaction' or 'metabolite'.
-
-	 type: The type of scale to set. Options are 'size' and 'color'.
-
-	 domain: The new scale domain. If domain is *null*, then the existing
-	 domain is used. If any settings.auto_*_domain is true, then, this input
-	 is ignored.
-
-	 */
-
-	if (domain===undefined) domain = null;
-	if (range===undefined) range = null;
-
-	if (domain !== null && (this.settings.auto_domain['reaction']==true ||
-				this.settings.auto_domain['metabolite']==true)) {
-	    console.warn('Cannot set domain manually if auto_*_domain is true');
-	    domain = null;
-	}
-
-	if (data=='reaction' && type=='size') {
-	    set_this_scale(this.scale.reaction_size, domain, range);
-	} else if (data=='reaction' && type=='color') {
-	    set_this_scale(this.scale.reaction_color, domain, range);
-	} else if (data=='metabolite' && type=='size') {
-	    set_this_scale(this.scale.metabolite_size, domain, range);
-	} else if (data=='metabolite' && type=='color') {
-	    set_this_scale(this.scale.metabolite_color, domain, range);
-	} else {
-	    throw Error('Bad value for data or type: ' + data + ', ' + type);
-	}
-
-	function set_this_scale(a_scale, a_domain, a_range) {
-	    if (a_domain !== null) a_scale.domain(a_domain);
-	    if (a_range !== null) a_scale.range(a_range);
-	}
-    }
-
-    // -------------------------------------------------------------------------
     // Appearance
 
     function set_status(status) {
@@ -7566,8 +7488,8 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 					this.scale,
 					this.nodes,
 					this.defs,
-					this.default_reaction_color,
 					this.has_reaction_data(),
+					this.settings.no_data['reaction'],
 					this.settings.data_styles['reaction'],
 					this.behavior.reaction_label_drag);
 	}.bind(this);
@@ -10515,6 +10437,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 			    set_domain_value: set_domain_value,
 			    set_domain: set_domain,
 			    set_range_value: set_range_value,
+			    set_no_data_value: set_no_data_value,
 			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes };
@@ -10528,7 +10451,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
     }
 
     // instance methods
-    function init(def_styles, def_auto_domain, def_domain, def_range) {
+    function init(def_styles, def_auto_domain, def_domain, def_range, def_no_data) {
 	// defaults
 	if (def_styles===undefined) 
 	    def_styles = { reaction: ['color', 'size', 'abs', 'text'],
@@ -10544,6 +10467,11 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 				      size: [4, 8, 12] },
 			  metabolite: { color: ['green', 'white', 'red'],
 					size: [6, 8, 10] } };
+	if (def_no_data===undefined)
+	    def_no_data = { reaction: { color: 'rgb(220,220,220)',
+					size: 4 },
+			    metabolite: { color: 'white',
+					  size: 6 } };
 
 	// event streams
 	this.data_styles = {};
@@ -10558,6 +10486,9 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.range = {};
 	this.range_bus = {};
 	this.range_stream = {};
+	this.no_data = {};
+	this.no_data_bus = {};
+	this.no_data_stream = {};
 
 	// manage accepting/abandoning changes
 	this.status_bus = new bacon.Bus();
@@ -10681,6 +10612,35 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 		}.bind(this));
 
 	    }.bind(this));
+
+	    // set up the no data settings
+	    this.no_data_bus[type] = {};
+	    this.no_data_stream[type] = {};
+	    this.no_data[type] = {};
+	    ['color', 'size'].forEach(function(no_data_type) {
+		// make the bus
+		this.no_data_bus[type][no_data_type] = new bacon.Bus();
+		// make a new constant for the input default
+		this.no_data_stream[type][no_data_type] = this.no_data_bus[type][no_data_type]
+		// conditionally accept changes
+		    .convert_to_conditional_stream(this.status_bus)
+		// combine into state array
+		    .scan([], function(current, value) {
+			return value;
+		    })
+		// force updates
+		    .force_update_with_bus(this.force_update_bus);
+
+		// get the latest
+		this.no_data_stream[type][no_data_type].onValue(function(v) {
+		    this.no_data[type][no_data_type] = v;
+		}.bind(this));
+
+		// push the default
+		var def = def_no_data[type][no_data_type];
+		this.no_data_bus[type][no_data_type].push(def);
+
+	    }.bind(this));
 	}.bind(this));
 
 	// definitions
@@ -10742,6 +10702,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 		});
 	}
     }
+
     function set_auto_domain(type, on_off) {	
 	/** Turn auto domain setting on or off.
 
@@ -10755,6 +10716,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
 	this.auto_domain_bus[type].push(on_off);
     }
+
     function change_data_style(type, style, on_off) {
 	/** Change the data style.
 
@@ -10771,6 +10733,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.data_styles_bus[type].push({ style: style,
 					  on_off: on_off });
     }
+
     function set_domain_value(type, index, value) {
 	/** Change a domain value.
 
@@ -10786,6 +10749,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.domain_bus[type].push({ index: index,
 				     value: value });
     }
+
     function set_domain(type, domain) {
 	/** Change a domain.
 
@@ -10800,6 +10764,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	    this.domain_bus[type].push({ index: i, value: d });
 	}.bind(this));
     }
+
     function set_range_value(type, range_type, index, value) {
 	/** Change a range value.
 
@@ -10817,6 +10782,22 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.range_bus[type][range_type].push({ index: index,
 						   value: value });
     }
+
+    function set_no_data_value(type, no_data_type, value) {
+	/** Change a no_data value.
+
+	 type: 'reaction' or 'metabolite'
+
+	 no_data_type: 'color' or 'size'
+
+	 value: The new value
+
+	 */
+	check_type(type);
+
+	this.no_data_bus[type][no_data_type].push(value);
+    }
+
     function hold_changes() {
 	this.status_bus.push('hold');
     }
@@ -11026,6 +11007,24 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 
 		    settings.range_stream[type][range_type_ar[0]].onValue(function(ar) {
 		    	this.value = ar[column];
+		    }.bind(this));
+		});
+	});
+
+	// no data
+	var r = t.append('tr').append('td').attr('colspan', '5');
+	[['color', 'No data color'], ['size', 'No data size']].forEach(function(range_type_ar) {
+	    r.append('span').text(range_type_ar[1] + ':');
+	    r.append('input').attr('class', 'no-data-input')
+		.each(function() {
+		    bacon.fromEventTarget(this, 'change')
+			.onValue(function(event) {
+			    settings.set_no_data_value(type, range_type_ar[0],
+						       event.target.value);
+			});
+
+		    settings.no_data_stream[type][range_type_ar[0]].onValue(function(ar) {
+		    	this.value = ar;
 		    }.bind(this));
 		});
 	});
@@ -11274,13 +11273,17 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    reaction_domain: [-10, 0, 10],
 	    reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
 	    reaction_size_range: [4, 8, 12],
+	    reaction_no_data_color: 'rgb(220,220,220)',
+	    reaction_no_data_size: 4,
 	    metabolite_data: null,
 	    metabolite_data_path: null,
 	    metabolite_styles: ['color', 'size', 'text'],
 	    auto_metabolite_domain: true,
 	    metabolite_domain: [-10, 0, 10],
 	    metabolite_color_range: ['green', 'white', 'red'],
-	    metabolite_size_range: [6, 8, 10]
+	    metabolite_size_range: [6, 8, 10],
+	    metabolite_no_data_color: 'white',
+	    metabolite_no_data_size: 6
 	});
 
 	// initialize the settings
@@ -11294,7 +11297,11 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    { reaction: { color: this.options.reaction_color_range,
 			  size: this.options.reaction_size_range },
 	      metabolite: { color: this.options.metabolite_color_range,
-			    size: this.options.metabolite_size_range } }
+			    size: this.options.metabolite_size_range } },
+	    { reaction: { color: this.options.reaction_no_data_color,
+			  size: this.options.reaction_no_data_size },
+	      metabolite: { color: this.options.metabolite_no_data_color,
+			    size: this.options.metabolite_no_data_size } }
 	);
 
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {

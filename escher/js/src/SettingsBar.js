@@ -197,6 +197,24 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		});
 	});
 
+	// no data
+	var r = t.append('tr').append('td').attr('colspan', '5');
+	[['color', 'No data color'], ['size', 'No data size']].forEach(function(range_type_ar) {
+	    r.append('span').text(range_type_ar[1] + ':');
+	    r.append('input').attr('class', 'no-data-input')
+		.each(function() {
+		    bacon.fromEventTarget(this, 'change')
+			.onValue(function(event) {
+			    settings.set_no_data_value(type, range_type_ar[0],
+						       event.target.value);
+			});
+
+		    settings.no_data_stream[type][range_type_ar[0]].onValue(function(ar) {
+		    	this.value = ar;
+		    }.bind(this));
+		});
+	});
+
 	// styles
 	t.append('tr').call(function(r) {
 	    r.append('td').text('Styles:');

@@ -92,3 +92,10 @@ def test_Builder(tmpdir):
 
     assert type(b.the_id) is unicode
     assert len(b.the_id) == 10
+
+def test_Builder_options():
+    b = Builder()
+    b.set_metabolite_no_data_color('white')
+    assert b.metabolite_no_data_color=='white'
+    html = b._get_html()
+    assert 'metabolite_no_data_color: "white"' in html

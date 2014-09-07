@@ -166,11 +166,15 @@ class Builder(object):
                         'reaction_domain',
                         'reaction_color_range',
                         'reaction_size_range',
+                        'reaction_no_data_color',
+                        'reaction_no_data_size',
                         'metabolite_styles',
                         'auto_metabolite_domain',
                         'metabolite_domain',
                         'metabolite_color_range',
-                        'metabolite_size_range']
+                        'metabolite_size_range',
+                        'metabolite_no_data_color',
+                        'metabolite_no_data_size']
         def get_getter_setter(o):
             """Use a closure."""
             # create local fget and fset functions 

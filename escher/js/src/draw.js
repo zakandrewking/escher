@@ -48,18 +48,17 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     }
 
     function update_reaction(update_selection, scale, drawn_nodes, 
-			     defs, default_reaction_color, has_reaction_data,
-			     reaction_data_styles, 
-			     label_drag_behavior) {
+			     defs, has_reaction_data,
+			     no_data_style, reaction_data_styles, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'drawn_nodes', 
-			       'defs', 'default_reaction_color', 'has_reaction_data',
-			       'reaction_data_styles',
+			       'defs', 'has_reaction_data',
+			       'no_data_style', 'reaction_data_styles',
 			       'label_drag_behavior']);
 
         // update reaction label
         update_selection.select('.reaction-label')
-            .call(function(sel) { return update_reaction_label(sel, has_reaction_data, 
+            .call(function(sel) { return update_reaction_label(sel, has_reaction_data,
 							       reaction_data_styles,
 							       label_drag_behavior); });
 
@@ -68,8 +67,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 				   create_segment,
 				   function(sel) { 
 				       return update_segment(sel, scale, drawn_nodes, defs,
-							     default_reaction_color,
-							     has_reaction_data, reaction_data_styles);
+							     has_reaction_data,
+							     no_data_style, reaction_data_styles);
 				   },
 				   function(sel) {
 				       sel.remove();
@@ -178,12 +177,12 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     }
     
     function update_segment(update_selection, scale, drawn_nodes,
-			    defs, default_reaction_color,
-			    has_reaction_data, reaction_data_styles) {
+			    defs, has_reaction_data, no_data_style,
+			    reaction_data_styles) {
 	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
 					  'defs',
-					  'default_reaction_color',
 					  'has_reaction_data',
+					  'no_data_style',
 					  'reaction_data_styles']);
 
         // update segment attributes
@@ -225,17 +224,17 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
             .style('stroke', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		    var f = d.data;
-		    return scale.reaction_color(f===null ? 0 : f);
+		    return f===null ? no_data_style['color'] : scale.reaction_color(f);
 		} else {
-		    return default_reaction_color;
+		    return null;
 		}
 	    })
 	    .style('stroke-width', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		    var f = d.data;
-		    return scale.reaction_size(f===null ? 0 : f);
+		    return f===null ? no_data_style['size'] : scale.reaction_size(f);
 		} else {
-		    return scale.reaction_size(0);
+		    return null;
 		}
             });
 
@@ -290,7 +289,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
 	}).attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
-	}).attr('fill', function(d) {
+	}).style('fill', function(d) {
 	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		if (d.show_arrowhead_flux) {
 		    // show the flux
@@ -302,16 +301,16 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		}
 	    }
 	    // default fill color
-	    return default_reaction_color;
-	}).attr('stroke', function(d) {
+	    return null;
+	}).style('stroke', function(d) {
 	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		// show the flux color in the stroke whether or not the fill is present
 		var f = d.data;
 		return scale.reaction_color(f===null ? 0 : f);
 	    }
 	    // default stroke color
-	    return default_reaction_color;
-	});;
+	    return null;
+	});
 	// remove
 	arrowheads.exit().remove();	
     }

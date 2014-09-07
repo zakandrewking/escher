@@ -54,13 +54,17 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    reaction_domain: [-10, 0, 10],
 	    reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
 	    reaction_size_range: [4, 8, 12],
+	    reaction_no_data_color: 'rgb(220,220,220)',
+	    reaction_no_data_size: 4,
 	    metabolite_data: null,
 	    metabolite_data_path: null,
 	    metabolite_styles: ['color', 'size', 'text'],
 	    auto_metabolite_domain: true,
 	    metabolite_domain: [-10, 0, 10],
 	    metabolite_color_range: ['green', 'white', 'red'],
-	    metabolite_size_range: [6, 8, 10]
+	    metabolite_size_range: [6, 8, 10],
+	    metabolite_no_data_color: 'white',
+	    metabolite_no_data_size: 6
 	});
 
 	// initialize the settings
@@ -74,7 +78,11 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    { reaction: { color: this.options.reaction_color_range,
 			  size: this.options.reaction_size_range },
 	      metabolite: { color: this.options.metabolite_color_range,
-			    size: this.options.metabolite_size_range } }
+			    size: this.options.metabolite_size_range } },
+	    { reaction: { color: this.options.reaction_no_data_color,
+			  size: this.options.reaction_no_data_size },
+	      metabolite: { color: this.options.metabolite_no_data_color,
+			    size: this.options.metabolite_no_data_size } }
 	);
 
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {

@@ -50,9 +50,12 @@
     stroke: rgb(5, 2, 0);
 }
 .segment {
-    stroke: grey;
-    stroke-width: 3px;
+    stroke: #334E75;
+    stroke-width: 6px;
     fill: none;
+}
+.arrowhead {
+    fill: #334E75;
 }
 .membrane {
     fill: none;

@@ -38,9 +38,6 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	// more setup
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
-	// scales
-	get_scale: get_scale,
-	set_scale: set_scale,
 	// appearance
 	set_status: set_status,
 	set_model: set_model,
@@ -137,9 +134,6 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	    canvas_size_and_loc = {x: -size.width, y: -size.height,
 				   width: size.width*3, height: size.height*3};
 	}
-
-	// defaults
-	this.default_reaction_color = '#334E75',
 
 	// set up the defs
 	this.svg = svg;
@@ -358,77 +352,6 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     }
 
     // -------------------------------------------------------------------------
-    // Scales
-
-    function get_scale(data, type) {
-	/** Get a reaction or metabolite scale.
-
-	 Arguments
-	 ---------
-	 
-	 data: The type of data. Options are 'reaction' or 'metabolite'.
-
-	 type: The type of scale to set. Options are 'size' and 'color'.
-
-	 */
-
-	if (data=='reaction' && type=='size') {
-	    return this.scale.reaction_size;
-	} else if (data=='reaction' && type=='color') {
-	    return this.scale.reaction_color;
-	} else if (data=='metabolite' && type=='size') {
-	    return this.scale.metabolite_size;
-	} else if (data=='metabolite' && type=='color') {
-	    return this.scale.metabolite_color;
-	} else {
-	    throw Error('Bad value for data or type: ' + data + ', ' + type);
-	}
-    }
-
-    function set_scale(data, type, domain, range) {
-	/** Set a reaction or metabolite scale.
-
-	 Arguments
-	 ---------
-	 
-	 data: The type of data. Options are 'reaction' or 'metabolite'.
-
-	 type: The type of scale to set. Options are 'size' and 'color'.
-
-	 domain: The new scale domain. If domain is *null*, then the existing
-	 domain is used. If any settings.auto_*_domain is true, then, this input
-	 is ignored.
-
-	 */
-
-	if (domain===undefined) domain = null;
-	if (range===undefined) range = null;
-
-	if (domain !== null && (this.settings.auto_domain['reaction']==true ||
-				this.settings.auto_domain['metabolite']==true)) {
-	    console.warn('Cannot set domain manually if auto_*_domain is true');
-	    domain = null;
-	}
-
-	if (data=='reaction' && type=='size') {
-	    set_this_scale(this.scale.reaction_size, domain, range);
-	} else if (data=='reaction' && type=='color') {
-	    set_this_scale(this.scale.reaction_color, domain, range);
-	} else if (data=='metabolite' && type=='size') {
-	    set_this_scale(this.scale.metabolite_size, domain, range);
-	} else if (data=='metabolite' && type=='color') {
-	    set_this_scale(this.scale.metabolite_color, domain, range);
-	} else {
-	    throw Error('Bad value for data or type: ' + data + ', ' + type);
-	}
-
-	function set_this_scale(a_scale, a_domain, a_range) {
-	    if (a_domain !== null) a_scale.domain(a_domain);
-	    if (a_range !== null) a_scale.range(a_range);
-	}
-    }
-
-    // -------------------------------------------------------------------------
     // Appearance
 
     function set_status(status) {
@@ -558,8 +481,8 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 					this.scale,
 					this.nodes,
 					this.defs,
-					this.default_reaction_color,
 					this.has_reaction_data(),
+					this.settings.no_data['reaction'],
 					this.settings.data_styles['reaction'],
 					this.behavior.reaction_label_drag);
 	}.bind(this);
