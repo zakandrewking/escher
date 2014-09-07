@@ -383,8 +383,10 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
         // create metabolite circle and label
         g.append('circle')
 	    .attr('class', function(d) {
-		if (d.node_type=='metabolite') return 'node-circle metabolite-circle';
-		else return 'node-circle';
+		var c = 'node-circle';
+		if (d.node_type!==null)
+		    c += (' ' + d.node_type + '-circle');
+		return c;
 	    });
             // .style('stroke-width', '2px');
 

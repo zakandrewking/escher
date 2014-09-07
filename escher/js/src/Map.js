@@ -1806,7 +1806,9 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	return out;
     }
     function save_svg() {
+	// run the before callback
 	this.callback_manager.run('before_svg_export');
+
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,
 	    window_translate = this.zoom_container.window_translate,
@@ -1820,13 +1822,24 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	this.canvas.mouse_node.attr('width', '0px');
 	this.canvas.mouse_node.attr('height', '0px');
 	this.canvas.mouse_node.attr('transform', null);
+	// hide the segment control points
+	var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle')
+	    .style('visibility', 'hidden');
+
+	// do the epxort
         utils.export_svg('saved_map', this.svg, true);
+
+	// revert everything
 	this.zoom_container.go_to(window_scale, window_translate, false);
 	this.svg.attr('width', null);
 	this.svg.attr('height', null);
 	this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
 	this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
 	this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
+	// unhide the segment control points
+	hidden_sel.style('visibility', null);
+
+	// run the after callback
 	this.callback_manager.run('after_svg_export');
     }
 });
