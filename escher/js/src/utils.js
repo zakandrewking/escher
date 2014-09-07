@@ -655,11 +655,10 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 
 	// generate map_path and model_path
 	[
-	    [map_download_url, 'map_name'],
-	    [model_download_url, 'model_name']
+	    [map_download_url, 'map_name', 'map_path'],
+	    [model_download_url, 'model_name', 'cobra_model_path']
 	].forEach(function(ar) {
-	    var url = ar[0], key = ar[1],
-		path = key.replace('name', 'path');
+	    var url = ar[0], key = ar[1], path = ar[2];
 	    if (url !== undefined && key in options)
 		options[path] = url + options[key] + '.json';
 	});

@@ -41,7 +41,7 @@ describe('utils', function() {
 	expect(options).toEqual({ map_name: 'iJO1366_central_metabolism',
 				  model_name: 'iJO1366',
 				  map_path: 'http://host1/iJO1366_central_metabolism.json',
-				  model_path: 'http://host2/iJO1366.json',
+				  cobra_model_path: 'http://host2/iJO1366.json',
 				  a: 'b' });
     });
 });
