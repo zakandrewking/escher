@@ -326,9 +326,10 @@ class Builder(object):
         dev_str = '' if dev else 'escher.'
         # parse the url in javascript
         if js_url_parse:
-            o = u'options = %sutils.parse_url_components(window, options, %s, %s);\n' % (dev_str,
-                                                                                         urls.map_download,
-                                                                                         urls.model_download)
+            o = (u'options = %sutils.parse_url_components(window, '
+                 u'options, "%s", "%s");\n' % (dev_str,
+                                               urls.map_download,
+                                               urls.model_download))
             draw = draw + o;
         # make the builder
         draw = draw + '%sBuilder(options);\n' % dev_str
