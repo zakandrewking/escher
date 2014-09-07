@@ -290,7 +290,8 @@ class Builder(object):
         return javascript
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
-                 fill_screen, scroll_behavior, auto_set_data_domain):
+                 fill_screen, scroll_behavior, auto_set_data_domain,
+                 never_ask_before_quit):
         draw = (u"Builder({{ selection: d3.select('#{the_id}'),"
                 u"enable_editing: {enable_editing},"
                 u"menu: {menu},"
@@ -302,6 +303,7 @@ class Builder(object):
                 u"auto_set_data_domain: {auto_set_data_domain},"
                 u"reaction_data: reaction_data_{the_id},"
 		u"metabolite_data: metabolite_data_{the_id},"
+                u"never_ask_before_quit: {never_ask_before_quit},"
                 u"css: css_string_{the_id},").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
@@ -309,7 +311,8 @@ class Builder(object):
                     enable_keys=json.dumps(enable_keys),
                     scroll_behavior=json.dumps(scroll_behavior),
                     fill_screen=json.dumps(fill_screen),
-                    auto_set_data_domain=json.dumps(auto_set_data_domain))
+                    auto_set_data_domain=json.dumps(auto_set_data_domain),
+                    never_ask_before_quit=json.dumps(never_ask_before_quit))
         # Add the specified options
         for option in self.options:
             val = getattr(self, option)
@@ -325,7 +328,7 @@ class Builder(object):
     def _get_html(self, js_source='web', menu='none', scroll_behavior='pan',
                   html_wrapper=False, enable_editing=False, enable_keys=False,
                   minified_js=True, fill_screen=False, height='800px',
-                  auto_set_data_domain=True):
+                  auto_set_data_domain=True, never_ask_before_quit=False):
         """Generate the Escher HTML.
 
         Arguments
@@ -361,6 +364,10 @@ class Builder(object):
 
         auto_set_data_domain: Automatically adjust the color and size scale
         domains as new data is applied.
+
+        never_ask_before_quit: Never display an alert asking if you want to
+        leave the page. By default, this message is displayed if enable_editing
+        is True.
 
         """
 
@@ -425,7 +432,8 @@ class Builder(object):
                               draw_js=self._draw_js(self.the_id, enable_editing,
                                                     menu, enable_keys, is_dev,
                                                     fill_screen, scroll_behavior,
-                                                    auto_set_data_domain),)
+                                                    auto_set_data_domain,
+                                                    never_ask_before_quit))
         return html
 
     def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',
@@ -462,12 +470,12 @@ class Builder(object):
 
         auto_set_data_domain: Automatically adjust the color and size scale
         domains as new data is applied.
-
+        
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
                               html_wrapper=False, enable_editing=enable_editing, enable_keys=enable_keys,
                               minified_js=minified_js, fill_screen=False, height=height,
-                              auto_set_data_domain=auto_set_data_domain)
+                              auto_set_data_domain=auto_set_data_domain, never_ask_before_quit=True)
         if menu=='all':
             raise Exception("The 'all' menu option cannot be used in an IPython notebook.")
         # import here, in case users don't have requirements installed
@@ -477,7 +485,7 @@ class Builder(object):
     
     def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50, js_source='web',
                            menu='all', scroll_behavior='pan', enable_editing=True, enable_keys=True,
-                           minified_js=True, auto_set_data_domain=True):
+                           minified_js=True, auto_set_data_domain=True, never_ask_before_quit=False):
         """Launch a web browser to view the map.
 
         Arguments
@@ -509,17 +517,22 @@ class Builder(object):
 
         auto_set_data_domain: Automatically adjust the color and size scale
         domains as new data is applied.
+        
+        never_ask_before_quit: Never display an alert asking if you want to
+        leave the page. By default, this message is displayed if enable_editing
+        is True.
 
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
                               html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
                               minified_js=minified_js, fill_screen=True, height="100%",
-                              auto_set_data_domain=auto_set_data_domain)
+                              auto_set_data_domain=auto_set_data_domain,
+                              never_ask_before_quit=never_ask_before_quit)
         serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
         
     def save_html(self, filepath=None, js_source='web', menu='all', scroll_behavior='pan',
                   enable_editing=True, enable_keys=True, minified_js=True,
-                  auto_set_data_domain=True):
+                  auto_set_data_domain=True, never_ask_before_quit=False):
         """Save an HTML file containing the map.
 
         Arguments
@@ -551,12 +564,17 @@ class Builder(object):
 
         auto_set_data_domain: Automatically adjust the color and size scale
         domains as new data is applied.
+        
+        never_ask_before_quit: Never display an alert asking if you want to
+        leave the page. By default, this message is displayed if enable_editing
+        is True.
 
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
                               html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
                               minified_js=minified_js, fill_screen=True, height="100%",
-                              auto_set_data_domain=auto_set_data_domain)
+                              auto_set_data_domain=auto_set_data_domain,
+                              never_ask_before_quit=never_ask_before_quit)
         if filepath is not None:
             with codecs.open(filepath, 'w', encoding='utf-8') as f:
                 f.write(html)

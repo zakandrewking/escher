@@ -116,7 +116,8 @@ class BuilderHandler(BaseHandler):
                           'menu': 'all'}
             
         # keyword
-        for a in ['menu', 'scroll_behavior', 'minified_js', 'auto_set_data_domain']:
+        for a in ['menu', 'scroll_behavior', 'minified_js',
+                  'auto_set_data_domain', 'never_ask_before_quit']:
             args = self.get_arguments(a)
             if len(args)==1:
                 display_kwargs[a] = (True if args[0].lower()=='true' else

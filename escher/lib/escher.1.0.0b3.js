@@ -11255,7 +11255,8 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 			  _setup_simple_zoom_buttons: _setup_simple_zoom_buttons,
 			  _setup_status: _setup_status,
 			  _setup_modes: _setup_modes,
-			  _get_keys: _get_keys };
+			  _get_keys: _get_keys,
+			  _setup_confirm_before_exit: _setup_confirm_before_exit };
 
     return Builder;
 
@@ -11280,6 +11281,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    css_path: null,
 	    css: null,
 	    starting_reaction: null,
+	    never_ask_before_quit: false,
 	    // applied data
 	    auto_reaction_domain: true,
 	    reaction_data_path: null,
@@ -11501,6 +11503,10 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    this.zoom_mode();
 	else
 	    this.view_mode();
+
+	// confirm before leaving the page
+	if (this.options.enable_editing && !this.options.never_ask_before_quit)
+	    this._setup_confirm_before_exit();
 
 	// draw
 	this.map.draw_everything();
@@ -11951,6 +11957,18 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    });
 	}
 	return keys;
+    }
+
+    function _setup_confirm_before_exit() {
+	/** Ask if the user wants to exit the page (to avoid unplanned refresh).
+
+	 */
+	
+	window.onbeforeunload = function(e) {
+	    // If we haven't been passed the event get the window.event
+	    e = e || window.event;
+	    return 'You may have unsaved changes.';
+	};
     }
 });
 
