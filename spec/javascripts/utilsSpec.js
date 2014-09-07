@@ -27,4 +27,19 @@ describe('utils', function() {
 	expect(utils.check_for_parent_tag(sel, 'BODY')).toBe(true);
 	expect(utils.check_for_parent_tag(sel, 'svg')).toBe(false);
     });
+
+    it('parse_url_components', function() {
+	var url = '?map_name=iJO1366_central_metabolism&model_name=iJO1366',
+	    the_window = { location: { search: url } };
+
+	var options = utils.parse_url_components(the_window);
+	expect(options).toEqual({ map_name: 'iJO1366_central_metabolism',
+				  model_name: 'iJO1366' });
+
+	options = { a: 'b' };
+	options = utils.parse_url_components(the_window, options);
+	expect(options).toEqual({ map_name: 'iJO1366_central_metabolism',
+				  model_name: 'iJO1366',
+				  a: 'b' });
+    });
 });

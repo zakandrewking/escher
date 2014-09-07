@@ -25,7 +25,7 @@ def get_cache_dir(name=None):
     name: an optional subdirectory within the cache
 
     """
-    cache_dir = join(appdirs.user_cache_dir('escher', appauthor="Zachary King"))
+    cache_dir = join(appdirs.user_cache_dir('escher', appauthor='Zachary King'))
     if name is not None:
         cache_dir = join(cache_dir, name)
     try:
@@ -206,21 +206,21 @@ class Builder(object):
         elif self.model_name is not None:
             # get the name
             model_name = self.model_name  
-            model_name = model_name.replace(".json", "")
+            model_name = model_name.replace('.json', '')
             # if the file is not present attempt to download
             cache_dir = get_cache_dir(name='models')
-            model_filename = join(cache_dir, model_name + ".json")
+            model_filename = join(cache_dir, model_name + '.json')
             if not isfile(model_filename):
                 model_not_cached = 'Model "%s" not in cache. Attempting download from %s' % \
                     (model_name, urls.escher_home)
                 warn(model_not_cached)
                 try:
-                    url = urls.model_download + model_name + ".json"
+                    url = urls.model_download + model_name + '.json'
                     download = urlopen(url)
-                    with open(model_filename, "w") as outfile:
+                    with open(model_filename, 'w') as outfile:
                         outfile.write(download.read())
                 except HTTPError:
-                    raise ValueError("No model named %s found in cache or at %s" % \
+                    raise ValueError('No model named %s found in cache or at %s' % \
                                      (model_name, url))
             with open(model_filename) as f:
                 self.loaded_model_json = f.read()
@@ -238,21 +238,21 @@ class Builder(object):
         elif self.map_name is not None:
             # get the name
             map_name = self.map_name  
-            map_name = map_name.replace(".json", "")
+            map_name = map_name.replace('.json', '')
             # if the file is not present attempt to download
             cache_dir = get_cache_dir(name='maps')
-            map_filename = join(cache_dir, map_name + ".json")
+            map_filename = join(cache_dir, map_name + '.json')
             if not isfile(map_filename):
                 map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
                     (map_name, urls.escher_home)
                 warn(map_not_cached)
                 try:
-                    url = urls.map_download + map_name + ".json"
+                    url = urls.map_download + map_name + '.json'
                     download = urlopen(url)
-                    with open(map_filename, "w") as outfile:
+                    with open(map_filename, 'w') as outfile:
                         outfile.write(download.read())
                 except HTTPError:
-                    raise ValueError("No map named %s found in cache or at %s" % \
+                    raise ValueError('No map named %s found in cache or at %s' % \
                                      (map_name, url))
             with open(map_filename) as f:
                 self.loaded_map_json = f.read()
@@ -272,11 +272,11 @@ class Builder(object):
         return unicode(download.read().replace('\n', ' '))
     
     def _initialize_javascript(self, is_local):
-        javascript = (u"var map_data_{the_id} = {map_data};"
-                      u"var cobra_model_{the_id} = {cobra_model};"
-                      u"var reaction_data_{the_id} = {reaction_data};"
-                      u"var metabolite_data_{the_id} = {metabolite_data};"
-                      u"var css_string_{the_id} = '{style}';").format(
+        javascript = (u"var map_data_{the_id} = {map_data};\n"
+                      u"var cobra_model_{the_id} = {cobra_model};\n"
+                      u"var reaction_data_{the_id} = {reaction_data};\n"
+                      u"var metabolite_data_{the_id} = {metabolite_data};\n"
+                      u"var css_string_{the_id} = '{style}';\n").format(
                           the_id=self.the_id,
                           map_data=(self.loaded_map_json if self.loaded_map_json else
                                     u'null'),
@@ -291,20 +291,20 @@ class Builder(object):
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
                  fill_screen, scroll_behavior, auto_set_data_domain,
-                 never_ask_before_quit):
-        draw = (u"Builder({{ selection: d3.select('#{the_id}'),"
-                u"enable_editing: {enable_editing},"
-                u"menu: {menu},"
-                u"enable_keys: {enable_keys},"
-                u"scroll_behavior: {scroll_behavior},"
-                u"fill_screen: {fill_screen},"
-                u"map: map_data_{the_id},"
-                u"cobra_model: cobra_model_{the_id},"
-                u"auto_set_data_domain: {auto_set_data_domain},"
-                u"reaction_data: reaction_data_{the_id},"
-		u"metabolite_data: metabolite_data_{the_id},"
-                u"never_ask_before_quit: {never_ask_before_quit},"
-                u"css: css_string_{the_id},").format(
+                 never_ask_before_quit, js_url_parse):
+        draw = (u"options = {{ selection: d3.select('#{the_id}'),\n"
+                u"enable_editing: {enable_editing},\n"
+                u"menu: {menu},\n"
+                u"enable_keys: {enable_keys},\n"
+                u"scroll_behavior: {scroll_behavior},\n"
+                u"fill_screen: {fill_screen},\n"
+                u"map: map_data_{the_id},\n"
+                u"cobra_model: cobra_model_{the_id},\n"
+                u"auto_set_data_domain: {auto_set_data_domain},\n"
+                u"reaction_data: reaction_data_{the_id},\n"
+		u"metabolite_data: metabolite_data_{the_id},\n"
+                u"never_ask_before_quit: {never_ask_before_quit},\n"
+                u"css: css_string_{the_id},\n").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
                     menu=json.dumps(menu),
@@ -317,18 +317,26 @@ class Builder(object):
         for option in self.options:
             val = getattr(self, option)
             if val is None: continue
-            draw = draw + u"{option}: {value},".format(
+            draw = draw + u"{option}: {value},\n".format(
                 option=option,
-                value=json.dumps(val))
-        draw = draw + u"});"
-        if not dev:
-            draw = u'escher.%s' % draw
+                value=json.dumps(val)) 
+        draw = draw + u"};\n\n"
+            
+        # dev needs escher.
+        dev_str = '' if dev else 'escher.'
+        # parse the url in javascript
+        if js_url_parse:
+            draw = draw + 'options = %sutils.parse_url_components(options);\n' % dev_str
+        # make the builder
+        draw = draw + '%sBuilder(options);\n' % dev_str
+
         return draw
     
     def _get_html(self, js_source='web', menu='none', scroll_behavior='pan',
                   html_wrapper=False, enable_editing=False, enable_keys=False,
                   minified_js=True, fill_screen=False, height='800px',
-                  auto_set_data_domain=True, never_ask_before_quit=False):
+                  auto_set_data_domain=True, never_ask_before_quit=False,
+                  js_url_parse=False):
         """Generate the Escher HTML.
 
         Arguments
@@ -369,6 +377,9 @@ class Builder(object):
         leave the page. By default, this message is displayed if enable_editing
         is True.
 
+        js_url_parse: Use javascript to parse the URL options. Primarily used
+        for generating static pages (see static_site.py).
+        
         """
 
         if js_source not in ['web', 'local', 'dev']:
@@ -433,7 +444,8 @@ class Builder(object):
                                                     menu, enable_keys, is_dev,
                                                     fill_screen, scroll_behavior,
                                                     auto_set_data_domain,
-                                                    never_ask_before_quit))
+                                                    never_ask_before_quit,
+                                                    js_url_parse))
         return html
 
     def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',
@@ -532,7 +544,8 @@ class Builder(object):
         
     def save_html(self, filepath=None, js_source='web', menu='all', scroll_behavior='pan',
                   enable_editing=True, enable_keys=True, minified_js=True,
-                  auto_set_data_domain=True, never_ask_before_quit=False):
+                  auto_set_data_domain=True, never_ask_before_quit=False,
+                  js_url_parse=False):
         """Save an HTML file containing the map.
 
         Arguments
@@ -569,12 +582,16 @@ class Builder(object):
         leave the page. By default, this message is displayed if enable_editing
         is True.
 
+        js_url_parse: Use javascript to parse the URL options. Primarily used
+        for generating static pages (see static_site.py).
+
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
                               html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
                               minified_js=minified_js, fill_screen=True, height="100%",
                               auto_set_data_domain=auto_set_data_domain,
-                              never_ask_before_quit=never_ask_before_quit)
+                              never_ask_before_quit=never_ask_before_quit,
+                              js_url_parse=js_url_parse)
         if filepath is not None:
             with codecs.open(filepath, 'w', encoding='utf-8') as f:
                 f.write(html)

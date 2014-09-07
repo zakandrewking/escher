@@ -33,7 +33,8 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     decompartmentalize: decompartmentalize,
 	     check_r: check_r,
 	     mean: mean,
-	     check_for_parent_tag: check_for_parent_tag };
+	     check_for_parent_tag: check_for_parent_tag,
+	     parse_url_components: parse_url_components };
 
     // definitions
     function set_options(options, defaults) {
@@ -612,4 +613,41 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	}
 	return false;
     }
+
+    function parse_url_components(the_window, options) {
+	/** Parse the URL and return options based on the URL arguments.
+
+	 Arguments
+	 ---------
+
+	 the_window: A reference to the global window.
+	 
+	 options: (optional) an existing options object to which new options
+	 will be added.
+
+
+	 Adapted from http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
+
+	 */
+	if (options===undefined) options = {};
+
+	var query = the_window.location.search.substring(1),
+	    vars = query.split("&");
+	for (var i = 0; i < vars.length; i++) {
+	    var pair = vars[i].split("=");
+    	    // If first entry with this name
+	    if (typeof options[pair[0]] === "undefined") {
+		options[pair[0]] = pair[1];
+    		// If second entry with this name
+	    } else if (typeof options[pair[0]] === "string") {
+		var arr = [ options[pair[0]], pair[1] ];
+		options[pair[0]] = arr;
+    		// If third or later entry with this name
+	    } else {
+		options[pair[0]].push(pair[1]);
+	    }
+	}
+
+	return options;
+    }    
 });
