@@ -37,9 +37,11 @@ describe('utils', function() {
 				  model_name: 'iJO1366' });
 
 	options = { a: 'b' };
-	options = utils.parse_url_components(the_window, options);
+	options = utils.parse_url_components(the_window, options, 'http://host1/', 'http://host2/');
 	expect(options).toEqual({ map_name: 'iJO1366_central_metabolism',
 				  model_name: 'iJO1366',
+				  map_path: 'http://host1/iJO1366_central_metabolism.json',
+				  model_path: 'http://host2/iJO1366.json',
 				  a: 'b' });
     });
 });

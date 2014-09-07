@@ -1400,7 +1400,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	return false;
     }
 
-    function parse_url_components(the_window, options) {
+    function parse_url_components(the_window, options, map_download_url, model_download_url) {
 	/** Parse the URL and return options based on the URL arguments.
 
 	 Arguments
@@ -1411,6 +1411,11 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	 options: (optional) an existing options object to which new options
 	 will be added.
 
+	 map_download_url: (optional) If map_name is in options, then add map_path
+	 to options, with this url prepended.
+
+	 model_download_url: (optional) If model_name is in options, then add model_path
+	 to options, with this url prepended.
 
 	 Adapted from http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
 
@@ -1433,6 +1438,17 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 		options[pair[0]].push(pair[1]);
 	    }
 	}
+
+	// generate map_path and model_path
+	[
+	    [map_download_url, 'map_name'],
+	    [model_download_url, 'model_name']
+	].forEach(function(ar) {
+	    var url = ar[0], key = ar[1],
+		path = key.replace('name', 'path');
+	    if (url !== undefined && key in options)
+		options[path] = url + options[key] + '.json';
+	});
 
 	return options;
     }    
