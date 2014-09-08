@@ -623,7 +623,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	 the_window: A reference to the global window.
 	 
 	 options: (optional) an existing options object to which new options
-	 will be added.
+	 will be added. Overwrites existing arguments in options.
 
 	 map_download_url: (optional) If map_name is in options, then add map_path
 	 to options, with this url prepended.
@@ -640,17 +640,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	    vars = query.split("&");
 	for (var i = 0; i < vars.length; i++) {
 	    var pair = vars[i].split("=");
-    	    // If first entry with this name
-	    if (typeof options[pair[0]] === "undefined") {
-		options[pair[0]] = pair[1];
-    		// If second entry with this name
-	    } else if (typeof options[pair[0]] === "string") {
-		var arr = [ options[pair[0]], pair[1] ];
-		options[pair[0]] = arr;
-    		// If third or later entry with this name
-	    } else {
-		options[pair[0]].push(pair[1]);
-	    }
+	    options[pair[0]] = pair[1];
 	}
 
 	// generate map_path and model_path

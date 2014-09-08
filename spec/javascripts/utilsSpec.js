@@ -36,7 +36,8 @@ describe('utils', function() {
 	expect(options).toEqual({ map_name: 'iJO1366_central_metabolism',
 				  model_name: 'iJO1366' });
 
-	options = { a: 'b' };
+	options = { a: 'b',
+		    model_name: 'old_model_name' };
 	options = utils.parse_url_components(the_window, options, 'http://host1/', 'http://host2/');
 	expect(options).toEqual({ map_name: 'iJO1366_central_metabolism',
 				  model_name: 'iJO1366',
