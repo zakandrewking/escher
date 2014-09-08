@@ -7,15 +7,20 @@ def generate_static_site():
     print build_path
     
     for kind in ['viewer', 'builder']:
-        js_source = 'web'
-        enable_editing = (kind=='builder')
-            
-        # make the builder        
-        builder = Builder(safe=True)
+        for minified_js in [True, False]:
+            js_source = 'web'
+            enable_editing = (kind=='builder')
 
-        html = builder.save_html(filepath=join(build_path, kind+'.html'),
-                                 js_source=js_source, enable_editing=enable_editing,
-                                 js_url_parse=True)
+            # make the builder        
+            builder = Builder(safe=True)
+            
+            filepath = join(build_path,
+                            '%s%s.html' % (kind, '' if minified_js else '_not_minified'))
+            html = builder.save_html(filepath=filepath,
+                                     js_source=js_source,
+                                     minified_js=minified_js,
+                                     enable_editing=enable_editing,
+                                     js_url_parse=True)
     
 if __name__=='__main__':
     generate_static_site()
