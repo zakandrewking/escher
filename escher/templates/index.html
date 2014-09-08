@@ -2,17 +2,18 @@
 {% block title %}Escher{% endblock %}
 {% block head %}
   <!-- TODO use the CDN when possible -->
-  <link rel="stylesheet" href="lib/bootstrap-3.1.1.min.css"> 
+  <script src="escher/lib/jquery-2.1.0.min.js"></script>
+  <link rel="stylesheet" href="escher/lib/bootstrap-3.1.1.min.css"> 
   <script src="//use.edgefonts.net/tulpen-one.js"></script>
 
-  <link href="css/index.css" rel="stylesheet" type="text/css" media="all">
+  <link href="escher/css/index.css" rel="stylesheet" type="text/css" media="all">
 {% endblock %}
 {% block content %}
   <main>
     <div class="container">
       <header class="row">
 	<div class="col-sm-12">
-	  <img src="resources/escher-logo@2x.png" id="logo">
+	  <img src="escher/resources/escher-logo@2x.png" id="logo">
 	  <div id="title-box">
 	    <h1 id="title">ESCHER</h1>
 	  </div>
@@ -23,14 +24,18 @@
 	  <h3>Model</h3>
 	  <select id="model" class="form-control">
 	    <option value="none">None</option>
-	    <option value="iJO1366">iJO1366</option>
+	    {% for model in models %}
+	      <option value="{{ model }}">{{ model }}</option>
+	    {% endfor %}
 	  </select>
 	</div>
 	<div class="col-sm-3">
 	  <h3>Map</h3>
 	  <select id="map" class="form-control">
-	    <option value="iJO1366_central_metabolism">iJO1366 central metabolism</option>
-	    <option value="empty">Emtpy builder</option>
+	    <option value="none">None</option>
+	    {% for map in maps %}
+	      <option value="{{ map }}">{{ map }}</option>
+	    {% endfor %}
 	  </select>
 	</div>
 	<div class="col-sm-3">
@@ -38,8 +43,10 @@
 	  <select id="options" class="form-control">
 	    <option value="viewer">Viewer</option>
 	    <option value="builder">Builder</option>
-	    <option value="dev_viewer">Viewer (Dev)</option>
-	    <option value="dev_builder">Builder (Dev)</option>
+	    {% if not web_version %}
+	      <option value="local_viewer">Viewer (Offline)</option>
+	      <option value="local_builder">Builder (Offline)</option>
+	    {% endif %}
 	  </select>
 	</div>
 	<div class="col-sm-3">
@@ -71,38 +78,8 @@
     </div>
   </footer>
 
-  <script type="application/javascript">
-   function get_value(id) {
-     var a = document.getElementById(id);
-     return a.options[a.selectedIndex].value
-   }
-
-   function submit() {
-     var map_value = get_value('map'),
-     model_value = get_value('model'),
-     options_value = get_value('options'),
-     add = [];
-     if (model_value!='none')
-     add.push('model_name=' + model_value);	 
-     if (map_value!='empty')
-     add.push('map_name=' + map_value);
-
-     if (options_value=='dev_viewer') {
-       url = 'dev/viewer.html';
-     } else if (options_value=='dev_builder') {
-       url = 'dev/builder.html';
-     } else if (options_value=='viewer') {
-       url = 'viewer.html';
-     } else {
-       url = 'builder.html';
-     }
-
-     url += '?';
-     for (var i=0, l=add.length; i < l; i++) {
-       if (i > 0) url += '&';
-       url += add[i];
-     }
-     window.location.href = url;
-   }
-  </script>
+  <script src="escher/js/web/index.js"></script>
+  {% if web_version %}
+    <script src="escher/js/web/index_gh_pages.js"></script>
+  {% endif %}
 {% endblock %}

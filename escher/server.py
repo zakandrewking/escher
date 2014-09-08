@@ -59,9 +59,21 @@ class BaseHandler(RequestHandler):
         self.finish()
 
 class IndexHandler(BaseHandler):
+    @asynchronous
+    @gen.engine
     def get(self):
+        # get the models
+        response = yield gen.Task(AsyncHTTPClient().fetch,
+                                  join(urls.model_download, 'index.json'))
+        models = json.loads(response.body)        
+        # get the maps
+        response = yield gen.Task(AsyncHTTPClient().fetch,
+                                  join(urls.map_download, 'index.json'))
+        maps = json.loads(response.body)
         template = env.get_template('index.html')
-        data = template.render()
+        data = template.render(models=models,
+                               maps=maps,
+                               web_version=False)
         self.set_header("Content-Type", "text/html")
         self.serve(data)
   
@@ -90,7 +102,6 @@ class BuilderHandler(BaseHandler):
             global PORT          
             response = yield gen.Task(AsyncHTTPClient().fetch,
                                       join('http://localhost:%d' % PORT, urls.builder_embed_css_local))
-            print response
             builder_kwargs['embedded_css'] = response.body.replace('\n', ' ')
 
         # example data
@@ -145,7 +156,7 @@ class StaticHandler(BaseHandler):
         path = join(directory, path)
         print 'getting path %s' % path
         self.serve_path(path)
-        
+
 settings = {"debug": "False"}
 
 application = Application([
