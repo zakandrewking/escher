@@ -71,9 +71,18 @@ class IndexHandler(BaseHandler):
                                   join(urls.map_download, 'index.json'))
         maps = json.loads(response.body)
         template = env.get_template('index.html')
-        data = template.render(models=models,
+        
+        data = template.render(jquery=urls.jquery_local,
+                               boot_css=urls.boot_css_local,
+                               index_css=urls.index_css_local,
+                               logo=urls.logo_local,
+                               github=urls.github,
+                               index_js=urls.index_js_local,
+                               index_gh_pages_js=urls.index_gh_pages_js_local,
+                               models=models,
                                maps=maps,
                                web_version=False)
+        
         self.set_header("Content-Type", "text/html")
         self.serve(data)
   

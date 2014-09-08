@@ -1,19 +1,20 @@
 {% extends "standalone.html" %}
 {% block title %}Escher{% endblock %}
 {% block head %}
-  <!-- TODO use the CDN when possible -->
-  <script src="escher/lib/jquery-2.1.0.min.js"></script>
-  <link rel="stylesheet" href="escher/lib/bootstrap-3.1.1.min.css"> 
-  <script src="//use.edgefonts.net/tulpen-one.js"></script>
+  <script src="{{jquery}}"></script>
 
-  <link href="escher/css/index.css" rel="stylesheet" type="text/css" media="all">
+  <link rel="stylesheet" href="{{boot_css}}"/>
+  <link rel="stylesheet" href="{{index_css}}"/>
+
+  <!-- This font cannot be downloaded. -->
+  <script src="//use.edgefonts.net/tulpen-one.js"></script>
 {% endblock %}
 {% block content %}
   <main>
     <div class="container">
       <header class="row">
 	<div class="col-sm-12">
-	  <img src="escher/resources/escher-logo@2x.png" id="logo">
+	  <img src="{{logo}}" id="logo">
 	  <div id="title-box">
 	    <h1 id="title">ESCHER</h1>
 	  </div>
@@ -73,13 +74,13 @@
   <footer>
     <div class="container">
       <p class="more">
-	Learn more about <a href="http://zakandrewking.github.io/escher">Escher</a>.
+	Learn more about <a href="{{github}}">Escher</a>.
       </p>
     </div>
   </footer>
 
-  <script src="escher/js/web/index.js"></script>
+  <script src="{{index_js}}"></script>
   {% if web_version %}
-    <script src="escher/js/web/index_gh_pages.js"></script>
+    <script src="{{index_gh_pages_js}}"></script>
   {% endif %}
 {% endblock %}

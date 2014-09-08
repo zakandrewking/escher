@@ -29,5 +29,5 @@ function submit() {
 	if (i > 0) url += '&';
 	url += add[i];
     }
-    window.location.href = url;
+    window.location.href = url; // TODO https here
 }

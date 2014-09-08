@@ -328,8 +328,8 @@ class Builder(object):
         if js_url_parse:
             o = (u'options = %sutils.parse_url_components(window, '
                  u'options, "%s", "%s");\n' % (dev_str,
-                                               urls.map_download,
-                                               urls.model_download))
+                                               urls.map_download_local,
+                                               urls.model_download_local))
             draw = draw + o;
         # make the builder
         draw = draw + '%sBuilder(options);\n' % dev_str
@@ -381,8 +381,9 @@ class Builder(object):
         leave the page. By default, this message is displayed if enable_editing
         is True.
 
-        js_url_parse: Use javascript to parse the URL options. Primarily used
-        for generating static pages (see static_site.py).
+        js_url_parse: Use javascript to parse the URL options. Used for
+        generating static pages (see static_site.py), and only works if maps and
+        models are available locally.
         
         """
 
@@ -586,8 +587,9 @@ class Builder(object):
         leave the page. By default, this message is displayed if enable_editing
         is True.
 
-        js_url_parse: Use javascript to parse the URL options. Primarily used
-        for generating static pages (see static_site.py).
+        js_url_parse: Use javascript to parse the URL options. Used for
+        generating static pages (see static_site.py), and only works if maps and
+        models are available locally.
 
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
