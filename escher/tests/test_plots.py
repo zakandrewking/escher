@@ -1,7 +1,7 @@
 import escher.server
 from escher import (Builder, get_cache_dir, clear_cache, list_cached_maps,
                     list_cached_models)
-from escher.plots import load_resource
+from escher.plots import (load_resource, model_name_to_url, map_name_to_url)
 
 import os
 from os.path import join
@@ -31,14 +31,22 @@ def test_get_cache_dir():
 #     clear_cache()
 #     Builder(model_name='iJO1366')
 #     assert list_cached_models() == ['iJO1366']
-        
+
+def test_model_name_to_url():
+    url = model_name_to_url('e_coli:iJO1366')
+    assert url == 'https://zakandrewking.github.io/escher/organisms/e_coli/models/iJO1366.json'
+
+def test_map_name_to_url():
+    url = map_name_to_url('e_coli:iJO1366:central_metabolism')
+    assert url == 'https://zakandrewking.github.io/escher/organisms/e_coli/models/iJO1366/maps/central_metabolism.json'
+    
 def test_load_resource(tmpdir):
     assert load_resource('{"r": "val"}', 'name') == '{"r": "val"}'
     
     directory = os.path.abspath(os.path.dirname(__file__))
     assert load_resource(join(directory, 'example.json'), 'name').strip() == '{"r": "val"}'
     
-    url = "https://zakandrewking.github.io/escher/maps/v1/iJO1366_central_metabolism.json"
+    url = "https://zakandrewking.github.io/escher/organisms/e_coli/models/iJO1366/maps/central_metabolism.json"
     _ = json.loads(load_resource(url, 'name'))
         
     # with raises(URLError):
@@ -79,15 +87,15 @@ def test_Builder(tmpdir):
     b._get_html(scroll_behavior='zoom')
     
     # download
-    b = Builder(map_name='iJO1366_central_metabolism', model_name='iJO1366')
+    b = Builder(map_name='e_coli:iJO1366:central_metabolism', model_name='e_coli:iJO1366')
     assert b.loaded_map_json is not None
     assert b.loaded_model_json is not None
     b.display_in_notebook(height=200)
 
     # data
-    b = Builder(map_name='iJO1366_central_metabolism', model_name='iJO1366',
+    b = Builder(map_name='e_coli:iJO1366:central_metabolism', model_name='e_coli:iJO1366',
                 reaction_data=[{'GAPD': 123}, {'GAPD': 123}])
-    b = Builder(map_name='iJO1366_central_metabolism', model_name='iJO1366',
+    b = Builder(map_name='e_coli:iJO1366:central_metabolism', model_name='e_coli:iJO1366',
                 metabolite_data=[{'nadh_c': 123}, {'nadh_c': 123}])
 
     assert type(b.the_id) is unicode

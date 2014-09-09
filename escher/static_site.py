@@ -14,15 +14,14 @@ def generate_static_site():
     # index file
     template = env.get_template('index.html')
     
-    data = template.render(jquery=urls.jquery_local,
+    data = template.render(d3=urls.d3_local,                           
                            boot_css=urls.boot_css_local,
                            index_css=urls.index_css_local,
                            logo=urls.logo_local,
                            github=urls.github,
                            index_js=urls.index_js_local,
                            index_gh_pages_js=urls.index_gh_pages_js_local,
-                           models=[],
-                           maps=[],
+                           data='null',
                            web_version=True)
     
     with open(join(build_path, 'index.html'), 'w') as f:

@@ -62,25 +62,23 @@ class IndexHandler(BaseHandler):
     @asynchronous
     @gen.engine
     def get(self):
-        # get the models
+        # get the organisms, maps, and models
         response = yield gen.Task(AsyncHTTPClient().fetch,
-                                  join(urls.model_download, 'index.json'))
-        models = json.loads(response.body)        
-        # get the maps
-        response = yield gen.Task(AsyncHTTPClient().fetch,
-                                  join(urls.map_download, 'index.json'))
-        maps = json.loads(response.body)
+                                  join(urls.download, 'index.json'))
+        json_data = response.body
+
+        print json_data
+
+        # render the template
         template = env.get_template('index.html')
-        
-        data = template.render(jquery=urls.jquery_local,
+        data = template.render(d3=urls.d3_local,
                                boot_css=urls.boot_css_local,
                                index_css=urls.index_css_local,
                                logo=urls.logo_local,
                                github=urls.github,
                                index_js=urls.index_js_local,
                                index_gh_pages_js=urls.index_gh_pages_js_local,
-                               models=models,
-                               maps=maps,
+                               data=json_data,
                                web_version=False)
         
         self.set_header("Content-Type", "text/html")

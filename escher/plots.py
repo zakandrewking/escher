@@ -63,6 +63,22 @@ def get_an_id():
     return unicode(''.join(random.choice(string.ascii_lowercase)
                            for _ in range(10)))
 
+def model_name_to_url(name):
+    """Convert short name to url"""
+    parts = name.split(':')
+    if len(parts) != 2:
+        raise Exception('Bad model name')
+    longname = join('organisms', parts[0], 'models', parts[1]+'.json')
+    return join(urls.download, longname)
+
+def map_name_to_url(name):
+    """Convert short name to url"""
+    parts = name.split(':')
+    if len(parts) != 3:
+        raise Exception('Bad map name')
+    longname = join('organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json')
+    return join(urls.download, longname)
+
 def load_resource(resource, name, safe=False):
     """Load a resource that could be a file, URL, or json string."""
     # if it's a url, download it
@@ -215,16 +231,16 @@ class Builder(object):
                     (model_name, urls.escher_home)
                 warn(model_not_cached)
                 try:
-                    url = urls.model_download + model_name + '.json'
-                    download = urlopen(url)
+                    model_url = model_name_to_url(model_name)
+                    download = urlopen(model_url)
                     with open(model_filename, 'w') as outfile:
                         outfile.write(download.read())
                 except HTTPError:
                     raise ValueError('No model named %s found in cache or at %s' % \
-                                     (model_name, url))
+                                     (model_name, model_url))
             with open(model_filename) as f:
                 self.loaded_model_json = f.read()
-    
+                
     def load_map(self):
         """Load the map from input map_json using load_resource, or, secondarily,
            from map_name.
@@ -237,23 +253,23 @@ class Builder(object):
                                                  safe=self.safe)
         elif self.map_name is not None:
             # get the name
-            map_name = self.map_name  
+            map_name = self.map_name
             map_name = map_name.replace('.json', '')
             # if the file is not present attempt to download
             cache_dir = get_cache_dir(name='maps')
             map_filename = join(cache_dir, map_name + '.json')
             if not isfile(map_filename):
                 map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
-                    (map_name, urls.escher_home)
+                    (map_name, urls.download)
                 warn(map_not_cached)
                 try:
-                    url = urls.map_download + map_name + '.json'
-                    download = urlopen(url)
+                    map_url = map_name_to_url(self.map_name)
+                    download = urlopen(map_url)
                     with open(map_filename, 'w') as outfile:
                         outfile.write(download.read())
                 except HTTPError:
                     raise ValueError('No map named %s found in cache or at %s' % \
-                                     (map_name, url))
+                                     (map_name, map_url))
             with open(map_filename) as f:
                 self.loaded_map_json = f.read()
 
