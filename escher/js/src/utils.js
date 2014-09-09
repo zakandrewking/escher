@@ -34,6 +34,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     check_r: check_r,
 	     mean: mean,
 	     check_for_parent_tag: check_for_parent_tag,
+	     name_to_url: name_to_url,
 	     parse_url_components: parse_url_components };
 
     // definitions
@@ -614,7 +615,38 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	return false;
     }
 
-    function parse_url_components(the_window, options, map_download_url, model_download_url) {
+    function name_to_url(name, download_url, type) {
+	/** Convert short name to url.
+
+	 Arguments
+	 ---------
+
+	 name: The short name, e.g. e_coli:iJO1366:central_metabolism.
+
+	 download_url: The url to prepend.
+
+	 type: Either 'model' or 'map'.
+
+	 */
+	// strip download_url
+	download_url = download_url.replace(/^\/|\/$/g, '');
+
+	var parts = name.split(':'),
+	    longname;
+	if (['model', 'map'].indexOf(type) == -1)
+	    throw Error('Bad type: ' + type);
+	if (parts.length != (type=='model' ? 2 : 3))
+            throw Error('Bad ' + type + ' name');
+	if (type=='model')
+	    longname = ['organisms', parts[0], 'models', parts[1]+'.json'].join('/');
+	else
+	    longname = ['organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json'].join('/');
+	var out = [download_url, longname].join('/');
+	// strip final path
+	return out.replace(/^\/|\/$/g, '');
+    }
+
+    function parse_url_components(the_window, options, download_url) {
 	/** Parse the URL and return options based on the URL arguments.
 
 	 Arguments
@@ -645,12 +677,12 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 
 	// generate map_path and model_path
 	[
-	    [map_download_url, 'map_name', 'map_path'],
-	    [model_download_url, 'model_name', 'cobra_model_path']
+	    ['map', 'map_name', 'map_path'],
+	    ['model', 'model_name', 'cobra_model_path']
 	].forEach(function(ar) {
-	    var url = ar[0], key = ar[1], path = ar[2];
-	    if (url !== undefined && key in options)
-		options[path] = url + options[key] + '.json';
+	    var type = ar[0], key = ar[1], path = ar[2];
+	    if (download_url!==undefined && key in options)
+		options[path] = name_to_url(options[key], download_url, type);
 	});
 
 	return options;

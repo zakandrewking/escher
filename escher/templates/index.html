@@ -29,15 +29,15 @@
 	</div>
       </div>
       <div class="row">
-	<div class="col-sm-3">
-	  <h3>Model</h3>
-	  <select id="models" class="form-control">
+	<div class="col-sm-5">
+	  <h3>Map</h3>
+	  <select id="maps" class="form-control">
 	    <option value="none">None</option>
 	  </select>
 	</div>
-	<div class="col-sm-6">
-	  <h3>Map</h3>
-	  <select id="maps" class="form-control">
+	<div class="col-sm-4">
+	  <h3>Model (Optional)</h3>
+	  <select id="models" class="form-control">
 	    <option value="none">None</option>
 	  </select>
 	</div>
@@ -67,6 +67,7 @@
       </div>
       <!-- FAQ  -->
       <div id="faq" class="row">
+	<hr/>
 	<div class="col-sm-12">
 	  <h2>FAQ</h2>
 	  <ol>
@@ -89,10 +90,10 @@
   </footer>
 
   <script>var data={{data}};</script>
+  <script src="{{index_js}}"></script>
   {% if web_version %}
     <script src="{{index_gh_pages_js}}"></script>
   {% else %}
     <script>setup()</script>
   {% endif %}
-  <script src="{{index_js}}"></script>
 {% endblock %}

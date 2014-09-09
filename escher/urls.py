@@ -7,7 +7,7 @@ model_download_local = "models/v1/"
 organism_download = "https://zakandrewking.github.io/escher/organisms/"
 organism_download_local = "organisms/"
 download = "https://zakandrewking.github.io/escher/"
-download_local = "/"
+download_local = ""
 
 escher_home = "https://zakandrewking.github.io/escher/"
 github = "https://github.com/zakandrewking/escher"
