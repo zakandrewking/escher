@@ -27,7 +27,11 @@ class CleanCommand(Command):
     def run(self):
         call(['rm', '-rf', join(directory, 'build')])
         call(['rm', '-rf', join(directory, 'dist')])
+        # remove lib files
         for f in glob(join(directory, 'escher/lib/escher.*.js')):
+            os.remove(f)
+        # remove site files
+        for f in glob(join(directory, '*.html')):
             os.remove(f)
         print 'done cleaning'
 
@@ -43,7 +47,25 @@ class JSBuildCommand(Command):
               'out=escher/lib/%s'%escher, 'optimize=none'])
         call([join(directory, 'bin/r.js'), '-o', 'escher/js/build/build.js',
               'out=escher/lib/%s'%escher_min, 'optimize=uglify'])
-        print 'done building'
+        print 'done building js'
+        
+class BuildGHPagesCommand(Command):
+    description = "Custom build command that generates static site, and copies escher libs"
+    user_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    def run(self):
+        # copy files to top level
+        call(['cp', join('escher/lib/', escher), '.'])
+        call(['cp', join('escher/lib/', escher_min), '.'])
+        call(['cp', join('escher/lib/', escher), 'escher.js'])
+        call(['cp', join('escher/lib/', escher_min), 'escher.min.js'])
+        # generate the static site
+        call(['python', 'escher/static_site.py'])
+        call(['python', 'escher/generate_index.py'])        
+        print 'done building gh-pages'
 
 class TestCommand(Command):
     description = "Custom test command that runs pytest and jasmine"
@@ -70,4 +92,5 @@ setup(name='Escher',
                                'resources/*']},
       cmdclass={'clean': CleanCommand,
                 'buildjs': JSBuildCommand,
+                'buildgh': BuildGHPagesCommand,
                 'test': TestCommand})
