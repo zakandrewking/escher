@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from escher.quick_server import serve_and_open
-from escher import urls
+from escher.urls import get_url, model_name_to_url, map_name_to_url
 
 import os
 from os.path import dirname, abspath, join, isfile, isdir
@@ -62,22 +62,6 @@ def list_cached_models():
 def get_an_id():
     return unicode(''.join(random.choice(string.ascii_lowercase)
                            for _ in range(10)))
-
-def model_name_to_url(name):
-    """Convert short name to url"""
-    parts = name.split(':')
-    if len(parts) != 2:
-        raise Exception('Bad model name')
-    longname = join('organisms', parts[0], 'models', parts[1]+'.json')
-    return join(urls.web_root, longname)
-
-def map_name_to_url(name):
-    """Convert short name to url"""
-    parts = name.split(':')
-    if len(parts) != 3:
-        raise Exception('Bad map name')
-    longname = join('organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json')
-    return join(urls.web_root, longname)
 
 def load_resource(resource, name, safe=False):
     """Load a resource that could be a file, URL, or json string."""
@@ -140,10 +124,12 @@ class Builder(object):
     values that will be mapped to metabolite nodes and labels.
 
     local_host: a hostname that will be used for any local files in dev
-    mode. Defaults to the current host.
+    mode.
 
-    embedded_css: a css string to be embedded with the Escher SVG. Required for
-    js_source 'dev' or 'local'
+    embedded_css: a css string to be embedded with the Escher SVG.
+
+    id: specify an id to make the javascript data definitions unique. A random
+    id is chosen by default.
     
     safe: if True, then loading files from the filesytem is not allowed. This is
     to ensure the safety of using Builder with a web server.
@@ -151,7 +137,7 @@ class Builder(object):
     """
     def __init__(self, map_name=None, map_json=None, model_name=None,
                  model_json=None, reaction_data=None, metabolite_data=None,
-                 local_host='', embedded_css=None, safe=False):
+                 local_host=None, embedded_css=None, id=None, safe=False):
         self.safe = safe
         
         # load the map
@@ -171,14 +157,15 @@ class Builder(object):
         # set the args
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
-        self.local_host = local_host.strip(os.sep)
+        self.local_host = local_host
+        
         # remove illegal characters from css
         try:
-            self.embedded_css = embedded_css.replace('\n', '')
+            self.embedded_css = unicode(embedded_css.replace('\n', ''))
         except AttributeError:
             self.embedded_css = None
         # make the unique id
-        self.generate_id()
+        self.the_id = get_an_id() if id is None else id
 
         # set up the options
         self.options = ['reaction_styles',
@@ -210,9 +197,6 @@ class Builder(object):
             # add corresponding local variable
             setattr(self, '_%s' % option, None)
         
-    def generate_id(self):
-        self.the_id = get_an_id()
-        
     def load_model(self):
         """Load the model from input model_json using load_resource, or, secondarily,
            from model_name.
@@ -232,7 +216,7 @@ class Builder(object):
             model_filename = join(cache_dir, model_name + '.json')
             if not isfile(model_filename):
                 model_not_cached = 'Model "%s" not in cache. Attempting download from %s' % \
-                    (model_name, urls.escher_home)
+                    (model_name, get_url('escher_root'))
                 warn(model_not_cached)
                 try:
                     model_url = model_name_to_url(model_name)
@@ -264,7 +248,7 @@ class Builder(object):
             map_filename = join(cache_dir, map_name + '.json')
             if not isfile(map_filename):
                 map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
-                    (map_name, urls.web_root)
+                    (map_name, get_url('escher_root'))
                 warn(map_not_cached)
                 try:
                     map_url = map_name_to_url(self.map_name)
@@ -277,21 +261,34 @@ class Builder(object):
             with open(map_filename) as f:
                 self.loaded_map_json = f.read()
 
-    def _embedded_css(self):
+    def _embedded_css(self, url_source):
         """Return a css string to be embedded in the SVG.
 
         Returns self.embedded_css if it has been assigned. Otherwise, attempts
         to download the css file.
 
+        Arguments
+        ---------
+        
+        url_source: Whether to load from 'web' or 'local'.
+        
+
         """
         if self.embedded_css is not None:
             return self.embedded_css
-        loc = (join(self.local_host, urls.builder_embed_css) if self.local_host!='' else
-               urls.web(urls.builder_embed_css))
-        download = urlopen(loc)
+     
+            
+        loc = get_url('builder_embed_css', source=url_source,
+                      local_host=self.local_host, protocol='https')
+        try:
+            download = urlopen(loc)
+        except ValueError:
+            raise Exception(('Could not find builder_embed_css. Be sure to pass '
+                             'a local_host argument to Builder if js_source is dev or local '
+                             'and you are in an iPython notebook or a static html file.'))
         return unicode(download.read().replace('\n', ' '))
 
-    def _initialize_javascript(self):
+    def _initialize_javascript(self, url_source):
         javascript = (u"var map_data_{the_id} = {map_data};\n"
                       u"var cobra_model_{the_id} = {cobra_model};\n"
                       u"var reaction_data_{the_id} = {reaction_data};\n"
@@ -306,7 +303,7 @@ class Builder(object):
                                          u'null'),
                           metabolite_data=(json.dumps(self.metabolite_data) if self.metabolite_data else
                                            u'null'),
-                          style=self._embedded_css())
+                          style=self._embedded_css(url_source))
         return javascript
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
@@ -346,8 +343,7 @@ class Builder(object):
         dev_str = '' if dev else 'escher.'
         # parse the url in javascript
         if js_url_parse:
-            o = (u'options = %sutils.parse_url_components(window, '
-                 u'options, "%s");\n' % (dev_str, urls.web_root))
+            o = u'options = %sutils.parse_url_components(window, options);\n' % (dev_str)
             draw = draw + o;
         # make the builder
         draw = draw + '%sBuilder(options);\n' % dev_str
@@ -368,8 +364,6 @@ class Builder(object):
             'web' - (Default) use js files from zakandrewking.github.io/escher.
             'local' - use compiled js files in the local escher installation. Works offline.
             'dev' - use the local, uncompiled development files. Works offline.
-
-            'dev' and 'local' require Builder.embedded_css to be defined.
 
         menu: Menu bar options include:
             'none' - (Default) No menu or buttons.
@@ -407,17 +401,13 @@ class Builder(object):
 
         if js_source not in ['web', 'local', 'dev']:
             raise Exception('Bad value for js_source: %s' % js_source)
-
-        if js_source in ['local', 'dev'] and self.embedded_css is None:
-            raise Exception(("js_source values 'dev' and 'local' require "
-                             "Builder.embedded_css to be defined."))
         
         if menu not in ['none', 'zoom', 'all']:
             raise Exception('Bad value for menu: %s' % menu)
 
         if scroll_behavior not in ['pan', 'zoom', 'none']:
-            raise Exception('Bad value for scroll_behavior: %s' % scroll_behavior)
-        
+            raise Exception('Bad value for scroll_behavior: %s' % scroll_behavior) 
+            
         content = env.get_template('content.html')
 
         # if height is not a string
@@ -429,40 +419,35 @@ class Builder(object):
             height = unicode(height)
             
         # set the proper urls 
-        is_local = js_source=='local' or js_source=='dev'
-        is_dev = js_source=='dev'
-        d3_url = (join(self.local_host, urls.d3_local) if is_local else
-                  urls.d3)
-        escher_url = ("" if js_source=='dev' else
-                      (join(self.local_host, urls.escher_min) if is_local and minified_js else
-                       (join(self.local_host, urls.escher) if is_local else
-                        (urls.web(urls.escher_min) if minified_js else
-                         urls.web(urls.escher)))))
-        jquery_url = ("" if not menu=='all' else
-                      (join(self.local_host, urls.jquery_local) if is_local else
-                       urls.jquery))
-        boot_css_url = ("" if not menu=='all' else
-                        (join(self.local_host, urls.boot_css_local) if is_local else 
-                         urls.boot_css))
-        boot_js_url = ("" if not menu=='all' else
-                       (join(self.local_host, urls.boot_js_local) if is_local else
-                        urls.boot_js))
-        require_js_url = (join(self.local_host, urls.require_js_local) if is_local else
-                          urls.require_js)
-        html = content.render(require_js=require_js_url,
-                              id=self.the_id,
+        url_source = 'local' if (js_source=='local' or js_source=='dev') else 'web'
+        is_dev = (js_source=='dev')
+        
+        d3_url = get_url('d3', url_source, self.local_host)
+        escher_url = ('' if js_source=='dev' else
+                      get_url('escher_min' if minified_js else 'escher',
+                              url_source, self.local_host))
+        jquery_url = ('' if not menu=='all' else
+                      get_url('jquery', url_source, self.local_host))
+        boot_css_url = ('' if not menu=='all' else
+                        get_url('boot_css', url_source, self.local_host))
+        boot_js_url = ('' if not menu=='all' else
+                        get_url('boot_js', url_source, self.local_host))
+        require_js_url = get_url('require_js', url_source, self.local_host)                     
+        escher_css_url = get_url('builder_css', url_source, self.local_host)
+        
+        html = content.render(id=self.the_id,
                               height=height,
-                              escher_css=(join(self.local_host, urls.builder_css) if is_local else
-                                          urls.web(urls.builder_css)),
                               dev=is_dev,
                               d3=d3_url,
                               escher=escher_url,
                               jquery=jquery_url,
                               boot_css=boot_css_url,
                               boot_js=boot_js_url,
+                              require_js=require_js_url,
+                              escher_css=escher_css_url,
                               wrapper=html_wrapper,
                               host=self.local_host,
-                              initialize_js=self._initialize_javascript(),
+                              initialize_js=self._initialize_javascript(url_source),
                               draw_js=self._draw_js(self.the_id, enable_editing,
                                                     menu, enable_keys, is_dev,
                                                     fill_screen, scroll_behavior,

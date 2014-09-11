@@ -1,7 +1,7 @@
 import escher.server
 from escher import (Builder, get_cache_dir, clear_cache, list_cached_maps,
                     list_cached_models)
-from escher.plots import (load_resource, model_name_to_url, map_name_to_url)
+from escher.plots import load_resource
 
 import os
 from os.path import join
@@ -31,14 +31,6 @@ def test_get_cache_dir():
 #     clear_cache()
 #     Builder(model_name='iJO1366')
 #     assert list_cached_models() == ['iJO1366']
-
-def test_model_name_to_url():
-    url = model_name_to_url('e_coli:iJO1366')
-    assert url == 'https://zakandrewking.github.io/escher/organisms/e_coli/models/iJO1366.json'
-
-def test_map_name_to_url():
-    url = map_name_to_url('e_coli:iJO1366:central_metabolism')
-    assert url == 'https://zakandrewking.github.io/escher/organisms/e_coli/models/iJO1366/maps/central_metabolism.json'
     
 def test_load_resource(tmpdir):
     assert load_resource('{"r": "val"}', 'name') == '{"r": "val"}'

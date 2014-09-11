@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from escher.plots import Builder
-from escher import urls
+from escher.urls import get_url
 
 import os, subprocess
 from os.path import join, dirname, realpath
 import tornado.ioloop
-from tornado.web import RequestHandler, asynchronous, HTTPError, Application
+from tornado.web import RequestHandler, HTTPError, Application, asynchronous
 from tornado.httpclient import AsyncHTTPClient
 from tornado import gen
 import tornado.escape
@@ -61,24 +61,24 @@ class BaseHandler(RequestHandler):
 
 class IndexHandler(BaseHandler):
     @asynchronous
-    @gen.engine
+    @gen.coroutine
     def get(self):
         # get the organisms, maps, and models
         response = yield gen.Task(AsyncHTTPClient().fetch,
-                                  join(urls.download, 'index.json'))
-        json_data = response.body
-
-        print json_data
+                                  '/'.join([get_url('escher_root', protocol='https'),
+                                            'index.json']))
+        json_data = response.body if response.body is not None else json.dumps(None)
 
         # render the template
         template = env.get_template('index.html')
-        data = template.render(d3=urls.d3_local,
-                               boot_css=urls.boot_css,
-                               index_css=urls.index_css,
-                               logo=urls.logo,
-                               github=urls.github,
-                               index_js=urls.index_js,
-                               index_gh_pages_js=urls.index_gh_pages_js,
+        source = 'local'
+        data = template.render(d3=get_url('d3', source),
+                               boot_css=get_url('boot_css', source),
+                               index_css=get_url('index_css', source),
+                               logo=get_url('logo', source),
+                               github=get_url('github'),
+                               index_js=get_url('index_js', source),
+                               index_gh_pages_js=get_url('index_gh_pages_js', source),
                                data=json_data,
                                web_version=False)
         
@@ -87,7 +87,7 @@ class IndexHandler(BaseHandler):
   
 class BuilderHandler(BaseHandler):
     @asynchronous
-    @gen.engine
+    @gen.coroutine
     def get(self, dev_path, offline_path, kind, path):
         # builder vs. viewer & dev vs. not dev
         js_source = ('dev' if (dev_path is not None) else
@@ -107,9 +107,13 @@ class BuilderHandler(BaseHandler):
         # if the server is running locally, then the embedded css must be loaded
         # asynchronously using the same server thread.
         if js_source in ['dev', 'local']:  
-            global PORT          
-            response = yield gen.Task(AsyncHTTPClient().fetch,
-                                      join('http://localhost:%d' % PORT, urls.builder_embed_css))
+            global PORT
+            url = get_url('builder_embed_css',
+                          source='local',
+                          local_host='http://localhost:%d' % PORT)
+            response = yield gen.Task(AsyncHTTPClient().fetch, url)
+            if response.body is None:
+                raise Exception('Could not load embedded_css from %s' % url)
             builder_kwargs['embedded_css'] = response.body.replace('\n', ' ')
 
         # example data

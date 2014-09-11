@@ -42,7 +42,18 @@ describe('utils', function() {
 
 	var options = utils.parse_url_components(the_window);
 	expect(options).toEqual({ map_name: 'e_coli:iJO1366:central_metabolism',
-				  model_name: 'e_coli:iJO1366' });
+				  model_name: 'e_coli:iJO1366',
+				  map_path: 'organisms/e_coli/models/iJO1366/maps/central_metabolism.json',
+				  cobra_model_path: 'organisms/e_coli/models/iJO1366.json' });
+
+	options = { a: 'b',
+		    model_name: 'old_model_name' };
+	options = utils.parse_url_components(the_window, options);
+	expect(options).toEqual({ map_name: 'e_coli:iJO1366:central_metabolism',
+				  model_name: 'e_coli:iJO1366',
+				  map_path: 'organisms/e_coli/models/iJO1366/maps/central_metabolism.json',
+				  cobra_model_path: 'organisms/e_coli/models/iJO1366.json',
+				  a: 'b' });
 
 	options = { a: 'b',
 		    model_name: 'old_model_name' };

@@ -1409,13 +1409,11 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 
 	 name: The short name, e.g. e_coli:iJO1366:central_metabolism.
 
-	 download_url: The url to prepend.
+	 download_url: The url to prepend. (Can be null)
 
 	 type: Either 'model' or 'map'.
 
 	 */
-	// strip download_url
-	download_url = download_url.replace(/^\/|\/$/g, '');
 
 	var parts = name.split(':'),
 	    longname;
@@ -1427,9 +1425,13 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	    longname = ['organisms', parts[0], 'models', parts[1]+'.json'].join('/');
 	else
 	    longname = ['organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json'].join('/');
-	var out = [download_url, longname].join('/');
+	if (download_url!==null) {
+	    // strip download_url
+	    download_url = download_url.replace(/^\/|\/$/g, '');
+	    longname = [download_url, longname].join('/');
+	}
 	// strip final path
-	return out.replace(/^\/|\/$/g, '');
+	return longname.replace(/^\/|\/$/g, '');
     }
 
     function parse_url_components(the_window, options, download_url) {
@@ -1453,6 +1455,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 
 	 */
 	if (options===undefined) options = {};
+	if (download_url===undefined) download_url = null;
 
 	var query = the_window.location.search.substring(1),
 	    vars = query.split("&");
@@ -1467,7 +1470,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	    ['model', 'model_name', 'cobra_model_path']
 	].forEach(function(ar) {
 	    var type = ar[0], key = ar[1], path = ar[2];
-	    if (download_url!==undefined && key in options)
+	    if (key in options)
 		options[path] = name_to_url(options[key], download_url, type);
 	});
 

@@ -1,5 +1,5 @@
 from escher.plots import Builder
-from escher import urls
+from escher.urls import get_url
 
 from os.path import join, dirname, realpath
 from jinja2 import Environment, PackageLoader
@@ -13,14 +13,17 @@ def generate_static_site():
 
     # index file
     template = env.get_template('index.html')
+
+    def add_escher(url):
+        return 'escher/' + url
     
-    data = template.render(d3=join('escher', urls.d3_local),
-                           index_css=join('escher', urls.index_css),
-                           logo=join('escher', urls.logo),
-                           index_js=join('escher', urls.index_js),
-                           index_gh_pages_js=join('escher', urls.index_gh_pages_js),
-                           boot_css=urls.boot_css,
-                           github=urls.github,
+    data = template.render(d3=add_escher(get_url('d3', 'local')),
+                           index_css=add_escher(get_url('index_css', 'local')),
+                           logo=add_escher(get_url('logo', 'local')),
+                           index_js=add_escher(get_url('index_js', 'local')),
+                           index_gh_pages_js=add_escher(get_url('index_gh_pages_js', 'local')),
+                           boot_css=add_escher(get_url('boot_css', 'local')),
+                           github=get_url('github', protocol='https'),
                            data='null',
                            web_version=True)
     
@@ -34,7 +37,7 @@ def generate_static_site():
             enable_editing = (kind=='builder')
 
             # make the builder        
-            builder = Builder(safe=True)
+            builder = Builder(safe=True, id='static')
             
             filepath = join(build_path,
                             '%s%s.html' % (kind, '' if minified_js else '_not_minified'))
