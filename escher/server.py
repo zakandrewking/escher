@@ -55,6 +55,7 @@ class BaseHandler(RequestHandler):
     def serve(self, data):
         if (NO_CACHE):
             self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        self.set_header('Access-Control-Allow-Origin', '*')
         self.write(data)
         self.finish()
 

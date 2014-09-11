@@ -172,7 +172,11 @@ class Builder(object):
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
         self.local_host = local_host.strip(os.sep)
-        self.embedded_css = embedded_css
+        # remove illegal characters from css
+        try:
+            self.embedded_css = embedded_css.replace('\n', '')
+        except AttributeError:
+            self.embedded_css = None
         # make the unique id
         self.generate_id()
 
