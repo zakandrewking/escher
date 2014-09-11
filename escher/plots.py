@@ -69,7 +69,7 @@ def model_name_to_url(name):
     if len(parts) != 2:
         raise Exception('Bad model name')
     longname = join('organisms', parts[0], 'models', parts[1]+'.json')
-    return join(urls.download, longname)
+    return join(urls.web_root, longname)
 
 def map_name_to_url(name):
     """Convert short name to url"""
@@ -77,7 +77,7 @@ def map_name_to_url(name):
     if len(parts) != 3:
         raise Exception('Bad map name')
     longname = join('organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json')
-    return join(urls.download, longname)
+    return join(urls.web_root, longname)
 
 def load_resource(resource, name, safe=False):
     """Load a resource that could be a file, URL, or json string."""
@@ -264,7 +264,7 @@ class Builder(object):
             map_filename = join(cache_dir, map_name + '.json')
             if not isfile(map_filename):
                 map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
-                    (map_name, urls.download)
+                    (map_name, urls.web_root)
                 warn(map_not_cached)
                 try:
                     map_url = map_name_to_url(self.map_name)
@@ -277,7 +277,7 @@ class Builder(object):
             with open(map_filename) as f:
                 self.loaded_map_json = f.read()
 
-    def _embedded_css(self, is_local):
+    def _embedded_css(self):
         """Return a css string to be embedded in the SVG.
 
         Returns self.embedded_css if it has been assigned. Otherwise, attempts
@@ -286,12 +286,12 @@ class Builder(object):
         """
         if self.embedded_css is not None:
             return self.embedded_css
-        loc = (join(self.local_host, urls.builder_embed_css_local) if is_local else
-               urls.builder_embed_css)
+        loc = (join(self.local_host, urls.builder_embed_css) if self.local_host!='' else
+               urls.web(urls.builder_embed_css))
         download = urlopen(loc)
         return unicode(download.read().replace('\n', ' '))
-    
-    def _initialize_javascript(self, is_local):
+
+    def _initialize_javascript(self):
         javascript = (u"var map_data_{the_id} = {map_data};\n"
                       u"var cobra_model_{the_id} = {cobra_model};\n"
                       u"var reaction_data_{the_id} = {reaction_data};\n"
@@ -306,7 +306,7 @@ class Builder(object):
                                          u'null'),
                           metabolite_data=(json.dumps(self.metabolite_data) if self.metabolite_data else
                                            u'null'),
-                          style=self._embedded_css(is_local))
+                          style=self._embedded_css())
         return javascript
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
@@ -347,8 +347,7 @@ class Builder(object):
         # parse the url in javascript
         if js_url_parse:
             o = (u'options = %sutils.parse_url_components(window, '
-                 u'options, "%s");\n' % (dev_str,
-                                         urls.download_local))
+                 u'options, "%s");\n' % (dev_str, urls.web_root))
             draw = draw + o;
         # make the builder
         draw = draw + '%sBuilder(options);\n' % dev_str
@@ -435,10 +434,10 @@ class Builder(object):
         d3_url = (join(self.local_host, urls.d3_local) if is_local else
                   urls.d3)
         escher_url = ("" if js_source=='dev' else
-                      (join(self.local_host, urls.escher_min_local) if is_local and minified_js else
-                       (join(self.local_host, urls.escher_local) if is_local else
-                        (urls.escher_min if minified_js else
-                         urls.escher))))
+                      (join(self.local_host, urls.escher_min) if is_local and minified_js else
+                       (join(self.local_host, urls.escher) if is_local else
+                        (urls.web(urls.escher_min) if minified_js else
+                         urls.web(urls.escher)))))
         jquery_url = ("" if not menu=='all' else
                       (join(self.local_host, urls.jquery_local) if is_local else
                        urls.jquery))
@@ -453,8 +452,8 @@ class Builder(object):
         html = content.render(require_js=require_js_url,
                               id=self.the_id,
                               height=height,
-                              escher_css=(join(self.local_host, urls.builder_css_local) if is_local else
-                                          urls.builder_css),
+                              escher_css=(join(self.local_host, urls.builder_css) if is_local else
+                                          urls.web(urls.builder_css)),
                               dev=is_dev,
                               d3=d3_url,
                               escher=escher_url,
@@ -463,7 +462,7 @@ class Builder(object):
                               boot_js=boot_js_url,
                               wrapper=html_wrapper,
                               host=self.local_host,
-                              initialize_js=self._initialize_javascript(is_local),
+                              initialize_js=self._initialize_javascript(),
                               draw_js=self._draw_js(self.the_id, enable_editing,
                                                     menu, enable_keys, is_dev,
                                                     fill_screen, scroll_behavior,

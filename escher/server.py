@@ -73,12 +73,12 @@ class IndexHandler(BaseHandler):
         # render the template
         template = env.get_template('index.html')
         data = template.render(d3=urls.d3_local,
-                               boot_css=urls.boot_css_local,
-                               index_css=urls.index_css_local,
-                               logo=urls.logo_local,
+                               boot_css=urls.boot_css,
+                               index_css=urls.index_css,
+                               logo=urls.logo,
                                github=urls.github,
-                               index_js=urls.index_js_local,
-                               index_gh_pages_js=urls.index_gh_pages_js_local,
+                               index_js=urls.index_js,
+                               index_gh_pages_js=urls.index_gh_pages_js,
                                data=json_data,
                                web_version=False)
         
@@ -109,7 +109,7 @@ class BuilderHandler(BaseHandler):
         if js_source in ['dev', 'local']:  
             global PORT          
             response = yield gen.Task(AsyncHTTPClient().fetch,
-                                      join('http://localhost:%d' % PORT, urls.builder_embed_css_local))
+                                      join('http://localhost:%d' % PORT, urls.builder_embed_css))
             builder_kwargs['embedded_css'] = response.body.replace('\n', ' ')
 
         # example data

@@ -14,13 +14,13 @@ def generate_static_site():
     # index file
     template = env.get_template('index.html')
     
-    data = template.render(d3=urls.d3_local,                           
-                           boot_css=urls.boot_css_local,
-                           index_css=urls.index_css_local,
-                           logo=urls.logo_local,
+    data = template.render(d3=join('escher', urls.d3_local),
+                           index_css=join('escher', urls.index_css),
+                           logo=join('escher', urls.logo),
+                           index_js=join('escher', urls.index_js),
+                           index_gh_pages_js=join('escher', urls.index_gh_pages_js),
+                           boot_css=urls.boot_css,
                            github=urls.github,
-                           index_js=urls.index_js_local,
-                           index_gh_pages_js=urls.index_gh_pages_js_local,
                            data='null',
                            web_version=True)
     
