@@ -135,10 +135,6 @@
     width: 100%;
     text-align: left;
 }
-.no-data-input {
-    width: 23%;
-    margin: 0 4px 0 4px;
-}
 .style-span {
     margin: 0 4px;
 }
@@ -194,10 +190,4 @@
 .input-close-button:hover {
     color: #ff3333;
     font-weight: bold;
-}
-/* text edit input */
-#text-edit-input input {
-    width: 500px;
-    border: none;
-    font-size: 22px;
 }
