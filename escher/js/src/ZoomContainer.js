@@ -165,6 +165,8 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
         move_this.attr('transform',
 		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
 		  'scale('+this.window_scale+')');
+
+	this.callback_manager.run('go_to');
 	return null;
     }
 

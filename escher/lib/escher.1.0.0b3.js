@@ -793,14 +793,15 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
              load_the_file: load_the_file,
 	     make_class: make_class,
 	     setup_defs: setup_defs,
-	     draw_an_array: draw_an_array,
 	     draw_an_object: draw_an_object,
+	     draw_a_nested_object: draw_a_nested_object,
 	     make_array: make_array,
 	     compare_arrays: compare_arrays,
 	     array_to_object: array_to_object,
 	     clone: clone,
 	     extend: extend,
 	     unique_concat: unique_concat,
+	     object_slice_for_ids: object_slice_for_ids,
 	     c_plus_c: c_plus_c,
 	     c_minus_c: c_minus_c,
 	     c_times_scalar: c_times_scalar,
@@ -818,7 +819,9 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	     decompartmentalize: decompartmentalize,
 	     check_r: check_r,
 	     mean: mean,
-	     check_for_parent_tag: check_for_parent_tag };
+	     check_for_parent_tag: check_for_parent_tag,
+	     name_to_url: name_to_url,
+	     parse_url_components: parse_url_components };
 
     // definitions
     function set_options(options, defaults) {
@@ -958,34 +961,86 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
         return defs;
     }
 
-    function draw_an_array(container_sel, parent_node_selector, children_selector,
-			   array, create_function, update_function) {
-	/** Run through the d3 data binding steps for an array.
-	 */
-	var sel = container_sel.select(parent_node_selector)
-		.selectAll(children_selector)
-		.data(array);
-	// enter: generate and place reaction
-	sel.enter().call(create_function);
-	// update: update when necessary
-	sel.call(update_function);
-	// exit
-	sel.exit().remove();
-    }
-
     function draw_an_object(container_sel, parent_node_selector, children_selector,
-			    object, id_key, create_function, update_function) {
+			    object, id_key, create_function, update_function,
+			    exit_function) {
 	/** Run through the d3 data binding steps for an object.
+
+	 Arguments
+	 ---------
+
+	 container_sel: A d3 selection containing all objects.
+
+	 parent_node_selector: A selector string for a subselection of
+	 container_sel.
+
+	 children_selector: A selector string for each DOM element to bind.
+
+	 object: An object to bind to the selection.
+
+	 id_key: The key that will be used to store object IDs in the bound data
+	 points.
+
+	 create_function: A function for enter selection.
+
+	 update_function: A function for update selection.
+
+	 exit_function: A function for exit selection.
+	 
 	 */
 	var sel = container_sel.select(parent_node_selector)
 		.selectAll(children_selector)
 		.data(make_array(object, id_key), function(d) { return d[id_key]; });
 	// enter: generate and place reaction
-	sel.enter().call(create_function);
+	if (create_function)
+	    sel.enter().call(create_function);
 	// update: update when necessary
-	sel.call(update_function);
+	if (update_function)
+	    sel.call(update_function);
 	// exit
-	sel.exit().remove();
+	if (exit_function) 
+	    sel.exit().call(exit_function);
+    }
+
+    function draw_a_nested_object(container_sel, children_selector, object_data_key,
+				  id_key, create_function, update_function,
+				  exit_function) {
+	/** Run through the d3 data binding steps for an object that is nested
+	 within another element with d3 data.
+
+	 Arguments
+	 ---------
+
+	 container_sel: A d3 selection containing all objects.
+
+	 children_selector: A selector string for each DOM element to bind.
+
+	 object_data_key: A key for the parent object containing data for the
+	 new selection.
+
+	 id_key: The key that will be used to store object IDs in the bound data
+	 points.
+
+	 create_function: A function for enter selection.
+
+	 update_function: A function for update selection.
+
+	 exit_function: A function for exit selection.
+	 
+	 */
+	var sel = container_sel.selectAll(children_selector)
+	    .data(function(d) {
+		return make_array(d[object_data_key], id_key);
+	    }, function(d) { return d[id_key]; });
+	// enter: generate and place reaction
+	if (create_function)
+	    sel.enter().call(create_function);
+	// update: update when necessary
+	if (update_function)
+	    sel.call(update_function);
+	// exit
+	if (exit_function) 
+	    sel.exit().call(exit_function);
     }
 
     function make_array(obj, id_key) { // is this super slow?
@@ -1088,6 +1143,27 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	    });
 	});
 	return new_array;
+    }
+
+    function object_slice_for_ids(obj, ids) {
+	/** Return a copy of the object with just the given ids. 
+	 
+	 Arguments
+	 ---------
+
+	 obj: An object.
+
+	 ids: An array of id strings.
+
+	 */
+        var subset = {}, i = -1;
+        while (++i<ids.length) {
+	    subset[ids[i]] = clone(obj[ids[i]]);
+        }
+        if (ids.length != Object.keys(subset).length) {
+	    console.warn('did not find correct reaction subset');
+        }
+	return subset;
     }
 
     function c_plus_c(coords1, coords2) {
@@ -1324,412 +1400,82 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	}
 	return false;
     }
-});
 
-/**
- * complete.ly 1.0.0
- * MIT Licensing
- * Copyright (c) 2013 Lorenzo Puccetti
- * 
- * This Software shall be used for doing good things, not bad things.
- * 
-**/  
-define('lib/complete.ly',[],function() {
-return function(container, config) {
-    config = config || {};
-    config.fontSize =                       config.fontSize   || '16px';
-    config.fontFamily =                     config.fontFamily || 'sans-serif';
-    config.promptInnerHTML =                config.promptInnerHTML || ''; 
-    config.color =                          config.color || '#333';
-    config.hintColor =                      config.hintColor || '#aaa';
-    config.backgroundColor =                config.backgroundColor || '#fff';
-    config.dropDownBorderColor =            config.dropDownBorderColor || '#aaa';
-    config.dropDownZIndex =                 config.dropDownZIndex || '100'; // to ensure we are in front of everybody
-    config.dropDownOnHoverBackgroundColor = config.dropDownOnHoverBackgroundColor || '#ddd';
-    
-    var txtInput = document.createElement('input');
-    txtInput.type ='text';
-    txtInput.spellcheck = false; 
-    txtInput.style.fontSize =        config.fontSize;
-    txtInput.style.fontFamily =      config.fontFamily;
-    txtInput.style.color =           config.color;
-    txtInput.style.backgroundColor = config.backgroundColor;
-    txtInput.style.width = '100%';
-    txtInput.style.outline = '0';
-    txtInput.style.border =  '0';
-    txtInput.style.margin =  '0';
-    txtInput.style.padding = '0';
-    
-    var txtHint = txtInput.cloneNode(); 
-    txtHint.disabled='';        
-    txtHint.style.position = 'absolute';
-    txtHint.style.top =  '0';
-    txtHint.style.left = '0';
-    txtHint.style.borderColor = 'transparent';
-    txtHint.style.boxShadow =   'none';
-    txtHint.style.color = config.hintColor;
-    
-    txtInput.style.backgroundColor ='transparent';
-    txtInput.style.verticalAlign = 'top';
-    txtInput.style.position = 'relative';
-    
-    var wrapper = document.createElement('div');
-    wrapper.style.position = 'relative';
-    wrapper.style.outline = '0';
-    wrapper.style.border =  '0';
-    wrapper.style.margin =  '0';
-    wrapper.style.padding = '0';
-    
-    var prompt = document.createElement('div');
-    prompt.style.position = 'absolute';
-    prompt.style.outline = '0';
-    prompt.style.margin =  '0';
-    prompt.style.padding = '0';
-    prompt.style.border =  '0';
-    prompt.style.fontSize =   config.fontSize;
-    prompt.style.fontFamily = config.fontFamily;
-    prompt.style.color =           config.color;
-    prompt.style.backgroundColor = config.backgroundColor;
-    prompt.style.top = '0';
-    prompt.style.left = '0';
-    prompt.style.overflow = 'hidden';
-    prompt.innerHTML = config.promptInnerHTML;
-    prompt.style.background = 'transparent';
-    if (document.body === undefined) {
-        throw 'document.body is undefined. The library was wired up incorrectly.';
-    }
-    document.body.appendChild(prompt);            
-    var w = prompt.getBoundingClientRect().right; // works out the width of the prompt.
-    wrapper.appendChild(prompt);
-    prompt.style.visibility = 'visible';
-    prompt.style.left = '-'+w+'px';
-    wrapper.style.marginLeft= w+'px';
-    
-    wrapper.appendChild(txtHint);
-    wrapper.appendChild(txtInput);
-    
-    var dropDown = document.createElement('div');
-    dropDown.style.position = 'absolute';
-    dropDown.style.visibility = 'hidden';
-    dropDown.style.outline = '0';
-    dropDown.style.margin =  '0';
-    dropDown.style.padding = '0';  
-    dropDown.style.textAlign = 'left';
-    dropDown.style.fontSize =   config.fontSize;      
-    dropDown.style.fontFamily = config.fontFamily;
-    dropDown.style.backgroundColor = config.backgroundColor;
-    dropDown.style.zIndex = config.dropDownZIndex; 
-    dropDown.style.cursor = 'default';
-    dropDown.style.borderStyle = 'solid';
-    dropDown.style.borderWidth = '1px';
-    dropDown.style.borderColor = config.dropDownBorderColor;
-    dropDown.style.overflowX= 'hidden';
-    dropDown.style.whiteSpace = 'pre';
-    dropDown.style.overflowY = 'scroll';  // note: this might be ugly when the scrollbar is not required. however in this way the width of the dropDown takes into account
-    
-    
-    var createDropDownController = function(elem) {
-        var rows = [];
-        var ix = 0;
-        var oldIndex = -1;
-        
-        var onMouseOver =  function() { this.style.outline = '1px solid #ddd'; }
-        var onMouseOut =   function() { this.style.outline = '0'; }
-        var onMouseDown =  function() { p.hide(); p.onmouseselection(this.__hint); }
-        
-        var p = {
-            hide :  function() { elem.style.visibility = 'hidden'; }, 
-            refresh : function(token, array) {
-                elem.style.visibility = 'hidden';
-                ix = 0;
-                elem.innerHTML ='';
-                var vph = (window.innerHeight || document.documentElement.clientHeight);
-                var rect = elem.parentNode.getBoundingClientRect();
-                var distanceToTop = rect.top - 6;                        // heuristic give 6px 
-                var distanceToBottom = vph - rect.bottom -6;  // distance from the browser border.
-                
-                rows = [];
-                for (var i=0;i<array.length;i++) {
-                    if (array[i].indexOf(token)!==0) { continue; }
-                    var divRow =document.createElement('div');
-                    divRow.style.color = config.color;
-                    divRow.onmouseover = onMouseOver; 
-                    divRow.onmouseout =  onMouseOut;
-                    divRow.onmousedown = onMouseDown; 
-                    divRow.__hint =    array[i];
-                    divRow.innerHTML = token+'<b>'+array[i].substring(token.length)+'</b>';
-                    rows.push(divRow);
-                    elem.appendChild(divRow);
-                }
-                if (rows.length===0) {
-                    return; // nothing to show.
-                }
-                if (rows.length===1 && token === rows[0].__hint) {
-                    return; // do not show the dropDown if it has only one element which matches what we have just displayed.
-                }
-                
-                if (rows.length<2) return; 
-                p.highlight(0);
-                
-                if (distanceToTop > distanceToBottom*3) {        // Heuristic (only when the distance to the to top is 4 times more than distance to the bottom
-                    elem.style.maxHeight =  distanceToTop+'px';  // we display the dropDown on the top of the input text
-                    elem.style.top ='';
-                    elem.style.bottom ='100%';
-                } else {
-                    elem.style.top = '100%';  
-                    elem.style.bottom = '';
-                    elem.style.maxHeight =  distanceToBottom+'px';
-                }
-                elem.style.visibility = 'visible';
-            },
-            highlight : function(index) {
-                if (oldIndex !=-1 && rows[oldIndex]) { 
-                    rows[oldIndex].style.backgroundColor = config.backgroundColor;
-                }
-                rows[index].style.backgroundColor = config.dropDownOnHoverBackgroundColor; // <-- should be config
-                oldIndex = index;
-            },
-            move : function(step) { // moves the selection either up or down (unless it's not possible) step is either +1 or -1.
-                if (elem.style.visibility === 'hidden')             return ''; // nothing to move if there is no dropDown. (this happens if the user hits escape and then down or up)
-                if (ix+step === -1 || ix+step === rows.length) return rows[ix].__hint; // NO CIRCULAR SCROLLING. 
-                ix+=step; 
-                p.highlight(ix);
-                return rows[ix].__hint;//txtShadow.value = uRows[uIndex].__hint ;
-            },
-            onmouseselection : function() {} // it will be overwritten. 
-        };
-        return p;
-    }
-    
-    var dropDownController = createDropDownController(dropDown);
-    
-    dropDownController.onmouseselection = function(text) {
-        txtInput.value = txtHint.value = leftSide+text; 
-        rs.onChange(txtInput.value); // <-- forcing it.
-        registerOnTextChangeOldValue = txtInput.value; // <-- ensure that mouse down will not show the dropDown now.
-        setTimeout(function() { txtInput.focus(); },0);  // <-- I need to do this for IE 
-    }
-    
-    wrapper.appendChild(dropDown);
-    container.appendChild(wrapper);
-    
-    var spacer; 
-    var leftSide; // <-- it will contain the leftSide part of the textfield (the bit that was already autocompleted)
-    
-    
-    function calculateWidthForText(text) {
-        if (spacer === undefined) { // on first call only.
-            spacer = document.createElement('span'); 
-            spacer.style.visibility = 'hidden';
-            spacer.style.position = 'fixed';
-            spacer.style.outline = '0';
-            spacer.style.margin =  '0';
-            spacer.style.padding = '0';
-            spacer.style.border =  '0';
-            spacer.style.left = '0';
-            spacer.style.whiteSpace = 'pre';
-            spacer.style.fontSize =   config.fontSize;
-            spacer.style.fontFamily = config.fontFamily;
-            spacer.style.fontWeight = 'normal';
-            document.body.appendChild(spacer);    
-        }        
-        
-        // Used to encode an HTML string into a plain text.
-        // taken from http://stackoverflow.com/questions/1219860/javascript-jquery-html-encoding
-        spacer.innerHTML = String(text).replace(/&/g, '&amp;')
-                                       .replace(/"/g, '&quot;')
-                                       .replace(/'/g, '&#39;')
-                                       .replace(/</g, '&lt;')
-                                       .replace(/>/g, '&gt;');
-        return spacer.getBoundingClientRect().right;
-    }
-    
-    
-    var rs = { 
-        onArrowDown : function() {},               // defaults to no action.
-        onArrowUp :   function() {},               // defaults to no action.
-        onEnter :     function() {},               // defaults to no action.
-        onTab :       function() {},               // defaults to no action.
-        onChange:     function() { rs.repaint() }, // defaults to repainting.
-        startFrom:    0,
-        options:      [],
-        wrapper : wrapper,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
-        input :  txtInput,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations) 
-        hint  :  txtHint,       // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
-        dropDown :  dropDown,         // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
-        prompt : prompt,
-        setText : function(text) {
-            txtHint.value = text;
-            txtInput.value = text; 
-        },
-        getText : function() {
-        	return txtInput.value; 
-        },
-        hideDropDown : function() {
-        	dropDownController.hide();
-        },
-        repaint : function() {
-            var text = txtInput.value;
-            var startFrom =  rs.startFrom; 
-            var options =    rs.options;
-            var optionsLength = options.length; 
-            
-            // breaking text in leftSide and token.
-            var token = text.substring(startFrom);
-            leftSide =  text.substring(0,startFrom);
-            
-            // updating the hint. 
-            txtHint.value ='';
-            for (var i=0;i<optionsLength;i++) {
-                var opt = options[i];
-                if (opt.indexOf(token)===0) {         // <-- how about upperCase vs. lowercase
-                    txtHint.value = leftSide +opt;
-                    break;
-                }
-            }
-            
-            // moving the dropDown and refreshing it.
-            dropDown.style.left = calculateWidthForText(leftSide)+'px';
-            dropDownController.refresh(token, rs.options);
-        }
-    };
-    
-    var registerOnTextChangeOldValue;
+    function name_to_url(name, download_url, type) {
+	/** Convert short name to url.
 
-    /**
-     * Register a callback function to detect changes to the content of the input-type-text.
-     * Those changes are typically followed by user's action: a key-stroke event but sometimes it might be a mouse click.
-    **/
-    var registerOnTextChange = function(txt, callback) {
-        registerOnTextChangeOldValue = txt.value;
-        var handler = function() {
-            var value = txt.value;
-            if (registerOnTextChangeOldValue !== value) {
-                registerOnTextChangeOldValue = value;
-                callback(value);
-            }
-        };
+	 Arguments
+	 ---------
 
-        //  
-        // For user's actions, we listen to both input events and key up events
-        // It appears that input events are not enough so we defensively listen to key up events too.
-        // source: http://help.dottoro.com/ljhxklln.php
-        //
-        // The cost of listening to three sources should be negligible as the handler will invoke callback function
-        // only if the text.value was effectively changed. 
-        //  
-        // 
-        if (txt.addEventListener) {
-            txt.addEventListener("input",  handler, false);
-            txt.addEventListener('keyup',  handler, false);
-            txt.addEventListener('change', handler, false);
-        } else { // is this a fair assumption: that attachEvent will exist ?
-            txt.attachEvent('oninput', handler); // IE<9
-            txt.attachEvent('onkeyup', handler); // IE<9
-            txt.attachEvent('onchange',handler); // IE<9
-        }
-    };
-    
-    
-    registerOnTextChange(txtInput,function(text) { // note the function needs to be wrapped as API-users will define their onChange
-        rs.onChange(text);
-    });
-    
-    
-    var keyDownHandler = function(e) {
-        e = e || window.event;
-        var keyCode = e.keyCode;
-        
-        if (keyCode == 33) { return; } // page up (do nothing)
-        if (keyCode == 34) { return; } // page down (do nothing);
-        
-        // if (keyCode == 27) { //escape
-        //     dropDownController.hide();
-        //     txtHint.value = txtInput.value; // ensure that no hint is left.
-        //     txtInput.focus(); 
-        //     return; 
-        // }
-        
-        if (keyCode == 39 || keyCode == 35 || keyCode == 9) { // right,  end, tab  (autocomplete triggered)
-        	if (keyCode == 9) { // for tabs we need to ensure that we override the default behaviour: move to the next focusable HTML-element 
-           	    e.preventDefault();
-                e.stopPropagation();
-                if (txtHint.value.length == 0) {
-                	rs.onTab(); // tab was called with no action.
-                	            // users might want to re-enable its default behaviour or handle the call somehow.
-                }
-            }
-            if (txtHint.value.length > 0) { // if there is a hint
-                dropDownController.hide();
-                txtInput.value = txtHint.value;
-                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
-                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
-                                                          // for example imagine the array contains the following words: bee, beef, beetroot
-                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
-                if (hasTextChanged) {
-                    rs.onChange(txtInput.value); // <-- forcing it.
-                }
-            }
-            return; 
-        }
-        
-        if (keyCode == 13) {       // enter  (autocomplete triggered)
-            if (txtHint.value.length == 0) { // if there is a hint
-                rs.onEnter();
-            } else {
-                var wasDropDownHidden = (dropDown.style.visibility == 'hidden');
-                dropDownController.hide();
-                
-                if (wasDropDownHidden) {
-                    txtHint.value = txtInput.value; // ensure that no hint is left.
-                    txtInput.focus();
-                    rs.onEnter();    
-                    return; 
-                }
-                
-                txtInput.value = txtHint.value;
-                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
-                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
-                                                          // for example imagine the array contains the following words: bee, beef, beetroot
-                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
-                if (hasTextChanged) {
-                    rs.onChange(txtInput.value); // <-- forcing it.
-                }
-                
-            }
-            return; 
-        }
-        
-        if (keyCode == 40) {     // down
-            var m = dropDownController.move(+1);
-            if (m == '') { rs.onArrowDown(); }
-            txtHint.value = leftSide+m;
-            return; 
-        } 
-            
-        if (keyCode == 38 ) {    // up
-            var m = dropDownController.move(-1);
-            if (m == '') { rs.onArrowUp(); }
-            txtHint.value = leftSide+m;
-            e.preventDefault();
-            e.stopPropagation();
-            return; 
-        }
-            
-        // it's important to reset the txtHint on key down.
-        // think: user presses a letter (e.g. 'x') and never releases... you get (xxxxxxxxxxxxxxxxx)
-        // and you would see still the hint
-        txtHint.value =''; // resets the txtHint. (it might be updated onKeyUp)
-        
-    };
-    
-    if (txtInput.addEventListener) {
-        txtInput.addEventListener("keydown",  keyDownHandler, false);
-    } else { // is this a fair assumption: that attachEvent will exist ?
-        txtInput.attachEvent('onkeydown', keyDownHandler); // IE<9
+	 name: The short name, e.g. e_coli:iJO1366:central_metabolism.
+
+	 download_url: The url to prepend. (Can be null)
+
+	 type: Either 'model' or 'map'.
+
+	 */
+
+	var parts = name.split(':'),
+	    longname;
+	if (['model', 'map'].indexOf(type) == -1)
+	    throw Error('Bad type: ' + type);
+	if (parts.length != (type=='model' ? 2 : 3))
+            throw Error('Bad ' + type + ' name');
+	if (type=='model')
+	    longname = ['organisms', parts[0], 'models', parts[1]+'.json'].join('/');
+	else
+	    longname = ['organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json'].join('/');
+	if (download_url!==null) {
+	    // strip download_url
+	    download_url = download_url.replace(/^\/|\/$/g, '');
+	    longname = [download_url, longname].join('/');
+	}
+	// strip final path
+	return longname.replace(/^\/|\/$/g, '');
     }
-    return rs;
-}
+
+    function parse_url_components(the_window, options, download_url) {
+	/** Parse the URL and return options based on the URL arguments.
+
+	 Arguments
+	 ---------
+
+	 the_window: A reference to the global window.
+	 
+	 options: (optional) an existing options object to which new options
+	 will be added. Overwrites existing arguments in options.
+
+	 map_download_url: (optional) If map_name is in options, then add map_path
+	 to options, with this url prepended.
+
+	 model_download_url: (optional) If model_name is in options, then add model_path
+	 to options, with this url prepended.
+
+	 Adapted from http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
+
+	 */
+	if (options===undefined) options = {};
+	if (download_url===undefined) download_url = null;
+
+	var query = the_window.location.search.substring(1),
+	    vars = query.split("&");
+	for (var i = 0; i < vars.length; i++) {
+	    var pair = vars[i].split("=");
+	    options[pair[0]] = pair[1];
+	}
+
+	// generate map_path and model_path
+	[
+	    ['map', 'map_name', 'map_path'],
+	    ['model', 'model_name', 'cobra_model_path']
+	].forEach(function(ar) {
+	    var type = ar[0], key = ar[1], path = ar[2];
+	    if (key in options)
+		options[path] = name_to_url(options[key], download_url, type);
+	});
+
+	return options;
+    }    
 });
 
 define('data_styles',["utils"], function(utils) {
@@ -1810,9 +1556,11 @@ define('data_styles',["utils"], function(utils) {
 
 
 
-define('draw',["utils", "data_styles"], function(utils, data_styles) {
+define('draw',['utils', 'data_styles'], function(utils, data_styles) {
     return { create_reaction: create_reaction,
 	     update_reaction: update_reaction,
+	     create_bezier: create_bezier,
+	     update_bezier: update_bezier,
 	     create_node: create_node,
 	     update_node: update_node,
 	     create_text_label: create_text_label,
@@ -1836,10 +1584,10 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
     function update_membrane(update_selection) {
 	utils.check_undefined(arguments, ['enter_selection']);
         update_selection
-            .attr("width", function(d){ return d.width; })
-            .attr("height", function(d){ return d.height; })
-            .attr("transform", function(d){return "translate("+d.x+","+d.y+")";})
-            .style("stroke-width", function(d) { return 10; })
+            .attr('width', function(d){ return d.width; })
+            .attr('height', function(d){ return d.height; })
+            .attr('transform', function(d){return 'translate('+d.x+','+d.y+')';})
+            .style('stroke-width', function(d) { return 10; })
             .attr('rx', function(d){ return 20; })
             .attr('ry', function(d){ return 20; });
     }
@@ -1855,43 +1603,32 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
         return;
     }
 
-    function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
-			     defs, default_reaction_color, has_reaction_data,
-			     reaction_data_styles, bezier_drag_behavior,
-			     label_drag_behavior) {
+    function update_reaction(update_selection, scale, drawn_nodes, 
+			     defs, has_reaction_data,
+			     no_data_style, reaction_data_styles, label_drag_behavior) {
 	utils.check_undefined(arguments,
-			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
-			       'defs', 'default_reaction_color', 'has_reaction_data',
-			       'reaction_data_styles', 'bezier_drag_behavior',
+			      ['update_selection', 'scale', 'drawn_nodes', 
+			       'defs', 'has_reaction_data',
+			       'no_data_style', 'reaction_data_styles',
 			       'label_drag_behavior']);
 
         // update reaction label
         update_selection.select('.reaction-label')
-            .call(function(sel) { return update_reaction_label(sel, has_reaction_data, 
+            .call(function(sel) { return update_reaction_label(sel, has_reaction_data,
 							       reaction_data_styles,
 							       label_drag_behavior); });
 
-        // select segments
-        var sel = update_selection
-                .selectAll('.segment-group')
-                .data(function(d) {
-                    return utils.make_array(d.segments, 'segment_id');
-                }, function(d) { return d.segment_id; });
-
-        // new segments
-        sel.enter().call(create_segment);
-
-        // update segments
-        sel.call(function(sel) { 
-	    return update_segment(sel, scale, drawn_nodes, show_beziers, defs,
-				  default_reaction_color,
-				  has_reaction_data, reaction_data_styles,
-				  bezier_drag_behavior);
-	});
-
-        // old segments
-        sel.exit().remove();
-
+	// draw segments
+	utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
+				   create_segment,
+				   function(sel) { 
+				       return update_segment(sel, scale, drawn_nodes, defs,
+							     has_reaction_data,
+							     no_data_style, reaction_data_styles);
+				   },
+				   function(sel) {
+				       sel.remove();
+				   });
 
 	// new connect lines
 	// var lines = sel
@@ -1926,7 +1663,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	//     update_selection
 	//     	.attr('d', function(d) {
 	//     	    if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
-	//     		return "";
+	//     		return '';
 	//     	    return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
 	//     	});
 	// }
@@ -1940,15 +1677,14 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	 */
 	
         sel.append('text')
-            .attr('class', 'reaction-label label')
-	    .style('cursor', 'default');
-	    // .on("mouseover", function(d) {
+            .attr('class', 'reaction-label label');
+	    // .on('mouseover', function(d) {
 	    // 	d3.select(this).style('stroke-width', String(3)+'px');
 	    // 	d3.select(this.parentNode)
 	    // 	    .selectAll('.connect-line')
 	    // 	    .attr('visibility', 'visible');
 	    // })
-	    // .on("mouseout", function(d) {
+	    // .on('mouseout', function(d) {
 	    // 	d3.select(this).style('stroke-width', String(1)+'px');
 	    // 	d3.select(this.parentNode)
 	    // 	    .selectAll('.connect-line')
@@ -1972,8 +1708,8 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	    return t;
 	}).attr('transform', function(d) {
 	    return 'translate('+d.label_x+','+d.label_y+')';
-	}).style("font-size", function(d) {
-	    return String(30)+"px";
+	}).style('font-size', function(d) {
+	    return String(30)+'px';
         })
 	    .call(turn_off_drag)
 	    .call(label_drag_behavior);
@@ -1994,21 +1730,16 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 
 	g.append('g')
 	    .attr('class', 'arrowheads');
-
-	g.append('g')
-	    .attr('class', 'beziers');
     }
     
-    function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
-			    defs, default_reaction_color,
-			    has_reaction_data, reaction_data_styles,
-			    bezier_drag_behavior) {
+    function update_segment(update_selection, scale, drawn_nodes,
+			    defs, has_reaction_data, no_data_style,
+			    reaction_data_styles) {
 	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
-					  'show_beziers', 'defs',
-					  'default_reaction_color',
+					  'defs',
 					  'has_reaction_data',
-					  'reaction_data_styles',
-					  'bezier_drag_behavior']);
+					  'no_data_style',
+					  'reaction_data_styles']);
 
         // update segment attributes
 	var get_disp = function(reversibility, coefficient) {
@@ -2049,17 +1780,17 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
             .style('stroke', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		    var f = d.data;
-		    return scale.reaction_color(f===null ? 0 : f);
+		    return f===null ? no_data_style['color'] : scale.reaction_color(f);
 		} else {
-		    return default_reaction_color;
+		    return null;
 		}
 	    })
 	    .style('stroke-width', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		    var f = d.data;
-		    return scale.reaction_size(f===null ? 0 : f);
+		    return f===null ? no_data_style['size'] : scale.reaction_size(f);
 		} else {
-		    return scale.reaction_size(0);
+		    return null;
 		}
             });
 
@@ -2105,7 +1836,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	arrowheads.enter().append('path')
 	    .classed('arrowhead', true);
 	// update arrowheads
-	arrowheads.attr("d", function(d) {
+	arrowheads.attr('d', function(d) {
 	    var markerWidth = 20, markerHeight = 13;
 	    if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		var f = d.data;
@@ -2114,7 +1845,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 	    return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
 	}).attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
-	}).attr('fill', function(d) {
+	}).style('fill', function(d) {
 	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		if (d.show_arrowhead_flux) {
 		    // show the flux
@@ -2126,133 +1857,72 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 		}
 	    }
 	    // default fill color
-	    return default_reaction_color;
-	}).attr('stroke', function(d) {
+	    return null;
+	}).style('stroke', function(d) {
 	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		// show the flux color in the stroke whether or not the fill is present
 		var f = d.data;
 		return scale.reaction_color(f===null ? 0 : f);
 	    }
 	    // default stroke color
-	    return default_reaction_color;
-	});;
-	// remove
-	arrowheads.exit().remove();
-
-	// new bezier points
-	var bez = update_selection.select('.beziers')
-		.selectAll('.bezier-group')
-		.data(function(d) {
-		    var beziers = [],
-			reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
-			segment_id = this.parentNode.parentNode.__data__.segment_id;
-		    //TODO fix; this is a bit of a hack
-		    if (d.b1!=null && d.b1.x!=null && d.b1.y!=null)
-			beziers.push({bezier: 1,
-				      x: d.b1.x,
-				      y: d.b1.y,
-				      reaction_id: reaction_id,
-				      segment_id: segment_id });
-		    if (d.b2!=null && d.b2.x!=null && d.b2.y!=null)
-			beziers.push({bezier: 2,
-				      x: d.b2.x,
-				      y: d.b2.y,
-				      reaction_id: reaction_id,
-				      segment_id: segment_id });
-		    return beziers;
-		}, function(d) { return d.bezier; });
-	bez.enter().call(function(sel) {
-	    return create_bezier(sel);
-	});
-	// update bezier points
-	bez.call(function(sel) {
-	    return update_bezier(sel, show_beziers, bezier_drag_behavior, drawn_nodes);
+	    return null;
 	});
 	// remove
-	bez.exit().remove();
+	arrowheads.exit().remove();	
+    }
 
-	// definitions
-	function create_bezier(enter_selection) {
-	    utils.check_undefined(arguments, ['enter_selection']);
+    function create_bezier(enter_selection) {
+	utils.check_undefined(arguments, ['enter_selection']);
 
-	    var g = enter_selection.append('g')
-	    	.attr('class', function(d) { return 'bezier-group'; });
-	    g.append('circle')
-	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
-	    	.style('stroke-width', String(1)+'px')	
-    		.attr('r', String(7)+'px')
-		.on("mouseover", function(d) {
-		    d3.select(this).style('stroke-width', String(3)+'px');
-		    d3.select(this.parentNode.parentNode)
-			.selectAll('.connect-line')
-			.attr('visibility', 'visible');
-		})
-		.on("mouseout", function(d) {
-		    d3.select(this).style('stroke-width', String(1)+'px');
-		    d3.select(this.parentNode.parentNode)
-			.selectAll('.connect-line')
-			.attr('visibility', 'hidden');
-		});
+	var g = enter_selection.append('g')
+		.attr('id', function(d) { return d.bezier_id; })
+	    	.attr('class', function(d) { return 'bezier'; });
+	g.append('path')
+	    .attr('class', 'connect-line');
+	g.append('circle')
+	    .attr('class', function(d) { return 'bezier-circle '+d.bezier; })
+	    .style('stroke-width', String(1)+'px')	
+    	    .attr('r', String(7)+'px');
+    }
+
+    function update_bezier(update_selection, show_beziers, drag_behavior,
+			   mouseover, mouseout, drawn_nodes, drawn_reactions) {
+	utils.check_undefined(arguments, ['update_selection', 'show_beziers',
+					  'drag_behavior', 'mouseover', 'mouseout',
+					  'drawn_nodes', 'drawn_reactions']);
+
+	if (!show_beziers) {
+	    update_selection.attr('visibility', 'hidden');
+	    return;
+	} else {
+	    update_selection.attr('visibility', 'visible');
 	}
-	function update_bezier(update_selection, show_beziers, drag_behavior,
-			       drawn_nodes) {
-	    utils.check_undefined(arguments, ['update_selection', 'show_beziers',
-					      'drag_behavior', 'drawn_nodes']);
-	    
-	    update_selection
-		.call(turn_off_drag)
-		.call(drag_behavior);
-	    if (!show_beziers) {
-	    	update_selection.attr('visibility', 'hidden');
-		return;
-	    }		
-	    
-	    // draw bezier points
-	    update_selection
-		.attr('visibility', 'visible')
-		.attr('transform', function(d) {
-	    	    if (d.x==null || d.y==null) return ""; 
-		    return 'translate('+d.x+','+d.y+')';
-		});
-
-	    // new bezier lines
-	    var bez_lines = update_selection
-		    .selectAll('.connect-line')
-		    .data(function(d) {
-			var bezier_line, node,
-			    segment_d = this.parentNode.parentNode.parentNode.__data__;
-			node = (d.bezier==1 ? 
-				drawn_nodes[segment_d.from_node_id] : 
-				drawn_nodes[segment_d.to_node_id]);
-			bezier_line = { x: d.x,
-					y: d.y,
-					source_x: node.x,
-					source_y: node.y};
-			return [bezier_line];
-		    });
-	    bez_lines.enter().call(function(sel) {
-		return create_bezier_line(sel);
+	
+	// draw bezier points
+	update_selection
+	    .select('.bezier-circle')
+	    .call(turn_off_drag)
+	    .call(drag_behavior)
+	    .on('mouseover', mouseover)
+	    .on('mouseout', mouseout)
+	    .attr('transform', function(d) {
+	    	if (d.x==null || d.y==null) return ''; 
+		return 'translate('+d.x+','+d.y+')';
 	    });
-	    // update bezier lines
-	    bez_lines.call(function(sel) { return update_bezier_line(sel); });
-	    // remove
-	    bez_lines.exit().remove();
 
-	    // definitions
-	    function create_bezier_line(enter_selection) {
-		enter_selection.append('path')
-	    	    .attr('class', function(d) { return 'connect-line'; })
-	    	    .attr('visibility', 'hidden');
-	    }
-	    function update_bezier_line(update_selection) {
-		update_selection
-	    	    .attr('d', function(d) {
-	    		if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
-	    		    return "";
-	    		return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
-	    	    });
-	    }
-	}
+	// update bezier line
+	update_selection
+	    .select('.connect-line')
+	    .attr('d', function(d) {
+		var node,
+		    segment_d = drawn_reactions[d.reaction_id].segments[d.segment_id];
+		node = (d.bezier=='b1' ? 
+			drawn_nodes[segment_d.from_node_id] : 
+			drawn_nodes[segment_d.to_node_id]);		
+	    	if (d.x==null || d.y==null || node.x==null || node.y==null)
+	    	    return '';
+	    	return 'M'+d.x+', '+d.y+' '+(node.x)+','+(node.y);
+	    });
     }
 
     function create_node(enter_selection, drawn_nodes, drawn_reactions) {
@@ -2269,15 +1939,16 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
         // create metabolite circle and label
         g.append('circle')
 	    .attr('class', function(d) {
-		if (d.node_type=='metabolite') return 'node-circle metabolite-circle';
-		else return 'node-circle';
+		var c = 'node-circle';
+		if (d.node_type!==null)
+		    c += (' ' + d.node_type + '-circle');
+		return c;
 	    });
             // .style('stroke-width', '2px');
 
         g.filter(function(d) { return d.node_type=='metabolite'; })
 	    .append('text')
-	    .attr('class', 'node-label label')
-	    .style('cursor', 'default');
+	    .attr('class', 'node-label label');
     }
 
     function update_node(update_selection, scale, has_metabolite_data, metabolite_data_styles,
@@ -2318,7 +1989,7 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 		})
 		.call(turn_off_drag)
 		.call(drag_behavior)
-		.on("click", click_fn)
+		.on('click', click_fn)
 		.on('mouseover', mouseover_fn)
 		.on('mouseout', mouseout_fn);
 
@@ -2327,8 +1998,8 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
             .attr('transform', function(d) {
                 return 'translate('+d.label_x+','+d.label_y+')';
             })
-            .style("font-size", function(d) {
-		return String(20)+"px";
+            .style('font-size', function(d) {
+		return String(20)+'px';
             })
             .text(function(d) {	
 		var t = d.bigg_id;
@@ -2343,17 +2014,20 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
     function create_text_label(enter_selection) {
 	utils.check_undefined(arguments, ['enter_selection']);
 
-	enter_selection.append('text')
-	    .attr('class', 'text-label label')
-	    .style('cursor', 'default')
-	    .text(function(d) { return d.text; });
+	enter_selection.append('g')
+	    .attr('id', function(d) { return 'l'+d.text_label_id; })
+	    .attr('class', 'text-label')
+	    .append('text')
+	    .attr('class', 'label');
     }
 
     function update_text_label(update_selection, label_click, label_drag_behavior) {
 	utils.check_undefined(arguments, ['update_selection', 'label_click', 'label_drag_behavior']);
 
         update_selection
-            .attr("transform", function(d) { return "translate("+d.x+","+d.y+")";})
+	    .select('.label')
+	    .text(function(d) { return d.text; })
+            .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
 	    .on('click', label_click)
 	    .call(turn_off_drag)
 	    .call(label_drag_behavior);
@@ -2380,7 +2054,12 @@ define('draw',["utils", "data_styles"], function(utils, data_styles) {
 define('build',["utils"], function(utils) {
     return { new_reaction: new_reaction,
 	     rotate_nodes: rotate_nodes,
-	     move_node_and_dependents: move_node_and_dependents };
+	     move_node_and_dependents: move_node_and_dependents,
+	     new_text_label: new_text_label,
+	     bezier_id_for_segment_id: bezier_id_for_segment_id,
+	     bezier_ids_for_reaction_ids: bezier_ids_for_reaction_ids,
+	     new_beziers_for_segments: new_beziers_for_segments,
+	     new_beziers_for_reactions: new_beziers_for_reactions };
     
     // definitions
     function new_reaction(bigg_id, cobra_reaction, cobra_metabolites,
@@ -2606,20 +2285,25 @@ define('build',["utils"], function(utils) {
 	var new_reactions = {};
 	new_reactions[new_reaction_id] = new_reaction;
 	
+	// new_beziers object
+	var new_beziers = new_beziers_for_reactions(new_reactions);
+
 	// add the selected node for rotation, and return it as a new (updated) node
 	new_nodes[selected_node_id] = selected_node;
-	var updated = rotate_nodes(new_nodes, new_reactions,
-				   angle, selected_node_coords);
+	rotate_nodes(new_nodes, new_reactions, new_beziers,
+		     angle, selected_node_coords);
 
 	return { new_reactions: new_reactions,
+		 new_beziers: new_beziers,
 		 new_nodes: new_nodes };
     }
 
-    function rotate_nodes(selected_nodes, reactions, angle, center) {
+    function rotate_nodes(selected_nodes, reactions, beziers, angle, center) {
 	/** Rotate the nodes around center.
 
 	 selected_nodes: Nodes to rotate.
 	 reactions: Only updates beziers for these reactions.
+	 beziers: Also update the bezier points.
 	 angle: Angle to rotate in radians.
 	 center: Point to rotate around.
 
@@ -2648,13 +2332,20 @@ define('build',["utils"], function(utils) {
 		if (reaction === undefined) return;
 
 		// rotate the beziers
-		var segment = reaction.segments[segment_obj.segment_id];
+		var segment_id = segment_obj.segment_id,
+		    segment = reaction.segments[segment_id];
 		if (segment.to_node_id==node_id && segment.b2) {
-		    var displacement = rotate_around(segment.b2);
+		    var displacement = rotate_around(segment.b2),
+			bez_id = bezier_id_for_segment_id(segment_id, 'b2');
 		    segment.b2 = utils.c_plus_c(segment.b2, displacement);
+		    beziers[bez_id].x = segment.b2.x;
+		    beziers[bez_id].y = segment.b2.y; 
 		} else if (segment.from_node_id==node_id && segment.b1) {
-		    var displacement = rotate_around(segment.b1);
+		    var displacement = rotate_around(segment.b1),
+			bez_id = bezier_id_for_segment_id(segment_id, 'b1');
 		    segment.b1 = utils.c_plus_c(segment.b1, displacement);
+		    beziers[bez_id].x = segment.b1.x;
+		    beziers[bez_id].y = segment.b1.y; 
 		}
 	    });
 
@@ -2667,7 +2358,7 @@ define('build',["utils"], function(utils) {
 		 reaction_ids: updated_reaction_ids };
     }
     
-    function move_node_and_dependents(node, node_id, reactions, displacement) {
+    function move_node_and_dependents(node, node_id, reactions, beziers, displacement) {
 	/** Move the node and its labels and beziers.
 
 	 */
@@ -2680,13 +2371,19 @@ define('build',["utils"], function(utils) {
 	    if (reaction === undefined) return;
 
 	    // update beziers
-	    var segment = reaction.segments[segment_obj.segment_id];
-	    if (segment.from_node_id==node_id && segment.b1) {
-		segment.b1 = utils.c_plus_c(segment.b1, displacement);
-	    }
-	    if (segment.to_node_id==node_id && segment.b2) {
-		segment.b2 = utils.c_plus_c(segment.b2, displacement);
-	    }
+	    var segment_id = segment_obj.segment_id,
+		segment = reaction.segments[segment_id];
+	    [['b1', 'from_node_id'], ['b2', 'to_node_id']].forEach(function(c) {
+		var bez = c[0],
+		    node = c[1];
+		if (segment[node]==node_id && segment[bez]) {
+		    segment[bez] = utils.c_plus_c(segment[bez], displacement);
+		    var tbez = beziers[bezier_id_for_segment_id(segment_id, bez)];
+		    tbez.x = segment[bez].x;
+		    tbez.y = segment[bez].y;
+		}
+	    });
+	    
 	    // add to list of updated reaction ids if it isn't already there
 	    if (updated.reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
 	        updated.reaction_ids.push(segment_obj.reaction_id);
@@ -2801,6 +2498,96 @@ define('build',["utils"], function(utils) {
 	loc.circle = utils.c_plus_c(displacement, circle);
         return loc;
     }
+
+    function new_text_label(largest_ids, text, coords) {
+	var new_id = String(++largest_ids.text_labels),
+	    new_label = { text: text,
+			  x: coords.x,
+			  y: coords.y };
+	return {id: new_id, label: new_label};
+    }
+
+    function bezier_id_for_segment_id(segment_id, bez) {
+	return segment_id+'_'+bez;
+    }
+
+    function bezier_ids_for_reaction_ids(reactions) {
+	/** Return an array of beziers ids for the array of reaction ids.
+
+	 Arguments
+	 ---------
+
+	 reactions: A reactions object, e.g. a subset of *escher.Map.reactions*.
+
+	 */ 
+	var bezier_ids = [];
+	for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id];
+
+	    for (var segment_id in reaction.segments) {
+		var segment = reaction.segments[segment_id];
+
+		['b1', 'b2'].forEach(function(bez) {
+		    var seg_bez = segment[bez];
+		    if (seg_bez !== null) {
+			bezier_ids.push(bezier_id_for_segment_id(segment_id, bez));
+		    }
+		});
+	    }
+	}
+	return bezier_ids;
+    }
+
+    function new_beziers_for_segments(segments, reaction_id) {
+	/** Return an object containing beziers for the segments object.
+
+	 Arguments
+	 ---------
+
+	 segments: A segments object, e.g. *escher.Map.segments*.
+
+	 reaction_id: The reaction id for the segments.
+
+	 */
+	var beziers = {};
+	for (var segment_id in segments) {
+	    var segment = segments[segment_id];
+
+	    ['b1', 'b2'].forEach(function(bez) {
+		var seg_bez = segment[bez];
+		if (seg_bez !== null) {
+		    var bezier_id = bezier_id_for_segment_id(segment_id, bez);
+		    beziers[bezier_id] = {
+			bezier: bez,
+	    		x: seg_bez.x,
+	    		y: seg_bez.y,
+	    		reaction_id: reaction_id,
+	    		segment_id: segment_id
+		    };
+		}
+	    });
+	}
+	return beziers;
+    }
+
+    function new_beziers_for_reactions(reactions) {
+	/** Return an object containing beziers for the reactions object.
+
+	 Arguments
+	 ---------
+
+	 reactions: A reactions object, e.g. *escher.Map.reactions*.
+
+	 */
+	var beziers = {};
+	for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id];
+
+	    var these = new_beziers_for_segments(reaction.segments, reaction_id);
+	    utils.extend(beziers, these);
+	}
+	return beziers;
+    }
 });
 
 define('Behavior',["utils", "build"], function(utils, build) {
@@ -2809,10 +2596,22 @@ define('Behavior',["utils", "build"], function(utils, build) {
 
      Has the following attributes:
 
-     Behavior.node_click
-     Behavior.node_drag
-     Behavior.bezier_drag
-     Behavior.label_drag
+     Behavior.rotation_drag:
+
+     Behavior.selectable_click:
+
+     Behavior.node_mouseover:
+
+     Behavior.node_mouseout:
+
+     Behavior.selectable_drag:
+
+     Behavior.bezier_drag:
+
+     Behavior.reaction_label_drag:
+
+     Behavior.node_label_drag:
+
      */
 
     var Behavior = utils.make_class();
@@ -2820,16 +2619,19 @@ define('Behavior',["utils", "build"], function(utils, build) {
 			   toggle_rotation_mode: toggle_rotation_mode,
 			   turn_everything_on: turn_everything_on,
 			   turn_everything_off: turn_everything_off,
-			   toggle_node_click: toggle_node_click,
-			   toggle_node_drag: toggle_node_drag,
-			   toggle_text_label_click: toggle_text_label_click,
+			   // toggle
+			   toggle_selectable_click: toggle_selectable_click,
+			   toggle_text_label_edit: toggle_text_label_edit,
+			   toggle_selectable_drag: toggle_selectable_drag,
 			   toggle_label_drag: toggle_label_drag,
-			   get_node_drag: get_node_drag,
-			   get_bezier_drag: get_bezier_drag,
-			   get_reaction_label_drag: get_reaction_label_drag,
-			   get_node_label_drag: get_node_label_drag,
-			   get_text_label_drag: get_text_label_drag,
-			   get_generic_drag: get_generic_drag };
+			   toggle_bezier_drag: toggle_bezier_drag,
+			   // get drag behaviors
+			   _get_selectable_drag: _get_selectable_drag,
+			   _get_bezier_drag: _get_bezier_drag,
+			   _get_reaction_label_drag: _get_reaction_label_drag,
+			   _get_node_label_drag: _get_node_label_drag,
+			   _get_generic_drag: _get_generic_drag,
+			   _get_generic_angular_drag: _get_generic_angular_drag };
 
     return Behavior;
 
@@ -2845,34 +2647,33 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	this.rotation_mode_enabled = false;
 	this.rotation_drag = d3.behavior.drag();
 
-	// init empty
-	this.node_click = null;
+	// behaviors to be applied
+	this.selectable_click = null;
+	this.text_label_click = null;
+	this.selectable_drag = this.empty_behavior;
 	this.node_mouseover = null;
 	this.node_mouseout = null;
-	this.node_drag = this.empty_behavior;
 	this.bezier_drag = this.empty_behavior;
+	this.bezier_mouseover = null;
+	this.bezier_mouseout = null;
 	this.reaction_label_drag = this.empty_behavior;
 	this.node_label_drag = this.empty_behavior;
-	this.text_label_click = null;
-	this.text_label_drag = this.empty_behavior;
 	this.turn_everything_on();
     }
     function turn_everything_on() {
-	/** Toggle everything except rotation mode.
-
+	/** Toggle everything except rotation mode and text mode.
+	 
 	 */
-	this.toggle_node_click(true);
-	this.toggle_node_drag(true);
-	this.toggle_text_label_click(true);
+	this.toggle_selectable_click(true);
+	this.toggle_selectable_drag(true);
 	this.toggle_label_drag(true);
     }
     function turn_everything_off() {
-	/** Toggle everything except rotation mode.
+	/** Toggle everything except rotation mode and text mode.
 
 	 */
-	this.toggle_node_click(false);
-	this.toggle_node_drag(false);
-	this.toggle_text_label_click(false);
+	this.toggle_selectable_click(false);
+	this.toggle_selectable_drag(false);
 	this.toggle_label_drag(false);
     }
 
@@ -2894,7 +2695,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    
 	    var selected_nodes = this.map.get_selected_nodes();
 	    if (Object.keys(selected_nodes).length == 0) {
-		console.log('No selected nodes');
+		console.warn('No selected nodes');
 		return;
 	    }
 	    
@@ -2906,49 +2707,50 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    var map = this.map,
 		selected_node_ids = Object.keys(selected_nodes),
 		reactions = this.map.reactions,
-		nodes = this.map.nodes;
+		nodes = this.map.nodes,
+		beziers = this.map.beziers;
 
 	    var start_fn = function(d) {
 		// silence other listeners
 		d3.event.sourceEvent.stopPropagation();
 	    },
-		drag_fn = function(d, displacement, total_displacement, location) {
-		    var angle = utils.angle_for_event(displacement,
-						location,
-						this.center);
+		drag_fn = function(d, angle, total_angle, center) {
 		    var updated = build.rotate_nodes(selected_nodes, reactions,
-						     angle, this.center);
+						     beziers, angle, center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
-		}.bind(this),
+		},
 		end_fn = function(d) {},
-		undo_fn = function(d, displacement, location) {
+		undo_fn = function(d, total_angle, center) {
 		    // undo
-		    var total_angle = utils.angle_for_event(displacement,
-						      location,
-						      this.center);
-
 		    var these_nodes = {};
-		    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+		    selected_node_ids.forEach(function(id) { 
+			these_nodes[id] = nodes[id];
+		    });
 		    var updated = build.rotate_nodes(these_nodes, reactions,
-						     -total_angle, utils.clone(this.center));
+						     beziers, -total_angle,
+						     center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
-		}.bind(this),
-		redo_fn = function(d, displacement, location) {
+		},
+		redo_fn = function(d, total_angle, center) {
 		    // redo
-		    var total_angle = utils.angle_for_event(displacement,
-						      location,
-						      this.center),
-			these_nodes = {};
-		    selected_node_ids.forEach(function(id) { these_nodes[id] = nodes[id]; });
+		    var these_nodes = {};
+		    selected_node_ids.forEach(function(id) {
+			these_nodes[id] = nodes[id];
+		    });
 		    var updated = build.rotate_nodes(these_nodes, reactions,
-						     total_angle, utils.clone(this.center));
+						     beziers, total_angle,
+						     center);
 		    map.draw_these_nodes(updated.node_ids);
 		    map.draw_these_reactions(updated.reaction_ids);
+		},
+		center_fn = function() {
+		    return this.center;
 		}.bind(this);
-	    this.rotation_drag = this.get_generic_drag(start_fn, drag_fn, end_fn,
-						       undo_fn, redo_fn, this.map.sel);
+	    this.rotation_drag = this._get_generic_angular_drag(start_fn, drag_fn, end_fn,
+								undo_fn, redo_fn, center_fn,
+								this.map.sel);
 	    selection_background.call(this.rotation_drag);
 
 
@@ -3011,17 +2813,18 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	}	
     }
 
-    function toggle_node_click(on_off) {
+    function toggle_selectable_click(on_off) {
 	/** With no argument, toggle the node click on or off.
 
 	 Pass in a boolean argument to set the on/off state.
 
 	 */
-	if (on_off===undefined) on_off = this.node_click==null;
+	if (on_off===undefined) on_off = this.selectable_click==null;
 	if (on_off) {
 	    var map = this.map;
-	    this.node_click = function(d) {
-		map.select_metabolite(this, d);
+	    this.selectable_click = function(d) {
+		if (d3.event.defaultPrevented) return; // click suppressed
+		map.select_selectable(this, d);
 		d3.event.stopPropagation();
 	    };
 	    this.node_mouseover = function(d) {	   
@@ -3033,42 +2836,65 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		d3.select(this).style('stroke-width', null);
 	    };
 	} else {
-	    this.node_click = null;
+	    this.selectable_click = null;
 	    this.node_mouseover = null;
 	    this.node_mouseout = null;
 	    this.map.sel.select('#nodes')
 		.selectAll('.node-circle').style('stroke-width', null);
 	}
     }
-    function toggle_text_label_click(on_off) {
-	/** With no argument, toggle the node click on or off.
+
+    function toggle_text_label_edit(on_off) {
+	/** With no argument, toggle the text edit on click on/off.
 
 	 Pass in a boolean argument to set the on/off state.
 
+	 The backup state is equal to selectable_click.
+
 	 */
-	if (on_off===undefined) on_off = this.text_label_click==null;
+	if (on_off===undefined) on_off = this.text_edit_click==null;
 	if (on_off) {
-	    var map = this.map;
-	    this.text_label_click = function(d) {
-		map.select_text_label(this, d);
+	    var map = this.map,
+		selection = this.selection;
+	    this.text_label_click = function() {
+		if (d3.event.defaultPrevented) return; // click suppressed
+		// run the callback
+		var coords_a = d3.transform(d3.select(this).attr('transform')).translate,
+		    coords = {x: coords_a[0], y: coords_a[1]};
+		map.callback_manager.run('edit_text_label', d3.select(this), coords);
 		d3.event.stopPropagation();
 	    };
+	    this.map.sel.select('#text-labels')
+		.selectAll('.label')
+		.classed('edit-text-cursor', true);
+	    // add the new-label listener
+	    this.map.sel.on('click.new_text_label', function(node) {
+		var coords = { x: d3.mouse(node)[0],
+			       y: d3.mouse(node)[1] };
+		this.map.callback_manager.run('new_text_label', coords);
+	    }.bind(this, this.map.sel.node()));
 	} else {
-	    this.text_label_click = null;
+	    this.text_label_click = this.selectable_click;
+	    this.map.sel.select('#text-labels')
+		.selectAll('.label')
+		.classed('edit-text-cursor', false);
+	    // remove the new-label listener
+	    this.map.sel.on('click.new_text_label', null);
 	}
     }
-    function toggle_node_drag(on_off) {
+
+    function toggle_selectable_drag(on_off) {
 	/** With no argument, toggle the node drag & bezier drag on or off.
 
 	 Pass in a boolean argument to set the on/off state.
 
 	 */
-	if (on_off===undefined) on_off = this.node_drag===this.empty_behavior;
+	if (on_off===undefined) on_off = this.selectable_drag===this.empty_behavior;
 	if (on_off) {
-	    this.node_drag = this.get_node_drag(this.map, this.undo_stack);
-	    this.bezier_drag = this.get_bezier_drag(this.map, this.undo_stack);
+	    this.selectable_drag = this._get_selectable_drag(this.map, this.undo_stack);
+	    this.bezier_drag = this._get_bezier_drag(this.map, this.undo_stack);
 	} else {
-	    this.node_drag = this.empty_behavior;
+	    this.selectable_drag = this.empty_behavior;
 	    this.bezier_drag = this.empty_behavior;
 	}
     }
@@ -3080,86 +2906,158 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	 */
 	if (on_off===undefined) on_off = this.label_drag===this.empty_behavior;
 	if (on_off) {
-	    this.reaction_label_drag = this.get_reaction_label_drag(this.map);
-	    this.node_label_drag = this.get_node_label_drag(this.map);
-	    this.text_label_drag = this.get_text_label_drag(this.map);
+	    this.reaction_label_drag = this._get_reaction_label_drag(this.map);
+	    this.node_label_drag = this._get_node_label_drag(this.map);
 	} else {
 	    this.reaction_label_drag = this.empty_behavior;
 	    this.node_label_drag = this.empty_behavior;
-	    this.text_label_drag = this.empty_behavior;
 	}
     }
 
-    function get_node_drag(map, undo_stack) {
+    function toggle_bezier_drag(on_off) {
+	/** With no argument, toggle the bezier drag on or off.
+
+	 Pass in a boolean argument to set the on/off state.
+
+	 */
+	if (on_off===undefined) on_off = this.bezier_drag===this.empty_behavior;
+	if (on_off) {
+	    this.bezier_drag = this._get_bezier_drag(this.map);
+	    this.bezier_mouseover = function(d) {
+		d3.select(this).style('stroke-width', String(3)+'px');
+		// d3.select(this.parentNode.parentNode)
+		//     .selectAll('.connect-line')
+		//     .attr('visibility', 'visible');
+	    };
+	    this.bezier_mouseout = function(d) {
+		d3.select(this).style('stroke-width', String(1)+'px');
+		// d3.select(this.parentNode.parentNode)
+		//     .selectAll('.connect-line')
+		//     .attr('visibility', 'hidden');
+	    };
+	} else {
+	    this.bezier_drag = this.empty_behavior;
+	    this.bezier_mouseover = null;
+	    this.bezier_mouseout = null;
+	}
+    }
+
+    function _get_selectable_drag(map, undo_stack) {
+	/** Drag the selected nodes and text labels.
+
+	 */
+
 	// define some variables
 	var behavior = d3.behavior.drag(),
+	    the_timeout = null,
 	    total_displacement = null,
-	    nodes_to_drag = null,
+	    // for nodes
+	    node_ids_to_drag = null,
 	    reaction_ids = null,
-	    the_timeout = null;
+	    // for text labels
+	    text_label_ids_to_drag = null,
+	    move_label = function(text_label_id, displacement) {
+    		var text_label = map.text_labels[text_label_id];
+    		text_label.x = text_label.x + displacement.x;
+    		text_label.y = text_label.y + displacement.y;
+    	    };
 
         behavior.on("dragstart", function () { 
-	    // Note that dragstart is called even for a click event
-	    var data = this.parentNode.__data__,
-		bigg_id = data.bigg_id,
-		node_group = this.parentNode;
 	    // silence other listeners
 	    d3.event.sourceEvent.stopPropagation();
 	    // remember the total displacement for later
-	    total_displacement = {};
-	    // Move element to back (for the next step to work). Wait 200ms
-	    // before making the move, becuase otherwise the element will be
-	    // deleted before the click event gets called, and selection
-	    // will stop working.
-	    the_timeout = window.setTimeout(function() {
-		node_group.parentNode.insertBefore(node_group,node_group.parentNode.firstChild);
-	    }, 200);
-	    // prepare to combine metabolites
-	    map.sel.selectAll('.metabolite-circle')
-		.on('mouseover.combine', function(d) {
-		    if (d.bigg_id==bigg_id && d.node_id!=data.node_id) {
-			d3.select(this).style('stroke-width', String(12)+'px')
-			    .classed('node-to-combine', true);
-		    }
-		}).on('mouseout.combine', function(d) {
-		    if (d.bigg_id==bigg_id) {
-			map.sel.selectAll('.node-to-combine').style('stroke-width', String(2)+'px')
-			    .classed('node-to-combine', false);
-		    }
-		});
+	    // total_displacement = {};
+	    total_displacement = {x: 0, y: 0};
+
+	    // If a text label is selected, the rest is not necessary
+	    if (d3.select(this).attr('class').indexOf('label')==-1) {		
+		// Note that dragstart is called even for a click event
+		var data = this.parentNode.__data__,
+		    bigg_id = data.bigg_id,
+		    node_group = this.parentNode;
+		// Move element to back (for the next step to work). Wait 200ms
+		// before making the move, becuase otherwise the element will be
+		// deleted before the click event gets called, and selection
+		// will stop working.
+		the_timeout = window.setTimeout(function() {
+		    node_group.parentNode.insertBefore(node_group,node_group.parentNode.firstChild);
+		}, 200);
+		// prepare to combine metabolites
+		map.sel.selectAll('.metabolite-circle')
+		    .on('mouseover.combine', function(d) {
+			if (d.bigg_id==bigg_id && d.node_id!=data.node_id) {
+			    d3.select(this).style('stroke-width', String(12)+'px')
+				.classed('node-to-combine', true);
+			}
+		    }).on('mouseout.combine', function(d) {
+			if (d.bigg_id==bigg_id) {
+			    map.sel.selectAll('.node-to-combine').style('stroke-width', String(2)+'px')
+				.classed('node-to-combine', false);
+			}
+		    });
+	    }
 	});
         behavior.on("drag", function() {
-	    var grabbed_id = this.parentNode.__data__.node_id, 
-		selected_ids = map.get_selected_node_ids();
-	    nodes_to_drag = [];
-	    // choose the nodes to drag
-	    if (selected_ids.indexOf(grabbed_id)==-1) { 
-		nodes_to_drag.push(grabbed_id);
+	    // get the grabbed id
+	    var grabbed = {};
+	    if (d3.select(this).attr('class').indexOf('label')==-1) {
+		// if it is a node
+		grabbed['type'] = 'node';
+		grabbed['id'] = this.parentNode.__data__.node_id;
 	    } else {
-		nodes_to_drag = selected_ids;
+		// if it is a text label
+		grabbed['type'] = 'label';
+		grabbed['id'] = this.__data__.text_label_id;
+	    }
+
+	    var selected_node_ids = map.get_selected_node_ids(),
+		selected_text_label_ids = map.get_selected_text_label_ids();
+	    node_ids_to_drag = []; text_label_ids_to_drag = [];
+	    // choose the nodes and text labels to drag
+	    if (grabbed['type']=='node' && 
+		selected_node_ids.indexOf(grabbed['id'])==-1) { 
+		node_ids_to_drag.push(grabbed['id']);
+	    } else if (grabbed['type']=='label' && 
+		       selected_text_label_ids.indexOf(grabbed['id'])==-1) {
+		text_label_ids_to_drag.push(grabbed['id']);
+	    } else {
+		node_ids_to_drag = selected_node_ids;
+		text_label_ids_to_drag = selected_text_label_ids;
 	    }
 	    reaction_ids = [];
-	    nodes_to_drag.forEach(function(node_id) {
+	    var displacement = { x: d3.event.dx,
+				 y: d3.event.dy };
+	    total_displacement = utils.c_plus_c(total_displacement, displacement);
+	    node_ids_to_drag.forEach(function(node_id) {
 		// update data
 		var node = map.nodes[node_id],
-		    displacement = { x: d3.event.dx,
-				     y: d3.event.dy },
-		    updated = build.move_node_and_dependents(node, node_id, map.reactions, displacement);
+		    updated = build.move_node_and_dependents(node, node_id,
+							     map.reactions,
+							     map.beziers,
+							     displacement);
 		reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids]);
 		// remember the displacements
-		if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 };
-		total_displacement[node_id] = utils.c_plus_c(total_displacement[node_id], displacement);
+		// if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 };
+		// total_displacement[node_id] = utils.c_plus_c(total_displacement[node_id], displacement);
+	    });
+	    text_label_ids_to_drag.forEach(function(text_label_id) {
+    		move_label(text_label_id, displacement);		
+		// remember the displacements
+		// if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 };
+		// total_displacement[node_id] = utils.c_plus_c(total_displacement[node_id], displacement);
 	    });
 	    // draw
-	    map.draw_these_nodes(nodes_to_drag);
+	    map.draw_these_nodes(node_ids_to_drag);
 	    map.draw_these_reactions(reaction_ids);
+    	    map.draw_these_text_labels(text_label_ids_to_drag);
 	});
 	behavior.on("dragend", function() {
-	    if (nodes_to_drag===null) {
+	    if (node_ids_to_drag===null) {
 		// Dragend can be called when drag has not been called. In this,
 		// case, do nothing.
 		total_displacement = null;
-		nodes_to_drag = null;
+		node_ids_to_drag = null;
+		text_label_ids_to_drag = null;
 		reaction_ids = null;
 		the_timeout = null;
 		return;
@@ -3213,26 +3111,38 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		var saved_displacement = utils.clone(total_displacement), 
 		    // BUG TODO this variable disappears!
 		    // Happens sometimes when you drag a node, then delete it, then undo twice
-		    saved_node_ids = utils.clone(nodes_to_drag),
+		    saved_node_ids = utils.clone(node_ids_to_drag),
+		    saved_text_label_ids = utils.clone(text_label_ids_to_drag),
 		    saved_reaction_ids = utils.clone(reaction_ids);
 		undo_stack.push(function() {
 		    // undo
 		    saved_node_ids.forEach(function(node_id) {
 			var node = map.nodes[node_id];
 			build.move_node_and_dependents(node, node_id, map.reactions,
-						       utils.c_times_scalar(saved_displacement[node_id], -1));
+						       map.beziers,
+						       utils.c_times_scalar(saved_displacement, -1));
+		    });
+		    saved_text_label_ids.forEach(function(text_label_id) {
+			move_label(text_label_id, 
+				   utils.c_times_scalar(saved_displacement, -1));
 		    });
 		    map.draw_these_nodes(saved_node_ids);
 		    map.draw_these_reactions(saved_reaction_ids);
+		    map.draw_these_text_labels(saved_text_label_ids);
 		}, function () {
 		    // redo
 		    saved_node_ids.forEach(function(node_id) {
 			var node = map.nodes[node_id];
 			build.move_node_and_dependents(node, node_id, map.reactions,
-						       saved_displacement[node_id]);
+						       map.beziers,
+						       saved_displacement);
+		    });		    
+		    saved_text_label_ids.forEach(function(text_label_id) {
+			move_label(text_label_id, saved_displacement);
 		    });
 		    map.draw_these_nodes(saved_node_ids);
 		    map.draw_these_reactions(saved_reaction_ids);
+		    map.draw_these_text_labels(saved_text_label_ids);
 		});
 	    }
 
@@ -3246,7 +3156,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
 
 	    // clear the shared variables
 	    total_displacement = null;
-	    nodes_to_drag = null;
+	    node_ids_to_drag = null;
+	    text_label_ids_to_drag = null;
 	    reaction_ids = null;
 	    the_timeout = null;
 	});
@@ -3278,33 +3189,42 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	    return updated_segment_objs;
 	}
     }
-    function get_bezier_drag(map) {
-	var move_bezier = function(reaction_id, segment_id, bezier, displacement) {
+    function _get_bezier_drag(map) {
+	var move_bezier = function(reaction_id, segment_id, bez, bezier_id, displacement) {
 	    var segment = map.reactions[reaction_id].segments[segment_id];
-	    segment['b'+bezier] = utils.c_plus_c(segment['b'+bezier], displacement);
+	    segment[bez] = utils.c_plus_c(segment[bez], displacement);
+	    map.beziers[bezier_id].x = segment[bez].x;
+	    map.beziers[bezier_id].y = segment[bez].y;
 	},
 	    start_fn = function(d) {
+		d.dragging = true;
 	    },
 	    drag_fn = function(d, displacement, total_displacement) {
 		// draw
-		move_bezier(d.reaction_id, d.segment_id, d.bezier, displacement);
-		map.draw_these_reactions([d.reaction_id]);
+		move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
+			    displacement);
+		map.draw_these_reactions([d.reaction_id], false);
+		map.draw_these_beziers([d.bezier_id]);
 	    },
 	    end_fn = function(d) {
+		d.dragging = false;
 	    },
 	    undo_fn = function(d, displacement) {
-		move_bezier(d.reaction_id, d.segment_id, d.bezier,
+		move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
 			    utils.c_times_scalar(displacement, -1));
-		map.draw_these_reactions([d.reaction_id]);
+		map.draw_these_reactions([d.reaction_id], false);
+		map.draw_these_beziers([d.bezier_id]);
 	    },
 	    redo_fn = function(d, displacement) {
-		move_bezier(d.reaction_id, d.segment_id, d.bezier, displacement);
-		map.draw_these_reactions([d.reaction_id]);
+		move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
+			    displacement);
+		map.draw_these_reactions([d.reaction_id], false);
+		map.draw_these_beziers([d.bezier_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-				     redo_fn, this.map.sel);
+	return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				      redo_fn, this.map.sel);
     }
-    function get_reaction_label_drag(map) {
+    function _get_reaction_label_drag(map) {
 	var move_label = function(reaction_id, displacement) {
 	    var reaction = map.reactions[reaction_id];
 	    reaction.label_x = reaction.label_x + displacement.x;
@@ -3327,10 +3247,10 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		move_label(d.reaction_id, displacement);
 		map.draw_these_reactions([d.reaction_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-				     redo_fn, this.map.sel);
+	return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				      redo_fn, this.map.sel);
     }
-    function get_node_label_drag(map) {
+    function _get_node_label_drag(map) {
 	var move_label = function(node_id, displacement) {
 	    var node = map.nodes[node_id];
 	    node.label_x = node.label_x + displacement.x;
@@ -3353,36 +3273,11 @@ define('Behavior',["utils", "build"], function(utils, build) {
 		move_label(d.node_id, displacement);
 		map.draw_these_nodes([d.node_id]);
 	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-				     redo_fn, this.map.sel);
+	return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
+				      redo_fn, this.map.sel);
     }
-    function get_text_label_drag(map) {
-	var move_label = function(text_label_id, displacement) {
-	    var text_label = map.text_labels[text_label_id];
-	    text_label.x = text_label.x + displacement.x;
-	    text_label.y = text_label.y + displacement.y;
-	},
-	    start_fn = function(d) {
-	    },
-	    drag_fn = function(d, displacement, total_displacement) {
-		// draw
-		move_label(d.text_label_id, displacement);
-		map.draw_these_text_labels([d.text_label_id]);
-	    },
-	    end_fn = function(d) {
-	    },
-	    undo_fn = function(d, displacement) {
-		move_label(d.text_label_id, utils.c_times_scalar(displacement, -1));
-		map.draw_these_text_labels([d.text_label_id]);
-	    },
-	    redo_fn = function(d, displacement) {
-		move_label(d.text_label_id, displacement);
-		map.draw_these_text_labels([d.text_label_id]);
-	    };
-	return this.get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-				     redo_fn, this.map.sel);
-    }
-    function get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, relative_to_selection) {
+
+    function _get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, relative_to_selection) {
 	/** Make a generic drag behavior, with undo/redo.
 
 	 start_fn: function(d) Called at dragstart.
@@ -3442,6 +3337,73 @@ define('Behavior',["utils", "build"], function(utils, build) {
 	});
 	return behavior;
     }
+
+    function _get_generic_angular_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, 
+				       get_center, relative_to_selection) {
+	/** Make a generic drag behavior, with undo/redo. Supplies angles in
+	 place of displacements.
+
+	 start_fn: function(d) Called at dragstart.
+
+	 drag_fn: function(d, displacement, total_displacement) Called during
+	 drag.
+
+	 end_fn:
+
+	 undo_fn:
+
+	 redo_fn:
+
+	 get_center:
+
+	 relative_to_selection: a d3 selection that the locations are calculated against.
+
+	 */
+	
+	// define some variables
+	var behavior = d3.behavior.drag(),
+	    total_angle,
+	    undo_stack = this.undo_stack,
+	    rel = relative_to_selection.node();
+
+        behavior.on("dragstart", function (d) {
+	    // silence other listeners
+	    d3.event.sourceEvent.stopPropagation();
+	    total_angle = 0;
+	    start_fn(d);
+	});
+        behavior.on("drag", function(d) {
+	    // update data
+	    var displacement = { x: d3.event.dx,
+				 y: d3.event.dy },
+		location = { x: d3.mouse(rel)[0],
+			     y: d3.mouse(rel)[1] },
+		center = get_center(),
+		angle = utils.angle_for_event(displacement,
+					      location,
+					      center);
+	    // remember the displacement
+	    total_angle = total_angle + angle;
+	    drag_fn(d, angle, total_angle, center);
+	});
+	behavior.on("dragend", function(d) {			  
+	    // add to undo/redo stack
+	    // remember the displacement, dragged nodes, and reactions
+	    var saved_d = utils.clone(d),
+		saved_angle = total_angle,
+		saved_center = utils.clone(get_center());
+
+	    undo_stack.push(function() {
+		// undo
+		undo_fn(saved_d, saved_angle, saved_center);
+	    }, function () {
+		// redo
+		redo_fn(saved_d, saved_angle, saved_center);
+	    });
+	    end_fn(d);
+	});
+	return behavior;
+    }
 });
 
 define('Scale',["utils"], function(utils) {
@@ -3461,10 +3423,10 @@ define('Scale',["utils"], function(utils) {
 	this.x_size = d3.scale.linear();
 	this.y_size = d3.scale.linear();
 	this.size = d3.scale.linear();
-	this.reaction_color = d3.scale.linear();
-        this.reaction_size = d3.scale.linear();
-	this.metabolite_size = d3.scale.linear();
-	this.metabolite_color = d3.scale.linear();
+	this.reaction_color = d3.scale.linear().clamp(true);
+        this.reaction_size = d3.scale.linear().clamp(true);
+	this.metabolite_color = d3.scale.linear().clamp(true);
+	this.metabolite_size = d3.scale.linear().clamp(true);
         this.scale_path = function(path) {
             var x_fn = this.x, y_fn = this.y;
             // TODO: scale arrow width
@@ -7123,13 +7085,33 @@ define('SearchIndex',["utils"], function(utils) {
 
 }).call(this);
 
-define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "CallbackManager", "KeyManager", "Canvas", "data_styles", "SearchIndex", "lib/bacon"], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon) {
+define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackManager', 'KeyManager', 'Canvas', 'data_styles', 'SearchIndex', 'lib/bacon'], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
      ---------
-     selection: A d3 selection for a node to place the map inside. Should be an SVG element.
-     behavior: A Behavior object which defines the interactivity of the map.
+
+     svg: The parent SVG container for the map.
+
+     css:
+
+     selection: A d3 selection for a node to place the map inside.
+
+     selection:
+
+     zoom_container:
+
+     settings:
+
+     reaction_data:
+
+     metabolite_data:
+
+     cobra_model:
+
+     canvas_size_and_loc:
+
+     enable_search:
 
      */
 
@@ -7143,9 +7125,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	// more setup
 	setup_containers: setup_containers,
 	reset_containers: reset_containers,
-	// scales
-	get_scale: get_scale,
-	set_scale: set_scale,
 	// appearance
 	set_status: set_status,
 	set_model: set_model,
@@ -7153,8 +7132,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	set_metabolite_data: set_metabolite_data,
 	clear_map: clear_map,
 	// selection
+	select_all: select_all,
 	select_none: select_none,
-	select_metabolite: select_metabolite,
+	invert_selection: invert_selection,
+	select_selectable: select_selectable,
 	select_metabolite_with_id: select_metabolite_with_id,
 	select_single_node: select_single_node,
 	deselect_nodes: deselect_nodes,
@@ -7167,10 +7148,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	make_selected_node_primary: make_selected_node_primary,
 	extend_nodes: extend_nodes,
 	extend_reactions: extend_reactions,
+	edit_text_label: edit_text_label,
 	// delete
 	delete_selected: delete_selected,
-	delete_nodes: delete_nodes,
-	delete_text_labels: delete_text_labels,
+	delete_selectable: delete_selectable,
 	delete_node_data: delete_node_data,
 	delete_segment_data: delete_segment_data,
 	delete_reaction_data: delete_reaction_data,
@@ -7182,24 +7163,35 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	get_selected_text_labels: get_selected_text_labels,
 	segments_and_reactions_for_nodes: segments_and_reactions_for_nodes,
 	// draw
-	has_reaction_data: has_reaction_data,
-	has_metabolite_data: has_metabolite_data,
 	draw_everything: draw_everything,
+	// draw reactions
 	draw_all_reactions: draw_all_reactions,
 	draw_these_reactions: draw_these_reactions,
+	clear_deleted_reactions: clear_deleted_reactions,
+	// draw nodes
 	draw_all_nodes: draw_all_nodes,
 	draw_these_nodes: draw_these_nodes,
+	clear_deleted_nodes: clear_deleted_nodes,
+	// draw text_labels
+	draw_all_text_labels: draw_all_text_labels,
 	draw_these_text_labels: draw_these_text_labels,
+	clear_deleted_text_labels: clear_deleted_text_labels,
+	// draw beziers
+	draw_all_beziers: draw_all_beziers,
+	draw_these_beziers: draw_these_beziers,
+	clear_deleted_beziers: clear_deleted_beziers,
+	toggle_beziers: toggle_beziers,
+	hide_beziers: hide_beziers,
+	show_beziers: show_beziers,
+	// data
+	has_reaction_data: has_reaction_data,
+	has_metabolite_data: has_metabolite_data,
 	apply_reaction_data_to_map: apply_reaction_data_to_map,
 	apply_reaction_data_to_reactions: apply_reaction_data_to_reactions,
 	update_reaction_data_domain: update_reaction_data_domain,
 	apply_metabolite_data_to_map: apply_metabolite_data_to_map,
 	apply_metabolite_data_to_nodes: apply_metabolite_data_to_nodes,
 	update_metabolite_data_domain: update_metabolite_data_domain,
-	get_selected_node_ids: get_selected_node_ids,
-	toggle_beziers: toggle_beziers,
-	hide_beziers: hide_beziers,
-	show_beziers: show_beziers,
 	// zoom
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
@@ -7229,9 +7221,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	    canvas_size_and_loc = {x: -size.width, y: -size.height,
 				   width: size.width*3, height: size.height*3};
 	}
-
-	// defaults
-	this.default_reaction_color = '#334E75',
 
 	// set up the defs
 	this.svg = svg;
@@ -7267,7 +7256,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 
 	this.largest_ids = { reactions: -1,
 			     nodes: -1,
-			     segments: -1 };
+			     segments: -1,
+			     text_labels: -1 };
 
 	// make the scales
 	this.scale = new Scale();
@@ -7298,6 +7288,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	
 	this.nodes = {};
 	this.reactions = {};
+	this.beziers = {};
 	this.membranes = [];
 	this.text_labels = {};
 	this.info = {};
@@ -7343,7 +7334,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	map.text_labels = map_data.text_labels;
 	map.info = map_data.info;
 
-	// propogate coefficients and reversbility, and populate the search index
+	// Propogate coefficients and reversbility, and populate the reaction
+	// search index.
 	for (var r_id in map.reactions) {
 	    var reaction = map.reactions[r_id];
 	    if (enable_search) {
@@ -7362,7 +7354,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 		if (to_node_bigg_id in reaction.metabolites) {
 		    segment.to_node_coefficient = reaction.metabolites[to_node_bigg_id].coefficient;
 		}
-		// if metabolite without beziers, then add them
+
+		// If the metabolite has no bezier points, then add them.
 		var start = map.nodes[segment.from_node_id],
 		    end = map.nodes[segment.to_node_id];
 		if (start['node_type']=='metabolite' || end['node_type']=='metabolite') {
@@ -7373,6 +7366,8 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 
 	    }
 	}
+
+	//  populate the nodes search index.
 	if (enable_search) {
 	    for (var node_id in map.nodes) {
 		var node = map.nodes[node_id];
@@ -7382,6 +7377,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 								 node_id: node_id }});
 	    }
 	}
+
+	// populate the beziers
+	map.beziers = build.new_beziers_for_reactions(map.reactions);
+
 	// get largest ids for adding new reactions, nodes, text labels, and
 	// segments
 	map.largest_ids.reactions = get_largest_id(map.reactions);
@@ -7417,98 +7416,27 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 
     function setup_containers(sel) {
         sel.append('g')
-	    .attr('id', 'nodes');
-        sel.append('g')
 	    .attr('id', 'reactions');
         sel.append('g')
-	    .attr('id', 'text-labels');
+	    .attr('id', 'nodes');
         sel.append('g')
-	    .attr('id', 'membranes');
+	    .attr('id', 'beziers');
+        sel.append('g')
+	    .attr('id', 'text-labels');
     }
     function reset_containers() {
+	this.sel.select('#reactions')
+	    .selectAll('.reaction')
+	    .remove();
 	this.sel.select('#nodes')
 	    .selectAll('.node')
 	    .remove();
-	this.sel.select('#reactions')
-	    .selectAll('.reaction')
+	this.sel.select('#beziers')
+	    .selectAll('.bezier')
 	    .remove();
 	this.sel.select('#text-labels')
 	    .selectAll('.text-label')
 	    .remove();
-	this.sel.select('#membranes')
-	    .selectAll('.membrane')
-	    .remove();
-    }
-
-    // -------------------------------------------------------------------------
-    // Scales
-
-    function get_scale(data, type) {
-	/** Get a reaction or metabolite scale.
-
-	 Arguments
-	 ---------
-	 
-	 data: The type of data. Options are 'reaction' or 'metabolite'.
-
-	 type: The type of scale to set. Options are 'size' and 'color'.
-
-	 */
-
-	if (data=='reaction' && type=='size') {
-	    return this.scale.reaction_size;
-	} else if (data=='reaction' && type=='color') {
-	    return this.scale.reaction_color;
-	} else if (data=='metabolite' && type=='size') {
-	    return this.scale.metabolite_size;
-	} else if (data=='metabolite' && type=='color') {
-	    return this.scale.metabolite_color;
-	} else {
-	    throw Error('Bad value for data or type: ' + data + ', ' + type);
-	}
-    }
-
-    function set_scale(data, type, domain, range) {
-	/** Set a reaction or metabolite scale.
-
-	 Arguments
-	 ---------
-	 
-	 data: The type of data. Options are 'reaction' or 'metabolite'.
-
-	 type: The type of scale to set. Options are 'size' and 'color'.
-
-	 domain: The new scale domain. If domain is *null*, then the existing
-	 domain is used. If any settings.auto_*_domain is true, then, this input
-	 is ignored.
-
-	 */
-
-	if (domain===undefined) domain = null;
-	if (range===undefined) range = null;
-
-	if (domain !== null && (this.settings.auto_domain['reaction']==true ||
-				this.settings.auto_domain['metabolite']==true)) {
-	    console.warn('Cannot set domain manually if auto_*_domain is true');
-	    domain = null;
-	}
-
-	if (data=='reaction' && type=='size') {
-	    set_this_scale(this.scale.reaction_size, domain, range);
-	} else if (data=='reaction' && type=='color') {
-	    set_this_scale(this.scale.reaction_color, domain, range);
-	} else if (data=='metabolite' && type=='size') {
-	    set_this_scale(this.scale.metabolite_size, domain, range);
-	} else if (data=='metabolite' && type=='color') {
-	    set_this_scale(this.scale.metabolite_color, domain, range);
-	} else {
-	    throw Error('Bad value for data or type: ' + data + ', ' + type);
-	}
-
-	function set_this_scale(a_scale, a_domain, a_range) {
-	    if (a_domain !== null) a_scale.domain(a_domain);
-	    if (a_range !== null) a_scale.range(a_range);
-	}
     }
 
     // -------------------------------------------------------------------------
@@ -7564,6 +7492,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     }
     function clear_map() {
 	this.reactions = {};
+	this.beziers = {};
 	this.nodes = {};
 	this.membranes = [];
 	this.text_labels = {};
@@ -7579,213 +7508,304 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	return (this.metabolite_data_object!==null);
     }
     function draw_everything() {
-        /** Draw the reactions and membranes
+        /** Draw the all reactions, nodes, & text labels.
 
          */
-	var sel = this.sel,
-	    membranes = this.membranes,
-	    scale = this.scale,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    text_labels = this.text_labels,
-	    defs = this.defs,
-	    default_reaction_color = this.default_reaction_color,
-	    bezier_drag_behavior = this.behavior.bezier_drag,
-	    node_click_fn = this.behavior.node_click,
-	    node_mouseover_fn = this.behavior.node_mouseover,
-	    node_mouseout_fn = this.behavior.node_mouseout,
-	    node_drag_behavior = this.behavior.node_drag,
-	    reaction_label_drag = this.behavior.reaction_label_drag,
-	    node_label_drag = this.behavior.node_label_drag,
-	    text_label_click = this.behavior.text_label_click,
-	    text_label_drag = this.behavior.text_label_drag,
-	    has_reaction_data = this.has_reaction_data(),
-	    reaction_data_styles = this.settings.data_styles['reaction'],
-	    has_metabolite_data = this.has_metabolite_data(),
-	    metabolite_data_styles = this.settings.data_styles['metabolite'],
-	    beziers_enabled = this.beziers_enabled;
-
-	utils.draw_an_array(sel, '#membranes' ,'.membrane', membranes,
-			    draw.create_membrane,
-			    draw.update_membrane);
-
-	utils.draw_an_object(sel, '#reactions', '.reaction', reactions,
-			     'reaction_id',
-			     draw.create_reaction, 
-			     function(sel) { return draw.update_reaction(sel,
-									 scale, 
-									 nodes,
-									 beziers_enabled, 
-									 defs,
-									 default_reaction_color,
-									 has_reaction_data,
-									 reaction_data_styles,
-									 bezier_drag_behavior,
-									 reaction_label_drag); });
-
-	utils.draw_an_object(sel, '#nodes', '.node', nodes, 'node_id', 
-			     function(sel) { return draw.create_node(sel, nodes, reactions); },
-			     function(sel) { return draw.update_node(sel, scale,
-								     has_metabolite_data,
-								     metabolite_data_styles,
-								     node_click_fn,
-								     node_mouseover_fn,
-								     node_mouseout_fn,
-								     node_drag_behavior,
-								     node_label_drag); });
-
-	utils.draw_an_object(sel, '#text-labels', '.text-label', text_labels,
-			     'text_label_id',
-			     function(sel) { return draw.create_text_label(sel); }, 
-			     function(sel) { return draw.update_text_label(sel,
-									   text_label_click,
-									   text_label_drag); });
-
-
+	this.draw_all_reactions(true); // also draw beziers
+	this.draw_all_nodes();
+	this.draw_all_text_labels();
     }
-    function draw_all_reactions() {
+    function draw_all_reactions(draw_beziers) {
+	/** Draw all reactions, and clear deleted reactions.
+
+	 Arguments
+	 ---------
+
+	 draw_beziers: (Boolean, default True) Whether to also draw the bezier
+	 control points.
+
+	 */
+	if (draw_beziers===undefined) draw_beziers = true;
+
+	// Draw all reactions.
 	var reaction_ids = [];
 	for (var reaction_id in this.reactions) {
 	    reaction_ids.push(reaction_id);
 	}
-	this.draw_these_reactions(reaction_ids);
+	// If draw_beziers is true, just draw them all, rather than deciding
+	// which ones to draw.
+	this.draw_these_reactions(reaction_ids, false);
+	if (draw_beziers)
+	    this.draw_all_beziers();
+
+	// Clear all deleted reactions.
+	this.clear_deleted_reactions(draw_beziers);
     }
-    function draw_these_reactions(reaction_ids) {
-	var scale = this.scale,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    defs = this.defs,
-	    default_reaction_color = this.default_reaction_color,
-	    bezier_drag_behavior = this.behavior.bezier_drag,
-	    reaction_label_drag = this.behavior.reaction_label_drag,
-	    has_reaction_data = this.has_reaction_data(),
-	    reaction_data_styles = this.settings.data_styles['reaction'],
-	    beziers_enabled = this.beziers_enabled;
+    
+    function draw_these_reactions(reaction_ids, draw_beziers) {
+	/** Draw specific reactions.
+
+         Does nothing with exit selection. Use clear_deleted_reactions to remove
+         reactions from the DOM.
+
+	 Arguments
+	 ---------
+
+	 reactions_ids: An array of reaction_ids to update.
+
+	 draw_beziers: (Boolean, default True) Whether to also draw the bezier
+	 control points.
+
+	 */
+	if (draw_beziers===undefined) draw_beziers = true;
 
         // find reactions for reaction_ids
-        var reaction_subset = {},
-	    i = -1;
-        while (++i<reaction_ids.length) {
-	    reaction_subset[reaction_ids[i]] = utils.clone(reactions[reaction_ids[i]]);
-        }
-        if (reaction_ids.length != Object.keys(reaction_subset).length) {
-	    console.warn('did not find correct reaction subset');
-        }
+	var reaction_subset = utils.object_slice_for_ids(this.reactions,
+							 reaction_ids);
 
-        // generate reactions for o.drawn_reactions
-        // assure constancy with cobra_id
-        var sel = this.sel.select('#reactions')
-                .selectAll('.reaction')
-                .data(utils.make_array(reaction_subset, 'reaction_id'),
-		      function(d) { return d.reaction_id; });
+	// function to update reactions
+	var update_fn = function(sel) {
+	    return draw.update_reaction(sel,
+					this.scale,
+					this.nodes,
+					this.defs,
+					this.has_reaction_data(),
+					this.settings.no_data['reaction'],
+					this.settings.data_styles['reaction'],
+					this.behavior.reaction_label_drag);
+	}.bind(this);
 
-        // enter: generate and place reaction
-        sel.enter().call(draw.create_reaction);
+	// draw the reactions
+	utils.draw_an_object(this.sel, '#reactions', '.reaction', reaction_subset,
+			     'reaction_id', draw.create_reaction, update_fn);
+	
+	if (draw_beziers) {
+	    // particular beziers to draw
+	    var bezier_ids = build.bezier_ids_for_reaction_ids(reaction_subset);
+	    this.draw_these_beziers(bezier_ids);
+	}
+    } 
 
-        // update: update when necessary
-        sel.call(function(sel) { return draw.update_reaction(sel, scale, 
-							     nodes,
-							     beziers_enabled, 
-							     defs,
-							     default_reaction_color,
-							     has_reaction_data,
-							     reaction_data_styles,
-							     bezier_drag_behavior,
-							     reaction_label_drag); });
+    function clear_deleted_reactions(draw_beziers) {
+	/** Remove any reactions that are not in *this.reactions*.
 
-        // exit
-        sel.exit();
+	 Arguments
+	 ---------
+
+	 draw_beziers: (Boolean, default True) Whether to also clear deleted
+	 bezier control points.
+
+	 */
+	if (draw_beziers===undefined) draw_beziers = true;
+	
+	// remove deleted reactions and segments
+	utils.draw_an_object(this.sel, '#reactions', '.reaction', this.reactions, 'reaction_id',
+			     null,
+			     clear_deleted_segments,
+			     function(sel) { sel.remove(); });
+
+	if (draw_beziers==true)
+	    this.clear_deleted_beziers();
+
+	// definitions
+	function clear_deleted_segments(update_selection) {
+	    // draw segments
+	    utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
+				       null,
+				       null,
+				       function(sel) { sel.remove(); });
+	};
     }
+
     function draw_all_nodes() {
+	/** Draw all nodes, and clear deleted nodes.
+
+	 */
 	var node_ids = [];
 	for (var node_id in this.nodes) {
 	    node_ids.push(node_id);
 	}
 	this.draw_these_nodes(node_ids);
+
+	// clear the deleted nodes
+	this.clear_deleted_nodes();
     }
+
     function draw_these_nodes(node_ids) {
-	var scale = this.scale,
-	    reactions = this.reactions,
-	    nodes = this.nodes,
-	    node_click_fn = this.behavior.node_click,
-	    node_mouseover_fn = this.behavior.node_mouseover,
-	    node_mouseout_fn = this.behavior.node_mouseout,
-	    node_drag_behavior = this.behavior.node_drag,
-	    node_label_drag = this.behavior.node_label_drag,
-	    metabolite_data_styles = this.settings.data_styles['metabolite'],
-	    has_metabolite_data = this.has_metabolite_data();
+	/** Draw specific nodes.
 
-	// find nodes for node_ids
-        var node_subset = {},
-	    i = -1;
-        while (++i<node_ids.length) {
-	    node_subset[node_ids[i]] = utils.clone(nodes[node_ids[i]]);
-        }
-        if (node_ids.length != Object.keys(node_subset).length) {
-	    console.warn('did not find correct node subset');
-        }
+         Does nothing with exit selection. Use clear_deleted_nodes to remove
+         nodes from the DOM.
 
-        // generate nodes for o.drawn_nodes
-        // assure constancy with cobra_id
-        var sel = this.sel.select('#nodes')
-                .selectAll('.node')
-                .data(utils.make_array(node_subset, 'node_id'),
-		      function(d) { return d.node_id; });
+	 Arguments
+	 ---------
 
-        // enter: generate and place node
-        sel.enter().call(function(sel) { return draw.create_node(sel, nodes, reactions); });
+	 nodes_ids: An array of node_ids to update.
 
-        // update: update when necessary
-        sel.call(function(sel) { return draw.update_node(sel, scale, has_metabolite_data, metabolite_data_styles, 
-							 node_click_fn,
-							 node_mouseover_fn,
-							 node_mouseout_fn,
-							 node_drag_behavior,
-							 node_label_drag); });
+	 */
+        // find reactions for reaction_ids
+	var node_subset = utils.object_slice_for_ids(this.nodes, node_ids);
 
-        // exit
-        sel.exit();
+	// functions to create and update nodes
+	var create_fn = function(sel) {
+		return draw.create_node(sel,
+					this.nodes,
+					this.reactions);
+	    }.bind(this),
+	    update_fn = function(sel) {
+		return draw.update_node(sel,
+					this.scale,
+					this.has_metabolite_data(),
+					this.settings.data_styles['metabolite'],
+					this.behavior.selectable_click,
+					this.behavior.node_mouseover,
+					this.behavior.node_mouseout,
+					this.behavior.selectable_drag,
+					this.behavior.node_label_drag);
+	    }.bind(this);
+
+	// draw the nodes
+	utils.draw_an_object(this.sel, '#nodes', '.node', node_subset, 'node_id',
+			     create_fn, update_fn);			      
     }
+
+    function clear_deleted_nodes() {
+	/** Remove any nodes that are not in *this.nodes*.
+
+	 */
+	// run remove for exit selection
+	utils.draw_an_object(this.sel, '#nodes', '.node', this.nodes, 'node_id',
+			     null, null, function(sel) { sel.remove(); });
+    }
+
+    function draw_all_text_labels() {
+	// Draw all text_labels.
+	var text_label_ids = [];
+	for (var text_label_id in this.text_labels) {
+	    text_label_ids.push(text_label_id);
+	}
+	this.draw_these_text_labels(text_label_ids);
+
+	// Clear all deleted text_labels.
+	this.clear_deleted_text_labels();
+    }
+
     function draw_these_text_labels(text_label_ids) {
-	var text_labels = this.text_labels,
-	    text_label_click = this.behavior.text_label_click,
-	    text_label_drag = this.behavior.text_label_drag;
+	/** Draw specific text_labels.
 
-	// find text labels for text_label_ids
-        var text_label_subset = {},
-	    i = -1;
-        while (++i<text_label_ids.length) {
-	    text_label_subset[text_label_ids[i]] = utils.clone(text_labels[text_label_ids[i]]);
-        }
-        if (text_label_ids.length != Object.keys(text_label_subset).length) {
-	    console.warn('did not find correct text label subset');
-        }
+         Does nothing with exit selection. Use clear_deleted_text_labels to remove
+         text_labels from the DOM.
 
-        // generate text for this.text_labels
-        var sel = this.sel.select('#text-labels')
-                .selectAll('.text-label')
-                .data(utils.make_array(text_label_subset, 'text_label_id'),
-		      function(d) { return d.text_label_id; });
+	 Arguments
+	 ---------
 
-        // enter: generate and place label
-        sel.enter().call(function(sel) {
-	    return draw.create_text_label(sel);
-	});
+	 text_labels_ids: An array of text_label_ids to update.
+	 
+	 */
+        // find reactions for reaction_ids
+	var text_label_subset = utils.object_slice_for_ids(this.text_labels, text_label_ids);
 
-        // update: update when necessary
-        sel.call(function(sel) {
-	    return draw.update_text_label(sel, text_label_click, text_label_drag);
-	});
+	// function to update text_labels
+	var update_fn = function(sel) {
+	    return draw.update_text_label(sel,
+					  this.behavior.text_label_click,
+					  this.behavior.selectable_drag);
+	}.bind(this);
 
-        // exit
-        sel.exit();
+	// draw the text_labels
+	utils.draw_an_object(this.sel, '#text-labels', '.text-label',
+			     text_label_subset, 'text_label_id',
+			     draw.create_text_label, update_fn);
     }
+
+    function clear_deleted_text_labels() {
+	/** Remove any text_labels that are not in *this.text_labels*.
+
+	 */
+	// clear deleted
+	utils.draw_an_object(this.sel, '#text-labels', '.text-label',
+			     this.text_labels, 'text_label_id', null, null,
+			     function(sel) { sel.remove(); });
+    }
+
+    function draw_all_beziers() {
+	/** Draw all beziers, and clear deleted reactions.
+
+	 */
+	var bezier_ids = [];
+	for (var bezier_id in this.beziers) {
+	    bezier_ids.push(bezier_id);
+	}
+	this.draw_these_beziers(bezier_ids);
+
+	// clear delete beziers
+	this.clear_deleted_beziers();
+    }
+
+    function draw_these_beziers(bezier_ids) {
+	/** Draw specific beziers.
+
+         Does nothing with exit selection. Use clear_deleted_beziers to remove
+         beziers from the DOM.
+
+	 Arguments
+	 ---------
+
+	 beziers_ids: An array of bezier_ids to update.
+
+	 */
+        // find reactions for reaction_ids
+	var bezier_subset = utils.object_slice_for_ids(this.beziers, bezier_ids);
+
+	// function to update beziers
+	var update_fn = function(sel) {
+	    return draw.update_bezier(sel,
+				      this.beziers_enabled,
+				      this.behavior.bezier_drag,
+				      this.behavior.bezier_mouseover,
+				      this.behavior.bezier_mouseout,
+				      this.nodes,
+				      this.reactions);
+	}.bind(this);
+
+	// draw the beziers
+	utils.draw_an_object(this.sel, '#beziers', '.bezier', bezier_subset,
+			     'bezier_id', draw.create_bezier, update_fn);
+    }
+
+    function clear_deleted_beziers() {
+	/** Remove any beziers that are not in *this.beziers*.
+
+	 */
+	// remove deleted
+	utils.draw_an_object(this.sel, '#beziers', '.bezier', this.beziers,
+			     'bezier_id', null, null,
+			     function(sel) { sel.remove(); });
+    }
+
+    function show_beziers() {
+	this.toggle_beziers(true);
+    }
+
+    function hide_beziers() {
+	this.toggle_beziers(false);
+    }
+
+    function toggle_beziers(on_off) {
+	if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
+	else this.beziers_enabled = on_off;
+	this.draw_all_beziers();
+	this.callback_manager.run('toggle_beziers', this.beziers_enabled);
+    }
+
+
     function apply_reaction_data_to_map() {
 	/**  Returns True if the scale has changed.
 
 	 */
 	return this.apply_reaction_data_to_reactions(this.reactions);
     }
+    
     function apply_reaction_data_to_reactions(reactions) {
 	/**  Returns True if the scale has changed.
 
@@ -7941,7 +7961,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	    self = this;
 	this.sel.select('#nodes')
 	    .selectAll('.selected')
-	    .each(function(d) { selected_nodes[d.node_id] = self.nodes[d.node_id]; });
+	    .each(function(d) {
+		selected_nodes[d.node_id] = this.nodes[d.node_id];
+	    }.bind(this));
 	return selected_nodes;
     }	
     function get_selected_text_label_ids() {
@@ -7956,23 +7978,52 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	    self = this;
 	this.sel.select('#text-labels')
 	    .selectAll('.selected')
-	    .each(function(d) { selected_text_labels[d.text_label_id] = self.text_labels[d.text_label_id]; });
+	    .each(function(d) {
+		selected_text_labels[d.text_label_id] = this.text_labels[d.text_label_id];
+	    }.bind(this));
 	return selected_text_labels;
     }	
 
+    function select_all() {
+	/** Select all nodes and text labels.
+
+	 */
+	this.sel.selectAll('#nodes,#text-labels')
+	    .selectAll('.node,.text-label')
+	    .classed('selected', true);
+    }
+
     function select_none() {
+	/** Deselect all nodes and text labels.
+
+	 */
 	this.sel.selectAll('.selected')
 	    .classed('selected', false);
     }
 
+    function invert_selection() {
+	/** Invert selection of nodes and text labels.
+
+	 */
+	var selection = this.sel.selectAll('#nodes,#text-labels')
+	    .selectAll('.node,.text-label');
+	selection.classed('selected', function() {
+	    return !d3.select(this).classed('selected');
+	});
+    }
+
     function select_metabolite_with_id(node_id) {
+	/** Select a metabolite with the given id, and turn off the reaction
+	 target.
+
+	 */
 	// deselect all text labels
 	this.deselect_text_labels();
 
 	var node_selection = this.sel.select('#nodes').selectAll('.node'),
 	    coords,
 	    selected_node;
-	node_selection.classed("selected", function(d) {
+	node_selection.classed('selected', function(d) {
 	    var selected = String(d.node_id) == String(node_id);
 	    if (selected) {
 		selected_node = d;
@@ -7983,27 +8034,42 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
 	this.callback_manager.run('select_metabolite_with_id', selected_node, coords);
     }
-    function select_metabolite(sel, d) {
-	// deselect all text labels
-	this.deselect_text_labels();
-	
-	var node_selection = this.sel.select('#nodes').selectAll('.node'), 
-	    shift_key_on = this.key_manager.held_keys.shift;
-	if (shift_key_on) {
-	    d3.select(sel.parentNode)
-		.classed("selected", !d3.select(sel.parentNode).classed("selected"));
+    function select_selectable(node, d) {
+	/** Select a metabolite or text label, and manage the shift key.
+
+	 */
+	var classable_selection = this.sel.selectAll('#nodes,#text-labels')
+		.selectAll('.node,.text-label'), 
+	    shift_key_on = this.key_manager.held_keys.shift,
+	    classable_node;
+	if (d3.select(node).attr('class').indexOf('text-label') == -1) {
+	    // node
+	    classable_node = node.parentNode;
+	} else {
+	    // text-label
+	    classable_node = node;
 	}
-        else node_selection.classed("selected", function(p) { return d === p; });
+	// toggle selection
+	if (shift_key_on) {
+	    // toggle this node
+	    d3.select(classable_node)
+		.classed('selected', !d3.select(classable_node).classed('selected'));
+	} else {
+	    // unselect all other nodes, and select this one
+	    classable_selection.classed('selected', false);
+	    d3.select(classable_node).classed('selected', true);
+	}
+	// run the select_metabolite callback
 	var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),
-	    count = 0,
+	    node_count = 0,
 	    coords,
 	    selected_node;
 	selected_nodes.each(function(d) {
 	    selected_node = d;
 	    coords = { x: d.x, y: d.y };
-	    count++;
+	    node_count++;
 	});
-	this.callback_manager.run('select_metabolite', count, selected_node, coords);
+	this.callback_manager.run('select_selectable', node_count, selected_node, coords);
     }
     function select_single_node() {
 	/** Unselect all but one selected node, and return the node.
@@ -8014,7 +8080,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	var out = null,
 	    self = this,
 	    node_selection = this.sel.select('#nodes').selectAll('.selected');
-	node_selection.classed("selected", function(d, i) {
+	node_selection.classed('selected', function(d, i) {
 	    if (i==0) {
 		out = d;
 		return true;
@@ -8026,7 +8092,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     }
     function deselect_nodes() {
 	var node_selection = this.sel.select('#nodes').selectAll('.node');
-	node_selection.classed("selected", false);
+	node_selection.classed('selected', false);
     }
     function select_text_label(sel, d) {
 	// deselect all nodes
@@ -8034,7 +8100,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	// find the new selection
 	// Ignore shift key and only allow single selection for now
 	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
-	text_label_selection.classed("selected", function(p) { return d === p; });
+	text_label_selection.classed('selected', function(p) { return d === p; });
 	var selected_text_labels = this.sel.select('#text-labels').selectAll('.selected'),
 	    coords;
 	selected_text_labels.each(function(d) {
@@ -8044,7 +8110,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     }
     function deselect_text_labels() {
 	var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
-	text_label_selection.classed("selected", false);
+	text_label_selection.classed('selected', false);
     }
 
     // ---------------------------------------------------------------------
@@ -8056,33 +8122,42 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	 Undoable.
 
 	 */
-	var selected_nodes = this.get_selected_nodes();
-	if (Object.keys(selected_nodes).length >= 1)
-	    this.delete_nodes(selected_nodes);
-	
-	var selected_text_labels = this.get_selected_text_labels();
-	if (Object.keys(selected_text_labels).length >= 1)
-	    this.delete_text_labels(selected_text_labels);
+	var selected_nodes = this.get_selected_nodes(),	
+	    selected_text_labels = this.get_selected_text_labels();
+	if (Object.keys(selected_nodes).length >= 1 ||
+	    Object.keys(selected_text_labels).length >= 1)
+	    this.delete_selectable(selected_nodes, selected_text_labels, true);
     }
-    function delete_nodes(selected_nodes) {
-	/** Delete the nodes and associated segments and reactions.
+    function delete_selectable(selected_nodes, selected_text_labels, should_draw) {
+	/** Delete the nodes and associated segments and reactions. Undoable.
 
-	 Undoable.
+	 Arguments
+	 ---------
+
+	 selected_nodes: An object that is a subset of map.nodes.
+
+	 selected_text_labels: An object that is a subset of map.text_labels.
+
+	 should_draw: A boolean argument to determine whether to draw the changes to the map.
 
 	 */
+
 	var out = this.segments_and_reactions_for_nodes(selected_nodes),
-	    reactions = out.reactions,
-	    segment_objs_w_segments = out.segment_objs_w_segments;
+	    segment_objs_w_segments = out.segment_objs_w_segments, // TODO repeated values here
+	    reactions = out.reactions;
 
 	// copy nodes to undelete
 	var saved_nodes = utils.clone(selected_nodes),
 	    saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments),
 	    saved_reactions = utils.clone(reactions),
-	    delete_and_draw = function(nodes, reactions, segment_objs) {
+	    saved_text_labels = utils.clone(selected_text_labels),
+	    delete_and_draw = function(nodes, reactions, segment_objs, 
+				       selected_text_labels) {
 		// delete nodes, segments, and reactions with no segments
   		this.delete_node_data(Object.keys(selected_nodes));
-		this.delete_segment_data(segment_objs);
-		this.delete_reaction_data(Object.keys(reactions));	   
+		this.delete_segment_data(segment_objs); // also deletes beziers
+		this.delete_reaction_data(Object.keys(reactions));
+		this.delete_text_label_data(Object.keys(selected_text_labels));
 
 		// apply the reaction and node data
 		if (this.has_reaction_data()) 
@@ -8091,12 +8166,16 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 		    this.apply_metabolite_data_domain();
 
 		// redraw
-		// TODO just redraw these nodes and segments
-		this.draw_everything();
+		if (should_draw) {
+		    this.clear_deleted_reactions(); // also clears segments and beziers
+		    this.clear_deleted_nodes();
+		    this.clear_deleted_text_labels();
+		}
 	    }.bind(this);
 
 	// delete
-	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
+	delete_and_draw(selected_nodes, reactions, segment_objs_w_segments,
+			selected_text_labels);
 
 	// add to undo/redo stack
 	this.undo_stack.push(function() {
@@ -8105,8 +8184,10 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 
 	    this.extend_nodes(saved_nodes);
 	    this.extend_reactions(saved_reactions);
-	    var reactions_to_draw = Object.keys(saved_reactions);
-	    saved_segment_objs_w_segments.forEach(function(segment_obj) {
+	    var reaction_ids_to_draw = Object.keys(saved_reactions);
+	    for (var segment_id in saved_segment_objs_w_segments) {
+		var segment_obj = saved_segment_objs_w_segments[segment_id];
+		
 		var segment = segment_obj.segment;
 		this.reactions[segment_obj.reaction_id]
 		    .segments[segment_obj.segment_id] = segment;
@@ -8120,26 +8201,41 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 						   segment_id: segment_obj.segment_id });
 		}.bind(this));
 
-		if (reactions_to_draw.indexOf(segment_obj.reaction_id)==-1)
-		    reactions_to_draw.push(segment_obj.reaction_id);
-	    }.bind(this));
+		// extend the beziers
+		var seg_id = segment_obj.segment_id,
+		    r_id = segment_obj.reaction_id,
+		    seg_o = {};
+		seg_o[seg_id] = segment_obj.segment;
+	    	utils.extend(this.beziers, build.new_beziers_for_segments(seg_o, r_id));
+
+		if (reaction_ids_to_draw.indexOf(segment_obj.reaction_id)==-1)
+		    reaction_ids_to_draw.push(segment_obj.reaction_id);
+	    }
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
 	    if (this.has_reaction_data()) {
 		var scale_changed = this.update_reaction_data_domain();
 		if (scale_changed) this.draw_all_reactions();
-		else this.draw_these_reactions(Object.keys(reactions_to_draw));
+		else this.draw_these_reactions(reaction_ids_to_draw);
 	    } else {
-		this.draw_these_reactions(Object.keys(reactions_to_draw));
+		if (should_draw) this.draw_these_reactions(reaction_ids_to_draw);
 	    }		
 	    if (this.has_metabolite_data()) {
 		var scale_changed = this.update_metabolite_data_domain();
-		if (scale_changed) this.draw_all_nodes();
-		else this.draw_these_nodes(Object.keys(saved_nodes));
+		if (should_draw) {
+		    if (scale_changed) this.draw_all_nodes();
+		    else this.draw_these_nodes(Object.keys(saved_nodes));
+		}
 	    } else {
-		this.draw_these_nodes(Object.keys(saved_nodes));
+		if (should_draw) this.draw_these_nodes(Object.keys(saved_nodes));
 	    }
+
+    	    // redraw the saved text_labels
+    	    utils.extend(this.text_labels, saved_text_labels);
+    	    if (should_draw) this.draw_these_text_labels(Object.keys(saved_text_labels));
+    	    // copy text_labels to re-delete
+    	    selected_text_labels = utils.clone(saved_text_labels);
 
 	    // copy nodes to re-delete
 	    selected_nodes = utils.clone(saved_nodes);
@@ -8148,41 +8244,11 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	}.bind(this), function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
-	    delete_and_draw(selected_nodes, reactions, segment_objs_w_segments);
+	    delete_and_draw(selected_nodes, reactions, segment_objs_w_segments, 
+			    selected_text_labels);
 	}.bind(this));
     }
-    function delete_text_labels(selected_text_labels) {
-	/** Delete the text_labels.
 
-	 Undoable.
-
-	 */
-	// copy text_labels to undelete
-	var saved_text_labels = utils.clone(selected_text_labels),
-	    self = this,
-	    delete_and_draw = function(text_labels) {
-		// delete text_labels, segments, and reactions with no segments
-  		self.delete_text_label_data(Object.keys(selected_text_labels));
-		// redraw
-		// TODO just redraw these text_labels
-		self.draw_everything();
-	    };
-
-	// delete
-	delete_and_draw(selected_text_labels);
-
-	// add to undo/redo stack
-	this.undo_stack.push(function() { // undo
-	    // redraw the saved text_labels, reactions, and segments
-	    utils.extend(self.text_labels, saved_text_labels);
-	    self.draw_these_text_labels(Object.keys(saved_text_labels));
-	    // copy text_labels to re-delete
-	    selected_text_labels = utils.clone(saved_text_labels);
-	}, function () { // redo
-	    // clone the text_labels
-	    delete_and_draw(selected_text_labels);
-	});
-    }
     function delete_node_data(node_ids) {
 	/** Delete nodes, and remove from search index.
 	 */
@@ -8195,14 +8261,16 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	    delete this.nodes[node_id];
 	}.bind(this));
     }
+
     function delete_segment_data(segment_objs) {
-	/** Delete segments, and update connected_segments in nodes. Also
-	 deletes any reactions with 0 segments.
+	/** Delete segments, update connected_segments in nodes, and delete
+	 bezier points.
 	 
-	 segment_objs: Array of objects with { reaction_id: "123", segment_id: "456" }
+	 segment_objs: Object with values like { reaction_id: '123', segment_id: '456' }
 	 
 	 */
-	segment_objs.forEach(function(segment_obj) {
+	for (var segment_id in segment_objs) {
+	    var segment_obj = segment_objs[segment_id];
 	    var reaction = this.reactions[segment_obj.reaction_id];
 
 	    // segment already deleted
@@ -8218,15 +8286,32 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 		});
 	    }.bind(this));
 
+            // remove beziers
+	    ['b1', 'b2'].forEach(function(bez) {
+		var bez_id = build.bezier_id_for_segment_id(segment_obj.segment_id, bez);
+	    	delete this.beziers[bez_id];
+	    }.bind(this));
+
 	    delete reaction.segments[segment_obj.segment_id];
-	}.bind(this));
+	}
     }
     function delete_reaction_data(reaction_ids) {
-	/** Delete reactions and remove from search index.
+	/** Delete reactions, segments, and beziers, and remove reaction from
+	 search index.
 	 
 	 */
 	reaction_ids.forEach(function(reaction_id) {
+            // remove beziers
+	    var reaction = this.reactions[reaction_id];
+	    for (var segment_id in reaction.segments) {
+		['b1', 'b2'].forEach(function(bez) {
+		    var bez_id = build.bezier_id_for_segment_id(segment_id, bez);
+	    	    delete this.beziers[bez_id];
+		}.bind(this));
+	    }
+	    // delete reaction
 	    delete this.reactions[reaction_id];
+	    // remove from search index
 	    var found = this.search_index.remove('r'+reaction_id);
 	    if (!found)
 		console.warn('Could not find deleted reaction in search index');
@@ -8238,18 +8323,6 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	text_label_ids.forEach(function(text_label_id) {
 	    delete this.text_labels[text_label_id];
 	}.bind(this));
-    }
-    function show_beziers() {
-	this.toggle_beziers(true);
-    }
-    function hide_beziers() {
-	this.toggle_beziers(false);
-    }
-    function toggle_beziers(on_off) {
-	if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
-	else this.beziers_enabled = on_off;
-	this.draw_everything();
-	this.callback_manager.run('toggle_beziers', this.beziers_enabled);
     }
 
     // ---------------------------------------------------------------------
@@ -8315,7 +8388,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    // draw
-	    map.draw_everything();
+	    map.clear_deleted_nodes();
 	}, function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
@@ -8370,6 +8443,26 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	utils.extend(this.reactions, new_reactions);
     }
 
+    function edit_text_label(text_label_id, new_value, should_draw) {
+	// save old value
+	var saved_value = this.text_labels[text_label_id].text,
+	    edit_and_draw = function(new_val, should_draw) {
+		// set the new value
+		this.text_labels[text_label_id].text = new_val;
+		if (should_draw) this.draw_these_text_labels([text_label_id]);
+	    }.bind(this);
+
+	// edit the label
+	edit_and_draw(new_value, should_draw);
+
+	// add to undo stack
+	this.undo_stack.push(function() {
+	    edit_and_draw(saved_value, should_draw);
+	}, function () {
+	    edit_and_draw(new_value, should_draw);
+	});
+    }
+
     function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id, direction) {
 	/** Build a new reaction starting with selected_met.
 
@@ -8401,38 +8494,45 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 				     this.cobra_model.cofactors,
 				     direction),
 	    new_nodes = out.new_nodes,
-	    new_reactions = out.new_reactions;
+	    new_reactions = out.new_reactions,
+	    new_beziers = out.new_beziers;
 
 	// draw
-	extend_and_draw_reaction.apply(this, [new_nodes, new_reactions, selected_node_id]);
+	extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
+					      new_beziers, selected_node_id]);
 
 	// clone the nodes and reactions, to redo this action later
 	var saved_nodes = utils.clone(new_nodes),
 	    saved_reactions = utils.clone(new_reactions),
-	    map = this;
+	    saved_beziers = utils.clone(new_beziers);
 
 	// add to undo/redo stack
 	this.undo_stack.push(function() {
 	    // undo
 	    // get the nodes to delete
 	    delete new_nodes[selected_node_id];
-	    map.delete_node_data(Object.keys(new_nodes));
-	    map.delete_reaction_data(Object.keys(new_reactions));
-	    select_metabolite_with_id.apply(map, [selected_node_id]);
+	    this.delete_node_data(Object.keys(new_nodes));
+	    this.delete_reaction_data(Object.keys(new_reactions)); // also deletes beziers
+	    select_metabolite_with_id.apply(this, [selected_node_id]);
 	    // save the nodes and reactions again, for redo
 	    new_nodes = utils.clone(saved_nodes);
 	    new_reactions = utils.clone(saved_reactions);
+	    new_beziers = utils.clone(saved_beziers);
 	    // draw
-	    map.draw_everything();
-	}, function () {
+	    this.clear_deleted_nodes();
+	    this.clear_deleted_reactions(true); // also clears segments and beziers
+	}.bind(this), function () {
 	    // redo
 	    // clone the nodes and reactions, to redo this action later
-	    extend_and_draw_reaction.apply(map, [new_nodes, new_reactions, selected_node_id]);
-	});
+	    extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
+						  new_beziers, selected_node_id]);
+	}.bind(this));
 
 	// definitions
-	function extend_and_draw_reaction(new_nodes, new_reactions, selected_node_id) {
+	function extend_and_draw_reaction(new_nodes, new_reactions, new_beziers,
+					  selected_node_id) {
 	    this.extend_reactions(new_reactions);
+	    utils.extend(this.beziers, new_beziers);
 	    // remove the selected node so it can be updated
 	    this.delete_node_data([selected_node_id]); // TODO this is a hack. fix
 	    this.extend_nodes(new_nodes);
@@ -8552,6 +8652,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	this.draw_these_reactions(reactions_to_draw);
 	// 7. select the primary node
 	this.select_metabolite_with_id(primary_node_id);
+	return null;
     }
     function make_selected_node_primary() {
 	var selected_nodes = this.get_selected_nodes(),
@@ -8593,8 +8694,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 
     function segments_and_reactions_for_nodes(nodes) {
 	/** Get segments and reactions that should be deleted with node deletions
+	 
 	 */
-	var segment_objs_w_segments = [],
+	var segment_objs_w_segments = {},
 	    these_reactions = {},
 	    segment_ids_for_reactions = {},
 	    reactions = this.reactions;
@@ -8607,7 +8709,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 		    segment = reaction.segments[segment_obj.segment_id],
 		    segment_obj_w_segment = utils.clone(segment_obj);
 		segment_obj_w_segment['segment'] = utils.clone(segment);
-		segment_objs_w_segments.push(segment_obj_w_segment);
+		segment_objs_w_segments[segment_obj.segment_id] = segment_obj_w_segment;
 		if (!(segment_obj.reaction_id in segment_ids_for_reactions))
 		    segment_ids_for_reactions[segment_obj.reaction_id] = [];
 		segment_ids_for_reactions[segment_obj.reaction_id].push(segment_obj.segment_id);
@@ -8751,8 +8853,7 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
     // IO
 
     function save() {
-        console.log("Saving");
-        utils.download_json(this.map_for_export(), "saved_map");
+        utils.download_json(this.map_for_export(), 'saved_map');
     }
     function map_for_export() {
 	var out = { reactions: utils.clone(this.reactions),
@@ -8793,8 +8894,9 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	return out;
     }
     function save_svg() {
-        console.log("Exporting SVG");
+	// run the before callback
 	this.callback_manager.run('before_svg_export');
+
 	// turn of zoom and translate so that illustrator likes the map
 	var window_scale = this.zoom_container.window_scale,
 	    window_translate = this.zoom_container.window_translate,
@@ -8808,15 +8910,493 @@ define('Map',["utils", "draw", "Behavior", "Scale", "build", "UndoStack", "Callb
 	this.canvas.mouse_node.attr('width', '0px');
 	this.canvas.mouse_node.attr('height', '0px');
 	this.canvas.mouse_node.attr('transform', null);
-        utils.export_svg("saved_map", this.svg, true);
+	// hide the segment control points
+	var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle')
+	    .style('visibility', 'hidden');
+
+	// do the epxort
+        utils.export_svg('saved_map', this.svg, true);
+
+	// revert everything
 	this.zoom_container.go_to(window_scale, window_translate, false);
 	this.svg.attr('width', null);
 	this.svg.attr('height', null);
 	this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
 	this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
 	this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
+	// unhide the segment control points
+	hidden_sel.style('visibility', null);
+
+	// run the after callback
 	this.callback_manager.run('after_svg_export');
     }
+});
+
+define('PlacedDiv',['utils', 'Map'], function(utils, Map) {
+    /** A container to position an html div to match the coordinates of a SVG element.
+
+     */
+
+    var PlacedDiv = utils.make_class();
+    // instance methods
+    PlacedDiv.prototype = { init: init,
+			    is_visible: is_visible,
+			    place: place,
+			    hide: hide };
+    return PlacedDiv;
+
+    // definitions
+    function init(div, map, displacement) {
+	// make the input box
+	this.div = div;
+
+	if (displacement===undefined)
+	    displacement = {x: 0, y: 0};
+	this.displacement = displacement;
+
+	if (map instanceof Map) {
+	    this.map = map;
+	} else {
+	    throw new Error('Cannot set the map. It is not an instance of Map');
+	}
+    }
+
+    function is_visible() {
+	return this.div.style('display') != 'none';
+    }
+
+    function place(coords) {
+	/** Position the html div to match the given SVG coordinates.
+
+	 */
+	// show the input
+	this.div.style('display', null);
+
+	// move the new input
+	var window_translate = this.map.zoom_container.window_translate,
+	    window_scale = this.map.zoom_container.window_scale,
+	    map_size = this.map.get_size(),
+	    left = Math.max(20,
+			    Math.min(map_size.width - 270,
+				     (window_scale * coords.x + window_translate.x - this.displacement.x))),
+	    top = Math.max(20,
+			   Math.min(map_size.height - 40,
+				    (window_scale * coords.y + window_translate.y - this.displacement.y)));
+	this.div.style('position', 'absolute')
+	    .style('display', 'block')
+	    .style('left', left+'px')
+	    .style('top', top+'px');
+    }
+
+    function hide() {
+	this.div.style('display', 'none');
+    }
+});
+
+/**
+ * complete.ly 1.0.0
+ * MIT Licensing
+ * Copyright (c) 2013 Lorenzo Puccetti
+ * 
+ * This Software shall be used for doing good things, not bad things.
+ * 
+**/  
+define('lib/complete.ly',[],function() {
+return function(container, config) {
+    config = config || {};
+    config.fontSize =                       config.fontSize   || '16px';
+    config.fontFamily =                     config.fontFamily || 'sans-serif';
+    config.promptInnerHTML =                config.promptInnerHTML || ''; 
+    config.color =                          config.color || '#333';
+    config.hintColor =                      config.hintColor || '#aaa';
+    config.backgroundColor =                config.backgroundColor || '#fff';
+    config.dropDownBorderColor =            config.dropDownBorderColor || '#aaa';
+    config.dropDownZIndex =                 config.dropDownZIndex || '100'; // to ensure we are in front of everybody
+    config.dropDownOnHoverBackgroundColor = config.dropDownOnHoverBackgroundColor || '#ddd';
+    
+    var txtInput = document.createElement('input');
+    txtInput.type ='text';
+    txtInput.spellcheck = false; 
+    txtInput.style.fontSize =        config.fontSize;
+    txtInput.style.fontFamily =      config.fontFamily;
+    txtInput.style.color =           config.color;
+    txtInput.style.backgroundColor = config.backgroundColor;
+    txtInput.style.width = '100%';
+    txtInput.style.outline = '0';
+    txtInput.style.border =  '0';
+    txtInput.style.margin =  '0';
+    txtInput.style.padding = '0';
+    
+    var txtHint = txtInput.cloneNode(); 
+    txtHint.disabled='';        
+    txtHint.style.position = 'absolute';
+    txtHint.style.top =  '0';
+    txtHint.style.left = '0';
+    txtHint.style.borderColor = 'transparent';
+    txtHint.style.boxShadow =   'none';
+    txtHint.style.color = config.hintColor;
+    
+    txtInput.style.backgroundColor ='transparent';
+    txtInput.style.verticalAlign = 'top';
+    txtInput.style.position = 'relative';
+    
+    var wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    wrapper.style.outline = '0';
+    wrapper.style.border =  '0';
+    wrapper.style.margin =  '0';
+    wrapper.style.padding = '0';
+    
+    var prompt = document.createElement('div');
+    prompt.style.position = 'absolute';
+    prompt.style.outline = '0';
+    prompt.style.margin =  '0';
+    prompt.style.padding = '0';
+    prompt.style.border =  '0';
+    prompt.style.fontSize =   config.fontSize;
+    prompt.style.fontFamily = config.fontFamily;
+    prompt.style.color =           config.color;
+    prompt.style.backgroundColor = config.backgroundColor;
+    prompt.style.top = '0';
+    prompt.style.left = '0';
+    prompt.style.overflow = 'hidden';
+    prompt.innerHTML = config.promptInnerHTML;
+    prompt.style.background = 'transparent';
+    if (document.body === undefined) {
+        throw 'document.body is undefined. The library was wired up incorrectly.';
+    }
+    document.body.appendChild(prompt);            
+    var w = prompt.getBoundingClientRect().right; // works out the width of the prompt.
+    wrapper.appendChild(prompt);
+    prompt.style.visibility = 'visible';
+    prompt.style.left = '-'+w+'px';
+    wrapper.style.marginLeft= w+'px';
+    
+    wrapper.appendChild(txtHint);
+    wrapper.appendChild(txtInput);
+    
+    var dropDown = document.createElement('div');
+    dropDown.style.position = 'absolute';
+    dropDown.style.visibility = 'hidden';
+    dropDown.style.outline = '0';
+    dropDown.style.margin =  '0';
+    dropDown.style.padding = '0';  
+    dropDown.style.textAlign = 'left';
+    dropDown.style.fontSize =   config.fontSize;      
+    dropDown.style.fontFamily = config.fontFamily;
+    dropDown.style.backgroundColor = config.backgroundColor;
+    dropDown.style.zIndex = config.dropDownZIndex; 
+    dropDown.style.cursor = 'default';
+    dropDown.style.borderStyle = 'solid';
+    dropDown.style.borderWidth = '1px';
+    dropDown.style.borderColor = config.dropDownBorderColor;
+    dropDown.style.overflowX= 'hidden';
+    dropDown.style.whiteSpace = 'pre';
+    dropDown.style.overflowY = 'scroll';  // note: this might be ugly when the scrollbar is not required. however in this way the width of the dropDown takes into account
+    
+    
+    var createDropDownController = function(elem) {
+        var rows = [];
+        var ix = 0;
+        var oldIndex = -1;
+        
+        var onMouseOver =  function() { this.style.outline = '1px solid #ddd'; }
+        var onMouseOut =   function() { this.style.outline = '0'; }
+        var onMouseDown =  function() { p.hide(); p.onmouseselection(this.__hint); }
+        
+        var p = {
+            hide :  function() { elem.style.visibility = 'hidden'; }, 
+            refresh : function(token, array) {
+                elem.style.visibility = 'hidden';
+                ix = 0;
+                elem.innerHTML ='';
+                var vph = (window.innerHeight || document.documentElement.clientHeight);
+                var rect = elem.parentNode.getBoundingClientRect();
+                var distanceToTop = rect.top - 6;                        // heuristic give 6px 
+                var distanceToBottom = vph - rect.bottom -6;  // distance from the browser border.
+                
+                rows = [];
+                for (var i=0;i<array.length;i++) {
+                    if (array[i].indexOf(token)!==0) { continue; }
+                    var divRow =document.createElement('div');
+                    divRow.style.color = config.color;
+                    divRow.onmouseover = onMouseOver; 
+                    divRow.onmouseout =  onMouseOut;
+                    divRow.onmousedown = onMouseDown; 
+                    divRow.__hint =    array[i];
+                    divRow.innerHTML = token+'<b>'+array[i].substring(token.length)+'</b>';
+                    rows.push(divRow);
+                    elem.appendChild(divRow);
+                }
+                if (rows.length===0) {
+                    return; // nothing to show.
+                }
+                if (rows.length===1 && token === rows[0].__hint) {
+                    return; // do not show the dropDown if it has only one element which matches what we have just displayed.
+                }
+                
+                if (rows.length<2) return; 
+                p.highlight(0);
+                
+                if (distanceToTop > distanceToBottom*3) {        // Heuristic (only when the distance to the to top is 4 times more than distance to the bottom
+                    elem.style.maxHeight =  distanceToTop+'px';  // we display the dropDown on the top of the input text
+                    elem.style.top ='';
+                    elem.style.bottom ='100%';
+                } else {
+                    elem.style.top = '100%';  
+                    elem.style.bottom = '';
+                    elem.style.maxHeight =  distanceToBottom+'px';
+                }
+                elem.style.visibility = 'visible';
+            },
+            highlight : function(index) {
+                if (oldIndex !=-1 && rows[oldIndex]) { 
+                    rows[oldIndex].style.backgroundColor = config.backgroundColor;
+                }
+                rows[index].style.backgroundColor = config.dropDownOnHoverBackgroundColor; // <-- should be config
+                oldIndex = index;
+            },
+            move : function(step) { // moves the selection either up or down (unless it's not possible) step is either +1 or -1.
+                if (elem.style.visibility === 'hidden')             return ''; // nothing to move if there is no dropDown. (this happens if the user hits escape and then down or up)
+                if (ix+step === -1 || ix+step === rows.length) return rows[ix].__hint; // NO CIRCULAR SCROLLING. 
+                ix+=step; 
+                p.highlight(ix);
+                return rows[ix].__hint;//txtShadow.value = uRows[uIndex].__hint ;
+            },
+            onmouseselection : function() {} // it will be overwritten. 
+        };
+        return p;
+    }
+    
+    var dropDownController = createDropDownController(dropDown);
+    
+    dropDownController.onmouseselection = function(text) {
+        txtInput.value = txtHint.value = leftSide+text; 
+        rs.onChange(txtInput.value); // <-- forcing it.
+        registerOnTextChangeOldValue = txtInput.value; // <-- ensure that mouse down will not show the dropDown now.
+        setTimeout(function() { txtInput.focus(); },0);  // <-- I need to do this for IE 
+    }
+    
+    wrapper.appendChild(dropDown);
+    container.appendChild(wrapper);
+    
+    var spacer; 
+    var leftSide; // <-- it will contain the leftSide part of the textfield (the bit that was already autocompleted)
+    
+    
+    function calculateWidthForText(text) {
+        if (spacer === undefined) { // on first call only.
+            spacer = document.createElement('span'); 
+            spacer.style.visibility = 'hidden';
+            spacer.style.position = 'fixed';
+            spacer.style.outline = '0';
+            spacer.style.margin =  '0';
+            spacer.style.padding = '0';
+            spacer.style.border =  '0';
+            spacer.style.left = '0';
+            spacer.style.whiteSpace = 'pre';
+            spacer.style.fontSize =   config.fontSize;
+            spacer.style.fontFamily = config.fontFamily;
+            spacer.style.fontWeight = 'normal';
+            document.body.appendChild(spacer);    
+        }        
+        
+        // Used to encode an HTML string into a plain text.
+        // taken from http://stackoverflow.com/questions/1219860/javascript-jquery-html-encoding
+        spacer.innerHTML = String(text).replace(/&/g, '&amp;')
+                                       .replace(/"/g, '&quot;')
+                                       .replace(/'/g, '&#39;')
+                                       .replace(/</g, '&lt;')
+                                       .replace(/>/g, '&gt;');
+        return spacer.getBoundingClientRect().right;
+    }
+    
+    
+    var rs = { 
+        onArrowDown : function() {},               // defaults to no action.
+        onArrowUp :   function() {},               // defaults to no action.
+        onEnter :     function() {},               // defaults to no action.
+        onTab :       function() {},               // defaults to no action.
+        onChange:     function() { rs.repaint() }, // defaults to repainting.
+        startFrom:    0,
+        options:      [],
+        wrapper : wrapper,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        input :  txtInput,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations) 
+        hint  :  txtHint,       // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        dropDown :  dropDown,         // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        prompt : prompt,
+        setText : function(text) {
+            txtHint.value = text;
+            txtInput.value = text; 
+        },
+        getText : function() {
+        	return txtInput.value; 
+        },
+        hideDropDown : function() {
+        	dropDownController.hide();
+        },
+        repaint : function() {
+            var text = txtInput.value;
+            var startFrom =  rs.startFrom; 
+            var options =    rs.options;
+            var optionsLength = options.length; 
+            
+            // breaking text in leftSide and token.
+            var token = text.substring(startFrom);
+            leftSide =  text.substring(0,startFrom);
+            
+            // updating the hint. 
+            txtHint.value ='';
+            for (var i=0;i<optionsLength;i++) {
+                var opt = options[i];
+                if (opt.indexOf(token)===0) {         // <-- how about upperCase vs. lowercase
+                    txtHint.value = leftSide +opt;
+                    break;
+                }
+            }
+            
+            // moving the dropDown and refreshing it.
+            dropDown.style.left = calculateWidthForText(leftSide)+'px';
+            dropDownController.refresh(token, rs.options);
+        }
+    };
+    
+    var registerOnTextChangeOldValue;
+
+    /**
+     * Register a callback function to detect changes to the content of the input-type-text.
+     * Those changes are typically followed by user's action: a key-stroke event but sometimes it might be a mouse click.
+    **/
+    var registerOnTextChange = function(txt, callback) {
+        registerOnTextChangeOldValue = txt.value;
+        var handler = function() {
+            var value = txt.value;
+            if (registerOnTextChangeOldValue !== value) {
+                registerOnTextChangeOldValue = value;
+                callback(value);
+            }
+        };
+
+        //  
+        // For user's actions, we listen to both input events and key up events
+        // It appears that input events are not enough so we defensively listen to key up events too.
+        // source: http://help.dottoro.com/ljhxklln.php
+        //
+        // The cost of listening to three sources should be negligible as the handler will invoke callback function
+        // only if the text.value was effectively changed. 
+        //  
+        // 
+        if (txt.addEventListener) {
+            txt.addEventListener("input",  handler, false);
+            txt.addEventListener('keyup',  handler, false);
+            txt.addEventListener('change', handler, false);
+        } else { // is this a fair assumption: that attachEvent will exist ?
+            txt.attachEvent('oninput', handler); // IE<9
+            txt.attachEvent('onkeyup', handler); // IE<9
+            txt.attachEvent('onchange',handler); // IE<9
+        }
+    };
+    
+    
+    registerOnTextChange(txtInput,function(text) { // note the function needs to be wrapped as API-users will define their onChange
+        rs.onChange(text);
+    });
+    
+    
+    var keyDownHandler = function(e) {
+        e = e || window.event;
+        var keyCode = e.keyCode;
+        
+        if (keyCode == 33) { return; } // page up (do nothing)
+        if (keyCode == 34) { return; } // page down (do nothing);
+        
+        // if (keyCode == 27) { //escape
+        //     dropDownController.hide();
+        //     txtHint.value = txtInput.value; // ensure that no hint is left.
+        //     txtInput.focus(); 
+        //     return; 
+        // }
+        
+        if (keyCode == 39 || keyCode == 35 || keyCode == 9) { // right,  end, tab  (autocomplete triggered)
+        	if (keyCode == 9) { // for tabs we need to ensure that we override the default behaviour: move to the next focusable HTML-element 
+           	    e.preventDefault();
+                e.stopPropagation();
+                if (txtHint.value.length == 0) {
+                	rs.onTab(); // tab was called with no action.
+                	            // users might want to re-enable its default behaviour or handle the call somehow.
+                }
+            }
+            if (txtHint.value.length > 0) { // if there is a hint
+                dropDownController.hide();
+                txtInput.value = txtHint.value;
+                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
+                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
+                                                          // for example imagine the array contains the following words: bee, beef, beetroot
+                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
+                if (hasTextChanged) {
+                    rs.onChange(txtInput.value); // <-- forcing it.
+                }
+            }
+            return; 
+        }
+        
+        if (keyCode == 13) {       // enter  (autocomplete triggered)
+            if (txtHint.value.length == 0) { // if there is a hint
+                rs.onEnter();
+            } else {
+                var wasDropDownHidden = (dropDown.style.visibility == 'hidden');
+                dropDownController.hide();
+                
+                if (wasDropDownHidden) {
+                    txtHint.value = txtInput.value; // ensure that no hint is left.
+                    txtInput.focus();
+                    rs.onEnter();    
+                    return; 
+                }
+                
+                txtInput.value = txtHint.value;
+                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
+                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
+                                                          // for example imagine the array contains the following words: bee, beef, beetroot
+                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
+                if (hasTextChanged) {
+                    rs.onChange(txtInput.value); // <-- forcing it.
+                }
+                
+            }
+            return; 
+        }
+        
+        if (keyCode == 40) {     // down
+            var m = dropDownController.move(+1);
+            if (m == '') { rs.onArrowDown(); }
+            txtHint.value = leftSide+m;
+            return; 
+        } 
+            
+        if (keyCode == 38 ) {    // up
+            var m = dropDownController.move(-1);
+            if (m == '') { rs.onArrowUp(); }
+            txtHint.value = leftSide+m;
+            e.preventDefault();
+            e.stopPropagation();
+            return; 
+        }
+            
+        // it's important to reset the txtHint on key down.
+        // think: user presses a letter (e.g. 'x') and never releases... you get (xxxxxxxxxxxxxxxxx)
+        // and you would see still the hint
+        txtHint.value =''; // resets the txtHint. (it might be updated onKeyUp)
+        
+    };
+    
+    if (txtInput.addEventListener) {
+        txtInput.addEventListener("keydown",  keyDownHandler, false);
+    } else { // is this a fair assumption: that attachEvent will exist ?
+        txtInput.attachEvent('onkeydown', keyDownHandler); // IE<9
+    }
+    return rs;
+}
 });
 
 define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackManager) {
@@ -8986,6 +9566,8 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
         move_this.attr('transform',
 		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
 		  'scale('+this.window_scale+')');
+
+	this.callback_manager.run('go_to');
 	return null;
     }
 
@@ -9171,49 +9753,51 @@ define('DirectionArrow',["utils"], function(utils) {
     }
 });
 
-define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", "draw", "DirectionArrow"], function(utils, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow) {
+define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'CallbackManager', 'draw', 'DirectionArrow'], function(utils, PlacedDiv, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow) {
     /**
      */
 
-    var Input = utils.make_class();
+    var BuildInput = utils.make_class();
     // instance methods
-    Input.prototype = { init: init,
-			setup_map_callbacks: setup_map_callbacks,
-			setup_zoom_callbacks: setup_zoom_callbacks,
-			is_visible: is_visible,
-			toggle: toggle,
-			show_dropdown: show_dropdown,
-			hide_dropdown: hide_dropdown,
-			place_at_selected: place_at_selected,
-			place: place,
-			reload_at_selected: reload_at_selected,
-			reload: reload,
-			toggle_start_reaction_listener: toggle_start_reaction_listener,
-			hide_target: hide_target,
-			show_target: show_target };
+    BuildInput.prototype = { init: init,
+			     setup_map_callbacks: setup_map_callbacks,
+			     setup_zoom_callbacks: setup_zoom_callbacks,
+			     is_visible: is_visible,
+			     toggle: toggle,
+			     show_dropdown: show_dropdown,
+			     hide_dropdown: hide_dropdown,
+			     place_at_selected: place_at_selected,
+			     place: place,
+			     reload_at_selected: reload_at_selected,
+			     reload: reload,
+			     toggle_start_reaction_listener: toggle_start_reaction_listener,
+			     hide_target: hide_target,
+			     show_target: show_target };
 
-    return Input;
+    return BuildInput;
 
     // definitions
     function init(selection, map, zoom_container) {
 	// set up container
-	var new_sel = selection.append("div").attr("id", "rxn-input");
+	var new_sel = selection.append('div').attr('id', 'rxn-input');
+	this.placed_div = PlacedDiv(new_sel, map, {x: 240, y: 0});
+	this.placed_div.hide();
 	// set up complete.ly
-	var c = completely(new_sel.node(), { backgroundColor: "#eee" });
+	var c = completely(new_sel.node(), { backgroundColor: '#eee' });
 	d3.select(c.input)
 	// .attr('placeholder', 'Reaction ID -- Flux')
 	    .on('input', function() {
 		this.value = this.value
-		    // .replace("/","")
+		// .replace("/","")
 		    .replace(" ","")
 		    .replace("\\","")
 		    .replace("<","");
 	    });
-	this.selection = new_sel;
 	this.completely = c;
 	// close button
 	new_sel.append('button').attr('class', "button input-close-button")
-	    .text("×").on('click', function() { this.hide_dropdown(); }.bind(this));
+	    .text("×")
+	    .on('click', function() { this.hide_dropdown(); }.bind(this));
 
 	if (map instanceof Map) {
 	    this.map = map;
@@ -9225,30 +9809,29 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 
 	    this.setup_map_callbacks(map);
 	} else {
-	    console.error('Cannot set the map. It is not an instance of builder/Map');
+	    throw new Error('Cannot set the map. It is not an instance of ' + 
+			    'Map');
 	}
 	if (zoom_container instanceof ZoomContainer) {
 	    this.zoom_container = zoom_container;
-	    this.setup_zoom_callbacks();
+	    this.setup_zoom_callbacks(zoom_container);
 	} else {
-	    console.error('Cannot set the zoom_container. It is not an instance of ' +
-			  'builder/ZoomContainer');
+	    throw new Error('Cannot set the zoom_container. It is not an ' +
+			    'instance of ZoomContainer');
 	}
-
-	// set up reaction input callbacks
-	this.callback_manager = new CallbackManager();
 
 	// toggle off
 	this.toggle(false);
 	this.target_coords = null;
     }
+
     function setup_map_callbacks(map) {
 	// input
 	map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
 	    if (this.is_active) this.reload(selected_node, coords, false);
 	    this.hide_target();
 	}.bind(this));
-	map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
+	map.callback_manager.set('select_selectable.input', function(count, selected_node, coords) {
 	    this.hide_target();
 	    if (count == 1 && this.is_active && coords) {
 		this.reload(selected_node, coords, false);
@@ -9263,16 +9846,19 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	    this.hide_target();
 	}.bind(this));
     }
-    function setup_zoom_callbacks() {
-	this.zoom_container.callback_manager.set('zoom.input', function() {
+
+    function setup_zoom_callbacks(zoom_container) {
+	zoom_container.callback_manager.set('zoom.input', function() {
 	    if (this.is_active) {
 		this.place_at_selected();
 	    }
 	}.bind(this));
     }
+
     function is_visible() {
-	return this.selection.style('display') != 'none';
+	return this.placed_div.is_visible();
     }
+
     function toggle(on_off) {
 	if (on_off===undefined) this.is_active = !this.is_active;
 	else this.is_active = on_off;
@@ -9287,7 +9873,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 		.add_escape_listener(function() { this.hide_dropdown(); }.bind(this));
 	} else {
 	    this.toggle_start_reaction_listener(false);
-	    this.selection.style("display", "none");
+	    this.placed_div.hide();
             this.completely.input.blur();
             this.completely.hideDropDown();
 	    this.map.set_status(null);
@@ -9298,14 +9884,14 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	}
     }
     function show_dropdown(coords) {
-	this.selection.style("display", "block");
+	this.placed_div.show();
         this.completely.input.blur();
 	this.completely.repaint();
 	this.completely.setText("");
         this.completely.input.focus();
     }
     function hide_dropdown() {
-	this.selection.style("display", "none");
+	this.placed_div.hide();
         this.completely.hideDropDown();
     }
     function place_at_selected() {
@@ -9321,21 +9907,7 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 	this.place(coords);
     }
     function place(coords) {
-	var d = {x: 240, y: 0},
-	    window_translate = this.map.zoom_container.window_translate,
-	    window_scale = this.map.zoom_container.window_scale,
-	    map_size = this.map.get_size();
-        var left = Math.max(20,
-			    Math.min(map_size.width - 270,
-				     (window_scale * coords.x + window_translate.x - d.x)));
-        var top = Math.max(20,
-			   Math.min(map_size.height - 40,
-				    (window_scale * coords.y + window_translate.y - d.y)));
-        this.selection.style('position', 'absolute')
-            .style('display', 'block')
-            .style('left',left+'px')
-            .style('top',top+'px');
-
+	this.placed_div.place(coords);
 	this.direction_arrow.set_location(coords);
 	this.direction_arrow.show();
     }
@@ -9451,12 +10023,12 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
 		if (x.string.toLowerCase()==text.toLowerCase()) {
 		    if (starting_from_scratch) {
 			map.new_reaction_from_scratch(x.reaction_abbreviation,
-							   coords,
-							   direction_arrow.get_rotation());
+						      coords,
+						      direction_arrow.get_rotation());
 		    } else {
 			map.new_reaction_for_metabolite(x.reaction_abbreviation,
-							     selected_node.node_id,
-							     direction_arrow.get_rotation());
+							selected_node.node_id,
+							direction_arrow.get_rotation());
 		    }
 		}
 	    });
@@ -9485,26 +10057,26 @@ define('Input',["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackMa
             this.start_reaction_listener = on_off;
         
         if (this.start_reaction_listener) {;
-            this.map.sel.on('click.start_reaction', function(node) {
-		// TODO fix this hack
-		if (this.direction_arrow.dragging) return;
-                // reload the reaction input
-                var coords = { x: d3.mouse(node)[0],
-			       y: d3.mouse(node)[1] };
-                // unselect metabolites
-		this.map.deselect_nodes();
-		this.map.deselect_text_labels();
-		// reload the reaction input
-                this.reload(null, coords, true);
-		// generate the target symbol
-		this.show_target(this.map, coords);
-            }.bind(this, this.map.sel.node()));
-            this.map.sel.classed('start-reaction-cursor', true);
-        } else {
-            this.map.sel.on('click.start_reaction', null);
-            this.map.sel.classed('start-reaction-cursor', false);
-	    this.hide_target();
-        }
+					   this.map.sel.on('click.start_reaction', function(node) {
+					       // TODO fix this hack
+					       if (this.direction_arrow.dragging) return;
+					       // reload the reaction input
+					       var coords = { x: d3.mouse(node)[0],
+							      y: d3.mouse(node)[1] };
+					       // unselect metabolites
+					       this.map.deselect_nodes();
+					       this.map.deselect_text_labels();
+					       // reload the reaction input
+					       this.reload(null, coords, true);
+					       // generate the target symbol
+					       this.show_target(this.map, coords);
+					   }.bind(this, this.map.sel.node()));
+					   this.map.sel.classed('start-reaction-cursor', true);
+					  } else {
+					      this.map.sel.on('click.start_reaction', null);
+					      this.map.sel.classed('start-reaction-cursor', false);
+					      this.hide_target();
+					  }
     }
 
     function hide_target() {
@@ -9558,17 +10130,8 @@ define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
 	    delete this.metabolites[the_id].id;
 	}
 
-	// get cofactors if preset
-	if ('cofactors' in model_data) {
-	    if (model_data.cofactors instanceof Array) {
-		this.cofactors = model_data.cofactors;
-	    } else {
-		console.warn('model_data.cofactors should be an array. Ignoring it');
-		this.cofactors = [];
-	    }
-	} else {
-	    this.cofactors = [];
-	}
+	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
+			  'gdp', 'h'];
     }
 
     function apply_reaction_data(reaction_data, styles) {
@@ -9609,7 +10172,14 @@ define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
 define('Brush',["utils"], function(utils) {
     /** Define a brush to select elements in a map.
 
-     Brush(selection, is_enabled, map, insert_after)
+     Arguments
+     ---------
+
+     selection: A d3 selection to place the brush in.
+
+     is_enabled: Whether to turn the brush on.
+
+     map: An instance of escher.Map.
 
      insert_after: A d3 selector string to choose the svg element that the brush
      will be inserted after. Often a canvas element (e.g. '.canvas-group').
@@ -9655,7 +10225,7 @@ define('Brush',["utils"], function(utils) {
     }	
     function setup_selection_brush() {
 	var selection = this.brush_sel, 
-	    nodes_selection = this.map.sel.select('#nodes'),
+	    selectable_selection = this.map.sel.selectAll('#nodes,#text-labels'),
 	    size_and_location = this.map.canvas.size_and_location(),
 	    width = size_and_location.width,
 	    height = size_and_location.height,
@@ -9670,10 +10240,12 @@ define('Brush',["utils"], function(utils) {
 			selection;
 		    if (shift_key_on) {
 			// when shift is pressed, ignore the currently selected nodes
-			selection = nodes_selection.selectAll('.node:not(.selected)');
+			selection = selectable_selection
+			    .selectAll('.node,.text-label:not(.selected)');
 		    } else {
 			// otherwise, brush all nodes
-			selection = nodes_selection.selectAll('.node');
+			selection = selectable_selection
+			    .selectAll('.node,.text-label');
 		    }
 		    selection.classed("selected", function(d) { 
 			var sx = d.x, sy = d.y;
@@ -9959,6 +10531,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 			    set_domain_value: set_domain_value,
 			    set_domain: set_domain,
 			    set_range_value: set_range_value,
+			    set_no_data_value: set_no_data_value,
 			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes };
@@ -9972,7 +10545,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
     }
 
     // instance methods
-    function init(def_styles, def_auto_domain, def_domain, def_range) {
+    function init(def_styles, def_auto_domain, def_domain, def_range, def_no_data) {
 	// defaults
 	if (def_styles===undefined) 
 	    def_styles = { reaction: ['color', 'size', 'abs', 'text'],
@@ -9988,6 +10561,11 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 				      size: [4, 8, 12] },
 			  metabolite: { color: ['green', 'white', 'red'],
 					size: [6, 8, 10] } };
+	if (def_no_data===undefined)
+	    def_no_data = { reaction: { color: 'rgb(220,220,220)',
+					size: 4 },
+			    metabolite: { color: 'white',
+					  size: 6 } };
 
 	// event streams
 	this.data_styles = {};
@@ -10002,6 +10580,9 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.range = {};
 	this.range_bus = {};
 	this.range_stream = {};
+	this.no_data = {};
+	this.no_data_bus = {};
+	this.no_data_stream = {};
 
 	// manage accepting/abandoning changes
 	this.status_bus = new bacon.Bus();
@@ -10125,6 +10706,35 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 		}.bind(this));
 
 	    }.bind(this));
+
+	    // set up the no data settings
+	    this.no_data_bus[type] = {};
+	    this.no_data_stream[type] = {};
+	    this.no_data[type] = {};
+	    ['color', 'size'].forEach(function(no_data_type) {
+		// make the bus
+		this.no_data_bus[type][no_data_type] = new bacon.Bus();
+		// make a new constant for the input default
+		this.no_data_stream[type][no_data_type] = this.no_data_bus[type][no_data_type]
+		// conditionally accept changes
+		    .convert_to_conditional_stream(this.status_bus)
+		// combine into state array
+		    .scan([], function(current, value) {
+			return value;
+		    })
+		// force updates
+		    .force_update_with_bus(this.force_update_bus);
+
+		// get the latest
+		this.no_data_stream[type][no_data_type].onValue(function(v) {
+		    this.no_data[type][no_data_type] = v;
+		}.bind(this));
+
+		// push the default
+		var def = def_no_data[type][no_data_type];
+		this.no_data_bus[type][no_data_type].push(def);
+
+	    }.bind(this));
 	}.bind(this));
 
 	// definitions
@@ -10186,6 +10796,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 		});
 	}
     }
+
     function set_auto_domain(type, on_off) {	
 	/** Turn auto domain setting on or off.
 
@@ -10199,6 +10810,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
 	this.auto_domain_bus[type].push(on_off);
     }
+
     function change_data_style(type, style, on_off) {
 	/** Change the data style.
 
@@ -10215,6 +10827,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.data_styles_bus[type].push({ style: style,
 					  on_off: on_off });
     }
+
     function set_domain_value(type, index, value) {
 	/** Change a domain value.
 
@@ -10230,6 +10843,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.domain_bus[type].push({ index: index,
 				     value: value });
     }
+
     function set_domain(type, domain) {
 	/** Change a domain.
 
@@ -10244,6 +10858,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	    this.domain_bus[type].push({ index: i, value: d });
 	}.bind(this));
     }
+
     function set_range_value(type, range_type, index, value) {
 	/** Change a range value.
 
@@ -10261,6 +10876,22 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.range_bus[type][range_type].push({ index: index,
 						   value: value });
     }
+
+    function set_no_data_value(type, no_data_type, value) {
+	/** Change a no_data value.
+
+	 type: 'reaction' or 'metabolite'
+
+	 no_data_type: 'color' or 'size'
+
+	 value: The new value
+
+	 */
+	check_type(type);
+
+	this.no_data_bus[type][no_data_type].push(value);
+    }
+
     function hold_changes() {
 	this.status_bus.push('hold');
     }
@@ -10474,6 +11105,24 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		});
 	});
 
+	// no data
+	var r = t.append('tr').append('td').attr('colspan', '5');
+	[['color', 'No data color'], ['size', 'No data size']].forEach(function(range_type_ar) {
+	    r.append('span').text(range_type_ar[1] + ':');
+	    r.append('input').attr('class', 'no-data-input')
+		.each(function() {
+		    bacon.fromEventTarget(this, 'change')
+			.onValue(function(event) {
+			    settings.set_no_data_value(type, range_type_ar[0],
+						       event.target.value);
+			});
+
+		    settings.no_data_stream[type][range_type_ar[0]].onValue(function(ar) {
+		    	this.value = ar;
+		    }.bind(this));
+		});
+	});
+
 	// styles
 	t.append('tr').call(function(r) {
 	    r.append('td').text('Styles:');
@@ -10508,7 +11157,163 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
     }
 });
 
-define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui", "SearchBar", "Settings", "SettingsBar"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar) {
+define('TextEditInput',['utils', 'PlacedDiv', 'Map', 'ZoomContainer', 'CallbackManager', 'build'], function(utils, PlacedDiv, Map, ZoomContainer, CallbackManager, build) {
+    /**
+     */
+
+    var TextEditInput = utils.make_class();
+    // instance methods
+    TextEditInput.prototype = { init: init,
+				setup_map_callbacks: setup_map_callbacks,
+				setup_zoom_callbacks: setup_zoom_callbacks,
+				is_visible: is_visible,
+				show: show,
+				hide: hide,
+				_accept_changes: _accept_changes,
+				_add_and_edit: _add_and_edit };
+
+    return TextEditInput;
+
+    // definitions
+    function init(selection, map, zoom_container) {
+	var div = selection.append('div')
+		.attr('id', 'text-edit-input');
+	this.placed_div = PlacedDiv(div, map);
+	this.placed_div.hide();
+	this.input = div.append('input');
+
+	if (map instanceof Map) {
+	    this.map = map;
+	    this.setup_map_callbacks(map);
+	} else {
+	    throw new Error('Cannot set the map. It is not an instance of ' + 
+			    'Map');
+	}
+	if (zoom_container instanceof ZoomContainer) {
+	    this.zoom_container = zoom_container;
+	    this.setup_zoom_callbacks(zoom_container);
+	} else {
+	    throw new Error('Cannot set the zoom_container. It is not an ' +
+			    'instance of ZoomContainer');
+	}
+    }
+
+    function setup_map_callbacks(map) {
+	// input
+	map.callback_manager.set('edit_text_label.text_edit_input', function(target, coords) {
+	    this.show(target, coords);
+	}.bind(this));
+
+	// new text_label
+	map.callback_manager.set('new_text_label.text_edit_input', function(coords) {
+	    if (this.active_target !== null)
+		this._accept_changes(this.active_target.target);
+	    this.hide();
+	    this._add_and_edit(coords);
+	}.bind(this));
+    }
+
+    function setup_zoom_callbacks(zoom_container) {
+	zoom_container.callback_manager.set('zoom.text_edit_input', function() {
+	    if (this.active_target)
+		this._accept_changes(this.active_target.target);
+	    this.hide();
+	}.bind(this));
+	zoom_container.callback_manager.set('go_to.text_edit_input', function() {
+	    if (this.active_target)
+		this._accept_changes(this.active_target.target);
+	    this.hide();
+	}.bind(this));
+    }
+
+    function is_visible() {
+	return this.placed_div.is_visible();
+    }
+
+    function show(target, coords) {
+	// save any existing edit
+	if (this.active_target) {
+	    this._accept_changes(this.active_target.target);
+	}
+
+	// set the current target
+	this.active_target = { target: target,
+			       coords: coords };
+
+	// set the new value
+	target.each(function(d) {
+	    this.input.node().value = d.text;
+	}.bind(this));
+
+	// place the input
+	this.placed_div.place(coords);
+	this.input.node().focus();
+
+	// escape key
+	this.escape = this.map.key_manager
+	    .add_escape_listener(function() {
+		this.hide();
+	    }.bind(this));
+	// enter key
+	this.enter = this.map.key_manager
+	    .add_enter_listener(function(target) {
+		this._accept_changes(target);
+		this.hide();
+	    }.bind(this, target));
+    }
+
+    function hide() {
+	// hide the input
+	this.placed_div.hide();
+
+	// clear the value
+	this.input.attr('value', '');
+	this.active_target = null;
+
+	// clear escape
+	if (this.escape)
+	    this.escape.clear();
+	this.escape = null;
+	// clear enter
+	if (this.enter)
+	    this.enter.clear();
+	this.enter = null;
+	// turn off click listener
+	// this.map.sel.on('click.', null);
+    }
+
+    function _accept_changes(target) {
+	if (this.input.node().value == '') {
+	    // delete the label
+	    target.each(function(d) {
+		var selected = {};
+		selected[d.text_label_id] = this.map.text_labels[d.text_label_id];
+		this.map.delete_selectable({}, selected, true);
+	    }.bind(this));
+	} else {
+	    // set the text
+	    var text_label_ids = [];
+	    target.each(function(d) {
+		this.map.edit_text_label(d.text_label_id, this.input.node().value, true);
+		text_label_ids.push(d.text_label_id);
+	    }.bind(this));
+	}
+    }
+
+    function _add_and_edit(coords) {
+	var out = build.new_text_label(this.map.largest_ids, '', coords);
+	this.map.text_labels[out.id] = out.label;
+	sel = this.map.draw_these_text_labels([out.id]);
+	// TODO wait here?
+	var sel = this.map.sel.select('#text-labels').selectAll('.text-label')
+		.filter(function(d) { return d.text_label_id==out.id; });
+	// apply the cursor to the new label
+	sel.select('text').classed('edit-text-cursor', true);
+	this.show(sel, coords);
+    }
+});
+
+define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Builder(options)
@@ -10525,12 +11330,14 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			  brush_mode: brush_mode,
 			  zoom_mode: zoom_mode,
 			  rotate_mode: rotate_mode,
+			  text_mode: text_mode,
 			  _toggle_direction_buttons: _toggle_direction_buttons,
 			  _setup_menu: _setup_menu,
 			  _setup_simple_zoom_buttons: _setup_simple_zoom_buttons,
 			  _setup_status: _setup_status,
 			  _setup_modes: _setup_modes,
-			  _get_keys: _get_keys };
+			  _get_keys: _get_keys,
+			  _setup_confirm_before_exit: _setup_confirm_before_exit };
 
     return Builder;
 
@@ -10555,6 +11362,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    css_path: null,
 	    css: null,
 	    starting_reaction: null,
+	    never_ask_before_quit: false,
 	    // applied data
 	    auto_reaction_domain: true,
 	    reaction_data_path: null,
@@ -10563,13 +11371,17 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    reaction_domain: [-10, 0, 10],
 	    reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
 	    reaction_size_range: [4, 8, 12],
+	    reaction_no_data_color: 'rgb(220,220,220)',
+	    reaction_no_data_size: 4,
 	    metabolite_data: null,
 	    metabolite_data_path: null,
 	    metabolite_styles: ['color', 'size', 'text'],
 	    auto_metabolite_domain: true,
 	    metabolite_domain: [-10, 0, 10],
 	    metabolite_color_range: ['green', 'white', 'red'],
-	    metabolite_size_range: [6, 8, 10]
+	    metabolite_size_range: [6, 8, 10],
+	    metabolite_no_data_color: 'white',
+	    metabolite_no_data_size: 6
 	});
 
 	// initialize the settings
@@ -10583,7 +11395,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    { reaction: { color: this.options.reaction_color_range,
 			  size: this.options.reaction_size_range },
 	      metabolite: { color: this.options.metabolite_color_range,
-			    size: this.options.metabolite_size_range } }
+			    size: this.options.metabolite_size_range } },
+	    { reaction: { color: this.options.reaction_no_data_color,
+			  size: this.options.reaction_no_data_size },
+	      metabolite: { color: this.options.metabolite_no_data_color,
+			    size: this.options.metabolite_no_data_size } }
 	);
 
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
@@ -10639,7 +11455,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	 */
 
 	// Begin with some definitions
-	var node_click_enabled = true,
+	var selectable_click_enabled = true,
 	    shift_key_on = false;
 
 	// set up this callback manager
@@ -10690,8 +11506,12 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	}
 
 	// set up the reaction input with complete.ly
-	this.reaction_input = Input(this.options.selection, this.map,
-				    this.zoom_container);
+	this.reaction_input = BuildInput(this.options.selection, this.map,
+					 this.zoom_container);
+
+	// set up the text edit input
+	this.text_edit_input = TextEditInput(this.options.selection, this.map,
+					     this.zoom_container);
 
 	// set up the Brush
 	this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
@@ -10728,7 +11548,7 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.map.key_manager.assigned_keys = keys;
 	// tell the key manager about the reaction input and search bar
 	this.map.key_manager.input_list = [this.reaction_input, this.search_bar,
-					   this.settings_page];
+					   this.settings_page, this.text_edit_input];
 	// make sure the key manager remembers all those changes
 	this.map.key_manager.update();
 	// turn it on/off
@@ -10765,6 +11585,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	else
 	    this.view_mode();
 
+	// confirm before leaving the page
+	if (this.options.enable_editing && !this.options.never_ask_before_quit)
+	    this._setup_confirm_before_exit();
+
 	// draw
 	this.map.draw_everything();
     }
@@ -10784,12 +11608,16 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
 	// behavior
 	this.map.behavior.toggle_rotation_mode(mode=='rotate');
-	this.map.behavior.toggle_node_click(mode=='build' || mode=='brush');
-	this.map.behavior.toggle_node_drag(mode=='brush');
-	this.map.behavior.toggle_text_label_click(mode=='brush');
+	this.map.behavior.toggle_selectable_click(mode=='build' || mode=='brush' || mode=='rotate');
+	this.map.behavior.toggle_selectable_drag(mode=='brush' || mode=='rotate');
 	this.map.behavior.toggle_label_drag(mode=='brush');
-	if (mode=='view')
+	this.map.behavior.toggle_text_label_edit(mode=='text');
+	this.map.behavior.toggle_bezier_drag(mode=='brush');
+	// edit selections
+	if (mode=='view' || mode=='text')
 	    this.map.select_none();
+	if (mode=='rotate')
+	    this.map.deselect_text_labels();
 	this.map.draw_everything();
     }
     function view_mode() {
@@ -10811,6 +11639,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
     function rotate_mode() {
 	this.callback_manager.run('rotate_mode');
 	this.set_mode('rotate');
+    }
+    function text_mode() {
+	this.callback_manager.run('text_mode');
+	this.set_mode('text');
     }	
     function _setup_menu(menu_selection, button_selection, map, zoom_container,
 			 key_manager, keys, enable_editing) {
@@ -10868,6 +11700,9 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.button({ key: keys.rotate_mode,
 			  id: 'rotate-mode-menu-button',
 			  text: "Rotate mode (r)" })
+		.button({ key: keys.text_mode,
+			  id: 'text-mode-menu-button',
+			  text: "Text mode (t)" })
 		.divider()
 		.button({ key: keys.delete,
 			  // icon: "glyphicon glyphicon-trash",
@@ -10880,8 +11715,12 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 			  text: "Make primary metabolite (p)" })
 		.button({ key: keys.cycle_primary,
 			  text: "Cycle primary metabolite (c)" })
+		.button({ key: keys.select_all,
+			  text: "Select all (Ctrl a)" })
 		.button({ key: keys.select_none,
-			  text: "Select none (Ctrl Shift a)" });
+			  text: "Select none (Ctrl Shift a)" })
+		.button({ key: keys.invert_selection,
+			  text: "Invert selection" });
 	} else {
 	    edit_menu.button({ key: keys.view_mode,
 			       id: 'view-mode-menu-button',
@@ -10951,7 +11790,11 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		.button({ key: keys.rotate_mode,
 			  id: 'rotate-mode-button',
 			  icon: "glyphicon glyphicon-repeat",
-			  tooltip: "Rotate mode (r)" });
+			  tooltip: "Rotate mode (r)" })
+		.button({ key: keys.text_mode,
+			  id: 'text-mode-button',
+			  icon: "glyphicon glyphicon-font",
+			  tooltip: "Text mode (r)" });
 
 	    // arrow buttons
 	    this.direction_buttons = button_panel.append('li');
@@ -10976,7 +11819,8 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		       '#zoom-mode-menu-button',
 		       '#brush-mode-menu-button',
 		       '#rotate-mode-menu-button',
-		       '#view-mode-menu-button'];
+		       '#view-mode-menu-button',
+		       '#text-mode-menu-button'];
 	    for (var i=0, l=ids.length; i<l; i++) {
 		var the_id = ids[i];
 		d3.select(the_id)
@@ -11004,6 +11848,10 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	this.callback_manager.set('view_mode', function() {
 	    $('#view-mode-button').button('toggle');
 	    select_menu_button('#view-mode-menu-button');
+	});
+	this.callback_manager.set('text_mode', function() {
+	    $('#text-mode-button').button('toggle');
+	    select_menu_button('#text-mode-menu-button');
 	});
 
 	// definitions
@@ -11073,13 +11921,13 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	    brush.toggle(false);
 	    was_enabled.zoom = zoom_container.zoom_on;
 	    zoom_container.toggle_zoom(false);
-	    was_enabled.node_click = map.behavior.node_click!=null;
-	    map.behavior.toggle_node_click(false);
+	    was_enabled.selectable_click = map.behavior.selectable_click!=null;
+	    map.behavior.toggle_selectable_click(false);
 	});
 	map.callback_manager.set('end_rotation', function() {
 	    brush.toggle(was_enabled.brush);
 	    zoom_container.toggle_zoom(was_enabled.zoom);
-	    map.behavior.toggle_node_click(was_enabled.node_click);
+	    map.behavior.toggle_selectable_click(was_enabled.selectable_click);
 	    was_enabled = {};
 	});
     }
@@ -11124,21 +11972,20 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 	if (enable_editing) {
 	    utils.extend(keys, {
 		build_mode: { key: 78, // n
-			      target: this,
-			      fn: this.build_mode,
+			      fn: this.build_mode.bind(this),
 			      ignore_with_input: true },
-		zoom_mode: { key: 90, // z 
-			     target: this,
-			     fn: this.zoom_mode,
+		zoom_mode: { key: 90, // z
+			     fn: this.zoom_mode.bind(this),
 			     ignore_with_input: true },
 		brush_mode: { key: 86, // v
-			      target: this,
-			      fn: this.brush_mode,
+			      fn: this.brush_mode.bind(this),
 			      ignore_with_input: true },
 		rotate_mode: { key: 82, // r
-			       target: this,
-			       fn: this.rotate_mode,
+			       fn: this.rotate_mode.bind(this),
 			       ignore_with_input: true },
+		text_mode: { key: 84, // t
+			     fn: this.text_mode.bind(this),
+			     ignore_with_input: true },
 		toggle_beziers: { key: 66,
 				  target: map,
 				  fn: map.toggle_beziers,
@@ -11181,14 +12028,28 @@ define('Builder',["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush
 		redo: { key: 90, modifiers: { control: true, shift: true },
 			target: map.undo_stack,
 			fn: map.undo_stack.redo },
+		select_all: { key: 65, modifiers: { control: true }, // Ctrl Shift a
+			       fn: map.select_all.bind(map) },
 		select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
-			       target: map,
-			       fn: map.select_none },
+			       fn: map.select_none.bind(map) },
+		invert_selection: { fn: map.invert_selection.bind(map) },
 		show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
 				 fn: settings_page.toggle.bind(settings_page) }
 	    });
 	}
 	return keys;
+    }
+
+    function _setup_confirm_before_exit() {
+	/** Ask if the user wants to exit the page (to avoid unplanned refresh).
+
+	 */
+	
+	window.onbeforeunload = function(e) {
+	    // If we haven't been passed the event get the window.event
+	    e = e || window.event;
+	    return 'You may have unsaved changes.';
+	};
     }
 });
 

@@ -1,4 +1,4 @@
-define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "CallbackManager", "ui", "SearchBar", "Settings", "SettingsBar"], function(utils, Input, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar) {
+define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Builder(options)
@@ -15,12 +15,14 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  brush_mode: brush_mode,
 			  zoom_mode: zoom_mode,
 			  rotate_mode: rotate_mode,
+			  text_mode: text_mode,
 			  _toggle_direction_buttons: _toggle_direction_buttons,
 			  _setup_menu: _setup_menu,
 			  _setup_simple_zoom_buttons: _setup_simple_zoom_buttons,
 			  _setup_status: _setup_status,
 			  _setup_modes: _setup_modes,
-			  _get_keys: _get_keys };
+			  _get_keys: _get_keys,
+			  _setup_confirm_before_exit: _setup_confirm_before_exit };
 
     return Builder;
 
@@ -45,6 +47,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    css_path: null,
 	    css: null,
 	    starting_reaction: null,
+	    never_ask_before_quit: false,
 	    // applied data
 	    auto_reaction_domain: true,
 	    reaction_data_path: null,
@@ -53,13 +56,17 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    reaction_domain: [-10, 0, 10],
 	    reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
 	    reaction_size_range: [4, 8, 12],
+	    reaction_no_data_color: 'rgb(220,220,220)',
+	    reaction_no_data_size: 4,
 	    metabolite_data: null,
 	    metabolite_data_path: null,
 	    metabolite_styles: ['color', 'size', 'text'],
 	    auto_metabolite_domain: true,
 	    metabolite_domain: [-10, 0, 10],
 	    metabolite_color_range: ['green', 'white', 'red'],
-	    metabolite_size_range: [6, 8, 10]
+	    metabolite_size_range: [6, 8, 10],
+	    metabolite_no_data_color: 'white',
+	    metabolite_no_data_size: 6
 	});
 
 	// initialize the settings
@@ -73,7 +80,11 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    { reaction: { color: this.options.reaction_color_range,
 			  size: this.options.reaction_size_range },
 	      metabolite: { color: this.options.metabolite_color_range,
-			    size: this.options.metabolite_size_range } }
+			    size: this.options.metabolite_size_range } },
+	    { reaction: { color: this.options.reaction_no_data_color,
+			  size: this.options.reaction_no_data_size },
+	      metabolite: { color: this.options.metabolite_no_data_color,
+			    size: this.options.metabolite_no_data_size } }
 	);
 
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
@@ -129,7 +140,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	 */
 
 	// Begin with some definitions
-	var node_click_enabled = true,
+	var selectable_click_enabled = true,
 	    shift_key_on = false;
 
 	// set up this callback manager
@@ -180,8 +191,12 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	}
 
 	// set up the reaction input with complete.ly
-	this.reaction_input = Input(this.options.selection, this.map,
-				    this.zoom_container);
+	this.reaction_input = BuildInput(this.options.selection, this.map,
+					 this.zoom_container);
+
+	// set up the text edit input
+	this.text_edit_input = TextEditInput(this.options.selection, this.map,
+					     this.zoom_container);
 
 	// set up the Brush
 	this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
@@ -218,7 +233,7 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.map.key_manager.assigned_keys = keys;
 	// tell the key manager about the reaction input and search bar
 	this.map.key_manager.input_list = [this.reaction_input, this.search_bar,
-					   this.settings_page];
+					   this.settings_page, this.text_edit_input];
 	// make sure the key manager remembers all those changes
 	this.map.key_manager.update();
 	// turn it on/off
@@ -255,6 +270,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	else
 	    this.view_mode();
 
+	// confirm before leaving the page
+	if (this.options.enable_editing && !this.options.never_ask_before_quit)
+	    this._setup_confirm_before_exit();
+
 	// draw
 	this.map.draw_everything();
     }
@@ -274,12 +293,16 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
 	// behavior
 	this.map.behavior.toggle_rotation_mode(mode=='rotate');
-	this.map.behavior.toggle_node_click(mode=='build' || mode=='brush');
-	this.map.behavior.toggle_node_drag(mode=='brush');
-	this.map.behavior.toggle_text_label_click(mode=='brush');
+	this.map.behavior.toggle_selectable_click(mode=='build' || mode=='brush' || mode=='rotate');
+	this.map.behavior.toggle_selectable_drag(mode=='brush' || mode=='rotate');
 	this.map.behavior.toggle_label_drag(mode=='brush');
-	if (mode=='view')
+	this.map.behavior.toggle_text_label_edit(mode=='text');
+	this.map.behavior.toggle_bezier_drag(mode=='brush');
+	// edit selections
+	if (mode=='view' || mode=='text')
 	    this.map.select_none();
+	if (mode=='rotate')
+	    this.map.deselect_text_labels();
 	this.map.draw_everything();
     }
     function view_mode() {
@@ -301,6 +324,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
     function rotate_mode() {
 	this.callback_manager.run('rotate_mode');
 	this.set_mode('rotate');
+    }
+    function text_mode() {
+	this.callback_manager.run('text_mode');
+	this.set_mode('text');
     }	
     function _setup_menu(menu_selection, button_selection, map, zoom_container,
 			 key_manager, keys, enable_editing) {
@@ -358,6 +385,9 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		.button({ key: keys.rotate_mode,
 			  id: 'rotate-mode-menu-button',
 			  text: "Rotate mode (r)" })
+		.button({ key: keys.text_mode,
+			  id: 'text-mode-menu-button',
+			  text: "Text mode (t)" })
 		.divider()
 		.button({ key: keys.delete,
 			  // icon: "glyphicon glyphicon-trash",
@@ -370,8 +400,12 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 			  text: "Make primary metabolite (p)" })
 		.button({ key: keys.cycle_primary,
 			  text: "Cycle primary metabolite (c)" })
+		.button({ key: keys.select_all,
+			  text: "Select all (Ctrl a)" })
 		.button({ key: keys.select_none,
-			  text: "Select none (Ctrl Shift a)" });
+			  text: "Select none (Ctrl Shift a)" })
+		.button({ key: keys.invert_selection,
+			  text: "Invert selection" });
 	} else {
 	    edit_menu.button({ key: keys.view_mode,
 			       id: 'view-mode-menu-button',
@@ -441,7 +475,11 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		.button({ key: keys.rotate_mode,
 			  id: 'rotate-mode-button',
 			  icon: "glyphicon glyphicon-repeat",
-			  tooltip: "Rotate mode (r)" });
+			  tooltip: "Rotate mode (r)" })
+		.button({ key: keys.text_mode,
+			  id: 'text-mode-button',
+			  icon: "glyphicon glyphicon-font",
+			  tooltip: "Text mode (r)" });
 
 	    // arrow buttons
 	    this.direction_buttons = button_panel.append('li');
@@ -466,7 +504,8 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		       '#zoom-mode-menu-button',
 		       '#brush-mode-menu-button',
 		       '#rotate-mode-menu-button',
-		       '#view-mode-menu-button'];
+		       '#view-mode-menu-button',
+		       '#text-mode-menu-button'];
 	    for (var i=0, l=ids.length; i<l; i++) {
 		var the_id = ids[i];
 		d3.select(the_id)
@@ -494,6 +533,10 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	this.callback_manager.set('view_mode', function() {
 	    $('#view-mode-button').button('toggle');
 	    select_menu_button('#view-mode-menu-button');
+	});
+	this.callback_manager.set('text_mode', function() {
+	    $('#text-mode-button').button('toggle');
+	    select_menu_button('#text-mode-menu-button');
 	});
 
 	// definitions
@@ -563,13 +606,13 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	    brush.toggle(false);
 	    was_enabled.zoom = zoom_container.zoom_on;
 	    zoom_container.toggle_zoom(false);
-	    was_enabled.node_click = map.behavior.node_click!=null;
-	    map.behavior.toggle_node_click(false);
+	    was_enabled.selectable_click = map.behavior.selectable_click!=null;
+	    map.behavior.toggle_selectable_click(false);
 	});
 	map.callback_manager.set('end_rotation', function() {
 	    brush.toggle(was_enabled.brush);
 	    zoom_container.toggle_zoom(was_enabled.zoom);
-	    map.behavior.toggle_node_click(was_enabled.node_click);
+	    map.behavior.toggle_selectable_click(was_enabled.selectable_click);
 	    was_enabled = {};
 	});
     }
@@ -614,21 +657,20 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 	if (enable_editing) {
 	    utils.extend(keys, {
 		build_mode: { key: 78, // n
-			      target: this,
-			      fn: this.build_mode,
+			      fn: this.build_mode.bind(this),
 			      ignore_with_input: true },
-		zoom_mode: { key: 90, // z 
-			     target: this,
-			     fn: this.zoom_mode,
+		zoom_mode: { key: 90, // z
+			     fn: this.zoom_mode.bind(this),
 			     ignore_with_input: true },
 		brush_mode: { key: 86, // v
-			      target: this,
-			      fn: this.brush_mode,
+			      fn: this.brush_mode.bind(this),
 			      ignore_with_input: true },
 		rotate_mode: { key: 82, // r
-			       target: this,
-			       fn: this.rotate_mode,
+			       fn: this.rotate_mode.bind(this),
 			       ignore_with_input: true },
+		text_mode: { key: 84, // t
+			     fn: this.text_mode.bind(this),
+			     ignore_with_input: true },
 		toggle_beziers: { key: 66,
 				  target: map,
 				  fn: map.toggle_beziers,
@@ -671,13 +713,27 @@ define(["utils", "Input", "ZoomContainer", "Map", "CobraModel", "Brush", "Callba
 		redo: { key: 90, modifiers: { control: true, shift: true },
 			target: map.undo_stack,
 			fn: map.undo_stack.redo },
+		select_all: { key: 65, modifiers: { control: true }, // Ctrl Shift a
+			       fn: map.select_all.bind(map) },
 		select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
-			       target: map,
-			       fn: map.select_none },
+			       fn: map.select_none.bind(map) },
+		invert_selection: { fn: map.invert_selection.bind(map) },
 		show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
 				 fn: settings_page.toggle.bind(settings_page) }
 	    });
 	}
 	return keys;
+    }
+
+    function _setup_confirm_before_exit() {
+	/** Ask if the user wants to exit the page (to avoid unplanned refresh).
+
+	 */
+	
+	window.onbeforeunload = function(e) {
+	    // If we haven't been passed the event get the window.event
+	    e = e || window.event;
+	    return 'You may have unsaved changes.';
+	};
     }
 });

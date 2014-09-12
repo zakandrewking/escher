@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from escher.plots import Builder
-from escher import urls
+from escher.urls import get_url
 
 import os, subprocess
 from os.path import join, dirname, realpath
 import tornado.ioloop
-from tornado.web import RequestHandler, asynchronous, HTTPError, Application
+from tornado.web import RequestHandler, HTTPError, Application, asynchronous
 from tornado.httpclient import AsyncHTTPClient
 from tornado import gen
 import tornado.escape
@@ -15,6 +15,8 @@ import json
 import re
 from jinja2 import Environment, PackageLoader
 from mimetypes import guess_type
+
+from escher.version import __version__
 
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
@@ -55,19 +57,40 @@ class BaseHandler(RequestHandler):
     def serve(self, data):
         if (NO_CACHE):
             self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        self.set_header('Access-Control-Allow-Origin', '*')
         self.write(data)
         self.finish()
 
 class IndexHandler(BaseHandler):
+    @asynchronous
+    @gen.coroutine
     def get(self):
+        # get the organisms, maps, and models
+        response = yield gen.Task(AsyncHTTPClient().fetch,
+                                  '/'.join([get_url('escher_root', protocol='https'),
+                                            'index.json']))
+        json_data = response.body if response.body is not None else json.dumps(None)
+
+        # render the template
         template = env.get_template('index.html')
-        data = template.render()
+        source = 'local'
+        data = template.render(d3=get_url('d3', source),
+                               boot_css=get_url('boot_css', source),
+                               index_css=get_url('index_css', source),
+                               logo=get_url('logo', source),
+                               github=get_url('github'),
+                               index_js=get_url('index_js', source),
+                               index_gh_pages_js=get_url('index_gh_pages_js', source),
+                               data=json_data,
+                               version=__version__,
+                               web_version=False)
+        
         self.set_header("Content-Type", "text/html")
         self.serve(data)
   
 class BuilderHandler(BaseHandler):
     @asynchronous
-    @gen.engine
+    @gen.coroutine
     def get(self, dev_path, offline_path, kind, path):
         # builder vs. viewer & dev vs. not dev
         js_source = ('dev' if (dev_path is not None) else
@@ -87,10 +110,13 @@ class BuilderHandler(BaseHandler):
         # if the server is running locally, then the embedded css must be loaded
         # asynchronously using the same server thread.
         if js_source in ['dev', 'local']:  
-            global PORT          
-            response = yield gen.Task(AsyncHTTPClient().fetch,
-                                      join('http://localhost:%d' % PORT, urls.builder_embed_css_local))
-            print response
+            global PORT
+            url = get_url('builder_embed_css',
+                          source='local',
+                          local_host='http://localhost:%d' % PORT)
+            response = yield gen.Task(AsyncHTTPClient().fetch, url)
+            if response.body is None:
+                raise Exception('Could not load embedded_css from %s' % url)
             builder_kwargs['embedded_css'] = response.body.replace('\n', ' ')
 
         # example data
@@ -116,7 +142,8 @@ class BuilderHandler(BaseHandler):
                           'menu': 'all'}
             
         # keyword
-        for a in ['menu', 'scroll_behavior', 'minified_js', 'auto_set_data_domain']:
+        for a in ['menu', 'scroll_behavior', 'minified_js',
+                  'auto_set_data_domain', 'never_ask_before_quit']:
             args = self.get_arguments(a)
             if len(args)==1:
                 display_kwargs[a] = (True if args[0].lower()=='true' else
@@ -144,7 +171,7 @@ class StaticHandler(BaseHandler):
         path = join(directory, path)
         print 'getting path %s' % path
         self.serve_path(path)
-        
+
 settings = {"debug": "False"}
 
 application = Application([

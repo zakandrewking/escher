@@ -15,10 +15,10 @@ define(["utils"], function(utils) {
 	this.x_size = d3.scale.linear();
 	this.y_size = d3.scale.linear();
 	this.size = d3.scale.linear();
-	this.reaction_color = d3.scale.linear();
-        this.reaction_size = d3.scale.linear();
-	this.metabolite_size = d3.scale.linear();
-	this.metabolite_color = d3.scale.linear();
+	this.reaction_color = d3.scale.linear().clamp(true);
+        this.reaction_size = d3.scale.linear().clamp(true);
+	this.metabolite_color = d3.scale.linear().clamp(true);
+	this.metabolite_size = d3.scale.linear().clamp(true);
         this.scale_path = function(path) {
             var x_fn = this.x, y_fn = this.y;
             // TODO: scale arrow width

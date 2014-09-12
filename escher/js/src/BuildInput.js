@@ -1,46 +1,48 @@
-define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", "draw", "DirectionArrow"], function(utils, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow) {
+define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'CallbackManager', 'draw', 'DirectionArrow'], function(utils, PlacedDiv, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow) {
     /**
      */
 
-    var Input = utils.make_class();
+    var BuildInput = utils.make_class();
     // instance methods
-    Input.prototype = { init: init,
-			setup_map_callbacks: setup_map_callbacks,
-			setup_zoom_callbacks: setup_zoom_callbacks,
-			is_visible: is_visible,
-			toggle: toggle,
-			show_dropdown: show_dropdown,
-			hide_dropdown: hide_dropdown,
-			place_at_selected: place_at_selected,
-			place: place,
-			reload_at_selected: reload_at_selected,
-			reload: reload,
-			toggle_start_reaction_listener: toggle_start_reaction_listener,
-			hide_target: hide_target,
-			show_target: show_target };
+    BuildInput.prototype = { init: init,
+			     setup_map_callbacks: setup_map_callbacks,
+			     setup_zoom_callbacks: setup_zoom_callbacks,
+			     is_visible: is_visible,
+			     toggle: toggle,
+			     show_dropdown: show_dropdown,
+			     hide_dropdown: hide_dropdown,
+			     place_at_selected: place_at_selected,
+			     place: place,
+			     reload_at_selected: reload_at_selected,
+			     reload: reload,
+			     toggle_start_reaction_listener: toggle_start_reaction_listener,
+			     hide_target: hide_target,
+			     show_target: show_target };
 
-    return Input;
+    return BuildInput;
 
     // definitions
     function init(selection, map, zoom_container) {
 	// set up container
-	var new_sel = selection.append("div").attr("id", "rxn-input");
+	var new_sel = selection.append('div').attr('id', 'rxn-input');
+	this.placed_div = PlacedDiv(new_sel, map, {x: 240, y: 0});
+	this.placed_div.hide();
 	// set up complete.ly
-	var c = completely(new_sel.node(), { backgroundColor: "#eee" });
+	var c = completely(new_sel.node(), { backgroundColor: '#eee' });
 	d3.select(c.input)
 	// .attr('placeholder', 'Reaction ID -- Flux')
 	    .on('input', function() {
 		this.value = this.value
-		    // .replace("/","")
+		// .replace("/","")
 		    .replace(" ","")
 		    .replace("\\","")
 		    .replace("<","");
 	    });
-	this.selection = new_sel;
 	this.completely = c;
 	// close button
 	new_sel.append('button').attr('class', "button input-close-button")
-	    .text("×").on('click', function() { this.hide_dropdown(); }.bind(this));
+	    .text("×")
+	    .on('click', function() { this.hide_dropdown(); }.bind(this));
 
 	if (map instanceof Map) {
 	    this.map = map;
@@ -52,30 +54,29 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 
 	    this.setup_map_callbacks(map);
 	} else {
-	    console.error('Cannot set the map. It is not an instance of builder/Map');
+	    throw new Error('Cannot set the map. It is not an instance of ' + 
+			    'Map');
 	}
 	if (zoom_container instanceof ZoomContainer) {
 	    this.zoom_container = zoom_container;
-	    this.setup_zoom_callbacks();
+	    this.setup_zoom_callbacks(zoom_container);
 	} else {
-	    console.error('Cannot set the zoom_container. It is not an instance of ' +
-			  'builder/ZoomContainer');
+	    throw new Error('Cannot set the zoom_container. It is not an ' +
+			    'instance of ZoomContainer');
 	}
-
-	// set up reaction input callbacks
-	this.callback_manager = new CallbackManager();
 
 	// toggle off
 	this.toggle(false);
 	this.target_coords = null;
     }
+
     function setup_map_callbacks(map) {
 	// input
 	map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
 	    if (this.is_active) this.reload(selected_node, coords, false);
 	    this.hide_target();
 	}.bind(this));
-	map.callback_manager.set('select_metabolite.input', function(count, selected_node, coords) {
+	map.callback_manager.set('select_selectable.input', function(count, selected_node, coords) {
 	    this.hide_target();
 	    if (count == 1 && this.is_active && coords) {
 		this.reload(selected_node, coords, false);
@@ -90,16 +91,19 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	    this.hide_target();
 	}.bind(this));
     }
-    function setup_zoom_callbacks() {
-	this.zoom_container.callback_manager.set('zoom.input', function() {
+
+    function setup_zoom_callbacks(zoom_container) {
+	zoom_container.callback_manager.set('zoom.input', function() {
 	    if (this.is_active) {
 		this.place_at_selected();
 	    }
 	}.bind(this));
     }
+
     function is_visible() {
-	return this.selection.style('display') != 'none';
+	return this.placed_div.is_visible();
     }
+
     function toggle(on_off) {
 	if (on_off===undefined) this.is_active = !this.is_active;
 	else this.is_active = on_off;
@@ -114,7 +118,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 		.add_escape_listener(function() { this.hide_dropdown(); }.bind(this));
 	} else {
 	    this.toggle_start_reaction_listener(false);
-	    this.selection.style("display", "none");
+	    this.placed_div.hide();
             this.completely.input.blur();
             this.completely.hideDropDown();
 	    this.map.set_status(null);
@@ -125,14 +129,14 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	}
     }
     function show_dropdown(coords) {
-	this.selection.style("display", "block");
+	this.placed_div.show();
         this.completely.input.blur();
 	this.completely.repaint();
 	this.completely.setText("");
         this.completely.input.focus();
     }
     function hide_dropdown() {
-	this.selection.style("display", "none");
+	this.placed_div.hide();
         this.completely.hideDropDown();
     }
     function place_at_selected() {
@@ -148,21 +152,7 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 	this.place(coords);
     }
     function place(coords) {
-	var d = {x: 240, y: 0},
-	    window_translate = this.map.zoom_container.window_translate,
-	    window_scale = this.map.zoom_container.window_scale,
-	    map_size = this.map.get_size();
-        var left = Math.max(20,
-			    Math.min(map_size.width - 270,
-				     (window_scale * coords.x + window_translate.x - d.x)));
-        var top = Math.max(20,
-			   Math.min(map_size.height - 40,
-				    (window_scale * coords.y + window_translate.y - d.y)));
-        this.selection.style('position', 'absolute')
-            .style('display', 'block')
-            .style('left',left+'px')
-            .style('top',top+'px');
-
+	this.placed_div.place(coords);
 	this.direction_arrow.set_location(coords);
 	this.direction_arrow.show();
     }
@@ -278,12 +268,12 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
 		if (x.string.toLowerCase()==text.toLowerCase()) {
 		    if (starting_from_scratch) {
 			map.new_reaction_from_scratch(x.reaction_abbreviation,
-							   coords,
-							   direction_arrow.get_rotation());
+						      coords,
+						      direction_arrow.get_rotation());
 		    } else {
 			map.new_reaction_for_metabolite(x.reaction_abbreviation,
-							     selected_node.node_id,
-							     direction_arrow.get_rotation());
+							selected_node.node_id,
+							direction_arrow.get_rotation());
 		    }
 		}
 	    });
@@ -312,26 +302,26 @@ define(["utils",  "lib/complete.ly", "Map", "ZoomContainer", "CallbackManager", 
             this.start_reaction_listener = on_off;
         
         if (this.start_reaction_listener) {;
-            this.map.sel.on('click.start_reaction', function(node) {
-		// TODO fix this hack
-		if (this.direction_arrow.dragging) return;
-                // reload the reaction input
-                var coords = { x: d3.mouse(node)[0],
-			       y: d3.mouse(node)[1] };
-                // unselect metabolites
-		this.map.deselect_nodes();
-		this.map.deselect_text_labels();
-		// reload the reaction input
-                this.reload(null, coords, true);
-		// generate the target symbol
-		this.show_target(this.map, coords);
-            }.bind(this, this.map.sel.node()));
-            this.map.sel.classed('start-reaction-cursor', true);
-        } else {
-            this.map.sel.on('click.start_reaction', null);
-            this.map.sel.classed('start-reaction-cursor', false);
-	    this.hide_target();
-        }
+					   this.map.sel.on('click.start_reaction', function(node) {
+					       // TODO fix this hack
+					       if (this.direction_arrow.dragging) return;
+					       // reload the reaction input
+					       var coords = { x: d3.mouse(node)[0],
+							      y: d3.mouse(node)[1] };
+					       // unselect metabolites
+					       this.map.deselect_nodes();
+					       this.map.deselect_text_labels();
+					       // reload the reaction input
+					       this.reload(null, coords, true);
+					       // generate the target symbol
+					       this.show_target(this.map, coords);
+					   }.bind(this, this.map.sel.node()));
+					   this.map.sel.classed('start-reaction-cursor', true);
+					  } else {
+					      this.map.sel.on('click.start_reaction', null);
+					      this.map.sel.classed('start-reaction-cursor', false);
+					      this.hide_target();
+					  }
     }
 
     function hide_target() {
