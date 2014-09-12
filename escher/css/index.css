@@ -29,7 +29,10 @@ footer {
     background-color: #291E1E;
     color: #eee;
 }
-footer a, a:hover, a:focus, a:visited {
+ a,  a:hover,  a:focus,  a:visited {
+    color: #CF6965;
+}
+footer a, footer a:hover, footer a:focus, footer a:visited {
     color: #FFA09D;
 }
 @media (max-width: 768px) {
@@ -68,6 +71,9 @@ footer a, a:hover, a:focus, a:visited {
 }
 #logo {
     vertical-align: inherit;
+}
+#faq li {
+    padding-top: 5px;
 }
 @media (max-width: 768px) {
     #title-box {
