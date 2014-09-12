@@ -1,6 +1,7 @@
 describe('CobraModel', function() {
     it("New model", function () {
-	var model_data = {reactions: {}};
+	var model_data = {reactions: {},
+			  cofactors: []};
 	expect(function() { escher.CobraModel(model_data);} )
 	    .toThrow(new Error("Bad model data."));
     });
@@ -26,11 +27,17 @@ describe('CobraModel', function() {
 	      acc_p: { formula: 'C3H2' }
 	    });
     });
-    it("Cofactors", function () {
+    it("No cofactors", function () {
+	var model_data = {'reactions': {},
+			  'metabolites': {}},
+	    model = escher.CobraModel(model_data);
+	expect(model.cofactors).toEqual([]);
+    });
+    it("Bad cofactors", function () {
 	var model_data = {reactions: {},
 			  metabolites: {},
 			  cofactors: {} },
 	    model = escher.CobraModel(model_data);
-	expect(model.cofactors).toContain('atp');
+	expect(model.cofactors).toEqual([]);
     });
 });

@@ -12,7 +12,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 			    set_domain_value: set_domain_value,
 			    set_domain: set_domain,
 			    set_range_value: set_range_value,
-			    set_no_data_value: set_no_data_value,
 			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes };
@@ -26,7 +25,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     }
 
     // instance methods
-    function init(def_styles, def_auto_domain, def_domain, def_range, def_no_data) {
+    function init(def_styles, def_auto_domain, def_domain, def_range) {
 	// defaults
 	if (def_styles===undefined) 
 	    def_styles = { reaction: ['color', 'size', 'abs', 'text'],
@@ -42,11 +41,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 				      size: [4, 8, 12] },
 			  metabolite: { color: ['green', 'white', 'red'],
 					size: [6, 8, 10] } };
-	if (def_no_data===undefined)
-	    def_no_data = { reaction: { color: 'rgb(220,220,220)',
-					size: 4 },
-			    metabolite: { color: 'white',
-					  size: 6 } };
 
 	// event streams
 	this.data_styles = {};
@@ -61,9 +55,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	this.range = {};
 	this.range_bus = {};
 	this.range_stream = {};
-	this.no_data = {};
-	this.no_data_bus = {};
-	this.no_data_stream = {};
 
 	// manage accepting/abandoning changes
 	this.status_bus = new bacon.Bus();
@@ -187,35 +178,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 		}.bind(this));
 
 	    }.bind(this));
-
-	    // set up the no data settings
-	    this.no_data_bus[type] = {};
-	    this.no_data_stream[type] = {};
-	    this.no_data[type] = {};
-	    ['color', 'size'].forEach(function(no_data_type) {
-		// make the bus
-		this.no_data_bus[type][no_data_type] = new bacon.Bus();
-		// make a new constant for the input default
-		this.no_data_stream[type][no_data_type] = this.no_data_bus[type][no_data_type]
-		// conditionally accept changes
-		    .convert_to_conditional_stream(this.status_bus)
-		// combine into state array
-		    .scan([], function(current, value) {
-			return value;
-		    })
-		// force updates
-		    .force_update_with_bus(this.force_update_bus);
-
-		// get the latest
-		this.no_data_stream[type][no_data_type].onValue(function(v) {
-		    this.no_data[type][no_data_type] = v;
-		}.bind(this));
-
-		// push the default
-		var def = def_no_data[type][no_data_type];
-		this.no_data_bus[type][no_data_type].push(def);
-
-	    }.bind(this));
 	}.bind(this));
 
 	// definitions
@@ -277,7 +239,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 		});
 	}
     }
-
     function set_auto_domain(type, on_off) {	
 	/** Turn auto domain setting on or off.
 
@@ -291,7 +252,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
 	this.auto_domain_bus[type].push(on_off);
     }
-
     function change_data_style(type, style, on_off) {
 	/** Change the data style.
 
@@ -308,7 +268,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	this.data_styles_bus[type].push({ style: style,
 					  on_off: on_off });
     }
-
     function set_domain_value(type, index, value) {
 	/** Change a domain value.
 
@@ -324,7 +283,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	this.domain_bus[type].push({ index: index,
 				     value: value });
     }
-
     function set_domain(type, domain) {
 	/** Change a domain.
 
@@ -339,7 +297,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	    this.domain_bus[type].push({ index: i, value: d });
 	}.bind(this));
     }
-
     function set_range_value(type, range_type, index, value) {
 	/** Change a range value.
 
@@ -357,22 +314,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	this.range_bus[type][range_type].push({ index: index,
 						   value: value });
     }
-
-    function set_no_data_value(type, no_data_type, value) {
-	/** Change a no_data value.
-
-	 type: 'reaction' or 'metabolite'
-
-	 no_data_type: 'color' or 'size'
-
-	 value: The new value
-
-	 */
-	check_type(type);
-
-	this.no_data_bus[type][no_data_type].push(value);
-    }
-
     function hold_changes() {
 	this.status_bus.push('hold');
     }

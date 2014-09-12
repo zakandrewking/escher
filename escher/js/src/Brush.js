@@ -1,14 +1,7 @@
 define(["utils"], function(utils) {
     /** Define a brush to select elements in a map.
 
-     Arguments
-     ---------
-
-     selection: A d3 selection to place the brush in.
-
-     is_enabled: Whether to turn the brush on.
-
-     map: An instance of escher.Map.
+     Brush(selection, is_enabled, map, insert_after)
 
      insert_after: A d3 selector string to choose the svg element that the brush
      will be inserted after. Often a canvas element (e.g. '.canvas-group').
@@ -54,7 +47,7 @@ define(["utils"], function(utils) {
     }	
     function setup_selection_brush() {
 	var selection = this.brush_sel, 
-	    selectable_selection = this.map.sel.selectAll('#nodes,#text-labels'),
+	    nodes_selection = this.map.sel.select('#nodes'),
 	    size_and_location = this.map.canvas.size_and_location(),
 	    width = size_and_location.width,
 	    height = size_and_location.height,
@@ -69,12 +62,10 @@ define(["utils"], function(utils) {
 			selection;
 		    if (shift_key_on) {
 			// when shift is pressed, ignore the currently selected nodes
-			selection = selectable_selection
-			    .selectAll('.node,.text-label:not(.selected)');
+			selection = nodes_selection.selectAll('.node:not(.selected)');
 		    } else {
 			// otherwise, brush all nodes
-			selection = selectable_selection
-			    .selectAll('.node,.text-label');
+			selection = nodes_selection.selectAll('.node');
 		    }
 		    selection.classed("selected", function(d) { 
 			var sx = d.x, sy = d.y;

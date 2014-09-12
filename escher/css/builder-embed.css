@@ -19,16 +19,12 @@
     fill: black; 
     stroke: none;
     text-rendering: optimizelegibility;
-    cursor: default;
 }
 .reaction-label {
     fill: rgb(32, 32, 120);
     text-rendering: optimizelegibility;
 }
-.text-label .label {
-    font-size: 50px;
-}
-.text-label-input {
+.text-label {
     font-size: 50px;
 }
 .node-circle {
@@ -36,26 +32,23 @@
     fill: none;	
     stroke: rgb(50, 50, 50);
 }
-g.selected .node-circle{
+.selected .node-circle{
     stroke-width: 3px;
     stroke: rgb(20, 113, 199);
 }
-g.selected .label {
+.selected.text-label {
     fill: rgb(20, 113, 199);
 }
 .metabolite-circle {
     stroke: rgb(162, 69, 16);
 }
-g.selected .metabolite-circle {
+.selected .metabolite-circle {
     stroke: rgb(5, 2, 0);
 }
 .segment {
-    stroke: #334E75;
-    stroke-width: 6px;
+    stroke: grey;
+    stroke-width: 3px;
     fill: none;
-}
-.arrowhead {
-    fill: #334E75;
 }
 .membrane {
     fill: none;
@@ -67,13 +60,13 @@ g.selected .metabolite-circle {
     stroke: #fff;
     shape-rendering: crispEdges;
 }
-.bezier-circle {
+.bezier {
     fill: rgb(255,255,255);	
 }
-.bezier-circle.b1 {
+.bezier1 {
     stroke: red;
 }
-.bezier-circle.b2 {
+.bezier2 {
     stroke: blue;
 }
 .connect-line{ 
@@ -107,7 +100,4 @@ g.selected .metabolite-circle {
 .cursor-grabbing {
     cursor: grabbing;
     cursor: -webkit-grabbing;
-}
-.edit-text-cursor {
-    cursor: text;
 }

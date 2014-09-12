@@ -1,10 +1,8 @@
-'use strict';
+"use strict";
 
-define(['utils', 'data_styles'], function(utils, data_styles) {
+define(["utils", "data_styles"], function(utils, data_styles) {
     return { create_reaction: create_reaction,
 	     update_reaction: update_reaction,
-	     create_bezier: create_bezier,
-	     update_bezier: update_bezier,
 	     create_node: create_node,
 	     update_node: update_node,
 	     create_text_label: create_text_label,
@@ -28,10 +26,10 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     function update_membrane(update_selection) {
 	utils.check_undefined(arguments, ['enter_selection']);
         update_selection
-            .attr('width', function(d){ return d.width; })
-            .attr('height', function(d){ return d.height; })
-            .attr('transform', function(d){return 'translate('+d.x+','+d.y+')';})
-            .style('stroke-width', function(d) { return 10; })
+            .attr("width", function(d){ return d.width; })
+            .attr("height", function(d){ return d.height; })
+            .attr("transform", function(d){return "translate("+d.x+","+d.y+")";})
+            .style("stroke-width", function(d) { return 10; })
             .attr('rx', function(d){ return 20; })
             .attr('ry', function(d){ return 20; });
     }
@@ -47,32 +45,43 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
         return;
     }
 
-    function update_reaction(update_selection, scale, drawn_nodes, 
-			     defs, has_reaction_data,
-			     no_data_style, reaction_data_styles, label_drag_behavior) {
+    function update_reaction(update_selection, scale, drawn_nodes, show_beziers,
+			     defs, default_reaction_color, has_reaction_data,
+			     reaction_data_styles, bezier_drag_behavior,
+			     label_drag_behavior) {
 	utils.check_undefined(arguments,
-			      ['update_selection', 'scale', 'drawn_nodes', 
-			       'defs', 'has_reaction_data',
-			       'no_data_style', 'reaction_data_styles',
+			      ['update_selection', 'scale', 'drawn_nodes', 'show_beziers',
+			       'defs', 'default_reaction_color', 'has_reaction_data',
+			       'reaction_data_styles', 'bezier_drag_behavior',
 			       'label_drag_behavior']);
 
         // update reaction label
         update_selection.select('.reaction-label')
-            .call(function(sel) { return update_reaction_label(sel, has_reaction_data,
+            .call(function(sel) { return update_reaction_label(sel, has_reaction_data, 
 							       reaction_data_styles,
 							       label_drag_behavior); });
 
-	// draw segments
-	utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
-				   create_segment,
-				   function(sel) { 
-				       return update_segment(sel, scale, drawn_nodes, defs,
-							     has_reaction_data,
-							     no_data_style, reaction_data_styles);
-				   },
-				   function(sel) {
-				       sel.remove();
-				   });
+        // select segments
+        var sel = update_selection
+                .selectAll('.segment-group')
+                .data(function(d) {
+                    return utils.make_array(d.segments, 'segment_id');
+                }, function(d) { return d.segment_id; });
+
+        // new segments
+        sel.enter().call(create_segment);
+
+        // update segments
+        sel.call(function(sel) { 
+	    return update_segment(sel, scale, drawn_nodes, show_beziers, defs,
+				  default_reaction_color,
+				  has_reaction_data, reaction_data_styles,
+				  bezier_drag_behavior);
+	});
+
+        // old segments
+        sel.exit().remove();
+
 
 	// new connect lines
 	// var lines = sel
@@ -107,7 +116,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	//     update_selection
 	//     	.attr('d', function(d) {
 	//     	    if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
-	//     		return '';
+	//     		return "";
 	//     	    return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
 	//     	});
 	// }
@@ -121,14 +130,15 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	 */
 	
         sel.append('text')
-            .attr('class', 'reaction-label label');
-	    // .on('mouseover', function(d) {
+            .attr('class', 'reaction-label label')
+	    .style('cursor', 'default');
+	    // .on("mouseover", function(d) {
 	    // 	d3.select(this).style('stroke-width', String(3)+'px');
 	    // 	d3.select(this.parentNode)
 	    // 	    .selectAll('.connect-line')
 	    // 	    .attr('visibility', 'visible');
 	    // })
-	    // .on('mouseout', function(d) {
+	    // .on("mouseout", function(d) {
 	    // 	d3.select(this).style('stroke-width', String(1)+'px');
 	    // 	d3.select(this.parentNode)
 	    // 	    .selectAll('.connect-line')
@@ -152,8 +162,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    return t;
 	}).attr('transform', function(d) {
 	    return 'translate('+d.label_x+','+d.label_y+')';
-	}).style('font-size', function(d) {
-	    return String(30)+'px';
+	}).style("font-size", function(d) {
+	    return String(30)+"px";
         })
 	    .call(turn_off_drag)
 	    .call(label_drag_behavior);
@@ -174,16 +184,21 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
 	g.append('g')
 	    .attr('class', 'arrowheads');
+
+	g.append('g')
+	    .attr('class', 'beziers');
     }
     
-    function update_segment(update_selection, scale, drawn_nodes,
-			    defs, has_reaction_data, no_data_style,
-			    reaction_data_styles) {
+    function update_segment(update_selection, scale, drawn_nodes, show_beziers, 
+			    defs, default_reaction_color,
+			    has_reaction_data, reaction_data_styles,
+			    bezier_drag_behavior) {
 	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
-					  'defs',
+					  'show_beziers', 'defs',
+					  'default_reaction_color',
 					  'has_reaction_data',
-					  'no_data_style',
-					  'reaction_data_styles']);
+					  'reaction_data_styles',
+					  'bezier_drag_behavior']);
 
         // update segment attributes
 	var get_disp = function(reversibility, coefficient) {
@@ -224,17 +239,17 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
             .style('stroke', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		    var f = d.data;
-		    return f===null ? no_data_style['color'] : scale.reaction_color(f);
+		    return scale.reaction_color(f===null ? 0 : f);
 		} else {
-		    return null;
+		    return default_reaction_color;
 		}
 	    })
 	    .style('stroke-width', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		    var f = d.data;
-		    return f===null ? no_data_style['size'] : scale.reaction_size(f);
+		    return scale.reaction_size(f===null ? 0 : f);
 		} else {
-		    return null;
+		    return scale.reaction_size(0);
 		}
             });
 
@@ -280,7 +295,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	arrowheads.enter().append('path')
 	    .classed('arrowhead', true);
 	// update arrowheads
-	arrowheads.attr('d', function(d) {
+	arrowheads.attr("d", function(d) {
 	    var markerWidth = 20, markerHeight = 13;
 	    if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
 		var f = d.data;
@@ -289,7 +304,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
 	}).attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
-	}).style('fill', function(d) {
+	}).attr('fill', function(d) {
 	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		if (d.show_arrowhead_flux) {
 		    // show the flux
@@ -301,72 +316,133 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		}
 	    }
 	    // default fill color
-	    return null;
-	}).style('stroke', function(d) {
+	    return default_reaction_color;
+	}).attr('stroke', function(d) {
 	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
 		// show the flux color in the stroke whether or not the fill is present
 		var f = d.data;
 		return scale.reaction_color(f===null ? 0 : f);
 	    }
 	    // default stroke color
-	    return null;
+	    return default_reaction_color;
+	});;
+	// remove
+	arrowheads.exit().remove();
+
+	// new bezier points
+	var bez = update_selection.select('.beziers')
+		.selectAll('.bezier-group')
+		.data(function(d) {
+		    var beziers = [],
+			reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
+			segment_id = this.parentNode.parentNode.__data__.segment_id;
+		    //TODO fix; this is a bit of a hack
+		    if (d.b1!=null && d.b1.x!=null && d.b1.y!=null)
+			beziers.push({bezier: 1,
+				      x: d.b1.x,
+				      y: d.b1.y,
+				      reaction_id: reaction_id,
+				      segment_id: segment_id });
+		    if (d.b2!=null && d.b2.x!=null && d.b2.y!=null)
+			beziers.push({bezier: 2,
+				      x: d.b2.x,
+				      y: d.b2.y,
+				      reaction_id: reaction_id,
+				      segment_id: segment_id });
+		    return beziers;
+		}, function(d) { return d.bezier; });
+	bez.enter().call(function(sel) {
+	    return create_bezier(sel);
+	});
+	// update bezier points
+	bez.call(function(sel) {
+	    return update_bezier(sel, show_beziers, bezier_drag_behavior, drawn_nodes);
 	});
 	// remove
-	arrowheads.exit().remove();	
-    }
+	bez.exit().remove();
 
-    function create_bezier(enter_selection) {
-	utils.check_undefined(arguments, ['enter_selection']);
+	// definitions
+	function create_bezier(enter_selection) {
+	    utils.check_undefined(arguments, ['enter_selection']);
 
-	var g = enter_selection.append('g')
-		.attr('id', function(d) { return d.bezier_id; })
-	    	.attr('class', function(d) { return 'bezier'; });
-	g.append('path')
-	    .attr('class', 'connect-line');
-	g.append('circle')
-	    .attr('class', function(d) { return 'bezier-circle '+d.bezier; })
-	    .style('stroke-width', String(1)+'px')	
-    	    .attr('r', String(7)+'px');
-    }
-
-    function update_bezier(update_selection, show_beziers, drag_behavior,
-			   mouseover, mouseout, drawn_nodes, drawn_reactions) {
-	utils.check_undefined(arguments, ['update_selection', 'show_beziers',
-					  'drag_behavior', 'mouseover', 'mouseout',
-					  'drawn_nodes', 'drawn_reactions']);
-
-	if (!show_beziers) {
-	    update_selection.attr('visibility', 'hidden');
-	    return;
-	} else {
-	    update_selection.attr('visibility', 'visible');
+	    var g = enter_selection.append('g')
+	    	.attr('class', function(d) { return 'bezier-group'; });
+	    g.append('circle')
+	    	.attr('class', function(d) { return 'bezier bezier'+d.bezier; })
+	    	.style('stroke-width', String(1)+'px')	
+    		.attr('r', String(7)+'px')
+		.on("mouseover", function(d) {
+		    d3.select(this).style('stroke-width', String(3)+'px');
+		    d3.select(this.parentNode.parentNode)
+			.selectAll('.connect-line')
+			.attr('visibility', 'visible');
+		})
+		.on("mouseout", function(d) {
+		    d3.select(this).style('stroke-width', String(1)+'px');
+		    d3.select(this.parentNode.parentNode)
+			.selectAll('.connect-line')
+			.attr('visibility', 'hidden');
+		});
 	}
-	
-	// draw bezier points
-	update_selection
-	    .select('.bezier-circle')
-	    .call(turn_off_drag)
-	    .call(drag_behavior)
-	    .on('mouseover', mouseover)
-	    .on('mouseout', mouseout)
-	    .attr('transform', function(d) {
-	    	if (d.x==null || d.y==null) return ''; 
-		return 'translate('+d.x+','+d.y+')';
-	    });
+	function update_bezier(update_selection, show_beziers, drag_behavior,
+			       drawn_nodes) {
+	    utils.check_undefined(arguments, ['update_selection', 'show_beziers',
+					      'drag_behavior', 'drawn_nodes']);
+	    
+	    update_selection
+		.call(turn_off_drag)
+		.call(drag_behavior);
+	    if (!show_beziers) {
+	    	update_selection.attr('visibility', 'hidden');
+		return;
+	    }		
+	    
+	    // draw bezier points
+	    update_selection
+		.attr('visibility', 'visible')
+		.attr('transform', function(d) {
+	    	    if (d.x==null || d.y==null) return ""; 
+		    return 'translate('+d.x+','+d.y+')';
+		});
 
-	// update bezier line
-	update_selection
-	    .select('.connect-line')
-	    .attr('d', function(d) {
-		var node,
-		    segment_d = drawn_reactions[d.reaction_id].segments[d.segment_id];
-		node = (d.bezier=='b1' ? 
-			drawn_nodes[segment_d.from_node_id] : 
-			drawn_nodes[segment_d.to_node_id]);		
-	    	if (d.x==null || d.y==null || node.x==null || node.y==null)
-	    	    return '';
-	    	return 'M'+d.x+', '+d.y+' '+(node.x)+','+(node.y);
+	    // new bezier lines
+	    var bez_lines = update_selection
+		    .selectAll('.connect-line')
+		    .data(function(d) {
+			var bezier_line, node,
+			    segment_d = this.parentNode.parentNode.parentNode.__data__;
+			node = (d.bezier==1 ? 
+				drawn_nodes[segment_d.from_node_id] : 
+				drawn_nodes[segment_d.to_node_id]);
+			bezier_line = { x: d.x,
+					y: d.y,
+					source_x: node.x,
+					source_y: node.y};
+			return [bezier_line];
+		    });
+	    bez_lines.enter().call(function(sel) {
+		return create_bezier_line(sel);
 	    });
+	    // update bezier lines
+	    bez_lines.call(function(sel) { return update_bezier_line(sel); });
+	    // remove
+	    bez_lines.exit().remove();
+
+	    // definitions
+	    function create_bezier_line(enter_selection) {
+		enter_selection.append('path')
+	    	    .attr('class', function(d) { return 'connect-line'; })
+	    	    .attr('visibility', 'hidden');
+	    }
+	    function update_bezier_line(update_selection) {
+		update_selection
+	    	    .attr('d', function(d) {
+	    		if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
+	    		    return "";
+	    		return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
+	    	    });
+	    }
+	}
     }
 
     function create_node(enter_selection, drawn_nodes, drawn_reactions) {
@@ -383,16 +459,15 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
         // create metabolite circle and label
         g.append('circle')
 	    .attr('class', function(d) {
-		var c = 'node-circle';
-		if (d.node_type!==null)
-		    c += (' ' + d.node_type + '-circle');
-		return c;
+		if (d.node_type=='metabolite') return 'node-circle metabolite-circle';
+		else return 'node-circle';
 	    });
             // .style('stroke-width', '2px');
 
         g.filter(function(d) { return d.node_type=='metabolite'; })
 	    .append('text')
-	    .attr('class', 'node-label label');
+	    .attr('class', 'node-label label')
+	    .style('cursor', 'default');
     }
 
     function update_node(update_selection, scale, has_metabolite_data, metabolite_data_styles,
@@ -433,7 +508,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		})
 		.call(turn_off_drag)
 		.call(drag_behavior)
-		.on('click', click_fn)
+		.on("click", click_fn)
 		.on('mouseover', mouseover_fn)
 		.on('mouseout', mouseout_fn);
 
@@ -442,8 +517,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
             .attr('transform', function(d) {
                 return 'translate('+d.label_x+','+d.label_y+')';
             })
-            .style('font-size', function(d) {
-		return String(20)+'px';
+            .style("font-size", function(d) {
+		return String(20)+"px";
             })
             .text(function(d) {	
 		var t = d.bigg_id;
@@ -458,20 +533,17 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     function create_text_label(enter_selection) {
 	utils.check_undefined(arguments, ['enter_selection']);
 
-	enter_selection.append('g')
-	    .attr('id', function(d) { return 'l'+d.text_label_id; })
-	    .attr('class', 'text-label')
-	    .append('text')
-	    .attr('class', 'label');
+	enter_selection.append('text')
+	    .attr('class', 'text-label label')
+	    .style('cursor', 'default')
+	    .text(function(d) { return d.text; });
     }
 
     function update_text_label(update_selection, label_click, label_drag_behavior) {
 	utils.check_undefined(arguments, ['update_selection', 'label_click', 'label_drag_behavior']);
 
         update_selection
-	    .select('.label')
-	    .text(function(d) { return d.text; })
-            .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
+            .attr("transform", function(d) { return "translate("+d.x+","+d.y+")";})
 	    .on('click', label_click)
 	    .call(turn_off_drag)
 	    .call(label_drag_behavior);

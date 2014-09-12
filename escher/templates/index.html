@@ -1,81 +1,48 @@
 {% extends "standalone.html" %}
 {% block title %}Escher{% endblock %}
 {% block head %}
-  <script src="{{d3}}"></script>
-
-  <link rel="stylesheet" href="{{boot_css}}"/>
-  <link rel="stylesheet" href="{{index_css}}"/>
-
-  <!-- This font cannot be downloaded. -->
+  <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootswatch/3.1.1/simplex/bootstrap.min.css">
   <script src="//use.edgefonts.net/tulpen-one.js"></script>
+
+  <link href="css/index.css" rel="stylesheet" type="text/css" media="all">
 {% endblock %}
 {% block content %}
   <main>
     <div class="container">
       <header class="row">
 	<div class="col-sm-12">
-	  <img src="{{logo}}" id="logo">
-	  <div id="title-box">
-	    <h1 id="title">ESCHER</h1>
-	  </div>
+	  <img src="resources/escher-logo@2x.png" id="logo">
+	  <h1 id="title">ESCHER</h1>
 	</div>
       </header>
-      <div class="row">	
-	<div class="col-sm-12">
-	  <h3>Filter by organism</h3>
-	  <select id="organisms" class="form-control">
-	    <option value="all">All</option>
-	  </select>
-	</div>
-      </div>
       <div class="row">
-	<div class="col-sm-5">
-	  <h3>Map</h3>
-	  <select id="maps" class="form-control">
+	<div class="col-sm-3">
+	  <h3>Model</h3>
+	  <select id="model" class="form-control">
 	    <option value="none">None</option>
-	  </select>
-	</div>
-	<div class="col-sm-4">
-	  <h3>Model (Optional)</h3>
-	  <select id="models" class="form-control">
-	    <option value="none">None</option>
+	    <option value="iJO1366">iJO1366</option>
 	  </select>
 	</div>
 	<div class="col-sm-3">
-	  <h3>Tool</h3>
-	  <select id="tools" class="form-control">
-	    <option class="tool" value="viewer">Viewer</option>
-	    <option class="tool" value="builder">Builder</option>
-	    {% if not web_version %}
-	      <option class="tool" value="local_viewer">Viewer (Offline)</option>
-	      <option class="tool" value="local_builder">Builder (Offline)</option>
-	    {% endif %}
+	  <h3>Map</h3>
+	  <select id="map" class="form-control">
+	    <option value="iJO1366_central_metabolism">iJO1366 central metabolism</option>
+	    <option value="empty">Emtpy builder</option>
 	  </select>
 	</div>
-      </div>
-      <div class="row">
-	<div class="col-sm-6">
+	<div class="col-sm-3">
 	  <h3>Options</h3>
-	    <div style="width: 100%"><input type="checkbox" id="scroll"> Scroll to zoom (instead scroll to pan)</div>
-	    <div style="width: 100%"><input type="checkbox" id="never_ask"> Never ask before reloading</div>
+	  <select id="options" class="form-control">
+	    <option value="viewer">Viewer</option>
+	    <option value="builder">Builder</option>
+	    <option value="dev_viewer">Viewer (Dev)</option>
+	    <option value="dev_builder">Builder (Dev)</option>
+	  </select>
 	</div>
-	<div class="col-sm-6">
-	  <button type="button" id="submit" class="btn btn-default column-button">
+	<div class="col-sm-3">
+	  <button type="button" class="btn btn-default column-button" onClick="submit()">
 	    Submit
 	  </button>
-	</div>
-      </div>
-      <!-- FAQ  -->
-      <div id="faq" class="row">
-	<hr/>
-	<div class="col-sm-12">
-	  <h2>FAQ</h2>
-	  <ol>
-	    <li><h4>How do I cite Escher?</h4>
-	      <p>Escher has not yet been published in a peer-review journal, but, in
-		the meantime, you can cite the code by DOI: [Fill in for release v1].</p>
-	    </li>
-	  </ol>
 	</div>
       </div>
     </div>
@@ -84,19 +51,43 @@
   <footer>
     <div class="container">
       <p class="more">
-	Learn more about <a href="{{github}}">Escher</a>.
-      </p>
-      <p class="version">
-	Version {{version}}
+	Learn more about <a href="http://zakandrewking.github.io/escher">Escher</a>.
       </p>
     </div>
   </footer>
 
-  <script>var data={{data}};</script>
-  <script src="{{index_js}}"></script>
-  {% if web_version %}
-    <script src="{{index_gh_pages_js}}"></script>
-  {% else %}
-    <script>setup()</script>
-  {% endif %}
+  <script type="application/javascript">
+   function get_value(id) {
+     var a = document.getElementById(id);
+     return a.options[a.selectedIndex].value
+   }
+
+   function submit() {
+     var map_value = get_value('map'),
+     model_value = get_value('model'),
+     options_value = get_value('options'),
+     add = [];
+     if (model_value!='none')
+     add.push('model_name=' + model_value);	 
+     if (map_value!='empty')
+     add.push('map_name=' + map_value);
+
+     if (options_value=='dev_viewer') {
+       url = 'dev/viewer.html';
+     } else if (options_value=='dev_builder') {
+       url = 'dev/builder.html';
+     } else if (options_value=='viewer') {
+       url = 'viewer.html';
+     } else {
+       url = 'builder.html';
+     }
+
+     url += '?';
+     for (var i=0, l=add.length; i < l; i++) {
+       if (i > 0) url += '&';
+       url += add[i];
+     }
+     window.location.href = url;
+   }
+  </script>
 {% endblock %}
