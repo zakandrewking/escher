@@ -68,9 +68,10 @@ function draw_models_select(data) {
 	});
     models.exit().remove();
 }
-function draw_maps_select(data) {	/** Draw the models selector.
+function draw_maps_select(data) {
+    /** Draw the models selector.
 
-					 */
+     */
     var filter_maps = function(map_id) {
 	var org = d3.select('#organisms').node().value;
 	if (org=='all')

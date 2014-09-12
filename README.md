@@ -1,7 +1,7 @@
 Escher
 ======
 
-A web-based tool to build, view, share, and embed metabolic maps.
+Escher is a web-based tool to build, view, share, and embed metabolic maps.
 
 See the [wiki](https://github.com/zakandrewking/escher/wiki) for documentation, examples, and developer information.
 
@@ -9,19 +9,20 @@ Follow [@zakandrewking](https://twitter.com/zakandrewking) for Escher updates, a
 
 **NOTE**: Escher is still a Beta release, so please be patient with the early version as you may encounter bugs and other unexpected behavior. The documentation is also unfinished. Feel free to submit bugs and feature requests as Issues, or, better yet, Pull Requests.
 
-The easiest way to use Escher it to try our [live demo](http://zak.ucsd.edu:7778). 
+The easiest way to use Escher is to browse or build maps on the  [Escher website](http://zakandrewking.github.io/escher/).
 
 1) Using the Escher web tool
 ======
 
-When you open the [live demo](http://zak.ucsd.edu:7778), you will see a few options:
+When you open [Escher](http://zakandrewking.github.io/escher/), you will see a few options:
 
-- Model: Choose a COBRA model to load, for building reactions. You can also load your own model after you launch the tool.
-- Map: Try viewing and editing a pre-built map, or start from scratch with the Empty Builder
+- Filter by organism: Choose an organism to filter the Maps and Models.
+- Map: Try viewing and editing a pre-built map, or start from scratch with an empty builder by choosing None.
+- Model (Optional): Choose a COBRA model to load, for building reactions. You can also load your own model after you launch the tool.
 - Options:
     1. The Viewer allows you to pan and zoom the map, and to assign data to reactions and metabolites.
     2. The Builder, in addition to the Viewer features, allows you to add reactions, move and rotate existing reactions, and adjust the map canvas.
-    3. The Dev modes utilize local javascript files and are useful (a) if you are editing/developing the Escher source code, or (b) if you want to try using Escher offline.
+    3. Local modes are available if you download Escher and run the local server (see below). These let you view and build Escher maps offline.
 
 ## Supported browsers
 
@@ -37,7 +38,7 @@ https://github.com/opencobra/cobrapy/releases
 
 You can keep an eye on that GitHub repository to follow the progress on the latest version of COBRApy, which will be release along with Escher v1.0.
 
-Once you have COBRApy v0.3.0b1 installed, then you can generate a JSON model by following this example code:
+Once you have COBRApy v0.3.0b1 (or later) installed, then you can generate a JSON model by following this example code:
 
 http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/json_models_in_cobrapy.ipynb
 
@@ -104,7 +105,9 @@ python -m escher.server --port=8005
 4) Using the static javascript files
 =======
 
-You can include the escher-1.0.dev.js script in any html document. The only dependencies are [d3.js](http://d3js.org/), and [Twitter Bootstrap](http://getbootstrap.com) if you are using the option menu='all'.
+You can include the compiled Escher javascript file in any html document. The only dependencies are [d3.js](http://d3js.org/), and [Twitter Bootstrap](http://getbootstrap.com) if you are using the option menu='all'.
+
+These files can be found in `escher/lib`.
 
 5) Building and testing escher
 =======
@@ -112,7 +115,7 @@ You can include the escher-1.0.dev.js script in any html document. The only depe
 Build:
 
 ```shell
-python setup.py build
+python setup.py buildjs
 ```
 
 This builds both the minified and non-minified javascript files.
