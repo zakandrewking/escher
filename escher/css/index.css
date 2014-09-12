@@ -47,6 +47,11 @@ footer a, a:hover, a:focus, a:visited {
 }
 .container .more {
     margin: 20px 0;
+    float: left;
+}
+.container .version {
+    margin: 20px 0;
+    float: right;
 }
 .column-button {
     width: 100%;

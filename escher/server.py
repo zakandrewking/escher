@@ -16,6 +16,8 @@ import re
 from jinja2 import Environment, PackageLoader
 from mimetypes import guess_type
 
+from escher.version import __version__
+
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
 
@@ -80,6 +82,7 @@ class IndexHandler(BaseHandler):
                                index_js=get_url('index_js', source),
                                index_gh_pages_js=get_url('index_gh_pages_js', source),
                                data=json_data,
+                               version=__version__,
                                web_version=False)
         
         self.set_header("Content-Type", "text/html")

@@ -4,6 +4,8 @@ from escher.urls import get_url
 from os.path import join, dirname, realpath
 from jinja2 import Environment, PackageLoader
 
+from escher.version import __version__
+
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
 
@@ -25,6 +27,7 @@ def generate_static_site():
                            boot_css=add_escher(get_url('boot_css', 'local')),
                            github=get_url('github', protocol='https'),
                            data='null',
+                           version=__version__,
                            web_version=True)
     
     with open(join(build_path, 'index.html'), 'w') as f:
