@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/6078/zakandrewking/escher.png)](http://dx.doi.org/10.5281/zenodo.11712)
+
 Escher
 ======
 
