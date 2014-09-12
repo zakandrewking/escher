@@ -169,7 +169,8 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
 	this.largest_ids = { reactions: -1,
 			     nodes: -1,
-			     segments: -1 };
+			     segments: -1,
+			     text_labels: -1 };
 
 	// make the scales
 	this.scale = new Scale();

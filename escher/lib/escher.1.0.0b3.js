@@ -7256,7 +7256,8 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
 	this.largest_ids = { reactions: -1,
 			     nodes: -1,
-			     segments: -1 };
+			     segments: -1,
+			     text_labels: -1 };
 
 	// make the scales
 	this.scale = new Scale();
@@ -11306,6 +11307,8 @@ define('TextEditInput',['utils', 'PlacedDiv', 'Map', 'ZoomContainer', 'CallbackM
 	// TODO wait here?
 	var sel = this.map.sel.select('#text-labels').selectAll('.text-label')
 		.filter(function(d) { return d.text_label_id==out.id; });
+	// apply the cursor to the new label
+	sel.select('text').classed('edit-text-cursor', true);
 	this.show(sel, coords);
     }
 });
