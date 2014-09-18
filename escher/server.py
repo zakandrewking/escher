@@ -51,7 +51,10 @@ class BaseHandler(RequestHandler):
         with open(path, "rb") as file:
             data = file.read()
         # set the mimetype
-        self.set_header("Content-Type", guess_type(path, strict=False)[0])
+        the_type = guess_type(path, strict=False)[0]
+        self.set_header("Content-Type", ("application/octet-stream"
+                                         if the_type is None
+                                         else the_type))
         self.serve(data)
         
     def serve(self, data):
