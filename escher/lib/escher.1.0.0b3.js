@@ -820,6 +820,7 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	     check_r: check_r,
 	     mean: mean,
 	     check_for_parent_tag: check_for_parent_tag,
+	     check_name: check_name,
 	     name_to_url: name_to_url,
 	     parse_url_components: parse_url_components };
 
@@ -1401,31 +1402,42 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	return false;
     }
 
-    function name_to_url(name, download_url, type) {
-	/** Convert short name to url.
+    function check_name(name) {
+	/** Name cannot include:
+
+	    <>:"/\|?*
+
+	*/
+
+	if (/[<>:"\/\\\|\?\*]/.test(name))
+	    throw new Error('Name cannot include the characters <>:"/\|?*');
+    }
+   
+    function name_to_url(name, download_url) {
+	/** Convert short name to url. The short name is separated by '+'
+	    characters.
 
 	 Arguments
 	 ---------
 
-	 name: The short name, e.g. e_coli:iJO1366:central_metabolism.
+	 name: The short name, e.g. e_coli+iJO1366+central_metabolism.
 
-	 download_url: The url to prepend. (Can be null)
+	 download_url: The url to prepend (optional).
 
-	 type: Either 'model' or 'map'.
+	*/
 
-	 */
+	check_name(name);
 
-	var parts = name.split(':'),
+	var parts = name.split('.'),
 	    longname;
-	if (['model', 'map'].indexOf(type) == -1)
-	    throw Error('Bad type: ' + type);
-	if (parts.length != (type=='model' ? 2 : 3))
-            throw Error('Bad ' + type + ' name');
-	if (type=='model')
+	if (parts.length == 2) {
 	    longname = ['organisms', parts[0], 'models', parts[1]+'.json'].join('/');
-	else
+	} else if (parts.length == 3) {
 	    longname = ['organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json'].join('/');
-	if (download_url!==null) {
+	} else {
+            throw Error('Bad short name');
+	}
+	if (download_url!==undefined) {
 	    // strip download_url
 	    download_url = download_url.replace(/^\/|\/$/g, '');
 	    longname = [download_url, longname].join('/');
@@ -1455,7 +1467,6 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 
 	 */
 	if (options===undefined) options = {};
-	if (download_url===undefined) download_url = null;
 
 	var query = the_window.location.search.substring(1),
 	    vars = query.split("&");
@@ -1466,12 +1477,12 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 
 	// generate map_path and model_path
 	[
-	    ['map', 'map_name', 'map_path'],
-	    ['model', 'model_name', 'cobra_model_path']
+	    ['map_name', 'map_path'],
+	    ['model_name', 'cobra_model_path']
 	].forEach(function(ar) {
-	    var type = ar[0], key = ar[1], path = ar[2];
+	    var key = ar[0], path = ar[1];
 	    if (key in options)
-		options[path] = name_to_url(options[key], download_url, type);
+		options[path] = name_to_url(options[key], download_url);
 	});
 
 	return options;
@@ -1603,13 +1614,21 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
         return;
     }
 
-    function update_reaction(update_selection, scale, drawn_nodes, 
-			     defs, has_reaction_data,
-			     no_data_style, reaction_data_styles, label_drag_behavior) {
+    function update_reaction(update_selection, scale,
+			     cobra_model, drawn_nodes, 
+			     defs, 
+			     has_reaction_data, no_data_style,
+			     missing_component_color,
+			     reaction_data_styles, label_drag_behavior) {
 	utils.check_undefined(arguments,
-			      ['update_selection', 'scale', 'drawn_nodes', 
-			       'defs', 'has_reaction_data',
-			       'no_data_style', 'reaction_data_styles',
+			      ['update_selection', 'scale',
+			       'cobra_model',
+			       'drawn_nodes', 
+			       'defs',
+			       'has_reaction_data',
+			       'no_data_style',
+			       'missing_component_color',
+			       'reaction_data_styles',
 			       'label_drag_behavior']);
 
         // update reaction label
@@ -1622,9 +1641,11 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
 				   create_segment,
 				   function(sel) { 
-				       return update_segment(sel, scale, drawn_nodes, defs,
+				       return update_segment(sel, scale, cobra_model,
+							     drawn_nodes, defs, 
 							     has_reaction_data,
-							     no_data_style, reaction_data_styles);
+							     no_data_style, missing_component_color,
+							     reaction_data_styles);
 				   },
 				   function(sel) {
 				       sel.remove();
@@ -1732,13 +1753,18 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	    .attr('class', 'arrowheads');
     }
     
-    function update_segment(update_selection, scale, drawn_nodes,
-			    defs, has_reaction_data, no_data_style,
-			    reaction_data_styles) {
-	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
+    function update_segment(update_selection, scale, cobra_model,
+			    drawn_nodes, defs, 
+			    has_reaction_data, no_data_style,
+			    missing_component_color, reaction_data_styles) {
+	utils.check_undefined(arguments, ['update_selection',
+					  'scale',
+					  'cobra_model',
+					  'drawn_nodes',
 					  'defs',
 					  'has_reaction_data',
 					  'no_data_style',
+					  'missing_component_color',
 					  'reaction_data_styles']);
 
         // update segment attributes
@@ -1778,12 +1804,20 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 		return curve;
             })
             .style('stroke', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
+		var reaction_id = this.parentNode.parentNode.__data__.bigg_id,
+		    show_missing = (cobra_model !== null &&
+				    missing_component_color!==null &&
+				    !(reaction_id in cobra_model.reactions)),
+		    should_color_data = (has_reaction_data &&
+					 reaction_data_styles.indexOf('color')!==-1);
+		if (show_missing) {
+		    return missing_component_color;
+		}
+		if (should_color_data) {
 		    var f = d.data;
 		    return f===null ? no_data_style['color'] : scale.reaction_color(f);
-		} else {
-		    return null;
 		}
+		return null;
 	    })
 	    .style('stroke-width', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
@@ -7184,6 +7218,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	hide_beziers: hide_beziers,
 	show_beziers: show_beziers,
 	// data
+	has_cobra_model: has_cobra_model,
 	has_reaction_data: has_reaction_data,
 	has_metabolite_data: has_metabolite_data,
 	apply_reaction_data_to_map: apply_reaction_data_to_map,
@@ -7442,9 +7477,29 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     // -------------------------------------------------------------------------
     // Appearance
 
-    function set_status(status) {
-	this.status = status;
+    function set_status(status, time) {
+	/** Set the status of the map, with an optional expiration
+	    time. Rendering the status is taken care of by the Builder.
+
+	    Arguments
+	    ---------
+
+	    status: The status string.
+
+	    time: An optional time, in ms, after which the status is set to ''.
+
+	*/
+	
 	this.callback_manager.run('set_status', status);
+	// clear any other timers on the status bar
+	window.clearTimeout(this._status_timer);
+	this._status_timer = null;
+	
+	if (time!==undefined) {
+	    this._status_timer = window.setTimeout(function() {
+		this.callback_manager.run('set_status', '');
+	    }.bind(this), time);
+	}
     }
     function set_model(model) {
 	/** Change the cobra model for the map.
@@ -7501,11 +7556,14 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	this.apply_metabolite_data_to_map();
 	this.draw_everything();
     }
+    function has_cobra_model() {
+	return (this.cobra_model !== null);
+    }
     function has_reaction_data() {
-	return (this.reaction_data_object!==null);
+	return (this.reaction_data_object !== null);
     }
     function has_metabolite_data() {
-	return (this.metabolite_data_object!==null);
+	return (this.metabolite_data_object !== null);
     }
     function draw_everything() {
         /** Draw the all reactions, nodes, & text labels.
@@ -7567,10 +7625,12 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	var update_fn = function(sel) {
 	    return draw.update_reaction(sel,
 					this.scale,
+					this.cobra_model,
 					this.nodes,
 					this.defs,
 					this.has_reaction_data(),
 					this.settings.no_data['reaction'],
+					this.settings.highlight_missing,
 					this.settings.data_styles['reaction'],
 					this.behavior.reaction_label_drag);
 	}.bind(this);
@@ -7855,7 +7915,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	var vals = [];
 	for (var reaction_id in this.reactions) {
 	    var reaction = this.reactions[reaction_id];
-	    if (reaction.data!==null) {
+	    if (reaction.data !== null) {
 		vals.push(reaction.data);
 	    }
 	}
@@ -7919,7 +7979,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	var vals = [];
 	for (var node_id in this.nodes) {
 	    var node = this.nodes[node_id];
-	    if (node.data!==null)
+	    if (node.data !== null)
 		vals.push(node.data);
 	} 
 	var old_domain = this.settings.domain['metabolite']['color'],
@@ -8727,15 +8787,6 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	}
 	return { segment_objs_w_segments: segment_objs_w_segments, reactions: these_reactions };
     }
-    function set_status(status) {
-        // TODO make this a class, and take out d3.select('body')
-        var t = d3.select('body').select('#status');
-        if (t.empty()) t = d3.select('body')
-	    .append('text')
-	    .attr('id', 'status');
-        t.text(status);
-        return this;
-    }
 
     // -------------------------------------------------------------------------
     // Zoom
@@ -8844,7 +8895,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     function highlight(sel) {
 	this.sel.selectAll('.highlight')
 	    .classed('highlight', false);
-	if (sel!==null) {
+	if (sel !== null) {
 	    sel.classed('highlight', true);
 	}
     }
@@ -10518,7 +10569,26 @@ define('SearchBar',["utils", "CallbackManager"], function(utils, CallbackManager
 });
 
 define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
-    /** 
+    /** A class to manage settings for a Map.
+
+	Arguments
+	---------
+
+	def_styles: 
+
+	def_auto_domain: 
+
+	def_domain:
+
+	def_range:
+
+	def_no_data:
+
+	def_highlight_missing:
+
+        highlight_missing_components: Boolean. If true, color components that
+        are not the in cobra model.
+
      */
 
     var SearchBar = utils.make_class();
@@ -10532,6 +10602,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 			    set_domain: set_domain,
 			    set_range_value: set_range_value,
 			    set_no_data_value: set_no_data_value,
+			    set_highlight_missing: set_highlight_missing,			    
 			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes };
@@ -10545,7 +10616,8 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
     }
 
     // instance methods
-    function init(def_styles, def_auto_domain, def_domain, def_range, def_no_data) {
+    function init(def_styles, def_auto_domain, def_domain, def_range,
+		  def_no_data, def_highlight_missing) {
 	// defaults
 	if (def_styles===undefined) 
 	    def_styles = { reaction: ['color', 'size', 'abs', 'text'],
@@ -10566,6 +10638,8 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 					size: 4 },
 			    metabolite: { color: 'white',
 					  size: 6 } };
+	if (def_highlight_missing===undefined)
+	    def_highlight_missing = 'red';
 
 	// event streams
 	this.data_styles = {};
@@ -10583,6 +10657,9 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.no_data = {};
 	this.no_data_bus = {};
 	this.no_data_stream = {};
+	// this.highlight_missing;
+	// this.highlight_missing_bus;
+	// this.highlight_missing_stream;
 
 	// manage accepting/abandoning changes
 	this.status_bus = new bacon.Bus();
@@ -10737,6 +10814,30 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	    }.bind(this));
 	}.bind(this));
 
+	
+	// set up the highlight missing settings
+	// make the bus
+	this.highlight_missing_bus = new bacon.Bus();
+	// make a new constant for the input default
+	this.highlight_missing_stream = this.highlight_missing_bus
+	// conditionally accept changes
+	    .convert_to_conditional_stream(this.status_bus)
+	// combine into state array
+	    .scan([], function(current, value) {
+		return value;
+	    })
+	// force updates
+	    .force_update_with_bus(this.force_update_bus);
+
+	// get the latest
+	this.highlight_missing_stream.onValue(function(v) {
+	    this.highlight_missing = v;
+	}.bind(this));
+
+	// push the default
+	var def = def_highlight_missing;
+	this.highlight_missing_bus.push(def);
+
 	// definitions
 	function convert_to_conditional_stream(status_stream) {
 	    /** Hold on to event when hold_property is true, and only keep them
@@ -10800,12 +10901,15 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
     function set_auto_domain(type, on_off) {	
 	/** Turn auto domain setting on or off.
 
-	 type: 'reaction' or 'metabolite'
+	    Arguments
+	    ---------
 
-	 on_off: (Boolean) If True, then automatically set the domain. If False,
-	 then manually set the domain.
+	    type: 'reaction' or 'metabolite'
 
-	 */
+	    on_off: (Boolean) If True, then automatically set the domain. If False,
+	    then manually set the domain.
+
+	*/
 	check_type(type);
 
 	this.auto_domain_bus[type].push(on_off);
@@ -10814,14 +10918,17 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
     function change_data_style(type, style, on_off) {
 	/** Change the data style.
 
-	 type: 'reaction' or 'metabolite'
+	    Arguments
+	    ---------
 
-	 style: A data style.
+	    type: 'reaction' or 'metabolite'
 
-	 on_off: (Boolean) If True, then add the style. If False, then remove
-	 it.
+	    style: A data style.
 
-	 */
+	    on_off: (Boolean) If True, then add the style. If False, then remove
+	    it.
+
+	*/
 	check_type(type);
 
 	this.data_styles_bus[type].push({ style: style,
@@ -10890,6 +10997,19 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	check_type(type);
 
 	this.no_data_bus[type][no_data_type].push(value);
+    }
+
+    function set_highlight_missing(value) {
+	/** Set the option for highlighting missing components from a cobra
+	    model.
+
+	    Arguments
+	    ---------
+
+	    value: The new boolean value.
+
+	*/
+	this.highlight_missing_bus.push(value);
     }
 
     function hold_changes() {
@@ -11320,6 +11440,10 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
      options: An object.
 
+
+         highlight_missing_color: A color to apply to components that are not
+         the in cobra model, or null to apply no color. Default: 'red'.
+
      */
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
@@ -11381,7 +11505,8 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    metabolite_color_range: ['green', 'white', 'red'],
 	    metabolite_size_range: [6, 8, 10],
 	    metabolite_no_data_color: 'white',
-	    metabolite_no_data_size: 6
+	    metabolite_no_data_size: 6,
+	    highlight_missing_color: 'red',
 	});
 
 	// initialize the settings
@@ -11399,7 +11524,8 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    { reaction: { color: this.options.reaction_no_data_color,
 			  size: this.options.reaction_no_data_size },
 	      metabolite: { color: this.options.metabolite_no_data_color,
-			    size: this.options.metabolite_no_data_size } }
+			    size: this.options.metabolite_no_data_size } },
+	    this.options.highlight_missing_color
 	);
 
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
@@ -11561,7 +11687,6 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	} else if (this.options.menu=='zoom') {
 	    this._setup_simple_zoom_buttons(button_div, keys);
 	}
-	var status = this._setup_status(this.options.selection, this.map);
 
 	// setup selection box
 	if (this.options.map_data!==null) {
@@ -11578,6 +11703,9 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 		this.map.zoom_extent_canvas();
 	    }
 	}
+
+	// status in both modes
+	var status = this._setup_status(this.options.selection, this.map);
 
 	// start in zoom mode for builder, view mode for viewer
 	if (this.options.enable_editing)
@@ -11856,15 +11984,40 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
 	// definitions
 	function load_map_for_file(error, map_data) {
+	    /** Load a map. This reloads the whole builder.
+
+	     */
 	    if (error) console.warn(error);
+	    check_map(map_data);
 	    this.options.map_data = map_data;
 	    this.reload_builder();
+
+	    // definitions
+	    function check_map(data) {
+		/** Perform a quick check to make sure the map is mostly valid.
+
+		 */
+		
+		if (!('reactions' in data && 'nodes' in data && 'canvas' in data))
+		    throw new Error('Bad map data.')
+	    }
 	}
 	function load_model_for_file(error, data) {
+	    /** Load a cobra model. Redraws the whole map if the
+		highlight_missing option is true.
+		
+	     */
 	    if (error) console.warn(error);
 	    var cobra_model_obj = CobraModel(data);
 	    this.map.set_model(cobra_model_obj);
 	    this.reaction_input.toggle(false);
+	    if ('id' in data)
+		this.map.set_status('Loaded model ' + data.id, 2000);
+	    else
+		this.map.set_status('Loaded model (no model id)', 2000);
+	    if (this.settings.highlight_missing!==null) {
+		this.map.draw_everything();
+	    }
 	}
 	function load_reaction_data_for_file(error, data) {
 	    if (error) console.warn(error);

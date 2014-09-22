@@ -135,8 +135,8 @@ class BuilderHandler(BaseHandler):
             builder_kwargs['reaction_data'] = load_data_file(r_filepath)
             m_filepath = 'example_data/metabolite_data_iJO1366.json'
             builder_kwargs['metabolite_data'] = load_data_file(m_filepath)
-            
-        # make the builder        
+        
+        # make the builder
         builder = Builder(safe=True, **builder_kwargs)
             
         # display options

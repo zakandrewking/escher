@@ -1,4 +1,7 @@
 from version import __version__
+from urllib import quote
+import os
+import re
 
 # TODO remove all os.path.join when using urls
 
@@ -95,22 +98,117 @@ def get_url(name, source='web', local_host=None, protocol=None):
     
     raise Exception('name not found')
 
-def model_name_to_url(name, protocol='https'):
-    """Convert short name to url.
+# See the corresponding javascript implementation in escher/js/src/utils.js
+
+def check_name(name):
+    """Name cannot include:
+
+    <>:"/\|?*
 
     """
-    parts = name.split(':')
-    if len(parts) != 2:
-        raise Exception('Bad model name')
-    longname = '/'.join(['organisms', parts[0], 'models', parts[1]+'.json'])
-    return '/'.join([get_url('escher_root', source='web', protocol=protocol), longname])
+    if re.search(r'[<>:"/\\\|\?\*]', name):
+        raise Exception('Name cannot include the characters <>:"/\|?*')
 
-def map_name_to_url(name, protocol='https'):
-    """Convert short name to url
+def name_to_url(name, protocol='https'):
+    """Convert short name to url. The short name is separated by '+'
+    characters.
+
+    Arguments
+    ---------
+
+    name: the shorthand name for the map or model.
+
+    protocol: 'https' or 'http
+    
+    """
+
+    check_name(name)
+    
+    parts = name.split('.')
+    if len(parts) == 2:
+        longname = '/'.join(['organisms', parts[0], 'models',
+                             parts[1]+'.json'])
+    elif len(parts) == 3:
+        longname = '/'.join(['organisms', parts[0], 'models', parts[1], 'maps',
+                             parts[2]+'.json'])
+    else:
+        raise Exception('Bad short name')
+    return '/'.join([get_url('escher_root', source='web', protocol=protocol),
+                     longname])
+
+def url_to_name(url):
+    """Convert url to short name. The short name is separated by '+' characters.
+
+    Arguments
+    ---------
+
+    url: The url, which must contain at least 'organisms' and 'models'.
 
     """
-    parts = name.split(':')
-    if len(parts) != 3:
-        raise Exception('Bad map name')
-    longname = '/'.join(['organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json'])
-    return '/'.join([get_url('escher_root', source='web', protocol=protocol), longname])
+
+    # get the section after organisms
+    url = (url.split('/organisms/')[1].strip('/')
+           .replace('.json', '')
+           .replace('.escher', '')
+           .replace('.cobra', ''))
+    # separate
+    organism, model = [x.strip('/') for x in url.split('/models/')]
+    # if maps are present, separate
+    if '/maps/' in model:
+        model, map = [x.strip('/') for x in model.split('/maps/')]
+        name = '.'.join([organism, model, map])
+    else:
+        name = '.'.join([organism, model])
+    return name
+
+def name_to_file(name, cache_dir):
+    """Convert short name to a filename in the cache. The short name is
+    separated by '+' characters.
+
+    Arguments
+    ---------
+
+    name: the shorthand name for the map or model.
+
+    cache_dir: The root of the cache directory.
+
+    """
+
+    check_name(name)
+        
+    parts = name.split('.')
+    if len(parts) == 2:
+        longname = os.path.join('organisms', parts[0], 'models',
+                                 parts[1]+'.json')
+    elif len(parts) == 3:
+        longname = os.path.join('organisms', parts[0], 'models', parts[1], 'maps',
+                                 parts[2]+'.json')
+    else:
+        raise Exception('Bad short name')
+    return os.path.join(cache_dir, longname)
+
+def file_to_name(file):
+    """Convert filename to a short name. The short name is separated by
+    '+' characters.
+
+    Arguments
+    ---------
+
+    file: The path, which must contain at least 'organisms' and 'models'.
+    
+    """
+
+    # get the section after organisms
+    file = (file.split(os.sep+'organisms'+os.sep)[1].strip(os.sep)
+            .replace('.json', '')
+            .replace('.escher', '')
+            .replace('.cobra', ''))
+    # separate
+    organism, model = [x.strip(os.sep) for x in file.split(os.sep+'models'+os.sep)]
+    # if maps are present, separate
+    if os.sep+'maps'+os.sep in model:
+        model, map = [x.strip(os.sep) for x in model.split(os.sep+'maps'+os.sep)]
+        name = '.'.join([organism, model, map])
+    else:
+        name = '.'.join([organism, model])
+    return name

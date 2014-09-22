@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from escher.quick_server import serve_and_open
-from escher.urls import get_url, model_name_to_url, map_name_to_url
+from escher.urls import get_url, name_to_url
 
 import os
 from os.path import dirname, abspath, join, isfile, isdir
@@ -219,7 +219,7 @@ class Builder(object):
                     (model_name, get_url('escher_root'))
                 warn(model_not_cached)
                 try:
-                    model_url = model_name_to_url(model_name)
+                    model_url = name_to_url(model_name)
                     download = urlopen(model_url)
                     with open(model_filename, 'w') as outfile:
                         outfile.write(download.read())
@@ -251,7 +251,7 @@ class Builder(object):
                     (map_name, get_url('escher_root'))
                 warn(map_not_cached)
                 try:
-                    map_url = map_name_to_url(self.map_name)
+                    map_url = name_to_url(self.map_name)
                     download = urlopen(map_url)
                     with open(map_filename, 'w') as outfile:
                         outfile.write(download.read())

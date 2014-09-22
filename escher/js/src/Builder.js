@@ -5,6 +5,10 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
      options: An object.
 
+
+         highlight_missing_color: A color to apply to components that are not
+         the in cobra model, or null to apply no color. Default: 'red'.
+
      */
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
@@ -66,7 +70,8 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    metabolite_color_range: ['green', 'white', 'red'],
 	    metabolite_size_range: [6, 8, 10],
 	    metabolite_no_data_color: 'white',
-	    metabolite_no_data_size: 6
+	    metabolite_no_data_size: 6,
+	    highlight_missing_color: 'red',
 	});
 
 	// initialize the settings
@@ -84,7 +89,8 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    { reaction: { color: this.options.reaction_no_data_color,
 			  size: this.options.reaction_no_data_size },
 	      metabolite: { color: this.options.metabolite_no_data_color,
-			    size: this.options.metabolite_no_data_size } }
+			    size: this.options.metabolite_no_data_size } },
+	    this.options.highlight_missing_color
 	);
 
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
@@ -246,7 +252,6 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	} else if (this.options.menu=='zoom') {
 	    this._setup_simple_zoom_buttons(button_div, keys);
 	}
-	var status = this._setup_status(this.options.selection, this.map);
 
 	// setup selection box
 	if (this.options.map_data!==null) {
@@ -263,6 +268,9 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 		this.map.zoom_extent_canvas();
 	    }
 	}
+
+	// status in both modes
+	var status = this._setup_status(this.options.selection, this.map);
 
 	// start in zoom mode for builder, view mode for viewer
 	if (this.options.enable_editing)
@@ -541,15 +549,40 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
 	// definitions
 	function load_map_for_file(error, map_data) {
+	    /** Load a map. This reloads the whole builder.
+
+	     */
 	    if (error) console.warn(error);
+	    check_map(map_data);
 	    this.options.map_data = map_data;
 	    this.reload_builder();
+
+	    // definitions
+	    function check_map(data) {
+		/** Perform a quick check to make sure the map is mostly valid.
+
+		 */
+		
+		if (!('reactions' in data && 'nodes' in data && 'canvas' in data))
+		    throw new Error('Bad map data.')
+	    }
 	}
 	function load_model_for_file(error, data) {
+	    /** Load a cobra model. Redraws the whole map if the
+		highlight_missing option is true.
+		
+	     */
 	    if (error) console.warn(error);
 	    var cobra_model_obj = CobraModel(data);
 	    this.map.set_model(cobra_model_obj);
 	    this.reaction_input.toggle(false);
+	    if ('id' in data)
+		this.map.set_status('Loaded model ' + data.id, 2000);
+	    else
+		this.map.set_status('Loaded model (no model id)', 2000);
+	    if (this.settings.highlight_missing!==null) {
+		this.map.draw_everything();
+	    }
 	}
 	function load_reaction_data_for_file(error, data) {
 	    if (error) console.warn(error);

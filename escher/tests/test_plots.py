@@ -15,6 +15,8 @@ def test_get_cache_dir():
     d = get_cache_dir(name='maps')
     assert os.path.isdir(d)
 
+# These are generally not run, because I don't want to casually loose my cache!
+
 # def test_clear_cache():
 #     clear_cache()
 #     d = get_cache_dir(name='maps')
@@ -79,15 +81,18 @@ def test_Builder(tmpdir):
     b._get_html(scroll_behavior='zoom')
     
     # download
-    b = Builder(map_name='e_coli:iJO1366:central_metabolism', model_name='e_coli:iJO1366')
+    b = Builder(map_name='e_coli+iJO1366+central_metabolism',
+                model_name='e_coli+iJO1366')
     assert b.loaded_map_json is not None
     assert b.loaded_model_json is not None
     b.display_in_notebook(height=200)
 
     # data
-    b = Builder(map_name='e_coli:iJO1366:central_metabolism', model_name='e_coli:iJO1366',
+    b = Builder(map_name='e_coli+iJO1366+central_metabolism',
+                model_name='e_coli+iJO1366',
                 reaction_data=[{'GAPD': 123}, {'GAPD': 123}])
-    b = Builder(map_name='e_coli:iJO1366:central_metabolism', model_name='e_coli:iJO1366',
+    b = Builder(map_name='e_coli+iJO1366+central_metabolism',
+                model_name='e_coli+iJO1366',
                 metabolite_data=[{'nadh_c': 123}, {'nadh_c': 123}])
 
     assert type(b.the_id) is unicode

@@ -97,6 +97,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	hide_beziers: hide_beziers,
 	show_beziers: show_beziers,
 	// data
+	has_cobra_model: has_cobra_model,
 	has_reaction_data: has_reaction_data,
 	has_metabolite_data: has_metabolite_data,
 	apply_reaction_data_to_map: apply_reaction_data_to_map,
@@ -355,9 +356,29 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     // -------------------------------------------------------------------------
     // Appearance
 
-    function set_status(status) {
-	this.status = status;
+    function set_status(status, time) {
+	/** Set the status of the map, with an optional expiration
+	    time. Rendering the status is taken care of by the Builder.
+
+	    Arguments
+	    ---------
+
+	    status: The status string.
+
+	    time: An optional time, in ms, after which the status is set to ''.
+
+	*/
+	
 	this.callback_manager.run('set_status', status);
+	// clear any other timers on the status bar
+	window.clearTimeout(this._status_timer);
+	this._status_timer = null;
+	
+	if (time!==undefined) {
+	    this._status_timer = window.setTimeout(function() {
+		this.callback_manager.run('set_status', '');
+	    }.bind(this), time);
+	}
     }
     function set_model(model) {
 	/** Change the cobra model for the map.
@@ -414,11 +435,14 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	this.apply_metabolite_data_to_map();
 	this.draw_everything();
     }
+    function has_cobra_model() {
+	return (this.cobra_model !== null);
+    }
     function has_reaction_data() {
-	return (this.reaction_data_object!==null);
+	return (this.reaction_data_object !== null);
     }
     function has_metabolite_data() {
-	return (this.metabolite_data_object!==null);
+	return (this.metabolite_data_object !== null);
     }
     function draw_everything() {
         /** Draw the all reactions, nodes, & text labels.
@@ -480,10 +504,12 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	var update_fn = function(sel) {
 	    return draw.update_reaction(sel,
 					this.scale,
+					this.cobra_model,
 					this.nodes,
 					this.defs,
 					this.has_reaction_data(),
 					this.settings.no_data['reaction'],
+					this.settings.highlight_missing,
 					this.settings.data_styles['reaction'],
 					this.behavior.reaction_label_drag);
 	}.bind(this);
@@ -768,7 +794,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	var vals = [];
 	for (var reaction_id in this.reactions) {
 	    var reaction = this.reactions[reaction_id];
-	    if (reaction.data!==null) {
+	    if (reaction.data !== null) {
 		vals.push(reaction.data);
 	    }
 	}
@@ -832,7 +858,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	var vals = [];
 	for (var node_id in this.nodes) {
 	    var node = this.nodes[node_id];
-	    if (node.data!==null)
+	    if (node.data !== null)
 		vals.push(node.data);
 	} 
 	var old_domain = this.settings.domain['metabolite']['color'],
@@ -1640,15 +1666,6 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	}
 	return { segment_objs_w_segments: segment_objs_w_segments, reactions: these_reactions };
     }
-    function set_status(status) {
-        // TODO make this a class, and take out d3.select('body')
-        var t = d3.select('body').select('#status');
-        if (t.empty()) t = d3.select('body')
-	    .append('text')
-	    .attr('id', 'status');
-        t.text(status);
-        return this;
-    }
 
     // -------------------------------------------------------------------------
     // Zoom
@@ -1757,7 +1774,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     function highlight(sel) {
 	this.sel.selectAll('.highlight')
 	    .classed('highlight', false);
-	if (sel!==null) {
+	if (sel !== null) {
 	    sel.classed('highlight', true);
 	}
     }

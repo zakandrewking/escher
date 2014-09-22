@@ -47,13 +47,21 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
         return;
     }
 
-    function update_reaction(update_selection, scale, drawn_nodes, 
-			     defs, has_reaction_data,
-			     no_data_style, reaction_data_styles, label_drag_behavior) {
+    function update_reaction(update_selection, scale,
+			     cobra_model, drawn_nodes, 
+			     defs, 
+			     has_reaction_data, no_data_style,
+			     missing_component_color,
+			     reaction_data_styles, label_drag_behavior) {
 	utils.check_undefined(arguments,
-			      ['update_selection', 'scale', 'drawn_nodes', 
-			       'defs', 'has_reaction_data',
-			       'no_data_style', 'reaction_data_styles',
+			      ['update_selection', 'scale',
+			       'cobra_model',
+			       'drawn_nodes', 
+			       'defs',
+			       'has_reaction_data',
+			       'no_data_style',
+			       'missing_component_color',
+			       'reaction_data_styles',
 			       'label_drag_behavior']);
 
         // update reaction label
@@ -66,9 +74,11 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
 				   create_segment,
 				   function(sel) { 
-				       return update_segment(sel, scale, drawn_nodes, defs,
+				       return update_segment(sel, scale, cobra_model,
+							     drawn_nodes, defs, 
 							     has_reaction_data,
-							     no_data_style, reaction_data_styles);
+							     no_data_style, missing_component_color,
+							     reaction_data_styles);
 				   },
 				   function(sel) {
 				       sel.remove();
@@ -176,13 +186,18 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    .attr('class', 'arrowheads');
     }
     
-    function update_segment(update_selection, scale, drawn_nodes,
-			    defs, has_reaction_data, no_data_style,
-			    reaction_data_styles) {
-	utils.check_undefined(arguments, ['update_selection', 'scale', 'drawn_nodes',
+    function update_segment(update_selection, scale, cobra_model,
+			    drawn_nodes, defs, 
+			    has_reaction_data, no_data_style,
+			    missing_component_color, reaction_data_styles) {
+	utils.check_undefined(arguments, ['update_selection',
+					  'scale',
+					  'cobra_model',
+					  'drawn_nodes',
 					  'defs',
 					  'has_reaction_data',
 					  'no_data_style',
+					  'missing_component_color',
 					  'reaction_data_styles']);
 
         // update segment attributes
@@ -222,12 +237,20 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		return curve;
             })
             .style('stroke', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
+		var reaction_id = this.parentNode.parentNode.__data__.bigg_id,
+		    show_missing = (cobra_model !== null &&
+				    missing_component_color!==null &&
+				    !(reaction_id in cobra_model.reactions)),
+		    should_color_data = (has_reaction_data &&
+					 reaction_data_styles.indexOf('color')!==-1);
+		if (show_missing) {
+		    return missing_component_color;
+		}
+		if (should_color_data) {
 		    var f = d.data;
 		    return f===null ? no_data_style['color'] : scale.reaction_color(f);
-		} else {
-		    return null;
 		}
+		return null;
 	    })
 	    .style('stroke-width', function(d) {
 		if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {

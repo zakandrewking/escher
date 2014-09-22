@@ -20,4 +20,15 @@ describe("SettingsSpy", function() {
 	// make sure the new value was added to the styles array
 	expect(settings.data_styles[t].indexOf(p.style)!=-1).toBe(true);
     });
+
+    it("Test highlight_missing stream", function() {
+	// set up the callback
+	settings.highlight_missing_stream.onValue(watch.fn);
+	// push a new value
+	settings.set_highlight_missing(false);
+	// make sure the callback fired
+	expect(watch.fn).toHaveBeenCalled();
+	// make sure the new value was added to the styles array
+	expect(settings.highlight_missing).toBe(false);
+    });
 });

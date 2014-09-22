@@ -1,10 +1,10 @@
 function convert_model_id(model_id) {
     var parts = model_id.split('/');
-    return parts[1] + ':' + parts[3];
+    return parts[1] + '.' + parts[3];
 }
 function convert_map_id(map_id) {
     var parts = map_id.split('/');
-    return parts[1] + ':' + parts[3] + ':' + parts[5];
+    return parts[1] + '.' + parts[3] + '.' + parts[5];
 }
 function submit() {
     var map_value = d3.select('#maps').node().value,

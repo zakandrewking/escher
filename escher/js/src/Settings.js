@@ -1,5 +1,24 @@
 define(["utils", "lib/bacon"], function(utils, bacon) {
-    /** 
+    /** A class to manage settings for a Map.
+
+	Arguments
+	---------
+
+	def_styles: 
+
+	def_auto_domain: 
+
+	def_domain:
+
+	def_range:
+
+	def_no_data:
+
+	def_highlight_missing:
+
+        highlight_missing_components: Boolean. If true, color components that
+        are not the in cobra model.
+
      */
 
     var SearchBar = utils.make_class();
@@ -13,6 +32,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 			    set_domain: set_domain,
 			    set_range_value: set_range_value,
 			    set_no_data_value: set_no_data_value,
+			    set_highlight_missing: set_highlight_missing,			    
 			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes };
@@ -26,7 +46,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     }
 
     // instance methods
-    function init(def_styles, def_auto_domain, def_domain, def_range, def_no_data) {
+    function init(def_styles, def_auto_domain, def_domain, def_range,
+		  def_no_data, def_highlight_missing) {
 	// defaults
 	if (def_styles===undefined) 
 	    def_styles = { reaction: ['color', 'size', 'abs', 'text'],
@@ -47,6 +68,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 					size: 4 },
 			    metabolite: { color: 'white',
 					  size: 6 } };
+	if (def_highlight_missing===undefined)
+	    def_highlight_missing = 'red';
 
 	// event streams
 	this.data_styles = {};
@@ -64,6 +87,9 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	this.no_data = {};
 	this.no_data_bus = {};
 	this.no_data_stream = {};
+	// this.highlight_missing;
+	// this.highlight_missing_bus;
+	// this.highlight_missing_stream;
 
 	// manage accepting/abandoning changes
 	this.status_bus = new bacon.Bus();
@@ -218,6 +244,30 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	    }.bind(this));
 	}.bind(this));
 
+	
+	// set up the highlight missing settings
+	// make the bus
+	this.highlight_missing_bus = new bacon.Bus();
+	// make a new constant for the input default
+	this.highlight_missing_stream = this.highlight_missing_bus
+	// conditionally accept changes
+	    .convert_to_conditional_stream(this.status_bus)
+	// combine into state array
+	    .scan([], function(current, value) {
+		return value;
+	    })
+	// force updates
+	    .force_update_with_bus(this.force_update_bus);
+
+	// get the latest
+	this.highlight_missing_stream.onValue(function(v) {
+	    this.highlight_missing = v;
+	}.bind(this));
+
+	// push the default
+	var def = def_highlight_missing;
+	this.highlight_missing_bus.push(def);
+
 	// definitions
 	function convert_to_conditional_stream(status_stream) {
 	    /** Hold on to event when hold_property is true, and only keep them
@@ -281,12 +331,15 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     function set_auto_domain(type, on_off) {	
 	/** Turn auto domain setting on or off.
 
-	 type: 'reaction' or 'metabolite'
+	    Arguments
+	    ---------
 
-	 on_off: (Boolean) If True, then automatically set the domain. If False,
-	 then manually set the domain.
+	    type: 'reaction' or 'metabolite'
 
-	 */
+	    on_off: (Boolean) If True, then automatically set the domain. If False,
+	    then manually set the domain.
+
+	*/
 	check_type(type);
 
 	this.auto_domain_bus[type].push(on_off);
@@ -295,14 +348,17 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     function change_data_style(type, style, on_off) {
 	/** Change the data style.
 
-	 type: 'reaction' or 'metabolite'
+	    Arguments
+	    ---------
 
-	 style: A data style.
+	    type: 'reaction' or 'metabolite'
 
-	 on_off: (Boolean) If True, then add the style. If False, then remove
-	 it.
+	    style: A data style.
 
-	 */
+	    on_off: (Boolean) If True, then add the style. If False, then remove
+	    it.
+
+	*/
 	check_type(type);
 
 	this.data_styles_bus[type].push({ style: style,
@@ -371,6 +427,19 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	check_type(type);
 
 	this.no_data_bus[type][no_data_type].push(value);
+    }
+
+    function set_highlight_missing(value) {
+	/** Set the option for highlighting missing components from a cobra
+	    model.
+
+	    Arguments
+	    ---------
+
+	    value: The new boolean value.
+
+	*/
+	this.highlight_missing_bus.push(value);
     }
 
     function hold_changes() {

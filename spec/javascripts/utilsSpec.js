@@ -28,29 +28,41 @@ describe('utils', function() {
 	expect(utils.check_for_parent_tag(sel, 'svg')).toBe(false);
     });
 
+    it('test check_name', function() {
+	// invalid characters
+	check_char = function(char) {
+	    utils.check_name('e_coli+iJO1366' + char);
+	};
+        expect(check_char.bind(null, '<')).toThrow();
+        expect(check_char.bind(null, '/')).toThrow();
+        expect(check_char.bind(null, ':')).toThrow();
+        expect(check_char.bind(null, '*')).toThrow();
+	check_char('');
+    });
+    
     it('test_name_to_url', function() {
-	var url = utils.name_to_url('e_coli:iJO1366', 'https://zakandrewking.github.io/escher/', 'model');
+	var url = utils.name_to_url('e_coli.iJO1366', 'https://zakandrewking.github.io/escher/');
 	expect(url).toEqual('https://zakandrewking.github.io/escher/organisms/e_coli/models/iJO1366.json');
 
-	var url = utils.name_to_url('e_coli:iJO1366:central_metabolism', '', 'map');
+	var url = utils.name_to_url('e_coli.iJO1366.central_metabolism');
 	expect(url).toEqual('organisms/e_coli/models/iJO1366/maps/central_metabolism.json');
     });
 
     it('parse_url_components', function() {
-	var url = '?map_name=e_coli:iJO1366:central_metabolism&model_name=e_coli:iJO1366',
+	var url = '?map_name=e_coli.iJO1366.central_metabolism&model_name=e_coli.iJO1366',
 	    the_window = { location: { search: url } };
 
 	var options = utils.parse_url_components(the_window);
-	expect(options).toEqual({ map_name: 'e_coli:iJO1366:central_metabolism',
-				  model_name: 'e_coli:iJO1366',
+	expect(options).toEqual({ map_name: 'e_coli.iJO1366.central_metabolism',
+				  model_name: 'e_coli.iJO1366',
 				  map_path: 'organisms/e_coli/models/iJO1366/maps/central_metabolism.json',
 				  cobra_model_path: 'organisms/e_coli/models/iJO1366.json' });
 
 	options = { a: 'b',
 		    model_name: 'old_model_name' };
 	options = utils.parse_url_components(the_window, options);
-	expect(options).toEqual({ map_name: 'e_coli:iJO1366:central_metabolism',
-				  model_name: 'e_coli:iJO1366',
+	expect(options).toEqual({ map_name: 'e_coli.iJO1366.central_metabolism',
+				  model_name: 'e_coli.iJO1366',
 				  map_path: 'organisms/e_coli/models/iJO1366/maps/central_metabolism.json',
 				  cobra_model_path: 'organisms/e_coli/models/iJO1366.json',
 				  a: 'b' });
@@ -58,8 +70,8 @@ describe('utils', function() {
 	options = { a: 'b',
 		    model_name: 'old_model_name' };
 	options = utils.parse_url_components(the_window, options, 'http://host/');
-	expect(options).toEqual({ map_name: 'e_coli:iJO1366:central_metabolism',
-				  model_name: 'e_coli:iJO1366',
+	expect(options).toEqual({ map_name: 'e_coli.iJO1366.central_metabolism',
+				  model_name: 'e_coli.iJO1366',
 				  map_path: 'http://host/organisms/e_coli/models/iJO1366/maps/central_metabolism.json',
 				  cobra_model_path: 'http://host/organisms/e_coli/models/iJO1366.json',
 				  a: 'b' });

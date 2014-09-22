@@ -34,6 +34,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     check_r: check_r,
 	     mean: mean,
 	     check_for_parent_tag: check_for_parent_tag,
+	     check_name: check_name,
 	     name_to_url: name_to_url,
 	     parse_url_components: parse_url_components };
 
@@ -615,31 +616,42 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	return false;
     }
 
-    function name_to_url(name, download_url, type) {
-	/** Convert short name to url.
+    function check_name(name) {
+	/** Name cannot include:
+
+	    <>:"/\|?*
+
+	*/
+
+	if (/[<>:"\/\\\|\?\*]/.test(name))
+	    throw new Error('Name cannot include the characters <>:"/\|?*');
+    }
+   
+    function name_to_url(name, download_url) {
+	/** Convert short name to url. The short name is separated by '+'
+	    characters.
 
 	 Arguments
 	 ---------
 
-	 name: The short name, e.g. e_coli:iJO1366:central_metabolism.
+	 name: The short name, e.g. e_coli+iJO1366+central_metabolism.
 
-	 download_url: The url to prepend. (Can be null)
+	 download_url: The url to prepend (optional).
 
-	 type: Either 'model' or 'map'.
+	*/
 
-	 */
+	check_name(name);
 
-	var parts = name.split(':'),
+	var parts = name.split('.'),
 	    longname;
-	if (['model', 'map'].indexOf(type) == -1)
-	    throw Error('Bad type: ' + type);
-	if (parts.length != (type=='model' ? 2 : 3))
-            throw Error('Bad ' + type + ' name');
-	if (type=='model')
+	if (parts.length == 2) {
 	    longname = ['organisms', parts[0], 'models', parts[1]+'.json'].join('/');
-	else
+	} else if (parts.length == 3) {
 	    longname = ['organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json'].join('/');
-	if (download_url!==null) {
+	} else {
+            throw Error('Bad short name');
+	}
+	if (download_url!==undefined) {
 	    // strip download_url
 	    download_url = download_url.replace(/^\/|\/$/g, '');
 	    longname = [download_url, longname].join('/');
@@ -669,7 +681,6 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 
 	 */
 	if (options===undefined) options = {};
-	if (download_url===undefined) download_url = null;
 
 	var query = the_window.location.search.substring(1),
 	    vars = query.split("&");
@@ -680,12 +691,12 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 
 	// generate map_path and model_path
 	[
-	    ['map', 'map_name', 'map_path'],
-	    ['model', 'model_name', 'cobra_model_path']
+	    ['map_name', 'map_path'],
+	    ['model_name', 'cobra_model_path']
 	].forEach(function(ar) {
-	    var type = ar[0], key = ar[1], path = ar[2];
+	    var key = ar[0], path = ar[1];
 	    if (key in options)
-		options[path] = name_to_url(options[key], download_url, type);
+		options[path] = name_to_url(options[key], download_url);
 	});
 
 	return options;
