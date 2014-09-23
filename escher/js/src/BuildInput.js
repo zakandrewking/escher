@@ -1,4 +1,4 @@
-define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'CallbackManager', 'draw', 'DirectionArrow'], function(utils, PlacedDiv, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow) {
+define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'CallbackManager', 'draw', 'DirectionArrow', 'CobraModel'], function(utils, PlacedDiv, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow, CobraModel) {
     /**
      */
 
@@ -217,7 +217,14 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
 						     string: (reaction_id + ': ' +
 							      reaction.data_string) };
 		    } else {
-	    		suggestions[reaction_id] = { string: reaction_id };
+			// get the reaction string
+			reaction_string = CobraModel.build_reaction_string(reaction.metabolites,
+									   reaction.reversibility,
+									   reaction.lower_bound,
+									   reaction.upper_bound);
+	    		suggestions[reaction_id] = { string: (reaction_id +
+							      ' -- ' +
+							      reaction_string) };
 		    }
 		}
 	    }

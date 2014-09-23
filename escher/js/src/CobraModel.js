@@ -3,6 +3,8 @@ define(["utils", "data_styles"], function(utils, data_styles) {
      */
 
     var CobraModel = utils.make_class();
+    // class methods
+    CobraModel.build_reaction_string = build_reaction_string;
     // instance methods
     CobraModel.prototype = { init: init,
 			     apply_reaction_data: apply_reaction_data,
@@ -10,6 +12,56 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 
     return CobraModel;
 
+    // class methods
+    function build_reaction_string(stoichiometries, is_reversible,
+				   lower_bound, upper_bound) {
+	/** Return a reaction string for the given stoichiometries.
+
+	    Adapted from cobra.core.Reaction.build_reaction_string().
+
+	    Arguments
+	    ---------
+
+	    stoichiometries: An object with metabolites as keys and
+	    stoichiometries as values.
+
+	    is_reversible: Boolean. Whether the reaction is reversible.
+
+	    lower_bound: Reaction upper bound, to determine direction.
+
+	    upper_bound: Reaction lower bound, to determine direction.
+
+	*/
+
+	var format = function(number) {
+            if (number == 1)
+                return "";
+            return String(number) + " ";
+	}
+        var reactant_dict = {},
+            product_dict = {},
+            reactant_bits = [],
+            product_bits = [];
+	for (var the_metabolite in stoichiometries) {
+	    var coefficient = stoichiometries[the_metabolite];
+            if (coefficient > 0)
+                product_bits.push(format(coefficient) + the_metabolite);
+            else
+                reactant_bits.push(format(Math.abs(coefficient)) + the_metabolite);
+	}
+        reaction_string = reactant_bits.join(' + ');
+        if (is_reversible) {
+            reaction_string += ' <=> ';
+        } else {
+            if (lower_bound < 0 && upper_bound <=0)
+                reaction_string += ' <-- ';
+            else
+		reaction_string += ' --> ';
+	}
+        reaction_string += product_bits.join(' + ')
+        return reaction_string
+    }
+    
     // instance methods
     function init(model_data) {
 	// reactions and metabolites

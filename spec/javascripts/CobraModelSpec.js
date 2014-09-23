@@ -1,4 +1,15 @@
 describe('CobraModel', function() {
+    it("reaction string", function () {
+	var r = {'atp': -1, 'amp': -1, 'adp': 2},
+	    s = escher.CobraModel.build_reaction_string(r, true,
+							0, 0);
+	expect(s).toEqual('atp + amp <=> 2 adp');
+	s = escher.CobraModel.build_reaction_string(r, false, 0, 1000);
+	expect(s).toEqual('atp + amp --> 2 adp');
+	s = escher.CobraModel.build_reaction_string(r, false, -10, 0);
+	expect(s).toEqual('atp + amp <-- 2 adp');
+    });
+    
     it("New model", function () {
 	var model_data = {reactions: {}};
 	expect(function() { escher.CobraModel(model_data);} )
