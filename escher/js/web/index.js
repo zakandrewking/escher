@@ -49,7 +49,7 @@ function submit() {
 	if (i > 0) url += '&';
 	url += add[i];
     }
-    window.location.href = url;
+    window.open(url,'_blank');
 }
 
 function draw_models_select(models) {
