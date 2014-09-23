@@ -75,5 +75,13 @@ describe('utils', function() {
 				  map_path: 'http://host/organisms/e_coli/models/iJO1366/maps/central_metabolism.json',
 				  cobra_model_path: 'http://host/organisms/e_coli/models/iJO1366.json',
 				  a: 'b' });
+
+	// array options
+	url = '?quick_jump[]=fatty_acid_metabolism&quick_jump[]=e_coli.iJO1366.fatty_acid_metabolism';
+	the_window = { location: { search: url } };
+	options = { a: 'b' };
+	options = utils.parse_url_components(the_window, options, 'http://host/');
+	expect(options).toEqual({ a: 'b',
+				  quick_jump: ['fatty_acid_metabolism', 'e_coli.iJO1366.fatty_acid_metabolism'] });
     });
 });

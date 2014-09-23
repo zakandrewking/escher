@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from escher.plots import Builder, list_cached_models, list_cached_maps
-from escher.urls import get_url
+from escher.urls import get_url, url_to_name
 
 import os, subprocess
 from os.path import join, dirname, realpath
@@ -115,6 +115,13 @@ class BuilderHandler(BaseHandler):
                 builder_kwargs[a] = (True if args[0].lower()=='true' else
                                      (False if args[0].lower()=='false' else
                                       args[0]))
+        # array args
+        for a in ['quick_jump']:
+            args = self.get_arguments(a + '[]')
+            if len(args) > 0:
+                builder_kwargs[a] = args
+
+        print builder_kwargs
 
         # if the server is running locally, then the embedded css must be loaded
         # asynchronously using the same server thread.
@@ -165,7 +172,19 @@ class BuilderHandler(BaseHandler):
         
         self.set_header("Content-Type", "text/html")
         self.serve(html)
-        
+
+class MapModelHandler(BaseHandler):
+    def get(self, path):
+        name = url_to_name(path)
+        try:
+            b = Builder(map_name=name)
+        except ValueError as err:
+            print err
+            raise HTTPError(404)
+        self.set_header('Content-Type', 'application/json')
+        print b.loaded_map_json
+        self.serve(unicode(b.loaded_map_json))
+         
 class LibHandler(BaseHandler):
     def get(self, path):
         full_path = join(directory, 'lib', path)
@@ -191,6 +210,7 @@ application = Application([
     (r".*/(resources/.*)", StaticHandler),
     (r"/(dev/)?(local/)?(?:web/)?(builder|viewer)(.*)", BuilderHandler),
     (r".*/(map_spec.json)", StaticHandler),
+    (r".*/(organisms/.*)", MapModelHandler),
     (r"/", IndexHandler),
 ], **settings)
  

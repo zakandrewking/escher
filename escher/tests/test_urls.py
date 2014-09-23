@@ -63,6 +63,8 @@ def test_url_to_name():
     assert name == 'e_coli.iJO1366_organisms'
     name = url_to_name('http://zakandrewking.github.io/escher/organisms/e_coli/models/iJO1366/maps/central_metabolism.json')
     assert name == 'e_coli.iJO1366.central_metabolism'
+    name = url_to_name('organisms/e_coli/models/iJO1366/maps/central_metabolism.json')
+    assert name == 'e_coli.iJO1366.central_metabolism'
 
 def test_name_to_file():
     file = name_to_file('e_coli.iJO1366', 'root')

@@ -1,4 +1,4 @@
-define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput) {
+define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput', 'QuickJump'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput, QuickJump) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Builder(options)
@@ -9,6 +9,9 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          highlight_missing_color: A color to apply to components that are not
          the in cobra model, or null to apply no color. Default: 'red'.
 
+	 quick_jump: A list of map names that can be reached by
+	 selecting them from a quick jump menu on the map.
+	 
      */
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
@@ -24,6 +27,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 			  _setup_menu: _setup_menu,
 			  _setup_simple_zoom_buttons: _setup_simple_zoom_buttons,
 			  _setup_status: _setup_status,
+			  _setup_quick_jump: _setup_quick_jump,
 			  _setup_modes: _setup_modes,
 			  _get_keys: _get_keys,
 			  _setup_confirm_before_exit: _setup_confirm_before_exit };
@@ -72,6 +76,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    metabolite_no_data_color: 'white',
 	    metabolite_no_data_size: 6,
 	    highlight_missing_color: 'red',
+	    quick_jump: null
 	});
 
 	// initialize the settings
@@ -271,6 +276,12 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
 	// status in both modes
 	var status = this._setup_status(this.options.selection, this.map);
+
+	// set up quick jump
+	if (this.options.quick_jump !== null) {
+	    this._setup_quick_jump(this.options.selection,
+				   this.options.quick_jump);
+	}
 
 	// start in zoom mode for builder, view mode for viewer
 	if (this.options.enable_editing)
@@ -629,6 +640,25 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    status_bar.text(status);
 	});
 	return status_bar;
+    }
+
+    function _setup_quick_jump(selection, options) {
+	this.quick_jump = QuickJump(selection, options);
+	this.quick_jump.callback_manager.set('switch_maps',
+					     function(new_map_name, current_map) {
+	    var url = utils.name_to_url(new_map_name);
+	    d3.json(url, function(error, data) {
+		if (error)
+		    throw new Error('Could not load data: ' + error) 
+		this.options.map_data = data;
+		// update the url with the new map
+		var new_url = window.location.href
+		    .replace(/(map_name=)([^&]+)(&|$)/, '$1' + new_map_name + '$3')
+		window.history.pushState("not implemented", new_map_name, new_url);
+		// now reload
+		this.reload_builder();
+	    }.bind(this));
+	}.bind(this));
     }
 
     function _setup_modes(map, brush, zoom_container) {

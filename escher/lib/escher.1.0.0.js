@@ -1472,7 +1472,15 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	    vars = query.split("&");
 	for (var i = 0; i < vars.length; i++) {
 	    var pair = vars[i].split("=");
-	    options[pair[0]] = pair[1];
+	    // deal with array options
+	    if (pair[0].indexOf('[]') == pair[0].length - 2) {
+		var o = pair[0].replace('[]', '');
+		if (!(o in options))
+		    options[o] = [];
+		options[o].push(pair[1]);
+	    } else {
+		options[pair[0]] = pair[1];
+	    }
 	}
 
 	// generate map_path and model_path
@@ -11492,7 +11500,66 @@ define('TextEditInput',['utils', 'PlacedDiv', 'Map', 'ZoomContainer', 'CallbackM
     }
 });
 
-define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput) {
+define('QuickJump',['utils', 'CallbackManager'], function(utils, CallbackManager) {
+    /** A QuickJump menu to move between maps.
+
+	Arguments
+	---------
+
+	sel: The d3 selection of an html node to place the menu inside.
+
+	options: An array of map names to jump to.
+	
+     */
+
+    var QuickJump = utils.make_class();
+    // instance methods
+    QuickJump.prototype = { init: init };
+
+    return QuickJump;
+
+    // instance methods
+    function init(sel, options) {
+	// make the callback manager
+	var callback_manager = CallbackManager();
+	this.callback_manager = callback_manager
+	
+	// set up the menu
+	var select_sel = sel.append('select')
+	    .attr('id', 'quick-jump-menu')
+	    .attr('class', 'form-control');
+	
+	this.default_value = '— Jump to map —';
+
+	var url_comp = utils.parse_url_components(window),
+	    current = ('map_name' in url_comp) ? url_comp.map_name : null;
+
+	// get the options to show
+	var view_options = [this.default_value].concat(options);
+	if (current !== null) {
+	    view_options = view_options.filter(function(o) {
+		return o != current;
+	    });
+	}
+	select_sel.selectAll('option')
+	    .data(view_options)
+	    .enter()
+	    .append('option')
+	    .text(function(d) {
+		// works whether or not a '.' is present
+		return d.split('.').slice(-1)[0];
+	    });
+
+	select_sel.on('change', function() {
+	    // go to the new map
+	    var map_name = this.options[this.selectedIndex].__data__;
+	    callback_manager.run('switch_maps', map_name);
+	});
+	
+    }
+});
+
+define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput', 'QuickJump'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput, QuickJump) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Builder(options)
@@ -11503,6 +11570,9 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
          highlight_missing_color: A color to apply to components that are not
          the in cobra model, or null to apply no color. Default: 'red'.
 
+	 quick_jump: A list of map names that can be reached by
+	 selecting them from a quick jump menu on the map.
+	 
      */
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
@@ -11518,6 +11588,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 			  _setup_menu: _setup_menu,
 			  _setup_simple_zoom_buttons: _setup_simple_zoom_buttons,
 			  _setup_status: _setup_status,
+			  _setup_quick_jump: _setup_quick_jump,
 			  _setup_modes: _setup_modes,
 			  _get_keys: _get_keys,
 			  _setup_confirm_before_exit: _setup_confirm_before_exit };
@@ -11566,6 +11637,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    metabolite_no_data_color: 'white',
 	    metabolite_no_data_size: 6,
 	    highlight_missing_color: 'red',
+	    quick_jump: null
 	});
 
 	// initialize the settings
@@ -11765,6 +11837,12 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
 	// status in both modes
 	var status = this._setup_status(this.options.selection, this.map);
+
+	// set up quick jump
+	if (this.options.quick_jump !== null) {
+	    this._setup_quick_jump(this.options.selection,
+				   this.options.quick_jump);
+	}
 
 	// start in zoom mode for builder, view mode for viewer
 	if (this.options.enable_editing)
@@ -12123,6 +12201,25 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    status_bar.text(status);
 	});
 	return status_bar;
+    }
+
+    function _setup_quick_jump(selection, options) {
+	this.quick_jump = QuickJump(selection, options);
+	this.quick_jump.callback_manager.set('switch_maps',
+					     function(new_map_name, current_map) {
+	    var url = utils.name_to_url(new_map_name);
+	    d3.json(url, function(error, data) {
+		if (error)
+		    throw new Error('Could not load data: ' + error) 
+		this.options.map_data = data;
+		// update the url with the new map
+		var new_url = window.location.href
+		    .replace(/(map_name=)([^&]+)(&|$)/, '$1' + new_map_name + '$3')
+		window.history.pushState("not implemented", new_map_name, new_url);
+		// now reload
+		this.reload_builder();
+	    }.bind(this));
+	}.bind(this));
     }
 
     function _setup_modes(map, brush, zoom_container) {

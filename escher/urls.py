@@ -146,11 +146,8 @@ def url_to_name(url):
 
     """
 
-    # get the section after organisms
-    url = (url.split('/organisms/')[1].strip('/')
-           .replace('.json', '')
-           .replace('.escher', '')
-           .replace('.cobra', ''))
+    # get the section after organisms, removing the file extension
+    url = re.search('(?:^|/)organisms/(.*)\.\w+', url).group(1)
     # separate
     organism, model = [x.strip('/') for x in url.split('/models/')]
     # if maps are present, separate

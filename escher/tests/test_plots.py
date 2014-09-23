@@ -104,3 +104,7 @@ def test_Builder_options():
     assert b.metabolite_no_data_color=='white'
     html = b._get_html()
     assert 'metabolite_no_data_color: "white"' in html
+
+def test_Builder_kwargs():
+    b = Builder(quick_jump=['new_map'])
+    assert b.quick_jump == ['new_map']

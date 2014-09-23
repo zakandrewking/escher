@@ -137,7 +137,8 @@ class Builder(object):
     """
     def __init__(self, map_name=None, map_json=None, model_name=None,
                  model_json=None, reaction_data=None, metabolite_data=None,
-                 local_host=None, embedded_css=None, id=None, safe=False):
+                 local_host=None, embedded_css=None, id=None, safe=False,
+                 **kwargs):
         self.safe = safe
         
         # load the map
@@ -181,7 +182,8 @@ class Builder(object):
                         'metabolite_color_range',
                         'metabolite_size_range',
                         'metabolite_no_data_color',
-                        'metabolite_no_data_size']
+                        'metabolite_no_data_size',
+                        'quick_jump']
         def get_getter_setter(o):
             """Use a closure."""
             # create local fget and fset functions 
@@ -196,6 +198,13 @@ class Builder(object):
             setattr(self.__class__, option, property(fget))
             # add corresponding local variable
             setattr(self, '_%s' % option, None)
+            
+        # set the kwargs
+        for key, val in kwargs.iteritems():
+            try:
+                getattr(self, 'set_%s' % key)(val)
+            except AttributeError:
+                print 'Unrecognized keywork argument %s' % key
         
     def load_model(self):
         """Load the model from input model_json using load_resource, or, secondarily,

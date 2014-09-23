@@ -8,16 +8,46 @@ function convert_url(url) {
 	return parts[1] + '.' + parts[3] + '.' + parts[5];
     throw new Error('Bad url ' + id);
 }
+function get_organism(name) {
+    /** Get organism from a map or model name.
+
+     */
+    var parts = name.replace('.json', '').split('.');
+    if (parts.length==2 || parts.length==3)
+	return parts[0];
+    return null
+}
 function get_organisms(l) {
+    /** Get organisms from a list of maps and models.
+
+     */
     var organisms = [];
     l.forEach(function(name) {
-	var parts = name.replace('.json', '').split('.');
-	if (parts.length==2 || parts.length==3)
-	    organisms.push(parts[0])
+	var org = get_organism(name);
+	if (org!==null)
+	    organisms.push(org)
     });
     return organisms;
 }
-function submit() {
+function get_quick_jump(this_map, maps) {
+    /** Find maps with the same organism.
+
+     */
+    var org = get_organism(this_map),
+	quick_jump = [],
+	all_maps = [];
+    if (maps.web !== null)
+	all_maps = all_maps.concat(maps.web);
+    if (maps.local !== null)
+	all_maps = all_maps.concat(maps.local);
+    all_maps.forEach(function(map) {
+	if (get_organism(map)==org)
+	    quick_jump.push(map);
+    });
+    return quick_jump;
+}
+function submit(maps) {
+    // get the selections
     var map_value = d3.select('#maps').node().value,
 	model_value = d3.select('#models').node().value,
 	options_value = d3.select('#tools').node().value,
@@ -34,6 +64,7 @@ function submit() {
     if (never_ask_value)
 	add.push('never_ask_before_quit=true');
 
+    // choose the file
     if (options_value=='local_viewer') {
 	url = 'local/viewer.html';
     } else if (options_value=='local_builder') {
@@ -42,6 +73,14 @@ function submit() {
 	url = 'viewer.html';
     } else {
 	url = 'builder.html';
+    }
+
+    // set the quick jump maps
+    var quick_jump = get_quick_jump(map_value, maps);
+    if (quick_jump.length > 0) {
+	quick_jump.forEach(function(o) {
+	    add.push('quick_jump[]=' + o);
+	})
     }
 
     url += '?';
@@ -80,22 +119,24 @@ function draw_models_select(models) {
 	web_sel = select_sel.select('#models-web');
 	local_sel = select_sel.select('#models-local');
     }
-    
+     
     // web
-    var model_data = models.web.filter(filter_models),
-	models_sel = web_sel.selectAll('.model')
-	.data(model_data, function(d) { return d; });
-    models_sel.enter()
-	.append('option')
-	.classed('model', true)
-	.attr('value', function(d) { return d; })
-	.text(function(d) {
-	    return d.split('.').slice(-1)[0];
-	});
-    models_sel.exit().remove();
-
+    if (models.web !== null) {
+	var model_data = models.web.filter(filter_models),
+	    models_sel = web_sel.selectAll('.model')
+	    .data(model_data, function(d) { return d; });
+	models_sel.enter()
+	    .append('option')
+	    .classed('model', true)
+	    .attr('value', function(d) { return d; })
+	    .text(function(d) {
+		return d.split('.').slice(-1)[0];
+	    });
+	models_sel.exit().remove();
+    }
+    
     // cached
-    if (models.local!==null) {
+    if (models.local !== null) {
 	var model_data = models.local.filter(filter_models),
 	    models_sel = local_sel.selectAll('.model')
 	    .data(model_data, function(d) { return d; });
@@ -141,20 +182,23 @@ function draw_maps_select(maps) {
 	web_sel = d3.select('#maps-web');
 	local_sel = d3.select('#maps-local');
     }
+    
     // web
-    var map_data = maps.web.filter(filter_maps),
-	maps_sel = web_sel.selectAll('.map')
-	.data(map_data, function(d) { return d; });
-    maps_sel.enter()
-	.append('option')
-	.classed('map', true)
-	.attr('value', function(d) { return d; })
-	.text(function(d) {
-	    var map = d.split('.').slice(-1)[0],
-		model = d.split('.').slice(-2)[0];
-	    return map + ' (' + model + ')';
-	});
-    maps_sel.exit().remove();
+    if (maps.web !== null) {
+	var map_data = maps.web.filter(filter_maps),
+	    maps_sel = web_sel.selectAll('.map')
+	    .data(map_data, function(d) { return d; });
+	maps_sel.enter()
+	    .append('option')
+	    .classed('map', true)
+	    .attr('value', function(d) { return d; })
+	    .text(function(d) {
+		var map = d.split('.').slice(-1)[0],
+		    model = d.split('.').slice(-2)[0];
+		return map + ' (' + model + ')';
+	    });
+	maps_sel.exit().remove();
+    }
 
     // cached
     if (maps.local!==null) {
@@ -210,22 +254,42 @@ function setup() {
 	    return local.indexOf(m)==-1;
 	});
     };
-    var organisms = data.organisms.map(convert_url);
+    
+    // organisms
+    var organisms = [];
+    if (data!==null)
+	organisms = uniq(organisms.concat(data.organisms.map(convert_url)));
     if (local_models!==null)
 	organisms = uniq(organisms.concat(get_organisms(local_models)));
     if (local_maps!==null)
 	organisms = uniq(organisms.concat(get_organisms(local_maps)));
-    var models = { web: not_cached(data.models.map(convert_url),
-				   local_models),
-		   local: local_models };
-    var maps = { web: not_cached(data.maps.map(convert_url),
-				 local_maps),
-		 local: local_maps };
+    
+    // models
+    var models = {};
+    if (data===null)
+	models.web = null;
+    else
+	models.web = not_cached(data.models.map(convert_url), local_models);
+    models.local = local_models;
+    
+    // maps
+    var maps = {};
+    if (data===null)
+	maps.web = null;
+    else
+	maps.web = not_cached(data.maps.map(convert_url), local_maps);
+    maps.local = local_maps;
     
     draw_organisms_select(organisms);
     draw_models_select(models);
     draw_maps_select(maps);
 
+    // select offline if it looks like we're offline
+    if (data === null) {
+	var n = d3.select('#tools').node();
+	n.selectedIndex = 2;
+    }
+    
     // update filters
     d3.select('#organisms')
 	.on('change', function() {
@@ -251,7 +315,7 @@ function setup() {
 	});
 
     // submit button
-    d3.select('#submit').on('click', submit);
+    d3.select('#submit').on('click', submit.bind(null, maps));
 
     // submit on enter
     var selection = d3.select(window),

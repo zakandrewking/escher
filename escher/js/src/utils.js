@@ -686,7 +686,15 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	    vars = query.split("&");
 	for (var i = 0; i < vars.length; i++) {
 	    var pair = vars[i].split("=");
-	    options[pair[0]] = pair[1];
+	    // deal with array options
+	    if (pair[0].indexOf('[]') == pair[0].length - 2) {
+		var o = pair[0].replace('[]', '');
+		if (!(o in options))
+		    options[o] = [];
+		options[o].push(pair[1]);
+	    } else {
+		options[pair[0]] = pair[1];
+	    }
 	}
 
 	// generate map_path and model_path
