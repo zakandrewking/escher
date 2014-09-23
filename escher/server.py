@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from escher.plots import Builder
+from escher.plots import Builder, list_cached_models, list_cached_maps
 from escher.urls import get_url
 
 import os, subprocess
@@ -74,6 +74,10 @@ class IndexHandler(BaseHandler):
                                             'index.json']))
         json_data = response.body if response.body is not None else json.dumps(None)
 
+        # get the cached maps and models
+        cached_maps = list_cached_maps()
+        cached_models = list_cached_models()
+
         # render the template
         template = env.get_template('index.html')
         source = 'local'
@@ -85,6 +89,8 @@ class IndexHandler(BaseHandler):
                                index_js=get_url('index_js', source),
                                index_gh_pages_js=get_url('index_gh_pages_js', source),
                                data=json_data,
+                               local_maps=cached_maps,
+                               local_models=cached_models,
                                version=__version__,
                                web_version=False)
         

@@ -113,7 +113,15 @@
     </div>
   </footer>
 
-  <script>var data={{data}};</script>
+  <script>
+   var data={{data}};
+   {% if not web_version %}
+   var local_maps={{local_maps}},
+   local_models={{local_models}};
+   {% else %}
+   var local_maps=null, local_models=null;
+   {% endif %}
+  </script>
   <script src="{{index_js}}"></script>
   {% if web_version %}
     <script src="{{index_gh_pages_js}}"></script>
