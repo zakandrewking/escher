@@ -575,7 +575,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
 		 */
 		
-		if (!('reactions' in data && 'nodes' in data && 'canvas' in data))
+		if (!('map_id' in data[0] && 'reactions' in data[1] &&
+		      'nodes' in data[1] && 'canvas' in data[1]))
 		    throw new Error('Bad map data.')
 	    }
 	}

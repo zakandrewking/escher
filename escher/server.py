@@ -208,8 +208,8 @@ application = Application([
     (r".*/(js/.*)", StaticHandler),
     (r".*/(css/.*)", StaticHandler),
     (r".*/(resources/.*)", StaticHandler),
+    (r".*/(jsonschema/.*)", StaticHandler),
     (r"/(dev/)?(local/)?(?:web/)?(builder|viewer)(.*)", BuilderHandler),
-    (r".*/(map_spec.json)", StaticHandler),
     (r".*/(organisms/.*)", MapModelHandler),
     (r"/", IndexHandler),
 ], **settings)

@@ -1,4 +1,4 @@
-define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackManager', 'KeyManager', 'Canvas', 'data_styles', 'SearchIndex', 'lib/bacon'], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon) {
+define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackManager', 'KeyManager', 'Canvas', 'data_styles', 'SearchIndex', 'lib/bacon', 'lib/tv4'], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon, tv4) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -203,9 +203,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	this.nodes = {};
 	this.reactions = {};
 	this.beziers = {};
-	this.membranes = [];
 	this.text_labels = {};
-	this.info = {};
 
 	// rotation mode off
 	this.rotation_on = false;
@@ -226,27 +224,15 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 					  'zoom_container', 'settings',
 					  'reaction_data', 'metabolite_data',
 					  'cobra_model', 'enable_search']);
-
-	if (this.debug) {
-	    d3.json('map_spec.json', function(error, spec) {
-		if (error) {
-		    console.warn(error);
-		    return;
-		}
-		utils.check_r(map_data, spec.spec, spec.can_be_none);
-	    });
-	}
 	
-	var canvas = map_data.canvas,
+	var canvas = map_data[1].canvas,
 	    map = new Map(svg, css, selection, zoom_container, settings, 
 			  reaction_data, metabolite_data, cobra_model, 
 			  canvas, enable_search);
 
-	map.reactions = map_data.reactions;
-	map.nodes = map_data.nodes;
-	map.membranes = map_data.membranes;
-	map.text_labels = map_data.text_labels;
-	map.info = map_data.info;
+	map.reactions = map_data[1].reactions;
+	map.nodes = map_data[1].nodes;
+	map.text_labels = map_data[1].text_labels;
 
 	// Propogate coefficients and reversbility, and populate the reaction
 	// search index.
@@ -260,14 +246,14 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	    for (var s_id in reaction.segments) {
 		var segment = reaction.segments[s_id];
 		segment.reversibility = reaction.reversibility;
-		var from_node_bigg_id = map.nodes[segment.from_node_id].bigg_id;
-		if (from_node_bigg_id in reaction.metabolites) {
-		    segment.from_node_coefficient = reaction.metabolites[from_node_bigg_id].coefficient;
-		}
-		var to_node_bigg_id = map.nodes[segment.to_node_id].bigg_id;
-		if (to_node_bigg_id in reaction.metabolites) {
-		    segment.to_node_coefficient = reaction.metabolites[to_node_bigg_id].coefficient;
-		}
+		var from_node_bigg_id = map.nodes[segment.from_node_id].bigg_id,
+		    to_node_bigg_id = map.nodes[segment.to_node_id].bigg_id;
+		reaction.metabolites.forEach(function(met) {
+		    if (met.bigg_id==from_node_bigg_id)
+			segment.from_node_coefficient = met.coefficient;
+		    else if (met.bigg_id==to_node_bigg_id)
+			segment.to_node_coefficient = met.coefficient;
+		});
 
 		// If the metabolite has no bezier points, then add them.
 		var start = map.nodes[segment.from_node_id],
@@ -1786,11 +1772,25 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         utils.download_json(this.map_for_export(), 'saved_map');
     }
     function map_for_export() {
-	var out = { reactions: utils.clone(this.reactions),
-		    nodes: utils.clone(this.nodes),
-		    membranes: utils.clone(this.membranes),
-		    text_labels: utils.clone(this.text_labels),
-		    canvas: this.canvas.size_and_location() };
+	var out = [{ "map_name": "",
+		     "map_id": "",
+		     "map_description": "",
+		     "homepage": "https://zakandrewking.github.io/escher",
+		     "schema": "https://zakandrewking.github.io/escher/jsonschema/1-0-0#"
+		   },
+		   { reactions: utils.clone(this.reactions),
+		     nodes: utils.clone(this.nodes),
+		     text_labels: utils.clone(this.text_labels),
+		     canvas: this.canvas.size_and_location() }
+		  ];
+
+	if (this.debug) {
+	    d3.json('jsonschema/1-0-0', function(error, schema) {
+		if (error) throw new Error(error);
+		if (!tv4.validate(out, schema))
+		    console.warn(tv4.error);
+	    });
+	}
 
 	// remove extra data
 	for (var r_id in out.reactions) {
@@ -1809,16 +1809,6 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	    var node = out.nodes[n_id];
 	    delete node.data;
 	    delete node.data_string;
-	}
-
-	if (this.debug) {
-	    d3.json('map_spec.json', function(error, spec) {
-		if (error) {
-		    console.warn(error);
-		    return;
-		}
-		utils.check_r(out, spec.spec, spec.can_be_none);
-	    });
 	}
 
 	return out;
