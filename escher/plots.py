@@ -317,7 +317,7 @@ class Builder(object):
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
                  fill_screen, scroll_behavior, auto_set_data_domain,
-                 never_ask_before_quit, js_url_parse):
+                 never_ask_before_quit, js_url_parse, local_host):
         draw = (u"options = {{ selection: d3.select('#{the_id}'),\n"
                 u"enable_editing: {enable_editing},\n"
                 u"menu: {menu},\n"
@@ -330,7 +330,8 @@ class Builder(object):
                 u"reaction_data: reaction_data_{the_id},\n"
 		u"metabolite_data: metabolite_data_{the_id},\n"
                 u"never_ask_before_quit: {never_ask_before_quit},\n"
-                u"css: css_string_{the_id},\n").format(
+                u"css: css_string_{the_id},\n"
+                u"local_host: {local_host},\n").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
                     menu=json.dumps(menu),
@@ -338,7 +339,8 @@ class Builder(object):
                     scroll_behavior=json.dumps(scroll_behavior),
                     fill_screen=json.dumps(fill_screen),
                     auto_set_data_domain=json.dumps(auto_set_data_domain),
-                    never_ask_before_quit=json.dumps(never_ask_before_quit))
+                    never_ask_before_quit=json.dumps(never_ask_before_quit),
+                    local_host=json.dumps(local_host))
         # Add the specified options
         for option in self.options:
             val = getattr(self, option)
@@ -462,7 +464,7 @@ class Builder(object):
                                                     fill_screen, scroll_behavior,
                                                     auto_set_data_domain,
                                                     never_ask_before_quit,
-                                                    js_url_parse))
+                                                    js_url_parse, self.local_host))
         return html
 
     def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',

@@ -49,6 +49,7 @@ describe('utils', function() {
     });
 
     it('parse_url_components', function() {
+	// standard name
 	var url = '?map_name=e_coli.iJO1366.central_metabolism&model_name=e_coli.iJO1366',
 	    the_window = { location: { search: url } };
 
@@ -58,15 +59,7 @@ describe('utils', function() {
 				  map_path: 'organisms/e_coli/models/iJO1366/maps/central_metabolism.json',
 				  cobra_model_path: 'organisms/e_coli/models/iJO1366.json' });
 
-	options = { a: 'b',
-		    model_name: 'old_model_name' };
-	options = utils.parse_url_components(the_window, options);
-	expect(options).toEqual({ map_name: 'e_coli.iJO1366.central_metabolism',
-				  model_name: 'e_coli.iJO1366',
-				  map_path: 'organisms/e_coli/models/iJO1366/maps/central_metabolism.json',
-				  cobra_model_path: 'organisms/e_coli/models/iJO1366.json',
-				  a: 'b' });
-
+	// with a host, and options
 	options = { a: 'b',
 		    model_name: 'old_model_name' };
 	options = utils.parse_url_components(the_window, options, 'http://host/');
@@ -76,12 +69,21 @@ describe('utils', function() {
 				  cobra_model_path: 'http://host/organisms/e_coli/models/iJO1366.json',
 				  a: 'b' });
 
+	// non-standard name, and options
+	url = '?map_name=local_map&model_name=local_model';
+	the_window = { location: { search: url } };
+	options = { a: 'b' };
+	options = utils.parse_url_components(the_window, options);
+	expect(options).toEqual({ map_name: 'local_map',
+				  model_name: 'local_model',
+				  a: 'b' });
+
 	// array options
-	url = '?quick_jump[]=fatty_acid_metabolism&quick_jump[]=e_coli.iJO1366.fatty_acid_metabolism';
+	url = '?quick_jump[]=e_coli.iJO1366.central_metabolism&quick_jump[]=e_coli.iJO1366.fatty_acid_metabolism';
 	the_window = { location: { search: url } };
 	options = { a: 'b' };
 	options = utils.parse_url_components(the_window, options, 'http://host/');
 	expect(options).toEqual({ a: 'b',
-				  quick_jump: ['fatty_acid_metabolism', 'e_coli.iJO1366.fatty_acid_metabolism'] });
+				  quick_jump: ['e_coli.iJO1366.central_metabolism', 'e_coli.iJO1366.fatty_acid_metabolism'] });
     });
 });

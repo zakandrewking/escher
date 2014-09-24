@@ -30,11 +30,15 @@ function get_organisms(l) {
     return organisms;
 }
 function get_quick_jump(this_map, maps) {
-    /** Find maps with the same organism.
+    /** Find maps with the same organism. Returns null if no quick jump options
+     * could be found.
 
      */
-    var org = get_organism(this_map),
-	quick_jump = [],
+    var org = get_organism(this_map);
+    if (org === null)
+	return null;
+    
+    var quick_jump = [],
 	all_maps = [];
     if (maps.web !== null)
 	all_maps = all_maps.concat(maps.web);
@@ -44,7 +48,7 @@ function get_quick_jump(this_map, maps) {
 	if (get_organism(map)==org)
 	    quick_jump.push(map);
     });
-    return quick_jump;
+    return quick_jump.length == 0 ? null : quick_jump;
 }
 function submit(maps) {
     // get the selections
@@ -77,7 +81,7 @@ function submit(maps) {
 
     // set the quick jump maps
     var quick_jump = get_quick_jump(map_value, maps);
-    if (quick_jump.length > 0) {
+    if (quick_jump !== null) {
 	quick_jump.forEach(function(o) {
 	    add.push('quick_jump[]=' + o);
 	})
@@ -226,6 +230,9 @@ function draw_maps_select(maps) {
     var n = select_sel.node();
     if (map_data.length > 0 && n.selectedIndex==0)
 	n.selectedIndex = 1;
+
+    // show the map_name
+    
 }
 function draw_organisms_select(organisms) {
     var org = d3.select('#organisms').selectAll('.organism')

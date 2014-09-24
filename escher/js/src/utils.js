@@ -634,7 +634,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	 Arguments
 	 ---------
 
-	 name: The short name, e.g. e_coli+iJO1366+central_metabolism.
+	 name: The short name, e.g. e_coli.iJO1366.central_metabolism.
 
 	 download_url: The url to prepend (optional).
 
@@ -651,7 +651,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	} else {
             throw Error('Bad short name');
 	}
-	if (download_url!==undefined) {
+	if (download_url !== undefined && download_url !== null) {
 	    // strip download_url
 	    download_url = download_url.replace(/^\/|\/$/g, '');
 	    longname = [download_url, longname].join('/');
@@ -703,8 +703,13 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	    ['model_name', 'cobra_model_path']
 	].forEach(function(ar) {
 	    var key = ar[0], path = ar[1];
-	    if (key in options)
-		options[path] = name_to_url(options[key], download_url);
+	    if (key in options) {
+		try {
+		    options[path] = name_to_url(options[key], download_url);
+		} catch (e) {
+		    console.warn(key + ' ' + options[key] + ' cannot be converted to a URL.');
+		}
+	    }
 	});
 
 	return options;

@@ -1,4 +1,4 @@
-define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput', 'QuickJump'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput, QuickJump) {
+define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput', 'QuickJump'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput, QuickJump) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Builder(options)
@@ -76,6 +76,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    metabolite_no_data_color: 'white',
 	    metabolite_no_data_size: 6,
 	    highlight_missing_color: 'red',
+	    local_host: null,
 	    quick_jump: null
 	});
 
@@ -643,10 +644,13 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
     }
 
     function _setup_quick_jump(selection, options) {
+	// make the quick jump object
 	this.quick_jump = QuickJump(selection, options);
-	this.quick_jump.callback_manager.set('switch_maps',
-					     function(new_map_name, current_map) {
-	    var url = utils.name_to_url(new_map_name);
+
+	// function to load a map
+	var load_map = function(new_map_name, current_map) {
+	    this.map.set_status('Loading map ' + new_map_name + ' ...');
+	    var url = utils.name_to_url(new_map_name, this.options.local_host);
 	    d3.json(url, function(error, data) {
 		if (error)
 		    throw new Error('Could not load data: ' + error) 
@@ -657,8 +661,12 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 		window.history.pushState("not implemented", new_map_name, new_url);
 		// now reload
 		this.reload_builder();
+		this.map.set_status('');
 	    }.bind(this));
-	}.bind(this));
+	}.bind(this);
+
+	// set the callback
+	this.quick_jump.callback_manager.set('switch_maps', load_map);
     }
 
     function _setup_modes(map, brush, zoom_container) {
