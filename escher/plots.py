@@ -120,8 +120,11 @@ class Builder(object):
     reaction_data: a dictionary with keys that correspond to reaction ids
     and values that will be mapped to reaction arrows and labels.
 
-    reaction_data: a dictionary with keys that correspond to metabolite ids and
+    metabolite_data: a dictionary with keys that correspond to metabolite ids and
     values that will be mapped to metabolite nodes and labels.
+
+    gene_data: a dictionary with keys that correspond to gene ids and
+    values that will be mapped to corresponding reactions.
 
     local_host: a hostname that will be used for any local files in dev
     mode.
@@ -134,11 +137,28 @@ class Builder(object):
     safe: if True, then loading files from the filesytem is not allowed. This is
     to ensure the safety of using Builder with a web server.
 
+    Keyword Arguments
+    -----------------
+
+    These are defined in the Javascript API:
+
+    reaction_styles, auto_reaction_domain, reaction_domain,
+    reaction_color_range, reaction_size_range, reaction_no_data_color,
+    reaction_no_data_size, metabolite_styles, auto_metabolite_domain,
+    metabolite_domain, metabolite_color_range, metabolite_size_range,
+    metabolite_no_data_color, metabolite_no_data_size, gene_data_rule,
+    quick_jump
+
+    All keyword arguments can also be set on an existing Builder object
+    using setter functions, e.g.:
+
+    my_builder.set_reaction_styles(new_styles);
+    
     """
     def __init__(self, map_name=None, map_json=None, model_name=None,
                  model_json=None, reaction_data=None, metabolite_data=None,
-                 local_host=None, embedded_css=None, id=None, safe=False,
-                 **kwargs):
+                 gene_data=None, local_host=None, embedded_css=None, id=None,
+                 safe=False, **kwargs):
         self.safe = safe
         
         # load the map
@@ -158,6 +178,7 @@ class Builder(object):
         # set the args
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
+        self.gene_data = gene_data
         self.local_host = local_host
         
         # remove illegal characters from css
@@ -183,6 +204,7 @@ class Builder(object):
                         'metabolite_size_range',
                         'metabolite_no_data_color',
                         'metabolite_no_data_size',
+                        'gene_data_rule',   # TODO propagate
                         'quick_jump']
         def get_getter_setter(o):
             """Use a closure."""
@@ -302,6 +324,7 @@ class Builder(object):
                       u"var cobra_model_{the_id} = {cobra_model};\n"
                       u"var reaction_data_{the_id} = {reaction_data};\n"
                       u"var metabolite_data_{the_id} = {metabolite_data};\n"
+                      u"var gene_data_{the_id} = {gene_data};\n"
                       u"var css_string_{the_id} = '{style}';\n").format(
                           the_id=self.the_id,
                           map_data=(self.loaded_map_json if self.loaded_map_json else
@@ -311,6 +334,8 @@ class Builder(object):
                           reaction_data=(json.dumps(self.reaction_data) if self.reaction_data else
                                          u'null'),
                           metabolite_data=(json.dumps(self.metabolite_data) if self.metabolite_data else
+                                           u'null'),
+                          gene_data=(json.dumps(self.gene_data) if self.gene_data else
                                            u'null'),
                           style=self._embedded_css(url_source))
         return javascript
@@ -328,7 +353,8 @@ class Builder(object):
                 u"cobra_model: cobra_model_{the_id},\n"
                 u"auto_set_data_domain: {auto_set_data_domain},\n"
                 u"reaction_data: reaction_data_{the_id},\n"
-		u"metabolite_data: metabolite_data_{the_id},\n"
+                u"metabolite_data: metabolite_data_{the_id},\n"
+                u"gene_data: gene_data_{the_id},\n"
                 u"never_ask_before_quit: {never_ask_before_quit},\n"
                 u"css: css_string_{the_id},\n"
                 u"local_host: {local_host},\n").format(

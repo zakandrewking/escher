@@ -94,6 +94,9 @@ def test_Builder(tmpdir):
     b = Builder(map_name='e_coli.iJO1366.central_metabolism',
                 model_name='e_coli.iJO1366',
                 metabolite_data=[{'nadh_c': 123}, {'nadh_c': 123}])
+    b = Builder(map_name='e_coli.iJO1366.central_metabolism',
+                model_name='e_coli.iJO1366',
+                gene_data=[{'gapA': 123}, {'adhE': 123}])
 
     assert type(b.the_id) is unicode
     assert len(b.the_id) == 10
