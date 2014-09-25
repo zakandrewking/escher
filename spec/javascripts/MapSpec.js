@@ -30,8 +30,6 @@ describe('Map', function() {
 	    if (node.node_type=='metabolite') {
 		// bigg ids and compartments should be present
 		expect(map.nodes[id].bigg_id).toBeDefined();
-		expect(map.nodes[id].bigg_id_compartmentalized).not.toBeDefined();
-		expect(map.nodes[id].compartment_id).toBeDefined();
 	    }
 	}
 

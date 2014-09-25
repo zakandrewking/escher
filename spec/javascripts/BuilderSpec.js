@@ -9,9 +9,9 @@ describe('Builder', function() {
 				     never_ask_before_quit: true });
 	    expect(sel.select('svg').node()).toBe(b.map.svg.node());
 	    expect(sel.selectAll('#nodes')[0].length).toEqual(1);
-	    expect(sel.selectAll('.node')[0].length).toEqual(31);
+	    expect(sel.selectAll('.node')[0].length).toEqual(30);
 	    expect(sel.selectAll('#reactions')[0].length).toEqual(1);
-	    expect(sel.selectAll('.reaction')[0].length).toEqual(5);
+	    expect(sel.selectAll('.reaction')[0].length).toEqual(6);
 	    expect(sel.selectAll('#text-labels')[0].length).toEqual(1);
 	    sels.push(sel);
 	}
