@@ -203,7 +203,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
             var reaction = cobra_reactions[reaction_id];
 
             // ignore drawn reactions
-            if (already_drawn(reaction_id, reactions)) continue;
+            // if (already_drawn(reaction_id, reactions)) continue;
 
 	    // check segments for match to selected metabolite
 	    for (var metabolite_id in reaction.metabolites) {

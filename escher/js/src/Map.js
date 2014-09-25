@@ -1262,12 +1262,12 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	 */
 	
         // If reaction id is not new, then return:
-	for (var reaction_id in this.reactions) {
-	    if (this.reactions[reaction_id].bigg_id == starting_reaction) {             
-		console.warn('reaction is already drawn');
-                return null;
-	    }
-        }
+	// for (var reaction_id in this.reactions) {
+	//     if (this.reactions[reaction_id].bigg_id == starting_reaction) {             
+	// 	console.warn('reaction is already drawn');
+        //         return null;
+	//     }
+        // }
 
 	// If there is no cobra model, error
 	if (!this.cobra_model) return console.error('No CobraModel. Cannot build new reaction');
@@ -1396,13 +1396,13 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	 */
 
         // If reaction id is not new, then return:
-	for (var reaction_id in this.reactions) {
-	    if (this.reactions[reaction_id].bigg_id == reaction_bigg_id) {
-		console.warn('reaction is already drawn');
-                return;
-	    }
-        }
-
+	// for (var reaction_id in this.reactions) {
+	//     if (this.reactions[reaction_id].bigg_id == reaction_bigg_id) {
+	// 	console.warn('reaction is already drawn');
+        //         return;
+	//     }
+        // }
+	
 	// get the metabolite node
 	var selected_node = this.nodes[selected_node_id];
 
