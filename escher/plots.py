@@ -246,17 +246,16 @@ class Builder(object):
             cache_dir = get_cache_dir(name='models')
             model_filename = join(cache_dir, model_name + '.json')
             if not isfile(model_filename):
-                model_not_cached = 'Model "%s" not in cache. Attempting download from %s' % \
-                    (model_name, get_url('escher_download'))
+                model_url = name_to_url(model_name)
+                model_not_cached = ('Model not in cache. '
+                                    'Attempting download from %s' % model_url)
                 warn(model_not_cached)
                 try:
-                    model_url = name_to_url(model_name)
                     download = urlopen(model_url)
                     with open(model_filename, 'w') as outfile:
                         outfile.write(download.read())
                 except HTTPError:
-                    raise ValueError('No model named %s found in cache or at %s' % \
-                                     (model_name, model_url))
+                    raise ValueError('No model found in cache or at %s' % model_url)
             with open(model_filename) as f:
                 self.loaded_model_json = f.read()
                 
@@ -278,17 +277,16 @@ class Builder(object):
             cache_dir = get_cache_dir(name='maps')
             map_filename = join(cache_dir, map_name + '.json')
             if not isfile(map_filename):
-                map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
-                    (map_name, get_url('escher_download'))
+                map_url = name_to_url(self.map_name)
+                map_not_cached = ('Map not in cache. '
+                                  'Attempting download from %s' % map_url)
                 warn(map_not_cached)
                 try:
-                    map_url = name_to_url(self.map_name)
                     download = urlopen(map_url)
                     with open(map_filename, 'w') as outfile:
                         outfile.write(download.read())
                 except HTTPError:
-                    raise ValueError('No map named %s found in cache or at %s' % \
-                                     (map_name, map_url))
+                    raise ValueError('No map found in cache or at %s' % map_url)
             with open(map_filename) as f:
                 self.loaded_map_json = f.read()
 
