@@ -2,6 +2,7 @@ import escher.server
 from escher import (Builder, get_cache_dir, clear_cache, list_cached_maps,
                     list_cached_models)
 from escher.plots import load_resource
+from escher.urls import get_url
 
 import os
 from os.path import join
@@ -40,15 +41,10 @@ def test_load_resource(tmpdir):
     directory = os.path.abspath(os.path.dirname(__file__))
     assert load_resource(join(directory, 'example.json'), 'name').strip() == '{"r": "val"}'
     
-    url = "https://zakandrewking.github.io/escher/organisms/e_coli/models/iJO1366/maps/central_metabolism.json"
+    url = '/'.join([get_url('escher_download', protocol='https'),
+                    'organisms/e_coli/models/iJO1366/maps/central_metabolism.json'])
     _ = json.loads(load_resource(url, 'name'))
         
-    # with raises(URLError):
-    #     load_resource("http://asodivhowef", 'name')
-       
-    # with raises(URLError):
-    #     load_resource("https://asodivhowef", 'name')
-
     with raises(ValueError) as err:
         p = join(str(tmpdir), 'dummy')
         with open(p, 'w') as f:

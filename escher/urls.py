@@ -35,11 +35,13 @@ _dependencies_cdn = {
     }
 
 _links = {
-    'escher_root': '//zakandrewking.github.io/escher',
+    'escher_download_rel': 'v1',
     'escher_src': '//zakandrewking.github.io/escher/escher',
     'escher_home': '//zakandrewking.github.io/escher',
     'github': '//github.com/zakandrewking/escher',
     }
+_links['escher_download'] = '/'.join([_links['escher_home'],
+                                      _links['escher_download_rel']])
     
 # external dependencies
 names = _escher.keys() + _dependencies.keys() + _links.keys()
@@ -133,7 +135,7 @@ def name_to_url(name, protocol='https'):
                              parts[2]+'.json'])
     else:
         raise Exception('Bad short name')
-    return '/'.join([get_url('escher_root', source='web', protocol=protocol),
+    return '/'.join([get_url('escher_download', source='web', protocol=protocol),
                      longname])
 
 def url_to_name(url):
@@ -158,54 +160,3 @@ def url_to_name(url):
         name = '.'.join([organism, model])
     return name
 
-def name_to_file(name, cache_dir):
-    """Convert short name to a filename in the cache. The short name is
-    separated by '+' characters.
-
-    Arguments
-    ---------
-
-    name: the shorthand name for the map or model.
-
-    cache_dir: The root of the cache directory.
-
-    """
-
-    check_name(name)
-        
-    parts = name.split('.')
-    if len(parts) == 2:
-        longname = os.path.join('organisms', parts[0], 'models',
-                                 parts[1]+'.json')
-    elif len(parts) == 3:
-        longname = os.path.join('organisms', parts[0], 'models', parts[1], 'maps',
-                                 parts[2]+'.json')
-    else:
-        raise Exception('Bad short name')
-    return os.path.join(cache_dir, longname)
-
-def file_to_name(file):
-    """Convert filename to a short name. The short name is separated by
-    '+' characters.
-
-    Arguments
-    ---------
-
-    file: The path, which must contain at least 'organisms' and 'models'.
-    
-    """
-
-    # get the section after organisms
-    file = (file.split(os.sep+'organisms'+os.sep)[1].strip(os.sep)
-            .replace('.json', '')
-            .replace('.escher', '')
-            .replace('.cobra', ''))
-    # separate
-    organism, model = [x.strip(os.sep) for x in file.split(os.sep+'models'+os.sep)]
-    # if maps are present, separate
-    if os.sep+'maps'+os.sep in model:
-        model, map = [x.strip(os.sep) for x in model.split(os.sep+'maps'+os.sep)]
-        name = '.'.join([organism, model, map])
-    else:
-        name = '.'.join([organism, model])
-    return name

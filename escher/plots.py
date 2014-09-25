@@ -247,7 +247,7 @@ class Builder(object):
             model_filename = join(cache_dir, model_name + '.json')
             if not isfile(model_filename):
                 model_not_cached = 'Model "%s" not in cache. Attempting download from %s' % \
-                    (model_name, get_url('escher_root'))
+                    (model_name, get_url('escher_download'))
                 warn(model_not_cached)
                 try:
                     model_url = name_to_url(model_name)
@@ -279,7 +279,7 @@ class Builder(object):
             map_filename = join(cache_dir, map_name + '.json')
             if not isfile(map_filename):
                 map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
-                    (map_name, get_url('escher_root'))
+                    (map_name, get_url('escher_download'))
                 warn(map_not_cached)
                 try:
                     map_url = name_to_url(self.map_name)
@@ -380,7 +380,10 @@ class Builder(object):
         dev_str = '' if dev else 'escher.'
         # parse the url in javascript
         if js_url_parse:
-            o = u'options = %sutils.parse_url_components(window, options);\n' % (dev_str)
+            # get the relative location of the escher_download urls
+            rel = get_url('escher_download_rel')
+            o = (u'options = %sutils.parse_url_components(window, '
+                 'options, "%s");\n' % (dev_str, rel))
             draw = draw + o;
         # make the builder
         draw = draw + '%sBuilder(options);\n' % dev_str

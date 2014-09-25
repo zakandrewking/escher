@@ -113,19 +113,19 @@
     </div>
   </footer>
 
-  <script>
-   var data={{data}};
-   {% if not web_version %}
-   var local_maps={{local_maps}},
-   local_models={{local_models}};
-   {% else %}
-   var local_maps=null, local_models=null;
-   {% endif %}
-  </script>
   <script src="{{index_js}}"></script>
-  {% if web_version %}
-    <script src="{{index_gh_pages_js}}"></script>
-  {% else %}
-    <script>setup()</script>
-  {% endif %}
+  <script>
+   {% if web_version %} 
+   // get the models
+   d3.json('{{download_rel}}/index.json', function(d) {
+     var data =d, local_maps=null, local_models=null;
+     setup(data, local_maps, local_models);
+   });
+   {% else %}
+   var data={{data}},
+   local_maps={{local_maps}},
+   local_models={{local_models}};
+   setup(data, local_maps, local_models);
+   {% endif %}   
+  </script>
 {% endblock %}

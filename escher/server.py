@@ -70,7 +70,7 @@ class IndexHandler(BaseHandler):
     def get(self):
         # get the organisms, maps, and models
         response = yield gen.Task(AsyncHTTPClient().fetch,
-                                  '/'.join([get_url('escher_root', protocol='https'),
+                                  '/'.join([get_url('escher_download', protocol='https'),
                                             'index.json']))
         json_data = response.body if response.body is not None else json.dumps(None)
 

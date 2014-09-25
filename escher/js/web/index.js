@@ -247,7 +247,7 @@ function draw_organisms_select(organisms) {
 	});
 }
 
-function setup() {
+function setup(data, local_maps, local_models) {
     // GO
     var uniq = function(a) {
 	var seen = {};
