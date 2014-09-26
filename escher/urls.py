@@ -35,7 +35,7 @@ _dependencies_cdn = {
     }
 
 _links = {
-    'escher_download_rel': 'v1',
+    'escher_download_rel': '1-0-0',
     'escher_src': '//zakandrewking.github.io/escher/escher',
     'escher_home': '//zakandrewking.github.io/escher',
     'github': '//github.com/zakandrewking/escher',

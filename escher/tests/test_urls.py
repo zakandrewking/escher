@@ -29,9 +29,9 @@ def test_urls():
 
     # download
     url = get_url('escher_download_rel')
-    assert url == 'v1'
+    assert url == '1-0-0'
     url = get_url('escher_download', protocol='https')
-    assert url == 'https://zakandrewking.github.io/escher/v1'
+    assert url == 'https://zakandrewking.github.io/escher/1-0-0'
     
     # raises
     with raises(Exception):
@@ -55,18 +55,20 @@ def test_check_name():
 
 def test_name_to_url():
     url = name_to_url('e_coli.iJO1366')
-    assert url == 'https://zakandrewking.github.io/escher/v1/organisms/e_coli/models/iJO1366.json'
-    url = name_to_url('e_coli.iJO1366.central_metabolism', protocol='http')
-    assert url == 'http://zakandrewking.github.io/escher/v1/organisms/e_coli/models/iJO1366/maps/central_metabolism.json'
+    assert url == '/'.join([get_url('escher_download', protocol='https'),
+                            'organisms/e_coli/models/iJO1366.json'])
+    url = name_to_url('e_coli.iJO1366.central_metabolism', protocol='http')    
+    assert url == '/'.join([get_url('escher_download', protocol='http'),
+                            'organisms/e_coli/models/iJO1366/maps/central_metabolism.json'])
 
     # too short
     with raises(Exception):
         name_to_url('e_coli')
 
 def test_url_to_name():
-    name = url_to_name('https://zakandrewking.github.io/escher/v1/organisms/e_coli/models/iJO1366_organisms.json')
+    name = url_to_name('https://zakandrewking.github.io/escher/1-0-0/organisms/e_coli/models/iJO1366_organisms.json')
     assert name == 'e_coli.iJO1366_organisms'
-    name = url_to_name('http://zakandrewking.github.io/escher/v1/organisms/e_coli/models/iJO1366/maps/central_metabolism.json')
+    name = url_to_name('http://zakandrewking.github.io/escher/1-0-2/organisms/e_coli/models/iJO1366/maps/central_metabolism.json')
     assert name == 'e_coli.iJO1366.central_metabolism'
-    name = url_to_name('v1/organisms/e_coli/models/iJO1366/maps/central_metabolism.json')
+    name = url_to_name('2-1-1/organisms/e_coli/models/iJO1366/maps/central_metabolism.json')
     assert name == 'e_coli.iJO1366.central_metabolism'
