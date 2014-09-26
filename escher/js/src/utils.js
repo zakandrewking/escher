@@ -1,4 +1,4 @@
-define(["lib/vkbeautify"], function(vkbeautify) {
+define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     return { set_options: set_options,
              setup_svg: setup_svg,
 	     remove_child_nodes: remove_child_nodes,
@@ -399,31 +399,20 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	return { "x": coords.x * scalar,
 		 "y": coords.y * scalar };
     }
-
+    
     function download_json(json, name) {
-        var a = document.createElement('a');
-        a.download = name + '.json'; // file name
-	var j = JSON.stringify(json);
-        a.setAttribute("href-lang", "application/json");
-        a.href = 'data:application/json,' + j;
-        // <a> constructed, simulate mouse click on it
-        var ev = document.createEvent("MouseEvents");
-        ev.initMouseEvent("click", true, false, self, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        a.dispatchEvent(ev);
+	/** Download json file in a blob.
 
-        function utf8_to_b64(str) {
-            return window.btoa(unescape(encodeURIComponent( str )));
-        }
+	 */
+	var j = JSON.stringify(json),
+	    blob = new Blob([j], {type: "octet/stream"});
+	FileSaver(blob, name + '.json');
     }
 
     function load_json(f, callback) {
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
 	    callback("The File APIs are not fully supported in this browser.", null);
-
-	// The following is not a safe assumption.
-	// if (!f.type.match("application/json"))
-	//     callback.call(target, "Not a json file.", null);
 
 	var reader = new window.FileReader();
 	// Closure to capture the file information.

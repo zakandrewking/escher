@@ -784,7 +784,14 @@ define('lib/vkbeautify',[],function() {
 
 });
 
-define('Utils',["lib/vkbeautify"], function(vkbeautify) {
+/*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
+var saveAs=saveAs||"undefined"!==typeof navigator&&navigator.msSaveOrOpenBlob&&navigator.msSaveOrOpenBlob.bind(navigator)||function(a){if("undefined"===typeof navigator||!/MSIE [1-9]\./.test(navigator.userAgent)){var k=a.document,n=k.createElementNS("http://www.w3.org/1999/xhtml","a"),w="download"in n,x=function(c){var e=k.createEvent("MouseEvents");e.initMouseEvent("click",!0,!1,a,0,0,0,0,0,!1,!1,!1,!1,0,null);c.dispatchEvent(e)},q=a.webkitRequestFileSystem,u=a.requestFileSystem||q||a.mozRequestFileSystem,
+y=function(c){(a.setImmediate||a.setTimeout)(function(){throw c;},0)},r=0,s=function(c){var e=function(){"string"===typeof c?(a.URL||a.webkitURL||a).revokeObjectURL(c):c.remove()};a.chrome?e():setTimeout(e,10)},t=function(c,a,d){a=[].concat(a);for(var b=a.length;b--;){var l=c["on"+a[b]];if("function"===typeof l)try{l.call(c,d||c)}catch(f){y(f)}}},m=function(c,e){var d=this,b=c.type,l=!1,f,p,k=function(){t(d,["writestart","progress","write","writeend"])},g=function(){if(l||!f)f=(a.URL||a.webkitURL||
+a).createObjectURL(c);p?p.location.href=f:void 0==a.open(f,"_blank")&&"undefined"!==typeof safari&&(a.location.href=f);d.readyState=d.DONE;k();s(f)},h=function(a){return function(){if(d.readyState!==d.DONE)return a.apply(this,arguments)}},m={create:!0,exclusive:!1},v;d.readyState=d.INIT;e||(e="download");if(w)f=(a.URL||a.webkitURL||a).createObjectURL(c),n.href=f,n.download=e,x(n),d.readyState=d.DONE,k(),s(f);else{a.chrome&&b&&"application/octet-stream"!==b&&(v=c.slice||c.webkitSlice,c=v.call(c,0,
+c.size,"application/octet-stream"),l=!0);q&&"download"!==e&&(e+=".download");if("application/octet-stream"===b||q)p=a;u?(r+=c.size,u(a.TEMPORARY,r,h(function(a){a.root.getDirectory("saved",m,h(function(a){var b=function(){a.getFile(e,m,h(function(a){a.createWriter(h(function(b){b.onwriteend=function(b){p.location.href=a.toURL();d.readyState=d.DONE;t(d,"writeend",b);s(a)};b.onerror=function(){var a=b.error;a.code!==a.ABORT_ERR&&g()};["writestart","progress","write","abort"].forEach(function(a){b["on"+
+a]=d["on"+a]});b.write(c);d.abort=function(){b.abort();d.readyState=d.DONE};d.readyState=d.WRITING}),g)}),g)};a.getFile(e,{create:!1},h(function(a){a.remove();b()}),h(function(a){a.code===a.NOT_FOUND_ERR?b():g()}))}),g)}),g)):g()}},b=m.prototype;b.abort=function(){this.readyState=this.DONE;t(this,"abort")};b.readyState=b.INIT=0;b.WRITING=1;b.DONE=2;b.error=b.onwritestart=b.onprogress=b.onwrite=b.onabort=b.onerror=b.onwriteend=null;return function(a,b){return new m(a,b)}}}("undefined"!==typeof self&&
+self||"undefined"!==typeof window&&window||this.content);"undefined"!==typeof module&&null!==module?module.exports=saveAs:"undefined"!==typeof define&&null!==define&&null!=define.amd&&define('lib/FileSaver',[],function(){return saveAs});
+define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     return { set_options: set_options,
              setup_svg: setup_svg,
 	     remove_child_nodes: remove_child_nodes,
@@ -1185,31 +1192,20 @@ define('Utils',["lib/vkbeautify"], function(vkbeautify) {
 	return { "x": coords.x * scalar,
 		 "y": coords.y * scalar };
     }
-
+    
     function download_json(json, name) {
-        var a = document.createElement('a');
-        a.download = name + '.json'; // file name
-	var j = JSON.stringify(json);
-        a.setAttribute("href-lang", "application/json");
-        a.href = 'data:application/json,' + j;
-        // <a> constructed, simulate mouse click on it
-        var ev = document.createEvent("MouseEvents");
-        ev.initMouseEvent("click", true, false, self, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        a.dispatchEvent(ev);
+	/** Download json file in a blob.
 
-        function utf8_to_b64(str) {
-            return window.btoa(unescape(encodeURIComponent( str )));
-        }
+	 */
+	var j = JSON.stringify(json),
+	    blob = new Blob([j], {type: "octet/stream"});
+	FileSaver(blob, name + '.json');
     }
 
     function load_json(f, callback) {
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
 	    callback("The File APIs are not fully supported in this browser.", null);
-
-	// The following is not a safe assumption.
-	// if (!f.type.match("application/json"))
-	//     callback.call(target, "Not a json file.", null);
 
 	var reader = new window.FileReader();
 	// Closure to capture the file information.
@@ -1458,7 +1454,7 @@ define('Utils',["lib/vkbeautify"], function(vkbeautify) {
     }    
 });
 
-define('utils',["lib/vkbeautify"], function(vkbeautify) {
+define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     return { set_options: set_options,
              setup_svg: setup_svg,
 	     remove_child_nodes: remove_child_nodes,
@@ -1859,31 +1855,20 @@ define('utils',["lib/vkbeautify"], function(vkbeautify) {
 	return { "x": coords.x * scalar,
 		 "y": coords.y * scalar };
     }
-
+    
     function download_json(json, name) {
-        var a = document.createElement('a');
-        a.download = name + '.json'; // file name
-	var j = JSON.stringify(json);
-        a.setAttribute("href-lang", "application/json");
-        a.href = 'data:application/json,' + j;
-        // <a> constructed, simulate mouse click on it
-        var ev = document.createEvent("MouseEvents");
-        ev.initMouseEvent("click", true, false, self, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        a.dispatchEvent(ev);
+	/** Download json file in a blob.
 
-        function utf8_to_b64(str) {
-            return window.btoa(unescape(encodeURIComponent( str )));
-        }
+	 */
+	var j = JSON.stringify(json),
+	    blob = new Blob([j], {type: "octet/stream"});
+	FileSaver(blob, name + '.json');
     }
 
     function load_json(f, callback) {
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
 	    callback("The File APIs are not fully supported in this browser.", null);
-
-	// The following is not a safe assumption.
-	// if (!f.type.match("application/json"))
-	//     callback.call(target, "Not a json file.", null);
 
 	var reader = new window.FileReader();
 	// Closure to capture the file information.
@@ -2952,11 +2937,12 @@ define('build',["utils"], function(utils) {
 	}
 
 	// now take out the extra reaction details
+	var metabolites_array = []
 	for (var bigg_id in new_reaction.metabolites) {
-	    new_reaction.metabolites[bigg_id] = {
-		coefficient: new_reaction.metabolites[bigg_id].coefficient
-	    };
+	    metabolites_array.push({'bigg_id': bigg_id,
+				    'coefficient': new_reaction.metabolites[bigg_id].coefficient});
 	}
+	new_reaction.metabolites = metabolites_array;    
 
 	// new_reactions object
 	var new_reactions = {};
@@ -9395,9 +9381,14 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	    var node = nodes[node_id];
 	    // find associated segments and reactions	    
 	    node.connected_segments.forEach(function(segment_obj) {
-		var reaction = reactions[segment_obj.reaction_id],
-		    segment = reaction.segments[segment_obj.segment_id],
-		    segment_obj_w_segment = utils.clone(segment_obj);
+		try {
+		    var reaction = reactions[segment_obj.reaction_id],
+			segment = reaction.segments[segment_obj.segment_id],
+			segment_obj_w_segment = utils.clone(segment_obj);
+		} catch (e) {
+		    console.warn('Could not find connected segments for node');
+		    return;
+		}
 		segment_obj_w_segment['segment'] = utils.clone(segment);
 		segment_objs_w_segments[segment_obj.segment_id] = segment_obj_w_segment;
 		if (!(segment_obj.reaction_id in segment_ids_for_reactions))
@@ -9549,14 +9540,6 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 		     canvas: this.canvas.size_and_location() }
 		  ];
 
-	if (this.debug) {
-	    d3.json('jsonschema/1-0-0', function(error, schema) {
-		if (error) throw new Error(error);
-		if (!tv4.validate(out, schema))
-		    console.warn(tv4.error);
-	    });
-	}
-
 	// remove extra data
 	for (var r_id in out.reactions) {
 	    var reaction = out.reactions[r_id];
@@ -9574,6 +9557,14 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	    var node = out.nodes[n_id];
 	    delete node.data;
 	    delete node.data_string;
+	}
+
+	if (this.debug) {
+	    d3.json('jsonschema/1-0-0', function(error, schema) {
+		if (error) throw new Error(error);
+		if (!tv4.validate(out, schema))
+		    console.warn(tv4.error);
+	    });
 	}
 
 	return out;

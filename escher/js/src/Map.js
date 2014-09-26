@@ -1630,9 +1630,14 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	    var node = nodes[node_id];
 	    // find associated segments and reactions	    
 	    node.connected_segments.forEach(function(segment_obj) {
-		var reaction = reactions[segment_obj.reaction_id],
-		    segment = reaction.segments[segment_obj.segment_id],
-		    segment_obj_w_segment = utils.clone(segment_obj);
+		try {
+		    var reaction = reactions[segment_obj.reaction_id],
+			segment = reaction.segments[segment_obj.segment_id],
+			segment_obj_w_segment = utils.clone(segment_obj);
+		} catch (e) {
+		    console.warn('Could not find connected segments for node');
+		    return;
+		}
 		segment_obj_w_segment['segment'] = utils.clone(segment);
 		segment_objs_w_segments[segment_obj.segment_id] = segment_obj_w_segment;
 		if (!(segment_obj.reaction_id in segment_ids_for_reactions))
@@ -1784,14 +1789,6 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 		     canvas: this.canvas.size_and_location() }
 		  ];
 
-	if (this.debug) {
-	    d3.json('jsonschema/1-0-0', function(error, schema) {
-		if (error) throw new Error(error);
-		if (!tv4.validate(out, schema))
-		    console.warn(tv4.error);
-	    });
-	}
-
 	// remove extra data
 	for (var r_id in out.reactions) {
 	    var reaction = out.reactions[r_id];
@@ -1809,6 +1806,14 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	    var node = out.nodes[n_id];
 	    delete node.data;
 	    delete node.data_string;
+	}
+
+	if (this.debug) {
+	    d3.json('jsonschema/1-0-0', function(error, schema) {
+		if (error) throw new Error(error);
+		if (!tv4.validate(out, schema))
+		    console.warn(tv4.error);
+	    });
 	}
 
 	return out;

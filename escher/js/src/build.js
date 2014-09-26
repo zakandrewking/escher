@@ -222,11 +222,12 @@ define(["utils"], function(utils) {
 	}
 
 	// now take out the extra reaction details
+	var metabolites_array = []
 	for (var bigg_id in new_reaction.metabolites) {
-	    new_reaction.metabolites[bigg_id] = {
-		coefficient: new_reaction.metabolites[bigg_id].coefficient
-	    };
+	    metabolites_array.push({'bigg_id': bigg_id,
+				    'coefficient': new_reaction.metabolites[bigg_id].coefficient});
 	}
+	new_reaction.metabolites = metabolites_array;    
 
 	// new_reactions object
 	var new_reactions = {};
