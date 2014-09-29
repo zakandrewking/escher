@@ -1,4 +1,4 @@
-define(["utils"], function(utils) {
+define(["utils", "data_styles"], function(utils, data_styles) {
     return { individual_button: individual_button,
 	     radio_button_group: radio_button_group,
 	     button_group: button_group,
@@ -104,10 +104,12 @@ define(["utils"], function(utils) {
 		.attr("type", "file")
 		.style("display", "none")
 		.on("change", function() { 
-		    utils.load_json(this.files[0], function(e, d) {
-			fn(e, d);
-			this.value = "";
-		    }.bind(this));
+		    utils.load_json_or_csv(this.files[0],
+					   data_styles.csv_converter,
+					   function(e, d) {
+					       fn(e, d);
+					       this.value = "";
+					   }.bind(this));
 		});
 	b.on('click', function(e) {
 	    input.node().click();

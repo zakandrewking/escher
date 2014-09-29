@@ -1,7 +1,7 @@
 describe('utils', function() {
     var utils = escher.utils;
 
-    it("set_options", function () {
+    it('set_options', function () {
 	var options = utils.set_options({ a: undefined,
 					  b: null }, {});
 	for (var x in options) {
@@ -9,19 +9,37 @@ describe('utils', function() {
 	}
     });
 
-    it("compare arrays", function() {
+    it('compare arrays', function() {
 	expect(utils.compare_arrays([1,2], [1,2])).toBe(true);
 	expect(utils.compare_arrays([1,2], [3,2])).toBe(false);
     });
 
-    it("array to object", function() {
+    it('array to object', function() {
 	var a = [{a:1, b:2}, {b:3, c:4}];
 	expect(utils.array_to_object(a)).toEqual({ a: [1, null],
 						   b: [2, 3],
 						   c: [null, 4] });
     });
 
-    it("check_for_parent_tag", function() {
+    it('load_json_or_csv', function() {
+	escher.utils.load_json_or_csv(null,
+				      escher.data_styles.csv_converter,
+				      function(error, value) {
+					  if (error) console.warn(error);
+					  expect(value).toEqual({'GAPD': 100});
+				      },
+				      {target: {result: '{"GAPD":100}'}});
+	
+	escher.utils.load_json_or_csv(null,
+				      escher.data_styles.csv_converter,
+				      function(error, value) {
+					  if (error) console.warn(error);
+					  expect(value).toEqual({'GAPD': 100});
+				      },
+				      {target: {result: 'GAPD,100\n'}});
+    });
+    
+    it('check_for_parent_tag', function() {
 	var sel = d3.select('body').append('div');
 	expect(utils.check_for_parent_tag(sel, 'body')).toBe(true);
 	expect(utils.check_for_parent_tag(sel, 'BODY')).toBe(true);

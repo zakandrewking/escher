@@ -2,7 +2,8 @@ define(["utils"], function(utils) {
     return { import_and_check: import_and_check,
 	     text_for_data: text_for_data,
 	     float_for_data: float_for_data,
-	     reverse_flux_for_data: reverse_flux_for_data
+	     reverse_flux_for_data: reverse_flux_for_data,
+	     csv_converter: csv_converter
 	   };
 
     function import_and_check(data, styles, name) {
@@ -71,5 +72,21 @@ define(["utils"], function(utils) {
 	function null_or_d(d, format) {
 	    return d===null ? '(nd)' : format(d);
 	}
+    }
+
+    function csv_converter(csv_rows) {
+	/** Convert data from a csv file to json-style data.
+
+	 */
+	converted = {};
+	csv_rows.forEach(function(row) {
+	    if (row.length==2)
+		converted[row[0]] = parseFloat(row[1]);
+	    else if (row.length > 2)
+		converted[row[0]] = row.slice(1).map(parseFloat);
+	    else
+		throw new Error('CSV file must have at least 2 columns');
+	});
+	return converted;
     }
 });

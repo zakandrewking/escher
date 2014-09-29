@@ -814,6 +814,7 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	     c_times_scalar: c_times_scalar,
 	     download_json: download_json,
 	     load_json: load_json,
+	     load_json_or_csv: load_json_or_csv,
 	     export_svg: export_svg,
 	     rotate_coords_recursive: rotate_coords_recursive,
 	     rotate_coords: rotate_coords,
@@ -1203,6 +1204,16 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     }
 
     function load_json(f, callback) {
+	/** Try to load the file as JSON..
+
+	    Arguments
+	    ---------
+
+	    f: The file path
+
+	    callback: A callback function that accepts arguments: error, data.
+
+	*/
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
 	    callback("The File APIs are not fully supported in this browser.", null);
@@ -1216,7 +1227,58 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
     }
+    
+    function load_json_or_csv(f, csv_converter, callback, debug_event) {
+	/** Try to load the file as JSON or CSV (JSON first).
 
+	    Arguments
+	    ---------
+
+	    f: The file path
+
+	    csv_converter: A function to convert the CSV output to equivalent JSON.
+
+	    callback: A callback function that accepts arguments: error, data.
+
+	    debug_event: An event, with a string at event.target.result, to load
+	    as though it was the contents of a loaded file.
+
+	*/
+	// Check for the various File API support.
+	if (!(window.File && window.FileReader && window.FileList && window.Blob))
+	    callback("The File APIs are not fully supported in this browser.", null);
+
+	var reader = new window.FileReader(),
+	    // Closure to capture the file information.
+	    onload_function = function(event) {
+		var result = event.target.result,
+		    data, errors;
+		// try JSON
+		try {
+		    data = JSON.parse(result);
+		    callback(null, data);
+		    return;
+		} catch (e) {
+		    errors = 'JSON error: ' + e;
+		}
+		// try csv
+		try {
+		    data = csv_converter(d3.csv.parseRows(result));
+		    callback(null, data);
+		    return;
+		} catch (e) {
+		    callback(errors + '\nCSV error: ' + e, null);
+		}
+            };
+	if (debug_event !== undefined && debug_event !== null) {
+	    console.warn('Debugging load_json_or_csv');
+	    return onload_function(debug_event);
+	}
+	// Read in the image file as a data URL.
+	reader.onload = onload_function;
+	reader.readAsText(f);
+    }
+    
     function export_svg(name, svg_sel, do_beautify) {
         var a = document.createElement('a'), xml, ev;
         a.download = name + '.svg'; // file name
@@ -1477,6 +1539,7 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	     c_times_scalar: c_times_scalar,
 	     download_json: download_json,
 	     load_json: load_json,
+	     load_json_or_csv: load_json_or_csv,
 	     export_svg: export_svg,
 	     rotate_coords_recursive: rotate_coords_recursive,
 	     rotate_coords: rotate_coords,
@@ -1866,6 +1929,16 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     }
 
     function load_json(f, callback) {
+	/** Try to load the file as JSON..
+
+	    Arguments
+	    ---------
+
+	    f: The file path
+
+	    callback: A callback function that accepts arguments: error, data.
+
+	*/
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
 	    callback("The File APIs are not fully supported in this browser.", null);
@@ -1879,7 +1952,58 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
     }
+    
+    function load_json_or_csv(f, csv_converter, callback, debug_event) {
+	/** Try to load the file as JSON or CSV (JSON first).
 
+	    Arguments
+	    ---------
+
+	    f: The file path
+
+	    csv_converter: A function to convert the CSV output to equivalent JSON.
+
+	    callback: A callback function that accepts arguments: error, data.
+
+	    debug_event: An event, with a string at event.target.result, to load
+	    as though it was the contents of a loaded file.
+
+	*/
+	// Check for the various File API support.
+	if (!(window.File && window.FileReader && window.FileList && window.Blob))
+	    callback("The File APIs are not fully supported in this browser.", null);
+
+	var reader = new window.FileReader(),
+	    // Closure to capture the file information.
+	    onload_function = function(event) {
+		var result = event.target.result,
+		    data, errors;
+		// try JSON
+		try {
+		    data = JSON.parse(result);
+		    callback(null, data);
+		    return;
+		} catch (e) {
+		    errors = 'JSON error: ' + e;
+		}
+		// try csv
+		try {
+		    data = csv_converter(d3.csv.parseRows(result));
+		    callback(null, data);
+		    return;
+		} catch (e) {
+		    callback(errors + '\nCSV error: ' + e, null);
+		}
+            };
+	if (debug_event !== undefined && debug_event !== null) {
+	    console.warn('Debugging load_json_or_csv');
+	    return onload_function(debug_event);
+	}
+	// Read in the image file as a data URL.
+	reader.onload = onload_function;
+	reader.readAsText(f);
+    }
+    
     function export_svg(name, svg_sel, do_beautify) {
         var a = document.createElement('a'), xml, ev;
         a.download = name + '.svg'; // file name
@@ -2121,7 +2245,8 @@ define('data_styles',["utils"], function(utils) {
     return { import_and_check: import_and_check,
 	     text_for_data: text_for_data,
 	     float_for_data: float_for_data,
-	     reverse_flux_for_data: reverse_flux_for_data
+	     reverse_flux_for_data: reverse_flux_for_data,
+	     csv_converter: csv_converter
 	   };
 
     function import_and_check(data, styles, name) {
@@ -2190,6 +2315,22 @@ define('data_styles',["utils"], function(utils) {
 	function null_or_d(d, format) {
 	    return d===null ? '(nd)' : format(d);
 	}
+    }
+
+    function csv_converter(csv_rows) {
+	/** Convert data from a csv file to json-style data.
+
+	 */
+	converted = {};
+	csv_rows.forEach(function(row) {
+	    if (row.length==2)
+		converted[row[0]] = parseFloat(row[1]);
+	    else if (row.length > 2)
+		converted[row[0]] = row.slice(1).map(parseFloat);
+	    else
+		throw new Error('CSV file must have at least 2 columns');
+	});
+	return converted;
     }
 });
 
@@ -8800,7 +8941,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 		if (this.has_reaction_data) 
 		    this.update_reaction_data_domain();
 		if (this.has_metabolite_data)
-		    this.apply_metabolite_data_domain();
+		    this.update_metabolite_data_domain();
 
 		// redraw
 		if (should_draw) {
@@ -11004,7 +11145,7 @@ define('Brush',["utils"], function(utils) {
     }
 });
 
-define('ui',["utils"], function(utils) {
+define('ui',["utils", "data_styles"], function(utils, data_styles) {
     return { individual_button: individual_button,
 	     radio_button_group: radio_button_group,
 	     button_group: button_group,
@@ -11110,10 +11251,12 @@ define('ui',["utils"], function(utils) {
 		.attr("type", "file")
 		.style("display", "none")
 		.on("change", function() { 
-		    utils.load_json(this.files[0], function(e, d) {
-			fn(e, d);
-			this.value = "";
-		    }.bind(this));
+		    utils.load_json_or_csv(this.files[0],
+					   data_styles.csv_converter,
+					   function(e, d) {
+					       fn(e, d);
+					       this.value = "";
+					   }.bind(this));
 		});
 	b.on('click', function(e) {
 	    input.node().click();
@@ -12959,7 +13102,11 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 		highlight_missing option is true.
 		
 	     */
-	    if (error) console.warn(error);
+	    if (error) {
+		console.warn(error); 
+		this.map.set_status('Error loading model', 2000);
+		return;
+	    }
 	    
 	    this.load_model(data);
 	    
@@ -12973,15 +13120,27 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    }
 	}
 	function load_reaction_data_for_file(error, data) {
-	    if (error) console.warn(error);
+	    if (error) {
+		console.warn(error); 
+		this.map.set_status('Could not parse file as JSON or CSV', 2000);
+		return;
+	    }
 	    this.set_reaction_data(data);
 	}
 	function load_metabolite_data_for_file(error, data) {
-	    if (error) console.warn(error);
+	    if (error) {
+		console.warn(error); 
+		this.map.set_status('Could not parse file as JSON or CSV', 2000);
+		return;
+	    }
 	    this.set_metabolite_data(data);
 	}
 	function load_gene_data_for_file(error, data) {
-	    if (error) console.warn(error);
+	    if (error) {
+		console.warn(error); 
+		this.map.set_status('Could not parse file as JSON or CSV', 2000);
+		return;
+	    }
 	    this.set_gene_data(data);
 	}
     }
@@ -13282,8 +13441,8 @@ define('DataMenu',["utils"], function(utils) {
     };
 });
 
-define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex", "Settings"],
-       function(bu, mp, bh, km, dm, us, cm, ut, si, se) {
+define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex", "Settings", "data_styles"],
+       function(bu, mp, bh, km, dm, us, cm, ut, si, se, ds) {
            return { Builder: bu,
 		    Map: mp,
 		    Behavior: bh,
@@ -13293,7 +13452,8 @@ define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStac
 		    CobraModel: cm,
 		    utils: ut,
 		    SearchIndex: si,
-		    Settings: se };
+		    Settings: se,
+		    data_styles: ds };
        });
 
     //The modules for your project will be inlined above

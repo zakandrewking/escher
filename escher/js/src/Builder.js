@@ -713,7 +713,11 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 		highlight_missing option is true.
 		
 	     */
-	    if (error) console.warn(error);
+	    if (error) {
+		console.warn(error); 
+		this.map.set_status('Error loading model', 2000);
+		return;
+	    }
 	    
 	    this.load_model(data);
 	    
@@ -727,15 +731,27 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    }
 	}
 	function load_reaction_data_for_file(error, data) {
-	    if (error) console.warn(error);
+	    if (error) {
+		console.warn(error); 
+		this.map.set_status('Could not parse file as JSON or CSV', 2000);
+		return;
+	    }
 	    this.set_reaction_data(data);
 	}
 	function load_metabolite_data_for_file(error, data) {
-	    if (error) console.warn(error);
+	    if (error) {
+		console.warn(error); 
+		this.map.set_status('Could not parse file as JSON or CSV', 2000);
+		return;
+	    }
 	    this.set_metabolite_data(data);
 	}
 	function load_gene_data_for_file(error, data) {
-	    if (error) console.warn(error);
+	    if (error) {
+		console.warn(error); 
+		this.map.set_status('Could not parse file as JSON or CSV', 2000);
+		return;
+	    }
 	    this.set_gene_data(data);
 	}
     }

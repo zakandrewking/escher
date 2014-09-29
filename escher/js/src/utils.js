@@ -21,6 +21,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	     c_times_scalar: c_times_scalar,
 	     download_json: download_json,
 	     load_json: load_json,
+	     load_json_or_csv: load_json_or_csv,
 	     export_svg: export_svg,
 	     rotate_coords_recursive: rotate_coords_recursive,
 	     rotate_coords: rotate_coords,
@@ -410,6 +411,16 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     }
 
     function load_json(f, callback) {
+	/** Try to load the file as JSON..
+
+	    Arguments
+	    ---------
+
+	    f: The file path
+
+	    callback: A callback function that accepts arguments: error, data.
+
+	*/
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
 	    callback("The File APIs are not fully supported in this browser.", null);
@@ -423,7 +434,58 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
     }
+    
+    function load_json_or_csv(f, csv_converter, callback, debug_event) {
+	/** Try to load the file as JSON or CSV (JSON first).
 
+	    Arguments
+	    ---------
+
+	    f: The file path
+
+	    csv_converter: A function to convert the CSV output to equivalent JSON.
+
+	    callback: A callback function that accepts arguments: error, data.
+
+	    debug_event: An event, with a string at event.target.result, to load
+	    as though it was the contents of a loaded file.
+
+	*/
+	// Check for the various File API support.
+	if (!(window.File && window.FileReader && window.FileList && window.Blob))
+	    callback("The File APIs are not fully supported in this browser.", null);
+
+	var reader = new window.FileReader(),
+	    // Closure to capture the file information.
+	    onload_function = function(event) {
+		var result = event.target.result,
+		    data, errors;
+		// try JSON
+		try {
+		    data = JSON.parse(result);
+		    callback(null, data);
+		    return;
+		} catch (e) {
+		    errors = 'JSON error: ' + e;
+		}
+		// try csv
+		try {
+		    data = csv_converter(d3.csv.parseRows(result));
+		    callback(null, data);
+		    return;
+		} catch (e) {
+		    callback(errors + '\nCSV error: ' + e, null);
+		}
+            };
+	if (debug_event !== undefined && debug_event !== null) {
+	    console.warn('Debugging load_json_or_csv');
+	    return onload_function(debug_event);
+	}
+	// Read in the image file as a data URL.
+	reader.onload = onload_function;
+	reader.readAsText(f);
+    }
+    
     function export_svg(name, svg_sel, do_beautify) {
         var a = document.createElement('a'), xml, ev;
         a.download = name + '.svg'; // file name
