@@ -56,6 +56,7 @@ define(["utils"], function(utils) {
 			     label_x: center.x + label_d.x,
 			     label_y: center.y + label_d.y,
 			     name: cobra_reaction.name,
+			     gene_reaction_rule: cobra_reaction.gene_reaction_rule,
 			     segments: {} };
 
         // set primary metabolites and count reactants/products

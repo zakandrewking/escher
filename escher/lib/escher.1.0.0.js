@@ -2437,7 +2437,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 				    missing_component_color!==null &&
 				    !(reaction_id in cobra_model.reactions)),
 		    should_color_data = (has_reaction_data &&
-					 reaction_data_styles.indexOf('color')!==-1);
+					 reaction_data_styles.indexOf('color') != -1);
 		if (show_missing) {
 		    return missing_component_color;
 		}
@@ -2448,7 +2448,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 		return null;
 	    })
 	    .style('stroke-width', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
+		if (has_reaction_data && reaction_data_styles.indexOf('size') != -1) {
 		    var f = d.data;
 		    return f===null ? no_data_style['size'] : scale.reaction_size(f);
 		} else {
@@ -2613,47 +2613,55 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	    .attr('class', 'node-label label');
     }
 
-    function update_node(update_selection, scale, has_metabolite_data, metabolite_data_styles,
-			 click_fn, mouseover_fn, mouseout_fn, drag_behavior, label_drag_behavior) {
+    function update_node(update_selection, scale, has_metabolite_data,
+			 metabolite_data_styles, no_data_style,
+			 click_fn, mouseover_fn, mouseout_fn,
+			 drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'has_metabolite_data',
-			       'metabolite_data_styles', 'click_fn', 'mouseover_fn', 'mouseout_fn',
+			       'no_data_style', 'metabolite_data_styles',
+			       'click_fn', 'mouseover_fn', 'mouseout_fn',
 			       'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
         var mg = update_selection
-                .select('.node-circle')
-                .attr('transform', function(d) {
-                    return 'translate('+d.x+','+d.y+')';
-                })
-		.attr('r', function(d) {
-		    if (d.node_type == 'metabolite') {
-			if (has_metabolite_data && metabolite_data_styles.indexOf('size')!==-1) {
-			    var f = d.data;
-			    return scale.metabolite_size(f===null ? 0 : f);
-			} else {
-			    return d.node_is_primary ? 15 : 10; 
-			}
+            .select('.node-circle')
+            .attr('transform', function(d) {
+                return 'translate('+d.x+','+d.y+')';
+            })
+	    .attr('r', function(d) {
+		if (d.node_type == 'metabolite') {
+		    var should_scale = (has_metabolite_data &&
+					metabolite_data_styles.indexOf('size') != -1);
+		    if (should_scale) {
+			var f = d.data;
+			return f===null ? no_data_style['size'] : scale.metabolite_size(f);
 		    } else {
-			return 5;
+			return d.node_is_primary ? 15 : 10; 
 		    }
-		})
-		.style('fill', function(d) {
-		    if (d.node_type=='metabolite') {
-			if (has_metabolite_data && metabolite_data_styles.indexOf('color')!==-1) {
-			    var f = d.data;
-			    return scale.metabolite_color(f===null ? 0 : f);
-			} else {
-			    return 'rgb(224, 134, 91)';
-			}
+		}
+		// midmarkers and multimarkers
+		return 5;
+	    })
+	    .style('fill', function(d) {
+		if (d.node_type=='metabolite') {
+		    var should_color_data = (has_metabolite_data &&
+					     metabolite_data_styles.indexOf('color') != -1);
+		    if (should_color_data) {
+			var f = d.data;
+			return f===null ? no_data_style['color'] : scale.metabolite_color(f);
+		    } else {
+			return null;
 		    }
-		    return null;
-		})
-		.call(turn_off_drag)
-		.call(drag_behavior)
-		.on('click', click_fn)
-		.on('mouseover', mouseover_fn)
-		.on('mouseout', mouseout_fn);
+		}
+		// midmarkers and multimarkers
+		return null;
+	    })
+	    .call(turn_off_drag)
+	    .call(drag_behavior)
+	    .on('click', click_fn)
+	    .on('mouseover', mouseover_fn)
+	    .on('mouseout', mouseout_fn);
 
         update_selection
             .select('.node-label')
@@ -2771,6 +2779,7 @@ define('build',["utils"], function(utils) {
 			     label_x: center.x + label_d.x,
 			     label_y: center.y + label_d.y,
 			     name: cobra_reaction.name,
+			     gene_reaction_rule: cobra_reaction.gene_reaction_rule,
 			     segments: {} };
 
         // set primary metabolites and count reactants/products
@@ -7767,10 +7776,6 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
      settings:
 
-     reaction_data:
-
-     metabolite_data:
-
      cobra_model:
 
      canvas_size_and_loc:
@@ -7791,9 +7796,6 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	reset_containers: reset_containers,
 	// appearance
 	set_status: set_status,
-	set_model: set_model,
-	set_reaction_data: set_reaction_data,
-	set_metabolite_data: set_metabolite_data,
 	clear_map: clear_map,
 	// selection
 	select_all: select_all,
@@ -7849,14 +7851,15 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	show_beziers: show_beziers,
 	// data
 	has_cobra_model: has_cobra_model,
-	has_reaction_data: has_reaction_data,
-	has_metabolite_data: has_metabolite_data,
 	apply_reaction_data_to_map: apply_reaction_data_to_map,
 	apply_reaction_data_to_reactions: apply_reaction_data_to_reactions,
 	update_reaction_data_domain: update_reaction_data_domain,
 	apply_metabolite_data_to_map: apply_metabolite_data_to_map,
 	apply_metabolite_data_to_nodes: apply_metabolite_data_to_nodes,
 	update_metabolite_data_domain: update_metabolite_data_domain,
+	apply_gene_data_to_map: apply_gene_data_to_map,
+	apply_gene_data_to_reactions: apply_gene_data_to_reactions,
+	update_gene_data_domain: update_gene_data_domain,
 	// zoom
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
@@ -7879,8 +7882,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     // setup
 
     function init(svg, css, selection, zoom_container, settings,
-		  reaction_data, metabolite_data, cobra_model, 
-		  canvas_size_and_loc, enable_search) {
+		  cobra_model, canvas_size_and_loc, enable_search) {
 	if (canvas_size_and_loc===null) {
 	    var size = zoom_container.get_size();
 	    canvas_size_and_loc = {x: -size.width, y: -size.height,
@@ -7899,25 +7901,9 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	this.zoom_container = zoom_container;
 
 	this.settings = settings;
-	this.settings.data_styles_stream['reaction']
-	    .onValue(function(val) {
-		this.apply_reaction_data_to_map();
-	    }.bind(this));
-	this.settings.data_styles_stream['metabolite']
-	    .onValue(function(val) {
-		this.apply_metabolite_data_to_map();
-	    }.bind(this));
-
-	// check and load data
-	this.reaction_data_object = data_styles.import_and_check(reaction_data,
-								 settings.data_styles['reaction'],
-								 'reaction_data');
-	this.metabolite_data_object = data_styles.import_and_check(metabolite_data,
-								   settings.data_styles['metabolite'],
-								   'metabolite_data');
 
 	// set the model AFTER loading the datasets
-	this.set_model(cobra_model);
+	this.cobra_model = cobra_model;
 
 	this.largest_ids = { reactions: -1,
 			     nodes: -1,
@@ -7950,6 +7936,10 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
 	// set up the callbacks
 	this.callback_manager = new CallbackManager();
+
+	// data
+	this.has_reaction_data = false;
+	this.has_metabolite_data = false;
 	
 	this.nodes = {};
 	this.reactions = {};
@@ -7967,19 +7957,17 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     // Import
 
     function from_data(map_data, svg, css, selection, zoom_container, settings,
-		       reaction_data, metabolite_data, cobra_model, enable_search) {
+		       cobra_model, enable_search) {
 	/** Load a json map and add necessary fields for rendering.
 	 
 	 */
 	utils.check_undefined(arguments, ['map_data', 'svg', 'css', 'selection',
 					  'zoom_container', 'settings',
-					  'reaction_data', 'metabolite_data',
 					  'cobra_model', 'enable_search']);
 	
 	var canvas = map_data[1].canvas,
-	    map = new Map(svg, css, selection, zoom_container, settings, 
-			  reaction_data, metabolite_data, cobra_model, 
-			  canvas, enable_search);
+	    map = new Map(svg, css, selection, zoom_container, settings,
+			  cobra_model, canvas, enable_search);
 
 	map.reactions = map_data[1].reactions;
 	map.nodes = map_data[1].nodes;
@@ -8044,10 +8032,6 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 						largest_segment_id);
 	}
 	map.largest_ids.segments = largest_segment_id;
-
-	// reaction_data onto existing map reactions
-	map.apply_reaction_data_to_map();
-	map.apply_metabolite_data_to_map();
 
 	return map;
 
@@ -8117,69 +8101,18 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	    }.bind(this), time);
 	}
     }
-    function set_model(model) {
-	/** Change the cobra model for the map.
-
-	 */
-	this.cobra_model = model;
-	if (this.cobra_model !== null) {
-	    this.cobra_model.apply_reaction_data(this.reaction_data_object,
-						 this.settings.data_styles['reaction']);
-	    this.cobra_model.apply_metabolite_data(this.metabolite_data_object,
-						   this.settings.data_styles['metabolite']);
-	}
-    }
-    function set_reaction_data(reaction_data) {
-	/** Set a new reaction data, and redraw the map.
-
-	 Pass null to reset the map and draw without reaction data.
-
-	 */
-	this.reaction_data_object = data_styles.import_and_check(reaction_data,
-								 this.settings.data_styles['reaction'],
-								 'reaction_data');
-	this.apply_reaction_data_to_map();
-	if (this.cobra_model !== null) {
-	    this.cobra_model.apply_reaction_data(this.reaction_data_object,
-						 this.settings.data_styles['metabolite']);
-	}
-	this.draw_all_reactions();
-    }
-    function set_metabolite_data(metabolite_data) {
-	/** Set a new metabolite data, and redraw the map.
-
-	 Pass null to reset the map and draw without metabolite data.
-
-	 */
-	this.metabolite_data_object = data_styles.import_and_check(metabolite_data,
-								   this.settings.data_styles['metabolite'],
-								   'metabolite_data');
-	this.apply_metabolite_data_to_map();
-	if (this.cobra_model !== null) {
-	    this.cobra_model.apply_metabolite_data(this.metabolite_data_object,
-						   this.settings.data_styles['metabolite']);
-	}
-	this.draw_all_nodes();
-    }
     function clear_map() {
 	this.reactions = {};
 	this.beziers = {};
 	this.nodes = {};
-	this.membranes = [];
 	this.text_labels = {};
 	// reaction_data onto existing map reactions
-	this.apply_reaction_data_to_map();
-	this.apply_metabolite_data_to_map();
+	this.apply_reaction_data_to_map(null);
+	this.apply_metabolite_data_to_map(null);
 	this.draw_everything();
     }
     function has_cobra_model() {
 	return (this.cobra_model !== null);
-    }
-    function has_reaction_data() {
-	return (this.reaction_data_object !== null);
-    }
-    function has_metabolite_data() {
-	return (this.metabolite_data_object !== null);
     }
     function draw_everything() {
         /** Draw the all reactions, nodes, & text labels.
@@ -8244,10 +8177,11 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 					this.cobra_model,
 					this.nodes,
 					this.defs,
-					this.has_reaction_data(),
-					this.settings.no_data['reaction'],
-					this.settings.highlight_missing,
-					this.settings.data_styles['reaction'],
+					this.has_reaction_data,
+					{ color: this.settings.get_option('reaction_no_data_color'),
+					  size: this.settings.get_option('reaction_no_data_size') },
+					this.settings.get_option('highlight_missing'),
+					this.settings.get_option('reaction_styles'),
 					this.behavior.reaction_label_drag);
 	}.bind(this);
 
@@ -8331,8 +8265,10 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	    update_fn = function(sel) {
 		return draw.update_node(sel,
 					this.scale,
-					this.has_metabolite_data(),
-					this.settings.data_styles['metabolite'],
+					this.has_metabolite_data,
+					this.settings.get_option('metabolite_styles'),
+					{ color: this.settings.get_option('metabolite_no_data_color'),
+					  size: this.settings.get_option('metabolite_no_data_size') },
 					this.behavior.selectable_click,
 					this.behavior.node_mouseover,
 					this.behavior.node_mouseout,
@@ -8474,19 +8410,18 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	this.callback_manager.run('toggle_beziers', this.beziers_enabled);
     }
 
-
-    function apply_reaction_data_to_map() {
+    function apply_reaction_data_to_map(data) {
 	/**  Returns True if the scale has changed.
 
 	 */
-	return this.apply_reaction_data_to_reactions(this.reactions);
+	return this.apply_reaction_data_to_reactions(this.reactions, data);
     }
     
-    function apply_reaction_data_to_reactions(reactions) {
+    function apply_reaction_data_to_reactions(reactions, data) {
 	/**  Returns True if the scale has changed.
 
 	 */
-	if (!this.has_reaction_data()) {
+	if (data === null) {	    
 	    for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id];
 		reaction.data = null;
@@ -8496,12 +8431,15 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 		    segment.data = null;
 		}
 	    }
+
+	    // remember
+	    this.has_reaction_data = false;
+	    
 	    return false;
 	}
-	// grab the data
-	var data = this.reaction_data_object,
-	    styles = this.settings.data_styles['reaction'];
-	// apply the datasets to the reactions	
+	
+	// apply the datasets to the reactions
+	var styles = this.settings.get_option('reaction_styles');
 	for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id],
 		d = (reaction.bigg_id in data ? data[reaction.bigg_id] : null),
@@ -8518,6 +8456,11 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 		segment.reverse_flux = reaction.reverse_flux;
 	    }
 	}
+
+	// remember
+	this.has_reaction_data = true;
+
+	// if auto_domain
 	return this.update_reaction_data_domain();
     }
     function update_reaction_data_domain() {
@@ -8525,7 +8468,8 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
 	 */
 
-	if (!this.settings.auto_domain['reaction']) return false;
+	// avoid an infinite loop
+	if (this.settings.get_option('auto_reaction_domain')) return false;
 
 	// default min and max
 	var vals = [];
@@ -8536,10 +8480,10 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	    }
 	}
 	
-	var old_domain = this.settings.domain['reaction']['color'],
+	var old_domain = this.settings.get_option('reaction_domain'),
 	    new_domain, min, max;
 	if (vals.length > 0) {
-	    if (this.settings.data_styles['reaction'].indexOf('abs') != -1) {
+	    if (this.settings.get_option('reaction_styles').indexOf('abs') != -1) {
 		// if using absolute value reaction style
 		vals = vals.map(function(x) { return Math.abs(x); });
 	    }
@@ -8554,26 +8498,30 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	// compare arrays
 	return !utils.compare_arrays(old_domain, new_domain);
     }
-    function apply_metabolite_data_to_map() {
+    function apply_metabolite_data_to_map(data) {
 	/**  Returns True if the scale has changed.
 
 	 */
-	return this.apply_metabolite_data_to_nodes(this.nodes);
+	return this.apply_metabolite_data_to_nodes(this.nodes, data);
     }
-    function apply_metabolite_data_to_nodes(nodes) {
+    function apply_metabolite_data_to_nodes(nodes, data) {
 	/**  Returns True if the scale has changed.
 
 	 */
-	if (!this.has_metabolite_data()) {
+	if (data === null) {
 	    for (var node_id in nodes) {
 		nodes[node_id].data = null;
 		nodes[node_id].data_string = '';
 	    }
+
+	    // remember
+	    this.has_metabolite_data = false;
+	    
 	    return false;
 	}
+	
 	// grab the data
-	var data = this.metabolite_data_object,
-	    styles = this.settings.data_styles['metabolite'];
+	var styles = this.settings.get_option('metabolite_styles');
 	for (var node_id in nodes) {
 	    var node = nodes[node_id],
 		d = (node.bigg_id in data ? data[node.bigg_id] : null),
@@ -8582,14 +8530,20 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	    node.data = f;
 	    node.data_string = s;
 	}
+
+	// remember
+	this.has_metabolite_data = true; 
+	
+	// if auto_domain
 	return this.update_metabolite_data_domain();
     }
     function update_metabolite_data_domain() {
 	/**  Returns True if the scale has changed.
 
 	 */
-
-	if (!this.settings.auto_domain['metabolite']) return false;
+	
+	// avoid an infinite loop
+	if (this.settings.get_option('auto_metabolite_domain')) return false;
 
 	// default min and max
 	var vals = [];
@@ -8598,10 +8552,10 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	    if (node.data !== null)
 		vals.push(node.data);
 	} 
-	var old_domain = this.settings.domain['metabolite']['color'],
+	var old_domain = this.settings.get_option('metabolite_color_domain'),
 	    new_domain, min, max;
 	if (vals.length > 0) {
-	    if (this.settings.data_styles['metabolite'].indexOf('abs') != -1) {
+	    if (this.settings.get_option('metabolite_styles').indexOf('abs') != -1) {
 		// if using absolute value reaction style
 		vals = vals.map(function(x) { return Math.abs(x); });
 	    }
@@ -8615,6 +8569,13 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	this.settings.set_domain('metabolite', new_domain);
 	// compare arrays
 	return !utils.compare_arrays(old_domain, new_domain);
+    }
+
+    function apply_gene_data_to_map() {
+    }
+    function apply_gene_data_to_reactions() {
+    }
+    function update_gene_data_domain() {
     }
 
     // ---------------------------------------------------------------------
@@ -8836,9 +8797,9 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 		this.delete_text_label_data(Object.keys(selected_text_labels));
 
 		// apply the reaction and node data
-		if (this.has_reaction_data()) 
+		if (this.has_reaction_data) 
 		    this.update_reaction_data_domain();
-		if (this.has_metabolite_data())
+		if (this.has_metabolite_data)
 		    this.apply_metabolite_data_domain();
 
 		// redraw
@@ -8890,14 +8851,14 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
-	    if (this.has_reaction_data()) {
+	    if (this.has_reaction_data) {
 		var scale_changed = this.update_reaction_data_domain();
 		if (scale_changed) this.draw_all_reactions();
 		else this.draw_these_reactions(reaction_ids_to_draw);
 	    } else {
 		if (should_draw) this.draw_these_reactions(reaction_ids_to_draw);
 	    }		
-	    if (this.has_metabolite_data()) {
+	    if (this.has_metabolite_data) {
 		var scale_changed = this.update_metabolite_data_domain();
 		if (should_draw) {
 		    if (scale_changed) this.draw_all_nodes();
@@ -9079,7 +9040,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // definitions
 	function extend_and_draw_metabolite(new_nodes, selected_node_id) {
 	    this.extend_nodes(new_nodes);
-	    if (this.has_metabolite_data()) {
+	    if (this.has_metabolite_data) {
 		var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
 		if (scale_changed) this.draw_all_nodes();
 		else this.draw_these_nodes([selected_node_id]);
@@ -9215,14 +9176,14 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
-	    if (this.has_reaction_data()) {
+	    if (this.has_reaction_data) {
 		var scale_changed = this.apply_reaction_data_to_reactions(new_reactions);
 		if (scale_changed) this.draw_all_reactions();
 		else this.draw_these_reactions(Object.keys(new_reactions));
 	    } else {
 		this.draw_these_reactions(Object.keys(new_reactions));
 	    }		
-	    if (this.has_metabolite_data()) {
+	    if (this.has_metabolite_data) {
 		var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
 		if (scale_changed) this.draw_all_nodes();
 		else this.draw_these_nodes(Object.keys(new_nodes));
@@ -10439,7 +10400,8 @@ define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
     // instance methods
     CobraModel.prototype = { init: init,
 			     apply_reaction_data: apply_reaction_data,
-			     apply_metabolite_data: apply_metabolite_data };
+			     apply_metabolite_data: apply_metabolite_data,
+			     apply_gene_data: apply_gene_data };
 
     return CobraModel;
 
@@ -10520,6 +10482,13 @@ define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
     }
 
     function apply_reaction_data(reaction_data, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+	    
+	    apply_reaction_data overrides apply_gene_data.
+
+	*/
+
 	for (var reaction_id in this.reactions) {
 	    var reaction = this.reactions[reaction_id];
 	    if (reaction_data===null) {
@@ -10537,6 +10506,10 @@ define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
     }
 
     function apply_metabolite_data(metabolite_data, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+
+	 */
 	for (var metabolite_id in this.metabolites) {
 	    var metabolite = this.metabolites[metabolite_id];
 	    if (metabolite_data===null) {
@@ -10549,6 +10522,31 @@ define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
 		    s = data_styles.text_for_data(d, styles);
 		metabolite.data = f;
 		metabolite.data_string = s;
+	    }
+	}
+    }
+
+    
+    function apply_gene_data(gene_data, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+
+	    apply_gene_data overrides apply_reaction_data.
+
+	*/
+	for (var gene_id in this.genes) {
+	    // var gene = this.genes[gene_id],
+	    // 	reaction_ids = utils.
+	    if (gene_data===null) {
+		gene.data = null;
+		gene.data_string = '';
+	    } else {
+		var d = (gene_id in gene_data ?
+			 gene_data[gene_id] : null),
+		    f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		gene.data = f;
+		gene.data_string = s;
 	    }
 	}
     }
@@ -10752,7 +10750,7 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContai
 	    cobra_reactions = this.map.cobra_model.reactions,
 	    cobra_metabolites = this.map.cobra_model.metabolites,
 	    reactions = this.map.reactions,
-	    has_reaction_data = this.map.has_reaction_data(),
+	    has_reaction_data = this.map.has_reaction_data,
 	    reaction_data = this.map.reaction_data,
 	    reaction_data_styles = this.map.reaction_data_styles;
         for (var reaction_id in cobra_reactions) {
@@ -11258,6 +11256,8 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	Arguments
 	---------
 
+	set_option: 
+
 	def_styles: 
 
 	def_auto_domain: 
@@ -11294,54 +11294,49 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
     return SearchBar;
 
     // class methods
-    function check_type(type) {
-	if (['reaction', 'metabolite'].indexOf(type)==-1)
+    function check_type(type, gene_ok) {
+	if (gene_ok === undefined)
+	    gene_ok = false;
+	
+	if (['reaction', 'metabolite'].indexOf(type)==-1 &&
+	    (!(gene_ok == true && type =='gene')))
 	    throw new Error('Bad type');
     }
 
     // instance methods
-    function init(def_styles, def_auto_domain, def_domain, def_range,
-		  def_no_data, def_highlight_missing) {
-	// defaults
-	if (def_styles===undefined) 
-	    def_styles = { reaction: ['color', 'size', 'abs', 'text'],
-			   metabolite: ['color', 'size', 'text'] };
-	if (def_auto_domain===undefined)
-	    def_auto_domain = { reaction: true,
-				metabolite: true };
-	if (def_domain===undefined)
-	    def_domain = { reaction: [-10, 0, 10],
-			   metabolite: [-10, 0, 10] };
-	if (def_range===undefined)
-	    def_range = { reaction: { color: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
-				      size: [4, 8, 12] },
-			  metabolite: { color: ['green', 'white', 'red'],
-					size: [6, 8, 10] } };
-	if (def_no_data===undefined)
-	    def_no_data = { reaction: { color: 'rgb(220,220,220)',
-					size: 4 },
-			    metabolite: { color: 'white',
-					  size: 6 } };
-	if (def_highlight_missing===undefined)
-	    def_highlight_missing = 'red';
+    function init(set_option, get_option) {
+	this.set_option = set_option;
+	this.get_option = get_option;
+	
+	// organize
+	var def_styles = { reaction: get_option('reaction_styles'),
+ 			   metabolite: get_option('metabolite_styles'),
+			   gene: get_option('gene_styles') },
+ 	    def_auto_domain = { reaction: get_option('auto_reaction_domain'),
+ 				metabolite: get_option('auto_metabolite_domain') },
+ 	    def_domain = { reaction: get_option('reaction_domain'),
+ 			   metabolite: get_option('metabolite_domain') },
+ 	    def_range = { reaction: { color: get_option('reaction_color_range'),
+ 	    			      size: get_option('reaction_size_range') },
+ 			  metabolite: { color: get_option('metabolite_color_range'),
+ 	    				size: get_option('metabolite_size_range') } },
+ 	    def_no_data = { reaction: { color: get_option('reaction_no_data_color'),
+ 	    				size: get_option('reaction_no_data_size') },
+ 			    metabolite: { color: get_option('metabolite_no_data_color'),
+ 	    				  size: get_option('metabolite_no_data_size') } },
+	    def_highlight_missing = get_option('highlight_missing_color');
 
 	// event streams
-	this.data_styles = {};
 	this.data_styles_bus = {};
 	this.data_styles_stream = {};
-	this.auto_domain = {};
 	this.auto_domain_bus = {};
 	this.auto_domain_stream = {};
-	this.domain = {};
 	this.domain_bus = {};
 	this.domain_stream = {};
-	this.range = {};
 	this.range_bus = {};
 	this.range_stream = {};
-	this.no_data = {};
 	this.no_data_bus = {};
 	this.no_data_stream = {};
-	// this.highlight_missing;
 	// this.highlight_missing_bus;
 	// this.highlight_missing_stream;
 
@@ -11355,7 +11350,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	bacon.Observable.prototype.convert_to_conditional_stream = convert_to_conditional_stream;
 	bacon.Observable.prototype.force_update_with_bus = force_update_with_bus;
 
-	['metabolite', 'reaction'].forEach(function(type) {
+	['metabolite', 'reaction', 'gene'].forEach(function(type) {
 	    // set up the styles settings
 	    this.data_styles_bus[type] = new bacon.Bus();
 	    // make the event stream
@@ -11384,7 +11379,12 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
 	    // get the latest
 	    this.data_styles_stream[type].onValue(function(v) {
-		this.data_styles[type] = v;
+		if (type=='reaction')
+		    this.set_option('reaction_styles', v);
+		else if (type=='metabolite')
+		    this.set_option('metabolite_styles', v);
+		else if (type=='gene')
+		    this.set_option('gene_styles', v);
 	    }.bind(this));
 
 	    // push the defaults
@@ -11392,7 +11392,9 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	    def.forEach(function(x) {
 	    	this.data_styles_bus[type].push({ style: x, on_off: true });
 	    }.bind(this));
+	}.bind(this));
 
+	['metabolite', 'reaction'].forEach(function(type) {
 	    // set up the auto_domain settings
 	    this.auto_domain_bus[type] = new bacon.Bus();
 	    this.auto_domain_stream[type] = this.auto_domain_bus[type]
@@ -11403,7 +11405,10 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
 	    // get the latest
 	    this.auto_domain_stream[type].onValue(function(v) {
-		this.auto_domain[type] = v;
+		if (type=='reaction')
+		    this.set_option('auto_reaction_domain', v);
+		else if (type=='metabolite')
+		    this.set_option('auto_metabolite_domain', v);
 	    }.bind(this));
 
 	    // set the default
@@ -11427,7 +11432,10 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
 	    // get the latest
 	    this.domain_stream[type].onValue(function(v) {
-		this.domain[type] = v;
+		if (type=='reaction')
+		    this.set_option('reaction_domain', v);
+		else if (type=='metabolite')
+		    this.set_option('metabolite_domain', v);
 	    }.bind(this));
 
 	    // push the defaults
@@ -11439,7 +11447,6 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	    // set up the ranges
 	    this.range_bus[type] = {};
 	    this.range_stream[type] = {};
-	    this.range[type] = {};
 	    ['color', 'size'].forEach(function(range_type) {
 		// make the bus
 		this.range_bus[type][range_type] = new bacon.Bus();
@@ -11457,7 +11464,14 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
 		// get the latest
 		this.range_stream[type][range_type].onValue(function(v) {
-		    this.range[type][range_type] = v;
+		    if (type=='reaction' && range_type=='color')
+			this.set_option('reaction_color_range', v);
+		    else if (type=='reaction' && range_type=='size')
+			this.set_option('reaction_size_range', v);
+		    else if (type=='metabolite' && range_type=='color')
+			this.set_option('metabolite_color_range', v);
+		    else if (type=='metabolite' && range_type=='size')
+			this.set_option('metabolite_size_range', v);
 		}.bind(this));
 
 		// push the default
@@ -11471,7 +11485,6 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	    // set up the no data settings
 	    this.no_data_bus[type] = {};
 	    this.no_data_stream[type] = {};
-	    this.no_data[type] = {};
 	    ['color', 'size'].forEach(function(no_data_type) {
 		// make the bus
 		this.no_data_bus[type][no_data_type] = new bacon.Bus();
@@ -11488,7 +11501,14 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
 		// get the latest
 		this.no_data_stream[type][no_data_type].onValue(function(v) {
-		    this.no_data[type][no_data_type] = v;
+		    if (type=='reaction' && no_data_type=='color')
+			this.set_option('reaction_no_data_color', v);
+		    else if (type=='reaction' && no_data_type=='size')
+			this.set_option('reaction_no_data_size', v);
+		    else if (type=='metabolite' && no_data_type=='color')
+			this.set_option('metabolite_no_data_color', v);
+		    else if (type=='metabolite' && no_data_type=='size')
+			this.set_option('metabolite_no_data_size', v);
 		}.bind(this));
 
 		// push the default
@@ -11515,7 +11535,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
 	// get the latest
 	this.highlight_missing_stream.onValue(function(v) {
-	    this.highlight_missing = v;
+	    this.set_option('highlight_missing', v);
 	}.bind(this));
 
 	// push the default
@@ -11613,7 +11633,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	    it.
 
 	*/
-	check_type(type);
+	check_type(type, true);
 
 	this.data_styles_bus[type].push({ style: style,
 					  on_off: on_off });
@@ -11702,6 +11722,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
     function abandon_changes() {
 	this.status_bus.push('reject');
 	this.status_bus.push('clear');
+	// TODO this could be way faster if it did not trigger redrawing the map
 	this.force_update_bus.push(true);
     };
     function accept_changes() {
@@ -11722,7 +11743,8 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes,
-			    scale_gui: scale_gui };
+			    scale_gui: scale_gui,
+			    gene_gui: gene_gui };
 
     return SearchBar;
 
@@ -11761,6 +11783,11 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    .attr('class', 'settings-section-heading');
 	this.scale_gui(container.append('div'), 'metabolite');
 
+	// gene data
+	container.append('div').text('Gene data')
+	    .attr('class', 'settings-section-heading');
+	this.gene_gui(container.append('div'));
+	
 	this.callback_manager = new CallbackManager();
 
 	this.map = map;
@@ -11829,7 +11856,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	// columns
 	var columns = [0, 1, 2],
 	    settings = this.settings;
-
+	
 	// numbers
 	t.append('tr')
 	    .selectAll('.settings-number')
@@ -11933,6 +11960,47 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    var cell = r.append('td').attr('colspan', columns.length + 1);
 
 	    var styles = ['abs', 'size', 'color', 'text'],
+		style_cells = cell.selectAll('.style-span')
+		    .data(styles),
+		s = style_cells.enter()
+		    .append('span')
+		    .attr('class', 'style-span');
+	    s.append('span').text(function(d) { return d; });
+
+	    // make the checkbox
+	    s.append('input').attr('type', 'checkbox')
+		.each(function(style) {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+		    		settings.change_data_style(type, style,
+							   event.target.checked);
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.data_styles_stream[type].onValue(function(ar) {
+			// check the box if the style is present
+			this.checked = (ar.indexOf(style) != -1);
+		    }.bind(this));
+		});
+	});
+    }
+    
+    function gene_gui(s) {
+
+	var t = s.append('table').attr('class', 'settings-table');
+
+	// columns
+	var settings = this.settings,
+	    type = 'gene';
+
+	// styles
+	t.append('tr').call(function(r) {
+	    r.append('td').text('Styles:');
+	    var cell = r.append('td')
+
+	    var styles = ['text', 'evaluate_on_reactions'],
 		style_cells = cell.selectAll('.style-span')
 		    .data(styles),
 		s = style_cells.enter()
@@ -12176,16 +12244,37 @@ define('QuickJump',['utils', 'CallbackManager'], function(utils, CallbackManager
     }
 });
 
-define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput', 'QuickJump'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput, QuickJump) {
+define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput', 'QuickJump', 'data_styles'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput, QuickJump, data_styles) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
-     Builder(options)
+     Arguments
+     ---------
+
+     map_data: The data for a map, to be passed to escher.Map.from_data().
+
+     model_data: The data for a cobra model, to be passed to
+     escher.CobraModel().
 
      options: An object.
 
 
+	 reaction_data: An object with reaction ids for keys and reaction data
+	 points for values.
+
+	 metabolite_data: An object with metabolite ids for keys and metabolite
+	 data points for values.
+
+	 gene_data: An object with Gene ids for keys and gene data points for
+	 values.
+
+	 gene_styles: An array with any of the following options: ['text',
+	 'evaluate_on_reactions'].
+
          highlight_missing_color: A color to apply to components that are not
          the in cobra model, or null to apply no color. Default: 'red'.
+
+	 local_host: The host used to load maps for quick_jump. E.g.,
+	 http://localhost:7778.
 
 	 quick_jump: A list of map names that can be reached by
 	 selecting them from a quick jump menu on the map.
@@ -12193,7 +12282,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
      */
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
-			  reload_builder: reload_builder,
+			  load_map: load_map,
+			  load_model: load_model,
 			  set_mode: set_mode,
 			  view_mode: view_mode,
 			  build_mode: build_mode,
@@ -12201,6 +12291,10 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 			  zoom_mode: zoom_mode,
 			  rotate_mode: rotate_mode,
 			  text_mode: text_mode,
+			  set_reaction_data: set_reaction_data,
+			  set_metabolite_data: set_metabolite_data,
+			  set_gene_data: set_gene_data,
+			  update_data: update_data,
 			  _toggle_direction_buttons: _toggle_direction_buttons,
 			  _setup_menu: _setup_menu,
 			  _setup_simple_zoom_buttons: _setup_simple_zoom_buttons,
@@ -12213,7 +12307,11 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
     return Builder;
 
     // definitions
-    function init(options) {
+    function init(map_data, model_data, options) {
+	
+	this.map_data = map_data;
+	this.model_data = model_data;
+	
 	// set defaults
 	this.options = utils.set_options(options, {
 	    // location
@@ -12226,17 +12324,12 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    enable_search: true,
 	    fillScreen: false,
 	    // map, model, and styles
-	    map_path: null,
-	    map: null,
-	    cobra_model_path: null,
-	    cobra_model: null,
-	    css_path: null,
 	    css: null,
 	    starting_reaction: null,
 	    never_ask_before_quit: false,
 	    // applied data
+	    // reaction
 	    auto_reaction_domain: true,
-	    reaction_data_path: null,
 	    reaction_data: null,
 	    reaction_styles: ['color', 'size', 'abs', 'text'],
 	    reaction_domain: [-10, 0, 10],
@@ -12244,8 +12337,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    reaction_size_range: [4, 8, 12],
 	    reaction_no_data_color: 'rgb(220,220,220)',
 	    reaction_no_data_size: 4,
+	    // metabolite
 	    metabolite_data: null,
-	    metabolite_data_path: null,
 	    metabolite_styles: ['color', 'size', 'text'],
 	    auto_metabolite_domain: true,
 	    metabolite_domain: [-10, 0, 10],
@@ -12253,96 +12346,105 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    metabolite_size_range: [6, 8, 10],
 	    metabolite_no_data_color: 'white',
 	    metabolite_no_data_size: 6,
+	    // gene
+	    gene_data: null,
+	    gene_styles: ['text'],
+	    // color reactions not in the model
 	    highlight_missing_color: 'red',
+	    // quick jump menu
 	    local_host: null,
 	    quick_jump: null
 	});
 
-	// initialize the settings
-	this.settings = new Settings(
-	    { reaction: this.options.reaction_styles,
-	      metabolite: this.options.metabolite_styles },
-	    { reaction: this.options.auto_reaction_domain,
-	      metabolite: this.options.auto_metabolite_domain },
-	    { reaction: this.options.reaction_domain,
-	      metabolite: this.options.metabolite_domain },
-	    { reaction: { color: this.options.reaction_color_range,
-			  size: this.options.reaction_size_range },
-	      metabolite: { color: this.options.metabolite_color_range,
-			    size: this.options.metabolite_size_range } },
-	    { reaction: { color: this.options.reaction_no_data_color,
-			  size: this.options.reaction_no_data_size },
-	      metabolite: { color: this.options.metabolite_no_data_color,
-			    size: this.options.metabolite_no_data_size } },
-	    this.options.highlight_missing_color
-	);
-
+	// check the location
 	if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
 	    throw new Error("Builder cannot be placed within an svg node "+
 			    "becuase UI elements are html-based.");
 	}
+	
+ 	// Initialize the settings
+	var set_option = function(option, new_value) {
+	    this.options[option] = new_value;
+	}.bind(this),
+	    get_option = function(option) {
+		return this.options[option];
+	    }.bind(this);	
+ 	this.settings = new Settings(set_option, get_option);
+	
+	// set up this callback manager
+	this.callback_manager = CallbackManager();
 
-	var files_to_load = [{ file: this.options.map_path, 
-			       value: this.options.map,
-			       callback: set_map_data },
-			     { file: this.options.cobra_model_path, 
-			       value: this.options.cobra_model,
-			       callback: set_cobra_model },
-			     { file: this.options.css_path, 
-			       value: this.options.css,
-			       callback: set_css },
-			     { file: this.options.reaction_data_path, 
-			       value: this.options.reaction_data,
-			       callback: set_reaction_data },
-			     { file: this.options.metabolite_data_path, 
-			       value: this.options.metabolite_data,
-			       callback: set_metabolite_data } ];
-	utils.load_files(this, files_to_load, reload_builder);
-	return;
+	// load the model
+	this.load_model(this.model_data);
 
-	// definitions
-	function set_map_data(error, map_data) {
-	    if (error) console.warn(error);
-	    this.options.map_data = map_data;
-	}
-	function set_cobra_model(error, cobra_model) {
-	    if (error) console.warn(error);
-	    this.options.cobra_model = cobra_model;
-	}
-	function set_css(error, css) {
-	    if (error) console.warn(error);
-	    this.options.css = css;
-	}
-	function set_reaction_data(error, data) {
-	    if (error) console.warn(error);
-	    this.options.reaction_data = data;
-	}
-	function set_metabolite_data(error, data) {
-	    if (error) console.warn(error);
-	    this.options.metabolite_data = data;
-	}
+	// load the map
+	this.load_map(this.map_data);
+	
+	// setting callbacks
+	var update = function(kind) {
+	    this.update_data(true, true, kind);
+	}.bind(this);
+	this.settings.data_styles_stream['reaction']
+	    .onValue(function() { update('reaction'); });
+	this.settings.data_styles_stream['metabolite']
+	    .onValue(function() { update('metabolite'); });
+	// if evaluate_on_reactions gets turned off, then update reactions too
+	this.settings.data_styles_stream['gene']
+	    .onValue(function() { update(['reaction', 'gene']); });
+	this.settings.domain_stream['reaction']
+	    .onValue(function() { update('reaction'); });
+	this.settings.domain_stream['metabolite']
+	    .onValue(function() { update('metabolite'); });
+	this.settings.range_stream['reaction']['color']
+	    .onValue(function() { update('reaction'); });
+	this.settings.range_stream['metabolite']['color']
+	    .onValue(function() { update('metabolite'); });
+	this.settings.range_stream['reaction']['size']
+	    .onValue(function() { update('reaction'); });
+	this.settings.range_stream['metabolite']['size']
+	    .onValue(function() { update('metabolite'); });
     }
 
     // Definitions
-    function reload_builder() {
-	/** Load the svg container and draw a loaded map if provided.
-	 
+    function load_model(model_data) {
+	/** Load the cobra model from model data
+
+	    Arguments
+	    ---------
+	    
+	    model_data: The data for a cobra model, to be passed to
+	    escher.CobraModel().
+
+	 */
+	
+	// Check the cobra model
+	if (model_data === null) {
+	    console.warn('No cobra model was loaded.');
+	    this.cobra_model = null;
+	} else {
+	    this.cobra_model = CobraModel(model_data);
+	    
+	    // TODO this doesn't seem like the best solution
+	    if (this.map !== null && this.map !== undefined)
+		this.map.cobra_model = this.cobra_model;
+	    
+	    this.update_data(true, false);
+	}
+    }
+
+    function load_map(map_data) {
+	/** Load a map for the loaded data. Also reloads most of the builder content.
+
+	    Arguments
+	    ---------
+
+	    map_data: The data for a map, to be passed to escher.Map.from_data().
+
 	 */
 
 	// Begin with some definitions
 	var selectable_click_enabled = true,
 	    shift_key_on = false;
-
-	// set up this callback manager
-	this.callback_manager = CallbackManager();
-
-	// Check the cobra model
-	var cobra_model_obj = null;
-	if (this.options.cobra_model!==null) {
-	    cobra_model_obj = CobraModel(this.options.cobra_model);
-	} else {
-	    console.warn('No cobra model was loaded.');
-	}
 
 	// remove the old builder
 	utils.remove_child_nodes(this.options.selection);
@@ -12355,30 +12457,32 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	this.zoom_container = new ZoomContainer(svg, this.options.selection,
 						this.options.scroll_behavior);
 	var zoomed_sel = this.zoom_container.zoomed_sel;
-
-	if (this.options.map_data!==null) {
+	
+	if (map_data!==null) {
 	    // import map
-	    this.map = Map.from_data(this.options.map_data,
-				     svg, this.options.css,
+	    this.map = Map.from_data(map_data,
+				     svg,
+				     this.options.css,
 				     zoomed_sel,
 				     this.zoom_container,
 				     this.settings,
-				     this.options.reaction_data,
-				     this.options.metabolite_data,
-				     cobra_model_obj,
+				     this.cobra_model,
 				     this.options.enable_search);
 	    this.zoom_container.reset();
 	} else {
 	    // new map
-	    this.map = new Map(svg, this.options.css, zoomed_sel,
+	    this.map = new Map(svg,
+			       this.options.css,
+			       zoomed_sel,
 			       this.zoom_container,
 			       this.settings,
-			       this.options.reaction_data,
-			       this.options.metabolite_data,
-			       cobra_model_obj,
+			       this.cobra_model,
 			       null,
 			       this.options.enable_search);
 	}
+
+	// set the data for the map
+	this.update_data(false, true);
 
 	// set up the reaction input with complete.ly
 	this.reaction_input = BuildInput(this.options.selection, this.map,
@@ -12438,10 +12542,10 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	}
 
 	// setup selection box
-	if (this.options.map_data!==null) {
+	if (map_data!==null) {
 	    this.map.zoom_extent_canvas();
 	} else {
-	    if (this.options.starting_reaction!==null && cobra_model_obj!==null) {
+	    if (this.options.starting_reaction!==null && this.cobra_model !== null) {
 		// Draw default reaction if no map is provided
 		var size = this.zoom_container.get_size();
 		var start_coords = { x: size.width / 2,
@@ -12475,7 +12579,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	// draw
 	this.map.draw_everything();
     }
-
+    
     function set_mode(mode) {
 	this.search_bar.toggle(false);
 	// input
@@ -12526,7 +12630,96 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
     function text_mode() {
 	this.callback_manager.run('text_mode');
 	this.set_mode('text');
-    }	
+    } 
+
+    function set_reaction_data(data) {
+	this.options.reaction_data = data;
+	this.update_data(true, true, 'reaction');
+    }
+    function set_metabolite_data(data) {
+	this.options.metabolite_data = data;
+	this.update_data(true, true, 'metabolite');
+    }
+    function set_gene_data(data) {
+	this.options.gene_data = data; 
+	this.update_data(true, true, 'gene');
+    }
+    
+    function update_data(update_model, update_map, kind) {
+	/** Set data and settings for the model.
+
+	 Arguments
+	 ---------
+
+	 update_model: (Boolean) Update data for the model.
+
+	 update_map: (Boolean) Update data for the map.
+
+	 kind: (Optional) An array defining which data is being updated that can include
+	 any of: ['reaction', 'metabolite', 'gene']. Default: all.
+	 
+	 */
+
+	// default: all
+	if (kind === undefined)
+	    kind = ['reaction', 'metabolite', 'gene'];
+
+	// metabolite data
+	var update_metabolite_data = (kind.indexOf('metabolite') != -1);
+	if (update_metabolite_data) {
+	    var data_object = data_styles.import_and_check(this.options.metabolite_data,
+							   this.options.metabolite_styles,
+							   'metabolite_data');
+	    if (update_model && this.cobra_model !== null) {
+		this.cobra_model.apply_metabolite_data(data_object,
+						       this.options.metabolite_styles);
+	    }
+	    if (update_map && this.map !== null) {
+		this.map.apply_metabolite_data_to_map(data_object); 
+		this.map.draw_all_nodes();
+	    }
+	}
+
+	// gene data overrides reaction data
+	var update_reaction_data = (kind.indexOf('reaction') != -1),
+	    update_gene_data = (kind.indexOf('gene') != -1),
+	    has_evaluated_gene_data = (this.options.gene_data !== null &&
+				       this.options.gene_styles.indexOf('evaluate_on_reactions') != -1);
+
+	// reaction data 
+	if (update_reaction_data) {
+	    data_object = data_styles.import_and_check(this.options.reaction_data,
+						       this.options.reaction_styles,
+						       'reaction_data');
+	    // only update the model if there is not going to be gene data
+	    if (update_model && !has_evaluated_gene_data && this.cobra_model !== null) {
+		this.cobra_model.apply_reaction_data(data_object,
+						     this.options.reaction_styles);
+	    }
+	    if (update_map && this.map !== null) {
+		this.map.apply_reaction_data_to_map(data_object); 
+		this.map.draw_all_reactions();
+	    }
+	}
+
+	// gene data
+	if (update_gene_data) {
+	    data_object = data_styles.import_and_check(this.options.gene_data,
+						       this.options.gene_styles,
+						       'gene_data');
+	    
+	    // only update the model if gene data is applied to reactions
+	    if (update_model && has_evaluated_gene_data && this.cobra_model !== null) {
+		this.cobra_model.apply_gene_data(data_object,
+						 this.options.gene_styles);
+	    }
+	    if (update_map && this.map !== null) {
+		this.map.apply_gene_data_to_map(data_object);
+		this.map.draw_all_reactions();
+	    }
+	}	
+    }
+    
     function _setup_menu(menu_selection, button_selection, map, zoom_container,
 			 key_manager, keys, enable_editing) {
 	var menu = menu_selection.attr('id', 'menu')
@@ -12565,6 +12758,10 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 			  text: "Load metabolite data" })
 		.button({ key: keys.clear_metabolite_data,
 			  text: "Clear metabolite data" })
+		.button({ input: { fn: load_gene_data_for_file.bind(this) },
+			  text: "Load gene data" })
+		.button({ key: keys.clear_gene_data,
+			  text: "Clear gene data" })
 		.button({ key: keys.show_settings,
 			  text: "Settings (Ctrl ,)" });
 	
@@ -12744,8 +12941,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	     */
 	    if (error) console.warn(error);
 	    check_map(map_data);
-	    this.options.map_data = map_data;
-	    this.reload_builder();
+	    this.load_map(map_data);
 
 	    // definitions
 	    function check_map(data) {
@@ -12755,7 +12951,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 		
 		if (!('map_id' in data[0] && 'reactions' in data[1] &&
 		      'nodes' in data[1] && 'canvas' in data[1]))
-		    throw new Error('Bad map data.')
+		    throw new Error('Bad map data.');
 	    }
 	}
 	function load_model_for_file(error, data) {
@@ -12764,8 +12960,9 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 		
 	     */
 	    if (error) console.warn(error);
-	    var cobra_model_obj = CobraModel(data);
-	    this.map.set_model(cobra_model_obj);
+	    
+	    this.load_model(data);
+	    
 	    this.reaction_input.toggle(false);
 	    if ('id' in data)
 		this.map.set_status('Loaded model ' + data.id, 2000);
@@ -12777,11 +12974,15 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	}
 	function load_reaction_data_for_file(error, data) {
 	    if (error) console.warn(error);
-	    this.map.set_reaction_data(data);
+	    this.set_reaction_data(data);
 	}
 	function load_metabolite_data_for_file(error, data) {
 	    if (error) console.warn(error);
-	    this.map.set_metabolite_data(data);
+	    this.set_metabolite_data(data);
+	}
+	function load_gene_data_for_file(error, data) {
+	    if (error) console.warn(error);
+	    this.set_gene_data(data);
 	}
     }
 
@@ -12833,13 +13034,12 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    d3.json(url, function(error, data) {
 		if (error)
 		    throw new Error('Could not load data: ' + error) 
-		this.options.map_data = data;
 		// update the url with the new map
 		var new_url = window.location.href
 		    .replace(/(map_name=)([^&]+)(&|$)/, '$1' + new_map_name + '$3')
 		window.history.pushState("not implemented", new_map_name, new_url);
 		// now reload
-		this.reload_builder();
+		this.load_map(data);
 		this.map.set_status('');
 	    }.bind(this));
 	}.bind(this);
@@ -12882,11 +13082,14 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             load_model: { key: 77, modifiers: { control: true }, // ctrl-m
 			  fn: null }, // defined by button
 	    load_reaction_data: { fn: null }, // defined by button
-	    clear_reaction_data: { target: map,
+	    clear_reaction_data: { target: this,
 				   fn: function() { this.set_reaction_data(null); }},
 	    load_metabolite_data: { fn: null }, // defined by button
-	    clear_metabolite_data: { target: map,
+	    clear_metabolite_data: { target: this,
 				     fn: function() { this.set_metabolite_data(null); }},
+	    load_gene_data: { fn: null }, // defined by button
+	    clear_gene_data: { target: this,
+			       fn: function() { this.set_gene_data(null); }},
 	    zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
 		       target: zoom_container,
 		       fn: zoom_container.zoom_in },

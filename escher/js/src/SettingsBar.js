@@ -10,7 +10,8 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes,
-			    scale_gui: scale_gui };
+			    scale_gui: scale_gui,
+			    gene_gui: gene_gui };
 
     return SearchBar;
 
@@ -49,6 +50,11 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    .attr('class', 'settings-section-heading');
 	this.scale_gui(container.append('div'), 'metabolite');
 
+	// gene data
+	container.append('div').text('Gene data')
+	    .attr('class', 'settings-section-heading');
+	this.gene_gui(container.append('div'));
+	
 	this.callback_manager = new CallbackManager();
 
 	this.map = map;
@@ -117,7 +123,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	// columns
 	var columns = [0, 1, 2],
 	    settings = this.settings;
-
+	
 	// numbers
 	t.append('tr')
 	    .selectAll('.settings-number')
@@ -221,6 +227,47 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    var cell = r.append('td').attr('colspan', columns.length + 1);
 
 	    var styles = ['abs', 'size', 'color', 'text'],
+		style_cells = cell.selectAll('.style-span')
+		    .data(styles),
+		s = style_cells.enter()
+		    .append('span')
+		    .attr('class', 'style-span');
+	    s.append('span').text(function(d) { return d; });
+
+	    // make the checkbox
+	    s.append('input').attr('type', 'checkbox')
+		.each(function(style) {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+		    		settings.change_data_style(type, style,
+							   event.target.checked);
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.data_styles_stream[type].onValue(function(ar) {
+			// check the box if the style is present
+			this.checked = (ar.indexOf(style) != -1);
+		    }.bind(this));
+		});
+	});
+    }
+    
+    function gene_gui(s) {
+
+	var t = s.append('table').attr('class', 'settings-table');
+
+	// columns
+	var settings = this.settings,
+	    type = 'gene';
+
+	// styles
+	t.append('tr').call(function(r) {
+	    r.append('td').text('Styles:');
+	    var cell = r.append('td')
+
+	    var styles = ['text', 'evaluate_on_reactions'],
 		style_cells = cell.selectAll('.style-span')
 		    .data(styles),
 		s = style_cells.enter()

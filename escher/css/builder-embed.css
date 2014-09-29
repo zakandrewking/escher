@@ -45,6 +45,7 @@ g.selected .label {
 }
 .metabolite-circle {
     stroke: rgb(162, 69, 16);
+    fill: rgb(224, 134, 91);
 }
 g.selected .metabolite-circle {
     stroke: rgb(5, 2, 0);

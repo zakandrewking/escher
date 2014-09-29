@@ -4,6 +4,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	Arguments
 	---------
 
+	set_option: 
+
 	def_styles: 
 
 	def_auto_domain: 
@@ -40,54 +42,49 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     return SearchBar;
 
     // class methods
-    function check_type(type) {
-	if (['reaction', 'metabolite'].indexOf(type)==-1)
+    function check_type(type, gene_ok) {
+	if (gene_ok === undefined)
+	    gene_ok = false;
+	
+	if (['reaction', 'metabolite'].indexOf(type)==-1 &&
+	    (!(gene_ok == true && type =='gene')))
 	    throw new Error('Bad type');
     }
 
     // instance methods
-    function init(def_styles, def_auto_domain, def_domain, def_range,
-		  def_no_data, def_highlight_missing) {
-	// defaults
-	if (def_styles===undefined) 
-	    def_styles = { reaction: ['color', 'size', 'abs', 'text'],
-			   metabolite: ['color', 'size', 'text'] };
-	if (def_auto_domain===undefined)
-	    def_auto_domain = { reaction: true,
-				metabolite: true };
-	if (def_domain===undefined)
-	    def_domain = { reaction: [-10, 0, 10],
-			   metabolite: [-10, 0, 10] };
-	if (def_range===undefined)
-	    def_range = { reaction: { color: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
-				      size: [4, 8, 12] },
-			  metabolite: { color: ['green', 'white', 'red'],
-					size: [6, 8, 10] } };
-	if (def_no_data===undefined)
-	    def_no_data = { reaction: { color: 'rgb(220,220,220)',
-					size: 4 },
-			    metabolite: { color: 'white',
-					  size: 6 } };
-	if (def_highlight_missing===undefined)
-	    def_highlight_missing = 'red';
+    function init(set_option, get_option) {
+	this.set_option = set_option;
+	this.get_option = get_option;
+	
+	// organize
+	var def_styles = { reaction: get_option('reaction_styles'),
+ 			   metabolite: get_option('metabolite_styles'),
+			   gene: get_option('gene_styles') },
+ 	    def_auto_domain = { reaction: get_option('auto_reaction_domain'),
+ 				metabolite: get_option('auto_metabolite_domain') },
+ 	    def_domain = { reaction: get_option('reaction_domain'),
+ 			   metabolite: get_option('metabolite_domain') },
+ 	    def_range = { reaction: { color: get_option('reaction_color_range'),
+ 	    			      size: get_option('reaction_size_range') },
+ 			  metabolite: { color: get_option('metabolite_color_range'),
+ 	    				size: get_option('metabolite_size_range') } },
+ 	    def_no_data = { reaction: { color: get_option('reaction_no_data_color'),
+ 	    				size: get_option('reaction_no_data_size') },
+ 			    metabolite: { color: get_option('metabolite_no_data_color'),
+ 	    				  size: get_option('metabolite_no_data_size') } },
+	    def_highlight_missing = get_option('highlight_missing_color');
 
 	// event streams
-	this.data_styles = {};
 	this.data_styles_bus = {};
 	this.data_styles_stream = {};
-	this.auto_domain = {};
 	this.auto_domain_bus = {};
 	this.auto_domain_stream = {};
-	this.domain = {};
 	this.domain_bus = {};
 	this.domain_stream = {};
-	this.range = {};
 	this.range_bus = {};
 	this.range_stream = {};
-	this.no_data = {};
 	this.no_data_bus = {};
 	this.no_data_stream = {};
-	// this.highlight_missing;
 	// this.highlight_missing_bus;
 	// this.highlight_missing_stream;
 
@@ -101,7 +98,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	bacon.Observable.prototype.convert_to_conditional_stream = convert_to_conditional_stream;
 	bacon.Observable.prototype.force_update_with_bus = force_update_with_bus;
 
-	['metabolite', 'reaction'].forEach(function(type) {
+	['metabolite', 'reaction', 'gene'].forEach(function(type) {
 	    // set up the styles settings
 	    this.data_styles_bus[type] = new bacon.Bus();
 	    // make the event stream
@@ -130,7 +127,12 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
 	    // get the latest
 	    this.data_styles_stream[type].onValue(function(v) {
-		this.data_styles[type] = v;
+		if (type=='reaction')
+		    this.set_option('reaction_styles', v);
+		else if (type=='metabolite')
+		    this.set_option('metabolite_styles', v);
+		else if (type=='gene')
+		    this.set_option('gene_styles', v);
 	    }.bind(this));
 
 	    // push the defaults
@@ -138,7 +140,9 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	    def.forEach(function(x) {
 	    	this.data_styles_bus[type].push({ style: x, on_off: true });
 	    }.bind(this));
+	}.bind(this));
 
+	['metabolite', 'reaction'].forEach(function(type) {
 	    // set up the auto_domain settings
 	    this.auto_domain_bus[type] = new bacon.Bus();
 	    this.auto_domain_stream[type] = this.auto_domain_bus[type]
@@ -149,7 +153,10 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
 	    // get the latest
 	    this.auto_domain_stream[type].onValue(function(v) {
-		this.auto_domain[type] = v;
+		if (type=='reaction')
+		    this.set_option('auto_reaction_domain', v);
+		else if (type=='metabolite')
+		    this.set_option('auto_metabolite_domain', v);
 	    }.bind(this));
 
 	    // set the default
@@ -173,7 +180,10 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
 	    // get the latest
 	    this.domain_stream[type].onValue(function(v) {
-		this.domain[type] = v;
+		if (type=='reaction')
+		    this.set_option('reaction_domain', v);
+		else if (type=='metabolite')
+		    this.set_option('metabolite_domain', v);
 	    }.bind(this));
 
 	    // push the defaults
@@ -185,7 +195,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	    // set up the ranges
 	    this.range_bus[type] = {};
 	    this.range_stream[type] = {};
-	    this.range[type] = {};
 	    ['color', 'size'].forEach(function(range_type) {
 		// make the bus
 		this.range_bus[type][range_type] = new bacon.Bus();
@@ -203,7 +212,14 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
 		// get the latest
 		this.range_stream[type][range_type].onValue(function(v) {
-		    this.range[type][range_type] = v;
+		    if (type=='reaction' && range_type=='color')
+			this.set_option('reaction_color_range', v);
+		    else if (type=='reaction' && range_type=='size')
+			this.set_option('reaction_size_range', v);
+		    else if (type=='metabolite' && range_type=='color')
+			this.set_option('metabolite_color_range', v);
+		    else if (type=='metabolite' && range_type=='size')
+			this.set_option('metabolite_size_range', v);
 		}.bind(this));
 
 		// push the default
@@ -217,7 +233,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	    // set up the no data settings
 	    this.no_data_bus[type] = {};
 	    this.no_data_stream[type] = {};
-	    this.no_data[type] = {};
 	    ['color', 'size'].forEach(function(no_data_type) {
 		// make the bus
 		this.no_data_bus[type][no_data_type] = new bacon.Bus();
@@ -234,7 +249,14 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
 		// get the latest
 		this.no_data_stream[type][no_data_type].onValue(function(v) {
-		    this.no_data[type][no_data_type] = v;
+		    if (type=='reaction' && no_data_type=='color')
+			this.set_option('reaction_no_data_color', v);
+		    else if (type=='reaction' && no_data_type=='size')
+			this.set_option('reaction_no_data_size', v);
+		    else if (type=='metabolite' && no_data_type=='color')
+			this.set_option('metabolite_no_data_color', v);
+		    else if (type=='metabolite' && no_data_type=='size')
+			this.set_option('metabolite_no_data_size', v);
 		}.bind(this));
 
 		// push the default
@@ -261,7 +283,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
 	// get the latest
 	this.highlight_missing_stream.onValue(function(v) {
-	    this.highlight_missing = v;
+	    this.set_option('highlight_missing', v);
 	}.bind(this));
 
 	// push the default
@@ -359,7 +381,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	    it.
 
 	*/
-	check_type(type);
+	check_type(type, true);
 
 	this.data_styles_bus[type].push({ style: style,
 					  on_off: on_off });
@@ -448,6 +470,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     function abandon_changes() {
 	this.status_bus.push('reject');
 	this.status_bus.push('clear');
+	// TODO this could be way faster if it did not trigger redrawing the map
 	this.force_update_bus.push(true);
     };
     function accept_changes() {

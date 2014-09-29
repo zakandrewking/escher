@@ -242,7 +242,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 				    missing_component_color!==null &&
 				    !(reaction_id in cobra_model.reactions)),
 		    should_color_data = (has_reaction_data &&
-					 reaction_data_styles.indexOf('color')!==-1);
+					 reaction_data_styles.indexOf('color') != -1);
 		if (show_missing) {
 		    return missing_component_color;
 		}
@@ -253,7 +253,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		return null;
 	    })
 	    .style('stroke-width', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
+		if (has_reaction_data && reaction_data_styles.indexOf('size') != -1) {
 		    var f = d.data;
 		    return f===null ? no_data_style['size'] : scale.reaction_size(f);
 		} else {
@@ -418,47 +418,55 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    .attr('class', 'node-label label');
     }
 
-    function update_node(update_selection, scale, has_metabolite_data, metabolite_data_styles,
-			 click_fn, mouseover_fn, mouseout_fn, drag_behavior, label_drag_behavior) {
+    function update_node(update_selection, scale, has_metabolite_data,
+			 metabolite_data_styles, no_data_style,
+			 click_fn, mouseover_fn, mouseout_fn,
+			 drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale', 'has_metabolite_data',
-			       'metabolite_data_styles', 'click_fn', 'mouseover_fn', 'mouseout_fn',
+			       'no_data_style', 'metabolite_data_styles',
+			       'click_fn', 'mouseover_fn', 'mouseout_fn',
 			       'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
         var mg = update_selection
-                .select('.node-circle')
-                .attr('transform', function(d) {
-                    return 'translate('+d.x+','+d.y+')';
-                })
-		.attr('r', function(d) {
-		    if (d.node_type == 'metabolite') {
-			if (has_metabolite_data && metabolite_data_styles.indexOf('size')!==-1) {
-			    var f = d.data;
-			    return scale.metabolite_size(f===null ? 0 : f);
-			} else {
-			    return d.node_is_primary ? 15 : 10; 
-			}
+            .select('.node-circle')
+            .attr('transform', function(d) {
+                return 'translate('+d.x+','+d.y+')';
+            })
+	    .attr('r', function(d) {
+		if (d.node_type == 'metabolite') {
+		    var should_scale = (has_metabolite_data &&
+					metabolite_data_styles.indexOf('size') != -1);
+		    if (should_scale) {
+			var f = d.data;
+			return f===null ? no_data_style['size'] : scale.metabolite_size(f);
 		    } else {
-			return 5;
+			return d.node_is_primary ? 15 : 10; 
 		    }
-		})
-		.style('fill', function(d) {
-		    if (d.node_type=='metabolite') {
-			if (has_metabolite_data && metabolite_data_styles.indexOf('color')!==-1) {
-			    var f = d.data;
-			    return scale.metabolite_color(f===null ? 0 : f);
-			} else {
-			    return 'rgb(224, 134, 91)';
-			}
+		}
+		// midmarkers and multimarkers
+		return 5;
+	    })
+	    .style('fill', function(d) {
+		if (d.node_type=='metabolite') {
+		    var should_color_data = (has_metabolite_data &&
+					     metabolite_data_styles.indexOf('color') != -1);
+		    if (should_color_data) {
+			var f = d.data;
+			return f===null ? no_data_style['color'] : scale.metabolite_color(f);
+		    } else {
+			return null;
 		    }
-		    return null;
-		})
-		.call(turn_off_drag)
-		.call(drag_behavior)
-		.on('click', click_fn)
-		.on('mouseover', mouseover_fn)
-		.on('mouseout', mouseout_fn);
+		}
+		// midmarkers and multimarkers
+		return null;
+	    })
+	    .call(turn_off_drag)
+	    .call(drag_behavior)
+	    .on('click', click_fn)
+	    .on('mouseover', mouseover_fn)
+	    .on('mouseout', mouseout_fn);
 
         update_selection
             .select('.node-label')

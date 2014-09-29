@@ -8,7 +8,8 @@ define(["utils", "data_styles"], function(utils, data_styles) {
     // instance methods
     CobraModel.prototype = { init: init,
 			     apply_reaction_data: apply_reaction_data,
-			     apply_metabolite_data: apply_metabolite_data };
+			     apply_metabolite_data: apply_metabolite_data,
+			     apply_gene_data: apply_gene_data };
 
     return CobraModel;
 
@@ -89,6 +90,13 @@ define(["utils", "data_styles"], function(utils, data_styles) {
     }
 
     function apply_reaction_data(reaction_data, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+	    
+	    apply_reaction_data overrides apply_gene_data.
+
+	*/
+
 	for (var reaction_id in this.reactions) {
 	    var reaction = this.reactions[reaction_id];
 	    if (reaction_data===null) {
@@ -106,6 +114,10 @@ define(["utils", "data_styles"], function(utils, data_styles) {
     }
 
     function apply_metabolite_data(metabolite_data, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+
+	 */
 	for (var metabolite_id in this.metabolites) {
 	    var metabolite = this.metabolites[metabolite_id];
 	    if (metabolite_data===null) {
@@ -118,6 +130,31 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		    s = data_styles.text_for_data(d, styles);
 		metabolite.data = f;
 		metabolite.data_string = s;
+	    }
+	}
+    }
+
+    
+    function apply_gene_data(gene_data, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+
+	    apply_gene_data overrides apply_reaction_data.
+
+	*/
+	for (var gene_id in this.genes) {
+	    // var gene = this.genes[gene_id],
+	    // 	reaction_ids = utils.
+	    if (gene_data===null) {
+		gene.data = null;
+		gene.data_string = '';
+	    } else {
+		var d = (gene_id in gene_data ?
+			 gene_data[gene_id] : null),
+		    f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		gene.data = f;
+		gene.data_string = s;
 	    }
 	}
     }

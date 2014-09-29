@@ -347,8 +347,6 @@ class Builder(object):
                 u"enable_keys: {enable_keys},\n"
                 u"scroll_behavior: {scroll_behavior},\n"
                 u"fill_screen: {fill_screen},\n"
-                u"map: map_data_{the_id},\n"
-                u"cobra_model: cobra_model_{the_id},\n"
                 u"auto_set_data_domain: {auto_set_data_domain},\n"
                 u"reaction_data: reaction_data_{the_id},\n"
                 u"metabolite_data: metabolite_data_{the_id},\n"
@@ -384,7 +382,8 @@ class Builder(object):
                  'options, "%s");\n' % (dev_str, rel))
             draw = draw + o;
         # make the builder
-        draw = draw + '%sBuilder(options);\n' % dev_str
+        draw = draw + u'{dev_str}Builder(map_data_{the_id}, cobra_model_{the_id}, options);\n'.format(
+            dev_str=dev_str, the_id=the_id)
 
         return draw
     

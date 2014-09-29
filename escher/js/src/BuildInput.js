@@ -196,7 +196,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
 	    cobra_reactions = this.map.cobra_model.reactions,
 	    cobra_metabolites = this.map.cobra_model.metabolites,
 	    reactions = this.map.reactions,
-	    has_reaction_data = this.map.has_reaction_data(),
+	    has_reaction_data = this.map.has_reaction_data,
 	    reaction_data = this.map.reaction_data,
 	    reaction_data_styles = this.map.reaction_data_styles;
         for (var reaction_id in cobra_reactions) {
