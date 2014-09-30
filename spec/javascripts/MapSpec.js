@@ -45,6 +45,13 @@ describe('Map', function() {
 	// clean up
 	svg.remove();
     });
+
+    it("def is the first element in the svg", function() {
+	// this fixes a bug with export SVG files to certain programs,
+	// e.g. Inkscape for Windows
+	var defs_node = d3.select('defs').node();
+	expect(defs_node.parentNode.firstChild).toBe(defs_node);	
+    });	
     
     it("Load without and with reaction/metabolite data", function () {
 	// no data

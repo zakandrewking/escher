@@ -962,7 +962,10 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     function setup_defs(svg, style) {
         // add stylesheet
         svg.select("defs").remove();
-        var defs = svg.append("defs");
+	var defs = svg.append("defs");
+	// make sure the defs is the first node
+	var node = defs.node();
+	node.parentNode.insertBefore(node, node.parentNode.firstChild);
         defs.append("style")
             .attr("type", "text/css")
             .text(style);
@@ -1687,7 +1690,10 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     function setup_defs(svg, style) {
         // add stylesheet
         svg.select("defs").remove();
-        var defs = svg.append("defs");
+	var defs = svg.append("defs");
+	// make sure the defs is the first node
+	var node = defs.node();
+	node.parentNode.insertBefore(node, node.parentNode.firstChild);
         defs.append("style")
             .attr("type", "text/css")
             .text(style);

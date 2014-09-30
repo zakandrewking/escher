@@ -109,14 +109,17 @@ class BuilderHandler(BaseHandler):
         
         # Builder options
         builder_kwargs = {}
-        for a in ['starting_reaction', 'model_name', 'map_name', 'map_json']:
+        for a in ['starting_reaction', 'model_name', 'map_name', 'map_json',
+                  'reaction_no_data_color', 'reaction_no_data_size',
+                  'metabolite_no_data_color', 'metabolite_no_data_size']:
             args = self.get_arguments(a)
             if len(args)==1:
                 builder_kwargs[a] = (True if args[0].lower()=='true' else
                                      (False if args[0].lower()=='false' else
                                       args[0]))
         # array args
-        for a in ['quick_jump']:
+        for a in ['quick_jump', 'metabolite_size_range', 'metabolite_color_range',
+                  'reaction_size_range', 'reaction_color_range']:
             args = self.get_arguments(a + '[]')
             if len(args) > 0:
                 builder_kwargs[a] = args
