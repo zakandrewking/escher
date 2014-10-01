@@ -128,11 +128,10 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	// set up this callback manager
 	this.callback_manager = CallbackManager();
 
-	// load the model
-	this.load_model(this.model_data);
-
-	// load the map
-	this.load_map(this.map_data);
+	// load the model, map, and update data in both
+	this.load_model(this.model_data, false);
+	this.load_map(this.map_data, false);
+	this.update_data(true, true);
 	
 	// setting callbacks
 	var update = function(kind) {
@@ -160,7 +159,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
     }
 
     // Definitions
-    function load_model(model_data) {
+    function load_model(model_data, should_update_data) {
 	/** Load the cobra model from model data
 
 	    Arguments
@@ -169,7 +168,13 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    model_data: The data for a cobra model, to be passed to
 	    escher.CobraModel().
 
+	    should_update_data: (Boolean, default true) Whether the data in the
+	    model should be updated.
+
 	 */
+
+	if (should_update_data === undefined)
+	    should_update_data = true;
 	
 	// Check the cobra model
 	if (model_data === null) {
@@ -181,12 +186,13 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    // TODO this doesn't seem like the best solution
 	    if (this.map !== null && this.map !== undefined)
 		this.map.cobra_model = this.cobra_model;
-	    
-	    this.update_data(true, false);
+
+	    if (should_update_data)
+		this.update_data(true, false);
 	}
     }
 
-    function load_map(map_data) {
+    function load_map(map_data, should_update_data) {
 	/** Load a map for the loaded data. Also reloads most of the builder content.
 
 	    Arguments
@@ -194,8 +200,14 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
 	    map_data: The data for a map, to be passed to escher.Map.from_data().
 
+	    should_update_data: (Boolean, default true) Whether the data in the
+	    model should be updated.
+
 	 */
 
+	if (should_update_data === undefined)
+	    should_update_data = true;
+	
 	// Begin with some definitions
 	var selectable_click_enabled = true,
 	    shift_key_on = false;
@@ -236,7 +248,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	}
 
 	// set the data for the map
-	this.update_data(false, true);
+	if (should_update_data)
+	    this.update_data(false, true);
 
 	// set up the reaction input with complete.ly
 	this.reaction_input = BuildInput(this.options.selection, this.map,
@@ -458,9 +471,19 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
 	// gene data
 	if (update_gene_data) {
+	    // collect reactions from map and model
+	    var all_reactions = {};
+	    if (this.cobra_model !== null)
+		utils.extend(all_reactions, this.cobra_model.reactions);
+	    // extend, overwrite
+	    if (this.map !== null)
+		utils.extend(all_reactions, this.map.reactions, true);
+	    
+	    // this object has reaction keys and values containing associated genes
 	    data_object = data_styles.import_and_check(this.options.gene_data,
 						       this.options.gene_styles,
-						       'gene_data');
+						       'gene_data',
+						       all_reactions);
 	    
 	    // only update the model if gene data is applied to reactions
 	    if (update_model && has_evaluated_gene_data && this.cobra_model !== null) {

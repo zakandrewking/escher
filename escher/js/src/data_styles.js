@@ -1,4 +1,4 @@
-define(["utils"], function(utils) {
+define(['utils', 'CobraModel'], function(utils, CobraModel) {
     return { import_and_check: import_and_check,
 	     text_for_data: text_for_data,
 	     float_for_data: float_for_data,
@@ -6,8 +6,30 @@ define(["utils"], function(utils) {
 	     csv_converter: csv_converter
 	   };
 
-    function import_and_check(data, styles, name) {
-	if (data===null) return null;
+    function import_and_check(data, styles, name, all_reactions) {
+	/** Convert imported data to a style that can be applied to reactions
+	    and nodes.
+
+	    Arguments
+	    ---------
+
+	    data: The data object.
+
+	    styles: The styles option.
+
+	    name: Either 'reaction_data', 'metabolite_data', or 'gene_data'
+
+	    all_reactions: Required for name == 'gene_data'. Must include all
+	    GPRs for the map and model.
+
+	*/
+	
+	// check arguments
+	if (data===null)
+	    return null;
+	if (['reaction_data', 'metabolite_data', 'gene_data'].indexOf(name)==-1)
+	    throw new Error('Invalid name argument: ' + name);	
+
 	// make array
 	if (!(data instanceof Array)) {
 	    data = [data];
@@ -20,11 +42,37 @@ define(["utils"], function(utils) {
 		return null;
 	    if (data.length==2) // && styles.indexOf('Diff')!=-1
 		return null;
-	    return console.warn('Bad data style: '+name);
+	    return console.warn('Bad data style: ' + name);
 	};
 	check();
 	data = utils.array_to_object(data);
+
+	if (name == 'gene_data') {
+	    if (all_reactions === undefined)
+		throw new Error('Must pass all_reactions argument for gene_data');
+	    data = align_gene_data_to_reactions(data, all_reactions);
+	}
+	
 	return data;
+    }
+
+    function align_gene_data_to_reactions(data, reactions) {
+	var aligned = {};
+	for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id],
+		this_gene_data = {}; 
+	    if (!('gene_reaction_rule' in reaction))
+		console.warn('No gene_reaction_rule for reaction ' % reaction_id);
+	    // save to aligned
+	    // get the genes
+	    var genes = CobraModel.genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
+	    genes.forEach(function(gene_id) {
+		this_gene_data[gene_id] = ((gene_id in data) ? data[gene_id] : null);
+	    });
+	    aligned[reaction_id] = { rule: reaction.gene_reaction_rule,
+				     genes: this_gene_data };
+	}
+	return aligned;
     }
 
     function float_for_data(d, styles, ignore_abs) {

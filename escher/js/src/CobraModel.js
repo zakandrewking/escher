@@ -5,6 +5,8 @@ define(["utils", "data_styles"], function(utils, data_styles) {
     var CobraModel = utils.make_class();
     // class methods
     CobraModel.build_reaction_string = build_reaction_string;
+    CobraModel.genes_for_gene_reaction_rule = genes_for_gene_reaction_rule;
+    CobraModel.evaluate_gene_reaction_rule = evaluate_gene_reaction_rule;
     // instance methods
     CobraModel.prototype = { init: init,
 			     apply_reaction_data: apply_reaction_data,
@@ -61,6 +63,64 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	}
         reaction_string += product_bits.join(' + ')
         return reaction_string
+    }
+    
+    function genes_for_gene_reaction_rule(rule) {
+	/** Find genes in gene_reaction_rule string.
+
+	    Arguments
+	    ---------
+
+	    rule: A boolean string containing gene names, parentheses, AND's and
+	    OR's.
+
+	*/
+	genes = rule
+	    .replace(/(AND|OR|\(|\))/g, '')
+	    .split(' ')
+	    .filter(function(x) { return x != '' });
+	return genes;
+    }
+
+    function check_gene_reaction_rule(rule) {
+	/** Raise an error if the rule is invalid.
+
+	    Arguments
+	    ---------
+
+	    rule: A boolean string containing gene names, parentheses, AND's and
+	    OR's.
+
+	*/
+	// TODO check the rules
+	return;
+    }
+    
+    function evaluate_gene_reaction_rule(rule, gene_values) {
+	/** Return a value given the rule and gene_values object.
+
+	    Arguments
+	    ---------
+
+	    rule: A boolean string containing gene names, parentheses, AND's and
+	    OR's.
+
+	    gene_values: Object with gene_ids for keys and numbers for values.
+
+	*/
+	check_gene_reaction_rule(rule);
+	
+	for (var gene_id in gene_values) {
+	    rule = rule.replace(gene_id, gene_values[gene_id]);
+	}
+	rule = rule.replace(/([^\(\)]+)AND([^\(\)]+)/g, 'Math.min($1,$2)');
+	rule = rule.replace(/OR/g, '+');
+	try {
+	    value = eval(rule);
+	} catch (e) {
+	    throw new Error('Could not evaluate rule ' + rule + ': ' + e);
+	}
+	return value;
     }
     
     // instance methods
@@ -135,26 +195,36 @@ define(["utils", "data_styles"], function(utils, data_styles) {
     }
 
     
-    function apply_gene_data(gene_data, styles) {
+    function apply_gene_data(gene_data_obj, styles) {
 	/** Apply data to model. This is only used to display options in
 	    BuildInput.
 
 	    apply_gene_data overrides apply_reaction_data.
 
+	    Arguments
+	    ---------
+
+	    gene_data_obj: The gene data object, with the following style:
+
+	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+
+	    style: Gene styles array.
+
 	*/
-	for (var gene_id in this.genes) {
+	for (var reaction_id in this.reactions) {
 	    // var gene = this.genes[gene_id],
 	    // 	reaction_ids = utils.
 	    if (gene_data===null) {
-		gene.data = null;
-		gene.data_string = '';
+		reaction.data = null;
+		reaction.data_string = '';
 	    } else {
-		var d = (gene_id in gene_data ?
-			 gene_data[gene_id] : null),
+		var d = (reaction_id in gene_data_obj ?
+			 evaluate_gene_reaction_rule(gene_data_obj[reaction_id]) :
+			 null),
 		    f = data_styles.float_for_data(d, styles),
 		    s = data_styles.text_for_data(d, styles);
-		gene.data = f;
-		gene.data_string = s;
+		reaction.data = f;
+		reaction.data_string = s;
 	    }
 	}
     }

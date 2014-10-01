@@ -9,18 +9,40 @@ describe('utils', function() {
 	}
     });
 
-    it('compare arrays', function() {
+    it('compare_arrays', function() {
 	expect(utils.compare_arrays([1,2], [1,2])).toBe(true);
 	expect(utils.compare_arrays([1,2], [3,2])).toBe(false);
     });
 
-    it('array to object', function() {
-	var a = [{a:1, b:2}, {b:3, c:4}];
-	expect(utils.array_to_object(a)).toEqual({ a: [1, null],
-						   b: [2, 3],
-						   c: [null, 4] });
+    it('array_to_object', function() {
+	// single
+	var a = [{a:1, b:2}],
+	    out = utils.array_to_object(a)
+	expect(out).toEqual({ a: [1],
+			      b: [2] });
+	// multiple
+	var a = [{a:1, b:2}, {b:3, c:4}],
+	    out = utils.array_to_object(a)
+	expect(out).toEqual({ a: [1, null],
+			      b: [2, 3],
+			      c: [null, 4] });
     });
 
+    it('extend', function() {
+	// extend
+	var one = {'a': 1, 'b': 2}, two = {'c': 3};
+	escher.utils.extend(one, two);
+	expect(one).toEqual({'a': 1, 'b': 2, 'c': 3});
+	// exception
+	var one = {'a': 1, 'b': 2}, two = {'b': 3};
+	expect(escher.utils.extend.bind(null, one, two))
+	    .toThrow();
+	// overwrite
+	var one = {'a': 1, 'b': 2}, two = {'b': 3};
+	escher.utils.extend(one, two, true);
+	expect(one).toEqual({'a': 1, 'b': 3});
+    });
+    
     it('load_json_or_csv', function() {
 	escher.utils.load_json_or_csv(null,
 				      escher.data_styles.csv_converter,

@@ -338,17 +338,30 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	throw new Error("Unable to copy obj! Its type isn't supported.");
     }
 
-    function extend(obj1, obj2) {
-	/** Extends obj1 with keys/values from obj2.
+    function extend(obj1, obj2, overwrite) {
+	/** Extends obj1 with keys/values from obj2. Performs the extension
+	    cautiously, and does not override attributes, unless the overwrite
+	    argument is true.
 
-	 Performs the extension cautiously, and does not override attributes.
+	    Arguments
+	    ---------
 
-	 */
+	    obj1: Object to extend
+	    
+	    obj2: Object with which to extend.
+
+	    overwrite: (Optional, Default false) Overwrite attributes in obj1.
+
+	*/
+
+	if (overwrite === undefined)
+	    overwrite = false;
+	
 	for (var attrname in obj2) { 
-	    if (!(attrname in obj1))
+	    if (!(attrname in obj1) || overwrite) // UNIT TEST This
 		obj1[attrname] = obj2[attrname];
 	    else
-		console.error('Attribute ' + attrname + ' already in object.');
+		throw new Error('Attribute ' + attrname + ' already in object.');
 	}
     }
 

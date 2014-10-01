@@ -1131,17 +1131,30 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	throw new Error("Unable to copy obj! Its type isn't supported.");
     }
 
-    function extend(obj1, obj2) {
-	/** Extends obj1 with keys/values from obj2.
+    function extend(obj1, obj2, overwrite) {
+	/** Extends obj1 with keys/values from obj2. Performs the extension
+	    cautiously, and does not override attributes, unless the overwrite
+	    argument is true.
 
-	 Performs the extension cautiously, and does not override attributes.
+	    Arguments
+	    ---------
 
-	 */
+	    obj1: Object to extend
+	    
+	    obj2: Object with which to extend.
+
+	    overwrite: (Optional, Default false) Overwrite attributes in obj1.
+
+	*/
+
+	if (overwrite === undefined)
+	    overwrite = false;
+	
 	for (var attrname in obj2) { 
-	    if (!(attrname in obj1))
+	    if (!(attrname in obj1) || overwrite) // UNIT TEST This
 		obj1[attrname] = obj2[attrname];
 	    else
-		console.error('Attribute ' + attrname + ' already in object.');
+		throw new Error('Attribute ' + attrname + ' already in object.');
 	}
     }
 
@@ -1859,17 +1872,30 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	throw new Error("Unable to copy obj! Its type isn't supported.");
     }
 
-    function extend(obj1, obj2) {
-	/** Extends obj1 with keys/values from obj2.
+    function extend(obj1, obj2, overwrite) {
+	/** Extends obj1 with keys/values from obj2. Performs the extension
+	    cautiously, and does not override attributes, unless the overwrite
+	    argument is true.
 
-	 Performs the extension cautiously, and does not override attributes.
+	    Arguments
+	    ---------
 
-	 */
+	    obj1: Object to extend
+	    
+	    obj2: Object with which to extend.
+
+	    overwrite: (Optional, Default false) Overwrite attributes in obj1.
+
+	*/
+
+	if (overwrite === undefined)
+	    overwrite = false;
+	
 	for (var attrname in obj2) { 
-	    if (!(attrname in obj1))
+	    if (!(attrname in obj1) || overwrite) // UNIT TEST This
 		obj1[attrname] = obj2[attrname];
 	    else
-		console.error('Attribute ' + attrname + ' already in object.');
+		throw new Error('Attribute ' + attrname + ' already in object.');
 	}
     }
 
@@ -2247,7 +2273,239 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     }    
 });
 
-define('data_styles',["utils"], function(utils) {
+define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
+    /**
+     */
+
+    var CobraModel = utils.make_class();
+    // class methods
+    CobraModel.build_reaction_string = build_reaction_string;
+    CobraModel.genes_for_gene_reaction_rule = genes_for_gene_reaction_rule;
+    CobraModel.evaluate_gene_reaction_rule = evaluate_gene_reaction_rule;
+    // instance methods
+    CobraModel.prototype = { init: init,
+			     apply_reaction_data: apply_reaction_data,
+			     apply_metabolite_data: apply_metabolite_data,
+			     apply_gene_data: apply_gene_data };
+
+    return CobraModel;
+
+    // class methods
+    function build_reaction_string(stoichiometries, is_reversible,
+				   lower_bound, upper_bound) {
+	/** Return a reaction string for the given stoichiometries.
+
+	    Adapted from cobra.core.Reaction.build_reaction_string().
+
+	    Arguments
+	    ---------
+
+	    stoichiometries: An object with metabolites as keys and
+	    stoichiometries as values.
+
+	    is_reversible: Boolean. Whether the reaction is reversible.
+
+	    lower_bound: Reaction upper bound, to determine direction.
+
+	    upper_bound: Reaction lower bound, to determine direction.
+
+	*/
+
+	var format = function(number) {
+            if (number == 1)
+                return "";
+            return String(number) + " ";
+	}
+        var reactant_dict = {},
+            product_dict = {},
+            reactant_bits = [],
+            product_bits = [];
+	for (var the_metabolite in stoichiometries) {
+	    var coefficient = stoichiometries[the_metabolite];
+            if (coefficient > 0)
+                product_bits.push(format(coefficient) + the_metabolite);
+            else
+                reactant_bits.push(format(Math.abs(coefficient)) + the_metabolite);
+	}
+        reaction_string = reactant_bits.join(' + ');
+        if (is_reversible) {
+            reaction_string += ' <=> ';
+        } else {
+            if (lower_bound < 0 && upper_bound <=0)
+                reaction_string += ' <-- ';
+            else
+		reaction_string += ' --> ';
+	}
+        reaction_string += product_bits.join(' + ')
+        return reaction_string
+    }
+    
+    function genes_for_gene_reaction_rule(rule) {
+	/** Find genes in gene_reaction_rule string.
+
+	    Arguments
+	    ---------
+
+	    rule: A boolean string containing gene names, parentheses, AND's and
+	    OR's.
+
+	*/
+	genes = rule
+	    .replace(/(AND|OR|\(|\))/g, '')
+	    .split(' ')
+	    .filter(function(x) { return x != '' });
+	return genes;
+    }
+
+    function check_gene_reaction_rule(rule) {
+	/** Raise an error if the rule is invalid.
+
+	    Arguments
+	    ---------
+
+	    rule: A boolean string containing gene names, parentheses, AND's and
+	    OR's.
+
+	*/
+	// TODO check the rules
+	return;
+    }
+    
+    function evaluate_gene_reaction_rule(rule, gene_values) {
+	/** Return a value given the rule and gene_values object.
+
+	    Arguments
+	    ---------
+
+	    rule: A boolean string containing gene names, parentheses, AND's and
+	    OR's.
+
+	    gene_values: Object with gene_ids for keys and numbers for values.
+
+	*/
+	check_gene_reaction_rule(rule);
+	
+	for (var gene_id in gene_values) {
+	    rule = rule.replace(gene_id, gene_values[gene_id]);
+	}
+	rule = rule.replace(/([^\(\)]+)AND([^\(\)]+)/g, 'Math.min($1,$2)');
+	rule = rule.replace(/OR/g, '+');
+	try {
+	    value = eval(rule);
+	} catch (e) {
+	    throw new Error('Could not evaluate rule ' + rule + ': ' + e);
+	}
+	return value;
+    }
+    
+    // instance methods
+    function init(model_data) {
+	// reactions and metabolites
+	if (!(model_data.reactions && model_data.metabolites)) {
+	    throw new Error('Bad model data.');
+	    return;
+	}
+	this.reactions = {};
+	for (var i=0, l=model_data.reactions.length; i<l; i++) {
+	    var r = model_data.reactions[i],
+		the_id = r.id;
+	    this.reactions[the_id] = utils.clone(r);
+	    delete this.reactions[the_id].id;
+	}
+	this.metabolites = {};
+	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
+	    var r = model_data.metabolites[i],
+		the_id = r.id;
+	    this.metabolites[the_id] = utils.clone(r);
+	    delete this.metabolites[the_id].id;
+	}
+
+	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
+			  'gdp', 'h'];
+    }
+
+    function apply_reaction_data(reaction_data, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+	    
+	    apply_reaction_data overrides apply_gene_data.
+
+	*/
+
+	for (var reaction_id in this.reactions) {
+	    var reaction = this.reactions[reaction_id];
+	    if (reaction_data===null) {
+		reaction.data = null;
+		reaction.data_string = '';
+	    } else {
+		var d = (reaction_id in reaction_data ?
+			 reaction_data[reaction_id] : null),
+		    f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		reaction.data = f;
+		reaction.data_string = s;
+	    }
+	}
+    }
+
+    function apply_metabolite_data(metabolite_data, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+
+	 */
+	for (var metabolite_id in this.metabolites) {
+	    var metabolite = this.metabolites[metabolite_id];
+	    if (metabolite_data===null) {
+		metabolite.data = null;
+		metabolite.data_string = '';
+	    } else {
+		var d = (metabolite_id in metabolite_data ?
+			 metabolite_data[metabolite_id] : null),
+		    f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		metabolite.data = f;
+		metabolite.data_string = s;
+	    }
+	}
+    }
+
+    
+    function apply_gene_data(gene_data_obj, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+
+	    apply_gene_data overrides apply_reaction_data.
+
+	    Arguments
+	    ---------
+
+	    gene_data_obj: The gene data object, with the following style:
+
+	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+
+	    style: Gene styles array.
+
+	*/
+	for (var reaction_id in this.reactions) {
+	    // var gene = this.genes[gene_id],
+	    // 	reaction_ids = utils.
+	    if (gene_data===null) {
+		reaction.data = null;
+		reaction.data_string = '';
+	    } else {
+		var d = (reaction_id in gene_data_obj ?
+			 evaluate_gene_reaction_rule(gene_data_obj[reaction_id]) :
+			 null),
+		    f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		reaction.data = f;
+		reaction.data_string = s;
+	    }
+	}
+    }
+});
+
+define('data_styles',['utils', 'CobraModel'], function(utils, CobraModel) {
     return { import_and_check: import_and_check,
 	     text_for_data: text_for_data,
 	     float_for_data: float_for_data,
@@ -2255,8 +2513,30 @@ define('data_styles',["utils"], function(utils) {
 	     csv_converter: csv_converter
 	   };
 
-    function import_and_check(data, styles, name) {
-	if (data===null) return null;
+    function import_and_check(data, styles, name, all_reactions) {
+	/** Convert imported data to a style that can be applied to reactions
+	    and nodes.
+
+	    Arguments
+	    ---------
+
+	    data: The data object.
+
+	    styles: The styles option.
+
+	    name: Either 'reaction_data', 'metabolite_data', or 'gene_data'
+
+	    all_reactions: Required for name == 'gene_data'. Must include all
+	    GPRs for the map and model.
+
+	*/
+	
+	// check arguments
+	if (data===null)
+	    return null;
+	if (['reaction_data', 'metabolite_data', 'gene_data'].indexOf(name)==-1)
+	    throw new Error('Invalid name argument: ' + name);	
+
 	// make array
 	if (!(data instanceof Array)) {
 	    data = [data];
@@ -2269,11 +2549,37 @@ define('data_styles',["utils"], function(utils) {
 		return null;
 	    if (data.length==2) // && styles.indexOf('Diff')!=-1
 		return null;
-	    return console.warn('Bad data style: '+name);
+	    return console.warn('Bad data style: ' + name);
 	};
 	check();
 	data = utils.array_to_object(data);
+
+	if (name == 'gene_data') {
+	    if (all_reactions === undefined)
+		throw new Error('Must pass all_reactions argument for gene_data');
+	    data = align_gene_data_to_reactions(data, all_reactions);
+	}
+	
 	return data;
+    }
+
+    function align_gene_data_to_reactions(data, reactions) {
+	var aligned = {};
+	for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id],
+		this_gene_data = {}; 
+	    if (!('gene_reaction_rule' in reaction))
+		console.warn('No gene_reaction_rule for reaction ' % reaction_id);
+	    // save to aligned
+	    // get the genes
+	    var genes = CobraModel.genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
+	    genes.forEach(function(gene_id) {
+		this_gene_data[gene_id] = ((gene_id in data) ? data[gene_id] : null);
+	    });
+	    aligned[reaction_id] = { rule: reaction.gene_reaction_rule,
+				     genes: this_gene_data };
+	}
+	return aligned;
     }
 
     function float_for_data(d, styles, ignore_abs) {
@@ -10537,168 +10843,6 @@ define('DirectionArrow',["utils"], function(utils) {
     }
 });
 
-define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
-    /**
-     */
-
-    var CobraModel = utils.make_class();
-    // class methods
-    CobraModel.build_reaction_string = build_reaction_string;
-    // instance methods
-    CobraModel.prototype = { init: init,
-			     apply_reaction_data: apply_reaction_data,
-			     apply_metabolite_data: apply_metabolite_data,
-			     apply_gene_data: apply_gene_data };
-
-    return CobraModel;
-
-    // class methods
-    function build_reaction_string(stoichiometries, is_reversible,
-				   lower_bound, upper_bound) {
-	/** Return a reaction string for the given stoichiometries.
-
-	    Adapted from cobra.core.Reaction.build_reaction_string().
-
-	    Arguments
-	    ---------
-
-	    stoichiometries: An object with metabolites as keys and
-	    stoichiometries as values.
-
-	    is_reversible: Boolean. Whether the reaction is reversible.
-
-	    lower_bound: Reaction upper bound, to determine direction.
-
-	    upper_bound: Reaction lower bound, to determine direction.
-
-	*/
-
-	var format = function(number) {
-            if (number == 1)
-                return "";
-            return String(number) + " ";
-	}
-        var reactant_dict = {},
-            product_dict = {},
-            reactant_bits = [],
-            product_bits = [];
-	for (var the_metabolite in stoichiometries) {
-	    var coefficient = stoichiometries[the_metabolite];
-            if (coefficient > 0)
-                product_bits.push(format(coefficient) + the_metabolite);
-            else
-                reactant_bits.push(format(Math.abs(coefficient)) + the_metabolite);
-	}
-        reaction_string = reactant_bits.join(' + ');
-        if (is_reversible) {
-            reaction_string += ' <=> ';
-        } else {
-            if (lower_bound < 0 && upper_bound <=0)
-                reaction_string += ' <-- ';
-            else
-		reaction_string += ' --> ';
-	}
-        reaction_string += product_bits.join(' + ')
-        return reaction_string
-    }
-    
-    // instance methods
-    function init(model_data) {
-	// reactions and metabolites
-	if (!(model_data.reactions && model_data.metabolites)) {
-	    throw new Error('Bad model data.');
-	    return;
-	}
-	this.reactions = {};
-	for (var i=0, l=model_data.reactions.length; i<l; i++) {
-	    var r = model_data.reactions[i],
-		the_id = r.id;
-	    this.reactions[the_id] = utils.clone(r);
-	    delete this.reactions[the_id].id;
-	}
-	this.metabolites = {};
-	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
-	    var r = model_data.metabolites[i],
-		the_id = r.id;
-	    this.metabolites[the_id] = utils.clone(r);
-	    delete this.metabolites[the_id].id;
-	}
-
-	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
-			  'gdp', 'h'];
-    }
-
-    function apply_reaction_data(reaction_data, styles) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
-	    
-	    apply_reaction_data overrides apply_gene_data.
-
-	*/
-
-	for (var reaction_id in this.reactions) {
-	    var reaction = this.reactions[reaction_id];
-	    if (reaction_data===null) {
-		reaction.data = null;
-		reaction.data_string = '';
-	    } else {
-		var d = (reaction_id in reaction_data ?
-			 reaction_data[reaction_id] : null),
-		    f = data_styles.float_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles);
-		reaction.data = f;
-		reaction.data_string = s;
-	    }
-	}
-    }
-
-    function apply_metabolite_data(metabolite_data, styles) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
-
-	 */
-	for (var metabolite_id in this.metabolites) {
-	    var metabolite = this.metabolites[metabolite_id];
-	    if (metabolite_data===null) {
-		metabolite.data = null;
-		metabolite.data_string = '';
-	    } else {
-		var d = (metabolite_id in metabolite_data ?
-			 metabolite_data[metabolite_id] : null),
-		    f = data_styles.float_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles);
-		metabolite.data = f;
-		metabolite.data_string = s;
-	    }
-	}
-    }
-
-    
-    function apply_gene_data(gene_data, styles) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
-
-	    apply_gene_data overrides apply_reaction_data.
-
-	*/
-	for (var gene_id in this.genes) {
-	    // var gene = this.genes[gene_id],
-	    // 	reaction_ids = utils.
-	    if (gene_data===null) {
-		gene.data = null;
-		gene.data_string = '';
-	    } else {
-		var d = (gene_id in gene_data ?
-			 gene_data[gene_id] : null),
-		    f = data_styles.float_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles);
-		gene.data = f;
-		gene.data_string = s;
-	    }
-	}
-    }
-});
-
 define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'CallbackManager', 'draw', 'DirectionArrow', 'CobraModel'], function(utils, PlacedDiv, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow, CobraModel) {
     /**
      */
@@ -12523,11 +12667,10 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	// set up this callback manager
 	this.callback_manager = CallbackManager();
 
-	// load the model
-	this.load_model(this.model_data);
-
-	// load the map
-	this.load_map(this.map_data);
+	// load the model, map, and update data in both
+	this.load_model(this.model_data, false);
+	this.load_map(this.map_data, false);
+	this.update_data(true, true);
 	
 	// setting callbacks
 	var update = function(kind) {
@@ -12555,7 +12698,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
     }
 
     // Definitions
-    function load_model(model_data) {
+    function load_model(model_data, should_update_data) {
 	/** Load the cobra model from model data
 
 	    Arguments
@@ -12564,7 +12707,13 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    model_data: The data for a cobra model, to be passed to
 	    escher.CobraModel().
 
+	    should_update_data: (Boolean, default true) Whether the data in the
+	    model should be updated.
+
 	 */
+
+	if (should_update_data === undefined)
+	    should_update_data = true;
 	
 	// Check the cobra model
 	if (model_data === null) {
@@ -12576,12 +12725,13 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    // TODO this doesn't seem like the best solution
 	    if (this.map !== null && this.map !== undefined)
 		this.map.cobra_model = this.cobra_model;
-	    
-	    this.update_data(true, false);
+
+	    if (should_update_data)
+		this.update_data(true, false);
 	}
     }
 
-    function load_map(map_data) {
+    function load_map(map_data, should_update_data) {
 	/** Load a map for the loaded data. Also reloads most of the builder content.
 
 	    Arguments
@@ -12589,8 +12739,14 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
 	    map_data: The data for a map, to be passed to escher.Map.from_data().
 
+	    should_update_data: (Boolean, default true) Whether the data in the
+	    model should be updated.
+
 	 */
 
+	if (should_update_data === undefined)
+	    should_update_data = true;
+	
 	// Begin with some definitions
 	var selectable_click_enabled = true,
 	    shift_key_on = false;
@@ -12631,7 +12787,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	}
 
 	// set the data for the map
-	this.update_data(false, true);
+	if (should_update_data)
+	    this.update_data(false, true);
 
 	// set up the reaction input with complete.ly
 	this.reaction_input = BuildInput(this.options.selection, this.map,
@@ -12853,9 +13010,19 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
 	// gene data
 	if (update_gene_data) {
+	    // collect reactions from map and model
+	    var all_reactions = {};
+	    if (this.cobra_model !== null)
+		utils.extend(all_reactions, this.cobra_model.reactions);
+	    // extend, overwrite
+	    if (this.map !== null)
+		utils.extend(all_reactions, this.map.reactions, true);
+	    
+	    // this object has reaction keys and values containing associated genes
 	    data_object = data_styles.import_and_check(this.options.gene_data,
 						       this.options.gene_styles,
-						       'gene_data');
+						       'gene_data',
+						       all_reactions);
 	    
 	    // only update the model if gene data is applied to reactions
 	    if (update_model && has_evaluated_gene_data && this.cobra_model !== null) {
