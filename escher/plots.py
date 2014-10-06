@@ -204,7 +204,8 @@ class Builder(object):
                         'metabolite_size_range',
                         'metabolite_no_data_color',
                         'metabolite_no_data_size',
-                        'gene_data_rule',   # TODO propagate
+                        'gene_styles',
+                        'highlight_missing_color',
                         'quick_jump']
         def get_getter_setter(o):
             """Use a closure."""

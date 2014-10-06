@@ -1,9 +1,12 @@
-define(['utils', 'CobraModel'], function(utils, CobraModel) {
+define(['utils'], function(utils) {
     return { import_and_check: import_and_check,
 	     text_for_data: text_for_data,
 	     float_for_data: float_for_data,
 	     reverse_flux_for_data: reverse_flux_for_data,
-	     csv_converter: csv_converter
+	     gene_string_for_data: gene_string_for_data,
+	     csv_converter: csv_converter,
+ 	     genes_for_gene_reaction_rule: genes_for_gene_reaction_rule,
+	     evaluate_gene_reaction_rule: evaluate_gene_reaction_rule
 	   };
 
     function import_and_check(data, styles, name, all_reactions) {
@@ -54,25 +57,32 @@ define(['utils', 'CobraModel'], function(utils, CobraModel) {
 	}
 	
 	return data;
-    }
 
-    function align_gene_data_to_reactions(data, reactions) {
-	var aligned = {};
-	for (var reaction_id in reactions) {
-	    var reaction = reactions[reaction_id],
-		this_gene_data = {}; 
-	    if (!('gene_reaction_rule' in reaction))
-		console.warn('No gene_reaction_rule for reaction ' % reaction_id);
-	    // save to aligned
-	    // get the genes
-	    var genes = CobraModel.genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
-	    genes.forEach(function(gene_id) {
-		this_gene_data[gene_id] = ((gene_id in data) ? data[gene_id] : null);
-	    });
-	    aligned[reaction_id] = { rule: reaction.gene_reaction_rule,
-				     genes: this_gene_data };
+	// definitions
+	function align_gene_data_to_reactions(data, reactions) {
+	    var aligned = {},
+		null_val = [null];
+	    // make an array of nulls as the default
+	    for (var gene_id in data) {
+		null_val = data[gene_id].map(function() { return null; });
+		break;
+	    }
+	    for (var reaction_id in reactions) {
+		var reaction = reactions[reaction_id],
+		    this_gene_data = {}; 
+		if (!('gene_reaction_rule' in reaction))
+		    console.warn('No gene_reaction_rule for reaction ' % reaction_id);
+		// save to aligned
+		// get the genes
+		var genes = genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
+		genes.forEach(function(gene_id) {
+		    this_gene_data[gene_id] = ((gene_id in data) ? data[gene_id] : null_val);
+		});
+		aligned[reaction_id] = { rule: reaction.gene_reaction_rule,
+					 genes: this_gene_data };
+	    }
+	    return aligned;
 	}
-	return aligned;
     }
 
     function float_for_data(d, styles, ignore_abs) {
@@ -99,6 +109,29 @@ define(['utils', 'CobraModel'], function(utils, CobraModel) {
 	return true;
     }
 
+    function gene_string_for_data(rule, gene_values, styles) {
+	if (gene_values === null) return '';
+	var out = rule,
+	    format = d3.format('.3g');
+	for (var gene_id in gene_values) {
+	    var d = gene_values[gene_id],
+		f = float_for_data(d, styles, true);
+	    if (d.length==1) {
+		out = out.replace(gene_id, (gene_id + ' (' + null_or_d(f, format) + ')\n'));
+	    }
+	    if (d.length==2) {
+		throw new Error('Not implemented');
+	    }
+	}
+	out = out.replace(/\n\s*\)?\s*$/, ')');
+	return out;
+	
+	// definitions
+	function null_or_d(d, format) {
+	    return d===null ? 'nd' : format(d);
+	}
+    }
+    
     function text_for_data(d, styles) {
 	if (d===null)
 	    return null_or_d(null);
@@ -136,5 +169,119 @@ define(['utils', 'CobraModel'], function(utils, CobraModel) {
 		throw new Error('CSV file must have at least 2 columns');
 	});
 	return converted;
+    }
+    
+    function genes_for_gene_reaction_rule(rule) {
+	/** Find genes in gene_reaction_rule string.
+
+	    Arguments
+	    ---------
+
+	    rule: A boolean string containing gene names, parentheses, AND's and
+	    OR's.
+
+	*/
+	genes = rule
+	// remove ANDs and ORs, surrounded by space or parentheses
+	    .replace(/([\(\) ])(?:and|or)([\)\( ])/ig, '$1$2')
+	// remove parentheses
+	    .replace(/\(|\)/g, '')
+	// split on whitespace
+	    .split(' ')
+	    .filter(function(x) { return x != '' });
+	return genes;
+    }
+    
+    function evaluate_gene_reaction_rule(rule, gene_values) {
+	/** Return a value given the rule and gene_values object.
+
+	    With the current version, all negative values are converted to zero,
+	    OR's are sums and AND's are Min()'s.
+
+	    TODO Deal with multiple datasets, e.g. Diff.
+
+	    Arguments
+	    ---------
+
+	    rule: A boolean string containing gene names, parentheses, AND's and
+	    OR's.
+
+	    gene_values: Object with gene_ids for keys and numbers for values.
+
+	*/
+
+	var null_val = [null],
+	    l = 1;
+	// make an array of nulls as the default
+	for (var gene_id in gene_values) {
+	    null_val = gene_values[gene_id].map(function() { return null; });
+	    l = null_val.length;
+	    break;
+	}
+	
+	if (rule == '') return null_val;
+
+	// for each element in the arrays
+	var out = [];
+	for (var i=0; i<l; i++) {
+	    // get the rule
+	    var curr_val = rule;
+	    
+	    var all_null = true;
+	    for (var gene_id in gene_values) {
+		var val;
+		if (gene_values[gene_id][i] === null || gene_values[gene_id][i] < 0) {
+		    val = 0;
+		} else {
+		    val = gene_values[gene_id][i];
+		    all_null = false;
+		}
+		curr_val = curr_val.replace(new RegExp(gene_id, 'g'),  val);
+	    }
+	    if (all_null) {
+		out.push(null);
+		continue;
+	    }
+
+	    // recursively evaluate
+	    while (true) {
+		// arithemtic expressions
+		var new_curr_val = curr_val,
+		    // or's
+		    reg = /(^|\()[0-9+.\s]+\s+(or\s+[0-9+.\s]+)+(\)|$)/ig,
+		    matches = new_curr_val.match(reg);
+		if (matches !== null) {
+		    matches.forEach(function(match) {
+			// remove parentheses, and sum
+			var ev = match.replace(/[\(\)]/g, ''),
+			    nums = ev.split(/\s+or\s+/i).map(parseFloat),
+			    sum = nums.reduce(function(a, b) { return a + b;});
+			new_curr_val = new_curr_val.replace(match, sum);
+		    });
+		}
+		// and's
+		var reg = /(^|\()[0-9+.\s]+\s+(and\s+[0-9+.\s]+)+(\)|$)/ig,
+		    matches = new_curr_val.match(reg);
+		if (matches !== null) {
+		    matches.forEach(function(match) {
+			// remove parentheses, and find min
+			var ev = match.replace(/[\(\)]/g, ''),
+			    nums = ev.split(/\s+and\s+/i).map(parseFloat),
+			    min = Math.min.apply(null, nums);
+			new_curr_val = new_curr_val.replace(match, min);
+		    });
+		}
+		// break if there is no change
+		if (new_curr_val == curr_val)
+		    break;
+		curr_val = new_curr_val;
+	    } 
+	    // strict test for number
+	    var num = Number(curr_val);
+	    if (isNaN(num))
+		throw new Error('Could not evaluate ' + rule);
+	    out.push(num)
+	}
+	return out;	
     }
 });

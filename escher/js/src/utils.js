@@ -444,8 +444,18 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	var reader = new window.FileReader();
 	// Closure to capture the file information.
 	reader.onload = function(event) {
-	    var json = JSON.parse(event.target.result);
-	    callback(null, json);
+	    var result = event.target.result,
+		data;
+	    // try JSON
+	    try {
+		data = JSON.parse(result);
+	    } catch (e) {
+		// if it failed, return the error
+		callback(e, null);
+		return;
+	    }
+	    // if successful, return the data
+	    callback(null, data);
         };
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
@@ -479,19 +489,20 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 		// try JSON
 		try {
 		    data = JSON.parse(result);
-		    callback(null, data);
-		    return;
 		} catch (e) {
 		    errors = 'JSON error: ' + e;
+		    
+		    // try csv
+		    try {
+			data = csv_converter(d3.csv.parseRows(result));
+		    } catch (e) {
+			// if both failed, return the errors
+			callback(errors + '\nCSV error: ' + e, null);
+			return;
+		    }
 		}
-		// try csv
-		try {
-		    data = csv_converter(d3.csv.parseRows(result));
-		    callback(null, data);
-		    return;
-		} catch (e) {
-		    callback(errors + '\nCSV error: ' + e, null);
-		}
+		// if successful, return the data
+		callback(null, data);
             };
 	if (debug_event !== undefined && debug_event !== null) {
 	    console.warn('Debugging load_json_or_csv');

@@ -131,8 +131,9 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 		    this.set_option('reaction_styles', v);
 		else if (type=='metabolite')
 		    this.set_option('metabolite_styles', v);
-		else if (type=='gene')
+		else if (type=='gene') {
 		    this.set_option('gene_styles', v);
+		}
 	    }.bind(this));
 
 	    // push the defaults
@@ -305,7 +306,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 		is_not_first_clear = status_stream
 		    .scan(false, function(c, x) {
 			// first clear only
-			return (c==false && x=='clear');
+			return (c==false && (x=='accepted' || x=='rejected'));
 		    }).not(),
 		is_not_first_hold = status_stream
 		    .scan(false, function(c, x) {
@@ -322,7 +323,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 			    return c;
 			} else if (x[1]=='reject') {
 			    return [];
-			} else if (x[1]=='clear') {
+			} else if (x[1]=='rejected' || x[1]=='accepted') {
 			    return [x[0]];
 			} else {
 			    throw Error('bad status ' + x[1]);
@@ -469,12 +470,11 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     }
     function abandon_changes() {
 	this.status_bus.push('reject');
-	this.status_bus.push('clear');
-	// TODO this could be way faster if it did not trigger redrawing the map
+	this.status_bus.push('rejected');
 	this.force_update_bus.push(true);
     };
     function accept_changes() {
 	this.status_bus.push('accept');
-	this.status_bus.push('clear');
+	this.status_bus.push('accepted');
     };
 });

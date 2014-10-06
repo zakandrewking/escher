@@ -196,7 +196,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
 	    cobra_reactions = this.map.cobra_model.reactions,
 	    cobra_metabolites = this.map.cobra_model.metabolites,
 	    reactions = this.map.reactions,
-	    has_reaction_data = this.map.has_reaction_data,
+	    has_data_on_reactions = this.map.has_data_on_reactions,
 	    reaction_data = this.map.reaction_data,
 	    reaction_data_styles = this.map.reaction_data_styles;
         for (var reaction_id in cobra_reactions) {
@@ -212,7 +212,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
 		if (starting_from_scratch || metabolite_id==selected_node.bigg_id) {
 		    // don't add suggestions twice
 		    if (reaction_id in suggestions) continue;
-		    if (has_reaction_data) {
+		    if (has_data_on_reactions) {
 			suggestions[reaction_id] = { reaction_data: reaction.data,
 						     string: (reaction_id + ': ' +
 							      reaction.data_string) };
@@ -233,7 +233,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
         // Generate the array of reactions to suggest and sort it
 	var strings_to_display = [],
 	    suggestions_array = utils.make_array(suggestions, 'reaction_abbreviation');
-	if (has_reaction_data) {
+	if (has_data_on_reactions) {
 	    suggestions_array.sort(function(x, y) {
 		return Math.abs(y.reaction_data) - Math.abs(x.reaction_data);
 	    });

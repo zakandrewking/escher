@@ -134,28 +134,12 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	this.update_data(true, true);
 	
 	// setting callbacks
-	var update = function(kind) {
-	    this.update_data(true, true, kind);
-	}.bind(this);
-	this.settings.data_styles_stream['reaction']
-	    .onValue(function() { update('reaction'); });
-	this.settings.data_styles_stream['metabolite']
-	    .onValue(function() { update('metabolite'); });
-	// if evaluate_on_reactions gets turned off, then update reactions too
-	this.settings.data_styles_stream['gene']
-	    .onValue(function() { update(['reaction', 'gene']); });
-	this.settings.domain_stream['reaction']
-	    .onValue(function() { update('reaction'); });
-	this.settings.domain_stream['metabolite']
-	    .onValue(function() { update('metabolite'); });
-	this.settings.range_stream['reaction']['color']
-	    .onValue(function() { update('reaction'); });
-	this.settings.range_stream['metabolite']['color']
-	    .onValue(function() { update('metabolite'); });
-	this.settings.range_stream['reaction']['size']
-	    .onValue(function() { update('reaction'); });
-	this.settings.range_stream['metabolite']['size']
-	    .onValue(function() { update('metabolite'); });
+	// TODO enable atomic updates. Right now, every time
+	// the menu closes, every stream updates.
+	this.settings.status_bus
+	    .onValue(function(x) {
+		if (x == 'accepted') this.update_data(true, true);
+	    }.bind(this));
     }
 
     // Definitions
@@ -449,17 +433,15 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
 	// gene data overrides reaction data
 	var update_reaction_data = (kind.indexOf('reaction') != -1),
-	    update_gene_data = (kind.indexOf('gene') != -1),
-	    has_evaluated_gene_data = (this.options.gene_data !== null &&
-				       this.options.gene_styles.indexOf('evaluate_on_reactions') != -1);
+	    update_gene_data = (kind.indexOf('gene') != -1);
 
-	// reaction data 
+	// reaction data
 	if (update_reaction_data) {
 	    data_object = data_styles.import_and_check(this.options.reaction_data,
 						       this.options.reaction_styles,
 						       'reaction_data');
 	    // only update the model if there is not going to be gene data
-	    if (update_model && !has_evaluated_gene_data && this.cobra_model !== null) {
+	    if (update_model && this.cobra_model !== null) {
 		this.cobra_model.apply_reaction_data(data_object,
 						     this.options.reaction_styles);
 	    }
@@ -486,7 +468,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 						       all_reactions);
 	    
 	    // only update the model if gene data is applied to reactions
-	    if (update_model && has_evaluated_gene_data && this.cobra_model !== null) {
+	    if (update_model && this.cobra_model !== null) {
 		this.cobra_model.apply_gene_data(data_object,
 						 this.options.gene_styles);
 	    }
@@ -527,15 +509,18 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	var data_menu = ui.dropdown_menu(menu, 'Data')
 		.button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
 				   key: 'fn',
-				   fn: load_reaction_data_for_file.bind(this) },
+				   fn: load_reaction_data_for_file.bind(this),
+				   accept_csv: true },
 			  text: "Load reaction data" })
 		.button({ key: keys.clear_reaction_data,
 			  text: "Clear reaction data" })
-		.button({ input: { fn: load_metabolite_data_for_file.bind(this) },
+		.button({ input: { fn: load_metabolite_data_for_file.bind(this),
+				   accept_csv: true  },
 			  text: "Load metabolite data" })
 		.button({ key: keys.clear_metabolite_data,
 			  text: "Clear metabolite data" })
-		.button({ input: { fn: load_gene_data_for_file.bind(this) },
+		.button({ input: { fn: load_gene_data_for_file.bind(this),
+				   accept_csv: true  },
 			  text: "Load gene data" })
 		.button({ key: keys.clear_gene_data,
 			  text: "Clear gene data" })
@@ -759,6 +744,9 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 		this.map.set_status('Could not parse file as JSON or CSV', 2000);
 		return;
 	    }
+	    // turn off gene data
+	    if (data !== null)
+		this.settings.change_data_style('gene', 'evaluate_on_reactions', false);
 	    this.set_reaction_data(data);
 	}
 	function load_metabolite_data_for_file(error, data) {
@@ -775,6 +763,9 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 		this.map.set_status('Could not parse file as JSON or CSV', 2000);
 		return;
 	    }
+	    // turn on gene data
+	    if (data !== null)
+		this.settings.change_data_style('gene', 'evaluate_on_reactions', true);
 	    this.set_gene_data(data);
 	}
     }

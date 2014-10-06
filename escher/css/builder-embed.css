@@ -22,6 +22,12 @@
     cursor: default;
 }
 .reaction-label {
+    font-size: 30px;
+    fill: rgb(32, 32, 120);
+    text-rendering: optimizelegibility;
+}
+.gene-label {
+    font-size: 18px;
     fill: rgb(32, 32, 120);
     text-rendering: optimizelegibility;
 }

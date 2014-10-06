@@ -47,27 +47,27 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
         return;
     }
 
-    function update_reaction(update_selection, scale,
-			     cobra_model, drawn_nodes, 
-			     defs, 
-			     has_reaction_data, no_data_style,
-			     missing_component_color,
-			     reaction_data_styles, label_drag_behavior) {
+    function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
+			     defs, has_data_on_reactions, no_data_style,
+			     missing_component_color, reaction_data_styles,
+			     gene_data_styles, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale',
 			       'cobra_model',
 			       'drawn_nodes', 
 			       'defs',
-			       'has_reaction_data',
+			       'has_data_on_reactions',
 			       'no_data_style',
 			       'missing_component_color',
 			       'reaction_data_styles',
+			       'gene_data_styles',
 			       'label_drag_behavior']);
 
         // update reaction label
-        update_selection.select('.reaction-label')
-            .call(function(sel) { return update_reaction_label(sel, has_reaction_data,
+        update_selection.select('.reaction-label-group')
+            .call(function(sel) { return update_reaction_label(sel, has_data_on_reactions,
 							       reaction_data_styles,
+							       gene_data_styles,
 							       label_drag_behavior); });
 
 	// draw segments
@@ -76,7 +76,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 				   function(sel) { 
 				       return update_segment(sel, scale, cobra_model,
 							     drawn_nodes, defs, 
-							     has_reaction_data,
+							     has_data_on_reactions,
 							     no_data_style, missing_component_color,
 							     reaction_data_styles);
 				   },
@@ -130,8 +130,12 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
 	 */
 	
-        sel.append('text')
+        var group = sel.append('g')
+	    .attr('class', 'reaction-label-group');
+	group.append('text')
             .attr('class', 'reaction-label label');
+	group.append('g')
+	    .attr('class', 'gene-label-group');
 	    // .on('mouseover', function(d) {
 	    // 	d3.select(this).style('stroke-width', String(3)+'px');
 	    // 	d3.select(this.parentNode)
@@ -147,26 +151,51 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
     }
 
-    function update_reaction_label(sel, has_reaction_data, reaction_data_styles,
-				   label_drag_behavior, drawn_nodes) {
+    function update_reaction_label(sel, has_data_on_reactions, reaction_data_styles,
+				   gene_data_styles, label_drag_behavior, drawn_nodes) {
 	utils.check_undefined(arguments, ['sel',
-					  'has_reaction_data',
+					  'has_data_on_reactions',
 					  'reaction_data_styles',
+					  'gene_data_styles',
 					  'label_drag_behavior']);
 	
 	var decimal_format = d3.format('.4g');
-	sel.text(function(d) { 
-	    var t = d.bigg_id;
-	    if (has_reaction_data && reaction_data_styles.indexOf('text') != -1)
-		t += ' ' + d.data_string;
-	    return t;
-	}).attr('transform', function(d) {
+	sel.attr('transform', function(d) {
 	    return 'translate('+d.label_x+','+d.label_y+')';
-	}).style('font-size', function(d) {
-	    return String(30)+'px';
-        })
+	})
 	    .call(turn_off_drag)
 	    .call(label_drag_behavior);
+	sel.select('.reaction-label')
+	    .text(function(d) { 
+		var t = d.bigg_id;
+		if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
+		    t += ' ' + d.data_string;
+		return t;
+	    });
+	// gene label
+	var gene_g = sel.select('.gene-label-group')
+	    .selectAll('text')
+	    .data(function(d) {
+		var show_gene_string = (gene_data_styles.indexOf('text') != -1 &&
+					'gene_string' in d &&
+					d.gene_string !== null);
+		if (show_gene_string) {
+		    return d.gene_string.split('\n');
+		} else {
+		    return [];
+		}
+	    }, function(d) {
+		return d;
+	    });
+	gene_g.enter()
+	    .append('text')
+	    .attr('class', 'gene-label');
+	gene_g.attr('transform', function(d, i) {
+	    return 'translate(0, ' + (18 + 25*i) + ')';
+	})
+	    .text(function(d) { return d; });
+	gene_g.exit()
+	    .remove();
     }
 
     function create_segment(enter_selection) {
@@ -188,14 +217,14 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     
     function update_segment(update_selection, scale, cobra_model,
 			    drawn_nodes, defs, 
-			    has_reaction_data, no_data_style,
+			    has_data_on_reactions, no_data_style,
 			    missing_component_color, reaction_data_styles) {
 	utils.check_undefined(arguments, ['update_selection',
 					  'scale',
 					  'cobra_model',
 					  'drawn_nodes',
 					  'defs',
-					  'has_reaction_data',
+					  'has_data_on_reactions',
 					  'no_data_style',
 					  'missing_component_color',
 					  'reaction_data_styles']);
@@ -241,7 +270,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		    show_missing = (cobra_model !== null &&
 				    missing_component_color!==null &&
 				    !(reaction_id in cobra_model.reactions)),
-		    should_color_data = (has_reaction_data &&
+		    should_color_data = (has_data_on_reactions &&
 					 reaction_data_styles.indexOf('color') != -1);
 		if (show_missing) {
 		    return missing_component_color;
@@ -253,7 +282,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		return null;
 	    })
 	    .style('stroke-width', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('size') != -1) {
+		if (has_data_on_reactions && reaction_data_styles.indexOf('size') != -1) {
 		    var f = d.data;
 		    return f===null ? no_data_style['size'] : scale.reaction_size(f);
 		} else {
@@ -305,19 +334,20 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	// update arrowheads
 	arrowheads.attr('d', function(d) {
 	    var markerWidth = 20, markerHeight = 13;
-	    if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
-		var f = d.data;
-		markerWidth += (scale.reaction_size(f) - scale.reaction_size(0));
+	    if (has_data_on_reactions && reaction_data_styles.indexOf('size')!==-1) {
+		var f = d.data,
+		    size = (f===null ? no_data_style['size'] : scale.reaction_size(f));
+		markerWidth += (size - scale.reaction_size(0));
 	    }		    
 	    return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
 	}).attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
 	}).style('fill', function(d) {
-	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
+	    if (has_data_on_reactions && reaction_data_styles.indexOf('color')!==-1) {
 		if (d.show_arrowhead_flux) {
 		    // show the flux
 		    var f = d.data;
-		    return scale.reaction_color(f===null ? 0 : f);
+		    return f===null ? no_data_style['color'] : scale.reaction_color(f);
 		} else {
 		    // if the arrowhead is not filled because it is reversed
 		    return '#FFFFFF';
@@ -326,10 +356,10 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    // default fill color
 	    return null;
 	}).style('stroke', function(d) {
-	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
+	    if (has_data_on_reactions && reaction_data_styles.indexOf('color')!==-1) {
 		// show the flux color in the stroke whether or not the fill is present
 		var f = d.data;
-		return scale.reaction_color(f===null ? 0 : f);
+		return f===null ? no_data_style['color'] : scale.reaction_color(f);
 	    }
 	    // default stroke color
 	    return null;
@@ -418,12 +448,12 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    .attr('class', 'node-label label');
     }
 
-    function update_node(update_selection, scale, has_metabolite_data,
+    function update_node(update_selection, scale, has_data_on_nodes,
 			 metabolite_data_styles, no_data_style,
 			 click_fn, mouseover_fn, mouseout_fn,
 			 drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
-			      ['update_selection', 'scale', 'has_metabolite_data',
+			      ['update_selection', 'scale', 'has_data_on_nodes',
 			       'no_data_style', 'metabolite_data_styles',
 			       'click_fn', 'mouseover_fn', 'mouseout_fn',
 			       'drag_behavior', 'label_drag_behavior']);
@@ -436,7 +466,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
             })
 	    .attr('r', function(d) {
 		if (d.node_type == 'metabolite') {
-		    var should_scale = (has_metabolite_data &&
+		    var should_scale = (has_data_on_nodes &&
 					metabolite_data_styles.indexOf('size') != -1);
 		    if (should_scale) {
 			var f = d.data;
@@ -450,7 +480,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    })
 	    .style('fill', function(d) {
 		if (d.node_type=='metabolite') {
-		    var should_color_data = (has_metabolite_data &&
+		    var should_color_data = (has_data_on_nodes &&
 					     metabolite_data_styles.indexOf('color') != -1);
 		    if (should_color_data) {
 			var f = d.data;
@@ -478,7 +508,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
             })
             .text(function(d) {	
 		var t = d.bigg_id;
-		if (has_metabolite_data && metabolite_data_styles.indexOf('text') != -1)
+		if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
 	    })

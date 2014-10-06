@@ -9,19 +9,6 @@ describe('CobraModel', function() {
 	s = escher.CobraModel.build_reaction_string(r, false, -10, 0);
 	expect(s).toEqual('atp + amp <-- 2 adp');
     });
-
-    it('genes_for_gene_reaction_rule', function() {
-	var rule = '(G1 AND G2) OR (G3 AND G4)';
-	expect(escher.CobraModel.genes_for_gene_reaction_rule(rule))
-	    .toEqual(['G1', 'G2', 'G3', 'G4']);
-    });
-
-    it('evaluate_gene_reaction_rule', function() {
-	var rule = '(G1 AND G2) OR (G3 AND G4)',
-	    gene_values = {G1: 5, G2: 2, G3: 10, G4: 11},
-	    out = escher.CobraModel.evaluate_gene_reaction_rule(rule, gene_values);
-	expect(out).toEqual(12);
-    });
     
     it("New model", function () {
 	var model_data = {reactions: {}};

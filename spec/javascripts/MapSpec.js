@@ -55,8 +55,8 @@ describe('Map', function() {
     
     it("Load without and with reaction/metabolite data", function () {
 	// no data
-	expect(map.has_reaction_data).toBe(false);
-	expect(map.has_metabolite_data).toBe(false);
+	expect(map.has_data_on_reactions).toBe(false);
+	expect(map.has_data_on_nodes).toBe(false);
 	
 	// data
 	map.apply_reaction_data_to_map({'GLCtex': 100});
@@ -80,7 +80,7 @@ describe('Map', function() {
 	    }
 	}
 
-	expect(map.has_reaction_data).toBe(true);
+	expect(map.has_data_on_reactions).toBe(true);
 	for (var id in map.reactions) {
 	    var reaction = map.reactions[id];
 	    if (reaction.bigg_id=='GLCtex') {
@@ -91,7 +91,7 @@ describe('Map', function() {
 	    }
 	}
 
-	expect(map.has_metabolite_data).toBe(true);
+	expect(map.has_data_on_nodes).toBe(true);
 	for (var id in map.nodes) {
 	    var node = map.nodes[id];
 	    if (node.bigg_id_compartmentalized=='glc__D_p')
@@ -101,13 +101,13 @@ describe('Map', function() {
 	}
 	
 	map.apply_reaction_data_to_map(null);
-	expect(map.has_reaction_data).toBe(false);
+	expect(map.has_data_on_reactions).toBe(false);
 	for (var id in map.reactions) {
 	    expect(map.reactions[id].data).toBe(null);
 	}
 
 	map.apply_metabolite_data_to_map(null);
-	expect(map.has_metabolite_data).toBe(false);
+	expect(map.has_data_on_nodes).toBe(false);
 	for (var id in map.nodes) {
 	    expect(map.nodes[id].data).toBe(null);
 	}
@@ -128,7 +128,7 @@ describe('Map', function() {
 	    model = escher.CobraModel(model_data);
 	map.cobra_model = model;
 
-	map.new_reaction_from_scratch('acc_tpp', {x: 0, y: 0}, 0);
+	map.new_reaction_from_scratch('acc_tpp', {x: 0, y: 0, gene_reaction_rule: ''}, 0);
 
 	// find the reaction
 	var match = null;
@@ -138,7 +138,7 @@ describe('Map', function() {
 		match = r;
 	}
 	expect(match).not.toBe(null);
-	// gene reactin rule
+	// gene reaction rule
 	expect(match.gene_reaction_rule)
 	    .toEqual(model_data.reactions[0].gene_reaction_rule);
 	

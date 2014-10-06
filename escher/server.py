@@ -119,7 +119,7 @@ class BuilderHandler(BaseHandler):
                                       args[0]))
         # array args
         for a in ['quick_jump', 'metabolite_size_range', 'metabolite_color_range',
-                  'reaction_size_range', 'reaction_color_range']:
+                  'reaction_size_range', 'reaction_color_range', 'gene_styles']:
             args = self.get_arguments(a + '[]')
             if len(args) > 0:
                 builder_kwargs[a] = args

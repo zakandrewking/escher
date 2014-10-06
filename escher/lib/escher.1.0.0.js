@@ -1237,8 +1237,18 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	var reader = new window.FileReader();
 	// Closure to capture the file information.
 	reader.onload = function(event) {
-	    var json = JSON.parse(event.target.result);
-	    callback(null, json);
+	    var result = event.target.result,
+		data;
+	    // try JSON
+	    try {
+		data = JSON.parse(result);
+	    } catch (e) {
+		// if it failed, return the error
+		callback(e, null);
+		return;
+	    }
+	    // if successful, return the data
+	    callback(null, data);
         };
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
@@ -1272,19 +1282,20 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 		// try JSON
 		try {
 		    data = JSON.parse(result);
-		    callback(null, data);
-		    return;
 		} catch (e) {
 		    errors = 'JSON error: ' + e;
+		    
+		    // try csv
+		    try {
+			data = csv_converter(d3.csv.parseRows(result));
+		    } catch (e) {
+			// if both failed, return the errors
+			callback(errors + '\nCSV error: ' + e, null);
+			return;
+		    }
 		}
-		// try csv
-		try {
-		    data = csv_converter(d3.csv.parseRows(result));
-		    callback(null, data);
-		    return;
-		} catch (e) {
-		    callback(errors + '\nCSV error: ' + e, null);
-		}
+		// if successful, return the data
+		callback(null, data);
             };
 	if (debug_event !== undefined && debug_event !== null) {
 	    console.warn('Debugging load_json_or_csv');
@@ -1978,8 +1989,18 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	var reader = new window.FileReader();
 	// Closure to capture the file information.
 	reader.onload = function(event) {
-	    var json = JSON.parse(event.target.result);
-	    callback(null, json);
+	    var result = event.target.result,
+		data;
+	    // try JSON
+	    try {
+		data = JSON.parse(result);
+	    } catch (e) {
+		// if it failed, return the error
+		callback(e, null);
+		return;
+	    }
+	    // if successful, return the data
+	    callback(null, data);
         };
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
@@ -2013,19 +2034,20 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 		// try JSON
 		try {
 		    data = JSON.parse(result);
-		    callback(null, data);
-		    return;
 		} catch (e) {
 		    errors = 'JSON error: ' + e;
+		    
+		    // try csv
+		    try {
+			data = csv_converter(d3.csv.parseRows(result));
+		    } catch (e) {
+			// if both failed, return the errors
+			callback(errors + '\nCSV error: ' + e, null);
+			return;
+		    }
 		}
-		// try csv
-		try {
-		    data = csv_converter(d3.csv.parseRows(result));
-		    callback(null, data);
-		    return;
-		} catch (e) {
-		    callback(errors + '\nCSV error: ' + e, null);
-		}
+		// if successful, return the data
+		callback(null, data);
             };
 	if (debug_event !== undefined && debug_event !== null) {
 	    console.warn('Debugging load_json_or_csv');
@@ -2273,244 +2295,478 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     }    
 });
 
-define('CobraModel',["utils", "data_styles"], function(utils, data_styles) {
-    /**
+define('PlacedDiv',['utils'], function(utils) {
+    /** A container to position an html div to match the coordinates of a SVG element.
+
      */
 
-    var CobraModel = utils.make_class();
-    // class methods
-    CobraModel.build_reaction_string = build_reaction_string;
-    CobraModel.genes_for_gene_reaction_rule = genes_for_gene_reaction_rule;
-    CobraModel.evaluate_gene_reaction_rule = evaluate_gene_reaction_rule;
+    var PlacedDiv = utils.make_class();
     // instance methods
-    CobraModel.prototype = { init: init,
-			     apply_reaction_data: apply_reaction_data,
-			     apply_metabolite_data: apply_metabolite_data,
-			     apply_gene_data: apply_gene_data };
+    PlacedDiv.prototype = { init: init,
+			    is_visible: is_visible,
+			    place: place,
+			    hide: hide };
+    return PlacedDiv;
 
-    return CobraModel;
+    // definitions
+    function init(div, map, displacement) {
+	// make the input box
+	this.div = div;
 
-    // class methods
-    function build_reaction_string(stoichiometries, is_reversible,
-				   lower_bound, upper_bound) {
-	/** Return a reaction string for the given stoichiometries.
+	if (displacement===undefined)
+	    displacement = {x: 0, y: 0};
+	this.displacement = displacement;
 
-	    Adapted from cobra.core.Reaction.build_reaction_string().
-
-	    Arguments
-	    ---------
-
-	    stoichiometries: An object with metabolites as keys and
-	    stoichiometries as values.
-
-	    is_reversible: Boolean. Whether the reaction is reversible.
-
-	    lower_bound: Reaction upper bound, to determine direction.
-
-	    upper_bound: Reaction lower bound, to determine direction.
-
-	*/
-
-	var format = function(number) {
-            if (number == 1)
-                return "";
-            return String(number) + " ";
-	}
-        var reactant_dict = {},
-            product_dict = {},
-            reactant_bits = [],
-            product_bits = [];
-	for (var the_metabolite in stoichiometries) {
-	    var coefficient = stoichiometries[the_metabolite];
-            if (coefficient > 0)
-                product_bits.push(format(coefficient) + the_metabolite);
-            else
-                reactant_bits.push(format(Math.abs(coefficient)) + the_metabolite);
-	}
-        reaction_string = reactant_bits.join(' + ');
-        if (is_reversible) {
-            reaction_string += ' <=> ';
-        } else {
-            if (lower_bound < 0 && upper_bound <=0)
-                reaction_string += ' <-- ';
-            else
-		reaction_string += ' --> ';
-	}
-        reaction_string += product_bits.join(' + ')
-        return reaction_string
-    }
-    
-    function genes_for_gene_reaction_rule(rule) {
-	/** Find genes in gene_reaction_rule string.
-
-	    Arguments
-	    ---------
-
-	    rule: A boolean string containing gene names, parentheses, AND's and
-	    OR's.
-
-	*/
-	genes = rule
-	    .replace(/(AND|OR|\(|\))/g, '')
-	    .split(' ')
-	    .filter(function(x) { return x != '' });
-	return genes;
+	this.map = map;
     }
 
-    function check_gene_reaction_rule(rule) {
-	/** Raise an error if the rule is invalid.
-
-	    Arguments
-	    ---------
-
-	    rule: A boolean string containing gene names, parentheses, AND's and
-	    OR's.
-
-	*/
-	// TODO check the rules
-	return;
-    }
-    
-    function evaluate_gene_reaction_rule(rule, gene_values) {
-	/** Return a value given the rule and gene_values object.
-
-	    Arguments
-	    ---------
-
-	    rule: A boolean string containing gene names, parentheses, AND's and
-	    OR's.
-
-	    gene_values: Object with gene_ids for keys and numbers for values.
-
-	*/
-	check_gene_reaction_rule(rule);
-	
-	for (var gene_id in gene_values) {
-	    rule = rule.replace(gene_id, gene_values[gene_id]);
-	}
-	rule = rule.replace(/([^\(\)]+)AND([^\(\)]+)/g, 'Math.min($1,$2)');
-	rule = rule.replace(/OR/g, '+');
-	try {
-	    value = eval(rule);
-	} catch (e) {
-	    throw new Error('Could not evaluate rule ' + rule + ': ' + e);
-	}
-	return value;
-    }
-    
-    // instance methods
-    function init(model_data) {
-	// reactions and metabolites
-	if (!(model_data.reactions && model_data.metabolites)) {
-	    throw new Error('Bad model data.');
-	    return;
-	}
-	this.reactions = {};
-	for (var i=0, l=model_data.reactions.length; i<l; i++) {
-	    var r = model_data.reactions[i],
-		the_id = r.id;
-	    this.reactions[the_id] = utils.clone(r);
-	    delete this.reactions[the_id].id;
-	}
-	this.metabolites = {};
-	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
-	    var r = model_data.metabolites[i],
-		the_id = r.id;
-	    this.metabolites[the_id] = utils.clone(r);
-	    delete this.metabolites[the_id].id;
-	}
-
-	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
-			  'gdp', 'h'];
+    function is_visible() {
+	return this.div.style('display') != 'none';
     }
 
-    function apply_reaction_data(reaction_data, styles) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
-	    
-	    apply_reaction_data overrides apply_gene_data.
-
-	*/
-
-	for (var reaction_id in this.reactions) {
-	    var reaction = this.reactions[reaction_id];
-	    if (reaction_data===null) {
-		reaction.data = null;
-		reaction.data_string = '';
-	    } else {
-		var d = (reaction_id in reaction_data ?
-			 reaction_data[reaction_id] : null),
-		    f = data_styles.float_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles);
-		reaction.data = f;
-		reaction.data_string = s;
-	    }
-	}
-    }
-
-    function apply_metabolite_data(metabolite_data, styles) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
+    function place(coords) {
+	/** Position the html div to match the given SVG coordinates.
 
 	 */
-	for (var metabolite_id in this.metabolites) {
-	    var metabolite = this.metabolites[metabolite_id];
-	    if (metabolite_data===null) {
-		metabolite.data = null;
-		metabolite.data_string = '';
-	    } else {
-		var d = (metabolite_id in metabolite_data ?
-			 metabolite_data[metabolite_id] : null),
-		    f = data_styles.float_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles);
-		metabolite.data = f;
-		metabolite.data_string = s;
-	    }
-	}
+	// show the input
+	this.div.style('display', null);
+
+	// move the new input
+	var window_translate = this.map.zoom_container.window_translate,
+	    window_scale = this.map.zoom_container.window_scale,
+	    map_size = this.map.get_size(),
+	    left = Math.max(20,
+			    Math.min(map_size.width - 270,
+				     (window_scale * coords.x + window_translate.x - this.displacement.x))),
+	    top = Math.max(20,
+			   Math.min(map_size.height - 40,
+				    (window_scale * coords.y + window_translate.y - this.displacement.y)));
+	this.div.style('position', 'absolute')
+	    .style('display', 'block')
+	    .style('left', left+'px')
+	    .style('top', top+'px');
     }
 
-    
-    function apply_gene_data(gene_data_obj, styles) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
-
-	    apply_gene_data overrides apply_reaction_data.
-
-	    Arguments
-	    ---------
-
-	    gene_data_obj: The gene data object, with the following style:
-
-	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
-
-	    style: Gene styles array.
-
-	*/
-	for (var reaction_id in this.reactions) {
-	    // var gene = this.genes[gene_id],
-	    // 	reaction_ids = utils.
-	    if (gene_data===null) {
-		reaction.data = null;
-		reaction.data_string = '';
-	    } else {
-		var d = (reaction_id in gene_data_obj ?
-			 evaluate_gene_reaction_rule(gene_data_obj[reaction_id]) :
-			 null),
-		    f = data_styles.float_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles);
-		reaction.data = f;
-		reaction.data_string = s;
-	    }
-	}
+    function hide() {
+	this.div.style('display', 'none');
     }
 });
 
-define('data_styles',['utils', 'CobraModel'], function(utils, CobraModel) {
+/**
+ * complete.ly 1.0.0
+ * MIT Licensing
+ * Copyright (c) 2013 Lorenzo Puccetti
+ * 
+ * This Software shall be used for doing good things, not bad things.
+ * 
+**/  
+define('lib/complete.ly',[],function() {
+return function(container, config) {
+    config = config || {};
+    config.fontSize =                       config.fontSize   || '16px';
+    config.fontFamily =                     config.fontFamily || 'sans-serif';
+    config.promptInnerHTML =                config.promptInnerHTML || ''; 
+    config.color =                          config.color || '#333';
+    config.hintColor =                      config.hintColor || '#aaa';
+    config.backgroundColor =                config.backgroundColor || '#fff';
+    config.dropDownBorderColor =            config.dropDownBorderColor || '#aaa';
+    config.dropDownZIndex =                 config.dropDownZIndex || '100'; // to ensure we are in front of everybody
+    config.dropDownOnHoverBackgroundColor = config.dropDownOnHoverBackgroundColor || '#ddd';
+    
+    var txtInput = document.createElement('input');
+    txtInput.type ='text';
+    txtInput.spellcheck = false; 
+    txtInput.style.fontSize =        config.fontSize;
+    txtInput.style.fontFamily =      config.fontFamily;
+    txtInput.style.color =           config.color;
+    txtInput.style.backgroundColor = config.backgroundColor;
+    txtInput.style.width = '100%';
+    txtInput.style.outline = '0';
+    txtInput.style.border =  '0';
+    txtInput.style.margin =  '0';
+    txtInput.style.padding = '0';
+    
+    var txtHint = txtInput.cloneNode(); 
+    txtHint.disabled='';        
+    txtHint.style.position = 'absolute';
+    txtHint.style.top =  '0';
+    txtHint.style.left = '0';
+    txtHint.style.borderColor = 'transparent';
+    txtHint.style.boxShadow =   'none';
+    txtHint.style.color = config.hintColor;
+    
+    txtInput.style.backgroundColor ='transparent';
+    txtInput.style.verticalAlign = 'top';
+    txtInput.style.position = 'relative';
+    
+    var wrapper = document.createElement('div');
+    wrapper.style.position = 'relative';
+    wrapper.style.outline = '0';
+    wrapper.style.border =  '0';
+    wrapper.style.margin =  '0';
+    wrapper.style.padding = '0';
+    
+    var prompt = document.createElement('div');
+    prompt.style.position = 'absolute';
+    prompt.style.outline = '0';
+    prompt.style.margin =  '0';
+    prompt.style.padding = '0';
+    prompt.style.border =  '0';
+    prompt.style.fontSize =   config.fontSize;
+    prompt.style.fontFamily = config.fontFamily;
+    prompt.style.color =           config.color;
+    prompt.style.backgroundColor = config.backgroundColor;
+    prompt.style.top = '0';
+    prompt.style.left = '0';
+    prompt.style.overflow = 'hidden';
+    prompt.innerHTML = config.promptInnerHTML;
+    prompt.style.background = 'transparent';
+    if (document.body === undefined) {
+        throw 'document.body is undefined. The library was wired up incorrectly.';
+    }
+    document.body.appendChild(prompt);            
+    var w = prompt.getBoundingClientRect().right; // works out the width of the prompt.
+    wrapper.appendChild(prompt);
+    prompt.style.visibility = 'visible';
+    prompt.style.left = '-'+w+'px';
+    wrapper.style.marginLeft= w+'px';
+    
+    wrapper.appendChild(txtHint);
+    wrapper.appendChild(txtInput);
+    
+    var dropDown = document.createElement('div');
+    dropDown.style.position = 'absolute';
+    dropDown.style.visibility = 'hidden';
+    dropDown.style.outline = '0';
+    dropDown.style.margin =  '0';
+    dropDown.style.padding = '0';  
+    dropDown.style.textAlign = 'left';
+    dropDown.style.fontSize =   config.fontSize;      
+    dropDown.style.fontFamily = config.fontFamily;
+    dropDown.style.backgroundColor = config.backgroundColor;
+    dropDown.style.zIndex = config.dropDownZIndex; 
+    dropDown.style.cursor = 'default';
+    dropDown.style.borderStyle = 'solid';
+    dropDown.style.borderWidth = '1px';
+    dropDown.style.borderColor = config.dropDownBorderColor;
+    dropDown.style.overflowX= 'hidden';
+    dropDown.style.whiteSpace = 'pre';
+    dropDown.style.overflowY = 'scroll';  // note: this might be ugly when the scrollbar is not required. however in this way the width of the dropDown takes into account
+    
+    
+    var createDropDownController = function(elem) {
+        var rows = [];
+        var ix = 0;
+        var oldIndex = -1;
+        
+        var onMouseOver =  function() { this.style.outline = '1px solid #ddd'; }
+        var onMouseOut =   function() { this.style.outline = '0'; }
+        var onMouseDown =  function() { p.hide(); p.onmouseselection(this.__hint); }
+        
+        var p = {
+            hide :  function() { elem.style.visibility = 'hidden'; }, 
+            refresh : function(token, array) {
+                elem.style.visibility = 'hidden';
+                ix = 0;
+                elem.innerHTML ='';
+                var vph = (window.innerHeight || document.documentElement.clientHeight);
+                var rect = elem.parentNode.getBoundingClientRect();
+                var distanceToTop = rect.top - 6;                        // heuristic give 6px 
+                var distanceToBottom = vph - rect.bottom -6;  // distance from the browser border.
+                
+                rows = [];
+                for (var i=0;i<array.length;i++) {
+                    if (array[i].indexOf(token)!==0) { continue; }
+                    var divRow =document.createElement('div');
+                    divRow.style.color = config.color;
+                    divRow.onmouseover = onMouseOver; 
+                    divRow.onmouseout =  onMouseOut;
+                    divRow.onmousedown = onMouseDown; 
+                    divRow.__hint =    array[i];
+                    divRow.innerHTML = token+'<b>'+array[i].substring(token.length)+'</b>';
+                    rows.push(divRow);
+                    elem.appendChild(divRow);
+                }
+                if (rows.length===0) {
+                    return; // nothing to show.
+                }
+                if (rows.length===1 && token === rows[0].__hint) {
+                    return; // do not show the dropDown if it has only one element which matches what we have just displayed.
+                }
+                
+                if (rows.length<2) return; 
+                p.highlight(0);
+                
+                if (distanceToTop > distanceToBottom*3) {        // Heuristic (only when the distance to the to top is 4 times more than distance to the bottom
+                    elem.style.maxHeight =  distanceToTop+'px';  // we display the dropDown on the top of the input text
+                    elem.style.top ='';
+                    elem.style.bottom ='100%';
+                } else {
+                    elem.style.top = '100%';  
+                    elem.style.bottom = '';
+                    elem.style.maxHeight =  distanceToBottom+'px';
+                }
+                elem.style.visibility = 'visible';
+            },
+            highlight : function(index) {
+                if (oldIndex !=-1 && rows[oldIndex]) { 
+                    rows[oldIndex].style.backgroundColor = config.backgroundColor;
+                }
+                rows[index].style.backgroundColor = config.dropDownOnHoverBackgroundColor; // <-- should be config
+                oldIndex = index;
+            },
+            move : function(step) { // moves the selection either up or down (unless it's not possible) step is either +1 or -1.
+                if (elem.style.visibility === 'hidden')             return ''; // nothing to move if there is no dropDown. (this happens if the user hits escape and then down or up)
+                if (ix+step === -1 || ix+step === rows.length) return rows[ix].__hint; // NO CIRCULAR SCROLLING. 
+                ix+=step; 
+                p.highlight(ix);
+                return rows[ix].__hint;//txtShadow.value = uRows[uIndex].__hint ;
+            },
+            onmouseselection : function() {} // it will be overwritten. 
+        };
+        return p;
+    }
+    
+    var dropDownController = createDropDownController(dropDown);
+    
+    dropDownController.onmouseselection = function(text) {
+        txtInput.value = txtHint.value = leftSide+text; 
+        rs.onChange(txtInput.value); // <-- forcing it.
+        registerOnTextChangeOldValue = txtInput.value; // <-- ensure that mouse down will not show the dropDown now.
+        setTimeout(function() { txtInput.focus(); },0);  // <-- I need to do this for IE 
+    }
+    
+    wrapper.appendChild(dropDown);
+    container.appendChild(wrapper);
+    
+    var spacer; 
+    var leftSide; // <-- it will contain the leftSide part of the textfield (the bit that was already autocompleted)
+    
+    
+    function calculateWidthForText(text) {
+        if (spacer === undefined) { // on first call only.
+            spacer = document.createElement('span'); 
+            spacer.style.visibility = 'hidden';
+            spacer.style.position = 'fixed';
+            spacer.style.outline = '0';
+            spacer.style.margin =  '0';
+            spacer.style.padding = '0';
+            spacer.style.border =  '0';
+            spacer.style.left = '0';
+            spacer.style.whiteSpace = 'pre';
+            spacer.style.fontSize =   config.fontSize;
+            spacer.style.fontFamily = config.fontFamily;
+            spacer.style.fontWeight = 'normal';
+            document.body.appendChild(spacer);    
+        }        
+        
+        // Used to encode an HTML string into a plain text.
+        // taken from http://stackoverflow.com/questions/1219860/javascript-jquery-html-encoding
+        spacer.innerHTML = String(text).replace(/&/g, '&amp;')
+                                       .replace(/"/g, '&quot;')
+                                       .replace(/'/g, '&#39;')
+                                       .replace(/</g, '&lt;')
+                                       .replace(/>/g, '&gt;');
+        return spacer.getBoundingClientRect().right;
+    }
+    
+    
+    var rs = { 
+        onArrowDown : function() {},               // defaults to no action.
+        onArrowUp :   function() {},               // defaults to no action.
+        onEnter :     function() {},               // defaults to no action.
+        onTab :       function() {},               // defaults to no action.
+        onChange:     function() { rs.repaint() }, // defaults to repainting.
+        startFrom:    0,
+        options:      [],
+        wrapper : wrapper,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        input :  txtInput,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations) 
+        hint  :  txtHint,       // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        dropDown :  dropDown,         // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
+        prompt : prompt,
+        setText : function(text) {
+            txtHint.value = text;
+            txtInput.value = text; 
+        },
+        getText : function() {
+        	return txtInput.value; 
+        },
+        hideDropDown : function() {
+        	dropDownController.hide();
+        },
+        repaint : function() {
+            var text = txtInput.value;
+            var startFrom =  rs.startFrom; 
+            var options =    rs.options;
+            var optionsLength = options.length; 
+            
+            // breaking text in leftSide and token.
+            var token = text.substring(startFrom);
+            leftSide =  text.substring(0,startFrom);
+            
+            // updating the hint. 
+            txtHint.value ='';
+            for (var i=0;i<optionsLength;i++) {
+                var opt = options[i];
+                if (opt.indexOf(token)===0) {         // <-- how about upperCase vs. lowercase
+                    txtHint.value = leftSide +opt;
+                    break;
+                }
+            }
+            
+            // moving the dropDown and refreshing it.
+            dropDown.style.left = calculateWidthForText(leftSide)+'px';
+            dropDownController.refresh(token, rs.options);
+        }
+    };
+    
+    var registerOnTextChangeOldValue;
+
+    /**
+     * Register a callback function to detect changes to the content of the input-type-text.
+     * Those changes are typically followed by user's action: a key-stroke event but sometimes it might be a mouse click.
+    **/
+    var registerOnTextChange = function(txt, callback) {
+        registerOnTextChangeOldValue = txt.value;
+        var handler = function() {
+            var value = txt.value;
+            if (registerOnTextChangeOldValue !== value) {
+                registerOnTextChangeOldValue = value;
+                callback(value);
+            }
+        };
+
+        //  
+        // For user's actions, we listen to both input events and key up events
+        // It appears that input events are not enough so we defensively listen to key up events too.
+        // source: http://help.dottoro.com/ljhxklln.php
+        //
+        // The cost of listening to three sources should be negligible as the handler will invoke callback function
+        // only if the text.value was effectively changed. 
+        //  
+        // 
+        if (txt.addEventListener) {
+            txt.addEventListener("input",  handler, false);
+            txt.addEventListener('keyup',  handler, false);
+            txt.addEventListener('change', handler, false);
+        } else { // is this a fair assumption: that attachEvent will exist ?
+            txt.attachEvent('oninput', handler); // IE<9
+            txt.attachEvent('onkeyup', handler); // IE<9
+            txt.attachEvent('onchange',handler); // IE<9
+        }
+    };
+    
+    
+    registerOnTextChange(txtInput,function(text) { // note the function needs to be wrapped as API-users will define their onChange
+        rs.onChange(text);
+    });
+    
+    
+    var keyDownHandler = function(e) {
+        e = e || window.event;
+        var keyCode = e.keyCode;
+        
+        if (keyCode == 33) { return; } // page up (do nothing)
+        if (keyCode == 34) { return; } // page down (do nothing);
+        
+        // if (keyCode == 27) { //escape
+        //     dropDownController.hide();
+        //     txtHint.value = txtInput.value; // ensure that no hint is left.
+        //     txtInput.focus(); 
+        //     return; 
+        // }
+        
+        if (keyCode == 39 || keyCode == 35 || keyCode == 9) { // right,  end, tab  (autocomplete triggered)
+        	if (keyCode == 9) { // for tabs we need to ensure that we override the default behaviour: move to the next focusable HTML-element 
+           	    e.preventDefault();
+                e.stopPropagation();
+                if (txtHint.value.length == 0) {
+                	rs.onTab(); // tab was called with no action.
+                	            // users might want to re-enable its default behaviour or handle the call somehow.
+                }
+            }
+            if (txtHint.value.length > 0) { // if there is a hint
+                dropDownController.hide();
+                txtInput.value = txtHint.value;
+                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
+                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
+                                                          // for example imagine the array contains the following words: bee, beef, beetroot
+                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
+                if (hasTextChanged) {
+                    rs.onChange(txtInput.value); // <-- forcing it.
+                }
+            }
+            return; 
+        }
+        
+        if (keyCode == 13) {       // enter  (autocomplete triggered)
+            if (txtHint.value.length == 0) { // if there is a hint
+                rs.onEnter();
+            } else {
+                var wasDropDownHidden = (dropDown.style.visibility == 'hidden');
+                dropDownController.hide();
+                
+                if (wasDropDownHidden) {
+                    txtHint.value = txtInput.value; // ensure that no hint is left.
+                    txtInput.focus();
+                    rs.onEnter();    
+                    return; 
+                }
+                
+                txtInput.value = txtHint.value;
+                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
+                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
+                                                          // for example imagine the array contains the following words: bee, beef, beetroot
+                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
+                if (hasTextChanged) {
+                    rs.onChange(txtInput.value); // <-- forcing it.
+                }
+                
+            }
+            return; 
+        }
+        
+        if (keyCode == 40) {     // down
+            var m = dropDownController.move(+1);
+            if (m == '') { rs.onArrowDown(); }
+            txtHint.value = leftSide+m;
+            return; 
+        } 
+            
+        if (keyCode == 38 ) {    // up
+            var m = dropDownController.move(-1);
+            if (m == '') { rs.onArrowUp(); }
+            txtHint.value = leftSide+m;
+            e.preventDefault();
+            e.stopPropagation();
+            return; 
+        }
+            
+        // it's important to reset the txtHint on key down.
+        // think: user presses a letter (e.g. 'x') and never releases... you get (xxxxxxxxxxxxxxxxx)
+        // and you would see still the hint
+        txtHint.value =''; // resets the txtHint. (it might be updated onKeyUp)
+        
+    };
+    
+    if (txtInput.addEventListener) {
+        txtInput.addEventListener("keydown",  keyDownHandler, false);
+    } else { // is this a fair assumption: that attachEvent will exist ?
+        txtInput.attachEvent('onkeydown', keyDownHandler); // IE<9
+    }
+    return rs;
+}
+});
+
+define('data_styles',['utils'], function(utils) {
     return { import_and_check: import_and_check,
 	     text_for_data: text_for_data,
 	     float_for_data: float_for_data,
 	     reverse_flux_for_data: reverse_flux_for_data,
-	     csv_converter: csv_converter
+	     gene_string_for_data: gene_string_for_data,
+	     csv_converter: csv_converter,
+ 	     genes_for_gene_reaction_rule: genes_for_gene_reaction_rule,
+	     evaluate_gene_reaction_rule: evaluate_gene_reaction_rule
 	   };
 
     function import_and_check(data, styles, name, all_reactions) {
@@ -2561,25 +2817,32 @@ define('data_styles',['utils', 'CobraModel'], function(utils, CobraModel) {
 	}
 	
 	return data;
-    }
 
-    function align_gene_data_to_reactions(data, reactions) {
-	var aligned = {};
-	for (var reaction_id in reactions) {
-	    var reaction = reactions[reaction_id],
-		this_gene_data = {}; 
-	    if (!('gene_reaction_rule' in reaction))
-		console.warn('No gene_reaction_rule for reaction ' % reaction_id);
-	    // save to aligned
-	    // get the genes
-	    var genes = CobraModel.genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
-	    genes.forEach(function(gene_id) {
-		this_gene_data[gene_id] = ((gene_id in data) ? data[gene_id] : null);
-	    });
-	    aligned[reaction_id] = { rule: reaction.gene_reaction_rule,
-				     genes: this_gene_data };
+	// definitions
+	function align_gene_data_to_reactions(data, reactions) {
+	    var aligned = {},
+		null_val = [null];
+	    // make an array of nulls as the default
+	    for (var gene_id in data) {
+		null_val = data[gene_id].map(function() { return null; });
+		break;
+	    }
+	    for (var reaction_id in reactions) {
+		var reaction = reactions[reaction_id],
+		    this_gene_data = {}; 
+		if (!('gene_reaction_rule' in reaction))
+		    console.warn('No gene_reaction_rule for reaction ' % reaction_id);
+		// save to aligned
+		// get the genes
+		var genes = genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
+		genes.forEach(function(gene_id) {
+		    this_gene_data[gene_id] = ((gene_id in data) ? data[gene_id] : null_val);
+		});
+		aligned[reaction_id] = { rule: reaction.gene_reaction_rule,
+					 genes: this_gene_data };
+	    }
+	    return aligned;
 	}
-	return aligned;
     }
 
     function float_for_data(d, styles, ignore_abs) {
@@ -2606,6 +2869,29 @@ define('data_styles',['utils', 'CobraModel'], function(utils, CobraModel) {
 	return true;
     }
 
+    function gene_string_for_data(rule, gene_values, styles) {
+	if (gene_values === null) return '';
+	var out = rule,
+	    format = d3.format('.3g');
+	for (var gene_id in gene_values) {
+	    var d = gene_values[gene_id],
+		f = float_for_data(d, styles, true);
+	    if (d.length==1) {
+		out = out.replace(gene_id, (gene_id + ' (' + null_or_d(f, format) + ')\n'));
+	    }
+	    if (d.length==2) {
+		throw new Error('Not implemented');
+	    }
+	}
+	out = out.replace(/\n\s*\)?\s*$/, ')');
+	return out;
+	
+	// definitions
+	function null_or_d(d, format) {
+	    return d===null ? 'nd' : format(d);
+	}
+    }
+    
     function text_for_data(d, styles) {
 	if (d===null)
 	    return null_or_d(null);
@@ -2643,6 +2929,120 @@ define('data_styles',['utils', 'CobraModel'], function(utils, CobraModel) {
 		throw new Error('CSV file must have at least 2 columns');
 	});
 	return converted;
+    }
+    
+    function genes_for_gene_reaction_rule(rule) {
+	/** Find genes in gene_reaction_rule string.
+
+	    Arguments
+	    ---------
+
+	    rule: A boolean string containing gene names, parentheses, AND's and
+	    OR's.
+
+	*/
+	genes = rule
+	// remove ANDs and ORs, surrounded by space or parentheses
+	    .replace(/([\(\) ])(?:and|or)([\)\( ])/ig, '$1$2')
+	// remove parentheses
+	    .replace(/\(|\)/g, '')
+	// split on whitespace
+	    .split(' ')
+	    .filter(function(x) { return x != '' });
+	return genes;
+    }
+    
+    function evaluate_gene_reaction_rule(rule, gene_values) {
+	/** Return a value given the rule and gene_values object.
+
+	    With the current version, all negative values are converted to zero,
+	    OR's are sums and AND's are Min()'s.
+
+	    TODO Deal with multiple datasets, e.g. Diff.
+
+	    Arguments
+	    ---------
+
+	    rule: A boolean string containing gene names, parentheses, AND's and
+	    OR's.
+
+	    gene_values: Object with gene_ids for keys and numbers for values.
+
+	*/
+
+	var null_val = [null],
+	    l = 1;
+	// make an array of nulls as the default
+	for (var gene_id in gene_values) {
+	    null_val = gene_values[gene_id].map(function() { return null; });
+	    l = null_val.length;
+	    break;
+	}
+	
+	if (rule == '') return null_val;
+
+	// for each element in the arrays
+	var out = [];
+	for (var i=0; i<l; i++) {
+	    // get the rule
+	    var curr_val = rule;
+	    
+	    var all_null = true;
+	    for (var gene_id in gene_values) {
+		var val;
+		if (gene_values[gene_id][i] === null || gene_values[gene_id][i] < 0) {
+		    val = 0;
+		} else {
+		    val = gene_values[gene_id][i];
+		    all_null = false;
+		}
+		curr_val = curr_val.replace(new RegExp(gene_id, 'g'),  val);
+	    }
+	    if (all_null) {
+		out.push(null);
+		continue;
+	    }
+
+	    // recursively evaluate
+	    while (true) {
+		// arithemtic expressions
+		var new_curr_val = curr_val,
+		    // or's
+		    reg = /(^|\()[0-9+.\s]+\s+(or\s+[0-9+.\s]+)+(\)|$)/ig,
+		    matches = new_curr_val.match(reg);
+		if (matches !== null) {
+		    matches.forEach(function(match) {
+			// remove parentheses, and sum
+			var ev = match.replace(/[\(\)]/g, ''),
+			    nums = ev.split(/\s+or\s+/i).map(parseFloat),
+			    sum = nums.reduce(function(a, b) { return a + b;});
+			new_curr_val = new_curr_val.replace(match, sum);
+		    });
+		}
+		// and's
+		var reg = /(^|\()[0-9+.\s]+\s+(and\s+[0-9+.\s]+)+(\)|$)/ig,
+		    matches = new_curr_val.match(reg);
+		if (matches !== null) {
+		    matches.forEach(function(match) {
+			// remove parentheses, and find min
+			var ev = match.replace(/[\(\)]/g, ''),
+			    nums = ev.split(/\s+and\s+/i).map(parseFloat),
+			    min = Math.min.apply(null, nums);
+			new_curr_val = new_curr_val.replace(match, min);
+		    });
+		}
+		// break if there is no change
+		if (new_curr_val == curr_val)
+		    break;
+		curr_val = new_curr_val;
+	    } 
+	    // strict test for number
+	    var num = Number(curr_val);
+	    if (isNaN(num))
+		throw new Error('Could not evaluate ' + rule);
+	    out.push(num)
+	}
+	return out;	
     }
 });
 
@@ -2695,27 +3095,27 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
         return;
     }
 
-    function update_reaction(update_selection, scale,
-			     cobra_model, drawn_nodes, 
-			     defs, 
-			     has_reaction_data, no_data_style,
-			     missing_component_color,
-			     reaction_data_styles, label_drag_behavior) {
+    function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
+			     defs, has_data_on_reactions, no_data_style,
+			     missing_component_color, reaction_data_styles,
+			     gene_data_styles, label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale',
 			       'cobra_model',
 			       'drawn_nodes', 
 			       'defs',
-			       'has_reaction_data',
+			       'has_data_on_reactions',
 			       'no_data_style',
 			       'missing_component_color',
 			       'reaction_data_styles',
+			       'gene_data_styles',
 			       'label_drag_behavior']);
 
         // update reaction label
-        update_selection.select('.reaction-label')
-            .call(function(sel) { return update_reaction_label(sel, has_reaction_data,
+        update_selection.select('.reaction-label-group')
+            .call(function(sel) { return update_reaction_label(sel, has_data_on_reactions,
 							       reaction_data_styles,
+							       gene_data_styles,
 							       label_drag_behavior); });
 
 	// draw segments
@@ -2724,7 +3124,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 				   function(sel) { 
 				       return update_segment(sel, scale, cobra_model,
 							     drawn_nodes, defs, 
-							     has_reaction_data,
+							     has_data_on_reactions,
 							     no_data_style, missing_component_color,
 							     reaction_data_styles);
 				   },
@@ -2778,8 +3178,12 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 
 	 */
 	
-        sel.append('text')
+        var group = sel.append('g')
+	    .attr('class', 'reaction-label-group');
+	group.append('text')
             .attr('class', 'reaction-label label');
+	group.append('g')
+	    .attr('class', 'gene-label-group');
 	    // .on('mouseover', function(d) {
 	    // 	d3.select(this).style('stroke-width', String(3)+'px');
 	    // 	d3.select(this.parentNode)
@@ -2795,26 +3199,51 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 
     }
 
-    function update_reaction_label(sel, has_reaction_data, reaction_data_styles,
-				   label_drag_behavior, drawn_nodes) {
+    function update_reaction_label(sel, has_data_on_reactions, reaction_data_styles,
+				   gene_data_styles, label_drag_behavior, drawn_nodes) {
 	utils.check_undefined(arguments, ['sel',
-					  'has_reaction_data',
+					  'has_data_on_reactions',
 					  'reaction_data_styles',
+					  'gene_data_styles',
 					  'label_drag_behavior']);
 	
 	var decimal_format = d3.format('.4g');
-	sel.text(function(d) { 
-	    var t = d.bigg_id;
-	    if (has_reaction_data && reaction_data_styles.indexOf('text') != -1)
-		t += ' ' + d.data_string;
-	    return t;
-	}).attr('transform', function(d) {
+	sel.attr('transform', function(d) {
 	    return 'translate('+d.label_x+','+d.label_y+')';
-	}).style('font-size', function(d) {
-	    return String(30)+'px';
-        })
+	})
 	    .call(turn_off_drag)
 	    .call(label_drag_behavior);
+	sel.select('.reaction-label')
+	    .text(function(d) { 
+		var t = d.bigg_id;
+		if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
+		    t += ' ' + d.data_string;
+		return t;
+	    });
+	// gene label
+	var gene_g = sel.select('.gene-label-group')
+	    .selectAll('text')
+	    .data(function(d) {
+		var show_gene_string = (gene_data_styles.indexOf('text') != -1 &&
+					'gene_string' in d &&
+					d.gene_string !== null);
+		if (show_gene_string) {
+		    return d.gene_string.split('\n');
+		} else {
+		    return [];
+		}
+	    }, function(d) {
+		return d;
+	    });
+	gene_g.enter()
+	    .append('text')
+	    .attr('class', 'gene-label');
+	gene_g.attr('transform', function(d, i) {
+	    return 'translate(0, ' + (18 + 25*i) + ')';
+	})
+	    .text(function(d) { return d; });
+	gene_g.exit()
+	    .remove();
     }
 
     function create_segment(enter_selection) {
@@ -2836,14 +3265,14 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
     
     function update_segment(update_selection, scale, cobra_model,
 			    drawn_nodes, defs, 
-			    has_reaction_data, no_data_style,
+			    has_data_on_reactions, no_data_style,
 			    missing_component_color, reaction_data_styles) {
 	utils.check_undefined(arguments, ['update_selection',
 					  'scale',
 					  'cobra_model',
 					  'drawn_nodes',
 					  'defs',
-					  'has_reaction_data',
+					  'has_data_on_reactions',
 					  'no_data_style',
 					  'missing_component_color',
 					  'reaction_data_styles']);
@@ -2889,7 +3318,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 		    show_missing = (cobra_model !== null &&
 				    missing_component_color!==null &&
 				    !(reaction_id in cobra_model.reactions)),
-		    should_color_data = (has_reaction_data &&
+		    should_color_data = (has_data_on_reactions &&
 					 reaction_data_styles.indexOf('color') != -1);
 		if (show_missing) {
 		    return missing_component_color;
@@ -2901,7 +3330,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 		return null;
 	    })
 	    .style('stroke-width', function(d) {
-		if (has_reaction_data && reaction_data_styles.indexOf('size') != -1) {
+		if (has_data_on_reactions && reaction_data_styles.indexOf('size') != -1) {
 		    var f = d.data;
 		    return f===null ? no_data_style['size'] : scale.reaction_size(f);
 		} else {
@@ -2953,19 +3382,20 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	// update arrowheads
 	arrowheads.attr('d', function(d) {
 	    var markerWidth = 20, markerHeight = 13;
-	    if (has_reaction_data && reaction_data_styles.indexOf('size')!==-1) {
-		var f = d.data;
-		markerWidth += (scale.reaction_size(f) - scale.reaction_size(0));
+	    if (has_data_on_reactions && reaction_data_styles.indexOf('size')!==-1) {
+		var f = d.data,
+		    size = (f===null ? no_data_style['size'] : scale.reaction_size(f));
+		markerWidth += (size - scale.reaction_size(0));
 	    }		    
 	    return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
 	}).attr('transform', function(d) {
 	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
 	}).style('fill', function(d) {
-	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
+	    if (has_data_on_reactions && reaction_data_styles.indexOf('color')!==-1) {
 		if (d.show_arrowhead_flux) {
 		    // show the flux
 		    var f = d.data;
-		    return scale.reaction_color(f===null ? 0 : f);
+		    return f===null ? no_data_style['color'] : scale.reaction_color(f);
 		} else {
 		    // if the arrowhead is not filled because it is reversed
 		    return '#FFFFFF';
@@ -2974,10 +3404,10 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	    // default fill color
 	    return null;
 	}).style('stroke', function(d) {
-	    if (has_reaction_data && reaction_data_styles.indexOf('color')!==-1) {
+	    if (has_data_on_reactions && reaction_data_styles.indexOf('color')!==-1) {
 		// show the flux color in the stroke whether or not the fill is present
 		var f = d.data;
-		return scale.reaction_color(f===null ? 0 : f);
+		return f===null ? no_data_style['color'] : scale.reaction_color(f);
 	    }
 	    // default stroke color
 	    return null;
@@ -3066,12 +3496,12 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	    .attr('class', 'node-label label');
     }
 
-    function update_node(update_selection, scale, has_metabolite_data,
+    function update_node(update_selection, scale, has_data_on_nodes,
 			 metabolite_data_styles, no_data_style,
 			 click_fn, mouseover_fn, mouseout_fn,
 			 drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
-			      ['update_selection', 'scale', 'has_metabolite_data',
+			      ['update_selection', 'scale', 'has_data_on_nodes',
 			       'no_data_style', 'metabolite_data_styles',
 			       'click_fn', 'mouseover_fn', 'mouseout_fn',
 			       'drag_behavior', 'label_drag_behavior']);
@@ -3084,7 +3514,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
             })
 	    .attr('r', function(d) {
 		if (d.node_type == 'metabolite') {
-		    var should_scale = (has_metabolite_data &&
+		    var should_scale = (has_data_on_nodes &&
 					metabolite_data_styles.indexOf('size') != -1);
 		    if (should_scale) {
 			var f = d.data;
@@ -3098,7 +3528,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	    })
 	    .style('fill', function(d) {
 		if (d.node_type=='metabolite') {
-		    var should_color_data = (has_metabolite_data &&
+		    var should_color_data = (has_data_on_nodes &&
 					     metabolite_data_styles.indexOf('color') != -1);
 		    if (should_color_data) {
 			var f = d.data;
@@ -3126,7 +3556,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
             })
             .text(function(d) {	
 		var t = d.bigg_id;
-		if (has_metabolite_data && metabolite_data_styles.indexOf('text') != -1)
+		if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
 	    })
@@ -8306,13 +8736,13 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	has_cobra_model: has_cobra_model,
 	apply_reaction_data_to_map: apply_reaction_data_to_map,
 	apply_reaction_data_to_reactions: apply_reaction_data_to_reactions,
-	update_reaction_data_domain: update_reaction_data_domain,
 	apply_metabolite_data_to_map: apply_metabolite_data_to_map,
 	apply_metabolite_data_to_nodes: apply_metabolite_data_to_nodes,
-	update_metabolite_data_domain: update_metabolite_data_domain,
 	apply_gene_data_to_map: apply_gene_data_to_map,
 	apply_gene_data_to_reactions: apply_gene_data_to_reactions,
-	update_gene_data_domain: update_gene_data_domain,
+	// data domains
+	update_reaction_data_domain: update_reaction_data_domain,
+	update_node_data_domain: update_node_data_domain,
 	// zoom
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
@@ -8391,14 +8821,19 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	this.callback_manager = new CallbackManager();
 
 	// data
-	this.has_reaction_data = false;
-	this.has_metabolite_data = false;
+	this.has_data_on_reactions = false;
+	this.has_data_on_nodes = false;
 	
 	this.nodes = {};
 	this.reactions = {};
 	this.beziers = {};
 	this.text_labels = {};
 
+	// update data with null to populate data-specific attributes
+	this.apply_reaction_data_to_map(null);
+	this.apply_metabolite_data_to_map(null);
+	this.apply_gene_data_to_map(null);
+	
 	// rotation mode off
 	this.rotation_on = false;
 
@@ -8486,6 +8921,11 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	}
 	map.largest_ids.segments = largest_segment_id;
 
+	// update data with null to populate data-specific attributes
+	map.apply_reaction_data_to_map(null);
+	map.apply_metabolite_data_to_map(null);
+	map.apply_gene_data_to_map(null);
+		
 	return map;
 
 	// definitions
@@ -8562,6 +9002,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	// reaction_data onto existing map reactions
 	this.apply_reaction_data_to_map(null);
 	this.apply_metabolite_data_to_map(null);
+	this.apply_gene_data_to_map(null);
 	this.draw_everything();
     }
     function has_cobra_model() {
@@ -8630,11 +9071,12 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 					this.cobra_model,
 					this.nodes,
 					this.defs,
-					this.has_reaction_data,
+					this.has_data_on_reactions,
 					{ color: this.settings.get_option('reaction_no_data_color'),
 					  size: this.settings.get_option('reaction_no_data_size') },
 					this.settings.get_option('highlight_missing'),
 					this.settings.get_option('reaction_styles'),
+					this.settings.get_option('gene_styles'),
 					this.behavior.reaction_label_drag);
 	}.bind(this);
 
@@ -8718,7 +9160,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	    update_fn = function(sel) {
 		return draw.update_node(sel,
 					this.scale,
-					this.has_metabolite_data,
+					this.has_data_on_nodes,
 					this.settings.get_option('metabolite_styles'),
 					{ color: this.settings.get_option('metabolite_no_data_color'),
 					  size: this.settings.get_option('metabolite_no_data_size') },
@@ -8874,6 +9316,12 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	/**  Returns True if the scale has changed.
 
 	 */
+
+	// don't mess with it if the gene data is applied
+	var gene_styles = this.settings.get_option('gene_styles');
+	if (gene_styles.indexOf('evaluate_on_reactions') != -1)
+	    return false;
+	
 	if (data === null) {	    
 	    for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id];
@@ -8886,7 +9334,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	    }
 
 	    // remember
-	    this.has_reaction_data = false;
+	    this.has_data_on_reactions = false;
 	    
 	    return false;
 	}
@@ -8911,11 +9359,195 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	}
 
 	// remember
-	this.has_reaction_data = true;
+	this.has_data_on_reactions = true;
 
 	// if auto_domain
 	return this.update_reaction_data_domain();
     }
+    function apply_metabolite_data_to_map(data) {
+	/**  Returns True if the scale has changed.
+
+	 */
+	return this.apply_metabolite_data_to_nodes(this.nodes, data);
+    }
+    function apply_metabolite_data_to_nodes(nodes, data) {
+	/**  Returns True if the scale has changed.
+
+	 */
+	if (data === null) {
+	    for (var node_id in nodes) {
+		nodes[node_id].data = null;
+		nodes[node_id].data_string = '';
+	    }
+
+	    // remember
+	    this.has_data_on_nodes = false;
+	    
+	    return false;
+	}
+	
+	// grab the data
+	var styles = this.settings.get_option('metabolite_styles');
+	for (var node_id in nodes) {
+	    var node = nodes[node_id],
+		d = (node.bigg_id in data ? data[node.bigg_id] : null),
+		f = data_styles.float_for_data(d, styles),
+		s = data_styles.text_for_data(d, styles);
+	    node.data = f;
+	    node.data_string = s;
+	}
+
+	// remember
+	this.has_data_on_nodes = true; 
+	
+	// if auto_domain
+	return this.update_node_data_domain();
+    }
+
+
+    function apply_gene_data_to_map(gene_data_obj) {
+	/** Returns True if the scale has changed.
+
+	    Arguments
+	    ---------
+
+	    gene_data_obj: The gene data object, with the following style:
+
+	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+
+	 */
+	return this.apply_gene_data_to_reactions(this.reactions, gene_data_obj);
+    }
+    function apply_gene_data_to_reactions(reactions, gene_data_obj) {
+	/** Returns True if the scale has changed.
+
+	    Arguments
+	    ---------
+
+	    reactions: The reactions to update.
+	    
+	    gene_data_obj: The gene data object, with the following style:
+
+	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+
+	 */
+
+
+	// only change gene_string when the gene data is not applied
+	var gene_styles = this.settings.get_option('gene_styles'),
+	    evaluate_on_reactions = (gene_styles.indexOf('evaluate_on_reactions') != -1);
+	
+	if (gene_data_obj === null) {	    
+	    for (var reaction_id in reactions) {
+		var reaction = reactions[reaction_id];
+		if (evaluate_on_reactions) {
+		    reaction.data = null;
+		    reaction.data_string = '';
+		    reaction.reverse_flux = false;
+		    for (var segment_id in reaction.segments) {
+			var segment = reaction.segments[segment_id];
+			segment.data = null;
+		    }
+		}
+		reaction.gene_string = '';
+	    }
+
+	    // remember
+	    if (evaluate_on_reactions)
+		this.has_data_on_reactions = false;
+	    
+	    return false;
+	}
+
+	// get the null val
+	var null_val = [null];
+	// make an array of nulls as the default
+	for (var reaction_id in gene_data_obj) {
+	    for (var gene_id in gene_data_obj[reaction_id].genes) {
+		null_val = gene_data_obj[reaction_id].genes[gene_id]
+		    .map(function() { return null; });
+		break;
+	    }
+	    break;
+	}
+	
+	// apply the datasets to the reactions
+	var styles = this.settings.get_option('gene_styles');
+	for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id];
+	    // find the data
+	    var d, rule, gene_values;
+	    if (reaction_id in gene_data_obj) {
+		rule = gene_data_obj[reaction_id].rule;
+		gene_values = gene_data_obj[reaction_id].genes;
+		d = data_styles.evaluate_gene_reaction_rule(rule, gene_values);
+	    } else {
+		rule = '';
+		gene_values = {};
+		d = null_val;
+	    }
+	    if (evaluate_on_reactions) {
+		var f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		reaction.data = f;
+		reaction.data_string = s;
+		reaction.reverse_flux = false;
+		// apply to the segments
+		for (var segment_id in reaction.segments) {
+		    var segment = reaction.segments[segment_id];
+		    segment.data = reaction.data;
+		    segment.reverse_flux = reaction.reverse_flux;
+		}
+	    }
+	    // always update the gene string
+	    reaction.gene_string = data_styles.gene_string_for_data(rule, gene_values, styles);
+	}
+
+	// remember
+	if (evaluate_on_reactions)
+	    this.has_data_on_reactions = true;
+
+	// if auto_domain
+	return this.update_reaction_data_domain();
+    }
+
+    // ------------------------------------------------
+    // Data domains
+    
+    function update_node_data_domain() {
+	/**  Returns True if the scale has changed.
+
+	 */
+	
+	// avoid an infinite loop
+	if (this.settings.get_option('auto_metabolite_domain')) return false;
+
+	// default min and max
+	var vals = [];
+	for (var node_id in this.nodes) {
+	    var node = this.nodes[node_id];
+	    if (node.data !== null)
+		vals.push(node.data);
+	} 
+	var old_domain = this.settings.get_option('metabolite_color_domain'),
+	    new_domain, min, max;
+	if (vals.length > 0) {
+	    if (this.settings.get_option('metabolite_styles').indexOf('abs') != -1) {
+		// if using absolute value reaction style
+		vals = vals.map(function(x) { return Math.abs(x); });
+	    }
+	    min = Math.min.apply(null, vals),
+	    max = Math.max.apply(null, vals);
+	} else {
+	    min = 0;
+	    max = 0;
+	}
+	new_domain = [0, min, max].sort();
+	this.settings.set_domain('metabolite', new_domain);
+	// compare arrays
+	return !utils.compare_arrays(old_domain, new_domain);
+    }
+    
     function update_reaction_data_domain() {
 	/**  Returns True if the scale has changed.
 
@@ -8950,85 +9582,6 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	this.settings.set_domain('reaction', new_domain);
 	// compare arrays
 	return !utils.compare_arrays(old_domain, new_domain);
-    }
-    function apply_metabolite_data_to_map(data) {
-	/**  Returns True if the scale has changed.
-
-	 */
-	return this.apply_metabolite_data_to_nodes(this.nodes, data);
-    }
-    function apply_metabolite_data_to_nodes(nodes, data) {
-	/**  Returns True if the scale has changed.
-
-	 */
-	if (data === null) {
-	    for (var node_id in nodes) {
-		nodes[node_id].data = null;
-		nodes[node_id].data_string = '';
-	    }
-
-	    // remember
-	    this.has_metabolite_data = false;
-	    
-	    return false;
-	}
-	
-	// grab the data
-	var styles = this.settings.get_option('metabolite_styles');
-	for (var node_id in nodes) {
-	    var node = nodes[node_id],
-		d = (node.bigg_id in data ? data[node.bigg_id] : null),
-		f = data_styles.float_for_data(d, styles),
-		s = data_styles.text_for_data(d, styles);
-	    node.data = f;
-	    node.data_string = s;
-	}
-
-	// remember
-	this.has_metabolite_data = true; 
-	
-	// if auto_domain
-	return this.update_metabolite_data_domain();
-    }
-    function update_metabolite_data_domain() {
-	/**  Returns True if the scale has changed.
-
-	 */
-	
-	// avoid an infinite loop
-	if (this.settings.get_option('auto_metabolite_domain')) return false;
-
-	// default min and max
-	var vals = [];
-	for (var node_id in this.nodes) {
-	    var node = this.nodes[node_id];
-	    if (node.data !== null)
-		vals.push(node.data);
-	} 
-	var old_domain = this.settings.get_option('metabolite_color_domain'),
-	    new_domain, min, max;
-	if (vals.length > 0) {
-	    if (this.settings.get_option('metabolite_styles').indexOf('abs') != -1) {
-		// if using absolute value reaction style
-		vals = vals.map(function(x) { return Math.abs(x); });
-	    }
-	    min = Math.min.apply(null, vals),
-	    max = Math.max.apply(null, vals);
-	} else {
-	    min = 0;
-	    max = 0;
-	}
-	new_domain = [0, min, max].sort();
-	this.settings.set_domain('metabolite', new_domain);
-	// compare arrays
-	return !utils.compare_arrays(old_domain, new_domain);
-    }
-
-    function apply_gene_data_to_map() {
-    }
-    function apply_gene_data_to_reactions() {
-    }
-    function update_gene_data_domain() {
     }
 
     // ---------------------------------------------------------------------
@@ -9250,10 +9803,10 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 		this.delete_text_label_data(Object.keys(selected_text_labels));
 
 		// apply the reaction and node data
-		if (this.has_reaction_data) 
+		if (this.has_data_on_reactions)
 		    this.update_reaction_data_domain();
-		if (this.has_metabolite_data)
-		    this.update_metabolite_data_domain();
+		if (this.has_data_on_nodes)
+		    this.update_node_data_domain();
 
 		// redraw
 		if (should_draw) {
@@ -9304,15 +9857,15 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
-	    if (this.has_reaction_data) {
+	    if (this.has_data_on_reactions) {
 		var scale_changed = this.update_reaction_data_domain();
 		if (scale_changed) this.draw_all_reactions();
 		else this.draw_these_reactions(reaction_ids_to_draw);
 	    } else {
 		if (should_draw) this.draw_these_reactions(reaction_ids_to_draw);
 	    }		
-	    if (this.has_metabolite_data) {
-		var scale_changed = this.update_metabolite_data_domain();
+	    if (this.has_data_on_nodes) {
+		var scale_changed = this.update_node_data_domain();
 		if (should_draw) {
 		    if (scale_changed) this.draw_all_nodes();
 		    else this.draw_these_nodes(Object.keys(saved_nodes));
@@ -9493,7 +10046,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // definitions
 	function extend_and_draw_metabolite(new_nodes, selected_node_id) {
 	    this.extend_nodes(new_nodes);
-	    if (this.has_metabolite_data) {
+	    if (this.has_data_on_nodes) {
 		var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
 		if (scale_changed) this.draw_all_nodes();
 		else this.draw_these_nodes([selected_node_id]);
@@ -9629,15 +10182,15 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
-	    if (this.has_reaction_data) {
-		var scale_changed = this.apply_reaction_data_to_reactions(new_reactions);
+	    if (this.has_data_on_reactions) {
+		var scale_changed = this.update_reaction_data_domain();
 		if (scale_changed) this.draw_all_reactions();
 		else this.draw_these_reactions(Object.keys(new_reactions));
 	    } else {
 		this.draw_these_reactions(Object.keys(new_reactions));
 	    }		
-	    if (this.has_metabolite_data) {
-		var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
+	    if (this.has_data_on_nodes) {
+		var scale_changed = this.update_node_data_domain;
 		if (scale_changed) this.draw_all_nodes();
 		else this.draw_these_nodes(Object.keys(new_nodes));
 	    } else {
@@ -10022,473 +10575,6 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     }
 });
 
-define('PlacedDiv',['utils', 'Map'], function(utils, Map) {
-    /** A container to position an html div to match the coordinates of a SVG element.
-
-     */
-
-    var PlacedDiv = utils.make_class();
-    // instance methods
-    PlacedDiv.prototype = { init: init,
-			    is_visible: is_visible,
-			    place: place,
-			    hide: hide };
-    return PlacedDiv;
-
-    // definitions
-    function init(div, map, displacement) {
-	// make the input box
-	this.div = div;
-
-	if (displacement===undefined)
-	    displacement = {x: 0, y: 0};
-	this.displacement = displacement;
-
-	if (map instanceof Map) {
-	    this.map = map;
-	} else {
-	    throw new Error('Cannot set the map. It is not an instance of Map');
-	}
-    }
-
-    function is_visible() {
-	return this.div.style('display') != 'none';
-    }
-
-    function place(coords) {
-	/** Position the html div to match the given SVG coordinates.
-
-	 */
-	// show the input
-	this.div.style('display', null);
-
-	// move the new input
-	var window_translate = this.map.zoom_container.window_translate,
-	    window_scale = this.map.zoom_container.window_scale,
-	    map_size = this.map.get_size(),
-	    left = Math.max(20,
-			    Math.min(map_size.width - 270,
-				     (window_scale * coords.x + window_translate.x - this.displacement.x))),
-	    top = Math.max(20,
-			   Math.min(map_size.height - 40,
-				    (window_scale * coords.y + window_translate.y - this.displacement.y)));
-	this.div.style('position', 'absolute')
-	    .style('display', 'block')
-	    .style('left', left+'px')
-	    .style('top', top+'px');
-    }
-
-    function hide() {
-	this.div.style('display', 'none');
-    }
-});
-
-/**
- * complete.ly 1.0.0
- * MIT Licensing
- * Copyright (c) 2013 Lorenzo Puccetti
- * 
- * This Software shall be used for doing good things, not bad things.
- * 
-**/  
-define('lib/complete.ly',[],function() {
-return function(container, config) {
-    config = config || {};
-    config.fontSize =                       config.fontSize   || '16px';
-    config.fontFamily =                     config.fontFamily || 'sans-serif';
-    config.promptInnerHTML =                config.promptInnerHTML || ''; 
-    config.color =                          config.color || '#333';
-    config.hintColor =                      config.hintColor || '#aaa';
-    config.backgroundColor =                config.backgroundColor || '#fff';
-    config.dropDownBorderColor =            config.dropDownBorderColor || '#aaa';
-    config.dropDownZIndex =                 config.dropDownZIndex || '100'; // to ensure we are in front of everybody
-    config.dropDownOnHoverBackgroundColor = config.dropDownOnHoverBackgroundColor || '#ddd';
-    
-    var txtInput = document.createElement('input');
-    txtInput.type ='text';
-    txtInput.spellcheck = false; 
-    txtInput.style.fontSize =        config.fontSize;
-    txtInput.style.fontFamily =      config.fontFamily;
-    txtInput.style.color =           config.color;
-    txtInput.style.backgroundColor = config.backgroundColor;
-    txtInput.style.width = '100%';
-    txtInput.style.outline = '0';
-    txtInput.style.border =  '0';
-    txtInput.style.margin =  '0';
-    txtInput.style.padding = '0';
-    
-    var txtHint = txtInput.cloneNode(); 
-    txtHint.disabled='';        
-    txtHint.style.position = 'absolute';
-    txtHint.style.top =  '0';
-    txtHint.style.left = '0';
-    txtHint.style.borderColor = 'transparent';
-    txtHint.style.boxShadow =   'none';
-    txtHint.style.color = config.hintColor;
-    
-    txtInput.style.backgroundColor ='transparent';
-    txtInput.style.verticalAlign = 'top';
-    txtInput.style.position = 'relative';
-    
-    var wrapper = document.createElement('div');
-    wrapper.style.position = 'relative';
-    wrapper.style.outline = '0';
-    wrapper.style.border =  '0';
-    wrapper.style.margin =  '0';
-    wrapper.style.padding = '0';
-    
-    var prompt = document.createElement('div');
-    prompt.style.position = 'absolute';
-    prompt.style.outline = '0';
-    prompt.style.margin =  '0';
-    prompt.style.padding = '0';
-    prompt.style.border =  '0';
-    prompt.style.fontSize =   config.fontSize;
-    prompt.style.fontFamily = config.fontFamily;
-    prompt.style.color =           config.color;
-    prompt.style.backgroundColor = config.backgroundColor;
-    prompt.style.top = '0';
-    prompt.style.left = '0';
-    prompt.style.overflow = 'hidden';
-    prompt.innerHTML = config.promptInnerHTML;
-    prompt.style.background = 'transparent';
-    if (document.body === undefined) {
-        throw 'document.body is undefined. The library was wired up incorrectly.';
-    }
-    document.body.appendChild(prompt);            
-    var w = prompt.getBoundingClientRect().right; // works out the width of the prompt.
-    wrapper.appendChild(prompt);
-    prompt.style.visibility = 'visible';
-    prompt.style.left = '-'+w+'px';
-    wrapper.style.marginLeft= w+'px';
-    
-    wrapper.appendChild(txtHint);
-    wrapper.appendChild(txtInput);
-    
-    var dropDown = document.createElement('div');
-    dropDown.style.position = 'absolute';
-    dropDown.style.visibility = 'hidden';
-    dropDown.style.outline = '0';
-    dropDown.style.margin =  '0';
-    dropDown.style.padding = '0';  
-    dropDown.style.textAlign = 'left';
-    dropDown.style.fontSize =   config.fontSize;      
-    dropDown.style.fontFamily = config.fontFamily;
-    dropDown.style.backgroundColor = config.backgroundColor;
-    dropDown.style.zIndex = config.dropDownZIndex; 
-    dropDown.style.cursor = 'default';
-    dropDown.style.borderStyle = 'solid';
-    dropDown.style.borderWidth = '1px';
-    dropDown.style.borderColor = config.dropDownBorderColor;
-    dropDown.style.overflowX= 'hidden';
-    dropDown.style.whiteSpace = 'pre';
-    dropDown.style.overflowY = 'scroll';  // note: this might be ugly when the scrollbar is not required. however in this way the width of the dropDown takes into account
-    
-    
-    var createDropDownController = function(elem) {
-        var rows = [];
-        var ix = 0;
-        var oldIndex = -1;
-        
-        var onMouseOver =  function() { this.style.outline = '1px solid #ddd'; }
-        var onMouseOut =   function() { this.style.outline = '0'; }
-        var onMouseDown =  function() { p.hide(); p.onmouseselection(this.__hint); }
-        
-        var p = {
-            hide :  function() { elem.style.visibility = 'hidden'; }, 
-            refresh : function(token, array) {
-                elem.style.visibility = 'hidden';
-                ix = 0;
-                elem.innerHTML ='';
-                var vph = (window.innerHeight || document.documentElement.clientHeight);
-                var rect = elem.parentNode.getBoundingClientRect();
-                var distanceToTop = rect.top - 6;                        // heuristic give 6px 
-                var distanceToBottom = vph - rect.bottom -6;  // distance from the browser border.
-                
-                rows = [];
-                for (var i=0;i<array.length;i++) {
-                    if (array[i].indexOf(token)!==0) { continue; }
-                    var divRow =document.createElement('div');
-                    divRow.style.color = config.color;
-                    divRow.onmouseover = onMouseOver; 
-                    divRow.onmouseout =  onMouseOut;
-                    divRow.onmousedown = onMouseDown; 
-                    divRow.__hint =    array[i];
-                    divRow.innerHTML = token+'<b>'+array[i].substring(token.length)+'</b>';
-                    rows.push(divRow);
-                    elem.appendChild(divRow);
-                }
-                if (rows.length===0) {
-                    return; // nothing to show.
-                }
-                if (rows.length===1 && token === rows[0].__hint) {
-                    return; // do not show the dropDown if it has only one element which matches what we have just displayed.
-                }
-                
-                if (rows.length<2) return; 
-                p.highlight(0);
-                
-                if (distanceToTop > distanceToBottom*3) {        // Heuristic (only when the distance to the to top is 4 times more than distance to the bottom
-                    elem.style.maxHeight =  distanceToTop+'px';  // we display the dropDown on the top of the input text
-                    elem.style.top ='';
-                    elem.style.bottom ='100%';
-                } else {
-                    elem.style.top = '100%';  
-                    elem.style.bottom = '';
-                    elem.style.maxHeight =  distanceToBottom+'px';
-                }
-                elem.style.visibility = 'visible';
-            },
-            highlight : function(index) {
-                if (oldIndex !=-1 && rows[oldIndex]) { 
-                    rows[oldIndex].style.backgroundColor = config.backgroundColor;
-                }
-                rows[index].style.backgroundColor = config.dropDownOnHoverBackgroundColor; // <-- should be config
-                oldIndex = index;
-            },
-            move : function(step) { // moves the selection either up or down (unless it's not possible) step is either +1 or -1.
-                if (elem.style.visibility === 'hidden')             return ''; // nothing to move if there is no dropDown. (this happens if the user hits escape and then down or up)
-                if (ix+step === -1 || ix+step === rows.length) return rows[ix].__hint; // NO CIRCULAR SCROLLING. 
-                ix+=step; 
-                p.highlight(ix);
-                return rows[ix].__hint;//txtShadow.value = uRows[uIndex].__hint ;
-            },
-            onmouseselection : function() {} // it will be overwritten. 
-        };
-        return p;
-    }
-    
-    var dropDownController = createDropDownController(dropDown);
-    
-    dropDownController.onmouseselection = function(text) {
-        txtInput.value = txtHint.value = leftSide+text; 
-        rs.onChange(txtInput.value); // <-- forcing it.
-        registerOnTextChangeOldValue = txtInput.value; // <-- ensure that mouse down will not show the dropDown now.
-        setTimeout(function() { txtInput.focus(); },0);  // <-- I need to do this for IE 
-    }
-    
-    wrapper.appendChild(dropDown);
-    container.appendChild(wrapper);
-    
-    var spacer; 
-    var leftSide; // <-- it will contain the leftSide part of the textfield (the bit that was already autocompleted)
-    
-    
-    function calculateWidthForText(text) {
-        if (spacer === undefined) { // on first call only.
-            spacer = document.createElement('span'); 
-            spacer.style.visibility = 'hidden';
-            spacer.style.position = 'fixed';
-            spacer.style.outline = '0';
-            spacer.style.margin =  '0';
-            spacer.style.padding = '0';
-            spacer.style.border =  '0';
-            spacer.style.left = '0';
-            spacer.style.whiteSpace = 'pre';
-            spacer.style.fontSize =   config.fontSize;
-            spacer.style.fontFamily = config.fontFamily;
-            spacer.style.fontWeight = 'normal';
-            document.body.appendChild(spacer);    
-        }        
-        
-        // Used to encode an HTML string into a plain text.
-        // taken from http://stackoverflow.com/questions/1219860/javascript-jquery-html-encoding
-        spacer.innerHTML = String(text).replace(/&/g, '&amp;')
-                                       .replace(/"/g, '&quot;')
-                                       .replace(/'/g, '&#39;')
-                                       .replace(/</g, '&lt;')
-                                       .replace(/>/g, '&gt;');
-        return spacer.getBoundingClientRect().right;
-    }
-    
-    
-    var rs = { 
-        onArrowDown : function() {},               // defaults to no action.
-        onArrowUp :   function() {},               // defaults to no action.
-        onEnter :     function() {},               // defaults to no action.
-        onTab :       function() {},               // defaults to no action.
-        onChange:     function() { rs.repaint() }, // defaults to repainting.
-        startFrom:    0,
-        options:      [],
-        wrapper : wrapper,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
-        input :  txtInput,      // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations) 
-        hint  :  txtHint,       // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
-        dropDown :  dropDown,         // Only to allow  easy access to the HTML elements to the final user (possibly for minor customizations)
-        prompt : prompt,
-        setText : function(text) {
-            txtHint.value = text;
-            txtInput.value = text; 
-        },
-        getText : function() {
-        	return txtInput.value; 
-        },
-        hideDropDown : function() {
-        	dropDownController.hide();
-        },
-        repaint : function() {
-            var text = txtInput.value;
-            var startFrom =  rs.startFrom; 
-            var options =    rs.options;
-            var optionsLength = options.length; 
-            
-            // breaking text in leftSide and token.
-            var token = text.substring(startFrom);
-            leftSide =  text.substring(0,startFrom);
-            
-            // updating the hint. 
-            txtHint.value ='';
-            for (var i=0;i<optionsLength;i++) {
-                var opt = options[i];
-                if (opt.indexOf(token)===0) {         // <-- how about upperCase vs. lowercase
-                    txtHint.value = leftSide +opt;
-                    break;
-                }
-            }
-            
-            // moving the dropDown and refreshing it.
-            dropDown.style.left = calculateWidthForText(leftSide)+'px';
-            dropDownController.refresh(token, rs.options);
-        }
-    };
-    
-    var registerOnTextChangeOldValue;
-
-    /**
-     * Register a callback function to detect changes to the content of the input-type-text.
-     * Those changes are typically followed by user's action: a key-stroke event but sometimes it might be a mouse click.
-    **/
-    var registerOnTextChange = function(txt, callback) {
-        registerOnTextChangeOldValue = txt.value;
-        var handler = function() {
-            var value = txt.value;
-            if (registerOnTextChangeOldValue !== value) {
-                registerOnTextChangeOldValue = value;
-                callback(value);
-            }
-        };
-
-        //  
-        // For user's actions, we listen to both input events and key up events
-        // It appears that input events are not enough so we defensively listen to key up events too.
-        // source: http://help.dottoro.com/ljhxklln.php
-        //
-        // The cost of listening to three sources should be negligible as the handler will invoke callback function
-        // only if the text.value was effectively changed. 
-        //  
-        // 
-        if (txt.addEventListener) {
-            txt.addEventListener("input",  handler, false);
-            txt.addEventListener('keyup',  handler, false);
-            txt.addEventListener('change', handler, false);
-        } else { // is this a fair assumption: that attachEvent will exist ?
-            txt.attachEvent('oninput', handler); // IE<9
-            txt.attachEvent('onkeyup', handler); // IE<9
-            txt.attachEvent('onchange',handler); // IE<9
-        }
-    };
-    
-    
-    registerOnTextChange(txtInput,function(text) { // note the function needs to be wrapped as API-users will define their onChange
-        rs.onChange(text);
-    });
-    
-    
-    var keyDownHandler = function(e) {
-        e = e || window.event;
-        var keyCode = e.keyCode;
-        
-        if (keyCode == 33) { return; } // page up (do nothing)
-        if (keyCode == 34) { return; } // page down (do nothing);
-        
-        // if (keyCode == 27) { //escape
-        //     dropDownController.hide();
-        //     txtHint.value = txtInput.value; // ensure that no hint is left.
-        //     txtInput.focus(); 
-        //     return; 
-        // }
-        
-        if (keyCode == 39 || keyCode == 35 || keyCode == 9) { // right,  end, tab  (autocomplete triggered)
-        	if (keyCode == 9) { // for tabs we need to ensure that we override the default behaviour: move to the next focusable HTML-element 
-           	    e.preventDefault();
-                e.stopPropagation();
-                if (txtHint.value.length == 0) {
-                	rs.onTab(); // tab was called with no action.
-                	            // users might want to re-enable its default behaviour or handle the call somehow.
-                }
-            }
-            if (txtHint.value.length > 0) { // if there is a hint
-                dropDownController.hide();
-                txtInput.value = txtHint.value;
-                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
-                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
-                                                          // for example imagine the array contains the following words: bee, beef, beetroot
-                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
-                if (hasTextChanged) {
-                    rs.onChange(txtInput.value); // <-- forcing it.
-                }
-            }
-            return; 
-        }
-        
-        if (keyCode == 13) {       // enter  (autocomplete triggered)
-            if (txtHint.value.length == 0) { // if there is a hint
-                rs.onEnter();
-            } else {
-                var wasDropDownHidden = (dropDown.style.visibility == 'hidden');
-                dropDownController.hide();
-                
-                if (wasDropDownHidden) {
-                    txtHint.value = txtInput.value; // ensure that no hint is left.
-                    txtInput.focus();
-                    rs.onEnter();    
-                    return; 
-                }
-                
-                txtInput.value = txtHint.value;
-                var hasTextChanged = registerOnTextChangeOldValue != txtInput.value
-                registerOnTextChangeOldValue = txtInput.value; // <-- to avoid dropDown to appear again. 
-                                                          // for example imagine the array contains the following words: bee, beef, beetroot
-                                                          // user has hit enter to get 'bee' it would be prompted with the dropDown again (as beef and beetroot also match)
-                if (hasTextChanged) {
-                    rs.onChange(txtInput.value); // <-- forcing it.
-                }
-                
-            }
-            return; 
-        }
-        
-        if (keyCode == 40) {     // down
-            var m = dropDownController.move(+1);
-            if (m == '') { rs.onArrowDown(); }
-            txtHint.value = leftSide+m;
-            return; 
-        } 
-            
-        if (keyCode == 38 ) {    // up
-            var m = dropDownController.move(-1);
-            if (m == '') { rs.onArrowUp(); }
-            txtHint.value = leftSide+m;
-            e.preventDefault();
-            e.stopPropagation();
-            return; 
-        }
-            
-        // it's important to reset the txtHint on key down.
-        // think: user presses a letter (e.g. 'x') and never releases... you get (xxxxxxxxxxxxxxxxx)
-        // and you would see still the hint
-        txtHint.value =''; // resets the txtHint. (it might be updated onKeyUp)
-        
-    };
-    
-    if (txtInput.addEventListener) {
-        txtInput.addEventListener("keydown",  keyDownHandler, false);
-    } else { // is this a fair assumption: that attachEvent will exist ?
-        txtInput.attachEvent('onkeydown', keyDownHandler); // IE<9
-    }
-    return rs;
-}
-});
-
 define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackManager) {
     /** ZoomContainer
 
@@ -10843,6 +10929,185 @@ define('DirectionArrow',["utils"], function(utils) {
     }
 });
 
+define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
+    /**
+     */
+
+    var CobraModel = utils.make_class();
+    // class methods
+    CobraModel.build_reaction_string = build_reaction_string;
+    // instance methods
+    CobraModel.prototype = { init: init,
+			     apply_reaction_data: apply_reaction_data,
+			     apply_metabolite_data: apply_metabolite_data,
+			     apply_gene_data: apply_gene_data };
+
+    return CobraModel;
+
+    // class methods
+    function build_reaction_string(stoichiometries, is_reversible,
+				   lower_bound, upper_bound) {
+	/** Return a reaction string for the given stoichiometries.
+
+	    Adapted from cobra.core.Reaction.build_reaction_string().
+
+	    Arguments
+	    ---------
+
+	    stoichiometries: An object with metabolites as keys and
+	    stoichiometries as values.
+
+	    is_reversible: Boolean. Whether the reaction is reversible.
+
+	    lower_bound: Reaction upper bound, to determine direction.
+
+	    upper_bound: Reaction lower bound, to determine direction.
+
+	*/
+
+	var format = function(number) {
+            if (number == 1)
+                return "";
+            return String(number) + " ";
+	}
+        var reactant_dict = {},
+            product_dict = {},
+            reactant_bits = [],
+            product_bits = [];
+	for (var the_metabolite in stoichiometries) {
+	    var coefficient = stoichiometries[the_metabolite];
+            if (coefficient > 0)
+                product_bits.push(format(coefficient) + the_metabolite);
+            else
+                reactant_bits.push(format(Math.abs(coefficient)) + the_metabolite);
+	}
+        reaction_string = reactant_bits.join(' + ');
+        if (is_reversible) {
+            reaction_string += ' <=> ';
+        } else {
+            if (lower_bound < 0 && upper_bound <=0)
+                reaction_string += ' <-- ';
+            else
+		reaction_string += ' --> ';
+	}
+        reaction_string += product_bits.join(' + ')
+        return reaction_string
+    }
+    
+    // instance methods
+    function init(model_data) {
+	// reactions and metabolites
+	if (!(model_data.reactions && model_data.metabolites)) {
+	    throw new Error('Bad model data.');
+	    return;
+	}
+	this.reactions = {};
+	for (var i=0, l=model_data.reactions.length; i<l; i++) {
+	    var r = model_data.reactions[i],
+		the_id = r.id;
+	    this.reactions[the_id] = utils.clone(r);
+	    delete this.reactions[the_id].id;
+	}
+	this.metabolites = {};
+	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
+	    var r = model_data.metabolites[i],
+		the_id = r.id;
+	    this.metabolites[the_id] = utils.clone(r);
+	    delete this.metabolites[the_id].id;
+	}
+
+	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
+			  'gdp', 'h'];
+    }
+
+    function apply_reaction_data(reaction_data, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+	    
+	    apply_reaction_data overrides apply_gene_data.
+
+	*/
+
+	for (var reaction_id in this.reactions) {
+	    var reaction = this.reactions[reaction_id];
+	    if (reaction_data===null) {
+		reaction.data = null;
+		reaction.data_string = '';
+	    } else {
+		var d = (reaction_id in reaction_data ?
+			 reaction_data[reaction_id] : null),
+		    f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		reaction.data = f;
+		reaction.data_string = s;
+	    }
+	}
+    }
+
+    function apply_metabolite_data(metabolite_data, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+
+	 */
+	for (var metabolite_id in this.metabolites) {
+	    var metabolite = this.metabolites[metabolite_id];
+	    if (metabolite_data===null) {
+		metabolite.data = null;
+		metabolite.data_string = '';
+	    } else {
+		var d = (metabolite_id in metabolite_data ?
+			 metabolite_data[metabolite_id] : null),
+		    f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		metabolite.data = f;
+		metabolite.data_string = s;
+	    }
+	}
+    }
+
+    function apply_gene_data(gene_data_obj, styles) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+
+	    apply_gene_data overrides apply_reaction_data.
+
+	    Arguments
+	    ---------
+
+	    gene_data_obj: The gene data object, with the following style:
+
+	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+
+	    style: Gene styles array.
+
+	*/
+	for (var reaction_id in this.reactions) {
+	    var reaction = this.reactions[reaction_id];
+	    if (gene_data_obj === null) {
+		reaction.data = null;
+		reaction.data_string = '';
+		reaction.gene_string = null;
+	    } else {
+		var d, rule, gene_values;
+		if (reaction_id in gene_data_obj) {
+		    rule = gene_data_obj[reaction_id].rule;
+		    gene_values = gene_data_obj[reaction_id].genes;
+		    d = data_styles.evaluate_gene_reaction_rule(rule, gene_values);
+		} else {
+		    gene_values = null;
+		    d = null;
+		}
+		var f = data_styles.float_for_data([d], styles),
+		    s = data_styles.text_for_data([d], styles),
+		    g = data_styles.gene_string_for_data(rule, gene_values, styles)
+		reaction.data = f;
+		reaction.data_string = s;
+		reaction.gene_string = g;
+	    }
+	}
+    }
+});
+
 define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'CallbackManager', 'draw', 'DirectionArrow', 'CobraModel'], function(utils, PlacedDiv, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow, CobraModel) {
     /**
      */
@@ -11041,7 +11306,7 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContai
 	    cobra_reactions = this.map.cobra_model.reactions,
 	    cobra_metabolites = this.map.cobra_model.metabolites,
 	    reactions = this.map.reactions,
-	    has_reaction_data = this.map.has_reaction_data,
+	    has_data_on_reactions = this.map.has_data_on_reactions,
 	    reaction_data = this.map.reaction_data,
 	    reaction_data_styles = this.map.reaction_data_styles;
         for (var reaction_id in cobra_reactions) {
@@ -11057,7 +11322,7 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContai
 		if (starting_from_scratch || metabolite_id==selected_node.bigg_id) {
 		    // don't add suggestions twice
 		    if (reaction_id in suggestions) continue;
-		    if (has_reaction_data) {
+		    if (has_data_on_reactions) {
 			suggestions[reaction_id] = { reaction_data: reaction.data,
 						     string: (reaction_id + ': ' +
 							      reaction.data_string) };
@@ -11078,7 +11343,7 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContai
         // Generate the array of reactions to suggest and sort it
 	var strings_to_display = [],
 	    suggestions_array = utils.make_array(suggestions, 'reaction_abbreviation');
-	if (has_reaction_data) {
+	if (has_data_on_reactions) {
 	    suggestions_array.sort(function(x, y) {
 		return Math.abs(y.reaction_data) - Math.abs(x.reaction_data);
 	    });
@@ -11301,7 +11566,8 @@ define('ui',["utils", "data_styles"], function(utils, data_styles) {
 	     button_group: button_group,
 	     dropdown_menu: dropdown_menu,
 	     set_button: set_button,
-	     set_input_button: set_input_button };
+	     set_json_input_button: set_json_input_button,
+	     set_json_or_csv_input_button: set_json_or_csv_input_button };
 
     function individual_button(s, button) {
 	var b = s.append('button'),
@@ -11376,7 +11642,9 @@ define('ui',["utils", "data_styles"], function(utils, data_styles) {
 		    set_button(link, button.key);
 		} else if ('input' in button) {
 		    var input = button.input,
-			out = set_input_button(link, li, input.fn);
+			out = (input.accept_csv ?
+			       set_json_or_csv_input_button(link, li, input.fn) :
+			       set_json_input_button(link, li, input.fn));
 		    if ('assign' in input && 'key' in input)
 			input.assign[input.key] = out;
 		}
@@ -11396,11 +11664,27 @@ define('ui',["utils", "data_styles"], function(utils, data_styles) {
 	    key.fn.call(key.target);
 	});
     }
-    function set_input_button(b, s, fn) {
+    function set_json_input_button(b, s, fn) {
 	var input = s.append("input")
 		.attr("type", "file")
 		.style("display", "none")
-		.on("change", function() { 
+		.on("change", function() {
+		    utils.load_json(this.files[0],
+				    function(e, d) {
+					fn(e, d);
+					this.value = "";
+				    }.bind(this));
+		});
+	b.on('click', function(e) {
+	    input.node().click();
+	});
+	return function() { input.node().click(); };
+    }
+    function set_json_or_csv_input_button(b, s, fn) {
+	var input = s.append("input")
+		.attr("type", "file")
+		.style("display", "none")
+		.on("change", function() {
 		    utils.load_json_or_csv(this.files[0],
 					   data_styles.csv_converter,
 					   function(e, d) {
@@ -11676,8 +11960,9 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 		    this.set_option('reaction_styles', v);
 		else if (type=='metabolite')
 		    this.set_option('metabolite_styles', v);
-		else if (type=='gene')
+		else if (type=='gene') {
 		    this.set_option('gene_styles', v);
+		}
 	    }.bind(this));
 
 	    // push the defaults
@@ -11850,7 +12135,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 		is_not_first_clear = status_stream
 		    .scan(false, function(c, x) {
 			// first clear only
-			return (c==false && x=='clear');
+			return (c==false && (x=='accepted' || x=='rejected'));
 		    }).not(),
 		is_not_first_hold = status_stream
 		    .scan(false, function(c, x) {
@@ -11867,7 +12152,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 			    return c;
 			} else if (x[1]=='reject') {
 			    return [];
-			} else if (x[1]=='clear') {
+			} else if (x[1]=='rejected' || x[1]=='accepted') {
 			    return [x[0]];
 			} else {
 			    throw Error('bad status ' + x[1]);
@@ -12014,13 +12299,12 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
     }
     function abandon_changes() {
 	this.status_bus.push('reject');
-	this.status_bus.push('clear');
-	// TODO this could be way faster if it did not trigger redrawing the map
+	this.status_bus.push('rejected');
 	this.force_update_bus.push(true);
     };
     function accept_changes() {
 	this.status_bus.push('accept');
-	this.status_bus.push('clear');
+	this.status_bus.push('accepted');
     };
 });
 
@@ -12673,28 +12957,12 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	this.update_data(true, true);
 	
 	// setting callbacks
-	var update = function(kind) {
-	    this.update_data(true, true, kind);
-	}.bind(this);
-	this.settings.data_styles_stream['reaction']
-	    .onValue(function() { update('reaction'); });
-	this.settings.data_styles_stream['metabolite']
-	    .onValue(function() { update('metabolite'); });
-	// if evaluate_on_reactions gets turned off, then update reactions too
-	this.settings.data_styles_stream['gene']
-	    .onValue(function() { update(['reaction', 'gene']); });
-	this.settings.domain_stream['reaction']
-	    .onValue(function() { update('reaction'); });
-	this.settings.domain_stream['metabolite']
-	    .onValue(function() { update('metabolite'); });
-	this.settings.range_stream['reaction']['color']
-	    .onValue(function() { update('reaction'); });
-	this.settings.range_stream['metabolite']['color']
-	    .onValue(function() { update('metabolite'); });
-	this.settings.range_stream['reaction']['size']
-	    .onValue(function() { update('reaction'); });
-	this.settings.range_stream['metabolite']['size']
-	    .onValue(function() { update('metabolite'); });
+	// TODO enable atomic updates. Right now, every time
+	// the menu closes, every stream updates.
+	this.settings.status_bus
+	    .onValue(function(x) {
+		if (x == 'accepted') this.update_data(true, true);
+	    }.bind(this));
     }
 
     // Definitions
@@ -12988,17 +13256,15 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
 	// gene data overrides reaction data
 	var update_reaction_data = (kind.indexOf('reaction') != -1),
-	    update_gene_data = (kind.indexOf('gene') != -1),
-	    has_evaluated_gene_data = (this.options.gene_data !== null &&
-				       this.options.gene_styles.indexOf('evaluate_on_reactions') != -1);
+	    update_gene_data = (kind.indexOf('gene') != -1);
 
-	// reaction data 
+	// reaction data
 	if (update_reaction_data) {
 	    data_object = data_styles.import_and_check(this.options.reaction_data,
 						       this.options.reaction_styles,
 						       'reaction_data');
 	    // only update the model if there is not going to be gene data
-	    if (update_model && !has_evaluated_gene_data && this.cobra_model !== null) {
+	    if (update_model && this.cobra_model !== null) {
 		this.cobra_model.apply_reaction_data(data_object,
 						     this.options.reaction_styles);
 	    }
@@ -13025,7 +13291,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 						       all_reactions);
 	    
 	    // only update the model if gene data is applied to reactions
-	    if (update_model && has_evaluated_gene_data && this.cobra_model !== null) {
+	    if (update_model && this.cobra_model !== null) {
 		this.cobra_model.apply_gene_data(data_object,
 						 this.options.gene_styles);
 	    }
@@ -13066,15 +13332,18 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	var data_menu = ui.dropdown_menu(menu, 'Data')
 		.button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
 				   key: 'fn',
-				   fn: load_reaction_data_for_file.bind(this) },
+				   fn: load_reaction_data_for_file.bind(this),
+				   accept_csv: true },
 			  text: "Load reaction data" })
 		.button({ key: keys.clear_reaction_data,
 			  text: "Clear reaction data" })
-		.button({ input: { fn: load_metabolite_data_for_file.bind(this) },
+		.button({ input: { fn: load_metabolite_data_for_file.bind(this),
+				   accept_csv: true  },
 			  text: "Load metabolite data" })
 		.button({ key: keys.clear_metabolite_data,
 			  text: "Clear metabolite data" })
-		.button({ input: { fn: load_gene_data_for_file.bind(this) },
+		.button({ input: { fn: load_gene_data_for_file.bind(this),
+				   accept_csv: true  },
 			  text: "Load gene data" })
 		.button({ key: keys.clear_gene_data,
 			  text: "Clear gene data" })
@@ -13298,6 +13567,9 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 		this.map.set_status('Could not parse file as JSON or CSV', 2000);
 		return;
 	    }
+	    // turn off gene data
+	    if (data !== null)
+		this.settings.change_data_style('gene', 'evaluate_on_reactions', false);
 	    this.set_reaction_data(data);
 	}
 	function load_metabolite_data_for_file(error, data) {
@@ -13314,6 +13586,9 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 		this.map.set_status('Could not parse file as JSON or CSV', 2000);
 		return;
 	    }
+	    // turn on gene data
+	    if (data !== null)
+		this.settings.change_data_style('gene', 'evaluate_on_reactions', true);
 	    this.set_gene_data(data);
 	}
     }

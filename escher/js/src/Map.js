@@ -93,13 +93,13 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	has_cobra_model: has_cobra_model,
 	apply_reaction_data_to_map: apply_reaction_data_to_map,
 	apply_reaction_data_to_reactions: apply_reaction_data_to_reactions,
-	update_reaction_data_domain: update_reaction_data_domain,
 	apply_metabolite_data_to_map: apply_metabolite_data_to_map,
 	apply_metabolite_data_to_nodes: apply_metabolite_data_to_nodes,
-	update_metabolite_data_domain: update_metabolite_data_domain,
 	apply_gene_data_to_map: apply_gene_data_to_map,
 	apply_gene_data_to_reactions: apply_gene_data_to_reactions,
-	update_gene_data_domain: update_gene_data_domain,
+	// data domains
+	update_reaction_data_domain: update_reaction_data_domain,
+	update_node_data_domain: update_node_data_domain,
 	// zoom
 	zoom_extent_nodes: zoom_extent_nodes,
 	zoom_extent_canvas: zoom_extent_canvas,
@@ -178,14 +178,19 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	this.callback_manager = new CallbackManager();
 
 	// data
-	this.has_reaction_data = false;
-	this.has_metabolite_data = false;
+	this.has_data_on_reactions = false;
+	this.has_data_on_nodes = false;
 	
 	this.nodes = {};
 	this.reactions = {};
 	this.beziers = {};
 	this.text_labels = {};
 
+	// update data with null to populate data-specific attributes
+	this.apply_reaction_data_to_map(null);
+	this.apply_metabolite_data_to_map(null);
+	this.apply_gene_data_to_map(null);
+	
 	// rotation mode off
 	this.rotation_on = false;
 
@@ -273,6 +278,11 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	}
 	map.largest_ids.segments = largest_segment_id;
 
+	// update data with null to populate data-specific attributes
+	map.apply_reaction_data_to_map(null);
+	map.apply_metabolite_data_to_map(null);
+	map.apply_gene_data_to_map(null);
+		
 	return map;
 
 	// definitions
@@ -349,6 +359,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	// reaction_data onto existing map reactions
 	this.apply_reaction_data_to_map(null);
 	this.apply_metabolite_data_to_map(null);
+	this.apply_gene_data_to_map(null);
 	this.draw_everything();
     }
     function has_cobra_model() {
@@ -417,11 +428,12 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 					this.cobra_model,
 					this.nodes,
 					this.defs,
-					this.has_reaction_data,
+					this.has_data_on_reactions,
 					{ color: this.settings.get_option('reaction_no_data_color'),
 					  size: this.settings.get_option('reaction_no_data_size') },
 					this.settings.get_option('highlight_missing'),
 					this.settings.get_option('reaction_styles'),
+					this.settings.get_option('gene_styles'),
 					this.behavior.reaction_label_drag);
 	}.bind(this);
 
@@ -505,7 +517,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	    update_fn = function(sel) {
 		return draw.update_node(sel,
 					this.scale,
-					this.has_metabolite_data,
+					this.has_data_on_nodes,
 					this.settings.get_option('metabolite_styles'),
 					{ color: this.settings.get_option('metabolite_no_data_color'),
 					  size: this.settings.get_option('metabolite_no_data_size') },
@@ -661,6 +673,12 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	/**  Returns True if the scale has changed.
 
 	 */
+
+	// don't mess with it if the gene data is applied
+	var gene_styles = this.settings.get_option('gene_styles');
+	if (gene_styles.indexOf('evaluate_on_reactions') != -1)
+	    return false;
+	
 	if (data === null) {	    
 	    for (var reaction_id in reactions) {
 	    var reaction = reactions[reaction_id];
@@ -673,7 +691,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	    }
 
 	    // remember
-	    this.has_reaction_data = false;
+	    this.has_data_on_reactions = false;
 	    
 	    return false;
 	}
@@ -698,11 +716,195 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	}
 
 	// remember
-	this.has_reaction_data = true;
+	this.has_data_on_reactions = true;
 
 	// if auto_domain
 	return this.update_reaction_data_domain();
     }
+    function apply_metabolite_data_to_map(data) {
+	/**  Returns True if the scale has changed.
+
+	 */
+	return this.apply_metabolite_data_to_nodes(this.nodes, data);
+    }
+    function apply_metabolite_data_to_nodes(nodes, data) {
+	/**  Returns True if the scale has changed.
+
+	 */
+	if (data === null) {
+	    for (var node_id in nodes) {
+		nodes[node_id].data = null;
+		nodes[node_id].data_string = '';
+	    }
+
+	    // remember
+	    this.has_data_on_nodes = false;
+	    
+	    return false;
+	}
+	
+	// grab the data
+	var styles = this.settings.get_option('metabolite_styles');
+	for (var node_id in nodes) {
+	    var node = nodes[node_id],
+		d = (node.bigg_id in data ? data[node.bigg_id] : null),
+		f = data_styles.float_for_data(d, styles),
+		s = data_styles.text_for_data(d, styles);
+	    node.data = f;
+	    node.data_string = s;
+	}
+
+	// remember
+	this.has_data_on_nodes = true; 
+	
+	// if auto_domain
+	return this.update_node_data_domain();
+    }
+
+
+    function apply_gene_data_to_map(gene_data_obj) {
+	/** Returns True if the scale has changed.
+
+	    Arguments
+	    ---------
+
+	    gene_data_obj: The gene data object, with the following style:
+
+	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+
+	 */
+	return this.apply_gene_data_to_reactions(this.reactions, gene_data_obj);
+    }
+    function apply_gene_data_to_reactions(reactions, gene_data_obj) {
+	/** Returns True if the scale has changed.
+
+	    Arguments
+	    ---------
+
+	    reactions: The reactions to update.
+	    
+	    gene_data_obj: The gene data object, with the following style:
+
+	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+
+	 */
+
+
+	// only change gene_string when the gene data is not applied
+	var gene_styles = this.settings.get_option('gene_styles'),
+	    evaluate_on_reactions = (gene_styles.indexOf('evaluate_on_reactions') != -1);
+	
+	if (gene_data_obj === null) {	    
+	    for (var reaction_id in reactions) {
+		var reaction = reactions[reaction_id];
+		if (evaluate_on_reactions) {
+		    reaction.data = null;
+		    reaction.data_string = '';
+		    reaction.reverse_flux = false;
+		    for (var segment_id in reaction.segments) {
+			var segment = reaction.segments[segment_id];
+			segment.data = null;
+		    }
+		}
+		reaction.gene_string = '';
+	    }
+
+	    // remember
+	    if (evaluate_on_reactions)
+		this.has_data_on_reactions = false;
+	    
+	    return false;
+	}
+
+	// get the null val
+	var null_val = [null];
+	// make an array of nulls as the default
+	for (var reaction_id in gene_data_obj) {
+	    for (var gene_id in gene_data_obj[reaction_id].genes) {
+		null_val = gene_data_obj[reaction_id].genes[gene_id]
+		    .map(function() { return null; });
+		break;
+	    }
+	    break;
+	}
+	
+	// apply the datasets to the reactions
+	var styles = this.settings.get_option('gene_styles');
+	for (var reaction_id in reactions) {
+	    var reaction = reactions[reaction_id];
+	    // find the data
+	    var d, rule, gene_values;
+	    if (reaction_id in gene_data_obj) {
+		rule = gene_data_obj[reaction_id].rule;
+		gene_values = gene_data_obj[reaction_id].genes;
+		d = data_styles.evaluate_gene_reaction_rule(rule, gene_values);
+	    } else {
+		rule = '';
+		gene_values = {};
+		d = null_val;
+	    }
+	    if (evaluate_on_reactions) {
+		var f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles);
+		reaction.data = f;
+		reaction.data_string = s;
+		reaction.reverse_flux = false;
+		// apply to the segments
+		for (var segment_id in reaction.segments) {
+		    var segment = reaction.segments[segment_id];
+		    segment.data = reaction.data;
+		    segment.reverse_flux = reaction.reverse_flux;
+		}
+	    }
+	    // always update the gene string
+	    reaction.gene_string = data_styles.gene_string_for_data(rule, gene_values, styles);
+	}
+
+	// remember
+	if (evaluate_on_reactions)
+	    this.has_data_on_reactions = true;
+
+	// if auto_domain
+	return this.update_reaction_data_domain();
+    }
+
+    // ------------------------------------------------
+    // Data domains
+    
+    function update_node_data_domain() {
+	/**  Returns True if the scale has changed.
+
+	 */
+	
+	// avoid an infinite loop
+	if (this.settings.get_option('auto_metabolite_domain')) return false;
+
+	// default min and max
+	var vals = [];
+	for (var node_id in this.nodes) {
+	    var node = this.nodes[node_id];
+	    if (node.data !== null)
+		vals.push(node.data);
+	} 
+	var old_domain = this.settings.get_option('metabolite_color_domain'),
+	    new_domain, min, max;
+	if (vals.length > 0) {
+	    if (this.settings.get_option('metabolite_styles').indexOf('abs') != -1) {
+		// if using absolute value reaction style
+		vals = vals.map(function(x) { return Math.abs(x); });
+	    }
+	    min = Math.min.apply(null, vals),
+	    max = Math.max.apply(null, vals);
+	} else {
+	    min = 0;
+	    max = 0;
+	}
+	new_domain = [0, min, max].sort();
+	this.settings.set_domain('metabolite', new_domain);
+	// compare arrays
+	return !utils.compare_arrays(old_domain, new_domain);
+    }
+    
     function update_reaction_data_domain() {
 	/**  Returns True if the scale has changed.
 
@@ -737,85 +939,6 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	this.settings.set_domain('reaction', new_domain);
 	// compare arrays
 	return !utils.compare_arrays(old_domain, new_domain);
-    }
-    function apply_metabolite_data_to_map(data) {
-	/**  Returns True if the scale has changed.
-
-	 */
-	return this.apply_metabolite_data_to_nodes(this.nodes, data);
-    }
-    function apply_metabolite_data_to_nodes(nodes, data) {
-	/**  Returns True if the scale has changed.
-
-	 */
-	if (data === null) {
-	    for (var node_id in nodes) {
-		nodes[node_id].data = null;
-		nodes[node_id].data_string = '';
-	    }
-
-	    // remember
-	    this.has_metabolite_data = false;
-	    
-	    return false;
-	}
-	
-	// grab the data
-	var styles = this.settings.get_option('metabolite_styles');
-	for (var node_id in nodes) {
-	    var node = nodes[node_id],
-		d = (node.bigg_id in data ? data[node.bigg_id] : null),
-		f = data_styles.float_for_data(d, styles),
-		s = data_styles.text_for_data(d, styles);
-	    node.data = f;
-	    node.data_string = s;
-	}
-
-	// remember
-	this.has_metabolite_data = true; 
-	
-	// if auto_domain
-	return this.update_metabolite_data_domain();
-    }
-    function update_metabolite_data_domain() {
-	/**  Returns True if the scale has changed.
-
-	 */
-	
-	// avoid an infinite loop
-	if (this.settings.get_option('auto_metabolite_domain')) return false;
-
-	// default min and max
-	var vals = [];
-	for (var node_id in this.nodes) {
-	    var node = this.nodes[node_id];
-	    if (node.data !== null)
-		vals.push(node.data);
-	} 
-	var old_domain = this.settings.get_option('metabolite_color_domain'),
-	    new_domain, min, max;
-	if (vals.length > 0) {
-	    if (this.settings.get_option('metabolite_styles').indexOf('abs') != -1) {
-		// if using absolute value reaction style
-		vals = vals.map(function(x) { return Math.abs(x); });
-	    }
-	    min = Math.min.apply(null, vals),
-	    max = Math.max.apply(null, vals);
-	} else {
-	    min = 0;
-	    max = 0;
-	}
-	new_domain = [0, min, max].sort();
-	this.settings.set_domain('metabolite', new_domain);
-	// compare arrays
-	return !utils.compare_arrays(old_domain, new_domain);
-    }
-
-    function apply_gene_data_to_map() {
-    }
-    function apply_gene_data_to_reactions() {
-    }
-    function update_gene_data_domain() {
     }
 
     // ---------------------------------------------------------------------
@@ -1037,10 +1160,10 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 		this.delete_text_label_data(Object.keys(selected_text_labels));
 
 		// apply the reaction and node data
-		if (this.has_reaction_data) 
+		if (this.has_data_on_reactions)
 		    this.update_reaction_data_domain();
-		if (this.has_metabolite_data)
-		    this.update_metabolite_data_domain();
+		if (this.has_data_on_nodes)
+		    this.update_node_data_domain();
 
 		// redraw
 		if (should_draw) {
@@ -1091,15 +1214,15 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
-	    if (this.has_reaction_data) {
+	    if (this.has_data_on_reactions) {
 		var scale_changed = this.update_reaction_data_domain();
 		if (scale_changed) this.draw_all_reactions();
 		else this.draw_these_reactions(reaction_ids_to_draw);
 	    } else {
 		if (should_draw) this.draw_these_reactions(reaction_ids_to_draw);
 	    }		
-	    if (this.has_metabolite_data) {
-		var scale_changed = this.update_metabolite_data_domain();
+	    if (this.has_data_on_nodes) {
+		var scale_changed = this.update_node_data_domain();
 		if (should_draw) {
 		    if (scale_changed) this.draw_all_nodes();
 		    else this.draw_these_nodes(Object.keys(saved_nodes));
@@ -1280,7 +1403,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // definitions
 	function extend_and_draw_metabolite(new_nodes, selected_node_id) {
 	    this.extend_nodes(new_nodes);
-	    if (this.has_metabolite_data) {
+	    if (this.has_data_on_nodes) {
 		var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
 		if (scale_changed) this.draw_all_nodes();
 		else this.draw_these_nodes([selected_node_id]);
@@ -1416,15 +1539,15 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
 	    // apply the reaction and node data
 	    // if the scale changes, redraw everything
-	    if (this.has_reaction_data) {
-		var scale_changed = this.apply_reaction_data_to_reactions(new_reactions);
+	    if (this.has_data_on_reactions) {
+		var scale_changed = this.update_reaction_data_domain();
 		if (scale_changed) this.draw_all_reactions();
 		else this.draw_these_reactions(Object.keys(new_reactions));
 	    } else {
 		this.draw_these_reactions(Object.keys(new_reactions));
 	    }		
-	    if (this.has_metabolite_data) {
-		var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
+	    if (this.has_data_on_nodes) {
+		var scale_changed = this.update_node_data_domain;
 		if (scale_changed) this.draw_all_nodes();
 		else this.draw_these_nodes(Object.keys(new_nodes));
 	    } else {
