@@ -429,6 +429,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 					this.nodes,
 					this.defs,
 					this.has_data_on_reactions,
+					this.settings.get_option('id_to_show'),
 					{ color: this.settings.get_option('reaction_no_data_color'),
 					  size: this.settings.get_option('reaction_no_data_size') },
 					this.settings.get_option('highlight_missing'),
@@ -518,6 +519,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 		return draw.update_node(sel,
 					this.scale,
 					this.has_data_on_nodes,
+					this.settings.get_option('id_to_show'),
 					this.settings.get_option('metabolite_styles'),
 					{ color: this.settings.get_option('metabolite_no_data_color'),
 					  size: this.settings.get_option('metabolite_no_data_size') },
@@ -875,9 +877,6 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	/**  Returns True if the scale has changed.
 
 	 */
-	
-	// avoid an infinite loop
-	if (this.settings.get_option('auto_metabolite_domain')) return false;
 
 	// default min and max
 	var vals = [];
@@ -910,9 +909,10 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
 	 */
 
-	// avoid an infinite loop
-	if (this.settings.get_option('auto_reaction_domain')) return false;
-
+	// check if it's gene data
+	var is_gene_data = (this.settings.get_option('gene_styles')
+			    .indexOf('evaluate_on_reactions') != -1);
+	
 	// default min and max
 	var vals = [];
 	for (var reaction_id in this.reactions) {
@@ -925,10 +925,10 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 	var old_domain = this.settings.get_option('reaction_domain'),
 	    new_domain, min, max;
 	if (vals.length > 0) {
-	    if (this.settings.get_option('reaction_styles').indexOf('abs') != -1) {
-		// if using absolute value reaction style
-		vals = vals.map(function(x) { return Math.abs(x); });
-	    }
+	    if (!is_gene_data && this.settings.get_option('reaction_styles').indexOf('abs') != -1) {
+                // if using absolute value reaction style
+                vals = vals.map(function(x) { return Math.abs(x); });
+            }
 	    min = Math.min.apply(null, vals),
 	    max = Math.max.apply(null, vals);
 	} else {

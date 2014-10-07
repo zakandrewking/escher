@@ -11,7 +11,8 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes,
 			    scale_gui: scale_gui,
-			    gene_gui: gene_gui };
+			    gene_gui: gene_gui,
+			    view_gui: view_gui };
 
     return SearchBar;
 
@@ -54,6 +55,11 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	container.append('div').text('Gene data')
 	    .attr('class', 'settings-section-heading');
 	this.gene_gui(container.append('div'));
+
+	// id_to_show
+	container.append('div').text('View options')
+	    .attr('class', 'settings-section-heading');
+	this.view_gui(container.append('div'));
 	
 	this.callback_manager = new CallbackManager();
 
@@ -223,7 +229,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 
 	// styles
 	t.append('tr').call(function(r) {
-	    r.append('td').text('Styles:');
+	    r.append('td').text('Styles:').attr('class', 'options-label');
 	    var cell = r.append('td').attr('colspan', columns.length + 1);
 
 	    var styles = ['abs', 'size', 'color', 'text'],
@@ -264,8 +270,8 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 
 	// styles
 	t.append('tr').call(function(r) {
-	    r.append('td').text('Styles:');
-	    var cell = r.append('td')
+	    r.append('td').text('Styles:').attr('class', 'options-label');
+	    var cell = r.append('td');
 
 	    var styles = ['text', 'evaluate_on_reactions'],
 		style_cells = cell.selectAll('.style-span')
@@ -293,5 +299,48 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		    }.bind(this));
 		});
 	});
+    }
+    
+    function view_gui(s, option_name, string, options) {
+
+	var t = s.append('table').attr('class', 'settings-table');
+
+	// columns
+	var settings = this.settings;
+
+	// styles
+	t.append('tr').call(function(r) {
+	    r.append('td').text('ID to show:').attr('class', 'options-label');
+	    var cell = r.append('td');
+
+	    var options = ['bigg_id', 'name'],
+		style_cells = cell.selectAll('.style-span')
+		    .data(options),
+		s = style_cells.enter()
+		    .append('span')
+		    .attr('class', 'style-span');
+	    s.append('span').text(function(d) { return d; });
+
+	    // make the checkbox
+	    s.append('input').attr('type', 'radio')
+		.attr('name', 'id_to_show')
+		.attr('value', function(d) { return d; })
+		.each(function(style) {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	.fromEventTarget(this, 'change')
+		    	.onValue(function(event) {
+			    settings.set_id_to_show(event.target.value);
+		    	});
+		    
+		    // subscribe to changes in the model
+		    settings.id_to_show_stream.onValue(function(value) {			
+			// check the box if the style is present
+			this.checked = (value == this.value);
+		    }.bind(this));
+		});
+
+	});
+
     }
 });

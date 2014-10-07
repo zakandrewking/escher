@@ -121,6 +121,9 @@
 .settings-table td {
     padding: 3px 5px;    
 }
+td.options-label {
+    width: 88px;
+}
 .settings-number {
     text-align: center;
     color: #AAA;

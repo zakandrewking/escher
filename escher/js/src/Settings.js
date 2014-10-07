@@ -34,7 +34,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 			    set_domain: set_domain,
 			    set_range_value: set_range_value,
 			    set_no_data_value: set_no_data_value,
-			    set_highlight_missing: set_highlight_missing,			    
+			    set_highlight_missing: set_highlight_missing,
+			    set_id_to_show: set_id_to_show,
 			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes };
@@ -72,7 +73,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
  	    				size: get_option('reaction_no_data_size') },
  			    metabolite: { color: get_option('metabolite_no_data_color'),
  	    				  size: get_option('metabolite_no_data_size') } },
-	    def_highlight_missing = get_option('highlight_missing_color');
+	    def_highlight_missing = get_option('highlight_missing_color'),
+	    def_id_to_show = get_option('id_to_show');
 
 	// event streams
 	this.data_styles_bus = {};
@@ -87,6 +89,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	this.no_data_stream = {};
 	// this.highlight_missing_bus;
 	// this.highlight_missing_stream;
+	// this.id_to_show_bus;
+	// this.id_to_show_stream;
 
 	// manage accepting/abandoning changes
 	this.status_bus = new bacon.Bus();
@@ -267,7 +271,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	    }.bind(this));
 	}.bind(this));
 
-	
 	// set up the highlight missing settings
 	// make the bus
 	this.highlight_missing_bus = new bacon.Bus();
@@ -290,6 +293,28 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	// push the default
 	var def = def_highlight_missing;
 	this.highlight_missing_bus.push(def);
+
+	// set up the id_to_show setting
+	// make the bus
+	this.id_to_show_bus = new bacon.Bus();
+	// make a new constant for the input default
+	this.id_to_show_stream = this.id_to_show_bus
+	// conditionally accept changes
+	    .convert_to_conditional_stream(this.status_bus)
+	// combine into state array
+	    .scan([], function(current, value) {
+		return value;
+	    })
+	// force updates
+	    .force_update_with_bus(this.force_update_bus);
+
+	// get the latest
+	this.id_to_show_stream.onValue(function(v) {
+	    this.set_option('id_to_show', v);
+	}.bind(this));
+
+	// push the default
+	this.id_to_show_bus.push(def_id_to_show);
 
 	// definitions
 	function convert_to_conditional_stream(status_stream) {
@@ -463,6 +488,20 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
 	*/
 	this.highlight_missing_bus.push(value);
+    }
+
+    function set_id_to_show(value) {
+	/** Set which id should be visible.
+
+	    Arguments
+	    ---------
+
+	    value: Either 'bigg_id' or 'name';
+
+	 */
+	if (['bigg_id', 'name'].indexOf(value) == -1)
+	    throw new Error('Bad value for id_to_show: ' + value);
+	this.id_to_show_bus.push(value);
     }
 
     function hold_changes() {

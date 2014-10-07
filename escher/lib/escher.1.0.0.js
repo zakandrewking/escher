@@ -2996,7 +2996,11 @@ define('data_styles',['utils'], function(utils) {
 		    val = gene_values[gene_id][i];
 		    all_null = false;
 		}
-		curr_val = curr_val.replace(new RegExp(gene_id, 'g'),  val);
+		// get the escaped string, with surrounding space or parentheses
+		var space_or_par_start = '(^|[\\\s\\\(\\\)])',
+		    space_or_par_finish = '([\\\s\\\(\\\)]|$)',
+		    escaped = space_or_par_start + escape_reg_exp(gene_id) + space_or_par_finish;
+		curr_val = curr_val.replace(new RegExp(escaped, 'g'),  '$1' + val + '$2');
 	    }
 	    if (all_null) {
 		out.push(null);
@@ -3038,11 +3042,19 @@ define('data_styles',['utils'], function(utils) {
 	    } 
 	    // strict test for number
 	    var num = Number(curr_val);
-	    if (isNaN(num))
-		throw new Error('Could not evaluate ' + rule);
-	    out.push(num)
+	    if (isNaN(num)) {
+		console.warn('Could not evaluate ' + rule);
+		out.push(null);
+	    } else {
+		out.push(num);
+	    }
 	}
-	return out;	
+	return out;
+
+	// definitions
+	function escape_reg_exp(string) {
+	    return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+	}
     }
 });
 
@@ -3096,15 +3108,17 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
     }
 
     function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
-			     defs, has_data_on_reactions, no_data_style,
-			     missing_component_color, reaction_data_styles,
-			     gene_data_styles, label_drag_behavior) {
+			     defs, has_data_on_reactions, id_to_show,
+			     no_data_style, missing_component_color,
+			     reaction_data_styles, gene_data_styles,
+			     label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale',
 			       'cobra_model',
 			       'drawn_nodes', 
 			       'defs',
 			       'has_data_on_reactions',
+			       'id_to_show',
 			       'no_data_style',
 			       'missing_component_color',
 			       'reaction_data_styles',
@@ -3113,10 +3127,12 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 
         // update reaction label
         update_selection.select('.reaction-label-group')
-            .call(function(sel) { return update_reaction_label(sel, has_data_on_reactions,
-							       reaction_data_styles,
-							       gene_data_styles,
-							       label_drag_behavior); });
+            .call(function(sel) {
+		return update_reaction_label(sel, has_data_on_reactions,
+					     id_to_show, reaction_data_styles,
+					     gene_data_styles,
+					     label_drag_behavior);
+	    });
 
 	// draw segments
 	utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
@@ -3199,8 +3215,9 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 
     }
 
-    function update_reaction_label(sel, has_data_on_reactions, reaction_data_styles,
-				   gene_data_styles, label_drag_behavior, drawn_nodes) {
+    function update_reaction_label(sel, has_data_on_reactions, id_to_show,
+				   reaction_data_styles, gene_data_styles,
+				   label_drag_behavior, drawn_nodes) {
 	utils.check_undefined(arguments, ['sel',
 					  'has_data_on_reactions',
 					  'reaction_data_styles',
@@ -3215,7 +3232,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 	    .call(label_drag_behavior);
 	sel.select('.reaction-label')
 	    .text(function(d) { 
-		var t = d.bigg_id;
+		var t = d[id_to_show];
 		if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
@@ -3497,7 +3514,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
     }
 
     function update_node(update_selection, scale, has_data_on_nodes,
-			 metabolite_data_styles, no_data_style,
+			 id_to_show, metabolite_data_styles, no_data_style,
 			 click_fn, mouseover_fn, mouseout_fn,
 			 drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
@@ -3555,7 +3572,7 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 		return String(20)+'px';
             })
             .text(function(d) {	
-		var t = d.bigg_id;
+		var t = d[id_to_show];
 		if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
@@ -9072,6 +9089,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 					this.nodes,
 					this.defs,
 					this.has_data_on_reactions,
+					this.settings.get_option('id_to_show'),
 					{ color: this.settings.get_option('reaction_no_data_color'),
 					  size: this.settings.get_option('reaction_no_data_size') },
 					this.settings.get_option('highlight_missing'),
@@ -9161,6 +9179,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 		return draw.update_node(sel,
 					this.scale,
 					this.has_data_on_nodes,
+					this.settings.get_option('id_to_show'),
 					this.settings.get_option('metabolite_styles'),
 					{ color: this.settings.get_option('metabolite_no_data_color'),
 					  size: this.settings.get_option('metabolite_no_data_size') },
@@ -9518,9 +9537,6 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	/**  Returns True if the scale has changed.
 
 	 */
-	
-	// avoid an infinite loop
-	if (this.settings.get_option('auto_metabolite_domain')) return false;
 
 	// default min and max
 	var vals = [];
@@ -9553,9 +9569,10 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
 	 */
 
-	// avoid an infinite loop
-	if (this.settings.get_option('auto_reaction_domain')) return false;
-
+	// check if it's gene data
+	var is_gene_data = (this.settings.get_option('gene_styles')
+			    .indexOf('evaluate_on_reactions') != -1);
+	
 	// default min and max
 	var vals = [];
 	for (var reaction_id in this.reactions) {
@@ -9568,10 +9585,10 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 	var old_domain = this.settings.get_option('reaction_domain'),
 	    new_domain, min, max;
 	if (vals.length > 0) {
-	    if (this.settings.get_option('reaction_styles').indexOf('abs') != -1) {
-		// if using absolute value reaction style
-		vals = vals.map(function(x) { return Math.abs(x); });
-	    }
+	    if (!is_gene_data && this.settings.get_option('reaction_styles').indexOf('abs') != -1) {
+                // if using absolute value reaction style
+                vals = vals.map(function(x) { return Math.abs(x); });
+            }
 	    min = Math.min.apply(null, vals),
 	    max = Math.max.apply(null, vals);
 	} else {
@@ -11863,7 +11880,8 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 			    set_domain: set_domain,
 			    set_range_value: set_range_value,
 			    set_no_data_value: set_no_data_value,
-			    set_highlight_missing: set_highlight_missing,			    
+			    set_highlight_missing: set_highlight_missing,
+			    set_id_to_show: set_id_to_show,
 			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes };
@@ -11901,7 +11919,8 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
  	    				size: get_option('reaction_no_data_size') },
  			    metabolite: { color: get_option('metabolite_no_data_color'),
  	    				  size: get_option('metabolite_no_data_size') } },
-	    def_highlight_missing = get_option('highlight_missing_color');
+	    def_highlight_missing = get_option('highlight_missing_color'),
+	    def_id_to_show = get_option('id_to_show');
 
 	// event streams
 	this.data_styles_bus = {};
@@ -11916,6 +11935,8 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.no_data_stream = {};
 	// this.highlight_missing_bus;
 	// this.highlight_missing_stream;
+	// this.id_to_show_bus;
+	// this.id_to_show_stream;
 
 	// manage accepting/abandoning changes
 	this.status_bus = new bacon.Bus();
@@ -12096,7 +12117,6 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	    }.bind(this));
 	}.bind(this));
 
-	
 	// set up the highlight missing settings
 	// make the bus
 	this.highlight_missing_bus = new bacon.Bus();
@@ -12119,6 +12139,28 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	// push the default
 	var def = def_highlight_missing;
 	this.highlight_missing_bus.push(def);
+
+	// set up the id_to_show setting
+	// make the bus
+	this.id_to_show_bus = new bacon.Bus();
+	// make a new constant for the input default
+	this.id_to_show_stream = this.id_to_show_bus
+	// conditionally accept changes
+	    .convert_to_conditional_stream(this.status_bus)
+	// combine into state array
+	    .scan([], function(current, value) {
+		return value;
+	    })
+	// force updates
+	    .force_update_with_bus(this.force_update_bus);
+
+	// get the latest
+	this.id_to_show_stream.onValue(function(v) {
+	    this.set_option('id_to_show', v);
+	}.bind(this));
+
+	// push the default
+	this.id_to_show_bus.push(def_id_to_show);
 
 	// definitions
 	function convert_to_conditional_stream(status_stream) {
@@ -12294,6 +12336,20 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	this.highlight_missing_bus.push(value);
     }
 
+    function set_id_to_show(value) {
+	/** Set which id should be visible.
+
+	    Arguments
+	    ---------
+
+	    value: Either 'bigg_id' or 'name';
+
+	 */
+	if (['bigg_id', 'name'].indexOf(value) == -1)
+	    throw new Error('Bad value for id_to_show: ' + value);
+	this.id_to_show_bus.push(value);
+    }
+
     function hold_changes() {
 	this.status_bus.push('hold');
     }
@@ -12321,7 +12377,8 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes,
 			    scale_gui: scale_gui,
-			    gene_gui: gene_gui };
+			    gene_gui: gene_gui,
+			    view_gui: view_gui };
 
     return SearchBar;
 
@@ -12364,6 +12421,11 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	container.append('div').text('Gene data')
 	    .attr('class', 'settings-section-heading');
 	this.gene_gui(container.append('div'));
+
+	// id_to_show
+	container.append('div').text('View options')
+	    .attr('class', 'settings-section-heading');
+	this.view_gui(container.append('div'));
 	
 	this.callback_manager = new CallbackManager();
 
@@ -12533,7 +12595,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 
 	// styles
 	t.append('tr').call(function(r) {
-	    r.append('td').text('Styles:');
+	    r.append('td').text('Styles:').attr('class', 'options-label');
 	    var cell = r.append('td').attr('colspan', columns.length + 1);
 
 	    var styles = ['abs', 'size', 'color', 'text'],
@@ -12574,8 +12636,8 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 
 	// styles
 	t.append('tr').call(function(r) {
-	    r.append('td').text('Styles:');
-	    var cell = r.append('td')
+	    r.append('td').text('Styles:').attr('class', 'options-label');
+	    var cell = r.append('td');
 
 	    var styles = ['text', 'evaluate_on_reactions'],
 		style_cells = cell.selectAll('.style-span')
@@ -12603,6 +12665,49 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		    }.bind(this));
 		});
 	});
+    }
+    
+    function view_gui(s, option_name, string, options) {
+
+	var t = s.append('table').attr('class', 'settings-table');
+
+	// columns
+	var settings = this.settings;
+
+	// styles
+	t.append('tr').call(function(r) {
+	    r.append('td').text('ID to show:').attr('class', 'options-label');
+	    var cell = r.append('td');
+
+	    var options = ['bigg_id', 'name'],
+		style_cells = cell.selectAll('.style-span')
+		    .data(options),
+		s = style_cells.enter()
+		    .append('span')
+		    .attr('class', 'style-span');
+	    s.append('span').text(function(d) { return d; });
+
+	    // make the checkbox
+	    s.append('input').attr('type', 'radio')
+		.attr('name', 'id_to_show')
+		.attr('value', function(d) { return d; })
+		.each(function(style) {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	.fromEventTarget(this, 'change')
+		    	.onValue(function(event) {
+			    settings.set_id_to_show(event.target.value);
+		    	});
+		    
+		    // subscribe to changes in the model
+		    settings.id_to_show_stream.onValue(function(value) {			
+			// check the box if the style is present
+			this.checked = (value == this.value);
+		    }.bind(this));
+		});
+
+	});
+
     }
 });
 
@@ -12834,6 +12939,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
      options: An object.
 
+         id_to_show: Either 'bigg_id' (default) or 'name'.
 
 	 reaction_data: An object with reaction ids for keys and reaction data
 	 points for values.
@@ -12855,6 +12961,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
 	 quick_jump: A list of map names that can be reached by
 	 selecting them from a quick jump menu on the map.
+
+	 first_load_callback: A function to run after loading.
 	 
      */
     var Builder = utils.make_class();
@@ -12888,11 +12996,16 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	
 	this.map_data = map_data;
 	this.model_data = model_data;
+
+	// default sel
+	var sel = null;
+	if (!('selection' in options) || options['selection'] === null)
+	    sel = d3.select("body").append("div");
 	
 	// set defaults
 	this.options = utils.set_options(options, {
 	    // location
-	    selection: d3.select("body").append("div"),
+	    selection: sel,
 	    // view options
 	    menu: 'all',
 	    scroll_behavior: 'pan',
@@ -12904,6 +13017,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    css: null,
 	    starting_reaction: null,
 	    never_ask_before_quit: false,
+	    id_to_show: 'bigg_id',
 	    // applied data
 	    // reaction
 	    auto_reaction_domain: true,
@@ -12930,7 +13044,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    highlight_missing_color: 'red',
 	    // quick jump menu
 	    local_host: null,
-	    quick_jump: null
+	    quick_jump: null,
+	    first_load_callback: null
 	});
 
 	// check the location
@@ -12950,6 +13065,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	
 	// set up this callback manager
 	this.callback_manager = CallbackManager();
+	if (this.options.first_load_callback !== null)
+	    this.callback_manager.set('first_load', this.options.first_load_callback);
 
 	// load the model, map, and update data in both
 	this.load_model(this.model_data, false);
@@ -12958,11 +13075,19 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	
 	// setting callbacks
 	// TODO enable atomic updates. Right now, every time
-	// the menu closes, every stream updates.
+	// the menu closes, everything is drawn.
 	this.settings.status_bus
 	    .onValue(function(x) {
-		if (x == 'accepted') this.update_data(true, true);
+		if (x == 'accepted') {
+		    this.update_data(true, true, ['reaction', 'metabolite', 'gene'], false);
+		    if (this.map !== null) {
+			this.map.draw_all_nodes();
+			this.map.draw_all_reactions();
+		    }
+		}
 	    }.bind(this));
+
+	this.callback_manager.run('first_load');
     }
 
     // Definitions
@@ -13219,7 +13344,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	this.update_data(true, true, 'gene');
     }
     
-    function update_data(update_model, update_map, kind) {
+    function update_data(update_model, update_map, kind, should_draw) {
 	/** Set data and settings for the model.
 
 	 Arguments
@@ -13229,14 +13354,19 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
 	 update_map: (Boolean) Update data for the map.
 
-	 kind: (Optional) An array defining which data is being updated that can include
-	 any of: ['reaction', 'metabolite', 'gene']. Default: all.
+	 kind: (Optional, Default: all) An array defining which data is being
+	 updated that can include any of: ['reaction', 'metabolite', 'gene'].
+
+	 should_draw: (Optional, Default: true) Whether to redraw the update
+	 sections of the map.
 	 
 	 */
 
-	// default: all
+	// defaults
 	if (kind === undefined)
 	    kind = ['reaction', 'metabolite', 'gene'];
+	if (should_draw === undefined)
+	    should_draw = true;
 
 	// metabolite data
 	var update_metabolite_data = (kind.indexOf('metabolite') != -1);
@@ -13249,8 +13379,9 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 						       this.options.metabolite_styles);
 	    }
 	    if (update_map && this.map !== null) {
-		this.map.apply_metabolite_data_to_map(data_object); 
-		this.map.draw_all_nodes();
+		this.map.apply_metabolite_data_to_map(data_object);
+		if (should_draw)
+		    this.map.draw_all_nodes();
 	    }
 	}
 
@@ -13270,7 +13401,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    }
 	    if (update_map && this.map !== null) {
 		this.map.apply_reaction_data_to_map(data_object); 
-		this.map.draw_all_reactions();
+		if (should_draw)
+		    this.map.draw_all_reactions();
 	    }
 	}
 
@@ -13297,7 +13429,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    }
 	    if (update_map && this.map !== null) {
 		this.map.apply_gene_data_to_map(data_object);
-		this.map.draw_all_reactions();
+		if (should_draw)
+		    this.map.draw_all_reactions();
 	    }
 	}	
     }

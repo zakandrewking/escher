@@ -236,7 +236,11 @@ define(['utils'], function(utils) {
 		    val = gene_values[gene_id][i];
 		    all_null = false;
 		}
-		curr_val = curr_val.replace(new RegExp(gene_id, 'g'),  val);
+		// get the escaped string, with surrounding space or parentheses
+		var space_or_par_start = '(^|[\\\s\\\(\\\)])',
+		    space_or_par_finish = '([\\\s\\\(\\\)]|$)',
+		    escaped = space_or_par_start + escape_reg_exp(gene_id) + space_or_par_finish;
+		curr_val = curr_val.replace(new RegExp(escaped, 'g'),  '$1' + val + '$2');
 	    }
 	    if (all_null) {
 		out.push(null);
@@ -278,10 +282,18 @@ define(['utils'], function(utils) {
 	    } 
 	    // strict test for number
 	    var num = Number(curr_val);
-	    if (isNaN(num))
-		throw new Error('Could not evaluate ' + rule);
-	    out.push(num)
+	    if (isNaN(num)) {
+		console.warn('Could not evaluate ' + rule);
+		out.push(null);
+	    } else {
+		out.push(num);
+	    }
 	}
-	return out;	
+	return out;
+
+	// definitions
+	function escape_reg_exp(string) {
+	    return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+	}
     }
 });

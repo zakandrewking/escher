@@ -11,6 +11,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
      options: An object.
 
+         id_to_show: Either 'bigg_id' (default) or 'name'.
 
 	 reaction_data: An object with reaction ids for keys and reaction data
 	 points for values.
@@ -32,6 +33,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
 	 quick_jump: A list of map names that can be reached by
 	 selecting them from a quick jump menu on the map.
+
+	 first_load_callback: A function to run after loading.
 	 
      */
     var Builder = utils.make_class();
@@ -65,11 +68,16 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	
 	this.map_data = map_data;
 	this.model_data = model_data;
+
+	// default sel
+	var sel = null;
+	if (!('selection' in options) || options['selection'] === null)
+	    sel = d3.select("body").append("div");
 	
 	// set defaults
 	this.options = utils.set_options(options, {
 	    // location
-	    selection: d3.select("body").append("div"),
+	    selection: sel,
 	    // view options
 	    menu: 'all',
 	    scroll_behavior: 'pan',
@@ -81,6 +89,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    css: null,
 	    starting_reaction: null,
 	    never_ask_before_quit: false,
+	    id_to_show: 'bigg_id',
 	    // applied data
 	    // reaction
 	    auto_reaction_domain: true,
@@ -107,7 +116,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    highlight_missing_color: 'red',
 	    // quick jump menu
 	    local_host: null,
-	    quick_jump: null
+	    quick_jump: null,
+	    first_load_callback: null
 	});
 
 	// check the location
@@ -127,6 +137,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	
 	// set up this callback manager
 	this.callback_manager = CallbackManager();
+	if (this.options.first_load_callback !== null)
+	    this.callback_manager.set('first_load', this.options.first_load_callback);
 
 	// load the model, map, and update data in both
 	this.load_model(this.model_data, false);
@@ -135,11 +147,19 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	
 	// setting callbacks
 	// TODO enable atomic updates. Right now, every time
-	// the menu closes, every stream updates.
+	// the menu closes, everything is drawn.
 	this.settings.status_bus
 	    .onValue(function(x) {
-		if (x == 'accepted') this.update_data(true, true);
+		if (x == 'accepted') {
+		    this.update_data(true, true, ['reaction', 'metabolite', 'gene'], false);
+		    if (this.map !== null) {
+			this.map.draw_all_nodes();
+			this.map.draw_all_reactions();
+		    }
+		}
 	    }.bind(this));
+
+	this.callback_manager.run('first_load');
     }
 
     // Definitions
@@ -396,7 +416,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	this.update_data(true, true, 'gene');
     }
     
-    function update_data(update_model, update_map, kind) {
+    function update_data(update_model, update_map, kind, should_draw) {
 	/** Set data and settings for the model.
 
 	 Arguments
@@ -406,14 +426,19 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
 	 update_map: (Boolean) Update data for the map.
 
-	 kind: (Optional) An array defining which data is being updated that can include
-	 any of: ['reaction', 'metabolite', 'gene']. Default: all.
+	 kind: (Optional, Default: all) An array defining which data is being
+	 updated that can include any of: ['reaction', 'metabolite', 'gene'].
+
+	 should_draw: (Optional, Default: true) Whether to redraw the update
+	 sections of the map.
 	 
 	 */
 
-	// default: all
+	// defaults
 	if (kind === undefined)
 	    kind = ['reaction', 'metabolite', 'gene'];
+	if (should_draw === undefined)
+	    should_draw = true;
 
 	// metabolite data
 	var update_metabolite_data = (kind.indexOf('metabolite') != -1);
@@ -426,8 +451,9 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 						       this.options.metabolite_styles);
 	    }
 	    if (update_map && this.map !== null) {
-		this.map.apply_metabolite_data_to_map(data_object); 
-		this.map.draw_all_nodes();
+		this.map.apply_metabolite_data_to_map(data_object);
+		if (should_draw)
+		    this.map.draw_all_nodes();
 	    }
 	}
 
@@ -447,7 +473,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    }
 	    if (update_map && this.map !== null) {
 		this.map.apply_reaction_data_to_map(data_object); 
-		this.map.draw_all_reactions();
+		if (should_draw)
+		    this.map.draw_all_reactions();
 	    }
 	}
 
@@ -474,7 +501,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    }
 	    if (update_map && this.map !== null) {
 		this.map.apply_gene_data_to_map(data_object);
-		this.map.draw_all_reactions();
+		if (should_draw)
+		    this.map.draw_all_reactions();
 	    }
 	}	
     }

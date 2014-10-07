@@ -48,15 +48,17 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     }
 
     function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
-			     defs, has_data_on_reactions, no_data_style,
-			     missing_component_color, reaction_data_styles,
-			     gene_data_styles, label_drag_behavior) {
+			     defs, has_data_on_reactions, id_to_show,
+			     no_data_style, missing_component_color,
+			     reaction_data_styles, gene_data_styles,
+			     label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale',
 			       'cobra_model',
 			       'drawn_nodes', 
 			       'defs',
 			       'has_data_on_reactions',
+			       'id_to_show',
 			       'no_data_style',
 			       'missing_component_color',
 			       'reaction_data_styles',
@@ -65,10 +67,12 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
         // update reaction label
         update_selection.select('.reaction-label-group')
-            .call(function(sel) { return update_reaction_label(sel, has_data_on_reactions,
-							       reaction_data_styles,
-							       gene_data_styles,
-							       label_drag_behavior); });
+            .call(function(sel) {
+		return update_reaction_label(sel, has_data_on_reactions,
+					     id_to_show, reaction_data_styles,
+					     gene_data_styles,
+					     label_drag_behavior);
+	    });
 
 	// draw segments
 	utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
@@ -151,8 +155,9 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
     }
 
-    function update_reaction_label(sel, has_data_on_reactions, reaction_data_styles,
-				   gene_data_styles, label_drag_behavior, drawn_nodes) {
+    function update_reaction_label(sel, has_data_on_reactions, id_to_show,
+				   reaction_data_styles, gene_data_styles,
+				   label_drag_behavior, drawn_nodes) {
 	utils.check_undefined(arguments, ['sel',
 					  'has_data_on_reactions',
 					  'reaction_data_styles',
@@ -167,7 +172,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    .call(label_drag_behavior);
 	sel.select('.reaction-label')
 	    .text(function(d) { 
-		var t = d.bigg_id;
+		var t = d[id_to_show];
 		if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
@@ -449,7 +454,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     }
 
     function update_node(update_selection, scale, has_data_on_nodes,
-			 metabolite_data_styles, no_data_style,
+			 id_to_show, metabolite_data_styles, no_data_style,
 			 click_fn, mouseover_fn, mouseout_fn,
 			 drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
@@ -507,7 +512,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		return String(20)+'px';
             })
             .text(function(d) {	
-		var t = d.bigg_id;
+		var t = d[id_to_show];
 		if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
