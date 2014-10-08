@@ -44,6 +44,13 @@ describe('data_styles', function() {
 	    out = escher.data_styles.import_and_check(gene_data, [], 'gene_data', reactions);
 	expect(out).toEqual(expected);
     });
+
+    it('csv_converter', function() {
+        var csv_rows = [['g1', 10, 20],
+                        ['g2', 15, 25]];
+        expect(escher.data_styles.csv_converter(csv_rows))
+            .toEqual([{'g1': 10, 'g2': 15}, {'g1': 20, 'g2': 25}]);
+    });
     
     it('genes_for_gene_reaction_rule', function() {
 	// funny names

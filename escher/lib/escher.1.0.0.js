@@ -2875,12 +2875,17 @@ define('data_styles',['utils'], function(utils) {
 	    format = d3.format('.3g');
 	for (var gene_id in gene_values) {
 	    var d = gene_values[gene_id],
-		f = float_for_data(d, styles, true);
+                f = float_for_data(d, styles, true);
 	    if (d.length==1) {
-		out = out.replace(gene_id, (gene_id + ' (' + null_or_d(f, format) + ')\n'));
+                out = replace_gene_in_rule(out, gene_id, (gene_id + ' (' + null_or_d(f, format) + ')\n'));
 	    }
 	    if (d.length==2) {
-		throw new Error('Not implemented');
+                var new_str = (gene_id + ' (' +
+                               null_or_d(d[0], format) + ', ' +
+                               null_or_d(d[1], format) + ': ' +
+                               null_or_d(f, format) +
+                               ')\n');
+                out = replace_gene_in_rule(out, gene_id, new_str);
 	    }
 	}
 	out = out.replace(/\n\s*\)?\s*$/, ')');
@@ -2919,14 +2924,20 @@ define('data_styles',['utils'], function(utils) {
 	/** Convert data from a csv file to json-style data.
 
 	 */
-	converted = {};
+        // count rows
+	var c = csv_rows[0].length,
+            converted = [];
+        if (c < 2 || c > 3)
+	    throw new Error('CSV file must have 2 or 3 columns');
+        // set up rows
+        for (var i = 1; i < c; i++) {
+            converted[i - 1] = {};
+        }
+        // fill
 	csv_rows.forEach(function(row) {
-	    if (row.length==2)
-		converted[row[0]] = parseFloat(row[1]);
-	    else if (row.length > 2)
-		converted[row[0]] = row.slice(1).map(parseFloat);
-	    else
-		throw new Error('CSV file must have at least 2 columns');
+            for (var i = 1, l = row.length; i < l; i++) {
+                converted[i - 1][row[0]] = parseFloat(row[i]);
+            }
 	});
 	return converted;
     }
@@ -2996,11 +3007,7 @@ define('data_styles',['utils'], function(utils) {
 		    val = gene_values[gene_id][i];
 		    all_null = false;
 		}
-		// get the escaped string, with surrounding space or parentheses
-		var space_or_par_start = '(^|[\\\s\\\(\\\)])',
-		    space_or_par_finish = '([\\\s\\\(\\\)]|$)',
-		    escaped = space_or_par_start + escape_reg_exp(gene_id) + space_or_par_finish;
-		curr_val = curr_val.replace(new RegExp(escaped, 'g'),  '$1' + val + '$2');
+                curr_val = replace_gene_in_rule(curr_val, gene_id, val);
 	    }
 	    if (all_null) {
 		out.push(null);
@@ -3050,7 +3057,15 @@ define('data_styles',['utils'], function(utils) {
 	    }
 	}
 	return out;
-
+    }
+    
+    function replace_gene_in_rule(rule, gene_id, val) {
+        // get the escaped string, with surrounding space or parentheses
+	var space_or_par_start = '(^|[\\\s\\\(\\\)])',
+	    space_or_par_finish = '([\\\s\\\(\\\)]|$)',
+	    escaped = space_or_par_start + escape_reg_exp(gene_id) + space_or_par_finish;
+	return rule.replace(new RegExp(escaped, 'g'),  '$1' + val + '$2');
+        
 	// definitions
 	function escape_reg_exp(string) {
 	    return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
