@@ -22,8 +22,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	 gene_data: An object with Gene ids for keys and gene data points for
 	 values.
 
-	 gene_styles: An array with any of the following options: ['text',
-	 'evaluate_on_reactions'].
+	 gene_styles: (Default: ['text']) An array with any of the following
+	 options: ['text', 'evaluate_on_reactions'].
 
          highlight_missing_color: A color to apply to components that are not
          the in cobra model, or null to apply no color. Default: 'red'.
@@ -519,7 +519,13 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    .button({ text: "Load map JSON (Ctrl o)",
 		      input: { assign: key_manager.assigned_keys.load,
 			       key: 'fn',
-			       fn: load_map_for_file.bind(this) }
+			       fn: load_map_for_file.bind(this),
+                               pre_fn: function() {
+                                   map.set_status('Loading map...');
+                               },
+                               failure_fn: function() {
+                                   map.set_status('');
+                               }}
 		    })
 	    .button({ key: keys.save_svg,
 		      text: "Export as SVG (Ctrl Shift s)" })
@@ -530,7 +536,13 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    .button({ text: 'Load COBRA model JSON (Ctrl m)',
 		      input: { assign: key_manager.assigned_keys.load_model,
 			       key: 'fn',
-			       fn: load_model_for_file.bind(this) }
+			       fn: load_model_for_file.bind(this),
+                               pre_fn: function() {
+                                   map.set_status('Loading model...');
+                               },
+                               failure_fn: function() {
+                                   map.set_status('');
+                               } }
 		    });
 
 	// data dropdown
@@ -729,10 +741,22 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    /** Load a map. This reloads the whole builder.
 
 	     */
-	    if (error) console.warn(error);
-	    check_map(map_data);
-	    this.load_map(map_data);
-
+            
+	    if (error) {
+		console.warn(error); 
+		this.map.set_status('Error loading map: ' + error, 2000);
+		return;
+	    }
+            
+	    try {            
+	        check_map(map_data);
+	        this.load_map(map_data); 
+	        this.map.set_status('Loaded map ' + map_data[0].map_id, 3000);
+            } catch (e) {
+                console.warn(e);
+		this.map.set_status('Error loading map: ' + e, 2000);
+            }
+            
 	    // definitions
 	    function check_map(data) {
 		/** Perform a quick check to make sure the map is mostly valid.
@@ -751,20 +775,25 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	     */
 	    if (error) {
 		console.warn(error); 
-		this.map.set_status('Error loading model', 2000);
+		this.map.set_status('Error loading model: ' + error, 2000);
 		return;
 	    }
+
+	    try {
+	        this.load_model(data); 
+	        this.reaction_input.toggle(false);
+	        if ('id' in data)
+		    this.map.set_status('Loaded model ' + data.id, 3000);
+	        else
+		    this.map.set_status('Loaded model (no model id)', 3000);
+	        if (this.settings.highlight_missing!==null) {
+		    this.map.draw_everything();
+	        }
+            } catch (e) {
+                console.warn(e);
+		this.map.set_status('Error loading model: ' + e, 2000);
+            }
 	    
-	    this.load_model(data);
-	    
-	    this.reaction_input.toggle(false);
-	    if ('id' in data)
-		this.map.set_status('Loaded model ' + data.id, 2000);
-	    else
-		this.map.set_status('Loaded model (no model id)', 2000);
-	    if (this.settings.highlight_missing!==null) {
-		this.map.draw_everything();
-	    }
 	}
 	function load_reaction_data_for_file(error, data) {
 	    if (error) {
@@ -917,7 +946,9 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    search: { key: 70, modifiers: { control: true }, // ctrl-f
 		      fn: search_bar.toggle.bind(search_bar, true) },
 	    view_mode: { fn: this.view_mode.bind(this),
-			 ignore_with_input: true }
+			 ignore_with_input: true },
+	    show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
+			     fn: settings_page.toggle.bind(settings_page) }
 	};
 	if (enable_editing) {
 	    utils.extend(keys, {
@@ -982,9 +1013,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 			       fn: map.select_all.bind(map) },
 		select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
 			       fn: map.select_none.bind(map) },
-		invert_selection: { fn: map.invert_selection.bind(map) },
-		show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
-				 fn: settings_page.toggle.bind(settings_page) }
+		invert_selection: { fn: map.invert_selection.bind(map) }
 	    });
 	}
 	return keys;

@@ -81,8 +81,10 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		} else if ('input' in button) {
 		    var input = button.input,
 			out = (input.accept_csv ?
-			       set_json_or_csv_input_button(link, li, input.fn) :
-			       set_json_input_button(link, li, input.fn));
+			       set_json_or_csv_input_button(link, li, input.pre_fn,
+                                                            input.fn, input.failure_fn) :
+			       set_json_input_button(link, li, input.pre_fn,
+                                                     input.fn, input.failure_fn));
 		    if ('assign' in input && 'key' in input)
 			input.assign[input.key] = out;
 		}
@@ -102,23 +104,25 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 	    key.fn.call(key.target);
 	});
     }
-    function set_json_input_button(b, s, fn) {
+    function set_json_input_button(b, s, pre_fn, post_fn, failure_fn) {
 	var input = s.append("input")
 		.attr("type", "file")
 		.style("display", "none")
 		.on("change", function() {
 		    utils.load_json(this.files[0],
 				    function(e, d) {
-					fn(e, d);
+					post_fn(e, d);
 					this.value = "";
-				    }.bind(this));
+				    }.bind(this),
+                                    pre_fn,
+                                    failure_fn);
 		});
 	b.on('click', function(e) {
 	    input.node().click();
 	});
 	return function() { input.node().click(); };
     }
-    function set_json_or_csv_input_button(b, s, fn) {
+    function set_json_or_csv_input_button(b, s, pre_fn, post_fn, failure_fn) {
 	var input = s.append("input")
 		.attr("type", "file")
 		.style("display", "none")
@@ -126,9 +130,11 @@ define(["utils", "data_styles"], function(utils, data_styles) {
 		    utils.load_json_or_csv(this.files[0],
 					   data_styles.csv_converter,
 					   function(e, d) {
-					       fn(e, d);
+					       post_fn(e, d);
 					       this.value = "";
-					   }.bind(this));
+					   }.bind(this),
+                                           pre_fn,
+                                           failure_fn);
 		});
 	b.on('click', function(e) {
 	    input.node().click();

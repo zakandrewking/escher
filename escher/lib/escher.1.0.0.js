@@ -1219,8 +1219,8 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	FileSaver(blob, name + '.json');
     }
 
-    function load_json(f, callback) {
-	/** Try to load the file as JSON..
+    function load_json(f, callback, pre_fn, failure_fn) {
+	/** Try to load the file as JSON.
 
 	    Arguments
 	    ---------
@@ -1229,6 +1229,10 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 
 	    callback: A callback function that accepts arguments: error, data.
 
+            pre_fn: (optional) A function to call before loading the data.
+
+            failure_fn: (optional) A function to call if the load fails or is aborted.
+            
 	*/
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
@@ -1250,11 +1254,24 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	    // if successful, return the data
 	    callback(null, data);
         };
+        if (pre_fn !== undefined && pre_fn !== null) {
+            try { pre_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onabort = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onerror = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
     }
     
-    function load_json_or_csv(f, csv_converter, callback, debug_event) {
+    function load_json_or_csv(f, csv_converter, callback, pre_fn, failure_fn,
+                              debug_event) {
 	/** Try to load the file as JSON or CSV (JSON first).
 
 	    Arguments
@@ -1266,8 +1283,13 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 
 	    callback: A callback function that accepts arguments: error, data.
 
-	    debug_event: An event, with a string at event.target.result, to load
-	    as though it was the contents of a loaded file.
+            pre_fn: (optional) A function to call before loading the data.
+
+            failure_fn: (optional) A function to call if the load fails or is aborted.
+
+	    debug_event: (optional) An event, with a string at
+	    event.target.result, to load as though it was the contents of a
+	    loaded file.
 
 	*/
 	// Check for the various File API support.
@@ -1277,6 +1299,7 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	var reader = new window.FileReader(),
 	    // Closure to capture the file information.
 	    onload_function = function(event) {
+                
 		var result = event.target.result,
 		    data, errors;
 		// try JSON
@@ -1301,6 +1324,18 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	    console.warn('Debugging load_json_or_csv');
 	    return onload_function(debug_event);
 	}
+        if (pre_fn !== undefined && pre_fn !== null) {
+            try { pre_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onabort = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onerror = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
 	// Read in the image file as a data URL.
 	reader.onload = onload_function;
 	reader.readAsText(f);
@@ -1971,8 +2006,8 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	FileSaver(blob, name + '.json');
     }
 
-    function load_json(f, callback) {
-	/** Try to load the file as JSON..
+    function load_json(f, callback, pre_fn, failure_fn) {
+	/** Try to load the file as JSON.
 
 	    Arguments
 	    ---------
@@ -1981,6 +2016,10 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 
 	    callback: A callback function that accepts arguments: error, data.
 
+            pre_fn: (optional) A function to call before loading the data.
+
+            failure_fn: (optional) A function to call if the load fails or is aborted.
+            
 	*/
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
@@ -2002,11 +2041,24 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	    // if successful, return the data
 	    callback(null, data);
         };
+        if (pre_fn !== undefined && pre_fn !== null) {
+            try { pre_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onabort = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onerror = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
     }
     
-    function load_json_or_csv(f, csv_converter, callback, debug_event) {
+    function load_json_or_csv(f, csv_converter, callback, pre_fn, failure_fn,
+                              debug_event) {
 	/** Try to load the file as JSON or CSV (JSON first).
 
 	    Arguments
@@ -2018,8 +2070,13 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 
 	    callback: A callback function that accepts arguments: error, data.
 
-	    debug_event: An event, with a string at event.target.result, to load
-	    as though it was the contents of a loaded file.
+            pre_fn: (optional) A function to call before loading the data.
+
+            failure_fn: (optional) A function to call if the load fails or is aborted.
+
+	    debug_event: (optional) An event, with a string at
+	    event.target.result, to load as though it was the contents of a
+	    loaded file.
 
 	*/
 	// Check for the various File API support.
@@ -2029,6 +2086,7 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	var reader = new window.FileReader(),
 	    // Closure to capture the file information.
 	    onload_function = function(event) {
+                
 		var result = event.target.result,
 		    data, errors;
 		// try JSON
@@ -2053,6 +2111,18 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	    console.warn('Debugging load_json_or_csv');
 	    return onload_function(debug_event);
 	}
+        if (pre_fn !== undefined && pre_fn !== null) {
+            try { pre_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onabort = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onerror = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
 	// Read in the image file as a data URL.
 	reader.onload = onload_function;
 	reader.readAsText(f);
@@ -11675,8 +11745,10 @@ define('ui',["utils", "data_styles"], function(utils, data_styles) {
 		} else if ('input' in button) {
 		    var input = button.input,
 			out = (input.accept_csv ?
-			       set_json_or_csv_input_button(link, li, input.fn) :
-			       set_json_input_button(link, li, input.fn));
+			       set_json_or_csv_input_button(link, li, input.pre_fn,
+                                                            input.fn, input.failure_fn) :
+			       set_json_input_button(link, li, input.pre_fn,
+                                                     input.fn, input.failure_fn));
 		    if ('assign' in input && 'key' in input)
 			input.assign[input.key] = out;
 		}
@@ -11696,23 +11768,25 @@ define('ui',["utils", "data_styles"], function(utils, data_styles) {
 	    key.fn.call(key.target);
 	});
     }
-    function set_json_input_button(b, s, fn) {
+    function set_json_input_button(b, s, pre_fn, post_fn, failure_fn) {
 	var input = s.append("input")
 		.attr("type", "file")
 		.style("display", "none")
 		.on("change", function() {
 		    utils.load_json(this.files[0],
 				    function(e, d) {
-					fn(e, d);
+					post_fn(e, d);
 					this.value = "";
-				    }.bind(this));
+				    }.bind(this),
+                                    pre_fn,
+                                    failure_fn);
 		});
 	b.on('click', function(e) {
 	    input.node().click();
 	});
 	return function() { input.node().click(); };
     }
-    function set_json_or_csv_input_button(b, s, fn) {
+    function set_json_or_csv_input_button(b, s, pre_fn, post_fn, failure_fn) {
 	var input = s.append("input")
 		.attr("type", "file")
 		.style("display", "none")
@@ -11720,9 +11794,11 @@ define('ui',["utils", "data_styles"], function(utils, data_styles) {
 		    utils.load_json_or_csv(this.files[0],
 					   data_styles.csv_converter,
 					   function(e, d) {
-					       fn(e, d);
+					       post_fn(e, d);
 					       this.value = "";
-					   }.bind(this));
+					   }.bind(this),
+                                           pre_fn,
+                                           failure_fn);
 		});
 	b.on('click', function(e) {
 	    input.node().click();
@@ -11894,6 +11970,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 			    set_domain_value: set_domain_value,
 			    set_domain: set_domain,
 			    set_range_value: set_range_value,
+			    set_range: set_range,
 			    set_no_data_value: set_no_data_value,
 			    set_highlight_missing: set_highlight_missing,
 			    set_id_to_show: set_id_to_show,
@@ -12320,7 +12397,24 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 	check_type(type);
 
 	this.range_bus[type][range_type].push({ index: index,
-						   value: value });
+						value: value });
+    }
+
+    function set_range(type, range_type, range) {
+	/** Change a range.
+
+	 type: 'reaction' or 'metabolite'
+
+	 range_type: 'color' or 'size'
+
+	 value: The new range
+
+	 */
+	check_type(type);
+
+	range.forEach(function(d, i) {
+	    this.range_bus[type][range_type].push({ index: i, value: d });
+	}.bind(this));
     }
 
     function set_no_data_value(type, no_data_type, value) {
@@ -12965,8 +13059,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	 gene_data: An object with Gene ids for keys and gene data points for
 	 values.
 
-	 gene_styles: An array with any of the following options: ['text',
-	 'evaluate_on_reactions'].
+	 gene_styles: (Default: ['text']) An array with any of the following
+	 options: ['text', 'evaluate_on_reactions'].
 
          highlight_missing_color: A color to apply to components that are not
          the in cobra model, or null to apply no color. Default: 'red'.
@@ -13462,7 +13556,13 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    .button({ text: "Load map JSON (Ctrl o)",
 		      input: { assign: key_manager.assigned_keys.load,
 			       key: 'fn',
-			       fn: load_map_for_file.bind(this) }
+			       fn: load_map_for_file.bind(this),
+                               pre_fn: function() {
+                                   map.set_status('Loading map...');
+                               },
+                               failure_fn: function() {
+                                   map.set_status('');
+                               }}
 		    })
 	    .button({ key: keys.save_svg,
 		      text: "Export as SVG (Ctrl Shift s)" })
@@ -13473,7 +13573,13 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    .button({ text: 'Load COBRA model JSON (Ctrl m)',
 		      input: { assign: key_manager.assigned_keys.load_model,
 			       key: 'fn',
-			       fn: load_model_for_file.bind(this) }
+			       fn: load_model_for_file.bind(this),
+                               pre_fn: function() {
+                                   map.set_status('Loading model...');
+                               },
+                               failure_fn: function() {
+                                   map.set_status('');
+                               } }
 		    });
 
 	// data dropdown
@@ -13672,10 +13778,22 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    /** Load a map. This reloads the whole builder.
 
 	     */
-	    if (error) console.warn(error);
-	    check_map(map_data);
-	    this.load_map(map_data);
-
+            
+	    if (error) {
+		console.warn(error); 
+		this.map.set_status('Error loading map: ' + error, 2000);
+		return;
+	    }
+            
+	    try {            
+	        check_map(map_data);
+	        this.load_map(map_data); 
+	        this.map.set_status('Loaded map ' + map_data[0].map_id, 3000);
+            } catch (e) {
+                console.warn(e);
+		this.map.set_status('Error loading map: ' + e, 2000);
+            }
+            
 	    // definitions
 	    function check_map(data) {
 		/** Perform a quick check to make sure the map is mostly valid.
@@ -13694,20 +13812,25 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	     */
 	    if (error) {
 		console.warn(error); 
-		this.map.set_status('Error loading model', 2000);
+		this.map.set_status('Error loading model: ' + error, 2000);
 		return;
 	    }
+
+	    try {
+	        this.load_model(data); 
+	        this.reaction_input.toggle(false);
+	        if ('id' in data)
+		    this.map.set_status('Loaded model ' + data.id, 3000);
+	        else
+		    this.map.set_status('Loaded model (no model id)', 3000);
+	        if (this.settings.highlight_missing!==null) {
+		    this.map.draw_everything();
+	        }
+            } catch (e) {
+                console.warn(e);
+		this.map.set_status('Error loading model: ' + e, 2000);
+            }
 	    
-	    this.load_model(data);
-	    
-	    this.reaction_input.toggle(false);
-	    if ('id' in data)
-		this.map.set_status('Loaded model ' + data.id, 2000);
-	    else
-		this.map.set_status('Loaded model (no model id)', 2000);
-	    if (this.settings.highlight_missing!==null) {
-		this.map.draw_everything();
-	    }
 	}
 	function load_reaction_data_for_file(error, data) {
 	    if (error) {
@@ -13860,7 +13983,9 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    search: { key: 70, modifiers: { control: true }, // ctrl-f
 		      fn: search_bar.toggle.bind(search_bar, true) },
 	    view_mode: { fn: this.view_mode.bind(this),
-			 ignore_with_input: true }
+			 ignore_with_input: true },
+	    show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
+			     fn: settings_page.toggle.bind(settings_page) }
 	};
 	if (enable_editing) {
 	    utils.extend(keys, {
@@ -13925,9 +14050,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 			       fn: map.select_all.bind(map) },
 		select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
 			       fn: map.select_none.bind(map) },
-		invert_selection: { fn: map.invert_selection.bind(map) },
-		show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
-				 fn: settings_page.toggle.bind(settings_page) }
+		invert_selection: { fn: map.invert_selection.bind(map) }
 	    });
 	}
 	return keys;
@@ -14037,8 +14160,8 @@ define('DataMenu',["utils"], function(utils) {
     };
 });
 
-define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex", "Settings", "data_styles"],
-       function(bu, mp, bh, km, dm, us, cm, ut, si, se, ds) {
+define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex", "Settings", "data_styles", "ui"],
+       function(bu, mp, bh, km, dm, us, cm, ut, si, se, ds, ui) {
            return { Builder: bu,
 		    Map: mp,
 		    Behavior: bh,
@@ -14049,7 +14172,8 @@ define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStac
 		    utils: ut,
 		    SearchIndex: si,
 		    Settings: se,
-		    data_styles: ds };
+		    data_styles: ds,
+                    ui: ui };
        });
 
     //The modules for your project will be inlined above

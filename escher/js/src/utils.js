@@ -426,8 +426,8 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	FileSaver(blob, name + '.json');
     }
 
-    function load_json(f, callback) {
-	/** Try to load the file as JSON..
+    function load_json(f, callback, pre_fn, failure_fn) {
+	/** Try to load the file as JSON.
 
 	    Arguments
 	    ---------
@@ -436,6 +436,10 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 
 	    callback: A callback function that accepts arguments: error, data.
 
+            pre_fn: (optional) A function to call before loading the data.
+
+            failure_fn: (optional) A function to call if the load fails or is aborted.
+            
 	*/
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
@@ -457,11 +461,24 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	    // if successful, return the data
 	    callback(null, data);
         };
+        if (pre_fn !== undefined && pre_fn !== null) {
+            try { pre_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onabort = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onerror = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
     }
     
-    function load_json_or_csv(f, csv_converter, callback, debug_event) {
+    function load_json_or_csv(f, csv_converter, callback, pre_fn, failure_fn,
+                              debug_event) {
 	/** Try to load the file as JSON or CSV (JSON first).
 
 	    Arguments
@@ -473,8 +490,13 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 
 	    callback: A callback function that accepts arguments: error, data.
 
-	    debug_event: An event, with a string at event.target.result, to load
-	    as though it was the contents of a loaded file.
+            pre_fn: (optional) A function to call before loading the data.
+
+            failure_fn: (optional) A function to call if the load fails or is aborted.
+
+	    debug_event: (optional) An event, with a string at
+	    event.target.result, to load as though it was the contents of a
+	    loaded file.
 
 	*/
 	// Check for the various File API support.
@@ -484,6 +506,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	var reader = new window.FileReader(),
 	    // Closure to capture the file information.
 	    onload_function = function(event) {
+                
 		var result = event.target.result,
 		    data, errors;
 		// try JSON
@@ -508,6 +531,18 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	    console.warn('Debugging load_json_or_csv');
 	    return onload_function(debug_event);
 	}
+        if (pre_fn !== undefined && pre_fn !== null) {
+            try { pre_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onabort = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onerror = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
 	// Read in the image file as a data URL.
 	reader.onload = onload_function;
 	reader.readAsText(f);

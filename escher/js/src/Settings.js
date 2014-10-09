@@ -33,6 +33,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 			    set_domain_value: set_domain_value,
 			    set_domain: set_domain,
 			    set_range_value: set_range_value,
+			    set_range: set_range,
 			    set_no_data_value: set_no_data_value,
 			    set_highlight_missing: set_highlight_missing,
 			    set_id_to_show: set_id_to_show,
@@ -459,7 +460,24 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	check_type(type);
 
 	this.range_bus[type][range_type].push({ index: index,
-						   value: value });
+						value: value });
+    }
+
+    function set_range(type, range_type, range) {
+	/** Change a range.
+
+	 type: 'reaction' or 'metabolite'
+
+	 range_type: 'color' or 'size'
+
+	 value: The new range
+
+	 */
+	check_type(type);
+
+	range.forEach(function(d, i) {
+	    this.range_bus[type][range_type].push({ index: i, value: d });
+	}.bind(this));
     }
 
     function set_no_data_value(type, no_data_type, value) {
