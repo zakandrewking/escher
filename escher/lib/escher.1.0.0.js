@@ -3326,8 +3326,6 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 		} else {
 		    return [];
 		}
-	    }, function(d) {
-		return d;
 	    });
 	gene_g.enter()
 	    .append('text')
