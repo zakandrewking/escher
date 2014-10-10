@@ -52,12 +52,12 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	}
         reaction_string = reactant_bits.join(' + ');
         if (is_reversible) {
-            reaction_string += ' <=> ';
+            reaction_string += ' ↔ ';
         } else {
             if (lower_bound < 0 && upper_bound <=0)
-                reaction_string += ' <-- ';
+                reaction_string += ' ← ';
             else
-		reaction_string += ' --> ';
+		reaction_string += ' → ';
 	}
         reaction_string += product_bits.join(' + ')
         return reaction_string
@@ -106,9 +106,11 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		var d = (reaction_id in reaction_data ?
 			 reaction_data[reaction_id] : null),
 		    f = data_styles.float_for_data(d, styles),
+		    r = data_styles.reverse_flux_for_data(d, styles),
 		    s = data_styles.text_for_data(d, styles);
 		reaction.data = f;
 		reaction.data_string = s;
+	        reaction.reverse_flux = r;
 	    }
 	}
     }
@@ -150,12 +152,27 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    style: Gene styles array.
 
 	*/
+
+        // TODO abstract out this function, and the equivalent Map.apply_gene_data_to_reactions();
+        
+	// get the null val
+	var null_val = [null];
+	// make an array of nulls as the default
+	for (var reaction_id in gene_data_obj) {
+	    for (var gene_id in gene_data_obj[reaction_id].genes) {
+		null_val = gene_data_obj[reaction_id].genes[gene_id]
+		    .map(function() { return null; });
+		break;
+	    }
+	    break;
+	}
+
 	for (var reaction_id in this.reactions) {
 	    var reaction = this.reactions[reaction_id];
 	    if (gene_data_obj === null) {
 		reaction.data = null;
 		reaction.data_string = '';
-		reaction.gene_string = null;
+		reaction.gene_string = '';
 	    } else {
 		var d, rule, gene_values;
 		if (reaction_id in gene_data_obj) {
@@ -163,15 +180,16 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		    gene_values = gene_data_obj[reaction_id].genes;
 		    d = data_styles.evaluate_gene_reaction_rule(rule, gene_values);
 		} else {
-		    gene_values = null;
-		    d = null;
+		    gene_values = {};
+		    d = null_val;
 		}
-		var f = data_styles.float_for_data([d], styles),
-		    s = data_styles.text_for_data([d], styles),
+		var f = data_styles.float_for_data(d, styles),
+		    s = data_styles.text_for_data(d, styles),
 		    g = data_styles.gene_string_for_data(rule, gene_values, styles)
 		reaction.data = f;
 		reaction.data_string = s;
 		reaction.gene_string = g;
+		reaction.reverse_flux = false;
 	    }
 	}
     }

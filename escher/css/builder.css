@@ -194,9 +194,16 @@ td.options-label {
     margin: 3px 0 0 0;
 }
 /* Reaction input */
+#rxn-input {
+    z-index: 10;
+}
 .input-close-button:hover {
     color: #ff3333;
     font-weight: bold;
+}
+.light {
+    color: #8b8b8be;
+    font-weight: normal;
 }
 /* text edit input */
 #text-edit-input input {
