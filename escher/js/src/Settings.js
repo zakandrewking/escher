@@ -34,12 +34,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     return SearchBar;
 
     // class methods
-    function check_type(type, gene_ok) {
-        if (gene_ok === undefined)
-            gene_ok = false;
-        
-        if (['reaction', 'metabolite'].indexOf(type)==-1 &&
-            (!(gene_ok == true && type =='gene')))
+    function check_type(type) {
+        if (['reaction', 'metabolite'].indexOf(type)==-1)
             throw new Error('Bad type');
     }
 
@@ -50,11 +46,9 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         
         // organize
         var def_styles = { reaction: get_option('reaction_styles'),
-                           metabolite: get_option('metabolite_styles'),
-                           gene: get_option('gene_styles') },
+                           metabolite: get_option('metabolite_styles') },
             def_compare_style = { reaction: get_option('reaction_compare_style'),
-                                  metabolite: get_option('metabolite_compare_style'),
-                                  gene: get_option('gene_compare_style') },
+                                  metabolite: get_option('metabolite_compare_style') },
             def_auto_domain = { reaction: get_option('auto_reaction_domain'),
                                 metabolite: get_option('auto_metabolite_domain') },
             def_domain = { reaction: get_option('reaction_domain'),
@@ -102,7 +96,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // style
         // ---------------------------------------------------------------------
         
-        ['metabolite', 'reaction', 'gene'].forEach(function(type) {
+        ['metabolite', 'reaction'].forEach(function(type) {
             // set up the styles settings
             this.data_styles_bus[type] = new bacon.Bus();
             // make the event stream
@@ -135,9 +129,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                     this.set_option('reaction_styles', v);
                 else if (type=='metabolite')
                     this.set_option('metabolite_styles', v);
-                else if (type=='gene') {
-                    this.set_option('gene_styles', v);
-                }
             }.bind(this));
 
             // push the defaults
@@ -151,7 +142,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // compare_style
         // ---------------------------------------------------------------------
         
-        ['reaction', 'metabolite', 'gene'].forEach(function(type) {
+        ['reaction', 'metabolite'].forEach(function(type) {
             // set up the styles settings
             this.compare_style_bus[type] = new bacon.Bus();
             // make the event stream
@@ -171,9 +162,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                     this.set_option('reaction_compare_style', v);
                 } else if (type=='metabolite') {
                     this.set_option('metabolite_compare_style', v);
-                } else if (type=='gene') {
-                    this.set_option('gene_compare_style', v);
-                }
+                } 
             }.bind(this));
 
             // push the defaults
@@ -452,7 +441,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             it.
 
         */
-        check_type(type, true);
+        check_type(type);
 
         this.data_styles_bus[type].push({ style: style,
                                           on_off: on_off });
@@ -464,12 +453,12 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             Arguments
             ---------
 
-            type: 'gene'.
+            type: 'reaction' or 'metabolite'.
 
             value: A compare_style.
 
         */
-        check_type(type, true);
+        check_type(type);
 
         if (['log2_fold', 'diff'].indexOf(value) == -1)
             throw new Error('Invalid compare_style: ' + value);

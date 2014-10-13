@@ -16,6 +16,9 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          reaction_data: An object with reaction ids for keys and reaction data
          points for values.
 
+         gene_data: An object with Gene ids for keys and gene data points for
+         values.
+
          reaction_compare_style: (Default: 'diff') How to compare to
          datasets. Can be either 'log2_fold' or 'diff'.
 
@@ -23,15 +26,6 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          data points for values.
 
          metabolite_compare_style: (Default: 'diff') How to compare to
-         datasets. Can be either 'log2_fold' or 'diff'.
-
-         gene_data: An object with Gene ids for keys and gene data points for
-         values.
-
-         gene_styles: (Default: ['abs', 'text']) An array with any of the following
-         options: ['text', 'evaluate_on_reactions'].
-
-         gene_compare_style: (Default: 'log2_fold') How to compare to
          datasets. Can be either 'log2_fold' or 'diff'.
 
          highlight_missing_color: A color to apply to components that are not
@@ -103,8 +97,9 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             // reaction
             auto_reaction_domain: true,
             reaction_data: null,
-            reaction_styles: ['color', 'size', 'abs', 'text'],
-            reaction_compare_style: 'diff',
+            gene_data: null,
+            reaction_styles: ['color', 'size', 'text'],
+            reaction_compare_style: 'log2_fold',
             reaction_domain: [-10, 0, 10],
             reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
             reaction_size_range: [4, 8, 12],
@@ -113,17 +108,13 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             // metabolite
             metabolite_data: null,
             metabolite_styles: ['color', 'size', 'text'],
-            metabolite_compare_style: 'diff',
+            metabolite_compare_style: 'log2_fold',
             auto_metabolite_domain: true,
             metabolite_domain: [-10, 0, 10],
             metabolite_color_range: ['green', 'white', 'red'],
             metabolite_size_range: [6, 8, 10],
             metabolite_no_data_color: 'white',
             metabolite_no_data_size: 6,
-            // gene
-            gene_data: null,
-            gene_styles: ['abs', 'text'],
-            gene_compare_style: 'log2_fold',
             // color reactions not in the model
             highlight_missing_color: 'red',
             // quick jump menu
@@ -163,7 +154,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         this.settings.status_bus
             .onValue(function(x) {
                 if (x == 'accepted') {
-                    this.update_data(true, true, ['reaction', 'metabolite', 'gene'], false);
+                    this.update_data(true, true, ['reaction', 'metabolite'], false);
                     if (this.map !== null) {
                         this.map.draw_all_nodes();
                         this.map.draw_all_reactions();
@@ -420,13 +411,13 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         this.options.reaction_data = data;
         this.update_data(true, true, 'reaction');
     }
+    function set_gene_data(data) {
+        this.options.gene_data = data; 
+        this.update_data(true, true, 'reaction');
+    }
     function set_metabolite_data(data) {
         this.options.metabolite_data = data;
         this.update_data(true, true, 'metabolite');
-    }
-    function set_gene_data(data) {
-        this.options.gene_data = data; 
-        this.update_data(true, true, 'gene');
     }
     
     function update_data(update_model, update_map, kind, should_draw) {
@@ -440,7 +431,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          update_map: (Boolean) Update data for the map.
 
          kind: (Optional, Default: all) An array defining which data is being
-         updated that can include any of: ['reaction', 'metabolite', 'gene'].
+         updated that can include any of: ['reaction', 'metabolite'].
 
          should_draw: (Optional, Default: true) Whether to redraw the update
          sections of the map.
@@ -449,7 +440,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
         // defaults
         if (kind === undefined)
-            kind = ['reaction', 'metabolite', 'gene'];
+            kind = ['reaction', 'metabolite'];
         if (should_draw === undefined)
             should_draw = true;
 
@@ -457,7 +448,6 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         var update_metabolite_data = (kind.indexOf('metabolite') != -1);
         if (update_metabolite_data) {
             var data_object = data_styles.import_and_check(this.options.metabolite_data,
-                                                           this.options.metabolite_styles,
                                                            'metabolite_data');
             if (update_model && this.cobra_model !== null) {
                 this.cobra_model.apply_metabolite_data(data_object,
@@ -471,54 +461,64 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             }
         }
 
-        // gene data overrides reaction data
-        var update_reaction_data = (kind.indexOf('reaction') != -1),
-            update_gene_data = (kind.indexOf('gene') != -1);
+        // reaction data overrides gene data
+        var update_reaction_data = (kind.indexOf('reaction') != -1);
 
         // reaction data
         if (update_reaction_data) {
-            data_object = data_styles.import_and_check(this.options.reaction_data,
-                                                       this.options.reaction_styles,
-                                                       'reaction_data');
-            // only update the model if there is not going to be gene data
-            if (update_model && this.cobra_model !== null) {
-                this.cobra_model.apply_reaction_data(data_object,
+            if (this.options.reaction_data !== null) {
+                data_object = data_styles.import_and_check(this.options.reaction_data,
+                                                           'reaction_data');
+                
+                // only update the model if there is not going to be gene data
+                if (update_model && this.cobra_model !== null) {
+                    this.cobra_model.apply_reaction_data(data_object,
+                                                         this.options.reaction_styles,
+                                                         this.options.reaction_compare_style);
+                }
+                if (update_map && this.map !== null) {
+                    this.map.apply_reaction_data_to_map(data_object); 
+                    if (should_draw)
+                        this.map.draw_all_reactions();
+                }
+            } else if (this.options.gene_data !== null) {
+                // collect reactions from map and model
+                var all_reactions = {};
+                if (this.cobra_model !== null)
+                    utils.extend(all_reactions, this.cobra_model.reactions);
+                // extend, overwrite
+                if (this.map !== null)
+                    utils.extend(all_reactions, this.map.reactions, true);
+                
+                // this object has reaction keys and values containing associated genes
+                data_object = data_styles.import_and_check(this.options.gene_data,
+                                                           'gene_data',
+                                                           all_reactions);
+
+                // update the model if data is applied to reactions
+                if (update_model && this.cobra_model !== null) {
+                    this.cobra_model.apply_gene_data(data_object,
                                                      this.options.reaction_styles,
                                                      this.options.reaction_compare_style);
-            }
-            if (update_map && this.map !== null) {
-                this.map.apply_reaction_data_to_map(data_object); 
-                if (should_draw)
-                    this.map.draw_all_reactions();
-            }
-        }
-
-        // gene data
-        if (update_gene_data) {
-            // collect reactions from map and model
-            var all_reactions = {};
-            if (this.cobra_model !== null)
-                utils.extend(all_reactions, this.cobra_model.reactions);
-            // extend, overwrite
-            if (this.map !== null)
-                utils.extend(all_reactions, this.map.reactions, true);
-            
-            // this object has reaction keys and values containing associated genes
-            data_object = data_styles.import_and_check(this.options.gene_data,
-                                                       this.options.gene_styles,
-                                                       'gene_data',
-                                                       all_reactions);
-            
-            // only update the model if gene data is applied to reactions
-            if (update_model && this.cobra_model !== null) {
-                this.cobra_model.apply_gene_data(data_object,
-                                                 this.options.gene_styles,
-                                                 this.options.gene_compare_style);
-            }
-            if (update_map && this.map !== null) {
-                this.map.apply_gene_data_to_map(data_object);
-                if (should_draw)
-                    this.map.draw_all_reactions();
+                }            
+                if (update_map && this.map !== null) {
+                    this.map.apply_gene_data_to_map(data_object);
+                    if (should_draw)
+                        this.map.draw_all_reactions();
+                }
+            } else {
+                // clear the data
+                // only update the model if there is not going to be gene data
+                if (update_model && this.cobra_model !== null) {
+                    this.cobra_model.apply_reaction_data(null,
+                                                         this.options.reaction_styles,
+                                                         this.options.reaction_compare_style);
+                }
+                if (update_map && this.map !== null) {
+                    this.map.apply_reaction_data_to_map(null); 
+                    if (should_draw)
+                        this.map.draw_all_reactions();
+                }
             }
         }       
     }
@@ -818,10 +818,9 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 return;
             }
             // turn off gene data
-            if (data !== null) {
-                this.settings.change_data_style('gene', 'evaluate_on_reactions', false);
+            if (data !== null)
                 this.set_gene_data(null);
-            }
+            
             this.set_reaction_data(data);
         }
         function load_metabolite_data_for_file(error, data) {
@@ -838,13 +837,10 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 this.map.set_status('Could not parse file as JSON or CSV', 2000);
                 return;
             }
-            // turn on gene data
-            if (data === null) {
-                this.settings.change_data_style('gene', 'evaluate_on_reactions', false);
-            } else {
-                this.settings.change_data_style('gene', 'evaluate_on_reactions', true);
+            // turn off reaction data
+            if (data !== null)
                 this.set_reaction_data(null);
-            }
+            
             this.set_gene_data(data);
         }
     }

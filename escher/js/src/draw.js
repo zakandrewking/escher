@@ -50,7 +50,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
 			     defs, has_data_on_reactions, identifiers_on_map,
 			     no_data_style, missing_component_color,
-			     reaction_data_styles, gene_data_styles,
+			     reaction_data_styles,
 			     label_drag_behavior) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale',
@@ -62,7 +62,6 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 			       'no_data_style',
 			       'missing_component_color',
 			       'reaction_data_styles',
-			       'gene_data_styles',
 			       'label_drag_behavior']);
 
         // update reaction label
@@ -70,7 +69,6 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
             .call(function(sel) {
 		return update_reaction_label(sel, has_data_on_reactions,
 					     identifiers_on_map, reaction_data_styles,
-					     gene_data_styles,
 					     label_drag_behavior);
 	    });
 
@@ -156,12 +154,11 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     }
 
     function update_reaction_label(sel, has_data_on_reactions, identifiers_on_map,
-				   reaction_data_styles, gene_data_styles,
+				   reaction_data_styles,
 				   label_drag_behavior, drawn_nodes) {
 	utils.check_undefined(arguments, ['sel',
 					  'has_data_on_reactions',
 					  'reaction_data_styles',
-					  'gene_data_styles',
 					  'label_drag_behavior']);
 	
 	var decimal_format = d3.format('.4g');
@@ -181,8 +178,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	var gene_g = sel.select('.gene-label-group')
 	    .selectAll('text')
 	    .data(function(d) {
-		var show_gene_string = (gene_data_styles.indexOf('text') != -1 &&
-					'gene_string' in d &&
+		var show_gene_string = ('gene_string' in d &&
 					d.gene_string !== null);
 		if (show_gene_string) {
 		    return d.gene_string.split('\n');
@@ -339,8 +335,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    var markerWidth = 20, markerHeight = 13;
 	    if (has_data_on_reactions && reaction_data_styles.indexOf('size')!==-1) {
 		var f = d.data,
-		    size = (f===null ? no_data_style['size'] : scale.reaction_size(f));
-		markerWidth += (size - scale.reaction_size(0));
+		    size = (f === null ? no_data_style['size'] : scale.reaction_size(f));
+		markerWidth = size * 2;
 	    }		    
 	    return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
 	}).attr('transform', function(d) {

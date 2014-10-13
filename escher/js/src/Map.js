@@ -282,7 +282,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         map.apply_reaction_data_to_map(null);
         map.apply_metabolite_data_to_map(null);
         map.apply_gene_data_to_map(null);
-                
+        
         return map;
 
         // definitions
@@ -329,16 +329,16 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
     function set_status(status, time) {
         /** Set the status of the map, with an optional expiration
-            time. Rendering the status is taken care of by the Builder.
+         time. Rendering the status is taken care of by the Builder.
 
-            Arguments
-            ---------
+         Arguments
+         ---------
 
-            status: The status string.
+         status: The status string.
 
-            time: An optional time, in ms, after which the status is set to ''.
+         time: An optional time, in ms, after which the status is set to ''.
 
-        */
+         */
         
         this.callback_manager.run('set_status', status);
         // clear any other timers on the status bar
@@ -434,7 +434,6 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                           size: this.settings.get_option('reaction_no_data_size') },
                                         this.settings.get_option('highlight_missing'),
                                         this.settings.get_option('reaction_styles'),
-                                        this.settings.get_option('gene_styles'),
                                         this.behavior.reaction_label_drag);
         }.bind(this);
 
@@ -511,10 +510,10 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // functions to create and update nodes
         var create_fn = function(sel) {
-                return draw.create_node(sel,
-                                        this.nodes,
-                                        this.reactions);
-            }.bind(this),
+            return draw.create_node(sel,
+                                    this.nodes,
+                                    this.reactions);
+        }.bind(this),
             update_fn = function(sel) {
                 return draw.update_node(sel,
                                         this.scale,
@@ -675,15 +674,10 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         /**  Returns True if the scale has changed.
 
          */
-
-        // don't mess with it if the gene data is applied
-        var gene_styles = this.settings.get_option('gene_styles');
-        if (gene_styles.indexOf('evaluate_on_reactions') != -1)
-            return false;
         
         if (data === null) {        
             for (var reaction_id in reactions) {
-            var reaction = reactions[reaction_id];
+                var reaction = reactions[reaction_id];
                 reaction.data = null;
                 reaction.data_string = '';
                 for (var segment_id in reaction.segments) {
@@ -769,12 +763,12 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     function apply_gene_data_to_map(gene_data_obj) {
         /** Returns True if the scale has changed.
 
-            Arguments
-            ---------
+         Arguments
+         ---------
 
-            gene_data_obj: The gene data object, with the following style:
+         gene_data_obj: The gene data object, with the following style:
 
-            { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+         { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
 
          */
         return this.apply_gene_data_to_reactions(this.reactions, gene_data_obj);
@@ -782,41 +776,34 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     function apply_gene_data_to_reactions(reactions, gene_data_obj) {
         /** Returns True if the scale has changed.
 
-            Arguments
-            ---------
+         Arguments
+         ---------
 
-            reactions: The reactions to update.
-            
-            gene_data_obj: The gene data object, with the following style:
+         reactions: The reactions to update.
+         
+         gene_data_obj: The gene data object, with the following style:
 
-            { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+         { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
 
          */
 
         // TODO abstract out this function, and the equivalent CobraModel.apply_gene_data()
-
-        // only change gene_string when the gene data is not applied
-        var gene_styles = this.settings.get_option('gene_styles'),
-            evaluate_on_reactions = (gene_styles.indexOf('evaluate_on_reactions') != -1);
         
         if (gene_data_obj === null) {       
             for (var reaction_id in reactions) {
                 var reaction = reactions[reaction_id];
-                if (evaluate_on_reactions) {
-                    reaction.data = null;
-                    reaction.data_string = '';
-                    reaction.reverse_flux = false;
-                    for (var segment_id in reaction.segments) {
-                        var segment = reaction.segments[segment_id];
-                        segment.data = null;
-                    }
+                reaction.data = null;
+                reaction.data_string = '';
+                reaction.reverse_flux = false;
+                for (var segment_id in reaction.segments) {
+                    var segment = reaction.segments[segment_id];
+                    segment.data = null;
                 }
                 reaction.gene_string = '';
             }
 
             // remember
-            if (evaluate_on_reactions)
-                this.has_data_on_reactions = false;
+            this.has_data_on_reactions = false;
             
             return false;
         }
@@ -834,8 +821,8 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         }
         
         // apply the datasets to the reactions
-        var styles = this.settings.get_option('gene_styles'),
-            compare_style = this.settings.get_option('gene_compare_style');
+        var styles = this.settings.get_option('reaction_styles'),
+            compare_style = this.settings.get_option('reaction_compare_style');
         for (var reaction_id in reactions) {
             var reaction = reactions[reaction_id];
             // find the data
@@ -849,19 +836,17 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 gene_values = {};
                 d = null_val;
             }
-            if (evaluate_on_reactions) {
-                var f = data_styles.float_for_data(d, styles, compare_style),
-                    r = data_styles.reverse_flux_for_data(d),
-                    s = data_styles.text_for_data(d, f);
-                reaction.data = f;
-                reaction.data_string = s;
-                reaction.reverse_flux = r;
-                // apply to the segments
-                for (var segment_id in reaction.segments) {
-                    var segment = reaction.segments[segment_id];
-                    segment.data = reaction.data;
-                    segment.reverse_flux = reaction.reverse_flux;
-                }
+            var f = data_styles.float_for_data(d, styles, compare_style),
+                r = data_styles.reverse_flux_for_data(d),
+                s = data_styles.text_for_data(d, f);
+            reaction.data = f;
+            reaction.data_string = s;
+            reaction.reverse_flux = r;
+            // apply to the segments
+            for (var segment_id in reaction.segments) {
+                var segment = reaction.segments[segment_id];
+                segment.data = reaction.data;
+                segment.reverse_flux = reaction.reverse_flux;
             }
             // always update the gene string
             reaction.gene_string = data_styles.gene_string_for_data(rule,
@@ -871,8 +856,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         }
 
         // remember
-        if (evaluate_on_reactions)
-            this.has_data_on_reactions = true;
+        this.has_data_on_reactions = true;
 
         // if auto_domain
         return this.update_reaction_data_domain();
@@ -906,7 +890,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             min = 0;
             max = 0;
         }
-        new_domain = [0, min, max].sort();
+        new_domain = [0, min, max].sort(function(x, y) { return x - y; });
         this.settings.set_domain('metabolite', new_domain);
         // compare arrays
         return !utils.compare_arrays(old_domain, new_domain);
@@ -916,10 +900,6 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         /**  Returns True if the scale has changed.
 
          */
-
-        // check if it's gene data
-        var is_gene_data = (this.settings.get_option('gene_styles')
-                            .indexOf('evaluate_on_reactions') != -1);
         
         // default min and max
         var vals = [];
@@ -933,7 +913,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         var old_domain = this.settings.get_option('reaction_domain'),
             new_domain, min, max;
         if (vals.length > 0) {
-            if (!is_gene_data && this.settings.get_option('reaction_styles').indexOf('abs') != -1) {
+            if (this.settings.get_option('reaction_styles').indexOf('abs') != -1) {
                 // if using absolute value reaction style
                 vals = vals.map(function(x) { return Math.abs(x); });
             }
@@ -943,7 +923,9 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             min = 0;
             max = 0;
         }
-        new_domain = [0, min, max].sort();
+
+        new_domain = [0, min, max].sort(function(x, y) { return x - y; });
+        
         this.settings.set_domain('reaction', new_domain);
         // compare arrays
         return !utils.compare_arrays(old_domain, new_domain);
@@ -1014,7 +996,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
          */
         var selection = this.sel.selectAll('#nodes,#text-labels')
-            .selectAll('.node,.text-label');
+                .selectAll('.node,.text-label');
         selection.classed('selected', function() {
             return !d3.select(this).classed('selected');
         });
@@ -1938,7 +1920,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.canvas.mouse_node.attr('transform', null);
         // hide the segment control points
         var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle')
-            .style('visibility', 'hidden');
+                .style('visibility', 'hidden');
 
         // do the epxort
         utils.export_svg('saved_map', this.svg, true);

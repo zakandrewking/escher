@@ -3,7 +3,7 @@ describe('data_styles', function() {
 	// reaction data
 	var reaction_data = { R1: 0, R2: 4, R3: -12.3 },
 	    expected = { R1: [0], R2: [4], R3: [-12.3] };
-	    out = escher.data_styles.import_and_check(reaction_data, [], 'reaction_data');
+	    out = escher.data_styles.import_and_check(reaction_data, 'reaction_data');
 	expect(out).toEqual(expected);
 	
 	// gene data, funny names
@@ -13,7 +13,7 @@ describe('data_styles', function() {
 				     genes: { G1ORF: [0],
 					      G2ANDHI: [4],
 					      'G3-A': [-12.3] }}},
-	    out = escher.data_styles.import_and_check(gene_data, [], 'gene_data', reactions);
+	    out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
 	expect(out).toEqual(expected);
 	
 	// gene data, multiple sets
@@ -23,7 +23,7 @@ describe('data_styles', function() {
 				       genes: { G1: [0, 2],
 						G2: [4, 6],
 						G3: [-12.3, null] }}},
-	    out = escher.data_styles.import_and_check(gene_data, [], 'gene_data', reactions);
+	    out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
 	expect(out).toEqual(expected);
 
 	// gene data, null
@@ -31,7 +31,7 @@ describe('data_styles', function() {
 	    reactions = { reaction_1: { gene_reaction_rule: '' }},
 	    expected = { reaction_1: { rule: '',
 				       genes: {} }},
-	    out = escher.data_styles.import_and_check(gene_data, [], 'gene_data', reactions);
+	    out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
 	expect(out).toEqual(expected);
 
 	// empty dataset
@@ -41,7 +41,7 @@ describe('data_styles', function() {
 				       genes: { G1: [null],
 					        G2: [null],
 					        G3: [null] } }},
-	    out = escher.data_styles.import_and_check(gene_data, [], 'gene_data', reactions);
+	    out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
 	expect(out).toEqual(expected);
     });
 
@@ -54,16 +54,18 @@ describe('data_styles', function() {
             .toEqual(-15);
         // abs diff
         expect(escher.data_styles.float_for_data([10, -5], ['abs'], 'diff'))
-            .toEqual(-5);
+            .toEqual(15);
         // fold
-        expect(escher.data_styles.float_for_data([10, 5], ['abs'], 'log2_fold'))
+        expect(escher.data_styles.float_for_data([10, 5], [], 'log2_fold'))
             .toEqual(-1);
+        expect(escher.data_styles.float_for_data([10, 5], ['abs'], 'log2_fold'))
+            .toEqual(1);
         // infinity
         expect(escher.data_styles.float_for_data([0, 5], [], 'log2_fold'))
             .toEqual(null);
         // abs negative fold
         expect(escher.data_styles.float_for_data([10, -5], ['abs'], 'log2_fold'))
-            .toEqual(-1);
+            .toEqual(null);
         // both neg fold
         expect(escher.data_styles.float_for_data([-10, -5], [], 'log2_fold'))
             .toEqual(-1); 
