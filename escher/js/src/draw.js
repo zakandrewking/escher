@@ -48,7 +48,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     }
 
     function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
-			     defs, has_data_on_reactions, id_to_show,
+			     defs, has_data_on_reactions, identifiers_on_map,
 			     no_data_style, missing_component_color,
 			     reaction_data_styles, gene_data_styles,
 			     label_drag_behavior) {
@@ -58,7 +58,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 			       'drawn_nodes', 
 			       'defs',
 			       'has_data_on_reactions',
-			       'id_to_show',
+			       'identifiers_on_map',
 			       'no_data_style',
 			       'missing_component_color',
 			       'reaction_data_styles',
@@ -69,7 +69,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
         update_selection.select('.reaction-label-group')
             .call(function(sel) {
 		return update_reaction_label(sel, has_data_on_reactions,
-					     id_to_show, reaction_data_styles,
+					     identifiers_on_map, reaction_data_styles,
 					     gene_data_styles,
 					     label_drag_behavior);
 	    });
@@ -155,7 +155,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
     }
 
-    function update_reaction_label(sel, has_data_on_reactions, id_to_show,
+    function update_reaction_label(sel, has_data_on_reactions, identifiers_on_map,
 				   reaction_data_styles, gene_data_styles,
 				   label_drag_behavior, drawn_nodes) {
 	utils.check_undefined(arguments, ['sel',
@@ -172,7 +172,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    .call(label_drag_behavior);
 	sel.select('.reaction-label')
 	    .text(function(d) { 
-		var t = d[id_to_show];
+		var t = d[identifiers_on_map];
 		if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
@@ -452,7 +452,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     }
 
     function update_node(update_selection, scale, has_data_on_nodes,
-			 id_to_show, metabolite_data_styles, no_data_style,
+			 identifiers_on_map, metabolite_data_styles, no_data_style,
 			 click_fn, mouseover_fn, mouseout_fn,
 			 drag_behavior, label_drag_behavior) {
 	utils.check_undefined(arguments,
@@ -510,7 +510,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		return String(20)+'px';
             })
             .text(function(d) {	
-		var t = d[id_to_show];
+		var t = d[identifiers_on_map];
 		if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;

@@ -11,7 +11,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
      options: An object.
 
-         id_to_show: Either 'bigg_id' (default) or 'name'.
+         identifiers_on_map: Either 'bigg_id' (default) or 'name'.
 
          reaction_data: An object with reaction ids for keys and reaction data
          points for values.
@@ -24,6 +24,9 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
          gene_styles: (Default: ['text']) An array with any of the following
          options: ['text', 'evaluate_on_reactions'].
+
+         gene_compare_style: (Default: 'log2_fold') How to compare to
+         datasets. Can be either 'log2_fold' or 'diff'.
 
          highlight_missing_color: A color to apply to components that are not
          the in cobra model, or null to apply no color. Default: 'red'.
@@ -89,7 +92,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             css: null,
             starting_reaction: null,
             never_ask_before_quit: false,
-            id_to_show: 'bigg_id',
+            identifiers_on_map: 'bigg_id',
             // applied data
             // reaction
             auto_reaction_domain: true,
@@ -112,6 +115,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             // gene
             gene_data: null,
             gene_styles: ['text'],
+            gene_compare_style: 'log2_fold',
             // color reactions not in the model
             highlight_missing_color: 'red',
             // quick jump menu

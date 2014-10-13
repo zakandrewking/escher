@@ -29,6 +29,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     // instance methods
     SearchBar.prototype = { init: init,
                             change_data_style: change_data_style,
+                            set_compare_style: set_compare_style,
                             set_auto_domain: set_auto_domain,
                             set_domain_value: set_domain_value,
                             set_domain: set_domain,
@@ -36,7 +37,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                             set_range: set_range,
                             set_no_data_value: set_no_data_value,
                             set_highlight_missing: set_highlight_missing,
-                            set_id_to_show: set_id_to_show,
+                            set_identifiers_on_map: set_identifiers_on_map,
                             hold_changes: hold_changes,
                             abandon_changes: abandon_changes,
                             accept_changes: accept_changes };
@@ -62,6 +63,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         var def_styles = { reaction: get_option('reaction_styles'),
                            metabolite: get_option('metabolite_styles'),
                            gene: get_option('gene_styles') },
+            def_compare_style = { gene: get_option('gene_compare_style') },
             def_auto_domain = { reaction: get_option('auto_reaction_domain'),
                                 metabolite: get_option('auto_metabolite_domain') },
             def_domain = { reaction: get_option('reaction_domain'),
@@ -75,11 +77,13 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                             metabolite: { color: get_option('metabolite_no_data_color'),
                                           size: get_option('metabolite_no_data_size') } },
             def_highlight_missing = get_option('highlight_missing_color'),
-            def_id_to_show = get_option('id_to_show');
+            def_identifiers_on_map = get_option('identifiers_on_map');
 
         // event streams
         this.data_styles_bus = {};
         this.data_styles_stream = {};
+        this.compare_style_bus = {};
+        this.compare_style_stream = {};
         this.auto_domain_bus = {};
         this.auto_domain_stream = {};
         this.domain_bus = {};
@@ -90,8 +94,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         this.no_data_stream = {};
         // this.highlight_missing_bus;
         // this.highlight_missing_stream;
-        // this.id_to_show_bus;
-        // this.id_to_show_stream;
+        // this.identifiers_on_map_bus;
+        // this.identifiers_on_map_stream;
 
         // manage accepting/abandoning changes
         this.status_bus = new bacon.Bus();
@@ -103,6 +107,10 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         bacon.Observable.prototype.convert_to_conditional_stream = convert_to_conditional_stream;
         bacon.Observable.prototype.force_update_with_bus = force_update_with_bus;
 
+        // ---------------------------------------------------------------------
+        // style
+        // ---------------------------------------------------------------------
+        
         ['metabolite', 'reaction', 'gene'].forEach(function(type) {
             // set up the styles settings
             this.data_styles_bus[type] = new bacon.Bus();
@@ -148,6 +156,40 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             }.bind(this));
         }.bind(this));
 
+        // ---------------------------------------------------------------------
+        // compare_style
+        // ---------------------------------------------------------------------
+        
+        ['gene'].forEach(function(type) {
+            // set up the styles settings
+            this.compare_style_bus[type] = new bacon.Bus();
+            // make the event stream
+            this.compare_style_stream[type] = this.compare_style_bus[type]
+            // conditionally accept changes
+                .convert_to_conditional_stream(this.status_bus)
+            // combine into state array
+                .scan([], function(current, value) {
+                    return value;
+                })
+            // force updates
+                .force_update_with_bus(this.force_update_bus);
+
+            // get the latest
+            this.compare_style_stream[type].onValue(function(v) {
+                if (type=='gene') {
+                    this.set_option('gene_compare_style', v);
+                }
+            }.bind(this));
+
+            // push the defaults
+            var def = def_compare_style[type];
+            this.compare_style_bus[type].push(def);
+        }.bind(this));
+
+        // ---------------------------------------------------------------------
+        // auto domain
+        // ---------------------------------------------------------------------
+        
         ['metabolite', 'reaction'].forEach(function(type) {
             // set up the auto_domain settings
             this.auto_domain_bus[type] = new bacon.Bus();
@@ -272,7 +314,10 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             }.bind(this));
         }.bind(this));
 
-        // set up the highlight missing settings
+        // ---------------------------------------------------------------------
+        // highlight missing
+        // ---------------------------------------------------------------------
+        
         // make the bus
         this.highlight_missing_bus = new bacon.Bus();
         // make a new constant for the input default
@@ -295,11 +340,15 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         var def = def_highlight_missing;
         this.highlight_missing_bus.push(def);
 
-        // set up the id_to_show setting
+        
+        // ---------------------------------------------------------------------
+        // identifiers_on_map
+        // ---------------------------------------------------------------------
+        
         // make the bus
-        this.id_to_show_bus = new bacon.Bus();
+        this.identifiers_on_map_bus = new bacon.Bus();
         // make a new constant for the input default
-        this.id_to_show_stream = this.id_to_show_bus
+        this.identifiers_on_map_stream = this.identifiers_on_map_bus
         // conditionally accept changes
             .convert_to_conditional_stream(this.status_bus)
         // combine into state array
@@ -310,12 +359,12 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             .force_update_with_bus(this.force_update_bus);
 
         // get the latest
-        this.id_to_show_stream.onValue(function(v) {
-            this.set_option('id_to_show', v);
+        this.identifiers_on_map_stream.onValue(function(v) {
+            this.set_option('identifiers_on_map', v);
         }.bind(this));
 
         // push the default
-        this.id_to_show_bus.push(def_id_to_show);
+        this.identifiers_on_map_bus.push(def_identifiers_on_map);
 
         // definitions
         function convert_to_conditional_stream(status_stream) {
@@ -414,6 +463,25 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                                           on_off: on_off });
     }
 
+    function set_compare_style(type, value) {
+        /** Change the data style.
+
+            Arguments
+            ---------
+
+            type: 'gene'.
+
+            value: A compare_style.
+
+        */
+        check_type(type, true);
+
+        if (['log2_fold', 'diff'].indexOf(value) == -1)
+            throw new Error('Invalid compare_style: ' + value);
+
+        this.compare_style_bus[type].push(value);
+    }
+    
     function set_domain_value(type, index, value) {
         /** Change a domain value.
 
@@ -508,7 +576,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         this.highlight_missing_bus.push(value);
     }
 
-    function set_id_to_show(value) {
+    function set_identifiers_on_map(value) {
         /** Set which id should be visible.
 
             Arguments
@@ -518,8 +586,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
          */
         if (['bigg_id', 'name'].indexOf(value) == -1)
-            throw new Error('Bad value for id_to_show: ' + value);
-        this.id_to_show_bus.push(value);
+            throw new Error('Bad value for identifiers_on_map: ' + value);
+        this.identifiers_on_map_bus.push(value);
     }
 
     function hold_changes() {

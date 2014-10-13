@@ -198,7 +198,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
         }
 
         // whether to show names instead of ids
-        var show_names = (this.map.settings.get_option('id_to_show')=='name');
+        var show_names = (this.map.settings.get_option('identifiers_on_map')=='name');
 
         // Find selected reaction
         var suggestions = [],
@@ -229,11 +229,19 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
                                                               ': <span class="light">' +
                                                               reaction.data_string + '</span>') };
                     } else {
+                        // get the metabolite names or IDs
+                        var mets = {};
+                        if (show_names) {
+                            for (var met_id in reaction.metabolites)
+                                mets[cobra_metabolites[met_id].name] = reaction.metabolites[met_id];
+                        } else {
+                            mets = utils.clone(reaction.metabolites);
+                        }
                         // get the reaction string
-                        var reaction_string = CobraModel.build_reaction_string(reaction.metabolites,
-                                                                           reaction.reversibility,
-                                                                           reaction.lower_bound,
-                                                                           reaction.upper_bound);
+                        var reaction_string = CobraModel.build_reaction_string(mets,
+                                                                               reaction.reversibility,
+                                                                               reaction.lower_bound,
+                                                                               reaction.upper_bound);
                         suggestions[reaction_id] = { string: ((show_names ? reaction_name : reaction_id) +
                                                               ' — <span class="light">' +
                                                               reaction_string +
@@ -244,7 +252,8 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
         }
         // for just the connected reactions, pull out metabolites
         for (var reaction_id in suggestions) {
-            var reaction = cobra_reactions[reaction_id];
+            var reaction = cobra_reactions[reaction_id],
+                reaction_name = reaction.name;
             
             for (var metabolite_id in reaction.metabolites) {
                 var met_name = cobra_metabolites[metabolite_id].name;
@@ -258,19 +267,27 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
                         metabolite_suggestions[joint_id] = {
                             reaction_data: reaction.data,
                             string: ((show_names ? met_name : metabolite_id) + ' — ' +
-                                     reaction_id + ': <span class="light">' +
+                                     (show_names ? reaction_name : reaction_id) + ': <span class="light">' +
                                      reaction.data_string + '</span>'),
                             reaction_abbreviation: reaction_id
                         };
                     } else {
+                        // get the metabolite names or IDs
+                        var mets = {};
+                        if (show_names) {
+                            for (var met_id in reaction.metabolites)
+                                mets[cobra_metabolites[met_id].name] = reaction.metabolites[met_id];
+                        } else {
+                            mets = utils.clone(reaction.metabolites);
+                        }
                         // get the reaction string
-                        var reaction_string = CobraModel.build_reaction_string(reaction.metabolites,
+                        var reaction_string = CobraModel.build_reaction_string(mets,
                                                                                reaction.reversibility,
                                                                                reaction.lower_bound,
                                                                                reaction.upper_bound);
                         metabolite_suggestions[joint_id] = {
                             string: ((show_names ? met_name : metabolite_id) + ' — ' +
-                                     reaction_id + ' — <span class="light">' +
+                                     (show_names ? reaction_name : reaction_id) + ' — <span class="light">' +
                                      reaction_string + '</span>'),
                             reaction_abbreviation: reaction_id
                         };

@@ -56,7 +56,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    .attr('class', 'settings-section-heading');
 	this.gene_gui(container.append('div'));
 
-	// id_to_show
+	// identifiers_on_map
 	container.append('div').text('View options')
 	    .attr('class', 'settings-section-heading');
 	this.view_gui(container.append('div'));
@@ -299,6 +299,42 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		    }.bind(this));
 		});
 	});
+        
+	// compare_style
+	t.append('tr').call(function(r) {
+	    r.append('td').text('Comparison:').attr('class', 'options-label');
+	    var cell = r.append('td');
+
+	    var styles = [['Log2(Fold Change)', 'log2_fold'], ['Difference', 'diff']],
+		style_cells = cell.selectAll('.style-span')
+		    .data(styles),
+		s = style_cells.enter()
+		    .append('span')
+		    .attr('class', 'style-span');
+	    s.append('span')
+                .text(function(d) { return d[0]; });
+
+	    // make the checkbox
+	    s.append('input').attr('type', 'radio')
+                .attr('name', 'gene_style')
+                .attr('value', function(d) { return d[1]; })
+		.each(function(style) {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+                                if (event.target.checked) {
+                                    settings.set_compare_style('gene', event.target.value);
+                                }
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.compare_style_stream.gene.onValue(function(value) {
+		        // check the box for the new value
+		        this.checked = (this.value == value);
+		    }.bind(this));
+		});
+	});
     }
     
     function view_gui(s, option_name, string, options) {
@@ -310,31 +346,31 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 
 	// styles
 	t.append('tr').call(function(r) {
-	    r.append('td').text('ID to show:').attr('class', 'options-label');
+	    r.append('td').text('Identifiers:').attr('class', 'options-label');
 	    var cell = r.append('td');
 
-	    var options = ['bigg_id', 'name'],
+	    var options = [['ID\'s', 'bigg_id'], ['Names', 'name']],
 		style_cells = cell.selectAll('.style-span')
 		    .data(options),
 		s = style_cells.enter()
 		    .append('span')
 		    .attr('class', 'style-span');
-	    s.append('span').text(function(d) { return d; });
+	    s.append('span').text(function(d) { return d[0]; });
 
 	    // make the checkbox
 	    s.append('input').attr('type', 'radio')
-		.attr('name', 'id_to_show')
-		.attr('value', function(d) { return d; })
+		.attr('name', 'identifiers_on_map')
+		.attr('value', function(d) { return d[1]; })
 		.each(function(style) {
 		    // change the model when the box is changed
 		    var change_stream = bacon
 		    	.fromEventTarget(this, 'change')
 		    	.onValue(function(event) {
-			    settings.set_id_to_show(event.target.value);
+			    settings.set_identifiers_on_map(event.target.value);
 		    	});
 		    
 		    // subscribe to changes in the model
-		    settings.id_to_show_stream.onValue(function(value) {			
+		    settings.identifiers_on_map_stream.onValue(function(value) {			
 			// check the box if the style is present
 			this.checked = (value == this.value);
 		    }.bind(this));

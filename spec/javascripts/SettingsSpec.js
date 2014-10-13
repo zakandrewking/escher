@@ -23,6 +23,7 @@ describe("SettingsSpy", function() {
 		    // gene
 		    gene_data: null,
 		    gene_styles: ['text'],
+                    gene_compare_style: 'log_fold',
 		    // color reactions not in the model
 		    highlight_missing_color: 'red' },
 	set_option = function(key, val) { options[key] = val; },
@@ -56,5 +57,18 @@ describe("SettingsSpy", function() {
 	expect(watch.fn).toHaveBeenCalled();
 	// make sure the new value was added to the styles array
 	expect(options.highlight_missing).toBe(false);
+    });
+    
+    it("Test compare_style stream", function() {
+	// set up the callback
+	settings.compare_style_stream['gene'].onValue(watch.fn);
+        // check the default
+        expect(options.gene_compare_style).toBe('log_fold');
+        // push a new value
+	settings.set_compare_style('gene', 'diff');
+	// make sure the callback fired
+	expect(watch.fn).toHaveBeenCalled();
+	// make sure the new value was added to the styles array
+	expect(options.gene_compare_style).toBe('diff');
     });
 });
