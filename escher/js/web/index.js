@@ -84,7 +84,7 @@ function submit(maps) {
     if (quick_jump !== null) {
 	quick_jump.forEach(function(o) {
 	    add.push('quick_jump[]=' + o);
-	})
+	});
     }
 
     url += '?';
@@ -131,8 +131,8 @@ function draw_models_select(models) {
 	    .data(model_data, function(d) { return d; });
 	models_sel.enter()
 	    .append('option')
-	    .classed('model', true)
-	    .attr('value', function(d) { return d; })
+	    .classed('model', true);
+	models_sel.attr('value', function(d) { return d; })
 	    .text(function(d) {
 		return d.split('.').slice(-1)[0];
 	    });
@@ -146,8 +146,8 @@ function draw_models_select(models) {
 	    .data(model_data, function(d) { return d; });
 	models_sel.enter()
 	    .append('option')
-	    .classed('model', true)
-	    .attr('value', function(d) { return d; })
+	    .classed('model', true);
+	models_sel.attr('value', function(d) { return d; })
 	    .text(function(d) {
 		var parts = d.split('.');
 		if (parts.length==2) {
@@ -194,8 +194,8 @@ function draw_maps_select(maps) {
 	    .data(map_data, function(d) { return d; });
 	maps_sel.enter()
 	    .append('option')
-	    .classed('map', true)
-	    .attr('value', function(d) { return d; })
+	    .classed('map', true);
+	maps_sel.attr('value', function(d) { return d; })
 	    .text(function(d) {
 		var map = d.split('.').slice(-1)[0],
 		    model = d.split('.').slice(-2)[0];
@@ -211,8 +211,8 @@ function draw_maps_select(maps) {
 	    .data(map_data, function(d) { return d; });
 	maps_sel.enter()
 	    .append('option')
-	    .classed('map', true)
-	    .attr('value', function(d) { return d; })
+	    .classed('map', true);
+	maps_sel.attr('value', function(d) { return d; })
 	    .text(function(d) {
 		var parts = d.split('.');
 		if (parts.length==3) {
@@ -239,8 +239,8 @@ function draw_organisms_select(organisms) {
 	.data(organisms, function(d) { return d; });
     org.enter()
 	.append('option')
-	.classed('organism', true)
-	.attr('value', function(d) { return d; })
+	.classed('organism', true);
+    org.attr('value', function(d) { return d; })
 	.text(function(d) {
 	    var parts = d.split('_');
 	    return parts[0].toUpperCase() + '. ' + parts[1];
