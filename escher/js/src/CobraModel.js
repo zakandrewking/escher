@@ -89,7 +89,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 			  'gdp', 'h'];
     }
 
-    function apply_reaction_data(reaction_data, styles) {
+    function apply_reaction_data(reaction_data, styles, compare_style) {
 	/** Apply data to model. This is only used to display options in
 	    BuildInput.
 	    
@@ -105,9 +105,9 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    } else {
 		var d = (reaction_id in reaction_data ?
 			 reaction_data[reaction_id] : null),
-		    f = data_styles.float_for_data(d, styles),
-		    r = data_styles.reverse_flux_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles);
+		    f = data_styles.float_for_data(d, styles, compare_style),
+		    r = data_styles.reverse_flux_for_data(d),
+		    s = data_styles.text_for_data(d, f);
 		reaction.data = f;
 		reaction.data_string = s;
 	        reaction.reverse_flux = r;
@@ -115,7 +115,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	}
     }
 
-    function apply_metabolite_data(metabolite_data, styles) {
+    function apply_metabolite_data(metabolite_data, styles, compare_style) {
 	/** Apply data to model. This is only used to display options in
 	    BuildInput.
 
@@ -128,15 +128,15 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    } else {
 		var d = (metabolite_id in metabolite_data ?
 			 metabolite_data[metabolite_id] : null),
-		    f = data_styles.float_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles);
+		    f = data_styles.float_for_data(d, styles, compare_style),
+		    s = data_styles.text_for_data(d, f);
 		metabolite.data = f;
 		metabolite.data_string = s;
 	    }
 	}
     }
 
-    function apply_gene_data(gene_data_obj, styles) {
+    function apply_gene_data(gene_data_obj, styles, compare_style) {
 	/** Apply data to model. This is only used to display options in
 	    BuildInput.
 
@@ -150,6 +150,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
 
 	    style: Gene styles array.
+
+            compare_style: The comparison type.
 
 	*/
 
@@ -183,13 +185,14 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		    gene_values = {};
 		    d = null_val;
 		}
-		var f = data_styles.float_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles),
-		    g = data_styles.gene_string_for_data(rule, gene_values, styles)
+		var f = data_styles.float_for_data(d, styles, compare_style),
+                    r = data_styles.reverse_flux_for_data(d),
+		    s = data_styles.text_for_data(d, f),
+		    g = data_styles.gene_string_for_data(rule, gene_values, styles, compare_style)
 		reaction.data = f;
 		reaction.data_string = s;
 		reaction.gene_string = g;
-		reaction.reverse_flux = false;
+		reaction.reverse_flux = r;
 	    }
 	}
     }

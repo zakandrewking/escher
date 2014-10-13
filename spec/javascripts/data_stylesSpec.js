@@ -45,6 +45,57 @@ describe('data_styles', function() {
 	expect(out).toEqual(expected);
     });
 
+    it('float_for_data',  function() {
+        // single
+        expect(escher.data_styles.float_for_data([-10], ['abs'], 'diff'))
+            .toEqual(10);
+        // diff
+        expect(escher.data_styles.float_for_data([10, -5], [], 'diff'))
+            .toEqual(-15);
+        // abs diff
+        expect(escher.data_styles.float_for_data([10, -5], ['abs'], 'diff'))
+            .toEqual(-5);
+        // fold
+        expect(escher.data_styles.float_for_data([10, 5], ['abs'], 'log2_fold'))
+            .toEqual(-1);
+        // infinity
+        expect(escher.data_styles.float_for_data([0, 5], [], 'log2_fold'))
+            .toEqual(null);
+        // abs negative fold
+        expect(escher.data_styles.float_for_data([10, -5], ['abs'], 'log2_fold'))
+            .toEqual(-1);
+        // both neg fold
+        expect(escher.data_styles.float_for_data([-10, -5], [], 'log2_fold'))
+            .toEqual(-1); 
+        // one neg, no abs
+        expect(escher.data_styles.float_for_data([10, -5], [], 'log2_fold'))
+            .toEqual(null);
+        // bad compare_style
+        expect(escher.data_styles.float_for_data.bind(null, [10, 5], [], 'd'))
+            .toThrow();
+    });
+    
+    it('text_for_data', function() {
+        expect(escher.data_styles.text_for_data([10], 10))
+            .toEqual('10.00');
+        expect(escher.data_styles.text_for_data([-10], 10))
+            .toEqual('-10.00');
+        expect(escher.data_styles.text_for_data([-10, 5], 10))
+            .toEqual('-10.0, 5.00: 10.0');
+    });
+    
+    it('reverse_flux_for_data',  function() {
+        expect(escher.data_styles.reverse_flux_for_data([10]))
+            .toEqual(false);
+        expect(escher.data_styles.reverse_flux_for_data([-10, 5]))
+            .toEqual(true);
+    });
+
+    it('gene_string_for_data',  function() {
+        expect(escher.data_styles.gene_string_for_data('( G1 )', { G1: [-10] }, ['abs'], 'log2_fold'))
+            .toEqual('( G1 (-10.0))');
+    });
+
     it('csv_converter', function() {
         var csv_rows = [['g1', 10, 20],
                         ['g2', 15, 25]];
@@ -78,11 +129,11 @@ describe('data_styles', function() {
 	out = escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values);
 	expect(out).toEqual([180]);
 
-	// single
+	// single negative
 	rule = 'YER056C';
-	gene_values = {"YER056C": [151]};
+	gene_values = {"YER056C": [-151]};
 	out = escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values);
-	expect(out).toEqual([151]);
+	expect(out).toEqual([null]);
 	
 	// multiple values
 	rule = '(G1 AND G2) OR (G3ANDHI aNd G4ORF)';

@@ -85,48 +85,71 @@ define(['utils'], function(utils) {
         }
     }
 
-    function float_for_data(d, styles, ignore_abs) {
-        if (ignore_abs===undefined) ignore_abs = false;
-        if (d===null) return null;
-        var f = null;
-        if (d.length==1) {
-            f = d[0];
-        } else if ((d.length==2) && styles.indexOf('diff')!=-1) {
-            if (d[0]===null || d[1]===null) return null;
-            else f = d[1] - d[0];
-        } else if ((d.length==2) && styles.indexOf('log2_fold')!=-1) {
-            if (d[0]===null || d[1]===null) return null;
-            else f = d[1] - d[0];
-        } else if (d.length==2) {
-            throw new Error('Bad data styles: ' + styles);
+    function float_for_data(d, styles, compare_style) {
+        // all null
+        if (d === null)
+            return null;
+
+        // absolute value
+        var take_abs = (styles.indexOf('abs') != -1);
+        
+        if (d.length==1) { // 1 set
+            // 1 null
+            if (d[0] === null)
+                return null;
+            
+            return abs(d[0], take_abs);
+        } else if (d.length==2) { // 2 sets            
+            // 2 null
+            if (d[0] === null || d[1] === null)
+                return null;
+            
+            if (compare_style == 'diff')
+                return diff(d[0], d[1], take_abs)
+            else if (compare_style == 'log2_fold') {
+                return log2_fold(d[0], d[1], take_abs);
+            } else if (d.length==2)
+                throw new Error('Bad data compare_style: ' + compare_style);
         }
-        if (styles.indexOf('abs') != -1 && !ignore_abs) {
-            f = Math.abs(f);
+
+        // definitions
+        function abs(x, take_abs) {
+            return take_abs ? Math.abs(x) : x;
         }
-        return f;
+        function diff(x, y, take_abs) {
+            if (take_abs) return Math.abs(y) - Math.abs(x);
+            else return y - x;
+        }
+        function log2_fold(x, y, take_abs) {
+            if (x == 0) return null;
+            if (take_abs) {
+                x = Math.abs(x);
+                y = Math.abs(y);
+            } else if (y / x < 0) {
+                return null;
+            }
+            return Math.log(y / x) / Math.log(2);
+        }
     }
 
-    function reverse_flux_for_data(d, styles) {
-        if (d===null) return null;
-        if (d.length==1)
-            return (d[0] <= 0);
-        if (d.length==2) // && styles.indexOf('Diff')!=-1)
-            return ((d[1] - d[0]) <= 0);
-        return true;
+    function reverse_flux_for_data(d) {
+        if (d === null || d[0] === null)
+            return false;
+        return (d[0] < 0);
     }
 
-    function gene_string_for_data(rule, gene_values, styles) {
+    function gene_string_for_data(rule, gene_values, styles, compare_style) {
         if (gene_values === null) return '';
         var out = rule,
             format = d3.format('.3g');
         for (var gene_id in gene_values) {
-            var d = gene_values[gene_id],
-                f = float_for_data(d, styles, true);
+            var d = gene_values[gene_id];
             if (d.length==1) {
-                out = replace_gene_in_rule(out, gene_id, (gene_id + ' (' + null_or_d(f, format) + ')\n'));
+                out = replace_gene_in_rule(out, gene_id, (gene_id + ' (' + null_or_d(d[0], format) + ')\n'));
             }
             if (d.length==2) {
-                var new_str = (gene_id + ' (' +
+                var f = float_for_data(d, styles, compare_style),
+                    new_str = (gene_id + ' (' +
                                null_or_d(d[0], format) + ', ' +
                                null_or_d(d[1], format) + ': ' +
                                null_or_d(f, format) +
@@ -143,15 +166,14 @@ define(['utils'], function(utils) {
         }
     }
     
-    function text_for_data(d, styles) {
-        if (d===null)
+    function text_for_data(d, f) {
+        if (d === null)
             return null_or_d(null);
-        var f = float_for_data(d, styles, true);
-        if (d.length==1) {
+        if (d.length == 1) {
             var format = d3.format('.4g');
-            return null_or_d(f, format);
+            return null_or_d(d[0], format);
         }
-        if (d.length==2) { // && styles.indexOf('Diff')!=-1) {
+        if (d.length == 2) {
             var format = d3.format('.3g'),
                 t = null_or_d(d[0], format);
             t += ', ' + null_or_d(d[1], format);
@@ -162,7 +184,7 @@ define(['utils'], function(utils) {
 
         // definitions
         function null_or_d(d, format) {
-            return d===null ? '(nd)' : format(d);
+            return d === null ? '(nd)' : format(d);
         }
     }
 

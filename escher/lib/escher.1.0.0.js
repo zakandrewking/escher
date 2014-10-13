@@ -2907,48 +2907,71 @@ define('data_styles',['utils'], function(utils) {
         }
     }
 
-    function float_for_data(d, styles, ignore_abs) {
-        if (ignore_abs===undefined) ignore_abs = false;
-        if (d===null) return null;
-        var f = null;
-        if (d.length==1) {
-            f = d[0];
-        } else if ((d.length==2) && styles.indexOf('diff')!=-1) {
-            if (d[0]===null || d[1]===null) return null;
-            else f = d[1] - d[0];
-        } else if ((d.length==2) && styles.indexOf('log2_fold')!=-1) {
-            if (d[0]===null || d[1]===null) return null;
-            else f = d[1] - d[0];
-        } else if (d.length==2) {
-            throw new Error('Bad data styles: ' + styles);
+    function float_for_data(d, styles, compare_style) {
+        // all null
+        if (d === null)
+            return null;
+
+        // absolute value
+        var take_abs = (styles.indexOf('abs') != -1);
+        
+        if (d.length==1) { // 1 set
+            // 1 null
+            if (d[0] === null)
+                return null;
+            
+            return abs(d[0], take_abs);
+        } else if (d.length==2) { // 2 sets            
+            // 2 null
+            if (d[0] === null || d[1] === null)
+                return null;
+            
+            if (compare_style == 'diff')
+                return diff(d[0], d[1], take_abs)
+            else if (compare_style == 'log2_fold') {
+                return log2_fold(d[0], d[1], take_abs);
+            } else if (d.length==2)
+                throw new Error('Bad data compare_style: ' + compare_style);
         }
-        if (styles.indexOf('abs') != -1 && !ignore_abs) {
-            f = Math.abs(f);
+
+        // definitions
+        function abs(x, take_abs) {
+            return take_abs ? Math.abs(x) : x;
         }
-        return f;
+        function diff(x, y, take_abs) {
+            if (take_abs) return Math.abs(y) - Math.abs(x);
+            else return y - x;
+        }
+        function log2_fold(x, y, take_abs) {
+            if (x == 0) return null;
+            if (take_abs) {
+                x = Math.abs(x);
+                y = Math.abs(y);
+            } else if (y / x < 0) {
+                return null;
+            }
+            return Math.log(y / x) / Math.log(2);
+        }
     }
 
-    function reverse_flux_for_data(d, styles) {
-        if (d===null) return null;
-        if (d.length==1)
-            return (d[0] <= 0);
-        if (d.length==2) // && styles.indexOf('Diff')!=-1)
-            return ((d[1] - d[0]) <= 0);
-        return true;
+    function reverse_flux_for_data(d) {
+        if (d === null || d[0] === null)
+            return false;
+        return (d[0] < 0);
     }
 
-    function gene_string_for_data(rule, gene_values, styles) {
+    function gene_string_for_data(rule, gene_values, styles, compare_style) {
         if (gene_values === null) return '';
         var out = rule,
             format = d3.format('.3g');
         for (var gene_id in gene_values) {
-            var d = gene_values[gene_id],
-                f = float_for_data(d, styles, true);
+            var d = gene_values[gene_id];
             if (d.length==1) {
-                out = replace_gene_in_rule(out, gene_id, (gene_id + ' (' + null_or_d(f, format) + ')\n'));
+                out = replace_gene_in_rule(out, gene_id, (gene_id + ' (' + null_or_d(d[0], format) + ')\n'));
             }
             if (d.length==2) {
-                var new_str = (gene_id + ' (' +
+                var f = float_for_data(d, styles, compare_style),
+                    new_str = (gene_id + ' (' +
                                null_or_d(d[0], format) + ', ' +
                                null_or_d(d[1], format) + ': ' +
                                null_or_d(f, format) +
@@ -2965,15 +2988,14 @@ define('data_styles',['utils'], function(utils) {
         }
     }
     
-    function text_for_data(d, styles) {
-        if (d===null)
+    function text_for_data(d, f) {
+        if (d === null)
             return null_or_d(null);
-        var f = float_for_data(d, styles, true);
-        if (d.length==1) {
+        if (d.length == 1) {
             var format = d3.format('.4g');
-            return null_or_d(f, format);
+            return null_or_d(d[0], format);
         }
-        if (d.length==2) { // && styles.indexOf('Diff')!=-1) {
+        if (d.length == 2) {
             var format = d3.format('.3g'),
                 t = null_or_d(d[0], format);
             t += ', ' + null_or_d(d[1], format);
@@ -2984,7 +3006,7 @@ define('data_styles',['utils'], function(utils) {
 
         // definitions
         function null_or_d(d, format) {
-            return d===null ? '(nd)' : format(d);
+            return d === null ? '(nd)' : format(d);
         }
     }
 
@@ -9449,13 +9471,14 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         }
         
         // apply the datasets to the reactions
-        var styles = this.settings.get_option('reaction_styles');
+        var styles = this.settings.get_option('reaction_styles'),
+            compare_style = this.settings.get_option('reaction_compare_style');
         for (var reaction_id in reactions) {
             var reaction = reactions[reaction_id],
                 d = (reaction.bigg_id in data ? data[reaction.bigg_id] : null),
-                f = data_styles.float_for_data(d, styles),
-                r = data_styles.reverse_flux_for_data(d, styles),
-                s = data_styles.text_for_data(d, styles);
+                f = data_styles.float_for_data(d, styles, compare_style),
+                r = data_styles.reverse_flux_for_data(d),
+                s = data_styles.text_for_data(d, f);
             reaction.data = f;
             reaction.data_string = s;
             reaction.reverse_flux = r;
@@ -9496,12 +9519,13 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         }
         
         // grab the data
-        var styles = this.settings.get_option('metabolite_styles');
+        var styles = this.settings.get_option('metabolite_styles'),
+            compare_style = this.settings.get_option('metabolite_compare_style');
         for (var node_id in nodes) {
             var node = nodes[node_id],
                 d = (node.bigg_id in data ? data[node.bigg_id] : null),
-                f = data_styles.float_for_data(d, styles),
-                s = data_styles.text_for_data(d, styles);
+                f = data_styles.float_for_data(d, styles, compare_style),
+                s = data_styles.text_for_data(d, f);
             node.data = f;
             node.data_string = s;
         }
@@ -9582,7 +9606,8 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         }
         
         // apply the datasets to the reactions
-        var styles = this.settings.get_option('gene_styles');
+        var styles = this.settings.get_option('gene_styles'),
+            compare_style = this.settings.get_option('gene_compare_style');
         for (var reaction_id in reactions) {
             var reaction = reactions[reaction_id];
             // find the data
@@ -9597,11 +9622,12 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 d = null_val;
             }
             if (evaluate_on_reactions) {
-                var f = data_styles.float_for_data(d, styles),
-                    s = data_styles.text_for_data(d, styles);
+                var f = data_styles.float_for_data(d, styles, compare_style),
+                    r = data_styles.reverse_flux_for_data(d),
+                    s = data_styles.text_for_data(d, f);
                 reaction.data = f;
                 reaction.data_string = s;
-                reaction.reverse_flux = false;
+                reaction.reverse_flux = r;
                 // apply to the segments
                 for (var segment_id in reaction.segments) {
                     var segment = reaction.segments[segment_id];
@@ -9610,7 +9636,10 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 }
             }
             // always update the gene string
-            reaction.gene_string = data_styles.gene_string_for_data(rule, gene_values, styles);
+            reaction.gene_string = data_styles.gene_string_for_data(rule,
+                                                                    gene_values,
+                                                                    styles,
+                                                                    compare_style);
         }
 
         // remember
@@ -11146,7 +11175,7 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 			  'gdp', 'h'];
     }
 
-    function apply_reaction_data(reaction_data, styles) {
+    function apply_reaction_data(reaction_data, styles, compare_style) {
 	/** Apply data to model. This is only used to display options in
 	    BuildInput.
 	    
@@ -11162,9 +11191,9 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 	    } else {
 		var d = (reaction_id in reaction_data ?
 			 reaction_data[reaction_id] : null),
-		    f = data_styles.float_for_data(d, styles),
-		    r = data_styles.reverse_flux_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles);
+		    f = data_styles.float_for_data(d, styles, compare_style),
+		    r = data_styles.reverse_flux_for_data(d),
+		    s = data_styles.text_for_data(d, f);
 		reaction.data = f;
 		reaction.data_string = s;
 	        reaction.reverse_flux = r;
@@ -11172,7 +11201,7 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 	}
     }
 
-    function apply_metabolite_data(metabolite_data, styles) {
+    function apply_metabolite_data(metabolite_data, styles, compare_style) {
 	/** Apply data to model. This is only used to display options in
 	    BuildInput.
 
@@ -11185,15 +11214,15 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 	    } else {
 		var d = (metabolite_id in metabolite_data ?
 			 metabolite_data[metabolite_id] : null),
-		    f = data_styles.float_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles);
+		    f = data_styles.float_for_data(d, styles, compare_style),
+		    s = data_styles.text_for_data(d, f);
 		metabolite.data = f;
 		metabolite.data_string = s;
 	    }
 	}
     }
 
-    function apply_gene_data(gene_data_obj, styles) {
+    function apply_gene_data(gene_data_obj, styles, compare_style) {
 	/** Apply data to model. This is only used to display options in
 	    BuildInput.
 
@@ -11207,6 +11236,8 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
 
 	    style: Gene styles array.
+
+            compare_style: The comparison type.
 
 	*/
 
@@ -11240,13 +11271,14 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 		    gene_values = {};
 		    d = null_val;
 		}
-		var f = data_styles.float_for_data(d, styles),
-		    s = data_styles.text_for_data(d, styles),
-		    g = data_styles.gene_string_for_data(rule, gene_values, styles)
+		var f = data_styles.float_for_data(d, styles, compare_style),
+                    r = data_styles.reverse_flux_for_data(d),
+		    s = data_styles.text_for_data(d, f),
+		    g = data_styles.gene_string_for_data(rule, gene_values, styles, compare_style)
 		reaction.data = f;
 		reaction.data_string = s;
 		reaction.gene_string = g;
-		reaction.reverse_flux = false;
+		reaction.reverse_flux = r;
 	    }
 	}
     }
@@ -12058,22 +12090,11 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         Arguments
         ---------
 
-        set_option: 
+        set_option: A function, fn(key), that returns the option value for the
+        key.
 
-        def_styles: 
-
-        def_auto_domain: 
-
-        def_domain:
-
-        def_range:
-
-        def_no_data:
-
-        def_highlight_missing:
-
-        highlight_missing_components: Boolean. If true, color components that
-        are not the in cobra model.
+        get_option: A function, fn(key, value), that sets the option for the key
+        and value.
 
      */
 
@@ -12117,7 +12138,9 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         var def_styles = { reaction: get_option('reaction_styles'),
                            metabolite: get_option('metabolite_styles'),
                            gene: get_option('gene_styles') },
-            def_compare_style = { gene: get_option('gene_compare_style') },
+            def_compare_style = { reaction: get_option('reaction_compare_style'),
+                                  metabolite: get_option('metabolite_compare_style'),
+                                  gene: get_option('gene_compare_style') },
             def_auto_domain = { reaction: get_option('auto_reaction_domain'),
                                 metabolite: get_option('auto_metabolite_domain') },
             def_domain = { reaction: get_option('reaction_domain'),
@@ -12214,7 +12237,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         // compare_style
         // ---------------------------------------------------------------------
         
-        ['gene'].forEach(function(type) {
+        ['reaction', 'metabolite', 'gene'].forEach(function(type) {
             // set up the styles settings
             this.compare_style_bus[type] = new bacon.Bus();
             // make the event stream
@@ -12230,7 +12253,11 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
             // get the latest
             this.compare_style_stream[type].onValue(function(v) {
-                if (type=='gene') {
+                if (type=='reaction') {
+                    this.set_option('reaction_compare_style', v);
+                } else if (type=='metabolite') {
+                    this.set_option('metabolite_compare_style', v);
+                } else if (type=='gene') {
                     this.set_option('gene_compare_style', v);
                 }
             }.bind(this));
@@ -12671,6 +12698,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes,
 			    scale_gui: scale_gui,
+			    style_gui: style_gui,
 			    gene_gui: gene_gui,
 			    view_gui: view_gui };
 
@@ -12682,7 +12710,10 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	this.settings = settings;
 	this.draw = false;
 
-	var container = sel.append('div')
+	var background = sel.append('div')
+		.attr('class', 'settings-box-background')
+		.style('display', 'none'),
+	    container = sel.append('div')
 		.attr('class', 'settings-box')
 		.style('display', 'none');
 
@@ -12700,31 +12731,42 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		this.abandon_changes();
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-remove");
+
+        // reactions
+	container.append('div')
+	    .text('Reactions').attr('class', 'settings-section-heading-large');
+	this.scale_gui(container.append('div'), 'reaction');
 	
 	// reaction data
 	container.append('div')
 	    .text('Reaction data').attr('class', 'settings-section-heading');
-	this.scale_gui(container.append('div'), 'reaction');
-
-	// metabolite data
-	container.append('div').text('Metabolite data')
-	    .attr('class', 'settings-section-heading');
-	this.scale_gui(container.append('div'), 'metabolite');
+	this.style_gui(container.append('div'), 'reaction');
 
 	// gene data
 	container.append('div').text('Gene data')
 	    .attr('class', 'settings-section-heading');
 	this.gene_gui(container.append('div'));
 
-	// identifiers_on_map
-	container.append('div').text('View options')
+	// metabolite data
+        container.append('hr');
+	container.append('div').text('Metabolites')
+	    .attr('class', 'settings-section-heading-large');
+	this.scale_gui(container.append('div'), 'metabolite');
+	container.append('div').text('Metabolite data')
 	    .attr('class', 'settings-section-heading');
+	this.style_gui(container.append('div'), 'metabolite');
+        
+	// identifiers_on_map
+        container.append('hr');
+	container.append('div').text('View options')
+	    .attr('class', 'settings-section-heading-large');
 	this.view_gui(container.append('div'));
 	
 	this.callback_manager = new CallbackManager();
 
 	this.map = map;
 	this.selection = container;
+        this.background = background;
     }
     function is_visible() {
 	return this.selection.style('display') != 'none';
@@ -12737,6 +12779,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    this.hold_changes();
 	    // show the menu
 	    this.selection.style("display", "block");
+	    this.background.style("display", "block");
 	    this.selection.select('input').node().focus();
 	    // escape key
 	    this.escape = this.map.key_manager
@@ -12755,6 +12798,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    if (this.draw) this.map.draw_everything();
 	    // hide the menu
 	    this.selection.style("display", "none");
+	    this.background.style("display", "none");
 	    if (this.escape) this.escape.clear();
 	    if (this.enter) this.enter.clear();
 	    this.escape = null;
@@ -12887,10 +12931,20 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		});
 	});
 
+    }
+
+    function style_gui(s, type) {
+	/** A UI to edit style.
+
+         */
+
+	var t = s.append('table').attr('class', 'settings-table'),
+	    settings = this.settings;
+
 	// styles
 	t.append('tr').call(function(r) {
 	    r.append('td').text('Styles:').attr('class', 'options-label');
-	    var cell = r.append('td').attr('colspan', columns.length + 1);
+	    var cell = r.append('td');
 
 	    var styles = ['abs', 'size', 'color', 'text'],
 		style_cells = cell.selectAll('.style-span')
@@ -12918,6 +12972,46 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		    }.bind(this));
 		});
 	});
+
+        
+	// compare_style
+	t.append('tr').call(function(r) {
+	    r.append('td')
+                .text('Comparison:')
+                .attr('class', 'options-label');
+	    var cell = r.append('td')
+                    .attr('colspan', '4');
+
+	    var styles = [['Log2(Fold Change)', 'log2_fold'], ['Difference', 'diff']],
+		style_cells = cell.selectAll('.style-span')
+		    .data(styles),
+		s = style_cells.enter()
+		    .append('span')
+		    .attr('class', 'style-span');
+	    s.append('span')
+                .text(function(d) { return d[0]; });
+
+	    // make the checkbox
+	    s.append('input').attr('type', 'radio')
+                .attr('name', type + '_compare_style')
+                .attr('value', function(d) { return d[1]; })
+		.each(function(style) {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+                                if (event.target.checked) {
+                                    settings.set_compare_style(type, event.target.value);
+                                }
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.compare_style_stream[type].onValue(function(value) {
+		        // check the box for the new value
+		        this.checked = (this.value == value);
+		    }.bind(this));
+		});
+        });
     }
     
     function gene_gui(s) {
@@ -12929,36 +13023,36 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    type = 'gene';
 
 	// styles
-	t.append('tr').call(function(r) {
-	    r.append('td').text('Styles:').attr('class', 'options-label');
-	    var cell = r.append('td');
+	// t.append('tr').call(function(r) {
+	//     r.append('td').text('Styles:').attr('class', 'options-label');
+	//     var cell = r.append('td');
 
-	    var styles = ['text', 'evaluate_on_reactions'],
-		style_cells = cell.selectAll('.style-span')
-		    .data(styles),
-		s = style_cells.enter()
-		    .append('span')
-		    .attr('class', 'style-span');
-	    s.append('span').text(function(d) { return d; });
+	//     var styles = ['abs', 'text', 'evaluate_on_reactions'],
+	// 	style_cells = cell.selectAll('.style-span')
+	// 	    .data(styles),
+	// 	s = style_cells.enter()
+	// 	    .append('span')
+	// 	    .attr('class', 'style-span');
+	//     s.append('span').text(function(d) { return d; });
 
-	    // make the checkbox
-	    s.append('input').attr('type', 'checkbox')
-		.each(function(style) {
-		    // change the model when the box is changed
-		    var change_stream = bacon
-		    	    .fromEventTarget(this, 'change')
-		    	    .onValue(function(event) {
-		    		settings.change_data_style(type, style,
-							   event.target.checked);
-		    	    });
+	//     // make the checkbox
+	//     s.append('input').attr('type', 'checkbox')
+	// 	.each(function(style) {
+	// 	    // change the model when the box is changed
+	// 	    var change_stream = bacon
+	// 	    	    .fromEventTarget(this, 'change')
+	// 	    	    .onValue(function(event) {
+	// 	    		settings.change_data_style(type, style,
+	// 						   event.target.checked);
+	// 	    	    });
 		    
-		    // subscribe to changes in the model
-		    settings.data_styles_stream[type].onValue(function(ar) {
-			// check the box if the style is present
-			this.checked = (ar.indexOf(style) != -1);
-		    }.bind(this));
-		});
-	});
+	// 	    // subscribe to changes in the model
+	// 	    settings.data_styles_stream[type].onValue(function(ar) {
+	// 		// check the box if the style is present
+	// 		this.checked = (ar.indexOf(style) != -1);
+	// 	    }.bind(this));
+	// 	});
+	// });
         
 	// compare_style
 	t.append('tr').call(function(r) {
@@ -12976,7 +13070,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 
 	    // make the checkbox
 	    s.append('input').attr('type', 'radio')
-                .attr('name', 'gene_style')
+                .attr('name', 'gene_compare_style')
                 .attr('value', function(d) { return d[1]; })
 		.each(function(style) {
 		    // change the model when the box is changed
@@ -13274,13 +13368,19 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
          reaction_data: An object with reaction ids for keys and reaction data
          points for values.
 
+         reaction_compare_style: (Default: 'diff') How to compare to
+         datasets. Can be either 'log2_fold' or 'diff'.
+
          metabolite_data: An object with metabolite ids for keys and metabolite
          data points for values.
+
+         metabolite_compare_style: (Default: 'diff') How to compare to
+         datasets. Can be either 'log2_fold' or 'diff'.
 
          gene_data: An object with Gene ids for keys and gene data points for
          values.
 
-         gene_styles: (Default: ['text']) An array with any of the following
+         gene_styles: (Default: ['abs', 'text']) An array with any of the following
          options: ['text', 'evaluate_on_reactions'].
 
          gene_compare_style: (Default: 'log2_fold') How to compare to
@@ -13356,6 +13456,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             auto_reaction_domain: true,
             reaction_data: null,
             reaction_styles: ['color', 'size', 'abs', 'text'],
+            reaction_compare_style: 'diff',
             reaction_domain: [-10, 0, 10],
             reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
             reaction_size_range: [4, 8, 12],
@@ -13364,6 +13465,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             // metabolite
             metabolite_data: null,
             metabolite_styles: ['color', 'size', 'text'],
+            metabolite_compare_style: 'diff',
             auto_metabolite_domain: true,
             metabolite_domain: [-10, 0, 10],
             metabolite_color_range: ['green', 'white', 'red'],
@@ -13372,7 +13474,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             metabolite_no_data_size: 6,
             // gene
             gene_data: null,
-            gene_styles: ['text'],
+            gene_styles: ['abs', 'text'],
             gene_compare_style: 'log2_fold',
             // color reactions not in the model
             highlight_missing_color: 'red',
@@ -13536,19 +13638,20 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 .append('div').attr('class', 'search-menu-container-inline'),
             menu_div = s.append('div'),
             search_bar_div = s.append('div'),
-            settings_div = s.append('div'),
             button_div = this.options.selection.append('div');
 
         // set up the search bar
         this.search_bar = SearchBar(search_bar_div, this.map.search_index, 
                                     this.map);
-        // set up the settings
-        this.settings_page = SettingsBar(settings_div, this.settings, 
-                                         this.map);
         // set up the hide callbacks
         this.search_bar.callback_manager.set('show', function() {
             this.settings_page.toggle(false);
         }.bind(this));
+        
+        // set up the settings
+        var settings_div = this.options.selection.append('div');
+        this.settings_page = SettingsBar(settings_div, this.settings, 
+                                         this.map);
         this.settings_page.callback_manager.set('show', function() {
             this.search_bar.toggle(false);
         }.bind(this));
@@ -13710,7 +13813,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                                            'metabolite_data');
             if (update_model && this.cobra_model !== null) {
                 this.cobra_model.apply_metabolite_data(data_object,
-                                                       this.options.metabolite_styles);
+                                                       this.options.metabolite_styles,
+                                                       this.options.metabolite_compare_style);
             }
             if (update_map && this.map !== null) {
                 this.map.apply_metabolite_data_to_map(data_object);
@@ -13731,7 +13835,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             // only update the model if there is not going to be gene data
             if (update_model && this.cobra_model !== null) {
                 this.cobra_model.apply_reaction_data(data_object,
-                                                     this.options.reaction_styles);
+                                                     this.options.reaction_styles,
+                                                     this.options.reaction_compare_style);
             }
             if (update_map && this.map !== null) {
                 this.map.apply_reaction_data_to_map(data_object); 
@@ -13759,7 +13864,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             // only update the model if gene data is applied to reactions
             if (update_model && this.cobra_model !== null) {
                 this.cobra_model.apply_gene_data(data_object,
-                                                 this.options.gene_styles);
+                                                 this.options.gene_styles,
+                                                 this.options.gene_compare_style);
             }
             if (update_map && this.map !== null) {
                 this.map.apply_gene_data_to_map(data_object);
@@ -13816,16 +13922,16 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                           text: "Load reaction data" })
                 .button({ key: keys.clear_reaction_data,
                           text: "Clear reaction data" })
-                .button({ input: { fn: load_metabolite_data_for_file.bind(this),
-                                   accept_csv: true  },
-                          text: "Load metabolite data" })
-                .button({ key: keys.clear_metabolite_data,
-                          text: "Clear metabolite data" })
                 .button({ input: { fn: load_gene_data_for_file.bind(this),
                                    accept_csv: true  },
                           text: "Load gene data" })
                 .button({ key: keys.clear_gene_data,
                           text: "Clear gene data" })
+                .button({ input: { fn: load_metabolite_data_for_file.bind(this),
+                                   accept_csv: true  },
+                          text: "Load metabolite data" })
+                .button({ key: keys.clear_metabolite_data,
+                          text: "Clear metabolite data" })
                 .button({ key: keys.show_settings,
                           text: "Settings (Ctrl ,)" });
         
@@ -14064,8 +14170,10 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 return;
             }
             // turn off gene data
-            if (data !== null)
+            if (data !== null) {
                 this.settings.change_data_style('gene', 'evaluate_on_reactions', false);
+                this.set_gene_data(null);
+            }
             this.set_reaction_data(data);
         }
         function load_metabolite_data_for_file(error, data) {
@@ -14083,8 +14191,12 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 return;
             }
             // turn on gene data
-            if (data !== null)
+            if (data === null) {
+                this.settings.change_data_style('gene', 'evaluate_on_reactions', false);
+            } else {
                 this.settings.change_data_style('gene', 'evaluate_on_reactions', true);
+                this.set_reaction_data(null);
+            }
             this.set_gene_data(data);
         }
     }

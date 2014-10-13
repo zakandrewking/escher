@@ -4,22 +4,11 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         Arguments
         ---------
 
-        set_option: 
+        set_option: A function, fn(key), that returns the option value for the
+        key.
 
-        def_styles: 
-
-        def_auto_domain: 
-
-        def_domain:
-
-        def_range:
-
-        def_no_data:
-
-        def_highlight_missing:
-
-        highlight_missing_components: Boolean. If true, color components that
-        are not the in cobra model.
+        get_option: A function, fn(key, value), that sets the option for the key
+        and value.
 
      */
 
@@ -63,7 +52,9 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         var def_styles = { reaction: get_option('reaction_styles'),
                            metabolite: get_option('metabolite_styles'),
                            gene: get_option('gene_styles') },
-            def_compare_style = { gene: get_option('gene_compare_style') },
+            def_compare_style = { reaction: get_option('reaction_compare_style'),
+                                  metabolite: get_option('metabolite_compare_style'),
+                                  gene: get_option('gene_compare_style') },
             def_auto_domain = { reaction: get_option('auto_reaction_domain'),
                                 metabolite: get_option('auto_metabolite_domain') },
             def_domain = { reaction: get_option('reaction_domain'),
@@ -160,7 +151,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // compare_style
         // ---------------------------------------------------------------------
         
-        ['gene'].forEach(function(type) {
+        ['reaction', 'metabolite', 'gene'].forEach(function(type) {
             // set up the styles settings
             this.compare_style_bus[type] = new bacon.Bus();
             // make the event stream
@@ -176,7 +167,11 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
             // get the latest
             this.compare_style_stream[type].onValue(function(v) {
-                if (type=='gene') {
+                if (type=='reaction') {
+                    this.set_option('reaction_compare_style', v);
+                } else if (type=='metabolite') {
+                    this.set_option('metabolite_compare_style', v);
+                } else if (type=='gene') {
                     this.set_option('gene_compare_style', v);
                 }
             }.bind(this));

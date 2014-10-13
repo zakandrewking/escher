@@ -699,13 +699,14 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         }
         
         // apply the datasets to the reactions
-        var styles = this.settings.get_option('reaction_styles');
+        var styles = this.settings.get_option('reaction_styles'),
+            compare_style = this.settings.get_option('reaction_compare_style');
         for (var reaction_id in reactions) {
             var reaction = reactions[reaction_id],
                 d = (reaction.bigg_id in data ? data[reaction.bigg_id] : null),
-                f = data_styles.float_for_data(d, styles),
-                r = data_styles.reverse_flux_for_data(d, styles),
-                s = data_styles.text_for_data(d, styles);
+                f = data_styles.float_for_data(d, styles, compare_style),
+                r = data_styles.reverse_flux_for_data(d),
+                s = data_styles.text_for_data(d, f);
             reaction.data = f;
             reaction.data_string = s;
             reaction.reverse_flux = r;
@@ -746,12 +747,13 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         }
         
         // grab the data
-        var styles = this.settings.get_option('metabolite_styles');
+        var styles = this.settings.get_option('metabolite_styles'),
+            compare_style = this.settings.get_option('metabolite_compare_style');
         for (var node_id in nodes) {
             var node = nodes[node_id],
                 d = (node.bigg_id in data ? data[node.bigg_id] : null),
-                f = data_styles.float_for_data(d, styles),
-                s = data_styles.text_for_data(d, styles);
+                f = data_styles.float_for_data(d, styles, compare_style),
+                s = data_styles.text_for_data(d, f);
             node.data = f;
             node.data_string = s;
         }
@@ -832,7 +834,8 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         }
         
         // apply the datasets to the reactions
-        var styles = this.settings.get_option('gene_styles');
+        var styles = this.settings.get_option('gene_styles'),
+            compare_style = this.settings.get_option('gene_compare_style');
         for (var reaction_id in reactions) {
             var reaction = reactions[reaction_id];
             // find the data
@@ -847,11 +850,12 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 d = null_val;
             }
             if (evaluate_on_reactions) {
-                var f = data_styles.float_for_data(d, styles),
-                    s = data_styles.text_for_data(d, styles);
+                var f = data_styles.float_for_data(d, styles, compare_style),
+                    r = data_styles.reverse_flux_for_data(d),
+                    s = data_styles.text_for_data(d, f);
                 reaction.data = f;
                 reaction.data_string = s;
-                reaction.reverse_flux = false;
+                reaction.reverse_flux = r;
                 // apply to the segments
                 for (var segment_id in reaction.segments) {
                     var segment = reaction.segments[segment_id];
@@ -860,7 +864,10 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 }
             }
             // always update the gene string
-            reaction.gene_string = data_styles.gene_string_for_data(rule, gene_values, styles);
+            reaction.gene_string = data_styles.gene_string_for_data(rule,
+                                                                    gene_values,
+                                                                    styles,
+                                                                    compare_style);
         }
 
         // remember

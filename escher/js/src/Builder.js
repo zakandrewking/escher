@@ -16,13 +16,19 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          reaction_data: An object with reaction ids for keys and reaction data
          points for values.
 
+         reaction_compare_style: (Default: 'diff') How to compare to
+         datasets. Can be either 'log2_fold' or 'diff'.
+
          metabolite_data: An object with metabolite ids for keys and metabolite
          data points for values.
+
+         metabolite_compare_style: (Default: 'diff') How to compare to
+         datasets. Can be either 'log2_fold' or 'diff'.
 
          gene_data: An object with Gene ids for keys and gene data points for
          values.
 
-         gene_styles: (Default: ['text']) An array with any of the following
+         gene_styles: (Default: ['abs', 'text']) An array with any of the following
          options: ['text', 'evaluate_on_reactions'].
 
          gene_compare_style: (Default: 'log2_fold') How to compare to
@@ -98,6 +104,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             auto_reaction_domain: true,
             reaction_data: null,
             reaction_styles: ['color', 'size', 'abs', 'text'],
+            reaction_compare_style: 'diff',
             reaction_domain: [-10, 0, 10],
             reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
             reaction_size_range: [4, 8, 12],
@@ -106,6 +113,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             // metabolite
             metabolite_data: null,
             metabolite_styles: ['color', 'size', 'text'],
+            metabolite_compare_style: 'diff',
             auto_metabolite_domain: true,
             metabolite_domain: [-10, 0, 10],
             metabolite_color_range: ['green', 'white', 'red'],
@@ -114,7 +122,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             metabolite_no_data_size: 6,
             // gene
             gene_data: null,
-            gene_styles: ['text'],
+            gene_styles: ['abs', 'text'],
             gene_compare_style: 'log2_fold',
             // color reactions not in the model
             highlight_missing_color: 'red',
@@ -278,19 +286,20 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 .append('div').attr('class', 'search-menu-container-inline'),
             menu_div = s.append('div'),
             search_bar_div = s.append('div'),
-            settings_div = s.append('div'),
             button_div = this.options.selection.append('div');
 
         // set up the search bar
         this.search_bar = SearchBar(search_bar_div, this.map.search_index, 
                                     this.map);
-        // set up the settings
-        this.settings_page = SettingsBar(settings_div, this.settings, 
-                                         this.map);
         // set up the hide callbacks
         this.search_bar.callback_manager.set('show', function() {
             this.settings_page.toggle(false);
         }.bind(this));
+        
+        // set up the settings
+        var settings_div = this.options.selection.append('div');
+        this.settings_page = SettingsBar(settings_div, this.settings, 
+                                         this.map);
         this.settings_page.callback_manager.set('show', function() {
             this.search_bar.toggle(false);
         }.bind(this));
@@ -452,7 +461,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                                                            'metabolite_data');
             if (update_model && this.cobra_model !== null) {
                 this.cobra_model.apply_metabolite_data(data_object,
-                                                       this.options.metabolite_styles);
+                                                       this.options.metabolite_styles,
+                                                       this.options.metabolite_compare_style);
             }
             if (update_map && this.map !== null) {
                 this.map.apply_metabolite_data_to_map(data_object);
@@ -473,7 +483,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             // only update the model if there is not going to be gene data
             if (update_model && this.cobra_model !== null) {
                 this.cobra_model.apply_reaction_data(data_object,
-                                                     this.options.reaction_styles);
+                                                     this.options.reaction_styles,
+                                                     this.options.reaction_compare_style);
             }
             if (update_map && this.map !== null) {
                 this.map.apply_reaction_data_to_map(data_object); 
@@ -501,7 +512,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             // only update the model if gene data is applied to reactions
             if (update_model && this.cobra_model !== null) {
                 this.cobra_model.apply_gene_data(data_object,
-                                                 this.options.gene_styles);
+                                                 this.options.gene_styles,
+                                                 this.options.gene_compare_style);
             }
             if (update_map && this.map !== null) {
                 this.map.apply_gene_data_to_map(data_object);
@@ -558,16 +570,16 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                           text: "Load reaction data" })
                 .button({ key: keys.clear_reaction_data,
                           text: "Clear reaction data" })
-                .button({ input: { fn: load_metabolite_data_for_file.bind(this),
-                                   accept_csv: true  },
-                          text: "Load metabolite data" })
-                .button({ key: keys.clear_metabolite_data,
-                          text: "Clear metabolite data" })
                 .button({ input: { fn: load_gene_data_for_file.bind(this),
                                    accept_csv: true  },
                           text: "Load gene data" })
                 .button({ key: keys.clear_gene_data,
                           text: "Clear gene data" })
+                .button({ input: { fn: load_metabolite_data_for_file.bind(this),
+                                   accept_csv: true  },
+                          text: "Load metabolite data" })
+                .button({ key: keys.clear_metabolite_data,
+                          text: "Clear metabolite data" })
                 .button({ key: keys.show_settings,
                           text: "Settings (Ctrl ,)" });
         
@@ -806,8 +818,10 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 return;
             }
             // turn off gene data
-            if (data !== null)
+            if (data !== null) {
                 this.settings.change_data_style('gene', 'evaluate_on_reactions', false);
+                this.set_gene_data(null);
+            }
             this.set_reaction_data(data);
         }
         function load_metabolite_data_for_file(error, data) {
@@ -825,8 +839,12 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 return;
             }
             // turn on gene data
-            if (data !== null)
+            if (data === null) {
+                this.settings.change_data_style('gene', 'evaluate_on_reactions', false);
+            } else {
                 this.settings.change_data_style('gene', 'evaluate_on_reactions', true);
+                this.set_reaction_data(null);
+            }
             this.set_gene_data(data);
         }
     }

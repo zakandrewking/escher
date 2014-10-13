@@ -11,6 +11,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes,
 			    scale_gui: scale_gui,
+			    style_gui: style_gui,
 			    gene_gui: gene_gui,
 			    view_gui: view_gui };
 
@@ -22,7 +23,10 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	this.settings = settings;
 	this.draw = false;
 
-	var container = sel.append('div')
+	var background = sel.append('div')
+		.attr('class', 'settings-box-background')
+		.style('display', 'none'),
+	    container = sel.append('div')
 		.attr('class', 'settings-box')
 		.style('display', 'none');
 
@@ -40,31 +44,42 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		this.abandon_changes();
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-remove");
+
+        // reactions
+	container.append('div')
+	    .text('Reactions').attr('class', 'settings-section-heading-large');
+	this.scale_gui(container.append('div'), 'reaction');
 	
 	// reaction data
 	container.append('div')
 	    .text('Reaction data').attr('class', 'settings-section-heading');
-	this.scale_gui(container.append('div'), 'reaction');
-
-	// metabolite data
-	container.append('div').text('Metabolite data')
-	    .attr('class', 'settings-section-heading');
-	this.scale_gui(container.append('div'), 'metabolite');
+	this.style_gui(container.append('div'), 'reaction');
 
 	// gene data
 	container.append('div').text('Gene data')
 	    .attr('class', 'settings-section-heading');
 	this.gene_gui(container.append('div'));
 
-	// identifiers_on_map
-	container.append('div').text('View options')
+	// metabolite data
+        container.append('hr');
+	container.append('div').text('Metabolites')
+	    .attr('class', 'settings-section-heading-large');
+	this.scale_gui(container.append('div'), 'metabolite');
+	container.append('div').text('Metabolite data')
 	    .attr('class', 'settings-section-heading');
+	this.style_gui(container.append('div'), 'metabolite');
+        
+	// identifiers_on_map
+        container.append('hr');
+	container.append('div').text('View options')
+	    .attr('class', 'settings-section-heading-large');
 	this.view_gui(container.append('div'));
 	
 	this.callback_manager = new CallbackManager();
 
 	this.map = map;
 	this.selection = container;
+        this.background = background;
     }
     function is_visible() {
 	return this.selection.style('display') != 'none';
@@ -77,6 +92,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    this.hold_changes();
 	    // show the menu
 	    this.selection.style("display", "block");
+	    this.background.style("display", "block");
 	    this.selection.select('input').node().focus();
 	    // escape key
 	    this.escape = this.map.key_manager
@@ -95,6 +111,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    if (this.draw) this.map.draw_everything();
 	    // hide the menu
 	    this.selection.style("display", "none");
+	    this.background.style("display", "none");
 	    if (this.escape) this.escape.clear();
 	    if (this.enter) this.enter.clear();
 	    this.escape = null;
@@ -227,10 +244,20 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		});
 	});
 
+    }
+
+    function style_gui(s, type) {
+	/** A UI to edit style.
+
+         */
+
+	var t = s.append('table').attr('class', 'settings-table'),
+	    settings = this.settings;
+
 	// styles
 	t.append('tr').call(function(r) {
 	    r.append('td').text('Styles:').attr('class', 'options-label');
-	    var cell = r.append('td').attr('colspan', columns.length + 1);
+	    var cell = r.append('td');
 
 	    var styles = ['abs', 'size', 'color', 'text'],
 		style_cells = cell.selectAll('.style-span')
@@ -258,6 +285,46 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		    }.bind(this));
 		});
 	});
+
+        
+	// compare_style
+	t.append('tr').call(function(r) {
+	    r.append('td')
+                .text('Comparison:')
+                .attr('class', 'options-label');
+	    var cell = r.append('td')
+                    .attr('colspan', '4');
+
+	    var styles = [['Log2(Fold Change)', 'log2_fold'], ['Difference', 'diff']],
+		style_cells = cell.selectAll('.style-span')
+		    .data(styles),
+		s = style_cells.enter()
+		    .append('span')
+		    .attr('class', 'style-span');
+	    s.append('span')
+                .text(function(d) { return d[0]; });
+
+	    // make the checkbox
+	    s.append('input').attr('type', 'radio')
+                .attr('name', type + '_compare_style')
+                .attr('value', function(d) { return d[1]; })
+		.each(function(style) {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+                                if (event.target.checked) {
+                                    settings.set_compare_style(type, event.target.value);
+                                }
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.compare_style_stream[type].onValue(function(value) {
+		        // check the box for the new value
+		        this.checked = (this.value == value);
+		    }.bind(this));
+		});
+        });
     }
     
     function gene_gui(s) {
@@ -269,36 +336,36 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    type = 'gene';
 
 	// styles
-	t.append('tr').call(function(r) {
-	    r.append('td').text('Styles:').attr('class', 'options-label');
-	    var cell = r.append('td');
+	// t.append('tr').call(function(r) {
+	//     r.append('td').text('Styles:').attr('class', 'options-label');
+	//     var cell = r.append('td');
 
-	    var styles = ['text', 'evaluate_on_reactions'],
-		style_cells = cell.selectAll('.style-span')
-		    .data(styles),
-		s = style_cells.enter()
-		    .append('span')
-		    .attr('class', 'style-span');
-	    s.append('span').text(function(d) { return d; });
+	//     var styles = ['abs', 'text', 'evaluate_on_reactions'],
+	// 	style_cells = cell.selectAll('.style-span')
+	// 	    .data(styles),
+	// 	s = style_cells.enter()
+	// 	    .append('span')
+	// 	    .attr('class', 'style-span');
+	//     s.append('span').text(function(d) { return d; });
 
-	    // make the checkbox
-	    s.append('input').attr('type', 'checkbox')
-		.each(function(style) {
-		    // change the model when the box is changed
-		    var change_stream = bacon
-		    	    .fromEventTarget(this, 'change')
-		    	    .onValue(function(event) {
-		    		settings.change_data_style(type, style,
-							   event.target.checked);
-		    	    });
+	//     // make the checkbox
+	//     s.append('input').attr('type', 'checkbox')
+	// 	.each(function(style) {
+	// 	    // change the model when the box is changed
+	// 	    var change_stream = bacon
+	// 	    	    .fromEventTarget(this, 'change')
+	// 	    	    .onValue(function(event) {
+	// 	    		settings.change_data_style(type, style,
+	// 						   event.target.checked);
+	// 	    	    });
 		    
-		    // subscribe to changes in the model
-		    settings.data_styles_stream[type].onValue(function(ar) {
-			// check the box if the style is present
-			this.checked = (ar.indexOf(style) != -1);
-		    }.bind(this));
-		});
-	});
+	// 	    // subscribe to changes in the model
+	// 	    settings.data_styles_stream[type].onValue(function(ar) {
+	// 		// check the box if the style is present
+	// 		this.checked = (ar.indexOf(style) != -1);
+	// 	    }.bind(this));
+	// 	});
+	// });
         
 	// compare_style
 	t.append('tr').call(function(r) {
@@ -316,7 +383,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 
 	    // make the checkbox
 	    s.append('input').attr('type', 'radio')
-                .attr('name', 'gene_style')
+                .attr('name', 'gene_compare_style')
                 .attr('value', function(d) { return d[1]; })
 		.each(function(style) {
 		    // change the model when the box is changed
