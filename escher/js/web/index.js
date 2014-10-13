@@ -15,7 +15,7 @@ function get_organism(name) {
     var parts = name.replace('.json', '').split('.');
     if (parts.length==2 || parts.length==3)
 	return parts[0];
-    return null
+    return null;
 }
 function get_organisms(l) {
     /** Get organisms from a list of maps and models.
@@ -25,7 +25,7 @@ function get_organisms(l) {
     l.forEach(function(name) {
 	var org = get_organism(name);
 	if (org!==null)
-	    organisms.push(org)
+	    organisms.push(org);
     });
     return organisms;
 }
@@ -153,7 +153,7 @@ function draw_models_select(models) {
 		if (parts.length==2) {
 		    return d.split('.').slice(-1)[0];
 		} else {
-		    return model;
+		    return d;
 		}
 	    });
 	models_sel.exit().remove();

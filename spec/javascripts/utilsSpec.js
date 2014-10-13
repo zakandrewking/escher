@@ -50,14 +50,18 @@ describe('utils', function() {
 					  if (error) console.warn(error);
 					  expect(value).toEqual({'GAPD': 100});
 				      },
+                                      null,
+                                      null,
 				      {target: {result: '{"GAPD":100}'}});
 	
 	escher.utils.load_json_or_csv(null,
 				      escher.data_styles.csv_converter,
 				      function(error, value) {
 					  if (error) console.warn(error);
-					  expect(value).toEqual({'GAPD': 100});
+					  expect(value).toEqual([{'GAPD': 100}]);
 				      },
+                                      null,
+                                      null,
 				      {target: {result: 'GAPD,100\n'}});
     });
     

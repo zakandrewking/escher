@@ -49,7 +49,7 @@ define(['utils'], function(utils) {
 	    .style('left', left+'px')
 	    .style('top', top+'px');
     }
-
+    
     function hide() {
 	this.div.style('display', 'none');
     }

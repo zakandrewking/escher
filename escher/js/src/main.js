@@ -1,5 +1,5 @@
-define(["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex", "Settings", "data_styles"],
-       function(bu, mp, bh, km, dm, us, cm, ut, si, se, ds) {
+define(["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex", "Settings", "data_styles", "ui"],
+       function(bu, mp, bh, km, dm, us, cm, ut, si, se, ds, ui) {
            return { Builder: bu,
 		    Map: mp,
 		    Behavior: bh,
@@ -10,6 +10,7 @@ define(["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "Co
 		    utils: ut,
 		    SearchIndex: si,
 		    Settings: se,
-		    data_styles: ds };
+		    data_styles: ds,
+                    ui: ui };
        });
 
