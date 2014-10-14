@@ -373,6 +373,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         this.map.behavior.toggle_selectable_click(mode=='build' || mode=='brush' || mode=='rotate');
         this.map.behavior.toggle_selectable_drag(mode=='brush' || mode=='rotate');
         this.map.behavior.toggle_label_drag(mode=='brush');
+        this.map.behavior.toggle_label_click(mode=='brush');
         this.map.behavior.toggle_text_label_edit(mode=='text');
         this.map.behavior.toggle_bezier_drag(mode=='brush');
         // edit selections
@@ -917,11 +918,14 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             zoom_container.toggle_zoom(false);
             was_enabled.selectable_click = map.behavior.selectable_click!=null;
             map.behavior.toggle_selectable_click(false);
+            was_enabled.label_click = map.behavior.label_click!=null;
+            map.behavior.toggle_label_click(false);
         });
         map.callback_manager.set('end_rotation', function() {
             brush.toggle(was_enabled.brush);
             zoom_container.toggle_zoom(was_enabled.zoom);
             map.behavior.toggle_selectable_click(was_enabled.selectable_click);
+            map.behavior.toggle_label_click(was_enabled.label_click);
             was_enabled = {};
         });
     }

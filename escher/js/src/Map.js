@@ -434,7 +434,10 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                           size: this.settings.get_option('reaction_no_data_size') },
                                         this.settings.get_option('highlight_missing'),
                                         this.settings.get_option('reaction_styles'),
-                                        this.behavior.reaction_label_drag);
+                                        this.behavior.reaction_label_drag,
+                                        this.behavior.label_click,
+                                        this.behavior.label_mouseover,
+                                        this.behavior.label_mouseout);
         }.bind(this);
 
         // draw the reactions

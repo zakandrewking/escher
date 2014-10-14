@@ -39,7 +39,10 @@
 }
 .node-circle {
     stroke-width: 2px;
-    fill: none;	
+}
+.midmarker-circle,.multimarker-circle {
+    fill: white;
+    fill-opacity: 0.2;
     stroke: rgb(50, 50, 50);
 }
 g.selected .node-circle{
@@ -78,7 +81,7 @@ g.selected .metabolite-circle {
     fill: none;
 }
 .bezier-circle {
-    fill: rgb(255,255,255);	
+    fill: rgb(255,255,255);     
 }
 .bezier-circle.b1 {
     stroke: red;

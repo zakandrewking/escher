@@ -8,6 +8,15 @@ function convert_url(url) {
 	return parts[1] + '.' + parts[3] + '.' + parts[5];
     throw new Error('Bad url ' + id);
 }
+function get_model(name) {
+    /** Get model from a map or model name.
+
+     */
+    var parts = name.replace('.json', '').split('.');
+    if (parts.length==2 || parts.length==3)
+	return parts[1];
+    return null;
+}
 function get_organism(name) {
     /** Get organism from a map or model name.
 
@@ -30,12 +39,12 @@ function get_organisms(l) {
     return organisms;
 }
 function get_quick_jump(this_map, maps) {
-    /** Find maps with the same organism. Returns null if no quick jump options
+    /** Find maps with the same model. Returns null if no quick jump options
      * could be found.
-
+     *
      */
-    var org = get_organism(this_map);
-    if (org === null)
+    var model = get_model(this_map);
+    if (model === null)
 	return null;
     
     var quick_jump = [],
@@ -45,7 +54,7 @@ function get_quick_jump(this_map, maps) {
     if (maps.local !== null)
 	all_maps = all_maps.concat(maps.local);
     all_maps.forEach(function(map) {
-	if (get_organism(map)==org)
+	if (get_model(map) == model)
 	    quick_jump.push(map);
     });
     return quick_jump.length == 0 ? null : quick_jump;

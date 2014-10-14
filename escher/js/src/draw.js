@@ -50,8 +50,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
 			     defs, has_data_on_reactions, identifiers_on_map,
 			     no_data_style, missing_component_color,
-			     reaction_data_styles,
-			     label_drag_behavior) {
+			     reaction_data_styles, label_drag_behavior,
+                             label_click_fn, label_mouseover_fn, label_mouseout_fn) {
 	utils.check_undefined(arguments,
 			      ['update_selection', 'scale',
 			       'cobra_model',
@@ -62,14 +62,18 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 			       'no_data_style',
 			       'missing_component_color',
 			       'reaction_data_styles',
-			       'label_drag_behavior']);
+			       'label_drag_behavior',
+                               'label_click_fn',
+                               'label_mouseover_fn',
+                               'label_mouseout_fn']);
 
         // update reaction label
         update_selection.select('.reaction-label-group')
             .call(function(sel) {
 		return update_reaction_label(sel, has_data_on_reactions,
 					     identifiers_on_map, reaction_data_styles,
-					     label_drag_behavior);
+					     label_drag_behavior, label_click_fn,
+                                             label_mouseover_fn, label_mouseout_fn);
 	    });
 
 	// draw segments
@@ -154,11 +158,16 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     }
 
     function update_reaction_label(sel, has_data_on_reactions, identifiers_on_map,
-				   reaction_data_styles,
-				   label_drag_behavior, drawn_nodes) {
+                                   reaction_data_styles, label_drag_behavior,
+                                   label_click_fn, label_mouseover_fn,
+                                   label_mouseout_fn) {
 	utils.check_undefined(arguments, ['sel',
 					  'has_data_on_reactions',
 					  'reaction_data_styles',
+                                          'label_drag_behavior',
+                                          'label_click_fn',
+                                          'label_mouseover_fn',
+                                          'label_mouseout_fn', 
 					  'label_drag_behavior']);
 	
 	var decimal_format = d3.format('.4g');
@@ -173,7 +182,10 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
 		    t += ' ' + d.data_string;
 		return t;
-	    });
+	    })
+            .on('click', label_click_fn)
+            .on('mouseover', label_mouseover_fn)
+            .on('mouseout', label_mouseout_fn);
 	// gene label
 	var gene_g = sel.select('.gene-label-group')
 	    .selectAll('text')
