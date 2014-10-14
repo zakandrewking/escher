@@ -112,6 +112,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		reaction.data_string = s;
 	        reaction.reverse_flux = r;
 	    }
+            reaction.gene_string = '';
 	}
     }
 

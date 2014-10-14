@@ -49,7 +49,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     function setup() {	
 	var self = this,
 	    extent = {"x": this.width, "y": this.height},
-	    dragbar_width = 20,
+	    dragbar_width = 100,
 	    mouse_node_mult = 10,
 	    new_sel = this.selection.append('g')
 		.classed('canvas-group', true)

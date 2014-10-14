@@ -218,25 +218,55 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         map.nodes = map_data[1].nodes;
         map.text_labels = map_data[1].text_labels;
 
-        // Propogate coefficients and reversbility, and populate the reaction
-        // search index.
+        for (var n_id in map.nodes) {
+            var node = map.nodes[n_id];
+
+            // clear all the connected segments
+            node.connected_segments = [];
+
+            //  populate the nodes search index.
+            if (enable_search) {
+                if (node.node_type!='metabolite') continue;
+                map.search_index.insert('n'+n_id, { 'name': node.bigg_id,
+                                                    'data': { type: 'metabolite',
+                                                              node_id: n_id }});
+            }
+        }
+             
+        // Propagate coefficients and reversibility, build the connected
+        // segments, add bezier points, and populate the reaction search index.
         for (var r_id in map.reactions) {
             var reaction = map.reactions[r_id];
+            
+            // reaction search index
             if (enable_search) {
                 map.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
                                                     'data': { type: 'reaction',
                                                               reaction_id: r_id }});
             }
+            
             for (var s_id in reaction.segments) {
                 var segment = reaction.segments[s_id];
+
+                // propagate reversibility
                 segment.reversibility = reaction.reversibility;
-                var from_node_bigg_id = map.nodes[segment.from_node_id].bigg_id,
-                    to_node_bigg_id = map.nodes[segment.to_node_id].bigg_id;
+
+                var from_node = map.nodes[segment.from_node_id],
+                    to_node = map.nodes[segment.to_node_id];
+                
+                // propagate coefficients
                 reaction.metabolites.forEach(function(met) {
-                    if (met.bigg_id==from_node_bigg_id)
+                    if (met.bigg_id==from_node.bigg_id) {
                         segment.from_node_coefficient = met.coefficient;
-                    else if (met.bigg_id==to_node_bigg_id)
+                    } else if (met.bigg_id==to_node.bigg_id) {
                         segment.to_node_coefficient = met.coefficient;
+                    }
+                });
+                                        
+                // build connected segments
+                [from_node, to_node].forEach(function(node) {
+                    node.connected_segments.push({ segment_id: s_id,
+						   reaction_id: r_id });
                 });
 
                 // If the metabolite has no bezier points, then add them.
@@ -250,18 +280,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
             }
         }
-
-        //  populate the nodes search index.
-        if (enable_search) {
-            for (var node_id in map.nodes) {
-                var node = map.nodes[node_id];
-                if (node.node_type!='metabolite') continue;
-                map.search_index.insert('n'+node_id, { 'name': node.bigg_id,
-                                                       'data': { type: 'metabolite',
-                                                                 node_id: node_id }});
-            }
-        }
-
+        
         // populate the beziers
         map.beziers = build.new_beziers_for_reactions(map.reactions);
 
@@ -687,6 +706,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                     var segment = reaction.segments[segment_id];
                     segment.data = null;
                 }
+                reaction.gene_string = '';
             }
 
             // remember
@@ -707,6 +727,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             reaction.data = f;
             reaction.data_string = s;
             reaction.reverse_flux = r;
+            reaction.gene_string = '';
             // apply to the segments
             for (var segment_id in reaction.segments) {
                 var segment = reaction.segments[segment_id];
@@ -1889,9 +1910,9 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 attrs;
             if (node.node_type == 'metabolite') {
                 attrs = ['node_type', 'x', 'y', 'bigg_id', 'name', 'label_x', 'label_y',
-                         'node_is_primary', 'connected_segments'];
+                         'node_is_primary'];
             } else {
-                attrs = ['node_type', 'x', 'y', 'connected_segments'];
+                attrs = ['node_type', 'x', 'y'];
             }
             attrs.forEach(function(attr) {
                 new_node[attr] = node[attr];

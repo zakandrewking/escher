@@ -3,20 +3,6 @@
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Escher map",
     "description": "A metabolic map for Escher: https://zakandrewking.github.io/escher",
-    "definitions": {
-	"connected_segments": {
-	    "type": "array",
-	    "items": {
-		"type": "object",
-		"required": ["reaction_id", "segment_id"],
-		"additionalProperties": false,
-		"properties": {
-		    "reaction_id": {"type": "string"},
-		    "segment_id": {"type": "string"}
-		}
-	    }
-	}
-    },
     "type": "array",
     "items": [
 	{
@@ -52,8 +38,7 @@
 				{
 				    "type": "object",
 				    "required": ["node_type", "x", "y", "bigg_id", "name",
-						 "label_x", "label_y", "node_is_primary",
-						 "connected_segments"],
+						 "label_x", "label_y", "node_is_primary"],
 				    "additionalProperties": false,
 				    "properties": {
 					"node_type":  {
@@ -66,16 +51,12 @@
 					"bigg_id": {"type": "string"},
 					"label_x": {"type": "number"},
 					"label_y": {"type": "number"},
-					"node_is_primary": {"type": "boolean"},
-					"connected_segments": {
-					    "$ref": "#/definitions/connected_segments"
-					}
+					"node_is_primary": {"type": "boolean"}
 				    }
 				},
 				{
 				    "type": "object",
-				    "required": ["node_type", "x", "y",
-						 "connected_segments"],
+				    "required": ["node_type", "x", "y"],
 				    "additionalProperties": false,
 				    "properties": {
 					"node_type":  {
@@ -83,10 +64,7 @@
 					    "enum": ["midmarker", "multimarker"]
 					},
 					"x": {"type": "number"},
-					"y": {"type": "number"}, 
-					"connected_segments": {
-					    "$ref": "#/definitions/connected_segments"
-					}
+					"y": {"type": "number"}
 				    }
 				}
 			    ]
