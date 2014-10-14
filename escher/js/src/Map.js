@@ -98,8 +98,8 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         apply_gene_data_to_map: apply_gene_data_to_map,
         apply_gene_data_to_reactions: apply_gene_data_to_reactions,
         // data domains
-        update_reaction_data_domain: update_reaction_data_domain,
-        update_node_data_domain: update_node_data_domain,
+        update_auto_reaction_domain: update_auto_reaction_domain,
+        update_auto_node_domain: update_auto_node_domain,
         // zoom
         zoom_extent_nodes: zoom_extent_nodes,
         zoom_extent_canvas: zoom_extent_canvas,
@@ -716,7 +716,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.has_data_on_reactions = true;
 
         // if auto_domain
-        return this.update_reaction_data_domain();
+        return this.update_auto_reaction_domain();
     }
     function apply_metabolite_data_to_map(data) {
         /**  Returns True if the scale has changed.
@@ -755,8 +755,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // remember
         this.has_data_on_nodes = true; 
         
-        // if auto_domain
-        return this.update_node_data_domain();
+        return this.update_auto_node_domain();
     }
 
 
@@ -859,16 +858,19 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.has_data_on_reactions = true;
 
         // if auto_domain
-        return this.update_reaction_data_domain();
+        return this.update_auto_reaction_domain();
     }
 
     // ------------------------------------------------
     // Data domains
     
-    function update_node_data_domain() {
+    function update_auto_node_domain() {
         /**  Returns True if the scale has changed.
 
          */
+
+        if (!this.settings.get_option('auto_metabolite_domain'))
+            return false;
 
         // default min and max
         var vals = [];
@@ -896,10 +898,13 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         return !utils.compare_arrays(old_domain, new_domain);
     }
     
-    function update_reaction_data_domain() {
+    function update_auto_reaction_domain() {
         /**  Returns True if the scale has changed.
 
          */
+        
+        if (!this.settings.get_option('auto_reaction_domain'))
+            return false;
         
         // default min and max
         var vals = [];
@@ -1151,9 +1156,9 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
                 // apply the reaction and node data
                 if (this.has_data_on_reactions)
-                    this.update_reaction_data_domain();
+                    this.update_auto_reaction_domain();
                 if (this.has_data_on_nodes)
-                    this.update_node_data_domain();
+                    this.update_auto_node_domain();
 
                 // redraw
                 if (should_draw) {
@@ -1205,14 +1210,14 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             // apply the reaction and node data
             // if the scale changes, redraw everything
             if (this.has_data_on_reactions) {
-                var scale_changed = this.update_reaction_data_domain();
+                var scale_changed = this.update_auto_reaction_domain();
                 if (scale_changed) this.draw_all_reactions();
                 else this.draw_these_reactions(reaction_ids_to_draw);
             } else {
                 if (should_draw) this.draw_these_reactions(reaction_ids_to_draw);
             }           
             if (this.has_data_on_nodes) {
-                var scale_changed = this.update_node_data_domain();
+                var scale_changed = this.update_auto_node_domain();
                 if (should_draw) {
                     if (scale_changed) this.draw_all_nodes();
                     else this.draw_these_nodes(Object.keys(saved_nodes));
@@ -1530,14 +1535,14 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             // apply the reaction and node data to the scales
             // if the scale changes, redraw everything
             if (this.has_data_on_reactions) {
-                var scale_changed = this.update_reaction_data_domain();
+                var scale_changed = this.update_auto_reaction_domain();
                 if (scale_changed) this.draw_all_reactions();
                 else this.draw_these_reactions(Object.keys(new_reactions));
             } else {
                 this.draw_these_reactions(Object.keys(new_reactions));
             }           
             if (this.has_data_on_nodes) {
-                var scale_changed = this.update_node_data_domain;
+                var scale_changed = this.update_auto_node_domain();
                 if (scale_changed) this.draw_all_nodes();
                 else this.draw_these_nodes(Object.keys(new_nodes));
             } else {
