@@ -4903,14 +4903,24 @@ define('Behavior',["utils", "build"], function(utils, build) {
                 updated_segment_objs = [];
             dragged_node.connected_segments.forEach(function(segment_obj) {
                 // change the segments to reflect
-                var segment = map.reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
+                var segment;
+                try {
+                    segment = map.reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
+                    if (segment === undefined) throw new Error('undefined segment');
+                } catch (e) {
+                    console.warn('Could not find connected segment ' + segment_obj.segment_id);
+                    return;
+                }
                 if (segment.from_node_id==dragged_node_id) segment.from_node_id = fixed_node_id;
                 else if (segment.to_node_id==dragged_node_id) segment.to_node_id = fixed_node_id;
-                else return console.error('Segment does not connect to dragged node');
+                else {
+                    console.error('Segment does not connect to dragged node');
+                    return;
+                }
                 // moved segment_obj to fixed_node
                 fixed_node.connected_segments.push(segment_obj);
                 updated_segment_objs.push(utils.clone(segment_obj));
-                return null;
+                return;
             });
             // delete the old node
             map.delete_node_data([dragged_node_id]);
@@ -10438,20 +10448,36 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             reactions_to_draw;
         nodes[node_id].connected_segments.forEach(function(segment_info) {
             reactions_to_draw = [segment_info.reaction_id];
-            var segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id];
+            var segment;
+            try {
+                segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id];
+                if (segment === undefined) throw new Error('undefined segment');
+            } catch (e) {
+                console.warn('Could not find connected segment ' + segment_info.segment_id);
+                return;
+            }
             connected_anchor_ids.push(segment.from_node_id==node_id ?
                                       segment.to_node_id : segment.from_node_id);
         });
         // can only be connected to one anchor
-        if (connected_anchor_ids.length != 1)
-            return console.error('Only connected nodes with a single reaction can be selected');
+        if (connected_anchor_ids.length != 1) {
+            console.error('Only connected nodes with a single reaction can be selected');
+            return;
+        }
         var connected_anchor_id = connected_anchor_ids[0];
         // 2. find nodes connected to the anchor that are metabolites
         var related_node_ids = [node_id];
         var segments = [];
         nodes[connected_anchor_id].connected_segments.forEach(function(segment_info) { // deterministic order
-            var segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id],
-                conn_met_id = segment.from_node_id == connected_anchor_id ? segment.to_node_id : segment.from_node_id,
+            var segment;
+            try {
+                segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id];
+                if (segment === undefined) throw new Error('undefined segment');
+            } catch (e) {
+                console.warn('Could not find connected segment ' + segment_info.segment_id);
+                return;
+            }
+            var conn_met_id = segment.from_node_id == connected_anchor_id ? segment.to_node_id : segment.from_node_id,
                 conn_node = nodes[conn_met_id];
             if (conn_node.node_type == 'metabolite' && conn_met_id != node_id) {
                 related_node_ids.push(String(conn_met_id));
@@ -10460,12 +10486,16 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // 3. make sure they only have 1 reaction connection, and check if
         // they match the other selected nodes
         for (var i=0; i<related_node_ids.length; i++) {
-            if (nodes[related_node_ids[i]].connected_segments.length > 1)
-                return console.error('Only connected nodes with a single reaction can be selected');
+            if (nodes[related_node_ids[i]].connected_segments.length > 1) {
+                console.error('Only connected nodes with a single reaction can be selected');
+                return;
+            }
         }
         for (var a_selected_node_id in selected_nodes) {
-            if (a_selected_node_id!=node_id && related_node_ids.indexOf(a_selected_node_id) == -1)
-                return console.warn('Selected nodes are not on the same reaction');
+            if (a_selected_node_id!=node_id && related_node_ids.indexOf(a_selected_node_id) == -1) {
+                console.warn('Selected nodes are not on the same reaction');
+                return;
+            }
         }
         // 4. change the primary node, and change coords, label coords, and beziers
         var nodes_to_draw = [],
@@ -10473,10 +10503,19 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             last_node = nodes[related_node_ids[last_i]],
             last_is_primary = last_node.node_is_primary,
             last_coords = { x: last_node.x, y: last_node.y,
-                            label_x: last_node.label_x, label_y: last_node.label_y },
-            last_segment_info = last_node.connected_segments[0], // guaranteed above to have only one
-            last_segment = reactions[last_segment_info.reaction_id].segments[last_segment_info.segment_id],
-            last_bezier = { b1: last_segment.b1, b2: last_segment.b2 },
+                            label_x: last_node.label_x, label_y: last_node.label_y };
+        if (last_node.connected_segments.length > 1)
+            console.warn('Too many connected segments for node ' + last_node.node_id);
+        var last_segment_info = last_node.connected_segments[0], // guaranteed above to have only one
+            last_segment;
+            try {
+                last_segment = reactions[last_segment_info.reaction_id].segments[last_segment_info.segment_id];
+                if (last_segment === undefined) throw new Error('undefined segment');
+            } catch (e) {
+                console.error('Could not find connected segment ' + last_segment_info.segment_id);
+                return;
+            }
+        var last_bezier = { b1: last_segment.b1, b2: last_segment.b2 },
             primary_node_id;
         related_node_ids.forEach(function(related_node_id) {
             var node = nodes[related_node_id],
@@ -10510,15 +10549,17 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         this.draw_these_reactions(reactions_to_draw);
         // 7. select the primary node
         this.select_metabolite_with_id(primary_node_id);
-        return null;
+        return;
     }
     function make_selected_node_primary() {
         var selected_nodes = this.get_selected_nodes(),
             reactions = this.reactions,
             nodes = this.nodes;     
         // can only have one selected
-        if (Object.keys(selected_nodes).length != 1)
-            return console.error('Only one node can be selected');
+        if (Object.keys(selected_nodes).length != 1) {
+            console.error('Only one node can be selected');
+            return;
+        }
         // get the first node
         var node_id = Object.keys(selected_nodes)[0],
             node = selected_nodes[node_id];
@@ -10529,7 +10570,14 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // 1. Get the connected anchor nodes for the node
         var connected_anchor_ids = [];
         nodes[node_id].connected_segments.forEach(function(segment_info) {
-            var segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id];
+            var segment;
+            try {
+                segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id];
+                if (segment === undefined) throw new Error('undefined segment');
+            } catch (e) {
+                console.warn('Could not find connected segment ' + segment_info.segment_id);
+                return;
+            }
             connected_anchor_ids.push(segment.from_node_id==node_id ?
                                       segment.to_node_id : segment.from_node_id);
         });
@@ -10537,8 +10585,15 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         connected_anchor_ids.forEach(function(anchor_id) {
             var segments = [];
             nodes[anchor_id].connected_segments.forEach(function(segment_info) {
-                var segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id],
-                    conn_met_id = segment.from_node_id == anchor_id ? segment.to_node_id : segment.from_node_id,
+                var segment;
+                try {
+                    segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id];
+                    if (segment === undefined) throw new Error('undefined segment');
+                } catch (e) {
+                    console.warn('Could not find connected segment ' + segment_info.segment_id);
+                    return;
+                }
+                var conn_met_id = segment.from_node_id == anchor_id ? segment.to_node_id : segment.from_node_id,
                     conn_node = nodes[conn_met_id];
                 if (conn_node.node_type == 'metabolite' && conn_met_id != node_id) {
                     conn_node.node_is_primary = false;
@@ -10563,14 +10618,15 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             var node = nodes[node_id];
             // find associated segments and reactions       
             node.connected_segments.forEach(function(segment_obj) {
+                var segment;
                 try {
-                    var reaction = reactions[segment_obj.reaction_id],
-                        segment = reaction.segments[segment_obj.segment_id],
-                        segment_obj_w_segment = utils.clone(segment_obj);
+                    segment = reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
+                    if (segment === undefined) throw new Error('undefined segment');
                 } catch (e) {
                     console.warn('Could not find connected segments for node');
                     return;
                 }
+                var segment_obj_w_segment = utils.clone(segment_obj);
                 segment_obj_w_segment['segment'] = utils.clone(segment);
                 segment_objs_w_segments[segment_obj.segment_id] = segment_obj_w_segment;
                 if (!(segment_obj.reaction_id in segment_ids_for_reactions))
@@ -13721,9 +13777,9 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             this.map.select_none();
         if (mode=='rotate')
             this.map.deselect_text_labels();
-        console.log('starting draw');
+        // console.log('starting draw');
         this.map.draw_everything();
-        console.log('finished draw');
+        // console.log('finished draw');
     }
     function view_mode() {
         this.callback_manager.run('view_mode');

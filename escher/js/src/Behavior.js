@@ -630,14 +630,24 @@ define(["utils", "build"], function(utils, build) {
                 updated_segment_objs = [];
             dragged_node.connected_segments.forEach(function(segment_obj) {
                 // change the segments to reflect
-                var segment = map.reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
+                var segment;
+                try {
+                    segment = map.reactions[segment_obj.reaction_id].segments[segment_obj.segment_id];
+                    if (segment === undefined) throw new Error('undefined segment');
+                } catch (e) {
+                    console.warn('Could not find connected segment ' + segment_obj.segment_id);
+                    return;
+                }
                 if (segment.from_node_id==dragged_node_id) segment.from_node_id = fixed_node_id;
                 else if (segment.to_node_id==dragged_node_id) segment.to_node_id = fixed_node_id;
-                else return console.error('Segment does not connect to dragged node');
+                else {
+                    console.error('Segment does not connect to dragged node');
+                    return;
+                }
                 // moved segment_obj to fixed_node
                 fixed_node.connected_segments.push(segment_obj);
                 updated_segment_objs.push(utils.clone(segment_obj));
-                return null;
+                return;
             });
             // delete the old node
             map.delete_node_data([dragged_node_id]);

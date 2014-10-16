@@ -381,9 +381,9 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             this.map.select_none();
         if (mode=='rotate')
             this.map.deselect_text_labels();
-        console.log('starting draw');
+        // console.log('starting draw');
         this.map.draw_everything();
-        console.log('finished draw');
+        // console.log('finished draw');
     }
     function view_mode() {
         this.callback_manager.run('view_mode');
