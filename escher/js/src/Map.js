@@ -244,13 +244,22 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                                     'data': { type: 'reaction',
                                                               reaction_id: r_id }});
             }
-            
+
+            // keep track of any bad segments
+            var segments_to_delete = [];
             for (var s_id in reaction.segments) {
                 var segment = reaction.segments[s_id];
 
                 // propagate reversibility
                 segment.reversibility = reaction.reversibility;
 
+                // if there is an error with to_ or from_ nodes, remove this segment
+                if (!(segment.from_node_id in map.nodes) || !(segment.to_node_id in map.nodes)) {
+                    console.warn('Bad node references in segment ' + s_id + '. Deleting segment.');
+                    segments_to_delete.push(s_id);
+                    continue
+                }
+                
                 var from_node = map.nodes[segment.from_node_id],
                     to_node = map.nodes[segment.to_node_id];
                 
@@ -279,6 +288,10 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 }
 
             }
+            // delete the bad segments
+            segments_to_delete.forEach(function(s_id) {
+                delete reaction.segments[s_id];
+            });
         }
         
         // populate the beziers
