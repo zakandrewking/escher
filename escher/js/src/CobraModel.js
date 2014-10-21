@@ -70,12 +70,37 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    throw new Error('Bad model data.');
 	    return;
 	}
+        // make a gene dictionary
+	var genes = {};
+	for (var i=0, l=model_data.genes.length; i<l; i++) {
+	    var r = model_data.genes[i],
+		the_id = r.id;
+	    genes[the_id] = r;
+	}
+
 	this.reactions = {};
 	for (var i=0, l=model_data.reactions.length; i<l; i++) {
 	    var r = model_data.reactions[i],
-		the_id = r.id;
-	    this.reactions[the_id] = utils.clone(r);
-	    delete this.reactions[the_id].id;
+		the_id = r.id,
+                reaction = utils.clone(r);
+	    delete reaction.id;
+            // add the appropriate genes
+            reaction.genes = [];
+            if ('gene_reaction_rule' in reaction) {
+                var gene_ids = data_styles.genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
+                gene_ids.forEach(function(gene_id) {
+                    if (gene_id in genes) {
+                        var gene = utils.clone(genes[gene_id]);
+                        // rename id to bigg_id
+                        gene.bigg_id = gene.id;
+                        delete gene.id;
+                        reaction.genes.push(gene);
+                    } else {
+                        console.warn('Could not find gene for gene_id ' + gene_id);
+                    }
+                });
+            }
+	    this.reactions[the_id] = reaction;
 	}
 	this.metabolites = {};
 	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
@@ -84,9 +109,9 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    this.metabolites[the_id] = utils.clone(r);
 	    delete this.metabolites[the_id].id;
 	}
-
+        
 	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
-			  'gdp', 'h'];
+			  'gdp', 'h', 'coa'];
     }
 
     function apply_reaction_data(reaction_data, styles, compare_style) {
@@ -137,7 +162,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	}
     }
 
-    function apply_gene_data(gene_data_obj, styles, compare_style) {
+    function apply_gene_data(gene_data_obj, styles, identifiers_on_map, compare_style) {
 	/** Apply data to model. This is only used to display options in
 	    BuildInput.
 
@@ -189,7 +214,10 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		var f = data_styles.float_for_data(d, styles, compare_style),
                     r = data_styles.reverse_flux_for_data(d),
 		    s = data_styles.text_for_data(d, f),
-		    g = data_styles.gene_string_for_data(rule, gene_values, styles, compare_style)
+		    g = data_styles.gene_string_for_data(rule, gene_values,
+                                                         reaction.genes, styles,
+                                                         identifiers_on_map,
+                                                         compare_style);
 		reaction.data = f;
 		reaction.data_string = s;
 		reaction.gene_string = g;

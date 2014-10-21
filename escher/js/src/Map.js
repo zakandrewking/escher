@@ -1,4 +1,4 @@
-define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackManager', 'KeyManager', 'Canvas', 'data_styles', 'SearchIndex', 'lib/bacon', 'lib/tv4'], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon, tv4) {
+define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackManager', 'KeyManager', 'Canvas', 'data_styles', 'SearchIndex', 'lib/bacon', 'lib/tv4'], function(utils, Draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon, tv4) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -160,6 +160,9 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // make a behavior object
         this.behavior = new Behavior(this, this.undo_stack);
 
+        // draw manager
+        this.draw = new Draw(this.behavior, this.settings);
+        
         // make a key manager
         this.key_manager = new KeyManager();
 
@@ -195,7 +198,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.rotation_on = false;
 
         // performs some extra checks
-        this.debug = false;
+        this.debug = true;
     };
 
     // -------------------------------------------------------------------------
@@ -455,7 +458,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // function to update reactions
         var update_fn = function(sel) {
-            return draw.update_reaction(sel,
+            return this.draw.update_reaction(sel,
                                         this.scale,
                                         this.cobra_model,
                                         this.nodes,
@@ -474,7 +477,8 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // draw the reactions
         utils.draw_an_object(this.sel, '#reactions', '.reaction', reaction_subset,
-                             'reaction_id', draw.create_reaction, update_fn);
+                             'reaction_id', this.draw.create_reaction.bind(this.draw),
+                             update_fn);
         
         if (draw_beziers) {
             // particular beziers to draw
@@ -545,12 +549,12 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // functions to create and update nodes
         var create_fn = function(sel) {
-            return draw.create_node(sel,
+            return this.draw.create_node(sel,
                                     this.nodes,
                                     this.reactions);
         }.bind(this),
             update_fn = function(sel) {
-                return draw.update_node(sel,
+                return this.draw.update_node(sel,
                                         this.scale,
                                         this.has_data_on_nodes,
                                         this.settings.get_option('identifiers_on_map'),
@@ -607,15 +611,14 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // function to update text_labels
         var update_fn = function(sel) {
-            return draw.update_text_label(sel,
-                                          this.behavior.text_label_click,
-                                          this.behavior.selectable_drag);
+            return this.draw.update_text_label(sel, this.behavior);;
         }.bind(this);
 
         // draw the text_labels
         utils.draw_an_object(this.sel, '#text-labels', '.text-label',
                              text_label_subset, 'text_label_id',
-                             draw.create_text_label, update_fn);
+                             this.draw.create_text_label.bind(this.draw),
+                             update_fn);
     }
 
     function clear_deleted_text_labels() {
@@ -659,7 +662,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // function to update beziers
         var update_fn = function(sel) {
-            return draw.update_bezier(sel,
+            return this.draw.update_bezier(sel,
                                       this.beziers_enabled,
                                       this.behavior.bezier_drag,
                                       this.behavior.bezier_mouseover,
@@ -670,7 +673,8 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // draw the beziers
         utils.draw_an_object(this.sel, '#beziers', '.bezier', bezier_subset,
-                             'bezier_id', draw.create_bezier, update_fn);
+                             'bezier_id', this.draw.create_bezier.bind(this.draw),
+                             update_fn);
     }
 
     function clear_deleted_beziers() {
@@ -858,7 +862,8 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         
         // apply the datasets to the reactions
         var styles = this.settings.get_option('reaction_styles'),
-            compare_style = this.settings.get_option('reaction_compare_style');
+            compare_style = this.settings.get_option('reaction_compare_style'),
+            identifiers_on_map = this.settings.get_option('identifiers_on_map');
         for (var reaction_id in reactions) {
             var reaction = reactions[reaction_id];
             // find the data
@@ -887,7 +892,9 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             // always update the gene string
             reaction.gene_string = data_styles.gene_string_for_data(rule,
                                                                     gene_values,
+                                                                    reaction.genes,
                                                                     styles,
+                                                                    identifiers_on_map,
                                                                     compare_style);
         }
 
@@ -1947,7 +1954,7 @@ define(['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             var reaction = out[1].reactions[r_id],
                 new_reaction = {};
             ['name', 'bigg_id','reversibility', 'label_x', 'label_y',
-             'gene_reaction_rule', 'metabolites'
+             'gene_reaction_rule', 'genes', 'metabolites'
             ].forEach(function(attr) {
                 new_reaction[attr] = reaction[attr];
             });

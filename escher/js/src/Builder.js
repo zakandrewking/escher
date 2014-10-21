@@ -19,8 +19,20 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          gene_data: An object with Gene ids for keys and gene data points for
          values.
 
+         reaction_styles:
+
          reaction_compare_style: (Default: 'diff') How to compare to
          datasets. Can be either 'log2_fold' or 'diff'.
+
+         reaction_domain:
+         
+         reaction_color_range:
+         
+         reaction_size_range:
+         
+         reaction_no_data_color:
+         
+         reaction_no_data_size:
 
          metabolite_data: An object with metabolite ids for keys and metabolite
          data points for values.
@@ -120,6 +132,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             // quick jump menu
             local_host: null,
             quick_jump: null,
+            // callback
             first_load_callback: null
         });
 
@@ -502,6 +515,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 if (update_model && this.cobra_model !== null) {
                     this.cobra_model.apply_gene_data(data_object,
                                                      this.options.reaction_styles,
+                                                     this.options.identifiers_on_map,
                                                      this.options.reaction_compare_style);
                 }            
                 if (update_map && this.map !== null) {
@@ -676,10 +690,6 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         // mode buttons
         if (enable_editing) {
             ui.radio_button_group(button_panel.append('li'))
-                .button({ key: keys.build_mode,
-                          id: 'build-mode-button',
-                          icon: "glyphicon glyphicon-plus",
-                          tooltip: "Add reaction mode (n)" })
                 .button({ key: keys.zoom_mode,
                           id: 'zoom-mode-button',
                           icon: "glyphicon glyphicon-move",
@@ -688,6 +698,10 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                           id: 'brush-mode-button',
                           icon: "glyphicon glyphicon-hand-up",
                           tooltip: "Select mode (v)" })
+                .button({ key: keys.build_mode,
+                          id: 'build-mode-button',
+                          icon: "glyphicon glyphicon-plus",
+                          tooltip: "Add reaction mode (n)" })
                 .button({ key: keys.rotate_mode,
                           id: 'rotate-mode-button',
                           icon: "glyphicon glyphicon-repeat",

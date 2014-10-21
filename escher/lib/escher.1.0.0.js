@@ -975,7 +975,9 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     function draw_an_object(container_sel, parent_node_selector, children_selector,
 			    object, id_key, create_function, update_function,
 			    exit_function) {
-	/** Run through the d3 data binding steps for an object.
+	/** Run through the d3 data binding steps for an object. Also checks to
+            make sure none of the values in the *object* are undefined, and
+            ignores those.
 
 	 Arguments
 	 ---------
@@ -998,10 +1000,19 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 
 	 exit_function: A function for exit selection.
 	 
-	 */
+	*/
+        var draw_object = {};
+        for (var id in object) {
+            if (object[id] === undefined) {
+                console.warn('Undefined value for id ' + id + ' in object. Ignoring.');
+            } else {
+                draw_object[id] = object[id];
+            }
+        }
+        
 	var sel = container_sel.select(parent_node_selector)
 		.selectAll(children_selector)
-		.data(make_array(object, id_key), function(d) { return d[id_key]; });
+		.data(make_array(draw_object, id_key), function(d) { return d[id_key]; });
 	// enter: generate and place reaction
 	if (create_function)
 	    sel.enter().call(create_function);
@@ -1762,7 +1773,9 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     function draw_an_object(container_sel, parent_node_selector, children_selector,
 			    object, id_key, create_function, update_function,
 			    exit_function) {
-	/** Run through the d3 data binding steps for an object.
+	/** Run through the d3 data binding steps for an object. Also checks to
+            make sure none of the values in the *object* are undefined, and
+            ignores those.
 
 	 Arguments
 	 ---------
@@ -1785,10 +1798,19 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 
 	 exit_function: A function for exit selection.
 	 
-	 */
+	*/
+        var draw_object = {};
+        for (var id in object) {
+            if (object[id] === undefined) {
+                console.warn('Undefined value for id ' + id + ' in object. Ignoring.');
+            } else {
+                draw_object[id] = object[id];
+            }
+        }
+        
 	var sel = container_sel.select(parent_node_selector)
 		.selectAll(children_selector)
-		.data(make_array(object, id_key), function(d) { return d[id_key]; });
+		.data(make_array(draw_object, id_key), function(d) { return d[id_key]; });
 	// enter: generate and place reaction
 	if (create_function)
 	    sel.enter().call(create_function);
@@ -2822,370 +2844,489 @@ define('lib/complete.ly',[],function() {
 
 define('data_styles',['utils'], function(utils) {
     return { import_and_check: import_and_check,
-	     text_for_data: text_for_data,
-	     float_for_data: float_for_data,
-	     reverse_flux_for_data: reverse_flux_for_data,
-	     gene_string_for_data: gene_string_for_data,
-	     csv_converter: csv_converter,
-	     genes_for_gene_reaction_rule: genes_for_gene_reaction_rule,
-	     evaluate_gene_reaction_rule: evaluate_gene_reaction_rule
-	   };
+             text_for_data: text_for_data,
+             float_for_data: float_for_data,
+             reverse_flux_for_data: reverse_flux_for_data,
+             gene_string_for_data: gene_string_for_data,
+             csv_converter: csv_converter,
+             genes_for_gene_reaction_rule: genes_for_gene_reaction_rule,
+             evaluate_gene_reaction_rule: evaluate_gene_reaction_rule
+           };
 
     function import_and_check(data, name, all_reactions) {
-	/** Convert imported data to a style that can be applied to reactions
-	    and nodes.
+        /** Convert imported data to a style that can be applied to reactions
+         and nodes.
 
-	    Arguments
-	    ---------
+         Arguments
+         ---------
 
-	    data: The data object.
+         data: The data object.
 
-	    name: Either 'reaction_data', 'metabolite_data', or 'gene_data'
+         name: Either 'reaction_data', 'metabolite_data', or 'gene_data'
 
-	    all_reactions: Required for name == 'gene_data'. Must include all
-	    GPRs for the map and model.
+         all_reactions: Required for name == 'gene_data'. Must include all
+         GPRs for the map and model.
 
-	*/
-	
-	// check arguments
-	if (data===null)
-	    return null;
-	if (['reaction_data', 'metabolite_data', 'gene_data'].indexOf(name)==-1)
-	    throw new Error('Invalid name argument: ' + name);	
+         */
+        
+        // check arguments
+        if (data===null)
+            return null;
+        if (['reaction_data', 'metabolite_data', 'gene_data'].indexOf(name)==-1)
+            throw new Error('Invalid name argument: ' + name);  
 
-	// make array
-	if (!(data instanceof Array)) {
-	    data = [data];
-	}
-	// check data
-	var check = function() {
-	    if (data===null)
-		return null;
-	    if (data.length==1)
-		return null;
-	    if (data.length==2)
-		return null;
-	    return console.warn('Bad data style: ' + name);
-	};
-	check();
-	data = utils.array_to_object(data);
+        // make array
+        if (!(data instanceof Array)) {
+            data = [data];
+        }
+        // check data
+        var check = function() {
+            if (data===null)
+                return null;
+            if (data.length==1)
+                return null;
+            if (data.length==2)
+                return null;
+            return console.warn('Bad data style: ' + name);
+        };
+        check();
+        data = utils.array_to_object(data);
 
-	if (name == 'gene_data') {
-	    if (all_reactions === undefined)
-		throw new Error('Must pass all_reactions argument for gene_data');
-	    data = align_gene_data_to_reactions(data, all_reactions);
-	}
-	
-	return data;
+        if (name == 'gene_data') {
+            if (all_reactions === undefined)
+                throw new Error('Must pass all_reactions argument for gene_data');
+            data = align_gene_data_to_reactions(data, all_reactions);
+        }
+        
+        return data;
 
-	// definitions
-	function align_gene_data_to_reactions(data, reactions) {
-	    var aligned = {},
-		null_val = [null];
-	    // make an array of nulls as the default
-	    for (var gene_id in data) {
-		null_val = data[gene_id].map(function() { return null; });
-		break;
-	    }
-	    for (var reaction_id in reactions) {
-		var reaction = reactions[reaction_id],
-		    this_gene_data = {}; 
-		if (!('gene_reaction_rule' in reaction))
-		    console.warn('No gene_reaction_rule for reaction ' % reaction_id);
-		// save to aligned
-		// get the genes
-		var genes = genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
-		genes.forEach(function(gene_id) {
-		    this_gene_data[gene_id] = ((gene_id in data) ? data[gene_id] : null_val);
-		});
-		aligned[reaction_id] = { rule: reaction.gene_reaction_rule,
-					 genes: this_gene_data };
-	    }
-	    return aligned;
-	}
+        // definitions
+        function align_gene_data_to_reactions(data, reactions) {
+            var aligned = {},
+                null_val = [null];
+            // make an array of nulls as the default
+            for (var gene_id in data) {
+                null_val = data[gene_id].map(function() { return null; });
+                break;
+            }
+            for (var reaction_id in reactions) {
+                var reaction = reactions[reaction_id],
+                    this_gene_data = {}; 
+                if (!('gene_reaction_rule' in reaction))
+                    console.warn('No gene_reaction_rule for reaction ' % reaction_id);
+                // save to aligned
+                // get the genes
+                var genes = genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
+                genes.forEach(function(gene_id) {
+                    this_gene_data[gene_id] = ((gene_id in data) ? data[gene_id] : null_val);
+                });
+                aligned[reaction_id] = { rule: reaction.gene_reaction_rule,
+                                         genes: this_gene_data };
+            }
+            return aligned;
+        }
     }
 
     function float_for_data(d, styles, compare_style) {
-	// all null
-	if (d === null)
-	    return null;
+        // all null
+        if (d === null)
+            return null;
 
-	// absolute value
-	var take_abs = (styles.indexOf('abs') != -1);
-	
-	if (d.length==1) { // 1 set
-	    // 1 null
-	    if (d[0] === null)
-		return null;
-	    
-	    return abs(d[0], take_abs);
-	} else if (d.length==2) { // 2 sets	       
-	    // 2 null
-	    if (d[0] === null || d[1] === null)
-		return null;
-	    
-	    if (compare_style == 'diff')
-		return diff(d[0], d[1], take_abs);
-	    else if (compare_style == 'log2_fold') {
-		return log2_fold(d[0], d[1], take_abs);
-	    } else if (d.length==2)
-		throw new Error('Bad data compare_style: ' + compare_style);
-	}
+        // absolute value
+        var take_abs = (styles.indexOf('abs') != -1);
+        
+        if (d.length==1) { // 1 set
+            // 1 null
+            if (d[0] === null)
+                return null;
+            
+            return abs(d[0], take_abs);
+        } else if (d.length==2) { // 2 sets            
+            // 2 null
+            if (d[0] === null || d[1] === null)
+                return null;
+            
+            if (compare_style == 'diff')
+                return diff(d[0], d[1], take_abs);
+            else if (compare_style == 'log2_fold') {
+                return log2_fold(d[0], d[1], take_abs);
+            }
+        }
+        throw new Error('Bad data compare_style: ' + compare_style);
 
-	// definitions
-	function abs(x, take_abs) {
-	    return take_abs ? Math.abs(x) : x;
-	}
-	function diff(x, y, take_abs) {
-	    if (take_abs) return Math.abs(y - x);
-	    else return y - x;
-	}
-	function log2_fold(x, y, take_abs) {
-	    if (x == 0) return null;
-	    if (y / x < 0) return null;
-	    var log = Math.log(y / x) / Math.log(2);
+        // definitions
+        function abs(x, take_abs) {
+            return take_abs ? Math.abs(x) : x;
+        }
+        function diff(x, y, take_abs) {
+            if (take_abs) return Math.abs(y - x);
+            else return y - x;
+        }
+        function log2_fold(x, y, take_abs) {
+            if (x == 0) return null;
+            if (y / x < 0) return null;
+            var log = Math.log(y / x) / Math.log(2);
             return take_abs ? Math.abs(log) : log;
-	}
+        }
     }
 
     function reverse_flux_for_data(d) {
-	if (d === null || d[0] === null)
-	    return false;
-	return (d[0] < 0);
+        if (d === null || d[0] === null)
+            return false;
+        return (d[0] < 0);
     }
 
-    function gene_string_for_data(rule, gene_values, styles, compare_style) {
-	if (gene_values === null) return '';
-	var out = rule,
-	    format = d3.format('.3g');
-	for (var gene_id in gene_values) {
-	    var d = gene_values[gene_id];
-	    if (d.length==1) {
-		out = replace_gene_in_rule(out, gene_id, (gene_id + ' (' + null_or_d(d[0], format) + ')\n'));
-	    }
-	    if (d.length==2) {
-		var f = float_for_data(d, styles, compare_style),
-		    new_str = (gene_id + ' (' +
-			       null_or_d(d[0], format) + ', ' +
-			       null_or_d(d[1], format) + ': ' +
-			       null_or_d(f, format) +
-			       ')\n');
-		out = replace_gene_in_rule(out, gene_id, new_str);
-	    }
-	}
-	out = out.replace(/\n\s*\)?\s*$/, ')');
-	return out;
-	
-	// definitions
-	function null_or_d(d, format) {
-	    return d===null ? 'nd' : format(d);
-	}
+    function gene_string_for_data(rule, gene_values, genes, styles,
+                                  identifiers_on_map, compare_style) {
+        if (gene_values === null) return '';
+        var out = rule,
+            format = d3.format('.3g');
+        for (var gene_id in gene_values) {
+            var d = gene_values[gene_id],
+                name = '';
+            // get id or name
+            if (identifiers_on_map=='bigg_id') {
+                name = gene_id;
+            } else if (identifiers_on_map=='name') {
+                genes.forEach(function(gene) {
+                    if (gene.bigg_id == gene_id) {
+                        name = gene.name;
+                        return;
+                    }
+                });
+            } else {
+                throw new Error('Bad value for identifiers_on_map: ' + identifiers_on_map);
+            }
+            // generate the string
+            if (d.length==1) {
+                out = replace_gene_in_rule(out, gene_id, (name + ' (' + null_or_d(d[0], format) + ')\n'));
+            }
+            if (d.length==2) {
+                var f = float_for_data(d, styles, compare_style),
+                    new_str = (name + ' (' +
+                               null_or_d(d[0], format) + ', ' +
+                               null_or_d(d[1], format) + ': ' +
+                               null_or_d(f, format) +
+                               ')\n');
+                out = replace_gene_in_rule(out, gene_id, new_str);
+            }
+        }
+        out = out.replace(/\n\s*\)?\s*$/, ')');
+        return out;
+        
+        // definitions
+        function null_or_d(d, format) {
+            return d===null ? 'nd' : format(d);
+        }
     }
     
     function text_for_data(d, f) {
-	if (d === null)
-	    return null_or_d(null);
-	if (d.length == 1) {
-	    var format = d3.format('.4g');
-	    return null_or_d(d[0], format);
-	}
-	if (d.length == 2) {
-	    var format = d3.format('.3g'),
-		t = null_or_d(d[0], format);
-	    t += ', ' + null_or_d(d[1], format);
-	    t += ': ' + null_or_d(f, format);
-	    return t;
-	}
-	return '';
+        if (d === null)
+            return null_or_d(null);
+        if (d.length == 1) {
+            var format = d3.format('.4g');
+            return null_or_d(d[0], format);
+        }
+        if (d.length == 2) {
+            var format = d3.format('.3g'),
+                t = null_or_d(d[0], format);
+            t += ', ' + null_or_d(d[1], format);
+            t += ': ' + null_or_d(f, format);
+            return t;
+        }
+        return '';
 
-	// definitions
-	function null_or_d(d, format) {
-	    return d === null ? '(nd)' : format(d);
-	}
+        // definitions
+        function null_or_d(d, format) {
+            return d === null ? '(nd)' : format(d);
+        }
     }
 
     function csv_converter(csv_rows) {
-	/** Convert data from a csv file to json-style data.
+        /** Convert data from a csv file to json-style data.
 
-	 */
-	// count rows
-	var c = csv_rows[0].length,
-	    converted = [];
-	if (c < 2 || c > 3)
-	    throw new Error('CSV file must have 2 or 3 columns');
-	// set up rows
-	for (var i = 1; i < c; i++) {
-	    converted[i - 1] = {};
-	}
-	// fill
-	csv_rows.forEach(function(row) {
-	    for (var i = 1, l = row.length; i < l; i++) {
-		converted[i - 1][row[0]] = parseFloat(row[i]);
-	    }
-	});
-	return converted;
+         File must include a header row.
+
+         */
+        // count rows
+        var c = csv_rows[0].length,
+            converted = [];
+        if (c < 2 || c > 3)
+            throw new Error('CSV file must have 2 or 3 columns');
+        // set up rows
+        for (var i = 1; i < c; i++) {
+            converted[i - 1] = {};
+        }
+        // fill
+        csv_rows.slice(1).forEach(function(row) {
+            for (var i = 1, l = row.length; i < l; i++) {
+                converted[i - 1][row[0]] = parseFloat(row[i]);
+            }
+        });
+        return converted;
     }
     
     function genes_for_gene_reaction_rule(rule) {
-	/** Find genes in gene_reaction_rule string.
+        /** Find genes in gene_reaction_rule string.
 
-	    Arguments
-	    ---------
+         Arguments
+         ---------
 
-	    rule: A boolean string containing gene names, parentheses, AND's and
-	    OR's.
+         rule: A boolean string containing gene names, parentheses, AND's and
+         OR's.
 
-	*/
-	genes = rule
-	// remove ANDs and ORs, surrounded by space or parentheses
-	    .replace(/([\(\) ])(?:and|or)([\)\( ])/ig, '$1$2')
-	// remove parentheses
-	    .replace(/\(|\)/g, '')
-	// split on whitespace
-	    .split(' ')
-	    .filter(function(x) { return x != '' });
-	return genes;
+         */
+        var genes = rule
+        // remove ANDs and ORs, surrounded by space or parentheses
+                .replace(/([\(\) ])(?:and|or)([\)\( ])/ig, '$1$2')
+        // remove parentheses
+                .replace(/\(|\)/g, '')
+        // split on whitespace
+                .split(' ')
+                .filter(function(x) { return x != ''; });
+        return genes;
     }
     
     function evaluate_gene_reaction_rule(rule, gene_values) {
-	/** Return a value given the rule and gene_values object.
+        /** Return a value given the rule and gene_values object.
 
-	    With the current version, all negative values are converted to zero,
-	    OR's are sums and AND's are Min()'s.
+         With the current version, all negative values are converted to zero,
+         OR's are sums and AND's are Min()'s.
 
-	    TODO Deal with multiple datasets, e.g. Diff.
+         TODO Deal with multiple datasets, e.g. Diff.
 
-	    Arguments
-	    ---------
+         Arguments
+         ---------
 
-	    rule: A boolean string containing gene names, parentheses, AND's and
-	    OR's.
+         rule: A boolean string containing gene names, parentheses, AND's and
+         OR's.
 
-	    gene_values: Object with gene_ids for keys and numbers for values.
+         gene_values: Object with gene_ids for keys and numbers for values.
 
-	*/
+         */
 
-	var null_val = [null],
-	    l = 1;
-	// make an array of nulls as the default
-	for (var gene_id in gene_values) {
-	    null_val = gene_values[gene_id].map(function() { return null; });
-	    l = null_val.length;
-	    break;
-	}
-	
-	if (rule == '') return null_val;
+        var null_val = [null],
+            l = 1;
+        // make an array of nulls as the default
+        for (var gene_id in gene_values) {
+            null_val = gene_values[gene_id].map(function() { return null; });
+            l = null_val.length;
+            break;
+        }
+        
+        if (rule == '') return null_val;
 
-	// for each element in the arrays
-	var out = [];
-	for (var i=0; i<l; i++) {
-	    // get the rule
-	    var curr_val = rule;
-	    
-	    var all_null = true;
-	    for (var gene_id in gene_values) {
-		var val;
-		if (gene_values[gene_id][i] === null || gene_values[gene_id][i] < 0) {
-		    val = 0;
-		} else {
-		    val = gene_values[gene_id][i];
-		    all_null = false;
-		}
-		curr_val = replace_gene_in_rule(curr_val, gene_id, val);
-	    }
-	    if (all_null) {
-		out.push(null);
-		continue;
-	    }
+        // for each element in the arrays
+        var out = [];
+        for (var i=0; i<l; i++) {
+            // get the rule
+            var curr_val = rule;
+            
+            var all_null = true;
+            for (var gene_id in gene_values) {
+                var val;
+                if (gene_values[gene_id][i] === null || gene_values[gene_id][i] < 0) {
+                    val = 0;
+                } else {
+                    val = gene_values[gene_id][i];
+                    all_null = false;
+                }
+                curr_val = replace_gene_in_rule(curr_val, gene_id, val);
+            }
+            if (all_null) {
+                out.push(null);
+                continue;
+            }
 
-	    // recursively evaluate
-	    while (true) {
-		// arithemtic expressions
-		var new_curr_val = curr_val,
-		    // or's
-		    reg = /(^|\()[0-9+.\s]+\s+(or\s+[0-9+.\s]+)+(\)|$)/ig,
-		    matches = new_curr_val.match(reg);
-		if (matches !== null) {
-		    matches.forEach(function(match) {
-			// remove parentheses, and sum
-			var ev = match.replace(/[\(\)]/g, ''),
-			    nums = ev.split(/\s+or\s+/i).map(parseFloat),
-			    sum = nums.reduce(function(a, b) { return a + b;});
-			new_curr_val = new_curr_val.replace(match, sum);
-		    });
-		}
-		// and's
-		var reg = /(^|\()[0-9+.\s]+\s+(and\s+[0-9+.\s]+)+(\)|$)/ig,
-		    matches = new_curr_val.match(reg);
-		if (matches !== null) {
-		    matches.forEach(function(match) {
-			// remove parentheses, and find min
-			var ev = match.replace(/[\(\)]/g, ''),
-			    nums = ev.split(/\s+and\s+/i).map(parseFloat),
-			    min = Math.min.apply(null, nums);
-			new_curr_val = new_curr_val.replace(match, min);
-		    });
-		}
-		// break if there is no change
-		if (new_curr_val == curr_val)
-		    break;
-		curr_val = new_curr_val;
-	    } 
-	    // strict test for number
-	    var num = Number(curr_val);
-	    if (isNaN(num)) {
-		console.warn('Could not evaluate ' + rule);
-		out.push(null);
-	    } else {
-		out.push(num);
-	    }
-	}
-	return out;
+            // recursively evaluate
+            while (true) {
+                // arithemtic expressions
+                var new_curr_val = curr_val,
+                    // or's
+                    reg = /(^|\()[0-9+.\s]+\s+(or\s+[0-9+.\s]+)+(\)|$)/ig,
+                    matches = new_curr_val.match(reg);
+                if (matches !== null) {
+                    matches.forEach(function(match) {
+                        // remove parentheses, and sum
+                        var ev = match.replace(/[\(\)]/g, ''),
+                            nums = ev.split(/\s+or\s+/i).map(parseFloat),
+                            sum = nums.reduce(function(a, b) { return a + b;});
+                        new_curr_val = new_curr_val.replace(match, sum);
+                    });
+                }
+                // and's
+                var reg = /(^|\()[0-9+.\s]+\s+(and\s+[0-9+.\s]+)+(\)|$)/ig,
+                    matches = new_curr_val.match(reg);
+                if (matches !== null) {
+                    matches.forEach(function(match) {
+                        // remove parentheses, and find min
+                        var ev = match.replace(/[\(\)]/g, ''),
+                            nums = ev.split(/\s+and\s+/i).map(parseFloat),
+                            min = Math.min.apply(null, nums);
+                        new_curr_val = new_curr_val.replace(match, min);
+                    });
+                }
+                // break if there is no change
+                if (new_curr_val == curr_val)
+                    break;
+                curr_val = new_curr_val;
+            } 
+            // strict test for number
+            var num = Number(curr_val);
+            if (isNaN(num)) {
+                console.warn('Could not evaluate ' + rule);
+                out.push(null);
+            } else {
+                out.push(num);
+            }
+        }
+        return out;
     }
     
     function replace_gene_in_rule(rule, gene_id, val) {
-	// get the escaped string, with surrounding space or parentheses
-	var space_or_par_start = '(^|[\\\s\\\(\\\)])',
-	    space_or_par_finish = '([\\\s\\\(\\\)]|$)',
-	    escaped = space_or_par_start + escape_reg_exp(gene_id) + space_or_par_finish;
-	return rule.replace(new RegExp(escaped, 'g'),  '$1' + val + '$2');
-	
-	// definitions
-	function escape_reg_exp(string) {
-	    return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
-	}
+        // get the escaped string, with surrounding space or parentheses
+        var space_or_par_start = '(^|[\\\s\\\(\\\)])',
+            space_or_par_finish = '([\\\s\\\(\\\)]|$)',
+            escaped = space_or_par_start + escape_reg_exp(gene_id) + space_or_par_finish;
+        return rule.replace(new RegExp(escaped, 'g'),  '$1' + val + '$2');
+        
+        // definitions
+        function escape_reg_exp(string) {
+            return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+        }
     }
 });
 
+define('CallbackManager',["utils"], function(utils) {
+    /** CallbackManager()
 
+     */
 
-define('draw',['utils', 'data_styles'], function(utils, data_styles) {
-    return { create_reaction: create_reaction,
-	     update_reaction: update_reaction,
-	     create_bezier: create_bezier,
-	     update_bezier: update_bezier,
-	     create_node: create_node,
-	     update_node: update_node,
-	     create_text_label: create_text_label,
-	     update_text_label: update_text_label,
-	     create_membrane: create_membrane,
-	     update_membrane: update_membrane
-	   };
+    var CallbackManager = utils.make_class();
+    CallbackManager.prototype = { init: init,
+				  set: set,
+				  remove: remove,
+				  run: run };
+
+    return CallbackManager;
+
+    function init() {
+
+    }
+    function set(name, fn) {
+	/** As in d3 callbacks, you can namespace your callbacks after a period:
+	 
+	 select_metabolite.direction_arrow
+	 select_metabolite.input
+
+	 Both are called by select_metabolite
+	 
+	 */
+	if (this.callbacks===undefined) this.callbacks = {};
+	if (this.callbacks[name]===undefined) this.callbacks[name] = [];
+	this.callbacks[name].push(fn);
+
+	return this;
+    }
+    function remove(name) {
+	/** Remove a callback by name
+	 
+	 */
+	if (this.callbacks===undefined || Object.keys(this.callbacks).length==0) {
+	    console.warn('No callbacks to remove');
+	}
+	delete this.callbacks[name];
+	return this;
+    }
+    function run(name) {
+	/** Run all callbacks that match the portion of name before the period ('.').
+
+	 */
+	if (this.callbacks===undefined) return this;
+	// pass all but the first (name) argument to the callback
+	var pass_args = Array.prototype.slice.call(arguments, 1);
+	// look for matching callback names
+	for (var a_name in this.callbacks) {
+	    var split_name = a_name.split('.')[0];
+	    if (split_name==name) {
+		this.callbacks[a_name].forEach(function(fn) {
+		    fn.apply(null, pass_args);
+		});
+	    }
+	}
+	return this;
+    }
+});
+
+define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles, CallbackManager) {
+    /** Manages creating, updating, and removing objects during d3 data binding.
+
+     Arguments
+     ---------
+
+     behavior: An escher.Behavior object.
+
+     settings: An escher.Settings object.
+
+     Callbacks
+     ---------
+
+     this.callback_manager.run('create_membrane', enter_selection);
+     this.callback_manager.run('update_membrane', update_selection);
+     this.callback_manager.run('create_reaction', enter_selection);
+     this.callback_manager.run('update_reaction', update_selection);
+     this.callback_manager.run('create_reaction_label', enter_selection);
+     this.callback_manager.run('update_reaction_label', update_selection);
+     this.callback_manager.run('create_segment', enter_selection);
+     this.callback_manager.run('update_segment', update_selection);
+     this.callback_manager.run('create_bezier', enter_selection);
+     this.callback_manager.run('update_bezier', update_selection);
+     this.callback_manager.run('create_node', enter_selection);
+     this.callback_manager.run('update_node', update_selection);
+     this.callback_manager.run('create_text_label', enter_selection);
+     this.callback_manager.run('update_text_label', update_selection);
+
+     */
+
+    var Draw = utils.make_class();
+    
+    // instance methods
+    Draw.prototype = { init: init,
+                       create_reaction: create_reaction,
+                       update_reaction: update_reaction,
+                       create_bezier: create_bezier,
+                       update_bezier: update_bezier,
+                       create_node: create_node,
+                       update_node: update_node,
+                       create_text_label: create_text_label,
+                       update_text_label: update_text_label,
+                       create_membrane: create_membrane,
+                       update_membrane: update_membrane,
+                       create_reaction_label: create_reaction_label,
+                       update_reaction_label: update_reaction_label,
+                       create_segment: create_segment,
+                       update_segment: update_segment
+                       
+                     };
+
+    return Draw;
 
     // definitions
-    function turn_off_drag(sel) {
-	sel.on('mousedown.drag', null);
-	sel.on('touchstart.drag', null);
+    function init(behavior, settings) {
+        this.behavior = behavior;
+        this.settings = settings;
+        this.callback_manager = new CallbackManager();
     }
     
     function create_membrane(enter_selection) {
-	utils.check_undefined(arguments, ['enter_selection']);
-	enter_selection.append('rect')
-	    .attr('class', 'membrane');
+        utils.check_undefined(arguments, ['enter_selection']);
+        enter_selection.append('rect')
+            .attr('class', 'membrane');
+        this.callback_manager.run('create_membrane', enter_selection);
     }
 
     function update_membrane(update_selection) {
-	utils.check_undefined(arguments, ['enter_selection']);
+        utils.check_undefined(arguments, ['enter_selection']);
         update_selection
             .attr('width', function(d){ return d.width; })
             .attr('height', function(d){ return d.height; })
@@ -3193,35 +3334,40 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
             .style('stroke-width', function(d) { return 10; })
             .attr('rx', function(d){ return 20; })
             .attr('ry', function(d){ return 20; });
+        
+        this.callback_manager.run('update_membrane', update_selection);
     }
 
     function create_reaction(enter_selection) {
-	utils.check_undefined(arguments, ['enter_selection']);
+        utils.check_undefined(arguments, ['enter_selection']);
         // attributes for new reaction group
 
         var t = enter_selection.append('g')
                 .attr('id', function(d) { return 'r'+d.reaction_id; })
                 .attr('class', 'reaction')
-                .call(create_reaction_label);
+                .call(this.create_reaction_label.bind(this));
+        
+        this.callback_manager.run('create_reaction', enter_selection);
         return;
     }
 
     function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
-			     defs, has_data_on_reactions, identifiers_on_map,
-			     no_data_style, missing_component_color,
-			     reaction_data_styles, label_drag_behavior,
+                             defs, has_data_on_reactions, identifiers_on_map,
+                             no_data_style, missing_component_color,
+                             reaction_data_styles, 
+                             label_drag_behavior,
                              label_click_fn, label_mouseover_fn, label_mouseout_fn) {
-	utils.check_undefined(arguments,
-			      ['update_selection', 'scale',
-			       'cobra_model',
-			       'drawn_nodes', 
-			       'defs',
-			       'has_data_on_reactions',
-			       'identifiers_on_map',
-			       'no_data_style',
-			       'missing_component_color',
-			       'reaction_data_styles',
-			       'label_drag_behavior',
+        utils.check_undefined(arguments,
+                              ['update_selection', 'scale',
+                               'cobra_model',
+                               'drawn_nodes', 
+                               'defs',
+                               'has_data_on_reactions',
+                               'identifiers_on_map',
+                               'no_data_style',
+                               'missing_component_color',
+                               'reaction_data_styles',
+                               'label_drag_behavior',
                                'label_click_fn',
                                'label_mouseover_fn',
                                'label_mouseout_fn']);
@@ -3229,148 +3375,141 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
         // update reaction label
         update_selection.select('.reaction-label-group')
             .call(function(sel) {
-		return update_reaction_label(sel, has_data_on_reactions,
-					     identifiers_on_map, reaction_data_styles,
-					     label_drag_behavior, label_click_fn,
-                                             label_mouseover_fn, label_mouseout_fn);
-	    });
+                return this.update_reaction_label(sel, has_data_on_reactions,
+                                                  identifiers_on_map, reaction_data_styles,
+                                                  label_drag_behavior, label_click_fn,
+                                                  label_mouseover_fn, label_mouseout_fn);
+            }.bind(this));
 
-	// draw segments
-	utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
-				   create_segment,
-				   function(sel) { 
-				       return update_segment(sel, scale, cobra_model,
-							     drawn_nodes, defs, 
-							     has_data_on_reactions,
-							     no_data_style, missing_component_color,
-							     reaction_data_styles);
-				   },
-				   function(sel) {
-				       sel.remove();
-				   });
+        // draw segments
+        utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
+                                   this.create_segment.bind(this),
+                                   function(sel) { 
+                                       return this.update_segment(sel, scale, cobra_model,
+                                                                  drawn_nodes, defs, 
+                                                                  has_data_on_reactions,
+                                                                  no_data_style, missing_component_color,
+                                                                  reaction_data_styles);
+                                   }.bind(this),
+                                   function(sel) {
+                                       sel.remove();
+                                   });
 
-	// new connect lines
-	// var lines = sel
-	// 	.selectAll('.connect-line')
-	// 	.data(function(d) {
-	// 	    var reaction_label_line, node,
-	// 		reaction_d = this.parentNode.parentNode.parentNode.__data__;
-	// 	    // node = (d.bezier==1 ? 
-	// 	    // 	    drawn_nodes[segment_d.from_node_id] : 
-	// 	    // 	    drawn_nodes[segment_d.to_node_id]);
-	// 	    reaction_label_line = { x: d.x,
-	// 				    y: d.y,
-	// 				    source_x: node.x,
-	// 				    source_y: node.y};
-	// 	    return [reaction_label_line];
-	// 	});
-	// lines.enter().call(function(sel) {
-	//     return create_reaction_label_line(sel);
-	// });
-	// // update reaction_label lines
-	// lines.call(function(sel) { return update_reaction_label_line(sel); });
-	// // remove
-	// lines.exit().remove();
+        // new connect lines
+        // var lines = sel
+        //      .selectAll('.connect-line')
+        //      .data(function(d) {
+        //          var reaction_label_line, node,
+        //              reaction_d = this.parentNode.parentNode.parentNode.__data__;
+        //          // node = (d.bezier==1 ? 
+        //          //      drawn_nodes[segment_d.from_node_id] : 
+        //          //      drawn_nodes[segment_d.to_node_id]);
+        //          reaction_label_line = { x: d.x,
+        //                                  y: d.y,
+        //                                  source_x: node.x,
+        //                                  source_y: node.y};
+        //          return [reaction_label_line];
+        //      });
+        // lines.enter().call(function(sel) {
+        //     return create_reaction_label_line(sel);
+        // });
+        // // update reaction_label lines
+        // lines.call(function(sel) { return update_reaction_label_line(sel); });
+        // // remove
+        // lines.exit().remove();
 
-	// // definitions
-	// function create_reaction_label_line(enter_selection) {
-	//     enter_selection.append('path')
-	//     	.attr('class', function(d) { return 'connect-line'; })
-	//     	.attr('visibility', 'hidden');
-	// }
-	// function update_reaction_label_line(update_selection) {
-	//     update_selection
-	//     	.attr('d', function(d) {
-	//     	    if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
-	//     		return '';
-	//     	    return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
-	//     	});
-	// }
+        // // definitions
+        // function create_reaction_label_line(enter_selection) {
+        //     enter_selection.append('path')
+        //      .attr('class', function(d) { return 'connect-line'; })
+        //      .attr('visibility', 'hidden');
+        // }
+        // function update_reaction_label_line(update_selection) {
+        //     update_selection
+        //      .attr('d', function(d) {
+        //          if (d.x==null || d.y==null || d.source_x==null || d.source_y==null)
+        //              return '';
+        //          return 'M0, 0 '+(d.source_x-d.x)+','+(d.source_y-d.y);
+        //      });
+        // }
 
+        this.callback_manager.run('update_reaction', update_selection);
     }
 
-    function create_reaction_label(sel) {
-	utils.check_undefined(arguments, ['sel']);
+    function create_reaction_label(enter_selection) {
         /** Draw reaction label for selection.
 
-	 */
-	
-        var group = sel.append('g')
-	    .attr('class', 'reaction-label-group');
-	group.append('text')
+         */
+        
+        var group = enter_selection.append('g')
+                .attr('class', 'reaction-label-group');
+        group.append('text')
             .attr('class', 'reaction-label label');
-	group.append('g')
-	    .attr('class', 'gene-label-group');
-	    // .on('mouseover', function(d) {
-	    // 	d3.select(this).style('stroke-width', String(3)+'px');
-	    // 	d3.select(this.parentNode)
-	    // 	    .selectAll('.connect-line')
-	    // 	    .attr('visibility', 'visible');
-	    // })
-	    // .on('mouseout', function(d) {
-	    // 	d3.select(this).style('stroke-width', String(1)+'px');
-	    // 	d3.select(this.parentNode)
-	    // 	    .selectAll('.connect-line')
-	    // 	    .attr('visibility', 'hidden');
-	    // });
+        group.append('g')
+            .attr('class', 'gene-label-group');
+        // .on('mouseover', function(d) {
+        //  d3.select(this).style('stroke-width', String(3)+'px');
+        //  d3.select(this.parentNode)
+        //      .selectAll('.connect-line')
+        //      .attr('visibility', 'visible');
+        // })
+        // .on('mouseout', function(d) {
+        //  d3.select(this).style('stroke-width', String(1)+'px');
+        //  d3.select(this.parentNode)
+        //      .selectAll('.connect-line')
+        //      .attr('visibility', 'hidden');
+        // });
 
+        this.callback_manager.run('create_reaction_label', enter_selection);
     }
 
-    function update_reaction_label(sel, has_data_on_reactions, identifiers_on_map,
-                                   reaction_data_styles, label_drag_behavior,
+    function update_reaction_label(update_selection, has_data_on_reactions,
+                                   identifiers_on_map, reaction_data_styles,
+                                   label_drag_behavior,
                                    label_click_fn, label_mouseover_fn,
-                                   label_mouseout_fn) {
-	utils.check_undefined(arguments, ['sel',
-					  'has_data_on_reactions',
-					  'reaction_data_styles',
-                                          'label_drag_behavior',
-                                          'label_click_fn',
-                                          'label_mouseover_fn',
-                                          'label_mouseout_fn', 
-					  'label_drag_behavior']);
-	
-	var decimal_format = d3.format('.4g');
-	sel.attr('transform', function(d) {
-	    return 'translate('+d.label_x+','+d.label_y+')';
-	})
-	    .call(turn_off_drag)
-	    .call(label_drag_behavior);
-	sel.select('.reaction-label')
-	    .text(function(d) { 
-		var t = d[identifiers_on_map];
-		if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
-		    t += ' ' + d.data_string;
-		return t;
-	    })
+                                   label_mouseout_fn) {        
+        var decimal_format = d3.format('.4g');
+        update_selection.attr('transform', function(d) {
+            return 'translate('+d.label_x+','+d.label_y+')';
+        })
+            .call(this.behavior.turn_off_drag)
+            .call(label_drag_behavior);
+        update_selection.select('.reaction-label')
+            .text(function(d) { 
+                var t = d[identifiers_on_map];
+                if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
+                    t += ' ' + d.data_string;
+                return t;
+            })
             .on('click', label_click_fn)
             .on('mouseover', label_mouseover_fn)
             .on('mouseout', label_mouseout_fn);
-	// gene label
-	var gene_g = sel.select('.gene-label-group')
-	    .selectAll('text')
-	    .data(function(d) {
-		var show_gene_string = ('gene_string' in d &&
-					d.gene_string !== null);
-		if (show_gene_string) {
-		    return d.gene_string.split('\n');
-		} else {
-		    return [];
-		}
-	    });
-	gene_g.enter()
-	    .append('text')
-	    .attr('class', 'gene-label');
-	gene_g.attr('transform', function(d, i) {
-	    return 'translate(0, ' + (18 + 25*i) + ')';
-	})
-	    .text(function(d) { return d; });
-	gene_g.exit()
-	    .remove();
+        // gene label
+        var gene_g = update_selection.select('.gene-label-group')
+                .selectAll('text')
+                .data(function(d) {
+                    var show_gene_string = ('gene_string' in d &&
+                                            d.gene_string !== null)
+                    if (show_gene_string) {
+                        return d.gene_string.split('\n');
+                    } else {
+                        return [];
+                    }
+                });
+        gene_g.enter()
+            .append('text')
+            .attr('class', 'gene-label');
+        gene_g.attr('transform', function(d, i) {
+            return 'translate(0, ' + (18 + 25*i) + ')';
+        })
+            .text(function(d) { return d; });
+        gene_g.exit()
+            .remove();
+        
+        this.callback_manager.run('update_reaction_label', update_selection);
     }
 
     function create_segment(enter_selection) {
-	utils.check_undefined(arguments, ['enter_selection']);
-
         // create segments
         var g = enter_selection
                 .append('g')
@@ -3381,28 +3520,30 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
         g.append('path')
             .attr('class', 'segment');
 
-	g.append('g')
-	    .attr('class', 'arrowheads');
+        g.append('g')
+            .attr('class', 'arrowheads');
+        
+        this.callback_manager.run('create_segment', enter_selection);
     }
     
     function update_segment(update_selection, scale, cobra_model,
-			    drawn_nodes, defs, 
-			    has_data_on_reactions, no_data_style,
-			    missing_component_color, reaction_data_styles) {
-	utils.check_undefined(arguments, ['update_selection',
-					  'scale',
-					  'cobra_model',
-					  'drawn_nodes',
-					  'defs',
-					  'has_data_on_reactions',
-					  'no_data_style',
-					  'missing_component_color',
-					  'reaction_data_styles']);
+                            drawn_nodes, defs, 
+                            has_data_on_reactions, no_data_style,
+                            missing_component_color, reaction_data_styles) {
+        utils.check_undefined(arguments, ['update_selection',
+                                          'scale',
+                                          'cobra_model',
+                                          'drawn_nodes',
+                                          'defs',
+                                          'has_data_on_reactions',
+                                          'no_data_style',
+                                          'missing_component_color',
+                                          'reaction_data_styles']);
 
         // update segment attributes
-	var get_disp = function(reversibility, coefficient) {
-	    return (reversibility || coefficient > 0) ? 32 : 20;
-	};
+        var get_disp = function(reversibility, coefficient) {
+            return (reversibility || coefficient > 0) ? 32 : 20;
+        };
         // update arrows
         update_selection
             .selectAll('.segment')
@@ -3410,193 +3551,194 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
                 return this.parentNode.__data__;
             })
             .attr('d', function(d) {
-		if (d.from_node_id==null || d.to_node_id==null)
-		    return null;
-		var start = drawn_nodes[d.from_node_id],
-		    end = drawn_nodes[d.to_node_id],
-		    b1 = d.b1,
-		    b2 = d.b2;
-		// if metabolite, then displace the arrow
-		if (start['node_type']=='metabolite' && b1!==null) {
-		    var disp = get_disp(d.reversibility, d.from_node_coefficient);
-		    var direction = (b1 === null) ? end : b1;
-		    start = displaced_coords(disp, start, direction, 'start');
-		}
-		if (end['node_type']=='metabolite') {
-		    var disp = get_disp(d.reversibility, d.to_node_coefficient);
-		    var direction = (b2 === null) ? start : b2;
-		    end = displaced_coords(disp, direction, end, 'end');
-		}
-		var curve = ('M'+start.x+','+start.y+' ');
-		if (b1 !== null && b2 !== null) {
-		    curve += ('C'+b1.x+','+b1.y+' '+
+                if (d.from_node_id==null || d.to_node_id==null)
+                    return null;
+                var start = drawn_nodes[d.from_node_id],
+                    end = drawn_nodes[d.to_node_id],
+                    b1 = d.b1,
+                    b2 = d.b2;
+                // if metabolite, then displace the arrow
+                if (start['node_type']=='metabolite' && b1!==null) {
+                    var disp = get_disp(d.reversibility, d.from_node_coefficient);
+                    var direction = (b1 === null) ? end : b1;
+                    start = displaced_coords(disp, start, direction, 'start');
+                }
+                if (end['node_type']=='metabolite') {
+                    var disp = get_disp(d.reversibility, d.to_node_coefficient);
+                    var direction = (b2 === null) ? start : b2;
+                    end = displaced_coords(disp, direction, end, 'end');
+                }
+                var curve = ('M'+start.x+','+start.y+' ');
+                if (b1 !== null && b2 !== null) {
+                    curve += ('C'+b1.x+','+b1.y+' '+
                               b2.x+','+b2.y+' ');
-		}
-		curve += (end.x+','+end.y);
-		return curve;
+                }
+                curve += (end.x+','+end.y);
+                return curve;
             })
             .style('stroke', function(d) {
-		var reaction_id = this.parentNode.parentNode.__data__.bigg_id,
-		    show_missing = (cobra_model !== null &&
-				    missing_component_color!==null &&
-				    !(reaction_id in cobra_model.reactions)),
-		    should_color_data = (has_data_on_reactions &&
-					 reaction_data_styles.indexOf('color') != -1);
-		if (show_missing) {
-		    return missing_component_color;
-		}
-		if (should_color_data) {
-		    var f = d.data;
-		    return f===null ? no_data_style['color'] : scale.reaction_color(f);
-		}
-		return null;
-	    })
-	    .style('stroke-width', function(d) {
-		if (has_data_on_reactions && reaction_data_styles.indexOf('size') != -1) {
-		    var f = d.data;
-		    return f===null ? no_data_style['size'] : scale.reaction_size(f);
-		} else {
-		    return null;
-		}
+                var reaction_id = this.parentNode.parentNode.__data__.bigg_id,
+                    show_missing = (cobra_model !== null &&
+                                    missing_component_color!==null &&
+                                    !(reaction_id in cobra_model.reactions)),
+                    should_color_data = (has_data_on_reactions &&
+                                         reaction_data_styles.indexOf('color') != -1);
+                if (show_missing) {
+                    return missing_component_color;
+                }
+                if (should_color_data) {
+                    var f = d.data;
+                    return f===null ? no_data_style['color'] : scale.reaction_color(f);
+                }
+                return null;
+            })
+            .style('stroke-width', function(d) {
+                if (has_data_on_reactions && reaction_data_styles.indexOf('size') != -1) {
+                    var f = d.data;
+                    return f===null ? no_data_style['size'] : scale.reaction_size(f);
+                } else {
+                    return null;
+                }
             });
 
-	// new arrowheads
-	var arrowheads = update_selection.select('.arrowheads')
-	    .selectAll('.arrowhead')
-	    .data(function (d) {
-		var arrowheads = [],
-		    reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
-		    segment_id = this.parentNode.parentNode.__data__.segment_id;		
-		var start = drawn_nodes[d.from_node_id],
-		    b1 = d.b1;
-		if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
-		    var disp = get_disp(d.reversibility, d.from_node_coefficient),
-			direction = (b1 === null) ? end : b1;
-		    var rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90;
-		    start = displaced_coords(disp, start, direction, 'start');
-		    arrowheads.push({ data: d.data,
-				      x: start.x,
-				      y: start.y,
-				      rotation: rotation,
-				      show_arrowhead_flux: (((d.from_node_coefficient < 0)==(d.reverse_flux))
-							    || d.data==0)
-				    });
-		}
-		var end = drawn_nodes[d.to_node_id],
-		    b2 = d.b2;
-		if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
-		    var disp = get_disp(d.reversibility, d.to_node_coefficient),
-			direction = (b2 === null) ? start : b2,
-			rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
-		    end = displaced_coords(disp, direction, end, 'end');
-		    arrowheads.push({ data: d.data,
-				      x: end.x,
-				      y: end.y,
-				      rotation: rotation,
-				      show_arrowhead_flux: (((d.to_node_coefficient < 0)==(d.reverse_flux))
-							    || d.data==0)
-				    });
-		}
-		return arrowheads;
-	    });
-	arrowheads.enter().append('path')
-	    .classed('arrowhead', true);
-	// update arrowheads
-	arrowheads.attr('d', function(d) {
-	    var markerWidth = 20, markerHeight = 13;
-	    if (has_data_on_reactions && reaction_data_styles.indexOf('size')!==-1) {
-		var f = d.data,
-		    size = (f === null ? no_data_style['size'] : scale.reaction_size(f));
-		markerWidth = size * 2;
-	    }		    
-	    return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
-	}).attr('transform', function(d) {
-	    return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
-	}).style('fill', function(d) {
-	    if (has_data_on_reactions && reaction_data_styles.indexOf('color')!==-1) {
-		if (d.show_arrowhead_flux) {
-		    // show the flux
-		    var f = d.data;
-		    return f===null ? no_data_style['color'] : scale.reaction_color(f);
-		} else {
-		    // if the arrowhead is not filled because it is reversed
-		    return '#FFFFFF';
-		}
-	    }
-	    // default fill color
-	    return null;
-	}).style('stroke', function(d) {
-	    if (has_data_on_reactions && reaction_data_styles.indexOf('color')!==-1) {
-		// show the flux color in the stroke whether or not the fill is present
-		var f = d.data;
-		return f===null ? no_data_style['color'] : scale.reaction_color(f);
-	    }
-	    // default stroke color
-	    return null;
-	});
-	// remove
-	arrowheads.exit().remove();	
+        // new arrowheads
+        var arrowheads = update_selection.select('.arrowheads')
+                .selectAll('.arrowhead')
+                .data(function (d) {
+                    var arrowheads = [],
+                        reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
+                        segment_id = this.parentNode.parentNode.__data__.segment_id;                
+                    var start = drawn_nodes[d.from_node_id],
+                        b1 = d.b1;
+                    if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
+                        var disp = get_disp(d.reversibility, d.from_node_coefficient),
+                            direction = (b1 === null) ? end : b1;
+                        var rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90;
+                        start = displaced_coords(disp, start, direction, 'start');
+                        arrowheads.push({ data: d.data,
+                                          x: start.x,
+                                          y: start.y,
+                                          rotation: rotation,
+                                          show_arrowhead_flux: (((d.from_node_coefficient < 0)==(d.reverse_flux))
+                                                                || d.data==0)
+                                        });
+                    }
+                    var end = drawn_nodes[d.to_node_id],
+                        b2 = d.b2;
+                    if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
+                        var disp = get_disp(d.reversibility, d.to_node_coefficient),
+                            direction = (b2 === null) ? start : b2,
+                            rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
+                        end = displaced_coords(disp, direction, end, 'end');
+                        arrowheads.push({ data: d.data,
+                                          x: end.x,
+                                          y: end.y,
+                                          rotation: rotation,
+                                          show_arrowhead_flux: (((d.to_node_coefficient < 0)==(d.reverse_flux))
+                                                                || d.data==0)
+                                        });
+                    }
+                    return arrowheads;
+                });
+        arrowheads.enter().append('path')
+            .classed('arrowhead', true);
+        // update arrowheads
+        arrowheads.attr('d', function(d) {
+            var markerWidth = 20, markerHeight = 13;
+            if (has_data_on_reactions && reaction_data_styles.indexOf('size')!==-1) {
+                var f = d.data,
+                    size = (f === null ? no_data_style['size'] : scale.reaction_size(f));
+                markerWidth = size * 2;
+            }               
+            return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
+        }).attr('transform', function(d) {
+            return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
+        }).style('fill', function(d) {
+            if (has_data_on_reactions && reaction_data_styles.indexOf('color')!==-1) {
+                if (d.show_arrowhead_flux) {
+                    // show the flux
+                    var f = d.data;
+                    return f===null ? no_data_style['color'] : scale.reaction_color(f);
+                } else {
+                    // if the arrowhead is not filled because it is reversed
+                    return '#FFFFFF';
+                }
+            }
+            // default fill color
+            return null;
+        }).style('stroke', function(d) {
+            if (has_data_on_reactions && reaction_data_styles.indexOf('color')!==-1) {
+                // show the flux color in the stroke whether or not the fill is present
+                var f = d.data;
+                return f===null ? no_data_style['color'] : scale.reaction_color(f);
+            }
+            // default stroke color
+            return null;
+        });
+        // remove
+        arrowheads.exit().remove();
+        
+        this.callback_manager.run('update_segment', update_selection);
     }
 
     function create_bezier(enter_selection) {
-	utils.check_undefined(arguments, ['enter_selection']);
-
-	var g = enter_selection.append('g')
-		.attr('id', function(d) { return d.bezier_id; })
-	    	.attr('class', function(d) { return 'bezier'; });
-	g.append('path')
-	    .attr('class', 'connect-line');
-	g.append('circle')
-	    .attr('class', function(d) { return 'bezier-circle '+d.bezier; })
-	    .style('stroke-width', String(1)+'px')	
-    	    .attr('r', String(7)+'px');
+        var g = enter_selection.append('g')
+                .attr('id', function(d) { return d.bezier_id; })
+                .attr('class', function(d) { return 'bezier'; });
+        g.append('path')
+            .attr('class', 'connect-line');
+        g.append('circle')
+            .attr('class', function(d) { return 'bezier-circle '+d.bezier; })
+            .style('stroke-width', String(1)+'px')      
+            .attr('r', String(7)+'px');
+        
+        this.callback_manager.run('create_bezier', enter_selection);
     }
 
-    function update_bezier(update_selection, show_beziers, drag_behavior,
-			   mouseover, mouseout, drawn_nodes, drawn_reactions) {
-	utils.check_undefined(arguments, ['update_selection', 'show_beziers',
-					  'drag_behavior', 'mouseover', 'mouseout',
-					  'drawn_nodes', 'drawn_reactions']);
+    function update_bezier(update_selection, show_beziers,
+                           drag_behavior,
+                           mouseover, mouseout, drawn_nodes, drawn_reactions) {
+        utils.check_undefined(arguments, ['update_selection', 'show_beziers',
+                                          'drag_behavior', 'mouseover', 'mouseout',
+                                          'drawn_nodes', 'drawn_reactions']);
 
-	if (!show_beziers) {
-	    update_selection.attr('visibility', 'hidden');
-	    return;
-	} else {
-	    update_selection.attr('visibility', 'visible');
-	}
-	
-	// draw bezier points
-	update_selection
-	    .select('.bezier-circle')
-	    .call(turn_off_drag)
-	    .call(drag_behavior)
-	    .on('mouseover', mouseover)
-	    .on('mouseout', mouseout)
-	    .attr('transform', function(d) {
-	    	if (d.x==null || d.y==null) return ''; 
-		return 'translate('+d.x+','+d.y+')';
-	    });
+        if (!show_beziers) {
+            update_selection.attr('visibility', 'hidden');
+            return;
+        } else {
+            update_selection.attr('visibility', 'visible');
+        }
+        
+        // draw bezier points
+        update_selection
+            .select('.bezier-circle')
+            .call(this.behavior.turn_off_drag)
+            .call(drag_behavior)
+            .on('mouseover', mouseover)
+            .on('mouseout', mouseout)
+            .attr('transform', function(d) {
+                if (d.x==null || d.y==null) return ''; 
+                return 'translate('+d.x+','+d.y+')';
+            });
 
-	// update bezier line
-	update_selection
-	    .select('.connect-line')
-	    .attr('d', function(d) {
-		var node,
-		    segment_d = drawn_reactions[d.reaction_id].segments[d.segment_id];
-		node = (d.bezier=='b1' ? 
-			drawn_nodes[segment_d.from_node_id] : 
-			drawn_nodes[segment_d.to_node_id]);		
-	    	if (d.x==null || d.y==null || node.x==null || node.y==null)
-	    	    return '';
-	    	return 'M'+d.x+', '+d.y+' '+(node.x)+','+(node.y);
-	    });
+        // update bezier line
+        update_selection
+            .select('.connect-line')
+            .attr('d', function(d) {
+                var node,
+                    segment_d = drawn_reactions[d.reaction_id].segments[d.segment_id];
+                node = (d.bezier=='b1' ? 
+                        drawn_nodes[segment_d.from_node_id] : 
+                        drawn_nodes[segment_d.to_node_id]);             
+                if (d.x==null || d.y==null || node.x==null || node.y==null)
+                    return '';
+                return 'M'+d.x+', '+d.y+' '+(node.x)+','+(node.y);
+            });
+        
+        this.callback_manager.run('update_bezier', update_selection);
     }
 
     function create_node(enter_selection, drawn_nodes, drawn_reactions) {
-	utils.check_undefined(arguments,
-			      ['enter_selection', 'drawn_nodes',
-			       'drawn_reactions']);
-
         // create nodes
         var g = enter_selection
                 .append('g')
@@ -3605,124 +3747,127 @@ define('draw',['utils', 'data_styles'], function(utils, data_styles) {
 
         // create metabolite circle and label
         g.append('circle')
-	    .attr('class', function(d) {
-		var c = 'node-circle';
-		if (d.node_type!==null)
-		    c += (' ' + d.node_type + '-circle');
-		return c;
-	    });
-            // .style('stroke-width', '2px');
-
+            .attr('class', function(d) {
+                var c = 'node-circle';
+                if (d.node_type!==null)
+                    c += (' ' + d.node_type + '-circle');
+                return c;
+            });
         g.filter(function(d) { return d.node_type=='metabolite'; })
-	    .append('text')
-	    .attr('class', 'node-label label');
+            .append('text')
+            .attr('class', 'node-label label');
+        
+        this.callback_manager.run('create_node', enter_selection);
     }
 
     function update_node(update_selection, scale, has_data_on_nodes,
-			 identifiers_on_map, metabolite_data_styles, no_data_style,
-			 click_fn, mouseover_fn, mouseout_fn,
-			 drag_behavior, label_drag_behavior) {
-	utils.check_undefined(arguments,
-			      ['update_selection', 'scale', 'has_data_on_nodes',
-			       'no_data_style', 'metabolite_data_styles',
-			       'click_fn', 'mouseover_fn', 'mouseout_fn',
-			       'drag_behavior', 'label_drag_behavior']);
+                         identifiers_on_map, metabolite_data_styles, no_data_style,
+                         click_fn, mouseover_fn, mouseout_fn,
+                         drag_behavior, label_drag_behavior) {
+        utils.check_undefined(arguments,
+                              ['update_selection', 'scale', 'has_data_on_nodes',
+                               'no_data_style', 'metabolite_data_styles',
+                               'click_fn', 'mouseover_fn', 'mouseout_fn',
+                               'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
         var mg = update_selection
-            .select('.node-circle')
-            .attr('transform', function(d) {
-                return 'translate('+d.x+','+d.y+')';
-            })
-	    .attr('r', function(d) {
-		if (d.node_type == 'metabolite') {
-		    var should_scale = (has_data_on_nodes &&
-					metabolite_data_styles.indexOf('size') != -1);
-		    if (should_scale) {
-			var f = d.data;
-			return f===null ? no_data_style['size'] : scale.metabolite_size(f);
-		    } else {
-			return d.node_is_primary ? 15 : 10; 
-		    }
-		}
-		// midmarkers and multimarkers
-		return 5;
-	    })
-	    .style('fill', function(d) {
-		if (d.node_type=='metabolite') {
-		    var should_color_data = (has_data_on_nodes &&
-					     metabolite_data_styles.indexOf('color') != -1);
-		    if (should_color_data) {
-			var f = d.data;
-			return f===null ? no_data_style['color'] : scale.metabolite_color(f);
-		    } else {
-			return null;
-		    }
-		}
-		// midmarkers and multimarkers
-		return null;
-	    })
-	    .call(turn_off_drag)
-	    .call(drag_behavior)
-	    .on('click', click_fn)
-	    .on('mouseover', mouseover_fn)
-	    .on('mouseout', mouseout_fn);
+                .select('.node-circle')
+                .attr('transform', function(d) {
+                    return 'translate('+d.x+','+d.y+')';
+                })
+                .attr('r', function(d) {
+                    if (d.node_type == 'metabolite') {
+                        var should_scale = (has_data_on_nodes &&
+                                            metabolite_data_styles.indexOf('size') != -1);
+                        if (should_scale) {
+                            var f = d.data;
+                            return f===null ? no_data_style['size'] : scale.metabolite_size(f);
+                        } else {
+                            return d.node_is_primary ? 15 : 10; 
+                        }
+                    }
+                    // midmarkers and multimarkers
+                    return 5;
+                })
+                .style('fill', function(d) {
+                    if (d.node_type=='metabolite') {
+                        var should_color_data = (has_data_on_nodes &&
+                                                 metabolite_data_styles.indexOf('color') != -1);
+                        if (should_color_data) {
+                            var f = d.data;
+                            return f===null ? no_data_style['color'] : scale.metabolite_color(f);
+                        } else {
+                            return null;
+                        }
+                    }
+                    // midmarkers and multimarkers
+                    return null;
+                })
+                .call(this.behavior.turn_off_drag)
+                .call(drag_behavior)
+                .on('click', click_fn)
+                .on('mouseover', mouseover_fn)
+                .on('mouseout', mouseout_fn);
 
         update_selection
             .select('.node-label')
             .attr('transform', function(d) {
                 return 'translate('+d.label_x+','+d.label_y+')';
             })
-            .style('font-size', function(d) {
-		return String(20)+'px';
+            .text(function(d) { 
+                var t = d[identifiers_on_map];
+                if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
+                    t += ' ' + d.data_string;
+                return t;
             })
-            .text(function(d) {	
-		var t = d[identifiers_on_map];
-		if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
-		    t += ' ' + d.data_string;
-		return t;
-	    })
-	    .call(turn_off_drag)
-	    .call(label_drag_behavior);
+            .call(this.behavior.turn_off_drag)
+            .call(label_drag_behavior);
+        
+        this.callback_manager.run('update_node', update_selection);
     }
 
     function create_text_label(enter_selection) {
-	utils.check_undefined(arguments, ['enter_selection']);
-
-	enter_selection.append('g')
-	    .attr('id', function(d) { return 'l'+d.text_label_id; })
-	    .attr('class', 'text-label')
-	    .append('text')
-	    .attr('class', 'label');
+        enter_selection.append('g')
+            .attr('id', function(d) { return 'l'+d.text_label_id; })
+            .attr('class', 'text-label')
+            .append('text')
+            .attr('class', 'label');
+        
+        this.callback_manager.run('create_text_label', enter_selection);
     }
 
-    function update_text_label(update_selection, label_click, label_drag_behavior) {
-	utils.check_undefined(arguments, ['update_selection', 'label_click', 'label_drag_behavior']);
-
+    function update_text_label(update_selection) {
+        var click_fn = this.behavior.text_label_click,
+            drag_behavior = this.behavior.selectable_drag,
+            turn_off_drag = this.behavior.turn_off_drag;
+        
         update_selection
-	    .select('.label')
-	    .text(function(d) { return d.text; })
+            .select('.label')
+            .text(function(d) { return d.text; })
             .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
-	    .on('click', label_click)
-	    .call(turn_off_drag)
-	    .call(label_drag_behavior);
+            .on('click', click_fn)
+            .call(turn_off_drag)
+            .call(drag_behavior);
+        
+        this.callback_manager.run('update_text_label', update_selection);
     }
 
     function displaced_coords(reaction_arrow_displacement, start, end, displace) {
-	utils.check_undefined(arguments, ['reaction_arrow_displacement', 'start', 'end', 'displace']);
+        utils.check_undefined(arguments, ['reaction_arrow_displacement', 'start', 'end', 'displace']);
 
-	var length = reaction_arrow_displacement,
-	    hyp = utils.distance(start, end),
-	    new_x, new_y;
-	if (!length || !hyp) console.error('Bad value');
-	if (displace=='start') {
-	    new_x = start.x + length * (end.x - start.x) / hyp,
-	    new_y = start.y + length * (end.y - start.y) / hyp;
-	} else if (displace=='end') {
-	    new_x = end.x - length * (end.x - start.x) / hyp,
-	    new_y = end.y - length * (end.y - start.y) / hyp;
-	} else { console.error('bad displace value: ' + displace); }
-	return {x: new_x, y: new_y};
+        var length = reaction_arrow_displacement,
+            hyp = utils.distance(start, end),
+            new_x, new_y;
+        if (!length || !hyp) console.error('Bad value');
+        if (displace=='start') {
+            new_x = start.x + length * (end.x - start.x) / hyp,
+            new_y = start.y + length * (end.y - start.y) / hyp;
+        } else if (displace=='end') {
+            new_x = end.x - length * (end.x - start.x) / hyp,
+            new_y = end.y - length * (end.y - start.y) / hyp;
+        } else { console.error('bad displace value: ' + displace); }
+        return {x: new_x, y: new_y};
     }
 });
 
@@ -4273,29 +4418,43 @@ define('build',["utils"], function(utils) {
 
 define('Behavior',["utils", "build"], function(utils, build) {
     /** Defines the set of click and drag behaviors for the map, and keeps track
-     of which behaviors are activated.
+     of which behaviors are activated. 
 
-     Has the following attributes:
+     A Behavior instance has the following attributes:
 
-     Behavior.rotation_drag:
+     my_behavior.rotation_drag:
 
-     Behavior.selectable_click:
+     my_behavior.text_label_click:
 
-     Behavior.node_mouseover:
+     my_behavior.selectable_click:
 
-     Behavior.node_mouseout:
+     my_behavior.selectable_drag:
 
-     Behavior.selectable_drag:
+     my_behavior.node_mouseover:
 
-     Behavior.bezier_drag:
+     my_behavior.node_mouseout:
 
-     Behavior.reaction_label_drag:
+     my_behavior.label_click:
 
-     Behavior.node_label_drag:
+     my_behavior.label_mouseover:
+
+     my_behavior.label_mouseout:
+
+     my_behavior.bezier_drag:
+
+     my_behavior.bezier_mouseover:
+
+     my_behavior.bezier_mouseout:
+
+     my_behavior.reaction_label_drag:
+
+     my_behavior.node_label_drag:
 
      */
 
     var Behavior = utils.make_class();
+    
+    // methods
     Behavior.prototype = { init: init,
                            toggle_rotation_mode: toggle_rotation_mode,
                            turn_everything_on: turn_everything_on,
@@ -4307,6 +4466,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
                            toggle_label_drag: toggle_label_drag,
                            toggle_label_click: toggle_label_click,
                            toggle_bezier_drag: toggle_bezier_drag,
+                           // util
+                           turn_off_drag: turn_off_drag,
                            // get drag behaviors
                            _get_selectable_drag: _get_selectable_drag,
                            _get_bezier_drag: _get_bezier_drag,
@@ -4674,6 +4835,11 @@ define('Behavior',["utils", "build"], function(utils, build) {
             this.bezier_mouseout = null;
         }
     }
+    
+    function turn_off_drag(sel) {
+	sel.on('mousedown.drag', null);
+	sel.on('touchstart.drag', null);
+    }    
 
     function _get_selectable_drag(map, undo_stack) {
         /** Drag the selected nodes and text labels.
@@ -5293,67 +5459,6 @@ define('UndoStack',["utils"], function(utils) {
     }
     function decr(a, l) {
 	return a - 1 < 0 ? l - 1 : a -  1;
-    }
-});
-
-define('CallbackManager',["utils"], function(utils) {
-    /** CallbackManager()
-
-     */
-
-    var CallbackManager = utils.make_class();
-    CallbackManager.prototype = { init: init,
-				  set: set,
-				  remove: remove,
-				  run: run };
-
-    return CallbackManager;
-
-    function init() {
-
-    }
-    function set(name, fn) {
-	/** As in d3 callbacks, you can namespace your callbacks after a period:
-	 
-	 select_metabolite.direction_arrow
-	 select_metabolite.input
-
-	 Both are called by select_metabolite
-	 
-	 */
-	if (this.callbacks===undefined) this.callbacks = {};
-	if (this.callbacks[name]===undefined) this.callbacks[name] = [];
-	this.callbacks[name].push(fn);
-
-	return this;
-    }
-    function remove(name) {
-	/** Remove a callback by name
-	 
-	 */
-	if (this.callbacks===undefined || Object.keys(this.callbacks).length==0) {
-	    console.warn('No callbacks to remove');
-	}
-	delete this.callbacks[name];
-	return this;
-    }
-    function run(name) {
-	/** Run all callbacks that match the portion of name before the period ('.').
-
-	 */
-	if (this.callbacks===undefined) return this;
-	// pass all but the first (name) argument to the callback
-	var pass_args = Array.prototype.slice.call(arguments, 1);
-	// look for matching callback names
-	for (var a_name in this.callbacks) {
-	    var split_name = a_name.split('.')[0];
-	    if (split_name==name) {
-		this.callbacks[a_name].forEach(function(fn) {
-		    fn.apply(null, pass_args);
-		});
-	    }
-	}
-	return this;
     }
 });
 
@@ -8834,7 +8939,7 @@ define('SearchIndex',["utils"], function(utils) {
 }).call(this);
 
 !function(a,b){"function"==typeof define&&define.amd?define('lib/tv4',[],b):"undefined"!=typeof module&&module.exports?module.exports=b():a.tv4=b()}(this,function(){function a(a){return encodeURI(a).replace(/%25[0-9][0-9]/g,function(a){return"%"+a.substring(3)})}function b(b){var c="";l[b.charAt(0)]&&(c=b.charAt(0),b=b.substring(1));var d="",e="",f=!0,g=!1,h=!1;"+"===c?f=!1:"."===c?(e=".",d="."):"/"===c?(e="/",d="/"):"#"===c?(e="#",f=!1):";"===c?(e=";",d=";",g=!0,h=!0):"?"===c?(e="?",d="&",g=!0):"&"===c&&(e="&",d="&",g=!0);for(var i=[],j=b.split(","),k=[],n={},o=0;o<j.length;o++){var p=j[o],q=null;if(-1!==p.indexOf(":")){var r=p.split(":");p=r[0],q=parseInt(r[1],10)}for(var s={};m[p.charAt(p.length-1)];)s[p.charAt(p.length-1)]=!0,p=p.substring(0,p.length-1);var t={truncate:q,name:p,suffices:s};k.push(t),n[p]=t,i.push(p)}var u=function(b){for(var c="",i=0,j=0;j<k.length;j++){var l=k[j],m=b(l.name);if(null===m||void 0===m||Array.isArray(m)&&0===m.length||"object"==typeof m&&0===Object.keys(m).length)i++;else if(c+=j===i?e:d||",",Array.isArray(m)){g&&(c+=l.name+"=");for(var n=0;n<m.length;n++)n>0&&(c+=l.suffices["*"]?d||",":",",l.suffices["*"]&&g&&(c+=l.name+"=")),c+=f?encodeURIComponent(m[n]).replace(/!/g,"%21"):a(m[n])}else if("object"==typeof m){g&&!l.suffices["*"]&&(c+=l.name+"=");var o=!0;for(var p in m)o||(c+=l.suffices["*"]?d||",":","),o=!1,c+=f?encodeURIComponent(p).replace(/!/g,"%21"):a(p),c+=l.suffices["*"]?"=":",",c+=f?encodeURIComponent(m[p]).replace(/!/g,"%21"):a(m[p])}else g&&(c+=l.name,h&&""===m||(c+="=")),null!=l.truncate&&(m=m.substring(0,l.truncate)),c+=f?encodeURIComponent(m).replace(/!/g,"%21"):a(m)}return c};return u.varNames=i,{prefix:e,substitution:u}}function c(a){if(!(this instanceof c))return new c(a);for(var d=a.split("{"),e=[d.shift()],f=[],g=[],h=[];d.length>0;){var i=d.shift(),j=i.split("}")[0],k=i.substring(j.length+1),l=b(j);g.push(l.substitution),f.push(l.prefix),e.push(k),h=h.concat(l.substitution.varNames)}this.fill=function(a){for(var b=e[0],c=0;c<g.length;c++){var d=g[c];b+=d(a),b+=e[c+1]}return b},this.varNames=h,this.template=a}function d(a,b){if(a===b)return!0;if("object"==typeof a&&"object"==typeof b){if(Array.isArray(a)!==Array.isArray(b))return!1;if(Array.isArray(a)){if(a.length!==b.length)return!1;for(var c=0;c<a.length;c++)if(!d(a[c],b[c]))return!1}else{var e;for(e in a)if(void 0===b[e]&&void 0!==a[e])return!1;for(e in b)if(void 0===a[e]&&void 0!==b[e])return!1;for(e in a)if(!d(a[e],b[e]))return!1}return!0}return!1}function e(a){var b=String(a).replace(/^\s+|\s+$/g,"").match(/^([^:\/?#]+:)?(\/\/(?:[^:@]*(?::[^:@]*)?@)?(([^:\/?#]*)(?::(\d*))?))?([^?#]*)(\?[^#]*)?(#[\s\S]*)?/);return b?{href:b[0]||"",protocol:b[1]||"",authority:b[2]||"",host:b[3]||"",hostname:b[4]||"",port:b[5]||"",pathname:b[6]||"",search:b[7]||"",hash:b[8]||""}:null}function f(a,b){function c(a){var b=[];return a.replace(/^(\.\.?(\/|$))+/,"").replace(/\/(\.(\/|$))+/g,"/").replace(/\/\.\.$/,"/../").replace(/\/?[^\/]*/g,function(a){"/.."===a?b.pop():b.push(a)}),b.join("").replace(/^\//,"/"===a.charAt(0)?"/":"")}return b=e(b||""),a=e(a||""),b&&a?(b.protocol||a.protocol)+(b.protocol||b.authority?b.authority:a.authority)+c(b.protocol||b.authority||"/"===b.pathname.charAt(0)?b.pathname:b.pathname?(a.authority&&!a.pathname?"/":"")+a.pathname.slice(0,a.pathname.lastIndexOf("/")+1)+b.pathname:a.pathname)+(b.protocol||b.authority||b.pathname?b.search:b.search||a.search)+b.hash:null}function g(a){return a.split("#")[0]}function h(a,b){if(a&&"object"==typeof a)if(void 0===b?b=a.id:"string"==typeof a.id&&(b=f(b,a.id),a.id=b),Array.isArray(a))for(var c=0;c<a.length;c++)h(a[c],b);else{"string"==typeof a.$ref&&(a.$ref=f(b,a.$ref));for(var d in a)"enum"!==d&&h(a[d],b)}}function i(a,b,c,d,e,f){if(Error.call(this),void 0===a)throw new Error("No code supplied for error: "+b);this.message=b,this.params=c,this.code=a,this.dataPath=d||"",this.schemaPath=e||"",this.subErrors=f||null;var g=new Error(this.message);if(this.stack=g.stack||g.stacktrace,!this.stack)try{throw g}catch(g){this.stack=g.stack||g.stacktrace}}function j(a,b){if(b.substring(0,a.length)===a){var c=b.substring(a.length);if(b.length>0&&"/"===b.charAt(a.length-1)||"#"===c.charAt(0)||"?"===c.charAt(0))return!0}return!1}function k(a){var b=new n,c=a||"en",d={addFormat:function(){b.addFormat.apply(b,arguments)},language:function(a){return a?(s[a]||(a=a.split("-")[0]),s[a]?(c=a,a):!1):c},addLanguage:function(a,b){var c;for(c in o)b[c]&&!b[o[c]]&&(b[o[c]]=b[c]);var d=a.split("-")[0];if(s[d]){s[a]=Object.create(s[d]);for(c in b)"undefined"==typeof s[d][c]&&(s[d][c]=b[c]),s[a][c]=b[c]}else s[a]=b,s[d]=b;return this},freshApi:function(a){var b=k();return a&&b.language(a),b},validate:function(a,d,e,f){var g=new n(b,!1,s[c],e,f);"string"==typeof d&&(d={$ref:d}),g.addSchema("",d);var h=g.validateAll(a,d,null,null,"");return!h&&f&&(h=g.banUnknownProperties()),this.error=h,this.missing=g.missing,this.valid=null===h,this.valid},validateResult:function(){var a={};return this.validate.apply(a,arguments),a},validateMultiple:function(a,d,e,f){var g=new n(b,!0,s[c],e,f);"string"==typeof d&&(d={$ref:d}),g.addSchema("",d),g.validateAll(a,d,null,null,""),f&&g.banUnknownProperties();var h={};return h.errors=g.errors,h.missing=g.missing,h.valid=0===h.errors.length,h},addSchema:function(){return b.addSchema.apply(b,arguments)},getSchema:function(){return b.getSchema.apply(b,arguments)},getSchemaMap:function(){return b.getSchemaMap.apply(b,arguments)},getSchemaUris:function(){return b.getSchemaUris.apply(b,arguments)},getMissingUris:function(){return b.getMissingUris.apply(b,arguments)},dropSchemas:function(){b.dropSchemas.apply(b,arguments)},defineKeyword:function(){b.defineKeyword.apply(b,arguments)},defineError:function(a,b,c){if("string"!=typeof a||!/^[A-Z]+(_[A-Z]+)*$/.test(a))throw new Error("Code name must be a string in UPPER_CASE_WITH_UNDERSCORES");if("number"!=typeof b||b%1!==0||1e4>b)throw new Error("Code number must be an integer > 10000");if("undefined"!=typeof o[a])throw new Error("Error already defined: "+a+" as "+o[a]);if("undefined"!=typeof p[b])throw new Error("Error code already used: "+p[b]+" as "+b);o[a]=b,p[b]=a,r[a]=r[b]=c;for(var d in s){var e=s[d];e[a]&&(e[b]=e[b]||e[a])}},reset:function(){b.reset(),this.error=null,this.missing=[],this.valid=!0},missing:[],error:null,valid:!0,normSchema:h,resolveUrl:f,getDocumentUri:g,errorCodes:o};return d}Object.keys||(Object.keys=function(){var a=Object.prototype.hasOwnProperty,b=!{toString:null}.propertyIsEnumerable("toString"),c=["toString","toLocaleString","valueOf","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","constructor"],d=c.length;return function(e){if("object"!=typeof e&&"function"!=typeof e||null===e)throw new TypeError("Object.keys called on non-object");var f=[];for(var g in e)a.call(e,g)&&f.push(g);if(b)for(var h=0;d>h;h++)a.call(e,c[h])&&f.push(c[h]);return f}}()),Object.create||(Object.create=function(){function a(){}return function(b){if(1!==arguments.length)throw new Error("Object.create implementation only accepts one parameter.");return a.prototype=b,new a}}()),Array.isArray||(Array.isArray=function(a){return"[object Array]"===Object.prototype.toString.call(a)}),Array.prototype.indexOf||(Array.prototype.indexOf=function(a){if(null===this)throw new TypeError;var b=Object(this),c=b.length>>>0;if(0===c)return-1;var d=0;if(arguments.length>1&&(d=Number(arguments[1]),d!==d?d=0:0!==d&&1/0!==d&&d!==-1/0&&(d=(d>0||-1)*Math.floor(Math.abs(d)))),d>=c)return-1;for(var e=d>=0?d:Math.max(c-Math.abs(d),0);c>e;e++)if(e in b&&b[e]===a)return e;return-1}),Object.isFrozen||(Object.isFrozen=function(a){for(var b="tv4_test_frozen_key";a.hasOwnProperty(b);)b+=Math.random();try{return a[b]=!0,delete a[b],!1}catch(c){return!0}});var l={"+":!0,"#":!0,".":!0,"/":!0,";":!0,"?":!0,"&":!0},m={"*":!0};c.prototype={toString:function(){return this.template},fillFromObject:function(a){return this.fill(function(b){return a[b]})}};var n=function(a,b,c,d,e){if(this.missing=[],this.missingMap={},this.formatValidators=a?Object.create(a.formatValidators):{},this.schemas=a?Object.create(a.schemas):{},this.collectMultiple=b,this.errors=[],this.handleError=b?this.collectError:this.returnError,d&&(this.checkRecursive=!0,this.scanned=[],this.scannedFrozen=[],this.scannedFrozenSchemas=[],this.scannedFrozenValidationErrors=[],this.validatedSchemasKey="tv4_validation_id",this.validationErrorsKey="tv4_validation_errors_id"),e&&(this.trackUnknownProperties=!0,this.knownPropertyPaths={},this.unknownPropertyPaths={}),this.errorMessages=c,this.definedKeywords={},a)for(var f in a.definedKeywords)this.definedKeywords[f]=a.definedKeywords[f].slice(0)};n.prototype.defineKeyword=function(a,b){this.definedKeywords[a]=this.definedKeywords[a]||[],this.definedKeywords[a].push(b)},n.prototype.createError=function(a,b,c,d,e){var f=this.errorMessages[a]||r[a];if("string"!=typeof f)return new i(a,"Unknown error code "+a+": "+JSON.stringify(b),b,c,d,e);var g=f.replace(/\{([^{}]*)\}/g,function(a,c){var d=b[c];return"string"==typeof d||"number"==typeof d?d:a});return new i(a,g,b,c,d,e)},n.prototype.returnError=function(a){return a},n.prototype.collectError=function(a){return a&&this.errors.push(a),null},n.prototype.prefixErrors=function(a,b,c){for(var d=a;d<this.errors.length;d++)this.errors[d]=this.errors[d].prefixWith(b,c);return this},n.prototype.banUnknownProperties=function(){for(var a in this.unknownPropertyPaths){var b=this.createError(o.UNKNOWN_PROPERTY,{path:a},a,""),c=this.handleError(b);if(c)return c}return null},n.prototype.addFormat=function(a,b){if("object"==typeof a){for(var c in a)this.addFormat(c,a[c]);return this}this.formatValidators[a]=b},n.prototype.resolveRefs=function(a,b){if(void 0!==a.$ref){if(b=b||{},b[a.$ref])return this.createError(o.CIRCULAR_REFERENCE,{urls:Object.keys(b).join(", ")},"","");b[a.$ref]=!0,a=this.getSchema(a.$ref,b)}return a},n.prototype.getSchema=function(a,b){var c;if(void 0!==this.schemas[a])return c=this.schemas[a],this.resolveRefs(c,b);var d=a,e="";if(-1!==a.indexOf("#")&&(e=a.substring(a.indexOf("#")+1),d=a.substring(0,a.indexOf("#"))),"object"==typeof this.schemas[d]){c=this.schemas[d];var f=decodeURIComponent(e);if(""===f)return this.resolveRefs(c,b);if("/"!==f.charAt(0))return void 0;for(var g=f.split("/").slice(1),h=0;h<g.length;h++){var i=g[h].replace(/~1/g,"/").replace(/~0/g,"~");if(void 0===c[i]){c=void 0;break}c=c[i]}if(void 0!==c)return this.resolveRefs(c,b)}void 0===this.missing[d]&&(this.missing.push(d),this.missing[d]=d,this.missingMap[d]=d)},n.prototype.searchSchemas=function(a,b){if(a&&"object"==typeof a){"string"==typeof a.id&&j(b,a.id)&&void 0===this.schemas[a.id]&&(this.schemas[a.id]=a);for(var c in a)if("enum"!==c)if("object"==typeof a[c])this.searchSchemas(a[c],b);else if("$ref"===c){var d=g(a[c]);d&&void 0===this.schemas[d]&&void 0===this.missingMap[d]&&(this.missingMap[d]=d)}}},n.prototype.addSchema=function(a,b){if("string"!=typeof a||"undefined"==typeof b){if("object"!=typeof a||"string"!=typeof a.id)return;b=a,a=b.id}a===g(a)+"#"&&(a=g(a)),this.schemas[a]=b,delete this.missingMap[a],h(b,a),this.searchSchemas(b,a)},n.prototype.getSchemaMap=function(){var a={};for(var b in this.schemas)a[b]=this.schemas[b];return a},n.prototype.getSchemaUris=function(a){var b=[];for(var c in this.schemas)(!a||a.test(c))&&b.push(c);return b},n.prototype.getMissingUris=function(a){var b=[];for(var c in this.missingMap)(!a||a.test(c))&&b.push(c);return b},n.prototype.dropSchemas=function(){this.schemas={},this.reset()},n.prototype.reset=function(){this.missing=[],this.missingMap={},this.errors=[]},n.prototype.validateAll=function(a,b,c,d,e){var f;if(b=this.resolveRefs(b),!b)return null;if(b instanceof i)return this.errors.push(b),b;var g,h=this.errors.length,j=null,k=null;if(this.checkRecursive&&a&&"object"==typeof a){if(f=!this.scanned.length,a[this.validatedSchemasKey]){var l=a[this.validatedSchemasKey].indexOf(b);if(-1!==l)return this.errors=this.errors.concat(a[this.validationErrorsKey][l]),null}if(Object.isFrozen(a)&&(g=this.scannedFrozen.indexOf(a),-1!==g)){var m=this.scannedFrozenSchemas[g].indexOf(b);if(-1!==m)return this.errors=this.errors.concat(this.scannedFrozenValidationErrors[g][m]),null}if(this.scanned.push(a),Object.isFrozen(a))-1===g&&(g=this.scannedFrozen.length,this.scannedFrozen.push(a),this.scannedFrozenSchemas.push([])),j=this.scannedFrozenSchemas[g].length,this.scannedFrozenSchemas[g][j]=b,this.scannedFrozenValidationErrors[g][j]=[];else{if(!a[this.validatedSchemasKey])try{Object.defineProperty(a,this.validatedSchemasKey,{value:[],configurable:!0}),Object.defineProperty(a,this.validationErrorsKey,{value:[],configurable:!0})}catch(n){a[this.validatedSchemasKey]=[],a[this.validationErrorsKey]=[]}k=a[this.validatedSchemasKey].length,a[this.validatedSchemasKey][k]=b,a[this.validationErrorsKey][k]=[]}}var o=this.errors.length,p=this.validateBasic(a,b,e)||this.validateNumeric(a,b,e)||this.validateString(a,b,e)||this.validateArray(a,b,e)||this.validateObject(a,b,e)||this.validateCombinations(a,b,e)||this.validateHypermedia(a,b,e)||this.validateFormat(a,b,e)||this.validateDefinedKeywords(a,b,e)||null;if(f){for(;this.scanned.length;){var q=this.scanned.pop();delete q[this.validatedSchemasKey]}this.scannedFrozen=[],this.scannedFrozenSchemas=[]}if(p||o!==this.errors.length)for(;c&&c.length||d&&d.length;){var r=c&&c.length?""+c.pop():null,s=d&&d.length?""+d.pop():null;p&&(p=p.prefixWith(r,s)),this.prefixErrors(o,r,s)}return null!==j?this.scannedFrozenValidationErrors[g][j]=this.errors.slice(h):null!==k&&(a[this.validationErrorsKey][k]=this.errors.slice(h)),this.handleError(p)},n.prototype.validateFormat=function(a,b){if("string"!=typeof b.format||!this.formatValidators[b.format])return null;var c=this.formatValidators[b.format].call(null,a,b);return"string"==typeof c||"number"==typeof c?this.createError(o.FORMAT_CUSTOM,{message:c}).prefixWith(null,"format"):c&&"object"==typeof c?this.createError(o.FORMAT_CUSTOM,{message:c.message||"?"},c.dataPath||null,c.schemaPath||"/format"):null},n.prototype.validateDefinedKeywords=function(a,b){for(var c in this.definedKeywords)if("undefined"!=typeof b[c])for(var d=this.definedKeywords[c],e=0;e<d.length;e++){var f=d[e],g=f(a,b[c],b);if("string"==typeof g||"number"==typeof g)return this.createError(o.KEYWORD_CUSTOM,{key:c,message:g}).prefixWith(null,"format");if(g&&"object"==typeof g){var h=g.code||o.KEYWORD_CUSTOM;if("string"==typeof h){if(!o[h])throw new Error("Undefined error code (use defineError): "+h);h=o[h]}var i="object"==typeof g.message?g.message:{key:c,message:g.message||"?"},j=g.schemaPath||"/"+c.replace(/~/g,"~0").replace(/\//g,"~1");return this.createError(h,i,g.dataPath||null,j)}}return null},n.prototype.validateBasic=function(a,b,c){var d;return(d=this.validateType(a,b,c))?d.prefixWith(null,"type"):(d=this.validateEnum(a,b,c))?d.prefixWith(null,"type"):null},n.prototype.validateType=function(a,b){if(void 0===b.type)return null;var c=typeof a;null===a?c="null":Array.isArray(a)&&(c="array");var d=b.type;"object"!=typeof d&&(d=[d]);for(var e=0;e<d.length;e++){var f=d[e];if(f===c||"integer"===f&&"number"===c&&a%1===0)return null}return this.createError(o.INVALID_TYPE,{type:c,expected:d.join("/")})},n.prototype.validateEnum=function(a,b){if(void 0===b["enum"])return null;for(var c=0;c<b["enum"].length;c++){var e=b["enum"][c];if(d(a,e))return null}return this.createError(o.ENUM_MISMATCH,{value:"undefined"!=typeof JSON?JSON.stringify(a):a})},n.prototype.validateNumeric=function(a,b,c){return this.validateMultipleOf(a,b,c)||this.validateMinMax(a,b,c)||null},n.prototype.validateMultipleOf=function(a,b){var c=b.multipleOf||b.divisibleBy;return void 0===c?null:"number"==typeof a&&a%c!==0?this.createError(o.NUMBER_MULTIPLE_OF,{value:a,multipleOf:c}):null},n.prototype.validateMinMax=function(a,b){if("number"!=typeof a)return null;if(void 0!==b.minimum){if(a<b.minimum)return this.createError(o.NUMBER_MINIMUM,{value:a,minimum:b.minimum}).prefixWith(null,"minimum");if(b.exclusiveMinimum&&a===b.minimum)return this.createError(o.NUMBER_MINIMUM_EXCLUSIVE,{value:a,minimum:b.minimum}).prefixWith(null,"exclusiveMinimum")}if(void 0!==b.maximum){if(a>b.maximum)return this.createError(o.NUMBER_MAXIMUM,{value:a,maximum:b.maximum}).prefixWith(null,"maximum");if(b.exclusiveMaximum&&a===b.maximum)return this.createError(o.NUMBER_MAXIMUM_EXCLUSIVE,{value:a,maximum:b.maximum}).prefixWith(null,"exclusiveMaximum")}return null},n.prototype.validateString=function(a,b,c){return this.validateStringLength(a,b,c)||this.validateStringPattern(a,b,c)||null},n.prototype.validateStringLength=function(a,b){return"string"!=typeof a?null:void 0!==b.minLength&&a.length<b.minLength?this.createError(o.STRING_LENGTH_SHORT,{length:a.length,minimum:b.minLength}).prefixWith(null,"minLength"):void 0!==b.maxLength&&a.length>b.maxLength?this.createError(o.STRING_LENGTH_LONG,{length:a.length,maximum:b.maxLength}).prefixWith(null,"maxLength"):null},n.prototype.validateStringPattern=function(a,b){if("string"!=typeof a||void 0===b.pattern)return null;var c=new RegExp(b.pattern);return c.test(a)?null:this.createError(o.STRING_PATTERN,{pattern:b.pattern}).prefixWith(null,"pattern")},n.prototype.validateArray=function(a,b,c){return Array.isArray(a)?this.validateArrayLength(a,b,c)||this.validateArrayUniqueItems(a,b,c)||this.validateArrayItems(a,b,c)||null:null},n.prototype.validateArrayLength=function(a,b){var c;return void 0!==b.minItems&&a.length<b.minItems&&(c=this.createError(o.ARRAY_LENGTH_SHORT,{length:a.length,minimum:b.minItems}).prefixWith(null,"minItems"),this.handleError(c))?c:void 0!==b.maxItems&&a.length>b.maxItems&&(c=this.createError(o.ARRAY_LENGTH_LONG,{length:a.length,maximum:b.maxItems}).prefixWith(null,"maxItems"),this.handleError(c))?c:null},n.prototype.validateArrayUniqueItems=function(a,b){if(b.uniqueItems)for(var c=0;c<a.length;c++)for(var e=c+1;e<a.length;e++)if(d(a[c],a[e])){var f=this.createError(o.ARRAY_UNIQUE,{match1:c,match2:e}).prefixWith(null,"uniqueItems");if(this.handleError(f))return f}return null},n.prototype.validateArrayItems=function(a,b,c){if(void 0===b.items)return null;var d,e;if(Array.isArray(b.items)){for(e=0;e<a.length;e++)if(e<b.items.length){if(d=this.validateAll(a[e],b.items[e],[e],["items",e],c+"/"+e))return d}else if(void 0!==b.additionalItems)if("boolean"==typeof b.additionalItems){if(!b.additionalItems&&(d=this.createError(o.ARRAY_ADDITIONAL_ITEMS,{}).prefixWith(""+e,"additionalItems"),this.handleError(d)))return d}else if(d=this.validateAll(a[e],b.additionalItems,[e],["additionalItems"],c+"/"+e))return d}else for(e=0;e<a.length;e++)if(d=this.validateAll(a[e],b.items,[e],["items"],c+"/"+e))return d;return null},n.prototype.validateObject=function(a,b,c){return"object"!=typeof a||null===a||Array.isArray(a)?null:this.validateObjectMinMaxProperties(a,b,c)||this.validateObjectRequiredProperties(a,b,c)||this.validateObjectProperties(a,b,c)||this.validateObjectDependencies(a,b,c)||null},n.prototype.validateObjectMinMaxProperties=function(a,b){var c,d=Object.keys(a);return void 0!==b.minProperties&&d.length<b.minProperties&&(c=this.createError(o.OBJECT_PROPERTIES_MINIMUM,{propertyCount:d.length,minimum:b.minProperties}).prefixWith(null,"minProperties"),this.handleError(c))?c:void 0!==b.maxProperties&&d.length>b.maxProperties&&(c=this.createError(o.OBJECT_PROPERTIES_MAXIMUM,{propertyCount:d.length,maximum:b.maxProperties}).prefixWith(null,"maxProperties"),this.handleError(c))?c:null},n.prototype.validateObjectRequiredProperties=function(a,b){if(void 0!==b.required)for(var c=0;c<b.required.length;c++){var d=b.required[c];if(void 0===a[d]){var e=this.createError(o.OBJECT_REQUIRED,{key:d}).prefixWith(null,""+c).prefixWith(null,"required");if(this.handleError(e))return e}}return null},n.prototype.validateObjectProperties=function(a,b,c){var d;for(var e in a){var f=c+"/"+e.replace(/~/g,"~0").replace(/\//g,"~1"),g=!1;if(void 0!==b.properties&&void 0!==b.properties[e]&&(g=!0,d=this.validateAll(a[e],b.properties[e],[e],["properties",e],f)))return d;if(void 0!==b.patternProperties)for(var h in b.patternProperties){var i=new RegExp(h);if(i.test(e)&&(g=!0,d=this.validateAll(a[e],b.patternProperties[h],[e],["patternProperties",h],f)))return d}if(g)this.trackUnknownProperties&&(this.knownPropertyPaths[f]=!0,delete this.unknownPropertyPaths[f]);else if(void 0!==b.additionalProperties){if(this.trackUnknownProperties&&(this.knownPropertyPaths[f]=!0,delete this.unknownPropertyPaths[f]),"boolean"==typeof b.additionalProperties){if(!b.additionalProperties&&(d=this.createError(o.OBJECT_ADDITIONAL_PROPERTIES,{}).prefixWith(e,"additionalProperties"),this.handleError(d)))return d}else if(d=this.validateAll(a[e],b.additionalProperties,[e],["additionalProperties"],f))return d}else this.trackUnknownProperties&&!this.knownPropertyPaths[f]&&(this.unknownPropertyPaths[f]=!0)}return null},n.prototype.validateObjectDependencies=function(a,b,c){var d;if(void 0!==b.dependencies)for(var e in b.dependencies)if(void 0!==a[e]){var f=b.dependencies[e];if("string"==typeof f){if(void 0===a[f]&&(d=this.createError(o.OBJECT_DEPENDENCY_KEY,{key:e,missing:f}).prefixWith(null,e).prefixWith(null,"dependencies"),this.handleError(d)))return d}else if(Array.isArray(f))for(var g=0;g<f.length;g++){var h=f[g];if(void 0===a[h]&&(d=this.createError(o.OBJECT_DEPENDENCY_KEY,{key:e,missing:h}).prefixWith(null,""+g).prefixWith(null,e).prefixWith(null,"dependencies"),this.handleError(d)))return d}else if(d=this.validateAll(a,f,[],["dependencies",e],c))return d}return null},n.prototype.validateCombinations=function(a,b,c){return this.validateAllOf(a,b,c)||this.validateAnyOf(a,b,c)||this.validateOneOf(a,b,c)||this.validateNot(a,b,c)||null},n.prototype.validateAllOf=function(a,b,c){if(void 0===b.allOf)return null;for(var d,e=0;e<b.allOf.length;e++){var f=b.allOf[e];if(d=this.validateAll(a,f,[],["allOf",e],c))return d}return null},n.prototype.validateAnyOf=function(a,b,c){if(void 0===b.anyOf)return null;var d,e,f=[],g=this.errors.length;this.trackUnknownProperties&&(d=this.unknownPropertyPaths,e=this.knownPropertyPaths);for(var h=!0,i=0;i<b.anyOf.length;i++){this.trackUnknownProperties&&(this.unknownPropertyPaths={},this.knownPropertyPaths={});var j=b.anyOf[i],k=this.errors.length,l=this.validateAll(a,j,[],["anyOf",i],c);if(null===l&&k===this.errors.length){if(this.errors=this.errors.slice(0,g),this.trackUnknownProperties){for(var m in this.knownPropertyPaths)e[m]=!0,delete d[m];for(var n in this.unknownPropertyPaths)e[n]||(d[n]=!0);h=!1;continue}return null}l&&f.push(l.prefixWith(null,""+i).prefixWith(null,"anyOf"))}return this.trackUnknownProperties&&(this.unknownPropertyPaths=d,this.knownPropertyPaths=e),h?(f=f.concat(this.errors.slice(g)),this.errors=this.errors.slice(0,g),this.createError(o.ANY_OF_MISSING,{},"","/anyOf",f)):void 0},n.prototype.validateOneOf=function(a,b,c){if(void 0===b.oneOf)return null;var d,e,f=null,g=[],h=this.errors.length;this.trackUnknownProperties&&(d=this.unknownPropertyPaths,e=this.knownPropertyPaths);for(var i=0;i<b.oneOf.length;i++){this.trackUnknownProperties&&(this.unknownPropertyPaths={},this.knownPropertyPaths={});var j=b.oneOf[i],k=this.errors.length,l=this.validateAll(a,j,[],["oneOf",i],c);if(null===l&&k===this.errors.length){if(null!==f)return this.errors=this.errors.slice(0,h),this.createError(o.ONE_OF_MULTIPLE,{index1:f,index2:i},"","/oneOf");if(f=i,this.trackUnknownProperties){for(var m in this.knownPropertyPaths)e[m]=!0,delete d[m];for(var n in this.unknownPropertyPaths)e[n]||(d[n]=!0)}}else l&&g.push(l)}return this.trackUnknownProperties&&(this.unknownPropertyPaths=d,this.knownPropertyPaths=e),null===f?(g=g.concat(this.errors.slice(h)),this.errors=this.errors.slice(0,h),this.createError(o.ONE_OF_MISSING,{},"","/oneOf",g)):(this.errors=this.errors.slice(0,h),null)},n.prototype.validateNot=function(a,b,c){if(void 0===b.not)return null;var d,e,f=this.errors.length;this.trackUnknownProperties&&(d=this.unknownPropertyPaths,e=this.knownPropertyPaths,this.unknownPropertyPaths={},this.knownPropertyPaths={});var g=this.validateAll(a,b.not,null,null,c),h=this.errors.slice(f);return this.errors=this.errors.slice(0,f),this.trackUnknownProperties&&(this.unknownPropertyPaths=d,this.knownPropertyPaths=e),null===g&&0===h.length?this.createError(o.NOT_PASSED,{},"","/not"):null},n.prototype.validateHypermedia=function(a,b,d){if(!b.links)return null;for(var e,f=0;f<b.links.length;f++){var g=b.links[f];if("describedby"===g.rel){for(var h=new c(g.href),i=!0,j=0;j<h.varNames.length;j++)if(!(h.varNames[j]in a)){i=!1;break}if(i){var k=h.fillFromObject(a),l={$ref:k};if(e=this.validateAll(a,l,[],["links",f],d))return e}}}};var o={INVALID_TYPE:0,ENUM_MISMATCH:1,ANY_OF_MISSING:10,ONE_OF_MISSING:11,ONE_OF_MULTIPLE:12,NOT_PASSED:13,NUMBER_MULTIPLE_OF:100,NUMBER_MINIMUM:101,NUMBER_MINIMUM_EXCLUSIVE:102,NUMBER_MAXIMUM:103,NUMBER_MAXIMUM_EXCLUSIVE:104,STRING_LENGTH_SHORT:200,STRING_LENGTH_LONG:201,STRING_PATTERN:202,OBJECT_PROPERTIES_MINIMUM:300,OBJECT_PROPERTIES_MAXIMUM:301,OBJECT_REQUIRED:302,OBJECT_ADDITIONAL_PROPERTIES:303,OBJECT_DEPENDENCY_KEY:304,ARRAY_LENGTH_SHORT:400,ARRAY_LENGTH_LONG:401,ARRAY_UNIQUE:402,ARRAY_ADDITIONAL_ITEMS:403,FORMAT_CUSTOM:500,KEYWORD_CUSTOM:501,CIRCULAR_REFERENCE:600,UNKNOWN_PROPERTY:1e3},p={};for(var q in o)p[o[q]]=q;var r={INVALID_TYPE:"Invalid type: {type} (expected {expected})",ENUM_MISMATCH:"No enum match for: {value}",ANY_OF_MISSING:'Data does not match any schemas from "anyOf"',ONE_OF_MISSING:'Data does not match any schemas from "oneOf"',ONE_OF_MULTIPLE:'Data is valid against more than one schema from "oneOf": indices {index1} and {index2}',NOT_PASSED:'Data matches schema from "not"',NUMBER_MULTIPLE_OF:"Value {value} is not a multiple of {multipleOf}",NUMBER_MINIMUM:"Value {value} is less than minimum {minimum}",NUMBER_MINIMUM_EXCLUSIVE:"Value {value} is equal to exclusive minimum {minimum}",NUMBER_MAXIMUM:"Value {value} is greater than maximum {maximum}",NUMBER_MAXIMUM_EXCLUSIVE:"Value {value} is equal to exclusive maximum {maximum}",STRING_LENGTH_SHORT:"String is too short ({length} chars), minimum {minimum}",STRING_LENGTH_LONG:"String is too long ({length} chars), maximum {maximum}",STRING_PATTERN:"String does not match pattern: {pattern}",OBJECT_PROPERTIES_MINIMUM:"Too few properties defined ({propertyCount}), minimum {minimum}",OBJECT_PROPERTIES_MAXIMUM:"Too many properties defined ({propertyCount}), maximum {maximum}",OBJECT_REQUIRED:"Missing required property: {key}",OBJECT_ADDITIONAL_PROPERTIES:"Additional properties not allowed",OBJECT_DEPENDENCY_KEY:"Dependency failed - key must exist: {missing} (due to key: {key})",ARRAY_LENGTH_SHORT:"Array is too short ({length}), minimum {minimum}",ARRAY_LENGTH_LONG:"Array is too long ({length}), maximum {maximum}",ARRAY_UNIQUE:"Array items are not unique (indices {match1} and {match2})",ARRAY_ADDITIONAL_ITEMS:"Additional items not allowed",FORMAT_CUSTOM:"Format validation failed ({message})",KEYWORD_CUSTOM:"Keyword failed: {key} ({message})",CIRCULAR_REFERENCE:"Circular $refs: {urls}",UNKNOWN_PROPERTY:"Unknown property (not in schema)"};i.prototype=Object.create(Error.prototype),i.prototype.constructor=i,i.prototype.name="ValidationError",i.prototype.prefixWith=function(a,b){if(null!==a&&(a=a.replace(/~/g,"~0").replace(/\//g,"~1"),this.dataPath="/"+a+this.dataPath),null!==b&&(b=b.replace(/~/g,"~0").replace(/\//g,"~1"),this.schemaPath="/"+b+this.schemaPath),null!==this.subErrors)for(var c=0;c<this.subErrors.length;c++)this.subErrors[c].prefixWith(a,b);return this};var s={},t=k();return t.addLanguage("en-gb",r),t.tv4=t,t});
-define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackManager', 'KeyManager', 'Canvas', 'data_styles', 'SearchIndex', 'lib/bacon', 'lib/tv4'], function(utils, draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon, tv4) {
+define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackManager', 'KeyManager', 'Canvas', 'data_styles', 'SearchIndex', 'lib/bacon', 'lib/tv4'], function(utils, Draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon, tv4) {
     /** Defines the metabolic map data, and manages drawing and building.
 
      Arguments
@@ -8996,6 +9101,9 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // make a behavior object
         this.behavior = new Behavior(this, this.undo_stack);
 
+        // draw manager
+        this.draw = new Draw(this.behavior, this.settings);
+        
         // make a key manager
         this.key_manager = new KeyManager();
 
@@ -9031,7 +9139,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         this.rotation_on = false;
 
         // performs some extra checks
-        this.debug = false;
+        this.debug = true;
     };
 
     // -------------------------------------------------------------------------
@@ -9291,7 +9399,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
         // function to update reactions
         var update_fn = function(sel) {
-            return draw.update_reaction(sel,
+            return this.draw.update_reaction(sel,
                                         this.scale,
                                         this.cobra_model,
                                         this.nodes,
@@ -9310,7 +9418,8 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
         // draw the reactions
         utils.draw_an_object(this.sel, '#reactions', '.reaction', reaction_subset,
-                             'reaction_id', draw.create_reaction, update_fn);
+                             'reaction_id', this.draw.create_reaction.bind(this.draw),
+                             update_fn);
         
         if (draw_beziers) {
             // particular beziers to draw
@@ -9381,12 +9490,12 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
         // functions to create and update nodes
         var create_fn = function(sel) {
-            return draw.create_node(sel,
+            return this.draw.create_node(sel,
                                     this.nodes,
                                     this.reactions);
         }.bind(this),
             update_fn = function(sel) {
-                return draw.update_node(sel,
+                return this.draw.update_node(sel,
                                         this.scale,
                                         this.has_data_on_nodes,
                                         this.settings.get_option('identifiers_on_map'),
@@ -9443,15 +9552,14 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
         // function to update text_labels
         var update_fn = function(sel) {
-            return draw.update_text_label(sel,
-                                          this.behavior.text_label_click,
-                                          this.behavior.selectable_drag);
+            return this.draw.update_text_label(sel, this.behavior);;
         }.bind(this);
 
         // draw the text_labels
         utils.draw_an_object(this.sel, '#text-labels', '.text-label',
                              text_label_subset, 'text_label_id',
-                             draw.create_text_label, update_fn);
+                             this.draw.create_text_label.bind(this.draw),
+                             update_fn);
     }
 
     function clear_deleted_text_labels() {
@@ -9495,7 +9603,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
         // function to update beziers
         var update_fn = function(sel) {
-            return draw.update_bezier(sel,
+            return this.draw.update_bezier(sel,
                                       this.beziers_enabled,
                                       this.behavior.bezier_drag,
                                       this.behavior.bezier_mouseover,
@@ -9506,7 +9614,8 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
         // draw the beziers
         utils.draw_an_object(this.sel, '#beziers', '.bezier', bezier_subset,
-                             'bezier_id', draw.create_bezier, update_fn);
+                             'bezier_id', this.draw.create_bezier.bind(this.draw),
+                             update_fn);
     }
 
     function clear_deleted_beziers() {
@@ -9694,7 +9803,8 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         
         // apply the datasets to the reactions
         var styles = this.settings.get_option('reaction_styles'),
-            compare_style = this.settings.get_option('reaction_compare_style');
+            compare_style = this.settings.get_option('reaction_compare_style'),
+            identifiers_on_map = this.settings.get_option('identifiers_on_map');
         for (var reaction_id in reactions) {
             var reaction = reactions[reaction_id];
             // find the data
@@ -9723,7 +9833,9 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             // always update the gene string
             reaction.gene_string = data_styles.gene_string_for_data(rule,
                                                                     gene_values,
+                                                                    reaction.genes,
                                                                     styles,
+                                                                    identifiers_on_map,
                                                                     compare_style);
         }
 
@@ -10783,7 +10895,7 @@ define('Map',['utils', 'draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             var reaction = out[1].reactions[r_id],
                 new_reaction = {};
             ['name', 'bigg_id','reversibility', 'label_x', 'label_y',
-             'gene_reaction_rule', 'metabolites'
+             'gene_reaction_rule', 'genes', 'metabolites'
             ].forEach(function(attr) {
                 new_reaction[attr] = reaction[attr];
             });
@@ -11290,12 +11402,37 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 	    throw new Error('Bad model data.');
 	    return;
 	}
+        // make a gene dictionary
+	var genes = {};
+	for (var i=0, l=model_data.genes.length; i<l; i++) {
+	    var r = model_data.genes[i],
+		the_id = r.id;
+	    genes[the_id] = r;
+	}
+
 	this.reactions = {};
 	for (var i=0, l=model_data.reactions.length; i<l; i++) {
 	    var r = model_data.reactions[i],
-		the_id = r.id;
-	    this.reactions[the_id] = utils.clone(r);
-	    delete this.reactions[the_id].id;
+		the_id = r.id,
+                reaction = utils.clone(r);
+	    delete reaction.id;
+            // add the appropriate genes
+            reaction.genes = [];
+            if ('gene_reaction_rule' in reaction) {
+                var gene_ids = data_styles.genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
+                gene_ids.forEach(function(gene_id) {
+                    if (gene_id in genes) {
+                        var gene = utils.clone(genes[gene_id]);
+                        // rename id to bigg_id
+                        gene.bigg_id = gene.id;
+                        delete gene.id;
+                        reaction.genes.push(gene);
+                    } else {
+                        console.warn('Could not find gene for gene_id ' + gene_id);
+                    }
+                });
+            }
+	    this.reactions[the_id] = reaction;
 	}
 	this.metabolites = {};
 	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
@@ -11304,9 +11441,9 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 	    this.metabolites[the_id] = utils.clone(r);
 	    delete this.metabolites[the_id].id;
 	}
-
+        
 	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
-			  'gdp', 'h'];
+			  'gdp', 'h', 'coa'];
     }
 
     function apply_reaction_data(reaction_data, styles, compare_style) {
@@ -11357,7 +11494,7 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 	}
     }
 
-    function apply_gene_data(gene_data_obj, styles, compare_style) {
+    function apply_gene_data(gene_data_obj, styles, identifiers_on_map, compare_style) {
 	/** Apply data to model. This is only used to display options in
 	    BuildInput.
 
@@ -11409,7 +11546,10 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 		var f = data_styles.float_for_data(d, styles, compare_style),
                     r = data_styles.reverse_flux_for_data(d),
 		    s = data_styles.text_for_data(d, f),
-		    g = data_styles.gene_string_for_data(rule, gene_values, styles, compare_style)
+		    g = data_styles.gene_string_for_data(rule, gene_values,
+                                                         reaction.genes, styles,
+                                                         identifiers_on_map,
+                                                         compare_style);
 		reaction.data = f;
 		reaction.data_string = s;
 		reaction.gene_string = g;
@@ -11419,7 +11559,7 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
     }
 });
 
-define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'CallbackManager', 'draw', 'DirectionArrow', 'CobraModel'], function(utils, PlacedDiv, completely, Map, ZoomContainer, CallbackManager, draw, DirectionArrow, CobraModel) {
+define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'CallbackManager', 'DirectionArrow', 'CobraModel'], function(utils, PlacedDiv, completely, Map, ZoomContainer, CallbackManager, DirectionArrow, CobraModel) {
     /**
      */
 
@@ -13415,8 +13555,20 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
          gene_data: An object with Gene ids for keys and gene data points for
          values.
 
+         reaction_styles:
+
          reaction_compare_style: (Default: 'diff') How to compare to
          datasets. Can be either 'log2_fold' or 'diff'.
+
+         reaction_domain:
+         
+         reaction_color_range:
+         
+         reaction_size_range:
+         
+         reaction_no_data_color:
+         
+         reaction_no_data_size:
 
          metabolite_data: An object with metabolite ids for keys and metabolite
          data points for values.
@@ -13516,6 +13668,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             // quick jump menu
             local_host: null,
             quick_jump: null,
+            // callback
             first_load_callback: null
         });
 
@@ -13898,6 +14051,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 if (update_model && this.cobra_model !== null) {
                     this.cobra_model.apply_gene_data(data_object,
                                                      this.options.reaction_styles,
+                                                     this.options.identifiers_on_map,
                                                      this.options.reaction_compare_style);
                 }            
                 if (update_map && this.map !== null) {
@@ -14072,10 +14226,6 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         // mode buttons
         if (enable_editing) {
             ui.radio_button_group(button_panel.append('li'))
-                .button({ key: keys.build_mode,
-                          id: 'build-mode-button',
-                          icon: "glyphicon glyphicon-plus",
-                          tooltip: "Add reaction mode (n)" })
                 .button({ key: keys.zoom_mode,
                           id: 'zoom-mode-button',
                           icon: "glyphicon glyphicon-move",
@@ -14084,6 +14234,10 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                           id: 'brush-mode-button',
                           icon: "glyphicon glyphicon-hand-up",
                           tooltip: "Select mode (v)" })
+                .button({ key: keys.build_mode,
+                          id: 'build-mode-button',
+                          icon: "glyphicon glyphicon-plus",
+                          tooltip: "Add reaction mode (n)" })
                 .button({ key: keys.rotate_mode,
                           id: 'rotate-mode-button',
                           icon: "glyphicon glyphicon-repeat",

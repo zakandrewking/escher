@@ -1,28 +1,42 @@
 define(["utils", "build"], function(utils, build) {
     /** Defines the set of click and drag behaviors for the map, and keeps track
-     of which behaviors are activated.
+     of which behaviors are activated. 
 
-     Has the following attributes:
+     A Behavior instance has the following attributes:
 
-     Behavior.rotation_drag:
+     my_behavior.rotation_drag:
 
-     Behavior.selectable_click:
+     my_behavior.text_label_click:
 
-     Behavior.node_mouseover:
+     my_behavior.selectable_click:
 
-     Behavior.node_mouseout:
+     my_behavior.selectable_drag:
 
-     Behavior.selectable_drag:
+     my_behavior.node_mouseover:
 
-     Behavior.bezier_drag:
+     my_behavior.node_mouseout:
 
-     Behavior.reaction_label_drag:
+     my_behavior.label_click:
 
-     Behavior.node_label_drag:
+     my_behavior.label_mouseover:
+
+     my_behavior.label_mouseout:
+
+     my_behavior.bezier_drag:
+
+     my_behavior.bezier_mouseover:
+
+     my_behavior.bezier_mouseout:
+
+     my_behavior.reaction_label_drag:
+
+     my_behavior.node_label_drag:
 
      */
 
     var Behavior = utils.make_class();
+    
+    // methods
     Behavior.prototype = { init: init,
                            toggle_rotation_mode: toggle_rotation_mode,
                            turn_everything_on: turn_everything_on,
@@ -34,6 +48,8 @@ define(["utils", "build"], function(utils, build) {
                            toggle_label_drag: toggle_label_drag,
                            toggle_label_click: toggle_label_click,
                            toggle_bezier_drag: toggle_bezier_drag,
+                           // util
+                           turn_off_drag: turn_off_drag,
                            // get drag behaviors
                            _get_selectable_drag: _get_selectable_drag,
                            _get_bezier_drag: _get_bezier_drag,
@@ -401,6 +417,11 @@ define(["utils", "build"], function(utils, build) {
             this.bezier_mouseout = null;
         }
     }
+    
+    function turn_off_drag(sel) {
+	sel.on('mousedown.drag', null);
+	sel.on('touchstart.drag', null);
+    }    
 
     function _get_selectable_drag(map, undo_stack) {
         /** Drag the selected nodes and text labels.

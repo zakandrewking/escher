@@ -26,6 +26,9 @@
     fill: rgb(32, 32, 120);
     text-rendering: optimizelegibility;
 }
+.node-label {
+    font-size: 20px;
+}
 .gene-label {
     font-size: 18px;
     fill: rgb(32, 32, 120);

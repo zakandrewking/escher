@@ -79,7 +79,7 @@
 			    "type": "object",
 			    "required": ["name", "bigg_id","reversibility",
 					 "label_x", "label_y", "gene_reaction_rule",
-					 "metabolites", "segments"],
+                                         "genes", "metabolites", "segments"],
 			    "additionalProperties": false,
 			    "properties": {
 				"name": {"type": "string"},
@@ -88,6 +88,18 @@
 				"label_x": {"type": "number"},
 				"label_y": {"type": "number"},
 				"gene_reaction_rule": {"type": "string"},
+                                "genes": {
+		                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "required_properties": ["bigg_id", "name"],
+		                        "additionalProperties": false,
+                                        "properties": {
+                                            "bigg_id": {"type": "string"},
+                                            "name": {"type": "string"}
+                                        }
+                                    }
+                                },
 				"metabolites": {
 				    "type": "array",
 				    "items": {

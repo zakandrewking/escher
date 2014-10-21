@@ -182,7 +182,9 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     function draw_an_object(container_sel, parent_node_selector, children_selector,
 			    object, id_key, create_function, update_function,
 			    exit_function) {
-	/** Run through the d3 data binding steps for an object.
+	/** Run through the d3 data binding steps for an object. Also checks to
+            make sure none of the values in the *object* are undefined, and
+            ignores those.
 
 	 Arguments
 	 ---------
@@ -205,10 +207,19 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 
 	 exit_function: A function for exit selection.
 	 
-	 */
+	*/
+        var draw_object = {};
+        for (var id in object) {
+            if (object[id] === undefined) {
+                console.warn('Undefined value for id ' + id + ' in object. Ignoring.');
+            } else {
+                draw_object[id] = object[id];
+            }
+        }
+        
 	var sel = container_sel.select(parent_node_selector)
 		.selectAll(children_selector)
-		.data(make_array(object, id_key), function(d) { return d[id_key]; });
+		.data(make_array(draw_object, id_key), function(d) { return d[id_key]; });
 	// enter: generate and place reaction
 	if (create_function)
 	    sel.enter().call(create_function);

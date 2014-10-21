@@ -123,7 +123,8 @@ describe('Map', function() {
 					    formula: 'C3H2' },
 					  { id: 'acc_p',
 					    formula: 'C3H2' }
-					]
+					],
+                           genes: []
 			 },
 	    model = escher.CobraModel(model_data);
 	map.cobra_model = model;

@@ -62,7 +62,7 @@ describe('utils', function() {
 				      },
                                       null,
                                       null,
-				      {target: {result: 'GAPD,100\n'}});
+				      {target: {result: 'reaction,value\nGAPD,100\n'}});
     });
     
     it('check_for_parent_tag', function() {

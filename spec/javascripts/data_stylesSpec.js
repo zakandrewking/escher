@@ -94,12 +94,18 @@ describe('data_styles', function() {
     });
 
     it('gene_string_for_data',  function() {
-        expect(escher.data_styles.gene_string_for_data('( G1 )', { G1: [-10] }, ['abs'], 'log2_fold'))
+        expect(escher.data_styles.gene_string_for_data('( G1 )', { G1: [-10] },
+                                                       [], ['abs'], 'bigg_id', 'log2_fold'))
             .toEqual('( G1 (-10.0))');
+        expect(escher.data_styles.gene_string_for_data('( G1 )', { G1: [-10] },
+                                                       [{bigg_id: 'G1', name: 'Gene1'}],
+                                                       ['abs'], 'name', 'log2_fold'))
+            .toEqual('( Gene1 (-10.0))');
     });
 
     it('csv_converter', function() {
-        var csv_rows = [['g1', 10, 20],
+        var csv_rows = [['gene', 'v1', 'v2'],
+                        ['g1', 10, 20],
                         ['g2', 15, 25]];
         expect(escher.data_styles.csv_converter(csv_rows))
             .toEqual([{'g1': 10, 'g2': 15}, {'g1': 20, 'g2': 25}]);
