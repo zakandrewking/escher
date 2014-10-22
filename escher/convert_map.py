@@ -126,6 +126,12 @@ def convert(map, model):
                            "genes", "metabolites", "segments"]:
                 del reaction[key]
 
+        # unsupported attributes in segments
+        for s_id, segment in reaction['segments'].iteritems():
+            for key in segment.keys():
+                if not key in ["from_node_id", "to_node_id", "b1", "b2"]:
+                    del segment[key]
+
         # get reaction
         try:
             cobra_reaction = model.reactions.get_by_id(reaction['bigg_id'])
