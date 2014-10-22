@@ -863,7 +863,8 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // apply the datasets to the reactions
         var styles = this.settings.get_option('reaction_styles'),
             compare_style = this.settings.get_option('reaction_compare_style'),
-            identifiers_on_map = this.settings.get_option('identifiers_on_map');
+            identifiers_on_map = this.settings.get_option('identifiers_on_map'),
+            and_method_in_gene_reaction_rule = this.settings.get_option('and_method_in_gene_reaction_rule');
         for (var reaction_id in reactions) {
             var reaction = reactions[reaction_id];
             // find the data
@@ -871,7 +872,8 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             if (reaction_id in gene_data_obj) {
                 rule = gene_data_obj[reaction_id].rule;
                 gene_values = gene_data_obj[reaction_id].genes;
-                d = data_styles.evaluate_gene_reaction_rule(rule, gene_values);
+                d = data_styles.evaluate_gene_reaction_rule(rule, gene_values,
+                                                            and_method_in_gene_reaction_rule);
             } else {
                 rule = '';
                 gene_values = {};

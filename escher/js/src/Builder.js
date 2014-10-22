@@ -16,13 +16,10 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          reaction_data: An object with reaction ids for keys and reaction data
          points for values.
 
-         gene_data: An object with Gene ids for keys and gene data points for
-         values.
-
          reaction_styles:
 
          reaction_compare_style: (Default: 'diff') How to compare to
-         datasets. Can be either 'log2_fold' or 'diff'.
+         datasets. Can be either 'fold, 'log2_fold', or 'diff'.
 
          reaction_domain:
          
@@ -34,11 +31,18 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          
          reaction_no_data_size:
 
+         gene_data: An object with Gene ids for keys and gene data points for
+         values.
+
+         and_method_in_gene_reaction_rule: (Default: mean) When evaluating a
+         gene reaction rule, use this function to evaluate AND rules. Can be
+         'mean' or 'min'.
+
          metabolite_data: An object with metabolite ids for keys and metabolite
          data points for values.
 
          metabolite_compare_style: (Default: 'diff') How to compare to
-         datasets. Can be either 'log2_fold' or 'diff'.
+         datasets. Can be either 'fold', 'log2_fold' or 'diff'.
 
          highlight_missing_color: A color to apply to components that are not
          the in cobra model, or null to apply no color. Default: 'red'.
@@ -109,7 +113,6 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             // reaction
             auto_reaction_domain: true,
             reaction_data: null,
-            gene_data: null,
             reaction_styles: ['color', 'size', 'text'],
             reaction_compare_style: 'log2_fold',
             reaction_domain: [-10, 0, 10],
@@ -117,6 +120,9 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             reaction_size_range: [4, 8, 12],
             reaction_no_data_color: 'rgb(220,220,220)',
             reaction_no_data_size: 4,
+            // gene
+            gene_data: null,
+            and_method_in_gene_reaction_rule: 'mean',
             // metabolite
             metabolite_data: null,
             metabolite_styles: ['color', 'size', 'text'],
@@ -516,7 +522,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                     this.cobra_model.apply_gene_data(data_object,
                                                      this.options.reaction_styles,
                                                      this.options.identifiers_on_map,
-                                                     this.options.reaction_compare_style);
+                                                     this.options.reaction_compare_style,
+                                                     this.options.and_method_in_gene_reaction_rule);
                 }            
                 if (update_map && this.map !== null) {
                     this.map.apply_gene_data_to_map(data_object);

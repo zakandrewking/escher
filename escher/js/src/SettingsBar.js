@@ -46,6 +46,12 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-remove");
 
+        // Tip
+        box.append('div')
+            .text('Tip: Hover over an option to see more details about it.')
+            .style('font-style', 'italic');
+        box.append('hr');
+        
         // reactions
 	box.append('div')
 	    .text('Reactions').attr('class', 'settings-section-heading-large');
@@ -132,10 +138,10 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	this.settings.accept_changes();
 	this.toggle(false);
     }
-    function scale_gui(s, type) {
+    function scale_gui(sel, type) {
 	/** A UI to edit color and size scales. */
 
-	var t = s.append('table').attr('class', 'settings-table');
+	var t = sel.append('table').attr('class', 'settings-table');
 
 	var size_domain = [], color_domain = [];
 
@@ -242,12 +248,12 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 
     }
 
-    function style_gui(s, type) {
+    function style_gui(sel, type) {
 	/** A UI to edit style.
 
          */
 
-	var t = s.append('table').attr('class', 'settings-table'),
+	var t = sel.append('table').attr('class', 'settings-table'),
 	    settings = this.settings;
 
 	// styles
@@ -289,10 +295,11 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    r.append('td')
                 .text('Comparison:')
                 .attr('class', 'options-label');
-	    var cell = r.append('td')
-                    .attr('colspan', '4');
+	    var cell = r.append('td');
 
-	    var styles = [['Log2(Fold Change)', 'log2_fold'], ['Difference', 'diff']],
+	    var styles = [['Fold Change', 'fold'],
+                          ['Log2(Fold Change)', 'log2_fold'],
+                          ['Difference', 'diff']],
 		style_cells = cell.selectAll('.style-span')
 		    .data(styles),
 		s = style_cells.enter()
@@ -322,6 +329,52 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		    }.bind(this));
 		});
         });
+
+        // gene-specific settings
+        if (type=='reaction') {
+	    var t = sel.append('table').attr('class', 'settings-table')
+                    .attr('title', ('When evaluating a gene reaction rule, use ' +
+                                    'this function to evaluate AND rules.'));
+            
+	    // and_method_in_gene_reaction_rule
+	    t.append('tr').call(function(r) {
+	        r.append('td')
+                    .text('Method for evaluating AND:')
+                    .attr('class', 'options-label-wide');
+	        var cell = r.append('td');
+
+	        var styles = [['Mean', 'mean'], ['Min', 'min']],
+		    style_cells = cell.selectAll('.style-span')
+		        .data(styles),
+		    s = style_cells.enter()
+		        .append('span')
+		        .attr('class', 'style-span');
+	        s.append('span')
+                    .text(function(d) { return d[0]; });
+
+	        // make the checkbox
+	        s.append('input').attr('type', 'radio')
+                    .attr('name', 'and_method_in_gene_reaction_rule')
+                    .attr('value', function(d) { return d[1]; })
+		    .each(function(style) {
+		        // change the model when the box is changed
+		        var change_stream = bacon
+		    	        .fromEventTarget(this, 'change')
+		    	        .onValue(function(event) {
+                                    if (event.target.checked) {
+                                        settings.set_and_method_in_gene_reaction_rule(event.target.value);
+                                    }
+		    	        });
+		        
+		        // subscribe to changes in the model
+		        settings.and_method_in_gene_reaction_rule_stream.onValue(function(value) {
+		            // check the box for the new value
+		            this.checked = (this.value == value);
+		        }.bind(this));
+		    });
+            });
+
+        }
     }
         
     function view_gui(s, option_name, string, options) {

@@ -102,8 +102,11 @@ define(['utils'], function(utils) {
             if (d[0] === null || d[1] === null)
                 return null;
             
-            if (compare_style == 'diff')
+            if (compare_style == 'diff') {
                 return diff(d[0], d[1], take_abs);
+            } else if (compare_style == 'fold') {
+                return fold(d[0], d[1], take_abs);
+            }
             else if (compare_style == 'log2_fold') {
                 return log2_fold(d[0], d[1], take_abs);
             }
@@ -117,6 +120,11 @@ define(['utils'], function(utils) {
         function diff(x, y, take_abs) {
             if (take_abs) return Math.abs(y - x);
             else return y - x;
+        }
+        function fold(x, y, take_abs) {
+            if (x == 0) return null;
+            var fold = y / x;
+            return take_abs ? Math.abs(fold) : fold;
         }
         function log2_fold(x, y, take_abs) {
             if (x == 0) return null;
@@ -243,7 +251,7 @@ define(['utils'], function(utils) {
         return genes;
     }
     
-    function evaluate_gene_reaction_rule(rule, gene_values) {
+    function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_reaction_rule) {
         /** Return a value given the rule and gene_values object.
 
          With the current version, all negative values are converted to zero,
@@ -258,6 +266,8 @@ define(['utils'], function(utils) {
          OR's.
 
          gene_values: Object with gene_ids for keys and numbers for values.
+
+         and_method_in_gene_reaction_rule: Either 'mean' or 'min'.
 
          */
 
@@ -318,8 +328,10 @@ define(['utils'], function(utils) {
                         // remove parentheses, and find min
                         var ev = match.replace(/[\(\)]/g, ''),
                             nums = ev.split(/\s+and\s+/i).map(parseFloat),
-                            min = Math.min.apply(null, nums);
-                        new_curr_val = new_curr_val.replace(match, min);
+                            val = (and_method_in_gene_reaction_rule=='min' ?
+                                   Math.min.apply(null, nums) :
+                                   nums.reduce(function(a, b){ return a + b; }) / nums.length);
+                        new_curr_val = new_curr_val.replace(match, val);
                     });
                 }
                 // break if there is no change

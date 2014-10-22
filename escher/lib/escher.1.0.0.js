@@ -2946,8 +2946,11 @@ define('data_styles',['utils'], function(utils) {
             if (d[0] === null || d[1] === null)
                 return null;
             
-            if (compare_style == 'diff')
+            if (compare_style == 'diff') {
                 return diff(d[0], d[1], take_abs);
+            } else if (compare_style == 'fold') {
+                return fold(d[0], d[1], take_abs);
+            }
             else if (compare_style == 'log2_fold') {
                 return log2_fold(d[0], d[1], take_abs);
             }
@@ -2961,6 +2964,11 @@ define('data_styles',['utils'], function(utils) {
         function diff(x, y, take_abs) {
             if (take_abs) return Math.abs(y - x);
             else return y - x;
+        }
+        function fold(x, y, take_abs) {
+            if (x == 0) return null;
+            var fold = y / x;
+            return take_abs ? Math.abs(fold) : fold;
         }
         function log2_fold(x, y, take_abs) {
             if (x == 0) return null;
@@ -3087,7 +3095,7 @@ define('data_styles',['utils'], function(utils) {
         return genes;
     }
     
-    function evaluate_gene_reaction_rule(rule, gene_values) {
+    function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_reaction_rule) {
         /** Return a value given the rule and gene_values object.
 
          With the current version, all negative values are converted to zero,
@@ -3102,6 +3110,8 @@ define('data_styles',['utils'], function(utils) {
          OR's.
 
          gene_values: Object with gene_ids for keys and numbers for values.
+
+         and_method_in_gene_reaction_rule: Either 'mean' or 'min'.
 
          */
 
@@ -3162,8 +3172,10 @@ define('data_styles',['utils'], function(utils) {
                         // remove parentheses, and find min
                         var ev = match.replace(/[\(\)]/g, ''),
                             nums = ev.split(/\s+and\s+/i).map(parseFloat),
-                            min = Math.min.apply(null, nums);
-                        new_curr_val = new_curr_val.replace(match, min);
+                            val = (and_method_in_gene_reaction_rule=='min' ?
+                                   Math.min.apply(null, nums) :
+                                   nums.reduce(function(a, b){ return a + b; }) / nums.length);
+                        new_curr_val = new_curr_val.replace(match, val);
                     });
                 }
                 // break if there is no change
@@ -9814,7 +9826,8 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // apply the datasets to the reactions
         var styles = this.settings.get_option('reaction_styles'),
             compare_style = this.settings.get_option('reaction_compare_style'),
-            identifiers_on_map = this.settings.get_option('identifiers_on_map');
+            identifiers_on_map = this.settings.get_option('identifiers_on_map'),
+            and_method_in_gene_reaction_rule = this.settings.get_option('and_method_in_gene_reaction_rule');
         for (var reaction_id in reactions) {
             var reaction = reactions[reaction_id];
             // find the data
@@ -9822,7 +9835,8 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             if (reaction_id in gene_data_obj) {
                 rule = gene_data_obj[reaction_id].rule;
                 gene_values = gene_data_obj[reaction_id].genes;
-                d = data_styles.evaluate_gene_reaction_rule(rule, gene_values);
+                d = data_styles.evaluate_gene_reaction_rule(rule, gene_values,
+                                                            and_method_in_gene_reaction_rule);
             } else {
                 rule = '';
                 gene_values = {};
@@ -11504,7 +11518,8 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 	}
     }
 
-    function apply_gene_data(gene_data_obj, styles, identifiers_on_map, compare_style) {
+    function apply_gene_data(gene_data_obj, styles, identifiers_on_map,
+                             compare_style, and_method_in_gene_reaction_rule) {
 	/** Apply data to model. This is only used to display options in
 	    BuildInput.
 
@@ -11520,6 +11535,8 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 	    style: Gene styles array.
 
             compare_style: The comparison type.
+
+            and_method_in_gene_reaction_rule: Either 'mean' or 'min'.
 
 	*/
 
@@ -11548,7 +11565,8 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
 		if (reaction_id in gene_data_obj) {
 		    rule = gene_data_obj[reaction_id].rule;
 		    gene_values = gene_data_obj[reaction_id].genes;
-		    d = data_styles.evaluate_gene_reaction_rule(rule, gene_values);
+		    d = data_styles.evaluate_gene_reaction_rule(rule, gene_values,
+                                                                and_method_in_gene_reaction_rule);
 		} else {
 		    gene_values = {};
 		    d = null_val;
@@ -12398,6 +12416,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
                             set_no_data_value: set_no_data_value,
                             set_highlight_missing: set_highlight_missing,
                             set_identifiers_on_map: set_identifiers_on_map,
+                            set_and_method_in_gene_reaction_rule: set_and_method_in_gene_reaction_rule,
                             hold_changes: hold_changes,
                             abandon_changes: abandon_changes,
                             accept_changes: accept_changes };
@@ -12433,7 +12452,8 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
                             metabolite: { color: get_option('metabolite_no_data_color'),
                                           size: get_option('metabolite_no_data_size') } },
             def_highlight_missing = get_option('highlight_missing_color'),
-            def_identifiers_on_map = get_option('identifiers_on_map');
+            def_identifiers_on_map = get_option('identifiers_on_map'),
+            def_and_method_in_gene_reaction_rule = get_option('and_method_in_gene_reaction_rule');
 
         // event streams
         this.data_styles_bus = {};
@@ -12452,6 +12472,8 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         // this.highlight_missing_stream;
         // this.identifiers_on_map_bus;
         // this.identifiers_on_map_stream;
+        // this.and_method_in_gene_reaction_rule_bus;
+        // this.and_method_in_gene_reaction_rule_stream;
 
         // manage accepting/abandoning changes
         this.status_bus = new bacon.Bus();
@@ -12721,6 +12743,31 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         // push the default
         this.identifiers_on_map_bus.push(def_identifiers_on_map);
 
+        // ---------------------------------------------------------------------
+        // and_method_in_gene_reaction_rule
+        // ---------------------------------------------------------------------
+        
+        // make the bus
+        this.and_method_in_gene_reaction_rule_bus = new bacon.Bus();
+        // make a new constant for the input default
+        this.and_method_in_gene_reaction_rule_stream = this.and_method_in_gene_reaction_rule_bus
+        // conditionally accept changes
+            .convert_to_conditional_stream(this.status_bus)
+        // combine into state array
+            .scan([], function(current, value) {
+                return value;
+            })
+        // force updates
+            .force_update_with_bus(this.force_update_bus);
+
+        // get the latest
+        this.and_method_in_gene_reaction_rule_stream.onValue(function(v) {
+            this.set_option('and_method_in_gene_reaction_rule', v);
+        }.bind(this));
+
+        // push the default
+        this.and_method_in_gene_reaction_rule_bus.push(def_and_method_in_gene_reaction_rule);
+
         // definitions
         function convert_to_conditional_stream(status_stream) {
             /** Hold on to event when hold_property is true, and only keep them
@@ -12831,7 +12878,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         */
         check_type(type);
 
-        if (['log2_fold', 'diff'].indexOf(value) == -1)
+        if (['fold', 'log2_fold', 'diff'].indexOf(value) == -1)
             throw new Error('Invalid compare_style: ' + value);
 
         this.compare_style_bus[type].push(value);
@@ -12945,6 +12992,21 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         this.identifiers_on_map_bus.push(value);
     }
 
+    function set_and_method_in_gene_reaction_rule(value) {
+        /**  When evaluating a gene reaction rule, use this function to evaluate
+             AND rules. 
+
+             Arguments
+             ---------
+
+             value: Can be 'mean' or 'min'.
+
+         */
+        if (['mean', 'min'].indexOf(value) == -1)
+            throw new Error('Bad value for and_method_in_gene_reaction_rule: ' + value);
+        this.and_method_in_gene_reaction_rule_bus.push(value);
+    }
+
     function hold_changes() {
         this.status_bus.push('hold');
     }
@@ -13007,6 +13069,12 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-remove");
 
+        // Tip
+        box.append('div')
+            .text('Tip: Hover over an option to see more details about it.')
+            .style('font-style', 'italic');
+        box.append('hr');
+        
         // reactions
 	box.append('div')
 	    .text('Reactions').attr('class', 'settings-section-heading-large');
@@ -13093,10 +13161,10 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	this.settings.accept_changes();
 	this.toggle(false);
     }
-    function scale_gui(s, type) {
+    function scale_gui(sel, type) {
 	/** A UI to edit color and size scales. */
 
-	var t = s.append('table').attr('class', 'settings-table');
+	var t = sel.append('table').attr('class', 'settings-table');
 
 	var size_domain = [], color_domain = [];
 
@@ -13203,12 +13271,12 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 
     }
 
-    function style_gui(s, type) {
+    function style_gui(sel, type) {
 	/** A UI to edit style.
 
          */
 
-	var t = s.append('table').attr('class', 'settings-table'),
+	var t = sel.append('table').attr('class', 'settings-table'),
 	    settings = this.settings;
 
 	// styles
@@ -13250,10 +13318,11 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    r.append('td')
                 .text('Comparison:')
                 .attr('class', 'options-label');
-	    var cell = r.append('td')
-                    .attr('colspan', '4');
+	    var cell = r.append('td');
 
-	    var styles = [['Log2(Fold Change)', 'log2_fold'], ['Difference', 'diff']],
+	    var styles = [['Fold Change', 'fold'],
+                          ['Log2(Fold Change)', 'log2_fold'],
+                          ['Difference', 'diff']],
 		style_cells = cell.selectAll('.style-span')
 		    .data(styles),
 		s = style_cells.enter()
@@ -13283,6 +13352,52 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		    }.bind(this));
 		});
         });
+
+        // gene-specific settings
+        if (type=='reaction') {
+	    var t = sel.append('table').attr('class', 'settings-table')
+                    .attr('title', ('When evaluating a gene reaction rule, use ' +
+                                    'this function to evaluate AND rules.'));
+            
+	    // and_method_in_gene_reaction_rule
+	    t.append('tr').call(function(r) {
+	        r.append('td')
+                    .text('Method for evaluating AND:')
+                    .attr('class', 'options-label-wide');
+	        var cell = r.append('td');
+
+	        var styles = [['Mean', 'mean'], ['Min', 'min']],
+		    style_cells = cell.selectAll('.style-span')
+		        .data(styles),
+		    s = style_cells.enter()
+		        .append('span')
+		        .attr('class', 'style-span');
+	        s.append('span')
+                    .text(function(d) { return d[0]; });
+
+	        // make the checkbox
+	        s.append('input').attr('type', 'radio')
+                    .attr('name', 'and_method_in_gene_reaction_rule')
+                    .attr('value', function(d) { return d[1]; })
+		    .each(function(style) {
+		        // change the model when the box is changed
+		        var change_stream = bacon
+		    	        .fromEventTarget(this, 'change')
+		    	        .onValue(function(event) {
+                                    if (event.target.checked) {
+                                        settings.set_and_method_in_gene_reaction_rule(event.target.value);
+                                    }
+		    	        });
+		        
+		        // subscribe to changes in the model
+		        settings.and_method_in_gene_reaction_rule_stream.onValue(function(value) {
+		            // check the box for the new value
+		            this.checked = (this.value == value);
+		        }.bind(this));
+		    });
+            });
+
+        }
     }
         
     function view_gui(s, option_name, string, options) {
@@ -13562,13 +13677,10 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
          reaction_data: An object with reaction ids for keys and reaction data
          points for values.
 
-         gene_data: An object with Gene ids for keys and gene data points for
-         values.
-
          reaction_styles:
 
          reaction_compare_style: (Default: 'diff') How to compare to
-         datasets. Can be either 'log2_fold' or 'diff'.
+         datasets. Can be either 'fold, 'log2_fold', or 'diff'.
 
          reaction_domain:
          
@@ -13580,11 +13692,18 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
          
          reaction_no_data_size:
 
+         gene_data: An object with Gene ids for keys and gene data points for
+         values.
+
+         and_method_in_gene_reaction_rule: (Default: mean) When evaluating a
+         gene reaction rule, use this function to evaluate AND rules. Can be
+         'mean' or 'min'.
+
          metabolite_data: An object with metabolite ids for keys and metabolite
          data points for values.
 
          metabolite_compare_style: (Default: 'diff') How to compare to
-         datasets. Can be either 'log2_fold' or 'diff'.
+         datasets. Can be either 'fold', 'log2_fold' or 'diff'.
 
          highlight_missing_color: A color to apply to components that are not
          the in cobra model, or null to apply no color. Default: 'red'.
@@ -13655,7 +13774,6 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             // reaction
             auto_reaction_domain: true,
             reaction_data: null,
-            gene_data: null,
             reaction_styles: ['color', 'size', 'text'],
             reaction_compare_style: 'log2_fold',
             reaction_domain: [-10, 0, 10],
@@ -13663,6 +13781,9 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             reaction_size_range: [4, 8, 12],
             reaction_no_data_color: 'rgb(220,220,220)',
             reaction_no_data_size: 4,
+            // gene
+            gene_data: null,
+            and_method_in_gene_reaction_rule: 'mean',
             // metabolite
             metabolite_data: null,
             metabolite_styles: ['color', 'size', 'text'],
@@ -14062,7 +14183,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                     this.cobra_model.apply_gene_data(data_object,
                                                      this.options.reaction_styles,
                                                      this.options.identifiers_on_map,
-                                                     this.options.reaction_compare_style);
+                                                     this.options.reaction_compare_style,
+                                                     this.options.and_method_in_gene_reaction_rule);
                 }            
                 if (update_map && this.map !== null) {
                     this.map.apply_gene_data_to_map(data_object);

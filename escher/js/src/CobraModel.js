@@ -162,7 +162,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	}
     }
 
-    function apply_gene_data(gene_data_obj, styles, identifiers_on_map, compare_style) {
+    function apply_gene_data(gene_data_obj, styles, identifiers_on_map,
+                             compare_style, and_method_in_gene_reaction_rule) {
 	/** Apply data to model. This is only used to display options in
 	    BuildInput.
 
@@ -178,6 +179,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 	    style: Gene styles array.
 
             compare_style: The comparison type.
+
+            and_method_in_gene_reaction_rule: Either 'mean' or 'min'.
 
 	*/
 
@@ -206,7 +209,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 		if (reaction_id in gene_data_obj) {
 		    rule = gene_data_obj[reaction_id].rule;
 		    gene_values = gene_data_obj[reaction_id].genes;
-		    d = data_styles.evaluate_gene_reaction_rule(rule, gene_values);
+		    d = data_styles.evaluate_gene_reaction_rule(rule, gene_values,
+                                                                and_method_in_gene_reaction_rule);
 		} else {
 		    gene_values = {};
 		    d = null_val;

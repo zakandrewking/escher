@@ -27,6 +27,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                             set_no_data_value: set_no_data_value,
                             set_highlight_missing: set_highlight_missing,
                             set_identifiers_on_map: set_identifiers_on_map,
+                            set_and_method_in_gene_reaction_rule: set_and_method_in_gene_reaction_rule,
                             hold_changes: hold_changes,
                             abandon_changes: abandon_changes,
                             accept_changes: accept_changes };
@@ -62,7 +63,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                             metabolite: { color: get_option('metabolite_no_data_color'),
                                           size: get_option('metabolite_no_data_size') } },
             def_highlight_missing = get_option('highlight_missing_color'),
-            def_identifiers_on_map = get_option('identifiers_on_map');
+            def_identifiers_on_map = get_option('identifiers_on_map'),
+            def_and_method_in_gene_reaction_rule = get_option('and_method_in_gene_reaction_rule');
 
         // event streams
         this.data_styles_bus = {};
@@ -81,6 +83,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // this.highlight_missing_stream;
         // this.identifiers_on_map_bus;
         // this.identifiers_on_map_stream;
+        // this.and_method_in_gene_reaction_rule_bus;
+        // this.and_method_in_gene_reaction_rule_stream;
 
         // manage accepting/abandoning changes
         this.status_bus = new bacon.Bus();
@@ -350,6 +354,31 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // push the default
         this.identifiers_on_map_bus.push(def_identifiers_on_map);
 
+        // ---------------------------------------------------------------------
+        // and_method_in_gene_reaction_rule
+        // ---------------------------------------------------------------------
+        
+        // make the bus
+        this.and_method_in_gene_reaction_rule_bus = new bacon.Bus();
+        // make a new constant for the input default
+        this.and_method_in_gene_reaction_rule_stream = this.and_method_in_gene_reaction_rule_bus
+        // conditionally accept changes
+            .convert_to_conditional_stream(this.status_bus)
+        // combine into state array
+            .scan([], function(current, value) {
+                return value;
+            })
+        // force updates
+            .force_update_with_bus(this.force_update_bus);
+
+        // get the latest
+        this.and_method_in_gene_reaction_rule_stream.onValue(function(v) {
+            this.set_option('and_method_in_gene_reaction_rule', v);
+        }.bind(this));
+
+        // push the default
+        this.and_method_in_gene_reaction_rule_bus.push(def_and_method_in_gene_reaction_rule);
+
         // definitions
         function convert_to_conditional_stream(status_stream) {
             /** Hold on to event when hold_property is true, and only keep them
@@ -460,7 +489,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         */
         check_type(type);
 
-        if (['log2_fold', 'diff'].indexOf(value) == -1)
+        if (['fold', 'log2_fold', 'diff'].indexOf(value) == -1)
             throw new Error('Invalid compare_style: ' + value);
 
         this.compare_style_bus[type].push(value);
@@ -572,6 +601,21 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         if (['bigg_id', 'name'].indexOf(value) == -1)
             throw new Error('Bad value for identifiers_on_map: ' + value);
         this.identifiers_on_map_bus.push(value);
+    }
+
+    function set_and_method_in_gene_reaction_rule(value) {
+        /**  When evaluating a gene reaction rule, use this function to evaluate
+             AND rules. 
+
+             Arguments
+             ---------
+
+             value: Can be 'mean' or 'min'.
+
+         */
+        if (['mean', 'min'].indexOf(value) == -1)
+            throw new Error('Bad value for and_method_in_gene_reaction_rule: ' + value);
+        this.and_method_in_gene_reaction_rule_bus.push(value);
     }
 
     function hold_changes() {

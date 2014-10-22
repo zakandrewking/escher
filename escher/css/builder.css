@@ -155,6 +155,9 @@
 td.options-label {
     width: 88px;
 }
+td.options-label-wide {
+    width: 192px;
+}
 .settings-number {
     text-align: center;
     color: #AAA;
