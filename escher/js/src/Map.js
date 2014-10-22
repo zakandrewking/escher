@@ -197,8 +197,8 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // rotation mode off
         this.rotation_on = false;
 
-        // performs some extra checks
-        this.debug = true;
+        // validate the JSON file during map export
+        this.debug = false;
     };
 
     // -------------------------------------------------------------------------
@@ -375,14 +375,14 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
          */
         
-        this.callback_manager.run('set_status', status);
+        this.callback_manager.run('set_status', null, status);
         // clear any other timers on the status bar
         window.clearTimeout(this._status_timer);
         this._status_timer = null;
         
         if (time!==undefined) {
             this._status_timer = window.setTimeout(function() {
-                this.callback_manager.run('set_status', '');
+                this.callback_manager.run('set_status', null, '');
             }.bind(this), time);
         }
     }
@@ -699,7 +699,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
         else this.beziers_enabled = on_off;
         this.draw_all_beziers();
-        this.callback_manager.run('toggle_beziers', this.beziers_enabled);
+        this.callback_manager.run('toggle_beziers', null, this.beziers_enabled);
     }
 
     function apply_reaction_data_to_map(data) {
@@ -1071,7 +1071,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             return selected;
         });
         this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-        this.callback_manager.run('select_metabolite_with_id', selected_node, coords);
+        this.callback_manager.run('select_metabolite_with_id', null, selected_node, coords);
     }
     function select_selectable(node, d) {
         /** Select a metabolite or text label, and manage the shift key.
@@ -1108,7 +1108,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             coords = { x: d.x, y: d.y };
             node_count++;
         });
-        this.callback_manager.run('select_selectable', node_count, selected_node, coords);
+        this.callback_manager.run('select_selectable', null, node_count, selected_node, coords);
     }
     function select_single_node() {
         /** Unselect all but one selected node, and return the node.

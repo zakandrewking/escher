@@ -291,7 +291,7 @@ define(["utils", "build"], function(utils, build) {
                 // run the callback
                 var coords_a = d3.transform(d3.select(this).attr('transform')).translate,
                     coords = {x: coords_a[0], y: coords_a[1]};
-                map.callback_manager.run('edit_text_label', d3.select(this), coords);
+                map.callback_manager.run('edit_text_label', null, d3.select(this), coords);
                 d3.event.stopPropagation();
             };
             this.map.sel.select('#text-labels')
@@ -301,7 +301,7 @@ define(["utils", "build"], function(utils, build) {
             this.map.sel.on('click.new_text_label', function(node) {
                 var coords = { x: d3.mouse(node)[0],
                                y: d3.mouse(node)[1] };
-                this.map.callback_manager.run('new_text_label', coords);
+                this.map.callback_manager.run('new_text_label', null, coords);
             }.bind(this, this.map.sel.node()));
         } else {
             this.text_label_click = this.selectable_click;

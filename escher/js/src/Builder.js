@@ -175,7 +175,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 }
             }.bind(this));
 
-        this.callback_manager.run('first_load');
+        this.callback_manager.run('first_load', this);
     }
 
     // Definitions

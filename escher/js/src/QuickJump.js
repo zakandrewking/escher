@@ -51,7 +51,7 @@ define(['utils', 'CallbackManager'], function(utils, CallbackManager) {
 	select_sel.on('change', function() {
 	    // go to the new map
 	    var map_name = this.options[this.selectedIndex].__data__;
-	    callback_manager.run('switch_maps', map_name);
+	    callback_manager.run('switch_maps', null, map_name);
 	});
 	
     }

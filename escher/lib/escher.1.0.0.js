@@ -3238,19 +3238,29 @@ define('CallbackManager',["utils"], function(utils) {
 	delete this.callbacks[name];
 	return this;
     }
-    function run(name) {
+    function run(name, this_arg) {
 	/** Run all callbacks that match the portion of name before the period ('.').
+
+            Arguments
+            ---------
+
+            name: The callback name, which can include a tag after a '.' to
+            specificy a particular callback.
+
+            this_arg: (Optional, Default: null) The object assigned to `this` in
+            the callback.
 
 	 */
 	if (this.callbacks===undefined) return this;
+        if (this_arg===undefined) this_arg = null;
 	// pass all but the first (name) argument to the callback
-	var pass_args = Array.prototype.slice.call(arguments, 1);
+	var pass_args = Array.prototype.slice.call(arguments, 2);
 	// look for matching callback names
 	for (var a_name in this.callbacks) {
 	    var split_name = a_name.split('.')[0];
 	    if (split_name==name) {
 		this.callbacks[a_name].forEach(function(fn) {
-		    fn.apply(null, pass_args);
+		    fn.apply(this_arg, pass_args);
 		});
 	    }
 	}
@@ -3271,20 +3281,20 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
      Callbacks
      ---------
 
-     this.callback_manager.run('create_membrane', enter_selection);
-     this.callback_manager.run('update_membrane', update_selection);
-     this.callback_manager.run('create_reaction', enter_selection);
-     this.callback_manager.run('update_reaction', update_selection);
-     this.callback_manager.run('create_reaction_label', enter_selection);
-     this.callback_manager.run('update_reaction_label', update_selection);
-     this.callback_manager.run('create_segment', enter_selection);
-     this.callback_manager.run('update_segment', update_selection);
-     this.callback_manager.run('create_bezier', enter_selection);
-     this.callback_manager.run('update_bezier', update_selection);
-     this.callback_manager.run('create_node', enter_selection);
-     this.callback_manager.run('update_node', update_selection);
-     this.callback_manager.run('create_text_label', enter_selection);
-     this.callback_manager.run('update_text_label', update_selection);
+     draw.callback_manager.run('create_membrane', draw, enter_selection);
+     draw.callback_manager.run('update_membrane', draw, update_selection);
+     draw.callback_manager.run('create_reaction', draw, enter_selection);
+     draw.callback_manager.run('update_reaction', draw, update_selection);
+     draw.callback_manager.run('create_reaction_label', draw, enter_selection);
+     draw.callback_manager.run('update_reaction_label', draw, update_selection);
+     draw.callback_manager.run('create_segment', draw, enter_selection);
+     draw.callback_manager.run('update_segment', draw, update_selection);
+     draw.callback_manager.run('create_bezier', draw, enter_selection);
+     draw.callback_manager.run('update_bezier', draw, update_selection);
+     draw.callback_manager.run('create_node', draw, enter_selection);
+     draw.callback_manager.run('update_node', draw, update_selection);
+     draw.callback_manager.run('create_text_label', draw, enter_selection);
+     draw.callback_manager.run('update_text_label', draw, update_selection);
 
      */
 
@@ -3322,7 +3332,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         utils.check_undefined(arguments, ['enter_selection']);
         enter_selection.append('rect')
             .attr('class', 'membrane');
-        this.callback_manager.run('create_membrane', enter_selection);
+        this.callback_manager.run('create_membrane', this, enter_selection);
     }
 
     function update_membrane(update_selection) {
@@ -3335,7 +3345,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             .attr('rx', function(d){ return 20; })
             .attr('ry', function(d){ return 20; });
         
-        this.callback_manager.run('update_membrane', update_selection);
+        this.callback_manager.run('update_membrane', this, update_selection);
     }
 
     function create_reaction(enter_selection) {
@@ -3347,7 +3357,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                 .attr('class', 'reaction')
                 .call(this.create_reaction_label.bind(this));
         
-        this.callback_manager.run('create_reaction', enter_selection);
+        this.callback_manager.run('create_reaction', this, enter_selection);
         return;
     }
 
@@ -3433,7 +3443,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         //      });
         // }
 
-        this.callback_manager.run('update_reaction', update_selection);
+        this.callback_manager.run('update_reaction', this, update_selection);
     }
 
     function create_reaction_label(enter_selection) {
@@ -3460,7 +3470,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         //      .attr('visibility', 'hidden');
         // });
 
-        this.callback_manager.run('create_reaction_label', enter_selection);
+        this.callback_manager.run('create_reaction_label', this, enter_selection);
     }
 
     function update_reaction_label(update_selection, has_data_on_reactions,
@@ -3506,7 +3516,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         gene_g.exit()
             .remove();
         
-        this.callback_manager.run('update_reaction_label', update_selection);
+        this.callback_manager.run('update_reaction_label', this, update_selection);
     }
 
     function create_segment(enter_selection) {
@@ -3523,7 +3533,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         g.append('g')
             .attr('class', 'arrowheads');
         
-        this.callback_manager.run('create_segment', enter_selection);
+        this.callback_manager.run('create_segment', this, enter_selection);
     }
     
     function update_segment(update_selection, scale, cobra_model,
@@ -3678,7 +3688,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         // remove
         arrowheads.exit().remove();
         
-        this.callback_manager.run('update_segment', update_selection);
+        this.callback_manager.run('update_segment', this, update_selection);
     }
 
     function create_bezier(enter_selection) {
@@ -3692,7 +3702,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             .style('stroke-width', String(1)+'px')      
             .attr('r', String(7)+'px');
         
-        this.callback_manager.run('create_bezier', enter_selection);
+        this.callback_manager.run('create_bezier', this, enter_selection);
     }
 
     function update_bezier(update_selection, show_beziers,
@@ -3735,7 +3745,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                 return 'M'+d.x+', '+d.y+' '+(node.x)+','+(node.y);
             });
         
-        this.callback_manager.run('update_bezier', update_selection);
+        this.callback_manager.run('update_bezier', this, update_selection);
     }
 
     function create_node(enter_selection, drawn_nodes, drawn_reactions) {
@@ -3757,7 +3767,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             .append('text')
             .attr('class', 'node-label label');
         
-        this.callback_manager.run('create_node', enter_selection);
+        this.callback_manager.run('create_node', this, enter_selection);
     }
 
     function update_node(update_selection, scale, has_data_on_nodes,
@@ -3824,7 +3834,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             .call(this.behavior.turn_off_drag)
             .call(label_drag_behavior);
         
-        this.callback_manager.run('update_node', update_selection);
+        this.callback_manager.run('update_node', this, update_selection);
     }
 
     function create_text_label(enter_selection) {
@@ -3834,7 +3844,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             .append('text')
             .attr('class', 'label');
         
-        this.callback_manager.run('create_text_label', enter_selection);
+        this.callback_manager.run('create_text_label', this, enter_selection);
     }
 
     function update_text_label(update_selection) {
@@ -3850,7 +3860,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             .call(turn_off_drag)
             .call(drag_behavior);
         
-        this.callback_manager.run('update_text_label', update_selection);
+        this.callback_manager.run('update_text_label', this, update_selection);
     }
 
     function displaced_coords(reaction_arrow_displacement, start, end, displace) {
@@ -4709,7 +4719,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
                 // run the callback
                 var coords_a = d3.transform(d3.select(this).attr('transform')).translate,
                     coords = {x: coords_a[0], y: coords_a[1]};
-                map.callback_manager.run('edit_text_label', d3.select(this), coords);
+                map.callback_manager.run('edit_text_label', null, d3.select(this), coords);
                 d3.event.stopPropagation();
             };
             this.map.sel.select('#text-labels')
@@ -4719,7 +4729,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
             this.map.sel.on('click.new_text_label', function(node) {
                 var coords = { x: d3.mouse(node)[0],
                                y: d3.mouse(node)[1] };
-                this.map.callback_manager.run('new_text_label', coords);
+                this.map.callback_manager.run('new_text_label', null, coords);
             }.bind(this, this.map.sel.node()));
         } else {
             this.text_label_click = this.selectable_click;
@@ -9138,8 +9148,8 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // rotation mode off
         this.rotation_on = false;
 
-        // performs some extra checks
-        this.debug = true;
+        // validate the JSON file during map export
+        this.debug = false;
     };
 
     // -------------------------------------------------------------------------
@@ -9316,14 +9326,14 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
          */
         
-        this.callback_manager.run('set_status', status);
+        this.callback_manager.run('set_status', null, status);
         // clear any other timers on the status bar
         window.clearTimeout(this._status_timer);
         this._status_timer = null;
         
         if (time!==undefined) {
             this._status_timer = window.setTimeout(function() {
-                this.callback_manager.run('set_status', '');
+                this.callback_manager.run('set_status', null, '');
             }.bind(this), time);
         }
     }
@@ -9640,7 +9650,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
         else this.beziers_enabled = on_off;
         this.draw_all_beziers();
-        this.callback_manager.run('toggle_beziers', this.beziers_enabled);
+        this.callback_manager.run('toggle_beziers', null, this.beziers_enabled);
     }
 
     function apply_reaction_data_to_map(data) {
@@ -10012,7 +10022,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             return selected;
         });
         this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
-        this.callback_manager.run('select_metabolite_with_id', selected_node, coords);
+        this.callback_manager.run('select_metabolite_with_id', null, selected_node, coords);
     }
     function select_selectable(node, d) {
         /** Select a metabolite or text label, and manage the shift key.
@@ -10049,7 +10059,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             coords = { x: d.x, y: d.y };
             node_count++;
         });
-        this.callback_manager.run('select_selectable', node_count, selected_node, coords);
+        this.callback_manager.run('select_selectable', null, node_count, selected_node, coords);
     }
     function select_single_node() {
         /** Unselect all but one selected node, and return the node.
@@ -13528,7 +13538,7 @@ define('QuickJump',['utils', 'CallbackManager'], function(utils, CallbackManager
 	select_sel.on('change', function() {
 	    // go to the new map
 	    var map_name = this.options[this.selectedIndex].__data__;
-	    callback_manager.run('switch_maps', map_name);
+	    callback_manager.run('switch_maps', null, map_name);
 	});
 	
     }
@@ -13711,7 +13721,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 }
             }.bind(this));
 
-        this.callback_manager.run('first_load');
+        this.callback_manager.run('first_load', this);
     }
 
     // Definitions
