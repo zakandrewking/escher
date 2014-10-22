@@ -1,4 +1,4 @@
-define(["lib/vkbeautify"], function(vkbeautify) {
+define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     return { set_options: set_options,
              setup_svg: setup_svg,
 	     remove_child_nodes: remove_child_nodes,
@@ -21,6 +21,7 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     c_times_scalar: c_times_scalar,
 	     download_json: download_json,
 	     load_json: load_json,
+	     load_json_or_csv: load_json_or_csv,
 	     export_svg: export_svg,
 	     rotate_coords_recursive: rotate_coords_recursive,
 	     rotate_coords: rotate_coords,
@@ -31,9 +32,9 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	     check_undefined: check_undefined,
 	     compartmentalize: compartmentalize,
 	     decompartmentalize: decompartmentalize,
-	     check_r: check_r,
 	     mean: mean,
 	     check_for_parent_tag: check_for_parent_tag,
+	     check_name: check_name,
 	     name_to_url: name_to_url,
 	     parse_url_components: parse_url_components };
 
@@ -168,7 +169,10 @@ define(["lib/vkbeautify"], function(vkbeautify) {
     function setup_defs(svg, style) {
         // add stylesheet
         svg.select("defs").remove();
-        var defs = svg.append("defs");
+	var defs = svg.append("defs");
+	// make sure the defs is the first node
+	var node = defs.node();
+	node.parentNode.insertBefore(node, node.parentNode.firstChild);
         defs.append("style")
             .attr("type", "text/css")
             .text(style);
@@ -178,7 +182,9 @@ define(["lib/vkbeautify"], function(vkbeautify) {
     function draw_an_object(container_sel, parent_node_selector, children_selector,
 			    object, id_key, create_function, update_function,
 			    exit_function) {
-	/** Run through the d3 data binding steps for an object.
+	/** Run through the d3 data binding steps for an object. Also checks to
+            make sure none of the values in the *object* are undefined, and
+            ignores those.
 
 	 Arguments
 	 ---------
@@ -201,10 +207,19 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 
 	 exit_function: A function for exit selection.
 	 
-	 */
+	*/
+        var draw_object = {};
+        for (var id in object) {
+            if (object[id] === undefined) {
+                console.warn('Undefined value for id ' + id + ' in object. Ignoring.');
+            } else {
+                draw_object[id] = object[id];
+            }
+        }
+        
 	var sel = container_sel.select(parent_node_selector)
 		.selectAll(children_selector)
-		.data(make_array(object, id_key), function(d) { return d[id_key]; });
+		.data(make_array(draw_object, id_key), function(d) { return d[id_key]; });
 	// enter: generate and place reaction
 	if (create_function)
 	    sel.enter().call(create_function);
@@ -334,17 +349,30 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	throw new Error("Unable to copy obj! Its type isn't supported.");
     }
 
-    function extend(obj1, obj2) {
-	/** Extends obj1 with keys/values from obj2.
+    function extend(obj1, obj2, overwrite) {
+	/** Extends obj1 with keys/values from obj2. Performs the extension
+	    cautiously, and does not override attributes, unless the overwrite
+	    argument is true.
 
-	 Performs the extension cautiously, and does not override attributes.
+	    Arguments
+	    ---------
 
-	 */
+	    obj1: Object to extend
+	    
+	    obj2: Object with which to extend.
+
+	    overwrite: (Optional, Default false) Overwrite attributes in obj1.
+
+	*/
+
+	if (overwrite === undefined)
+	    overwrite = false;
+	
 	for (var attrname in obj2) { 
-	    if (!(attrname in obj1))
+	    if (!(attrname in obj1) || overwrite) // UNIT TEST This
 		obj1[attrname] = obj2[attrname];
 	    else
-		console.error('Attribute ' + attrname + ' already in object.');
+		throw new Error('Attribute ' + attrname + ' already in object.');
 	}
     }
 
@@ -399,42 +427,138 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	return { "x": coords.x * scalar,
 		 "y": coords.y * scalar };
     }
-
+    
     function download_json(json, name) {
-        var a = document.createElement('a');
-        a.download = name + '.json'; // file name
-	var j = JSON.stringify(json);
-        a.setAttribute("href-lang", "application/json");
-        a.href = 'data:application/json,' + j;
-        // <a> constructed, simulate mouse click on it
-        var ev = document.createEvent("MouseEvents");
-        ev.initMouseEvent("click", true, false, self, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        a.dispatchEvent(ev);
+	/** Download json file in a blob.
 
-        function utf8_to_b64(str) {
-            return window.btoa(unescape(encodeURIComponent( str )));
-        }
+	 */
+	var j = JSON.stringify(json),
+	    blob = new Blob([j], {type: "octet/stream"});
+	FileSaver(blob, name + '.json');
     }
 
-    function load_json(f, callback) {
+    function load_json(f, callback, pre_fn, failure_fn) {
+	/** Try to load the file as JSON.
+
+	    Arguments
+	    ---------
+
+	    f: The file path
+
+	    callback: A callback function that accepts arguments: error, data.
+
+            pre_fn: (optional) A function to call before loading the data.
+
+            failure_fn: (optional) A function to call if the load fails or is aborted.
+            
+	*/
 	// Check for the various File API support.
 	if (!(window.File && window.FileReader && window.FileList && window.Blob))
 	    callback("The File APIs are not fully supported in this browser.", null);
 
-	// The following is not a safe assumption.
-	// if (!f.type.match("application/json"))
-	//     callback.call(target, "Not a json file.", null);
-
 	var reader = new window.FileReader();
 	// Closure to capture the file information.
 	reader.onload = function(event) {
-	    var json = JSON.parse(event.target.result);
-	    callback(null, json);
+	    var result = event.target.result,
+		data;
+	    // try JSON
+	    try {
+		data = JSON.parse(result);
+	    } catch (e) {
+		// if it failed, return the error
+		callback(e, null);
+		return;
+	    }
+	    // if successful, return the data
+	    callback(null, data);
         };
+        if (pre_fn !== undefined && pre_fn !== null) {
+            try { pre_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onabort = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onerror = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
 	// Read in the image file as a data URL.
 	reader.readAsText(f);
     }
+    
+    function load_json_or_csv(f, csv_converter, callback, pre_fn, failure_fn,
+                              debug_event) {
+	/** Try to load the file as JSON or CSV (JSON first).
 
+	    Arguments
+	    ---------
+
+	    f: The file path
+
+	    csv_converter: A function to convert the CSV output to equivalent JSON.
+
+	    callback: A callback function that accepts arguments: error, data.
+
+            pre_fn: (optional) A function to call before loading the data.
+
+            failure_fn: (optional) A function to call if the load fails or is aborted.
+
+	    debug_event: (optional) An event, with a string at
+	    event.target.result, to load as though it was the contents of a
+	    loaded file.
+
+	*/
+	// Check for the various File API support.
+	if (!(window.File && window.FileReader && window.FileList && window.Blob))
+	    callback("The File APIs are not fully supported in this browser.", null);
+
+	var reader = new window.FileReader(),
+	    // Closure to capture the file information.
+	    onload_function = function(event) {
+                
+		var result = event.target.result,
+		    data, errors;
+		// try JSON
+		try {
+		    data = JSON.parse(result);
+		} catch (e) {
+		    errors = 'JSON error: ' + e;
+		    
+		    // try csv
+		    try {
+			data = csv_converter(d3.csv.parseRows(result));
+		    } catch (e) {
+			// if both failed, return the errors
+			callback(errors + '\nCSV error: ' + e, null);
+			return;
+		    }
+		}
+		// if successful, return the data
+		callback(null, data);
+            };
+	if (debug_event !== undefined && debug_event !== null) {
+	    console.warn('Debugging load_json_or_csv');
+	    return onload_function(debug_event);
+	}
+        if (pre_fn !== undefined && pre_fn !== null) {
+            try { pre_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onabort = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
+        reader.onerror = function(event) {
+            try { failure_fn(); }
+            catch (e) { console.warn(e); }
+        }
+	// Read in the image file as a data URL.
+	reader.onload = onload_function;
+	reader.readAsText(f);
+    }
+    
     function export_svg(name, svg_sel, do_beautify) {
         var a = document.createElement('a'), xml, ev;
         a.download = name + '.svg'; // file name
@@ -546,49 +670,6 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	}
     }
 
-    function check_r(o, spec, can_be_none) {
-	if (typeof spec == "string") {
-	    var the_type;
-	    if (spec=='String') {
-		the_type = function(x) { return typeof x == "string"; };
-	    } else if (spec=="Float") {
-		the_type = function(x) { return typeof x == "number"; };
-	    } else if (spec=="Integer") {
-		the_type = function(x) { return (typeof x == "number") &&
-					 (parseFloat(x,10) == parseInt(x,10)); };
-	    } else if (spec=="Boolean") {
-		the_type = function(x) { return typeof x == "boolean"; };
-	    } else if (spec!="*") {
-		throw new Error("Bad spec string: " + spec);
-	    }
-	    if (!the_type(o)) {
-		throw new Error('Bad type: '+String(o)+' should be '+spec);
-	    }
-	} else if (spec instanceof Array) {
-	    o.forEach(function(x) {
-		check_r(x, spec[0], can_be_none);
-	    });
-	} else { // dictionary/object
-	    var key = Object.keys(spec)[0];
-	    if (key == "*") {
-		for (var k in o) {
-		    if (o[k]===null && can_be_none.indexOf(k)!=-1) 
-			continue;
-		    check_r(o[k], spec[key], can_be_none);
-		}
-	    } else {
-		for (var k in spec) {
-		    if (!(k in o)) {
-			throw new Error('Missing key: %s' % k);
-		    };
-		    if (o[k]===null && can_be_none.indexOf(k)!=-1) 
-			continue;
-		    check_r(o[k], spec[k], can_be_none);
-		}
-	    }
-	}
-    }
-
     function mean(array) {
 	var sum = array.reduce(function(a, b) { return a + b; });
 	var avg = sum / array.length;
@@ -615,31 +696,42 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 	return false;
     }
 
-    function name_to_url(name, download_url, type) {
-	/** Convert short name to url.
+    function check_name(name) {
+	/** Name cannot include:
+
+	    <>:"/\|?*
+
+	*/
+
+	if (/[<>:"\/\\\|\?\*]/.test(name))
+	    throw new Error('Name cannot include the characters <>:"/\|?*');
+    }
+   
+    function name_to_url(name, download_url) {
+	/** Convert short name to url. The short name is separated by '+'
+	    characters.
 
 	 Arguments
 	 ---------
 
-	 name: The short name, e.g. e_coli:iJO1366:central_metabolism.
+	 name: The short name, e.g. e_coli.iJO1366.central_metabolism.
 
-	 download_url: The url to prepend. (Can be null)
+	 download_url: The url to prepend (optional).
 
-	 type: Either 'model' or 'map'.
+	*/
 
-	 */
+	check_name(name);
 
-	var parts = name.split(':'),
+	var parts = name.split('.'),
 	    longname;
-	if (['model', 'map'].indexOf(type) == -1)
-	    throw Error('Bad type: ' + type);
-	if (parts.length != (type=='model' ? 2 : 3))
-            throw Error('Bad ' + type + ' name');
-	if (type=='model')
+	if (parts.length == 2) {
 	    longname = ['organisms', parts[0], 'models', parts[1]+'.json'].join('/');
-	else
+	} else if (parts.length == 3) {
 	    longname = ['organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json'].join('/');
-	if (download_url!==null) {
+	} else {
+            throw Error('Bad short name');
+	}
+	if (download_url !== undefined && download_url !== null) {
 	    // strip download_url
 	    download_url = download_url.replace(/^\/|\/$/g, '');
 	    longname = [download_url, longname].join('/');
@@ -669,23 +761,35 @@ define(["lib/vkbeautify"], function(vkbeautify) {
 
 	 */
 	if (options===undefined) options = {};
-	if (download_url===undefined) download_url = null;
 
 	var query = the_window.location.search.substring(1),
 	    vars = query.split("&");
 	for (var i = 0; i < vars.length; i++) {
 	    var pair = vars[i].split("=");
-	    options[pair[0]] = pair[1];
+	    // deal with array options
+	    if (pair[0].indexOf('[]') == pair[0].length - 2) {
+		var o = pair[0].replace('[]', '');
+		if (!(o in options))
+		    options[o] = [];
+		options[o].push(pair[1]);
+	    } else {
+		options[pair[0]] = pair[1];
+	    }
 	}
 
 	// generate map_path and model_path
 	[
-	    ['map', 'map_name', 'map_path'],
-	    ['model', 'model_name', 'cobra_model_path']
+	    ['map_name', 'map_path'],
+	    ['model_name', 'cobra_model_path']
 	].forEach(function(ar) {
-	    var type = ar[0], key = ar[1], path = ar[2];
-	    if (key in options)
-		options[path] = name_to_url(options[key], download_url, type);
+	    var key = ar[0], path = ar[1];
+	    if (key in options) {
+		try {
+		    options[path] = name_to_url(options[key], download_url);
+		} catch (e) {
+		    console.warn(key + ' ' + options[key] + ' cannot be converted to a URL.');
+		}
+	    }
 	});
 
 	return options;

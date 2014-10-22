@@ -2,6 +2,7 @@ import escher.server
 from escher import (Builder, get_cache_dir, clear_cache, list_cached_maps,
                     list_cached_models)
 from escher.plots import load_resource
+from escher.urls import get_url
 
 import os
 from os.path import join
@@ -14,6 +15,8 @@ def test_get_cache_dir():
     assert os.path.isdir(d)
     d = get_cache_dir(name='maps')
     assert os.path.isdir(d)
+
+# These are generally not run, because I don't want to casually loose my cache!
 
 # def test_clear_cache():
 #     clear_cache()
@@ -38,15 +41,10 @@ def test_load_resource(tmpdir):
     directory = os.path.abspath(os.path.dirname(__file__))
     assert load_resource(join(directory, 'example.json'), 'name').strip() == '{"r": "val"}'
     
-    url = "https://zakandrewking.github.io/escher/organisms/e_coli/models/iJO1366/maps/central_metabolism.json"
+    url = '/'.join([get_url('escher_download', protocol='https'),
+                    'organisms/e_coli/models/iJO1366/maps/central_metabolism.json'])
     _ = json.loads(load_resource(url, 'name'))
         
-    # with raises(URLError):
-    #     load_resource("http://asodivhowef", 'name')
-       
-    # with raises(URLError):
-    #     load_resource("https://asodivhowef", 'name')
-
     with raises(ValueError) as err:
         p = join(str(tmpdir), 'dummy')
         with open(p, 'w') as f:
@@ -79,16 +77,22 @@ def test_Builder(tmpdir):
     b._get_html(scroll_behavior='zoom')
     
     # download
-    b = Builder(map_name='e_coli:iJO1366:central_metabolism', model_name='e_coli:iJO1366')
+    b = Builder(map_name='e_coli.iJO1366.central_metabolism',
+                model_name='e_coli.iJO1366')
     assert b.loaded_map_json is not None
     assert b.loaded_model_json is not None
     b.display_in_notebook(height=200)
 
     # data
-    b = Builder(map_name='e_coli:iJO1366:central_metabolism', model_name='e_coli:iJO1366',
+    b = Builder(map_name='e_coli.iJO1366.central_metabolism',
+                model_name='e_coli.iJO1366',
                 reaction_data=[{'GAPD': 123}, {'GAPD': 123}])
-    b = Builder(map_name='e_coli:iJO1366:central_metabolism', model_name='e_coli:iJO1366',
+    b = Builder(map_name='e_coli.iJO1366.central_metabolism',
+                model_name='e_coli.iJO1366',
                 metabolite_data=[{'nadh_c': 123}, {'nadh_c': 123}])
+    b = Builder(map_name='e_coli.iJO1366.central_metabolism',
+                model_name='e_coli.iJO1366',
+                gene_data=[{'gapA': 123}, {'adhE': 123}])
 
     assert type(b.the_id) is unicode
     assert len(b.the_id) == 10
@@ -99,3 +103,7 @@ def test_Builder_options():
     assert b.metabolite_no_data_color=='white'
     html = b._get_html()
     assert 'metabolite_no_data_color: "white"' in html
+
+def test_Builder_kwargs():
+    b = Builder(quick_jump=['new_map'])
+    assert b.quick_jump == ['new_map']

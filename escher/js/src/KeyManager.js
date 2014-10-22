@@ -130,31 +130,36 @@ define(["utils"], function(utils) {
 	this.enabled = on_off;
 	this.update();
     }	
-    function add_enter_listener(callback) {
+    function add_enter_listener(callback, id) {
 	/** Call the callback when the enter key is pressed, then
 	 unregisters the listener.
 
 	 */
-	this.add_key_listener(callback, 13);
+	this.add_key_listener(callback, 13, id);
     }
-    function add_escape_listener(callback) {
+    function add_escape_listener(callback, id) {
 	/** Call the callback when the escape key is pressed, then
 	 unregisters the listener.
 
 	 */
-	this.add_key_listener(callback, 27);
+	this.add_key_listener(callback, 27, id);
     }
-    function add_key_listener(callback, kc) {
+    function add_key_listener(callback, kc, id) {
 	/** Call the callback when the key is pressed, then unregisters the
 	 listener.
 
-	 */
+	*/
+
+        var event_name = 'keydown.' + kc;
+        if (id !== undefined)
+            event_name += id;
+        
 	var selection = d3.select(window);
-	selection.on('keydown.'+kc, function() {
+	selection.on(event_name, function() {
 	    if (d3.event.keyCode==kc) {
 		callback();
 	    }
 	});
-	return { clear: function() { selection.on('keydown.'+kc, null); } };
+	return { clear: function() { selection.on(event_name, null); } };
     }
 });

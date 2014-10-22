@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from escher.plots import Builder
-from escher.urls import get_url
+from escher.plots import Builder, list_cached_models, list_cached_maps
+from escher.urls import get_url, url_to_name
 
 import os, subprocess
 from os.path import join, dirname, realpath
@@ -51,7 +51,10 @@ class BaseHandler(RequestHandler):
         with open(path, "rb") as file:
             data = file.read()
         # set the mimetype
-        self.set_header("Content-Type", guess_type(path, strict=False)[0])
+        the_type = guess_type(path, strict=False)[0]
+        self.set_header("Content-Type", ("application/octet-stream"
+                                         if the_type is None
+                                         else the_type))
         self.serve(data)
         
     def serve(self, data):
@@ -67,9 +70,13 @@ class IndexHandler(BaseHandler):
     def get(self):
         # get the organisms, maps, and models
         response = yield gen.Task(AsyncHTTPClient().fetch,
-                                  '/'.join([get_url('escher_root', protocol='https'),
+                                  '/'.join([get_url('escher_download', protocol='https'),
                                             'index.json']))
         json_data = response.body if response.body is not None else json.dumps(None)
+
+        # get the cached maps and models
+        cached_maps = list_cached_maps()
+        cached_models = list_cached_models()
 
         # render the template
         template = env.get_template('index.html')
@@ -82,6 +89,8 @@ class IndexHandler(BaseHandler):
                                index_js=get_url('index_js', source),
                                index_gh_pages_js=get_url('index_gh_pages_js', source),
                                data=json_data,
+                               local_maps=cached_maps,
+                               local_models=cached_models,
                                version=__version__,
                                web_version=False)
         
@@ -100,12 +109,22 @@ class BuilderHandler(BaseHandler):
         
         # Builder options
         builder_kwargs = {}
-        for a in ['starting_reaction', 'model_name', 'map_name', 'map_json']:
+        for a in ['starting_reaction', 'model_name', 'map_name', 'map_json',
+                  'reaction_no_data_color', 'reaction_no_data_size',
+                  'metabolite_no_data_color', 'metabolite_no_data_size']:
             args = self.get_arguments(a)
             if len(args)==1:
                 builder_kwargs[a] = (True if args[0].lower()=='true' else
                                      (False if args[0].lower()=='false' else
                                       args[0]))
+        # array args
+        for a in ['quick_jump', 'metabolite_size_range', 'metabolite_color_range',
+                  'reaction_size_range', 'reaction_color_range', 'gene_styles']:
+            args = self.get_arguments(a + '[]')
+            if len(args) > 0:
+                builder_kwargs[a] = args
+
+        print builder_kwargs
 
         # if the server is running locally, then the embedded css must be loaded
         # asynchronously using the same server thread.
@@ -132,8 +151,8 @@ class BuilderHandler(BaseHandler):
             builder_kwargs['reaction_data'] = load_data_file(r_filepath)
             m_filepath = 'example_data/metabolite_data_iJO1366.json'
             builder_kwargs['metabolite_data'] = load_data_file(m_filepath)
-            
-        # make the builder        
+        
+        # make the builder
         builder = Builder(safe=True, **builder_kwargs)
             
         # display options
@@ -156,7 +175,19 @@ class BuilderHandler(BaseHandler):
         
         self.set_header("Content-Type", "text/html")
         self.serve(html)
-        
+
+class MapModelHandler(BaseHandler):
+    def get(self, path):
+        name = url_to_name(path)
+        try:
+            b = Builder(map_name=name)
+        except ValueError as err:
+            print err
+            raise HTTPError(404)
+        self.set_header('Content-Type', 'application/json')
+        print b.loaded_map_json
+        self.serve(unicode(b.loaded_map_json))
+         
 class LibHandler(BaseHandler):
     def get(self, path):
         full_path = join(directory, 'lib', path)
@@ -180,8 +211,9 @@ application = Application([
     (r".*/(js/.*)", StaticHandler),
     (r".*/(css/.*)", StaticHandler),
     (r".*/(resources/.*)", StaticHandler),
+    (r".*/(jsonschema/.*)", StaticHandler),
     (r"/(dev/)?(local/)?(?:web/)?(builder|viewer)(.*)", BuilderHandler),
-    (r".*/(map_spec.json)", StaticHandler),
+    (r".*/(organisms/.*)", MapModelHandler),
     (r"/", IndexHandler),
 ], **settings)
  

@@ -1,4 +1,4 @@
-define(['utils', 'Map'], function(utils, Map) {
+define(['utils'], function(utils) {
     /** A container to position an html div to match the coordinates of a SVG element.
 
      */
@@ -20,11 +20,7 @@ define(['utils', 'Map'], function(utils, Map) {
 	    displacement = {x: 0, y: 0};
 	this.displacement = displacement;
 
-	if (map instanceof Map) {
-	    this.map = map;
-	} else {
-	    throw new Error('Cannot set the map. It is not an instance of Map');
-	}
+	this.map = map;
     }
 
     function is_visible() {
@@ -53,7 +49,7 @@ define(['utils', 'Map'], function(utils, Map) {
 	    .style('left', left+'px')
 	    .style('top', top+'px');
     }
-
+    
     function hide() {
 	this.div.style('display', 'none');
     }

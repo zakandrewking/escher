@@ -87,7 +87,7 @@
 	      <p>Escher has not yet been published in a peer-reviewed journal,
 		but, in the meantime, you can cite the code by DOI:
 		<a href="http://dx.doi.org/10.5281/zenodo.11712"><img
-		src="https://zenodo.org/badge/6078/zakandrewking/escher.png"><a>.</p>
+		src="https://zenodo.org/badge/6078/zakandrewking/escher.png"></a>.</p>
 	    </li>
 	    <li><h4>I have more questions. Who do I ask?</h4>
 	      <p>You can follow <a href="https://twitter.com/zakandrewking">@zakandrewking</a>
@@ -113,11 +113,19 @@
     </div>
   </footer>
 
-  <script>var data={{data}};</script>
   <script src="{{index_js}}"></script>
-  {% if web_version %}
-    <script src="{{index_gh_pages_js}}"></script>
-  {% else %}
-    <script>setup()</script>
-  {% endif %}
+  <script>
+   {% if web_version %} 
+   // get the models
+   d3.json('{{download_rel}}/index.json', function(d) {
+     var data =d, local_maps=null, local_models=null;
+     setup(data, local_maps, local_models);
+   });
+   {% else %}
+   var data={{data}},
+   local_maps={{local_maps}},
+   local_models={{local_models}};
+   setup(data, local_maps, local_models);
+   {% endif %}   
+  </script>
 {% endblock %}

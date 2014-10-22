@@ -3,7 +3,8 @@ from subprocess import call
 import threading
 import webbrowser
 import os
-from os.path import join, dirname, realpath
+from shutil import copy
+from os.path import join, dirname, realpath, exists
 from glob import glob
     
 try:
@@ -25,8 +26,10 @@ class CleanCommand(Command):
     def finalize_options(self):
         pass
     def run(self):
-        call(['rm', '-rf', join(directory, 'build')])
-        call(['rm', '-rf', join(directory, 'dist')])
+        def remove_if(x):
+            if exists(x): os.remove(x)
+        remove_if(join(directory, 'build'))
+        remove_if(join(directory, 'dist'))
         # remove lib files
         for f in glob(join(directory, 'escher/lib/escher.*.js')):
             os.remove(f)
@@ -43,10 +46,16 @@ class JSBuildCommand(Command):
     def finalize_options(self):
         pass
     def run(self):
-        call([join(directory, 'bin/r.js'), '-o', 'escher/js/build/build.js',
-              'out=escher/lib/%s'%escher, 'optimize=none'])
-        call([join(directory, 'bin/r.js'), '-o', 'escher/js/build/build.js',
-              'out=escher/lib/%s'%escher_min, 'optimize=uglify'])
+        call(['node',
+              join(directory, 'bin', 'r.js'),
+              '-o', join('escher', 'js', 'build', 'build.js'),
+              'out='+join('escher', 'lib', escher),
+              'optimize=none'])
+        call(['node',
+              join(directory, 'bin', 'r.js'),
+              '-o', join('escher', 'js', 'build', 'build.js'),
+              'out='+join('escher', 'lib', escher_min),
+              'optimize=uglify'])
         print 'done building js'
         
 class BuildGHPagesCommand(Command):
@@ -58,14 +67,14 @@ class BuildGHPagesCommand(Command):
         pass
     def run(self):
         # copy files to top level
-        call(['cp', join('escher/lib/', escher), '.'])
-        call(['cp', join('escher/lib/', escher_min), '.'])
-        call(['cp', join('escher/lib/', escher), 'escher.js'])
-        call(['cp', join('escher/lib/', escher_min), 'escher.min.js'])
+        copy(join('escher', 'lib', escher), '.')
+        copy(join('escher', 'lib', escher_min), '.')
+        copy(join('escher', 'lib', escher), 'escher.js')
+        copy(join('escher', 'lib', escher_min), 'escher.min.js')
         # generate the static site
-        call(['python', 'escher/static_site.py'])
-        call(['python', 'escher/generate_index.py'])        
-        print 'done building gh-pages'
+        call(['python', join('escher', 'static_site.py')])
+        call(['python', join('escher', 'generate_index.py')])
+        print 'Done building gh-pages'
 
 class TestCommand(Command):
     description = "Custom test command that runs pytest and jasmine"
@@ -78,7 +87,7 @@ class TestCommand(Command):
         pass
     def run(self):
         if not self.jsonly:
-            call(['py.test'])
+            call('py.test', shell=True)
         if not self.pyonly:
             call(['jasmine', '--port=%d' % port])
         

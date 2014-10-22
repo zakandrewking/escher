@@ -22,6 +22,15 @@
     cursor: default;
 }
 .reaction-label {
+    font-size: 30px;
+    fill: rgb(32, 32, 120);
+    text-rendering: optimizelegibility;
+}
+.node-label {
+    font-size: 20px;
+}
+.gene-label {
+    font-size: 18px;
     fill: rgb(32, 32, 120);
     text-rendering: optimizelegibility;
 }
@@ -33,7 +42,10 @@
 }
 .node-circle {
     stroke-width: 2px;
-    fill: none;	
+}
+.midmarker-circle,.multimarker-circle {
+    fill: white;
+    fill-opacity: 0.2;
     stroke: rgb(50, 50, 50);
 }
 g.selected .node-circle{
@@ -45,6 +57,7 @@ g.selected .label {
 }
 .metabolite-circle {
     stroke: rgb(162, 69, 16);
+    fill: rgb(224, 134, 91);
 }
 g.selected .metabolite-circle {
     stroke: rgb(5, 2, 0);
@@ -67,8 +80,11 @@ g.selected .metabolite-circle {
     stroke: #fff;
     shape-rendering: crispEdges;
 }
+#brush-container .background {
+    fill: none;
+}
 .bezier-circle {
-    fill: rgb(255,255,255);	
+    fill: rgb(255,255,255);     
 }
 .bezier-circle.b1 {
     stroke: red;

@@ -28,7 +28,8 @@ def generate_static_site():
                            github=get_url('github', protocol='https'),
                            data='null',
                            version=__version__,
-                           web_version=True)
+                           web_version=True,
+                           download_rel=get_url('escher_download_rel'))
     
     with open(join(build_path, 'index.html'), 'w') as f:
         f.write(data)

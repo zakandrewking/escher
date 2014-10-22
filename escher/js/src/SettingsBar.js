@@ -10,7 +10,9 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes,
-			    scale_gui: scale_gui };
+			    scale_gui: scale_gui,
+			    style_gui: style_gui,
+			    view_gui: view_gui };
 
     return SearchBar;
 
@@ -20,39 +22,60 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	this.settings = settings;
 	this.draw = false;
 
-	var container = sel.append('div')
-		.attr('class', 'settings-box')
-		.style('display', 'none');
+	var background = sel.append('div')
+		.attr('class', 'settings-box-background')
+		.style('display', 'none'),
+	    container = sel.append('div')
+                .attr('class', 'settings-box-container')
+		.style('display', 'none'),
+            box = container.append('div')
+		.attr('class', 'settings-box');
 
 	// done button
-	container.append('button')
+	box.append('button')
 	    .attr("class", "btn btn-sm btn-default close-button")
 	    .on('click', function() {
 		this.accept_changes();
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-ok");
 	// quit button
-	container.append('button')
+	box.append('button')
 	    .attr("class", "btn btn-sm btn-default close-button")
 	    .on('click', function() {
 		this.abandon_changes();
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-remove");
+
+        // reactions
+	box.append('div')
+	    .text('Reactions').attr('class', 'settings-section-heading-large');
+	this.scale_gui(box.append('div'), 'reaction');
 	
 	// reaction data
-	container.append('div')
-	    .text('Reaction data').attr('class', 'settings-section-heading');
-	this.scale_gui(container.append('div'), 'reaction');
+	box.append('div')
+	    .text('Reaction or Gene data').attr('class', 'settings-section-heading');
+	this.style_gui(box.append('div'), 'reaction');
 
 	// metabolite data
-	container.append('div').text('Metabolite data')
+        box.append('hr');
+	box.append('div').text('Metabolites')
+	    .attr('class', 'settings-section-heading-large');
+	this.scale_gui(box.append('div'), 'metabolite');
+	box.append('div').text('Metabolite data')
 	    .attr('class', 'settings-section-heading');
-	this.scale_gui(container.append('div'), 'metabolite');
-
+	this.style_gui(box.append('div'), 'metabolite');
+        
+	// identifiers_on_map
+        box.append('hr');
+	box.append('div').text('View options')
+	    .attr('class', 'settings-section-heading-large');
+	this.view_gui(box.append('div'));
+	
 	this.callback_manager = new CallbackManager();
 
 	this.map = map;
 	this.selection = container;
+        this.background = background;
     }
     function is_visible() {
 	return this.selection.style('display') != 'none';
@@ -65,6 +88,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    this.hold_changes();
 	    // show the menu
 	    this.selection.style("display", "block");
+	    this.background.style("display", "block");
 	    this.selection.select('input').node().focus();
 	    // escape key
 	    this.escape = this.map.key_manager
@@ -83,6 +107,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    if (this.draw) this.map.draw_everything();
 	    // hide the menu
 	    this.selection.style("display", "none");
+	    this.background.style("display", "none");
 	    if (this.escape) this.escape.clear();
 	    if (this.enter) this.enter.clear();
 	    this.escape = null;
@@ -117,7 +142,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	// columns
 	var columns = [0, 1, 2],
 	    settings = this.settings;
-
+	
 	// numbers
 	t.append('tr')
 	    .selectAll('.settings-number')
@@ -215,36 +240,130 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		});
 	});
 
+    }
+
+    function style_gui(s, type) {
+	/** A UI to edit style.
+
+         */
+
+	var t = s.append('table').attr('class', 'settings-table'),
+	    settings = this.settings;
+
 	// styles
 	t.append('tr').call(function(r) {
-	    r.append('td').text('Styles:');
-	    var cell = r.append('td').attr('colspan', columns.length + 1);
+	    r.append('td').text('Styles:').attr('class', 'options-label');
+	    var cell = r.append('td');
 
-	    var styles = ['abs', 'size', 'color', 'text'],
+	    var styles = [['Absolute value', 'abs'], ['Size', 'size'],
+                          ['Color', 'color'], ['Text', 'text']],
 		style_cells = cell.selectAll('.style-span')
 		    .data(styles),
 		s = style_cells.enter()
 		    .append('span')
 		    .attr('class', 'style-span');
-	    s.append('span').text(function(d) { return d; });
+	    s.append('span').text(function(d) { return d[0]; });
 
 	    // make the checkbox
 	    s.append('input').attr('type', 'checkbox')
-		.each(function(style) {
+		.each(function(d) {
 		    // change the model when the box is changed
 		    var change_stream = bacon
 		    	    .fromEventTarget(this, 'change')
 		    	    .onValue(function(event) {
-		    		settings.change_data_style(type, style,
+		    		settings.change_data_style(type, d[1],
 							   event.target.checked);
 		    	    });
 		    
 		    // subscribe to changes in the model
 		    settings.data_styles_stream[type].onValue(function(ar) {
 			// check the box if the style is present
-			this.checked = (ar.indexOf(style) != -1);
+			this.checked = (ar.indexOf(d[1]) != -1);
 		    }.bind(this));
 		});
 	});
+
+        
+	// compare_style
+	t.append('tr').call(function(r) {
+	    r.append('td')
+                .text('Comparison:')
+                .attr('class', 'options-label');
+	    var cell = r.append('td')
+                    .attr('colspan', '4');
+
+	    var styles = [['Log2(Fold Change)', 'log2_fold'], ['Difference', 'diff']],
+		style_cells = cell.selectAll('.style-span')
+		    .data(styles),
+		s = style_cells.enter()
+		    .append('span')
+		    .attr('class', 'style-span');
+	    s.append('span')
+                .text(function(d) { return d[0]; });
+
+	    // make the checkbox
+	    s.append('input').attr('type', 'radio')
+                .attr('name', type + '_compare_style')
+                .attr('value', function(d) { return d[1]; })
+		.each(function(style) {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+                                if (event.target.checked) {
+                                    settings.set_compare_style(type, event.target.value);
+                                }
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.compare_style_stream[type].onValue(function(value) {
+		        // check the box for the new value
+		        this.checked = (this.value == value);
+		    }.bind(this));
+		});
+        });
+    }
+        
+    function view_gui(s, option_name, string, options) {
+
+	var t = s.append('table').attr('class', 'settings-table');
+
+	// columns
+	var settings = this.settings;
+
+	// styles
+	t.append('tr').call(function(r) {
+	    r.append('td').text('Identifiers:').attr('class', 'options-label');
+	    var cell = r.append('td');
+
+	    var options = [['ID\'s', 'bigg_id'], ['Names', 'name']],
+		style_cells = cell.selectAll('.style-span')
+		    .data(options),
+		s = style_cells.enter()
+		    .append('span')
+		    .attr('class', 'style-span');
+	    s.append('span').text(function(d) { return d[0]; });
+
+	    // make the checkbox
+	    s.append('input').attr('type', 'radio')
+		.attr('name', 'identifiers_on_map')
+		.attr('value', function(d) { return d[1]; })
+		.each(function(style) {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	.fromEventTarget(this, 'change')
+		    	.onValue(function(event) {
+			    settings.set_identifiers_on_map(event.target.value);
+		    	});
+		    
+		    // subscribe to changes in the model
+		    settings.identifiers_on_map_stream.onValue(function(value) {			
+			// check the box if the style is present
+			this.checked = (value == this.value);
+		    }.bind(this));
+		});
+
+	});
+
     }
 });

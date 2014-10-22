@@ -39,19 +39,29 @@ define(["utils"], function(utils) {
 	delete this.callbacks[name];
 	return this;
     }
-    function run(name) {
+    function run(name, this_arg) {
 	/** Run all callbacks that match the portion of name before the period ('.').
+
+            Arguments
+            ---------
+
+            name: The callback name, which can include a tag after a '.' to
+            specificy a particular callback.
+
+            this_arg: (Optional, Default: null) The object assigned to `this` in
+            the callback.
 
 	 */
 	if (this.callbacks===undefined) return this;
+        if (this_arg===undefined) this_arg = null;
 	// pass all but the first (name) argument to the callback
-	var pass_args = Array.prototype.slice.call(arguments, 1);
+	var pass_args = Array.prototype.slice.call(arguments, 2);
 	// look for matching callback names
 	for (var a_name in this.callbacks) {
 	    var split_name = a_name.split('.')[0];
 	    if (split_name==name) {
 		this.callbacks[a_name].forEach(function(fn) {
-		    fn.apply(null, pass_args);
+		    fn.apply(this_arg, pass_args);
 		});
 	    }
 	}

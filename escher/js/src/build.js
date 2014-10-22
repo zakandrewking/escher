@@ -50,13 +50,12 @@ define(["utils"], function(utils) {
 	var anchor_distance = 20;
 
 	// new reaction structure
-	var new_reaction = { bigg_id: bigg_id,
-			     reversibility: cobra_reaction.reversibility,
-			     metabolites: utils.clone(cobra_reaction.metabolites),
-			     label_x: center.x + label_d.x,
-			     label_y: center.y + label_d.y,
-			     name: cobra_reaction.name,
-			     segments: {} };
+	var new_reaction = utils.clone(cobra_reaction);
+        utils.extend(new_reaction,
+                     { bigg_id: bigg_id,
+		       label_x: center.x + label_d.x,
+		       label_y: center.y + label_d.y,
+		       segments: {} });
 
         // set primary metabolites and count reactants/products
 
@@ -149,7 +148,9 @@ define(["utils"], function(utils) {
 						       to_node_id: to_id,
 						       from_node_coefficient: null,
 						       to_node_coefficient: null,
-						       reversibility: new_reaction.reversibility };
+						       reversibility: new_reaction.reversibility,
+                                                       data: new_reaction.data,
+                                                       reverse_flux: new_reaction.reverse_flux };
 	    new_anchors[from_id].connected_segments.push({ segment_id: new_segment_id,
 							   reaction_id: new_reaction_id });
 	    new_anchors[to_id].connected_segments.push({ segment_id: new_segment_id,
@@ -188,7 +189,9 @@ define(["utils"], function(utils) {
 							  to_node_id: selected_node_id,
 							  from_node_coefficient: null,
 							  to_node_coefficient: metabolite.coefficient,
-							  reversibility: new_reaction.reversibility };
+							  reversibility: new_reaction.reversibility,
+                                                          data: new_reaction.data,
+                                                          reverse_flux: new_reaction.reverse_flux };
 		// update the existing node
 		selected_node.connected_segments.push({ segment_id: new_segment_id,
 							reaction_id: new_reaction_id });
@@ -204,7 +207,9 @@ define(["utils"], function(utils) {
 							  to_node_id: new_node_id,
 							  from_node_coefficient: null,
 							  to_node_coefficient: metabolite.coefficient,
-							  reversibility: new_reaction.reversibility };
+							  reversibility: new_reaction.reversibility,
+                                                          data: new_reaction.data,
+                                                          reverse_flux: new_reaction.reverse_flux };
 		// save new node
 		new_nodes[new_node_id] = { connected_segments: [{ segment_id: new_segment_id,
 								  reaction_id: new_reaction_id }],
@@ -222,11 +227,12 @@ define(["utils"], function(utils) {
 	}
 
 	// now take out the extra reaction details
+	var metabolites_array = []
 	for (var bigg_id in new_reaction.metabolites) {
-	    new_reaction.metabolites[bigg_id] = {
-		coefficient: new_reaction.metabolites[bigg_id].coefficient
-	    };
+	    metabolites_array.push({'bigg_id': bigg_id,
+				    'coefficient': new_reaction.metabolites[bigg_id].coefficient});
 	}
+	new_reaction.metabolites = metabolites_array;    
 
 	// new_reactions object
 	var new_reactions = {};

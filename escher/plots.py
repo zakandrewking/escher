@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from escher.quick_server import serve_and_open
-from escher.urls import get_url, model_name_to_url, map_name_to_url
+from escher.urls import get_url, name_to_url
 
 import os
 from os.path import dirname, abspath, join, isfile, isdir
@@ -120,8 +120,11 @@ class Builder(object):
     reaction_data: a dictionary with keys that correspond to reaction ids
     and values that will be mapped to reaction arrows and labels.
 
-    reaction_data: a dictionary with keys that correspond to metabolite ids and
+    metabolite_data: a dictionary with keys that correspond to metabolite ids and
     values that will be mapped to metabolite nodes and labels.
+
+    gene_data: a dictionary with keys that correspond to gene ids and
+    values that will be mapped to corresponding reactions.
 
     local_host: a hostname that will be used for any local files in dev
     mode.
@@ -134,10 +137,28 @@ class Builder(object):
     safe: if True, then loading files from the filesytem is not allowed. This is
     to ensure the safety of using Builder with a web server.
 
+    Keyword Arguments
+    -----------------
+
+    These are defined in the Javascript API:
+
+    reaction_styles, auto_reaction_domain, reaction_domain,
+    reaction_color_range, reaction_size_range, reaction_no_data_color,
+    reaction_no_data_size, metabolite_styles, auto_metabolite_domain,
+    metabolite_domain, metabolite_color_range, metabolite_size_range,
+    metabolite_no_data_color, metabolite_no_data_size, gene_data_rule,
+    quick_jump
+
+    All keyword arguments can also be set on an existing Builder object
+    using setter functions, e.g.:
+
+    my_builder.set_reaction_styles(new_styles);
+    
     """
     def __init__(self, map_name=None, map_json=None, model_name=None,
                  model_json=None, reaction_data=None, metabolite_data=None,
-                 local_host=None, embedded_css=None, id=None, safe=False):
+                 gene_data=None, local_host=None, embedded_css=None, id=None,
+                 safe=False, **kwargs):
         self.safe = safe
         
         # load the map
@@ -157,6 +178,7 @@ class Builder(object):
         # set the args
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
+        self.gene_data = gene_data
         self.local_host = local_host
         
         # remove illegal characters from css
@@ -181,7 +203,10 @@ class Builder(object):
                         'metabolite_color_range',
                         'metabolite_size_range',
                         'metabolite_no_data_color',
-                        'metabolite_no_data_size']
+                        'metabolite_no_data_size',
+                        'gene_styles',
+                        'highlight_missing_color',
+                        'quick_jump']
         def get_getter_setter(o):
             """Use a closure."""
             # create local fget and fset functions 
@@ -196,6 +221,13 @@ class Builder(object):
             setattr(self.__class__, option, property(fget))
             # add corresponding local variable
             setattr(self, '_%s' % option, None)
+            
+        # set the kwargs
+        for key, val in kwargs.iteritems():
+            try:
+                getattr(self, 'set_%s' % key)(val)
+            except AttributeError:
+                print 'Unrecognized keywork argument %s' % key
         
     def load_model(self):
         """Load the model from input model_json using load_resource, or, secondarily,
@@ -215,17 +247,16 @@ class Builder(object):
             cache_dir = get_cache_dir(name='models')
             model_filename = join(cache_dir, model_name + '.json')
             if not isfile(model_filename):
-                model_not_cached = 'Model "%s" not in cache. Attempting download from %s' % \
-                    (model_name, get_url('escher_root'))
+                model_url = name_to_url(model_name)
+                model_not_cached = ('Model not in cache. '
+                                    'Attempting download from %s' % model_url)
                 warn(model_not_cached)
                 try:
-                    model_url = model_name_to_url(model_name)
                     download = urlopen(model_url)
                     with open(model_filename, 'w') as outfile:
                         outfile.write(download.read())
                 except HTTPError:
-                    raise ValueError('No model named %s found in cache or at %s' % \
-                                     (model_name, model_url))
+                    raise ValueError('No model found in cache or at %s' % model_url)
             with open(model_filename) as f:
                 self.loaded_model_json = f.read()
                 
@@ -247,17 +278,16 @@ class Builder(object):
             cache_dir = get_cache_dir(name='maps')
             map_filename = join(cache_dir, map_name + '.json')
             if not isfile(map_filename):
-                map_not_cached = 'Map "%s" not in cache. Attempting download from %s' % \
-                    (map_name, get_url('escher_root'))
+                map_url = name_to_url(self.map_name)
+                map_not_cached = ('Map not in cache. '
+                                  'Attempting download from %s' % map_url)
                 warn(map_not_cached)
                 try:
-                    map_url = map_name_to_url(self.map_name)
                     download = urlopen(map_url)
                     with open(map_filename, 'w') as outfile:
                         outfile.write(download.read())
                 except HTTPError:
-                    raise ValueError('No map named %s found in cache or at %s' % \
-                                     (map_name, map_url))
+                    raise ValueError('No map found in cache or at %s' % map_url)
             with open(map_filename) as f:
                 self.loaded_map_json = f.read()
 
@@ -293,6 +323,7 @@ class Builder(object):
                       u"var cobra_model_{the_id} = {cobra_model};\n"
                       u"var reaction_data_{the_id} = {reaction_data};\n"
                       u"var metabolite_data_{the_id} = {metabolite_data};\n"
+                      u"var gene_data_{the_id} = {gene_data};\n"
                       u"var css_string_{the_id} = '{style}';\n").format(
                           the_id=self.the_id,
                           map_data=(self.loaded_map_json if self.loaded_map_json else
@@ -303,25 +334,27 @@ class Builder(object):
                                          u'null'),
                           metabolite_data=(json.dumps(self.metabolite_data) if self.metabolite_data else
                                            u'null'),
+                          gene_data=(json.dumps(self.gene_data) if self.gene_data else
+                                           u'null'),
                           style=self._embedded_css(url_source))
         return javascript
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
                  fill_screen, scroll_behavior, auto_set_data_domain,
-                 never_ask_before_quit, js_url_parse):
+                 never_ask_before_quit, js_url_parse, local_host):
         draw = (u"options = {{ selection: d3.select('#{the_id}'),\n"
                 u"enable_editing: {enable_editing},\n"
                 u"menu: {menu},\n"
                 u"enable_keys: {enable_keys},\n"
                 u"scroll_behavior: {scroll_behavior},\n"
                 u"fill_screen: {fill_screen},\n"
-                u"map: map_data_{the_id},\n"
-                u"cobra_model: cobra_model_{the_id},\n"
                 u"auto_set_data_domain: {auto_set_data_domain},\n"
                 u"reaction_data: reaction_data_{the_id},\n"
-		u"metabolite_data: metabolite_data_{the_id},\n"
+                u"metabolite_data: metabolite_data_{the_id},\n"
+                u"gene_data: gene_data_{the_id},\n"
                 u"never_ask_before_quit: {never_ask_before_quit},\n"
-                u"css: css_string_{the_id},\n").format(
+                u"css: css_string_{the_id},\n"
+                u"local_host: {local_host},\n").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
                     menu=json.dumps(menu),
@@ -329,7 +362,8 @@ class Builder(object):
                     scroll_behavior=json.dumps(scroll_behavior),
                     fill_screen=json.dumps(fill_screen),
                     auto_set_data_domain=json.dumps(auto_set_data_domain),
-                    never_ask_before_quit=json.dumps(never_ask_before_quit))
+                    never_ask_before_quit=json.dumps(never_ask_before_quit),
+                    local_host=json.dumps(local_host))
         # Add the specified options
         for option in self.options:
             val = getattr(self, option)
@@ -343,10 +377,14 @@ class Builder(object):
         dev_str = '' if dev else 'escher.'
         # parse the url in javascript
         if js_url_parse:
-            o = u'options = %sutils.parse_url_components(window, options);\n' % (dev_str)
+            # get the relative location of the escher_download urls
+            rel = get_url('escher_download_rel')
+            o = (u'options = %sutils.parse_url_components(window, '
+                 'options, "%s");\n' % (dev_str, rel))
             draw = draw + o;
         # make the builder
-        draw = draw + '%sBuilder(options);\n' % dev_str
+        draw = draw + u'{dev_str}Builder(map_data_{the_id}, cobra_model_{the_id}, options);\n'.format(
+            dev_str=dev_str, the_id=the_id)
 
         return draw
     
@@ -453,7 +491,7 @@ class Builder(object):
                                                     fill_screen, scroll_behavior,
                                                     auto_set_data_domain,
                                                     never_ask_before_quit,
-                                                    js_url_parse))
+                                                    js_url_parse, self.local_host))
         return html
 
     def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',

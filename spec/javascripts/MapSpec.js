@@ -1,19 +1,66 @@
 describe('Map', function() {
-    it("Load with reaction/met data", function () {
-	var svg = d3.select('body').append('svg'),
-	    sel = svg.append('g'),
-	    map = escher.Map.from_data(get_map(),
-				       svg,
-				       null,
-				       sel,
-				       null,
-				       new escher.Settings(),
-				       {'GLCtex': 100},
-				       {'glc__D_p': 3},
-				       null,
-				       false);
+    var map, svg;
 
+    beforeEach(function() {
+	// set up map
+	svg = d3.select('body').append('svg');
+	
+	var sel = svg.append('g'),
+	    options = {	auto_reaction_domain: true,
+			reaction_data: null,
+			reaction_styles: ['color', 'size', 'abs', 'text'],
+			reaction_domain: [-10, 0, 10],
+			reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
+			reaction_size_range: [4, 8, 12],
+			reaction_no_data_color: 'rgb(220,220,220)',
+			reaction_no_data_size: 4,
+			// metabolite
+			metabolite_data: null,
+			metabolite_styles: ['color', 'size', 'text'],
+			auto_metabolite_domain: true,
+			metabolite_domain: [-10, 0, 10],
+			metabolite_color_range: ['green', 'white', 'red'],
+			metabolite_size_range: [6, 8, 10],
+			metabolite_no_data_color: 'white',
+			metabolite_no_data_size: 6,
+			// gene
+			gene_data: null,
+			gene_styles: ['text'],
+			// color reactions not in the model
+			highlight_missing_color: 'red' },
+	    set_option = function(key, val) { options[key] = val; },
+	    get_option = function(key) { return options[key]; };
+	
+	map = escher.Map.from_data(get_map(),
+				   svg,
+				   null,
+				   sel,
+				   null,
+				   new escher.Settings(set_option, get_option),
+				   null,
+				   false);
+    });
 
+    afterEach(function() {
+	// clean up
+	svg.remove();
+    });
+
+    it("def is the first element in the svg", function() {
+	// this fixes a bug with export SVG files to certain programs,
+	// e.g. Inkscape for Windows
+	var defs_node = d3.select('defs').node();
+	expect(defs_node.parentNode.firstChild).toBe(defs_node);	
+    });	
+    
+    it("Load without and with reaction/metabolite data", function () {
+	// no data
+	expect(map.has_data_on_reactions).toBe(false);
+	expect(map.has_data_on_nodes).toBe(false);
+	
+	// data
+	map.apply_reaction_data_to_map({'GLCtex': 100});
+	map.apply_metabolite_data_to_map({'glc__D_p': 3});
 			     
 	// make sure ids are saved correctly
 	for (var id in map.reactions) {
@@ -30,12 +77,10 @@ describe('Map', function() {
 	    if (node.node_type=='metabolite') {
 		// bigg ids and compartments should be present
 		expect(map.nodes[id].bigg_id).toBeDefined();
-		expect(map.nodes[id].bigg_id_compartmentalized).not.toBeDefined();
-		expect(map.nodes[id].compartment_id).toBeDefined();
 	    }
 	}
 
-	expect(map.has_reaction_data()).toBe(true);
+	expect(map.has_data_on_reactions).toBe(true);
 	for (var id in map.reactions) {
 	    var reaction = map.reactions[id];
 	    if (reaction.bigg_id=='GLCtex') {
@@ -46,7 +91,7 @@ describe('Map', function() {
 	    }
 	}
 
-	expect(map.has_metabolite_data()).toBe(true);
+	expect(map.has_data_on_nodes).toBe(true);
 	for (var id in map.nodes) {
 	    var node = map.nodes[id];
 	    if (node.bigg_id_compartmentalized=='glc__D_p')
@@ -55,35 +100,48 @@ describe('Map', function() {
 		expect(map.nodes[id].data).toBe(null);
 	}
 	
-	map.set_reaction_data(null);
-	expect(map.has_reaction_data()).toBe(false);
+	map.apply_reaction_data_to_map(null);
+	expect(map.has_data_on_reactions).toBe(false);
 	for (var id in map.reactions) {
 	    expect(map.reactions[id].data).toBe(null);
 	}
 
-	map.set_metabolite_data(null);
-	expect(map.has_metabolite_data()).toBe(false);
+	map.apply_metabolite_data_to_map(null);
+	expect(map.has_data_on_nodes).toBe(false);
 	for (var id in map.nodes) {
 	    expect(map.nodes[id].data).toBe(null);
 	}
-	svg.remove();
     });
-    it("Load without reaction/met data", function () {
-	var svg = d3.select('body').append('svg'),
-	    sel = svg.append('g'),
-	    map = escher.Map.from_data(get_map(),
-				       svg,
-				       null,
-				       sel,
-				       null,
-				       new escher.Settings(),
-				       null,
-				       null,
-				       null,
-				       null);
 
-	expect(map.has_reaction_data()).toBe(false);
-	expect(map.has_metabolite_data()).toBe(false);
-	svg.remove();
+    it('Add reaction to map', function() {
+	var model_data = { reactions: [ { id: 'acc_tpp',
+					  metabolites: { acc_c: 1, acc_p: -1 },
+					  gene_reaction_rule: 'Y1234'
+					}
+				      ],
+			   metabolites: [ { id: 'acc_c',
+					    formula: 'C3H2' },
+					  { id: 'acc_p',
+					    formula: 'C3H2' }
+					],
+                           genes: []
+			 },
+	    model = escher.CobraModel(model_data);
+	map.cobra_model = model;
+
+	map.new_reaction_from_scratch('acc_tpp', {x: 0, y: 0, gene_reaction_rule: ''}, 0);
+
+	// find the reaction
+	var match = null;
+	for (var r_id in map.reactions) {
+	    var r = map.reactions[r_id];
+	    if (r.bigg_id == 'acc_tpp')
+		match = r;
+	}
+	expect(match).not.toBe(null);
+	// gene reaction rule
+	expect(match.gene_reaction_rule)
+	    .toEqual(model_data.reactions[0].gene_reaction_rule);
+	
     });
 });
