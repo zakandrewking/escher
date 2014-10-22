@@ -12112,146 +12112,174 @@ define('Brush',["utils"], function(utils) {
 
 define('ui',["utils", "data_styles"], function(utils, data_styles) {
     return { individual_button: individual_button,
-	     radio_button_group: radio_button_group,
-	     button_group: button_group,
-	     dropdown_menu: dropdown_menu,
-	     set_button: set_button,
-	     set_json_input_button: set_json_input_button,
-	     set_json_or_csv_input_button: set_json_or_csv_input_button };
+             radio_button_group: radio_button_group,
+             button_group: button_group,
+             dropdown_menu: dropdown_menu,
+             set_json_input_button: set_json_input_button,
+             set_json_or_csv_input_button: set_json_or_csv_input_button };
 
     function individual_button(s, button) {
-	var b = s.append('button'),
-	    c = b.append('span');
-	if ('id' in button) b.attr('id', button.id);
-	if ('classes' in button) b.attr('class', button.classes);
-	if ('text' in button) c.text(button.text);
-	if ('icon' in button) c.classed(button.icon, true);
-	if ('key' in button) set_button(b, button.key);
-	// if ('tooltip' in button) 
-	b.attr('title', button.tooltip);
+        var b = s.append('button'),
+            c = b.append('span');
+        if ('id' in button) b.attr('id', button.id);
+        if ('classes' in button) b.attr('class', button.classes);
+
+        // text
+        if ('key_text' in button && 'text' in button && button.key_text !== null)
+            c.text(button.text + button.key_text);
+        else if ('text' in button)
+            c.text(button.text);
+        
+        if ('icon' in button) c.classed(button.icon, true);
+        if ('key' in button) set_button(b, button.key);
+        // if ('tooltip' in button) 
+        b.attr('title', button.tooltip);
     }
+    
     function radio_button_group(s) {
-	var s2 = s.append('li')
-		.attr('class', 'btn-group-vertical')
-		.attr('data-toggle', 'buttons');
-	return { button: function(button) {
-	    var b = s2.append("label")
-		    .attr("class", "btn btn-default");
-	    b.append('input').attr('type', 'radio');
-	    var c = b.append("span");
-	    if ('id' in button) b.attr('id', button.id);
-	    if ('text' in button) c.text(button.text);
-	    if ('icon' in button) c.classed(button.icon, true);
-	    if ('key' in button) set_button(b, button.key);
-	    if ('tooltip' in button) b.attr('title', button.tooltip);
-	    return this;
-	}};
+        var s2 = s.append('li')
+                .attr('class', 'btn-group-vertical')
+                .attr('data-toggle', 'buttons');
+        return { button: function(button) {
+            var b = s2.append("label")
+                    .attr("class", "btn btn-default");
+            b.append('input').attr('type', 'radio');
+            var c = b.append("span");
+            if ('id' in button) b.attr('id', button.id);
+            
+            // text
+            if ('key_text' in button && 'text' in button && button.key_text !== null)
+                c.text(button.text + button.key_text);
+            else if ('text' in button)
+                c.text(button.text);
+
+            if ('icon' in button) c.classed(button.icon, true);
+            if ('key' in button) set_button(b, button.key);
+            if ('tooltip' in button) b.attr('title', button.tooltip);
+            return this;
+        }};
     }
+    
     function button_group(s) {
-	var s2 = s.attr('class', 'btn-group-vertical');
-	return { button: function(button) {
-	    var b = s2.append("button")
-		    .attr("class", "btn btn-default");
-	    var c = b.append("span");
-	    if ('id' in button) b.attr('id', button.id);
-	    if ('text' in button) c.text(button.text);
-	    if ('icon' in button) c.classed(button.icon, true);
-	    if ('key' in button) set_button(b, button.key);
-	    if ('tooltip' in button) b.attr('title', button.tooltip);
-	    return this;
-	}};
+        var s2 = s.attr('class', 'btn-group-vertical');
+        return { button: function(button) {
+            var b = s2.append("button")
+                    .attr("class", "btn btn-default");
+            var c = b.append("span");
+            if ('id' in button) b.attr('id', button.id);
+
+            // text
+            if ('key_text' in button && 'text' in button && button.key_text !== null)
+                c.text(button.text + button.key_text);
+            else if ('text' in button)
+                c.text(button.text);
+            
+            if ('icon' in button) c.classed(button.icon, true);
+            if ('key' in button) set_button(b, button.key);
+            if ('tooltip' in button) b.attr('title', button.tooltip);
+            return this;
+        }};
     }
+    
     function dropdown_menu(s, name, pull_right) {
-	if (pull_right === undefined) pull_right = false;
-	var s2 = s.append('li')
-		.attr('class', 'dropdown');
-	s2.append('button').text(name+" ")
-	    .attr('class', 'btn btn-link btn-sm dropdown-button')
-	    .attr('data-toggle', 'dropdown')
-	    .append('b').attr('class', 'caret');
-	var ul = s2.append('ul')
-		.attr('class', 'dropdown-menu')
-		.classed('pull-right', pull_right)
-		.attr('role', 'menu')
-		.attr('aria-labelledby', 'dLabel');
-	return {
-	    button: function(button) {
-		var li = ul.append("li")
-			.attr('role', 'presentation'),
-		    link = li.append("a")
-			.attr('href', '#'),
-		    icon = link.append('span')
-			.attr('class', 'dropdown-button-icon'),
-		    text = link.append('span')
-			.attr('class', 'dropdown-button-text');
-		if ('id' in button) li.attr('id', button.id);
-		if ('text' in button) text.text(" "+button.text);
-		if ('icon' in button) icon.classed(button.icon, true);
-		
-		if ('key' in button) {
-		    set_button(link, button.key);
-		} else if ('input' in button) {
-		    var input = button.input,
-			out = (input.accept_csv ?
-			       set_json_or_csv_input_button(link, li, input.pre_fn,
+        if (pull_right === undefined) pull_right = false;
+        var s2 = s.append('li')
+                .attr('class', 'dropdown');
+        s2.append('button').text(name+" ")
+            .attr('class', 'btn btn-link btn-sm dropdown-button')
+            .attr('data-toggle', 'dropdown')
+            .append('b').attr('class', 'caret');
+        var ul = s2.append('ul')
+                .attr('class', 'dropdown-menu')
+                .classed('pull-right', pull_right)
+                .attr('role', 'menu')
+                .attr('aria-labelledby', 'dLabel');
+        return {
+            button: function(button) {
+                var li = ul.append("li")
+                        .attr('role', 'presentation'),
+                    link = li.append("a")
+                        .attr('href', '#'),
+                    icon = link.append('span')
+                        .attr('class', 'dropdown-button-icon'),
+                    text = link.append('span')
+                        .attr('class', 'dropdown-button-text');
+                if ('id' in button) li.attr('id', button.id);
+                
+                // text
+                if ('key_text' in button && 'text' in button && button.key_text !== null)
+                    text.text(" "+button.text + button.key_text);
+                else if ('text' in button)
+                    text.text(" "+button.text);
+
+                if ('icon' in button) icon.classed(button.icon, true);
+                
+                if ('key' in button) {
+                    set_button(link, button.key);
+                } else if ('input' in button) {
+                    var input = button.input,
+                        out = (input.accept_csv ?
+                               set_json_or_csv_input_button(link, li, input.pre_fn,
                                                             input.fn, input.failure_fn) :
-			       set_json_input_button(link, li, input.pre_fn,
+                               set_json_input_button(link, li, input.pre_fn,
                                                      input.fn, input.failure_fn));
-		    if ('assign' in input && 'key' in input)
-			input.assign[input.key] = out;
-		}
-		return this;
-	    },
-	    divider: function() {
-		ul.append("li")
-		    .attr('role', 'presentation')
-		    .attr('class', 'divider');
-		return this;
-	    }
-	};
+                    if ('assign' in input && 'key' in input)
+                        input.assign[input.key] = out;
+                }
+                return this;
+            },
+            divider: function() {
+                ul.append("li")
+                    .attr('role', 'presentation')
+                    .attr('class', 'divider');
+                return this;
+            }
+        };
     }
-    function set_button(b, key, name) {
-	if (name !== undefined) b.text(name);
-	b.on("click", function() {
-	    key.fn.call(key.target);
-	});
+    
+    function set_button(b, key) {
+        b.on("click", function() {
+            key.fn.call(key.target);
+        });
     }
+    
     function set_json_input_button(b, s, pre_fn, post_fn, failure_fn) {
-	var input = s.append("input")
-		.attr("type", "file")
-		.style("display", "none")
-		.on("change", function() {
-		    utils.load_json(this.files[0],
-				    function(e, d) {
-					post_fn(e, d);
-					this.value = "";
-				    }.bind(this),
+        var input = s.append("input")
+                .attr("type", "file")
+                .style("display", "none")
+                .on("change", function() {
+                    utils.load_json(this.files[0],
+                                    function(e, d) {
+                                        post_fn(e, d);
+                                        this.value = "";
+                                    }.bind(this),
                                     pre_fn,
                                     failure_fn);
-		});
-	b.on('click', function(e) {
-	    input.node().click();
-	});
-	return function() { input.node().click(); };
+                });
+        b.on('click', function(e) {
+            input.node().click();
+        });
+        return function() { input.node().click(); };
     }
+    
     function set_json_or_csv_input_button(b, s, pre_fn, post_fn, failure_fn) {
-	var input = s.append("input")
-		.attr("type", "file")
-		.style("display", "none")
-		.on("change", function() {
-		    utils.load_json_or_csv(this.files[0],
-					   data_styles.csv_converter,
-					   function(e, d) {
-					       post_fn(e, d);
-					       this.value = "";
-					   }.bind(this),
+        var input = s.append("input")
+                .attr("type", "file")
+                .style("display", "none")
+                .on("change", function() {
+                    utils.load_json_or_csv(this.files[0],
+                                           data_styles.csv_converter,
+                                           function(e, d) {
+                                               post_fn(e, d);
+                                               this.value = "";
+                                           }.bind(this),
                                            pre_fn,
                                            failure_fn);
-		});
-	b.on('click', function(e) {
-	    input.node().click();
-	});
-	return function() { input.node().click(); };
+                });
+        b.on('click', function(e) {
+            input.node().click();
+        });
+        return function() { input.node().click(); };
     }
 });
 
@@ -13672,50 +13700,50 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
      options: An object.
 
-         identifiers_on_map: Either 'bigg_id' (default) or 'name'.
+     identifiers_on_map: Either 'bigg_id' (default) or 'name'.
 
-         reaction_data: An object with reaction ids for keys and reaction data
-         points for values.
+     reaction_data: An object with reaction ids for keys and reaction data
+     points for values.
 
-         reaction_styles:
+     reaction_styles:
 
-         reaction_compare_style: (Default: 'diff') How to compare to
-         datasets. Can be either 'fold, 'log2_fold', or 'diff'.
+     reaction_compare_style: (Default: 'diff') How to compare to
+     datasets. Can be either 'fold, 'log2_fold', or 'diff'.
 
-         reaction_domain:
-         
-         reaction_color_range:
-         
-         reaction_size_range:
-         
-         reaction_no_data_color:
-         
-         reaction_no_data_size:
+     reaction_domain:
+     
+     reaction_color_range:
+     
+     reaction_size_range:
+     
+     reaction_no_data_color:
+     
+     reaction_no_data_size:
 
-         gene_data: An object with Gene ids for keys and gene data points for
-         values.
+     gene_data: An object with Gene ids for keys and gene data points for
+     values.
 
-         and_method_in_gene_reaction_rule: (Default: mean) When evaluating a
-         gene reaction rule, use this function to evaluate AND rules. Can be
-         'mean' or 'min'.
+     and_method_in_gene_reaction_rule: (Default: mean) When evaluating a
+     gene reaction rule, use this function to evaluate AND rules. Can be
+     'mean' or 'min'.
 
-         metabolite_data: An object with metabolite ids for keys and metabolite
-         data points for values.
+     metabolite_data: An object with metabolite ids for keys and metabolite
+     data points for values.
 
-         metabolite_compare_style: (Default: 'diff') How to compare to
-         datasets. Can be either 'fold', 'log2_fold' or 'diff'.
+     metabolite_compare_style: (Default: 'diff') How to compare to
+     datasets. Can be either 'fold', 'log2_fold' or 'diff'.
 
-         highlight_missing_color: A color to apply to components that are not
-         the in cobra model, or null to apply no color. Default: 'red'.
+     highlight_missing_color: A color to apply to components that are not
+     the in cobra model, or null to apply no color. Default: 'red'.
 
-         local_host: The host used to load maps for quick_jump. E.g.,
-         http://localhost:7778.
+     local_host: The host used to load maps for quick_jump. E.g.,
+     http://localhost:7778.
 
-         quick_jump: A list of map names that can be reached by
-         selecting them from a quick jump menu on the map.
+     quick_jump: A list of map names that can be reached by
+     selecting them from a quick jump menu on the map.
 
-         first_load_callback: A function to run after loading.
-         
+     first_load_callback: A function to run after loading.
+     
      */
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
@@ -13752,7 +13780,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         // default sel
         var sel = null;
         if (!('selection' in options) || options['selection'] === null)
-            sel = d3.select("body").append("div");
+            sel = d3.select('body').append('div');
         
         // set defaults
         this.options = utils.set_options(options, {
@@ -13805,8 +13833,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
         // check the location
         if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
-            throw new Error("Builder cannot be placed within an svg node "+
-                            "becuase UI elements are html-based.");
+            throw new Error('Builder cannot be placed within an svg node '+
+                            'becuase UI elements are html-based.');
         }
         
         // Initialize the settings
@@ -13849,14 +13877,14 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
     function load_model(model_data, should_update_data) {
         /** Load the cobra model from model data
 
-            Arguments
-            ---------
-            
-            model_data: The data for a cobra model, to be passed to
-            escher.CobraModel().
+         Arguments
+         ---------
+         
+         model_data: The data for a cobra model, to be passed to
+         escher.CobraModel().
 
-            should_update_data: (Boolean, default true) Whether the data in the
-            model should be updated.
+         should_update_data: (Boolean, default true) Whether the data in the
+         model should be updated.
 
          */
 
@@ -13882,13 +13910,13 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
     function load_map(map_data, should_update_data) {
         /** Load a map for the loaded data. Also reloads most of the builder content.
 
-            Arguments
-            ---------
+         Arguments
+         ---------
 
-            map_data: The data for a map, to be passed to escher.Map.from_data().
+         map_data: The data for a map, to be passed to escher.Map.from_data().
 
-            should_update_data: (Boolean, default true) Whether the data in the
-            model should be updated.
+         should_update_data: (Boolean, default true) Whether the data in the
+         model should be updated.
 
          */
 
@@ -13991,7 +14019,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         // set up menu and status bars
         if (this.options.menu=='all') {
             this._setup_menu(menu_div, button_div, this.map, this.zoom_container, this.map.key_manager, keys,
-                             this.options.enable_editing);
+                             this.options.enable_editing, this.options.enable_keys);
         } else if (this.options.menu=='zoom') {
             this._setup_simple_zoom_buttons(button_div, keys);
         }
@@ -14209,15 +14237,17 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
     }
     
     function _setup_menu(menu_selection, button_selection, map, zoom_container,
-                         key_manager, keys, enable_editing) {
+                         key_manager, keys, enable_editing, enable_keys) {
         var menu = menu_selection.attr('id', 'menu')
-                .append("ul")
-                .attr("class", "nav nav-pills");
+                .append('ul')
+                .attr('class', 'nav nav-pills');
         // map dropdown
         ui.dropdown_menu(menu, 'Map')
             .button({ key: keys.save,
-                      text: "Save as JSON (Ctrl s)" })
-            .button({ text: "Load map JSON (Ctrl o)",
+                      text: 'Save as JSON',
+                      key_text: (enable_keys ? ' (Ctrl+S)' : null) })
+            .button({ text: 'Load map JSON',
+                      key_text: (enable_keys ? ' (Ctrl+O)' : null),
                       input: { assign: key_manager.assigned_keys.load,
                                key: 'fn',
                                fn: load_map_for_file.bind(this),
@@ -14229,12 +14259,14 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                }}
                     })
             .button({ key: keys.save_svg,
-                      text: "Export as SVG (Ctrl Shift s)" })
+                      text: 'Export as SVG',
+                      key_text: (enable_keys ? ' (Ctrl+Shift+S)' : null) })
             .button({ key: keys.clear_map,
-                      text: "Clear map" });
+                      text: 'Clear map' });
         // model dropdown
         ui.dropdown_menu(menu, 'Model')
-            .button({ text: 'Load COBRA model JSON (Ctrl m)',
+            .button({ text: 'Load COBRA model JSON',
+                      key_text: (enable_keys ? ' (Ctrl+M)' : null),
                       input: { assign: key_manager.assigned_keys.load_model,
                                key: 'fn',
                                fn: load_model_for_file.bind(this),
@@ -14252,490 +14284,518 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                    key: 'fn',
                                    fn: load_reaction_data_for_file.bind(this),
                                    accept_csv: true },
-                          text: "Load reaction data" })
+                          text: 'Load reaction data' })
                 .button({ key: keys.clear_reaction_data,
-                          text: "Clear reaction data" })
+                          text: 'Clear reaction data' })
                 .button({ input: { fn: load_gene_data_for_file.bind(this),
                                    accept_csv: true  },
-                          text: "Load gene data" })
+                          text: 'Load gene data' })
                 .button({ key: keys.clear_gene_data,
-                          text: "Clear gene data" })
+                          text: 'Clear gene data' })
                 .button({ input: { fn: load_metabolite_data_for_file.bind(this),
                                    accept_csv: true  },
-                          text: "Load metabolite data" })
+                          text: 'Load metabolite data' })
                 .button({ key: keys.clear_metabolite_data,
-                          text: "Clear metabolite data" })
+                          text: 'Clear metabolite data' })
                 .button({ key: keys.show_settings,
-                          text: "Settings (Ctrl ,)" });
+                          text: 'Settings',
+                          key_text: (enable_keys ? ' (Ctrl+,)' : null) });
         
         // edit dropdown 
         var edit_menu = ui.dropdown_menu(menu, 'Edit', true);
         if (enable_editing) {      
             edit_menu.button({ key: keys.build_mode,
                                id: 'build-mode-menu-button',
-                               text: "Add reaction mode (n)" })
+                               text: 'Add reaction mode',
+                               key_text: (enable_keys ? ' (N)' : null) })
                 .button({ key: keys.zoom_mode,
                           id: 'zoom-mode-menu-button',
-                          text: "Pan mode (z)" })
+                          text: 'Pan mode',
+                          key_text: (enable_keys ? ' (Z)' : null) })
                 .button({ key: keys.brush_mode,
                           id: 'brush-mode-menu-button',
-                          text: "Select mode (v)" })
+                          text: 'Select mode',
+                          key_text: (enable_keys ? ' (V)' : null) })
                 .button({ key: keys.rotate_mode,
                           id: 'rotate-mode-menu-button',
-                          text: "Rotate mode (r)" })
+                          text: 'Rotate mode',
+                          key_text: (enable_keys ? ' (R)' : null) })
                 .button({ key: keys.text_mode,
                           id: 'text-mode-menu-button',
-                          text: "Text mode (t)" })
+                          text: 'Text mode',
+                          key_text: (enable_keys ? ' (T)' : null) })
                 .divider()
                 .button({ key: keys.delete,
-                          // icon: "glyphicon glyphicon-trash",
-                          text: "Delete (Del)" })
+                          // icon: 'glyphicon glyphicon-trash',
+                          text: 'Delete',
+                          key_text: (enable_keys ? ' (Del)' : null) })
                 .button({ key: keys.undo, 
-                          text: "Undo (Ctrl z)" })
+                          text: 'Undo',
+                          key_text: (enable_keys ? ' (Ctrl+Z)' : null) })
                 .button({ key: keys.redo,
-                          text: "Redo (Ctrl Shift z)" }) 
+                          text: 'Redo',
+                          key_text: (enable_keys ? ' (Ctrl+Shift+Z)' : null) })
                 .button({ key: keys.make_primary,
-                          text: "Make primary metabolite (p)" })
+                          text: 'Make primary metabolite',
+                          key_text: (enable_keys ? ' (P)' : null) })
                 .button({ key: keys.cycle_primary,
-                          text: "Cycle primary metabolite (c)" })
+                          text: 'Cycle primary metabolite',
+                          key_text: (enable_keys ? ' (C)' : null) })
                 .button({ key: keys.select_all,
-                          text: "Select all (Ctrl a)" })
+                          text: 'Select all',
+                          key_text: (enable_keys ? ' (Ctrl+A)' : null) })
                 .button({ key: keys.select_none,
-                          text: "Select none (Ctrl Shift a)" })
+                          text: 'Select none',
+                          key_text: (enable_keys ? ' (Ctrl+Shift+A)' : null) })
                 .button({ key: keys.invert_selection,
-                          text: "Invert selection" });
+                          text: 'Invert selection' });
         } else {
             edit_menu.button({ key: keys.view_mode,
                                id: 'view-mode-menu-button',
-                               text: "View mode" });
+                               text: 'View mode' });
         }
 
         // view dropdown
         var view_menu = ui.dropdown_menu(menu, 'View', true)
                 .button({ key: keys.zoom_in,
-                          text: "Zoom in (Ctrl +)" })
+                          text: 'Zoom in',
+                          key_text: (enable_keys ? ' (Ctrl and +)' : null) })
                 .button({ key: keys.zoom_out,
-                          text: "Zoom out (Ctrl -)" })
+                          text: 'Zoom out',
+                          key_text: (enable_keys ? ' (Ctrl and -)' : null) })
                 .button({ key: keys.extent_nodes,
-                          text: "Zoom to nodes (Ctrl 0)"
-                        })
+                          text: 'Zoom to nodes',
+                          key_text: (enable_keys ? ' (Ctrl+0)' : null) })        
                 .button({ key: keys.extent_canvas,
-                          text: "Zoom to canvas (Ctrl 1)" })
+                          text: 'Zoom to canvas',
+                          key_text: (enable_keys ? ' (Ctrl+1)' : null) })
                 .button({ key: keys.search,
-                          text: "Find (Ctrl f)" });
-        if (enable_editing) {
-            view_menu.button({ key: keys.toggle_beziers,
-                               id: "bezier-button",
-                               text: "Show control points (b)"});           
-            map.callback_manager
-                .set('toggle_beziers.button', function(on_off) {
-                    menu.select('#bezier-button').select('.dropdown-button-text')
-                        .text((on_off ? 'Hide' : 'Show') + ' control points (b)');
-                });
-        }
-        
-        var button_panel = button_selection.append("ul")
-                .attr("class", "nav nav-pills nav-stacked")
-                .attr('id', 'button-panel');
+                          text: 'Find',
+                          key_text: (enable_keys ? ' (Ctrl+F)' : null) });
+       if (enable_editing) {
+           view_menu.button({ key: keys.toggle_beziers,
+                              id: 'bezier-button',
+                              text: 'Show control points',
+                              key_text: (enable_keys ? ' (B)' : null) });
+           map.callback_manager
+               .set('toggle_beziers.button', function(on_off) {
+                   menu.select('#bezier-button').select('.dropdown-button-text')
+                       .text((on_off ? 'Hide' : 'Show') +
+                             ' control points' +
+                             (enable_keys ? ' (B)' : ''));
+               });
+       }
+       
+       var button_panel = button_selection.append('ul')
+               .attr('class', 'nav nav-pills nav-stacked')
+               .attr('id', 'button-panel');
 
-        // buttons
-        ui.individual_button(button_panel.append('li'),
-                             { key: keys.zoom_in,
-                               icon: "glyphicon glyphicon-plus-sign",
-                               classes: 'btn btn-default',
-                               tooltip: "Zoom in (Ctrl +)" });
-        ui.individual_button(button_panel.append('li'),
-                             { key: keys.zoom_out,
-                               icon: "glyphicon glyphicon-minus-sign",
-                               classes: 'btn btn-default',
-                               tooltip: "Zoom out (Ctrl -)" });
-        ui.individual_button(button_panel.append('li'),
-                             { key: keys.extent_canvas,
-                               icon: "glyphicon glyphicon-resize-full",
-                               classes: 'btn btn-default',
-                               tooltip: "Zoom to canvas (Ctrl 1)" });
+       // buttons
+       ui.individual_button(button_panel.append('li'),
+                            { key: keys.zoom_in,
+                              icon: 'glyphicon glyphicon-plus-sign',
+                              classes: 'btn btn-default',
+                              tooltip: 'Zoom in',
+                              key_text: (enable_keys ? ' (Ctrl and +)' : null) });
+       ui.individual_button(button_panel.append('li'),
+                            { key: keys.zoom_out,
+                              icon: 'glyphicon glyphicon-minus-sign',
+                              classes: 'btn btn-default',
+                              tooltip: 'Zoom out',
+                              key_text: (enable_keys ? ' (Ctrl and -)' : null) });
+       ui.individual_button(button_panel.append('li'),
+                            { key: keys.extent_canvas,
+                              icon: 'glyphicon glyphicon-resize-full',
+                              classes: 'btn btn-default',
+                              tooltip: 'Zoom to canvas',
+                              key_text: (enable_keys ? ' (Ctrl+1)' : null) });
 
-        // mode buttons
-        if (enable_editing) {
-            ui.radio_button_group(button_panel.append('li'))
-                .button({ key: keys.zoom_mode,
-                          id: 'zoom-mode-button',
-                          icon: "glyphicon glyphicon-move",
-                          tooltip: "Pan mode (z)" })
-                .button({ key: keys.brush_mode,
-                          id: 'brush-mode-button',
-                          icon: "glyphicon glyphicon-hand-up",
-                          tooltip: "Select mode (v)" })
-                .button({ key: keys.build_mode,
-                          id: 'build-mode-button',
-                          icon: "glyphicon glyphicon-plus",
-                          tooltip: "Add reaction mode (n)" })
-                .button({ key: keys.rotate_mode,
-                          id: 'rotate-mode-button',
-                          icon: "glyphicon glyphicon-repeat",
-                          tooltip: "Rotate mode (r)" })
-                .button({ key: keys.text_mode,
-                          id: 'text-mode-button',
-                          icon: "glyphicon glyphicon-font",
-                          tooltip: "Text mode (r)" });
+       // mode buttons
+       if (enable_editing) {
+           ui.radio_button_group(button_panel.append('li'))
+               .button({ key: keys.zoom_mode,
+                         id: 'zoom-mode-button',
+                         icon: 'glyphicon glyphicon-move',
+                         tooltip: 'Pan mode',
+                         key_text: (enable_keys ? ' (Z)' : null) })
+               .button({ key: keys.brush_mode,
+                         id: 'brush-mode-button',
+                         icon: 'glyphicon glyphicon-hand-up',
+                         tooltip: 'Select mode',
+                         key_text: (enable_keys ? ' (V)' : null) })
+               .button({ key: keys.build_mode,
+                         id: 'build-mode-button',
+                         icon: 'glyphicon glyphicon-plus',
+                         tooltip: 'Add reaction mode',
+                         key_text: (enable_keys ? ' (N)' : null) })
+               .button({ key: keys.rotate_mode,
+                         id: 'rotate-mode-button',
+                         icon: 'glyphicon glyphicon-repeat',
+                         tooltip: 'Rotate mode',
+                         key_text: (enable_keys ? ' (R)' : null) })
+               .button({ key: keys.text_mode,
+                         id: 'text-mode-button',
+                         icon: 'glyphicon glyphicon-font',
+                         tooltip: 'Text mode',
+                         key_text: (enable_keys ? ' (T)' : null) });
 
-            // arrow buttons
-            this.direction_buttons = button_panel.append('li');
-            var o = ui.button_group(this.direction_buttons)
-                    .button({ key: keys.direction_arrow_left,
-                              icon: "glyphicon glyphicon-arrow-left",
-                              tooltip: "Direction arrow (←)" })
-                    .button({ key: keys.direction_arrow_right,
-                              icon: "glyphicon glyphicon-arrow-right",
-                              tooltip: "Direction arrow (→)" })
-                    .button({ key: keys.direction_arrow_up,
-                              icon: "glyphicon glyphicon-arrow-up",
-                              tooltip: "Direction arrow (↑)" })
-                    .button({ key: keys.direction_arrow_down,
-                              icon: "glyphicon glyphicon-arrow-down",
-                              tooltip: "Direction arrow (↓)" });
-        }
+           // arrow buttons
+           this.direction_buttons = button_panel.append('li');
+           var o = ui.button_group(this.direction_buttons)
+                   .button({ key: keys.direction_arrow_left,
+                             icon: 'glyphicon glyphicon-arrow-left',
+                             tooltip: 'Direction arrow (←)' })
+                   .button({ key: keys.direction_arrow_right,
+                             icon: 'glyphicon glyphicon-arrow-right',
+                             tooltip: 'Direction arrow (→)' })
+                   .button({ key: keys.direction_arrow_up,
+                             icon: 'glyphicon glyphicon-arrow-up',
+                             tooltip: 'Direction arrow (↑)' })
+                   .button({ key: keys.direction_arrow_down,
+                             icon: 'glyphicon glyphicon-arrow-down',
+                             tooltip: 'Direction arrow (↓)' });
+       }
 
-        // set up mode callbacks
-        var select_menu_button = function(id) {
-            var ids = ['#build-mode-menu-button',
-                       '#zoom-mode-menu-button',
-                       '#brush-mode-menu-button',
-                       '#rotate-mode-menu-button',
-                       '#view-mode-menu-button',
-                       '#text-mode-menu-button'];
-            for (var i=0, l=ids.length; i<l; i++) {
-                var the_id = ids[i];
-                d3.select(the_id)
-                    .select('span')
-                    .classed('glyphicon', the_id==id)
-                    .classed('glyphicon-ok', the_id==id);
-            }
-        };
-        this.callback_manager.set('build_mode', function() {
-            $('#build-mode-button').button('toggle');
-            select_menu_button('#build-mode-menu-button');
-        });
-        this.callback_manager.set('zoom_mode', function() {
-            $('#zoom-mode-button').button('toggle');
-            select_menu_button('#zoom-mode-menu-button');
-        });
-        this.callback_manager.set('brush_mode', function() {
-            $('#brush-mode-button').button('toggle');
-            select_menu_button('#brush-mode-menu-button');
-        });
-        this.callback_manager.set('rotate_mode', function() {
-            $('#rotate-mode-button').button('toggle');
-            select_menu_button('#rotate-mode-menu-button');
-        });
-        this.callback_manager.set('view_mode', function() {
-            $('#view-mode-button').button('toggle');
-            select_menu_button('#view-mode-menu-button');
-        });
-        this.callback_manager.set('text_mode', function() {
-            $('#text-mode-button').button('toggle');
-            select_menu_button('#text-mode-menu-button');
-        });
+       // set up mode callbacks
+       var select_menu_button = function(id) {
+           var ids = ['#build-mode-menu-button',
+                      '#zoom-mode-menu-button',
+                      '#brush-mode-menu-button',
+                      '#rotate-mode-menu-button',
+                      '#view-mode-menu-button',
+                      '#text-mode-menu-button'];
+           for (var i=0, l=ids.length; i<l; i++) {
+               var the_id = ids[i];
+               d3.select(the_id)
+                   .select('span')
+                   .classed('glyphicon', the_id==id)
+                   .classed('glyphicon-ok', the_id==id);
+           }
+       };
+       this.callback_manager.set('build_mode', function() {
+           $('#build-mode-button').button('toggle');
+           select_menu_button('#build-mode-menu-button');
+       });
+       this.callback_manager.set('zoom_mode', function() {
+           $('#zoom-mode-button').button('toggle');
+           select_menu_button('#zoom-mode-menu-button');
+       });
+       this.callback_manager.set('brush_mode', function() {
+           $('#brush-mode-button').button('toggle');
+           select_menu_button('#brush-mode-menu-button');
+       });
+       this.callback_manager.set('rotate_mode', function() {
+           $('#rotate-mode-button').button('toggle');
+           select_menu_button('#rotate-mode-menu-button');
+       });
+       this.callback_manager.set('view_mode', function() {
+           $('#view-mode-button').button('toggle');
+           select_menu_button('#view-mode-menu-button');
+       });
+       this.callback_manager.set('text_mode', function() {
+           $('#text-mode-button').button('toggle');
+           select_menu_button('#text-mode-menu-button');
+       });
 
-        // definitions
-        function load_map_for_file(error, map_data) {
-            /** Load a map. This reloads the whole builder.
+       // definitions
+       function load_map_for_file(error, map_data) {
+           /** Load a map. This reloads the whole builder.
 
-             */
+            */
+           
+           if (error) {
+               console.warn(error); 
+               this.map.set_status('Error loading map: ' + error, 2000);
+               return;
+           }
+           
+           try {            
+               check_map(map_data);
+               this.load_map(map_data); 
+               this.map.set_status('Loaded map ' + map_data[0].map_id, 3000);
+           } catch (e) {
+               console.warn(e);
+               this.map.set_status('Error loading map: ' + e, 2000);
+           }
+           
+           // definitions
+           function check_map(data) {
+               /** Perform a quick check to make sure the map is mostly valid.
+
+                */
+               
+               if (!('map_id' in data[0] && 'reactions' in data[1] &&
+                     'nodes' in data[1] && 'canvas' in data[1]))
+                   throw new Error('Bad map data.');
+           }
+       }
+       function load_model_for_file(error, data) {
+           /** Load a cobra model. Redraws the whole map if the
+            highlight_missing option is true.
             
-            if (error) {
-                console.warn(error); 
-                this.map.set_status('Error loading map: ' + error, 2000);
-                return;
-            }
-            
-            try {            
-                check_map(map_data);
-                this.load_map(map_data); 
-                this.map.set_status('Loaded map ' + map_data[0].map_id, 3000);
-            } catch (e) {
-                console.warn(e);
-                this.map.set_status('Error loading map: ' + e, 2000);
-            }
-            
-            // definitions
-            function check_map(data) {
-                /** Perform a quick check to make sure the map is mostly valid.
+            */
+           if (error) {
+               console.warn(error); 
+               this.map.set_status('Error loading model: ' + error, 2000);
+               return;
+           }
 
-                 */
-                
-                if (!('map_id' in data[0] && 'reactions' in data[1] &&
-                      'nodes' in data[1] && 'canvas' in data[1]))
-                    throw new Error('Bad map data.');
-            }
-        }
-        function load_model_for_file(error, data) {
-            /** Load a cobra model. Redraws the whole map if the
-                highlight_missing option is true.
-                
-             */
-            if (error) {
-                console.warn(error); 
-                this.map.set_status('Error loading model: ' + error, 2000);
-                return;
-            }
+           try {
+               this.load_model(data); 
+               this.reaction_input.toggle(false);
+               if ('id' in data)
+                   this.map.set_status('Loaded model ' + data.id, 3000);
+               else
+                   this.map.set_status('Loaded model (no model id)', 3000);
+               if (this.settings.highlight_missing!==null) {
+                   this.map.draw_everything();
+               }
+           } catch (e) {
+               console.warn(e);
+               this.map.set_status('Error loading model: ' + e, 2000);
+           }
+           
+       }
+       function load_reaction_data_for_file(error, data) {
+           if (error) {
+               console.warn(error); 
+               this.map.set_status('Could not parse file as JSON or CSV', 2000);
+               return;
+           }
+           // turn off gene data
+           if (data !== null)
+               this.set_gene_data(null);
+           
+           this.set_reaction_data(data);
+       }
+       function load_metabolite_data_for_file(error, data) {
+           if (error) {
+               console.warn(error); 
+               this.map.set_status('Could not parse file as JSON or CSV', 2000);
+               return;
+           }
+           this.set_metabolite_data(data);
+       }
+       function load_gene_data_for_file(error, data) {
+           if (error) {
+               console.warn(error); 
+               this.map.set_status('Could not parse file as JSON or CSV', 2000);
+               return;
+           }
+           // turn off reaction data
+           if (data !== null)
+               this.set_reaction_data(null);
+           
+           this.set_gene_data(data);
+       }
+      }
 
-            try {
-                this.load_model(data); 
-                this.reaction_input.toggle(false);
-                if ('id' in data)
-                    this.map.set_status('Loaded model ' + data.id, 3000);
-                else
-                    this.map.set_status('Loaded model (no model id)', 3000);
-                if (this.settings.highlight_missing!==null) {
-                    this.map.draw_everything();
-                }
-            } catch (e) {
-                console.warn(e);
-                this.map.set_status('Error loading model: ' + e, 2000);
-            }
-            
-        }
-        function load_reaction_data_for_file(error, data) {
-            if (error) {
-                console.warn(error); 
-                this.map.set_status('Could not parse file as JSON or CSV', 2000);
-                return;
-            }
-            // turn off gene data
-            if (data !== null)
-                this.set_gene_data(null);
-            
-            this.set_reaction_data(data);
-        }
-        function load_metabolite_data_for_file(error, data) {
-            if (error) {
-                console.warn(error); 
-                this.map.set_status('Could not parse file as JSON or CSV', 2000);
-                return;
-            }
-            this.set_metabolite_data(data);
-        }
-        function load_gene_data_for_file(error, data) {
-            if (error) {
-                console.warn(error); 
-                this.map.set_status('Could not parse file as JSON or CSV', 2000);
-                return;
-            }
-            // turn off reaction data
-            if (data !== null)
-                this.set_reaction_data(null);
-            
-            this.set_gene_data(data);
-        }
-    }
+function _setup_simple_zoom_buttons(button_selection, keys) {
+    var button_panel = button_selection.append('div')
+            .attr('id', 'simple-button-panel');
 
-    function _setup_simple_zoom_buttons(button_selection, keys) {
-        var button_panel = button_selection.append("div")
-                .attr('id', 'simple-button-panel');
+    // buttons
+    ui.individual_button(button_panel.append('div'),
+                         { key: keys.zoom_in,
+                           text: '+',
+                           classes: 'simple-button',
+                           tooltip: 'Zoom in (Ctrl +)' });
+    ui.individual_button(button_panel.append('div'),
+                         { key: keys.zoom_out,
+                           text: '–',
+                           classes: 'simple-button',
+                           tooltip: 'Zoom out (Ctrl -)' });
+    ui.individual_button(button_panel.append('div'),
+                         { key: keys.extent_canvas,
+                           text: '↔',
+                           classes: 'simple-button',
+                           tooltip: 'Zoom to canvas (Ctrl 1)' });
 
-        // buttons
-        ui.individual_button(button_panel.append('div'),
-                             { key: keys.zoom_in,
-                               text: "+",
-                               classes: "simple-button",
-                               tooltip: "Zoom in (Ctrl +)" });
-        ui.individual_button(button_panel.append('div'),
-                             { key: keys.zoom_out,
-                               text: "–",
-                               classes: "simple-button",
-                               tooltip: "Zoom out (Ctrl -)" });
-        ui.individual_button(button_panel.append('div'),
-                             { key: keys.extent_canvas,
-                               text: "↔",
-                               classes: "simple-button",
-                               tooltip: "Zoom to canvas (Ctrl 1)" });
+}
 
-    }
+function _toggle_direction_buttons(on_off) {
+    if (on_off===undefined)
+        on_off = !this.direction_buttons.style('visibility')=='visible';
+    this.direction_buttons.style('visibility', on_off ? 'visible' : 'hidden');
+}
 
-    function _toggle_direction_buttons(on_off) {
-        if (on_off===undefined)
-            on_off = !this.direction_buttons.style('visibility')=='visible';
-        this.direction_buttons.style('visibility', on_off ? 'visible' : 'hidden');
-    }
+function _setup_status(selection, map) {
+    var status_bar = selection.append('div').attr('id', 'status');
+    map.callback_manager.set('set_status', function(status) {
+        status_bar.text(status);
+    });
+    return status_bar;
+}
 
-    function _setup_status(selection, map) {
-        var status_bar = selection.append("div").attr("id", "status");
-        map.callback_manager.set('set_status', function(status) {
-            status_bar.text(status);
-        });
-        return status_bar;
-    }
+function _setup_quick_jump(selection, options) {
+    // make the quick jump object
+    this.quick_jump = QuickJump(selection, options);
 
-    function _setup_quick_jump(selection, options) {
-        // make the quick jump object
-        this.quick_jump = QuickJump(selection, options);
-
-        // function to load a map
-        var load_map = function(new_map_name, current_map) {
-            this.map.set_status('Loading map ' + new_map_name + ' ...');
-            var url = utils.name_to_url(new_map_name, this.options.local_host);
-            d3.json(url, function(error, data) {
-                if (error)
-                    throw new Error('Could not load data: ' + error) 
-                // update the url with the new map
-                var new_url = window.location.href
+    // function to load a map
+    var load_map = function(new_map_name, current_map) {
+        this.map.set_status('Loading map ' + new_map_name + ' ...');
+        var url = utils.name_to_url(new_map_name, this.options.local_host);
+        d3.json(url, function(error, data) {
+            if (error)
+                throw new Error('Could not load data: ' + error) 
+            // update the url with the new map
+            var new_url = window.location.href
                     .replace(/(map_name=)([^&]+)(&|$)/, '$1' + new_map_name + '$3')
-                window.history.pushState("not implemented", new_map_name, new_url);
-                // now reload
-                this.load_map(data);
-                this.map.set_status('');
-            }.bind(this));
-        }.bind(this);
+            window.history.pushState('not implemented', new_map_name, new_url);
+            // now reload
+            this.load_map(data);
+            this.map.set_status('');
+        }.bind(this));
+    }.bind(this);
 
-        // set the callback
-        this.quick_jump.callback_manager.set('switch_maps', load_map);
-    }
+    // set the callback
+    this.quick_jump.callback_manager.set('switch_maps', load_map);
+}
 
-    function _setup_modes(map, brush, zoom_container) {
-        // set up zoom+pan and brush modes
-        var was_enabled = {};
-        map.callback_manager.set('start_rotation', function() {
-            was_enabled.brush = brush.enabled;
-            brush.toggle(false);
-            was_enabled.zoom = zoom_container.zoom_on;
-            zoom_container.toggle_zoom(false);
-            was_enabled.selectable_click = map.behavior.selectable_click!=null;
-            map.behavior.toggle_selectable_click(false);
-            was_enabled.label_click = map.behavior.label_click!=null;
-            map.behavior.toggle_label_click(false);
-        });
-        map.callback_manager.set('end_rotation', function() {
-            brush.toggle(was_enabled.brush);
-            zoom_container.toggle_zoom(was_enabled.zoom);
-            map.behavior.toggle_selectable_click(was_enabled.selectable_click);
-            map.behavior.toggle_label_click(was_enabled.label_click);
-            was_enabled = {};
-        });
-    }
+function _setup_modes(map, brush, zoom_container) {
+    // set up zoom+pan and brush modes
+    var was_enabled = {};
+    map.callback_manager.set('start_rotation', function() {
+        was_enabled.brush = brush.enabled;
+        brush.toggle(false);
+        was_enabled.zoom = zoom_container.zoom_on;
+        zoom_container.toggle_zoom(false);
+        was_enabled.selectable_click = map.behavior.selectable_click!=null;
+        map.behavior.toggle_selectable_click(false);
+        was_enabled.label_click = map.behavior.label_click!=null;
+        map.behavior.toggle_label_click(false);
+    });
+    map.callback_manager.set('end_rotation', function() {
+        brush.toggle(was_enabled.brush);
+        zoom_container.toggle_zoom(was_enabled.zoom);
+        map.behavior.toggle_selectable_click(was_enabled.selectable_click);
+        map.behavior.toggle_label_click(was_enabled.label_click);
+        was_enabled = {};
+    });
+}
 
-    function _get_keys(map, zoom_container, search_bar, settings_page, enable_editing) {
-        var keys = {
-            save: { key: 83, modifiers: { control: true }, // ctrl-s
+function _get_keys(map, zoom_container, search_bar, settings_page, enable_editing) {
+    var keys = {
+        save: { key: 83, modifiers: { control: true }, // ctrl-s
+                target: map,
+                fn: map.save },
+        save_svg: { key: 83, modifiers: { control: true, shift: true },
                     target: map,
-                    fn: map.save },
-            save_svg: { key: 83, modifiers: { control: true, shift: true },
+                    fn: map.save_svg },
+        load: { key: 79, modifiers: { control: true }, // ctrl-o
+                fn: null }, // defined by button
+        clear_map: { target: map,
+                     fn: function() { this.clear_map(); }},
+        load_model: { key: 77, modifiers: { control: true }, // ctrl-m
+                      fn: null }, // defined by button
+        load_reaction_data: { fn: null }, // defined by button
+        clear_reaction_data: { target: this,
+                               fn: function() { this.set_reaction_data(null); }},
+        load_metabolite_data: { fn: null }, // defined by button
+        clear_metabolite_data: { target: this,
+                                 fn: function() { this.set_metabolite_data(null); }},
+        load_gene_data: { fn: null }, // defined by button
+        clear_gene_data: { target: this,
+                           fn: function() { this.set_gene_data(null); }},
+        zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
+                   target: zoom_container,
+                   fn: zoom_container.zoom_in },
+        zoom_out: { key: 189, modifiers: { control: true }, // ctrl -
+                    target: zoom_container,
+                    fn: zoom_container.zoom_out },
+        extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
                         target: map,
-                        fn: map.save_svg },
-            load: { key: 79, modifiers: { control: true }, // ctrl-o
-                    fn: null }, // defined by button
-            clear_map: { target: map,
-                         fn: function() { this.clear_map(); }},
-            load_model: { key: 77, modifiers: { control: true }, // ctrl-m
-                          fn: null }, // defined by button
-            load_reaction_data: { fn: null }, // defined by button
-            clear_reaction_data: { target: this,
-                                   fn: function() { this.set_reaction_data(null); }},
-            load_metabolite_data: { fn: null }, // defined by button
-            clear_metabolite_data: { target: this,
-                                     fn: function() { this.set_metabolite_data(null); }},
-            load_gene_data: { fn: null }, // defined by button
-            clear_gene_data: { target: this,
-                               fn: function() { this.set_gene_data(null); }},
-            zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
-                       target: zoom_container,
-                       fn: zoom_container.zoom_in },
-            zoom_out: { key: 189, modifiers: { control: true }, // ctrl -
-                        target: zoom_container,
-                        fn: zoom_container.zoom_out },
-            extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
-                            target: map,
-                            fn: map.zoom_extent_nodes },
-            extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
-                             target: map,
-                             fn: map.zoom_extent_canvas },
-            search: { key: 70, modifiers: { control: true }, // ctrl-f
-                      fn: search_bar.toggle.bind(search_bar, true) },
-            view_mode: { fn: this.view_mode.bind(this),
+                        fn: map.zoom_extent_nodes },
+        extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
+                         target: map,
+                         fn: map.zoom_extent_canvas },
+        search: { key: 70, modifiers: { control: true }, // ctrl-f
+                  fn: search_bar.toggle.bind(search_bar, true) },
+        view_mode: { fn: this.view_mode.bind(this),
+                     ignore_with_input: true },
+        show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
+                         fn: settings_page.toggle.bind(settings_page) }
+    };
+    if (enable_editing) {
+        utils.extend(keys, {
+            build_mode: { key: 78, // n
+                          fn: this.build_mode.bind(this),
+                          ignore_with_input: true },
+            zoom_mode: { key: 90, // z
+                         fn: this.zoom_mode.bind(this),
                          ignore_with_input: true },
-            show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
-                             fn: settings_page.toggle.bind(settings_page) }
-        };
-        if (enable_editing) {
-            utils.extend(keys, {
-                build_mode: { key: 78, // n
-                              fn: this.build_mode.bind(this),
-                              ignore_with_input: true },
-                zoom_mode: { key: 90, // z
-                             fn: this.zoom_mode.bind(this),
-                             ignore_with_input: true },
-                brush_mode: { key: 86, // v
-                              fn: this.brush_mode.bind(this),
-                              ignore_with_input: true },
-                rotate_mode: { key: 82, // r
-                               fn: this.rotate_mode.bind(this),
-                               ignore_with_input: true },
-                text_mode: { key: 84, // t
-                             fn: this.text_mode.bind(this),
-                             ignore_with_input: true },
-                toggle_beziers: { key: 66,
-                                  target: map,
-                                  fn: map.toggle_beziers,
-                                  ignore_with_input: true  }, // b
-                delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
+            brush_mode: { key: 86, // v
+                          fn: this.brush_mode.bind(this),
+                          ignore_with_input: true },
+            rotate_mode: { key: 82, // r
+                           fn: this.rotate_mode.bind(this),
+                           ignore_with_input: true },
+            text_mode: { key: 84, // t
+                         fn: this.text_mode.bind(this),
+                         ignore_with_input: true },
+            toggle_beziers: { key: 66,
+                              target: map,
+                              fn: map.toggle_beziers,
+                              ignore_with_input: true  }, // b
+            delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
+                      target: map,
+                      fn: map.delete_selected,
+                      ignore_with_input: true },
+            delete_del: { key: 46, modifiers: { control: false }, // Del
                           target: map,
                           fn: map.delete_selected,
                           ignore_with_input: true },
-                delete_del: { key: 46, modifiers: { control: false }, // Del
-                              target: map,
-                              fn: map.delete_selected,
-                              ignore_with_input: true },
-                make_primary: { key: 80, // p
-                                target: map,
-                                fn: map.make_selected_node_primary,
-                                ignore_with_input: true },
-                cycle_primary: { key: 67, // c
-                                 target: map,
-                                 fn: map.cycle_primary_node,
-                                 ignore_with_input: true },
-                direction_arrow_right: { key: 39, // right
-                                         fn: this.reaction_input.direction_arrow.right
-                                         .bind(this.reaction_input.direction_arrow),
-                                         ignore_with_input: true },
-                direction_arrow_down: { key: 40, // down
-                                        fn: this.reaction_input.direction_arrow.down
-                                        .bind(this.reaction_input.direction_arrow),
-                                        ignore_with_input: true },
-                direction_arrow_left: { key: 37, // left
-                                        fn: this.reaction_input.direction_arrow.left
-                                        .bind(this.reaction_input.direction_arrow),
-                                        ignore_with_input: true },
-                direction_arrow_up: { key: 38, // up
-                                      fn: this.reaction_input.direction_arrow.up
-                                      .bind(this.reaction_input.direction_arrow),
-                                      ignore_with_input: true },
-                undo: { key: 90, modifiers: { control: true },
-                        target: map.undo_stack,
-                        fn: map.undo_stack.undo },
-                redo: { key: 90, modifiers: { control: true, shift: true },
-                        target: map.undo_stack,
-                        fn: map.undo_stack.redo },
-                select_all: { key: 65, modifiers: { control: true }, // Ctrl Shift a
-                               fn: map.select_all.bind(map) },
-                select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
-                               fn: map.select_none.bind(map) },
-                invert_selection: { fn: map.invert_selection.bind(map) }
-            });
-        }
-        return keys;
+            make_primary: { key: 80, // p
+                            target: map,
+                            fn: map.make_selected_node_primary,
+                            ignore_with_input: true },
+            cycle_primary: { key: 67, // c
+                             target: map,
+                             fn: map.cycle_primary_node,
+                             ignore_with_input: true },
+            direction_arrow_right: { key: 39, // right
+                                     fn: this.reaction_input.direction_arrow.right
+                                     .bind(this.reaction_input.direction_arrow),
+                                     ignore_with_input: true },
+            direction_arrow_down: { key: 40, // down
+                                    fn: this.reaction_input.direction_arrow.down
+                                    .bind(this.reaction_input.direction_arrow),
+                                    ignore_with_input: true },
+            direction_arrow_left: { key: 37, // left
+                                    fn: this.reaction_input.direction_arrow.left
+                                    .bind(this.reaction_input.direction_arrow),
+                                    ignore_with_input: true },
+            direction_arrow_up: { key: 38, // up
+                                  fn: this.reaction_input.direction_arrow.up
+                                  .bind(this.reaction_input.direction_arrow),
+                                  ignore_with_input: true },
+            undo: { key: 90, modifiers: { control: true },
+                    target: map.undo_stack,
+                    fn: map.undo_stack.undo },
+            redo: { key: 90, modifiers: { control: true, shift: true },
+                    target: map.undo_stack,
+                    fn: map.undo_stack.redo },
+            select_all: { key: 65, modifiers: { control: true }, // Ctrl Shift a
+                          fn: map.select_all.bind(map) },
+            select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
+                           fn: map.select_none.bind(map) },
+            invert_selection: { fn: map.invert_selection.bind(map) }
+        });
     }
+    return keys;
+}
 
-    function _setup_confirm_before_exit() {
-        /** Ask if the user wants to exit the page (to avoid unplanned refresh).
+function _setup_confirm_before_exit() {
+    /** Ask if the user wants to exit the page (to avoid unplanned refresh).
 
-         */
-        
-        window.onbeforeunload = function(e) {
-            // If we haven't been passed the event get the window.event
-            e = e || window.event;
-            return 'You may have unsaved changes.';
-        };
-    }
+     */
+    
+    window.onbeforeunload = function(e) {
+        // If we haven't been passed the event get the window.event
+        e = e || window.event;
+        return 'You may have unsaved changes.';
+    };
+}
 });
 
 define('DataMenu',["utils"], function(utils) {
