@@ -38,7 +38,8 @@
 				{
 				    "type": "object",
 				    "required": ["node_type", "x", "y", "bigg_id", "name",
-						 "label_x", "label_y", "node_is_primary"],
+						 "label_x", "label_y", "label_align",
+                                                 "node_is_primary"],
 				    "additionalProperties": false,
 				    "properties": {
 					"node_type":  {
@@ -51,6 +52,10 @@
 					"bigg_id": {"type": "string"},
 					"label_x": {"type": "number"},
 					"label_y": {"type": "number"},
+                                        "label_align": {
+                                            "type": "string",
+                                            "enum": ["left", "right", "center"]
+                                        },
 					"node_is_primary": {"type": "boolean"}
 				    }
 				},
@@ -78,8 +83,9 @@
 			"[0-9]+": {
 			    "type": "object",
 			    "required": ["name", "bigg_id","reversibility",
-					 "label_x", "label_y", "gene_reaction_rule",
-                                         "genes", "metabolites", "segments"],
+					 "label_x", "label_y", "label_align",
+                                         "gene_reaction_rule", "genes",
+                                         "metabolites", "segments"],
 			    "additionalProperties": false,
 			    "properties": {
 				"name": {"type": "string"},
@@ -87,6 +93,10 @@
 				"reversibility": {"type": "boolean"},
 				"label_x": {"type": "number"},
 				"label_y": {"type": "number"},
+                                "label_align": {
+                                    "type": "string",
+                                    "enum": ["left", "right", "center"]
+                                },
 				"gene_reaction_rule": {"type": "string"},
                                 "genes": {
 		                    "type": "array",
@@ -156,12 +166,16 @@
 		    "patternProperties": {
 			"[0-9]+": {
 			    "type": "object",
-			    "required": ["x", "y", "text"],
+			    "required": ["x", "y", "text", "label_align"],
 			    "additionalProperties": false,
 			    "properties": {
 				"x": {"type": "number"},
 				"y": {"type": "number"},
-				"text": {"type": "string"}
+				"text": {"type": "string"},
+                                "label_align": {
+                                    "type": "string",
+                                    "enum": ["left", "right", "center"]
+                                }
 			    }
 			}
 		    }
