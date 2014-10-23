@@ -70,7 +70,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
                     this.toggle(false);
                 }.bind(this), 'settings');
             // enter key
-            this.escape = this.map.key_manager
+            this.enter = this.map.key_manager
                 .add_enter_listener(function() {
                     this.next();
                 }.bind(this), 'settings');

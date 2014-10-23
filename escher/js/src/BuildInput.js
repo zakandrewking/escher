@@ -129,8 +129,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
             this.completely.hideDropDown();
             this.map.set_status(null);
             this.direction_arrow.hide();
-            if (this.escape)
-                this.escape.clear();
+            if (this.escape) this.escape.clear();
             this.escape = null;
         }
     }

@@ -1,7 +1,7 @@
 describe("KeyManager", function() {
 
     it("Makes a key manager", function() {
-	var key_manager = escher.KeyManager({}, ['a', 'list']);
+	var key_manager = escher.KeyManager(null, {}, ['a', 'list']);
 	expect(key_manager.input_list).toEqual(['a', 'list']);
     });
 });
@@ -18,7 +18,7 @@ describe("KeySpy", function() {
 		       modifiers: { shift: true },
 		       target: 'hi',
 		       fn: function() { x = this; } };
-	key_manager = escher.KeyManager({ k1: key, k2: key_shift });
+	key_manager = escher.KeyManager(null, { k1: key, k2: key_shift });
 
 	spyOn(key, 'fn');
 	spyOn(key_shift, 'fn').and.callThrough();

@@ -2966,9 +2966,8 @@ define('data_styles',['utils'], function(utils) {
             else return y - x;
         }
         function fold(x, y, take_abs) {
-            if (x == 0) return null;
-            var fold = y / x;
-            return take_abs ? Math.abs(fold) : fold;
+            if (x == 0 || y == 0) return null;
+            return (y >= x ? y / x : - x / y);
         }
         function log2_fold(x, y, take_abs) {
             if (x == 0) return null;
@@ -5484,7 +5483,7 @@ define('UndoStack',["utils"], function(utils) {
     }
 });
 
-define('KeyManager',["utils"], function(utils) {
+define('KeyManager',['utils'], function(utils) {
     /** 
      */
 
@@ -5509,10 +5508,14 @@ define('KeyManager',["utils"], function(utils) {
 	h.shift = false;
     }
     // instance methods
-    function init(assigned_keys, input_list, ctrl_equals_cmd) {
+    function init(unique_map_id, assigned_keys, input_list, ctrl_equals_cmd) {
 	/** Assign keys for commands.
 
 	 */
+
+        // identify this key manager
+        if (unique_map_id===undefined) unique_map_id = null;
+        this.unique_string = (unique_map_id === null ? '' : '.' + unique_map_id);        
 
 	if (assigned_keys===undefined) this.assigned_keys = {};
 	else this.assigned_keys = assigned_keys;
@@ -5541,12 +5544,12 @@ define('KeyManager',["utils"], function(utils) {
                               option: 18,
                               shift: 16 };
 
-        d3.select(window).on("keydown.key_manager", null);
-        d3.select(window).on("keyup.key_manager", null);
+        d3.select(window).on('keydown.key_manager' + this.unique_string, null);
+        d3.select(window).on('keyup.key_manager' + this.unique_string, null);
 
 	if (!(this.enabled)) return;
 
-        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, input_list) {
+        d3.select(window).on('keydown.key_manager' + this.unique_string, function(ctrl_equals_cmd, input_list) {
             var kc = d3.event.keyCode,
 		meaningless = true;
 	    // check the inputs
@@ -5577,7 +5580,7 @@ define('KeyManager',["utils"], function(utils) {
 	    if (meaningless) 
 		reset_held_keys(held_keys);
         }.bind(null, this.ctrl_equals_cmd, this.input_list))
-	    .on("keyup.key_manager", function() {
+	    .on('keyup.key_manager' + this.unique_string, function() {
             toggle_modifiers(modifier_keys, held_keys,
 			     d3.event.keyCode, false);
         });
@@ -5621,14 +5624,14 @@ define('KeyManager',["utils"], function(utils) {
 	 unregisters the listener.
 
 	 */
-	this.add_key_listener(callback, 13, id);
+	return this.add_key_listener(callback, 13, id);
     }
     function add_escape_listener(callback, id) {
 	/** Call the callback when the escape key is pressed, then
 	 unregisters the listener.
 
 	 */
-	this.add_key_listener(callback, 27, id);
+	return this.add_key_listener(callback, 27, id);
     }
     function add_key_listener(callback, kc, id) {
 	/** Call the callback when the key is pressed, then unregisters the
@@ -5638,7 +5641,8 @@ define('KeyManager',["utils"], function(utils) {
 
         var event_name = 'keydown.' + kc;
         if (id !== undefined)
-            event_name += id;
+            event_name += ('.' + id);
+        event_name += this.unique_string;
         
 	var selection = d3.select(window);
 	selection.on(event_name, function() {
@@ -5646,7 +5650,11 @@ define('KeyManager',["utils"], function(utils) {
 		callback();
 	    }
 	});
-	return { clear: function() { selection.on(event_name, null); } };
+	return {
+            clear: function() {
+                selection.on(event_name, null);
+            }
+        };
     }
 });
 
@@ -9125,9 +9133,9 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
         // draw manager
         this.draw = new Draw(this.behavior, this.settings);
-        
+
         // make a key manager
-        this.key_manager = new KeyManager();
+        this.key_manager = new KeyManager(this.settings.get_option('unique_map_id'));
 
         // make the search index
         this.enable_search = enable_search;
@@ -9146,7 +9154,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // data
         this.has_data_on_reactions = false;
         this.has_data_on_nodes = false;
-        
+
         this.nodes = {};
         this.reactions = {};
         this.beziers = {};
@@ -9156,7 +9164,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         this.apply_reaction_data_to_map(null);
         this.apply_metabolite_data_to_map(null);
         this.apply_gene_data_to_map(null);
-        
+
         // rotation mode off
         this.rotation_on = false;
 
@@ -9170,12 +9178,12 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     function from_data(map_data, svg, css, selection, zoom_container, settings,
                        cobra_model, enable_search) {
         /** Load a json map and add necessary fields for rendering.
-         
+
          */
         utils.check_undefined(arguments, ['map_data', 'svg', 'css', 'selection',
                                           'zoom_container', 'settings',
                                           'cobra_model', 'enable_search']);
-        
+
         var canvas = map_data[1].canvas,
             map = new Map(svg, css, selection, zoom_container, settings,
                           cobra_model, canvas, enable_search);
@@ -9198,12 +9206,12 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                                                               node_id: n_id }});
             }
         }
-             
+
         // Propagate coefficients and reversibility, build the connected
         // segments, add bezier points, and populate the reaction search index.
         for (var r_id in map.reactions) {
             var reaction = map.reactions[r_id];
-            
+
             // reaction search index
             if (enable_search) {
                 map.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
@@ -9225,10 +9233,10 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                     segments_to_delete.push(s_id);
                     continue
                 }
-                
+
                 var from_node = map.nodes[segment.from_node_id],
                     to_node = map.nodes[segment.to_node_id];
-                
+
                 // propagate coefficients
                 reaction.metabolites.forEach(function(met) {
                     if (met.bigg_id==from_node.bigg_id) {
@@ -9237,7 +9245,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                         segment.to_node_coefficient = met.coefficient;
                     }
                 });
-                                        
+
                 // build connected segments
                 [from_node, to_node].forEach(function(node) {
                     node.connected_segments.push({ segment_id: s_id,
@@ -9259,7 +9267,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 delete reaction.segments[s_id];
             });
         }
-        
+
         // populate the beziers
         map.beziers = build.new_beziers_for_reactions(map.reactions);
 
@@ -9280,7 +9288,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         map.apply_reaction_data_to_map(null);
         map.apply_metabolite_data_to_map(null);
         map.apply_gene_data_to_map(null);
-        
+
         return map;
 
         // definitions
@@ -9337,12 +9345,12 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
          time: An optional time, in ms, after which the status is set to ''.
 
          */
-        
+
         this.callback_manager.run('set_status', null, status);
         // clear any other timers on the status bar
         window.clearTimeout(this._status_timer);
         this._status_timer = null;
-        
+
         if (time!==undefined) {
             this._status_timer = window.setTimeout(function() {
                 this.callback_manager.run('set_status', null, '');
@@ -9397,7 +9405,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // Clear all deleted reactions.
         this.clear_deleted_reactions(draw_beziers);
     }
-    
+
     function draw_these_reactions(reaction_ids, draw_beziers) {
         /** Draw specific reactions.
 
@@ -9442,13 +9450,13 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         utils.draw_an_object(this.sel, '#reactions', '.reaction', reaction_subset,
                              'reaction_id', this.draw.create_reaction.bind(this.draw),
                              update_fn);
-        
+
         if (draw_beziers) {
             // particular beziers to draw
             var bezier_ids = build.bezier_ids_for_reaction_ids(reaction_subset);
             this.draw_these_beziers(bezier_ids);
         }
-    } 
+    }
 
     function clear_deleted_reactions(draw_beziers) {
         /** Remove any reactions that are not in *this.reactions*.
@@ -9461,7 +9469,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
          */
         if (draw_beziers===undefined) draw_beziers = true;
-        
+
         // remove deleted reactions and segments
         utils.draw_an_object(this.sel, '#reactions', '.reaction', this.reactions, 'reaction_id',
                              null,
@@ -9533,7 +9541,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
         // draw the nodes
         utils.draw_an_object(this.sel, '#nodes', '.node', node_subset, 'node_id',
-                             create_fn, update_fn);                           
+                             create_fn, update_fn);
     }
 
     function clear_deleted_nodes() {
@@ -9567,7 +9575,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
          ---------
 
          text_labels_ids: An array of text_label_ids to update.
-         
+
          */
         // find reactions for reaction_ids
         var text_label_subset = utils.object_slice_for_ids(this.text_labels, text_label_ids);
@@ -9671,13 +9679,13 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
          */
         return this.apply_reaction_data_to_reactions(this.reactions, data);
     }
-    
+
     function apply_reaction_data_to_reactions(reactions, data) {
         /**  Returns True if the scale has changed.
 
          */
-        
-        if (data === null) {        
+
+        if (data === null) {
             for (var reaction_id in reactions) {
                 var reaction = reactions[reaction_id];
                 reaction.data = null;
@@ -9691,10 +9699,10 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
             // remember
             this.has_data_on_reactions = false;
-            
+
             return false;
         }
-        
+
         // apply the datasets to the reactions
         var styles = this.settings.get_option('reaction_styles'),
             compare_style = this.settings.get_option('reaction_compare_style');
@@ -9740,10 +9748,10 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
             // remember
             this.has_data_on_nodes = false;
-            
+
             return false;
         }
-        
+
         // grab the data
         var styles = this.settings.get_option('metabolite_styles'),
             compare_style = this.settings.get_option('metabolite_compare_style');
@@ -9757,8 +9765,8 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         }
 
         // remember
-        this.has_data_on_nodes = true; 
-        
+        this.has_data_on_nodes = true;
+
         return this.update_auto_node_domain();
     }
 
@@ -9783,7 +9791,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
          ---------
 
          reactions: The reactions to update.
-         
+
          gene_data_obj: The gene data object, with the following style:
 
          { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
@@ -9791,8 +9799,8 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
          */
 
         // TODO abstract out this function, and the equivalent CobraModel.apply_gene_data()
-        
-        if (gene_data_obj === null) {       
+
+        if (gene_data_obj === null) {
             for (var reaction_id in reactions) {
                 var reaction = reactions[reaction_id];
                 reaction.data = null;
@@ -9807,7 +9815,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
             // remember
             this.has_data_on_reactions = false;
-            
+
             return false;
         }
 
@@ -9822,7 +9830,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             }
             break;
         }
-        
+
         // apply the datasets to the reactions
         var styles = this.settings.get_option('reaction_styles'),
             compare_style = this.settings.get_option('reaction_compare_style'),
@@ -9872,7 +9880,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
     // ------------------------------------------------
     // Data domains
-    
+
     function update_auto_node_domain() {
         /**  Returns True if the scale has changed.
 
@@ -9887,7 +9895,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             var node = this.nodes[node_id];
             if (node.data !== null)
                 vals.push(node.data);
-        } 
+        }
         var old_domain = this.settings.get_option('metabolite_color_domain'),
             new_domain, min, max;
         if (vals.length > 0) {
@@ -9906,15 +9914,15 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // compare arrays
         return !utils.compare_arrays(old_domain, new_domain);
     }
-    
+
     function update_auto_reaction_domain() {
         /**  Returns True if the scale has changed.
 
          */
-        
+
         if (!this.settings.get_option('auto_reaction_domain'))
             return false;
-        
+
         // default min and max
         var vals = [];
         for (var reaction_id in this.reactions) {
@@ -9923,7 +9931,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 vals.push(reaction.data);
             }
         }
-        
+
         var old_domain = this.settings.get_option('reaction_domain'),
             new_domain, min, max;
         if (vals.length > 0) {
@@ -9939,7 +9947,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         }
 
         new_domain = [0, min, max].sort(function(x, y) { return x - y; });
-        
+
         this.settings.set_domain('reaction', new_domain);
         // compare arrays
         return !utils.compare_arrays(old_domain, new_domain);
@@ -9947,7 +9955,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
     // ---------------------------------------------------------------------
     // Node interaction
-    
+
     function get_coords_for_node(node_id) {
         var node = this.nodes[node_id],
             coords = {'x': node.x, 'y': node.y};
@@ -9969,14 +9977,14 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 selected_nodes[d.node_id] = this.nodes[d.node_id];
             }.bind(this));
         return selected_nodes;
-    }   
+    }
     function get_selected_text_label_ids() {
         var selected_text_label_ids = [];
         this.sel.select('#text-labels')
             .selectAll('.selected')
             .each(function(d) { selected_text_label_ids.push(d.text_label_id); });
         return selected_text_label_ids;
-    }   
+    }
     function get_selected_text_labels() {
         var selected_text_labels = {},
             self = this;
@@ -9986,7 +9994,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 selected_text_labels[d.text_label_id] = this.text_labels[d.text_label_id];
             }.bind(this));
         return selected_text_labels;
-    }   
+    }
 
     function select_all() {
         /** Select all nodes and text labels.
@@ -10043,7 +10051,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
          */
         var classable_selection = this.sel.selectAll('#nodes,#text-labels')
-                .selectAll('.node,.text-label'), 
+                .selectAll('.node,.text-label'),
             shift_key_on = this.key_manager.held_keys.shift,
             classable_node;
         if (d3.select(node).attr('class').indexOf('text-label') == -1) {
@@ -10092,7 +10100,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 return false;
             }
         });
-        return out;                
+        return out;
     }
     function deselect_nodes() {
         var node_selection = this.sel.select('#nodes').selectAll('.node');
@@ -10126,7 +10134,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
          Undoable.
 
          */
-        var selected_nodes = this.get_selected_nodes(), 
+        var selected_nodes = this.get_selected_nodes(),
             selected_text_labels = this.get_selected_text_labels();
         if (Object.keys(selected_nodes).length >= 1 ||
             Object.keys(selected_text_labels).length >= 1)
@@ -10155,7 +10163,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments),
             saved_reactions = utils.clone(reactions),
             saved_text_labels = utils.clone(selected_text_labels),
-            delete_and_draw = function(nodes, reactions, segment_objs, 
+            delete_and_draw = function(nodes, reactions, segment_objs,
                                        selected_text_labels) {
                 // delete nodes, segments, and reactions with no segments
                 this.delete_node_data(Object.keys(selected_nodes));
@@ -10191,7 +10199,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             var reaction_ids_to_draw = Object.keys(saved_reactions);
             for (var segment_id in saved_segment_objs_w_segments) {
                 var segment_obj = saved_segment_objs_w_segments[segment_id];
-                
+
                 var segment = segment_obj.segment;
                 this.reactions[segment_obj.reaction_id]
                     .segments[segment_obj.segment_id] = segment;
@@ -10224,7 +10232,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 else this.draw_these_reactions(reaction_ids_to_draw);
             } else {
                 if (should_draw) this.draw_these_reactions(reaction_ids_to_draw);
-            }           
+            }
             if (this.has_data_on_nodes) {
                 var scale_changed = this.update_auto_node_domain();
                 if (should_draw) {
@@ -10248,7 +10256,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         }.bind(this), function () {
             // redo
             // clone the nodes and reactions, to redo this action later
-            delete_and_draw(selected_nodes, reactions, segment_objs_w_segments, 
+            delete_and_draw(selected_nodes, reactions, segment_objs_w_segments,
                             selected_text_labels);
         }.bind(this));
     }
@@ -10269,9 +10277,9 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     function delete_segment_data(segment_objs) {
         /** Delete segments, update connected_segments in nodes, and delete
          bezier points.
-         
+
          segment_objs: Object with values like { reaction_id: '123', segment_id: '456' }
-         
+
          */
         for (var segment_id in segment_objs) {
             var segment_obj = segment_objs[segment_id];
@@ -10279,14 +10287,14 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
             // segment already deleted
             if (!(segment_obj.segment_id in reaction.segments)) return;
-            
+
             var segment = reaction.segments[segment_obj.segment_id];
             // updated connected nodes
             [segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
                 if (!(node_id in this.nodes)) return;
                 var node = this.nodes[node_id];
                 node.connected_segments = node.connected_segments.filter(function(so) {
-                    return so.segment_id != segment_obj.segment_id;                             
+                    return so.segment_id != segment_obj.segment_id;
                 });
             }.bind(this));
 
@@ -10302,7 +10310,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     function delete_reaction_data(reaction_ids) {
         /** Delete reactions, segments, and beziers, and remove reaction from
          search index.
-         
+
          */
         reaction_ids.forEach(function(reaction_id) {
             // remove beziers
@@ -10339,10 +10347,10 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
          coords: coordinates to start drawing
 
          */
-        
+
         // If reaction id is not new, then return:
         // for (var reaction_id in this.reactions) {
-        //     if (this.reactions[reaction_id].bigg_id == starting_reaction) {             
+        //     if (this.reactions[reaction_id].bigg_id == starting_reaction) {
         //      console.warn('reaction is already drawn');
         //         return null;
         //     }
@@ -10398,10 +10406,10 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             // clone the nodes and reactions, to redo this action later
             extend_and_draw_metabolite.apply(map, [new_nodes, selected_node_id]);
         });
-        
+
         // draw the reaction
         this.new_reaction_for_metabolite(starting_reaction, selected_node_id, direction);
-        
+
         return null;
 
         // definitions
@@ -10416,7 +10424,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             }
         }
     }
-    
+
     function extend_nodes(new_nodes) {
         /** Add new nodes to data and search index.
 
@@ -10481,7 +10489,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         //         return;
         //     }
         // }
-        
+
         // get the metabolite node
         var selected_node = this.nodes[selected_node_id];
 
@@ -10549,7 +10557,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 else this.draw_these_reactions(Object.keys(new_reactions));
             } else {
                 this.draw_these_reactions(Object.keys(new_reactions));
-            }           
+            }
             if (this.has_data_on_nodes) {
                 var scale_changed = this.update_auto_node_domain();
                 if (scale_changed) this.draw_all_nodes();
@@ -10569,7 +10577,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 }
             }
         }
-        
+
     }
     function cycle_primary_node() {
         var selected_nodes = this.get_selected_nodes();
@@ -10679,7 +10687,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             if (last_i==i) return;
             new_connected_segments.push(segment);
         });
-        nodes[connected_anchor_id].connected_segments = new_connected_segments;     
+        nodes[connected_anchor_id].connected_segments = new_connected_segments;
         // 6. draw the nodes
         this.draw_these_nodes(nodes_to_draw);
         this.draw_these_reactions(reactions_to_draw);
@@ -10690,7 +10698,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     function make_selected_node_primary() {
         var selected_nodes = this.get_selected_nodes(),
             reactions = this.reactions,
-            nodes = this.nodes;     
+            nodes = this.nodes;
         // can only have one selected
         if (Object.keys(selected_nodes).length != 1) {
             console.error('Only one node can be selected');
@@ -10743,7 +10751,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
     function segments_and_reactions_for_nodes(nodes) {
         /** Get segments and reactions that should be deleted with node deletions
-         
+
          */
         var segment_objs_w_segments = {},
             these_reactions = {},
@@ -10752,7 +10760,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // for each node
         for (var node_id in nodes) {
             var node = nodes[node_id];
-            // find associated segments and reactions       
+            // find associated segments and reactions
             node.connected_segments.forEach(function(segment_obj) {
                 var segment;
                 try {
@@ -11718,8 +11726,7 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContai
             this.completely.hideDropDown();
             this.map.set_status(null);
             this.direction_arrow.hide();
-            if (this.escape)
-                this.escape.clear();
+            if (this.escape) this.escape.clear();
             this.escape = null;
         }
     }
@@ -12356,7 +12363,7 @@ define('SearchBar',["utils", "CallbackManager"], function(utils, CallbackManager
                     this.toggle(false);
                 }.bind(this), 'settings');
             // enter key
-            this.escape = this.map.key_manager
+            this.enter = this.map.key_manager
                 .add_enter_listener(function() {
                     this.next();
                 }.bind(this), 'settings');
@@ -13072,6 +13079,9 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	this.sel = sel;
 	this.settings = settings;
 	this.draw = false;
+        
+        var unique_map_id = this.settings.get_option('unique_map_id');
+        this.unique_string = (unique_map_id === null ? '' : '.' + unique_map_id);
 
 	var background = sel.append('div')
 		.attr('class', 'settings-box-background')
@@ -13151,12 +13161,12 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    this.escape = this.map.key_manager
 		.add_escape_listener(function() {
 		    this.abandon_changes();
-		}.bind(this));
+		}.bind(this), 'settings');
 	    // enter key
 	    this.enter = this.map.key_manager
 		.add_enter_listener(function() {
 		    this.accept_changes();
-		}.bind(this));
+		}.bind(this), 'settings');
 	    // run the show callback
 	    this.callback_manager.run('show');
 	} else {
@@ -13361,7 +13371,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 
 	    // make the checkbox
 	    s.append('input').attr('type', 'radio')
-                .attr('name', type + '_compare_style')
+                .attr('name', type + '_compare_style' + this.unique_string)
                 .attr('value', function(d) { return d[1]; })
 		.each(function(style) {
 		    // change the model when the box is changed
@@ -13379,7 +13389,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		        this.checked = (this.value == value);
 		    }.bind(this));
 		});
-        });
+        }.bind(this));
 
         // gene-specific settings
         if (type=='reaction') {
@@ -13405,7 +13415,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 
 	        // make the checkbox
 	        s.append('input').attr('type', 'radio')
-                    .attr('name', 'and_method_in_gene_reaction_rule')
+                    .attr('name', 'and_method_in_gene_reaction_rule' + this.unique_string)
                     .attr('value', function(d) { return d[1]; })
 		    .each(function(style) {
 		        // change the model when the box is changed
@@ -13423,7 +13433,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		            this.checked = (this.value == value);
 		        }.bind(this));
 		    });
-            });
+            }.bind(this));
 
         }
     }
@@ -13450,7 +13460,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 
 	    // make the checkbox
 	    s.append('input').attr('type', 'radio')
-		.attr('name', 'identifiers_on_map')
+		.attr('name', 'identifiers_on_map' + this.unique_string)
 		.attr('value', function(d) { return d[1]; })
 		.each(function(style) {
 		    // change the model when the box is changed
@@ -13467,7 +13477,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		    }.bind(this));
 		});
 
-	});
+	}.bind(this));
 
     }
 });
@@ -13702,6 +13712,9 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
      identifiers_on_map: Either 'bigg_id' (default) or 'name'.
 
+     unique_map_id: A unique ID that will be used to UI elements don't interfere
+     when multiple maps are in the same HTML document.
+
      reaction_data: An object with reaction ids for keys and reaction data
      points for values.
 
@@ -13711,13 +13724,13 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
      datasets. Can be either 'fold, 'log2_fold', or 'diff'.
 
      reaction_domain:
-     
+
      reaction_color_range:
-     
+
      reaction_size_range:
-     
+
      reaction_no_data_color:
-     
+
      reaction_no_data_size:
 
      gene_data: An object with Gene ids for keys and gene data points for
@@ -13743,7 +13756,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
      selecting them from a quick jump menu on the map.
 
      first_load_callback: A function to run after loading.
-     
+
      */
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
@@ -13773,7 +13786,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
     // definitions
     function init(map_data, model_data, options) {
-        
+
         this.map_data = map_data;
         this.model_data = model_data;
 
@@ -13781,7 +13794,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         var sel = null;
         if (!('selection' in options) || options['selection'] === null)
             sel = d3.select('body').append('div');
-        
+
         // set defaults
         this.options = utils.set_options(options, {
             // location
@@ -13792,12 +13805,13 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             enable_editing: true,
             enable_keys: true,
             enable_search: true,
-            fillScreen: false,
+            fill_screen: false,
             // map, model, and styles
             css: null,
             starting_reaction: null,
             never_ask_before_quit: false,
             identifiers_on_map: 'bigg_id',
+            unique_map_id: null,
             // applied data
             // reaction
             auto_reaction_domain: true,
@@ -13836,16 +13850,16 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             throw new Error('Builder cannot be placed within an svg node '+
                             'becuase UI elements are html-based.');
         }
-        
+
         // Initialize the settings
         var set_option = function(option, new_value) {
             this.options[option] = new_value;
         }.bind(this),
             get_option = function(option) {
                 return this.options[option];
-            }.bind(this);       
+            }.bind(this);
         this.settings = new Settings(set_option, get_option);
-        
+
         // set up this callback manager
         this.callback_manager = CallbackManager();
         if (this.options.first_load_callback !== null)
@@ -13855,7 +13869,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         this.load_model(this.model_data, false);
         this.load_map(this.map_data, false);
         this.update_data(true, true);
-        
+
         // setting callbacks
         // TODO enable atomic updates. Right now, every time
         // the menu closes, everything is drawn.
@@ -13879,7 +13893,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
          Arguments
          ---------
-         
+
          model_data: The data for a cobra model, to be passed to
          escher.CobraModel().
 
@@ -13890,14 +13904,14 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
         if (should_update_data === undefined)
             should_update_data = true;
-        
+
         // Check the cobra model
         if (model_data === null) {
             console.warn('No cobra model was loaded.');
             this.cobra_model = null;
         } else {
             this.cobra_model = CobraModel(model_data);
-            
+
             // TODO this doesn't seem like the best solution
             if (this.map !== null && this.map !== undefined)
                 this.map.cobra_model = this.cobra_model;
@@ -13922,7 +13936,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
         if (should_update_data === undefined)
             should_update_data = true;
-        
+
         // Begin with some definitions
         var selectable_click_enabled = true,
             shift_key_on = false;
@@ -13933,12 +13947,12 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         // set up the svg
         var svg = utils.setup_svg(this.options.selection, this.options.selection_is_svg,
                                   this.options.fill_screen);
-        
+
         // se up the zoom container
         this.zoom_container = new ZoomContainer(svg, this.options.selection,
                                                 this.options.scroll_behavior);
         var zoomed_sel = this.zoom_container.zoomed_sel;
-        
+
         if (map_data!==null) {
             // import map
             this.map = Map.from_data(map_data,
@@ -13967,8 +13981,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             this.update_data(false, true);
 
         // set up the reaction input with complete.ly
-        this.reaction_input = BuildInput(this.options.selection, this.map,
-                                         this.zoom_container);
+        this.build_input = BuildInput(this.options.selection, this.map,
+                                      this.zoom_container);
 
         // set up the text edit input
         this.text_edit_input = TextEditInput(this.options.selection, this.map,
@@ -13988,34 +14002,34 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             button_div = this.options.selection.append('div');
 
         // set up the search bar
-        this.search_bar = SearchBar(search_bar_div, this.map.search_index, 
+        this.search_bar = SearchBar(search_bar_div, this.map.search_index,
                                     this.map);
         // set up the hide callbacks
         this.search_bar.callback_manager.set('show', function() {
-            this.settings_page.toggle(false);
+            this.settings_bar.toggle(false);
         }.bind(this));
-        
+
         // set up the settings
         var settings_div = this.options.selection.append('div');
-        this.settings_page = SettingsBar(settings_div, this.settings, 
-                                         this.map);
-        this.settings_page.callback_manager.set('show', function() {
+        this.settings_bar = SettingsBar(settings_div, this.settings,
+                                        this.map);
+        this.settings_bar.callback_manager.set('show', function() {
             this.search_bar.toggle(false);
         }.bind(this));
 
         // set up key manager
         var keys = this._get_keys(this.map, this.zoom_container,
-                                  this.search_bar, this.settings_page,
+                                  this.search_bar, this.settings_bar,
                                   this.options.enable_editing);
         this.map.key_manager.assigned_keys = keys;
         // tell the key manager about the reaction input and search bar
-        this.map.key_manager.input_list = [this.reaction_input, this.search_bar,
-                                           this.settings_page, this.text_edit_input];
+        this.map.key_manager.input_list = [this.build_input, this.search_bar,
+                                           this.settings_bar, this.text_edit_input];
         // make sure the key manager remembers all those changes
         this.map.key_manager.update();
         // turn it on/off
         this.map.key_manager.toggle(this.options.enable_keys);
-        
+
         // set up menu and status bars
         if (this.options.menu=='all') {
             this._setup_menu(menu_div, button_div, this.map, this.zoom_container, this.map.key_manager, keys,
@@ -14062,12 +14076,12 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         // draw
         this.map.draw_everything();
     }
-    
+
     function set_mode(mode) {
         this.search_bar.toggle(false);
         // input
-        this.reaction_input.toggle(mode=='build');
-        this.reaction_input.direction_arrow.toggle(mode=='build');
+        this.build_input.toggle(mode=='build');
+        this.build_input.direction_arrow.toggle(mode=='build');
         if (this.options.menu=='all' && this.options.enable_editing)
             this._toggle_direction_buttons(mode=='build');
         // brush
@@ -14100,7 +14114,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
     function build_mode() {
         this.callback_manager.run('build_mode');
         this.set_mode('build');
-    }   
+    }
     function brush_mode() {
         this.callback_manager.run('brush_mode');
         this.set_mode('brush');
@@ -14116,21 +14130,21 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
     function text_mode() {
         this.callback_manager.run('text_mode');
         this.set_mode('text');
-    } 
+    }
 
     function set_reaction_data(data) {
         this.options.reaction_data = data;
         this.update_data(true, true, 'reaction');
     }
     function set_gene_data(data) {
-        this.options.gene_data = data; 
+        this.options.gene_data = data;
         this.update_data(true, true, 'reaction');
     }
     function set_metabolite_data(data) {
         this.options.metabolite_data = data;
         this.update_data(true, true, 'metabolite');
     }
-    
+
     function update_data(update_model, update_map, kind, should_draw) {
         /** Set data and settings for the model.
 
@@ -14146,7 +14160,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
          should_draw: (Optional, Default: true) Whether to redraw the update
          sections of the map.
-         
+
          */
 
         // defaults
@@ -14180,7 +14194,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             if (this.options.reaction_data !== null) {
                 data_object = data_styles.import_and_check(this.options.reaction_data,
                                                            'reaction_data');
-                
+
                 // only update the model if there is not going to be gene data
                 if (update_model && this.cobra_model !== null) {
                     this.cobra_model.apply_reaction_data(data_object,
@@ -14188,7 +14202,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                                          this.options.reaction_compare_style);
                 }
                 if (update_map && this.map !== null) {
-                    this.map.apply_reaction_data_to_map(data_object); 
+                    this.map.apply_reaction_data_to_map(data_object);
                     if (should_draw)
                         this.map.draw_all_reactions();
                 }
@@ -14200,7 +14214,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 // extend, overwrite
                 if (this.map !== null)
                     utils.extend(all_reactions, this.map.reactions, true);
-                
+
                 // this object has reaction keys and values containing associated genes
                 data_object = data_styles.import_and_check(this.options.gene_data,
                                                            'gene_data',
@@ -14213,7 +14227,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                                      this.options.identifiers_on_map,
                                                      this.options.reaction_compare_style,
                                                      this.options.and_method_in_gene_reaction_rule);
-                }            
+                }
                 if (update_map && this.map !== null) {
                     this.map.apply_gene_data_to_map(data_object);
                     if (should_draw)
@@ -14228,14 +14242,14 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                                          this.options.reaction_compare_style);
                 }
                 if (update_map && this.map !== null) {
-                    this.map.apply_reaction_data_to_map(null); 
+                    this.map.apply_reaction_data_to_map(null);
                     if (should_draw)
                         this.map.draw_all_reactions();
                 }
             }
-        }       
+        }
     }
-    
+
     function _setup_menu(menu_selection, button_selection, map, zoom_container,
                          key_manager, keys, enable_editing, enable_keys) {
         var menu = menu_selection.attr('id', 'menu')
@@ -14300,14 +14314,11 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 .button({ key: keys.show_settings,
                           text: 'Settings',
                           key_text: (enable_keys ? ' (Ctrl+,)' : null) });
-        
-        // edit dropdown 
+
+        // edit dropdown
         var edit_menu = ui.dropdown_menu(menu, 'Edit', true);
-        if (enable_editing) {      
-            edit_menu.button({ key: keys.build_mode,
-                               id: 'build-mode-menu-button',
-                               text: 'Add reaction mode',
-                               key_text: (enable_keys ? ' (N)' : null) })
+        if (enable_editing) {
+            edit_menu
                 .button({ key: keys.zoom_mode,
                           id: 'zoom-mode-menu-button',
                           text: 'Pan mode',
@@ -14316,6 +14327,10 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                           id: 'brush-mode-menu-button',
                           text: 'Select mode',
                           key_text: (enable_keys ? ' (V)' : null) })
+                .button({ key: keys.build_mode,
+                          id: 'build-mode-menu-button',
+                          text: 'Add reaction mode',
+                          key_text: (enable_keys ? ' (N)' : null) })
                 .button({ key: keys.rotate_mode,
                           id: 'rotate-mode-menu-button',
                           text: 'Rotate mode',
@@ -14326,10 +14341,9 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                           key_text: (enable_keys ? ' (T)' : null) })
                 .divider()
                 .button({ key: keys.delete,
-                          // icon: 'glyphicon glyphicon-trash',
                           text: 'Delete',
                           key_text: (enable_keys ? ' (Del)' : null) })
-                .button({ key: keys.undo, 
+                .button({ key: keys.undo,
                           text: 'Undo',
                           key_text: (enable_keys ? ' (Ctrl+Z)' : null) })
                 .button({ key: keys.redo,
@@ -14365,437 +14379,421 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                           key_text: (enable_keys ? ' (Ctrl and -)' : null) })
                 .button({ key: keys.extent_nodes,
                           text: 'Zoom to nodes',
-                          key_text: (enable_keys ? ' (Ctrl+0)' : null) })        
+                          key_text: (enable_keys ? ' (Ctrl+0)' : null) })
                 .button({ key: keys.extent_canvas,
                           text: 'Zoom to canvas',
                           key_text: (enable_keys ? ' (Ctrl+1)' : null) })
                 .button({ key: keys.search,
                           text: 'Find',
                           key_text: (enable_keys ? ' (Ctrl+F)' : null) });
-       if (enable_editing) {
-           view_menu.button({ key: keys.toggle_beziers,
-                              id: 'bezier-button',
-                              text: 'Show control points',
-                              key_text: (enable_keys ? ' (B)' : null) });
-           map.callback_manager
-               .set('toggle_beziers.button', function(on_off) {
-                   menu.select('#bezier-button').select('.dropdown-button-text')
-                       .text((on_off ? 'Hide' : 'Show') +
-                             ' control points' +
-                             (enable_keys ? ' (B)' : ''));
-               });
-       }
-       
-       var button_panel = button_selection.append('ul')
-               .attr('class', 'nav nav-pills nav-stacked')
-               .attr('id', 'button-panel');
+        if (enable_editing) {
+            view_menu.button({ key: keys.toggle_beziers,
+                               id: 'bezier-button',
+                               text: 'Show control points',
+                               key_text: (enable_keys ? ' (B)' : null) });
+            map.callback_manager
+                .set('toggle_beziers.button', function(on_off) {
+                    menu.select('#bezier-button').select('.dropdown-button-text')
+                        .text((on_off ? 'Hide' : 'Show') +
+                              ' control points' +
+                              (enable_keys ? ' (B)' : ''));
+                });
+        }
 
-       // buttons
-       ui.individual_button(button_panel.append('li'),
-                            { key: keys.zoom_in,
-                              icon: 'glyphicon glyphicon-plus-sign',
-                              classes: 'btn btn-default',
-                              tooltip: 'Zoom in',
-                              key_text: (enable_keys ? ' (Ctrl and +)' : null) });
-       ui.individual_button(button_panel.append('li'),
-                            { key: keys.zoom_out,
-                              icon: 'glyphicon glyphicon-minus-sign',
-                              classes: 'btn btn-default',
-                              tooltip: 'Zoom out',
-                              key_text: (enable_keys ? ' (Ctrl and -)' : null) });
-       ui.individual_button(button_panel.append('li'),
-                            { key: keys.extent_canvas,
-                              icon: 'glyphicon glyphicon-resize-full',
-                              classes: 'btn btn-default',
-                              tooltip: 'Zoom to canvas',
-                              key_text: (enable_keys ? ' (Ctrl+1)' : null) });
+        var button_panel = button_selection.append('ul')
+                .attr('class', 'nav nav-pills nav-stacked')
+                .attr('id', 'button-panel');
 
-       // mode buttons
-       if (enable_editing) {
-           ui.radio_button_group(button_panel.append('li'))
-               .button({ key: keys.zoom_mode,
-                         id: 'zoom-mode-button',
-                         icon: 'glyphicon glyphicon-move',
-                         tooltip: 'Pan mode',
-                         key_text: (enable_keys ? ' (Z)' : null) })
-               .button({ key: keys.brush_mode,
-                         id: 'brush-mode-button',
-                         icon: 'glyphicon glyphicon-hand-up',
-                         tooltip: 'Select mode',
-                         key_text: (enable_keys ? ' (V)' : null) })
-               .button({ key: keys.build_mode,
-                         id: 'build-mode-button',
-                         icon: 'glyphicon glyphicon-plus',
-                         tooltip: 'Add reaction mode',
-                         key_text: (enable_keys ? ' (N)' : null) })
-               .button({ key: keys.rotate_mode,
-                         id: 'rotate-mode-button',
-                         icon: 'glyphicon glyphicon-repeat',
-                         tooltip: 'Rotate mode',
-                         key_text: (enable_keys ? ' (R)' : null) })
-               .button({ key: keys.text_mode,
-                         id: 'text-mode-button',
-                         icon: 'glyphicon glyphicon-font',
-                         tooltip: 'Text mode',
-                         key_text: (enable_keys ? ' (T)' : null) });
+        // buttons
+        ui.individual_button(button_panel.append('li'),
+                             { key: keys.zoom_in,
+                               icon: 'glyphicon glyphicon-plus-sign',
+                               classes: 'btn btn-default',
+                               tooltip: 'Zoom in',
+                               key_text: (enable_keys ? ' (Ctrl and +)' : null) });
+        ui.individual_button(button_panel.append('li'),
+                             { key: keys.zoom_out,
+                               icon: 'glyphicon glyphicon-minus-sign',
+                               classes: 'btn btn-default',
+                               tooltip: 'Zoom out',
+                               key_text: (enable_keys ? ' (Ctrl and -)' : null) });
+        ui.individual_button(button_panel.append('li'),
+                             { key: keys.extent_canvas,
+                               icon: 'glyphicon glyphicon-resize-full',
+                               classes: 'btn btn-default',
+                               tooltip: 'Zoom to canvas',
+                               key_text: (enable_keys ? ' (Ctrl+1)' : null) });
 
-           // arrow buttons
-           this.direction_buttons = button_panel.append('li');
-           var o = ui.button_group(this.direction_buttons)
-                   .button({ key: keys.direction_arrow_left,
-                             icon: 'glyphicon glyphicon-arrow-left',
-                             tooltip: 'Direction arrow (←)' })
-                   .button({ key: keys.direction_arrow_right,
-                             icon: 'glyphicon glyphicon-arrow-right',
-                             tooltip: 'Direction arrow (→)' })
-                   .button({ key: keys.direction_arrow_up,
-                             icon: 'glyphicon glyphicon-arrow-up',
-                             tooltip: 'Direction arrow (↑)' })
-                   .button({ key: keys.direction_arrow_down,
-                             icon: 'glyphicon glyphicon-arrow-down',
-                             tooltip: 'Direction arrow (↓)' });
-       }
+        // mode buttons
+        if (enable_editing) {
+            ui.radio_button_group(button_panel.append('li'))
+                .button({ key: keys.zoom_mode,
+                          id: 'zoom-mode-button',
+                          icon: 'glyphicon glyphicon-move',
+                          tooltip: 'Pan mode',
+                          key_text: (enable_keys ? ' (Z)' : null) })
+                .button({ key: keys.brush_mode,
+                          id: 'brush-mode-button',
+                          icon: 'glyphicon glyphicon-hand-up',
+                          tooltip: 'Select mode',
+                          key_text: (enable_keys ? ' (V)' : null) })
+                .button({ key: keys.build_mode,
+                          id: 'build-mode-button',
+                          icon: 'glyphicon glyphicon-plus',
+                          tooltip: 'Add reaction mode',
+                          key_text: (enable_keys ? ' (N)' : null) })
+                .button({ key: keys.rotate_mode,
+                          id: 'rotate-mode-button',
+                          icon: 'glyphicon glyphicon-repeat',
+                          tooltip: 'Rotate mode',
+                          key_text: (enable_keys ? ' (R)' : null) })
+                .button({ key: keys.text_mode,
+                          id: 'text-mode-button',
+                          icon: 'glyphicon glyphicon-font',
+                          tooltip: 'Text mode',
+                          key_text: (enable_keys ? ' (T)' : null) });
 
-       // set up mode callbacks
-       var select_menu_button = function(id) {
-           var ids = ['#build-mode-menu-button',
-                      '#zoom-mode-menu-button',
-                      '#brush-mode-menu-button',
-                      '#rotate-mode-menu-button',
-                      '#view-mode-menu-button',
-                      '#text-mode-menu-button'];
-           for (var i=0, l=ids.length; i<l; i++) {
-               var the_id = ids[i];
-               d3.select(the_id)
-                   .select('span')
-                   .classed('glyphicon', the_id==id)
-                   .classed('glyphicon-ok', the_id==id);
-           }
-       };
-       this.callback_manager.set('build_mode', function() {
-           $('#build-mode-button').button('toggle');
-           select_menu_button('#build-mode-menu-button');
-       });
-       this.callback_manager.set('zoom_mode', function() {
-           $('#zoom-mode-button').button('toggle');
-           select_menu_button('#zoom-mode-menu-button');
-       });
-       this.callback_manager.set('brush_mode', function() {
-           $('#brush-mode-button').button('toggle');
-           select_menu_button('#brush-mode-menu-button');
-       });
-       this.callback_manager.set('rotate_mode', function() {
-           $('#rotate-mode-button').button('toggle');
-           select_menu_button('#rotate-mode-menu-button');
-       });
-       this.callback_manager.set('view_mode', function() {
-           $('#view-mode-button').button('toggle');
-           select_menu_button('#view-mode-menu-button');
-       });
-       this.callback_manager.set('text_mode', function() {
-           $('#text-mode-button').button('toggle');
-           select_menu_button('#text-mode-menu-button');
-       });
+            // arrow buttons
+            this.direction_buttons = button_panel.append('li');
+            var o = ui.button_group(this.direction_buttons)
+                    .button({ key: keys.direction_arrow_left,
+                              icon: 'glyphicon glyphicon-arrow-left',
+                              tooltip: 'Direction arrow (←)' })
+                    .button({ key: keys.direction_arrow_right,
+                              icon: 'glyphicon glyphicon-arrow-right',
+                              tooltip: 'Direction arrow (→)' })
+                    .button({ key: keys.direction_arrow_up,
+                              icon: 'glyphicon glyphicon-arrow-up',
+                              tooltip: 'Direction arrow (↑)' })
+                    .button({ key: keys.direction_arrow_down,
+                              icon: 'glyphicon glyphicon-arrow-down',
+                              tooltip: 'Direction arrow (↓)' });
+        }
 
-       // definitions
-       function load_map_for_file(error, map_data) {
-           /** Load a map. This reloads the whole builder.
+        // set up mode callbacks
+        var select_button = function(id) {
+            // toggle the button
+            $(this.options.selection.node()).find('#' + id)
+                .button('toggle');
 
-            */
-           
-           if (error) {
-               console.warn(error); 
-               this.map.set_status('Error loading map: ' + error, 2000);
-               return;
-           }
-           
-           try {            
-               check_map(map_data);
-               this.load_map(map_data); 
-               this.map.set_status('Loaded map ' + map_data[0].map_id, 3000);
-           } catch (e) {
-               console.warn(e);
-               this.map.set_status('Error loading map: ' + e, 2000);
-           }
-           
-           // definitions
-           function check_map(data) {
-               /** Perform a quick check to make sure the map is mostly valid.
+            // menu buttons
+            var ids = ['zoom-mode-menu-button', 'brush-mode-menu-button',
+                       'build-mode-menu-button', 'rotate-mode-menu-button',
+                       'view-mode-menu-button', 'text-mode-menu-button'];
+            ids.forEach(function(this_id) {
+                var b_id = this_id.replace('-menu', '');
+                this.options.selection.select('#' + this_id)
+                    .select('span')
+                    .classed('glyphicon', b_id == id)
+                    .classed('glyphicon-ok', b_id == id);
+            }.bind(this));
+        };
+        this.callback_manager.set('zoom_mode', select_button.bind(this, 'zoom-mode-button'));
+        this.callback_manager.set('brush_mode', select_button.bind(this, 'brush-mode-button'));
+        this.callback_manager.set('build_mode', select_button.bind(this, 'build-mode-button'));
+        this.callback_manager.set('rotate_mode', select_button.bind(this, 'rotate-mode-button'));
+        this.callback_manager.set('view_mode', select_button.bind(this, 'view-mode-button'));
+        this.callback_manager.set('text_mode', select_button.bind(this, 'text-mode-button'));
 
-                */
-               
-               if (!('map_id' in data[0] && 'reactions' in data[1] &&
-                     'nodes' in data[1] && 'canvas' in data[1]))
-                   throw new Error('Bad map data.');
-           }
-       }
-       function load_model_for_file(error, data) {
-           /** Load a cobra model. Redraws the whole map if the
-            highlight_missing option is true.
-            
-            */
-           if (error) {
-               console.warn(error); 
-               this.map.set_status('Error loading model: ' + error, 2000);
-               return;
-           }
+        // definitions
+        function load_map_for_file(error, map_data) {
+            /** Load a map. This reloads the whole builder.
 
-           try {
-               this.load_model(data); 
-               this.reaction_input.toggle(false);
-               if ('id' in data)
-                   this.map.set_status('Loaded model ' + data.id, 3000);
-               else
-                   this.map.set_status('Loaded model (no model id)', 3000);
-               if (this.settings.highlight_missing!==null) {
-                   this.map.draw_everything();
-               }
-           } catch (e) {
-               console.warn(e);
-               this.map.set_status('Error loading model: ' + e, 2000);
-           }
-           
-       }
-       function load_reaction_data_for_file(error, data) {
-           if (error) {
-               console.warn(error); 
-               this.map.set_status('Could not parse file as JSON or CSV', 2000);
-               return;
-           }
-           // turn off gene data
-           if (data !== null)
-               this.set_gene_data(null);
-           
-           this.set_reaction_data(data);
-       }
-       function load_metabolite_data_for_file(error, data) {
-           if (error) {
-               console.warn(error); 
-               this.map.set_status('Could not parse file as JSON or CSV', 2000);
-               return;
-           }
-           this.set_metabolite_data(data);
-       }
-       function load_gene_data_for_file(error, data) {
-           if (error) {
-               console.warn(error); 
-               this.map.set_status('Could not parse file as JSON or CSV', 2000);
-               return;
-           }
-           // turn off reaction data
-           if (data !== null)
-               this.set_reaction_data(null);
-           
-           this.set_gene_data(data);
-       }
-      }
+             */
 
-function _setup_simple_zoom_buttons(button_selection, keys) {
-    var button_panel = button_selection.append('div')
-            .attr('id', 'simple-button-panel');
+            if (error) {
+                console.warn(error);
+                this.map.set_status('Error loading map: ' + error, 2000);
+                return;
+            }
 
-    // buttons
-    ui.individual_button(button_panel.append('div'),
-                         { key: keys.zoom_in,
-                           text: '+',
-                           classes: 'simple-button',
-                           tooltip: 'Zoom in (Ctrl +)' });
-    ui.individual_button(button_panel.append('div'),
-                         { key: keys.zoom_out,
-                           text: '–',
-                           classes: 'simple-button',
-                           tooltip: 'Zoom out (Ctrl -)' });
-    ui.individual_button(button_panel.append('div'),
-                         { key: keys.extent_canvas,
-                           text: '↔',
-                           classes: 'simple-button',
-                           tooltip: 'Zoom to canvas (Ctrl 1)' });
+            try {
+                check_map(map_data);
+                this.load_map(map_data);
+                this.map.set_status('Loaded map ' + map_data[0].map_id, 3000);
+            } catch (e) {
+                console.warn(e);
+                this.map.set_status('Error loading map: ' + e, 2000);
+            }
 
-}
+            // definitions
+            function check_map(data) {
+                /** Perform a quick check to make sure the map is mostly valid.
 
-function _toggle_direction_buttons(on_off) {
-    if (on_off===undefined)
-        on_off = !this.direction_buttons.style('visibility')=='visible';
-    this.direction_buttons.style('visibility', on_off ? 'visible' : 'hidden');
-}
+                 */
 
-function _setup_status(selection, map) {
-    var status_bar = selection.append('div').attr('id', 'status');
-    map.callback_manager.set('set_status', function(status) {
-        status_bar.text(status);
-    });
-    return status_bar;
-}
+                if (!('map_id' in data[0] && 'reactions' in data[1] &&
+                      'nodes' in data[1] && 'canvas' in data[1]))
+                    throw new Error('Bad map data.');
+            }
+        }
+        function load_model_for_file(error, data) {
+            /** Load a cobra model. Redraws the whole map if the
+             highlight_missing option is true.
 
-function _setup_quick_jump(selection, options) {
-    // make the quick jump object
-    this.quick_jump = QuickJump(selection, options);
+             */
+            if (error) {
+                console.warn(error);
+                this.map.set_status('Error loading model: ' + error, 2000);
+                return;
+            }
 
-    // function to load a map
-    var load_map = function(new_map_name, current_map) {
-        this.map.set_status('Loading map ' + new_map_name + ' ...');
-        var url = utils.name_to_url(new_map_name, this.options.local_host);
-        d3.json(url, function(error, data) {
-            if (error)
-                throw new Error('Could not load data: ' + error) 
-            // update the url with the new map
-            var new_url = window.location.href
-                    .replace(/(map_name=)([^&]+)(&|$)/, '$1' + new_map_name + '$3')
-            window.history.pushState('not implemented', new_map_name, new_url);
-            // now reload
-            this.load_map(data);
-            this.map.set_status('');
-        }.bind(this));
-    }.bind(this);
+            try {
+                this.load_model(data);
+                this.build_input.toggle(false);
+                if ('id' in data)
+                    this.map.set_status('Loaded model ' + data.id, 3000);
+                else
+                    this.map.set_status('Loaded model (no model id)', 3000);
+                if (this.settings.highlight_missing!==null) {
+                    this.map.draw_everything();
+                }
+            } catch (e) {
+                console.warn(e);
+                this.map.set_status('Error loading model: ' + e, 2000);
+            }
 
-    // set the callback
-    this.quick_jump.callback_manager.set('switch_maps', load_map);
-}
+        }
+        function load_reaction_data_for_file(error, data) {
+            if (error) {
+                console.warn(error);
+                this.map.set_status('Could not parse file as JSON or CSV', 2000);
+                return;
+            }
+            // turn off gene data
+            if (data !== null)
+                this.set_gene_data(null);
 
-function _setup_modes(map, brush, zoom_container) {
-    // set up zoom+pan and brush modes
-    var was_enabled = {};
-    map.callback_manager.set('start_rotation', function() {
-        was_enabled.brush = brush.enabled;
-        brush.toggle(false);
-        was_enabled.zoom = zoom_container.zoom_on;
-        zoom_container.toggle_zoom(false);
-        was_enabled.selectable_click = map.behavior.selectable_click!=null;
-        map.behavior.toggle_selectable_click(false);
-        was_enabled.label_click = map.behavior.label_click!=null;
-        map.behavior.toggle_label_click(false);
-    });
-    map.callback_manager.set('end_rotation', function() {
-        brush.toggle(was_enabled.brush);
-        zoom_container.toggle_zoom(was_enabled.zoom);
-        map.behavior.toggle_selectable_click(was_enabled.selectable_click);
-        map.behavior.toggle_label_click(was_enabled.label_click);
-        was_enabled = {};
-    });
-}
+            this.set_reaction_data(data);
+        }
+        function load_metabolite_data_for_file(error, data) {
+            if (error) {
+                console.warn(error);
+                this.map.set_status('Could not parse file as JSON or CSV', 2000);
+                return;
+            }
+            this.set_metabolite_data(data);
+        }
+        function load_gene_data_for_file(error, data) {
+            if (error) {
+                console.warn(error);
+                this.map.set_status('Could not parse file as JSON or CSV', 2000);
+                return;
+            }
+            // turn off reaction data
+            if (data !== null)
+                this.set_reaction_data(null);
 
-function _get_keys(map, zoom_container, search_bar, settings_page, enable_editing) {
-    var keys = {
-        save: { key: 83, modifiers: { control: true }, // ctrl-s
-                target: map,
-                fn: map.save },
-        save_svg: { key: 83, modifiers: { control: true, shift: true },
+            this.set_gene_data(data);
+        }
+    }
+
+    function _setup_simple_zoom_buttons(button_selection, keys) {
+        var button_panel = button_selection.append('div')
+                .attr('id', 'simple-button-panel');
+
+        // buttons
+        ui.individual_button(button_panel.append('div'),
+                             { key: keys.zoom_in,
+                               text: '+',
+                               classes: 'simple-button',
+                               tooltip: 'Zoom in (Ctrl +)' });
+        ui.individual_button(button_panel.append('div'),
+                             { key: keys.zoom_out,
+                               text: '–',
+                               classes: 'simple-button',
+                               tooltip: 'Zoom out (Ctrl -)' });
+        ui.individual_button(button_panel.append('div'),
+                             { key: keys.extent_canvas,
+                               text: '↔',
+                               classes: 'simple-button',
+                               tooltip: 'Zoom to canvas (Ctrl 1)' });
+
+    }
+
+    function _toggle_direction_buttons(on_off) {
+        if (on_off===undefined)
+            on_off = !this.direction_buttons.style('visibility')=='visible';
+        this.direction_buttons.style('visibility', on_off ? 'visible' : 'hidden');
+    }
+
+    function _setup_status(selection, map) {
+        var status_bar = selection.append('div').attr('id', 'status');
+        map.callback_manager.set('set_status', function(status) {
+            status_bar.text(status);
+        });
+        return status_bar;
+    }
+
+    function _setup_quick_jump(selection, options) {
+        // make the quick jump object
+        this.quick_jump = QuickJump(selection, options);
+
+        // function to load a map
+        var load_map = function(new_map_name, current_map) {
+            this.map.set_status('Loading map ' + new_map_name + ' ...');
+            var url = utils.name_to_url(new_map_name, this.options.local_host);
+            d3.json(url, function(error, data) {
+                if (error)
+                    throw new Error('Could not load data: ' + error)
+                // update the url with the new map
+                var new_url = window.location.href
+                        .replace(/(map_name=)([^&]+)(&|$)/, '$1' + new_map_name + '$3')
+                window.history.pushState('not implemented', new_map_name, new_url);
+                // now reload
+                this.load_map(data);
+                this.map.set_status('');
+            }.bind(this));
+        }.bind(this);
+
+        // set the callback
+        this.quick_jump.callback_manager.set('switch_maps', load_map);
+    }
+
+    function _setup_modes(map, brush, zoom_container) {
+        // set up zoom+pan and brush modes
+        var was_enabled = {};
+        map.callback_manager.set('start_rotation', function() {
+            was_enabled.brush = brush.enabled;
+            brush.toggle(false);
+            was_enabled.zoom = zoom_container.zoom_on;
+            zoom_container.toggle_zoom(false);
+            was_enabled.selectable_click = map.behavior.selectable_click!=null;
+            map.behavior.toggle_selectable_click(false);
+            was_enabled.label_click = map.behavior.label_click!=null;
+            map.behavior.toggle_label_click(false);
+        });
+        map.callback_manager.set('end_rotation', function() {
+            brush.toggle(was_enabled.brush);
+            zoom_container.toggle_zoom(was_enabled.zoom);
+            map.behavior.toggle_selectable_click(was_enabled.selectable_click);
+            map.behavior.toggle_label_click(was_enabled.label_click);
+            was_enabled = {};
+        });
+    }
+
+    function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing) {
+        var keys = {
+            save: { key: 83, modifiers: { control: true }, // ctrl-s
                     target: map,
-                    fn: map.save_svg },
-        load: { key: 79, modifiers: { control: true }, // ctrl-o
-                fn: null }, // defined by button
-        clear_map: { target: map,
-                     fn: function() { this.clear_map(); }},
-        load_model: { key: 77, modifiers: { control: true }, // ctrl-m
-                      fn: null }, // defined by button
-        load_reaction_data: { fn: null }, // defined by button
-        clear_reaction_data: { target: this,
-                               fn: function() { this.set_reaction_data(null); }},
-        load_metabolite_data: { fn: null }, // defined by button
-        clear_metabolite_data: { target: this,
-                                 fn: function() { this.set_metabolite_data(null); }},
-        load_gene_data: { fn: null }, // defined by button
-        clear_gene_data: { target: this,
-                           fn: function() { this.set_gene_data(null); }},
-        zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
-                   target: zoom_container,
-                   fn: zoom_container.zoom_in },
-        zoom_out: { key: 189, modifiers: { control: true }, // ctrl -
-                    target: zoom_container,
-                    fn: zoom_container.zoom_out },
-        extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
+                    fn: map.save },
+            save_svg: { key: 83, modifiers: { control: true, shift: true },
                         target: map,
-                        fn: map.zoom_extent_nodes },
-        extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
-                         target: map,
-                         fn: map.zoom_extent_canvas },
-        search: { key: 70, modifiers: { control: true }, // ctrl-f
-                  fn: search_bar.toggle.bind(search_bar, true) },
-        view_mode: { fn: this.view_mode.bind(this),
-                     ignore_with_input: true },
-        show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
-                         fn: settings_page.toggle.bind(settings_page) }
-    };
-    if (enable_editing) {
-        utils.extend(keys, {
-            build_mode: { key: 78, // n
-                          fn: this.build_mode.bind(this),
-                          ignore_with_input: true },
-            zoom_mode: { key: 90, // z
-                         fn: this.zoom_mode.bind(this),
+                        fn: map.save_svg },
+            load: { key: 79, modifiers: { control: true }, // ctrl-o
+                    fn: null }, // defined by button
+            clear_map: { target: map,
+                         fn: function() { this.clear_map(); }},
+            load_model: { key: 77, modifiers: { control: true }, // ctrl-m
+                          fn: null }, // defined by button
+            load_reaction_data: { fn: null }, // defined by button
+            clear_reaction_data: { target: this,
+                                   fn: function() { this.set_reaction_data(null); }},
+            load_metabolite_data: { fn: null }, // defined by button
+            clear_metabolite_data: { target: this,
+                                     fn: function() { this.set_metabolite_data(null); }},
+            load_gene_data: { fn: null }, // defined by button
+            clear_gene_data: { target: this,
+                               fn: function() { this.set_gene_data(null); }},
+            zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
+                       target: zoom_container,
+                       fn: zoom_container.zoom_in },
+            zoom_out: { key: 189, modifiers: { control: true }, // ctrl -
+                        target: zoom_container,
+                        fn: zoom_container.zoom_out },
+            extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
+                            target: map,
+                            fn: map.zoom_extent_nodes },
+            extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
+                             target: map,
+                             fn: map.zoom_extent_canvas },
+            search: { key: 70, modifiers: { control: true }, // ctrl-f
+                      fn: search_bar.toggle.bind(search_bar, true) },
+            view_mode: { fn: this.view_mode.bind(this),
                          ignore_with_input: true },
-            brush_mode: { key: 86, // v
-                          fn: this.brush_mode.bind(this),
-                          ignore_with_input: true },
-            rotate_mode: { key: 82, // r
-                           fn: this.rotate_mode.bind(this),
-                           ignore_with_input: true },
-            text_mode: { key: 84, // t
-                         fn: this.text_mode.bind(this),
-                         ignore_with_input: true },
-            toggle_beziers: { key: 66,
-                              target: map,
-                              fn: map.toggle_beziers,
-                              ignore_with_input: true  }, // b
-            delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
-                      target: map,
-                      fn: map.delete_selected,
-                      ignore_with_input: true },
-            delete_del: { key: 46, modifiers: { control: false }, // Del
+            show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
+                             fn: settings_bar.toggle.bind(settings_bar) }
+        };
+        if (enable_editing) {
+            utils.extend(keys, {
+                build_mode: { key: 78, // n
+                              fn: this.build_mode.bind(this),
+                              ignore_with_input: true },
+                zoom_mode: { key: 90, // z
+                             fn: this.zoom_mode.bind(this),
+                             ignore_with_input: true },
+                brush_mode: { key: 86, // v
+                              fn: this.brush_mode.bind(this),
+                              ignore_with_input: true },
+                rotate_mode: { key: 82, // r
+                               fn: this.rotate_mode.bind(this),
+                               ignore_with_input: true },
+                text_mode: { key: 84, // t
+                             fn: this.text_mode.bind(this),
+                             ignore_with_input: true },
+                toggle_beziers: { key: 66,
+                                  target: map,
+                                  fn: map.toggle_beziers,
+                                  ignore_with_input: true  }, // b
+                delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
                           target: map,
                           fn: map.delete_selected,
                           ignore_with_input: true },
-            make_primary: { key: 80, // p
-                            target: map,
-                            fn: map.make_selected_node_primary,
-                            ignore_with_input: true },
-            cycle_primary: { key: 67, // c
-                             target: map,
-                             fn: map.cycle_primary_node,
-                             ignore_with_input: true },
-            direction_arrow_right: { key: 39, // right
-                                     fn: this.reaction_input.direction_arrow.right
-                                     .bind(this.reaction_input.direction_arrow),
-                                     ignore_with_input: true },
-            direction_arrow_down: { key: 40, // down
-                                    fn: this.reaction_input.direction_arrow.down
-                                    .bind(this.reaction_input.direction_arrow),
-                                    ignore_with_input: true },
-            direction_arrow_left: { key: 37, // left
-                                    fn: this.reaction_input.direction_arrow.left
-                                    .bind(this.reaction_input.direction_arrow),
-                                    ignore_with_input: true },
-            direction_arrow_up: { key: 38, // up
-                                  fn: this.reaction_input.direction_arrow.up
-                                  .bind(this.reaction_input.direction_arrow),
-                                  ignore_with_input: true },
-            undo: { key: 90, modifiers: { control: true },
-                    target: map.undo_stack,
-                    fn: map.undo_stack.undo },
-            redo: { key: 90, modifiers: { control: true, shift: true },
-                    target: map.undo_stack,
-                    fn: map.undo_stack.redo },
-            select_all: { key: 65, modifiers: { control: true }, // Ctrl Shift a
-                          fn: map.select_all.bind(map) },
-            select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
-                           fn: map.select_none.bind(map) },
-            invert_selection: { fn: map.invert_selection.bind(map) }
-        });
+                delete_del: { key: 46, modifiers: { control: false }, // Del
+                              target: map,
+                              fn: map.delete_selected,
+                              ignore_with_input: true },
+                make_primary: { key: 80, // p
+                                target: map,
+                                fn: map.make_selected_node_primary,
+                                ignore_with_input: true },
+                cycle_primary: { key: 67, // c
+                                 target: map,
+                                 fn: map.cycle_primary_node,
+                                 ignore_with_input: true },
+                direction_arrow_right: { key: 39, // right
+                                         fn: this.build_input.direction_arrow.right
+                                         .bind(this.build_input.direction_arrow),
+                                         ignore_with_input: true },
+                direction_arrow_down: { key: 40, // down
+                                        fn: this.build_input.direction_arrow.down
+                                        .bind(this.build_input.direction_arrow),
+                                        ignore_with_input: true },
+                direction_arrow_left: { key: 37, // left
+                                        fn: this.build_input.direction_arrow.left
+                                        .bind(this.build_input.direction_arrow),
+                                        ignore_with_input: true },
+                direction_arrow_up: { key: 38, // up
+                                      fn: this.build_input.direction_arrow.up
+                                      .bind(this.build_input.direction_arrow),
+                                      ignore_with_input: true },
+                undo: { key: 90, modifiers: { control: true },
+                        target: map.undo_stack,
+                        fn: map.undo_stack.undo },
+                redo: { key: 90, modifiers: { control: true, shift: true },
+                        target: map.undo_stack,
+                        fn: map.undo_stack.redo },
+                select_all: { key: 65, modifiers: { control: true }, // Ctrl Shift a
+                              fn: map.select_all.bind(map) },
+                select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
+                               fn: map.select_none.bind(map) },
+                invert_selection: { fn: map.invert_selection.bind(map) }
+            });
+        }
+        return keys;
     }
-    return keys;
-}
 
-function _setup_confirm_before_exit() {
-    /** Ask if the user wants to exit the page (to avoid unplanned refresh).
+    function _setup_confirm_before_exit() {
+        /** Ask if the user wants to exit the page (to avoid unplanned refresh).
 
-     */
-    
-    window.onbeforeunload = function(e) {
-        // If we haven't been passed the event get the window.event
-        e = e || window.event;
-        return 'You may have unsaved changes.';
-    };
-}
+         */
+
+        window.onbeforeunload = function(e) {
+            // If we haven't been passed the event get the window.event
+            e = e || window.event;
+            return 'You may have unsaved changes.';
+        };
+    }
 });
 
 define('DataMenu',["utils"], function(utils) {

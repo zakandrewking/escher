@@ -1,4 +1,4 @@
-define(["utils"], function(utils) {
+define(['utils'], function(utils) {
     /** 
      */
 
@@ -23,10 +23,14 @@ define(["utils"], function(utils) {
 	h.shift = false;
     }
     // instance methods
-    function init(assigned_keys, input_list, ctrl_equals_cmd) {
+    function init(unique_map_id, assigned_keys, input_list, ctrl_equals_cmd) {
 	/** Assign keys for commands.
 
 	 */
+
+        // identify this key manager
+        if (unique_map_id===undefined) unique_map_id = null;
+        this.unique_string = (unique_map_id === null ? '' : '.' + unique_map_id);        
 
 	if (assigned_keys===undefined) this.assigned_keys = {};
 	else this.assigned_keys = assigned_keys;
@@ -55,12 +59,12 @@ define(["utils"], function(utils) {
                               option: 18,
                               shift: 16 };
 
-        d3.select(window).on("keydown.key_manager", null);
-        d3.select(window).on("keyup.key_manager", null);
+        d3.select(window).on('keydown.key_manager' + this.unique_string, null);
+        d3.select(window).on('keyup.key_manager' + this.unique_string, null);
 
 	if (!(this.enabled)) return;
 
-        d3.select(window).on("keydown.key_manager", function(ctrl_equals_cmd, input_list) {
+        d3.select(window).on('keydown.key_manager' + this.unique_string, function(ctrl_equals_cmd, input_list) {
             var kc = d3.event.keyCode,
 		meaningless = true;
 	    // check the inputs
@@ -91,7 +95,7 @@ define(["utils"], function(utils) {
 	    if (meaningless) 
 		reset_held_keys(held_keys);
         }.bind(null, this.ctrl_equals_cmd, this.input_list))
-	    .on("keyup.key_manager", function() {
+	    .on('keyup.key_manager' + this.unique_string, function() {
             toggle_modifiers(modifier_keys, held_keys,
 			     d3.event.keyCode, false);
         });
@@ -135,14 +139,14 @@ define(["utils"], function(utils) {
 	 unregisters the listener.
 
 	 */
-	this.add_key_listener(callback, 13, id);
+	return this.add_key_listener(callback, 13, id);
     }
     function add_escape_listener(callback, id) {
 	/** Call the callback when the escape key is pressed, then
 	 unregisters the listener.
 
 	 */
-	this.add_key_listener(callback, 27, id);
+	return this.add_key_listener(callback, 27, id);
     }
     function add_key_listener(callback, kc, id) {
 	/** Call the callback when the key is pressed, then unregisters the
@@ -152,7 +156,8 @@ define(["utils"], function(utils) {
 
         var event_name = 'keydown.' + kc;
         if (id !== undefined)
-            event_name += id;
+            event_name += ('.' + id);
+        event_name += this.unique_string;
         
 	var selection = d3.select(window);
 	selection.on(event_name, function() {
@@ -160,6 +165,10 @@ define(["utils"], function(utils) {
 		callback();
 	    }
 	});
-	return { clear: function() { selection.on(event_name, null); } };
+	return {
+            clear: function() {
+                selection.on(event_name, null);
+            }
+        };
     }
 });

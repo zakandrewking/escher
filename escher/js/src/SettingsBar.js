@@ -21,6 +21,9 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	this.sel = sel;
 	this.settings = settings;
 	this.draw = false;
+        
+        var unique_map_id = this.settings.get_option('unique_map_id');
+        this.unique_string = (unique_map_id === null ? '' : '.' + unique_map_id);
 
 	var background = sel.append('div')
 		.attr('class', 'settings-box-background')
@@ -100,12 +103,12 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    this.escape = this.map.key_manager
 		.add_escape_listener(function() {
 		    this.abandon_changes();
-		}.bind(this));
+		}.bind(this), 'settings');
 	    // enter key
 	    this.enter = this.map.key_manager
 		.add_enter_listener(function() {
 		    this.accept_changes();
-		}.bind(this));
+		}.bind(this), 'settings');
 	    // run the show callback
 	    this.callback_manager.run('show');
 	} else {
@@ -310,7 +313,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 
 	    // make the checkbox
 	    s.append('input').attr('type', 'radio')
-                .attr('name', type + '_compare_style')
+                .attr('name', type + '_compare_style' + this.unique_string)
                 .attr('value', function(d) { return d[1]; })
 		.each(function(style) {
 		    // change the model when the box is changed
@@ -328,7 +331,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		        this.checked = (this.value == value);
 		    }.bind(this));
 		});
-        });
+        }.bind(this));
 
         // gene-specific settings
         if (type=='reaction') {
@@ -354,7 +357,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 
 	        // make the checkbox
 	        s.append('input').attr('type', 'radio')
-                    .attr('name', 'and_method_in_gene_reaction_rule')
+                    .attr('name', 'and_method_in_gene_reaction_rule' + this.unique_string)
                     .attr('value', function(d) { return d[1]; })
 		    .each(function(style) {
 		        // change the model when the box is changed
@@ -372,7 +375,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		            this.checked = (this.value == value);
 		        }.bind(this));
 		    });
-            });
+            }.bind(this));
 
         }
     }
@@ -399,7 +402,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 
 	    // make the checkbox
 	    s.append('input').attr('type', 'radio')
-		.attr('name', 'identifiers_on_map')
+		.attr('name', 'identifiers_on_map' + this.unique_string)
 		.attr('value', function(d) { return d[1]; })
 		.each(function(style) {
 		    // change the model when the box is changed
@@ -416,7 +419,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		    }.bind(this));
 		});
 
-	});
+	}.bind(this));
 
     }
 });

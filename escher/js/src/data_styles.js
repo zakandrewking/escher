@@ -122,9 +122,8 @@ define(['utils'], function(utils) {
             else return y - x;
         }
         function fold(x, y, take_abs) {
-            if (x == 0) return null;
-            var fold = y / x;
-            return take_abs ? Math.abs(fold) : fold;
+            if (x == 0 || y == 0) return null;
+            return (y >= x ? y / x : - x / y);
         }
         function log2_fold(x, y, take_abs) {
             if (x == 0) return null;
