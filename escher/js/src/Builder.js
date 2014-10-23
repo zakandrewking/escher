@@ -650,6 +650,14 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 .button({ key: keys.redo,
                           text: 'Redo',
                           key_text: (enable_keys ? ' (Ctrl+Shift+Z)' : null) })
+                .divider()
+                .button({ key: keys.align_label_left,
+                          text: 'Label(s) align left' })
+                .button({ key: keys.align_label_center,
+                          text: 'Label(s) align center' })
+                .button({ key: keys.align_label_right,
+                          text: 'Label(s) align right' })
+                .divider()
                 .button({ key: keys.make_primary,
                           text: 'Make primary metabolite',
                           key_text: (enable_keys ? ' (P)' : null) })
@@ -1044,6 +1052,11 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                               target: map,
                               fn: map.delete_selected,
                               ignore_with_input: true },
+                // align labels
+                align_label_left: { fn: map.align_selected_labels.bind(map, 'left') },
+                align_label_center: { fn: map.align_selected_labels.bind(map, 'center') },
+                align_label_right: { fn: map.align_selected_labels.bind(map, 'right') },
+                // metabolites
                 make_primary: { key: 80, // p
                                 target: map,
                                 fn: map.make_selected_node_primary,

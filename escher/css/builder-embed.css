@@ -49,18 +49,18 @@
     stroke: rgb(50, 50, 50);
 }
 g.selected .node-circle{
-    stroke-width: 3px;
-    stroke: rgb(20, 113, 199);
+    stroke-width: 4px;
+    stroke: rgb(223, 37, 80);
 }
 g.selected .label {
-    fill: rgb(20, 113, 199);
+    fill: rgb(223, 37, 80);
+}
+g.selected .metabolite-circle {
+    stroke: rgb(223, 37, 80);
 }
 .metabolite-circle {
     stroke: rgb(162, 69, 16);
     fill: rgb(224, 134, 91);
-}
-g.selected .metabolite-circle {
-    stroke: rgb(5, 2, 0);
 }
 .segment {
     stroke: #334E75;

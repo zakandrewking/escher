@@ -55,6 +55,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         extend_nodes: extend_nodes,
         extend_reactions: extend_reactions,
         edit_text_label: edit_text_label,
+        align_selected_labels: align_selected_labels,
         // delete
         delete_selected: delete_selected,
         delete_selectable: delete_selectable,
@@ -1504,6 +1505,45 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         });
     }
 
+    function align_selected_labels(alignment) {
+        /** Align the selection label to this direction.
+
+         Undoable
+
+         Arguments
+         ---------
+
+         alignment: Can be 'left', 'center', or 'right'.
+
+         */
+
+        if (['left', 'center', 'right'].indexOf(alignment) == -1)
+            throw new Error('Bad value for alignment: ' + alignment);
+
+        // text labels
+        var ids = this.get_selected_text_label_ids();
+        ids.forEach(function(id) {
+            this.text_labels[id].label_align = alignment;
+        }.bind(this));
+        this.draw_these_text_labels(ids);
+
+        // nodes
+        ids = this.get_selected_node_ids();
+        var reaction_ids_to_draw = [];
+        ids.forEach(function(id) {
+            var node = this.nodes[id];
+            if (node.node_type == 'metabolite') {
+                node.label_align = alignment;
+            } else if (node.node_type == 'midmarker') {
+                var r_id = node.connected_segments[0].reaction_id;
+                reaction_ids_to_draw.push(r_id);
+                this.reactions[r_id].label_align = alignment;
+            }
+        }.bind(this));
+        this.draw_these_nodes(ids);
+        this.draw_these_reactions(reaction_ids_to_draw);
+    }
+    
     function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id, direction) {
         /** Build a new reaction starting with selected_met.
 
@@ -1956,7 +1996,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             var reaction = out[1].reactions[r_id],
                 new_reaction = {};
             ['name', 'bigg_id','reversibility', 'label_x', 'label_y',
-             'gene_reaction_rule', 'genes', 'metabolites'
+             'label_align', 'gene_reaction_rule', 'genes', 'metabolites'
             ].forEach(function(attr) {
                 new_reaction[attr] = reaction[attr];
             });
@@ -1978,7 +2018,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 attrs;
             if (node.node_type == 'metabolite') {
                 attrs = ['node_type', 'x', 'y', 'bigg_id', 'name', 'label_x', 'label_y',
-                         'node_is_primary'];
+                         'label_align', 'node_is_primary'];
             } else {
                 attrs = ['node_type', 'x', 'y'];
             }

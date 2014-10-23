@@ -70,6 +70,17 @@ def convert(map, model):
     # keep track of deleted nodes and reactions
     nodes_to_delete = []
     reactions_to_delete = []
+    
+    # text_labels
+    for id, text_label in map_body['text_labels'].iteritems():
+        # unsupported attributes
+        for key in text_label.keys():
+            if not key in ["x", "y", "text", "label_align"]:
+                del text_label[key]
+
+        # align left by default
+        if 'label_align' not in text_label:
+            text_label['label_align'] = 'left'
 
     # nodes
     for id, node in map_body['nodes'].iteritems():
@@ -84,9 +95,14 @@ def convert(map, model):
             # unsupported attributes
             for key in node.keys():
                 if not key in ["node_type", "x", "y", "bigg_id", "name",
-                               "label_x", "label_y", "node_is_primary"]:
+                               "label_x", "label_y", "label_align",
+                               "node_is_primary"]:
                     del node[key]
                     
+            # align left by default
+            if 'label_align' not in node:
+                node['label_align'] = 'left'
+
             # find the metabolite
             try:
                 cobra_metabolite = model.metabolites.get_by_id(node['bigg_id'])
@@ -122,8 +138,9 @@ def convert(map, model):
         # unsupported attributes
         for key in reaction.keys():
             if not key in ["name", "bigg_id","reversibility",
-                           "label_x", "label_y", "gene_reaction_rule",
-                           "genes", "metabolites", "segments"]:
+                           "label_x", "label_y", "label_align",
+                           "gene_reaction_rule", "genes", "metabolites",
+                           "segments"]:
                 del reaction[key]
 
         # unsupported attributes in segments
@@ -132,11 +149,15 @@ def convert(map, model):
                 if not key in ["from_node_id", "to_node_id", "b1", "b2"]:
                     del segment[key]
 
+        # align left by default
+        if 'label_align' not in reaction:
+            reaction['label_align'] = 'left'
+
         # get reaction
         try:
             cobra_reaction = model.reactions.get_by_id(reaction['bigg_id'])
         except KeyError:
-            print 'Could not find metabolite %s in model. Deleting.' % node['bigg_id']
+            print 'Could not find metabolite %s in model. Deleting.' % reaction['bigg_id']
             reactions_to_delete.append(id)
             continue
         reaction['gene_reaction_rule'] = cobra_reaction.gene_reaction_rule

@@ -208,7 +208,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                                    label_drag_behavior,
                                    label_click_fn, label_mouseover_fn,
                                    label_mouseout_fn) {        
-        var decimal_format = d3.format('.4g');
+        var decimal_format = d3.format('.4g'),
+            conv = {'left': 'start', 'center': 'middle', 'right': 'end'};
         update_selection.attr('transform', function(d) {
             return 'translate('+d.label_x+','+d.label_y+')';
         })
@@ -220,6 +221,11 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                 if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
                     t += ' ' + d.data_string;
                 return t;
+            })
+            .attr('text-anchor', function(d) {
+                if ('label_align' in d && d.label_align !== null && d.label_align in conv)
+                    return conv[d.label_align];
+                return null;
             })
             .on('click', label_click_fn)
             .on('mouseover', label_mouseover_fn)
@@ -550,6 +556,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                 .on('mouseover', mouseover_fn)
                 .on('mouseout', mouseout_fn);
 
+        var conv = {'left': 'start', 'center': 'middle', 'right': 'end'};
         update_selection
             .select('.node-label')
             .attr('transform', function(d) {
@@ -560,6 +567,11 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                 if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
                     t += ' ' + d.data_string;
                 return t;
+            })
+            .attr('text-anchor', function(d) {
+                if ('label_align' in d && d.label_align !== null && d.label_align in conv)
+                    return conv[d.label_align];
+                return null;
             })
             .call(this.behavior.turn_off_drag)
             .call(label_drag_behavior);
@@ -580,11 +592,17 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
     function update_text_label(update_selection) {
         var click_fn = this.behavior.text_label_click,
             drag_behavior = this.behavior.selectable_drag,
-            turn_off_drag = this.behavior.turn_off_drag;
+            turn_off_drag = this.behavior.turn_off_drag,
+            conv = {'left': 'start', 'center': 'middle', 'right': 'end'};
         
         update_selection
             .select('.label')
             .text(function(d) { return d.text; })
+            .attr('text-anchor', function(d) {
+                if ('label_align' in d && d.label_align !== null && d.label_align in conv)
+                    return conv[d.label_align];
+                return null;
+            })
             .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
             .on('click', click_fn)
             .call(turn_off_drag)
