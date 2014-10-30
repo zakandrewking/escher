@@ -82,10 +82,10 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
         utils.check_undefined(arguments, ['enter_selection']);
         // attributes for new reaction group
 
-        var t = enter_selection.append('g')
-                .attr('id', function(d) { return 'r'+d.reaction_id; })
-                .attr('class', 'reaction')
-                .call(this.create_reaction_label.bind(this));
+        enter_selection.append('g')
+            .attr('id', function(d) { return 'r'+d.reaction_id; })
+            .attr('class', 'reaction')
+            .call(this.create_reaction_label.bind(this));
         
         this.callback_manager.run('create_reaction', this, enter_selection);
         return;

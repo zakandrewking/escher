@@ -1,4 +1,4 @@
-define(['utils', 'PlacedDiv', 'Map', 'ZoomContainer', 'CallbackManager', 'build'], function(utils, PlacedDiv, Map, ZoomContainer, CallbackManager, build) {
+define(['utils', 'PlacedDiv', 'build'], function(utils, PlacedDiv, build) {
     /**
      */
 
@@ -23,20 +23,10 @@ define(['utils', 'PlacedDiv', 'Map', 'ZoomContainer', 'CallbackManager', 'build'
 	this.placed_div.hide();
 	this.input = div.append('input');
 
-	if (map instanceof Map) {
-	    this.map = map;
-	    this.setup_map_callbacks(map);
-	} else {
-	    throw new Error('Cannot set the map. It is not an instance of ' + 
-			    'Map');
-	}
-	if (zoom_container instanceof ZoomContainer) {
-	    this.zoom_container = zoom_container;
-	    this.setup_zoom_callbacks(zoom_container);
-	} else {
-	    throw new Error('Cannot set the zoom_container. It is not an ' +
-			    'instance of ZoomContainer');
-	}
+	this.map = map;
+	this.setup_map_callbacks(map);
+	this.zoom_container = zoom_container;
+	this.setup_zoom_callbacks(zoom_container);
     }
 
     function setup_map_callbacks(map) {
@@ -93,6 +83,7 @@ define(['utils', 'PlacedDiv', 'Map', 'ZoomContainer', 'CallbackManager', 'build'
 	// escape key
 	this.escape = this.map.key_manager
 	    .add_escape_listener(function() {
+		this._accept_changes(target);
 		this.hide();
 	    }.bind(this));
 	// enter key
@@ -142,13 +133,11 @@ define(['utils', 'PlacedDiv', 'Map', 'ZoomContainer', 'CallbackManager', 'build'
     }
 
     function _add_and_edit(coords) {
-	var out = build.new_text_label(this.map.largest_ids, '', coords);
-	this.map.text_labels[out.id] = out.label;
-	sel = this.map.draw_these_text_labels([out.id]);
-	// TODO wait here?
-	var sel = this.map.sel.select('#text-labels').selectAll('.text-label')
-		.filter(function(d) { return d.text_label_id==out.id; });
+        // make an empty label
+        var text_label_id = this.map.new_text_label(coords, '');
 	// apply the cursor to the new label
+        var sel = this.map.sel.select('#text-labels').selectAll('.text-label')
+	    .filter(function(d) { return d.text_label_id == text_label_id; });
 	sel.select('text').classed('edit-text-cursor', true);
 	this.show(sel, coords);
     }

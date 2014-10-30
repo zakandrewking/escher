@@ -22,6 +22,18 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
      enable_search:
 
+     Callbacks
+     ---------
+
+     map.callback_manager.run('set_status', null, status);
+     map.callback_manager.run('toggle_beziers', null, beziers_enabled);
+     map.callback_manager.run('select_metabolite_with_id', null, selected_node, coords);
+     map.callback_manager.run('select_selectable', null, node_count, selected_node, coords);
+     map.callback_manager.run('deselect_nodes');
+     map.callback_manager.run('select_text_label');
+     map.callback_manager.run('before_svg_export');
+     map.callback_manager.run('after_svg_export');
+
      */
 
     var Map = utils.make_class();
@@ -49,11 +61,12 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         deselect_text_labels: deselect_text_labels,
         // build
         new_reaction_from_scratch: new_reaction_from_scratch,
-        new_reaction_for_metabolite: new_reaction_for_metabolite,
-        cycle_primary_node: cycle_primary_node,
-        make_selected_node_primary: make_selected_node_primary,
         extend_nodes: extend_nodes,
         extend_reactions: extend_reactions,
+        new_reaction_for_metabolite: new_reaction_for_metabolite,
+        cycle_primary_node: cycle_primary_node,
+        toggle_selected_node_primary: toggle_selected_node_primary,
+        new_text_label: new_text_label,
         edit_text_label: edit_text_label,
         // delete
         delete_selected: delete_selected,
@@ -107,8 +120,10 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         get_size: get_size,
         zoom_to_reaction: zoom_to_reaction,
         zoom_to_node: zoom_to_node,
+        zoom_to_text_label: zoom_to_text_label,
         highlight_reaction: highlight_reaction,
         highlight_node: highlight_node,
+        highlight_text_label: highlight_text_label,
         highlight: highlight,
         // io
         save: save,
@@ -233,6 +248,9 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 map.search_index.insert('n'+n_id, { 'name': node.bigg_id,
                                                     'data': { type: 'metabolite',
                                                               node_id: n_id }});
+                map.search_index.insert('n_name'+n_id, { 'name': node.name,
+                                                         'data': { type: 'metabolite',
+                                                                   node_id: n_id }});
             }
         }
 
@@ -246,6 +264,9 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 map.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
                                                     'data': { type: 'reaction',
                                                               reaction_id: r_id }});
+                map.search_index.insert('r_name'+r_id, { 'name': reaction.name,
+                                                         'data': { type: 'reaction',
+                                                                   reaction_id: r_id }});
             }
 
             // keep track of any bad segments
@@ -295,6 +316,16 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             segments_to_delete.forEach(function(s_id) {
                 delete reaction.segments[s_id];
             });
+        }
+
+        // add text_labels to the search index
+        if (enable_search) {
+            for (var label_id in map.text_labels) {
+                var label = map.text_labels[label_id];
+                map.search_index.insert('l'+label_id, { 'name': label.text,
+                                                        'data': { type: 'text_label',
+                                                                  text_label_id: label_id }});
+            }
         }
 
         // populate the beziers
@@ -1362,7 +1393,12 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         /** delete text labels for an array of ids
          */
         text_label_ids.forEach(function(text_label_id) {
+            // delete label
             delete this.text_labels[text_label_id];
+            // remove from search index
+            var found = this.search_index.remove('l'+text_label_id);
+            if (!found)
+                console.warn('Could not find deleted text label in search index');
         }.bind(this));
     }
 
@@ -1484,27 +1520,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         }
         utils.extend(this.reactions, new_reactions);
     }
-
-    function edit_text_label(text_label_id, new_value, should_draw) {
-        // save old value
-        var saved_value = this.text_labels[text_label_id].text,
-            edit_and_draw = function(new_val, should_draw) {
-                // set the new value
-                this.text_labels[text_label_id].text = new_val;
-                if (should_draw) this.draw_these_text_labels([text_label_id]);
-            }.bind(this);
-
-        // edit the label
-        edit_and_draw(new_value, should_draw);
-
-        // add to undo stack
-        this.undo_stack.push(function() {
-            edit_and_draw(saved_value, should_draw);
-        }, function () {
-            edit_and_draw(new_value, should_draw);
-        });
-    }
-
+    
     function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id,
                                          direction, apply_undo_redo) {
         /** Build a new reaction starting with selected_met.
@@ -1746,58 +1762,37 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.select_metabolite_with_id(primary_node_id);
         return;
     }
-    function make_selected_node_primary() {
-        var selected_nodes = this.get_selected_nodes(),
-            reactions = this.reactions,
-            nodes = this.nodes;
-        // can only have one selected
-        if (Object.keys(selected_nodes).length != 1) {
-            console.error('Only one node can be selected');
-            return;
-        }
-        // get the first node
-        var node_id = Object.keys(selected_nodes)[0],
-            node = selected_nodes[node_id];
-        // make it primary
-        nodes[node_id].node_is_primary = true;
-        var nodes_to_draw = [node_id];
-        // make the other reactants or products secondary
-        // 1. Get the connected anchor nodes for the node
-        var connected_anchor_ids = [];
-        nodes[node_id].connected_segments.forEach(function(segment_info) {
-            var segment;
-            try {
-                segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id];
-                if (segment === undefined) throw new Error('undefined segment');
-            } catch (e) {
-                console.warn('Could not find connected segment ' + segment_info.segment_id);
-                return;
-            }
-            connected_anchor_ids.push(segment.from_node_id==node_id ?
-                                      segment.to_node_id : segment.from_node_id);
+    function toggle_selected_node_primary() {
+        /** Toggle the primary/secondary status of each selected node.
+
+            Undoable.
+
+            */
+        var selected_node_ids = this.get_selected_node_ids(),
+            go = function(ids) {
+                var node_ids_to_draw = [];
+                ids.forEach(function(id) {
+                    if (!(id in this.nodes)) {
+                        console.warn('Could not find node: ' + id);
+                        return
+                    }
+                    var node = this.nodes[id];
+                    node.node_is_primary = !node.node_is_primary;
+                    node_ids_to_draw.push(id);
+                }.bind(this));
+                // draw the nodes
+                this.draw_these_nodes(node_ids_to_draw);
+            }.bind(this);
+
+        // go
+        go(selected_node_ids);
+
+        // add to the undo stack
+        this.undo_stack.push(function () {
+            go(selected_node_ids);
+        }, function () {
+            go(selected_node_ids);
         });
-        // 2. find nodes connected to the anchor that are metabolites
-        connected_anchor_ids.forEach(function(anchor_id) {
-            var segments = [];
-            nodes[anchor_id].connected_segments.forEach(function(segment_info) {
-                var segment;
-                try {
-                    segment = reactions[segment_info.reaction_id].segments[segment_info.segment_id];
-                    if (segment === undefined) throw new Error('undefined segment');
-                } catch (e) {
-                    console.warn('Could not find connected segment ' + segment_info.segment_id);
-                    return;
-                }
-                var conn_met_id = segment.from_node_id == anchor_id ? segment.to_node_id : segment.from_node_id,
-                    conn_node = nodes[conn_met_id];
-                if (conn_node.node_type == 'metabolite' && conn_met_id != node_id) {
-                    conn_node.node_is_primary = false;
-                    nodes_to_draw.push(conn_met_id);
-                }
-            });
-        });
-        // draw the nodes
-        this.draw_these_nodes(nodes_to_draw);
     }
 
     function segments_and_reactions_for_nodes(nodes) {
@@ -1840,6 +1835,46 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             if (has) these_reactions[reaction_id] = reaction;
         }
         return { segment_objs_w_segments: segment_objs_w_segments, reactions: these_reactions };
+    }
+
+    function new_text_label(coords, text) {
+        // make an label
+	var out = build.new_text_label(this.largest_ids, text, coords);
+	this.text_labels[out.id] = out.label;
+	sel = this.draw_these_text_labels([out.id]);
+        // add to the search index
+        this.search_index.insert('l' + out.id, { 'name': text,
+                                                 'data': { type: 'text_label',
+                                                           text_label_id: out.id }});
+        return out.id;
+    }
+    
+    function edit_text_label(text_label_id, new_value, should_draw) {
+        // save old value
+        var saved_value = this.text_labels[text_label_id].text,
+            edit_and_draw = function(new_val, should_draw) {
+                // set the new value
+                this.text_labels[text_label_id].text = new_val;
+                if (should_draw) this.draw_these_text_labels([text_label_id]);
+                // update in the search index
+                var record_id = 'l' + text_label_id,
+                    found = this.search_index.remove(record_id);
+                if (!found)
+                    console.warn('Could not find modified text label in search index');
+                this.search_index.insert(record_id, { 'name': new_val,
+                                                      'data': { type: 'text_label',
+                                                                text_label_id: text_label_id }});
+            }.bind(this);
+
+        // edit the label
+        edit_and_draw(new_value, should_draw);
+
+        // add to undo stack
+        this.undo_stack.push(function() {
+            edit_and_draw(saved_value, should_draw);
+        }, function () {
+            edit_and_draw(new_value, should_draw);
+        });
     }
 
     // -------------------------------------------------------------------------
@@ -1924,7 +1959,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
     function zoom_to_reaction(reaction_id) {
         var reaction = this.reactions[reaction_id],
-            new_zoom = 0.6,
+            new_zoom = 0.5,
             size = this.get_size(),
             new_pos = { x: - reaction.label_x * new_zoom + size.width/2,
                         y: - reaction.label_y * new_zoom + size.height/2 };
@@ -1933,19 +1968,34 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
     function zoom_to_node(node_id) {
         var node = this.nodes[node_id],
-            new_zoom = 0.6,
+            new_zoom = 0.5,
             size = this.get_size(),
             new_pos = { x: - node.label_x * new_zoom + size.width/2,
                         y: - node.label_y * new_zoom + size.height/2 };
         this.zoom_container.go_to(new_zoom, new_pos);
     }
 
+    function zoom_to_text_label(text_label_id) {
+        var text_label = this.text_labels[text_label_id],
+            new_zoom = 0.5,
+            size = this.get_size(),
+            new_pos = { x: - text_label.x * new_zoom + size.width/2,
+                        y: - text_label.y * new_zoom + size.height/2 };
+        this.zoom_container.go_to(new_zoom, new_pos);
+    }
+    
     function highlight_reaction(reaction_id) {
         this.highlight(this.sel.selectAll('#r'+reaction_id).selectAll('text'));
     }
+    
     function highlight_node(node_id) {
         this.highlight(this.sel.selectAll('#n'+node_id).selectAll('text'));
     }
+    
+    function highlight_text_label(text_label_id) {
+        this.highlight(this.sel.selectAll('#l'+text_label_id).selectAll('text'));
+    }
+    
     function highlight(sel) {
         this.sel.selectAll('.highlight')
             .classed('highlight', false);

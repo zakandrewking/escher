@@ -661,11 +661,11 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 .button({ key: keys.redo,
                           text: 'Redo',
                           key_text: (enable_keys ? ' (Ctrl+Shift+Z)' : null) })
-                .button({ key: keys.make_primary,
-                          text: 'Make primary metabolite',
+                .button({ key: keys.toggle_primary,
+                          text: 'Toggle primary/secondary',
                           key_text: (enable_keys ? ' (P)' : null) })
                 .button({ key: keys.cycle_primary,
-                          text: 'Cycle primary metabolite',
+                          text: 'Rotate reactant locations',
                           key_text: (enable_keys ? ' (C)' : null) })
                 .button({ key: keys.select_all,
                           text: 'Select all',
@@ -711,6 +711,13 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                               (enable_keys ? ' (B)' : ''));
                 });
         }
+
+        // help
+        menu.append('a')
+            .attr('class', 'help-button')
+            .attr('target', '#')
+            .attr('href', 'http://github.com/zakandrewking/escher/wiki')
+            .text('?');
 
         var button_panel = button_selection.append('ul')
                 .attr('class', 'nav nav-pills nav-stacked')
@@ -1055,10 +1062,10 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                               target: map,
                               fn: map.delete_selected,
                               ignore_with_input: true },
-                make_primary: { key: 80, // p
-                                target: map,
-                                fn: map.make_selected_node_primary,
-                                ignore_with_input: true },
+                toggle_primary: { key: 80, // p
+                                  target: map,
+                                  fn: map.toggle_selected_node_primary,
+                                  ignore_with_input: true },
                 cycle_primary: { key: 67, // c
                                  target: map,
                                  fn: map.cycle_primary_node,

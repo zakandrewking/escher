@@ -106,6 +106,9 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
             } else if (r.type=='metabolite') {
                 this.map.zoom_to_node(r.node_id);
                 this.map.highlight_node(r.node_id);
+            } else if (r.type=='text_label') {
+                this.map.zoom_to_text_label(r.text_label_id);
+                this.map.highlight_text_label(r.text_label_id);
             } else {
                 throw new Error('Bad search index data type: ' + r.type);
             }
