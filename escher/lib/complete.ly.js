@@ -106,17 +106,18 @@ define(function() {
             var rows = [];
             var ix = 0;
             var oldIndex = -1;
+            var current_row = null;
             
             var onMouseOver =  function() { this.style.outline = '1px solid #ddd'; }
             var onMouseOut =   function() { this.style.outline = '0'; }
             var onDblClick =  function(e) {
                 e.preventDefault();
-                p.onmouseselection(this.__hint);
+                p.onmouseselection(this.id);
             }
             
             var p = {
                 hide :  function() { elem.style.visibility = 'hidden'; }, 
-                refresh : function(token, array) {
+                refresh : function(token, options) {
                     elem.style.visibility = 'hidden';
                     ix = 0;
                     elem.innerHTML ='';
@@ -126,9 +127,12 @@ define(function() {
                     var distanceToBottom = vph - rect.bottom -6;  // distance from the browser border.
                     
                     rows = [];
-                    for (var i = 0; i < array.length; i++) {
+                    for (var i = 0; i < options.length; i++) {
                         // ignore case
-                        if (array[i].toLowerCase().indexOf(token.toLowerCase()) != 0)
+                        var found = options[i].matches.filter(function(match) {
+                            return match.toLowerCase().indexOf(token.toLowerCase()) == 0;
+                        });
+                        if (found.length == 0)
                             continue;
                         var divRow = document.createElement('div');
                         divRow.style.color = config.color;
@@ -137,9 +141,9 @@ define(function() {
                         // prevent selection for double click
                         divRow.onmousedown = function(e) { e.preventDefault(); };
                         divRow.ondblclick = onDblClick; 
-                        divRow.__hint =    array[i];
-                        divRow.innerHTML = (array[i].substring(0, token.length) + '<b>' +
-                                            array[i].substring(token.length) + '</b>');
+                        divRow.__hint = found[0];
+                        divRow.id = options[i].id;
+                        divRow.innerHTML = options[i].html;
                         rows.push(divRow);
                         elem.appendChild(divRow);
                         if (rows.length >= rs.display_limit)
@@ -170,6 +174,7 @@ define(function() {
                     }
                     rows[index].style.backgroundColor = config.dropDownOnHoverBackgroundColor; // <-- should be config
                     oldIndex = index;
+                    current_row = rows[index];
                 },
                 // moves the selection either up or down (unless it's not
                 // possible) step is either +1 or -1.
@@ -185,18 +190,18 @@ define(function() {
                     p.highlight(ix);
                     return rows[ix].__hint;
                 },
-                onmouseselection : function() {}
+                onmouseselection : function() {},
+                get_current_row: function () {
+                    return current_row;
+                }
             };
             return p;
         }
         
         var dropDownController = createDropDownController(dropDown);
         
-        dropDownController.onmouseselection = function(text) {
-            txtInput.value = txtHint.value = rs.get_hint(text);
-            // ensure that mouse down will not show the dropDown now.
-            registerOnTextChangeOldValue = txtInput.value; 
-            rs.onEnter()
+        dropDownController.onmouseselection = function(id) {
+            rs.onEnter(id)
             rs.input.focus();
         }
         
@@ -237,7 +242,7 @@ define(function() {
         
         
         var rs = {
-            get_hint :    function() {},
+            get_hint :    function(x) { return x; },
             display_limit: 100,
             onArrowDown : function() {},               // defaults to no action.
             onArrowUp :   function() {},               // defaults to no action.
@@ -278,11 +283,13 @@ define(function() {
                 // updating the hint. 
                 txtHint.value ='';
                 for (var i = 0; i < optionsLength; i++) {
-                    var opt = options[i];
-                    if (opt.toLowerCase().indexOf(token.toLowerCase()) == 0) {
-                        txtHint.value = rs.get_hint(opt);
-                        break;
-                    }
+                    var found = options[i].matches.filter(function(match) {
+                        return match.toLowerCase().indexOf(token.toLowerCase()) == 0;
+                    });
+                    if (found.length == 0)
+                        continue;
+                    txtHint.value = rs.get_hint(found[0]);
+                    break;
                 }
                 
                 // moving the dropDown and refreshing it.
@@ -362,9 +369,9 @@ define(function() {
             }
 
             if (keyCode == 13) { // enter
-                txtInput.value = txtHint.value;
-                rs.onChange(txtInput.value);
-                rs.onEnter();
+                // get current
+                var id = dropDownController.get_current_row().id;
+                rs.onEnter(id);
                 return; 
             }
             

@@ -11,8 +11,6 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
      options: An object.
 
-     identifiers_on_map: Either 'bigg_id' (default) or 'name'.
-
      unique_map_id: A unique ID that will be used to UI elements don't interfere
      when multiple maps are in the same HTML document.
 
@@ -47,8 +45,18 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
      metabolite_compare_style: (Default: 'diff') How to compare to
      datasets. Can be either 'fold', 'log2_fold' or 'diff'.
 
-     highlight_missing_color: A color to apply to components that are not
-     the in cobra model, or null to apply no color. Default: 'red'.
+     // View and build options
+
+     identifiers_on_map: Either 'bigg_id' (default) or 'name'.
+
+     highlight_missing: (Default: false) If true, then highlight reactions that
+     are not in the loaded model in red.
+
+     allow_building_duplicate_reactions: (Default: true) If true, then building
+     duplicate reactions is allowed. If false, then duplicate reactions are
+     hidden in `Add reaction mode`.
+
+     // Quick jump menu
 
      local_host: The host used to load maps for quick_jump. E.g.,
      http://localhost:7778.
@@ -56,6 +64,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
      quick_jump: A list of map names that can be reached by
      selecting them from a quick jump menu on the map.
 
+     // Callbacks
+     
      first_load_callback: A function to run after loading.
 
      */
@@ -111,7 +121,6 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             css: null,
             starting_reaction: null,
             never_ask_before_quit: false,
-            identifiers_on_map: 'bigg_id',
             unique_map_id: null,
             // applied data
             // reaction
@@ -137,12 +146,14 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             metabolite_size_range: [6, 8, 10],
             metabolite_no_data_color: 'white',
             metabolite_no_data_size: 6,
-            // color reactions not in the model
-            highlight_missing_color: 'red',
-            // quick jump menu
+            // View and build options
+            identifiers_on_map: 'bigg_id',
+            highlight_missing: false,
+            allow_building_duplicate_reactions: true,
+            // Quick jump menu
             local_host: null,
             quick_jump: null,
-            // callback
+            // Callbacks
             first_load_callback: null
         });
 
@@ -283,7 +294,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
         // set up the reaction input with complete.ly
         this.build_input = BuildInput(this.options.selection, this.map,
-                                      this.zoom_container);
+                                      this.zoom_container, this.settings);
 
         // set up the text edit input
         this.text_edit_input = TextEditInput(this.options.selection, this.map,
@@ -846,7 +857,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                     this.map.set_status('Loaded model ' + data.id, 3000);
                 else
                     this.map.set_status('Loaded model (no model id)', 3000);
-                if (this.settings.highlight_missing!==null) {
+                if (this.settings.highlight_missing) {
                     this.map.draw_everything();
                 }
             } catch (e) {

@@ -72,7 +72,10 @@ class IndexHandler(BaseHandler):
         response = yield gen.Task(AsyncHTTPClient().fetch,
                                   '/'.join([get_url('escher_download', protocol='https'),
                                             'index.json']))
-        json_data = response.body if response.body is not None else json.dumps(None)
+        if response.code == 200 and response.body is not None:
+            json_data = response.body
+        else:
+            json_data = json.dumps(None)
 
         # get the cached maps and models
         cached_maps = list_cached_maps()
@@ -134,7 +137,7 @@ class BuilderHandler(BaseHandler):
                           source='local',
                           local_host='http://localhost:%d' % PORT)
             response = yield gen.Task(AsyncHTTPClient().fetch, url)
-            if response.body is None:
+            if response.code != 200 or response.body is None:
                 raise Exception('Could not load embedded_css from %s' % url)
             builder_kwargs['embedded_css'] = response.body.replace('\n', ' ')
 

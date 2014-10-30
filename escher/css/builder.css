@@ -180,7 +180,11 @@ td.options-label-wide {
     margin: 0 4px;
 }
 .style-span span {
-    margin: 0 4px 0 0;
+    margin: 0 6px 0 0;
+}
+.style-span input[type="radio"], .style-span input[type="checkbox"] {
+    top: 2px;
+    position: relative;
 }
 /* For Settings and Search */
 .close-button {

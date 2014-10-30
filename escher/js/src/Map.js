@@ -467,7 +467,6 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                         this.settings.get_option('identifiers_on_map'),
                                         { color: this.settings.get_option('reaction_no_data_color'),
                                           size: this.settings.get_option('reaction_no_data_size') },
-                                        this.settings.get_option('highlight_missing'),
                                         this.settings.get_option('reaction_styles'),
                                         this.behavior.reaction_label_drag,
                                         this.behavior.label_click,
@@ -1134,6 +1133,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     function deselect_nodes() {
         var node_selection = this.sel.select('#nodes').selectAll('.node');
         node_selection.classed('selected', false);
+        this.callback_manager.run('deselect_nodes');
     }
     function select_text_label(sel, d) {
         // deselect all nodes
@@ -1377,14 +1377,6 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
          */
 
-        // If reaction id is not new, then return:
-        // for (var reaction_id in this.reactions) {
-        //     if (this.reactions[reaction_id].bigg_id == starting_reaction) {
-        //      console.warn('reaction is already drawn');
-        //         return null;
-        //     }
-        // }
-
         // If there is no cobra model, error
         if (!this.cobra_model) return console.error('No CobraModel. Cannot build new reaction');
 
@@ -1418,26 +1410,35 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         extend_and_draw_metabolite.apply(this, [new_nodes, selected_node_id]);
 
         // clone the nodes and reactions, to redo this action later
-        var saved_nodes = utils.clone(new_nodes),
-            map = this;
+        var saved_nodes = utils.clone(new_nodes);
 
+        // draw the reaction
+        var out = this.new_reaction_for_metabolite(starting_reaction,
+                                                   selected_node_id,
+                                                   direction, false),
+            reaction_redo = out.redo,
+            reaction_undo = out.undo;
+        
         // add to undo/redo stack
         this.undo_stack.push(function() {
             // undo
+            // first undo the reaction
+            reaction_undo();
             // get the nodes to delete
-            map.delete_node_data(Object.keys(new_nodes));
+            this.delete_node_data(Object.keys(new_nodes));
             // save the nodes and reactions again, for redo
             new_nodes = utils.clone(saved_nodes);
             // draw
-            map.clear_deleted_nodes();
-        }, function () {
+            this.clear_deleted_nodes();
+            // deselect
+            this.deselect_nodes();
+        }.bind(this), function () {
             // redo
             // clone the nodes and reactions, to redo this action later
-            extend_and_draw_metabolite.apply(map, [new_nodes, selected_node_id]);
-        });
-
-        // draw the reaction
-        this.new_reaction_for_metabolite(starting_reaction, selected_node_id, direction);
+            extend_and_draw_metabolite.apply(this, [new_nodes, selected_node_id]);
+            // now redo the reaction
+            reaction_redo();
+        }.bind(this));
 
         return null;
 
@@ -1504,21 +1505,35 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         });
     }
 
-    function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id, direction) {
+    function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id,
+                                         direction, apply_undo_redo) {
         /** Build a new reaction starting with selected_met.
 
          Undoable
 
+         Arguments
+         ---------
+
+         reaction_bigg_id: The BiGG ID of the reaction to draw.
+
+         selected_node_id: The ID of the node to begin drawing with.
+
+         direction: The direction to draw in.
+
+         apply_undo_redo: (Optional, Default: true) If true, then add to the
+         undo stack. Otherwise, just return the undo and redo functions.
+
+         Returns
+         -------
+
+         { undo: undo_function,
+           redo: redo_function }
+
          */
 
-        // If reaction id is not new, then return:
-        // for (var reaction_id in this.reactions) {
-        //     if (this.reactions[reaction_id].bigg_id == reaction_bigg_id) {
-        //      console.warn('reaction is already drawn');
-        //         return;
-        //     }
-        // }
-
+        // default args
+        if (apply_undo_redo === undefined) apply_undo_redo = true;
+        
         // get the metabolite node
         var selected_node = this.nodes[selected_node_id];
 
@@ -1548,7 +1563,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             saved_beziers = utils.clone(new_beziers);
 
         // add to undo/redo stack
-        this.undo_stack.push(function() {
+        var undo_fn = function() {
             // undo
             // get the nodes to delete
             delete new_nodes[selected_node_id];
@@ -1562,12 +1577,19 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             // draw
             this.clear_deleted_nodes();
             this.clear_deleted_reactions(true); // also clears segments and beziers
-        }.bind(this), function () {
-            // redo
-            // clone the nodes and reactions, to redo this action later
-            extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
-                                                  new_beziers, selected_node_id]);
-        }.bind(this));
+        }.bind(this),
+            redo_fn = function () {
+                // redo
+                // clone the nodes and reactions, to redo this action later
+                extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
+                                                      new_beziers, selected_node_id]);
+            }.bind(this);
+
+        if (apply_undo_redo)
+            this.undo_stack.push(undo_fn, redo_fn);
+
+        return { undo: undo_fn,
+                 redo: redo_fn };
 
         // definitions
         function extend_and_draw_reaction(new_nodes, new_reactions, new_beziers,

@@ -76,7 +76,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
         
 	// identifiers_on_map
         box.append('hr');
-	box.append('div').text('View options')
+	box.append('div').text('View and build options')
 	    .attr('class', 'settings-section-heading-large');
 	this.view_gui(box.append('div'));
 	
@@ -311,7 +311,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    s.append('span')
                 .text(function(d) { return d[0]; });
 
-	    // make the checkbox
+	    // make the radio
 	    s.append('input').attr('type', 'radio')
                 .attr('name', type + '_compare_style' + this.unique_string)
                 .attr('value', function(d) { return d[1]; })
@@ -336,8 +336,10 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
         // gene-specific settings
         if (type=='reaction') {
 	    var t = sel.append('table').attr('class', 'settings-table')
-                    .attr('title', ('When evaluating a gene reaction rule, use ' +
-                                    'this function to evaluate AND rules.'));
+                    .attr('title', ('The function that will be used to evaluate ' +
+                                    'AND connections in gene reaction rules (AND ' +
+                                    'connections generally connect components of ' +
+                                    'an enzyme complex)'));
             
 	    // and_method_in_gene_reaction_rule
 	    t.append('tr').call(function(r) {
@@ -355,7 +357,7 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	        s.append('span')
                     .text(function(d) { return d[0]; });
 
-	        // make the checkbox
+	        // make the radio
 	        s.append('input').attr('type', 'radio')
                     .attr('name', 'and_method_in_gene_reaction_rule' + this.unique_string)
                     .attr('value', function(d) { return d[1]; })
@@ -387,8 +389,8 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	// columns
 	var settings = this.settings;
 
-	// styles
 	t.append('tr').call(function(r) {
+            // identifiers
 	    r.append('td').text('Identifiers:').attr('class', 'options-label');
 	    var cell = r.append('td');
 
@@ -418,8 +420,55 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 			this.checked = (value == this.value);
 		    }.bind(this));
 		});
-
+        }.bind(this));
+        
+        // highlight missing reactions
+	t.append('tr').call(function(r) {
+	    var s = r.append('td')
+                    .attr('class', 'options-label style-span')
+                    .attr('colspan', '2');
+            s.append('span')
+                .text('Highlight reactions not in model');
+	    s.append('input').attr('type', 'checkbox')
+		.each(function() {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+			        settings.set_highlight_missing(event.target.checked);
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.highlight_missing_stream.onValue(function(value) {			
+			// check the box if the style is present
+			this.checked = value;
+		    }.bind(this));
+		});
 	}.bind(this));
 
+        // allow duplicate reactions
+	t.append('tr').call(function(r) {
+            r.attr('title', 'If checked, then allow duplicate reactions during model building.')
+	    var s = r.append('td')
+                    .attr('class', 'options-label style-span')
+                    .attr('colspan', '2');
+            s.append('span')
+                .text('Allow duplicate reactions');
+	    s.append('input').attr('type', 'checkbox')
+		.each(function() {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+			        settings.set_allow_building_duplicate_reactions(event.target.checked);
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.allow_building_duplicate_reactions_stream.onValue(function(value) {			
+			// check the box if the style is present
+			this.checked = value;
+		    }.bind(this));
+		});
+	}.bind(this));
     }
 });

@@ -93,7 +93,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
 
     function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
                              defs, has_data_on_reactions, identifiers_on_map,
-                             no_data_style, missing_component_color,
+                             no_data_style,
                              reaction_data_styles, 
                              label_drag_behavior,
                              label_click_fn, label_mouseover_fn, label_mouseout_fn) {
@@ -105,7 +105,6 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                                'has_data_on_reactions',
                                'identifiers_on_map',
                                'no_data_style',
-                               'missing_component_color',
                                'reaction_data_styles',
                                'label_drag_behavior',
                                'label_click_fn',
@@ -128,7 +127,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                                        return this.update_segment(sel, scale, cobra_model,
                                                                   drawn_nodes, defs, 
                                                                   has_data_on_reactions,
-                                                                  no_data_style, missing_component_color,
+                                                                  no_data_style,
                                                                   reaction_data_styles);
                                    }.bind(this),
                                    function(sel) {
@@ -269,7 +268,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
     function update_segment(update_selection, scale, cobra_model,
                             drawn_nodes, defs, 
                             has_data_on_reactions, no_data_style,
-                            missing_component_color, reaction_data_styles) {
+                            reaction_data_styles) {
         utils.check_undefined(arguments, ['update_selection',
                                           'scale',
                                           'cobra_model',
@@ -277,13 +276,14 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                                           'defs',
                                           'has_data_on_reactions',
                                           'no_data_style',
-                                          'missing_component_color',
                                           'reaction_data_styles']);
 
         // update segment attributes
-        var get_disp = function(reversibility, coefficient) {
-            return (reversibility || coefficient > 0) ? 32 : 20;
-        };
+        var highlight_missing  = this.settings.get_option('highlight_missing'),
+            get_disp = function(reversibility, coefficient) {
+                return (reversibility || coefficient > 0) ? 32 : 20;
+            }; 
+            
         // update arrows
         update_selection
             .selectAll('.segment')
@@ -318,13 +318,13 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             })
             .style('stroke', function(d) {
                 var reaction_id = this.parentNode.parentNode.__data__.bigg_id,
-                    show_missing = (cobra_model !== null &&
-                                    missing_component_color!==null &&
+                    show_missing = (highlight_missing &&
+                                    cobra_model !== null &&
                                     !(reaction_id in cobra_model.reactions)),
                     should_color_data = (has_data_on_reactions &&
                                          reaction_data_styles.indexOf('color') != -1);
                 if (show_missing) {
-                    return missing_component_color;
+                    return 'red';
                 }
                 if (should_color_data) {
                     var f = d.data;

@@ -1,6 +1,5 @@
 import escher.server
 import tornado.ioloop
-from tornado.httpclient import AsyncHTTPClient
 from tornado.testing import AsyncHTTPTestCase, gen_test
 
 class TestBuilder(AsyncHTTPTestCase):

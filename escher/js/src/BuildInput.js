@@ -1,4 +1,4 @@
-define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'CallbackManager', 'DirectionArrow', 'CobraModel'], function(utils, PlacedDiv, completely, Map, ZoomContainer, CallbackManager, DirectionArrow, CobraModel) {
+define(['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 'CobraModel'], function(utils, PlacedDiv, completely, DirectionArrow, CobraModel) {
     /**
      */
 
@@ -22,7 +22,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
     return BuildInput;
 
     // definitions
-    function init(selection, map, zoom_container) {
+    function init(selection, map, zoom_container, settings) {
         // set up container
         var new_sel = selection.append('div').attr('id', 'rxn-input');
         this.placed_div = PlacedDiv(new_sel, map, {x: 240, y: 0});
@@ -30,7 +30,6 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
         
         // set up complete.ly
         var c = completely(new_sel.node(), { backgroundColor: '#eee' });
-        c.get_hint = get_hint;
         
         d3.select(c.input)
         // .attr('placeholder', 'Reaction ID -- Flux')
@@ -47,26 +46,20 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
             .text("×")
             .on('click', function() { this.hide_dropdown(); }.bind(this));
 
-        if (map instanceof Map) {
-            this.map = map;
+        // map
+        this.map = map;
+        // set up the reaction direction arrow
+        var default_angle = 90; // degrees
+        this.direction_arrow = new DirectionArrow(map.sel);
+        this.direction_arrow.set_rotation(default_angle);
+        this.setup_map_callbacks(map);
+        
+        // zoom container
+        this.zoom_container = zoom_container;
+        this.setup_zoom_callbacks(zoom_container);
 
-            // set up the reaction direction arrow
-            var default_angle = 90; // degrees
-            this.direction_arrow = new DirectionArrow(map.sel);
-            this.direction_arrow.set_rotation(default_angle);
-
-            this.setup_map_callbacks(map);
-        } else {
-            throw new Error('Cannot set the map. It is not an instance of ' + 
-                            'Map');
-        }
-        if (zoom_container instanceof ZoomContainer) {
-            this.zoom_container = zoom_container;
-            this.setup_zoom_callbacks(zoom_container);
-        } else {
-            throw new Error('Cannot set the zoom_container. It is not an ' +
-                            'instance of ZoomContainer');
-        }
+        // settings
+        this.settings = settings;
 
         // toggle off
         this.toggle(false);
@@ -86,6 +79,10 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
             } else {
                 this.toggle(false);
             }
+        }.bind(this)); 
+        map.callback_manager.set('deselect_nodes', function() {
+            this.direction_arrow.hide();
+            this.hide_dropdown();
         }.bind(this));
 
         // svg export
@@ -182,8 +179,11 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
          
          */
 
-        if (selected_node===undefined && !starting_from_scratch)
+        // try finding the selected node
+        if (!starting_from_scratch && !selected_node) {
             console.error('No selected node, and not starting from scratch');
+            return;
+        }
 
         this.place(coords);
 
@@ -196,111 +196,87 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
             return;
         }
 
-        // whether to show names instead of ids
-        var show_names = (this.map.settings.get_option('identifiers_on_map')=='name');
+        // settings
+        var show_names = this.settings.get_option('identifiers_on_map') == 'name',
+            allow_duplicates = this.settings.get_option('allow_building_duplicate_reactions');
 
-        // Find selected reaction
-        var suggestions = [],
-            metabolite_suggestions = [],
+        // Find selected
+        var options = [],
             cobra_reactions = this.map.cobra_model.reactions,
             cobra_metabolites = this.map.cobra_model.metabolites,
             reactions = this.map.reactions,
             has_data_on_reactions = this.map.has_data_on_reactions,
             reaction_data = this.map.reaction_data,
-            reaction_data_styles = this.map.reaction_data_styles;
-        for (var reaction_id in cobra_reactions) {
-            var reaction = cobra_reactions[reaction_id],
-                reaction_name = reaction.name;
+            reaction_data_styles = this.map.reaction_data_styles,
+            selected_m_name = (selected_node ? (show_names ? selected_node.name : selected_node.bigg_id) : ''),
+            bold_mets_in_str = function(str, mets) {
+                return str.replace(new RegExp('(^| )(' + mets.join('|') + ')($| )', 'g'),
+                                   '$1<b>$2</b>$3');
+            };
+
+        // for reactions
+        var reaction_suggestions = {};        
+        for (var bigg_id in cobra_reactions) {
+            var reaction = cobra_reactions[bigg_id],
+                reaction_name = reaction.name,
+                show_r_name = (show_names ? reaction_name : bigg_id);
 
             // ignore drawn reactions
-            // if (already_drawn(reaction_id, reactions)) continue;
+            if ((!allow_duplicates) && already_drawn(bigg_id, reactions))
+                continue;
 
             // check segments for match to selected metabolite
-            for (var metabolite_id in reaction.metabolites) {
+            for (var met_bigg_id in reaction.metabolites) {
 
                 // if starting with a selected metabolite, check for that id
-                if (starting_from_scratch || metabolite_id==selected_node.bigg_id) {
+                if (starting_from_scratch || met_bigg_id==selected_node.bigg_id) {
                     // don't add suggestions twice
-                    if (reaction_id in suggestions) continue;
-                    if (has_data_on_reactions) {
-                        suggestions[reaction_id] = { reaction_data: reaction.data,
-                                                     string: ((show_names ? reaction_name : reaction_id) +
-                                                              ': <span class="light">' +
-                                                              reaction.data_string + '</span>') };
-                    } else {
-                        // get the metabolite names or IDs
-                        var mets = {};
-                        if (show_names) {
-                            for (var met_id in reaction.metabolites)
-                                mets[cobra_metabolites[met_id].name] = reaction.metabolites[met_id];
-                        } else {
-                            mets = utils.clone(reaction.metabolites);
-                        }
-                        // get the reaction string
-                        var reaction_string = CobraModel.build_reaction_string(mets,
-                                                                               reaction.reversibility,
-                                                                               reaction.lower_bound,
-                                                                               reaction.upper_bound);
-                        suggestions[reaction_id] = { string: ((show_names ? reaction_name : reaction_id) +
-                                                              ' — <span class="light">' +
-                                                              reaction_string +
-                                                              '</span>')};
-                    }
-                }
-            }
-        }
-        // for just the connected reactions, pull out metabolites
-        for (var reaction_id in suggestions) {
-            var reaction = cobra_reactions[reaction_id],
-                reaction_name = reaction.name;
-            
-            for (var metabolite_id in reaction.metabolites) {
-                var met_name = cobra_metabolites[metabolite_id].name;
-                
-                // don't add the connected metabolite
-                if (starting_from_scratch || metabolite_id!=selected_node.bigg_id) {
-                    var joint_id = [reaction_id, metabolite_id].join('/');
-                    // don't add suggestions twice
-                    if (joint_id in metabolite_suggestions) continue;
-                    if (has_data_on_reactions) {
-                        metabolite_suggestions[joint_id] = {
-                            reaction_data: reaction.data,
-                            string: ((show_names ? met_name : metabolite_id) + ' — ' +
-                                     (show_names ? reaction_name : reaction_id) + ': <span class="light">' +
-                                     reaction.data_string + '</span>'),
-                            reaction_abbreviation: reaction_id
-                        };
-                    } else {
-                        // get the metabolite names or IDs
-                        var mets = {};
-                        if (show_names) {
-                            for (var met_id in reaction.metabolites)
-                                mets[cobra_metabolites[met_id].name] = reaction.metabolites[met_id];
-                        } else {
-                            mets = utils.clone(reaction.metabolites);
-                        }
-                        // get the reaction string
-                        var reaction_string = CobraModel.build_reaction_string(mets,
-                                                                               reaction.reversibility,
-                                                                               reaction.lower_bound,
-                                                                               reaction.upper_bound);
-                        metabolite_suggestions[joint_id] = {
-                            string: ((show_names ? met_name : metabolite_id) + ' — ' +
-                                     (show_names ? reaction_name : reaction_id) + ' — <span class="light">' +
-                                     reaction_string + '</span>'),
-                            reaction_abbreviation: reaction_id
-                        };
-                    }
-                }
-            }
-        }
+                    if (bigg_id in reaction_suggestions) continue;
 
+                    var met_name = cobra_metabolites[met_bigg_id].name,
+                        show_m_name = (show_names ? met_name : met_bigg_id);
+                    
+                    if (has_data_on_reactions) {
+                        options.push({ reaction_data: reaction.data,
+                                       html: ('<b>' + show_r_name + '</b>' +
+                                              ': ' +
+                                              reaction.data_string),
+                                       matches: [show_r_name],
+                                       id: bigg_id });
+                        reaction_suggestions[bigg_id] = true;
+                    } else {
+                        // get the metabolite names or IDs
+                        var mets = {},
+                            show_met_names = [];
+                        if (show_names) {
+                            for (var met_id in reaction.metabolites) {
+                                var name = cobra_metabolites[met_id].name;
+                                mets[name] = reaction.metabolites[met_id];
+                                show_met_names.push(name);
+                            }
+                        } else {
+                            mets = utils.clone(reaction.metabolites);
+                            for (var met_id in reaction.metabolites) {
+                                show_met_names.push(met_id);
+                            }
+                        }
+                        // get the reaction string
+                        var reaction_string = CobraModel.build_reaction_string(mets,
+                                                                               reaction.reversibility,
+                                                                               reaction.lower_bound,
+                                                                               reaction.upper_bound);
+                        options.push({ html: ('<b>' + show_r_name + '</b>' +
+                                              '\t' +
+                                              bold_mets_in_str(reaction_string, [selected_m_name])),
+                                       matches: [show_r_name].concat(show_met_names),
+                                       id: bigg_id });
+                        reaction_suggestions[bigg_id] = true;
+                    }
+                }
+            }
+        }
+        
         // Generate the array of reactions to suggest and sort it
-        var strings_to_display = [],
-            suggestions_array = utils.make_array(suggestions,
-                                                 'reaction_abbreviation'),
-            met_suggestions_array = utils.make_array(metabolite_suggestions,
-                                                     'joint_id');
         var sort_fn;
         if (has_data_on_reactions) {
             sort_fn = function(x, y) {
@@ -308,19 +284,14 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
             };
         } else {
             sort_fn = function(x, y) {
-                return (x.string.toLowerCase() < y.string.toLowerCase() ? -1 : 1);
+                return (x.html.toLowerCase() < y.html.toLowerCase() ? -1 : 1);
             };
         }
-        suggestions_array = suggestions_array.sort(sort_fn);
-        met_suggestions_array = met_suggestions_array.sort(sort_fn);
-        var all_suggestions = suggestions_array.concat(met_suggestions_array);
-        all_suggestions.forEach(function(x) {
-            strings_to_display.push(x.string);
-        });
+        options = options.sort(sort_fn);
         // set up the box with data, searching for first num results
         var num = 20,
             complete = this.completely;
-        complete.options = strings_to_display;
+        complete.options = options;
 
         // TODO test this behavior
         // if (strings_to_display.length==1) complete.setText(strings_to_display[0]);
@@ -328,24 +299,29 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
         complete.setText("");
         
         var direction_arrow = this.direction_arrow,
-            map = this.map;
-        complete.onEnter = function() {
-            var text = this.getText();
-            this.setText("");
-            this.onChange("");
-            all_suggestions.forEach(function(x) {
-                if (get_hint(x.string.toLowerCase())==text.toLowerCase()) {
+            check_and_build = function(id) {
+                if (id !== null) {
+                    // make sure the selected node exists, in case changes were made in the meantime
                     if (starting_from_scratch) {
-                        map.new_reaction_from_scratch(x.reaction_abbreviation,
-                                                      coords,
-                                                      direction_arrow.get_rotation());
+                        this.map.new_reaction_from_scratch(id,
+                                                           coords,
+                                                           direction_arrow.get_rotation());
                     } else {
-                        map.new_reaction_for_metabolite(x.reaction_abbreviation,
-                                                        selected_node.node_id,
-                                                        direction_arrow.get_rotation());
+                        if (!(selected_node.node_id in this.map.nodes)) {
+                            console.error('Selected node no longer exists');
+                            this.hide_dropdown();
+                            return;
+                        }
+                        this.map.new_reaction_for_metabolite(id,
+                                                             selected_node.node_id,
+                                                             direction_arrow.get_rotation());
                     }
                 }
-            });
+            }.bind(this);
+        complete.onEnter = function(id) {
+            this.setText("");
+            this.onChange("");
+            check_and_build(id);
         };
         complete.repaint();
         this.completely.input.focus();
@@ -408,12 +384,4 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'Callba
             .attr('transform', 'translate('+coords.x+','+coords.y+')');
         this.target_coords = coords;
     }
-
-    function get_hint(suggestion_string) {
-        return (suggestion_string
-                .split(/[—:]/)
-                .slice(-3,-1)
-                .join('—')
-                .replace(/$^\s+|\s+$/g, ''));
-    };
 });

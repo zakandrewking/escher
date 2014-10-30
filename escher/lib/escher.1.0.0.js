@@ -2552,17 +2552,18 @@ define('lib/complete.ly',[],function() {
             var rows = [];
             var ix = 0;
             var oldIndex = -1;
+            var current_row = null;
             
             var onMouseOver =  function() { this.style.outline = '1px solid #ddd'; }
             var onMouseOut =   function() { this.style.outline = '0'; }
             var onDblClick =  function(e) {
                 e.preventDefault();
-                p.onmouseselection(this.__hint);
+                p.onmouseselection(this.id);
             }
             
             var p = {
                 hide :  function() { elem.style.visibility = 'hidden'; }, 
-                refresh : function(token, array) {
+                refresh : function(token, options) {
                     elem.style.visibility = 'hidden';
                     ix = 0;
                     elem.innerHTML ='';
@@ -2572,9 +2573,12 @@ define('lib/complete.ly',[],function() {
                     var distanceToBottom = vph - rect.bottom -6;  // distance from the browser border.
                     
                     rows = [];
-                    for (var i = 0; i < array.length; i++) {
+                    for (var i = 0; i < options.length; i++) {
                         // ignore case
-                        if (array[i].toLowerCase().indexOf(token.toLowerCase()) != 0)
+                        var found = options[i].matches.filter(function(match) {
+                            return match.toLowerCase().indexOf(token.toLowerCase()) == 0;
+                        });
+                        if (found.length == 0)
                             continue;
                         var divRow = document.createElement('div');
                         divRow.style.color = config.color;
@@ -2583,9 +2587,9 @@ define('lib/complete.ly',[],function() {
                         // prevent selection for double click
                         divRow.onmousedown = function(e) { e.preventDefault(); };
                         divRow.ondblclick = onDblClick; 
-                        divRow.__hint =    array[i];
-                        divRow.innerHTML = (array[i].substring(0, token.length) + '<b>' +
-                                            array[i].substring(token.length) + '</b>');
+                        divRow.__hint = found[0];
+                        divRow.id = options[i].id;
+                        divRow.innerHTML = options[i].html;
                         rows.push(divRow);
                         elem.appendChild(divRow);
                         if (rows.length >= rs.display_limit)
@@ -2616,6 +2620,7 @@ define('lib/complete.ly',[],function() {
                     }
                     rows[index].style.backgroundColor = config.dropDownOnHoverBackgroundColor; // <-- should be config
                     oldIndex = index;
+                    current_row = rows[index];
                 },
                 // moves the selection either up or down (unless it's not
                 // possible) step is either +1 or -1.
@@ -2631,18 +2636,18 @@ define('lib/complete.ly',[],function() {
                     p.highlight(ix);
                     return rows[ix].__hint;
                 },
-                onmouseselection : function() {}
+                onmouseselection : function() {},
+                get_current_row: function () {
+                    return current_row;
+                }
             };
             return p;
         }
         
         var dropDownController = createDropDownController(dropDown);
         
-        dropDownController.onmouseselection = function(text) {
-            txtInput.value = txtHint.value = rs.get_hint(text);
-            // ensure that mouse down will not show the dropDown now.
-            registerOnTextChangeOldValue = txtInput.value; 
-            rs.onEnter()
+        dropDownController.onmouseselection = function(id) {
+            rs.onEnter(id)
             rs.input.focus();
         }
         
@@ -2683,7 +2688,7 @@ define('lib/complete.ly',[],function() {
         
         
         var rs = {
-            get_hint :    function() {},
+            get_hint :    function(x) { return x; },
             display_limit: 100,
             onArrowDown : function() {},               // defaults to no action.
             onArrowUp :   function() {},               // defaults to no action.
@@ -2724,11 +2729,13 @@ define('lib/complete.ly',[],function() {
                 // updating the hint. 
                 txtHint.value ='';
                 for (var i = 0; i < optionsLength; i++) {
-                    var opt = options[i];
-                    if (opt.toLowerCase().indexOf(token.toLowerCase()) == 0) {
-                        txtHint.value = rs.get_hint(opt);
-                        break;
-                    }
+                    var found = options[i].matches.filter(function(match) {
+                        return match.toLowerCase().indexOf(token.toLowerCase()) == 0;
+                    });
+                    if (found.length == 0)
+                        continue;
+                    txtHint.value = rs.get_hint(found[0]);
+                    break;
                 }
                 
                 // moving the dropDown and refreshing it.
@@ -2808,9 +2815,9 @@ define('lib/complete.ly',[],function() {
             }
 
             if (keyCode == 13) { // enter
-                txtInput.value = txtHint.value;
-                rs.onChange(txtInput.value);
-                rs.onEnter();
+                // get current
+                var id = dropDownController.get_current_row().id;
+                rs.onEnter(id);
                 return; 
             }
             
@@ -2839,6 +2846,129 @@ define('lib/complete.ly',[],function() {
         
         txtInput.addEventListener("keydown",  keyDownHandler, false);
         return rs;
+    }
+});
+
+define('DirectionArrow',["utils"], function(utils) {
+    /** DirectionArrow returns a constructor for an arrow that can be rotated
+     and dragged, and supplies its direction.
+     */
+    var DirectionArrow = utils.make_class();
+    DirectionArrow.prototype = { init: init,
+				 set_location: set_location,
+				 set_rotation: set_rotation,
+				 displace_rotation: displace_rotation,
+				 get_rotation: get_rotation,
+				 toggle: toggle,
+				 show: show,
+				 hide: hide,
+				 right: right,
+				 left: left,
+				 up: up,
+				 down: down,
+				 _setup_drag: _setup_drag };
+    return DirectionArrow;
+
+    // definitions
+    function init(sel) {
+	this.arrow_container = sel.append('g')
+	    .attr('id', 'direction-arrow-container')
+	    .attr('transform', 'translate(0,0)rotate(0)');
+	this.arrow = this.arrow_container.append('path')
+	    .classed('direction-arrow', true)
+	    .attr('d', path_for_arrow())
+	    .style('visibility', 'hidden')
+	    .attr('transform', 'translate(30,0)scale(2.5)');
+
+	this.sel = sel;
+	this.center = { x: 0, y: 0 };
+
+	this._setup_drag();
+	this.dragging = false;
+
+	this.is_visible = false;
+	this.show();
+
+	// definitions
+	function path_for_arrow() {
+	    return "M0 -5 L0 5 L20 5 L20 10 L30 0 L20 -10 L20 -5 Z";
+	}
+    }
+    function set_location(coords) {
+	/** Move the arrow to coords.
+	 */
+	this.center = coords;
+	var transform = d3.transform(this.arrow_container.attr('transform'));
+	this.arrow_container.attr('transform',
+				  'translate('+coords.x+','+coords.y+')rotate('+transform.rotate+')');
+    }
+    function set_rotation(rotation) {
+	/** Rotate the arrow to rotation.
+	 */
+	var transform = d3.transform(this.arrow_container.attr('transform'));
+	this.arrow_container.attr('transform',
+				  'translate('+transform.translate+')rotate('+rotation+')');
+    }
+    function displace_rotation(d_rotation) {
+	/** Displace the arrow rotation by a set amount.
+	 */
+	var transform = d3.transform(this.arrow_container.attr('transform'));
+	this.arrow_container.attr('transform',
+				  'translate('+transform.translate+')'+
+				  'rotate('+(transform.rotate+d_rotation)+')');
+    }
+    function get_rotation() {
+	/** Returns the arrow rotation.
+	 */
+	return d3.transform(this.arrow_container.attr('transform')).rotate;
+    }
+    function toggle(on_off) {
+	if (on_off===undefined) this.is_visible = !this.is_visible;
+	else this.is_visible = on_off;
+	this.arrow.style('visibility', this.is_visible ? 'visible' : 'hidden');
+    }
+    function show() {
+	this.toggle(true);
+    }
+    function hide() {
+	this.toggle(false);
+    }
+    function right() {
+	this.set_rotation(0);
+    }
+    function down() {
+	this.set_rotation(90);
+    }
+    function left() {
+	this.set_rotation(180);
+    }
+    function up() {
+	this.set_rotation(270);
+    }
+    
+    function _setup_drag() {
+	var b = d3.behavior.drag()
+		.on("dragstart", function(d) {
+		    // silence other listeners
+		    d3.event.sourceEvent.stopPropagation();
+		    this.dragging = true;
+		}.bind(this))
+		.on("drag.direction_arrow", function(d) {
+		    var displacement = { x: d3.event.dx,
+					 y: d3.event.dy },
+			location = { x: d3.mouse(this.sel.node())[0],
+				     y: d3.mouse(this.sel.node())[1] },
+			d_angle = utils.angle_for_event(displacement,
+							location,
+							this.center);
+		    this.displace_rotation(utils.to_degrees(d_angle));
+		}.bind(this))
+		.on("dragend", function(d) {
+		    window.setTimeout(function() {
+			this.dragging = false;
+		    }.bind(this), 200);
+		}.bind(this));
+	this.arrow_container.call(b);
     }
 });
 
@@ -3208,6 +3338,627 @@ define('data_styles',['utils'], function(utils) {
     }
 });
 
+define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
+    /**
+     */
+
+    var CobraModel = utils.make_class();
+    // class methods
+    CobraModel.build_reaction_string = build_reaction_string;
+    // instance methods
+    CobraModel.prototype = { init: init,
+			     apply_reaction_data: apply_reaction_data,
+			     apply_metabolite_data: apply_metabolite_data,
+			     apply_gene_data: apply_gene_data };
+
+    return CobraModel;
+
+    // class methods
+    function build_reaction_string(stoichiometries, is_reversible,
+				   lower_bound, upper_bound) {
+	/** Return a reaction string for the given stoichiometries.
+
+	    Adapted from cobra.core.Reaction.build_reaction_string().
+
+	    Arguments
+	    ---------
+
+	    stoichiometries: An object with metabolites as keys and
+	    stoichiometries as values.
+
+	    is_reversible: Boolean. Whether the reaction is reversible.
+
+	    lower_bound: Reaction upper bound, to determine direction.
+
+	    upper_bound: Reaction lower bound, to determine direction.
+
+	*/
+
+	var format = function(number) {
+            if (number == 1)
+                return "";
+            return String(number) + " ";
+	}
+        var reactant_dict = {},
+            product_dict = {},
+            reactant_bits = [],
+            product_bits = [];
+	for (var the_metabolite in stoichiometries) {
+	    var coefficient = stoichiometries[the_metabolite];
+            if (coefficient > 0)
+                product_bits.push(format(coefficient) + the_metabolite);
+            else
+                reactant_bits.push(format(Math.abs(coefficient)) + the_metabolite);
+	}
+        reaction_string = reactant_bits.join(' + ');
+        if (is_reversible) {
+            reaction_string += ' ↔ ';
+        } else {
+            if (lower_bound < 0 && upper_bound <=0)
+                reaction_string += ' ← ';
+            else
+		reaction_string += ' → ';
+	}
+        reaction_string += product_bits.join(' + ')
+        return reaction_string
+    }
+    
+    // instance methods
+    function init(model_data) {
+	// reactions and metabolites
+	if (!(model_data.reactions && model_data.metabolites)) {
+	    throw new Error('Bad model data.');
+	    return;
+	}
+        // make a gene dictionary
+	var genes = {};
+	for (var i=0, l=model_data.genes.length; i<l; i++) {
+	    var r = model_data.genes[i],
+		the_id = r.id;
+	    genes[the_id] = r;
+	}
+
+	this.reactions = {};
+	for (var i=0, l=model_data.reactions.length; i<l; i++) {
+	    var r = model_data.reactions[i],
+		the_id = r.id,
+                reaction = utils.clone(r);
+	    delete reaction.id;
+            // add the appropriate genes
+            reaction.genes = [];
+            if ('gene_reaction_rule' in reaction) {
+                var gene_ids = data_styles.genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
+                gene_ids.forEach(function(gene_id) {
+                    if (gene_id in genes) {
+                        var gene = utils.clone(genes[gene_id]);
+                        // rename id to bigg_id
+                        gene.bigg_id = gene.id;
+                        delete gene.id;
+                        reaction.genes.push(gene);
+                    } else {
+                        console.warn('Could not find gene for gene_id ' + gene_id);
+                    }
+                });
+            }
+	    this.reactions[the_id] = reaction;
+	}
+	this.metabolites = {};
+	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
+	    var r = model_data.metabolites[i],
+		the_id = r.id;
+	    this.metabolites[the_id] = utils.clone(r);
+	    delete this.metabolites[the_id].id;
+	}
+        
+	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
+			  'gdp', 'h', 'coa'];
+    }
+
+    function apply_reaction_data(reaction_data, styles, compare_style) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+	    
+	    apply_reaction_data overrides apply_gene_data.
+
+	*/
+
+	for (var reaction_id in this.reactions) {
+	    var reaction = this.reactions[reaction_id];
+	    if (reaction_data===null) {
+		reaction.data = null;
+		reaction.data_string = '';
+	    } else {
+		var d = (reaction_id in reaction_data ?
+			 reaction_data[reaction_id] : null),
+		    f = data_styles.float_for_data(d, styles, compare_style),
+		    r = data_styles.reverse_flux_for_data(d),
+		    s = data_styles.text_for_data(d, f);
+		reaction.data = f;
+		reaction.data_string = s;
+	        reaction.reverse_flux = r;
+	    }
+            reaction.gene_string = '';
+	}
+    }
+
+    function apply_metabolite_data(metabolite_data, styles, compare_style) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+
+	 */
+	for (var metabolite_id in this.metabolites) {
+	    var metabolite = this.metabolites[metabolite_id];
+	    if (metabolite_data===null) {
+		metabolite.data = null;
+		metabolite.data_string = '';
+	    } else {
+		var d = (metabolite_id in metabolite_data ?
+			 metabolite_data[metabolite_id] : null),
+		    f = data_styles.float_for_data(d, styles, compare_style),
+		    s = data_styles.text_for_data(d, f);
+		metabolite.data = f;
+		metabolite.data_string = s;
+	    }
+	}
+    }
+
+    function apply_gene_data(gene_data_obj, styles, identifiers_on_map,
+                             compare_style, and_method_in_gene_reaction_rule) {
+	/** Apply data to model. This is only used to display options in
+	    BuildInput.
+
+	    apply_gene_data overrides apply_reaction_data.
+
+	    Arguments
+	    ---------
+
+	    gene_data_obj: The gene data object, with the following style:
+
+	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+
+	    style: Gene styles array.
+
+            compare_style: The comparison type.
+
+            and_method_in_gene_reaction_rule: Either 'mean' or 'min'.
+
+	*/
+
+        // TODO abstract out this function, and the equivalent Map.apply_gene_data_to_reactions();
+        
+	// get the null val
+	var null_val = [null];
+	// make an array of nulls as the default
+	for (var reaction_id in gene_data_obj) {
+	    for (var gene_id in gene_data_obj[reaction_id].genes) {
+		null_val = gene_data_obj[reaction_id].genes[gene_id]
+		    .map(function() { return null; });
+		break;
+	    }
+	    break;
+	}
+
+	for (var reaction_id in this.reactions) {
+	    var reaction = this.reactions[reaction_id];
+	    if (gene_data_obj === null) {
+		reaction.data = null;
+		reaction.data_string = '';
+		reaction.gene_string = '';
+	    } else {
+		var d, rule, gene_values;
+		if (reaction_id in gene_data_obj) {
+		    rule = gene_data_obj[reaction_id].rule;
+		    gene_values = gene_data_obj[reaction_id].genes;
+		    d = data_styles.evaluate_gene_reaction_rule(rule, gene_values,
+                                                                and_method_in_gene_reaction_rule);
+		} else {
+		    gene_values = {};
+		    d = null_val;
+		}
+		var f = data_styles.float_for_data(d, styles, compare_style),
+                    r = data_styles.reverse_flux_for_data(d),
+		    s = data_styles.text_for_data(d, f),
+		    g = data_styles.gene_string_for_data(rule, gene_values,
+                                                         reaction.genes, styles,
+                                                         identifiers_on_map,
+                                                         compare_style);
+		reaction.data = f;
+		reaction.data_string = s;
+		reaction.gene_string = g;
+		reaction.reverse_flux = r;
+	    }
+	}
+    }
+});
+
+define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 'CobraModel'], function(utils, PlacedDiv, completely, DirectionArrow, CobraModel) {
+    /**
+     */
+
+    var BuildInput = utils.make_class();
+    // instance methods
+    BuildInput.prototype = { init: init,
+                             setup_map_callbacks: setup_map_callbacks,
+                             setup_zoom_callbacks: setup_zoom_callbacks,
+                             is_visible: is_visible,
+                             toggle: toggle,
+                             show_dropdown: show_dropdown,
+                             hide_dropdown: hide_dropdown,
+                             place_at_selected: place_at_selected,
+                             place: place,
+                             reload_at_selected: reload_at_selected,
+                             reload: reload,
+                             toggle_start_reaction_listener: toggle_start_reaction_listener,
+                             hide_target: hide_target,
+                             show_target: show_target };
+
+    return BuildInput;
+
+    // definitions
+    function init(selection, map, zoom_container, settings) {
+        // set up container
+        var new_sel = selection.append('div').attr('id', 'rxn-input');
+        this.placed_div = PlacedDiv(new_sel, map, {x: 240, y: 0});
+        this.placed_div.hide();
+        
+        // set up complete.ly
+        var c = completely(new_sel.node(), { backgroundColor: '#eee' });
+        
+        d3.select(c.input)
+        // .attr('placeholder', 'Reaction ID -- Flux')
+            .on('input', function() {
+                this.value = this.value
+                // .replace("/","")
+                    .replace(" ","")
+                    .replace("\\","")
+                    .replace("<","");
+            });
+        this.completely = c;
+        // close button
+        new_sel.append('button').attr('class', "button input-close-button")
+            .text("×")
+            .on('click', function() { this.hide_dropdown(); }.bind(this));
+
+        // map
+        this.map = map;
+        // set up the reaction direction arrow
+        var default_angle = 90; // degrees
+        this.direction_arrow = new DirectionArrow(map.sel);
+        this.direction_arrow.set_rotation(default_angle);
+        this.setup_map_callbacks(map);
+        
+        // zoom container
+        this.zoom_container = zoom_container;
+        this.setup_zoom_callbacks(zoom_container);
+
+        // settings
+        this.settings = settings;
+
+        // toggle off
+        this.toggle(false);
+        this.target_coords = null;
+    }
+
+    function setup_map_callbacks(map) {
+        // input
+        map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
+            if (this.is_active) this.reload(selected_node, coords, false);
+            this.hide_target();
+        }.bind(this));
+        map.callback_manager.set('select_selectable.input', function(count, selected_node, coords) {
+            this.hide_target();
+            if (count == 1 && this.is_active && coords) {
+                this.reload(selected_node, coords, false);
+            } else {
+                this.toggle(false);
+            }
+        }.bind(this)); 
+        map.callback_manager.set('deselect_nodes', function() {
+            this.direction_arrow.hide();
+            this.hide_dropdown();
+        }.bind(this));
+
+        // svg export
+        map.callback_manager.set('before_svg_export', function() {
+            this.direction_arrow.hide();
+            this.hide_target();
+        }.bind(this));
+    }
+
+    function setup_zoom_callbacks(zoom_container) {
+        zoom_container.callback_manager.set('zoom.input', function() {
+            if (this.is_active) {
+                this.place_at_selected();
+            }
+        }.bind(this));
+    }
+
+    function is_visible() {
+        return this.placed_div.is_visible();
+    }
+
+    function toggle(on_off) {
+        if (on_off===undefined) this.is_active = !this.is_active;
+        else this.is_active = on_off;
+        if (this.is_active) {
+            this.toggle_start_reaction_listener(true);
+            if (this.target_coords !== null)
+                this.show_dropdown(this.target_coords);
+            else this.reload_at_selected();
+            this.map.set_status('Click on the canvas or an existing metabolite');
+            this.direction_arrow.show();
+            // escape key
+            this.escape = this.map.key_manager
+                .add_escape_listener(function() {
+                    this.hide_dropdown();
+                }.bind(this), 'build_input');
+        } else {
+            this.toggle_start_reaction_listener(false);
+            this.placed_div.hide();
+            this.completely.input.blur();
+            this.completely.hideDropDown();
+            this.map.set_status(null);
+            this.direction_arrow.hide();
+            if (this.escape) this.escape.clear();
+            this.escape = null;
+        }
+    }
+    function show_dropdown(coords) {
+        this.placed_div.place(coords);
+        this.completely.input.blur();
+        this.completely.repaint();
+        this.completely.setText("");
+        this.completely.input.focus();
+    }
+    function hide_dropdown() {
+        this.placed_div.hide();
+        this.completely.hideDropDown();
+    }
+    function place_at_selected() {
+        /** Place autocomplete box at the first selected node.
+         
+         */
+
+        // get the selected node
+        this.map.deselect_text_labels();
+        var selected_node = this.map.select_single_node();
+        if (selected_node==null) return;
+        var coords = { x: selected_node.x, y: selected_node.y };
+        this.place(coords);
+    }
+    function place(coords) {
+        this.placed_div.place(coords);
+        this.direction_arrow.set_location(coords);
+        this.direction_arrow.show();
+    }
+
+    function reload_at_selected() {
+        /** Reload data for autocomplete box and redraw box at the first
+         selected node.
+         
+         */
+        // get the selected node
+        this.map.deselect_text_labels();
+        var selected_node = this.map.select_single_node();
+        if (selected_node==null) return false;
+        var coords = { x: selected_node.x, y: selected_node.y };
+        // reload the reaction input
+        this.reload(selected_node, coords, false);
+        return true;
+    }
+    function reload(selected_node, coords, starting_from_scratch) {
+        /** Reload data for autocomplete box and redraw box at the new
+         coordinates.
+         
+         */
+
+        // try finding the selected node
+        if (!starting_from_scratch && !selected_node) {
+            console.error('No selected node, and not starting from scratch');
+            return;
+        }
+
+        this.place(coords);
+
+        // blur
+        this.completely.input.blur();
+        this.completely.repaint(); // put in place()?
+
+        if (this.map.cobra_model===null) {
+            this.completely.setText('Cannot add: No model.');
+            return;
+        }
+
+        // settings
+        var show_names = this.settings.get_option('identifiers_on_map') == 'name',
+            allow_duplicates = this.settings.get_option('allow_building_duplicate_reactions');
+
+        // Find selected
+        var options = [],
+            cobra_reactions = this.map.cobra_model.reactions,
+            cobra_metabolites = this.map.cobra_model.metabolites,
+            reactions = this.map.reactions,
+            has_data_on_reactions = this.map.has_data_on_reactions,
+            reaction_data = this.map.reaction_data,
+            reaction_data_styles = this.map.reaction_data_styles,
+            selected_m_name = (selected_node ? (show_names ? selected_node.name : selected_node.bigg_id) : ''),
+            bold_mets_in_str = function(str, mets) {
+                return str.replace(new RegExp('(^| )(' + mets.join('|') + ')($| )', 'g'),
+                                   '$1<b>$2</b>$3');
+            };
+
+        // for reactions
+        var reaction_suggestions = {};        
+        for (var bigg_id in cobra_reactions) {
+            var reaction = cobra_reactions[bigg_id],
+                reaction_name = reaction.name,
+                show_r_name = (show_names ? reaction_name : bigg_id);
+
+            // ignore drawn reactions
+            if ((!allow_duplicates) && already_drawn(bigg_id, reactions))
+                continue;
+
+            // check segments for match to selected metabolite
+            for (var met_bigg_id in reaction.metabolites) {
+
+                // if starting with a selected metabolite, check for that id
+                if (starting_from_scratch || met_bigg_id==selected_node.bigg_id) {
+                    // don't add suggestions twice
+                    if (bigg_id in reaction_suggestions) continue;
+
+                    var met_name = cobra_metabolites[met_bigg_id].name,
+                        show_m_name = (show_names ? met_name : met_bigg_id);
+                    
+                    if (has_data_on_reactions) {
+                        options.push({ reaction_data: reaction.data,
+                                       html: ('<b>' + show_r_name + '</b>' +
+                                              ': ' +
+                                              reaction.data_string),
+                                       matches: [show_r_name],
+                                       id: bigg_id });
+                        reaction_suggestions[bigg_id] = true;
+                    } else {
+                        // get the metabolite names or IDs
+                        var mets = {},
+                            show_met_names = [];
+                        if (show_names) {
+                            for (var met_id in reaction.metabolites) {
+                                var name = cobra_metabolites[met_id].name;
+                                mets[name] = reaction.metabolites[met_id];
+                                show_met_names.push(name);
+                            }
+                        } else {
+                            mets = utils.clone(reaction.metabolites);
+                            for (var met_id in reaction.metabolites) {
+                                show_met_names.push(met_id);
+                            }
+                        }
+                        // get the reaction string
+                        var reaction_string = CobraModel.build_reaction_string(mets,
+                                                                               reaction.reversibility,
+                                                                               reaction.lower_bound,
+                                                                               reaction.upper_bound);
+                        options.push({ html: ('<b>' + show_r_name + '</b>' +
+                                              '\t' +
+                                              bold_mets_in_str(reaction_string, [selected_m_name])),
+                                       matches: [show_r_name].concat(show_met_names),
+                                       id: bigg_id });
+                        reaction_suggestions[bigg_id] = true;
+                    }
+                }
+            }
+        }
+        
+        // Generate the array of reactions to suggest and sort it
+        var sort_fn;
+        if (has_data_on_reactions) {
+            sort_fn = function(x, y) {
+                return Math.abs(y.reaction_data) - Math.abs(x.reaction_data);
+            };
+        } else {
+            sort_fn = function(x, y) {
+                return (x.html.toLowerCase() < y.html.toLowerCase() ? -1 : 1);
+            };
+        }
+        options = options.sort(sort_fn);
+        // set up the box with data, searching for first num results
+        var num = 20,
+            complete = this.completely;
+        complete.options = options;
+
+        // TODO test this behavior
+        // if (strings_to_display.length==1) complete.setText(strings_to_display[0]);
+        // else complete.setText("");
+        complete.setText("");
+        
+        var direction_arrow = this.direction_arrow,
+            check_and_build = function(id) {
+                if (id !== null) {
+                    // make sure the selected node exists, in case changes were made in the meantime
+                    if (starting_from_scratch) {
+                        this.map.new_reaction_from_scratch(id,
+                                                           coords,
+                                                           direction_arrow.get_rotation());
+                    } else {
+                        if (!(selected_node.node_id in this.map.nodes)) {
+                            console.error('Selected node no longer exists');
+                            this.hide_dropdown();
+                            return;
+                        }
+                        this.map.new_reaction_for_metabolite(id,
+                                                             selected_node.node_id,
+                                                             direction_arrow.get_rotation());
+                    }
+                }
+            }.bind(this);
+        complete.onEnter = function(id) {
+            this.setText("");
+            this.onChange("");
+            check_and_build(id);
+        };
+        complete.repaint();
+        this.completely.input.focus();
+
+        //definitions
+        function already_drawn(bigg_id, reactions) {
+            for (var drawn_id in reactions) {
+                if (reactions[drawn_id].bigg_id==bigg_id) 
+                    return true;
+            }
+            return false;
+        };
+    }
+    function toggle_start_reaction_listener(on_off) {
+        /** Toggle listening for a click to place a new reaction on the canvas.
+
+         */
+        if (on_off===undefined)
+            this.start_reaction_listener = !this.start_reaction_listener;
+        else if (this.start_reaction_listener==on_off)
+            return;
+        else
+            this.start_reaction_listener = on_off;
+        
+        if (this.start_reaction_listener) {;
+                                           this.map.sel.on('click.start_reaction', function(node) {
+                                               // TODO fix this hack
+                                               if (this.direction_arrow.dragging) return;
+                                               // reload the reaction input
+                                               var coords = { x: d3.mouse(node)[0],
+                                                              y: d3.mouse(node)[1] };
+                                               // unselect metabolites
+                                               this.map.deselect_nodes();
+                                               this.map.deselect_text_labels();
+                                               // reload the reaction input
+                                               this.reload(null, coords, true);
+                                               // generate the target symbol
+                                               this.show_target(this.map, coords);
+                                           }.bind(this, this.map.sel.node()));
+                                           this.map.sel.classed('start-reaction-cursor', true);
+                                          } else {
+                                              this.map.sel.on('click.start_reaction', null);
+                                              this.map.sel.classed('start-reaction-cursor', false);
+                                              this.hide_target();
+                                          }
+    }
+
+    function hide_target() {
+        if (this.target_coords)
+            this.map.sel.selectAll('.start-reaction-target').remove();
+        this.target_coords = null;
+    }
+    function show_target(map, coords) {
+        var s = map.sel.selectAll('.start-reaction-target').data([12, 5]);
+        s.enter().append('circle')
+            .classed('start-reaction-target', true)
+            .attr('r', function(d) { return d; })
+            .style('stroke-width', 4);
+        s.style('visibility', 'visible')
+            .attr('transform', 'translate('+coords.x+','+coords.y+')');
+        this.target_coords = coords;
+    }
+});
+
 define('CallbackManager',["utils"], function(utils) {
     /** CallbackManager()
 
@@ -3276,6 +4027,237 @@ define('CallbackManager',["utils"], function(utils) {
 	    }
 	}
 	return this;
+    }
+});
+
+define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackManager) {
+    /** ZoomContainer
+
+     The zoom behavior is based on this SO question:
+     http://stackoverflow.com/questions/18788188/how-to-temporarily-disable-the-zooming-in-d3-js
+     */
+    var ZoomContainer = utils.make_class();
+    ZoomContainer.prototype = { init: init,
+				toggle_zoom: toggle_zoom,
+				go_to: go_to,
+				zoom_by: zoom_by,
+				zoom_in: zoom_in,
+				zoom_out: zoom_out,
+				get_size: get_size,
+				translate_off_screen: translate_off_screen,
+				reset: reset };
+    return ZoomContainer;
+
+    // definitions
+    function init(selection, size_container, scroll_behavior) {
+	/** Make a container that will manage panning and zooming.
+
+	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
+	 container in.
+
+	 size_container: A d3 selection of a 'div' node that has defined width
+	 and height.
+
+	 */
+
+	this.zoom_on = true;
+	this.initial_zoom = 1.0;
+	this.window_translate = {x: 0, y: 0};
+	this.window_scale = 1.0;
+
+	// set up the callbacks
+	this.callback_manager = new CallbackManager();
+
+	// save the size_container
+	this.size_container = size_container;
+
+        // set up the container
+        selection.select("#zoom-container").remove();
+        var container = selection.append("g")
+                .attr("id", "zoom-container");
+        this.zoomed_sel = container.append("g");
+
+	// the zoom function and behavior
+        var zoom = function(zoom_container, event) {
+	    if (zoom_container.zoom_on) {
+                zoom_container.zoomed_sel.attr("transform", "translate(" + event.translate + ")" +
+					       "scale(" + event.scale + ")");
+		zoom_container.window_translate = {'x': event.translate[0],
+						   'y': event.translate[1]};
+		zoom_container.window_scale = event.scale;
+		zoom_container.callback_manager.run('zoom');
+	    }
+        };
+	var zoom_container = this;
+	this.zoom_behavior = d3.behavior.zoom()
+	    .on("zoom", function() {
+		zoom(zoom_container, d3.event);
+	    });
+	container.call(this.zoom_behavior);	
+	if (scroll_behavior=='none' || scroll_behavior=='pan') {
+	    container.on("mousewheel.zoom", null)
+		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
+		.on("wheel.zoom", null) // disables newer versions of Firefox
+		.on('dblclick.zoom', null);
+	}
+	if (scroll_behavior=='pan') {
+	    // Add the wheel listener
+	    var wheel_fn = function() {
+		var ev = d3.event,
+		    sensitivity = 0.5;
+		// stop scroll in parent elements
+		ev.stopPropagation();
+		ev.preventDefault();
+		ev.returnValue = false;
+		// change the location
+		this.go_to(this.window_scale,
+			   { x: this.window_translate.x -
+			     (ev.wheelDeltaX!==undefined ? -ev.wheelDeltaX/1.5 : ev.deltaX) * sensitivity,
+			     y: this.window_translate.y -
+			     (ev.wheelDeltaY!==undefined ? -ev.wheelDeltaY/1.5 : ev.deltaY) * sensitivity },
+			   false);
+	    }.bind(this);
+	    container.on('mousewheel.escher', wheel_fn);
+	    container.on('DOMMouseScroll.escher', wheel_fn);
+	    container.on('wheel.escher', wheel_fn);
+	}
+
+	this.saved_scale = null;
+	this.saved_translate = null;
+    }
+
+    function toggle_zoom(on_off) {
+	/** Toggle the zoom state, and remember zoom when the behavior is off.
+
+	 */
+	if (on_off===undefined) {
+	    this.zoom_on = !this.zoom_on;
+	} else {
+	    this.zoom_on = on_off;
+	}
+	if (this.zoom_on) {
+	    if (this.saved_scale !== null){
+		this.zoom_behavior.scale(this.saved_scale);
+		this.saved_scale = null;
+	    }
+	    if (this.saved_translate !== null){
+		this.zoom_behavior.translate(this.saved_translate);
+		this.saved_translate = null;
+	    }
+
+	    // turn on the hand
+	    this.zoomed_sel
+		.classed('cursor-grab', true).classed('cursor-grabbing', false);
+	    this.zoomed_sel
+		.on('mousedown.cursor', function(sel) {
+		    sel.classed('cursor-grab', false).classed('cursor-grabbing', true);
+		}.bind(null, this.zoomed_sel))
+		.on('mouseup.cursor', function(sel) {
+		    sel.classed('cursor-grab', true).classed('cursor-grabbing', false);
+		}.bind(null, this.zoomed_sel));
+	} else {
+	    if (this.saved_scale === null){
+		this.saved_scale = utils.clone(this.zoom_behavior.scale());
+	    }
+	    if (this.saved_translate === null){
+		this.saved_translate = utils.clone(this.zoom_behavior.translate());
+	    }
+
+	    // turn off the hand
+	    this.zoomed_sel.style('cursor', null)
+		.classed('cursor-grab', false)
+		.classed('cursor-grabbing', false);
+	    this.zoomed_sel.on('mousedown.cursor', null);
+	    this.zoomed_sel.on('mouseup.cursor', null);
+	}
+    }
+
+    // functions to scale and translate
+    function go_to(scale, translate, show_transition) {
+	utils.check_undefined(arguments, ['scale', 'translate']);
+	if (show_transition===undefined) show_transition = true;
+
+	if (!scale) throw new Error('Bad scale value');
+	if (!translate || !('x' in translate) || !('y' in translate) ||
+	    isNaN(translate.x) || isNaN(translate.y))
+	    return console.error('Bad translate value');
+
+	this.zoom_behavior.scale(scale);
+	this.window_scale = scale;
+	if (this.saved_scale !== null) this.saved_scale = scale;
+
+	var translate_array = [translate.x, translate.y];
+	this.zoom_behavior.translate(translate_array);
+        this.window_translate = translate;
+	if (this.saved_translate !== null) this.saved_translate = translate_array;
+
+	var move_this = (show_transition ?
+			 this.zoomed_sel.transition() :
+			 this.zoomed_sel);
+        move_this.attr('transform',
+		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
+		  'scale('+this.window_scale+')');
+
+	this.callback_manager.run('go_to');
+	return null;
+    }
+
+    function zoom_by(amount) {
+	var size = this.get_size(),
+	    shift = { x: size.width/2 - ((size.width/2 - this.window_translate.x) * amount +
+					 this.window_translate.x),
+	 	      y: size.height/2 - ((size.height/2 - this.window_translate.y) * amount +
+					  this.window_translate.y) };
+	this.go_to(this.window_scale*amount,
+		   utils.c_plus_c(this.window_translate, shift),
+		   true);
+    }
+    function zoom_in() {
+	this.zoom_by(1.5);
+    }
+    function zoom_out() {
+	this.zoom_by(0.667);
+    }
+
+    function get_size() {
+	return { width: parseInt(this.size_container.style('width'), 10),
+		 height: parseInt(this.size_container.style('height'), 10) };
+    }
+
+    function translate_off_screen(coords) {
+        // shift window if new reaction will draw off the screen
+        // TODO BUG not accounting for scale correctly
+        var margin = 120, // pixels
+	    size = this.get_size(),
+	    current = {'x': {'min': - this.window_translate.x / this.window_scale +
+			     margin / this.window_scale,
+			     'max': - this.window_translate.x / this.window_scale +
+			     (size.width-margin) / this.window_scale },
+		       'y': {'min': - this.window_translate.y / this.window_scale +
+			     margin / this.window_scale,
+			     'max': - this.window_translate.y / this.window_scale +
+			     (size.height-margin) / this.window_scale } };
+        if (coords.x < current.x.min) {
+            this.window_translate.x = this.window_translate.x -
+		(coords.x - current.x.min) * this.window_scale;
+            this.go_to(this.window_scale, this.window_translate);
+        } else if (coords.x > current.x.max) {
+            this.window_translate.x = this.window_translate.x -
+		(coords.x - current.x.max) * this.window_scale;
+            this.go_to(this.window_scale, this.window_translate);
+        }
+        if (coords.y < current.y.min) {
+            this.window_translate.y = this.window_translate.y -
+		(coords.y - current.y.min) * this.window_scale;
+            this.go_to(this.window_scale, this.window_translate);
+        } else if (coords.y > current.y.max) {
+            this.window_translate.y = this.window_translate.y -
+		(coords.y - current.y.max) * this.window_scale;
+            this.go_to(this.window_scale, this.window_translate);
+        }
+    }
+    function reset() {
+	this.go_to(1.0, {x: 0.0, y: 0.0});
     }
 });
 
@@ -3374,7 +4356,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
 
     function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
                              defs, has_data_on_reactions, identifiers_on_map,
-                             no_data_style, missing_component_color,
+                             no_data_style,
                              reaction_data_styles, 
                              label_drag_behavior,
                              label_click_fn, label_mouseover_fn, label_mouseout_fn) {
@@ -3386,7 +4368,6 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                                'has_data_on_reactions',
                                'identifiers_on_map',
                                'no_data_style',
-                               'missing_component_color',
                                'reaction_data_styles',
                                'label_drag_behavior',
                                'label_click_fn',
@@ -3409,7 +4390,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                                        return this.update_segment(sel, scale, cobra_model,
                                                                   drawn_nodes, defs, 
                                                                   has_data_on_reactions,
-                                                                  no_data_style, missing_component_color,
+                                                                  no_data_style,
                                                                   reaction_data_styles);
                                    }.bind(this),
                                    function(sel) {
@@ -3550,7 +4531,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
     function update_segment(update_selection, scale, cobra_model,
                             drawn_nodes, defs, 
                             has_data_on_reactions, no_data_style,
-                            missing_component_color, reaction_data_styles) {
+                            reaction_data_styles) {
         utils.check_undefined(arguments, ['update_selection',
                                           'scale',
                                           'cobra_model',
@@ -3558,13 +4539,14 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                                           'defs',
                                           'has_data_on_reactions',
                                           'no_data_style',
-                                          'missing_component_color',
                                           'reaction_data_styles']);
 
         // update segment attributes
-        var get_disp = function(reversibility, coefficient) {
-            return (reversibility || coefficient > 0) ? 32 : 20;
-        };
+        var highlight_missing  = this.settings.get_option('highlight_missing'),
+            get_disp = function(reversibility, coefficient) {
+                return (reversibility || coefficient > 0) ? 32 : 20;
+            }; 
+            
         // update arrows
         update_selection
             .selectAll('.segment')
@@ -3599,13 +4581,13 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             })
             .style('stroke', function(d) {
                 var reaction_id = this.parentNode.parentNode.__data__.bigg_id,
-                    show_missing = (cobra_model !== null &&
-                                    missing_component_color!==null &&
+                    show_missing = (highlight_missing &&
+                                    cobra_model !== null &&
                                     !(reaction_id in cobra_model.reactions)),
                     should_color_data = (has_data_on_reactions &&
                                          reaction_data_styles.indexOf('color') != -1);
                 if (show_missing) {
-                    return missing_component_color;
+                    return 'red';
                 }
                 if (should_color_data) {
                     var f = d.data;
@@ -9438,7 +10420,6 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                                         this.settings.get_option('identifiers_on_map'),
                                         { color: this.settings.get_option('reaction_no_data_color'),
                                           size: this.settings.get_option('reaction_no_data_size') },
-                                        this.settings.get_option('highlight_missing'),
                                         this.settings.get_option('reaction_styles'),
                                         this.behavior.reaction_label_drag,
                                         this.behavior.label_click,
@@ -10105,6 +11086,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     function deselect_nodes() {
         var node_selection = this.sel.select('#nodes').selectAll('.node');
         node_selection.classed('selected', false);
+        this.callback_manager.run('deselect_nodes');
     }
     function select_text_label(sel, d) {
         // deselect all nodes
@@ -10348,14 +11330,6 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
          */
 
-        // If reaction id is not new, then return:
-        // for (var reaction_id in this.reactions) {
-        //     if (this.reactions[reaction_id].bigg_id == starting_reaction) {
-        //      console.warn('reaction is already drawn');
-        //         return null;
-        //     }
-        // }
-
         // If there is no cobra model, error
         if (!this.cobra_model) return console.error('No CobraModel. Cannot build new reaction');
 
@@ -10389,26 +11363,35 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         extend_and_draw_metabolite.apply(this, [new_nodes, selected_node_id]);
 
         // clone the nodes and reactions, to redo this action later
-        var saved_nodes = utils.clone(new_nodes),
-            map = this;
+        var saved_nodes = utils.clone(new_nodes);
 
+        // draw the reaction
+        var out = this.new_reaction_for_metabolite(starting_reaction,
+                                                   selected_node_id,
+                                                   direction, false),
+            reaction_redo = out.redo,
+            reaction_undo = out.undo;
+        
         // add to undo/redo stack
         this.undo_stack.push(function() {
             // undo
+            // first undo the reaction
+            reaction_undo();
             // get the nodes to delete
-            map.delete_node_data(Object.keys(new_nodes));
+            this.delete_node_data(Object.keys(new_nodes));
             // save the nodes and reactions again, for redo
             new_nodes = utils.clone(saved_nodes);
             // draw
-            map.clear_deleted_nodes();
-        }, function () {
+            this.clear_deleted_nodes();
+            // deselect
+            this.deselect_nodes();
+        }.bind(this), function () {
             // redo
             // clone the nodes and reactions, to redo this action later
-            extend_and_draw_metabolite.apply(map, [new_nodes, selected_node_id]);
-        });
-
-        // draw the reaction
-        this.new_reaction_for_metabolite(starting_reaction, selected_node_id, direction);
+            extend_and_draw_metabolite.apply(this, [new_nodes, selected_node_id]);
+            // now redo the reaction
+            reaction_redo();
+        }.bind(this));
 
         return null;
 
@@ -10475,21 +11458,35 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         });
     }
 
-    function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id, direction) {
+    function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id,
+                                         direction, apply_undo_redo) {
         /** Build a new reaction starting with selected_met.
 
          Undoable
 
+         Arguments
+         ---------
+
+         reaction_bigg_id: The BiGG ID of the reaction to draw.
+
+         selected_node_id: The ID of the node to begin drawing with.
+
+         direction: The direction to draw in.
+
+         apply_undo_redo: (Optional, Default: true) If true, then add to the
+         undo stack. Otherwise, just return the undo and redo functions.
+
+         Returns
+         -------
+
+         { undo: undo_function,
+           redo: redo_function }
+
          */
 
-        // If reaction id is not new, then return:
-        // for (var reaction_id in this.reactions) {
-        //     if (this.reactions[reaction_id].bigg_id == reaction_bigg_id) {
-        //      console.warn('reaction is already drawn');
-        //         return;
-        //     }
-        // }
-
+        // default args
+        if (apply_undo_redo === undefined) apply_undo_redo = true;
+        
         // get the metabolite node
         var selected_node = this.nodes[selected_node_id];
 
@@ -10519,7 +11516,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             saved_beziers = utils.clone(new_beziers);
 
         // add to undo/redo stack
-        this.undo_stack.push(function() {
+        var undo_fn = function() {
             // undo
             // get the nodes to delete
             delete new_nodes[selected_node_id];
@@ -10533,12 +11530,19 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             // draw
             this.clear_deleted_nodes();
             this.clear_deleted_reactions(true); // also clears segments and beziers
-        }.bind(this), function () {
-            // redo
-            // clone the nodes and reactions, to redo this action later
-            extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
-                                                  new_beziers, selected_node_id]);
-        }.bind(this));
+        }.bind(this),
+            redo_fn = function () {
+                // redo
+                // clone the nodes and reactions, to redo this action later
+                extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
+                                                      new_beziers, selected_node_id]);
+            }.bind(this);
+
+        if (apply_undo_redo)
+            this.undo_stack.push(undo_fn, redo_fn);
+
+        return { undo: undo_fn,
+                 redo: redo_fn };
 
         // definitions
         function extend_and_draw_reaction(new_nodes, new_reactions, new_beziers,
@@ -11008,1013 +12012,6 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     }
 });
 
-define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackManager) {
-    /** ZoomContainer
-
-     The zoom behavior is based on this SO question:
-     http://stackoverflow.com/questions/18788188/how-to-temporarily-disable-the-zooming-in-d3-js
-     */
-    var ZoomContainer = utils.make_class();
-    ZoomContainer.prototype = { init: init,
-				toggle_zoom: toggle_zoom,
-				go_to: go_to,
-				zoom_by: zoom_by,
-				zoom_in: zoom_in,
-				zoom_out: zoom_out,
-				get_size: get_size,
-				translate_off_screen: translate_off_screen,
-				reset: reset };
-    return ZoomContainer;
-
-    // definitions
-    function init(selection, size_container, scroll_behavior) {
-	/** Make a container that will manage panning and zooming.
-
-	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
-	 container in.
-
-	 size_container: A d3 selection of a 'div' node that has defined width
-	 and height.
-
-	 */
-
-	this.zoom_on = true;
-	this.initial_zoom = 1.0;
-	this.window_translate = {x: 0, y: 0};
-	this.window_scale = 1.0;
-
-	// set up the callbacks
-	this.callback_manager = new CallbackManager();
-
-	// save the size_container
-	this.size_container = size_container;
-
-        // set up the container
-        selection.select("#zoom-container").remove();
-        var container = selection.append("g")
-                .attr("id", "zoom-container");
-        this.zoomed_sel = container.append("g");
-
-	// the zoom function and behavior
-        var zoom = function(zoom_container, event) {
-	    if (zoom_container.zoom_on) {
-                zoom_container.zoomed_sel.attr("transform", "translate(" + event.translate + ")" +
-					       "scale(" + event.scale + ")");
-		zoom_container.window_translate = {'x': event.translate[0],
-						   'y': event.translate[1]};
-		zoom_container.window_scale = event.scale;
-		zoom_container.callback_manager.run('zoom');
-	    }
-        };
-	var zoom_container = this;
-	this.zoom_behavior = d3.behavior.zoom()
-	    .on("zoom", function() {
-		zoom(zoom_container, d3.event);
-	    });
-	container.call(this.zoom_behavior);	
-	if (scroll_behavior=='none' || scroll_behavior=='pan') {
-	    container.on("mousewheel.zoom", null)
-		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
-		.on("wheel.zoom", null) // disables newer versions of Firefox
-		.on('dblclick.zoom', null);
-	}
-	if (scroll_behavior=='pan') {
-	    // Add the wheel listener
-	    var wheel_fn = function() {
-		var ev = d3.event,
-		    sensitivity = 0.5;
-		// stop scroll in parent elements
-		ev.stopPropagation();
-		ev.preventDefault();
-		ev.returnValue = false;
-		// change the location
-		this.go_to(this.window_scale,
-			   { x: this.window_translate.x -
-			     (ev.wheelDeltaX!==undefined ? -ev.wheelDeltaX/1.5 : ev.deltaX) * sensitivity,
-			     y: this.window_translate.y -
-			     (ev.wheelDeltaY!==undefined ? -ev.wheelDeltaY/1.5 : ev.deltaY) * sensitivity },
-			   false);
-	    }.bind(this);
-	    container.on('mousewheel.escher', wheel_fn);
-	    container.on('DOMMouseScroll.escher', wheel_fn);
-	    container.on('wheel.escher', wheel_fn);
-	}
-
-	this.saved_scale = null;
-	this.saved_translate = null;
-    }
-
-    function toggle_zoom(on_off) {
-	/** Toggle the zoom state, and remember zoom when the behavior is off.
-
-	 */
-	if (on_off===undefined) {
-	    this.zoom_on = !this.zoom_on;
-	} else {
-	    this.zoom_on = on_off;
-	}
-	if (this.zoom_on) {
-	    if (this.saved_scale !== null){
-		this.zoom_behavior.scale(this.saved_scale);
-		this.saved_scale = null;
-	    }
-	    if (this.saved_translate !== null){
-		this.zoom_behavior.translate(this.saved_translate);
-		this.saved_translate = null;
-	    }
-
-	    // turn on the hand
-	    this.zoomed_sel
-		.classed('cursor-grab', true).classed('cursor-grabbing', false);
-	    this.zoomed_sel
-		.on('mousedown.cursor', function(sel) {
-		    sel.classed('cursor-grab', false).classed('cursor-grabbing', true);
-		}.bind(null, this.zoomed_sel))
-		.on('mouseup.cursor', function(sel) {
-		    sel.classed('cursor-grab', true).classed('cursor-grabbing', false);
-		}.bind(null, this.zoomed_sel));
-	} else {
-	    if (this.saved_scale === null){
-		this.saved_scale = utils.clone(this.zoom_behavior.scale());
-	    }
-	    if (this.saved_translate === null){
-		this.saved_translate = utils.clone(this.zoom_behavior.translate());
-	    }
-
-	    // turn off the hand
-	    this.zoomed_sel.style('cursor', null)
-		.classed('cursor-grab', false)
-		.classed('cursor-grabbing', false);
-	    this.zoomed_sel.on('mousedown.cursor', null);
-	    this.zoomed_sel.on('mouseup.cursor', null);
-	}
-    }
-
-    // functions to scale and translate
-    function go_to(scale, translate, show_transition) {
-	utils.check_undefined(arguments, ['scale', 'translate']);
-	if (show_transition===undefined) show_transition = true;
-
-	if (!scale) throw new Error('Bad scale value');
-	if (!translate || !('x' in translate) || !('y' in translate) ||
-	    isNaN(translate.x) || isNaN(translate.y))
-	    return console.error('Bad translate value');
-
-	this.zoom_behavior.scale(scale);
-	this.window_scale = scale;
-	if (this.saved_scale !== null) this.saved_scale = scale;
-
-	var translate_array = [translate.x, translate.y];
-	this.zoom_behavior.translate(translate_array);
-        this.window_translate = translate;
-	if (this.saved_translate !== null) this.saved_translate = translate_array;
-
-	var move_this = (show_transition ?
-			 this.zoomed_sel.transition() :
-			 this.zoomed_sel);
-        move_this.attr('transform',
-		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
-		  'scale('+this.window_scale+')');
-
-	this.callback_manager.run('go_to');
-	return null;
-    }
-
-    function zoom_by(amount) {
-	var size = this.get_size(),
-	    shift = { x: size.width/2 - ((size.width/2 - this.window_translate.x) * amount +
-					 this.window_translate.x),
-	 	      y: size.height/2 - ((size.height/2 - this.window_translate.y) * amount +
-					  this.window_translate.y) };
-	this.go_to(this.window_scale*amount,
-		   utils.c_plus_c(this.window_translate, shift),
-		   true);
-    }
-    function zoom_in() {
-	this.zoom_by(1.5);
-    }
-    function zoom_out() {
-	this.zoom_by(0.667);
-    }
-
-    function get_size() {
-	return { width: parseInt(this.size_container.style('width'), 10),
-		 height: parseInt(this.size_container.style('height'), 10) };
-    }
-
-    function translate_off_screen(coords) {
-        // shift window if new reaction will draw off the screen
-        // TODO BUG not accounting for scale correctly
-        var margin = 120, // pixels
-	    size = this.get_size(),
-	    current = {'x': {'min': - this.window_translate.x / this.window_scale +
-			     margin / this.window_scale,
-			     'max': - this.window_translate.x / this.window_scale +
-			     (size.width-margin) / this.window_scale },
-		       'y': {'min': - this.window_translate.y / this.window_scale +
-			     margin / this.window_scale,
-			     'max': - this.window_translate.y / this.window_scale +
-			     (size.height-margin) / this.window_scale } };
-        if (coords.x < current.x.min) {
-            this.window_translate.x = this.window_translate.x -
-		(coords.x - current.x.min) * this.window_scale;
-            this.go_to(this.window_scale, this.window_translate);
-        } else if (coords.x > current.x.max) {
-            this.window_translate.x = this.window_translate.x -
-		(coords.x - current.x.max) * this.window_scale;
-            this.go_to(this.window_scale, this.window_translate);
-        }
-        if (coords.y < current.y.min) {
-            this.window_translate.y = this.window_translate.y -
-		(coords.y - current.y.min) * this.window_scale;
-            this.go_to(this.window_scale, this.window_translate);
-        } else if (coords.y > current.y.max) {
-            this.window_translate.y = this.window_translate.y -
-		(coords.y - current.y.max) * this.window_scale;
-            this.go_to(this.window_scale, this.window_translate);
-        }
-    }
-    function reset() {
-	this.go_to(1.0, {x: 0.0, y: 0.0});
-    }
-});
-
-define('DirectionArrow',["utils"], function(utils) {
-    /** DirectionArrow returns a constructor for an arrow that can be rotated
-     and dragged, and supplies its direction.
-     */
-    var DirectionArrow = utils.make_class();
-    DirectionArrow.prototype = { init: init,
-				 set_location: set_location,
-				 set_rotation: set_rotation,
-				 displace_rotation: displace_rotation,
-				 get_rotation: get_rotation,
-				 toggle: toggle,
-				 show: show,
-				 hide: hide,
-				 right: right,
-				 left: left,
-				 up: up,
-				 down: down,
-				 _setup_drag: _setup_drag };
-    return DirectionArrow;
-
-    // definitions
-    function init(sel) {
-	this.arrow_container = sel.append('g')
-	    .attr('id', 'direction-arrow-container')
-	    .attr('transform', 'translate(0,0)rotate(0)');
-	this.arrow = this.arrow_container.append('path')
-	    .classed('direction-arrow', true)
-	    .attr('d', path_for_arrow())
-	    .style('visibility', 'hidden')
-	    .attr('transform', 'translate(30,0)scale(2.5)');
-
-	this.sel = sel;
-	this.center = { x: 0, y: 0 };
-
-	this._setup_drag();
-	this.dragging = false;
-
-	this.is_visible = false;
-	this.show();
-
-	// definitions
-	function path_for_arrow() {
-	    return "M0 -5 L0 5 L20 5 L20 10 L30 0 L20 -10 L20 -5 Z";
-	}
-    }
-    function set_location(coords) {
-	/** Move the arrow to coords.
-	 */
-	this.center = coords;
-	var transform = d3.transform(this.arrow_container.attr('transform'));
-	this.arrow_container.attr('transform',
-				  'translate('+coords.x+','+coords.y+')rotate('+transform.rotate+')');
-    }
-    function set_rotation(rotation) {
-	/** Rotate the arrow to rotation.
-	 */
-	var transform = d3.transform(this.arrow_container.attr('transform'));
-	this.arrow_container.attr('transform',
-				  'translate('+transform.translate+')rotate('+rotation+')');
-    }
-    function displace_rotation(d_rotation) {
-	/** Displace the arrow rotation by a set amount.
-	 */
-	var transform = d3.transform(this.arrow_container.attr('transform'));
-	this.arrow_container.attr('transform',
-				  'translate('+transform.translate+')'+
-				  'rotate('+(transform.rotate+d_rotation)+')');
-    }
-    function get_rotation() {
-	/** Returns the arrow rotation.
-	 */
-	return d3.transform(this.arrow_container.attr('transform')).rotate;
-    }
-    function toggle(on_off) {
-	if (on_off===undefined) this.is_visible = !this.is_visible;
-	else this.is_visible = on_off;
-	this.arrow.style('visibility', this.is_visible ? 'visible' : 'hidden');
-    }
-    function show() {
-	this.toggle(true);
-    }
-    function hide() {
-	this.toggle(false);
-    }
-    function right() {
-	this.set_rotation(0);
-    }
-    function down() {
-	this.set_rotation(90);
-    }
-    function left() {
-	this.set_rotation(180);
-    }
-    function up() {
-	this.set_rotation(270);
-    }
-    
-    function _setup_drag() {
-	var b = d3.behavior.drag()
-		.on("dragstart", function(d) {
-		    // silence other listeners
-		    d3.event.sourceEvent.stopPropagation();
-		    this.dragging = true;
-		}.bind(this))
-		.on("drag.direction_arrow", function(d) {
-		    var displacement = { x: d3.event.dx,
-					 y: d3.event.dy },
-			location = { x: d3.mouse(this.sel.node())[0],
-				     y: d3.mouse(this.sel.node())[1] },
-			d_angle = utils.angle_for_event(displacement,
-							location,
-							this.center);
-		    this.displace_rotation(utils.to_degrees(d_angle));
-		}.bind(this))
-		.on("dragend", function(d) {
-		    window.setTimeout(function() {
-			this.dragging = false;
-		    }.bind(this), 200);
-		}.bind(this));
-	this.arrow_container.call(b);
-    }
-});
-
-define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
-    /**
-     */
-
-    var CobraModel = utils.make_class();
-    // class methods
-    CobraModel.build_reaction_string = build_reaction_string;
-    // instance methods
-    CobraModel.prototype = { init: init,
-			     apply_reaction_data: apply_reaction_data,
-			     apply_metabolite_data: apply_metabolite_data,
-			     apply_gene_data: apply_gene_data };
-
-    return CobraModel;
-
-    // class methods
-    function build_reaction_string(stoichiometries, is_reversible,
-				   lower_bound, upper_bound) {
-	/** Return a reaction string for the given stoichiometries.
-
-	    Adapted from cobra.core.Reaction.build_reaction_string().
-
-	    Arguments
-	    ---------
-
-	    stoichiometries: An object with metabolites as keys and
-	    stoichiometries as values.
-
-	    is_reversible: Boolean. Whether the reaction is reversible.
-
-	    lower_bound: Reaction upper bound, to determine direction.
-
-	    upper_bound: Reaction lower bound, to determine direction.
-
-	*/
-
-	var format = function(number) {
-            if (number == 1)
-                return "";
-            return String(number) + " ";
-	}
-        var reactant_dict = {},
-            product_dict = {},
-            reactant_bits = [],
-            product_bits = [];
-	for (var the_metabolite in stoichiometries) {
-	    var coefficient = stoichiometries[the_metabolite];
-            if (coefficient > 0)
-                product_bits.push(format(coefficient) + the_metabolite);
-            else
-                reactant_bits.push(format(Math.abs(coefficient)) + the_metabolite);
-	}
-        reaction_string = reactant_bits.join(' + ');
-        if (is_reversible) {
-            reaction_string += ' ↔ ';
-        } else {
-            if (lower_bound < 0 && upper_bound <=0)
-                reaction_string += ' ← ';
-            else
-		reaction_string += ' → ';
-	}
-        reaction_string += product_bits.join(' + ')
-        return reaction_string
-    }
-    
-    // instance methods
-    function init(model_data) {
-	// reactions and metabolites
-	if (!(model_data.reactions && model_data.metabolites)) {
-	    throw new Error('Bad model data.');
-	    return;
-	}
-        // make a gene dictionary
-	var genes = {};
-	for (var i=0, l=model_data.genes.length; i<l; i++) {
-	    var r = model_data.genes[i],
-		the_id = r.id;
-	    genes[the_id] = r;
-	}
-
-	this.reactions = {};
-	for (var i=0, l=model_data.reactions.length; i<l; i++) {
-	    var r = model_data.reactions[i],
-		the_id = r.id,
-                reaction = utils.clone(r);
-	    delete reaction.id;
-            // add the appropriate genes
-            reaction.genes = [];
-            if ('gene_reaction_rule' in reaction) {
-                var gene_ids = data_styles.genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
-                gene_ids.forEach(function(gene_id) {
-                    if (gene_id in genes) {
-                        var gene = utils.clone(genes[gene_id]);
-                        // rename id to bigg_id
-                        gene.bigg_id = gene.id;
-                        delete gene.id;
-                        reaction.genes.push(gene);
-                    } else {
-                        console.warn('Could not find gene for gene_id ' + gene_id);
-                    }
-                });
-            }
-	    this.reactions[the_id] = reaction;
-	}
-	this.metabolites = {};
-	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
-	    var r = model_data.metabolites[i],
-		the_id = r.id;
-	    this.metabolites[the_id] = utils.clone(r);
-	    delete this.metabolites[the_id].id;
-	}
-        
-	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
-			  'gdp', 'h', 'coa'];
-    }
-
-    function apply_reaction_data(reaction_data, styles, compare_style) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
-	    
-	    apply_reaction_data overrides apply_gene_data.
-
-	*/
-
-	for (var reaction_id in this.reactions) {
-	    var reaction = this.reactions[reaction_id];
-	    if (reaction_data===null) {
-		reaction.data = null;
-		reaction.data_string = '';
-	    } else {
-		var d = (reaction_id in reaction_data ?
-			 reaction_data[reaction_id] : null),
-		    f = data_styles.float_for_data(d, styles, compare_style),
-		    r = data_styles.reverse_flux_for_data(d),
-		    s = data_styles.text_for_data(d, f);
-		reaction.data = f;
-		reaction.data_string = s;
-	        reaction.reverse_flux = r;
-	    }
-            reaction.gene_string = '';
-	}
-    }
-
-    function apply_metabolite_data(metabolite_data, styles, compare_style) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
-
-	 */
-	for (var metabolite_id in this.metabolites) {
-	    var metabolite = this.metabolites[metabolite_id];
-	    if (metabolite_data===null) {
-		metabolite.data = null;
-		metabolite.data_string = '';
-	    } else {
-		var d = (metabolite_id in metabolite_data ?
-			 metabolite_data[metabolite_id] : null),
-		    f = data_styles.float_for_data(d, styles, compare_style),
-		    s = data_styles.text_for_data(d, f);
-		metabolite.data = f;
-		metabolite.data_string = s;
-	    }
-	}
-    }
-
-    function apply_gene_data(gene_data_obj, styles, identifiers_on_map,
-                             compare_style, and_method_in_gene_reaction_rule) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
-
-	    apply_gene_data overrides apply_reaction_data.
-
-	    Arguments
-	    ---------
-
-	    gene_data_obj: The gene data object, with the following style:
-
-	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
-
-	    style: Gene styles array.
-
-            compare_style: The comparison type.
-
-            and_method_in_gene_reaction_rule: Either 'mean' or 'min'.
-
-	*/
-
-        // TODO abstract out this function, and the equivalent Map.apply_gene_data_to_reactions();
-        
-	// get the null val
-	var null_val = [null];
-	// make an array of nulls as the default
-	for (var reaction_id in gene_data_obj) {
-	    for (var gene_id in gene_data_obj[reaction_id].genes) {
-		null_val = gene_data_obj[reaction_id].genes[gene_id]
-		    .map(function() { return null; });
-		break;
-	    }
-	    break;
-	}
-
-	for (var reaction_id in this.reactions) {
-	    var reaction = this.reactions[reaction_id];
-	    if (gene_data_obj === null) {
-		reaction.data = null;
-		reaction.data_string = '';
-		reaction.gene_string = '';
-	    } else {
-		var d, rule, gene_values;
-		if (reaction_id in gene_data_obj) {
-		    rule = gene_data_obj[reaction_id].rule;
-		    gene_values = gene_data_obj[reaction_id].genes;
-		    d = data_styles.evaluate_gene_reaction_rule(rule, gene_values,
-                                                                and_method_in_gene_reaction_rule);
-		} else {
-		    gene_values = {};
-		    d = null_val;
-		}
-		var f = data_styles.float_for_data(d, styles, compare_style),
-                    r = data_styles.reverse_flux_for_data(d),
-		    s = data_styles.text_for_data(d, f),
-		    g = data_styles.gene_string_for_data(rule, gene_values,
-                                                         reaction.genes, styles,
-                                                         identifiers_on_map,
-                                                         compare_style);
-		reaction.data = f;
-		reaction.data_string = s;
-		reaction.gene_string = g;
-		reaction.reverse_flux = r;
-	    }
-	}
-    }
-});
-
-define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'Map', 'ZoomContainer', 'CallbackManager', 'DirectionArrow', 'CobraModel'], function(utils, PlacedDiv, completely, Map, ZoomContainer, CallbackManager, DirectionArrow, CobraModel) {
-    /**
-     */
-
-    var BuildInput = utils.make_class();
-    // instance methods
-    BuildInput.prototype = { init: init,
-                             setup_map_callbacks: setup_map_callbacks,
-                             setup_zoom_callbacks: setup_zoom_callbacks,
-                             is_visible: is_visible,
-                             toggle: toggle,
-                             show_dropdown: show_dropdown,
-                             hide_dropdown: hide_dropdown,
-                             place_at_selected: place_at_selected,
-                             place: place,
-                             reload_at_selected: reload_at_selected,
-                             reload: reload,
-                             toggle_start_reaction_listener: toggle_start_reaction_listener,
-                             hide_target: hide_target,
-                             show_target: show_target };
-
-    return BuildInput;
-
-    // definitions
-    function init(selection, map, zoom_container) {
-        // set up container
-        var new_sel = selection.append('div').attr('id', 'rxn-input');
-        this.placed_div = PlacedDiv(new_sel, map, {x: 240, y: 0});
-        this.placed_div.hide();
-        
-        // set up complete.ly
-        var c = completely(new_sel.node(), { backgroundColor: '#eee' });
-        c.get_hint = get_hint;
-        
-        d3.select(c.input)
-        // .attr('placeholder', 'Reaction ID -- Flux')
-            .on('input', function() {
-                this.value = this.value
-                // .replace("/","")
-                    .replace(" ","")
-                    .replace("\\","")
-                    .replace("<","");
-            });
-        this.completely = c;
-        // close button
-        new_sel.append('button').attr('class', "button input-close-button")
-            .text("×")
-            .on('click', function() { this.hide_dropdown(); }.bind(this));
-
-        if (map instanceof Map) {
-            this.map = map;
-
-            // set up the reaction direction arrow
-            var default_angle = 90; // degrees
-            this.direction_arrow = new DirectionArrow(map.sel);
-            this.direction_arrow.set_rotation(default_angle);
-
-            this.setup_map_callbacks(map);
-        } else {
-            throw new Error('Cannot set the map. It is not an instance of ' + 
-                            'Map');
-        }
-        if (zoom_container instanceof ZoomContainer) {
-            this.zoom_container = zoom_container;
-            this.setup_zoom_callbacks(zoom_container);
-        } else {
-            throw new Error('Cannot set the zoom_container. It is not an ' +
-                            'instance of ZoomContainer');
-        }
-
-        // toggle off
-        this.toggle(false);
-        this.target_coords = null;
-    }
-
-    function setup_map_callbacks(map) {
-        // input
-        map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
-            if (this.is_active) this.reload(selected_node, coords, false);
-            this.hide_target();
-        }.bind(this));
-        map.callback_manager.set('select_selectable.input', function(count, selected_node, coords) {
-            this.hide_target();
-            if (count == 1 && this.is_active && coords) {
-                this.reload(selected_node, coords, false);
-            } else {
-                this.toggle(false);
-            }
-        }.bind(this));
-
-        // svg export
-        map.callback_manager.set('before_svg_export', function() {
-            this.direction_arrow.hide();
-            this.hide_target();
-        }.bind(this));
-    }
-
-    function setup_zoom_callbacks(zoom_container) {
-        zoom_container.callback_manager.set('zoom.input', function() {
-            if (this.is_active) {
-                this.place_at_selected();
-            }
-        }.bind(this));
-    }
-
-    function is_visible() {
-        return this.placed_div.is_visible();
-    }
-
-    function toggle(on_off) {
-        if (on_off===undefined) this.is_active = !this.is_active;
-        else this.is_active = on_off;
-        if (this.is_active) {
-            this.toggle_start_reaction_listener(true);
-            if (this.target_coords !== null)
-                this.show_dropdown(this.target_coords);
-            else this.reload_at_selected();
-            this.map.set_status('Click on the canvas or an existing metabolite');
-            this.direction_arrow.show();
-            // escape key
-            this.escape = this.map.key_manager
-                .add_escape_listener(function() {
-                    this.hide_dropdown();
-                }.bind(this), 'build_input');
-        } else {
-            this.toggle_start_reaction_listener(false);
-            this.placed_div.hide();
-            this.completely.input.blur();
-            this.completely.hideDropDown();
-            this.map.set_status(null);
-            this.direction_arrow.hide();
-            if (this.escape) this.escape.clear();
-            this.escape = null;
-        }
-    }
-    function show_dropdown(coords) {
-        this.placed_div.place(coords);
-        this.completely.input.blur();
-        this.completely.repaint();
-        this.completely.setText("");
-        this.completely.input.focus();
-    }
-    function hide_dropdown() {
-        this.placed_div.hide();
-        this.completely.hideDropDown();
-    }
-    function place_at_selected() {
-        /** Place autocomplete box at the first selected node.
-         
-         */
-
-        // get the selected node
-        this.map.deselect_text_labels();
-        var selected_node = this.map.select_single_node();
-        if (selected_node==null) return;
-        var coords = { x: selected_node.x, y: selected_node.y };
-        this.place(coords);
-    }
-    function place(coords) {
-        this.placed_div.place(coords);
-        this.direction_arrow.set_location(coords);
-        this.direction_arrow.show();
-    }
-
-    function reload_at_selected() {
-        /** Reload data for autocomplete box and redraw box at the first
-         selected node.
-         
-         */
-        // get the selected node
-        this.map.deselect_text_labels();
-        var selected_node = this.map.select_single_node();
-        if (selected_node==null) return false;
-        var coords = { x: selected_node.x, y: selected_node.y };
-        // reload the reaction input
-        this.reload(selected_node, coords, false);
-        return true;
-    }
-    function reload(selected_node, coords, starting_from_scratch) {
-        /** Reload data for autocomplete box and redraw box at the new
-         coordinates.
-         
-         */
-
-        if (selected_node===undefined && !starting_from_scratch)
-            console.error('No selected node, and not starting from scratch');
-
-        this.place(coords);
-
-        // blur
-        this.completely.input.blur();
-        this.completely.repaint(); // put in place()?
-
-        if (this.map.cobra_model===null) {
-            this.completely.setText('Cannot add: No model.');
-            return;
-        }
-
-        // whether to show names instead of ids
-        var show_names = (this.map.settings.get_option('identifiers_on_map')=='name');
-
-        // Find selected reaction
-        var suggestions = [],
-            metabolite_suggestions = [],
-            cobra_reactions = this.map.cobra_model.reactions,
-            cobra_metabolites = this.map.cobra_model.metabolites,
-            reactions = this.map.reactions,
-            has_data_on_reactions = this.map.has_data_on_reactions,
-            reaction_data = this.map.reaction_data,
-            reaction_data_styles = this.map.reaction_data_styles;
-        for (var reaction_id in cobra_reactions) {
-            var reaction = cobra_reactions[reaction_id],
-                reaction_name = reaction.name;
-
-            // ignore drawn reactions
-            // if (already_drawn(reaction_id, reactions)) continue;
-
-            // check segments for match to selected metabolite
-            for (var metabolite_id in reaction.metabolites) {
-
-                // if starting with a selected metabolite, check for that id
-                if (starting_from_scratch || metabolite_id==selected_node.bigg_id) {
-                    // don't add suggestions twice
-                    if (reaction_id in suggestions) continue;
-                    if (has_data_on_reactions) {
-                        suggestions[reaction_id] = { reaction_data: reaction.data,
-                                                     string: ((show_names ? reaction_name : reaction_id) +
-                                                              ': <span class="light">' +
-                                                              reaction.data_string + '</span>') };
-                    } else {
-                        // get the metabolite names or IDs
-                        var mets = {};
-                        if (show_names) {
-                            for (var met_id in reaction.metabolites)
-                                mets[cobra_metabolites[met_id].name] = reaction.metabolites[met_id];
-                        } else {
-                            mets = utils.clone(reaction.metabolites);
-                        }
-                        // get the reaction string
-                        var reaction_string = CobraModel.build_reaction_string(mets,
-                                                                               reaction.reversibility,
-                                                                               reaction.lower_bound,
-                                                                               reaction.upper_bound);
-                        suggestions[reaction_id] = { string: ((show_names ? reaction_name : reaction_id) +
-                                                              ' — <span class="light">' +
-                                                              reaction_string +
-                                                              '</span>')};
-                    }
-                }
-            }
-        }
-        // for just the connected reactions, pull out metabolites
-        for (var reaction_id in suggestions) {
-            var reaction = cobra_reactions[reaction_id],
-                reaction_name = reaction.name;
-            
-            for (var metabolite_id in reaction.metabolites) {
-                var met_name = cobra_metabolites[metabolite_id].name;
-                
-                // don't add the connected metabolite
-                if (starting_from_scratch || metabolite_id!=selected_node.bigg_id) {
-                    var joint_id = [reaction_id, metabolite_id].join('/');
-                    // don't add suggestions twice
-                    if (joint_id in metabolite_suggestions) continue;
-                    if (has_data_on_reactions) {
-                        metabolite_suggestions[joint_id] = {
-                            reaction_data: reaction.data,
-                            string: ((show_names ? met_name : metabolite_id) + ' — ' +
-                                     (show_names ? reaction_name : reaction_id) + ': <span class="light">' +
-                                     reaction.data_string + '</span>'),
-                            reaction_abbreviation: reaction_id
-                        };
-                    } else {
-                        // get the metabolite names or IDs
-                        var mets = {};
-                        if (show_names) {
-                            for (var met_id in reaction.metabolites)
-                                mets[cobra_metabolites[met_id].name] = reaction.metabolites[met_id];
-                        } else {
-                            mets = utils.clone(reaction.metabolites);
-                        }
-                        // get the reaction string
-                        var reaction_string = CobraModel.build_reaction_string(mets,
-                                                                               reaction.reversibility,
-                                                                               reaction.lower_bound,
-                                                                               reaction.upper_bound);
-                        metabolite_suggestions[joint_id] = {
-                            string: ((show_names ? met_name : metabolite_id) + ' — ' +
-                                     (show_names ? reaction_name : reaction_id) + ' — <span class="light">' +
-                                     reaction_string + '</span>'),
-                            reaction_abbreviation: reaction_id
-                        };
-                    }
-                }
-            }
-        }
-
-        // Generate the array of reactions to suggest and sort it
-        var strings_to_display = [],
-            suggestions_array = utils.make_array(suggestions,
-                                                 'reaction_abbreviation'),
-            met_suggestions_array = utils.make_array(metabolite_suggestions,
-                                                     'joint_id');
-        var sort_fn;
-        if (has_data_on_reactions) {
-            sort_fn = function(x, y) {
-                return Math.abs(y.reaction_data) - Math.abs(x.reaction_data);
-            };
-        } else {
-            sort_fn = function(x, y) {
-                return (x.string.toLowerCase() < y.string.toLowerCase() ? -1 : 1);
-            };
-        }
-        suggestions_array = suggestions_array.sort(sort_fn);
-        met_suggestions_array = met_suggestions_array.sort(sort_fn);
-        var all_suggestions = suggestions_array.concat(met_suggestions_array);
-        all_suggestions.forEach(function(x) {
-            strings_to_display.push(x.string);
-        });
-        // set up the box with data, searching for first num results
-        var num = 20,
-            complete = this.completely;
-        complete.options = strings_to_display;
-
-        // TODO test this behavior
-        // if (strings_to_display.length==1) complete.setText(strings_to_display[0]);
-        // else complete.setText("");
-        complete.setText("");
-        
-        var direction_arrow = this.direction_arrow,
-            map = this.map;
-        complete.onEnter = function() {
-            var text = this.getText();
-            this.setText("");
-            this.onChange("");
-            all_suggestions.forEach(function(x) {
-                if (get_hint(x.string.toLowerCase())==text.toLowerCase()) {
-                    if (starting_from_scratch) {
-                        map.new_reaction_from_scratch(x.reaction_abbreviation,
-                                                      coords,
-                                                      direction_arrow.get_rotation());
-                    } else {
-                        map.new_reaction_for_metabolite(x.reaction_abbreviation,
-                                                        selected_node.node_id,
-                                                        direction_arrow.get_rotation());
-                    }
-                }
-            });
-        };
-        complete.repaint();
-        this.completely.input.focus();
-
-        //definitions
-        function already_drawn(bigg_id, reactions) {
-            for (var drawn_id in reactions) {
-                if (reactions[drawn_id].bigg_id==bigg_id) 
-                    return true;
-            }
-            return false;
-        };
-    }
-    function toggle_start_reaction_listener(on_off) {
-        /** Toggle listening for a click to place a new reaction on the canvas.
-
-         */
-        if (on_off===undefined)
-            this.start_reaction_listener = !this.start_reaction_listener;
-        else if (this.start_reaction_listener==on_off)
-            return;
-        else
-            this.start_reaction_listener = on_off;
-        
-        if (this.start_reaction_listener) {;
-                                           this.map.sel.on('click.start_reaction', function(node) {
-                                               // TODO fix this hack
-                                               if (this.direction_arrow.dragging) return;
-                                               // reload the reaction input
-                                               var coords = { x: d3.mouse(node)[0],
-                                                              y: d3.mouse(node)[1] };
-                                               // unselect metabolites
-                                               this.map.deselect_nodes();
-                                               this.map.deselect_text_labels();
-                                               // reload the reaction input
-                                               this.reload(null, coords, true);
-                                               // generate the target symbol
-                                               this.show_target(this.map, coords);
-                                           }.bind(this, this.map.sel.node()));
-                                           this.map.sel.classed('start-reaction-cursor', true);
-                                          } else {
-                                              this.map.sel.on('click.start_reaction', null);
-                                              this.map.sel.classed('start-reaction-cursor', false);
-                                              this.hide_target();
-                                          }
-    }
-
-    function hide_target() {
-        if (this.target_coords)
-            this.map.sel.selectAll('.start-reaction-target').remove();
-        this.target_coords = null;
-    }
-    function show_target(map, coords) {
-        var s = map.sel.selectAll('.start-reaction-target').data([12, 5]);
-        s.enter().append('circle')
-            .classed('start-reaction-target', true)
-            .attr('r', function(d) { return d; })
-            .style('stroke-width', 4);
-        s.style('visibility', 'visible')
-            .attr('transform', 'translate('+coords.x+','+coords.y+')');
-        this.target_coords = coords;
-    }
-
-    function get_hint(suggestion_string) {
-        return (suggestion_string
-                .split(/[—:]/)
-                .slice(-3,-1)
-                .join('—')
-                .replace(/$^\s+|\s+$/g, ''));
-    };
-});
-
 define('Brush',["utils"], function(utils) {
     /** Define a brush to select elements in a map.
 
@@ -12449,9 +12446,12 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
                             set_range_value: set_range_value,
                             set_range: set_range,
                             set_no_data_value: set_no_data_value,
-                            set_highlight_missing: set_highlight_missing,
-                            set_identifiers_on_map: set_identifiers_on_map,
                             set_and_method_in_gene_reaction_rule: set_and_method_in_gene_reaction_rule,
+                            // View and build options
+                            set_identifiers_on_map: set_identifiers_on_map,
+                            set_highlight_missing: set_highlight_missing,
+                            set_allow_building_duplicate_reactions: set_allow_building_duplicate_reactions,
+                            // changes
                             hold_changes: hold_changes,
                             abandon_changes: abandon_changes,
                             accept_changes: accept_changes };
@@ -12486,9 +12486,10 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
                                         size: get_option('reaction_no_data_size') },
                             metabolite: { color: get_option('metabolite_no_data_color'),
                                           size: get_option('metabolite_no_data_size') } },
-            def_highlight_missing = get_option('highlight_missing_color'),
+            def_and_method_in_gene_reaction_rule = get_option('and_method_in_gene_reaction_rule'),
             def_identifiers_on_map = get_option('identifiers_on_map'),
-            def_and_method_in_gene_reaction_rule = get_option('and_method_in_gene_reaction_rule');
+            def_highlight_missing = get_option('highlight_missing'),
+            def_allow_building_duplicate_reactions = get_option('allow_building_duplicate_reactions');
 
         // event streams
         this.data_styles_bus = {};
@@ -12503,12 +12504,14 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         this.range_stream = {};
         this.no_data_bus = {};
         this.no_data_stream = {};
-        // this.highlight_missing_bus;
-        // this.highlight_missing_stream;
-        // this.identifiers_on_map_bus;
-        // this.identifiers_on_map_stream;
         // this.and_method_in_gene_reaction_rule_bus;
         // this.and_method_in_gene_reaction_rule_stream;
+        // this.identifiers_on_map_bus;
+        // this.identifiers_on_map_stream;
+        // this.highlight_missing_bus;
+        // this.highlight_missing_stream;
+        // this.allow_building_duplicate_reactions_bus;
+        // this.allow_building_duplicate_reactions_stream;
 
         // manage accepting/abandoning changes
         this.status_bus = new bacon.Bus();
@@ -12727,13 +12730,13 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         }.bind(this));
 
         // ---------------------------------------------------------------------
-        // highlight missing
+        // and_method_in_gene_reaction_rule
         // ---------------------------------------------------------------------
         
         // make the bus
-        this.highlight_missing_bus = new bacon.Bus();
+        this.and_method_in_gene_reaction_rule_bus = new bacon.Bus();
         // make a new constant for the input default
-        this.highlight_missing_stream = this.highlight_missing_bus
+        this.and_method_in_gene_reaction_rule_stream = this.and_method_in_gene_reaction_rule_bus
         // conditionally accept changes
             .convert_to_conditional_stream(this.status_bus)
         // combine into state array
@@ -12744,14 +12747,12 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
             .force_update_with_bus(this.force_update_bus);
 
         // get the latest
-        this.highlight_missing_stream.onValue(function(v) {
-            this.set_option('highlight_missing', v);
+        this.and_method_in_gene_reaction_rule_stream.onValue(function(v) {
+            this.set_option('and_method_in_gene_reaction_rule', v);
         }.bind(this));
 
         // push the default
-        var def = def_highlight_missing;
-        this.highlight_missing_bus.push(def);
-
+        this.and_method_in_gene_reaction_rule_bus.push(def_and_method_in_gene_reaction_rule);
         
         // ---------------------------------------------------------------------
         // identifiers_on_map
@@ -12779,13 +12780,13 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         this.identifiers_on_map_bus.push(def_identifiers_on_map);
 
         // ---------------------------------------------------------------------
-        // and_method_in_gene_reaction_rule
+        // highlight missing
         // ---------------------------------------------------------------------
         
         // make the bus
-        this.and_method_in_gene_reaction_rule_bus = new bacon.Bus();
+        this.highlight_missing_bus = new bacon.Bus();
         // make a new constant for the input default
-        this.and_method_in_gene_reaction_rule_stream = this.and_method_in_gene_reaction_rule_bus
+        this.highlight_missing_stream = this.highlight_missing_bus
         // conditionally accept changes
             .convert_to_conditional_stream(this.status_bus)
         // combine into state array
@@ -12796,13 +12797,40 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
             .force_update_with_bus(this.force_update_bus);
 
         // get the latest
-        this.and_method_in_gene_reaction_rule_stream.onValue(function(v) {
-            this.set_option('and_method_in_gene_reaction_rule', v);
+        this.highlight_missing_stream.onValue(function(v) {
+            this.set_option('highlight_missing', v);
         }.bind(this));
 
         // push the default
-        this.and_method_in_gene_reaction_rule_bus.push(def_and_method_in_gene_reaction_rule);
+        var def = def_highlight_missing;
+        this.highlight_missing_bus.push(def);
 
+        // ---------------------------------------------------------------------
+        // allow_building_duplicate_reactions
+        // ---------------------------------------------------------------------
+        
+        // make the bus
+        this.allow_building_duplicate_reactions_bus = new bacon.Bus();
+        // make a new constant for the input default
+        this.allow_building_duplicate_reactions_stream = this.allow_building_duplicate_reactions_bus
+        // conditionally accept changes
+            .convert_to_conditional_stream(this.status_bus)
+        // combine into state array
+            .scan([], function(current, value) {
+                return value;
+            })
+        // force updates
+            .force_update_with_bus(this.force_update_bus);
+
+        // get the latest
+        this.allow_building_duplicate_reactions_stream.onValue(function(v) {
+            this.set_option('allow_building_duplicate_reactions', v);
+        }.bind(this));
+
+        // push the default
+        this.allow_building_duplicate_reactions_bus.push(def_allow_building_duplicate_reactions);
+
+        
         // definitions
         function convert_to_conditional_stream(status_stream) {
             /** Hold on to event when hold_property is true, and only keep them
@@ -13000,17 +13028,19 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         this.no_data_bus[type][no_data_type].push(value);
     }
 
-    function set_highlight_missing(value) {
-        /** Set the option for highlighting missing components from a cobra
-            model.
+    function set_and_method_in_gene_reaction_rule(value) {
+        /**  When evaluating a gene reaction rule, use this function to evaluate
+             AND rules. 
 
-            Arguments
-            ---------
+             Arguments
+             ---------
 
-            value: The new boolean value.
+             value: Can be 'mean' or 'min'.
 
-        */
-        this.highlight_missing_bus.push(value);
+         */
+        if (['mean', 'min'].indexOf(value) == -1)
+            throw new Error('Bad value for and_method_in_gene_reaction_rule: ' + value);
+        this.and_method_in_gene_reaction_rule_bus.push(value);
     }
 
     function set_identifiers_on_map(value) {
@@ -13027,33 +13057,44 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         this.identifiers_on_map_bus.push(value);
     }
 
-    function set_and_method_in_gene_reaction_rule(value) {
-        /**  When evaluating a gene reaction rule, use this function to evaluate
-             AND rules. 
+    function set_highlight_missing(value) {
+        /** Set the option.
 
-             Arguments
-             ---------
+            Arguments
+            ---------
 
-             value: Can be 'mean' or 'min'.
+            value: The new boolean value.
 
-         */
-        if (['mean', 'min'].indexOf(value) == -1)
-            throw new Error('Bad value for and_method_in_gene_reaction_rule: ' + value);
-        this.and_method_in_gene_reaction_rule_bus.push(value);
+        */
+        this.highlight_missing_bus.push(value);
     }
+    
+    function set_allow_building_duplicate_reactions(value) {
+        /** Set the option.
 
+            Arguments
+            ---------
+
+            value: The new boolean value.
+
+        */
+        this.allow_building_duplicate_reactions_bus.push(value);
+    }
+    
     function hold_changes() {
         this.status_bus.push('hold');
     }
+    
     function abandon_changes() {
         this.status_bus.push('reject');
         this.status_bus.push('rejected');
         this.force_update_bus.push(true);
-    };
+    }
+    
     function accept_changes() {
         this.status_bus.push('accept');
         this.status_bus.push('accepted');
-    };
+    }
 });
 
 define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManager, bacon) {
@@ -13134,7 +13175,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
         
 	// identifiers_on_map
         box.append('hr');
-	box.append('div').text('View options')
+	box.append('div').text('View and build options')
 	    .attr('class', 'settings-section-heading-large');
 	this.view_gui(box.append('div'));
 	
@@ -13369,7 +13410,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    s.append('span')
                 .text(function(d) { return d[0]; });
 
-	    // make the checkbox
+	    // make the radio
 	    s.append('input').attr('type', 'radio')
                 .attr('name', type + '_compare_style' + this.unique_string)
                 .attr('value', function(d) { return d[1]; })
@@ -13394,8 +13435,10 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
         // gene-specific settings
         if (type=='reaction') {
 	    var t = sel.append('table').attr('class', 'settings-table')
-                    .attr('title', ('When evaluating a gene reaction rule, use ' +
-                                    'this function to evaluate AND rules.'));
+                    .attr('title', ('The function that will be used to evaluate ' +
+                                    'AND connections in gene reaction rules (AND ' +
+                                    'connections generally connect components of ' +
+                                    'an enzyme complex)'));
             
 	    // and_method_in_gene_reaction_rule
 	    t.append('tr').call(function(r) {
@@ -13413,7 +13456,7 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	        s.append('span')
                     .text(function(d) { return d[0]; });
 
-	        // make the checkbox
+	        // make the radio
 	        s.append('input').attr('type', 'radio')
                     .attr('name', 'and_method_in_gene_reaction_rule' + this.unique_string)
                     .attr('value', function(d) { return d[1]; })
@@ -13445,8 +13488,8 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	// columns
 	var settings = this.settings;
 
-	// styles
 	t.append('tr').call(function(r) {
+            // identifiers
 	    r.append('td').text('Identifiers:').attr('class', 'options-label');
 	    var cell = r.append('td');
 
@@ -13476,9 +13519,56 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 			this.checked = (value == this.value);
 		    }.bind(this));
 		});
-
+        }.bind(this));
+        
+        // highlight missing reactions
+	t.append('tr').call(function(r) {
+	    var s = r.append('td')
+                    .attr('class', 'options-label style-span')
+                    .attr('colspan', '2');
+            s.append('span')
+                .text('Highlight reactions not in model');
+	    s.append('input').attr('type', 'checkbox')
+		.each(function() {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+			        settings.set_highlight_missing(event.target.checked);
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.highlight_missing_stream.onValue(function(value) {			
+			// check the box if the style is present
+			this.checked = value;
+		    }.bind(this));
+		});
 	}.bind(this));
 
+        // allow duplicate reactions
+	t.append('tr').call(function(r) {
+            r.attr('title', 'If checked, then allow duplicate reactions during model building.')
+	    var s = r.append('td')
+                    .attr('class', 'options-label style-span')
+                    .attr('colspan', '2');
+            s.append('span')
+                .text('Allow duplicate reactions');
+	    s.append('input').attr('type', 'checkbox')
+		.each(function() {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+			        settings.set_allow_building_duplicate_reactions(event.target.checked);
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.allow_building_duplicate_reactions_stream.onValue(function(value) {			
+			// check the box if the style is present
+			this.checked = value;
+		    }.bind(this));
+		});
+	}.bind(this));
     }
 });
 
@@ -13710,8 +13800,6 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
      options: An object.
 
-     identifiers_on_map: Either 'bigg_id' (default) or 'name'.
-
      unique_map_id: A unique ID that will be used to UI elements don't interfere
      when multiple maps are in the same HTML document.
 
@@ -13746,8 +13834,18 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
      metabolite_compare_style: (Default: 'diff') How to compare to
      datasets. Can be either 'fold', 'log2_fold' or 'diff'.
 
-     highlight_missing_color: A color to apply to components that are not
-     the in cobra model, or null to apply no color. Default: 'red'.
+     // View and build options
+
+     identifiers_on_map: Either 'bigg_id' (default) or 'name'.
+
+     highlight_missing: (Default: false) If true, then highlight reactions that
+     are not in the loaded model in red.
+
+     allow_building_duplicate_reactions: (Default: true) If true, then building
+     duplicate reactions is allowed. If false, then duplicate reactions are
+     hidden in `Add reaction mode`.
+
+     // Quick jump menu
 
      local_host: The host used to load maps for quick_jump. E.g.,
      http://localhost:7778.
@@ -13755,6 +13853,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
      quick_jump: A list of map names that can be reached by
      selecting them from a quick jump menu on the map.
 
+     // Callbacks
+     
      first_load_callback: A function to run after loading.
 
      */
@@ -13810,7 +13910,6 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             css: null,
             starting_reaction: null,
             never_ask_before_quit: false,
-            identifiers_on_map: 'bigg_id',
             unique_map_id: null,
             // applied data
             // reaction
@@ -13836,12 +13935,14 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             metabolite_size_range: [6, 8, 10],
             metabolite_no_data_color: 'white',
             metabolite_no_data_size: 6,
-            // color reactions not in the model
-            highlight_missing_color: 'red',
-            // quick jump menu
+            // View and build options
+            identifiers_on_map: 'bigg_id',
+            highlight_missing: false,
+            allow_building_duplicate_reactions: true,
+            // Quick jump menu
             local_host: null,
             quick_jump: null,
-            // callback
+            // Callbacks
             first_load_callback: null
         });
 
@@ -13982,7 +14083,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
         // set up the reaction input with complete.ly
         this.build_input = BuildInput(this.options.selection, this.map,
-                                      this.zoom_container);
+                                      this.zoom_container, this.settings);
 
         // set up the text edit input
         this.text_edit_input = TextEditInput(this.options.selection, this.map,
@@ -14545,7 +14646,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                     this.map.set_status('Loaded model ' + data.id, 3000);
                 else
                     this.map.set_status('Loaded model (no model id)', 3000);
-                if (this.settings.highlight_missing!==null) {
+                if (this.settings.highlight_missing) {
                     this.map.draw_everything();
                 }
             } catch (e) {
