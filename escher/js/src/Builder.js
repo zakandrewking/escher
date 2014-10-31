@@ -14,6 +14,16 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
      unique_map_id: A unique ID that will be used to UI elements don't interfere
      when multiple maps are in the same HTML document.
 
+     primary_metabolite_radius: (Default: 15) The radius of primary metabolites.
+     
+     secondary_metabolite_radius: (Default: 10) The radius of secondary metabolites.
+     
+     marker_radius: (Default: 5) The radius of marker nodes.
+     
+     hide_secondary_nodes: (Default: false) If true, then secondary nodes and
+     segments are hidden. This is convenient for generating simplified map
+     figures.
+
      reaction_data: An object with reaction ids for keys and reaction data
      points for values.
 
@@ -122,6 +132,10 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             starting_reaction: null,
             never_ask_before_quit: false,
             unique_map_id: null,
+	    primary_metabolite_radius: 15,
+	    secondary_metabolite_radius: 10,
+	    marker_radius: 5,
+	    hide_secondary_nodes: false,
             // applied data
             // reaction
             auto_reaction_domain: true,

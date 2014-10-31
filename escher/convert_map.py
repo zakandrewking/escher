@@ -33,8 +33,7 @@ def main():
     """
     try:
         in_file = sys.argv[1]
-        out_directory = sys.argv[2]
-        model_path = sys.argv[3]
+        model_path = sys.argv[2]
     except IndexError:
         raise Exception("Not enough arguments")
    
@@ -53,9 +52,8 @@ def main():
 
     the_map = convert(out, model)
     
-    out_file = join(out_directory, basename(in_file))
     # don't replace the file
-    out_file = out_file.replace('.json', '_converted.json')
+    out_file = in_file.replace('.json', '_converted.json')
     print 'Saving validated map to %s' % out_file
     with open(out_file, 'w') as f:
         json.dump(the_map, f, allow_nan=False)
@@ -140,7 +138,7 @@ def convert(map, model):
             reactions_to_delete.append(id)
             continue
         reaction['gene_reaction_rule'] = cobra_reaction.gene_reaction_rule
-        reaction['reversibility'] = cobra_reaction.reversibility
+        reaction['reversibility'] = cobra_reaction.reversibility   # TODO !! reverse metabolites if reaction runs in reverse
         reaction['name'] = cobra_reaction.name
 
         reaction['genes'] = []
