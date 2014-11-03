@@ -3347,85 +3347,89 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
     CobraModel.build_reaction_string = build_reaction_string;
     // instance methods
     CobraModel.prototype = { init: init,
-			     apply_reaction_data: apply_reaction_data,
-			     apply_metabolite_data: apply_metabolite_data,
-			     apply_gene_data: apply_gene_data };
+                             apply_reaction_data: apply_reaction_data,
+                             apply_metabolite_data: apply_metabolite_data,
+                             apply_gene_data: apply_gene_data };
 
     return CobraModel;
 
     // class methods
-    function build_reaction_string(stoichiometries, is_reversible,
-				   lower_bound, upper_bound) {
-	/** Return a reaction string for the given stoichiometries.
+    function build_reaction_string(stoichiometries, is_reversible) {
+        /** Return a reaction string for the given stoichiometries.
 
-	    Adapted from cobra.core.Reaction.build_reaction_string().
+            Adapted from cobra.core.Reaction.build_reaction_string().
 
-	    Arguments
-	    ---------
+            Arguments
+            ---------
 
-	    stoichiometries: An object with metabolites as keys and
-	    stoichiometries as values.
+            stoichiometries: An object with metabolites as keys and
+            stoichiometries as values.
 
-	    is_reversible: Boolean. Whether the reaction is reversible.
+            is_reversible: Boolean. Whether the reaction is reversible.
 
-	    lower_bound: Reaction upper bound, to determine direction.
+        */
 
-	    upper_bound: Reaction lower bound, to determine direction.
-
-	*/
-
-	var format = function(number) {
+        var format = function(number) {
             if (number == 1)
                 return "";
             return String(number) + " ";
-	}
+        };
         var reactant_dict = {},
             product_dict = {},
             reactant_bits = [],
             product_bits = [];
-	for (var the_metabolite in stoichiometries) {
-	    var coefficient = stoichiometries[the_metabolite];
+        for (var the_metabolite in stoichiometries) {
+            var coefficient = stoichiometries[the_metabolite];
             if (coefficient > 0)
                 product_bits.push(format(coefficient) + the_metabolite);
             else
                 reactant_bits.push(format(Math.abs(coefficient)) + the_metabolite);
-	}
-        reaction_string = reactant_bits.join(' + ');
+        }
+        var reaction_string = reactant_bits.join(' + ');
         if (is_reversible) {
             reaction_string += ' ↔ ';
         } else {
-            if (lower_bound < 0 && upper_bound <=0)
-                reaction_string += ' ← ';
-            else
-		reaction_string += ' → ';
-	}
-        reaction_string += product_bits.join(' + ')
-        return reaction_string
+            reaction_string += ' → ';
+        }
+        reaction_string += product_bits.join(' + ');
+        return reaction_string;
     }
     
     // instance methods
     function init(model_data) {
-	// reactions and metabolites
-	if (!(model_data.reactions && model_data.metabolites)) {
-	    throw new Error('Bad model data.');
-	    return;
-	}
+        // reactions and metabolites
+        if (!(model_data.reactions && model_data.metabolites)) {
+            throw new Error('Bad model data.');
+            return;
+        }
         // make a gene dictionary
-	var genes = {};
-	for (var i=0, l=model_data.genes.length; i<l; i++) {
-	    var r = model_data.genes[i],
-		the_id = r.id;
-	    genes[the_id] = r;
-	}
+        var genes = {};
+        for (var i=0, l=model_data.genes.length; i<l; i++) {
+            var r = model_data.genes[i],
+                the_id = r.id;
+            genes[the_id] = r;
+        }
 
-	this.reactions = {};
-	for (var i=0, l=model_data.reactions.length; i<l; i++) {
-	    var r = model_data.reactions[i],
-		the_id = r.id,
+        this.reactions = {};
+        for (var i=0, l=model_data.reactions.length; i<l; i++) {
+            var r = model_data.reactions[i],
+                the_id = r.id,
                 reaction = utils.clone(r);
-	    delete reaction.id;
+            delete reaction.id;
             // add the appropriate genes
             reaction.genes = [];
+
+            // set reversibility
+            reaction.reversibility = (reaction.lower_bound < 0 && reaction.upper_bound > 0);
+            if (reaction.upper_bound <= 0 && reaction.lower_bound < 0) {
+                // reverse stoichiometries
+		for (var met_id in reaction.metabolites) {
+		    reaction.metabolites[met_id] = -reaction.metabolites[met_id];
+                }
+            }
+            delete reaction.lower_bound;
+            delete reaction.upper_bound;
+
             if ('gene_reaction_rule' in reaction) {
                 var gene_ids = data_styles.genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
                 gene_ids.forEach(function(gene_id) {
@@ -3440,134 +3444,134 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
                     }
                 });
             }
-	    this.reactions[the_id] = reaction;
-	}
-	this.metabolites = {};
-	for (var i=0, l=model_data.metabolites.length; i<l; i++) {
-	    var r = model_data.metabolites[i],
-		the_id = r.id;
-	    this.metabolites[the_id] = utils.clone(r);
-	    delete this.metabolites[the_id].id;
-	}
+            this.reactions[the_id] = reaction;
+        }
+        this.metabolites = {};
+        for (var i=0, l=model_data.metabolites.length; i<l; i++) {
+            var r = model_data.metabolites[i],
+                the_id = r.id;
+            this.metabolites[the_id] = utils.clone(r);
+            delete this.metabolites[the_id].id;
+        }
         
-	this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
-			  'gdp', 'h', 'coa'];
+        this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
+                          'gdp', 'h', 'coa'];
     }
 
     function apply_reaction_data(reaction_data, styles, compare_style) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
-	    
-	    apply_reaction_data overrides apply_gene_data.
+        /** Apply data to model. This is only used to display options in
+            BuildInput.
+            
+            apply_reaction_data overrides apply_gene_data.
 
-	*/
+        */
 
-	for (var reaction_id in this.reactions) {
-	    var reaction = this.reactions[reaction_id];
-	    if (reaction_data===null) {
-		reaction.data = null;
-		reaction.data_string = '';
-	    } else {
-		var d = (reaction_id in reaction_data ?
-			 reaction_data[reaction_id] : null),
-		    f = data_styles.float_for_data(d, styles, compare_style),
-		    r = data_styles.reverse_flux_for_data(d),
-		    s = data_styles.text_for_data(d, f);
-		reaction.data = f;
-		reaction.data_string = s;
-	        reaction.reverse_flux = r;
-	    }
+        for (var reaction_id in this.reactions) {
+            var reaction = this.reactions[reaction_id];
+            if (reaction_data===null) {
+                reaction.data = null;
+                reaction.data_string = '';
+            } else {
+                var d = (reaction_id in reaction_data ?
+                         reaction_data[reaction_id] : null),
+                    f = data_styles.float_for_data(d, styles, compare_style),
+                    r = data_styles.reverse_flux_for_data(d),
+                    s = data_styles.text_for_data(d, f);
+                reaction.data = f;
+                reaction.data_string = s;
+                reaction.reverse_flux = r;
+            }
             reaction.gene_string = '';
-	}
+        }
     }
 
     function apply_metabolite_data(metabolite_data, styles, compare_style) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
+        /** Apply data to model. This is only used to display options in
+            BuildInput.
 
-	 */
-	for (var metabolite_id in this.metabolites) {
-	    var metabolite = this.metabolites[metabolite_id];
-	    if (metabolite_data===null) {
-		metabolite.data = null;
-		metabolite.data_string = '';
-	    } else {
-		var d = (metabolite_id in metabolite_data ?
-			 metabolite_data[metabolite_id] : null),
-		    f = data_styles.float_for_data(d, styles, compare_style),
-		    s = data_styles.text_for_data(d, f);
-		metabolite.data = f;
-		metabolite.data_string = s;
-	    }
-	}
+         */
+        for (var metabolite_id in this.metabolites) {
+            var metabolite = this.metabolites[metabolite_id];
+            if (metabolite_data===null) {
+                metabolite.data = null;
+                metabolite.data_string = '';
+            } else {
+                var d = (metabolite_id in metabolite_data ?
+                         metabolite_data[metabolite_id] : null),
+                    f = data_styles.float_for_data(d, styles, compare_style),
+                    s = data_styles.text_for_data(d, f);
+                metabolite.data = f;
+                metabolite.data_string = s;
+            }
+        }
     }
 
     function apply_gene_data(gene_data_obj, styles, identifiers_on_map,
                              compare_style, and_method_in_gene_reaction_rule) {
-	/** Apply data to model. This is only used to display options in
-	    BuildInput.
+        /** Apply data to model. This is only used to display options in
+            BuildInput.
 
-	    apply_gene_data overrides apply_reaction_data.
+            apply_gene_data overrides apply_reaction_data.
 
-	    Arguments
-	    ---------
+            Arguments
+            ---------
 
-	    gene_data_obj: The gene data object, with the following style:
+            gene_data_obj: The gene data object, with the following style:
 
-	    { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+            { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
 
-	    style: Gene styles array.
+            style: Gene styles array.
 
             compare_style: The comparison type.
 
             and_method_in_gene_reaction_rule: Either 'mean' or 'min'.
 
-	*/
+        */
 
         // TODO abstract out this function, and the equivalent Map.apply_gene_data_to_reactions();
         
-	// get the null val
-	var null_val = [null];
-	// make an array of nulls as the default
-	for (var reaction_id in gene_data_obj) {
-	    for (var gene_id in gene_data_obj[reaction_id].genes) {
-		null_val = gene_data_obj[reaction_id].genes[gene_id]
-		    .map(function() { return null; });
-		break;
-	    }
-	    break;
-	}
+        // get the null val
+        var null_val = [null];
+        // make an array of nulls as the default
+        for (var reaction_id in gene_data_obj) {
+            for (var gene_id in gene_data_obj[reaction_id].genes) {
+                null_val = gene_data_obj[reaction_id].genes[gene_id]
+                    .map(function() { return null; });
+                break;
+            }
+            break;
+        }
 
-	for (var reaction_id in this.reactions) {
-	    var reaction = this.reactions[reaction_id];
-	    if (gene_data_obj === null) {
-		reaction.data = null;
-		reaction.data_string = '';
-		reaction.gene_string = '';
-	    } else {
-		var d, rule, gene_values;
-		if (reaction_id in gene_data_obj) {
-		    rule = gene_data_obj[reaction_id].rule;
-		    gene_values = gene_data_obj[reaction_id].genes;
-		    d = data_styles.evaluate_gene_reaction_rule(rule, gene_values,
+        for (var reaction_id in this.reactions) {
+            var reaction = this.reactions[reaction_id];
+            if (gene_data_obj === null) {
+                reaction.data = null;
+                reaction.data_string = '';
+                reaction.gene_string = '';
+            } else {
+                var d, rule, gene_values;
+                if (reaction_id in gene_data_obj) {
+                    rule = gene_data_obj[reaction_id].rule;
+                    gene_values = gene_data_obj[reaction_id].genes;
+                    d = data_styles.evaluate_gene_reaction_rule(rule, gene_values,
                                                                 and_method_in_gene_reaction_rule);
-		} else {
-		    gene_values = {};
-		    d = null_val;
-		}
-		var f = data_styles.float_for_data(d, styles, compare_style),
+                } else {
+                    gene_values = {};
+                    d = null_val;
+                }
+                var f = data_styles.float_for_data(d, styles, compare_style),
                     r = data_styles.reverse_flux_for_data(d),
-		    s = data_styles.text_for_data(d, f),
-		    g = data_styles.gene_string_for_data(rule, gene_values,
+                    s = data_styles.text_for_data(d, f),
+                    g = data_styles.gene_string_for_data(rule, gene_values,
                                                          reaction.genes, styles,
                                                          identifiers_on_map,
                                                          compare_style);
-		reaction.data = f;
-		reaction.data_string = s;
-		reaction.gene_string = g;
-		reaction.reverse_flux = r;
-	    }
-	}
+                reaction.data = f;
+                reaction.data_string = s;
+                reaction.gene_string = g;
+                reaction.reverse_flux = r;
+            }
+        }
     }
 });
 
@@ -3803,6 +3807,7 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 
 
                 // if starting with a selected metabolite, check for that id
                 if (starting_from_scratch || met_bigg_id==selected_node.bigg_id) {
+
                     // don't add suggestions twice
                     if (bigg_id in reaction_suggestions) continue;
 
@@ -4543,16 +4548,41 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
 
         // update segment attributes
         var highlight_missing  = this.settings.get_option('highlight_missing'),
-            get_disp = function(reversibility, coefficient) {
-                return (reversibility || coefficient > 0) ? 32 : 20;
-            }; 
-            
+	    hide_secondary_nodes = this.settings.get_option('hide_secondary_nodes'),
+	    primary_r = this.settings.get_option('primary_metabolite_radius'),
+	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
+	    get_arrow_size = function(data) {
+		var width = 20,
+		    height = 13;
+		if (has_data_on_reactions && reaction_data_styles.indexOf('size')!==-1) {
+                    var size = (data === null ? no_data_style['size'] : scale.reaction_size(data));
+                    width = size * 2;
+		    height = size;
+		}           
+		return { width: width, height: height };
+	    }, 
+            get_disp = function(reversibility, coefficient, node_is_primary, data) {
+		var arrow_height = ((reversibility || coefficient > 0) ?
+				    get_arrow_size(data).height :
+				    0),
+		    r = node_is_primary ? primary_r : secondary_r;
+		return r + arrow_height + 10;
+            };
         // update arrows
         update_selection
             .selectAll('.segment')
             .datum(function() {
                 return this.parentNode.__data__;
             })
+	    .style('visibility', function(d) {
+		var start = drawn_nodes[d.from_node_id],
+                    end = drawn_nodes[d.to_node_id];
+		if (hide_secondary_nodes &&
+		    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+		     (start['node_type']=='metabolite' && !start.node_is_primary)))
+			return 'hidden';
+		return null;
+	    })
             .attr('d', function(d) {
                 if (d.from_node_id==null || d.to_node_id==null)
                     return null;
@@ -4562,12 +4592,14 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                     b2 = d.b2;
                 // if metabolite, then displace the arrow
                 if (start['node_type']=='metabolite' && b1!==null) {
-                    var disp = get_disp(d.reversibility, d.from_node_coefficient);
+                    var disp = get_disp(d.reversibility, d.from_node_coefficient,
+					start.node_is_primary, d.data);
                     var direction = (b1 === null) ? end : b1;
                     start = displaced_coords(disp, start, direction, 'start');
                 }
                 if (end['node_type']=='metabolite') {
-                    var disp = get_disp(d.reversibility, d.to_node_coefficient);
+                    var disp = get_disp(d.reversibility, d.to_node_coefficient,
+					end.node_is_primary, d.data);
                     var direction = (b2 === null) ? start : b2;
                     end = displaced_coords(disp, direction, end, 'end');
                 }
@@ -4612,9 +4644,18 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                         reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
                         segment_id = this.parentNode.parentNode.__data__.segment_id;                
                     var start = drawn_nodes[d.from_node_id],
-                        b1 = d.b1;
+                        b1 = d.b1,
+			end = drawn_nodes[d.to_node_id],
+                        b2 = d.b2;
+		    // hide_secondary_nodes option
+		    if (hide_secondary_nodes &&
+			((end['node_type']=='metabolite' && !end.node_is_primary) ||
+			 (start['node_type']=='metabolite' && !start.node_is_primary)))
+			return arrowheads;
+
                     if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
-                        var disp = get_disp(d.reversibility, d.from_node_coefficient),
+                        var disp = get_disp(d.reversibility, d.from_node_coefficient,
+					    start.node_is_primary, d.data),
                             direction = (b1 === null) ? end : b1;
                         var rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90;
                         start = displaced_coords(disp, start, direction, 'start');
@@ -4626,10 +4667,9 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                                                                 || d.data==0)
                                         });
                     }
-                    var end = drawn_nodes[d.to_node_id],
-                        b2 = d.b2;
                     if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
-                        var disp = get_disp(d.reversibility, d.to_node_coefficient),
+                        var disp = get_disp(d.reversibility, d.to_node_coefficient,
+					    end.node_is_primary, d.data),
                             direction = (b2 === null) ? start : b2,
                             rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
                         end = displaced_coords(disp, direction, end, 'end');
@@ -4647,13 +4687,8 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             .classed('arrowhead', true);
         // update arrowheads
         arrowheads.attr('d', function(d) {
-            var markerWidth = 20, markerHeight = 13;
-            if (has_data_on_reactions && reaction_data_styles.indexOf('size')!==-1) {
-                var f = d.data,
-                    size = (f === null ? no_data_style['size'] : scale.reaction_size(f));
-                markerWidth = size * 2;
-            }               
-            return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
+            var size = get_arrow_size(d.data);
+            return 'M'+[-size.width/2, 0]+' L'+[0, size.height]+' L'+[size.width/2, 0]+' Z';
         }).attr('transform', function(d) {
             return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
         }).style('fill', function(d) {
@@ -4774,11 +4809,18 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                                'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
+	var hide_secondary_nodes = this.settings.get_option('hide_secondary_nodes'),
+	    primary_r = this.settings.get_option('primary_metabolite_radius'),
+	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
+	    marker_r = this.settings.get_option('marker_radius');
         var mg = update_selection
                 .select('.node-circle')
                 .attr('transform', function(d) {
                     return 'translate('+d.x+','+d.y+')';
                 })
+		.style('visibility', function(d) {
+		    return (hide_secondary_nodes && !d.node_is_primary) ? 'hidden' : null;
+		})
                 .attr('r', function(d) {
                     if (d.node_type == 'metabolite') {
                         var should_scale = (has_data_on_nodes &&
@@ -4787,11 +4829,11 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                             var f = d.data;
                             return f===null ? no_data_style['size'] : scale.metabolite_size(f);
                         } else {
-                            return d.node_is_primary ? 15 : 10; 
+                            return d.node_is_primary ? primary_r : secondary_r;
                         }
                     }
                     // midmarkers and multimarkers
-                    return 5;
+                    return marker_r;
                 })
                 .style('fill', function(d) {
                     if (d.node_type=='metabolite') {
@@ -12041,7 +12083,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         this.canvas.mouse_node.attr('height', '0px');
         this.canvas.mouse_node.attr('transform', null);
         // hide the segment control points
-        var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle')
+        var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas')
                 .style('visibility', 'hidden');
 
         // do the epxort
@@ -13845,6 +13887,16 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
      unique_map_id: A unique ID that will be used to UI elements don't interfere
      when multiple maps are in the same HTML document.
 
+     primary_metabolite_radius: (Default: 15) The radius of primary metabolites.
+     
+     secondary_metabolite_radius: (Default: 10) The radius of secondary metabolites.
+     
+     marker_radius: (Default: 5) The radius of marker nodes.
+     
+     hide_secondary_nodes: (Default: false) If true, then secondary nodes and
+     segments are hidden. This is convenient for generating simplified map
+     figures.
+
      reaction_data: An object with reaction ids for keys and reaction data
      points for values.
 
@@ -13953,6 +14005,10 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             starting_reaction: null,
             never_ask_before_quit: false,
             unique_map_id: null,
+	    primary_metabolite_radius: 15,
+	    secondary_metabolite_radius: 10,
+	    marker_radius: 5,
+	    hide_secondary_nodes: false,
             // applied data
             // reaction
             auto_reaction_domain: true,

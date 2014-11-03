@@ -81,11 +81,10 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
             // set reversibility
             reaction.reversibility = (reaction.lower_bound < 0 && reaction.upper_bound > 0);
-            if (reaction.upper_bound == 0 && reaction.lower_bound < 0) {
+            if (reaction.upper_bound <= 0 && reaction.lower_bound < 0) {
                 // reverse stoichiometries
 		for (var met_id in reaction.metabolites) {
-		    var met = reaction.metabolites[met_id];
-                    met.coefficient = -met.coefficient;
+		    reaction.metabolites[met_id] = -reaction.metabolites[met_id];
                 }
             }
             delete reaction.lower_bound;

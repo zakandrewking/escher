@@ -64,10 +64,21 @@ def convert(map, model):
         map_body = map[1]
     else:
         map_body = map
+
+    # add missing elements
+    for k in ['nodes', 'reactions', 'text_labels']:
+        if k not in map_body:
+            map_body[k] = {}
+    # default canvas
+    if 'canvas' not in map_body:
+        map_body['canvas'] = { 'x': -1440,
+                               'y': -775,
+                               'width': 4320,
+                               'height': 2325 }        
     
     # keep track of deleted nodes and reactions
-    nodes_to_delete = []
-    reactions_to_delete = []
+    nodes_to_delete = set()
+    reactions_to_delete = set()
 
     # nodes
     for id, node in map_body['nodes'].iteritems():
@@ -77,7 +88,7 @@ def convert(map, model):
             # no bigg_id
             if not 'bigg_id' in node:
                 print 'No bigg_id for node %s. Deleting.' % id
-                nodes_to_delete.append(id)
+                nodes_to_delete.add(id)
                 
             # unsupported attributes
             for key in node.keys():
@@ -90,7 +101,7 @@ def convert(map, model):
                 cobra_metabolite = model.metabolites.get_by_id(node['bigg_id'])
             except KeyError:
                 print 'Could not find metabolite %s in model. Deleting.' % node['bigg_id']
-                nodes_to_delete.append(id)
+                nodes_to_delete.add(id)
                 continue
             # apply new display names
             node['name'] = cobra_metabolite.name
@@ -106,15 +117,19 @@ def convert(map, model):
                     del node[key]
         # invalid node_type
         else:
-            nodes_to_delete.append(id)
+            nodes_to_delete.add(id)
             continue
         
     # update reactions
     for id, reaction in map_body['reactions'].iteritems():
-        # no bigg_id
-        if not 'bigg_id' in reaction:
-            print 'No bigg_id for reaction %s. Deleting.' % id
-            reactions_to_delete.append(id)
+        # missing attributes
+        will_delete = False
+        for k in ["bigg_id", "segments", "label_x", "label_y"]:
+            if not k in reaction:
+                print 'No %s for reaction %s. Deleting.' % (k, id)
+                reactions_to_delete.add(id)
+                will_delete = True
+        if will_delete:
             continue
 
         # unsupported attributes
@@ -135,10 +150,19 @@ def convert(map, model):
             cobra_reaction = model.reactions.get_by_id(reaction['bigg_id'])
         except KeyError:
             print 'Could not find metabolite %s in model. Deleting.' % node['bigg_id']
-            reactions_to_delete.append(id)
+            reactions_to_delete.add(id)
             continue
         reaction['gene_reaction_rule'] = cobra_reaction.gene_reaction_rule
-        reaction['reversibility'] = cobra_reaction.reversibility   # TODO !! reverse metabolites if reaction runs in reverse
+        reaction['reversibility'] = (cobra_reaction.lower_bound < 0 and cobra_reaction.upper_bound > 0)
+        # reverse metabolites if reaction runs in reverse
+        rev_mult = (-1 if
+                    (cobra_reaction.lower_bound < 0 and cobra_reaction.upper_bound <= 0)
+                    else 1)
+        # use metabolites from reaction
+        reaction['metabolites'] = [{'bigg_id': met.id, 'coefficient': coeff * rev_mult}
+                                   for met, coeff in
+                                   cobra_reaction.metabolites.iteritems()]
+            
         reaction['name'] = cobra_reaction.name
 
         reaction['genes'] = []
@@ -150,11 +174,6 @@ def convert(map, model):
                 reaction['genes'].append({'bigg_id': gene, 'name': gene})
                 continue
             reaction['genes'].append({'bigg_id': gene, 'name': cobra_gene.name})
-
-        # use metabolites from reaction
-        reaction['metabolites'] = [{'bigg_id': met.id, 'coefficient': coeff}
-                                   for met, coeff in
-                                   cobra_reaction.metabolites.iteritems()]
         
         # remove any lost segments
         reaction['segments'] = {id: seg for id, seg in reaction['segments'].iteritems()

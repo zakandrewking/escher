@@ -1,13 +1,10 @@
 describe('CobraModel', function() {
     it("reaction string", function () {
 	var r = {'atp': -1, 'amp': -1, 'adp': 2},
-	    s = escher.CobraModel.build_reaction_string(r, true,
-							0, 0);
+	    s = escher.CobraModel.build_reaction_string(r, true);
 	expect(s).toEqual('atp + amp ↔ 2 adp');
-	s = escher.CobraModel.build_reaction_string(r, false, 0, 1000);
+	s = escher.CobraModel.build_reaction_string(r, false);
 	expect(s).toEqual('atp + amp → 2 adp');
-	s = escher.CobraModel.build_reaction_string(r, false, -10, 0);
-	expect(s).toEqual('atp + amp ← 2 adp');
     });
     
     it("New model", function () {
@@ -15,14 +12,19 @@ describe('CobraModel', function() {
 	expect(function() { escher.CobraModel(model_data);} )
 	    .toThrow(new Error("Bad model data."));
     });
-    it("Formulas and genes", function () {
+    
+    it("Formulas, genes, reversibility", function () {
 	var model_data = { reactions: [ { id: 'acc_tpp',
 					  metabolites: { acc_c: 1, acc_p: -1 },
-                                          gene_reaction_rule: 'my_gene'
+                                          gene_reaction_rule: 'my_gene',
+                                          lower_bound: -100,
+                                          upper_bound: -2
 					},
                                         { id: 'my_empty_reaction',
 					  metabolites: {},
-                                          gene_reaction_rule: ''
+                                          gene_reaction_rule: '',
+                                          lower_bound: -4,
+                                          upper_bound: 1000
 					}
 				      ],
 			   metabolites: [ { id: 'acc_c',
@@ -34,14 +36,16 @@ describe('CobraModel', function() {
 			 };
 	var model = escher.CobraModel(model_data);
 	expect(model.reactions).toEqual(
-	    { acc_tpp: { metabolites: { acc_c: 1, 
-					acc_p: -1 },
+	    { acc_tpp: { metabolites: { acc_c: -1, // should reverse the reaction
+					acc_p: 1 },
+                         reversibility: false,
                          gene_reaction_rule: 'my_gene',
                          genes: [ { bigg_id: 'my_gene', name: 'gene_name' } ]
 		       },
               my_empty_reaction: { metabolites: {},
                                    gene_reaction_rule: '',
-                                   genes: []
+                                   genes: [],
+                                   reversibility: true
                                  }
 	    });
 	expect(model.metabolites).toEqual(
