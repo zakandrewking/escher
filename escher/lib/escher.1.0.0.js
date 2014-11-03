@@ -13812,7 +13812,7 @@ define('TextEditInput',['utils', 'PlacedDiv', 'build'], function(utils, PlacedDi
     }
 });
 
-define('QuickJump',['utils', 'CallbackManager'], function(utils, CallbackManager) {
+define('QuickJump',['utils'], function(utils) {
     /** A QuickJump menu to move between maps.
 
 	Arguments
@@ -13821,38 +13821,40 @@ define('QuickJump',['utils', 'CallbackManager'], function(utils, CallbackManager
 	sel: The d3 selection of an html node to place the menu inside.
 
 	options: An array of map names to jump to.
-	
+
+        load_callback: A callback function that accepts two arguments: map_name,
+        and another callback which returns true or false for success or failure
+        (callback purgatory).
+
      */
 
     var QuickJump = utils.make_class();
     // instance methods
-    QuickJump.prototype = { init: init };
+    QuickJump.prototype = { init: init,
+                            reset_selection: reset_selection,
+                            replace_state_for_map_name: replace_state_for_map_name };
 
     return QuickJump;
 
     // instance methods
-    function init(sel, options) {
-	// make the callback manager
-	var callback_manager = CallbackManager();
-	this.callback_manager = callback_manager
-	
+    function init(sel, options, load_callback) {        
 	// set up the menu
 	var select_sel = sel.append('select')
 	    .attr('id', 'quick-jump-menu')
-	    .attr('class', 'form-control');
-	
-	this.default_value = '— Jump to map —';
-
-	var url_comp = utils.parse_url_components(window),
-	    current = ('map_name' in url_comp) ? url_comp.map_name : null;
+	    .attr('class', 'form-control'); 
+        this.selector = select_sel;
 
 	// get the options to show
-	var view_options = [this.default_value].concat(options);
+	var url_comp = utils.parse_url_components(window),
+	    current = ('map_name' in url_comp) ? url_comp.map_name : null,
+            default_value = '— Jump to map —',
+	    view_options = [default_value].concat(options);
 	if (current !== null) {
 	    view_options = view_options.filter(function(o) {
 		return o != current;
 	    });
 	}
+        
 	select_sel.selectAll('option')
 	    .data(view_options)
 	    .enter()
@@ -13862,12 +13864,37 @@ define('QuickJump',['utils', 'CallbackManager'], function(utils, CallbackManager
 		return d.split('.').slice(-1)[0];
 	    });
 
+        // on selection
+        var change_map = function(map_name) {
+            load_callback(map_name, function(success) {
+                if (success)
+                    this.replace_state_for_map_name(map_name);
+                else
+                    this.reset_selection();
+            }.bind(this));
+        }.bind(this);
+        
 	select_sel.on('change', function() {
-	    // go to the new map
+	    // get the new map
 	    var map_name = this.options[this.selectedIndex].__data__;
-	    callback_manager.run('switch_maps', null, map_name);
+            change_map(map_name);
 	});
-	
+    }
+
+    function reset_selection() {
+        this.selector.node().selectedIndex = 0;
+    }
+    
+    function replace_state_for_map_name(map_name) {
+        /** Just changes the url to match the new map name. Does not actually
+            manage the HTML5 history.
+
+        */
+        
+        // update the url with the new map
+        var url = window.location.href
+                .replace(/(map_name=)([^&]+)(&|$)/, '$1' + map_name + '$3');
+        window.history.replaceState('Not implemented', '', url);
     }
 });
 
@@ -14269,7 +14296,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             this.view_mode();
 
         // confirm before leaving the page
-        if (this.options.enable_editing && !this.options.never_ask_before_quit)
+        if (this.options.enable_editing)
             this._setup_confirm_before_exit();
 
         // draw
@@ -14832,28 +14859,34 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
     }
 
     function _setup_quick_jump(selection, options) {
-        // make the quick jump object
-        this.quick_jump = QuickJump(selection, options);
 
         // function to load a map
-        var load_map = function(new_map_name, current_map) {
+        var load_fn = function(new_map_name, callback) {
+            if (this.options.enable_editing && !this.options.never_ask_before_quit) {
+                if (!(confirm(('You will lose any unsaved changes.\n\n' +
+                               'Are you sure you want to switch maps?')))) {
+                    if (callback) callback(false);
+                    return;
+                }
+            }
             this.map.set_status('Loading map ' + new_map_name + ' ...');
             var url = utils.name_to_url(new_map_name, this.options.local_host);
             d3.json(url, function(error, data) {
-                if (error)
-                    throw new Error('Could not load data: ' + error)
-                // update the url with the new map
-                var new_url = window.location.href
-                        .replace(/(map_name=)([^&]+)(&|$)/, '$1' + new_map_name + '$3')
-                window.history.pushState('not implemented', new_map_name, new_url);
+                if (error) {
+                    console.warn('Could not load data: ' + error);
+                    if (callback) callback(false);
+                }
+                // run callback before load_map so the new map has the correct
+                // quick_jump menu
+                if (callback) callback(true);
                 // now reload
                 this.load_map(data);
                 this.map.set_status('');
             }.bind(this));
         }.bind(this);
-
-        // set the callback
-        this.quick_jump.callback_manager.set('switch_maps', load_map);
+        
+        // make the quick jump object
+        this.quick_jump = QuickJump(selection, options, load_fn);
     }
 
     function _setup_modes(map, brush, zoom_container) {
@@ -14997,7 +15030,8 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         window.onbeforeunload = function(e) {
             // If we haven't been passed the event get the window.event
             e = e || window.event;
-            return 'You may have unsaved changes.';
+            return  (this.options.never_ask_before_quit ? null :
+                     'You will lose any unsaved changes.');
         };
     }
 });

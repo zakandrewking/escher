@@ -396,7 +396,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             this.view_mode();
 
         // confirm before leaving the page
-        if (this.options.enable_editing && !this.options.never_ask_before_quit)
+        if (this.options.enable_editing)
             this._setup_confirm_before_exit();
 
         // draw
@@ -959,28 +959,34 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
     }
 
     function _setup_quick_jump(selection, options) {
-        // make the quick jump object
-        this.quick_jump = QuickJump(selection, options);
 
         // function to load a map
-        var load_map = function(new_map_name, current_map) {
+        var load_fn = function(new_map_name, callback) {
+            if (this.options.enable_editing && !this.options.never_ask_before_quit) {
+                if (!(confirm(('You will lose any unsaved changes.\n\n' +
+                               'Are you sure you want to switch maps?')))) {
+                    if (callback) callback(false);
+                    return;
+                }
+            }
             this.map.set_status('Loading map ' + new_map_name + ' ...');
             var url = utils.name_to_url(new_map_name, this.options.local_host);
             d3.json(url, function(error, data) {
-                if (error)
-                    throw new Error('Could not load data: ' + error)
-                // update the url with the new map
-                var new_url = window.location.href
-                        .replace(/(map_name=)([^&]+)(&|$)/, '$1' + new_map_name + '$3')
-                window.history.pushState('not implemented', new_map_name, new_url);
+                if (error) {
+                    console.warn('Could not load data: ' + error);
+                    if (callback) callback(false);
+                }
+                // run callback before load_map so the new map has the correct
+                // quick_jump menu
+                if (callback) callback(true);
                 // now reload
                 this.load_map(data);
                 this.map.set_status('');
             }.bind(this));
         }.bind(this);
-
-        // set the callback
-        this.quick_jump.callback_manager.set('switch_maps', load_map);
+        
+        // make the quick jump object
+        this.quick_jump = QuickJump(selection, options, load_fn);
     }
 
     function _setup_modes(map, brush, zoom_container) {
@@ -1124,7 +1130,8 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         window.onbeforeunload = function(e) {
             // If we haven't been passed the event get the window.event
             e = e || window.event;
-            return 'You may have unsaved changes.';
+            return  (this.options.never_ask_before_quit ? null :
+                     'You will lose any unsaved changes.');
         };
     }
 });
