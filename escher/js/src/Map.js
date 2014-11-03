@@ -2088,7 +2088,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.canvas.mouse_node.attr('height', '0px');
         this.canvas.mouse_node.attr('transform', null);
         // hide the segment control points
-        var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle')
+        var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas')
                 .style('visibility', 'hidden');
 
         // do the epxort

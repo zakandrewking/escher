@@ -190,21 +190,29 @@ class Builder(object):
         self.the_id = get_an_id() if id is None else id
 
         # set up the options
-        self.options = ['reaction_styles',
+        self.options = ['identifiers_on_map',
+                        'unique_map_id',
+                        'primary_metabolite_radius',
+                        'secondary_metabolite_radius',
+                        'marker_radius',
+                        'hide_secondary_nodes',
                         'auto_reaction_domain',
+                        'reaction_styles',
+                        'reaction_compare_style',
                         'reaction_domain',
                         'reaction_color_range',
                         'reaction_size_range',
                         'reaction_no_data_color',
                         'reaction_no_data_size',
+                        'and_method_in_gene_reaction_rule',
                         'metabolite_styles',
                         'auto_metabolite_domain',
+                        'metabolite_compare_style',
                         'metabolite_domain',
                         'metabolite_color_range',
                         'metabolite_size_range',
                         'metabolite_no_data_color',
                         'metabolite_no_data_size',
-                        'gene_styles',
                         'highlight_missing_color',
                         'quick_jump']
         def get_getter_setter(o):

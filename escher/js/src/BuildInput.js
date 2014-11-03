@@ -230,6 +230,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 'CobraModel']
 
                 // if starting with a selected metabolite, check for that id
                 if (starting_from_scratch || met_bigg_id==selected_node.bigg_id) {
+
                     // don't add suggestions twice
                     if (bigg_id in reaction_suggestions) continue;
 

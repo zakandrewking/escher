@@ -280,16 +280,41 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
 
         // update segment attributes
         var highlight_missing  = this.settings.get_option('highlight_missing'),
-            get_disp = function(reversibility, coefficient) {
-                return (reversibility || coefficient > 0) ? 32 : 20;
-            }; 
-            
+	    hide_secondary_nodes = this.settings.get_option('hide_secondary_nodes'),
+	    primary_r = this.settings.get_option('primary_metabolite_radius'),
+	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
+	    get_arrow_size = function(data) {
+		var width = 20,
+		    height = 13;
+		if (has_data_on_reactions && reaction_data_styles.indexOf('size')!==-1) {
+                    var size = (data === null ? no_data_style['size'] : scale.reaction_size(data));
+                    width = size * 2;
+		    height = size;
+		}           
+		return { width: width, height: height };
+	    }, 
+            get_disp = function(reversibility, coefficient, node_is_primary, data) {
+		var arrow_height = ((reversibility || coefficient > 0) ?
+				    get_arrow_size(data).height :
+				    0),
+		    r = node_is_primary ? primary_r : secondary_r;
+		return r + arrow_height + 10;
+            };
         // update arrows
         update_selection
             .selectAll('.segment')
             .datum(function() {
                 return this.parentNode.__data__;
             })
+	    .style('visibility', function(d) {
+		var start = drawn_nodes[d.from_node_id],
+                    end = drawn_nodes[d.to_node_id];
+		if (hide_secondary_nodes &&
+		    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+		     (start['node_type']=='metabolite' && !start.node_is_primary)))
+			return 'hidden';
+		return null;
+	    })
             .attr('d', function(d) {
                 if (d.from_node_id==null || d.to_node_id==null)
                     return null;
@@ -299,12 +324,14 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                     b2 = d.b2;
                 // if metabolite, then displace the arrow
                 if (start['node_type']=='metabolite' && b1!==null) {
-                    var disp = get_disp(d.reversibility, d.from_node_coefficient);
+                    var disp = get_disp(d.reversibility, d.from_node_coefficient,
+					start.node_is_primary, d.data);
                     var direction = (b1 === null) ? end : b1;
                     start = displaced_coords(disp, start, direction, 'start');
                 }
                 if (end['node_type']=='metabolite') {
-                    var disp = get_disp(d.reversibility, d.to_node_coefficient);
+                    var disp = get_disp(d.reversibility, d.to_node_coefficient,
+					end.node_is_primary, d.data);
                     var direction = (b2 === null) ? start : b2;
                     end = displaced_coords(disp, direction, end, 'end');
                 }
@@ -349,9 +376,18 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                         reaction_id = this.parentNode.parentNode.parentNode.__data__.reaction_id,
                         segment_id = this.parentNode.parentNode.__data__.segment_id;                
                     var start = drawn_nodes[d.from_node_id],
-                        b1 = d.b1;
+                        b1 = d.b1,
+			end = drawn_nodes[d.to_node_id],
+                        b2 = d.b2;
+		    // hide_secondary_nodes option
+		    if (hide_secondary_nodes &&
+			((end['node_type']=='metabolite' && !end.node_is_primary) ||
+			 (start['node_type']=='metabolite' && !start.node_is_primary)))
+			return arrowheads;
+
                     if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
-                        var disp = get_disp(d.reversibility, d.from_node_coefficient),
+                        var disp = get_disp(d.reversibility, d.from_node_coefficient,
+					    start.node_is_primary, d.data),
                             direction = (b1 === null) ? end : b1;
                         var rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90;
                         start = displaced_coords(disp, start, direction, 'start');
@@ -363,10 +399,9 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                                                                 || d.data==0)
                                         });
                     }
-                    var end = drawn_nodes[d.to_node_id],
-                        b2 = d.b2;
                     if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
-                        var disp = get_disp(d.reversibility, d.to_node_coefficient),
+                        var disp = get_disp(d.reversibility, d.to_node_coefficient,
+					    end.node_is_primary, d.data),
                             direction = (b2 === null) ? start : b2,
                             rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90;
                         end = displaced_coords(disp, direction, end, 'end');
@@ -384,13 +419,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             .classed('arrowhead', true);
         // update arrowheads
         arrowheads.attr('d', function(d) {
-            var markerWidth = 20, markerHeight = 13;
-            if (has_data_on_reactions && reaction_data_styles.indexOf('size')!==-1) {
-                var f = d.data,
-                    size = (f === null ? no_data_style['size'] : scale.reaction_size(f));
-                markerWidth = size * 2;
-            }               
-            return 'M'+[-markerWidth/2, 0]+' L'+[0, markerHeight]+' L'+[markerWidth/2, 0]+' Z';
+            var size = get_arrow_size(d.data);
+            return 'M'+[-size.width/2, 0]+' L'+[0, size.height]+' L'+[size.width/2, 0]+' Z';
         }).attr('transform', function(d) {
             return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
         }).style('fill', function(d) {
@@ -511,11 +541,18 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                                'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
+	var hide_secondary_nodes = this.settings.get_option('hide_secondary_nodes'),
+	    primary_r = this.settings.get_option('primary_metabolite_radius'),
+	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
+	    marker_r = this.settings.get_option('marker_radius');
         var mg = update_selection
                 .select('.node-circle')
                 .attr('transform', function(d) {
                     return 'translate('+d.x+','+d.y+')';
                 })
+		.style('visibility', function(d) {
+		    return (hide_secondary_nodes && !d.node_is_primary) ? 'hidden' : null;
+		})
                 .attr('r', function(d) {
                     if (d.node_type == 'metabolite') {
                         var should_scale = (has_data_on_nodes &&
@@ -524,11 +561,11 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                             var f = d.data;
                             return f===null ? no_data_style['size'] : scale.metabolite_size(f);
                         } else {
-                            return d.node_is_primary ? 15 : 10; 
+                            return d.node_is_primary ? primary_r : secondary_r;
                         }
                     }
                     // midmarkers and multimarkers
-                    return 5;
+                    return marker_r;
                 })
                 .style('fill', function(d) {
                     if (d.node_type=='metabolite') {
