@@ -5,13 +5,15 @@ Escher
 
 Escher is a web-based tool to build, view, share, and embed metabolic maps.
 
-See the [wiki](https://github.com/zakandrewking/escher/wiki) for documentation, examples, and developer information.
-
-Follow [@zakandrewking](https://twitter.com/zakandrewking) for Escher updates, and ask for help on Stack Overflow with the [Escher](http://stackoverflow.com/questions/tagged/escher) tag.
+See the [wiki](https://github.com/zakandrewking/escher/wiki) for documentation, examples, and developer information. And follow [@zakandrewking](https://twitter.com/zakandrewking) for Escher updates. <!-- , and ask for help on Stack Overflow with the [Escher](http://stackoverflow.com/questions/tagged/escher) tag -->
 
 **NOTE**: Escher is still a Beta release, so please be patient with the early version as you may encounter bugs and other unexpected behavior. The documentation is also unfinished. Feel free to submit bugs and feature requests as Issues, or, better yet, Pull Requests.
 
 The easiest way to use Escher is to browse or build maps on the  [Escher website](http://zakandrewking.github.io/escher/).
+
+### Supported browsers
+
+We recommend using Google Chrome for optimal performance and consistency, but Escher will also run in the latest versions of Firefox, Internet Explorer, and Safari (including mobile Safari).
 
 1) Using the Escher web tool
 ======
@@ -25,24 +27,6 @@ When you open [Escher](http://zakandrewking.github.io/escher/), you will see a f
     1. The Viewer allows you to pan and zoom the map, and to assign data to reactions and metabolites.
     2. The Builder, in addition to the Viewer features, allows you to add reactions, move and rotate existing reactions, and adjust the map canvas.
     3. Local modes are available if you download Escher and run the local server (see below). These let you view and build Escher maps offline.
-
-## Supported browsers
-
-We test Escher on the latest versions of Chrome, Firefox, and Safari on Mac and Windows, and Safari on iOS. Other modern browsers should mostly work.
-
-We recommend using Chrome for optimal performance and consistency.
-
-## Uploading a custom model
-
-Generating COBRA models that can be imported into Escher requires the latest beta version of COBRApy which can be found here:
-
-https://github.com/opencobra/cobrapy/releases
-
-You can keep an eye on that GitHub repository to follow the progress on the latest version of COBRApy, which will be release along with Escher v1.0.
-
-Once you have COBRApy v0.3.0b1 (or later) installed, then you can generate a JSON model by following this example code:
-
-http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/json_models_in_cobrapy.ipynb
 
 ## Loading reaction and metabolite data
 
@@ -63,6 +47,18 @@ with open('out_comp.json', 'w') as f:
 ```
 
 Once you have saved your data as a JSON file, you can load the files using the Data menu in the Escher tool.
+
+## Uploading a custom model
+
+Generating COBRA models that can be imported into Escher requires the latest beta version of COBRApy which can be found here:
+
+https://github.com/opencobra/cobrapy/releases
+
+You can keep an eye on that GitHub repository to follow the progress on the latest version of COBRApy, which will be release along with Escher v1.0.
+
+Once you have COBRApy v0.3.0b1 (or later) installed, then you can generate a JSON model by following this example code:
+
+http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/json_models_in_cobrapy.ipynb
 
 2) Installing, and using Escher in the IPython Notebook
 ======
