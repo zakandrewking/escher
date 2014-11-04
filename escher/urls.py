@@ -6,14 +6,14 @@ import re
 # TODO remove all os.path.join when using urls
 
 _escher = {
-    'builder_embed_css': 'css/builder-embed.css',
-    'builder_css': 'css/builder.css',
-    'escher': 'lib/escher.%s.js' % __version__,
-    'escher_min': 'lib/escher.%s.min.js' % __version__,
+    'builder_embed_css': 'css/builder-embed-%s.css' % __version__,
+    'builder_css': 'css/builder-%s.css' % __version__,
+    'escher': 'lib/escher-%s.js' % __version__,
+    'escher_min': 'lib/escher-%s.min.js' % __version__,
     'logo': 'resources/escher-logo@2x.png',
     'index_js': 'js/web/index.js',
     'index_gh_pages_js': 'js/web/index_gh_pages.js',
-    'index_css': 'css/index.css',
+    'index_css': 'css/web/index.css',
     }
     
 _dependencies = {

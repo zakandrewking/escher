@@ -1,11 +1,13 @@
+import sys
 from sys import argv
 from subprocess import call
 import threading
 import webbrowser
 import os
-from shutil import copy
+from shutil import copy, move
 from os.path import join, dirname, realpath, exists
 from glob import glob
+import re
     
 try:
     from setuptools import setup, Command
@@ -14,8 +16,8 @@ except:
 
 directory = dirname(realpath(__file__))
 version = __import__('escher').__version__
-escher = 'escher.%s.js'%version
-escher_min = 'escher.%s.min.js'%version
+escher = 'escher-%s.js'%version
+escher_min = 'escher-%s.min.js'%version
 port = 8789
 
 class CleanCommand(Command):
@@ -31,7 +33,7 @@ class CleanCommand(Command):
         remove_if(join(directory, 'build'))
         remove_if(join(directory, 'dist'))
         # remove lib files
-        for f in glob(join(directory, 'escher/lib/escher.*.js')):
+        for f in glob(join(directory, 'escher/lib/escher*.js')):
             os.remove(f)
         # remove site files
         for f in glob(join(directory, '*.html')):
@@ -69,12 +71,49 @@ class BuildGHPagesCommand(Command):
         # copy files to top level
         copy(join('escher', 'lib', escher), '.')
         copy(join('escher', 'lib', escher_min), '.')
-        copy(join('escher', 'lib', escher), 'escher.js')
-        copy(join('escher', 'lib', escher_min), 'escher.min.js')
+        copy(join('escher', 'lib', escher), 'escher-latest.js')
+        copy(join('escher', 'lib', escher_min), 'escher-latest.min.js')
         # generate the static site
         call(['python', join('escher', 'static_site.py')])
         call(['python', join('escher', 'generate_index.py')])
         print 'Done building gh-pages'
+
+class BuildRelease(Command):
+    description = "Make file modifications for a new release version"
+    user_options = [('version=', 'v', 'The new version')]
+    def initialize_options(self):
+        self.version = None
+    def finalize_options(self):
+        if self.version is None:
+            print 'Usage: python setup.py build_release -v=[version_number]'
+            sys.exit()
+    def run(self):
+        old_version = version
+        new_version = self.version
+        # change the version
+        file = join('escher', 'version.py')
+        with open(file, 'r') as f:
+            lines = f.readlines()
+        with open(file, 'w') as f:
+            for line in lines:
+                f.write(line.replace(old_version, new_version))
+        # update the specs
+        file = join('spec', 'javascripts', 'support', 'jasmine.yml')
+        with open(file, 'r') as f:
+            lines = f.readlines()
+        with open(file, 'w') as f:
+            for line in lines:
+                f.write(line.replace('escher-%s.js' % old_version, 'escher-%s.js' % new_version))
+        # move the files
+        move(join('escher', 'lib', 'escher-%s.js' % old_version),
+             join('escher', 'lib', 'escher-%s.js' % new_version))
+        move(join('escher', 'lib', 'escher-%s.min.js' % old_version),
+             join('escher', 'lib', 'escher-%s.min.js' % new_version))
+        move(join('escher', 'css', 'builder-%s.css' % old_version),
+             join('escher', 'css', 'builder-%s.css' % new_version))
+        move(join('escher', 'css', 'builder-embed-%s.css' % old_version),
+             join('escher', 'css', 'builder-embed-%s.css' % new_version))
+        print 'Done building release %s' % new_version
 
 class TestCommand(Command):
     description = "Custom test command that runs pytest and jasmine"
@@ -102,4 +141,5 @@ setup(name='Escher',
       cmdclass={'clean': CleanCommand,
                 'buildjs': JSBuildCommand,
                 'buildgh': BuildGHPagesCommand,
+                'build_release': BuildRelease,
                 'test': TestCommand})

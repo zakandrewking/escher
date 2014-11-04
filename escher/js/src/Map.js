@@ -489,20 +489,9 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // function to update reactions
         var update_fn = function(sel) {
-            return this.draw.update_reaction(sel,
-                                        this.scale,
-                                        this.cobra_model,
-                                        this.nodes,
-                                        this.defs,
-                                        this.has_data_on_reactions,
-                                        this.settings.get_option('identifiers_on_map'),
-                                        { color: this.settings.get_option('reaction_no_data_color'),
-                                          size: this.settings.get_option('reaction_no_data_size') },
-                                        this.settings.get_option('reaction_styles'),
-                                        this.behavior.reaction_label_drag,
-                                        this.behavior.label_click,
-                                        this.behavior.label_mouseover,
-                                        this.behavior.label_mouseout);
+            return this.draw.update_reaction(sel, this.scale, this.cobra_model,
+                                             this.nodes, this.defs,
+                                             this.has_data_on_reactions);
         }.bind(this);
 
         // draw the reactions
@@ -1762,6 +1751,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.select_metabolite_with_id(primary_node_id);
         return;
     }
+    
     function toggle_selected_node_primary() {
         /** Toggle the primary/secondary status of each selected node.
 
@@ -1774,7 +1764,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 ids.forEach(function(id) {
                     if (!(id in this.nodes)) {
                         console.warn('Could not find node: ' + id);
-                        return
+                        return;
                     }
                     var node = this.nodes[id];
                     node.node_is_primary = !node.node_is_primary;

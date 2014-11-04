@@ -70,6 +70,14 @@ g.selected .metabolite-circle {
 .arrowhead {
     fill: #334E75;
 }
+.stoichiometry-label-rect {
+    fill: white;
+    opacity: 0.5;
+}
+.stoichiometry-label {
+    fill: #334E75;
+    font-size: 17px;
+}
 .membrane {
     fill: none;
     stroke: rgb(255, 187, 0);
