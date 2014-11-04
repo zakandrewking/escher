@@ -147,14 +147,14 @@ class Builder(object):
 
     These are defined in the Javascript API:
 
-    identifiers_on_map, unique_map_id, primary_metabolite_radius,
-    secondary_metabolite_radius, marker_radius, hide_secondary_nodes,
-    auto_reaction_domain, reaction_styles, reaction_compare_style,
-    reaction_domain, reaction_color_range, reaction_size_range,
-    reaction_no_data_color, reaction_no_data_size,
-    and_method_in_gene_reaction_rule, metabolite_styles,
-    auto_metabolite_domain, metabolite_compare_style, metabolite_domain,
-    metabolite_color_range, metabolite_size_range,
+    identifiers_on_map, show_gene_reaction_rules, unique_map_id,
+    primary_metabolite_radius, secondary_metabolite_radius,
+    marker_radius, hide_secondary_nodes, auto_reaction_domain,
+    reaction_styles, reaction_compare_style, reaction_domain,
+    reaction_color_range, reaction_size_range, reaction_no_data_color,
+    reaction_no_data_size, and_method_in_gene_reaction_rule,
+    metabolite_styles, auto_metabolite_domain, metabolite_compare_style,
+    metabolite_domain, metabolite_color_range, metabolite_size_range,
     metabolite_no_data_color, metabolite_no_data_size,
     highlight_missing_color, quick_jump
 
@@ -202,6 +202,7 @@ class Builder(object):
 
         # set up the options
         self.options = ['identifiers_on_map',
+                        'show_gene_reaction_rules',
                         'unique_map_id',
                         'primary_metabolite_radius',
                         'secondary_metabolite_radius',
@@ -517,8 +518,7 @@ class Builder(object):
         return html
 
     def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',
-                            enable_editing=False, enable_keys=False, minified_js=True, 
-                            height=500, auto_set_data_domain=True):
+                            minified_js=True, height=500, auto_set_data_domain=True):
         """Display the plot in the notebook.
 
         Arguments
@@ -539,10 +539,6 @@ class Builder(object):
             'zoom' - Zoom the map.
             'none' - (Default) No scroll events.
 
-        enable_editing: Enable the editing modes (build, rotate, etc.).
-
-        enable_keys: Enable keyboard shortcuts.
-
         minified_js: If True, use the minified version of js files. If js_source
         is 'dev', then this option is ignored.
 
@@ -553,7 +549,7 @@ class Builder(object):
         
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
-                              html_wrapper=False, enable_editing=enable_editing, enable_keys=enable_keys,
+                              html_wrapper=False, enable_editing=False, enable_keys=False,
                               minified_js=minified_js, fill_screen=False, height=height,
                               auto_set_data_domain=auto_set_data_domain, never_ask_before_quit=True)
         if menu=='all':

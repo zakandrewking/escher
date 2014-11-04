@@ -28,6 +28,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                             set_and_method_in_gene_reaction_rule: set_and_method_in_gene_reaction_rule,
                             // View and build options
                             set_identifiers_on_map: set_identifiers_on_map,
+                            set_show_gene_reaction_rules: set_show_gene_reaction_rules,
                             set_highlight_missing: set_highlight_missing,
                             set_allow_building_duplicate_reactions: set_allow_building_duplicate_reactions,
                             // changes
@@ -67,6 +68,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                                           size: get_option('metabolite_no_data_size') } },
             def_and_method_in_gene_reaction_rule = get_option('and_method_in_gene_reaction_rule'),
             def_identifiers_on_map = get_option('identifiers_on_map'),
+            def_show_gene_reaction_rules = get_option('show_gene_reaction_rules'),
             def_highlight_missing = get_option('highlight_missing'),
             def_allow_building_duplicate_reactions = get_option('allow_building_duplicate_reactions');
 
@@ -87,6 +89,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // this.and_method_in_gene_reaction_rule_stream;
         // this.identifiers_on_map_bus;
         // this.identifiers_on_map_stream;
+        // this.show_gene_reaction_rules_bus;
+        // this.show_gene_reaction_rules_stream;
         // this.highlight_missing_bus;
         // this.highlight_missing_stream;
         // this.allow_building_duplicate_reactions_bus;
@@ -357,6 +361,31 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
         // push the default
         this.identifiers_on_map_bus.push(def_identifiers_on_map);
+        
+        // ---------------------------------------------------------------------
+        // show_gene_reaction_rules
+        // ---------------------------------------------------------------------
+        
+        // make the bus
+        this.show_gene_reaction_rules_bus = new bacon.Bus();
+        // make a new constant for the input default
+        this.show_gene_reaction_rules_stream = this.show_gene_reaction_rules_bus
+        // conditionally accept changes
+            .convert_to_conditional_stream(this.status_bus)
+        // combine into state array
+            .scan([], function(current, value) {
+                return value;
+            })
+        // force updates
+            .force_update_with_bus(this.force_update_bus);
+
+        // get the latest
+        this.show_gene_reaction_rules_stream.onValue(function(v) {
+            this.set_option('show_gene_reaction_rules', v);
+        }.bind(this));
+
+        // push the default
+        this.show_gene_reaction_rules_bus.push(def_show_gene_reaction_rules);
 
         // ---------------------------------------------------------------------
         // highlight missing
@@ -634,6 +663,19 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         if (['bigg_id', 'name'].indexOf(value) == -1)
             throw new Error('Bad value for identifiers_on_map: ' + value);
         this.identifiers_on_map_bus.push(value);
+    }
+
+    function set_show_gene_reaction_rules(value) {
+        /** Set boolean to determine whether to show gene reaction rules, even
+         when there is no gene data loaded.
+
+         Arguments
+         ---------
+
+         value: The new boolean value
+
+         */
+        this.show_gene_reaction_rules_bus.push(value);
     }
 
     function set_highlight_missing(value) {

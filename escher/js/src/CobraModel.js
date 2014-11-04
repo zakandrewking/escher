@@ -141,7 +141,7 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
                 reaction.data_string = s;
                 reaction.reverse_flux = r;
             }
-            reaction.gene_string = '';
+            reaction.gene_string = null;
         }
     }
 
@@ -206,8 +206,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
             var reaction = this.reactions[reaction_id];
             if (gene_data_obj === null) {
                 reaction.data = null;
-                reaction.data_string = '';
-                reaction.gene_string = '';
+                reaction.data_string = null;
+                reaction.gene_string = null;
             } else {
                 var d, rule, gene_values;
                 if (reaction_id in gene_data_obj) {

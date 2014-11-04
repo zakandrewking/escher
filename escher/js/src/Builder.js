@@ -27,6 +27,9 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          segments are hidden. This is convenient for generating simplified map
          figures.
 
+         show_gene_reaction_rules: (Default: false) If true, then show the gene
+         reaction rules, even without gene data.
+
          reaction_data: An object with reaction ids for keys and reaction data
          points for values.
 
@@ -139,6 +142,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 	    secondary_metabolite_radius: 10,
 	    marker_radius: 5,
 	    hide_secondary_nodes: false,
+            show_gene_reaction_rules: false,
             // applied data
             // reaction
             auto_reaction_domain: true,

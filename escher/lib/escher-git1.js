@@ -3481,7 +3481,7 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
                 reaction.data_string = s;
                 reaction.reverse_flux = r;
             }
-            reaction.gene_string = '';
+            reaction.gene_string = null;
         }
     }
 
@@ -3546,8 +3546,8 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
             var reaction = this.reactions[reaction_id];
             if (gene_data_obj === null) {
                 reaction.data = null;
-                reaction.data_string = '';
-                reaction.gene_string = '';
+                reaction.data_string = null;
+                reaction.gene_string = null;
             } else {
                 var d, rule, gene_values;
                 if (reaction_id in gene_data_obj) {
@@ -4398,6 +4398,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         var decimal_format = d3.format('.4g'),
             identifiers_on_map = this.settings.get_option('identifiers_on_map'),
             reaction_data_styles = this.settings.get_option('reaction_styles'),
+            show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules'),
             label_click_fn = this.behavior.label_click,
             label_mouseover_fn = this.behavior.label_mouseover,
             label_mouseout_fn = this.behavior.label_mouseout;
@@ -4422,9 +4423,14 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                 .selectAll('text')
                 .data(function(d) {
                     var show_gene_string = ('gene_string' in d &&
-                                            d.gene_string !== null);
+                                            d.gene_string !== null),
+                        show_gene_reaction_rule = ('gene_reaction_rule' in d &&
+                                                   d.gene_reaction_rule !== null &&
+                                                   show_gene_reaction_rules);
                     if (show_gene_string) {
                         return d.gene_string.split('\n');
+                    } else if (show_gene_reaction_rule) {
+                        return [d.gene_reaction_rule];
                     } else {
                         return [];
                     }
@@ -10731,7 +10737,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                     var segment = reaction.segments[segment_id];
                     segment.data = null;
                 }
-                reaction.gene_string = '';
+                reaction.gene_string = null;
             }
 
             // remember
@@ -10752,7 +10758,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             reaction.data = f;
             reaction.data_string = s;
             reaction.reverse_flux = r;
-            reaction.gene_string = '';
+            reaction.gene_string = null;
             // apply to the segments
             for (var segment_id in reaction.segments) {
                 var segment = reaction.segments[segment_id];
@@ -10847,7 +10853,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                     var segment = reaction.segments[segment_id];
                     segment.data = null;
                 }
-                reaction.gene_string = '';
+                reaction.gene_string = null;
             }
 
             // remember
@@ -12528,6 +12534,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
                             set_and_method_in_gene_reaction_rule: set_and_method_in_gene_reaction_rule,
                             // View and build options
                             set_identifiers_on_map: set_identifiers_on_map,
+                            set_show_gene_reaction_rules: set_show_gene_reaction_rules,
                             set_highlight_missing: set_highlight_missing,
                             set_allow_building_duplicate_reactions: set_allow_building_duplicate_reactions,
                             // changes
@@ -12567,6 +12574,7 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
                                           size: get_option('metabolite_no_data_size') } },
             def_and_method_in_gene_reaction_rule = get_option('and_method_in_gene_reaction_rule'),
             def_identifiers_on_map = get_option('identifiers_on_map'),
+            def_show_gene_reaction_rules = get_option('show_gene_reaction_rules'),
             def_highlight_missing = get_option('highlight_missing'),
             def_allow_building_duplicate_reactions = get_option('allow_building_duplicate_reactions');
 
@@ -12587,6 +12595,8 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         // this.and_method_in_gene_reaction_rule_stream;
         // this.identifiers_on_map_bus;
         // this.identifiers_on_map_stream;
+        // this.show_gene_reaction_rules_bus;
+        // this.show_gene_reaction_rules_stream;
         // this.highlight_missing_bus;
         // this.highlight_missing_stream;
         // this.allow_building_duplicate_reactions_bus;
@@ -12857,6 +12867,31 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
         // push the default
         this.identifiers_on_map_bus.push(def_identifiers_on_map);
+        
+        // ---------------------------------------------------------------------
+        // show_gene_reaction_rules
+        // ---------------------------------------------------------------------
+        
+        // make the bus
+        this.show_gene_reaction_rules_bus = new bacon.Bus();
+        // make a new constant for the input default
+        this.show_gene_reaction_rules_stream = this.show_gene_reaction_rules_bus
+        // conditionally accept changes
+            .convert_to_conditional_stream(this.status_bus)
+        // combine into state array
+            .scan([], function(current, value) {
+                return value;
+            })
+        // force updates
+            .force_update_with_bus(this.force_update_bus);
+
+        // get the latest
+        this.show_gene_reaction_rules_stream.onValue(function(v) {
+            this.set_option('show_gene_reaction_rules', v);
+        }.bind(this));
+
+        // push the default
+        this.show_gene_reaction_rules_bus.push(def_show_gene_reaction_rules);
 
         // ---------------------------------------------------------------------
         // highlight missing
@@ -13134,6 +13169,19 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         if (['bigg_id', 'name'].indexOf(value) == -1)
             throw new Error('Bad value for identifiers_on_map: ' + value);
         this.identifiers_on_map_bus.push(value);
+    }
+
+    function set_show_gene_reaction_rules(value) {
+        /** Set boolean to determine whether to show gene reaction rules, even
+         when there is no gene data loaded.
+
+         Arguments
+         ---------
+
+         value: The new boolean value
+
+         */
+        this.show_gene_reaction_rules_bus.push(value);
     }
 
     function set_highlight_missing(value) {
@@ -13599,6 +13647,33 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		    }.bind(this));
 		});
         }.bind(this));
+
+        // show gene reaction rules
+	t.append('tr').call(function(r) {
+	    var s = r.append('td')
+                    .attr('class', 'options-label style-span')
+                    .attr('colspan', '2')
+                    .attr('title', ('If checked, then gene reaction rules will be displayed ' +
+                                    'below each reaction label. (Gene reaction rules are always ' +
+                                    'shown when gene data is loaded.)'));
+            s.append('span')
+                .text('Show gene reaction rules');
+	    s.append('input').attr('type', 'checkbox')
+		.each(function() {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+			        settings.set_show_gene_reaction_rules(event.target.checked);
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.show_gene_reaction_rules_stream.onValue(function(value) {			
+			// check the box if the style is present
+			this.checked = value;
+		    }.bind(this));
+		});
+	}.bind(this));
         
         // highlight missing reactions
 	t.append('tr').call(function(r) {
@@ -13911,6 +13986,9 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
          segments are hidden. This is convenient for generating simplified map
          figures.
 
+         show_gene_reaction_rules: (Default: false) If true, then show the gene
+         reaction rules, even without gene data.
+
          reaction_data: An object with reaction ids for keys and reaction data
          points for values.
 
@@ -14023,6 +14101,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 	    secondary_metabolite_radius: 10,
 	    marker_radius: 5,
 	    hide_secondary_nodes: false,
+            show_gene_reaction_rules: false,
             // applied data
             // reaction
             auto_reaction_domain: true,

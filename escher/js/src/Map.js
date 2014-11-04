@@ -742,7 +742,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                     var segment = reaction.segments[segment_id];
                     segment.data = null;
                 }
-                reaction.gene_string = '';
+                reaction.gene_string = null;
             }
 
             // remember
@@ -763,7 +763,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             reaction.data = f;
             reaction.data_string = s;
             reaction.reverse_flux = r;
-            reaction.gene_string = '';
+            reaction.gene_string = null;
             // apply to the segments
             for (var segment_id in reaction.segments) {
                 var segment = reaction.segments[segment_id];
@@ -858,7 +858,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                     var segment = reaction.segments[segment_id];
                     segment.data = null;
                 }
-                reaction.gene_string = '';
+                reaction.gene_string = null;
             }
 
             // remember

@@ -130,6 +130,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
         var decimal_format = d3.format('.4g'),
             identifiers_on_map = this.settings.get_option('identifiers_on_map'),
             reaction_data_styles = this.settings.get_option('reaction_styles'),
+            show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules'),
             label_click_fn = this.behavior.label_click,
             label_mouseover_fn = this.behavior.label_mouseover,
             label_mouseout_fn = this.behavior.label_mouseout;
@@ -154,9 +155,14 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                 .selectAll('text')
                 .data(function(d) {
                     var show_gene_string = ('gene_string' in d &&
-                                            d.gene_string !== null);
+                                            d.gene_string !== null),
+                        show_gene_reaction_rule = ('gene_reaction_rule' in d &&
+                                                   d.gene_reaction_rule !== null &&
+                                                   show_gene_reaction_rules);
                     if (show_gene_string) {
                         return d.gene_string.split('\n');
+                    } else if (show_gene_reaction_rule) {
+                        return [d.gene_reaction_rule];
                     } else {
                         return [];
                     }

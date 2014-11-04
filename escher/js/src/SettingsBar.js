@@ -421,6 +421,33 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		    }.bind(this));
 		});
         }.bind(this));
+
+        // show gene reaction rules
+	t.append('tr').call(function(r) {
+	    var s = r.append('td')
+                    .attr('class', 'options-label style-span')
+                    .attr('colspan', '2')
+                    .attr('title', ('If checked, then gene reaction rules will be displayed ' +
+                                    'below each reaction label. (Gene reaction rules are always ' +
+                                    'shown when gene data is loaded.)'));
+            s.append('span')
+                .text('Show gene reaction rules');
+	    s.append('input').attr('type', 'checkbox')
+		.each(function() {
+		    // change the model when the box is changed
+		    var change_stream = bacon
+		    	    .fromEventTarget(this, 'change')
+		    	    .onValue(function(event) {
+			        settings.set_show_gene_reaction_rules(event.target.checked);
+		    	    });
+		    
+		    // subscribe to changes in the model
+		    settings.show_gene_reaction_rules_stream.onValue(function(value) {			
+			// check the box if the style is present
+			this.checked = value;
+		    }.bind(this));
+		});
+	}.bind(this));
         
         // highlight missing reactions
 	t.append('tr').call(function(r) {
