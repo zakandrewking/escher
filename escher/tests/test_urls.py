@@ -1,5 +1,6 @@
 from escher.urls import get_url, names, check_name, name_to_url, url_to_name
 from escher.server import directory
+from escher.version import __version__
 import os
 from os.path import join, exists
 
@@ -8,11 +9,11 @@ from pytest import raises
 def test_urls():
     # online
     url = get_url('builder_embed_css', source='web', protocol='https')
-    assert url == 'https://zakandrewking.github.io/escher/escher/css/builder-embed.css'
+    assert url == 'https://zakandrewking.github.io/escher/builder-embed-%s.css' % __version__
 
     # no protocol
-    url = get_url('index_js', 'web')
-    assert url == '//zakandrewking.github.io/escher/escher/js/web/index.js'
+    url = get_url('escher', 'web')
+    assert url == '//zakandrewking.github.io/escher/escher-%s.js' % __version__
 
     # local
     url = get_url('require_js', 'local')

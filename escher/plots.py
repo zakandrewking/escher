@@ -106,21 +106,28 @@ class Builder(object):
 
     Arguments
     ---------
-    map_name: a string specifying a map to be downloaded from the Escher web server.
     
-    map_json: a json string, or a file path to a json file, or a URL specifying
-    a json file to be downloaded.
-
-    model_name: a string specifying a model to be downloaded from the Escher web
-    server.
+    map_name: A string specifying a map to be downloaded from the Escher
+    web server, or loaded from the cache.
     
-    model_json: a json string, or a file path to a json file, or a URL
-    specifying a json file to be downloaded.
+    map_json: A JSON string, or a file path to a JSON file, or a URL
+    specifying a JSON file to be downloaded.
 
-    reaction_data: a dictionary with keys that correspond to reaction ids
-    and values that will be mapped to reaction arrows and labels.
+    model: A Cobra model.
 
-    metabolite_data: a dictionary with keys that correspond to metabolite ids and
+    model_name: A string specifying a model to be downloaded from the Escher web
+    server, or loaded from the cache.
+    
+    model_json: A JSON string, or a file path to a JSON file, or a URL
+    specifying a JSON file to be downloaded.
+
+    embedded_css: The CSS (as a string) to be embedded with the Escher
+    SVG.
+    
+    reaction_data: A dictionary with keys that correspond to reaction
+    ids and values that will be mapped to reaction arrows and labels.
+
+    metabolite_data: A dictionary with keys that correspond to metabolite ids and
     values that will be mapped to metabolite nodes and labels.
 
     gene_data: a dictionary with keys that correspond to gene ids and
@@ -128,8 +135,6 @@ class Builder(object):
 
     local_host: a hostname that will be used for any local files in dev
     mode.
-
-    embedded_css: a css string to be embedded with the Escher SVG.
 
     id: specify an id to make the javascript data definitions unique. A random
     id is chosen by default.
@@ -142,23 +147,28 @@ class Builder(object):
 
     These are defined in the Javascript API:
 
-    reaction_styles, auto_reaction_domain, reaction_domain,
-    reaction_color_range, reaction_size_range, reaction_no_data_color,
-    reaction_no_data_size, metabolite_styles, auto_metabolite_domain,
-    metabolite_domain, metabolite_color_range, metabolite_size_range,
-    metabolite_no_data_color, metabolite_no_data_size, gene_data_rule,
-    quick_jump
+    identifiers_on_map, unique_map_id, primary_metabolite_radius,
+    secondary_metabolite_radius, marker_radius, hide_secondary_nodes,
+    auto_reaction_domain, reaction_styles, reaction_compare_style,
+    reaction_domain, reaction_color_range, reaction_size_range,
+    reaction_no_data_color, reaction_no_data_size,
+    and_method_in_gene_reaction_rule, metabolite_styles,
+    auto_metabolite_domain, metabolite_compare_style, metabolite_domain,
+    metabolite_color_range, metabolite_size_range,
+    metabolite_no_data_color, metabolite_no_data_size,
+    highlight_missing_color, quick_jump
 
     All keyword arguments can also be set on an existing Builder object
     using setter functions, e.g.:
 
     my_builder.set_reaction_styles(new_styles);
-    
     """
-    def __init__(self, map_name=None, map_json=None, model_name=None,
-                 model_json=None, reaction_data=None, metabolite_data=None,
-                 gene_data=None, local_host=None, embedded_css=None, id=None,
-                 safe=False, **kwargs):
+    
+    def __init__(self, map_name=None, map_json=None, model=None,
+        model_name=None, model_json=None, embedded_css=None,
+        reaction_data=None, metabolite_data=None, gene_data=None,
+        local_host=None, id=None, safe=False, **kwargs):
+
         self.safe = safe
         
         # load the map
@@ -169,11 +179,12 @@ class Builder(object):
             warn('map_json overrides map_name')
         self.load_map()
         # load the model
+        self.model = model
         self.model_name = model_name
         self.model_json = model_json
         self.loaded_model_json = None
-        if model_name and model_json:
-            warn('model_json overrides model_name')
+        if sum([x is None for x in model, model_name, model_json]) >= 2:
+            warn('model overrides model_json, and both override model_name')
         self.load_model()
         # set the args
         self.reaction_data = reaction_data
@@ -238,12 +249,16 @@ class Builder(object):
                 print 'Unrecognized keywork argument %s' % key
         
     def load_model(self):
-        """Load the model from input model_json using load_resource, or, secondarily,
-           from model_name.
+        """Load the model.
 
+        Try first from self.model, second from self.model_json, and
+        third from from self.model_name.
+        
         """
-        model_json = self.model_json
-        if model_json is not None:
+        
+        if self.model is not None:
+            self.loaded_model_json = cobra.io.to_json(self.model)
+        elif self.model_json is not None:
             self.loaded_model_json = load_resource(self.model_json,
                                                    'model_json',
                                                    safe=self.safe)
@@ -273,8 +288,8 @@ class Builder(object):
            from map_name.
 
         """
-        map_json = self.map_json
-        if map_json is not None:
+        
+        if self.map_json is not None:
             self.loaded_map_json = load_resource(self.map_json,
                                                  'map_json',
                                                  safe=self.safe)
@@ -332,7 +347,7 @@ class Builder(object):
                       u"var reaction_data_{the_id} = {reaction_data};\n"
                       u"var metabolite_data_{the_id} = {metabolite_data};\n"
                       u"var gene_data_{the_id} = {gene_data};\n"
-                      u"var css_string_{the_id} = '{style}';\n").format(
+                      u"var embedded_css_{the_id} = '{style}';\n").format(
                           the_id=self.the_id,
                           map_data=(self.loaded_map_json if self.loaded_map_json else
                                     u'null'),
@@ -361,7 +376,6 @@ class Builder(object):
                 u"metabolite_data: metabolite_data_{the_id},\n"
                 u"gene_data: gene_data_{the_id},\n"
                 u"never_ask_before_quit: {never_ask_before_quit},\n"
-                u"css: css_string_{the_id},\n"
                 u"local_host: {local_host},\n").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
@@ -391,7 +405,7 @@ class Builder(object):
                  'options, "%s");\n' % (dev_str, rel))
             draw = draw + o;
         # make the builder
-        draw = draw + u'{dev_str}Builder(map_data_{the_id}, cobra_model_{the_id}, options);\n'.format(
+        draw = draw + u'{dev_str}Builder(map_data_{the_id}, cobra_model_{the_id}, embedded_css_{the_id}, options);\n'.format(
             dev_str=dev_str, the_id=the_id)
 
         return draw

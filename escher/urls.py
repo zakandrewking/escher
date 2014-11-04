@@ -5,7 +5,7 @@ import re
 
 # TODO remove all os.path.join when using urls
 
-_escher = {
+_escher_local = {
     'builder_embed_css': 'css/builder-embed-%s.css' % __version__,
     'builder_css': 'css/builder-%s.css' % __version__,
     'escher': 'lib/escher-%s.js' % __version__,
@@ -14,6 +14,13 @@ _escher = {
     'index_js': 'js/web/index.js',
     'index_gh_pages_js': 'js/web/index_gh_pages.js',
     'index_css': 'css/web/index.css',
+    }
+
+_escher_web = {
+    'builder_embed_css': 'builder-embed-%s.css' % __version__,
+    'builder_css': 'builder-%s.css' % __version__,
+    'escher': 'escher-%s.js' % __version__,
+    'escher_min': 'escher-%s.min.js' % __version__,
     }
     
 _dependencies = {
@@ -44,7 +51,7 @@ _links['escher_download'] = '/'.join([_links['escher_home'],
                                       _links['escher_download_rel']])
     
 # external dependencies
-names = _escher.keys() + _dependencies.keys() + _links.keys()
+names = _escher_local.keys() + _escher_web.keys() + _dependencies.keys() + _links.keys()
 
 def get_url(name, source='web', local_host=None, protocol=None):
     """Get a url.
@@ -78,12 +85,12 @@ def get_url(name, source='web', local_host=None, protocol=None):
         return '/'.join([local_host.rstrip('/'), url])
         
     # escher
-    if name in _escher:
-        if source=='local':
-            if local_host is not None:
-                return apply_local_host(_escher[name])
-            return _escher[name]
-        return protocol + _links['escher_src'] + '/' + _escher[name]
+    if name in _escher_local and source == 'local':
+        if local_host is not None:
+            return apply_local_host(_escher_local[name])
+        return _escher_local[name]
+    elif name in _escher_web and source == 'web':
+        return protocol + _links['escher_home'] + '/' + _escher_web[name]
     # links
     elif name in _links:
         if source=='local':

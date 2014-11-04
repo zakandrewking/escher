@@ -16,7 +16,7 @@ def test_get_cache_dir():
     d = get_cache_dir(name='maps')
     assert os.path.isdir(d)
 
-# These are generally not run, because I don't want to casually loose my cache!
+# These are generally not run, because I don't want to casually loosen my cache
 
 # def test_clear_cache():
 #     clear_cache()

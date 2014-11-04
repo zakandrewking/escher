@@ -1,4 +1,4 @@
-[![DOI](https://zenodo.org/badge/6078/zakandrewking/escher.png)](http://dx.doi.org/10.5281/zenodo.11712)
+Cite Escher v1.0 Beta 3:  [![DOI](https://zenodo.org/badge/6078/zakandrewking/escher.png)](http://dx.doi.org/10.5281/zenodo.11712)
 
 Escher
 ======

@@ -13888,79 +13888,82 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
      Arguments
      ---------
 
-     map_data: The data for a map, to be passed to escher.Map.from_data().
+     map_data: The data for a map, to be passed to escher.Map.from_data(). If
+     null, then an empty Builder is initialized
 
      model_data: The data for a cobra model, to be passed to
-     escher.CobraModel().
+     escher.CobraModel(). Can be null.
 
-     options: An object.
+     embedded_css: The stylesheet for the SVG elements in the Escher map.
 
-     unique_map_id: A unique ID that will be used to UI elements don't interfere
-     when multiple maps are in the same HTML document.
+     options: An object defining any of the following options.
 
-     primary_metabolite_radius: (Default: 15) The radius of primary metabolites.
-     
-     secondary_metabolite_radius: (Default: 10) The radius of secondary metabolites.
-     
-     marker_radius: (Default: 5) The radius of marker nodes.
-     
-     hide_secondary_nodes: (Default: false) If true, then secondary nodes and
-     segments are hidden. This is convenient for generating simplified map
-     figures.
+         unique_map_id: A unique ID that will be used to UI elements don't interfere
+         when multiple maps are in the same HTML document.
 
-     reaction_data: An object with reaction ids for keys and reaction data
-     points for values.
+         primary_metabolite_radius: (Default: 15) The radius of primary metabolites.
 
-     reaction_styles:
+         secondary_metabolite_radius: (Default: 10) The radius of secondary metabolites.
 
-     reaction_compare_style: (Default: 'diff') How to compare to
-     datasets. Can be either 'fold, 'log2_fold', or 'diff'.
+         marker_radius: (Default: 5) The radius of marker nodes.
 
-     reaction_domain:
+         hide_secondary_nodes: (Default: false) If true, then secondary nodes and
+         segments are hidden. This is convenient for generating simplified map
+         figures.
 
-     reaction_color_range:
+         reaction_data: An object with reaction ids for keys and reaction data
+         points for values.
 
-     reaction_size_range:
+         reaction_styles:
 
-     reaction_no_data_color:
+         reaction_compare_style: (Default: 'diff') How to compare to
+         datasets. Can be either 'fold, 'log2_fold', or 'diff'.
 
-     reaction_no_data_size:
+         reaction_domain:
 
-     gene_data: An object with Gene ids for keys and gene data points for
-     values.
+         reaction_color_range:
 
-     and_method_in_gene_reaction_rule: (Default: mean) When evaluating a
-     gene reaction rule, use this function to evaluate AND rules. Can be
-     'mean' or 'min'.
+         reaction_size_range:
 
-     metabolite_data: An object with metabolite ids for keys and metabolite
-     data points for values.
+         reaction_no_data_color:
 
-     metabolite_compare_style: (Default: 'diff') How to compare to
-     datasets. Can be either 'fold', 'log2_fold' or 'diff'.
+         reaction_no_data_size:
 
-     // View and build options
+         gene_data: An object with Gene ids for keys and gene data points for
+         values.
 
-     identifiers_on_map: Either 'bigg_id' (default) or 'name'.
+         and_method_in_gene_reaction_rule: (Default: mean) When evaluating a
+         gene reaction rule, use this function to evaluate AND rules. Can be
+         'mean' or 'min'.
 
-     highlight_missing: (Default: false) If true, then highlight reactions that
-     are not in the loaded model in red.
+         metabolite_data: An object with metabolite ids for keys and metabolite
+         data points for values.
 
-     allow_building_duplicate_reactions: (Default: true) If true, then building
-     duplicate reactions is allowed. If false, then duplicate reactions are
-     hidden in `Add reaction mode`.
+         metabolite_compare_style: (Default: 'diff') How to compare to
+         datasets. Can be either 'fold', 'log2_fold' or 'diff'.
 
-     // Quick jump menu
+         // View and build options
 
-     local_host: The host used to load maps for quick_jump. E.g.,
-     http://localhost:7778.
+         identifiers_on_map: Either 'bigg_id' (default) or 'name'.
 
-     quick_jump: A list of map names that can be reached by
-     selecting them from a quick jump menu on the map.
+         highlight_missing: (Default: false) If true, then highlight reactions that
+         are not in the loaded model in red.
 
-     // Callbacks
-     
-     first_load_callback: A function to run after loading.
+         allow_building_duplicate_reactions: (Default: true) If true, then building
+         duplicate reactions is allowed. If false, then duplicate reactions are
+         hidden in `Add reaction mode`.
+
+         // Quick jump menu
+
+         local_host: The host used to load maps for quick_jump. E.g.,
+         http://localhost:7778.
+
+         quick_jump: A list of map names that can be reached by
+         selecting them from a quick jump menu on the map.
+
+         // Callbacks
+
+         first_load_callback: A function to run after loading.
 
      */
     var Builder = utils.make_class();
@@ -13990,10 +13993,11 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
     return Builder;
 
     // definitions
-    function init(map_data, model_data, options) {
+    function init(map_data, model_data, embedded_css, options) {
 
         this.map_data = map_data;
         this.model_data = model_data;
+        this.embedded_css = embedded_css;
 
         // default sel
         var sel = null;
@@ -14012,7 +14016,6 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             enable_search: true,
             fill_screen: false,
             // map, model, and styles
-            css: null,
             starting_reaction: null,
             never_ask_before_quit: false,
             unique_map_id: null,
@@ -14167,7 +14170,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             // import map
             this.map = Map.from_data(map_data,
                                      svg,
-                                     this.options.css,
+                                     this.embedded_css,
                                      zoomed_sel,
                                      this.zoom_container,
                                      this.settings,
@@ -14177,7 +14180,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         } else {
             // new map
             this.map = new Map(svg,
-                               this.options.css,
+                               this.embedded_css,
                                zoomed_sel,
                                this.zoom_container,
                                this.settings,
@@ -15016,7 +15019,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             e = e || window.event;
             return  (this.options.never_ask_before_quit ? null :
                      'You will lose any unsaved changes.');
-        };
+        }.bind(this);
     }
 });
 

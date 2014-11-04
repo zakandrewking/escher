@@ -4,7 +4,7 @@ describe('Builder', function() {
 	var sels = [];
 	for (var i=0, l=3; i < l; i++) {
 	    var sel = d3.select('body').append('div'),
-		b = escher.Builder(get_map(), null,
+		b = escher.Builder(get_map(), null, '',
 				   { selection: sel,
 				     never_ask_before_quit: true });
 	    expect(sel.select('svg').node()).toBe(b.map.svg.node());
@@ -23,7 +23,7 @@ describe('Builder', function() {
     it("SVG selection error", function () {
 	var sel = d3.select('body').append('svg').append('g');
 	expect(function () {
-	    escher.Builder(null, null,
+	    escher.Builder(null, null, '',
 			   { selection: sel,
 			     never_ask_before_quit: true  });
 	}).toThrow(new Error("Builder cannot be placed within an svg node "+
