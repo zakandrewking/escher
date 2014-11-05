@@ -197,6 +197,85 @@ td.options-label-wide {
     top: 2px;
     position: relative;
 }
+/* Live scale */
+.live-scale-container {
+    position: relative;
+    width: 100%;
+    height: 120px;
+}
+.live-scale-centered {
+    position: absolute;
+    width: 440px;
+    height: 100%;
+    left: 35px;
+    top: 0px;
+}    
+.live-scale-container .add {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    width: 20px;
+    cursor: pointer;
+}
+.live-scale-trash-container {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 420px;
+    height: 20px;
+}
+.live-scale-trash {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    cursor: pointer;
+}
+.live-scale {
+    position: absolute;
+    top: 20px;
+    left: 0px;
+}
+.live-scale-input-container {
+    position: absolute;
+    top: 56px;
+    left: 0px;
+    width: 420px;
+}
+.live-scale-input {
+    position: absolute;
+    height: 18px;
+    font-size: 12px;
+    left: 0px;
+    top: 0px;
+}
+.live-scale-label {
+    position: absolute;
+    left: 0px;
+    height: 18px;
+    line-height: 18px;
+    font-size: 12px;
+}
+.live-scale-input-set {
+    position: absolute;
+    top: 0px;
+    height: 54px;
+}
+.live-scale-input-set.selected-set {
+    z-index: 5; 
+    box-shadow: 0px 2px 14px rgb(197, 197, 197);
+}
+.live-scale-input.domain-type-picker {
+    height: 14px;
+    background-color: rgb(232, 232, 232);
+}
+.live-scale {
+    width: 440px;
+    height: 80px;
+}
+.picker rect {
+    color: black;
+    opacity: 0.4;
+}
 /* For Settings and Search */
 .close-button {
     margin-left: 4px;

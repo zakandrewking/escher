@@ -45,28 +45,39 @@ define(["utils"], function(utils) {
         };
     }
 
-    function connect_to_settings(settings) {
+    function connect_to_settings(settings, get_data_statistics) {
 	// domains
-	settings.domain_stream['reaction'].onValue(function(s) {
-	    this.reaction_color.domain(s);
-	    this.reaction_size.domain(s);
+        settings.streams['reaction_scale'].onValue(function(s) {
+            var domain = domain_for_scale(s, get_data_statistics());
+	    this.reaction_color.domain(domain);
+	    this.reaction_size.domain(domain);
+	    this.reaction_color.range(range_for_scale(s, 'color'));
+	    this.reaction_size.range(range_for_scale(s, 'size'));
 	}.bind(this));
-	settings.domain_stream['metabolite'].onValue(function(s) {
-	    this.metabolite_color.domain(s);
-	    this.metabolite_size.domain(s);
+	settings.streams['metabolite_scale'].onValue(function(s) {
+            var domain = domain_for_scale(s, get_data_statistics());
+	    this.metabolite_color.domain(domain);
+	    this.metabolite_size.domain(domain);
+	    this.metabolite_color.range(range_for_scale(s, 'color'));
+	    this.metabolite_size.range(range_for_scale(s, 'size'));
 	}.bind(this));
-	// ranges
-	settings.range_stream['reaction']['color'].onValue(function(s) {
-	    this.reaction_color.range(s);
-	}.bind(this));
-	settings.range_stream['reaction']['size'].onValue(function(s) {
-	    this.reaction_size.range(s);
-	}.bind(this));
-	settings.range_stream['metabolite']['color'].onValue(function(s) {
-	    this.metabolite_color.range(s);
-	}.bind(this));
-	settings.range_stream['metabolite']['size'].onValue(function(s) {
-	    this.metabolite_size.range(s);
-	}.bind(this));
+        
+        // definitions
+        function domain_for_scale(scale, stats) {
+            return scale.map(function(x) {
+                if (['min', 'median', 'mean', 'max'].indexOf(x.type) != -1)
+                    return stats['reaction'][x.type]
+                else if (x.type == 'value')
+                    return x.value
+                else
+                    throw new Error('Bad domain type ' + x.type);
+            });
+        }
+        
+        function range_for_scale(scale, type) {
+            return scale.map(function(x) {
+                return x[type];
+            });
+        }
     }
 });

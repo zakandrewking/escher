@@ -1,4 +1,4 @@
-define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManager, bacon) {
+define(["utils", "CallbackManager", "lib/bacon", "ScaleEditor"], function(utils, CallbackManager, bacon, ScaleEditor) {
     /** 
      */
 
@@ -58,7 +58,11 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
         // reactions
 	box.append('div')
 	    .text('Reactions').attr('class', 'settings-section-heading-large');
-	this.scale_gui(box.append('div'), 'reaction');
+        var rse = new ScaleEditor(box.append('div'), 'reaction', this.settings,
+                                  map.get_data_statistics.bind(map));
+        map.callback_manager.set('calc_data_stats', function(same) {
+            if (!same) rse.update();
+        });
 	
 	// reaction data
 	box.append('div')
@@ -174,12 +178,13 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		.each(function(column) {
 		    bacon.fromEventTarget(this, 'change')
 			.onValue(function(event) {
-			    settings.set_domain_value(type, column, event.target.value);
+                            
+			    // settings.set_conditional(type + '_scale', new_scale);
 			});
 
-		    settings.domain_stream[type].onValue(function(ar) {
-			this.value = ar[column];
-		    }.bind(this));
+		    // settings.domain_stream[type].onValue(function(ar) {
+		    //     this.value = ar[column];
+		    // }.bind(this));
 		});
 
 	    // auto checkbox
@@ -190,20 +195,20 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 			bacon.fromEventTarget(this, 'change')
 			    .onValue(function(event) {
 				var on_off = event.target.checked;
-			    	settings.set_auto_domain(type, on_off);
+			    	// settings.set_auto_domain(type, on_off);
 				// disable the domain boxes on ui check
 				scale_bars.selectAll('input')
 				    .attr('disabled', on_off ? 'true' : null);
 			    });
 			
 			// subscribe to changes in the model
-			settings.auto_domain_stream[type].onValue(function(on_off) {
-			    // check the box if auto domain on
-			    this.checked = on_off;
-			    // also disable the domain boxes on programmatic change
-			    scale_bars.selectAll('input')
-				.attr('disabled', on_off ? 'true' : null);
-			}.bind(this));
+			// settings.auto_domain_stream[type].onValue(function(on_off) {
+			//     // check the box if auto domain on
+			//     this.checked = on_off;
+			//     // also disable the domain boxes on programmatic change
+			//     scale_bars.selectAll('input')
+			// 	.attr('disabled', on_off ? 'true' : null);
+			// }.bind(this));
 
 		    });
 		});
@@ -221,13 +226,13 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		.each(function(column) {
 		    bacon.fromEventTarget(this, 'change')
 			.onValue(function(event) {
-			    settings.set_range_value(type, range_type_ar[0],
-						     column, event.target.value);
+			    // settings.set_range_value(type, range_type_ar[0],
+			    //     		     column, event.target.value);
 			});
 
-		    settings.range_stream[type][range_type_ar[0]].onValue(function(ar) {
-		    	this.value = ar[column];
-		    }.bind(this));
+		    // settings.range_stream[type][range_type_ar[0]].onValue(function(ar) {
+		    // 	this.value = ar[column];
+		    // }.bind(this));
 		});
 	});
 
@@ -239,18 +244,18 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		.each(function() {
 		    bacon.fromEventTarget(this, 'change')
 			.onValue(function(event) {
-			    settings.set_no_data_value(type, range_type_ar[0],
-						       event.target.value);
+			    // settings.set_no_data_value(type, range_type_ar[0],
+			    //     		       event.target.value);
 			});
 
-		    settings.no_data_stream[type][range_type_ar[0]].onValue(function(ar) {
-		    	this.value = ar;
-		    }.bind(this));
+		    // settings.no_data_stream[type][range_type_ar[0]].onValue(function(ar) {
+		    // 	this.value = ar;
+		    // }.bind(this));
 		});
 	});
 
     }
-
+        
     function style_gui(sel, type) {
 	/** A UI to edit style.
 
@@ -274,22 +279,26 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    s.append('span').text(function(d) { return d[0]; });
 
 	    // make the checkbox
+            var streams = [];
 	    s.append('input').attr('type', 'checkbox')
 		.each(function(d) {
 		    // change the model when the box is changed
-		    var change_stream = bacon
-		    	    .fromEventTarget(this, 'change')
-		    	    .onValue(function(event) {
-		    		settings.change_data_style(type, d[1],
-							   event.target.checked);
-		    	    });
+		    var new_stream = bacon.fromEventTarget(this, 'change', function(event) {
+                        return event.target.checked ? d[1] : null;
+                    });
+                    streams.push(new_stream);
 		    
 		    // subscribe to changes in the model
-		    settings.data_styles_stream[type].onValue(function(ar) {
+		    settings.streams[type + '_styles'].onValue(function(ar) {
 			// check the box if the style is present
 			this.checked = (ar.indexOf(d[1]) != -1);
 		    }.bind(this));
 		});
+            bacon.combineAsArray(streams).onValue(function(ar) {
+                var styles = ar.filter(function(x) { return x !== null; });
+                console.log(styles);
+                settings.set_conditional(type + '_styles', styles);
+            });
 	});
 
         
@@ -321,15 +330,15 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		    	    .fromEventTarget(this, 'change')
 		    	    .onValue(function(event) {
                                 if (event.target.checked) {
-                                    settings.set_compare_style(type, event.target.value);
+                                    // settings.set_compare_style(type, event.target.value);
                                 }
 		    	    });
 		    
 		    // subscribe to changes in the model
-		    settings.compare_style_stream[type].onValue(function(value) {
-		        // check the box for the new value
-		        this.checked = (this.value == value);
-		    }.bind(this));
+		    // settings.compare_style_stream[type].onValue(function(value) {
+		    //     // check the box for the new value
+		    //     this.checked = (this.value == value);
+		    // }.bind(this));
 		});
         }.bind(this));
 
@@ -358,8 +367,9 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
                     .text(function(d) { return d[0]; });
 
 	        // make the radio
+                var name = 'and_method_in_gene_reaction_rule';
 	        s.append('input').attr('type', 'radio')
-                    .attr('name', 'and_method_in_gene_reaction_rule' + this.unique_string)
+                    .attr('name', name + this.unique_string)
                     .attr('value', function(d) { return d[1]; })
 		    .each(function(style) {
 		        // change the model when the box is changed
@@ -367,12 +377,12 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 		    	        .fromEventTarget(this, 'change')
 		    	        .onValue(function(event) {
                                     if (event.target.checked) {
-                                        settings.set_and_method_in_gene_reaction_rule(event.target.value);
+                                        settings.set_conditional(name, event.target.value);
                                     }
 		    	        });
 		        
 		        // subscribe to changes in the model
-		        settings.and_method_in_gene_reaction_rule_stream.onValue(function(value) {
+		        settings.streams[name].onValue(function(value) {
 		            // check the box for the new value
 		            this.checked = (this.value == value);
 		        }.bind(this));
@@ -403,19 +413,20 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 	    s.append('span').text(function(d) { return d[0]; });
 
 	    // make the checkbox
+            var name = 'identifiers_on_map';
 	    s.append('input').attr('type', 'radio')
-		.attr('name', 'identifiers_on_map' + this.unique_string)
+		.attr('name', name + this.unique_string)
 		.attr('value', function(d) { return d[1]; })
 		.each(function(style) {
 		    // change the model when the box is changed
 		    var change_stream = bacon
 		    	.fromEventTarget(this, 'change')
 		    	.onValue(function(event) {
-			    settings.set_identifiers_on_map(event.target.value);
+			    settings.set_conditional(name, event.target.value);
 		    	});
 		    
 		    // subscribe to changes in the model
-		    settings.identifiers_on_map_stream.onValue(function(value) {			
+		    settings.streams[name].onValue(function(value) {			
 			// check the box if the style is present
 			this.checked = (value == this.value);
 		    }.bind(this));
@@ -432,17 +443,18 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
                                     'shown when gene data is loaded.)'));
             s.append('span')
                 .text('Show gene reaction rules');
+            var name = 'show_gene_reaction_rules';
 	    s.append('input').attr('type', 'checkbox')
 		.each(function() {
 		    // change the model when the box is changed
 		    var change_stream = bacon
 		    	    .fromEventTarget(this, 'change')
 		    	    .onValue(function(event) {
-			        settings.set_show_gene_reaction_rules(event.target.checked);
+			        settings.set_conditional(name, event.target.checked);
 		    	    });
 		    
 		    // subscribe to changes in the model
-		    settings.show_gene_reaction_rules_stream.onValue(function(value) {			
+		    settings.streams[name].onValue(function(value) {			
 			// check the box if the style is present
 			this.checked = value;
 		    }.bind(this));
@@ -456,17 +468,18 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
                     .attr('colspan', '2');
             s.append('span')
                 .text('Highlight reactions not in model');
+            var name = 'highlight_missing';
 	    s.append('input').attr('type', 'checkbox')
 		.each(function() {
 		    // change the model when the box is changed
 		    var change_stream = bacon
 		    	    .fromEventTarget(this, 'change')
 		    	    .onValue(function(event) {
-			        settings.set_highlight_missing(event.target.checked);
+			        settings.set_conditional(name, event.target.checked);
 		    	    });
 		    
 		    // subscribe to changes in the model
-		    settings.highlight_missing_stream.onValue(function(value) {			
+		    settings.streams[name].onValue(function(value) {			
 			// check the box if the style is present
 			this.checked = value;
 		    }.bind(this));
@@ -475,23 +488,24 @@ define(["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManage
 
         // allow duplicate reactions
 	t.append('tr').call(function(r) {
-            r.attr('title', 'If checked, then allow duplicate reactions during model building.')
+            r.attr('title', 'If checked, then allow duplicate reactions during model building.');
 	    var s = r.append('td')
                     .attr('class', 'options-label style-span')
                     .attr('colspan', '2');
             s.append('span')
                 .text('Allow duplicate reactions');
+            var name = 'allow_building_duplicate_reactions';
 	    s.append('input').attr('type', 'checkbox')
 		.each(function() {
 		    // change the model when the box is changed
 		    var change_stream = bacon
 		    	    .fromEventTarget(this, 'change')
 		    	    .onValue(function(event) {
-			        settings.set_allow_building_duplicate_reactions(event.target.checked);
+			        settings.set_conditional(name, event.target.checked);
 		    	    });
 		    
 		    // subscribe to changes in the model
-		    settings.allow_building_duplicate_reactions_stream.onValue(function(value) {			
+		    settings.streams[name].onValue(function(value) {			
 			// check the box if the style is present
 			this.checked = value;
 		    }.bind(this));

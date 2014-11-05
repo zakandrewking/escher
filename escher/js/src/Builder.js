@@ -38,11 +38,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          reaction_compare_style: (Default: 'diff') How to compare to
          datasets. Can be either 'fold, 'log2_fold', or 'diff'.
 
-         reaction_domain:
-
-         reaction_color_range:
-
-         reaction_size_range:
+         reaction_scale:
 
          reaction_no_data_color:
 
@@ -60,6 +56,12 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
          metabolite_compare_style: (Default: 'diff') How to compare to
          datasets. Can be either 'fold', 'log2_fold' or 'diff'.
+
+         metabolite_scale:
+
+         metabolite_no_data_color:
+
+         metabolite_no_data_size:
 
          // View and build options
 
@@ -145,14 +147,13 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             show_gene_reaction_rules: false,
             // applied data
             // reaction
-            auto_reaction_domain: true,
             reaction_data: null,
             reaction_styles: ['color', 'size', 'text'],
             reaction_compare_style: 'log2_fold',
-            reaction_domain: [-10, 0, 10],
-            reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
-            reaction_size_range: [4, 8, 12],
-            reaction_no_data_color: 'rgb(220,220,220)',
+            reaction_scale: [ { type: 'min', color: '#c8c8c8', size: 4 },
+                              { type: 'value', value: 0, color: '#9696ff', size: 8 },
+                              { type: 'max', color: '#4b009f', size: 12 } ],
+            reaction_no_data_color: '#dcdcdc',
             reaction_no_data_size: 4,
             // gene
             gene_data: null,
@@ -161,11 +162,10 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             metabolite_data: null,
             metabolite_styles: ['color', 'size', 'text'],
             metabolite_compare_style: 'log2_fold',
-            auto_metabolite_domain: true,
-            metabolite_domain: [-10, 0, 10],
-            metabolite_color_range: ['green', 'white', 'red'],
-            metabolite_size_range: [6, 8, 10],
-            metabolite_no_data_color: 'white',
+            metabolite_scale: [ { type: 'min', color: '#00ff00', size: 6 },
+                                { type: 'value', value: 0, color: '#ffffff', size: 8 },
+                                { type: 'max', color: '#ff0000', size: 10 } ],
+            metabolite_no_data_color: '#ffffff',
             metabolite_no_data_size: 6,
             // View and build options
             identifiers_on_map: 'bigg_id',
@@ -191,7 +191,15 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             get_option = function(option) {
                 return this.options[option];
             }.bind(this);
-        this.settings = new Settings(set_option, get_option);
+        // these options can be edited in the settings menu
+        var editable_options = ['show_gene_reaction_rules', 'reaction_styles', 'metabolite_styles',
+                                'reaction_compare_style', 'metabolite_compare_style',
+                                'reaction_scale', 'metabolite_scale',
+                               'reaction_no_data_color', 'reaction_no_data_size',
+                               'metabolite_no_data_color', 'metabolite_no_data_size',
+                               'and_method_in_gene_reaction_rule', 'identifiers_on_map',
+                                'highlight_missing', 'allow_building_duplicate_reactions'];
+        this.settings = new Settings(set_option, get_option, editable_options);
 
         // set up this callback manager
         this.callback_manager = CallbackManager();

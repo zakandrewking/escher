@@ -826,6 +826,7 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	     compartmentalize: compartmentalize,
 	     decompartmentalize: decompartmentalize,
 	     mean: mean,
+             median: median,
 	     check_for_parent_tag: check_for_parent_tag,
 	     check_name: check_name,
 	     name_to_url: name_to_url,
@@ -1467,6 +1468,15 @@ define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	var sum = array.reduce(function(a, b) { return a + b; });
 	var avg = sum / array.length;
 	return avg;
+    }
+
+    function median(array) {
+        array.sort(function(a, b) { return a - b; });
+        var half = Math.floor(array.length / 2);
+        if(array.length % 2)
+            return array[half];
+        else
+            return (array[half-1] + array[half]) / 2.0;
     }
 
     function check_for_parent_tag(el, tag) {
@@ -1624,6 +1634,7 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	     compartmentalize: compartmentalize,
 	     decompartmentalize: decompartmentalize,
 	     mean: mean,
+             median: median,
 	     check_for_parent_tag: check_for_parent_tag,
 	     check_name: check_name,
 	     name_to_url: name_to_url,
@@ -2265,6 +2276,15 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	var sum = array.reduce(function(a, b) { return a + b; });
 	var avg = sum / array.length;
 	return avg;
+    }
+
+    function median(array) {
+        array.sort(function(a, b) { return a - b; });
+        var half = Math.floor(array.length / 2);
+        if(array.length % 2)
+            return array[half];
+        else
+            return (array[half-1] + array[half]) / 2.0;
     }
 
     function check_for_parent_tag(el, tag) {
@@ -6407,29 +6427,40 @@ define('Scale',["utils"], function(utils) {
         };
     }
 
-    function connect_to_settings(settings) {
+    function connect_to_settings(settings, get_data_statistics) {
 	// domains
-	settings.domain_stream['reaction'].onValue(function(s) {
-	    this.reaction_color.domain(s);
-	    this.reaction_size.domain(s);
+        settings.streams['reaction_scale'].onValue(function(s) {
+            var domain = domain_for_scale(s, get_data_statistics());
+	    this.reaction_color.domain(domain);
+	    this.reaction_size.domain(domain);
+	    this.reaction_color.range(range_for_scale(s, 'color'));
+	    this.reaction_size.range(range_for_scale(s, 'size'));
 	}.bind(this));
-	settings.domain_stream['metabolite'].onValue(function(s) {
-	    this.metabolite_color.domain(s);
-	    this.metabolite_size.domain(s);
+	settings.streams['metabolite_scale'].onValue(function(s) {
+            var domain = domain_for_scale(s, get_data_statistics());
+	    this.metabolite_color.domain(domain);
+	    this.metabolite_size.domain(domain);
+	    this.metabolite_color.range(range_for_scale(s, 'color'));
+	    this.metabolite_size.range(range_for_scale(s, 'size'));
 	}.bind(this));
-	// ranges
-	settings.range_stream['reaction']['color'].onValue(function(s) {
-	    this.reaction_color.range(s);
-	}.bind(this));
-	settings.range_stream['reaction']['size'].onValue(function(s) {
-	    this.reaction_size.range(s);
-	}.bind(this));
-	settings.range_stream['metabolite']['color'].onValue(function(s) {
-	    this.metabolite_color.range(s);
-	}.bind(this));
-	settings.range_stream['metabolite']['size'].onValue(function(s) {
-	    this.metabolite_size.range(s);
-	}.bind(this));
+        
+        // definitions
+        function domain_for_scale(scale, stats) {
+            return scale.map(function(x) {
+                if (['min', 'median', 'mean', 'max'].indexOf(x.type) != -1)
+                    return stats['reaction'][x.type]
+                else if (x.type == 'value')
+                    return x.value
+                else
+                    throw new Error('Bad domain type ' + x.type);
+            });
+        }
+        
+        function range_for_scale(scale, type) {
+            return scale.map(function(x) {
+                return x[type];
+            });
+        }
     }
 });
 
@@ -10028,6 +10059,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
      map.callback_manager.run('select_text_label');
      map.callback_manager.run('before_svg_export');
      map.callback_manager.run('after_svg_export');
+     this.callback_manager.run('calc_data_stats', null, same);
 
      */
 
@@ -10105,9 +10137,9 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         apply_metabolite_data_to_nodes: apply_metabolite_data_to_nodes,
         apply_gene_data_to_map: apply_gene_data_to_map,
         apply_gene_data_to_reactions: apply_gene_data_to_reactions,
-        // data domains
-        update_auto_reaction_domain: update_auto_reaction_domain,
-        update_auto_node_domain: update_auto_node_domain,
+        // data statistics
+        get_data_statistics: get_data_statistics,
+        calc_data_stats: calc_data_stats,
         // zoom
         zoom_extent_nodes: zoom_extent_nodes,
         zoom_extent_canvas: zoom_extent_canvas,
@@ -10162,7 +10194,12 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
         // make the scales
         this.scale = new Scale();
-        this.scale.connect_to_settings(this.settings);
+        this.data_statistics = { 'reaction': { 'min': null, 'median': null,
+                                               'mean': null, 'max': null },
+                                 'metabolite': { 'min': null, 'median': null,
+                                                 'mean': null, 'max': null } };
+        this.scale.connect_to_settings(this.settings,
+                                       get_data_statistics.bind(this));
 
         // make the undo/redo stack
         this.undo_stack = new UndoStack();
@@ -10771,7 +10808,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         this.has_data_on_reactions = true;
 
         // if auto_domain
-        return this.update_auto_reaction_domain();
+        return this.calc_data_stats('reaction');
     }
     function apply_metabolite_data_to_map(data) {
         /**  Returns True if the scale has changed.
@@ -10810,7 +10847,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // remember
         this.has_data_on_nodes = true;
 
-        return this.update_auto_node_domain();
+        return this.calc_data_stats('metabolite');
     }
 
 
@@ -10918,82 +10955,66 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         this.has_data_on_reactions = true;
 
         // if auto_domain
-        return this.update_auto_reaction_domain();
+        return this.calc_data_stats('reaction');
     }
 
     // ------------------------------------------------
     // Data domains
-
-    function update_auto_node_domain() {
-        /**  Returns True if the scale has changed.
-
-         */
-
-        if (!this.settings.get_option('auto_metabolite_domain'))
-            return false;
-
-        // default min and max
-        var vals = [];
-        for (var node_id in this.nodes) {
-            var node = this.nodes[node_id];
-            if (node.data !== null)
-                vals.push(node.data);
-        }
-        var old_domain = this.settings.get_option('metabolite_color_domain'),
-            new_domain, min, max;
-        if (vals.length > 0) {
-            if (this.settings.get_option('metabolite_styles').indexOf('abs') != -1) {
-                // if using absolute value reaction style
-                vals = vals.map(function(x) { return Math.abs(x); });
-            }
-            min = Math.min.apply(null, vals),
-            max = Math.max.apply(null, vals);
-        } else {
-            min = 0;
-            max = 0;
-        }
-        new_domain = [0, min, max].sort(function(x, y) { return x - y; });
-        this.settings.set_domain('metabolite', new_domain);
-        // compare arrays
-        return !utils.compare_arrays(old_domain, new_domain);
+    function get_data_statistics() {
+        return this.data_statistics;
     }
+    
+    function calc_data_stats(type) {
+        /** Returns True if the stats have changed.
 
-    function update_auto_reaction_domain() {
-        /**  Returns True if the scale has changed.
+         Arguments
+         ---------
+         
+         type: Either 'metabolite' or 'reaction'
 
          */
 
-        if (!this.settings.get_option('auto_reaction_domain'))
-            return false;
+        if (['reaction', 'metabolite'].indexOf(type) == -1)
+            throw new Error('Bad type ' + type);
 
+        var same = true;
         // default min and max
         var vals = [];
-        for (var reaction_id in this.reactions) {
-            var reaction = this.reactions[reaction_id];
-            if (reaction.data !== null) {
-                vals.push(reaction.data);
+        if (type == 'metabolite') {
+            for (var node_id in this.nodes) {
+                var node = this.nodes[node_id];
+                if (node.data !== null)
+                    vals.push(node.data);
+            }
+        } else if (type == 'reaction') {
+            for (var reaction_id in this.reactions) {
+                var reaction = this.reactions[reaction_id];
+                if (reaction.data !== null) {
+                    vals.push(reaction.data);
+                }
             }
         }
 
-        var old_domain = this.settings.get_option('reaction_domain'),
-            new_domain, min, max;
-        if (vals.length > 0) {
-            if (this.settings.get_option('reaction_styles').indexOf('abs') != -1) {
-                // if using absolute value reaction style
-                vals = vals.map(function(x) { return Math.abs(x); });
-            }
-            min = Math.min.apply(null, vals),
-            max = Math.max.apply(null, vals);
-        } else {
-            min = 0;
-            max = 0;
+        // calculate these statistics
+        var funcs = [['min', on_array(Math.min)], ['max', on_array(Math.max)],
+                     ['median', utils.median], ['mean', utils.mean]];
+        funcs.forEach(function(ar) {
+            var name = ar[0], fn = ar[1],
+                new_val = fn(vals);
+            if (new_val != this.data_statistics[type][name])
+                same = false;
+            this.data_statistics[type][name] = new_val;
+        }.bind(this));
+
+        console.log(this.data_statistics[type], same);
+
+        this.callback_manager.run('calc_data_stats', null, same);
+        return same;
+
+        // definitions
+        function on_array(fn) {
+            return function (array) { return fn.apply(null, array); };
         }
-
-        new_domain = [0, min, max].sort(function(x, y) { return x - y; });
-
-        this.settings.set_domain('reaction', new_domain);
-        // compare arrays
-        return !utils.compare_arrays(old_domain, new_domain);
     }
 
     // ---------------------------------------------------------------------
@@ -11217,9 +11238,9 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
                 // apply the reaction and node data
                 if (this.has_data_on_reactions)
-                    this.update_auto_reaction_domain();
+                    this.calc_data_stats('reaction');
                 if (this.has_data_on_nodes)
-                    this.update_auto_node_domain();
+                    this.calc_data_stats('metabolite');
 
                 // redraw
                 if (should_draw) {
@@ -11271,14 +11292,14 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             // apply the reaction and node data
             // if the scale changes, redraw everything
             if (this.has_data_on_reactions) {
-                var scale_changed = this.update_auto_reaction_domain();
+                var scale_changed = this.calc_data_stats('reaction');
                 if (scale_changed) this.draw_all_reactions();
                 else this.draw_these_reactions(reaction_ids_to_draw);
             } else {
                 if (should_draw) this.draw_these_reactions(reaction_ids_to_draw);
             }
             if (this.has_data_on_nodes) {
-                var scale_changed = this.update_auto_node_domain();
+                var scale_changed = this.calc_data_stats('metabolite');
                 if (should_draw) {
                     if (scale_changed) this.draw_all_nodes();
                     else this.draw_these_nodes(Object.keys(saved_nodes));
@@ -11603,14 +11624,14 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             // apply the reaction and node data to the scales
             // if the scale changes, redraw everything
             if (this.has_data_on_reactions) {
-                var scale_changed = this.update_auto_reaction_domain();
+                var scale_changed = this.calc_data_stats('reaction');
                 if (scale_changed) this.draw_all_reactions();
                 else this.draw_these_reactions(Object.keys(new_reactions));
             } else {
                 this.draw_these_reactions(Object.keys(new_reactions));
             }
             if (this.has_data_on_nodes) {
-                var scale_changed = this.update_auto_node_domain();
+                var scale_changed = this.calc_data_stats('metabolite');
                 if (scale_changed) this.draw_all_nodes();
                 else this.draw_these_nodes(Object.keys(new_nodes));
             } else {
@@ -12507,101 +12528,34 @@ define('SearchBar',["utils", "CallbackManager"], function(utils, CallbackManager
 define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
     /** A class to manage settings for a Map.
 
-        Arguments
-        ---------
+     Arguments
+     ---------
 
-        set_option: A function, fn(key), that returns the option value for the
-        key.
+     set_option: A function, fn(key), that returns the option value for the
+     key.
 
-        get_option: A function, fn(key, value), that sets the option for the key
-        and value.
+     get_option: A function, fn(key, value), that sets the option for the key
+     and value.
+
+     options_list: The options to be initialized.
 
      */
 
     var SearchBar = utils.make_class();
-    // class methods
-    SearchBar.check_type = check_type;
     // instance methods
     SearchBar.prototype = { init: init,
-                            change_data_style: change_data_style,
-                            set_compare_style: set_compare_style,
-                            set_auto_domain: set_auto_domain,
-                            set_domain_value: set_domain_value,
-                            set_domain: set_domain,
-                            set_range_value: set_range_value,
-                            set_range: set_range,
-                            set_no_data_value: set_no_data_value,
-                            set_and_method_in_gene_reaction_rule: set_and_method_in_gene_reaction_rule,
-                            // View and build options
-                            set_identifiers_on_map: set_identifiers_on_map,
-                            set_show_gene_reaction_rules: set_show_gene_reaction_rules,
-                            set_highlight_missing: set_highlight_missing,
-                            set_allow_building_duplicate_reactions: set_allow_building_duplicate_reactions,
-                            // changes
+                            set_conditional: set_conditional,
                             hold_changes: hold_changes,
                             abandon_changes: abandon_changes,
                             accept_changes: accept_changes };
 
     return SearchBar;
 
-    // class methods
-    function check_type(type) {
-        if (['reaction', 'metabolite'].indexOf(type)==-1)
-            throw new Error('Bad type');
-    }
-
     // instance methods
-    function init(set_option, get_option) {
+    function init(set_option, get_option, options_list) {
         this.set_option = set_option;
         this.get_option = get_option;
         
-        // organize
-        var def_styles = { reaction: get_option('reaction_styles'),
-                           metabolite: get_option('metabolite_styles') },
-            def_compare_style = { reaction: get_option('reaction_compare_style'),
-                                  metabolite: get_option('metabolite_compare_style') },
-            def_auto_domain = { reaction: get_option('auto_reaction_domain'),
-                                metabolite: get_option('auto_metabolite_domain') },
-            def_domain = { reaction: get_option('reaction_domain'),
-                           metabolite: get_option('metabolite_domain') },
-            def_range = { reaction: { color: get_option('reaction_color_range'),
-                                      size: get_option('reaction_size_range') },
-                          metabolite: { color: get_option('metabolite_color_range'),
-                                        size: get_option('metabolite_size_range') } },
-            def_no_data = { reaction: { color: get_option('reaction_no_data_color'),
-                                        size: get_option('reaction_no_data_size') },
-                            metabolite: { color: get_option('metabolite_no_data_color'),
-                                          size: get_option('metabolite_no_data_size') } },
-            def_and_method_in_gene_reaction_rule = get_option('and_method_in_gene_reaction_rule'),
-            def_identifiers_on_map = get_option('identifiers_on_map'),
-            def_show_gene_reaction_rules = get_option('show_gene_reaction_rules'),
-            def_highlight_missing = get_option('highlight_missing'),
-            def_allow_building_duplicate_reactions = get_option('allow_building_duplicate_reactions');
-
-        // event streams
-        this.data_styles_bus = {};
-        this.data_styles_stream = {};
-        this.compare_style_bus = {};
-        this.compare_style_stream = {};
-        this.auto_domain_bus = {};
-        this.auto_domain_stream = {};
-        this.domain_bus = {};
-        this.domain_stream = {};
-        this.range_bus = {};
-        this.range_stream = {};
-        this.no_data_bus = {};
-        this.no_data_stream = {};
-        // this.and_method_in_gene_reaction_rule_bus;
-        // this.and_method_in_gene_reaction_rule_stream;
-        // this.identifiers_on_map_bus;
-        // this.identifiers_on_map_stream;
-        // this.show_gene_reaction_rules_bus;
-        // this.show_gene_reaction_rules_stream;
-        // this.highlight_missing_bus;
-        // this.highlight_missing_stream;
-        // this.allow_building_duplicate_reactions_bus;
-        // this.allow_building_duplicate_reactions_stream;
-
         // manage accepting/abandoning changes
         this.status_bus = new bacon.Bus();
 
@@ -12609,605 +12563,119 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         this.force_update_bus = new bacon.Bus();
 
         // modify bacon.observable
-        bacon.Observable.prototype.convert_to_conditional_stream = convert_to_conditional_stream;
-        bacon.Observable.prototype.force_update_with_bus = force_update_with_bus;
+        bacon.Observable.prototype.convert_to_conditional_stream = _convert_to_conditional_stream;
+        bacon.Observable.prototype.force_update_with_bus = _force_update_with_bus;
 
-        // ---------------------------------------------------------------------
-        // style
-        // ---------------------------------------------------------------------
-        
-        ['metabolite', 'reaction'].forEach(function(type) {
-            // set up the styles settings
-            this.data_styles_bus[type] = new bacon.Bus();
-            // make the event stream
-            this.data_styles_stream[type] = this.data_styles_bus[type]
-            // conditionally accept changes
-                .convert_to_conditional_stream(this.status_bus)
-            // combine into state array
-                .scan([], function(current, event) {
-                    if (event===null)
-                        return current;
-                    // add or remove the property from the stream
-                    if (event.on_off && current.indexOf(event.style) == -1) {
-                        // if it is checked, add the style
-                        return current.concat([event.style]);
-                    } else if (!event.on_off && current.indexOf(event.style) != -1) {
-                        // if not, remove the style
-                        return current.filter(function(v) {
-                            return v != event.style;
-                        });
-                    }
-                    // otherwise, return unchanged
-                    return current;
-                })
-            // force updates
-                .force_update_with_bus(this.force_update_bus);
-
-            // get the latest
-            this.data_styles_stream[type].onValue(function(v) {
-                if (type=='reaction')
-                    this.set_option('reaction_styles', v);
-                else if (type=='metabolite')
-                    this.set_option('metabolite_styles', v);
-            }.bind(this));
-
-            // push the defaults
-            var def = def_styles[type];
-            def.forEach(function(x) {
-                this.data_styles_bus[type].push({ style: x, on_off: true });
-            }.bind(this));
-        }.bind(this));
-
-        // ---------------------------------------------------------------------
-        // compare_style
-        // ---------------------------------------------------------------------
-        
-        ['reaction', 'metabolite'].forEach(function(type) {
-            // set up the styles settings
-            this.compare_style_bus[type] = new bacon.Bus();
-            // make the event stream
-            this.compare_style_stream[type] = this.compare_style_bus[type]
-            // conditionally accept changes
-                .convert_to_conditional_stream(this.status_bus)
-            // combine into state array
-                .scan([], function(current, value) {
-                    return value;
-                })
-            // force updates
-                .force_update_with_bus(this.force_update_bus);
-
-            // get the latest
-            this.compare_style_stream[type].onValue(function(v) {
-                if (type=='reaction') {
-                    this.set_option('reaction_compare_style', v);
-                } else if (type=='metabolite') {
-                    this.set_option('metabolite_compare_style', v);
-                } 
-            }.bind(this));
-
-            // push the defaults
-            var def = def_compare_style[type];
-            this.compare_style_bus[type].push(def);
-        }.bind(this));
-
-        // ---------------------------------------------------------------------
-        // auto domain
-        // ---------------------------------------------------------------------
-        
-        ['metabolite', 'reaction'].forEach(function(type) {
-            // set up the auto_domain settings
-            this.auto_domain_bus[type] = new bacon.Bus();
-            this.auto_domain_stream[type] = this.auto_domain_bus[type]
-            // conditionally accept changes
-                .convert_to_conditional_stream(this.status_bus)
-            // force updates
-                .force_update_with_bus(this.force_update_bus);
-
-            // get the latest
-            this.auto_domain_stream[type].onValue(function(v) {
-                if (type=='reaction')
-                    this.set_option('auto_reaction_domain', v);
-                else if (type=='metabolite')
-                    this.set_option('auto_metabolite_domain', v);
-            }.bind(this));
-
-            // set the default
-            var def = def_auto_domain[type];
-            this.auto_domain_bus[type].push(def);
-
-            // set up the domain
-            // make the bus
-            this.domain_bus[type] = new bacon.Bus();
-            // make a new constant for the input default
-            this.domain_stream[type] = this.domain_bus[type]
-            // conditionally accept changes
-                .convert_to_conditional_stream(this.status_bus)
-            // combine into state array
-                .scan([], function(current, event) {
-                    current[event.index] = event.value;
-                    return current;
-                })
-            // force updates
-                .force_update_with_bus(this.force_update_bus);
-
-            // get the latest
-            this.domain_stream[type].onValue(function(v) {
-                if (type=='reaction')
-                    this.set_option('reaction_domain', v);
-                else if (type=='metabolite')
-                    this.set_option('metabolite_domain', v);
-            }.bind(this));
-
-            // push the defaults
-            var def = def_domain[type];
-            def.forEach(function(x, i) { 
-                this.domain_bus[type].push({ index: i, value: x });
-            }.bind(this));
-
-            // set up the ranges
-            this.range_bus[type] = {};
-            this.range_stream[type] = {};
-            ['color', 'size'].forEach(function(range_type) {
-                // make the bus
-                this.range_bus[type][range_type] = new bacon.Bus();
-                // make a new constant for the input default
-                this.range_stream[type][range_type] = this.range_bus[type][range_type]
-                // conditionally accept changes
-                    .convert_to_conditional_stream(this.status_bus)
-                // combine into state array
-                    .scan([], function(current, event) {
-                        current[event.index] = event.value;
-                        return current;
-                    })
-                // force updates
-                    .force_update_with_bus(this.force_update_bus);
-
-                // get the latest
-                this.range_stream[type][range_type].onValue(function(v) {
-                    if (type=='reaction' && range_type=='color')
-                        this.set_option('reaction_color_range', v);
-                    else if (type=='reaction' && range_type=='size')
-                        this.set_option('reaction_size_range', v);
-                    else if (type=='metabolite' && range_type=='color')
-                        this.set_option('metabolite_color_range', v);
-                    else if (type=='metabolite' && range_type=='size')
-                        this.set_option('metabolite_size_range', v);
-                }.bind(this));
-
-                // push the default
-                var def = def_range[type][range_type];
-                def.forEach(function(x, i) { 
-                    this.range_bus[type][range_type].push({ index: i, value: x });
-                }.bind(this));
-
-            }.bind(this));
-
-            // set up the no data settings
-            this.no_data_bus[type] = {};
-            this.no_data_stream[type] = {};
-            ['color', 'size'].forEach(function(no_data_type) {
-                // make the bus
-                this.no_data_bus[type][no_data_type] = new bacon.Bus();
-                // make a new constant for the input default
-                this.no_data_stream[type][no_data_type] = this.no_data_bus[type][no_data_type]
-                // conditionally accept changes
-                    .convert_to_conditional_stream(this.status_bus)
-                // combine into state array
-                    .scan([], function(current, value) {
-                        return value;
-                    })
-                // force updates
-                    .force_update_with_bus(this.force_update_bus);
-
-                // get the latest
-                this.no_data_stream[type][no_data_type].onValue(function(v) {
-                    if (type=='reaction' && no_data_type=='color')
-                        this.set_option('reaction_no_data_color', v);
-                    else if (type=='reaction' && no_data_type=='size')
-                        this.set_option('reaction_no_data_size', v);
-                    else if (type=='metabolite' && no_data_type=='color')
-                        this.set_option('metabolite_no_data_color', v);
-                    else if (type=='metabolite' && no_data_type=='size')
-                        this.set_option('metabolite_no_data_size', v);
-                }.bind(this));
-
-                // push the default
-                var def = def_no_data[type][no_data_type];
-                this.no_data_bus[type][no_data_type].push(def);
-
-            }.bind(this));
-        }.bind(this));
-
-        // ---------------------------------------------------------------------
-        // and_method_in_gene_reaction_rule
-        // ---------------------------------------------------------------------
-        
-        // make the bus
-        this.and_method_in_gene_reaction_rule_bus = new bacon.Bus();
-        // make a new constant for the input default
-        this.and_method_in_gene_reaction_rule_stream = this.and_method_in_gene_reaction_rule_bus
-        // conditionally accept changes
-            .convert_to_conditional_stream(this.status_bus)
-        // combine into state array
-            .scan([], function(current, value) {
-                return value;
-            })
-        // force updates
-            .force_update_with_bus(this.force_update_bus);
-
-        // get the latest
-        this.and_method_in_gene_reaction_rule_stream.onValue(function(v) {
-            this.set_option('and_method_in_gene_reaction_rule', v);
-        }.bind(this));
-
-        // push the default
-        this.and_method_in_gene_reaction_rule_bus.push(def_and_method_in_gene_reaction_rule);
-        
-        // ---------------------------------------------------------------------
-        // identifiers_on_map
-        // ---------------------------------------------------------------------
-        
-        // make the bus
-        this.identifiers_on_map_bus = new bacon.Bus();
-        // make a new constant for the input default
-        this.identifiers_on_map_stream = this.identifiers_on_map_bus
-        // conditionally accept changes
-            .convert_to_conditional_stream(this.status_bus)
-        // combine into state array
-            .scan([], function(current, value) {
-                return value;
-            })
-        // force updates
-            .force_update_with_bus(this.force_update_bus);
-
-        // get the latest
-        this.identifiers_on_map_stream.onValue(function(v) {
-            this.set_option('identifiers_on_map', v);
-        }.bind(this));
-
-        // push the default
-        this.identifiers_on_map_bus.push(def_identifiers_on_map);
-        
-        // ---------------------------------------------------------------------
-        // show_gene_reaction_rules
-        // ---------------------------------------------------------------------
-        
-        // make the bus
-        this.show_gene_reaction_rules_bus = new bacon.Bus();
-        // make a new constant for the input default
-        this.show_gene_reaction_rules_stream = this.show_gene_reaction_rules_bus
-        // conditionally accept changes
-            .convert_to_conditional_stream(this.status_bus)
-        // combine into state array
-            .scan([], function(current, value) {
-                return value;
-            })
-        // force updates
-            .force_update_with_bus(this.force_update_bus);
-
-        // get the latest
-        this.show_gene_reaction_rules_stream.onValue(function(v) {
-            this.set_option('show_gene_reaction_rules', v);
-        }.bind(this));
-
-        // push the default
-        this.show_gene_reaction_rules_bus.push(def_show_gene_reaction_rules);
-
-        // ---------------------------------------------------------------------
-        // highlight missing
-        // ---------------------------------------------------------------------
-        
-        // make the bus
-        this.highlight_missing_bus = new bacon.Bus();
-        // make a new constant for the input default
-        this.highlight_missing_stream = this.highlight_missing_bus
-        // conditionally accept changes
-            .convert_to_conditional_stream(this.status_bus)
-        // combine into state array
-            .scan([], function(current, value) {
-                return value;
-            })
-        // force updates
-            .force_update_with_bus(this.force_update_bus);
-
-        // get the latest
-        this.highlight_missing_stream.onValue(function(v) {
-            this.set_option('highlight_missing', v);
-        }.bind(this));
-
-        // push the default
-        var def = def_highlight_missing;
-        this.highlight_missing_bus.push(def);
-
-        // ---------------------------------------------------------------------
-        // allow_building_duplicate_reactions
-        // ---------------------------------------------------------------------
-        
-        // make the bus
-        this.allow_building_duplicate_reactions_bus = new bacon.Bus();
-        // make a new constant for the input default
-        this.allow_building_duplicate_reactions_stream = this.allow_building_duplicate_reactions_bus
-        // conditionally accept changes
-            .convert_to_conditional_stream(this.status_bus)
-        // combine into state array
-            .scan([], function(current, value) {
-                return value;
-            })
-        // force updates
-            .force_update_with_bus(this.force_update_bus);
-
-        // get the latest
-        this.allow_building_duplicate_reactions_stream.onValue(function(v) {
-            this.set_option('allow_building_duplicate_reactions', v);
-        }.bind(this));
-
-        // push the default
-        this.allow_building_duplicate_reactions_bus.push(def_allow_building_duplicate_reactions);
-
-        
-        // definitions
-        function convert_to_conditional_stream(status_stream) {
-            /** Hold on to event when hold_property is true, and only keep them
-              if accept_property is true (when hold_property becomes false).
-
-             */
-
-            // true if hold is pressed
-            var is_not_hold_event = status_stream
-                    .map(function(x) { return x=='hold'; })
-                    .not()
-                    .toProperty(true),
-                is_not_first_clear = status_stream
-                    .scan(false, function(c, x) {
-                        // first clear only
-                        return (c==false && (x=='accepted' || x=='rejected'));
-                    }).not(),
-                is_not_first_hold = status_stream
-                    .scan(false, function(c, x) {
-                        // first clear only
-                        return (c==false && x=='hold');
-                    }).not(),
-                combined = bacon.combineAsArray(this, status_stream),
-                held = combined
-                    .scan([], function(c, x) {
-                        if (x[1]=='hold') {
-                            c.push(x[0]);
-                            return c;
-                        } else if (x[1]=='accept') {
-                            return c;
-                        } else if (x[1]=='reject') {
-                            return [];
-                        } else if (x[1]=='rejected' || x[1]=='accepted') {
-                            return [x[0]];
-                        } else {
-                            throw Error('bad status ' + x[1]);
-                        }
-                    })
-            // don't pass in events until the end of a hold
-                    .filter(is_not_hold_event)
-            // ignore the event when clear is passed
-                    .filter(is_not_first_clear)
-            // ignore the event when hold is passed
-                    .filter(is_not_first_hold)
-                    .flatMap(function(ar) {
-                        return bacon.fromArray(ar);
-                    }),
-                unheld = this.filter(is_not_hold_event);
-            return unheld.merge(held);
+        // create the options
+        this.busses = {};
+        this.streams = {};
+        for (var i = 0, l = options_list.length; i < l; i++) {
+            var name = options_list[i],
+                out = _create_conditional_setting(name, get_option(name), set_option,
+                                                  this.status_bus, this.force_update_bus);
+            this.busses[name] = out.bus;
+            this.streams[name] = out.stream;
         }
-
-        function force_update_with_bus(bus) {        
-            return bacon
-                .combineAsArray(this, bus.toProperty(false))
-                .map(function(t) {
-                    return t[0];
-                });
-        }
-    }
-
-    function set_auto_domain(type, on_off) {    
-        /** Turn auto domain setting on or off.
-
-            Arguments
-            ---------
-
-            type: 'reaction' or 'metabolite'
-
-            on_off: (Boolean) If True, then automatically set the domain. If False,
-            then manually set the domain.
-
-        */
-        check_type(type);
-
-        this.auto_domain_bus[type].push(on_off);
-    }
-
-    function change_data_style(type, style, on_off) {
-        /** Change the data style.
-
-            Arguments
-            ---------
-
-            type: 'reaction' or 'metabolite'
-
-            style: A data style.
-
-            on_off: (Boolean) If True, then add the style. If False, then remove
-            it.
-
-        */
-        check_type(type);
-
-        this.data_styles_bus[type].push({ style: style,
-                                          on_off: on_off });
-    }
-
-    function set_compare_style(type, value) {
-        /** Change the data style.
-
-            Arguments
-            ---------
-
-            type: 'reaction' or 'metabolite'.
-
-            value: A compare_style.
-
-        */
-        check_type(type);
-
-        if (['fold', 'log2_fold', 'diff'].indexOf(value) == -1)
-            throw new Error('Invalid compare_style: ' + value);
-
-        this.compare_style_bus[type].push(value);
     }
     
-    function set_domain_value(type, index, value) {
-        /** Change a domain value.
-
-         type: 'reaction' or 'metabolite'
-
-         index: The domain index to set.
-
-         value: The new value
+    function _convert_to_conditional_stream(status_stream) {
+        /** Hold on to event when hold_property is true, and only keep them
+         if accept_property is true (when hold_property becomes false).
 
          */
-        check_type(type);
 
-        this.domain_bus[type].push({ index: index,
-                                     value: value });
+        // true if hold is pressed
+        var is_not_hold_event = status_stream
+                .map(function(x) { return x=='hold'; })
+                .not()
+                .toProperty(true),
+            is_not_first_clear = status_stream
+                .scan(false, function(c, x) {
+                    // first clear only
+                    return (c==false && (x=='accepted' || x=='rejected'));
+                }).not(),
+            is_not_first_hold = status_stream
+                .scan(false, function(c, x) {
+                    // first clear only
+                    return (c==false && x=='hold');
+                }).not(),
+            combined = bacon.combineAsArray(this, status_stream),
+            held = combined
+                .scan([], function(c, x) {
+                    if (x[1]=='hold') {
+                        c.push(x[0]);
+                        return c;
+                    } else if (x[1]=='accept') {
+                        return c;
+                    } else if (x[1]=='reject') {
+                        return [];
+                    } else if (x[1]=='rejected' || x[1]=='accepted') {
+                        return [x[0]];
+                    } else {
+                        throw Error('bad status ' + x[1]);
+                    }
+                })
+        // don't pass in events until the end of a hold
+                .filter(is_not_hold_event)
+        // ignore the event when clear is passed
+                .filter(is_not_first_clear)
+        // ignore the event when hold is passed
+                .filter(is_not_first_hold)
+                .flatMap(function(ar) {
+                    return bacon.fromArray(ar);
+                }),
+            unheld = this.filter(is_not_hold_event);
+        return unheld.merge(held);
     }
 
-    function set_domain(type, domain) {
-        /** Change a domain.
+    function _force_update_with_bus(bus) {        
+        return bacon
+            .combineAsArray(this, bus.toProperty(false))
+            .map(function(t) {
+                return t[0];
+            });
+    }
+    
+    function _create_conditional_setting(name, initial_value, set_option,
+                                         status_bus, force_update_bus) {
+        // set up the bus
+        var bus = new bacon.Bus();
+        // make the event stream
+        var stream = bus
+        // conditionally accept changes
+                .convert_to_conditional_stream(status_bus)
+        // force updates
+                .force_update_with_bus(force_update_bus);
+        
+        // get the latest
+        stream.onValue(function(v) {
+            set_option(name, v);
+        });
+        
+        // push the initial value
+        bus.push(initial_value);
 
-         type: 'reaction' or 'metabolite'
-
-         domain: The new domain.
-
-         */
-        check_type(type);
-
-        domain.forEach(function(d, i) {
-            this.domain_bus[type].push({ index: i, value: d });
-        }.bind(this));
+        return { bus: bus, stream: stream };
     }
 
-    function set_range_value(type, range_type, index, value) {
-        /** Change a range value.
-
-         type: 'reaction' or 'metabolite'
-
-         range_type: 'color' or 'size'
-
-         index: The range index to set.
-
-         value: The new value
-
-         */
-        check_type(type);
-
-        this.range_bus[type][range_type].push({ index: index,
-                                                value: value });
-    }
-
-    function set_range(type, range_type, range) {
-        /** Change a range.
-
-         type: 'reaction' or 'metabolite'
-
-         range_type: 'color' or 'size'
-
-         value: The new range
-
-         */
-        check_type(type);
-
-        range.forEach(function(d, i) {
-            this.range_bus[type][range_type].push({ index: i, value: d });
-        }.bind(this));
-    }
-
-    function set_no_data_value(type, no_data_type, value) {
-        /** Change a no_data value.
-
-         type: 'reaction' or 'metabolite'
-
-         no_data_type: 'color' or 'size'
-
-         value: The new value
-
-         */
-        check_type(type);
-
-        this.no_data_bus[type][no_data_type].push(value);
-    }
-
-    function set_and_method_in_gene_reaction_rule(value) {
-        /**  When evaluating a gene reaction rule, use this function to evaluate
-             AND rules. 
-
-             Arguments
-             ---------
-
-             value: Can be 'mean' or 'min'.
-
-         */
-        if (['mean', 'min'].indexOf(value) == -1)
-            throw new Error('Bad value for and_method_in_gene_reaction_rule: ' + value);
-        this.and_method_in_gene_reaction_rule_bus.push(value);
-    }
-
-    function set_identifiers_on_map(value) {
-        /** Set which id should be visible.
-
-            Arguments
-            ---------
-
-            value: Either 'bigg_id' or 'name';
-
-         */
-        if (['bigg_id', 'name'].indexOf(value) == -1)
-            throw new Error('Bad value for identifiers_on_map: ' + value);
-        this.identifiers_on_map_bus.push(value);
-    }
-
-    function set_show_gene_reaction_rules(value) {
-        /** Set boolean to determine whether to show gene reaction rules, even
-         when there is no gene data loaded.
+    function set_conditional(name, value) {
+        /** Set the value of a conditional setting, one that will only be
+         accepted if this.accept_changes() is called.
 
          Arguments
          ---------
 
-         value: The new boolean value
+         name: The option name
+
+         value: The new value
 
          */
-        this.show_gene_reaction_rules_bus.push(value);
+
+        if (!(name in this.busses))
+            throw new Error('Invalid setting name');
+        this.busses[name].push(value);
     }
 
-    function set_highlight_missing(value) {
-        /** Set the option.
-
-            Arguments
-            ---------
-
-            value: The new boolean value.
-
-        */
-        this.highlight_missing_bus.push(value);
-    }
-    
-    function set_allow_building_duplicate_reactions(value) {
-        /** Set the option.
-
-            Arguments
-            ---------
-
-            value: The new boolean value.
-
-        */
-        this.allow_building_duplicate_reactions_bus.push(value);
-    }
-    
     function hold_changes() {
         this.status_bus.push('hold');
     }
@@ -13224,7 +12692,353 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
     }
 });
 
-define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, CallbackManager, bacon) {
+
+define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
+    /** An interactive UI to edit color and size scales.
+
+     Attributes
+     ----------
+
+     sel: A d3 selection.
+
+     type: A type, that should be unique on the page.
+
+     settings: The Settings object.
+
+     */
+
+    var ScaleEditor = utils.make_class();
+    // instance methods
+    ScaleEditor.prototype = { init: init,
+                              update: update };
+    return ScaleEditor;
+
+    // instance methods
+    function init(sel, type, settings, get_data_statistics) {
+        // sels
+        var grad_id = 'grad' + type + this.unique_string;
+        this.w = 400;
+        this.h = 30;
+        this.x = 20;
+        this.input_width = 90;
+        this.input_height = 24;
+        var b = sel.append('div')
+                .attr('class', 'live-scale-container');
+        this.input_label_group = b.append('div');
+        var c = b.append('div')
+                .attr('class', 'live-scale-centered');
+        this.add_group = c.append('div');
+        this.trash_group = c.append('div')
+            .attr('class', 'live-scale-trash-container');
+        var svg = c.append('svg')
+                .attr('class', 'live-scale');
+        this.input_group = c.append('div')
+            .attr('class', 'live-scale-input-container');
+        this.gradient = svg.append('defs')
+            .append('linearGradient')
+            .attr('id', grad_id);
+        svg.append('rect')
+            .attr('class', 'live-scale-rect')
+            .attr('fill', 'url(#' + grad_id + ')')
+            .attr('width', this.w + 'px')
+            .attr('height', this.h + 'px')
+            .attr('x', this.x + 'px'),
+        this.pickers_group = svg.append('g');
+
+        // settings
+        this.type = type;
+        this.settings = settings;
+        this.get_data_statistics = get_data_statistics;
+        
+        var unique_map_id = this.settings.get_option('unique_map_id');
+        this.unique_string = (unique_map_id === null ? '' : '.' + unique_map_id);
+
+        // collect data
+        this.settings.streams[type + '_scale'].onValue(function(scale) {
+            this.scale = scale;
+            this.update();
+        }.bind(this));
+    }
+
+    function update() {
+        var scale = this.scale,
+            stats = this.get_data_statistics()[this.type],
+            sc = d3.scale.linear()
+                .domain([0, this.w])
+                .range([stats.min, stats.max]),
+            sc_size = d3.scale.linear()
+                .domain([0, this.w])
+                .range([0, stats.max - stats.min]),
+            bar_w = 14,
+            bar_h = 35,
+            x_disp = this.x;
+
+        // must have max and min
+        if (stats.max === null || stats.min === null)
+            scale = [];
+
+        // ---------------------------------------------------------------------
+        // convenience functions
+        var bring_to_front = function(d, i) {
+            // bring an input set to the front 
+            this.input_group.selectAll('.live-scale-input-set').each(function(d2) {
+                d3.select(this).classed('selected-set', d === d2);
+            });
+        }.bind(this);
+        
+        var get_this_val = function(d) {
+            return (d.type == 'value') ? d.value : stats[d.type];
+        };
+        
+        var set_scale = function(scale) {
+            this.settings.set_conditional(this.type + '_scale', scale);
+            this.scale = scale;
+            this.update();
+        }.bind(this);
+
+        // ---------------------------------------------------------------------
+        // make the gradient
+        var stops = this.gradient.selectAll('stop')
+                .data(scale);
+        stops.enter()
+            .append('stop');
+        stops.attr('offset', function(d) {
+            return ((get_this_val(d) - stats.min) / (stats.max - stats.min)) * 100 + '%';
+        }).style('stop-color', function (d) {
+            return d.color;
+        });
+        stops.exit().remove();
+
+        // ---------------------------------------------------------------------
+        // make the pickers
+        var pickers = this.pickers_group
+                .selectAll('.picker')
+                .data(scale);
+        // drag 
+        var drag = d3.behavior.drag();
+        drag.on('drag', function(d, i) {
+            if (i == 0 || i == scale.length - 1 || scale[i].type != 'value')
+                return;
+            // change the model on drag
+            var new_d = scale[i].value + sc_size(d3.event.dx),
+                buf = sc_size(bar_w + 2);
+            if (new_d > stats.max - buf) new_d = stats.max - buf;
+            if (new_d < stats.min + buf) new_d = stats.min + buf;
+            // round to 2 decimals
+            new_d = Math.floor(new_d * 100.0) / 100.0;
+            scale[i].value = new_d;
+            this.settings.set_conditional(this.type + '_scale', scale);
+            this.scale = scale;
+            this.update();
+        }.bind(this));
+        // enter
+        pickers.enter()
+            .append('g')
+            .attr('class', 'picker')
+            .style('cursor', 'pointer')
+            .append('rect');
+        // update
+        pickers.select('rect')
+            .attr('x', function(d, i) {
+                return sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp;
+            })
+            .attr('width', bar_w + 'px')
+            .attr('height', bar_h + 'px')
+            .call(drag)
+            .on('mousedown', bring_to_front);
+        // exit
+        pickers.exit().remove();
+
+        // ---------------------------------------------------------------------
+        // make the delete buttons
+        var trashes = this.trash_group.selectAll('span')
+                .data(scale);
+        // enter
+        trashes.enter()
+            .append('span');
+        // update
+        trashes.attr('class', function(d, i) {
+            if (i == 0 || i == scale.length - 1)
+                return null;
+            return 'live-scale-trash glyphicon glyphicon-trash';
+        }).style('left', function(d) {
+            return sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp + 'px';
+        }).on('click', function (d, i) {
+            if (i == 0 || i == scale.length - 1)
+                return;
+            scale = scale.slice(0, i).concat(scale.slice(i + 1));
+            this.settings.set_conditional(this.type + '_scale', scale);
+            this.scale = scale;
+            this.update();
+        }.bind(this));
+        // exit
+        trashes.exit().remove();
+
+        // ---------------------------------------------------------------------
+        // make the add button
+        var add = this.add_group.selectAll('.add')
+                .data(['add']);
+        // enter
+        add.enter()
+            .append('span')
+            .attr('class', 'add glyphicon glyphicon-plus');
+        // update
+        add.on('click', function (d) {
+            var new_d = (stats.max + stats.min) / 2,
+                buf = sc_size(bar_w + 2),
+                last_ind = 0;
+            // try to make the new point not overlap
+            for (var j = 0, l = domain.length; j < l; j++) {
+                if (Math.abs(domain[j] - new_d) < buf) {
+                    new_d = new_d + buf;
+                    if (new_d > stats.max - buf) new_d = stats.max - buf;
+                    if (new_d < stats.min + buf) new_d = stats.min + buf;
+                }
+                if (new_d > domain[j])
+                    last_ind = j;
+            }
+            // add
+            domain = domain.slice(0, last_ind + 1)
+                .concat([new_d])
+                .concat(domain.slice(last_ind + 1));
+            color_range = color_range.slice(0, last_ind + 1)
+                .concat(color_range.slice(last_ind, last_ind + 1))
+                .concat(color_range.slice(last_ind + 1));           
+            size_range = size_range.slice(0, last_ind + 1)
+                .concat(size_range.slice(last_ind, last_ind + 1))
+                .concat(size_range.slice(last_ind + 1)); 
+            this.settings.set_domain(this.type, domain);
+            this.settings.set_range(this.type, 'color', color_range);
+            this.settings.set_range(this.type, 'size', size_range);
+            this.scale = scale;
+            this.update(scale);
+        }.bind(this));
+        // exit
+        add.exit().remove();
+        
+        // ---------------------------------------------------------------------
+        // input labels
+        var labels = this.input_label_group.selectAll('.live-scale-label')
+                .data(['Value:', 'Color:', 'Size:']);
+        // enter
+        labels.enter().append('div').attr('class', 'live-scale-label');
+        // update
+        labels
+            .style('top', function(d, i) {
+                return 56 + (i * this.input_height) + 'px';
+            }.bind(this))
+            .text(function(d) { return d; });
+        // exit
+        labels.exit().remove();
+        
+        // ---------------------------------------------------------------------
+        // inputs
+        var inputs = this.input_group.selectAll('.live-scale-input-set')
+                .data(scale);
+        
+        // enter
+        var i = inputs.enter()
+                .append('div')
+                .attr('class', 'live-scale-input-set');
+        i.append('input')
+            .attr('class', 'live-scale-input domain-input')
+            .style('width', this.input_width + 'px');
+        var select = i.append('select')
+                .attr('class', 'live-scale-input domain-type-picker');
+        select.append('option').attr('value', 'median').text('Median');
+        select.append('option').attr('value', 'value').text('Value');
+        i.append('input')
+            .attr('class', 'live-scale-input color-input')
+            .style('width', this.input_width + 'px');
+        i.append('input')
+            .attr('type', 'color')
+            .style('visibility', function() {
+                // hide the input if the HTML5 color picker is not supported
+                return (this.type == 'text') ? 'hidden' : null;
+            })
+            .attr('class', 'live-scale-input color-picker');
+        i.append('input')
+            .attr('class', 'live-scale-input size-input')
+            .style('width', this.input_width + 'px');
+        
+        // update
+        inputs.style('width', this.input_width + 'px')
+            .style('left', function(d) {
+                var l = sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp;
+                // don't go over the right edge of the bar
+                if (l + this.input_width > this.w + this.x)
+                    l = l - this.input_width + (bar_w / 2);
+                return l + 'px';
+            }.bind(this));
+        
+        inputs.select('.domain-input')
+            .style('height', this.input_height + 'px')
+            .each(function (d, i) {
+                if (i == 0) { 
+                   this.value = 'Min (' + get_this_val(d) + ')';
+                    this.disabled = true;
+                } else if (i == scale.length - 1) {
+                    this.value = 'Max (' + get_this_val(d) + ')';
+                    this.disabled = true;
+                }  else {
+                    this.value = get_this_val(d);
+                    this.disabled = false;
+                }
+            }).on('change', function(d, i) {
+                var buf = sc_size(bar_w + 2),
+                    new_d = parseFloat(this.value);
+                if (new_d < stats.min + buf) new_d = stats.min + buf;
+                if (new_d > stats.max - buf) new_d = stats.max - buf;
+                scale[i].value = new_d;
+                set_scale(scale);
+            });
+        inputs.select('.domain-type-picker')
+            .style('visibility', function(d, i) {
+                return (i == 0 || i == scale.length - 1) ? 'hidden' : null;
+            })
+            .style('left', (this.input_width - 20) + 'px')
+            .style('width', '20px')
+            .each(function (d, i) {
+                this.selectedIndex = 0;
+            }).on('change', function(d, i) {
+                // set_domain(domain);
+            });
+        inputs.select('.color-input')
+            .style('height', this.input_height + 'px')
+            .style('top', this.input_height + 'px')
+            .each(function (d, i) {
+                this.value = d.color;
+            }).on('change', function(d, i) {
+                scale[i].color = this.value;
+                set_scale(scale);
+            });
+        inputs.select('.color-picker')
+            .style('left', (this.input_width - this.input_height) + 'px')
+            .style('top', this.input_height + 'px')
+            .style('width', this.input_height + 'px')
+            .style('height', this.input_height + 'px')
+            .each(function (d, i) {
+                this.value = d.color;
+            }).on('change', function(d, i) {
+                scale[i].color = this.value;
+                set_scale(scale);
+            });
+        inputs.select('.size-input')
+            .style('height', this.input_height + 'px')
+            .style('top', this.input_height * 2 + 'px')
+            .each(function (d, i) {
+                this.value = d.size;
+            }).on('change', function(d, i) {
+                scale[i].size = parseFloat(this.value);
+                set_scale(scale);
+            });
+        
+        // exit
+        inputs.exit().remove();
+    }
+});
+
+define('SettingsBar',["utils", "CallbackManager", "lib/bacon", "ScaleEditor"], function(utils, CallbackManager, bacon, ScaleEditor) {
     /** 
      */
 
@@ -13284,7 +13098,11 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
         // reactions
 	box.append('div')
 	    .text('Reactions').attr('class', 'settings-section-heading-large');
-	this.scale_gui(box.append('div'), 'reaction');
+        var rse = new ScaleEditor(box.append('div'), 'reaction', this.settings,
+                                  map.get_data_statistics.bind(map));
+        map.callback_manager.set('calc_data_stats', function(same) {
+            if (!same) rse.update();
+        });
 	
 	// reaction data
 	box.append('div')
@@ -13400,12 +13218,13 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		.each(function(column) {
 		    bacon.fromEventTarget(this, 'change')
 			.onValue(function(event) {
-			    settings.set_domain_value(type, column, event.target.value);
+                            
+			    // settings.set_conditional(type + '_scale', new_scale);
 			});
 
-		    settings.domain_stream[type].onValue(function(ar) {
-			this.value = ar[column];
-		    }.bind(this));
+		    // settings.domain_stream[type].onValue(function(ar) {
+		    //     this.value = ar[column];
+		    // }.bind(this));
 		});
 
 	    // auto checkbox
@@ -13416,20 +13235,20 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 			bacon.fromEventTarget(this, 'change')
 			    .onValue(function(event) {
 				var on_off = event.target.checked;
-			    	settings.set_auto_domain(type, on_off);
+			    	// settings.set_auto_domain(type, on_off);
 				// disable the domain boxes on ui check
 				scale_bars.selectAll('input')
 				    .attr('disabled', on_off ? 'true' : null);
 			    });
 			
 			// subscribe to changes in the model
-			settings.auto_domain_stream[type].onValue(function(on_off) {
-			    // check the box if auto domain on
-			    this.checked = on_off;
-			    // also disable the domain boxes on programmatic change
-			    scale_bars.selectAll('input')
-				.attr('disabled', on_off ? 'true' : null);
-			}.bind(this));
+			// settings.auto_domain_stream[type].onValue(function(on_off) {
+			//     // check the box if auto domain on
+			//     this.checked = on_off;
+			//     // also disable the domain boxes on programmatic change
+			//     scale_bars.selectAll('input')
+			// 	.attr('disabled', on_off ? 'true' : null);
+			// }.bind(this));
 
 		    });
 		});
@@ -13447,13 +13266,13 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		.each(function(column) {
 		    bacon.fromEventTarget(this, 'change')
 			.onValue(function(event) {
-			    settings.set_range_value(type, range_type_ar[0],
-						     column, event.target.value);
+			    // settings.set_range_value(type, range_type_ar[0],
+			    //     		     column, event.target.value);
 			});
 
-		    settings.range_stream[type][range_type_ar[0]].onValue(function(ar) {
-		    	this.value = ar[column];
-		    }.bind(this));
+		    // settings.range_stream[type][range_type_ar[0]].onValue(function(ar) {
+		    // 	this.value = ar[column];
+		    // }.bind(this));
 		});
 	});
 
@@ -13465,18 +13284,18 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		.each(function() {
 		    bacon.fromEventTarget(this, 'change')
 			.onValue(function(event) {
-			    settings.set_no_data_value(type, range_type_ar[0],
-						       event.target.value);
+			    // settings.set_no_data_value(type, range_type_ar[0],
+			    //     		       event.target.value);
 			});
 
-		    settings.no_data_stream[type][range_type_ar[0]].onValue(function(ar) {
-		    	this.value = ar;
-		    }.bind(this));
+		    // settings.no_data_stream[type][range_type_ar[0]].onValue(function(ar) {
+		    // 	this.value = ar;
+		    // }.bind(this));
 		});
 	});
 
     }
-
+        
     function style_gui(sel, type) {
 	/** A UI to edit style.
 
@@ -13500,22 +13319,26 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    s.append('span').text(function(d) { return d[0]; });
 
 	    // make the checkbox
+            var streams = [];
 	    s.append('input').attr('type', 'checkbox')
 		.each(function(d) {
 		    // change the model when the box is changed
-		    var change_stream = bacon
-		    	    .fromEventTarget(this, 'change')
-		    	    .onValue(function(event) {
-		    		settings.change_data_style(type, d[1],
-							   event.target.checked);
-		    	    });
+		    var new_stream = bacon.fromEventTarget(this, 'change', function(event) {
+                        return event.target.checked ? d[1] : null;
+                    });
+                    streams.push(new_stream);
 		    
 		    // subscribe to changes in the model
-		    settings.data_styles_stream[type].onValue(function(ar) {
+		    settings.streams[type + '_styles'].onValue(function(ar) {
 			// check the box if the style is present
 			this.checked = (ar.indexOf(d[1]) != -1);
 		    }.bind(this));
 		});
+            bacon.combineAsArray(streams).onValue(function(ar) {
+                var styles = ar.filter(function(x) { return x !== null; });
+                console.log(styles);
+                settings.set_conditional(type + '_styles', styles);
+            });
 	});
 
         
@@ -13547,15 +13370,15 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		    	    .fromEventTarget(this, 'change')
 		    	    .onValue(function(event) {
                                 if (event.target.checked) {
-                                    settings.set_compare_style(type, event.target.value);
+                                    // settings.set_compare_style(type, event.target.value);
                                 }
 		    	    });
 		    
 		    // subscribe to changes in the model
-		    settings.compare_style_stream[type].onValue(function(value) {
-		        // check the box for the new value
-		        this.checked = (this.value == value);
-		    }.bind(this));
+		    // settings.compare_style_stream[type].onValue(function(value) {
+		    //     // check the box for the new value
+		    //     this.checked = (this.value == value);
+		    // }.bind(this));
 		});
         }.bind(this));
 
@@ -13584,8 +13407,9 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
                     .text(function(d) { return d[0]; });
 
 	        // make the radio
+                var name = 'and_method_in_gene_reaction_rule';
 	        s.append('input').attr('type', 'radio')
-                    .attr('name', 'and_method_in_gene_reaction_rule' + this.unique_string)
+                    .attr('name', name + this.unique_string)
                     .attr('value', function(d) { return d[1]; })
 		    .each(function(style) {
 		        // change the model when the box is changed
@@ -13593,12 +13417,12 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 		    	        .fromEventTarget(this, 'change')
 		    	        .onValue(function(event) {
                                     if (event.target.checked) {
-                                        settings.set_and_method_in_gene_reaction_rule(event.target.value);
+                                        settings.set_conditional(name, event.target.value);
                                     }
 		    	        });
 		        
 		        // subscribe to changes in the model
-		        settings.and_method_in_gene_reaction_rule_stream.onValue(function(value) {
+		        settings.streams[name].onValue(function(value) {
 		            // check the box for the new value
 		            this.checked = (this.value == value);
 		        }.bind(this));
@@ -13629,19 +13453,20 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 	    s.append('span').text(function(d) { return d[0]; });
 
 	    // make the checkbox
+            var name = 'identifiers_on_map';
 	    s.append('input').attr('type', 'radio')
-		.attr('name', 'identifiers_on_map' + this.unique_string)
+		.attr('name', name + this.unique_string)
 		.attr('value', function(d) { return d[1]; })
 		.each(function(style) {
 		    // change the model when the box is changed
 		    var change_stream = bacon
 		    	.fromEventTarget(this, 'change')
 		    	.onValue(function(event) {
-			    settings.set_identifiers_on_map(event.target.value);
+			    settings.set_conditional(name, event.target.value);
 		    	});
 		    
 		    // subscribe to changes in the model
-		    settings.identifiers_on_map_stream.onValue(function(value) {			
+		    settings.streams[name].onValue(function(value) {			
 			// check the box if the style is present
 			this.checked = (value == this.value);
 		    }.bind(this));
@@ -13658,17 +13483,18 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
                                     'shown when gene data is loaded.)'));
             s.append('span')
                 .text('Show gene reaction rules');
+            var name = 'show_gene_reaction_rules';
 	    s.append('input').attr('type', 'checkbox')
 		.each(function() {
 		    // change the model when the box is changed
 		    var change_stream = bacon
 		    	    .fromEventTarget(this, 'change')
 		    	    .onValue(function(event) {
-			        settings.set_show_gene_reaction_rules(event.target.checked);
+			        settings.set_conditional(name, event.target.checked);
 		    	    });
 		    
 		    // subscribe to changes in the model
-		    settings.show_gene_reaction_rules_stream.onValue(function(value) {			
+		    settings.streams[name].onValue(function(value) {			
 			// check the box if the style is present
 			this.checked = value;
 		    }.bind(this));
@@ -13682,17 +13508,18 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
                     .attr('colspan', '2');
             s.append('span')
                 .text('Highlight reactions not in model');
+            var name = 'highlight_missing';
 	    s.append('input').attr('type', 'checkbox')
 		.each(function() {
 		    // change the model when the box is changed
 		    var change_stream = bacon
 		    	    .fromEventTarget(this, 'change')
 		    	    .onValue(function(event) {
-			        settings.set_highlight_missing(event.target.checked);
+			        settings.set_conditional(name, event.target.checked);
 		    	    });
 		    
 		    // subscribe to changes in the model
-		    settings.highlight_missing_stream.onValue(function(value) {			
+		    settings.streams[name].onValue(function(value) {			
 			// check the box if the style is present
 			this.checked = value;
 		    }.bind(this));
@@ -13701,23 +13528,24 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon"], function(utils, 
 
         // allow duplicate reactions
 	t.append('tr').call(function(r) {
-            r.attr('title', 'If checked, then allow duplicate reactions during model building.')
+            r.attr('title', 'If checked, then allow duplicate reactions during model building.');
 	    var s = r.append('td')
                     .attr('class', 'options-label style-span')
                     .attr('colspan', '2');
             s.append('span')
                 .text('Allow duplicate reactions');
+            var name = 'allow_building_duplicate_reactions';
 	    s.append('input').attr('type', 'checkbox')
 		.each(function() {
 		    // change the model when the box is changed
 		    var change_stream = bacon
 		    	    .fromEventTarget(this, 'change')
 		    	    .onValue(function(event) {
-			        settings.set_allow_building_duplicate_reactions(event.target.checked);
+			        settings.set_conditional(name, event.target.checked);
 		    	    });
 		    
 		    // subscribe to changes in the model
-		    settings.allow_building_duplicate_reactions_stream.onValue(function(value) {			
+		    settings.streams[name].onValue(function(value) {			
 			// check the box if the style is present
 			this.checked = value;
 		    }.bind(this));
@@ -13997,11 +13825,7 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
          reaction_compare_style: (Default: 'diff') How to compare to
          datasets. Can be either 'fold, 'log2_fold', or 'diff'.
 
-         reaction_domain:
-
-         reaction_color_range:
-
-         reaction_size_range:
+         reaction_scale:
 
          reaction_no_data_color:
 
@@ -14019,6 +13843,12 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
          metabolite_compare_style: (Default: 'diff') How to compare to
          datasets. Can be either 'fold', 'log2_fold' or 'diff'.
+
+         metabolite_scale:
+
+         metabolite_no_data_color:
+
+         metabolite_no_data_size:
 
          // View and build options
 
@@ -14104,14 +13934,13 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             show_gene_reaction_rules: false,
             // applied data
             // reaction
-            auto_reaction_domain: true,
             reaction_data: null,
             reaction_styles: ['color', 'size', 'text'],
             reaction_compare_style: 'log2_fold',
-            reaction_domain: [-10, 0, 10],
-            reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
-            reaction_size_range: [4, 8, 12],
-            reaction_no_data_color: 'rgb(220,220,220)',
+            reaction_scale: [ { type: 'min', color: '#c8c8c8', size: 4 },
+                              { type: 'value', value: 0, color: '#9696ff', size: 8 },
+                              { type: 'max', color: '#4b009f', size: 12 } ],
+            reaction_no_data_color: '#dcdcdc',
             reaction_no_data_size: 4,
             // gene
             gene_data: null,
@@ -14120,11 +13949,10 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             metabolite_data: null,
             metabolite_styles: ['color', 'size', 'text'],
             metabolite_compare_style: 'log2_fold',
-            auto_metabolite_domain: true,
-            metabolite_domain: [-10, 0, 10],
-            metabolite_color_range: ['green', 'white', 'red'],
-            metabolite_size_range: [6, 8, 10],
-            metabolite_no_data_color: 'white',
+            metabolite_scale: [ { type: 'min', color: '#00ff00', size: 6 },
+                                { type: 'value', value: 0, color: '#ffffff', size: 8 },
+                                { type: 'max', color: '#ff0000', size: 10 } ],
+            metabolite_no_data_color: '#ffffff',
             metabolite_no_data_size: 6,
             // View and build options
             identifiers_on_map: 'bigg_id',
@@ -14150,7 +13978,15 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             get_option = function(option) {
                 return this.options[option];
             }.bind(this);
-        this.settings = new Settings(set_option, get_option);
+        // these options can be edited in the settings menu
+        var editable_options = ['show_gene_reaction_rules', 'reaction_styles', 'metabolite_styles',
+                                'reaction_compare_style', 'metabolite_compare_style',
+                                'reaction_scale', 'metabolite_scale',
+                               'reaction_no_data_color', 'reaction_no_data_size',
+                               'metabolite_no_data_color', 'metabolite_no_data_size',
+                               'and_method_in_gene_reaction_rule', 'identifiers_on_map',
+                                'highlight_missing', 'allow_building_duplicate_reactions'];
+        this.settings = new Settings(set_option, get_option, editable_options);
 
         // set up this callback manager
         this.callback_manager = CallbackManager();

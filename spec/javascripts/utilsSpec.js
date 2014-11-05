@@ -64,6 +64,15 @@ describe('utils', function() {
                                       null,
 				      {target: {result: 'reaction,value\nGAPD,100\n'}});
     });
+
+    it('mean', function() {
+        expect(utils.mean([1, 2, 3]).toEqual(2));
+    });
+
+    it('median', function() {
+        expect(utils.median([1, 8, 3, 1, 10]).toEqual(3));
+        expect(utils.median([1, 8, 3, 1, 10, 11]).toEqual(5.5));
+    });
     
     it('check_for_parent_tag', function() {
 	var sel = d3.select('body').append('div');
