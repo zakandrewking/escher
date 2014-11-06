@@ -12888,30 +12888,25 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
                 buf = sc_size(bar_w + 2),
                 last_ind = 0;
             // try to make the new point not overlap
-            for (var j = 0, l = domain.length; j < l; j++) {
-                if (Math.abs(domain[j] - new_d) < buf) {
+            for (var j = 0, l = scale.length; j < l; j++) {
+		var th = get_this_val(scale[j]);
+                if (Math.abs(th - new_d) < buf) {
                     new_d = new_d + buf;
                     if (new_d > stats.max - buf) new_d = stats.max - buf;
                     if (new_d < stats.min + buf) new_d = stats.min + buf;
                 }
-                if (new_d > domain[j])
+                if (new_d > th)
                     last_ind = j;
             }
             // add
-            domain = domain.slice(0, last_ind + 1)
-                .concat([new_d])
-                .concat(domain.slice(last_ind + 1));
-            color_range = color_range.slice(0, last_ind + 1)
-                .concat(color_range.slice(last_ind, last_ind + 1))
-                .concat(color_range.slice(last_ind + 1));           
-            size_range = size_range.slice(0, last_ind + 1)
-                .concat(size_range.slice(last_ind, last_ind + 1))
-                .concat(size_range.slice(last_ind + 1)); 
-            this.settings.set_domain(this.type, domain);
-            this.settings.set_range(this.type, 'color', color_range);
-            this.settings.set_range(this.type, 'size', size_range);
-            this.scale = scale;
-            this.update(scale);
+            scale = scale.slice(0, last_ind + 1)
+                .concat([{ type: 'value',
+			   value: new_d,
+			   color: scale[last_ind].color,
+			   size: scale[last_ind].size }])
+		.concat(scale.slice(last_ind + 1));
+	    console.log(scale);
+	    set_scale(scale);
         }.bind(this));
         // exit
         add.exit().remove();
@@ -12921,7 +12916,10 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         var labels = this.input_label_group.selectAll('.live-scale-label')
                 .data(['Value:', 'Color:', 'Size:']);
         // enter
-        labels.enter().append('div').attr('class', 'live-scale-label');
+        labels.enter().append('div')
+	    .attr('class', 'live-scale-label')
+	    .style('height', this.input_height + 'px')
+	    .style('line-height', this.input_height + 'px');
         // update
         labels
             .style('top', function(d, i) {
@@ -12943,10 +12941,14 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         i.append('input')
             .attr('class', 'live-scale-input domain-input')
             .style('width', this.input_width + 'px');
+	// domain types
         var select = i.append('select')
                 .attr('class', 'live-scale-input domain-type-picker');
-        select.append('option').attr('value', 'median').text('Median');
-        select.append('option').attr('value', 'value').text('Value');
+	var opts = select.selectAll('option').data(['value', 'median', 'mean']);
+	opts.enter().append('option');
+	opts.attr('value', function(d) { return d; })
+	    .text(function(d) { return d; });
+	// color input
         i.append('input')
             .attr('class', 'live-scale-input color-input')
             .style('width', this.input_width + 'px');
@@ -12969,21 +12971,19 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
                 if (l + this.input_width > this.w + this.x)
                     l = l - this.input_width + (bar_w / 2);
                 return l + 'px';
-            }.bind(this));
+            }.bind(this))
+	    .on('mousedown', bring_to_front);
         
         inputs.select('.domain-input')
             .style('height', this.input_height + 'px')
             .each(function (d, i) {
-                if (i == 0) { 
-                   this.value = 'Min (' + get_this_val(d) + ')';
-                    this.disabled = true;
-                } else if (i == scale.length - 1) {
-                    this.value = 'Max (' + get_this_val(d) + ')';
-                    this.disabled = true;
-                }  else {
+                if (d.type == 'value') {
                     this.value = get_this_val(d);
                     this.disabled = false;
-                }
+		} else {
+                    this.value = d.type + ' (' + get_this_val(d) + ')';
+                    this.disabled = true;
+                } 
             }).on('change', function(d, i) {
                 var buf = sc_size(bar_w + 2),
                     new_d = parseFloat(this.value);
@@ -12999,9 +12999,20 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
             .style('left', (this.input_width - 20) + 'px')
             .style('width', '20px')
             .each(function (d, i) {
-                this.selectedIndex = 0;
+                var sind = 0;
+		d3.select(this).selectAll('option').each(function(_, i) {
+		    if (this.value == d.type)
+			sind = i;
+		});
+		this.selectedIndex = sind;
             }).on('change', function(d, i) {
-                // set_domain(domain);
+		// set the value to the current location
+		if (this.value == 'value')
+		    scale[i].value = stats[d.type];
+		// switch to the new type
+		scale[i].type = this.value;
+		// reload
+                set_scale(scale);
             });
         inputs.select('.color-input')
             .style('height', this.input_height + 'px')

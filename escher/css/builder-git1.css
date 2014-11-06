@@ -193,10 +193,10 @@ td.options-label-wide {
 .style-span span {
     margin: 0 6px 0 0;
 }
-.style-span input[type="radio"], .style-span input[type="checkbox"] {
-    top: 2px;
-    position: relative;
-}
+/* .style-span input[type="radio"], .style-span input[type="checkbox"] { */
+/*     top: 2px; */
+/*     position: relative; */
+/* } */
 /* Live scale */
 .live-scale-container {
     position: relative;
@@ -243,16 +243,16 @@ td.options-label-wide {
 }
 .live-scale-input {
     position: absolute;
-    height: 18px;
     font-size: 12px;
     left: 0px;
     top: 0px;
 }
+input.live-scale-input[disabled] {
+    background-color: #EBEBEB;
+}
 .live-scale-label {
     position: absolute;
     left: 0px;
-    height: 18px;
-    line-height: 18px;
     font-size: 12px;
 }
 .live-scale-input-set {
