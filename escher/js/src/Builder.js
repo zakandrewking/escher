@@ -151,8 +151,8 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             reaction_styles: ['color', 'size', 'text'],
             reaction_compare_style: 'log2_fold',
             reaction_scale: [ { type: 'min', color: '#c8c8c8', size: 4 },
-                              { type: 'value', value: 0, color: '#9696ff', size: 8 },
-                              { type: 'max', color: '#4b009f', size: 12 } ],
+                              { type: 'median', color: '#9696ff', size: 8 },
+                              { type: 'max', color: '#ff0000', size: 12 } ],
             reaction_no_data_color: '#dcdcdc',
             reaction_no_data_size: 4,
             // gene
@@ -162,9 +162,9 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             metabolite_data: null,
             metabolite_styles: ['color', 'size', 'text'],
             metabolite_compare_style: 'log2_fold',
-            metabolite_scale: [ { type: 'min', color: '#00ff00', size: 6 },
-                                { type: 'value', value: 0, color: '#ffffff', size: 8 },
-                                { type: 'max', color: '#ff0000', size: 10 } ],
+            metabolite_scale: [ { type: 'min', color: '#fffaf0', size:12 },
+                                { type: 'median', color: '#f1c470', size: 14 },
+                                { type: 'max', color: '#800000', size: 20 } ],
             metabolite_no_data_color: '#ffffff',
             metabolite_no_data_size: 6,
             // View and build options

@@ -59,8 +59,8 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
 	    .text('Reactions').attr('class', 'settings-section-heading-large');
         var rse = new ScaleEditor(box.append('div'), 'reaction', this.settings,
                                   map.get_data_statistics.bind(map));
-        map.callback_manager.set('calc_data_stats__reaction', function(same) {
-            if (!same) {
+        map.callback_manager.set('calc_data_stats__reaction', function(changed) {
+            if (changed) {
                 rse.update();
                 rse.update_no_data();
             }
@@ -81,8 +81,8 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
 	    .attr('class', 'settings-section-heading-large');
         var mse = new ScaleEditor(box.append('div'), 'metabolite', this.settings,
                                   map.get_data_statistics.bind(map));
-        map.callback_manager.set('calc_data_stats__metabolite', function(same) {
-            if (!same) {
+        map.callback_manager.set('calc_data_stats__metabolite', function(changed) {
+            if (changed) {
                 mse.update();
                 mse.update_no_data();
             }

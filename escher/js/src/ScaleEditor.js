@@ -34,7 +34,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // no data loaded
         this.data_not_loaded = b.append('div')
             .attr('class', 'data-not-loaded')
-            .text(type[0].toUpperCase() + type.slice(1) + ' data not loaded');
+            .text((type == 'reaction' ? 'Reaction and gene' : 'Metabolite') + ' data not loaded');
         // label
         this.input_label_group = b.append('div')
             .attr('class', 'input-label-group');
@@ -298,7 +298,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             .style('width', this.input_width + 'px');
         
         // update
-        inputs.style('width', this.input_width + 'px')
+        inputs.style('height', this.input_height * 3 + 'px')
+            .style('width', this.input_width + 'px')
             .style('left', function(d) {
                 var l = sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp;
                 // don't go over the right edge of the bar

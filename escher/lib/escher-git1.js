@@ -5633,22 +5633,33 @@ define('Scale',["utils"], function(utils) {
         };
     }
 
-    function connect_to_settings(settings, get_data_statistics) {
+    function connect_to_settings(settings, map, get_data_statistics) {
 	// domains
-        settings.streams['reaction_scale'].onValue(function(s) {
+        var update_reaction = function(s) {
             var domain = domain_for_scale(s, get_data_statistics()['reaction']);
 	    this.reaction_color.domain(domain);
 	    this.reaction_size.domain(domain);
 	    this.reaction_color.range(range_for_scale(s, 'color'));
 	    this.reaction_size.range(range_for_scale(s, 'size'));
-	}.bind(this));
-	settings.streams['metabolite_scale'].onValue(function(s) {
-            var domain = domain_for_scale(s, get_data_statistics()['metabolite']);
-	    this.metabolite_color.domain(domain);
-	    this.metabolite_size.domain(domain);
-	    this.metabolite_color.range(range_for_scale(s, 'color'));
-	    this.metabolite_size.range(range_for_scale(s, 'size'));
-	}.bind(this));
+	}.bind(this),
+            update_metabolite = function(s) {
+                var domain = domain_for_scale(s, get_data_statistics()['metabolite']);
+	        this.metabolite_color.domain(domain);
+	        this.metabolite_size.domain(domain);
+	        this.metabolite_color.range(range_for_scale(s, 'color'));
+	        this.metabolite_size.range(range_for_scale(s, 'size'));
+	    }.bind(this);
+
+        // scale changes
+        settings.streams['reaction_scale'].onValue(update_reaction);
+        settings.streams['metabolite_scale'].onValue(update_metabolite);
+        // stats changes
+        map.callback_manager.set('calc_data_stats__reaction', function(changed) {
+            if (changed) update_reaction(settings.get_option('reaction_scale'));
+        });
+        map.callback_manager.set('calc_data_stats__metabolite', function(changed) {
+            if (changed) update_metabolite(settings.get_option('metabolite_scale'));
+        });
         
         // definitions
         function domain_for_scale(scale, stats) {
@@ -9265,8 +9276,8 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
      map.callback_manager.run('select_text_label');
      map.callback_manager.run('before_svg_export');
      map.callback_manager.run('after_svg_export');
-     this.callback_manager.run('calc_data_stats__reaction', null, same);
-     this.callback_manager.run('calc_data_stats__metabolite', null, same);
+     this.callback_manager.run('calc_data_stats__reaction', null, changed);
+     this.callback_manager.run('calc_data_stats__metabolite', null, changed);
 
      */
 
@@ -9407,7 +9418,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // initialize stats
         this.calc_data_stats('reaction');
         this.calc_data_stats('metabolite');
-        this.scale.connect_to_settings(this.settings,
+        this.scale.connect_to_settings(this.settings, this,
                                        get_data_statistics.bind(this));
 
         // make the undo/redo stack
@@ -9986,7 +9997,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             // remember
             this.has_data_on_reactions = false;
 
-            return false;
+            return this.calc_data_stats('reaction');
         }
 
         // apply the datasets to the reactions
@@ -10013,7 +10024,6 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // remember
         this.has_data_on_reactions = true;
 
-        // if auto_domain
         return this.calc_data_stats('reaction');
     }
     function apply_metabolite_data_to_map(data) {
@@ -10035,7 +10045,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             // remember
             this.has_data_on_nodes = false;
 
-            return false;
+            return this.calc_data_stats('metabolite');
         }
 
         // grab the data
@@ -10160,7 +10170,6 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // remember
         this.has_data_on_reactions = true;
 
-        // if auto_domain
         return this.calc_data_stats('reaction');
     }
 
@@ -10229,12 +10238,12 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 same = false;
             this.data_statistics[type][name] = new_val;
         }.bind(this));
-
+        
         if (type == 'reaction')
-            this.callback_manager.run('calc_data_stats__reaction', null, same);
+            this.callback_manager.run('calc_data_stats__reaction', null, !same);
         else
-            this.callback_manager.run('calc_data_stats__metabolite', null, same);
-        return same;
+            this.callback_manager.run('calc_data_stats__metabolite', null, !same);
+        return !same;
 
         // definitions
         function on_array(fn) {
@@ -10462,15 +10471,23 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 this.delete_text_label_data(Object.keys(selected_text_labels));
 
                 // apply the reaction and node data
+                var changed_r_scale = false,
+                    changed_m_scale = false;
                 if (this.has_data_on_reactions)
-                    this.calc_data_stats('reaction');
+                    changed_r_scale = this.calc_data_stats('reaction');
                 if (this.has_data_on_nodes)
-                    this.calc_data_stats('metabolite');
-
+                    changed_m_scale = this.calc_data_stats('metabolite');
+                
                 // redraw
                 if (should_draw) {
-                    this.clear_deleted_reactions(); // also clears segments and beziers
-                    this.clear_deleted_nodes();
+                    if (changed_r_scale)
+                        this.draw_all_reactions();
+                    else
+                        this.clear_deleted_reactions(); // also clears segments and beziers
+                    if (changed_m_scale)
+                        this.draw_all_nodes();
+                    else
+                        this.clear_deleted_nodes();
                     this.clear_deleted_text_labels();
                 }
             }.bind(this);
@@ -10821,8 +10838,20 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             new_reactions = utils.clone(saved_reactions);
             new_beziers = utils.clone(saved_beziers);
             // draw
-            this.clear_deleted_nodes();
-            this.clear_deleted_reactions(true); // also clears segments and beziers
+            if (this.has_data_on_reactions) {
+                var scale_changed = this.calc_data_stats('reaction');
+                if (scale_changed) this.draw_all_reactions();
+                this.clear_deleted_reactions(true); // also clears segments and beziers
+            } else {
+                this.draw_these_reactions(Object.keys(new_reactions));
+            }
+            if (this.has_data_on_nodes) {
+                var scale_changed = this.calc_data_stats('metabolite');
+                if (scale_changed) this.draw_all_nodes();
+                else this.draw_these_nodes(Object.keys(new_nodes));
+            } else {
+                this.clear_deleted_nodes();
+            }
         }.bind(this),
             redo_fn = function () {
                 // redo
@@ -11762,22 +11791,24 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
      get_option: A function, fn(key, value), that sets the option for the key
      and value.
 
-     options_list: The options to be initialized.
+     conditional_options: The options to that are conditionally accepted when
+     changed. Changes can be abandoned by calling abandon_changes(), or accepted
+     by calling accept_changes().
 
      */
 
     var Settings = utils.make_class();
     // instance methods
     Settings.prototype = { init: init,
-                            set_conditional: set_conditional,
-                            hold_changes: hold_changes,
-                            abandon_changes: abandon_changes,
-                            accept_changes: accept_changes };
+                           set_conditional: set_conditional,
+                           hold_changes: hold_changes,
+                           abandon_changes: abandon_changes,
+                           accept_changes: accept_changes };
 
     return Settings;
 
     // instance methods
-    function init(set_option, get_option, options_list) {
+    function init(set_option, get_option, conditional_options) {
         this.set_option = set_option;
         this.get_option = get_option;
         
@@ -11794,8 +11825,8 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
         // create the options
         this.busses = {};
         this.streams = {};
-        for (var i = 0, l = options_list.length; i < l; i++) {
-            var name = options_list[i],
+        for (var i = 0, l = conditional_options.length; i < l; i++) {
+            var name = conditional_options[i],
                 out = _create_conditional_setting(name, get_option(name), set_option,
                                                   this.status_bus, this.force_update_bus);
             this.busses[name] = out.bus;
@@ -11954,7 +11985,7 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         // no data loaded
         this.data_not_loaded = b.append('div')
             .attr('class', 'data-not-loaded')
-            .text(type[0].toUpperCase() + type.slice(1) + ' data not loaded');
+            .text((type == 'reaction' ? 'Reaction and gene' : 'Metabolite') + ' data not loaded');
         // label
         this.input_label_group = b.append('div')
             .attr('class', 'input-label-group');
@@ -12218,7 +12249,8 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
             .style('width', this.input_width + 'px');
         
         // update
-        inputs.style('width', this.input_width + 'px')
+        inputs.style('height', this.input_height * 3 + 'px')
+            .style('width', this.input_width + 'px')
             .style('left', function(d) {
                 var l = sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp;
                 // don't go over the right edge of the bar
@@ -12456,8 +12488,8 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
 	    .text('Reactions').attr('class', 'settings-section-heading-large');
         var rse = new ScaleEditor(box.append('div'), 'reaction', this.settings,
                                   map.get_data_statistics.bind(map));
-        map.callback_manager.set('calc_data_stats__reaction', function(same) {
-            if (!same) {
+        map.callback_manager.set('calc_data_stats__reaction', function(changed) {
+            if (changed) {
                 rse.update();
                 rse.update_no_data();
             }
@@ -12478,8 +12510,8 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
 	    .attr('class', 'settings-section-heading-large');
         var mse = new ScaleEditor(box.append('div'), 'metabolite', this.settings,
                                   map.get_data_statistics.bind(map));
-        map.callback_manager.set('calc_data_stats__metabolite', function(same) {
-            if (!same) {
+        map.callback_manager.set('calc_data_stats__metabolite', function(changed) {
+            if (changed) {
                 mse.update();
                 mse.update_no_data();
             }
@@ -13170,8 +13202,8 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             reaction_styles: ['color', 'size', 'text'],
             reaction_compare_style: 'log2_fold',
             reaction_scale: [ { type: 'min', color: '#c8c8c8', size: 4 },
-                              { type: 'value', value: 0, color: '#9696ff', size: 8 },
-                              { type: 'max', color: '#4b009f', size: 12 } ],
+                              { type: 'median', color: '#9696ff', size: 8 },
+                              { type: 'max', color: '#ff0000', size: 12 } ],
             reaction_no_data_color: '#dcdcdc',
             reaction_no_data_size: 4,
             // gene
@@ -13181,9 +13213,9 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             metabolite_data: null,
             metabolite_styles: ['color', 'size', 'text'],
             metabolite_compare_style: 'log2_fold',
-            metabolite_scale: [ { type: 'min', color: '#00ff00', size: 6 },
-                                { type: 'value', value: 0, color: '#ffffff', size: 8 },
-                                { type: 'max', color: '#ff0000', size: 10 } ],
+            metabolite_scale: [ { type: 'min', color: '#fffaf0', size:12 },
+                                { type: 'median', color: '#f1c470', size: 14 },
+                                { type: 'max', color: '#800000', size: 20 } ],
             metabolite_no_data_color: '#ffffff',
             metabolite_no_data_size: 6,
             // View and build options

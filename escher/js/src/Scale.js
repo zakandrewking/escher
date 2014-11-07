@@ -45,22 +45,33 @@ define(["utils"], function(utils) {
         };
     }
 
-    function connect_to_settings(settings, get_data_statistics) {
+    function connect_to_settings(settings, map, get_data_statistics) {
 	// domains
-        settings.streams['reaction_scale'].onValue(function(s) {
+        var update_reaction = function(s) {
             var domain = domain_for_scale(s, get_data_statistics()['reaction']);
 	    this.reaction_color.domain(domain);
 	    this.reaction_size.domain(domain);
 	    this.reaction_color.range(range_for_scale(s, 'color'));
 	    this.reaction_size.range(range_for_scale(s, 'size'));
-	}.bind(this));
-	settings.streams['metabolite_scale'].onValue(function(s) {
-            var domain = domain_for_scale(s, get_data_statistics()['metabolite']);
-	    this.metabolite_color.domain(domain);
-	    this.metabolite_size.domain(domain);
-	    this.metabolite_color.range(range_for_scale(s, 'color'));
-	    this.metabolite_size.range(range_for_scale(s, 'size'));
-	}.bind(this));
+	}.bind(this),
+            update_metabolite = function(s) {
+                var domain = domain_for_scale(s, get_data_statistics()['metabolite']);
+	        this.metabolite_color.domain(domain);
+	        this.metabolite_size.domain(domain);
+	        this.metabolite_color.range(range_for_scale(s, 'color'));
+	        this.metabolite_size.range(range_for_scale(s, 'size'));
+	    }.bind(this);
+
+        // scale changes
+        settings.streams['reaction_scale'].onValue(update_reaction);
+        settings.streams['metabolite_scale'].onValue(update_metabolite);
+        // stats changes
+        map.callback_manager.set('calc_data_stats__reaction', function(changed) {
+            if (changed) update_reaction(settings.get_option('reaction_scale'));
+        });
+        map.callback_manager.set('calc_data_stats__metabolite', function(changed) {
+            if (changed) update_metabolite(settings.get_option('metabolite_scale'));
+        });
         
         // definitions
         function domain_for_scale(scale, stats) {

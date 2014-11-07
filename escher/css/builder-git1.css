@@ -218,8 +218,7 @@ td.options-label-wide {
     text-align: center;
     width: 400px;
     font-size: 15px;
-    color: #000000;
-    opacity: 0.5;
+    color: #B19EC0;
 }
 .scale-editor .add {
     position: absolute;
@@ -269,7 +268,6 @@ td.options-label-wide {
 .scale-editor .input-set {
     position: absolute;
     top: 0px;
-    height: 54px;
     box-shadow: 0px 2px 14px rgb(197, 197, 197);
 }
 .scale-editor .input-set.selected-set {

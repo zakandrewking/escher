@@ -19,10 +19,10 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     var Settings = utils.make_class();
     // instance methods
     Settings.prototype = { init: init,
-                            set_conditional: set_conditional,
-                            hold_changes: hold_changes,
-                            abandon_changes: abandon_changes,
-                            accept_changes: accept_changes };
+                           set_conditional: set_conditional,
+                           hold_changes: hold_changes,
+                           abandon_changes: abandon_changes,
+                           accept_changes: accept_changes };
 
     return Settings;
 

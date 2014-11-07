@@ -33,8 +33,8 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
      map.callback_manager.run('select_text_label');
      map.callback_manager.run('before_svg_export');
      map.callback_manager.run('after_svg_export');
-     this.callback_manager.run('calc_data_stats__reaction', null, same);
-     this.callback_manager.run('calc_data_stats__metabolite', null, same);
+     this.callback_manager.run('calc_data_stats__reaction', null, changed);
+     this.callback_manager.run('calc_data_stats__metabolite', null, changed);
 
      */
 
@@ -175,7 +175,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // initialize stats
         this.calc_data_stats('reaction');
         this.calc_data_stats('metabolite');
-        this.scale.connect_to_settings(this.settings,
+        this.scale.connect_to_settings(this.settings, this,
                                        get_data_statistics.bind(this));
 
         // make the undo/redo stack
@@ -754,7 +754,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             // remember
             this.has_data_on_reactions = false;
 
-            return false;
+            return this.calc_data_stats('reaction');
         }
 
         // apply the datasets to the reactions
@@ -781,7 +781,6 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // remember
         this.has_data_on_reactions = true;
 
-        // if auto_domain
         return this.calc_data_stats('reaction');
     }
     function apply_metabolite_data_to_map(data) {
@@ -803,7 +802,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             // remember
             this.has_data_on_nodes = false;
 
-            return false;
+            return this.calc_data_stats('metabolite');
         }
 
         // grab the data
@@ -928,7 +927,6 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // remember
         this.has_data_on_reactions = true;
 
-        // if auto_domain
         return this.calc_data_stats('reaction');
     }
 
@@ -997,12 +995,12 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 same = false;
             this.data_statistics[type][name] = new_val;
         }.bind(this));
-
+        
         if (type == 'reaction')
-            this.callback_manager.run('calc_data_stats__reaction', null, same);
+            this.callback_manager.run('calc_data_stats__reaction', null, !same);
         else
-            this.callback_manager.run('calc_data_stats__metabolite', null, same);
-        return same;
+            this.callback_manager.run('calc_data_stats__metabolite', null, !same);
+        return !same;
 
         // definitions
         function on_array(fn) {
@@ -1230,15 +1228,23 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 this.delete_text_label_data(Object.keys(selected_text_labels));
 
                 // apply the reaction and node data
+                var changed_r_scale = false,
+                    changed_m_scale = false;
                 if (this.has_data_on_reactions)
-                    this.calc_data_stats('reaction');
+                    changed_r_scale = this.calc_data_stats('reaction');
                 if (this.has_data_on_nodes)
-                    this.calc_data_stats('metabolite');
-
+                    changed_m_scale = this.calc_data_stats('metabolite');
+                
                 // redraw
                 if (should_draw) {
-                    this.clear_deleted_reactions(); // also clears segments and beziers
-                    this.clear_deleted_nodes();
+                    if (changed_r_scale)
+                        this.draw_all_reactions();
+                    else
+                        this.clear_deleted_reactions(); // also clears segments and beziers
+                    if (changed_m_scale)
+                        this.draw_all_nodes();
+                    else
+                        this.clear_deleted_nodes();
                     this.clear_deleted_text_labels();
                 }
             }.bind(this);
@@ -1589,8 +1595,20 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             new_reactions = utils.clone(saved_reactions);
             new_beziers = utils.clone(saved_beziers);
             // draw
-            this.clear_deleted_nodes();
-            this.clear_deleted_reactions(true); // also clears segments and beziers
+            if (this.has_data_on_reactions) {
+                var scale_changed = this.calc_data_stats('reaction');
+                if (scale_changed) this.draw_all_reactions();
+                this.clear_deleted_reactions(true); // also clears segments and beziers
+            } else {
+                this.draw_these_reactions(Object.keys(new_reactions));
+            }
+            if (this.has_data_on_nodes) {
+                var scale_changed = this.calc_data_stats('metabolite');
+                if (scale_changed) this.draw_all_nodes();
+                else this.draw_these_nodes(Object.keys(new_nodes));
+            } else {
+                this.clear_deleted_nodes();
+            }
         }.bind(this),
             redo_fn = function () {
                 // redo
