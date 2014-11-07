@@ -105,15 +105,18 @@ define(['utils'], function(utils) {
             if (compare_style == 'diff') {
                 return diff(d[0], d[1], take_abs);
             } else if (compare_style == 'fold') {
-                return fold(d[0], d[1], take_abs);
+                return check_finite(fold(d[0], d[1], take_abs));
             }
             else if (compare_style == 'log2_fold') {
-                return log2_fold(d[0], d[1], take_abs);
+                return check_finite(log2_fold(d[0], d[1], take_abs));
             }
         }
         throw new Error('Bad data compare_style: ' + compare_style);
 
         // definitions
+	function check_finite(x) {
+	    return isFinite(x) ? x : null;
+	}
         function abs(x, take_abs) {
             return take_abs ? Math.abs(x) : x;
         }

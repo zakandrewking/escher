@@ -45,28 +45,53 @@ define(["utils"], function(utils) {
         };
     }
 
-    function connect_to_settings(settings) {
+    function connect_to_settings(settings, map, get_data_statistics) {
 	// domains
-	settings.domain_stream['reaction'].onValue(function(s) {
-	    this.reaction_color.domain(s);
-	    this.reaction_size.domain(s);
-	}.bind(this));
-	settings.domain_stream['metabolite'].onValue(function(s) {
-	    this.metabolite_color.domain(s);
-	    this.metabolite_size.domain(s);
-	}.bind(this));
-	// ranges
-	settings.range_stream['reaction']['color'].onValue(function(s) {
-	    this.reaction_color.range(s);
-	}.bind(this));
-	settings.range_stream['reaction']['size'].onValue(function(s) {
-	    this.reaction_size.range(s);
-	}.bind(this));
-	settings.range_stream['metabolite']['color'].onValue(function(s) {
-	    this.metabolite_color.range(s);
-	}.bind(this));
-	settings.range_stream['metabolite']['size'].onValue(function(s) {
-	    this.metabolite_size.range(s);
-	}.bind(this));
+        var update_reaction = function(s) {
+	    var out = sort_scale(s, get_data_statistics()['reaction']);
+	    this.reaction_color.domain(out.domain);
+	    this.reaction_size.domain(out.domain);
+	    this.reaction_color.range(out.color_range);
+	    this.reaction_size.range(out.size_range);
+	}.bind(this);
+        var update_metabolite = function(s) {
+	    var out = sort_scale(s, get_data_statistics()['metabolite']);
+	    this.metabolite_color.domain(out.domain);
+	    this.metabolite_size.domain(out.domain);
+	    this.metabolite_color.range(out.color_range);
+	    this.metabolite_size.range(out.size_range);
+	}.bind(this);
+
+        // scale changes
+        settings.streams['reaction_scale'].onValue(update_reaction);
+        settings.streams['metabolite_scale'].onValue(update_metabolite);
+        // stats changes
+        map.callback_manager.set('calc_data_stats__reaction', function(changed) {
+            if (changed) update_reaction(settings.get_option('reaction_scale'));
+        });
+        map.callback_manager.set('calc_data_stats__metabolite', function(changed) {
+            if (changed) update_metabolite(settings.get_option('metabolite_scale'));
+        });
+        
+        // definitions
+	function sort_scale(scale, stats) {
+	    var sorted = scale.map(function(x) {
+		var v;
+                if (x.type in stats)
+                    v = stats[x.type];
+                else if (x.type == 'value')
+                    v = x.value;
+                else
+                    throw new Error('Bad domain type ' + x.type);
+		return { v: v,
+			 color: x.color,
+			 size: x.size };
+            }).sort(function(a, b) {
+		return a.v - b.v;
+	    });
+	    return { domain: sorted.map(function(x) { return x.v; }),
+		     color_range: sorted.map(function(x) { return x.color; }),
+		     size_range: sorted.map(function(x) { return x.size; }) };
+        }
     }
 });

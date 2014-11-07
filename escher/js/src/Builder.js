@@ -1,4 +1,4 @@
-define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput', 'QuickJump', 'data_styles'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput, QuickJump, data_styles) {
+define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsMenu', 'TextEditInput', 'QuickJump', 'data_styles'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsMenu, TextEditInput, QuickJump, data_styles) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Arguments
@@ -38,11 +38,7 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          reaction_compare_style: (Default: 'diff') How to compare to
          datasets. Can be either 'fold, 'log2_fold', or 'diff'.
 
-         reaction_domain:
-
-         reaction_color_range:
-
-         reaction_size_range:
+         reaction_scale:
 
          reaction_no_data_color:
 
@@ -60,6 +56,12 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
          metabolite_compare_style: (Default: 'diff') How to compare to
          datasets. Can be either 'fold', 'log2_fold' or 'diff'.
+
+         metabolite_scale:
+
+         metabolite_no_data_color:
+
+         metabolite_no_data_size:
 
          // View and build options
 
@@ -145,14 +147,13 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             show_gene_reaction_rules: false,
             // applied data
             // reaction
-            auto_reaction_domain: true,
             reaction_data: null,
             reaction_styles: ['color', 'size', 'text'],
             reaction_compare_style: 'log2_fold',
-            reaction_domain: [-10, 0, 10],
-            reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
-            reaction_size_range: [4, 8, 12],
-            reaction_no_data_color: 'rgb(220,220,220)',
+            reaction_scale: [{ type: 'min', color: '#c8c8c8', size: 4 },
+			     { type: 'median', color: '#9696ff', size: 8 },
+			     { type: 'max', color: '#ff0000', size: 12 }],
+            reaction_no_data_color: '#dcdcdc',
             reaction_no_data_size: 4,
             // gene
             gene_data: null,
@@ -161,11 +162,10 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             metabolite_data: null,
             metabolite_styles: ['color', 'size', 'text'],
             metabolite_compare_style: 'log2_fold',
-            auto_metabolite_domain: true,
-            metabolite_domain: [-10, 0, 10],
-            metabolite_color_range: ['green', 'white', 'red'],
-            metabolite_size_range: [6, 8, 10],
-            metabolite_no_data_color: 'white',
+            metabolite_scale: [ { type: 'min', color: '#fffaf0', size:12 },
+                                { type: 'median', color: '#f1c470', size: 14 },
+                                { type: 'max', color: '#800000', size: 20 } ],
+            metabolite_no_data_color: '#ffffff',
             metabolite_no_data_size: 6,
             // View and build options
             identifiers_on_map: 'bigg_id',
@@ -184,14 +184,36 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                             'becuase UI elements are html-based.');
         }
 
+	// check the scales have max and min
+	['reaction_scale', 'metabolite_scale'].forEach(function(name) {
+	    ['min', 'max'].forEach(function(type) {
+		var has = this.options[name].reduce(function(has_found, scale_el) {
+		    return has_found || (scale_el.type == type);
+		}, false);
+		if (!has) this.options[name].push({ type: type,
+						    color: '#ffffff',
+						    size: 10 });
+	    }.bind(this));
+	}.bind(this));
+	// TODO warn about repeated types in the scale
+
         // Initialize the settings
         var set_option = function(option, new_value) {
             this.options[option] = new_value;
         }.bind(this),
             get_option = function(option) {
                 return this.options[option];
-            }.bind(this);
-        this.settings = new Settings(set_option, get_option);
+            }.bind(this),
+            // the options that are erased when the settings menu is canceled
+            conditional_options = ['show_gene_reaction_rules', 'reaction_styles',
+                                   'reaction_compare_style', 'reaction_scale',
+                                   'reaction_no_data_color', 'reaction_no_data_size',
+                                   'and_method_in_gene_reaction_rule', 'metabolite_styles',
+                                   'metabolite_compare_style', 'metabolite_scale',
+                                   'metabolite_no_data_color', 'metabolite_no_data_size',
+                                   'identifiers_on_map', 'highlight_missing',
+                                   'allow_building_duplicate_reactions',];
+        this.settings = new Settings(set_option, get_option, conditional_options);
 
         // set up this callback manager
         this.callback_manager = CallbackManager();
@@ -344,8 +366,21 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
         // set up the settings
         var settings_div = this.options.selection.append('div');
-        this.settings_bar = SettingsBar(settings_div, this.settings,
-                                        this.map);
+        this.settings_bar = SettingsMenu(settings_div, this.settings, this.map,
+                                         function(type, on_off) {
+                                             // temporarily set the abs type, for
+                                             // previewing it in the Settings
+                                             // menu
+                                             var o = this.options[type + '_styles'];
+                                             if (on_off && o.indexOf('abs') == -1)
+                                                 o.push('abs');
+                                             else if (!on_off) {
+                                                 var i = o.indexOf('abs');
+                                                 if (i != -1)
+                                                     this.options[type + '_styles'] = o.slice(0, i).concat(o.slice(i + 1));
+                                             }
+                                             this.update_data(false, true, type);
+                                         }.bind(this));
         this.settings_bar.callback_manager.set('show', function() {
             this.search_bar.toggle(false);
         }.bind(this));

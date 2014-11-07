@@ -72,6 +72,11 @@ describe('data_styles', function() {
         // one neg, no abs
         expect(escher.data_styles.float_for_data([10, -5], [], 'log2_fold'))
             .toEqual(null);
+        // with zeros
+        expect(escher.data_styles.float_for_data([10, 0], [], 'log2_fold'))
+            .toEqual(null);
+        expect(escher.data_styles.float_for_data([0, 10], [], 'log2_fold'))
+            .toEqual(null);
         // bad compare_style
         expect(escher.data_styles.float_for_data.bind(null, [10, 5], [], 'd'))
             .toThrow();

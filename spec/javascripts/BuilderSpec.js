@@ -29,4 +29,16 @@ describe('Builder', function() {
 	}).toThrow(new Error("Builder cannot be placed within an svg node "+
 			     "becuase UI elements are html-based."));
     });
+
+    it('fix scales', function () {
+	b = escher.Builder(null, null, '', { reaction_scale: [{ type: 'median', color: '#9696ff', size: 8 }] });
+	expect(b.options.reaction_scale).toEqual([{ type: 'median', color: '#9696ff', size: 8 },
+						  { type: 'min', color: '#ffffff', size: 10 },
+						  { type: 'max', color: '#ffffff', size: 10 }]);
+
+	b = escher.Builder(null, null, '', { metabolite_scale: [{ type: 'median', color: '#9696ff', size: 8 }] });
+	expect(b.options.metabolite_scale).toEqual([{ type: 'median', color: '#9696ff', size: 8 },
+						    { type: 'min', color: '#ffffff', size: 10 },
+						    { type: 'max', color: '#ffffff', size: 10 }]);
+    });
 });
