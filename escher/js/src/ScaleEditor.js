@@ -132,12 +132,20 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
         // ---------------------------------------------------------------------
         // make the gradient
+	var sorted_domain = scale.map(function(d) {
+	    return { frac: (get_this_val(d) - stats.min) / (stats.max - stats.min),
+		     color: d.color };
+	}).filter(function(d) {
+	    return (d.frac >= 0 && d.frac <= 1.0);
+	}).sort(function(a, b) {
+	    return a.frac - b.frac;
+	});
         var stops = this.gradient.selectAll('stop')
-                .data(scale);
+                .data(sorted_domain);
         stops.enter()
             .append('stop');
         stops.attr('offset', function(d) {
-            return ((get_this_val(d) - stats.min) / (stats.max - stats.min)) * 100 + '%';
+	    return d.frac * 100 + '%';
         }).style('stop-color', function (d) {
             return d.color === null ? '#F1ECFA' : d.color;
         });
@@ -156,7 +164,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // drag 
         var drag = d3.behavior.drag();
         drag.on('drag', function(d, i) {
-            if (i == 0 || i == scale.length - 1 || scale[i].type != 'value')
+            if (scale[i].type != 'value')
                 return;
             // change the model on drag
             var new_d = scale[i].value + sc_size(d3.event.dx),
@@ -179,7 +187,13 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // update
         pickers.select('rect')
             .attr('x', function(d, i) {
-                return sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp;
+		var val = get_this_val(d),
+		    buf = bar_w + 2;
+		if (d.type == 'value' && val <= stats.min)
+		    return sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
+		if (d.type == 'value' && val >= stats.max)
+		    return sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
+                return sc.invert(val) - (bar_w / 2) + x_disp;
             })
             .attr('width', bar_w + 'px')
             .attr('height', bar_h + 'px')
@@ -197,13 +211,13 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             .append('span');
         // update
         trashes.attr('class', function(d, i) {
-            if (i == 0 || i == scale.length - 1)
+            if (d.type == 'min' || d.type == 'max')
                 return null;
             return 'trash glyphicon glyphicon-trash';
         }).style('left', function(d) {
             return sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp + 'px';
         }).on('click', function (d, i) {
-            if (i == 0 || i == scale.length - 1)
+            if (d.type == 'min' || d.type == 'max')
                 return;
             scale = scale.slice(0, i).concat(scale.slice(i + 1));
             this.settings.set_conditional(this.type + '_scale', scale);
@@ -223,6 +237,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             .attr('class', 'add glyphicon glyphicon-plus');
         // update
         add.on('click', function (d) {
+	    if (data_not_loaded) return;
+
             var new_d = (stats.max + stats.min) / 2,
                 buf = sc_size(bar_w + 2),
                 last_ind = 0;
@@ -238,12 +254,10 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                     last_ind = j;
             }
             // add
-            scale = scale.slice(0, last_ind + 1)
-                .concat([{ type: 'value',
-			   value: new_d,
-			   color: scale[last_ind].color,
-			   size: scale[last_ind].size }])
-		.concat(scale.slice(last_ind + 1));
+            scale.push({ type: 'value',
+			 value: new_d,
+			 color: scale[last_ind].color,
+			 size: scale[last_ind].size });
 	    set_scale(scale);
         }.bind(this));
         // exit
@@ -301,7 +315,15 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         inputs.style('height', this.input_height * 3 + 'px')
             .style('width', this.input_width + 'px')
             .style('left', function(d) {
-                var l = sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp;
+		var val = get_this_val(d),
+		    buf = bar_w + 2,
+		    l;
+		if (d.type == 'value' && val <= stats.min)
+		    l = sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
+		else if (d.type == 'value' && val >= stats.max)
+		    l = sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
+		else
+                    l = sc.invert(val) - (bar_w / 2) + x_disp;
                 // don't go over the right edge of the bar
                 if (l + this.input_width > this.w + this.x)
                     l = l - this.input_width + (bar_w / 2);
@@ -323,8 +345,6 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             }).on('change', function(d, i) {
                 var buf = sc_size(bar_w + 2),
                     new_d = parseFloat(this.value);
-                if (new_d < stats.min + buf) new_d = stats.min + buf;
-                if (new_d > stats.max - buf) new_d = stats.max - buf;
                 scale[i].value = new_d;
                 set_scale(scale);
             });
@@ -340,8 +360,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 	opts.attr('value', function(d) { return d; })
 	    .text(function(d) { return d; });
         opts.exit().remove();
-        select.style('visibility', function(d, i) {
-                return (i == 0 || i == scale.length - 1) ? 'hidden' : null;
+        select.style('visibility', function(d) {
+                return (d.type == 'min' || d.type == 'max') ? 'hidden' : null;
             })
             .style('left', (this.input_width - 20) + 'px')
             .style('width', '20px')

@@ -2305,15 +2305,18 @@ define('data_styles',['utils'], function(utils) {
             if (compare_style == 'diff') {
                 return diff(d[0], d[1], take_abs);
             } else if (compare_style == 'fold') {
-                return fold(d[0], d[1], take_abs);
+                return check_finite(fold(d[0], d[1], take_abs));
             }
             else if (compare_style == 'log2_fold') {
-                return log2_fold(d[0], d[1], take_abs);
+                return check_finite(log2_fold(d[0], d[1], take_abs));
             }
         }
         throw new Error('Bad data compare_style: ' + compare_style);
 
         // definitions
+	function check_finite(x) {
+	    return isFinite(x) ? x : null;
+	}
         function abs(x, take_abs) {
             return take_abs ? Math.abs(x) : x;
         }
@@ -5636,19 +5639,19 @@ define('Scale',["utils"], function(utils) {
     function connect_to_settings(settings, map, get_data_statistics) {
 	// domains
         var update_reaction = function(s) {
-            var domain = domain_for_scale(s, get_data_statistics()['reaction']);
-	    this.reaction_color.domain(domain);
-	    this.reaction_size.domain(domain);
-	    this.reaction_color.range(range_for_scale(s, 'color'));
-	    this.reaction_size.range(range_for_scale(s, 'size'));
-	}.bind(this),
-            update_metabolite = function(s) {
-                var domain = domain_for_scale(s, get_data_statistics()['metabolite']);
-	        this.metabolite_color.domain(domain);
-	        this.metabolite_size.domain(domain);
-	        this.metabolite_color.range(range_for_scale(s, 'color'));
-	        this.metabolite_size.range(range_for_scale(s, 'size'));
-	    }.bind(this);
+	    var out = sort_scale(s, get_data_statistics()['reaction']);
+	    this.reaction_color.domain(out.domain);
+	    this.reaction_size.domain(out.domain);
+	    this.reaction_color.range(out.color_range);
+	    this.reaction_size.range(out.size_range);
+	}.bind(this);
+        var update_metabolite = function(s) {
+	    var out = sort_scale(s, get_data_statistics()['metabolite']);
+	    this.metabolite_color.domain(out.domain);
+	    this.metabolite_size.domain(out.domain);
+	    this.metabolite_color.range(out.color_range);
+	    this.metabolite_size.range(out.size_range);
+	}.bind(this);
 
         // scale changes
         settings.streams['reaction_scale'].onValue(update_reaction);
@@ -5662,21 +5665,24 @@ define('Scale',["utils"], function(utils) {
         });
         
         // definitions
-        function domain_for_scale(scale, stats) {
-            return scale.map(function(x) {
+	function sort_scale(scale, stats) {
+	    var sorted = scale.map(function(x) {
+		var v;
                 if (x.type in stats)
-                    return stats[x.type];
+                    v = stats[x.type];
                 else if (x.type == 'value')
-                    return x.value;
+                    v = x.value;
                 else
                     throw new Error('Bad domain type ' + x.type);
-            });
-        }
-        
-        function range_for_scale(scale, type) {
-            return scale.map(function(x) {
-                return x[type];
-            });
+		return { v: v,
+			 color: x.color,
+			 size: x.size };
+            }).sort(function(a, b) {
+		return a.v - b.v;
+	    });
+	    return { domain: sorted.map(function(x) { return x.v; }),
+		     color_range: sorted.map(function(x) { return x.color; }),
+		     size_range: sorted.map(function(x) { return x.size; }) };
         }
     }
 });
@@ -12083,12 +12089,20 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
 
         // ---------------------------------------------------------------------
         // make the gradient
+	var sorted_domain = scale.map(function(d) {
+	    return { frac: (get_this_val(d) - stats.min) / (stats.max - stats.min),
+		     color: d.color };
+	}).filter(function(d) {
+	    return (d.frac >= 0 && d.frac <= 1.0);
+	}).sort(function(a, b) {
+	    return a.frac - b.frac;
+	});
         var stops = this.gradient.selectAll('stop')
-                .data(scale);
+                .data(sorted_domain);
         stops.enter()
             .append('stop');
         stops.attr('offset', function(d) {
-            return ((get_this_val(d) - stats.min) / (stats.max - stats.min)) * 100 + '%';
+	    return d.frac * 100 + '%';
         }).style('stop-color', function (d) {
             return d.color === null ? '#F1ECFA' : d.color;
         });
@@ -12107,7 +12121,7 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         // drag 
         var drag = d3.behavior.drag();
         drag.on('drag', function(d, i) {
-            if (i == 0 || i == scale.length - 1 || scale[i].type != 'value')
+            if (scale[i].type != 'value')
                 return;
             // change the model on drag
             var new_d = scale[i].value + sc_size(d3.event.dx),
@@ -12130,7 +12144,13 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         // update
         pickers.select('rect')
             .attr('x', function(d, i) {
-                return sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp;
+		var val = get_this_val(d),
+		    buf = bar_w + 2;
+		if (d.type == 'value' && val <= stats.min)
+		    return sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
+		if (d.type == 'value' && val >= stats.max)
+		    return sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
+                return sc.invert(val) - (bar_w / 2) + x_disp;
             })
             .attr('width', bar_w + 'px')
             .attr('height', bar_h + 'px')
@@ -12148,13 +12168,13 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
             .append('span');
         // update
         trashes.attr('class', function(d, i) {
-            if (i == 0 || i == scale.length - 1)
+            if (d.type == 'min' || d.type == 'max')
                 return null;
             return 'trash glyphicon glyphicon-trash';
         }).style('left', function(d) {
             return sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp + 'px';
         }).on('click', function (d, i) {
-            if (i == 0 || i == scale.length - 1)
+            if (d.type == 'min' || d.type == 'max')
                 return;
             scale = scale.slice(0, i).concat(scale.slice(i + 1));
             this.settings.set_conditional(this.type + '_scale', scale);
@@ -12174,6 +12194,8 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
             .attr('class', 'add glyphicon glyphicon-plus');
         // update
         add.on('click', function (d) {
+	    if (data_not_loaded) return;
+
             var new_d = (stats.max + stats.min) / 2,
                 buf = sc_size(bar_w + 2),
                 last_ind = 0;
@@ -12189,12 +12211,10 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
                     last_ind = j;
             }
             // add
-            scale = scale.slice(0, last_ind + 1)
-                .concat([{ type: 'value',
-			   value: new_d,
-			   color: scale[last_ind].color,
-			   size: scale[last_ind].size }])
-		.concat(scale.slice(last_ind + 1));
+            scale.push({ type: 'value',
+			 value: new_d,
+			 color: scale[last_ind].color,
+			 size: scale[last_ind].size });
 	    set_scale(scale);
         }.bind(this));
         // exit
@@ -12252,7 +12272,15 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         inputs.style('height', this.input_height * 3 + 'px')
             .style('width', this.input_width + 'px')
             .style('left', function(d) {
-                var l = sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp;
+		var val = get_this_val(d),
+		    buf = bar_w + 2,
+		    l;
+		if (d.type == 'value' && val <= stats.min)
+		    l = sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
+		else if (d.type == 'value' && val >= stats.max)
+		    l = sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
+		else
+                    l = sc.invert(val) - (bar_w / 2) + x_disp;
                 // don't go over the right edge of the bar
                 if (l + this.input_width > this.w + this.x)
                     l = l - this.input_width + (bar_w / 2);
@@ -12274,8 +12302,6 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
             }).on('change', function(d, i) {
                 var buf = sc_size(bar_w + 2),
                     new_d = parseFloat(this.value);
-                if (new_d < stats.min + buf) new_d = stats.min + buf;
-                if (new_d > stats.max - buf) new_d = stats.max - buf;
                 scale[i].value = new_d;
                 set_scale(scale);
             });
@@ -12291,8 +12317,8 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
 	opts.attr('value', function(d) { return d; })
 	    .text(function(d) { return d; });
         opts.exit().remove();
-        select.style('visibility', function(d, i) {
-                return (i == 0 || i == scale.length - 1) ? 'hidden' : null;
+        select.style('visibility', function(d) {
+                return (d.type == 'min' || d.type == 'max') ? 'hidden' : null;
             })
             .style('left', (this.input_width - 20) + 'px')
             .style('width', '20px')
@@ -13201,9 +13227,9 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             reaction_data: null,
             reaction_styles: ['color', 'size', 'text'],
             reaction_compare_style: 'log2_fold',
-            reaction_scale: [ { type: 'min', color: '#c8c8c8', size: 4 },
-                              { type: 'median', color: '#9696ff', size: 8 },
-                              { type: 'max', color: '#ff0000', size: 12 } ],
+            reaction_scale: [{ type: 'min', color: '#c8c8c8', size: 4 },
+			     { type: 'median', color: '#9696ff', size: 8 },
+			     { type: 'max', color: '#ff0000', size: 12 }],
             reaction_no_data_color: '#dcdcdc',
             reaction_no_data_size: 4,
             // gene
@@ -13234,6 +13260,19 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             throw new Error('Builder cannot be placed within an svg node '+
                             'becuase UI elements are html-based.');
         }
+
+	// check the scales have max and min
+	['reaction_scale', 'metabolite_scale'].forEach(function(name) {
+	    ['min', 'max'].forEach(function(type) {
+		var has = this.options[name].reduce(function(has_found, scale_el) {
+		    return has_found || (scale_el.type == type);
+		}, false);
+		if (!has) this.options[name].push({ type: type,
+						    color: '#ffffff',
+						    size: 10 });
+	    }.bind(this));
+	}.bind(this));
+	// TODO warn about repeated types in the scale
 
         // Initialize the settings
         var set_option = function(option, new_value) {

@@ -48,19 +48,19 @@ define(["utils"], function(utils) {
     function connect_to_settings(settings, map, get_data_statistics) {
 	// domains
         var update_reaction = function(s) {
-            var domain = domain_for_scale(s, get_data_statistics()['reaction']);
-	    this.reaction_color.domain(domain);
-	    this.reaction_size.domain(domain);
-	    this.reaction_color.range(range_for_scale(s, 'color'));
-	    this.reaction_size.range(range_for_scale(s, 'size'));
-	}.bind(this),
-            update_metabolite = function(s) {
-                var domain = domain_for_scale(s, get_data_statistics()['metabolite']);
-	        this.metabolite_color.domain(domain);
-	        this.metabolite_size.domain(domain);
-	        this.metabolite_color.range(range_for_scale(s, 'color'));
-	        this.metabolite_size.range(range_for_scale(s, 'size'));
-	    }.bind(this);
+	    var out = sort_scale(s, get_data_statistics()['reaction']);
+	    this.reaction_color.domain(out.domain);
+	    this.reaction_size.domain(out.domain);
+	    this.reaction_color.range(out.color_range);
+	    this.reaction_size.range(out.size_range);
+	}.bind(this);
+        var update_metabolite = function(s) {
+	    var out = sort_scale(s, get_data_statistics()['metabolite']);
+	    this.metabolite_color.domain(out.domain);
+	    this.metabolite_size.domain(out.domain);
+	    this.metabolite_color.range(out.color_range);
+	    this.metabolite_size.range(out.size_range);
+	}.bind(this);
 
         // scale changes
         settings.streams['reaction_scale'].onValue(update_reaction);
@@ -74,21 +74,24 @@ define(["utils"], function(utils) {
         });
         
         // definitions
-        function domain_for_scale(scale, stats) {
-            return scale.map(function(x) {
+	function sort_scale(scale, stats) {
+	    var sorted = scale.map(function(x) {
+		var v;
                 if (x.type in stats)
-                    return stats[x.type];
+                    v = stats[x.type];
                 else if (x.type == 'value')
-                    return x.value;
+                    v = x.value;
                 else
                     throw new Error('Bad domain type ' + x.type);
-            });
-        }
-        
-        function range_for_scale(scale, type) {
-            return scale.map(function(x) {
-                return x[type];
-            });
+		return { v: v,
+			 color: x.color,
+			 size: x.size };
+            }).sort(function(a, b) {
+		return a.v - b.v;
+	    });
+	    return { domain: sorted.map(function(x) { return x.v; }),
+		     color_range: sorted.map(function(x) { return x.color; }),
+		     size_range: sorted.map(function(x) { return x.size; }) };
         }
     }
 });
