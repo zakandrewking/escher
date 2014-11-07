@@ -6,37 +6,19 @@ describe('Map', function() {
 	svg = d3.select('body').append('svg');
 	
 	var sel = svg.append('g'),
-	    options = {	auto_reaction_domain: true,
-			reaction_data: null,
-			reaction_styles: ['color', 'size', 'abs', 'text'],
-			reaction_domain: [-10, 0, 10],
-			reaction_color_range: ['rgb(200,200,200)', 'rgb(150,150,255)', 'purple'],
-			reaction_size_range: [4, 8, 12],
-			reaction_no_data_color: 'rgb(220,220,220)',
-			reaction_no_data_size: 4,
-			// metabolite
-			metabolite_data: null,
-			metabolite_styles: ['color', 'size', 'text'],
-			auto_metabolite_domain: true,
-			metabolite_domain: [-10, 0, 10],
-			metabolite_color_range: ['green', 'white', 'red'],
-			metabolite_size_range: [6, 8, 10],
-			metabolite_no_data_color: 'white',
-			metabolite_no_data_size: 6,
-			// gene
-			gene_data: null,
-			gene_styles: ['text'],
-			// color reactions not in the model
-			highlight_missing_color: 'red' },
-	    set_option = function(key, val) { options[key] = val; },
-	    get_option = function(key) { return options[key]; };
-	
+            // streams are required for these options
+	    required_options = { reaction_scale: [],
+			         metabolite_scale: [] },
+	    set_option = function(key, val) { required_options[key] = val; },
+	    get_option = function(key) { return required_options[key]; };
+	    
 	map = escher.Map.from_data(get_map(),
 				   svg,
 				   null,
 				   sel,
 				   null,
-				   new escher.Settings(set_option, get_option),
+				   new escher.Settings(set_option, get_option,
+                                                       Object.keys(required_options)),
 				   null,
 				   false);
     });

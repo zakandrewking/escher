@@ -10,22 +10,24 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
      get_option: A function, fn(key, value), that sets the option for the key
      and value.
 
-     options_list: The options to be initialized.
+     conditional_options: The options to that are conditionally accepted when
+     changed. Changes can be abandoned by calling abandon_changes(), or accepted
+     by calling accept_changes().
 
      */
 
-    var SearchBar = utils.make_class();
+    var Settings = utils.make_class();
     // instance methods
-    SearchBar.prototype = { init: init,
+    Settings.prototype = { init: init,
                             set_conditional: set_conditional,
                             hold_changes: hold_changes,
                             abandon_changes: abandon_changes,
                             accept_changes: accept_changes };
 
-    return SearchBar;
+    return Settings;
 
     // instance methods
-    function init(set_option, get_option, options_list) {
+    function init(set_option, get_option, conditional_options) {
         this.set_option = set_option;
         this.get_option = get_option;
         
@@ -42,8 +44,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // create the options
         this.busses = {};
         this.streams = {};
-        for (var i = 0, l = options_list.length; i < l; i++) {
-            var name = options_list[i],
+        for (var i = 0, l = conditional_options.length; i < l; i++) {
+            var name = conditional_options[i],
                 out = _create_conditional_setting(name, get_option(name), set_option,
                                                   this.status_bus, this.force_update_bus);
             this.busses[name] = out.bus;

@@ -1,4 +1,4 @@
-define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput', 'QuickJump', 'data_styles'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput, QuickJump, data_styles) {
+define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsMenu', 'TextEditInput', 'QuickJump', 'data_styles'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsMenu, TextEditInput, QuickJump, data_styles) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Arguments
@@ -190,16 +190,17 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         }.bind(this),
             get_option = function(option) {
                 return this.options[option];
-            }.bind(this);
-        // these options can be edited in the settings menu
-        var editable_options = ['show_gene_reaction_rules', 'reaction_styles', 'metabolite_styles',
-                                'reaction_compare_style', 'metabolite_compare_style',
-                                'reaction_scale', 'metabolite_scale',
-                               'reaction_no_data_color', 'reaction_no_data_size',
-                               'metabolite_no_data_color', 'metabolite_no_data_size',
-                               'and_method_in_gene_reaction_rule', 'identifiers_on_map',
-                                'highlight_missing', 'allow_building_duplicate_reactions'];
-        this.settings = new Settings(set_option, get_option, editable_options);
+            }.bind(this),
+            // the options that are erased when the settings menu is canceled
+            conditional_options = ['show_gene_reaction_rules', 'reaction_styles',
+                                   'reaction_compare_style', 'reaction_scale',
+                                   'reaction_no_data_color', 'reaction_no_data_size',
+                                   'and_method_in_gene_reaction_rule', 'metabolite_styles',
+                                   'metabolite_compare_style', 'metabolite_scale',
+                                   'metabolite_no_data_color', 'metabolite_no_data_size',
+                                   'identifiers_on_map', 'highlight_missing',
+                                   'allow_building_duplicate_reactions',];
+        this.settings = new Settings(set_option, get_option, conditional_options);
 
         // set up this callback manager
         this.callback_manager = CallbackManager();
@@ -352,8 +353,21 @@ define(['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
         // set up the settings
         var settings_div = this.options.selection.append('div');
-        this.settings_bar = SettingsBar(settings_div, this.settings,
-                                        this.map);
+        this.settings_bar = SettingsMenu(settings_div, this.settings, this.map,
+                                         function(type, on_off) {
+                                             // temporarily set the abs type, for
+                                             // previewing it in the Settings
+                                             // menu
+                                             var o = this.options[type + '_styles'];
+                                             if (on_off && o.indexOf('abs') == -1)
+                                                 o.push('abs');
+                                             else if (!on_off) {
+                                                 var i = o.indexOf('abs');
+                                                 if (i != -1)
+                                                     this.options[type + '_styles'] = o.slice(0, i).concat(o.slice(i + 1));
+                                             }
+                                             this.update_data(false, true, type);
+                                         }.bind(this));
         this.settings_bar.callback_manager.set('show', function() {
             this.search_bar.toggle(false);
         }.bind(this));

@@ -48,14 +48,14 @@ define(["utils"], function(utils) {
     function connect_to_settings(settings, get_data_statistics) {
 	// domains
         settings.streams['reaction_scale'].onValue(function(s) {
-            var domain = domain_for_scale(s, get_data_statistics());
+            var domain = domain_for_scale(s, get_data_statistics()['reaction']);
 	    this.reaction_color.domain(domain);
 	    this.reaction_size.domain(domain);
 	    this.reaction_color.range(range_for_scale(s, 'color'));
 	    this.reaction_size.range(range_for_scale(s, 'size'));
 	}.bind(this));
 	settings.streams['metabolite_scale'].onValue(function(s) {
-            var domain = domain_for_scale(s, get_data_statistics());
+            var domain = domain_for_scale(s, get_data_statistics()['metabolite']);
 	    this.metabolite_color.domain(domain);
 	    this.metabolite_size.domain(domain);
 	    this.metabolite_color.range(range_for_scale(s, 'color'));
@@ -65,10 +65,10 @@ define(["utils"], function(utils) {
         // definitions
         function domain_for_scale(scale, stats) {
             return scale.map(function(x) {
-                if (['min', 'median', 'mean', 'max'].indexOf(x.type) != -1)
-                    return stats['reaction'][x.type]
+                if (x.type in stats)
+                    return stats[x.type];
                 else if (x.type == 'value')
-                    return x.value
+                    return x.value;
                 else
                     throw new Error('Bad domain type ' + x.type);
             });

@@ -34,6 +34,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	     decompartmentalize: decompartmentalize,
 	     mean: mean,
              median: median,
+             quartiles: quartiles,
 	     check_for_parent_tag: check_for_parent_tag,
 	     check_name: check_name,
 	     name_to_url: name_to_url,
@@ -680,10 +681,23 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     function median(array) {
         array.sort(function(a, b) { return a - b; });
         var half = Math.floor(array.length / 2);
-        if(array.length % 2)
+        if(array.length % 2 == 1)
             return array[half];
         else
             return (array[half-1] + array[half]) / 2.0;
+    }
+
+    function quartiles(array) {
+        array.sort(function(a, b) { return a - b; });
+        var half = Math.floor(array.length / 2);
+        if (array.length % 2 == 1)
+            return [ median(array.slice(0, half)),
+                     array[half],
+                     median(array.slice(half + 1)) ];
+        else
+            return [ median(array.slice(0, half)),
+                     (array[half-1] + array[half]) / 2.0,
+                     median(array.slice(half)) ];
     }
 
     function check_for_parent_tag(el, tag) {

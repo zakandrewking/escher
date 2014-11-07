@@ -791,814 +791,6 @@ a).createObjectURL(c);p?p.location.href=f:void 0==a.open(f,"_blank")&&"undefined
 c.size,"application/octet-stream"),l=!0);q&&"download"!==e&&(e+=".download");if("application/octet-stream"===b||q)p=a;u?(r+=c.size,u(a.TEMPORARY,r,h(function(a){a.root.getDirectory("saved",m,h(function(a){var b=function(){a.getFile(e,m,h(function(a){a.createWriter(h(function(b){b.onwriteend=function(b){p.location.href=a.toURL();d.readyState=d.DONE;t(d,"writeend",b);s(a)};b.onerror=function(){var a=b.error;a.code!==a.ABORT_ERR&&g()};["writestart","progress","write","abort"].forEach(function(a){b["on"+
 a]=d["on"+a]});b.write(c);d.abort=function(){b.abort();d.readyState=d.DONE};d.readyState=d.WRITING}),g)}),g)};a.getFile(e,{create:!1},h(function(a){a.remove();b()}),h(function(a){a.code===a.NOT_FOUND_ERR?b():g()}))}),g)}),g)):g()}},b=m.prototype;b.abort=function(){this.readyState=this.DONE;t(this,"abort")};b.readyState=b.INIT=0;b.WRITING=1;b.DONE=2;b.error=b.onwritestart=b.onprogress=b.onwrite=b.onabort=b.onerror=b.onwriteend=null;return function(a,b){return new m(a,b)}}}("undefined"!==typeof self&&
 self||"undefined"!==typeof window&&window||this.content);"undefined"!==typeof module&&null!==module?module.exports=saveAs:"undefined"!==typeof define&&null!==define&&null!=define.amd&&define('lib/FileSaver',[],function(){return saveAs});
-define('Utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
-    return { set_options: set_options,
-             setup_svg: setup_svg,
-	     remove_child_nodes: remove_child_nodes,
-             load_css: load_css,
-             load_files: load_files,
-             load_the_file: load_the_file,
-	     make_class: make_class,
-	     setup_defs: setup_defs,
-	     draw_an_object: draw_an_object,
-	     draw_a_nested_object: draw_a_nested_object,
-	     make_array: make_array,
-	     compare_arrays: compare_arrays,
-	     array_to_object: array_to_object,
-	     clone: clone,
-	     extend: extend,
-	     unique_concat: unique_concat,
-	     object_slice_for_ids: object_slice_for_ids,
-	     c_plus_c: c_plus_c,
-	     c_minus_c: c_minus_c,
-	     c_times_scalar: c_times_scalar,
-	     download_json: download_json,
-	     load_json: load_json,
-	     load_json_or_csv: load_json_or_csv,
-	     export_svg: export_svg,
-	     rotate_coords_recursive: rotate_coords_recursive,
-	     rotate_coords: rotate_coords,
-	     get_angle: get_angle,
-	     to_degrees: to_degrees,
-	     angle_for_event: angle_for_event,
-	     distance: distance,
-	     check_undefined: check_undefined,
-	     compartmentalize: compartmentalize,
-	     decompartmentalize: decompartmentalize,
-	     mean: mean,
-             median: median,
-	     check_for_parent_tag: check_for_parent_tag,
-	     check_name: check_name,
-	     name_to_url: name_to_url,
-	     parse_url_components: parse_url_components };
-
-    // definitions
-    function set_options(options, defaults) {
-        if (options===undefined) return defaults;
-        var i = -1,
-            out = defaults;
-	for (var key in options) {
-	    var val = options[key];
-	    if (val===undefined) {
-		val = null;
-	    }
-	    out[key] = val;
-	}
-        return out;
-    }
-
-    function setup_svg(selection, selection_is_svg, fill_screen) {
-        // sub selection places the graph in an existing svg environment
-        var add_svg = function(f, s) {
-            if (f) {
-                d3.select("body").classed('fill-screen-body', true);
-		s.classed('fill-screen-div', true);
-            }
-            var svg = s.append('svg')
-		    .attr("class", "escher-svg")
-                    .attr('xmlns', "http://www.w3.org/2000/svg");
-	    return svg;
-        };
-
-        // run
-        var out;
-	// set the selection class
-	selection.classed('escher-container', true);
-	// make the svg
-        if (selection_is_svg) {
-            return selection;
-        } else if (selection) {
-            return add_svg(fill_screen, selection);
-        } else {
-            throw new Error('No selection');
-        }
-    }
-
-    function remove_child_nodes(selection) {
-	/** Removes all child nodes from a d3 selection
-
-	 */
-	var node =  selection.node();
-	while (node.hasChildNodes()) {
-	    node.removeChild(node.lastChild);
-	}
-    }
-
-    function load_css(css_path, callback) {
-        var css = "";
-        if (css_path) {
-            d3.text(css_path, function(error, text) {
-                if (error) {
-                    console.warn(error);
-                }
-                css = text;
-                callback(css);
-            });
-        }
-        return false;
-    };
-    function update() {
-        return 'omg yes';
-    };
-    function load_the_file(t, file, callback, value) {
-        // if the value is specified, don't even need to do the ajax query
-        if (value) {
-            if (file) console.warn('File ' + file + ' overridden by value.');
-            callback.call(t, null, value, file);
-            return;
-        }
-        if (!file) {
-            callback.call(t, "No filename", null, file);
-            return;
-        }
-        if (ends_with(file, 'json'))
-	    d3.json(file, function(e, d) { callback(e, d, file); });
-        else if (ends_with(file, 'css'))
-	    d3.text(file, function(e, d) { callback(e, d, file); });
-        else
-	    callback.call(t, "Unrecognized file type", null, file);
-        return;
-
-        // definitions
-        function ends_with(str, suffix) {
-	    return str.indexOf(suffix, str.length - suffix.length) !== -1;
-	}
-    }
-    function load_files(t, files_to_load, final_callback) {
-        // load multiple files asynchronously
-        // Takes a list of objects: { file: a_filename.json, callback: a_callback_fn }
-        var i = -1, remaining = files_to_load.length, callbacks = {};
-        while (++i < files_to_load.length) {
-            var this_file = files_to_load[i].file;
-            callbacks[this_file] = files_to_load[i].callback;
-            load_the_file(t,
-			  this_file,
-                          function(e, d, file) {
-                              callbacks[file].call(t, e, d);
-                              if (!--remaining) final_callback.call(t);
-                          },
-                          files_to_load[i].value);
-        }
-    }
-    // makeClass - By Hubert Kauker (MIT Licensed)
-    // original by John Resig (MIT Licensed).
-    // http://stackoverflow.com/questions/7892884/simple-class-instantiation
-    function make_class(){
-	var isInternal;
-	var constructor = function(args){
-            if ( this instanceof constructor ) {
-		if ( typeof this.init == "function" ) {
-                    this.init.apply( this, isInternal ? args : arguments );
-		}
-            } else {
-		isInternal = true;
-		var instance = new constructor( arguments );
-		isInternal = false;
-		return instance;
-            }
-	};
-	return constructor;
-    }
-
-    function setup_defs(svg, style) {
-        // add stylesheet
-        svg.select("defs").remove();
-	var defs = svg.append("defs");
-	// make sure the defs is the first node
-	var node = defs.node();
-	node.parentNode.insertBefore(node, node.parentNode.firstChild);
-        defs.append("style")
-            .attr("type", "text/css")
-            .text(style);
-        return defs;
-    }
-
-    function draw_an_object(container_sel, parent_node_selector, children_selector,
-			    object, id_key, create_function, update_function,
-			    exit_function) {
-	/** Run through the d3 data binding steps for an object. Also checks to
-            make sure none of the values in the *object* are undefined, and
-            ignores those.
-
-	 Arguments
-	 ---------
-
-	 container_sel: A d3 selection containing all objects.
-
-	 parent_node_selector: A selector string for a subselection of
-	 container_sel.
-
-	 children_selector: A selector string for each DOM element to bind.
-
-	 object: An object to bind to the selection.
-
-	 id_key: The key that will be used to store object IDs in the bound data
-	 points.
-
-	 create_function: A function for enter selection.
-
-	 update_function: A function for update selection.
-
-	 exit_function: A function for exit selection.
-	 
-	*/
-        var draw_object = {};
-        for (var id in object) {
-            if (object[id] === undefined) {
-                console.warn('Undefined value for id ' + id + ' in object. Ignoring.');
-            } else {
-                draw_object[id] = object[id];
-            }
-        }
-        
-	var sel = container_sel.select(parent_node_selector)
-		.selectAll(children_selector)
-		.data(make_array(draw_object, id_key), function(d) { return d[id_key]; });
-	// enter: generate and place reaction
-	if (create_function)
-	    sel.enter().call(create_function);
-	// update: update when necessary
-	if (update_function)
-	    sel.call(update_function);
-	// exit
-	if (exit_function) 
-	    sel.exit().call(exit_function);
-    }
-
-    function draw_a_nested_object(container_sel, children_selector, object_data_key,
-				  id_key, create_function, update_function,
-				  exit_function) {
-	/** Run through the d3 data binding steps for an object that is nested
-	 within another element with d3 data.
-
-	 Arguments
-	 ---------
-
-	 container_sel: A d3 selection containing all objects.
-
-	 children_selector: A selector string for each DOM element to bind.
-
-	 object_data_key: A key for the parent object containing data for the
-	 new selection.
-
-	 id_key: The key that will be used to store object IDs in the bound data
-	 points.
-
-	 create_function: A function for enter selection.
-
-	 update_function: A function for update selection.
-
-	 exit_function: A function for exit selection.
-	 
-	 */
-	var sel = container_sel.selectAll(children_selector)
-	    .data(function(d) {
-		return make_array(d[object_data_key], id_key);
-	    }, function(d) { return d[id_key]; });
-	// enter: generate and place reaction
-	if (create_function)
-	    sel.enter().call(create_function);
-	// update: update when necessary
-	if (update_function)
-	    sel.call(update_function);
-	// exit
-	if (exit_function) 
-	    sel.exit().call(exit_function);
-    }
-
-    function make_array(obj, id_key) { // is this super slow?
-        var array = [];
-        for (var key in obj) {
-            // copy object
-            var it = clone(obj[key]);
-            // add key as 'id'
-            it[id_key] = key;
-            // add object to array
-            array.push(it);
-        }
-        return array;
-    }
-
-    function compare_arrays(a1, a2) {
-	/** Compares two simple (not-nested) arrays.
-
-	 */
-	if (!a1 || !a2) return false;
-	if (a1.length != a2.length) return false;
-	for (var i = 0, l=a1.length; i < l; i++) {
-            if (a1[i] != a2[i]) {
-		// Warning - two different object instances will never be equal: {x:20} != {x:20}
-		return false;
-            }
-	}
-	return true;
-    }
-
-    function array_to_object(arr) {
-	var obj = {};
-	for (var i=0, l=arr.length; i<l; i++) { // 0
-	    var a = arr[i];
-	    for (var id in a) {
-		if (id in obj) {
-		    obj[id][i] = a[id];
-		} else {
-		    var n = [];
-		    // fill leading spaces with null
-		    for (var j=0; j<i; j++) {
-			n[j] = null;
-		    }
-		    n[i] = a[id];
-		    obj[id] = n;
-		}
-	    }
-	    // fill trailing spaces with null
-	    for (var id in obj) {
-		for (var j=obj[id].length; j<=i; j++) {
-		    obj[id][j] = null;
-		}
-	    }
-	}
-	return obj;
-    }
-
-    function clone(obj) {
-	// Handles the array and object types, and null or undefined
-	if (null == obj || "object" != typeof obj) return obj;
-	// Handle Array
-	if (obj instanceof Array) {
-            var copy = [];
-            for (var i = 0, len = obj.length; i < len; i++) {
-		copy[i] = clone(obj[i]);
-            }
-            return copy;
-	}
-	// Handle Object
-	if (obj instanceof Object) {
-            var copy = {};
-            for (var attr in obj) {
-		if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
-            }
-            return copy;
-	}
-	throw new Error("Unable to copy obj! Its type isn't supported.");
-    }
-
-    function extend(obj1, obj2, overwrite) {
-	/** Extends obj1 with keys/values from obj2. Performs the extension
-	    cautiously, and does not override attributes, unless the overwrite
-	    argument is true.
-
-	    Arguments
-	    ---------
-
-	    obj1: Object to extend
-	    
-	    obj2: Object with which to extend.
-
-	    overwrite: (Optional, Default false) Overwrite attributes in obj1.
-
-	*/
-
-	if (overwrite === undefined)
-	    overwrite = false;
-	
-	for (var attrname in obj2) { 
-	    if (!(attrname in obj1) || overwrite) // UNIT TEST This
-		obj1[attrname] = obj2[attrname];
-	    else
-		throw new Error('Attribute ' + attrname + ' already in object.');
-	}
-    }
-
-    function unique_concat(arrays) {
-	var new_array = [];
-	arrays.forEach(function (a) {
-	    a.forEach(function(x) {
-		if (new_array.indexOf(x) < 0)
-		    new_array.push(x);
-	    });
-	});
-	return new_array;
-    }
-
-    function object_slice_for_ids(obj, ids) {
-	/** Return a copy of the object with just the given ids. 
-	 
-	 Arguments
-	 ---------
-
-	 obj: An object.
-
-	 ids: An array of id strings.
-
-	 */
-        var subset = {}, i = -1;
-        while (++i<ids.length) {
-	    subset[ids[i]] = clone(obj[ids[i]]);
-        }
-        if (ids.length != Object.keys(subset).length) {
-	    console.warn('did not find correct reaction subset');
-        }
-	return subset;
-    }
-
-    function c_plus_c(coords1, coords2) {
-	if (coords1 === null || coords2 === null || 
-	    coords1 === undefined || coords2 === undefined)
-	    return null;
-	return { "x": coords1.x + coords2.x,
-		 "y": coords1.y + coords2.y };
-    }
-    function c_minus_c(coords1, coords2) {
-	if (coords1 === null || coords2 === null || 
-	    coords1 === undefined || coords2 === undefined)
-	    return null;
-	return { "x": coords1.x - coords2.x,
-		 "y": coords1.y - coords2.y };
-    }
-
-    function c_times_scalar(coords, scalar) {
-	return { "x": coords.x * scalar,
-		 "y": coords.y * scalar };
-    }
-    
-    function download_json(json, name) {
-	/** Download json file in a blob.
-
-	 */
-	var j = JSON.stringify(json),
-	    blob = new Blob([j], {type: "octet/stream"});
-	FileSaver(blob, name + '.json');
-    }
-
-    function load_json(f, callback, pre_fn, failure_fn) {
-	/** Try to load the file as JSON.
-
-	    Arguments
-	    ---------
-
-	    f: The file path
-
-	    callback: A callback function that accepts arguments: error, data.
-
-            pre_fn: (optional) A function to call before loading the data.
-
-            failure_fn: (optional) A function to call if the load fails or is aborted.
-            
-	*/
-	// Check for the various File API support.
-	if (!(window.File && window.FileReader && window.FileList && window.Blob))
-	    callback("The File APIs are not fully supported in this browser.", null);
-
-	var reader = new window.FileReader();
-	// Closure to capture the file information.
-	reader.onload = function(event) {
-	    var result = event.target.result,
-		data;
-	    // try JSON
-	    try {
-		data = JSON.parse(result);
-	    } catch (e) {
-		// if it failed, return the error
-		callback(e, null);
-		return;
-	    }
-	    // if successful, return the data
-	    callback(null, data);
-        };
-        if (pre_fn !== undefined && pre_fn !== null) {
-            try { pre_fn(); }
-            catch (e) { console.warn(e); }
-        }
-        reader.onabort = function(event) {
-            try { failure_fn(); }
-            catch (e) { console.warn(e); }
-        }
-        reader.onerror = function(event) {
-            try { failure_fn(); }
-            catch (e) { console.warn(e); }
-        }
-	// Read in the image file as a data URL.
-	reader.readAsText(f);
-    }
-    
-    function load_json_or_csv(f, csv_converter, callback, pre_fn, failure_fn,
-                              debug_event) {
-	/** Try to load the file as JSON or CSV (JSON first).
-
-	    Arguments
-	    ---------
-
-	    f: The file path
-
-	    csv_converter: A function to convert the CSV output to equivalent JSON.
-
-	    callback: A callback function that accepts arguments: error, data.
-
-            pre_fn: (optional) A function to call before loading the data.
-
-            failure_fn: (optional) A function to call if the load fails or is aborted.
-
-	    debug_event: (optional) An event, with a string at
-	    event.target.result, to load as though it was the contents of a
-	    loaded file.
-
-	*/
-	// Check for the various File API support.
-	if (!(window.File && window.FileReader && window.FileList && window.Blob))
-	    callback("The File APIs are not fully supported in this browser.", null);
-
-	var reader = new window.FileReader(),
-	    // Closure to capture the file information.
-	    onload_function = function(event) {
-                
-		var result = event.target.result,
-		    data, errors;
-		// try JSON
-		try {
-		    data = JSON.parse(result);
-		} catch (e) {
-		    errors = 'JSON error: ' + e;
-		    
-		    // try csv
-		    try {
-			data = csv_converter(d3.csv.parseRows(result));
-		    } catch (e) {
-			// if both failed, return the errors
-			callback(errors + '\nCSV error: ' + e, null);
-			return;
-		    }
-		}
-		// if successful, return the data
-		callback(null, data);
-            };
-	if (debug_event !== undefined && debug_event !== null) {
-	    console.warn('Debugging load_json_or_csv');
-	    return onload_function(debug_event);
-	}
-        if (pre_fn !== undefined && pre_fn !== null) {
-            try { pre_fn(); }
-            catch (e) { console.warn(e); }
-        }
-        reader.onabort = function(event) {
-            try { failure_fn(); }
-            catch (e) { console.warn(e); }
-        }
-        reader.onerror = function(event) {
-            try { failure_fn(); }
-            catch (e) { console.warn(e); }
-        }
-	// Read in the image file as a data URL.
-	reader.onload = onload_function;
-	reader.readAsText(f);
-    }
-    
-    function export_svg(name, svg_sel, do_beautify) {
-        var a = document.createElement('a'), xml, ev;
-        a.download = name + '.svg'; // file name
-	// convert node to xml string
-        xml = (new XMLSerializer()).serializeToString(svg_sel.node()); 
-        if (do_beautify) xml = vkbeautify.xml(xml);
-        xml = '<?xml version="1.0" encoding="utf-8"?>\n \
-            <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n \
-        "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' + xml;
-        a.setAttribute("href-lang", "image/svg+xml");
-        a.href = 'data:image/svg+xml;base64,' + utf8_to_b64(xml); // create data uri
-        // <a> constructed, simulate mouse click on it
-        ev = document.createEvent("MouseEvents");
-        ev.initMouseEvent("click", true, false, self, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        a.dispatchEvent(ev);
-        
-	// definitions
-        function utf8_to_b64(str) {
-            return window.btoa(unescape(encodeURIComponent( str )));
-        }
-    };
-
-    function rotate_coords_recursive(coords_array, angle, center) {
-	var rot = function(c) { return rotate_coords(c, angle, center); };
-        return coords_array.map(rot);
-    }
-
-    function rotate_coords(c, angle, center) {
-	/** Calculates displacement { x: dx, y: dy } based on rotating point c around 
-	 center with angle.
-
-	 */
-        var dx = Math.cos(-angle) * (c.x - center.x) +
-                Math.sin(-angle) * (c.y - center.y)
-		+ center.x - c.x,
-            dy = - Math.sin(-angle) * (c.x - center.x) +
-                Math.cos(-angle) * (c.y - center.y)
-		+ center.y - c.y;
-        return { x: dx, y: dy };
-    }
-
-    function get_angle(coords) {
-	/* Takes an array of 2 coordinate objects {"x": 1, "y": 1}
-	 *
-	 * Returns angle between 0 and 2PI.
-	 */
-	var denominator = coords[1].x - coords[0].x,
-	    numerator = coords[1].y - coords[0].y;
-	if (denominator==0 && numerator >= 0) return Math.PI/2;
-	else if (denominator==0 && numerator < 0) return 3*Math.PI/2;
-	else if (denominator >= 0 && numerator >= 0) return Math.atan(numerator/denominator);
-	else if (denominator >= 0) return (Math.atan(numerator/denominator) + 2*Math.PI);
-	else return (Math.atan(numerator/denominator) + Math.PI);
-    }
-
-    function to_degrees(radians) { return radians*180/Math.PI; }
-
-    function angle_for_event(displacement, point, center) {
-	var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
-	    beta = Math.atan2((point.x - center.x + displacement.x), 
-			      (center.y - point.y - displacement.y)),
-	    angle = beta - gamma;
-	return angle;
-    }
-
-    function distance(start, end) { return Math.sqrt(Math.pow(end.y-start.y, 2) + Math.pow(end.x-start.x, 2)); }
-
-    function check_undefined(args, names) {
-	/** Report an error if any of the arguments are undefined.
-
-	 Call by passing in *arguments* from any function and an array of
-	 argument names.
-
-	 */
-	names.map(function(name, i) {
-	    if (args[i]===undefined) {
-		console.error('Argument is undefined: '+String(names[i]));
-	    }
-	});
-    }
-
-    function compartmentalize(bigg_id, compartment_id) {
-	return bigg_id + '_' + compartment_id;
-    }
-
-
-    // definitions
-    function decompartmentalize(id) {
-	/** Convert ids to bigg_id and compartment_id.
-	 
-	 */
-	var out = no_compartment(id);
-	if (out===null) out = [id, null];
-	return out;
-
-	// definitions
-	function no_compartment(id) {
-	    /** Returns an array of [bigg_id, compartment id].
-
-	     Matches compartment ids with length 1 or 2.
-
-	     Return null if no match is found.
-
-	     */
-	    var reg = /(.*)_([a-z0-9]{1,2})$/,
-		result = reg.exec(id);
-	    if (result===null) return null;
-	    return result.slice(1,3);
-	}
-    }
-
-    function mean(array) {
-	var sum = array.reduce(function(a, b) { return a + b; });
-	var avg = sum / array.length;
-	return avg;
-    }
-
-    function median(array) {
-        array.sort(function(a, b) { return a - b; });
-        var half = Math.floor(array.length / 2);
-        if(array.length % 2)
-            return array[half];
-        else
-            return (array[half-1] + array[half]) / 2.0;
-    }
-
-    function check_for_parent_tag(el, tag) {
-	/** Check that the selection has the given parent tag.
-
-	 el: A d3 selection or node.
-
-	 tag: A tag name (case insensitive)
-
-	 */
-	// make sure it is a node
-	if (el instanceof Array)
-	    el = el.node();
-	while (el.parentNode !== null) {
-	    el = el.parentNode;
-	    if (el.tagName === undefined) continue;
-	    if (el.tagName.toLowerCase() === tag.toLowerCase())
-		return true;
-	}
-	return false;
-    }
-
-    function check_name(name) {
-	/** Name cannot include:
-
-	    <>:"/\|?*
-
-	*/
-
-	if (/[<>:"\/\\\|\?\*]/.test(name))
-	    throw new Error('Name cannot include the characters <>:"/\|?*');
-    }
-   
-    function name_to_url(name, download_url) {
-	/** Convert short name to url. The short name is separated by '+'
-	    characters.
-
-	 Arguments
-	 ---------
-
-	 name: The short name, e.g. e_coli.iJO1366.central_metabolism.
-
-	 download_url: The url to prepend (optional).
-
-	*/
-
-	check_name(name);
-
-	var parts = name.split('.'),
-	    longname;
-	if (parts.length == 2) {
-	    longname = ['organisms', parts[0], 'models', parts[1]+'.json'].join('/');
-	} else if (parts.length == 3) {
-	    longname = ['organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json'].join('/');
-	} else {
-            throw Error('Bad short name');
-	}
-	if (download_url !== undefined && download_url !== null) {
-	    // strip download_url
-	    download_url = download_url.replace(/^\/|\/$/g, '');
-	    longname = [download_url, longname].join('/');
-	}
-	// strip final path
-	return longname.replace(/^\/|\/$/g, '');
-    }
-
-    function parse_url_components(the_window, options, download_url) {
-	/** Parse the URL and return options based on the URL arguments.
-
-	 Arguments
-	 ---------
-
-	 the_window: A reference to the global window.
-	 
-	 options: (optional) an existing options object to which new options
-	 will be added. Overwrites existing arguments in options.
-
-	 map_download_url: (optional) If map_name is in options, then add map_path
-	 to options, with this url prepended.
-
-	 model_download_url: (optional) If model_name is in options, then add model_path
-	 to options, with this url prepended.
-
-	 Adapted from http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
-
-	 */
-	if (options===undefined) options = {};
-
-	var query = the_window.location.search.substring(1),
-	    vars = query.split("&");
-	for (var i = 0; i < vars.length; i++) {
-	    var pair = vars[i].split("=");
-	    // deal with array options
-	    if (pair[0].indexOf('[]') == pair[0].length - 2) {
-		var o = pair[0].replace('[]', '');
-		if (!(o in options))
-		    options[o] = [];
-		options[o].push(pair[1]);
-	    } else {
-		options[pair[0]] = pair[1];
-	    }
-	}
-
-	// generate map_path and model_path
-	[
-	    ['map_name', 'map_path'],
-	    ['model_name', 'cobra_model_path']
-	].forEach(function(ar) {
-	    var key = ar[0], path = ar[1];
-	    if (key in options) {
-		try {
-		    options[path] = name_to_url(options[key], download_url);
-		} catch (e) {
-		    console.warn(key + ' ' + options[key] + ' cannot be converted to a URL.');
-		}
-	    }
-	});
-
-	return options;
-    }    
-});
-
 define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     return { set_options: set_options,
              setup_svg: setup_svg,
@@ -1635,6 +827,7 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	     decompartmentalize: decompartmentalize,
 	     mean: mean,
              median: median,
+             quartiles: quartiles,
 	     check_for_parent_tag: check_for_parent_tag,
 	     check_name: check_name,
 	     name_to_url: name_to_url,
@@ -2281,10 +1474,23 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     function median(array) {
         array.sort(function(a, b) { return a - b; });
         var half = Math.floor(array.length / 2);
-        if(array.length % 2)
+        if(array.length % 2 == 1)
             return array[half];
         else
             return (array[half-1] + array[half]) / 2.0;
+    }
+
+    function quartiles(array) {
+        array.sort(function(a, b) { return a - b; });
+        var half = Math.floor(array.length / 2);
+        if (array.length % 2 == 1)
+            return [ median(array.slice(0, half)),
+                     array[half],
+                     median(array.slice(half + 1)) ];
+        else
+            return [ median(array.slice(0, half)),
+                     (array[half-1] + array[half]) / 2.0,
+                     median(array.slice(half)) ];
     }
 
     function check_for_parent_tag(el, tag) {
@@ -6430,14 +5636,14 @@ define('Scale',["utils"], function(utils) {
     function connect_to_settings(settings, get_data_statistics) {
 	// domains
         settings.streams['reaction_scale'].onValue(function(s) {
-            var domain = domain_for_scale(s, get_data_statistics());
+            var domain = domain_for_scale(s, get_data_statistics()['reaction']);
 	    this.reaction_color.domain(domain);
 	    this.reaction_size.domain(domain);
 	    this.reaction_color.range(range_for_scale(s, 'color'));
 	    this.reaction_size.range(range_for_scale(s, 'size'));
 	}.bind(this));
 	settings.streams['metabolite_scale'].onValue(function(s) {
-            var domain = domain_for_scale(s, get_data_statistics());
+            var domain = domain_for_scale(s, get_data_statistics()['metabolite']);
 	    this.metabolite_color.domain(domain);
 	    this.metabolite_size.domain(domain);
 	    this.metabolite_color.range(range_for_scale(s, 'color'));
@@ -6447,10 +5653,10 @@ define('Scale',["utils"], function(utils) {
         // definitions
         function domain_for_scale(scale, stats) {
             return scale.map(function(x) {
-                if (['min', 'median', 'mean', 'max'].indexOf(x.type) != -1)
-                    return stats['reaction'][x.type]
+                if (x.type in stats)
+                    return stats[x.type];
                 else if (x.type == 'value')
-                    return x.value
+                    return x.value;
                 else
                     throw new Error('Bad domain type ' + x.type);
             });
@@ -10059,7 +9265,8 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
      map.callback_manager.run('select_text_label');
      map.callback_manager.run('before_svg_export');
      map.callback_manager.run('after_svg_export');
-     this.callback_manager.run('calc_data_stats', null, same);
+     this.callback_manager.run('calc_data_stats__reaction', null, same);
+     this.callback_manager.run('calc_data_stats__metabolite', null, same);
 
      */
 
@@ -10171,6 +9378,9 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                                    width: size.width*3, height: size.height*3};
         }
 
+        // set up the callbacks
+        this.callback_manager = new CallbackManager();
+        
         // set up the defs
         this.svg = svg;
         this.defs = utils.setup_defs(svg, css);
@@ -10194,10 +9404,9 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
         // make the scales
         this.scale = new Scale();
-        this.data_statistics = { 'reaction': { 'min': null, 'median': null,
-                                               'mean': null, 'max': null },
-                                 'metabolite': { 'min': null, 'median': null,
-                                                 'mean': null, 'max': null } };
+        // initialize stats
+        this.calc_data_stats('reaction');
+        this.calc_data_stats('metabolite');
         this.scale.connect_to_settings(this.settings,
                                        get_data_statistics.bind(this));
 
@@ -10223,9 +9432,6 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
         // hide beziers
         this.beziers_enabled = false;
-
-        // set up the callbacks
-        this.callback_manager = new CallbackManager();
 
         // data
         this.has_data_on_reactions = false;
@@ -10977,6 +10183,14 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         if (['reaction', 'metabolite'].indexOf(type) == -1)
             throw new Error('Bad type ' + type);
 
+        // make the data structure
+        if (!('data_statistics' in this)) {
+            this.data_statistics = {};
+            this.data_statistics[type] = {};
+        } else if (!(type in this.data_statistics)) {
+            this.data_statistics[type] = {};
+        }
+        
         var same = true;
         // default min and max
         var vals = [];
@@ -10996,19 +10210,30 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         }
 
         // calculate these statistics
-        var funcs = [['min', on_array(Math.min)], ['max', on_array(Math.max)],
-                     ['median', utils.median], ['mean', utils.mean]];
+        var quartiles = utils.quartiles(vals),
+            funcs = [['min', on_array(Math.min)],
+                     ['max', on_array(Math.max)],
+                     ['mean', utils.mean],
+                     ['Q1', function() { return quartiles[0]; }],
+                     ['median', function() { return quartiles[1]; }],
+                     ['Q3', function() { return quartiles[2]; }]];
         funcs.forEach(function(ar) {
-            var name = ar[0], fn = ar[1],
+            var new_val, name = ar[0];
+            if (vals.length == 0) {
+                new_val = null;
+            } else {
+                var fn = ar[1];
                 new_val = fn(vals);
+            }
             if (new_val != this.data_statistics[type][name])
                 same = false;
             this.data_statistics[type][name] = new_val;
         }.bind(this));
 
-        console.log(this.data_statistics[type], same);
-
-        this.callback_manager.run('calc_data_stats', null, same);
+        if (type == 'reaction')
+            this.callback_manager.run('calc_data_stats__reaction', null, same);
+        else
+            this.callback_manager.run('calc_data_stats__metabolite', null, same);
         return same;
 
         // definitions
@@ -12541,15 +11766,15 @@ define('Settings',["utils", "lib/bacon"], function(utils, bacon) {
 
      */
 
-    var SearchBar = utils.make_class();
+    var Settings = utils.make_class();
     // instance methods
-    SearchBar.prototype = { init: init,
+    Settings.prototype = { init: init,
                             set_conditional: set_conditional,
                             hold_changes: hold_changes,
                             abandon_changes: abandon_changes,
                             accept_changes: accept_changes };
 
-    return SearchBar;
+    return Settings;
 
     // instance methods
     function init(set_option, get_option, options_list) {
@@ -12710,7 +11935,9 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
     var ScaleEditor = utils.make_class();
     // instance methods
     ScaleEditor.prototype = { init: init,
-                              update: update };
+                              update: update,
+                              update_no_data: update_no_data,
+                              _data_not_loaded: _data_not_loaded };
     return ScaleEditor;
 
     // instance methods
@@ -12723,22 +11950,35 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         this.input_width = 90;
         this.input_height = 24;
         var b = sel.append('div')
-                .attr('class', 'live-scale-container');
-        this.input_label_group = b.append('div');
+                .attr('class', 'scale-editor');
+        // no data loaded
+        this.data_not_loaded = b.append('div')
+            .attr('class', 'data-not-loaded')
+            .text(type[0].toUpperCase() + type.slice(1) + ' data not loaded');
+        // label
+        this.input_label_group = b.append('div')
+            .attr('class', 'input-label-group');
+        // no data
+        var nd = b.append('div')
+            .style('top', this.input_height * 3 + 56 + 10 + 'px')
+            .attr('class', 'no-data');
+        nd.append('span').text('Styles for ' + type + 's with no data')
+            .attr('class', 'no-data-heading');
+        this.no_data_container = nd.append('div');
         var c = b.append('div')
-                .attr('class', 'live-scale-centered');
+                .attr('class', 'centered');
         this.add_group = c.append('div');
         this.trash_group = c.append('div')
-            .attr('class', 'live-scale-trash-container');
+            .attr('class', 'trash-container');
         var svg = c.append('svg')
-                .attr('class', 'live-scale');
+                .attr('class', 'scale-svg');
         this.input_group = c.append('div')
-            .attr('class', 'live-scale-input-container');
+            .attr('class', 'input-container');
         this.gradient = svg.append('defs')
             .append('linearGradient')
             .attr('id', grad_id);
         svg.append('rect')
-            .attr('class', 'live-scale-rect')
+            .attr('class', 'rect')
             .attr('fill', 'url(#' + grad_id + ')')
             .attr('width', this.w + 'px')
             .attr('height', this.h + 'px')
@@ -12753,7 +11993,16 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         var unique_map_id = this.settings.get_option('unique_map_id');
         this.unique_string = (unique_map_id === null ? '' : '.' + unique_map_id);
 
-        // collect data
+        // collect data    
+        this.no_data = {};
+        ['color', 'size'].forEach(function(s) {
+            this.no_data[s] = null;
+            this.settings.streams[this.type + '_no_data_' + s].onValue(function(val) {
+                this.no_data[s] = val;
+                this.update_no_data();
+            }.bind(this));
+        }.bind(this));
+        
         this.settings.streams[type + '_scale'].onValue(function(scale) {
             this.scale = scale;
             this.update();
@@ -12763,25 +12012,30 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
     function update() {
         var scale = this.scale,
             stats = this.get_data_statistics()[this.type],
-            sc = d3.scale.linear()
+            bar_w = 14,
+            bar_h = 35,
+            x_disp = this.x,
+            data_not_loaded = this._data_not_loaded();
+
+        // Must have max and min. Otherwise, assume that no data is loaded.
+        if (data_not_loaded) {
+            scale = [{ type: 'min', 'color': null, 'size': null },
+                     { type: 'max', 'color': null, 'size': null }];
+            stats = { 'min': 0, 'max': 1 };
+        }
+
+        var sc = d3.scale.linear()
                 .domain([0, this.w])
                 .range([stats.min, stats.max]),
             sc_size = d3.scale.linear()
                 .domain([0, this.w])
-                .range([0, stats.max - stats.min]),
-            bar_w = 14,
-            bar_h = 35,
-            x_disp = this.x;
-
-        // must have max and min
-        if (stats.max === null || stats.min === null)
-            scale = [];
+                .range([0, stats.max - stats.min]);
 
         // ---------------------------------------------------------------------
         // convenience functions
         var bring_to_front = function(d, i) {
             // bring an input set to the front 
-            this.input_group.selectAll('.live-scale-input-set').each(function(d2) {
+            this.input_group.selectAll('.input-set').each(function(d2) {
                 d3.select(this).classed('selected-set', d === d2);
             });
         }.bind(this);
@@ -12805,10 +12059,15 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         stops.attr('offset', function(d) {
             return ((get_this_val(d) - stats.min) / (stats.max - stats.min)) * 100 + '%';
         }).style('stop-color', function (d) {
-            return d.color;
+            return d.color === null ? '#F1ECFA' : d.color;
         });
         stops.exit().remove();
 
+        // ---------------------------------------------------------------------
+        // no data sign
+
+        this.data_not_loaded.style('visibility', (data_not_loaded ? null : 'hidden'));
+        
         // ---------------------------------------------------------------------
         // make the pickers
         var pickers = this.pickers_group
@@ -12860,7 +12119,7 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         trashes.attr('class', function(d, i) {
             if (i == 0 || i == scale.length - 1)
                 return null;
-            return 'live-scale-trash glyphicon glyphicon-trash';
+            return 'trash glyphicon glyphicon-trash';
         }).style('left', function(d) {
             return sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp + 'px';
         }).on('click', function (d, i) {
@@ -12905,7 +12164,6 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
 			   color: scale[last_ind].color,
 			   size: scale[last_ind].size }])
 		.concat(scale.slice(last_ind + 1));
-	    console.log(scale);
 	    set_scale(scale);
         }.bind(this));
         // exit
@@ -12913,11 +12171,11 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         
         // ---------------------------------------------------------------------
         // input labels
-        var labels = this.input_label_group.selectAll('.live-scale-label')
+        var labels = this.input_label_group.selectAll('.row-label')
                 .data(['Value:', 'Color:', 'Size:']);
         // enter
         labels.enter().append('div')
-	    .attr('class', 'live-scale-label')
+	    .attr('class', 'row-label')
 	    .style('height', this.input_height + 'px')
 	    .style('line-height', this.input_height + 'px');
         // update
@@ -12931,26 +12189,22 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         
         // ---------------------------------------------------------------------
         // inputs
-        var inputs = this.input_group.selectAll('.live-scale-input-set')
+        var inputs = this.input_group.selectAll('.input-set')
                 .data(scale);
         
         // enter
         var i = inputs.enter()
                 .append('div')
-                .attr('class', 'live-scale-input-set');
+                .attr('class', 'input-set');
         i.append('input')
-            .attr('class', 'live-scale-input domain-input')
+            .attr('class', 'domain-input')
             .style('width', this.input_width + 'px');
-	// domain types
-        var select = i.append('select')
-                .attr('class', 'live-scale-input domain-type-picker');
-	var opts = select.selectAll('option').data(['value', 'median', 'mean']);
-	opts.enter().append('option');
-	opts.attr('value', function(d) { return d; })
-	    .text(function(d) { return d; });
+        // type picker
+        i.append('select')
+            .attr('class', 'domain-type-picker'),
 	// color input
         i.append('input')
-            .attr('class', 'live-scale-input color-input')
+            .attr('class', 'color-input')
             .style('width', this.input_width + 'px');
         i.append('input')
             .attr('type', 'color')
@@ -12958,9 +12212,9 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
                 // hide the input if the HTML5 color picker is not supported
                 return (this.type == 'text') ? 'hidden' : null;
             })
-            .attr('class', 'live-scale-input color-picker');
+            .attr('class', 'color-picker');
         i.append('input')
-            .attr('class', 'live-scale-input size-input')
+            .attr('class', 'size-input')
             .style('width', this.input_width + 'px');
         
         // update
@@ -12973,7 +12227,8 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
                 return l + 'px';
             }.bind(this))
 	    .on('mousedown', bring_to_front);
-        
+
+        var format = d3.format('.4g');
         inputs.select('.domain-input')
             .style('height', this.input_height + 'px')
             .each(function (d, i) {
@@ -12981,7 +12236,7 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
                     this.value = get_this_val(d);
                     this.disabled = false;
 		} else {
-                    this.value = d.type + ' (' + get_this_val(d) + ')';
+                    this.value = d.type + ' (' + format(get_this_val(d)) + ')';
                     this.disabled = true;
                 } 
             }).on('change', function(d, i) {
@@ -12992,8 +12247,19 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
                 scale[i].value = new_d;
                 set_scale(scale);
             });
-        inputs.select('.domain-type-picker')
-            .style('visibility', function(d, i) {
+        // update type picker
+        var select = inputs.select('.domain-type-picker'),
+            // get the function types, except min and max
+            stat_types = (['value'].concat(Object.keys(stats))
+                          .filter(function(x) {
+                              return x != 'min' && x != 'max';
+                          })),
+	    opts = select.selectAll('option').data(stat_types);
+	opts.enter().append('option');
+	opts.attr('value', function(d) { return d; })
+	    .text(function(d) { return d; });
+        opts.exit().remove();
+        select.style('visibility', function(d, i) {
                 return (i == 0 || i == scale.length - 1) ? 'hidden' : null;
             })
             .style('left', (this.input_width - 20) + 'px')
@@ -13014,11 +12280,13 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
 		// reload
                 set_scale(scale);
             });
+        // update color input
         inputs.select('.color-input')
             .style('height', this.input_height + 'px')
             .style('top', this.input_height + 'px')
             .each(function (d, i) {
-                this.value = d.color;
+                this.value = (d.color === null ? '' : d.color);
+                this.disabled = (d.color === null);
             }).on('change', function(d, i) {
                 scale[i].color = this.value;
                 set_scale(scale);
@@ -13029,7 +12297,8 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
             .style('width', this.input_height + 'px')
             .style('height', this.input_height + 'px')
             .each(function (d, i) {
-                this.value = d.color;
+                this.value = (d.color === null ? '#dddddd' : d.color);
+                this.disabled = (d.color === null);
             }).on('change', function(d, i) {
                 scale[i].color = this.value;
                 set_scale(scale);
@@ -13038,7 +12307,8 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
             .style('height', this.input_height + 'px')
             .style('top', this.input_height * 2 + 'px')
             .each(function (d, i) {
-                this.value = d.size;
+                this.value = (d.size === null ? '' : d.size);
+                this.disabled = (d.size === null);
             }).on('change', function(d, i) {
                 scale[i].size = parseFloat(this.value);
                 set_scale(scale);
@@ -13047,28 +12317,103 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         // exit
         inputs.exit().remove();
     }
+    
+    function update_no_data() {
+        var no_data = this.no_data,
+            data_not_loaded = this._data_not_loaded(),
+            label_w = 40;
+        
+        var ins = this.no_data_container
+                .selectAll('.input-group')
+                .data([['color', 'Color:'], ['size', 'Size:']]);
+        // enter
+        var t = ins.enter().append('div')
+                .attr('class', 'input-group');
+        t.append('span');
+        t.append('input');
+        t.append('input')
+            .attr('type', 'color')
+            .style('visibility', function(d) {
+                // hide the input if the HTML5 color picker is not supported,
+                // or if this is a size box
+                return (this.type == 'text' || d[0] != 'color') ? 'hidden' : null;
+            })
+            .attr('class', 'color-picker');
+        // update
+        ins.select('span')
+            .text(function(d) { return d[1]; })
+	    .style('height', this.input_height + 'px')
+	    .style('line-height', this.input_height + 'px')
+            .style('left', function(d, i) {
+                return ((label_w + this.input_width + 10) * i) + 'px';
+            }.bind(this));
+        var get_o = function(kind) {
+            return this.settings.get_option(this.type + '_no_data_' + kind);
+        }.bind(this);
+        ins.select('input')
+            .style('left', function(d, i) {
+                return (label_w + (label_w + this.input_width + 10) * i) + 'px';
+            }.bind(this))
+            .style('height', this.input_height + 'px')
+            .style('width', this.input_width + 'px')
+            .each(function(d) {
+                // initial value
+                this.value = data_not_loaded ? '' : no_data[d[0]];
+                this.disabled = data_not_loaded;
+            })
+            .on('change', function(d) {
+                var val = d3.event.target.value;
+                if (d[0] == 'size')
+                    val = parseFloat(val);
+                this.no_data[d[0]] = val;
+                this.settings.set_conditional(this.type + '_no_data_' + d[0], val);
+                this.update_no_data();
+	    }.bind(this));
+        ins.select('.color-picker')
+            .style('left', function(d, i) {
+                return ((label_w + this.input_width) * (i + 1) - this.input_height) + 'px';
+            }.bind(this))
+            .style('width', this.input_height + 'px')
+            .style('height', this.input_height + 'px')
+            .each(function (d, i) {
+                this.value = data_not_loaded ? '#dddddd' : no_data[d[0]];
+                this.disabled = data_not_loaded;
+            })
+            .on('change', function(d, i) {
+                var val = d3.event.target.value;
+                this.no_data[d[0]] = val;
+                this.settings.set_conditional(this.type + '_no_data_' + d[0], val);
+                this.update_no_data();
+            }.bind(this));
+        // exit
+        ins.exit().remove();
+    }
+
+    function _data_not_loaded() {
+        var stats = this.get_data_statistics()[this.type];
+        return (stats.max === null || stats.min === null);
+    }
 });
 
-define('SettingsBar',["utils", "CallbackManager", "lib/bacon", "ScaleEditor"], function(utils, CallbackManager, bacon, ScaleEditor) {
+define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackManager, ScaleEditor) {
     /** 
      */
 
-    var SearchBar = utils.make_class();
+    var SettingsMenu = utils.make_class();
     // instance methods
-    SearchBar.prototype = { init: init,
+    SettingsMenu.prototype = { init: init,
 			    is_visible: is_visible,
 			    toggle: toggle,
 			    hold_changes: hold_changes,
 			    abandon_changes: abandon_changes,
 			    accept_changes: accept_changes,
-			    scale_gui: scale_gui,
 			    style_gui: style_gui,
 			    view_gui: view_gui };
 
-    return SearchBar;
+    return SettingsMenu;
 
     // instance methods
-    function init(sel, settings, map) {
+    function init(sel, settings, map, toggle_abs_and_apply_data) {
 	this.sel = sel;
 	this.settings = settings;
 	this.draw = false;
@@ -13111,23 +12456,43 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon", "ScaleEditor"], f
 	    .text('Reactions').attr('class', 'settings-section-heading-large');
         var rse = new ScaleEditor(box.append('div'), 'reaction', this.settings,
                                   map.get_data_statistics.bind(map));
-        map.callback_manager.set('calc_data_stats', function(same) {
-            if (!same) rse.update();
+        map.callback_manager.set('calc_data_stats__reaction', function(same) {
+            if (!same) {
+                rse.update();
+                rse.update_no_data();
+            }
         });
-	
-	// reaction data
 	box.append('div')
 	    .text('Reaction or Gene data').attr('class', 'settings-section-heading');
-	this.style_gui(box.append('div'), 'reaction');
+	this.style_gui(box.append('div'), 'reaction', function(on_off) {
+            if (toggle_abs_and_apply_data) {
+                toggle_abs_and_apply_data('reaction', on_off);
+                rse.update();
+                rse.update_no_data();
+            }
+        });
 
 	// metabolite data
         box.append('hr');
 	box.append('div').text('Metabolites')
 	    .attr('class', 'settings-section-heading-large');
-	this.scale_gui(box.append('div'), 'metabolite');
+        var mse = new ScaleEditor(box.append('div'), 'metabolite', this.settings,
+                                  map.get_data_statistics.bind(map));
+        map.callback_manager.set('calc_data_stats__metabolite', function(same) {
+            if (!same) {
+                mse.update();
+                mse.update_no_data();
+            }
+        });
 	box.append('div').text('Metabolite data')
 	    .attr('class', 'settings-section-heading');
-	this.style_gui(box.append('div'), 'metabolite');
+	this.style_gui(box.append('div'), 'metabolite', function(on_off) {
+            if (toggle_abs_and_apply_data) {
+                toggle_abs_and_apply_data('metabolite', on_off);
+                mse.update();
+                mse.update_no_data();
+            }
+        });
         
 	// identifiers_on_map
         box.append('hr');
@@ -13196,118 +12561,8 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon", "ScaleEditor"], f
 	this.settings.accept_changes();
 	this.toggle(false);
     }
-    function scale_gui(sel, type) {
-	/** A UI to edit color and size scales. */
-
-	var t = sel.append('table').attr('class', 'settings-table');
-
-	var size_domain = [], color_domain = [];
-
-	// columns
-	var columns = [0, 1, 2],
-	    settings = this.settings;
-	
-	// numbers
-	t.append('tr')
-	    .selectAll('.settings-number')
-	    .data([''].concat(columns))
-	    .enter()
-	    .append('td').attr('class', 'settings-number')
-	    .text(function (d) {
-		return d==='' ? d : ('— ' + d + ' —');
-	    });
-
-	// domain
-	t.append('tr').call(function(r) {
-	    r.append('td').text('Domain:');
-
-	    var scale_bars = r.selectAll('.input-cell')
-		    .data(columns);
-	    scale_bars.enter()
-		.append('td').attr('class', 'input-cell')
-		.append('input').attr('class', 'scale-bar-input')
-		.each(function(column) {
-		    bacon.fromEventTarget(this, 'change')
-			.onValue(function(event) {
-                            
-			    // settings.set_conditional(type + '_scale', new_scale);
-			});
-
-		    // settings.domain_stream[type].onValue(function(ar) {
-		    //     this.value = ar[column];
-		    // }.bind(this));
-		});
-
-	    // auto checkbox
-	    r.append('td').call(function(z) {
-		z.append('span').text('auto ');
-		z.append('input').attr('type', 'checkbox')
-		    .each(function() {
-			bacon.fromEventTarget(this, 'change')
-			    .onValue(function(event) {
-				var on_off = event.target.checked;
-			    	// settings.set_auto_domain(type, on_off);
-				// disable the domain boxes on ui check
-				scale_bars.selectAll('input')
-				    .attr('disabled', on_off ? 'true' : null);
-			    });
-			
-			// subscribe to changes in the model
-			// settings.auto_domain_stream[type].onValue(function(on_off) {
-			//     // check the box if auto domain on
-			//     this.checked = on_off;
-			//     // also disable the domain boxes on programmatic change
-			//     scale_bars.selectAll('input')
-			// 	.attr('disabled', on_off ? 'true' : null);
-			// }.bind(this));
-
-		    });
-		});
-	}.bind(this));
-	
-	// ranges
-	[['size', 'Size'], ['color', 'Color']].forEach(function(range_type_ar) {
-	    var r = t.append('tr');
-	    r.append('td').text(range_type_ar[1] + ':');
-	    var scale_bars = r.selectAll('.input-cell')
-		    .data(columns);
-	    scale_bars.enter()
-		.append('td').attr('class', 'input-cell')
-		.append('input').attr('class', 'scale-bar-input')
-		.each(function(column) {
-		    bacon.fromEventTarget(this, 'change')
-			.onValue(function(event) {
-			    // settings.set_range_value(type, range_type_ar[0],
-			    //     		     column, event.target.value);
-			});
-
-		    // settings.range_stream[type][range_type_ar[0]].onValue(function(ar) {
-		    // 	this.value = ar[column];
-		    // }.bind(this));
-		});
-	});
-
-	// no data
-	var r = t.append('tr').append('td').attr('colspan', '5');
-	[['color', 'No data color'], ['size', 'No data size']].forEach(function(range_type_ar) {
-	    r.append('span').text(range_type_ar[1] + ':');
-	    r.append('input').attr('class', 'no-data-input')
-		.each(function() {
-		    bacon.fromEventTarget(this, 'change')
-			.onValue(function(event) {
-			    // settings.set_no_data_value(type, range_type_ar[0],
-			    //     		       event.target.value);
-			});
-
-		    // settings.no_data_stream[type][range_type_ar[0]].onValue(function(ar) {
-		    // 	this.value = ar;
-		    // }.bind(this));
-		});
-	});
-
-    }
         
-    function style_gui(sel, type) {
+    function style_gui(sel, type, abs_callback) {
 	/** A UI to edit style.
 
          */
@@ -13317,80 +12572,94 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon", "ScaleEditor"], f
 
 	// styles
 	t.append('tr').call(function(r) {
-	    r.append('td').text('Styles:').attr('class', 'options-label');
+	    r.append('td').text('Options:')
+                .attr('class', 'options-label')
+                .attr('title', ('Options for ' + type + ' data.'));
 	    var cell = r.append('td');
 
-	    var styles = [['Absolute value', 'abs'], ['Size', 'size'],
-                          ['Color', 'color'], ['Text', 'text']],
-		style_cells = cell.selectAll('.style-span')
+	    var styles = [['Absolute value', 'abs',
+                           ('If checked, use the absolute value when ' +
+                            'calculating colors and sizes of ' + type + 's on the map')],
+                          ['Size', 'size',
+                           ('If checked, then size the ' +
+                            (type == 'metabolite' ? 'radius of metabolite circles ' : 'thickness of reaction lines ') +
+                            'according to the value of the ' + type + ' data')],
+                          ['Color', 'color',
+                           ('If checked, then color the ' +
+                            (type == 'metabolite' ? 'metabolite circles ' : 'reaction lines ') +
+                            'according to the value of the ' + type + ' data')],
+                          ['Text', 'text',
+                           ('If checked, then show data values in the ' + type + ' ' +
+                            'labels')]],
+		style_cells = cell.selectAll('.option-group')
 		    .data(styles),
 		s = style_cells.enter()
 		    .append('span')
-		    .attr('class', 'style-span');
-	    s.append('span').text(function(d) { return d[0]; });
+		    .attr('class', 'option-group');
 
 	    // make the checkbox
-            var streams = [];
+            var streams = [],
+                get_styles = function() {
+                    var styles = [];
+                    cell.selectAll('input')
+                        .each(function(d) { if (this.checked) styles.push(d[1]); });
+                    return styles;
+                };
 	    s.append('input').attr('type', 'checkbox')
-		.each(function(d) {
-		    // change the model when the box is changed
-		    var new_stream = bacon.fromEventTarget(this, 'change', function(event) {
-                        return event.target.checked ? d[1] : null;
-                    });
-                    streams.push(new_stream);
-		    
-		    // subscribe to changes in the model
+                .on('change', function(d) {
+                    settings.set_conditional(type + '_styles', get_styles());
+                    if (d[1] == 'abs')
+                        abs_callback(this.checked);
+                }).each(function(d) {
+                    // subscribe to changes in the model
 		    settings.streams[type + '_styles'].onValue(function(ar) {
-			// check the box if the style is present
-			this.checked = (ar.indexOf(d[1]) != -1);
+		        // check the box if the style is present
+		        this.checked = (ar.indexOf(d[1]) != -1);
 		    }.bind(this));
-		});
-            bacon.combineAsArray(streams).onValue(function(ar) {
-                var styles = ar.filter(function(x) { return x !== null; });
-                console.log(styles);
-                settings.set_conditional(type + '_styles', styles);
-            });
+                });
+	    s.append('span')
+                .text(function(d) { return d[0]; })
+                .attr('title', function(d) { return d[2]; });
 	});
 
-        
 	// compare_style
 	t.append('tr').call(function(r) {
 	    r.append('td')
                 .text('Comparison:')
-                .attr('class', 'options-label');
-	    var cell = r.append('td');
+                .attr('class', 'options-label')
+                .attr('title', ('The function that will be used to compare ' +
+                                'datasets, when paired data is loaded'));
+	    var cell = r.append('td')
+                .attr('title', ('The function that will be used to compare ' +
+                                'datasets, when paired data is loaded'));;
 
 	    var styles = [['Fold Change', 'fold'],
                           ['Log2(Fold Change)', 'log2_fold'],
                           ['Difference', 'diff']],
-		style_cells = cell.selectAll('.style-span')
+		style_cells = cell.selectAll('.option-group')
 		    .data(styles),
 		s = style_cells.enter()
 		    .append('span')
-		    .attr('class', 'style-span');
-	    s.append('span')
-                .text(function(d) { return d[0]; });
-
+		    .attr('class', 'option-group');
+            
 	    // make the radio
 	    s.append('input').attr('type', 'radio')
                 .attr('name', type + '_compare_style' + this.unique_string)
                 .attr('value', function(d) { return d[1]; })
-		.each(function(style) {
-		    // change the model when the box is changed
-		    var change_stream = bacon
-		    	    .fromEventTarget(this, 'change')
-		    	    .onValue(function(event) {
-                                if (event.target.checked) {
-                                    // settings.set_compare_style(type, event.target.value);
-                                }
-		    	    });
-		    
+                .on('change', function() {
+                    if (this.checked)
+                        settings.set_conditional(type + '_compare_style', this.value);
+                })
+		.each(function() {
 		    // subscribe to changes in the model
-		    // settings.compare_style_stream[type].onValue(function(value) {
-		    //     // check the box for the new value
-		    //     this.checked = (this.value == value);
-		    // }.bind(this));
+		    settings.streams[type + '_compare_style'].onValue(function(value) {
+		        // check the box for the new value
+		        this.checked = (this.value == value);
+		    }.bind(this));
 		});
+	    s.append('span')
+                .text(function(d) { return d[0]; });
+
         }.bind(this));
 
         // gene-specific settings
@@ -13409,35 +12678,30 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon", "ScaleEditor"], f
 	        var cell = r.append('td');
 
 	        var styles = [['Mean', 'mean'], ['Min', 'min']],
-		    style_cells = cell.selectAll('.style-span')
+		    style_cells = cell.selectAll('.option-group')
 		        .data(styles),
 		    s = style_cells.enter()
 		        .append('span')
-		        .attr('class', 'style-span');
-	        s.append('span')
-                    .text(function(d) { return d[0]; });
+		        .attr('class', 'option-group');
 
 	        // make the radio
                 var name = 'and_method_in_gene_reaction_rule';
 	        s.append('input').attr('type', 'radio')
                     .attr('name', name + this.unique_string)
                     .attr('value', function(d) { return d[1]; })
-		    .each(function(style) {
-		        // change the model when the box is changed
-		        var change_stream = bacon
-		    	        .fromEventTarget(this, 'change')
-		    	        .onValue(function(event) {
-                                    if (event.target.checked) {
-                                        settings.set_conditional(name, event.target.value);
-                                    }
-		    	        });
-		        
-		        // subscribe to changes in the model
-		        settings.streams[name].onValue(function(value) {
-		            // check the box for the new value
-		            this.checked = (this.value == value);
-		        }.bind(this));
-		    });
+                .on('change', function() {
+                    if (this.checked)
+                        settings.set_conditional(name, this.value);
+                })
+		.each(function() {
+		    // subscribe to changes in the model
+		    settings.streams[name].onValue(function(value) {
+		        // check the box for the new value
+		        this.checked = (this.value == value);
+		    }.bind(this));
+		});
+                s.append('span')
+                    .text(function(d) { return d[0]; });
             }.bind(this));
 
         }
@@ -13445,123 +12709,80 @@ define('SettingsBar',["utils", "CallbackManager", "lib/bacon", "ScaleEditor"], f
         
     function view_gui(s, option_name, string, options) {
 
-	var t = s.append('table').attr('class', 'settings-table');
-
 	// columns
 	var settings = this.settings;
 
+	var t = s.append('table').attr('class', 'settings-table');
 	t.append('tr').call(function(r) {
             // identifiers
-	    r.append('td').text('Identifiers:').attr('class', 'options-label');
+            r.attr('title', ('The identifiers that are show in the reaction, ' +
+                             'gene, and metabolite labels on the map.'));
+	    r.append('td').text('Identifiers:')
+                .attr('class', 'options-label');
 	    var cell = r.append('td');
 
-	    var options = [['ID\'s', 'bigg_id'], ['Names', 'name']],
-		style_cells = cell.selectAll('.style-span')
+	    var options = [['ID\'s', 'bigg_id'], ['Descriptive names', 'name']],
+		style_cells = cell.selectAll('.option-group')
 		    .data(options),
 		s = style_cells.enter()
 		    .append('span')
-		    .attr('class', 'style-span');
-	    s.append('span').text(function(d) { return d[0]; });
+		    .attr('class', 'option-group');
 
 	    // make the checkbox
             var name = 'identifiers_on_map';
 	    s.append('input').attr('type', 'radio')
 		.attr('name', name + this.unique_string)
 		.attr('value', function(d) { return d[1]; })
-		.each(function(style) {
-		    // change the model when the box is changed
-		    var change_stream = bacon
-		    	.fromEventTarget(this, 'change')
-		    	.onValue(function(event) {
-			    settings.set_conditional(name, event.target.value);
-		    	});
-		    
+                .on('change', function() {
+                    if (this.checked)
+                        settings.set_conditional(name, this.value);
+                })
+		.each(function() {
 		    // subscribe to changes in the model
-		    settings.streams[name].onValue(function(value) {			
-			// check the box if the style is present
-			this.checked = (value == this.value);
+		    settings.streams[name].onValue(function(value) {
+		        // check the box for the new value
+		        this.checked = (this.value == value);
 		    }.bind(this));
 		});
+            s.append('span').text(function(d) { return d[0]; });
+
         }.bind(this));
 
-        // show gene reaction rules
-	t.append('tr').call(function(r) {
-	    var s = r.append('td')
-                    .attr('class', 'options-label style-span')
-                    .attr('colspan', '2')
-                    .attr('title', ('If checked, then gene reaction rules will be displayed ' +
-                                    'below each reaction label. (Gene reaction rules are always ' +
-                                    'shown when gene data is loaded.)'));
-            s.append('span')
-                .text('Show gene reaction rules');
-            var name = 'show_gene_reaction_rules';
-	    s.append('input').attr('type', 'checkbox')
-		.each(function() {
-		    // change the model when the box is changed
-		    var change_stream = bacon
-		    	    .fromEventTarget(this, 'change')
-		    	    .onValue(function(event) {
-			        settings.set_conditional(name, event.target.checked);
-		    	    });
-		    
-		    // subscribe to changes in the model
-		    settings.streams[name].onValue(function(value) {			
-			// check the box if the style is present
-			this.checked = value;
-		    }.bind(this));
-		});
-	}.bind(this));
+        var boolean_options = [['show_gene_reaction_rules', 'Show gene reaction rules',
+                                ('If checked, then gene reaction rules will be displayed ' +
+                                 'below each reaction label. (Gene reaction rules are always ' +
+                                 'shown when gene data is loaded.)')],
+                               ['highlight_missing', 'Highlight reactions not in model',
+                                ('If checked, then highlight in red all the ' +
+                                 'reactions on the map that are not present in ' +
+                                 'the loaded model.')],
+                               ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
+                                ('If checked, then allow duplicate reactions during model building.')]];
         
-        // highlight missing reactions
-	t.append('tr').call(function(r) {
-	    var s = r.append('td')
-                    .attr('class', 'options-label style-span')
-                    .attr('colspan', '2');
-            s.append('span')
-                .text('Highlight reactions not in model');
-            var name = 'highlight_missing';
-	    s.append('input').attr('type', 'checkbox')
-		.each(function() {
-		    // change the model when the box is changed
-		    var change_stream = bacon
-		    	    .fromEventTarget(this, 'change')
-		    	    .onValue(function(event) {
-			        settings.set_conditional(name, event.target.checked);
-		    	    });
-		    
-		    // subscribe to changes in the model
-		    settings.streams[name].onValue(function(value) {			
-			// check the box if the style is present
-			this.checked = value;
-		    }.bind(this));
-		});
-	}.bind(this));
-
-        // allow duplicate reactions
-	t.append('tr').call(function(r) {
-            r.attr('title', 'If checked, then allow duplicate reactions during model building.');
-	    var s = r.append('td')
-                    .attr('class', 'options-label style-span')
-                    .attr('colspan', '2');
-            s.append('span')
-                .text('Allow duplicate reactions');
-            var name = 'allow_building_duplicate_reactions';
-	    s.append('input').attr('type', 'checkbox')
-		.each(function() {
-		    // change the model when the box is changed
-		    var change_stream = bacon
-		    	    .fromEventTarget(this, 'change')
-		    	    .onValue(function(event) {
-			        settings.set_conditional(name, event.target.checked);
-		    	    });
-		    
-		    // subscribe to changes in the model
-		    settings.streams[name].onValue(function(value) {			
-			// check the box if the style is present
-			this.checked = value;
-		    }.bind(this));
-		});
-	}.bind(this));
+	var opts = s.append('div').attr('class', 'settings-container')
+                .selectAll('.option-group')
+                .data(boolean_options);
+        // enter
+        var e = opts.enter()
+            .append('div')
+            .attr('class', 'option-group');
+        e.append('input').attr('type', 'checkbox');
+        e.append('span');
+        // update
+        opts.attr('title', function(d) { return d[2]; });
+        opts.select('input')
+            .on('change', function(d) {
+                settings.set_conditional(d[0], this.checked);
+            })
+            .each(function(d) {
+                settings.streams[d[0]].onValue(function(value) {
+                    this.checked = value;
+                }.bind(this));
+            });
+        opts.select('span')
+            .text(function(d) { return d[1]; });
+        // exit
+        opts.exit().remove();
     }
 });
 
@@ -13796,7 +13017,7 @@ define('QuickJump',['utils'], function(utils) {
     }
 });
 
-define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsBar', 'TextEditInput', 'QuickJump', 'data_styles'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsBar, TextEditInput, QuickJump, data_styles) {
+define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsMenu', 'TextEditInput', 'QuickJump', 'data_styles'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsMenu, TextEditInput, QuickJump, data_styles) {
     /** A Builder object contains all the ui and logic to generate a map builder or viewer.
 
      Arguments
@@ -13988,16 +13209,17 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         }.bind(this),
             get_option = function(option) {
                 return this.options[option];
-            }.bind(this);
-        // these options can be edited in the settings menu
-        var editable_options = ['show_gene_reaction_rules', 'reaction_styles', 'metabolite_styles',
-                                'reaction_compare_style', 'metabolite_compare_style',
-                                'reaction_scale', 'metabolite_scale',
-                               'reaction_no_data_color', 'reaction_no_data_size',
-                               'metabolite_no_data_color', 'metabolite_no_data_size',
-                               'and_method_in_gene_reaction_rule', 'identifiers_on_map',
-                                'highlight_missing', 'allow_building_duplicate_reactions'];
-        this.settings = new Settings(set_option, get_option, editable_options);
+            }.bind(this),
+            // the options that are erased when the settings menu is canceled
+            conditional_options = ['show_gene_reaction_rules', 'reaction_styles',
+                                   'reaction_compare_style', 'reaction_scale',
+                                   'reaction_no_data_color', 'reaction_no_data_size',
+                                   'and_method_in_gene_reaction_rule', 'metabolite_styles',
+                                   'metabolite_compare_style', 'metabolite_scale',
+                                   'metabolite_no_data_color', 'metabolite_no_data_size',
+                                   'identifiers_on_map', 'highlight_missing',
+                                   'allow_building_duplicate_reactions',];
+        this.settings = new Settings(set_option, get_option, conditional_options);
 
         // set up this callback manager
         this.callback_manager = CallbackManager();
@@ -14150,8 +13372,21 @@ define('Builder',['Utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
         // set up the settings
         var settings_div = this.options.selection.append('div');
-        this.settings_bar = SettingsBar(settings_div, this.settings,
-                                        this.map);
+        this.settings_bar = SettingsMenu(settings_div, this.settings, this.map,
+                                         function(type, on_off) {
+                                             // temporarily set the abs type, for
+                                             // previewing it in the Settings
+                                             // menu
+                                             var o = this.options[type + '_styles'];
+                                             if (on_off && o.indexOf('abs') == -1)
+                                                 o.push('abs');
+                                             else if (!on_off) {
+                                                 var i = o.indexOf('abs');
+                                                 if (i != -1)
+                                                     this.options[type + '_styles'] = o.slice(0, i).concat(o.slice(i + 1));
+                                             }
+                                             this.update_data(false, true, type);
+                                         }.bind(this));
         this.settings_bar.callback_manager.set('show', function() {
             this.search_bar.toggle(false);
         }.bind(this));

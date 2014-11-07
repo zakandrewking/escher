@@ -33,7 +33,8 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
      map.callback_manager.run('select_text_label');
      map.callback_manager.run('before_svg_export');
      map.callback_manager.run('after_svg_export');
-     this.callback_manager.run('calc_data_stats', null, same);
+     this.callback_manager.run('calc_data_stats__reaction', null, same);
+     this.callback_manager.run('calc_data_stats__metabolite', null, same);
 
      */
 
@@ -145,6 +146,9 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                    width: size.width*3, height: size.height*3};
         }
 
+        // set up the callbacks
+        this.callback_manager = new CallbackManager();
+        
         // set up the defs
         this.svg = svg;
         this.defs = utils.setup_defs(svg, css);
@@ -168,10 +172,9 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // make the scales
         this.scale = new Scale();
-        this.data_statistics = { 'reaction': { 'min': null, 'median': null,
-                                               'mean': null, 'max': null },
-                                 'metabolite': { 'min': null, 'median': null,
-                                                 'mean': null, 'max': null } };
+        // initialize stats
+        this.calc_data_stats('reaction');
+        this.calc_data_stats('metabolite');
         this.scale.connect_to_settings(this.settings,
                                        get_data_statistics.bind(this));
 
@@ -197,9 +200,6 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // hide beziers
         this.beziers_enabled = false;
-
-        // set up the callbacks
-        this.callback_manager = new CallbackManager();
 
         // data
         this.has_data_on_reactions = false;
@@ -951,6 +951,14 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         if (['reaction', 'metabolite'].indexOf(type) == -1)
             throw new Error('Bad type ' + type);
 
+        // make the data structure
+        if (!('data_statistics' in this)) {
+            this.data_statistics = {};
+            this.data_statistics[type] = {};
+        } else if (!(type in this.data_statistics)) {
+            this.data_statistics[type] = {};
+        }
+        
         var same = true;
         // default min and max
         var vals = [];
@@ -970,19 +978,30 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         }
 
         // calculate these statistics
-        var funcs = [['min', on_array(Math.min)], ['max', on_array(Math.max)],
-                     ['median', utils.median], ['mean', utils.mean]];
+        var quartiles = utils.quartiles(vals),
+            funcs = [['min', on_array(Math.min)],
+                     ['max', on_array(Math.max)],
+                     ['mean', utils.mean],
+                     ['Q1', function() { return quartiles[0]; }],
+                     ['median', function() { return quartiles[1]; }],
+                     ['Q3', function() { return quartiles[2]; }]];
         funcs.forEach(function(ar) {
-            var name = ar[0], fn = ar[1],
+            var new_val, name = ar[0];
+            if (vals.length == 0) {
+                new_val = null;
+            } else {
+                var fn = ar[1];
                 new_val = fn(vals);
+            }
             if (new_val != this.data_statistics[type][name])
                 same = false;
             this.data_statistics[type][name] = new_val;
         }.bind(this));
 
-        console.log(this.data_statistics[type], same);
-
-        this.callback_manager.run('calc_data_stats', null, same);
+        if (type == 'reaction')
+            this.callback_manager.run('calc_data_stats__reaction', null, same);
+        else
+            this.callback_manager.run('calc_data_stats__metabolite', null, same);
         return same;
 
         // definitions
