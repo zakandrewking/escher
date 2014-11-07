@@ -10,6 +10,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	     draw_an_object: draw_an_object,
 	     draw_a_nested_object: draw_a_nested_object,
 	     make_array: make_array,
+             make_array_ref: make_array_ref,
 	     compare_arrays: compare_arrays,
 	     array_to_object: array_to_object,
 	     clone: clone,
@@ -279,6 +280,23 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         for (var key in obj) {
             // copy object
             var it = clone(obj[key]);
+            // add key as 'id'
+            it[id_key] = key;
+            // add object to array
+            array.push(it);
+        }
+        return array;
+    }
+
+    function make_array_ref(obj, id_key) {
+        /** Turn the object into an array, but only by reference. Faster than
+            make_array.
+
+         */
+        var array = [];
+        for (var key in obj) {
+            // copy object
+            var it = obj[key];
             // add key as 'id'
             it[id_key] = key;
             // add object to array
@@ -690,7 +708,9 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     function quartiles(array) {
         array.sort(function(a, b) { return a - b; });
         var half = Math.floor(array.length / 2);
-        if (array.length % 2 == 1)
+        if (array.length == 1)
+            return [ array[0], array[0], array[0] ];
+        else if (array.length % 2 == 1)
             return [ median(array.slice(0, half)),
                      array[half],
                      median(array.slice(half + 1)) ];

@@ -77,6 +77,8 @@ describe('utils', function() {
     });
 
     it('quartiles', function() {
+        expect(utils.quartiles([10])).toEqual([10, 10, 10]);
+        expect(utils.quartiles([5, 10])).toEqual([5, 7.5, 10]);
         expect(utils.quartiles([1, 8, 3, 1, 10])).toEqual([1, 3, 9]);
         expect(utils.quartiles([ 6, 7, 15, 36, 39, 40, 41, 42, 43, 47, 49]))
             .toEqual([15, 40, 43]);

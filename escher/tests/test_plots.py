@@ -7,7 +7,7 @@ from escher.urls import get_url
 import os
 from os.path import join
 import json
-from pytest import raises
+from pytest import raises, mark 
 from urllib2 import URLError
 
 def test_get_cache_dir():
@@ -41,17 +41,19 @@ def test_load_resource(tmpdir):
     directory = os.path.abspath(os.path.dirname(__file__))
     assert load_resource(join(directory, 'example.json'), 'name').strip() == '{"r": "val"}'
     
-    url = '/'.join([get_url('escher_download', protocol='https'),
-                    'organisms/e_coli/models/iJO1366/maps/central_metabolism.json'])
-    _ = json.loads(load_resource(url, 'name'))
-        
     with raises(ValueError) as err:
         p = join(str(tmpdir), 'dummy')
         with open(p, 'w') as f:
             f.write('dummy')
         load_resource(p, 'name')
         assert 'not a valid json file' in err.value
-        
+
+@mark.web
+def test_load_resource_web(tmpdir): 
+    url = '/'.join([get_url('escher_download', protocol='https'),
+                    'organisms/e_coli/models/iJO1366/maps/central_metabolism.json'])
+    _ = json.loads(load_resource(url, 'name'))
+                
 def test_Builder(tmpdir):
     b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}')
     # Cannot load dev/local version without an explicit css string property.
@@ -60,10 +62,11 @@ def test_Builder(tmpdir):
         b.display_in_notebook(js_source='dev')
     with raises(Exception):
         b.display_in_notebook(js_source='local')
-    b.display_in_notebook(js_source='web')
-    b.display_in_notebook(height=200)
-    # b.display_in_browser()
-    b.save_html(join(str(tmpdir), 'Builder.html'))
+
+    # ok with embedded_css arg
+    b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}', embedded_css='')
+    b.display_in_notebook(js_source='dev')
+    b.save_html(join(str(tmpdir), 'Builder.html'), js_source='dev')
 
     # test options
     with raises(Exception):
@@ -72,15 +75,18 @@ def test_Builder(tmpdir):
         b._get_html(menu='')
     with raises(Exception):
         b._get_html(scroll_behavior='asdf')
-    b._get_html(js_source='web')
+    b._get_html(js_source='local')
     b._get_html(menu='all')
     b._get_html(scroll_behavior='zoom')
-    
+
+@mark.web
+def test_Builder_download():
     # download
     b = Builder(map_name='e_coli.iJO1366.central_metabolism',
                 model_name='e_coli.iJO1366')
     assert b.loaded_map_json is not None
     assert b.loaded_model_json is not None
+    b._get_html(js_source='web')
     b.display_in_notebook(height=200)
 
     # data
@@ -98,10 +104,10 @@ def test_Builder(tmpdir):
     assert len(b.the_id) == 10
 
 def test_Builder_options():
-    b = Builder()
+    b = Builder(embedded_css='')
     b.set_metabolite_no_data_color('white')
     assert b.metabolite_no_data_color=='white'
-    html = b._get_html()
+    html = b._get_html(js_source='local')
     assert 'metabolite_no_data_color: "white"' in html
 
 def test_Builder_kwargs():

@@ -181,7 +181,7 @@ class Builder(object):
         self.model_name = model_name
         self.model_json = model_json
         self.loaded_model_json = None
-        if sum([x is None for x in model, model_name, model_json]) >= 2:
+        if sum([x is not None for x in model, model_name, model_json]) >= 2:
             warn('model overrides model_json, and both override model_name')
         self.load_model()
         # set the args

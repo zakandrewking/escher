@@ -93,27 +93,32 @@ define(['utils'], function(utils) {
         
         if (d.length==1) { // 1 set
             // 1 null
-            if (d[0] === null)
+            var f = parse_float_or_null(d[0])
+            if (f === null)
                 return null;
-            
-            return abs(d[0], take_abs);
+            return abs(f, take_abs);
         } else if (d.length==2) { // 2 sets            
             // 2 null
-            if (d[0] === null || d[1] === null)
+            var fs = d.map(parse_float_or_null);
+            if (fs[0] === null || fs[1] === null)
                 return null;
             
             if (compare_style == 'diff') {
-                return diff(d[0], d[1], take_abs);
+                return diff(fs[0], fs[1], take_abs);
             } else if (compare_style == 'fold') {
-                return check_finite(fold(d[0], d[1], take_abs));
+                return check_finite(fold(fs[0], fs[1], take_abs));
             }
             else if (compare_style == 'log2_fold') {
-                return check_finite(log2_fold(d[0], d[1], take_abs));
+                return check_finite(log2_fold(fs[0], fs[1], take_abs));
             }
         }
         throw new Error('Bad data compare_style: ' + compare_style);
 
         // definitions
+        function parse_float_or_null(x) {
+            var f = parseFloat(x);
+            return isNaN(f) ? null : f;
+        }
 	function check_finite(x) {
 	    return isFinite(x) ? x : null;
 	}

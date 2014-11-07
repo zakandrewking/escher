@@ -49,6 +49,9 @@ describe('data_styles', function() {
         // single
         expect(escher.data_styles.float_for_data([-10], ['abs'], 'diff'))
             .toEqual(10);
+        // string
+        expect(escher.data_styles.float_for_data(['-10'], [], 'diff'))
+            .toEqual(-10);
         // diff
         expect(escher.data_styles.float_for_data([10, -5], [], 'diff'))
             .toEqual(-15);

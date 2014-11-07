@@ -36,7 +36,11 @@ describe('Builder', function() {
 						  { type: 'min', color: '#ffffff', size: 10 },
 						  { type: 'max', color: '#ffffff', size: 10 }]);
 
-	b = escher.Builder(null, null, '', { metabolite_scale: [{ type: 'median', color: '#9696ff', size: 8 }] });
+        // after callback
+	b = escher.Builder(null, null, '', { metabolite_scale: [{ type: 'median', color: 'red', size: 0 },
+					                        { type: 'min', color: 'red', size: 0 },
+					                        { type: 'max', color: 'red', size: 0 } ]});
+        b.settings.set_conditional('metabolite_scale', [{ type: 'median', color: '#9696ff', size: 8 }]);
 	expect(b.options.metabolite_scale).toEqual([{ type: 'median', color: '#9696ff', size: 8 },
 						    { type: 'min', color: '#ffffff', size: 10 },
 						    { type: 'max', color: '#ffffff', size: 10 }]);

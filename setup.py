@@ -118,15 +118,20 @@ class BuildRelease(Command):
 class TestCommand(Command):
     description = "Custom test command that runs pytest and jasmine"
     user_options = [('jsonly', None, 'Only run jasmine tests'),
-                    ('pyonly', None, 'Only run pytest')]
+                    ('pyonly', None, 'Only run pytest'),
+                    ('noweb', None, 'Skip run tests that require the Escher website')]
     def initialize_options(self):
         self.jsonly = False
         self.pyonly = False
+        self.noweb = False
     def finalize_options(self):
         pass
     def run(self):
         if not self.jsonly:
-            call('py.test', shell=True)
+            if self.noweb:
+                call('py.test -m "not web"', shell=True)
+            else:
+                call('py.test', shell=True)
         if not self.pyonly:
             call(['jasmine', '--port=%d' % port])
         

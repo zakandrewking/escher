@@ -803,6 +803,7 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	     draw_an_object: draw_an_object,
 	     draw_a_nested_object: draw_a_nested_object,
 	     make_array: make_array,
+             make_array_ref: make_array_ref,
 	     compare_arrays: compare_arrays,
 	     array_to_object: array_to_object,
 	     clone: clone,
@@ -1072,6 +1073,23 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
         for (var key in obj) {
             // copy object
             var it = clone(obj[key]);
+            // add key as 'id'
+            it[id_key] = key;
+            // add object to array
+            array.push(it);
+        }
+        return array;
+    }
+
+    function make_array_ref(obj, id_key) {
+        /** Turn the object into an array, but only by reference. Faster than
+            make_array.
+
+         */
+        var array = [];
+        for (var key in obj) {
+            // copy object
+            var it = obj[key];
             // add key as 'id'
             it[id_key] = key;
             // add object to array
@@ -1483,7 +1501,9 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     function quartiles(array) {
         array.sort(function(a, b) { return a - b; });
         var half = Math.floor(array.length / 2);
-        if (array.length % 2 == 1)
+        if (array.length == 1)
+            return [ array[0], array[0], array[0] ];
+        else if (array.length % 2 == 1)
             return [ median(array.slice(0, half)),
                      array[half],
                      median(array.slice(half + 1)) ];
@@ -2293,27 +2313,32 @@ define('data_styles',['utils'], function(utils) {
         
         if (d.length==1) { // 1 set
             // 1 null
-            if (d[0] === null)
+            var f = parse_float_or_null(d[0])
+            if (f === null)
                 return null;
-            
-            return abs(d[0], take_abs);
+            return abs(f, take_abs);
         } else if (d.length==2) { // 2 sets            
             // 2 null
-            if (d[0] === null || d[1] === null)
+            var fs = d.map(parse_float_or_null);
+            if (fs[0] === null || fs[1] === null)
                 return null;
             
             if (compare_style == 'diff') {
-                return diff(d[0], d[1], take_abs);
+                return diff(fs[0], fs[1], take_abs);
             } else if (compare_style == 'fold') {
-                return check_finite(fold(d[0], d[1], take_abs));
+                return check_finite(fold(fs[0], fs[1], take_abs));
             }
             else if (compare_style == 'log2_fold') {
-                return check_finite(log2_fold(d[0], d[1], take_abs));
+                return check_finite(log2_fold(fs[0], fs[1], take_abs));
             }
         }
         throw new Error('Bad data compare_style: ' + compare_style);
 
         // definitions
+        function parse_float_or_null(x) {
+            var f = parseFloat(x);
+            return isNaN(f) ? null : f;
+        }
 	function check_finite(x) {
 	    return isFinite(x) ? x : null;
 	}
@@ -10212,15 +10237,16 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         if (type == 'metabolite') {
             for (var node_id in this.nodes) {
                 var node = this.nodes[node_id];
+                // check number
                 if (node.data !== null)
                     vals.push(node.data);
             }
         } else if (type == 'reaction') {
             for (var reaction_id in this.reactions) {
                 var reaction = this.reactions[reaction_id];
-                if (reaction.data !== null) {
+                // check number
+                if (reaction.data !== null)
                     vals.push(reaction.data);
-                }
             }
         }
 
@@ -13217,10 +13243,10 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             starting_reaction: null,
             never_ask_before_quit: false,
             unique_map_id: null,
-	    primary_metabolite_radius: 15,
-	    secondary_metabolite_radius: 10,
-	    marker_radius: 5,
-	    hide_secondary_nodes: false,
+            primary_metabolite_radius: 15,
+            secondary_metabolite_radius: 10,
+            marker_radius: 5,
+            hide_secondary_nodes: false,
             show_gene_reaction_rules: false,
             // applied data
             // reaction
@@ -13228,8 +13254,8 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             reaction_styles: ['color', 'size', 'text'],
             reaction_compare_style: 'log2_fold',
             reaction_scale: [{ type: 'min', color: '#c8c8c8', size: 4 },
-			     { type: 'median', color: '#9696ff', size: 8 },
-			     { type: 'max', color: '#ff0000', size: 12 }],
+                             { type: 'median', color: '#9696ff', size: 8 },
+                             { type: 'max', color: '#ff0000', size: 12 }],
             reaction_no_data_color: '#dcdcdc',
             reaction_no_data_size: 4,
             // gene
@@ -13261,19 +13287,6 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                             'becuase UI elements are html-based.');
         }
 
-	// check the scales have max and min
-	['reaction_scale', 'metabolite_scale'].forEach(function(name) {
-	    ['min', 'max'].forEach(function(type) {
-		var has = this.options[name].reduce(function(has_found, scale_el) {
-		    return has_found || (scale_el.type == type);
-		}, false);
-		if (!has) this.options[name].push({ type: type,
-						    color: '#ffffff',
-						    size: 10 });
-	    }.bind(this));
-	}.bind(this));
-	// TODO warn about repeated types in the scale
-
         // Initialize the settings
         var set_option = function(option, new_value) {
             this.options[option] = new_value;
@@ -13291,6 +13304,22 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                    'identifiers_on_map', 'highlight_missing',
                                    'allow_building_duplicate_reactions',];
         this.settings = new Settings(set_option, get_option, conditional_options);
+
+        // check the scales have max and min
+        ['reaction_scale', 'metabolite_scale'].forEach(function(name) {
+            this.settings.streams[name].onValue(function(val) {
+                ['min', 'max'].forEach(function(type) {
+                    var has = val.reduce(function(has_found, scale_el) {
+                        return has_found || (scale_el.type == type);
+                    }, false);
+                    if (!has) {
+                        val.push({ type: type, color: '#ffffff', size: 10 });
+                        this.settings.set_conditional(name, val);
+                    }
+                }.bind(this));
+            }.bind(this));
+        }.bind(this));
+        // TODO warn about repeated types in the scale
 
         // set up this callback manager
         this.callback_manager = CallbackManager();

@@ -2,10 +2,13 @@ import escher.server
 import tornado.ioloop
 from tornado.testing import AsyncHTTPTestCase, gen_test
 
+from pytest import mark
+
 class TestBuilder(AsyncHTTPTestCase):
     def get_app(self):
         return escher.server.application
 
+    @mark.web
     def test_builder_request(self):
         # set the correct port
         escher.server.PORT = self.get_http_port()

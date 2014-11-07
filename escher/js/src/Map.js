@@ -963,15 +963,16 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         if (type == 'metabolite') {
             for (var node_id in this.nodes) {
                 var node = this.nodes[node_id];
+                // check number
                 if (node.data !== null)
                     vals.push(node.data);
             }
         } else if (type == 'reaction') {
             for (var reaction_id in this.reactions) {
                 var reaction = this.reactions[reaction_id];
-                if (reaction.data !== null) {
+                // check number
+                if (reaction.data !== null)
                     vals.push(reaction.data);
-                }
             }
         }
 

@@ -140,10 +140,10 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             starting_reaction: null,
             never_ask_before_quit: false,
             unique_map_id: null,
-	    primary_metabolite_radius: 15,
-	    secondary_metabolite_radius: 10,
-	    marker_radius: 5,
-	    hide_secondary_nodes: false,
+            primary_metabolite_radius: 15,
+            secondary_metabolite_radius: 10,
+            marker_radius: 5,
+            hide_secondary_nodes: false,
             show_gene_reaction_rules: false,
             // applied data
             // reaction
@@ -151,8 +151,8 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             reaction_styles: ['color', 'size', 'text'],
             reaction_compare_style: 'log2_fold',
             reaction_scale: [{ type: 'min', color: '#c8c8c8', size: 4 },
-			     { type: 'median', color: '#9696ff', size: 8 },
-			     { type: 'max', color: '#ff0000', size: 12 }],
+                             { type: 'median', color: '#9696ff', size: 8 },
+                             { type: 'max', color: '#ff0000', size: 12 }],
             reaction_no_data_color: '#dcdcdc',
             reaction_no_data_size: 4,
             // gene
@@ -184,19 +184,6 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                             'becuase UI elements are html-based.');
         }
 
-	// check the scales have max and min
-	['reaction_scale', 'metabolite_scale'].forEach(function(name) {
-	    ['min', 'max'].forEach(function(type) {
-		var has = this.options[name].reduce(function(has_found, scale_el) {
-		    return has_found || (scale_el.type == type);
-		}, false);
-		if (!has) this.options[name].push({ type: type,
-						    color: '#ffffff',
-						    size: 10 });
-	    }.bind(this));
-	}.bind(this));
-	// TODO warn about repeated types in the scale
-
         // Initialize the settings
         var set_option = function(option, new_value) {
             this.options[option] = new_value;
@@ -214,6 +201,22 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                                    'identifiers_on_map', 'highlight_missing',
                                    'allow_building_duplicate_reactions',];
         this.settings = new Settings(set_option, get_option, conditional_options);
+
+        // check the scales have max and min
+        ['reaction_scale', 'metabolite_scale'].forEach(function(name) {
+            this.settings.streams[name].onValue(function(val) {
+                ['min', 'max'].forEach(function(type) {
+                    var has = val.reduce(function(has_found, scale_el) {
+                        return has_found || (scale_el.type == type);
+                    }, false);
+                    if (!has) {
+                        val.push({ type: type, color: '#ffffff', size: 10 });
+                        this.settings.set_conditional(name, val);
+                    }
+                }.bind(this));
+            }.bind(this));
+        }.bind(this));
+        // TODO warn about repeated types in the scale
 
         // set up this callback manager
         this.callback_manager = CallbackManager();
