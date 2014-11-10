@@ -103,7 +103,15 @@ class BuildRelease(Command):
             lines = f.readlines()
         with open(file, 'w') as f:
             for line in lines:
-                f.write(line.replace('escher-%s.js' % old_version, 'escher-%s.js' % new_version))
+                f.write(line.replace('escher-%s.js' % old_version, 'escher-%s.js' % new_version)) 
+        # update the docs
+        file = join('docs', 'conf.py')
+        with open(file, 'r') as f:
+            lines = f.readlines()
+        with open(file, 'w') as f:
+            for line in lines:
+                f.write(line.replace("version = '%s'" % old_version, "version = '%s'" % new_version))
+                f.write(line.replace("release = '%s'" % old_version, "release = '%s'" % new_version))
         # move the files
         move(join('escher', 'lib', 'escher-%s.js' % old_version),
              join('escher', 'lib', 'escher-%s.js' % new_version))
