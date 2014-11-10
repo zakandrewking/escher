@@ -11588,9 +11588,11 @@ define('ui',["utils", "data_styles"], function(utils, data_styles) {
                 .attr('role', 'menu')
                 .attr('aria-labelledby', 'dLabel');
         return {
+            dropdown: s2,
             button: function(button) {
                 var li = ul.append("li")
-                        .attr('role', 'presentation'),
+                        .attr('role', 'presentation')
+                        .datum(button),
                     link = li.append("a")
                         .attr('href', '#'),
                     icon = link.append('span')
@@ -13187,7 +13189,18 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
          // Callbacks
 
-         first_load_callback: A function to run after loading.
+         first_load_callback: A function to run after loading the Builder. 
+
+     Callback
+     --------
+
+     this.callback_manager.run('view_mode');
+     this.callback_manager.run('build_mode');
+     this.callback_manager.run('brush_mode');
+     this.callback_manager.run('zoom_mode');
+     this.callback_manager.run('rotate_mode');
+     this.callback_manager.run('text_mode');
+     this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw);
 
      */
     var Builder = utils.make_class();
@@ -13722,6 +13735,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 }
             }
         }
+        this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw);
     }
 
     function _setup_menu(menu_selection, button_selection, map, zoom_container,
@@ -13775,19 +13789,33 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                           text: 'Load reaction data' })
                 .button({ key: keys.clear_reaction_data,
                           text: 'Clear reaction data' })
+                .divider()
                 .button({ input: { fn: load_gene_data_for_file.bind(this),
                                    accept_csv: true  },
                           text: 'Load gene data' })
                 .button({ key: keys.clear_gene_data,
                           text: 'Clear gene data' })
+                .divider()
                 .button({ input: { fn: load_metabolite_data_for_file.bind(this),
                                    accept_csv: true  },
                           text: 'Load metabolite data' })
                 .button({ key: keys.clear_metabolite_data,
-                          text: 'Clear metabolite data' })
-                .button({ key: keys.show_settings,
-                          text: 'Settings',
-                          key_text: (enable_keys ? ' (Ctrl+,)' : null) });
+                          text: 'Clear metabolite data' });
+
+        // update the buttons
+        this.callback_manager.set('update_data', function() {
+            data_menu.dropdown.selectAll('li')
+                .classed('escher-disabled', function(d) {
+                    if (!d) return false;
+                    if (d.text == 'Clear reaction data' && this.options.reaction_data === null)
+                        return true;
+                    if (d.text == 'Clear gene data' && this.options.gene_data === null)
+                        return true;
+                    if (d.text == 'Clear metabolite data' && this.options.metabolite_data === null)
+                        return true;
+                    return false;
+                }.bind(this));
+        }.bind(this));
 
         // edit dropdown
         var edit_menu = ui.dropdown_menu(menu, 'Edit', true);
@@ -13873,6 +13901,10 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                               (enable_keys ? ' (B)' : ''));
                 });
         }
+        view_menu.divider()
+            .button({ key: keys.show_settings,
+                      text: 'Settings',
+                      key_text: (enable_keys ? ' (Ctrl+,)' : null) });
 
         // help
         menu.append('a')

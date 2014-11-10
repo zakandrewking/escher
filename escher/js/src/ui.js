@@ -83,9 +83,11 @@ define(["utils", "data_styles"], function(utils, data_styles) {
                 .attr('role', 'menu')
                 .attr('aria-labelledby', 'dLabel');
         return {
+            dropdown: s2,
             button: function(button) {
                 var li = ul.append("li")
-                        .attr('role', 'presentation'),
+                        .attr('role', 'presentation')
+                        .datum(button),
                     link = li.append("a")
                         .attr('href', '#'),
                     icon = link.append('span')
