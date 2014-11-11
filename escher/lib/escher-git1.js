@@ -13104,110 +13104,14 @@ define('QuickJump',['utils'], function(utils) {
 });
 
 define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'CallbackManager', 'ui', 'SearchBar', 'Settings', 'SettingsMenu', 'TextEditInput', 'QuickJump', 'data_styles'], function(utils, BuildInput, ZoomContainer, Map, CobraModel, Brush, CallbackManager, ui, SearchBar, Settings, SettingsMenu, TextEditInput, QuickJump, data_styles) {
-    /** A Builder object contains all the ui and logic to generate a map builder or viewer.
+    /** For documentation of this class, see docs/javascript_api.rst 
 
-     Arguments
-     ---------
-
-     map_data: The data for a map, to be passed to escher.Map.from_data(). If
-     null, then an empty Builder is initialized
-
-     model_data: The data for a cobra model, to be passed to
-     escher.CobraModel(). Can be null.
-
-     embedded_css: The stylesheet for the SVG elements in the Escher map.
-
-     options: An object defining any of the following options.
-
-         unique_map_id: A unique ID that will be used to UI elements don't interfere
-         when multiple maps are in the same HTML document.
-
-         primary_metabolite_radius: (Default: 15) The radius of primary metabolites.
-
-         secondary_metabolite_radius: (Default: 10) The radius of secondary metabolites.
-
-         marker_radius: (Default: 5) The radius of marker nodes.
-
-         hide_secondary_nodes: (Default: false) If true, then secondary nodes and
-         segments are hidden. This is convenient for generating simplified map
-         figures.
-
-         show_gene_reaction_rules: (Default: false) If true, then show the gene
-         reaction rules, even without gene data.
-
-         reaction_data: An object with reaction ids for keys and reaction data
-         points for values.
-
-         reaction_styles:
-
-         reaction_compare_style: (Default: 'diff') How to compare to
-         datasets. Can be either 'fold, 'log2_fold', or 'diff'.
-
-         reaction_scale:
-
-         reaction_no_data_color:
-
-         reaction_no_data_size:
-
-         gene_data: An object with Gene ids for keys and gene data points for
-         values.
-
-         and_method_in_gene_reaction_rule: (Default: mean) When evaluating a
-         gene reaction rule, use this function to evaluate AND rules. Can be
-         'mean' or 'min'.
-
-         metabolite_data: An object with metabolite ids for keys and metabolite
-         data points for values.
-
-         metabolite_compare_style: (Default: 'diff') How to compare to
-         datasets. Can be either 'fold', 'log2_fold' or 'diff'.
-
-         metabolite_scale:
-
-         metabolite_no_data_color:
-
-         metabolite_no_data_size:
-
-         // View and build options
-
-         identifiers_on_map: Either 'bigg_id' (default) or 'name'.
-
-         highlight_missing: (Default: false) If true, then highlight reactions that
-         are not in the loaded model in red.
-
-         allow_building_duplicate_reactions: (Default: true) If true, then building
-         duplicate reactions is allowed. If false, then duplicate reactions are
-         hidden in `Add reaction mode`.
-
-         // Quick jump menu
-
-         local_host: The host used to load maps for quick_jump. E.g.,
-         http://localhost:7778.
-
-         quick_jump: A list of map names that can be reached by
-         selecting them from a quick jump menu on the map.
-
-         // Callbacks
-
-         first_load_callback: A function to run after loading the Builder. 
-
-     Callback
-     --------
-
-     this.callback_manager.run('view_mode');
-     this.callback_manager.run('build_mode');
-     this.callback_manager.run('brush_mode');
-     this.callback_manager.run('zoom_mode');
-     this.callback_manager.run('rotate_mode');
-     this.callback_manager.run('text_mode');
-     this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw);
-
-     */
+     */    
     var Builder = utils.make_class();
     Builder.prototype = { init: init,
                           load_map: load_map,
                           load_model: load_model,
-                          set_mode: set_mode,
+                          _set_mode: _set_mode,
                           view_mode: view_mode,
                           build_mode: build_mode,
                           brush_mode: brush_mode,
@@ -13217,7 +13121,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                           set_reaction_data: set_reaction_data,
                           set_metabolite_data: set_metabolite_data,
                           set_gene_data: set_gene_data,
-                          update_data: update_data,
+                          _update_data: _update_data,
                           _toggle_direction_buttons: _toggle_direction_buttons,
                           _setup_menu: _setup_menu,
                           _setup_simple_zoom_buttons: _setup_simple_zoom_buttons,
@@ -13342,7 +13246,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         // load the model, map, and update data in both
         this.load_model(this.model_data, false);
         this.load_map(this.map_data, false);
-        this.update_data(true, true);
+        this._update_data(true, true);
 
         // setting callbacks
         // TODO enable atomic updates. Right now, every time
@@ -13350,7 +13254,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         this.settings.status_bus
             .onValue(function(x) {
                 if (x == 'accepted') {
-                    this.update_data(true, true, ['reaction', 'metabolite'], false);
+                    this._update_data(true, true, ['reaction', 'metabolite'], false);
                     if (this.map !== null) {
                         this.map.draw_all_nodes();
                         this.map.draw_all_reactions();
@@ -13363,19 +13267,9 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
     // Definitions
     function load_model(model_data, should_update_data) {
-        /** Load the cobra model from model data
-
-         Arguments
-         ---------
-
-         model_data: The data for a cobra model, to be passed to
-         escher.CobraModel().
-
-         should_update_data: (Boolean, default true) Whether the data in the
-         model should be updated.
+        /** For documentation of this function, see docs/javascript_api.rst.
 
          */
-
         if (should_update_data === undefined)
             should_update_data = true;
 
@@ -13391,20 +13285,12 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 this.map.cobra_model = this.cobra_model;
 
             if (should_update_data)
-                this.update_data(true, false);
+                this._update_data(true, false);
         }
     }
 
     function load_map(map_data, should_update_data) {
-        /** Load a map for the loaded data. Also reloads most of the builder content.
-
-         Arguments
-         ---------
-
-         map_data: The data for a map, to be passed to escher.Map.from_data().
-
-         should_update_data: (Boolean, default true) Whether the data in the
-         model should be updated.
+        /** For documentation of this function, see docs/javascript_api.rst 
 
          */
 
@@ -13452,7 +13338,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
         // set the data for the map
         if (should_update_data)
-            this.update_data(false, true);
+            this._update_data(false, true);
 
         // set up the reaction input with complete.ly
         this.build_input = BuildInput(this.options.selection, this.map,
@@ -13498,7 +13384,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                                  if (i != -1)
                                                      this.options[type + '_styles'] = o.slice(0, i).concat(o.slice(i + 1));
                                              }
-                                             this.update_data(false, true, type);
+                                             this._update_data(false, true, type);
                                          }.bind(this));
         this.settings_bar.callback_manager.set('show', function() {
             this.search_bar.toggle(false);
@@ -13564,7 +13450,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         this.map.draw_everything();
     }
 
-    function set_mode(mode) {
+    function _set_mode(mode) {
         this.search_bar.toggle(false);
         // input
         this.build_input.toggle(mode=='build');
@@ -13594,45 +13480,80 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         this.map.draw_everything();
         // console.log('finished draw');
     }
+    
     function view_mode() {
+        /** For documentation of this function, see docs/javascript_api.rst.
+
+         */
         this.callback_manager.run('view_mode');
-        this.set_mode('view');
+        this._set_mode('view');
     }
+    
     function build_mode() {
+        /** For documentation of this function, see docs/javascript_api.rst.
+
+         */
         this.callback_manager.run('build_mode');
-        this.set_mode('build');
+        this._set_mode('build');
     }
+    
     function brush_mode() {
+        /** For documentation of this function, see docs/javascript_api.rst.
+
+         */
         this.callback_manager.run('brush_mode');
-        this.set_mode('brush');
+        this._set_mode('brush');
     }
+    
     function zoom_mode() {
+        /** For documentation of this function, see docs/javascript_api.rst.
+
+         */
         this.callback_manager.run('zoom_mode');
-        this.set_mode('zoom');
+        this._set_mode('zoom');
     }
+    
     function rotate_mode() {
+        /** For documentation of this function, see docs/javascript_api.rst.
+
+         */
         this.callback_manager.run('rotate_mode');
-        this.set_mode('rotate');
+        this._set_mode('rotate');
     }
+    
     function text_mode() {
+        /** For documentation of this function, see docs/javascript_api.rst.
+
+         */
         this.callback_manager.run('text_mode');
-        this.set_mode('text');
+        this._set_mode('text');
     }
 
     function set_reaction_data(data) {
+        /** For documentation of this function, see docs/javascript_api.rst.
+
+         */
         this.options.reaction_data = data;
-        this.update_data(true, true, 'reaction');
+        this._update_data(true, true, 'reaction');
     }
+    
     function set_gene_data(data) {
+        /** For documentation of this function, see docs/javascript_api.rst.
+
+         */
         this.options.gene_data = data;
-        this.update_data(true, true, 'reaction');
+        this._update_data(true, true, 'reaction');
     }
+    
     function set_metabolite_data(data) {
+        /** For documentation of this function, see docs/javascript_api.rst.
+
+         */
         this.options.metabolite_data = data;
-        this.update_data(true, true, 'metabolite');
+        this._update_data(true, true, 'metabolite');
     }
 
-    function update_data(update_model, update_map, kind, should_draw) {
+    function _update_data(update_model, update_map, kind, should_draw) {
         /** Set data and settings for the model.
 
          Arguments

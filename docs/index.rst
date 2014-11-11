@@ -11,6 +11,8 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   javascript_api
+   python_api
 
 
 Indices and tables

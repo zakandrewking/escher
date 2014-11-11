@@ -95,7 +95,7 @@ def load_resource(resource, name, safe=False):
     raise Exception('Could not load %s.' % name)
 
 class Builder(object):
-    """Viewable metabolic map.
+    """A metabolic map that can be viewed, edited, and used to visualize data.
     
     This map will also show metabolic fluxes passed in during consruction.  It
     can be viewed as a standalone html inside a browswer. Alternately, the
@@ -103,63 +103,94 @@ class Builder(object):
 
     Maps are stored in json files and are stored in a cache directory. Maps
     which are not found will be downloaded from a map repository if found.
-
-    Arguments
-    ---------
     
-    map_name: A string specifying a map to be downloaded from the Escher
-    web server, or loaded from the cache.
+    :param map_name:
+
+        A string specifying a map to be downloaded from the Escher web server,
+        or loaded from the cache.
     
-    map_json: A JSON string, or a file path to a JSON file, or a URL
-    specifying a JSON file to be downloaded.
+    :param map_json:
 
-    model: A Cobra model.
+        A JSON string, or a file path to a JSON file, or a URL specifying a JSON
+        file to be downloaded.
 
-    model_name: A string specifying a model to be downloaded from the Escher web
-    server, or loaded from the cache.
+    :param model: A Cobra model.
+
+    :param model_name:
+
+        A string specifying a model to be downloaded from the Escher web server,
+        or loaded from the cache.
     
-    model_json: A JSON string, or a file path to a JSON file, or a URL
-    specifying a JSON file to be downloaded.
+    :param model_json:
 
-    embedded_css: The CSS (as a string) to be embedded with the Escher
-    SVG.
+        A JSON string, or a file path to a JSON file, or a URL specifying a JSON
+        file to be downloaded.
+
+    :param embedded_css:
+
+        The CSS (as a string) to be embedded with the Escher SVG.
     
-    reaction_data: A dictionary with keys that correspond to reaction
-    ids and values that will be mapped to reaction arrows and labels.
+    :param reaction_data:
 
-    metabolite_data: A dictionary with keys that correspond to metabolite ids and
-    values that will be mapped to metabolite nodes and labels.
+        A dictionary with keys that correspond to reaction ids and values that
+        will be mapped to reaction arrows and labels.
 
-    gene_data: a dictionary with keys that correspond to gene ids and
-    values that will be mapped to corresponding reactions.
+    :param metabolite_data:
 
-    local_host: a hostname that will be used for any local files in dev
-    mode.
+        A dictionary with keys that correspond to metabolite ids and values that
+        will be mapped to metabolite nodes and labels.
 
-    id: specify an id to make the javascript data definitions unique. A random
-    id is chosen by default.
+    :param gene_data:
+
+        A dictionary with keys that correspond to gene ids and values that will
+        be mapped to corresponding reactions.
+
+    :param local_host:
+
+        A hostname that will be used for any local files in dev mode.
+
+    :param id:
+
+        Specify an id to make the javascript data definitions unique. A random
+        id is chosen by default.
     
-    safe: if True, then loading files from the filesytem is not allowed. This is
-    to ensure the safety of using Builder with a web server.
+    :param safe:
 
-    Keyword Arguments
-    -----------------
+        If True, then loading files from the filesytem is not allowed. This is
+        to ensure the safety of using Builder with a web server.
+
+    **Keyword Arguments**
 
     These are defined in the Javascript API:
 
-    identifiers_on_map, show_gene_reaction_rules, unique_map_id,
-    primary_metabolite_radius, secondary_metabolite_radius,
-    marker_radius, hide_secondary_nodes, reaction_styles,
-    reaction_compare_style, reaction_scale, reaction_no_data_color,
-    reaction_no_data_size, and_method_in_gene_reaction_rule,
-    metabolite_styles, metabolite_compare_style, metabolite_scale,
-    metabolite_no_data_color, metabolite_no_data_size,
-    highlight_missing_color, quick_jump
+        - identifiers_on_map
+        - show_gene_reaction_rules
+        - unique_map_id
+        - primary_metabolite_radius
+        - secondary_metabolite_radius
+        - marker_radius
+        - hide_secondary_nodes
+        - reaction_styles,
+        - reaction_compare_style
+        - reaction_scale
+        - reaction_no_data_color,
+        - reaction_no_data_size
+        - and_method_in_gene_reaction_rule,
+        - metabolite_styles
+        - metabolite_compare_style
+        - metabolite_scale,
+        - metabolite_no_data_color
+        - metabolite_no_data_size,
+        - highlight_missing_color
+        - quick_jump
 
     All keyword arguments can also be set on an existing Builder object
     using setter functions, e.g.:
 
-    my_builder.set_reaction_styles(new_styles);
+    .. code:: python
+    
+        my_builder.set_reaction_styles(new_styles)
+
     """
     
     def __init__(self, map_name=None, map_json=None, model=None,
@@ -175,7 +206,7 @@ class Builder(object):
         self.loaded_map_json = None
         if map_name and map_json:
             warn('map_json overrides map_name')
-        self.load_map()
+        self._load_map()
         # load the model
         self.model = model
         self.model_name = model_name
@@ -183,7 +214,7 @@ class Builder(object):
         self.loaded_model_json = None
         if sum([x is not None for x in model, model_name, model_json]) >= 2:
             warn('model overrides model_json, and both override model_name')
-        self.load_model()
+        self._load_model()
         # set the args
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
@@ -241,7 +272,7 @@ class Builder(object):
             except AttributeError:
                 print 'Unrecognized keywork argument %s' % key
         
-    def load_model(self):
+    def _load_model(self):
         """Load the model.
 
         Try first from self.model, second from self.model_json, and
@@ -276,7 +307,7 @@ class Builder(object):
             with open(model_filename) as f:
                 self.loaded_model_json = f.read()
                 
-    def load_map(self):
+    def _load_map(self):
         """Load the map from input map_json using load_resource, or, secondarily,
            from map_name.
 
@@ -356,7 +387,7 @@ class Builder(object):
         return javascript
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
-                 fill_screen, scroll_behavior, auto_set_data_domain,
+                 fill_screen, scroll_behavior,
                  never_ask_before_quit, js_url_parse, local_host):
         draw = (u"options = {{ selection: d3.select('#{the_id}'),\n"
                 u"enable_editing: {enable_editing},\n"
@@ -364,7 +395,6 @@ class Builder(object):
                 u"enable_keys: {enable_keys},\n"
                 u"scroll_behavior: {scroll_behavior},\n"
                 u"fill_screen: {fill_screen},\n"
-                u"auto_set_data_domain: {auto_set_data_domain},\n"
                 u"reaction_data: reaction_data_{the_id},\n"
                 u"metabolite_data: metabolite_data_{the_id},\n"
                 u"gene_data: gene_data_{the_id},\n"
@@ -376,7 +406,6 @@ class Builder(object):
                     enable_keys=json.dumps(enable_keys),
                     scroll_behavior=json.dumps(scroll_behavior),
                     fill_screen=json.dumps(fill_screen),
-                    auto_set_data_domain=json.dumps(auto_set_data_domain),
                     never_ask_before_quit=json.dumps(never_ask_before_quit),
                     local_host=json.dumps(local_host))
         # Add the specified options
@@ -406,8 +435,7 @@ class Builder(object):
     def _get_html(self, js_source='web', menu='none', scroll_behavior='pan',
                   html_wrapper=False, enable_editing=False, enable_keys=False,
                   minified_js=True, fill_screen=False, height='800px',
-                  auto_set_data_domain=True, never_ask_before_quit=False,
-                  js_url_parse=False):
+                  never_ask_before_quit=False, js_url_parse=False):
         """Generate the Escher HTML.
 
         Arguments
@@ -438,9 +466,6 @@ class Builder(object):
         enable_keys: Enable keyboard shortcuts.
 
         height: The height of the HTML container.
-
-        auto_set_data_domain: Automatically adjust the color and size scale
-        domains as new data is applied.
 
         never_ask_before_quit: Never display an alert asking if you want to
         leave the page. By default, this message is displayed if enable_editing
@@ -504,46 +529,46 @@ class Builder(object):
                               draw_js=self._draw_js(self.the_id, enable_editing,
                                                     menu, enable_keys, is_dev,
                                                     fill_screen, scroll_behavior,
-                                                    auto_set_data_domain,
                                                     never_ask_before_quit,
                                                     js_url_parse, self.local_host))
         return html
 
     def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',
-                            minified_js=True, height=500, auto_set_data_domain=True):
-        """Display the plot in the notebook.
+                            minified_js=True, height=500):
+        """Embed the Map within the current IPython Notebook.
 
-        Arguments
-        --------
+        :param string js_source:
 
-        js_source: Can be one of the following:
-            'web' (Default) - use js files from zakandrewking.github.io/escher.
-            'local' - use compiled js files in the local escher installation. Works offline.
-            'dev' - use the local, uncompiled development files. Works offline.
-
-        menu: Menu bar options include:
-            'none' - No menu or buttons.
-            'zoom' - Just zoom buttons.
-            Note: The 'all' menu option does not work in an IPython notebook.
-
-        scroll_behavior: Scroll behavior options:
-            'pan' - Pan the map.
-            'zoom' - Zoom the map.
-            'none' - (Default) No scroll events.
-
-        minified_js: If True, use the minified version of js files. If js_source
-        is 'dev', then this option is ignored.
-
-        height: Height of the HTML container.
-
-        auto_set_data_domain: Automatically adjust the color and size scale
-        domains as new data is applied.
+            Can be one of the following:
+            
+            - *web* (Default) - Use JavaScript files from zakandrewking.github.io/escher.
+            - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
+            - *dev* - Use the local, uncompiled development files. Works offline.
+            
+        :param string menu: Menu bar options include:
         
+            - *none* - No menu or buttons.
+            - *zoom* - Just zoom buttons.
+            - Note: The *all* menu option does not work in an IPython notebook.
+
+        :param string scroll_behavior: Scroll behavior options:
+        
+            - *pan* - Pan the map.
+            - *zoom* - Zoom the map.
+            - *none* - (Default) No scroll events.
+
+        :param Boolean minified_js:
+
+            If True, use the minified version of js files. If js_source is
+            *dev*, then this option is ignored.
+
+        :param height: Height of the HTML container.
+
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
                               html_wrapper=False, enable_editing=False, enable_keys=False,
                               minified_js=minified_js, fill_screen=False, height=height,
-                              auto_set_data_domain=auto_set_data_domain, never_ask_before_quit=True)
+                              never_ask_before_quit=True)
         if menu=='all':
             raise Exception("The 'all' menu option cannot be used in an IPython notebook.")
         # import here, in case users don't have requirements installed
@@ -553,100 +578,115 @@ class Builder(object):
     
     def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50, js_source='web',
                            menu='all', scroll_behavior='pan', enable_editing=True, enable_keys=True,
-                           minified_js=True, auto_set_data_domain=True, never_ask_before_quit=False):
+                           minified_js=True, never_ask_before_quit=False):
         """Launch a web browser to view the map.
 
-        Arguments
-        --------
+        :param ip: The IP address to serve the map on.
 
-        js_source: Can be one of the following:
-            'web' - use js files from zakandrewking.github.io/escher.
-            'local' - use compiled js files in the local escher installation. Works offline.
-            'dev' - use the local, uncompiled development files. Works offline.
+        :param port:
 
-        menu: Menu bar options include:
-            'none' - No menu or buttons.
-            'zoom' - Just zoom buttons (does not require bootstrap).
-            'all' - Menu and button bar (requires bootstrap).
+            The port to serve the map on. If specified the port is occupied,
+            then a random free port will be used.
 
-        scroll_behavior: Scroll behavior options:
-            'pan' - (Default) Pan the map.
-            'zoom' - Zoom the map.
-            'none' - No scroll events.
+        :param int n_retries:
+
+            The number of times the server will try to find a port before
+            quitting.
             
-        enable_editing: Enable the editing modes (build, rotate, etc.).
+        :param string js_source:
 
-        enable_keys: Enable keyboard shortcuts.
+            Can be one of the following:
+            
+            - *web* (Default) - Use JavaScript files from zakandrewking.github.io/escher.
+            - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
+            - *dev* - Use the local, uncompiled development files. Works offline.
 
-        minified_js: If True, use the minified version of js files. If js_source
-        is 'dev', then this option is ignored.
-
-        height: Height of the HTML container.
-
-        auto_set_data_domain: Automatically adjust the color and size scale
-        domains as new data is applied.
+        :param string menu: Menu bar options include:
         
-        never_ask_before_quit: Never display an alert asking if you want to
-        leave the page. By default, this message is displayed if enable_editing
-        is True.
+            - *none* - No menu or buttons.
+            - *zoom* - Just zoom buttons.
+            - *all* (Default) - Menu and button bar (requires Bootstrap).
+
+        :param string scroll_behavior: Scroll behavior options:
+        
+            - *pan* - Pan the map.
+            - *zoom* - Zoom the map.
+            - *none* (Default) - No scroll events.
+                
+        :param Boolean enable_editing: Enable the map editing modes.
+
+        :param Boolean enable_keys: Enable keyboard shortcuts.
+
+        :param Boolean minified_js:
+
+            If True, use the minified version of js files. If js_source is
+            *dev*, then this option is ignored.
+
+        :param Boolean never_ask_before_quit:
+
+            Never display an alert asking if you want to leave the page. By
+            default, this message is displayed if enable_editing is True.
 
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
                               html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
                               minified_js=minified_js, fill_screen=True, height="100%",
-                              auto_set_data_domain=auto_set_data_domain,
                               never_ask_before_quit=never_ask_before_quit)
         serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
         
     def save_html(self, filepath=None, js_source='web', menu='all', scroll_behavior='pan',
                   enable_editing=True, enable_keys=True, minified_js=True,
-                  auto_set_data_domain=True, never_ask_before_quit=False,
-                  js_url_parse=False):
+                  never_ask_before_quit=False, js_url_parse=False):
         """Save an HTML file containing the map.
 
-        Arguments
-        --------
+        :param string filepath: The HTML file will be saved to this location.
 
-        js_source: Can be one of the following:
-            'web' - use js files from zakandrewking.github.io/escher.
-            'local' - use compiled js files in the local escher installation. Works offline.
-            'dev' - use the local, uncompiled development files. Works offline.
+        :param string js_source:
 
-        menu: Menu bar options include:
-            'none' - No menu or buttons.
-            'zoom' - Just zoom buttons (does not require bootstrap).
-            'all' - Menu and button bar (requires bootstrap).
-
-        scroll_behavior: Scroll behavior options:
-            'pan' - (Default) Pan the map.
-            'zoom' - Zoom the map.
-            'none' - No scroll events.
+            Can be one of the following:
             
-        enable_editing: Enable the editing modes (build, rotate, etc.).
-
-        enable_keys: Enable keyboard shortcuts.
-
-        minified_js: If True, use the minified version of js files. If js_source
-        is 'dev', then this option is ignored.
-
-        height: Height of the HTML container.
-
-        auto_set_data_domain: Automatically adjust the color and size scale
-        domains as new data is applied.
+            - *web* (Default) - Use JavaScript files from zakandrewking.github.io/escher.
+            - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
+            - *dev* - Use the local, uncompiled development files. Works offline.
+            
+        :param string menu: Menu bar options include:
         
-        never_ask_before_quit: Never display an alert asking if you want to
-        leave the page. By default, this message is displayed if enable_editing
-        is True.
+            - *none* - No menu or buttons.
+            - *zoom* - Just zoom buttons.
+            - *all* (Default) - Menu and button bar (requires Bootstrap).
 
-        js_url_parse: Use javascript to parse the URL options. Used for
-        generating static pages (see static_site.py), and only works if maps and
-        models are available locally.
+        :param string scroll_behavior: Scroll behavior options:
+        
+            - *pan* - Pan the map.
+            - *zoom* - Zoom the map.
+            - *none* (Default) - No scroll events.
+            
+        :param Boolean enable_editing: Enable the map editing modes.
+
+        :param Boolean enable_keys: Enable keyboard shortcuts.
+
+        :param Boolean minified_js:
+
+            If True, use the minified version of js files. If js_source is
+            *dev*, then this option is ignored.
+
+        :param number height: Height of the HTML container.
+
+        :param Boolean never_ask_before_quit:
+
+            Never display an alert asking if you want to leave the page. By
+            default, this message is displayed if enable_editing is True.
+
+        :param Boolean js_url_parse:
+
+            Use JavaScript to parse the URL options. Used for generating static
+            pages (see static_site.py), and only works if maps and models are
+            available locally.
 
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
                               html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
                               minified_js=minified_js, fill_screen=True, height="100%",
-                              auto_set_data_domain=auto_set_data_domain,
                               never_ask_before_quit=never_ask_before_quit,
                               js_url_parse=js_url_parse)
         if filepath is not None:
@@ -660,4 +700,3 @@ class Builder(object):
             write(os_file, unicode(html).encode('utf-8'))
             close(os_file)
             return filename
-    

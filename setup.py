@@ -123,6 +123,16 @@ class BuildRelease(Command):
              join('escher', 'css', 'builder-embed-%s.css' % new_version))
         print 'Done building release %s' % new_version
 
+class BuildDocs(Command):
+    description = "Build the sphinx documentation"
+    user_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    def run(self):
+        call(['make', 'html', '-C', 'docs'])
+
 class TestCommand(Command):
     description = "Custom test command that runs pytest and jasmine"
     user_options = [('jsonly', None, 'Only run jasmine tests'),
@@ -155,4 +165,5 @@ setup(name='Escher',
                 'buildjs': JSBuildCommand,
                 'buildgh': BuildGHPagesCommand,
                 'build_release': BuildRelease,
+                'build_docs': BuildDocs,
                 'test': TestCommand})

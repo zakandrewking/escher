@@ -206,6 +206,12 @@ class StaticHandler(BaseHandler):
         path = join(directory, path)
         print 'getting path %s' % path
         self.serve_path(path)
+        
+class DocsHandler(BaseHandler):
+    def get(self, path):
+        path = join(directory, '..', 'docs', '_build', 'html', path)
+        print 'getting path %s' % path
+        self.serve_path(path)
 
 settings = {"debug": "False"}
 
@@ -218,6 +224,7 @@ application = Application([
     (r".*/(jsonschema/.*)", StaticHandler),
     (r"/(dev/)?(local/)?(?:web/)?(builder|viewer)(.*)", BuilderHandler),
     (r".*/(organisms/.*)", MapModelHandler),
+    (r"/docs/(.*)", DocsHandler),
     (r"/", IndexHandler),
 ], **settings)
  
