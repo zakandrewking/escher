@@ -208,7 +208,13 @@ class StaticHandler(BaseHandler):
         path = join(directory, path)
         print 'getting path %s' % path
         self.serve_path(path)
-        
+
+class ResourceHandler(BaseHandler):
+    def get(self, path):
+        path = join(directory, 'resources', path)
+        print 'getting path %s' % path
+        self.serve_path(path)
+
 class DocsHandler(BaseHandler):
     def get(self, path):
         path = join(directory, '..', 'docs', '_build', 'html', path)
@@ -222,11 +228,12 @@ application = Application([
     (r"/(fonts/.*)", LibHandler),
     (r"/(js/.*)", StaticHandler),
     (r"/(css/.*)", StaticHandler),
-    (r"/(resources/.*)", StaticHandler),
+    (r"/resources/(.*)", ResourceHandler),
     (r"/(jsonschema/.*)", StaticHandler),
     (r"/(builder|viewer)(.*)", BuilderHandler),
     (r"/(organisms/.*)", MapModelHandler),
     (r"/docs/(.*)", DocsHandler),
+    (r"/(favicon.ico)", ResourceHandler),
     (r"/", IndexHandler),
 ], **settings)
  

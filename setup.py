@@ -15,7 +15,8 @@ except:
     from distutils.core import setup, Command
 
 directory = dirname(realpath(__file__))
-version = __import__('escher').__version__
+sys.path.insert(0, join(directory, 'escher'))
+version = __import__('version').__version__
 escher = 'escher-%s.js'%version
 escher_min = 'escher-%s.min.js'%version
 port = 8789
@@ -158,9 +159,11 @@ setup(name='Escher',
       author='Zachary King',
       url='http://zakandrewking.github.io/escher/',
       packages=['escher'],
-      package_data={'escher': ['css/*', 'templates/*', 'example_data/*',
-                               'lib/*.js', 'lib/*.css', 'lib/fonts/*',
-                               'resources/*']},
+      package_data={'escher': ['css/web/*.css', 'css/*.css', 'templates/*',
+                               'example_data/*', 'lib/*.js', 'lib/*.css',
+                               'lib/fonts/*', 'resources/*']},
+      install_requires=['Jinja2>=2.7.3',
+                        'tornado>=4.0.2'],
       cmdclass={'clean': CleanCommand,
                 'buildjs': JSBuildCommand,
                 'buildgh': BuildGHPagesCommand,
