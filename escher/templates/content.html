@@ -29,10 +29,10 @@
      // require.js is available: use it to load d3 and escher
      {% if dev %}
      requirejs.config({
-       baseUrl: '{{host}}/js/src',
+       baseUrl: '{{host}}js/src',
        paths: {
 	 lib: '../../lib',
-	 d3: "{{ d3[:-3] }}"
+	 d3: "../../{{ d3[:-3] }}"
        }
      });
      require(["d3", "Builder", "utils"], function(d3, Builder, utils) {

@@ -79,13 +79,21 @@ function submit(maps) {
 
     // choose the file
     if (options_value=='local_viewer') {
-	url = 'local/viewer.html';
+	url = 'viewer.html';
+        add.push('js_source=local');
     } else if (options_value=='local_builder') {
-	url = 'local/builder.html';
+	url = 'builder.html';
+        add.push('js_source=local');
     } else if (options_value=='viewer') {
 	url = 'viewer.html';
-    } else {
+    } else if (options_value=='builder') {
 	url = 'builder.html';
+    } else if (can_dev && options_value=='dev_viewer') {
+	url = 'viewer.html';
+        add.push('js_source=dev');
+    } else if (can_dev && options_value=='dev_builder') {
+	url = 'builder.html';
+        add.push('js_source=dev');
     }
 
     // set the quick jump maps

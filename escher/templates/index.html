@@ -50,6 +50,10 @@
 	      <option class="tool" value="local_viewer">Viewer (Offline)</option>
 	      <option class="tool" value="local_builder">Builder (Offline)</option>
 	    {% endif %}
+	    {% if not web_version and can_dev %}
+	      <option class="tool" value="dev_viewer">Viewer (Dev)</option>
+	      <option class="tool" value="dev_builder">Builder (Dev)</option>
+	    {% endif %}
 	  </select>
 	</div>
       </div>
@@ -125,6 +129,7 @@
    var data={{data}},
    local_maps={{local_maps}},
    local_models={{local_models}};
+   can_dev={{can_dev_js}};
    setup(data, local_maps, local_models);
    {% endif %}   
   </script>

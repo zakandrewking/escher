@@ -22,7 +22,7 @@ env = Environment(loader=PackageLoader('escher', 'templates'))
 def get_cache_dir(name=None):
     """ Get the cache dir as a string.
 
-    name: an optional subdirectory within the cache
+    :param string name: An optional subdirectory within the cache
 
     """
     cache_dir = join(appdirs.user_cache_dir('escher', appauthor='Zachary King'))
@@ -59,11 +59,11 @@ def list_cached_models():
         print 'No cached maps'
         return None
     
-def get_an_id():
+def _get_an_id():
     return unicode(''.join(random.choice(string.ascii_lowercase)
                            for _ in range(10)))
 
-def load_resource(resource, name, safe=False):
+def _load_resource(resource, name, safe=False):
     """Load a resource that could be a file, URL, or json string."""
     # if it's a url, download it
     if resource.startswith('http://') or resource.startswith('https://'):
@@ -170,17 +170,17 @@ class Builder(object):
         - secondary_metabolite_radius
         - marker_radius
         - hide_secondary_nodes
-        - reaction_styles,
+        - reaction_styles
         - reaction_compare_style
         - reaction_scale
-        - reaction_no_data_color,
+        - reaction_no_data_color
         - reaction_no_data_size
-        - and_method_in_gene_reaction_rule,
+        - and_method_in_gene_reaction_rule
         - metabolite_styles
         - metabolite_compare_style
-        - metabolite_scale,
+        - metabolite_scale
         - metabolite_no_data_color
-        - metabolite_no_data_size,
+        - metabolite_no_data_size
         - highlight_missing_color
         - quick_jump
 
@@ -227,7 +227,7 @@ class Builder(object):
         except AttributeError:
             self.embedded_css = None
         # make the unique id
-        self.the_id = get_an_id() if id is None else id
+        self.the_id = _get_an_id() if id is None else id
 
         # set up the options
         self.options = ['identifiers_on_map',
@@ -283,7 +283,7 @@ class Builder(object):
         if self.model is not None:
             self.loaded_model_json = cobra.io.to_json(self.model)
         elif self.model_json is not None:
-            self.loaded_model_json = load_resource(self.model_json,
+            self.loaded_model_json = _load_resource(self.model_json,
                                                    'model_json',
                                                    safe=self.safe)
         elif self.model_name is not None:
@@ -308,15 +308,15 @@ class Builder(object):
                 self.loaded_model_json = f.read()
                 
     def _load_map(self):
-        """Load the map from input map_json using load_resource, or, secondarily,
+        """Load the map from input map_json using _load_resource, or, secondarily,
            from map_name.
 
         """
         
         if self.map_json is not None:
-            self.loaded_map_json = load_resource(self.map_json,
-                                                 'map_json',
-                                                 safe=self.safe)
+            self.loaded_map_json = _load_resource(self.map_json,
+                                                  'map_json',
+                                                  safe=self.safe)
         elif self.map_name is not None:
             # get the name
             map_name = self.map_name
@@ -512,6 +512,10 @@ class Builder(object):
                         get_url('boot_js', url_source, self.local_host))
         require_js_url = get_url('require_js', url_source, self.local_host)                     
         escher_css_url = get_url('builder_css', url_source, self.local_host)
+
+        lh_string = ('' if self.local_host is None else
+                     (self.local_host + '/' if not self.local_host.endswith('/') else
+                      self.local_host))
         
         html = content.render(id=self.the_id,
                               height=height,
@@ -524,7 +528,7 @@ class Builder(object):
                               require_js=require_js_url,
                               escher_css=escher_css_url,
                               wrapper=html_wrapper,
-                              host=self.local_host,
+                              host=lh_string,
                               initialize_js=self._initialize_javascript(url_source),
                               draw_js=self._draw_js(self.the_id, enable_editing,
                                                     menu, enable_keys, is_dev,

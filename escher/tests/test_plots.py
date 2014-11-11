@@ -1,7 +1,7 @@
 import escher.server
 from escher import (Builder, get_cache_dir, clear_cache, list_cached_maps,
                     list_cached_models)
-from escher.plots import load_resource
+from escher.plots import _load_resource
 from escher.urls import get_url
 
 import os
@@ -35,24 +35,24 @@ def test_get_cache_dir():
 #     Builder(model_name='iJO1366')
 #     assert list_cached_models() == ['iJO1366']
     
-def test_load_resource(tmpdir):
-    assert load_resource('{"r": "val"}', 'name') == '{"r": "val"}'
+def test__load_resource(tmpdir):
+    assert _load_resource('{"r": "val"}', 'name') == '{"r": "val"}'
     
     directory = os.path.abspath(os.path.dirname(__file__))
-    assert load_resource(join(directory, 'example.json'), 'name').strip() == '{"r": "val"}'
+    assert _load_resource(join(directory, 'example.json'), 'name').strip() == '{"r": "val"}'
     
     with raises(ValueError) as err:
         p = join(str(tmpdir), 'dummy')
         with open(p, 'w') as f:
             f.write('dummy')
-        load_resource(p, 'name')
+        _load_resource(p, 'name')
         assert 'not a valid json file' in err.value
 
 @mark.web
-def test_load_resource_web(tmpdir): 
+def test__load_resource_web(tmpdir): 
     url = '/'.join([get_url('escher_download', protocol='https'),
                     'organisms/e_coli/models/iJO1366/maps/central_metabolism.json'])
-    _ = json.loads(load_resource(url, 'name'))
+    _ = json.loads(_load_resource(url, 'name'))
                 
 def test_Builder(tmpdir):
     b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}')

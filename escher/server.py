@@ -26,6 +26,7 @@ directory = dirname(realpath(__file__))
 NO_CACHE = True
 PORT = 7778
 PUBLIC = False
+CAN_DEV = os.path.exists(join(directory, '..', '.can_dev'))
 
 def run(port=PORT, public=PUBLIC):
     global PORT
@@ -94,6 +95,8 @@ class IndexHandler(BaseHandler):
                                data=json_data,
                                local_maps=cached_maps,
                                local_models=cached_models,
+                               can_dev=CAN_DEV,
+                               can_dev_js=json.dumps(CAN_DEV),
                                version=__version__,
                                web_version=False)
         
@@ -103,13 +106,10 @@ class IndexHandler(BaseHandler):
 class BuilderHandler(BaseHandler):
     @asynchronous
     @gen.coroutine
-    def get(self, dev_path, offline_path, kind, path):
-        # builder vs. viewer & dev vs. not dev
-        js_source = ('dev' if (dev_path is not None) else
-                     ('local' if (offline_path is not None) else
-                      'web'))
+    def get(self, kind, path):
+        # builder vs. viewer
         enable_editing = (kind=='builder')
-        
+
         # Builder options
         builder_kwargs = {}
         for a in ['starting_reaction', 'model_name', 'map_name', 'map_json',
@@ -128,7 +128,9 @@ class BuilderHandler(BaseHandler):
             if len(args) > 0:
                 builder_kwargs[a] = args
 
-        print builder_kwargs
+        # js source
+        args = self.get_arguments('js_source')
+        js_source = args[0] if len(args) == 1 else 'web'
 
         # if the server is running locally, then the embedded css must be loaded
         # asynchronously using the same server thread.
@@ -216,14 +218,14 @@ class DocsHandler(BaseHandler):
 settings = {"debug": "False"}
 
 application = Application([
-    (r".*/lib/(.*)", LibHandler),
-    (r".*/(fonts/.*)", LibHandler),
-    (r".*/(js/.*)", StaticHandler),
-    (r".*/(css/.*)", StaticHandler),
-    (r".*/(resources/.*)", StaticHandler),
-    (r".*/(jsonschema/.*)", StaticHandler),
-    (r"/(dev/)?(local/)?(?:web/)?(builder|viewer)(.*)", BuilderHandler),
-    (r".*/(organisms/.*)", MapModelHandler),
+    (r"/lib/(.*)", LibHandler),
+    (r"/(fonts/.*)", LibHandler),
+    (r"/(js/.*)", StaticHandler),
+    (r"/(css/.*)", StaticHandler),
+    (r"/(resources/.*)", StaticHandler),
+    (r"/(jsonschema/.*)", StaticHandler),
+    (r"/(builder|viewer)(.*)", BuilderHandler),
+    (r"/(organisms/.*)", MapModelHandler),
     (r"/docs/(.*)", DocsHandler),
     (r"/", IndexHandler),
 ], **settings)
