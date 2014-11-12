@@ -16,3 +16,11 @@ with open('gene_data_iJO1366.json', 'w') as f:
 
 (pd.DataFrame.from_records(gene_data.items(), columns=['gene', 'value'])
  .to_csv('gene_data_iJO1366.csv', index=None))
+
+# reaction text data
+reaction_text_data = {reaction.id: reaction.build_reaction_string() for reaction in ijo.reactions}
+
+(pd.DataFrame.from_records(reaction_text_data.items(), columns=['reaction', 'value'])
+ .to_csv('reaction_text_data_iJO1366.csv', index=None))
+
+# 

@@ -58,7 +58,7 @@ describe('utils', function() {
                                       escher.data_styles.csv_converter,
                                       function(error, value) {
                                           if (error) console.warn(error);
-                                          expect(value).toEqual([{'GAPD': 100}]);
+                                          expect(value).toEqual([{'GAPD': '100'}]);
                                       },
                                       null,
                                       null,

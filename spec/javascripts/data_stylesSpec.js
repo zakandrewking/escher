@@ -80,6 +80,11 @@ describe('data_styles', function() {
             .toEqual(null);
         expect(escher.data_styles.float_for_data([0, 10], [], 'log2_fold'))
             .toEqual(null);
+        // null values 
+        expect(escher.data_styles.float_for_data([null], [], 'log2_fold'))
+            .toEqual(null);
+        expect(escher.data_styles.float_for_data([''], [], 'log2_fold'))
+            .toEqual(null);
         // bad compare_style
         expect(escher.data_styles.float_for_data.bind(null, [10, 5], [], 'd'))
             .toThrow();
@@ -93,7 +98,7 @@ describe('data_styles', function() {
         expect(escher.data_styles.text_for_data([-10, 5], 10))
             .toEqual('-10.0, 5.00: 10.0');
     });
-    
+
     it('reverse_flux_for_data',  function() {
         expect(escher.data_styles.reverse_flux_for_data([10]))
             .toEqual(false);
@@ -110,13 +115,27 @@ describe('data_styles', function() {
                                                        ['abs'], 'name', 'log2_fold'))
             .toEqual('( Gene1 (-10.0))');
     });
-
+    
+    it('stores text for non-numeric data', function() {
+        expect(escher.data_styles.float_for_data(['2dmmql8_c + fum_c --> 2dmmq8_c + s'], [], 'log2_fold'))
+            .toEqual(null);
+        expect(escher.data_styles.text_for_data(['2dmmql8_c + fum_c --> 2dmmq8_c + s', '8'], null))
+            .toEqual('2dmmql8_c + fum_c --> 2dmmq8_c + s, 8: (nd)');
+        expect(escher.data_styles.reverse_flux_for_data(['2dmmql8_c + fum_c --> 2dmmq8_c + s']))
+            .toEqual(false);
+        expect(escher.data_styles.gene_string_for_data('( G1 )', { G1: ['my favorite gene✓', '8'] },
+                                                       [{bigg_id: 'G1', name: 'Gene1'}],
+                                                       ['abs'], 'name', 'log2_fold'))
+            .toEqual('( Gene1 (my favorite gene✓, 8: nd))');
+    });
+    
     it('csv_converter', function() {
         var csv_rows = [['gene', 'v1', 'v2'],
-                        ['g1', 10, 20],
-                        ['g2', 15, 25]];
+                        ['g1', '10', '20'],
+                        ['g2', '15', '25'],
+                        ['g3', 'text', 'data']];
         expect(escher.data_styles.csv_converter(csv_rows))
-            .toEqual([{'g1': 10, 'g2': 15}, {'g1': 20, 'g2': 25}]);
+            .toEqual([{'g1': '10', 'g2': '15', g3: 'text'}, {g1: '20', g2: '25', g3: 'data'}]);
     });
     
     it('genes_for_gene_reaction_rule', function() {

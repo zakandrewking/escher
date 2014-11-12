@@ -2313,7 +2313,7 @@ define('data_styles',['utils'], function(utils) {
         
         if (d.length==1) { // 1 set
             // 1 null
-            var f = parse_float_or_null(d[0])
+            var f = parse_float_or_null(d[0]);
             if (f === null)
                 return null;
             return abs(f, take_abs);
@@ -2331,13 +2331,17 @@ define('data_styles',['utils'], function(utils) {
             else if (compare_style == 'log2_fold') {
                 return check_finite(log2_fold(fs[0], fs[1], take_abs));
             }
+        } else {
+            throw new Error('Data array must be of length 1 or 2');
         }
         throw new Error('Bad data compare_style: ' + compare_style);
 
         // definitions
         function parse_float_or_null(x) {
-            var f = parseFloat(x);
-            return isNaN(f) ? null : f;
+            // strict number casting
+            var f = Number(x);
+            // check for null and '', which haven't been caught yet
+            return (isNaN(f) || parseFloat(x) != f) ? null : f;
         }
 	function check_finite(x) {
 	    return isFinite(x) ? x : null;
@@ -2370,8 +2374,7 @@ define('data_styles',['utils'], function(utils) {
     function gene_string_for_data(rule, gene_values, genes, styles,
                                   identifiers_on_map, compare_style) {
         if (gene_values === null) return '';
-        var out = rule,
-            format = d3.format('.3g');
+        var out = rule;
         for (var gene_id in gene_values) {
             var d = gene_values[gene_id],
                 name = '';
@@ -2389,12 +2392,13 @@ define('data_styles',['utils'], function(utils) {
                 throw new Error('Bad value for identifiers_on_map: ' + identifiers_on_map);
             }
             // generate the string
+            var f = float_for_data(d, styles, compare_style),
+                format = (f === null ? function(x) { return x; } : d3.format('.3g'));
             if (d.length==1) {
                 out = replace_gene_in_rule(out, gene_id, (name + ' (' + null_or_d(d[0], format) + ')\n'));
             }
             if (d.length==2) {
-                var f = float_for_data(d, styles, compare_style),
-                    new_str = (name + ' (' +
+                var new_str = (name + ' (' +
                                null_or_d(d[0], format) + ', ' +
                                null_or_d(d[1], format) + ': ' +
                                null_or_d(f, format) +
@@ -2415,11 +2419,19 @@ define('data_styles',['utils'], function(utils) {
         if (d === null)
             return null_or_d(null);
         if (d.length == 1) {
-            var format = d3.format('.4g');
+            var format = (f === null ? 
+                          // just return the string
+                          function(x) { return x; } : 
+                          // otherwise, format the string
+                          d3.format('.4g'));
             return null_or_d(d[0], format);
         }
         if (d.length == 2) {
-            var format = d3.format('.3g'),
+            var format = (f === null ? 
+                          // just return the string
+                          function(x) { return x; } : 
+                          // otherwise, format the string
+                          d3.format('.3g')),
                 t = null_or_d(d[0], format);
             t += ', ' + null_or_d(d[1], format);
             t += ': ' + null_or_d(f, format);
@@ -2451,7 +2463,7 @@ define('data_styles',['utils'], function(utils) {
         // fill
         csv_rows.slice(1).forEach(function(row) {
             for (var i = 1, l = row.length; i < l; i++) {
-                converted[i - 1][row[0]] = parseFloat(row[i]);
+                converted[i - 1][row[0]] = row[i];
             }
         });
         return converted;
