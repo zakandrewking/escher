@@ -16,15 +16,13 @@ class TestBuilder(AsyncHTTPTestCase):
         
         response = self.fetch('/builder.html')
         assert response.code==200
-        response = self.fetch('/web/builder.html')
-        assert response.code==200
         
     def test_dev_builder_request(self):
         # set the correct port
         escher.server.PORT = self.get_http_port()
         print escher.server.PORT
 
-        response = self.fetch('/dev/builder.html')
+        response = self.fetch('/builder.html?js_source=dev')
         assert response.code==200
         
     def test_local_builder_request(self):
@@ -32,7 +30,7 @@ class TestBuilder(AsyncHTTPTestCase):
         escher.server.PORT = self.get_http_port()
         print escher.server.PORT
 
-        response = self.fetch('/local/builder.html')
+        response = self.fetch('/builder.html?js_source=local')
         assert response.code==200
         
 def test_server():

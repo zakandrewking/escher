@@ -8,7 +8,7 @@ from shutil import copy, move
 from os.path import join, dirname, realpath, exists
 from glob import glob
 import re
-    
+
 try:
     from setuptools import setup, Command
 except:
@@ -147,13 +147,17 @@ class TestCommand(Command):
         pass
     def run(self):
         if not self.jsonly:
+            import pytest
             if self.noweb:
-                call('py.test -m "not web"', shell=True)
+                exit_code = pytest.main(['-m', 'not web'])
             else:
-                call('py.test', shell=True)
+                exit_code = pytest.main()
+        else:
+            exit_code = 0
         if not self.pyonly:
             call(['jasmine', '--port=%d' % port])
-        
+        sys.exit(exit_code)
+
 setup(name='Escher',
       version=version,
       author='Zachary King',

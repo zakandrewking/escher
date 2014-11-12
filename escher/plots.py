@@ -576,7 +576,10 @@ class Builder(object):
         if menu=='all':
             raise Exception("The 'all' menu option cannot be used in an IPython notebook.")
         # import here, in case users don't have requirements installed
-        from IPython.display import HTML
+        try:
+            from IPython.display import HTML
+        except ImportError:
+            raise Exception('You need to be using the IPython notebook for this function to work')
         return HTML(html)
 
     

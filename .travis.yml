@@ -1,0 +1,13 @@
+language: python
+python:
+ - "2.7"
+# command to install dependencies
+before_install:
+  - pip install cython jsonschema ipython
+  - pip install -e git+https://github.com/opencobra/cobrapy.git\#egg=cobra
+install:
+  - python setup.py develop
+# # command to run tests
+script: python setup.py test --noweb --pyonly
+notifications:
+  email: false

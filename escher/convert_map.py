@@ -16,13 +16,20 @@ python convert_map.py another_old_map.json output_directory path/to/iJO1366.sbml
 
 """
 
+try:
+    import cobra.io
+    import jsonschema
+except ImportError:
+    raise Exception(('The Python packages jsonschema and COBRApy (0.3.0b3 or later) '
+                     'are required for converting maps.'))
+try:
+    from theseus import load_model
+except ImportError:
+    print 'Theseus not available (https://github.com/zakandrewking/Theseus)'
 import sys
-import cobra.io
 import json
-from theseus import load_model
 from os.path import basename, join
 from urllib2 import urlopen
-import jsonschema
 import re
 
 from escher.validate import get_jsonschema, check_segments
