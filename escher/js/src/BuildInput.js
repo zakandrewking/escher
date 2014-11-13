@@ -229,13 +229,12 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 'CobraModel']
             for (var met_bigg_id in reaction.metabolites) {
 
                 // if starting with a selected metabolite, check for that id
-                if (starting_from_scratch || met_bigg_id==selected_node.bigg_id) {
+                if (starting_from_scratch || met_bigg_id == selected_node.bigg_id) {
 
                     // don't add suggestions twice
                     if (bigg_id in reaction_suggestions) continue;
 
-                    var met_name = cobra_metabolites[met_bigg_id].name,
-                        show_m_name = (show_names ? met_name : met_bigg_id);
+                    var met_name = cobra_metabolites[met_bigg_id].name;
                     
                     if (has_data_on_reactions) {
                         options.push({ reaction_data: reaction.data,
@@ -261,6 +260,10 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 'CobraModel']
                                 show_met_names.push(met_id);
                             }
                         }
+                        var key = show_names ? 'name' : 'bigg_id',
+                            show_gene_names = reaction.genes.map(function(g_obj) {
+                                return g_obj[key];
+                            });
                         // get the reaction string
                         var reaction_string = CobraModel.build_reaction_string(mets,
                                                                                reaction.reversibility,
@@ -269,7 +272,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 'CobraModel']
                         options.push({ html: ('<b>' + show_r_name + '</b>' +
                                               '\t' +
                                               bold_mets_in_str(reaction_string, [selected_m_name])),
-                                       matches: [show_r_name].concat(show_met_names),
+                                       matches: [show_r_name].concat(show_met_names).concat(show_gene_names),
                                        id: bigg_id });
                         reaction_suggestions[bigg_id] = true;
                     }

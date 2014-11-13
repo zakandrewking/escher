@@ -169,7 +169,7 @@ class Builder(object):
         - primary_metabolite_radius
         - secondary_metabolite_radius
         - marker_radius
-        - hide_secondary_nodes
+        - hide_secondary_metabolites
         - reaction_styles
         - reaction_compare_style
         - reaction_scale
@@ -236,7 +236,7 @@ class Builder(object):
                         'primary_metabolite_radius',
                         'secondary_metabolite_radius',
                         'marker_radius',
-                        'hide_secondary_nodes',
+                        'hide_secondary_metabolites',
                         'reaction_styles',
                         'reaction_compare_style',
                         'reaction_scale',

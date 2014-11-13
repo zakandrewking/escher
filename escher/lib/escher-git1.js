@@ -3072,13 +3072,12 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 
             for (var met_bigg_id in reaction.metabolites) {
 
                 // if starting with a selected metabolite, check for that id
-                if (starting_from_scratch || met_bigg_id==selected_node.bigg_id) {
+                if (starting_from_scratch || met_bigg_id == selected_node.bigg_id) {
 
                     // don't add suggestions twice
                     if (bigg_id in reaction_suggestions) continue;
 
-                    var met_name = cobra_metabolites[met_bigg_id].name,
-                        show_m_name = (show_names ? met_name : met_bigg_id);
+                    var met_name = cobra_metabolites[met_bigg_id].name;
                     
                     if (has_data_on_reactions) {
                         options.push({ reaction_data: reaction.data,
@@ -3104,6 +3103,10 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 
                                 show_met_names.push(met_id);
                             }
                         }
+                        var key = show_names ? 'name' : 'bigg_id',
+                            show_gene_names = reaction.genes.map(function(g_obj) {
+                                return g_obj[key];
+                            });
                         // get the reaction string
                         var reaction_string = CobraModel.build_reaction_string(mets,
                                                                                reaction.reversibility,
@@ -3112,7 +3115,7 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 
                         options.push({ html: ('<b>' + show_r_name + '</b>' +
                                               '\t' +
                                               bold_mets_in_str(reaction_string, [selected_m_name])),
-                                       matches: [show_r_name].concat(show_met_names),
+                                       matches: [show_r_name].concat(show_met_names).concat(show_gene_names),
                                        id: bigg_id });
                         reaction_suggestions[bigg_id] = true;
                     }
@@ -3743,7 +3746,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         
         // update segment attributes
         var highlight_missing  = this.settings.get_option('highlight_missing'),
-	    hide_secondary_nodes = this.settings.get_option('hide_secondary_nodes'),
+	    hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
 	    primary_r = this.settings.get_option('primary_metabolite_radius'),
 	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
 	    get_arrow_size = function(data) {
@@ -3777,7 +3780,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
 	    .style('visibility', function(d) {
 		var start = drawn_nodes[d.from_node_id],
                     end = drawn_nodes[d.to_node_id];
-		if (hide_secondary_nodes &&
+		if (hide_secondary_metabolites &&
 		    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
 		     (start['node_type']=='metabolite' && !start.node_is_primary)))
 			return 'hidden';
@@ -3845,8 +3848,8 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                         b1 = d.b1,
 			end = drawn_nodes[d.to_node_id],
                         b2 = d.b2;
-		    // hide_secondary_nodes option
-		    if (hide_secondary_nodes &&
+		    // hide_secondary_metabolites option
+		    if (hide_secondary_metabolites &&
 			((end['node_type']=='metabolite' && !end.node_is_primary) ||
 			 (start['node_type']=='metabolite' && !start.node_is_primary)))
 			return arrowheads;
@@ -3923,8 +3926,8 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                         b1 = d.b1,
 		        end = drawn_nodes[d.to_node_id],
                         b2 = d.b2;
-		    // hide_secondary_nodes option
-		    if (hide_secondary_nodes &&
+		    // hide_secondary_metabolites option
+		    if (hide_secondary_metabolites &&
 			((end['node_type']=='metabolite' && !end.node_is_primary) ||
 			 (start['node_type']=='metabolite' && !start.node_is_primary)))
 			return labels;
@@ -4072,7 +4075,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                                'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
-	var hide_secondary_nodes = this.settings.get_option('hide_secondary_nodes'),
+	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
 	    primary_r = this.settings.get_option('primary_metabolite_radius'),
 	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
 	    marker_r = this.settings.get_option('marker_radius');
@@ -4082,7 +4085,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                     return 'translate('+d.x+','+d.y+')';
                 })
 		.style('visibility', function(d) {
-		    return (hide_secondary_nodes && !d.node_is_primary) ? 'hidden' : null;
+		    return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
 		})
                 .attr('r', function(d) {
                     if (d.node_type == 'metabolite') {
@@ -4121,7 +4124,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         update_selection
             .select('.node-label')
             .style('visibility', function(d) {
-		return (hide_secondary_nodes && !d.node_is_primary) ? 'hidden' : null;
+		return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
 	    })
             .attr('transform', function(d) {
                 return 'translate('+d.label_x+','+d.label_y+')';
@@ -10885,9 +10888,9 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             if (this.has_data_on_reactions) {
                 var scale_changed = this.calc_data_stats('reaction');
                 if (scale_changed) this.draw_all_reactions();
-                this.clear_deleted_reactions(true); // also clears segments and beziers
+                else this.draw_these_reactions(Object.keys(new_reactions));
             } else {
-                this.draw_these_reactions(Object.keys(new_reactions));
+                this.clear_deleted_reactions(true); // also clears segments and beziers
             }
             if (this.has_data_on_nodes) {
                 var scale_changed = this.calc_data_stats('metabolite');
@@ -11074,7 +11077,9 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             */
         var selected_node_ids = this.get_selected_node_ids(),
             go = function(ids) {
-                var node_ids_to_draw = [];
+                var node_ids_to_draw = [],
+                    reaction_ids_to_draw = [],
+                    hide_secondary_metabolites = this.get_option('hide_secondary_metabolites');
                 ids.forEach(function(id) {
                     if (!(id in this.nodes)) {
                         console.warn('Could not find node: ' + id);
@@ -11083,9 +11088,11 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                     var node = this.nodes[id];
                     node.node_is_primary = !node.node_is_primary;
                     node_ids_to_draw.push(id);
+                    if (hide_secondary_metabolites) console.log('Unfinished');
                 }.bind(this));
                 // draw the nodes
                 this.draw_these_nodes(node_ids_to_draw);
+                this.draw_these_reactions(reaction_ids_to_draw);
             }.bind(this);
 
         // go
@@ -12846,7 +12853,10 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
 
         }.bind(this));
 
-        var boolean_options = [['show_gene_reaction_rules', 'Show gene reaction rules',
+        var boolean_options = [['hide_secondary_metabolites', 'Hide secondary metabolites',
+                                ('If checked, then only the primary metabolites ' +
+                                 'will be displayed.')],
+                               ['show_gene_reaction_rules', 'Show gene reaction rules',
                                 ('If checked, then gene reaction rules will be displayed ' +
                                  'below each reaction label. (Gene reaction rules are always ' +
                                  'shown when gene data is loaded.)')],
@@ -13175,7 +13185,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             primary_metabolite_radius: 15,
             secondary_metabolite_radius: 10,
             marker_radius: 5,
-            hide_secondary_nodes: false,
+            hide_secondary_metabolites: false,
             show_gene_reaction_rules: false,
             // applied data
             // reaction
@@ -13224,7 +13234,8 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 return this.options[option];
             }.bind(this),
             // the options that are erased when the settings menu is canceled
-            conditional_options = ['show_gene_reaction_rules', 'reaction_styles',
+            conditional_options = ['hide_secondary_metabolites', 'show_gene_reaction_rules',
+                                   'reaction_styles',
                                    'reaction_compare_style', 'reaction_scale',
                                    'reaction_no_data_color', 'reaction_no_data_size',
                                    'and_method_in_gene_reaction_rule', 'metabolite_styles',
@@ -13736,19 +13747,21 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                           text: 'Clear metabolite data' });
 
         // update the buttons
-        this.callback_manager.set('update_data', function() {
+        var disable_clears = function() {
             data_menu.dropdown.selectAll('li')
                 .classed('escher-disabled', function(d) {
-                    if (!d) return false;
+                    if (!d) return null;
                     if (d.text == 'Clear reaction data' && this.options.reaction_data === null)
                         return true;
                     if (d.text == 'Clear gene data' && this.options.gene_data === null)
                         return true;
                     if (d.text == 'Clear metabolite data' && this.options.metabolite_data === null)
                         return true;
-                    return false;
+                    return null;
                 }.bind(this));
-        }.bind(this));
+        }.bind(this);
+        disable_clears();
+        this.callback_manager.set('update_data', disable_clears);
 
         // edit dropdown
         var edit_menu = ui.dropdown_menu(menu, 'Edit', true);

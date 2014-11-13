@@ -58,7 +58,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             primary_metabolite_radius: 15,
             secondary_metabolite_radius: 10,
             marker_radius: 5,
-            hide_secondary_nodes: false,
+            hide_secondary_metabolites: false,
             show_gene_reaction_rules: false,
             // applied data
             // reaction
@@ -107,7 +107,8 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 return this.options[option];
             }.bind(this),
             // the options that are erased when the settings menu is canceled
-            conditional_options = ['show_gene_reaction_rules', 'reaction_styles',
+            conditional_options = ['hide_secondary_metabolites', 'show_gene_reaction_rules',
+                                   'reaction_styles',
                                    'reaction_compare_style', 'reaction_scale',
                                    'reaction_no_data_color', 'reaction_no_data_size',
                                    'and_method_in_gene_reaction_rule', 'metabolite_styles',
@@ -619,19 +620,21 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                           text: 'Clear metabolite data' });
 
         // update the buttons
-        this.callback_manager.set('update_data', function() {
+        var disable_clears = function() {
             data_menu.dropdown.selectAll('li')
                 .classed('escher-disabled', function(d) {
-                    if (!d) return false;
+                    if (!d) return null;
                     if (d.text == 'Clear reaction data' && this.options.reaction_data === null)
                         return true;
                     if (d.text == 'Clear gene data' && this.options.gene_data === null)
                         return true;
                     if (d.text == 'Clear metabolite data' && this.options.metabolite_data === null)
                         return true;
-                    return false;
+                    return null;
                 }.bind(this));
-        }.bind(this));
+        }.bind(this);
+        disable_clears();
+        this.callback_manager.set('update_data', disable_clears);
 
         // edit dropdown
         var edit_menu = ui.dropdown_menu(menu, 'Edit', true);

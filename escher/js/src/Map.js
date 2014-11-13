@@ -1599,9 +1599,9 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             if (this.has_data_on_reactions) {
                 var scale_changed = this.calc_data_stats('reaction');
                 if (scale_changed) this.draw_all_reactions();
-                this.clear_deleted_reactions(true); // also clears segments and beziers
+                else this.draw_these_reactions(Object.keys(new_reactions));
             } else {
-                this.draw_these_reactions(Object.keys(new_reactions));
+                this.clear_deleted_reactions(true); // also clears segments and beziers
             }
             if (this.has_data_on_nodes) {
                 var scale_changed = this.calc_data_stats('metabolite');
@@ -1788,7 +1788,9 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             */
         var selected_node_ids = this.get_selected_node_ids(),
             go = function(ids) {
-                var node_ids_to_draw = [];
+                var node_ids_to_draw = [],
+                    reaction_ids_to_draw = [],
+                    hide_secondary_metabolites = this.get_option('hide_secondary_metabolites');
                 ids.forEach(function(id) {
                     if (!(id in this.nodes)) {
                         console.warn('Could not find node: ' + id);
@@ -1797,9 +1799,11 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                     var node = this.nodes[id];
                     node.node_is_primary = !node.node_is_primary;
                     node_ids_to_draw.push(id);
+                    if (hide_secondary_metabolites) console.log('Unfinished');
                 }.bind(this));
                 // draw the nodes
                 this.draw_these_nodes(node_ids_to_draw);
+                this.draw_these_reactions(reaction_ids_to_draw);
             }.bind(this);
 
         // go

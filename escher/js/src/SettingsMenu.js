@@ -351,7 +351,10 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
 
         }.bind(this));
 
-        var boolean_options = [['show_gene_reaction_rules', 'Show gene reaction rules',
+        var boolean_options = [['hide_secondary_metabolites', 'Hide secondary metabolites',
+                                ('If checked, then only the primary metabolites ' +
+                                 'will be displayed.')],
+                               ['show_gene_reaction_rules', 'Show gene reaction rules',
                                 ('If checked, then gene reaction rules will be displayed ' +
                                  'below each reaction label. (Gene reaction rules are always ' +
                                  'shown when gene data is loaded.)')],

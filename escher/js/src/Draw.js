@@ -209,7 +209,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
         
         // update segment attributes
         var highlight_missing  = this.settings.get_option('highlight_missing'),
-	    hide_secondary_nodes = this.settings.get_option('hide_secondary_nodes'),
+	    hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
 	    primary_r = this.settings.get_option('primary_metabolite_radius'),
 	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
 	    get_arrow_size = function(data) {
@@ -243,7 +243,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
 	    .style('visibility', function(d) {
 		var start = drawn_nodes[d.from_node_id],
                     end = drawn_nodes[d.to_node_id];
-		if (hide_secondary_nodes &&
+		if (hide_secondary_metabolites &&
 		    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
 		     (start['node_type']=='metabolite' && !start.node_is_primary)))
 			return 'hidden';
@@ -311,8 +311,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                         b1 = d.b1,
 			end = drawn_nodes[d.to_node_id],
                         b2 = d.b2;
-		    // hide_secondary_nodes option
-		    if (hide_secondary_nodes &&
+		    // hide_secondary_metabolites option
+		    if (hide_secondary_metabolites &&
 			((end['node_type']=='metabolite' && !end.node_is_primary) ||
 			 (start['node_type']=='metabolite' && !start.node_is_primary)))
 			return arrowheads;
@@ -389,8 +389,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                         b1 = d.b1,
 		        end = drawn_nodes[d.to_node_id],
                         b2 = d.b2;
-		    // hide_secondary_nodes option
-		    if (hide_secondary_nodes &&
+		    // hide_secondary_metabolites option
+		    if (hide_secondary_metabolites &&
 			((end['node_type']=='metabolite' && !end.node_is_primary) ||
 			 (start['node_type']=='metabolite' && !start.node_is_primary)))
 			return labels;
@@ -538,7 +538,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                                'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
-	var hide_secondary_nodes = this.settings.get_option('hide_secondary_nodes'),
+	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
 	    primary_r = this.settings.get_option('primary_metabolite_radius'),
 	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
 	    marker_r = this.settings.get_option('marker_radius');
@@ -548,7 +548,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                     return 'translate('+d.x+','+d.y+')';
                 })
 		.style('visibility', function(d) {
-		    return (hide_secondary_nodes && !d.node_is_primary) ? 'hidden' : null;
+		    return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
 		})
                 .attr('r', function(d) {
                     if (d.node_type == 'metabolite') {
@@ -587,7 +587,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
         update_selection
             .select('.node-label')
             .style('visibility', function(d) {
-		return (hide_secondary_nodes && !d.node_is_primary) ? 'hidden' : null;
+		return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
 	    })
             .attr('transform', function(d) {
                 return 'translate('+d.label_x+','+d.label_y+')';
