@@ -1,3 +1,5 @@
+@charset "utf-8";
+
 /* Containers */
 .escher-container {
     background-color: #F3F3F3;
@@ -370,7 +372,7 @@ ul#button-panel li {
 /* text edit input */
 #text-edit-input input {
     width: 500px;
-    border: none;
+    border: 1px solid #cccccc;
     font-size: 22px;
 }
 /* quick jump menu */

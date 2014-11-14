@@ -50,7 +50,7 @@ class BaseHandler(RequestHandler):
         # make sure the path exists
         if not os.path.isfile(path):
             raise HTTPError(404)
-        # serve any file type, ignoring encodings
+        # serve any raw file type
         with open(path, "rb") as file:
             data = file.read()
         # set the mimetype
@@ -144,7 +144,7 @@ class BuilderHandler(BaseHandler):
             response = yield gen.Task(AsyncHTTPClient().fetch, url)
             if response.code != 200 or response.body is None:
                 raise Exception('Could not load embedded_css from %s' % url)
-        
+
             builder_kwargs['embedded_css'] = (response.body
                                               .decode('utf-8')
                                               .replace('\n', ' '))

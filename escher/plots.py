@@ -78,13 +78,19 @@ def _load_resource(resource, name, safe=False):
         except URLError as err:
             raise err
         else:
-            return download.read().decode('utf-8')
+            data = download.read()
+            encoding = download.headers.getparam('charset')
+            if encoding:
+                data = data.decode(encoding)
+            else:
+                data = data.decode('utf-8')
+            return data
     # if it's a filepath, load it
     if os.path.exists(resource):
         if (safe):
             raise Exception('Cannot load resource from file with safe mode enabled.')
         try:
-            with open(resource, 'r') as f:
+            with open(resource, 'rb') as f:
                 loaded_resource = f.read().decode('utf-8')
             _ = json.loads(loaded_resource)
         except ValueError as err:
@@ -310,7 +316,7 @@ class Builder(object):
                         outfile.write(download.read())
                 except HTTPError:
                     raise ValueError('No model found in cache or at %s' % model_url)
-            with open(model_filename) as f:
+            with open(model_filename, 'rb') as f:
                 self.loaded_model_json = f.read().decode('utf-8')
                 
     def _load_map(self):
@@ -341,7 +347,7 @@ class Builder(object):
                         outfile.write(download.read())
                 except HTTPError:
                     raise ValueError('No map found in cache or at %s' % map_url)
-            with open(map_filename) as f:
+            with open(map_filename, 'rb') as f:
                 self.loaded_map_json = f.read().decode('utf-8')
 
     def _embedded_css(self, url_source):
@@ -369,7 +375,13 @@ class Builder(object):
             raise Exception(('Could not find builder_embed_css. Be sure to pass '
                              'a local_host argument to Builder if js_source is dev or local '
                              'and you are in an iPython notebook or a static html file.'))
-        return download.read().decode('utf-8').replace('\n', ' ')
+        data = download.read()
+        encoding = r.headers.getparam('charset')
+        if encoding:
+            data = data.decode(encoding)
+        else:
+            data = data.decode('utf-8')
+        return data.replace('\n', ' ')
 
     def _initialize_javascript(self, url_source):
         javascript = ("var map_data_{the_id} = {map_data};\n"
@@ -703,13 +715,13 @@ class Builder(object):
                               never_ask_before_quit=never_ask_before_quit,
                               js_url_parse=js_url_parse)
         if filepath is not None:
-            with open(filepath, 'w') as f:
+            with open(filepath, 'wb') as f:
                 f.write(html.encode('utf-8'))
             return filepath
         else:
             from tempfile import mkstemp
             from os import write, close
-            os_file, filename = mkstemp(suffix=".html")
+            os_file, filename = mkstemp(suffix=".html", text=False) # binary
             write(os_file, html.encode('utf-8'))
             close(os_file)
             return filename

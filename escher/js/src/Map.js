@@ -1788,22 +1788,31 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             */
         var selected_node_ids = this.get_selected_node_ids(),
             go = function(ids) {
-                var node_ids_to_draw = [],
-                    reaction_ids_to_draw = [],
-                    hide_secondary_metabolites = this.get_option('hide_secondary_metabolites');
+                var nodes_to_draw = {},
+                    hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites');
                 ids.forEach(function(id) {
                     if (!(id in this.nodes)) {
                         console.warn('Could not find node: ' + id);
                         return;
                     }
                     var node = this.nodes[id];
-                    node.node_is_primary = !node.node_is_primary;
-                    node_ids_to_draw.push(id);
-                    if (hide_secondary_metabolites) console.log('Unfinished');
+                    if (node.node_type == 'metabolite') {
+                        node.node_is_primary = !node.node_is_primary;
+                        nodes_to_draw[id] = node;
+                    }
                 }.bind(this));
                 // draw the nodes
-                this.draw_these_nodes(node_ids_to_draw);
-                this.draw_these_reactions(reaction_ids_to_draw);
+                this.draw_these_nodes(Object.keys(nodes_to_draw));
+                // draw associated reactions
+                if (hide_secondary_metabolites) {
+                    var out = this.segments_and_reactions_for_nodes(nodes_to_draw),
+                        reaction_ids_to_draw_o = {};
+                    for (var id in out.segment_objs_w_segments) {
+                        var r_id = out.segment_objs_w_segments[id].reaction_id;
+                        reaction_ids_to_draw_o[r_id] = true;
+                    }
+                    this.draw_these_reactions(Object.keys(reaction_ids_to_draw_o));
+                }
             }.bind(this);
 
         // go

@@ -11106,22 +11106,31 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             */
         var selected_node_ids = this.get_selected_node_ids(),
             go = function(ids) {
-                var node_ids_to_draw = [],
-                    reaction_ids_to_draw = [],
-                    hide_secondary_metabolites = this.get_option('hide_secondary_metabolites');
+                var nodes_to_draw = {},
+                    hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites');
                 ids.forEach(function(id) {
                     if (!(id in this.nodes)) {
                         console.warn('Could not find node: ' + id);
                         return;
                     }
                     var node = this.nodes[id];
-                    node.node_is_primary = !node.node_is_primary;
-                    node_ids_to_draw.push(id);
-                    if (hide_secondary_metabolites) console.log('Unfinished');
+                    if (node.node_type == 'metabolite') {
+                        node.node_is_primary = !node.node_is_primary;
+                        nodes_to_draw[id] = node;
+                    }
                 }.bind(this));
                 // draw the nodes
-                this.draw_these_nodes(node_ids_to_draw);
-                this.draw_these_reactions(reaction_ids_to_draw);
+                this.draw_these_nodes(Object.keys(nodes_to_draw));
+                // draw associated reactions
+                if (hide_secondary_metabolites) {
+                    var out = this.segments_and_reactions_for_nodes(nodes_to_draw),
+                        reaction_ids_to_draw_o = {};
+                    for (var id in out.segment_objs_w_segments) {
+                        var r_id = out.segment_objs_w_segments[id].reaction_id;
+                        reaction_ids_to_draw_o[r_id] = true;
+                    }
+                    this.draw_these_reactions(Object.keys(reaction_ids_to_draw_o));
+                }
             }.bind(this);
 
         // go
@@ -13334,19 +13343,18 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             should_update_data = true;
 
         // Check the cobra model
-        if (model_data === null) {
-            console.warn('No cobra model was loaded.');
+        if (model_data === null)
             this.cobra_model = null;
-        } else {
+        else
             this.cobra_model = CobraModel(model_data);
+        
+        if (this.map) this.map.cobra_model = this.cobra_model;
+        if (should_update_data)
+            this._update_data(true, false);
+        if (this.settings.get_option('highlight_missing'))
+            this.map.draw_all_reactions();
 
-            // TODO this doesn't seem like the best solution
-            if (this.map !== null && this.map !== undefined)
-                this.map.cobra_model = this.cobra_model;
-
-            if (should_update_data)
-                this._update_data(true, false);
-        }
+        this.callback_manager.run('load_model', null, model_data, should_update_data);
     }
 
     function load_map(map_data, should_update_data) {
@@ -13727,7 +13735,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         // map dropdown
         ui.dropdown_menu(menu, 'Map')
             .button({ key: keys.save,
-                      text: 'Save as JSON',
+                      text: 'Save map JSON',
                       key_text: (enable_keys ? ' (Ctrl+S)' : null) })
             .button({ text: 'Load map JSON',
                       key_text: (enable_keys ? ' (Ctrl+O)' : null),
@@ -13747,7 +13755,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             .button({ key: keys.clear_map,
                       text: 'Clear map' });
         // model dropdown
-        ui.dropdown_menu(menu, 'Model')
+        var model_menu = ui.dropdown_menu(menu, 'Model')
             .button({ text: 'Load COBRA model JSON',
                       key_text: (enable_keys ? ' (Ctrl+M)' : null),
                       input: { assign: key_manager.assigned_keys.load_model,
@@ -13759,8 +13767,21 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                failure_fn: function() {
                                    map.set_status('');
                                } }
-                    });
-
+                    })
+            .button({ key: keys.clear_model,
+                      text: 'Clear model' });
+        // disable the clear button
+        var disable_model_clear = function() {
+            model_menu.dropdown.selectAll('li')
+                .classed('escher-disabled', function(d) {
+                    if (d.text == 'Clear model' && this.cobra_model === null)
+                        return true;
+                    return null;
+                }.bind(this));
+        }.bind(this);
+        disable_model_clear();
+        this.callback_manager.set('load_model', disable_model_clear);
+        
         // data dropdown
         var data_menu = ui.dropdown_menu(menu, 'Data')
                 .button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
@@ -14035,15 +14056,12 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             }
 
             try {
-                this.load_model(data);
+                this.load_model(data, true);
                 this.build_input.toggle(false);
                 if ('id' in data)
                     this.map.set_status('Loaded model ' + data.id, 3000);
                 else
                     this.map.set_status('Loaded model (no model id)', 3000);
-                if (this.settings.highlight_missing) {
-                    this.map.draw_everything();
-                }
             } catch (e) {
                 console.warn(e);
                 this.map.set_status('Error loading model: ' + e, 2000);
@@ -14184,10 +14202,10 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                         fn: map.save_svg },
             load: { key: 79, modifiers: { control: true }, // ctrl-o
                     fn: null }, // defined by button
-            clear_map: { target: map,
-                         fn: function() { this.clear_map(); }},
+            clear_map: { fn: this.map.clear_map.bind(this.map) },
             load_model: { key: 77, modifiers: { control: true }, // ctrl-m
                           fn: null }, // defined by button
+            clear_model: { fn: this.load_model.bind(this, null, true) },
             load_reaction_data: { fn: null }, // defined by button
             clear_reaction_data: { target: this,
                                    fn: function() { this.set_reaction_data(null); }},

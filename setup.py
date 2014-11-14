@@ -134,7 +134,11 @@ class BuildDocs(Command):
     def finalize_options(self):
         pass
     def run(self):
-        call(['make', 'html', '-C', 'docs'])
+        import platform
+        if platform.system() == 'Windows':
+            call('cd docs & make.bat html & cd ..', shell=True)
+        else:
+            call(['make', 'html', '-C', 'docs'])
 
 class TestCommand(Command):
     description = "Custom test command that runs pytest and jasmine"
