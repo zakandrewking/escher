@@ -16,6 +16,8 @@ python convert_map.py another_old_map.json path/to/iJO1366.sbml
 
 """
 
+from __future__ import print_function, unicode_literals
+
 try:
     import cobra.io
     import jsonschema
@@ -25,11 +27,14 @@ except ImportError:
 try:
     from theseus import load_model
 except ImportError:
-    print 'Theseus not available (https://github.com/zakandrewking/Theseus)'
+    print('Theseus not available (https://github.com/zakandrewking/Theseus)')
 import sys
 import json
 from os.path import basename, join
-from urllib2 import urlopen
+try:
+    from urllib.request import urlopen
+except ImportError:
+    from urllib import urlopen
 import re
 
 from escher.validate import get_jsonschema, check_segments
@@ -50,7 +55,7 @@ def main():
     except Exception:
         try:
             model = cobra.io.load_json_model(model_path)
-        except IOError, ValueError:
+        except (IOError, ValueError):
             try:
                 model = cobra.io.read_sbml_model(model_path)
             except IOError:
@@ -64,7 +69,7 @@ def main():
     
     # don't replace the file
     out_file = in_file.replace('.json', '_converted.json')
-    print 'Saving validated map to %s' % out_file
+    print('Saving validated map to %s' % out_file)
     with open(out_file, 'w') as f:
         json.dump(the_map, f, allow_nan=False)
 
@@ -91,13 +96,13 @@ def convert(map, model):
     reactions_to_delete = set()
 
     # nodes
-    for id, node in map_body['nodes'].iteritems():
+    for id, node in map_body['nodes'].items():
         # follow rules for type
         # metabolites
         if node['node_type'] == 'metabolite':
             # no bigg_id
             if not 'bigg_id' in node:
-                print 'No bigg_id for node %s. Deleting.' % id
+                print('No bigg_id for node %s. Deleting.' % id)
                 nodes_to_delete.add(id)
                 
             # unsupported attributes
@@ -110,7 +115,7 @@ def convert(map, model):
             try:
                 cobra_metabolite = model.metabolites.get_by_id(node['bigg_id'])
             except KeyError:
-                print 'Could not find metabolite %s in model. Deleting.' % node['bigg_id']
+                print('Could not find metabolite %s in model. Deleting.' % node['bigg_id'])
                 nodes_to_delete.add(id)
                 continue
             # apply new display names
@@ -131,12 +136,12 @@ def convert(map, model):
             continue
         
     # update reactions
-    for id, reaction in map_body['reactions'].iteritems():
+    for id, reaction in map_body['reactions'].items():
         # missing attributes
         will_delete = False
         for k in ["bigg_id", "segments", "label_x", "label_y"]:
             if not k in reaction:
-                print 'No %s for reaction %s. Deleting.' % (k, id)
+                print('No %s for reaction %s. Deleting.' % (k, id))
                 reactions_to_delete.add(id)
                 will_delete = True
         if will_delete:
@@ -150,7 +155,7 @@ def convert(map, model):
                 del reaction[key]
 
         # unsupported attributes in segments
-        for s_id, segment in reaction['segments'].iteritems():
+        for s_id, segment in reaction['segments'].items():
             for key in segment.keys():
                 if not key in ["from_node_id", "to_node_id", "b1", "b2"]:
                     del segment[key]
@@ -159,7 +164,7 @@ def convert(map, model):
         try:
             cobra_reaction = model.reactions.get_by_id(reaction['bigg_id'])
         except KeyError:
-            print 'Could not find metabolite %s in model. Deleting.' % node['bigg_id']
+            print('Could not find metabolite %s in model. Deleting.' % node['bigg_id'])
             reactions_to_delete.add(id)
             continue
         reaction['gene_reaction_rule'] = cobra_reaction.gene_reaction_rule
@@ -171,7 +176,7 @@ def convert(map, model):
         # use metabolites from reaction
         reaction['metabolites'] = [{'bigg_id': met.id, 'coefficient': coeff * rev_mult}
                                    for met, coeff in
-                                   cobra_reaction.metabolites.iteritems()]
+                                   cobra_reaction.metabolites.items()]
             
         reaction['name'] = cobra_reaction.name
 
@@ -180,13 +185,13 @@ def convert(map, model):
             try:
                 cobra_gene = model.genes.get_by_id(gene)
             except KeyError:
-                print 'Could not find gene %s in model. Setting name to ID.'
+                print('Could not find gene %s in model. Setting name to ID.')
                 reaction['genes'].append({'bigg_id': gene, 'name': gene})
                 continue
             reaction['genes'].append({'bigg_id': gene, 'name': cobra_gene.name})
         
         # remove any lost segments
-        reaction['segments'] = {id: seg for id, seg in reaction['segments'].iteritems()
+        reaction['segments'] = {id: seg for id, seg in reaction['segments'].items()
                                 if ((seg['to_node_id'] in map_body['nodes'] and seg['to_node_id'] not in nodes_to_delete) and
                                     (seg['from_node_id'] in map_body['nodes'] and seg['from_node_id'] not in nodes_to_delete))}
 
@@ -211,7 +216,7 @@ def convert(map, model):
         "map_description": ""
         }
     if len(map) == 2:
-        for key, value in map[0].iteritems():
+        for key, value in map[0].items():
             if key in ['schema', 'homepage']: continue
             header[key] = value
     
@@ -222,11 +227,11 @@ def convert(map, model):
 
     nonvalid = check_segments(the_map)
     if len(nonvalid) == 0:
-        print 'Map is valid'
+        print('Map is valid')
         return the_map
     else:
-        print 'Error. No nodes for segments:'
-        print '\n'.join(str(x) for x in nonvalid)
+        print('Error. No nodes for segments:')
+        print('\n'.join(str(x) for x in nonvalid))
         return None
 
 def genes_for_gene_reaction_rule(rule):
@@ -245,7 +250,7 @@ def genes_for_gene_reaction_rule(rule):
     # remove parentheses
     rule = re.sub(r'\(|\)', r'', rule)
     # split on whitespace
-    genes = filter(lambda x: x != '', rule.split(' '))
+    genes = [x for x in rule.split(' ') if x != '']
     return genes
 
 if __name__=="__main__":

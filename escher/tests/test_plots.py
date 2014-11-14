@@ -1,3 +1,5 @@
+from __future__ import print_function, unicode_literals
+
 import escher.server
 from escher import (Builder, get_cache_dir, clear_cache, list_cached_maps,
                     list_cached_models)
@@ -5,10 +7,19 @@ from escher.plots import _load_resource
 from escher.urls import get_url
 
 import os
+import sys
 from os.path import join
 import json
-from pytest import raises, mark 
-from urllib2 import URLError
+from pytest import raises, mark
+try:
+    from urllib.error import URLError
+except ImportError:
+    from urllib2 import URLError
+
+if sys.version < '3':
+    unicode_type = unicode
+else:
+    unicode_type = str
 
 def test_get_cache_dir():
     d = get_cache_dir()
@@ -100,7 +111,7 @@ def test_Builder_download():
                 model_name='e_coli.iJO1366',
                 gene_data=[{'gapA': 123}, {'adhE': 123}])
 
-    assert type(b.the_id) is unicode
+    assert type(b.the_id) is unicode_type
     assert len(b.the_id) == 10
 
 def test_Builder_options():

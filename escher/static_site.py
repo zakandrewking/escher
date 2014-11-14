@@ -1,3 +1,5 @@
+from __future__ import print_function, unicode_literals
+
 from escher.plots import Builder
 from escher.urls import get_url
 
@@ -11,7 +13,7 @@ env = Environment(loader=PackageLoader('escher', 'templates'))
 
 def generate_static_site():
     build_path = realpath(join(dirname(realpath(__file__)), '..'))
-    print 'Generating static site at %s' % build_path
+    print('Generating static site at %s' % build_path)
 
     # index file
     template = env.get_template('index.html')

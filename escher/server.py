@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function, unicode_literals
+
 from escher.plots import Builder, list_cached_models, list_cached_maps
 from escher.urls import get_url, url_to_name
 
@@ -33,12 +35,12 @@ def run(port=PORT, public=PUBLIC):
     global PUBLIC
     PORT = port
     PUBLIC = public
-    print 'serving directory %s on port %d' % (directory, PORT)
+    print('serving directory %s on port %d' % (directory, PORT))
     application.listen(port, None if public else "localhost")
     try:
         tornado.ioloop.IOLoop.instance().start()
     except KeyboardInterrupt:
-        print "bye!"
+        print("bye!")
 
 def stop():
     tornado.ioloop.IOLoop.instance().stop()
@@ -48,7 +50,7 @@ class BaseHandler(RequestHandler):
         # make sure the path exists
         if not os.path.isfile(path):
             raise HTTPError(404)
-        # serve it
+        # serve any file type, ignoring encodings
         with open(path, "rb") as file:
             data = file.read()
         # set the mimetype
@@ -74,14 +76,14 @@ class IndexHandler(BaseHandler):
                                   '/'.join([get_url('escher_download', protocol='https'),
                                             'index.json']))
         if response.code == 200 and response.body is not None:
-            json_data = response.body
+            json_data = response.body.decode('utf-8')
         else:
             json_data = json.dumps(None)
 
         # get the cached maps and models
         cached_maps = list_cached_maps()
         cached_models = list_cached_models()
-
+        
         # render the template
         template = env.get_template('index.html')
         source = 'local'
@@ -93,8 +95,8 @@ class IndexHandler(BaseHandler):
                                index_js=get_url('index_js', source),
                                index_gh_pages_js=get_url('index_gh_pages_js', source),
                                data=json_data,
-                               local_maps=cached_maps,
-                               local_models=cached_models,
+                               local_maps=json.dumps(cached_maps),
+                               local_models=json.dumps(cached_models),
                                can_dev=CAN_DEV,
                                can_dev_js=json.dumps(CAN_DEV),
                                version=__version__,
@@ -142,7 +144,10 @@ class BuilderHandler(BaseHandler):
             response = yield gen.Task(AsyncHTTPClient().fetch, url)
             if response.code != 200 or response.body is None:
                 raise Exception('Could not load embedded_css from %s' % url)
-            builder_kwargs['embedded_css'] = response.body.replace('\n', ' ')
+        
+            builder_kwargs['embedded_css'] = (response.body
+                                              .decode('utf-8')
+                                              .replace('\n', ' '))
 
         # example data
         def load_data_file(rel_path):
@@ -188,11 +193,11 @@ class MapModelHandler(BaseHandler):
         try:
             b = Builder(map_name=name)
         except ValueError as err:
-            print err
+            print(err)
             raise HTTPError(404)
         self.set_header('Content-Type', 'application/json')
-        print b.loaded_map_json
-        self.serve(unicode(b.loaded_map_json))
+        print(b.loaded_map_json)
+        self.serve(b.loaded_map_json)
          
 class LibHandler(BaseHandler):
     def get(self, path):
@@ -206,19 +211,19 @@ class LibHandler(BaseHandler):
 class StaticHandler(BaseHandler):
     def get(self, path):
         path = join(directory, path)
-        print 'getting path %s' % path
+        print('getting path %s' % path)
         self.serve_path(path)
 
 class ResourceHandler(BaseHandler):
     def get(self, path):
         path = join(directory, 'resources', path)
-        print 'getting path %s' % path
+        print('getting path %s' % path)
         self.serve_path(path)
 
 class DocsHandler(BaseHandler):
     def get(self, path):
         path = join(directory, '..', 'docs', '_build', 'html', path)
-        print 'getting path %s' % path
+        print('getting path %s' % path)
         self.serve_path(path)
 
 settings = {"debug": "False"}

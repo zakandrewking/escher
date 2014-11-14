@@ -1,5 +1,8 @@
-from version import __version__
-from urllib import quote
+# -*- coding: utf-8 -*-
+
+from __future__ import print_function, unicode_literals
+
+from escher.version import __version__
 import os
 import re
 
@@ -51,7 +54,7 @@ _links['escher_download'] = '/'.join([_links['escher_home'],
                                       _links['escher_download_rel']])
     
 # external dependencies
-names = _escher_local.keys() + _escher_web.keys() + _dependencies.keys() + _links.keys()
+names = list(_escher_local.keys()) + list(_escher_web.keys()) + list(_dependencies.keys()) + list(_links.keys())
 
 def get_url(name, source='web', local_host=None, protocol=None):
     """Get a url.

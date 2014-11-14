@@ -1,3 +1,5 @@
+from __future__ import print_function, unicode_literals
+
 from escher.server import directory
 from os.path import join
 import json
@@ -9,10 +11,10 @@ def validate_map(map_data):
 
     nonvalid = check_segments(map_data)
     if len(nonvalid) == 0:
-        print 'Map is valid'
+        print('Map is valid')
     else:
-        print 'Error. No nodes for segments:'
-        print '\n'.join(str(x) for x in nonvalid)
+        print('Error. No nodes for segments:')
+        print('\n'.join(str(x) for x in nonvalid))
 
 def validate_schema():
     import jsonschema
@@ -26,8 +28,8 @@ def check_segments(map_data):
     reactions = map_data[1]['reactions'];
     nodes = map_data[1]['nodes'];
     nonvalid = []
-    for _, reaction in reactions.iteritems():
-        for segment_id, segment in reaction['segments'].iteritems():
+    for _, reaction in reactions.items():
+        for segment_id, segment in reaction['segments'].items():
             for n in ['to_node_id', 'from_node_id']:
                 if segment[n] not in nodes:
                     nonvalid.append((n, segment_id))

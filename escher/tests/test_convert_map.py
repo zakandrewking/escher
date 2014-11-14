@@ -1,3 +1,5 @@
+from __future__ import print_function, unicode_literals
+
 from escher.convert_map import genes_for_gene_reaction_rule, convert
 import cobra.io
 from os.path import join
