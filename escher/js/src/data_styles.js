@@ -6,7 +6,8 @@ define(['utils'], function(utils) {
              gene_string_for_data: gene_string_for_data,
              csv_converter: csv_converter,
              genes_for_gene_reaction_rule: genes_for_gene_reaction_rule,
-             evaluate_gene_reaction_rule: evaluate_gene_reaction_rule
+             evaluate_gene_reaction_rule: evaluate_gene_reaction_rule,
+             replace_gene_in_rule: replace_gene_in_rule
            };
 
     function import_and_check(data, name, all_reactions) {
@@ -28,7 +29,7 @@ define(['utils'], function(utils) {
         // check arguments
         if (data===null)
             return null;
-        if (['reaction_data', 'metabolite_data', 'gene_data'].indexOf(name)==-1)
+        if (['reaction_data', 'metabolite_data', 'gene_data'].indexOf(name) == -1)
             throw new Error('Invalid name argument: ' + name);  
 
         // make array
@@ -93,13 +94,13 @@ define(['utils'], function(utils) {
         
         if (d.length==1) { // 1 set
             // 1 null
-            var f = parse_float_or_null(d[0]);
+            var f = _parse_float_or_null(d[0]);
             if (f === null)
                 return null;
             return abs(f, take_abs);
         } else if (d.length==2) { // 2 sets            
             // 2 null
-            var fs = d.map(parse_float_or_null);
+            var fs = d.map(_parse_float_or_null);
             if (fs[0] === null || fs[1] === null)
                 return null;
             
@@ -117,12 +118,6 @@ define(['utils'], function(utils) {
         throw new Error('Bad data compare_style: ' + compare_style);
 
         // definitions
-        function parse_float_or_null(x) {
-            // strict number casting
-            var f = Number(x);
-            // check for null and '', which haven't been caught yet
-            return (isNaN(f) || parseFloat(x) != f) ? null : f;
-        }
 	function check_finite(x) {
 	    return isFinite(x) ? x : null;
 	}
@@ -153,45 +148,53 @@ define(['utils'], function(utils) {
 
     function gene_string_for_data(rule, gene_values, genes, styles,
                                   identifiers_on_map, compare_style) {
-        if (gene_values === null) return '';
-        var out = rule;
-        for (var gene_id in gene_values) {
-            var d = gene_values[gene_id],
-                name = '';
+        var out = rule,
+            no_data = (gene_values === null);
+        genes.forEach(function(g_obj) {
             // get id or name
-            if (identifiers_on_map=='bigg_id') {
-                name = gene_id;
-            } else if (identifiers_on_map=='name') {
-                genes.forEach(function(gene) {
-                    if (gene.bigg_id == gene_id) {
-                        name = gene.name;
-                        return;
-                    }
-                });
-            } else {
+            var name = g_obj[identifiers_on_map];
+            if (name === undefined)
                 throw new Error('Bad value for identifiers_on_map: ' + identifiers_on_map);
-            }
             // generate the string
-            var f = float_for_data(d, styles, compare_style),
-                format = (f === null ? function(x) { return x; } : d3.format('.3g'));
-            if (d.length==1) {
-                out = replace_gene_in_rule(out, gene_id, (name + ' (' + null_or_d(d[0], format) + ')\n'));
+            if (no_data) {
+                out = replace_gene_in_rule(out, g_obj.bigg_id, (name + '\n'));
+            } else {
+                var d = g_obj.bigg_id in gene_values ? gene_values[g_obj.bigg_id] : null,
+                    f = float_for_data(d, styles, compare_style),
+                    format = (f === null ? function(x) { return x; } : d3.format('.3g')); 
+                if (d.length==1) {
+                    out = replace_gene_in_rule(out, g_obj.bigg_id, (name + ' (' + null_or_d(d[0], format) + ')\n'));
+                }
+                else if (d.length==2) {
+                    // check if they are all text
+                    var new_str,
+                        any_num = d.reduce(function(c, x) {
+                            return c || _parse_float_or_null(x) !== null;
+                        }, false);
+                    if (any_num) {
+                        new_str = (name + ' (' +
+                                   null_or_d(d[0], format) + ', ' +
+                                   null_or_d(d[1], format) + ': ' +
+                                   null_or_d(f, format) +
+                                   ')\n');
+                    } else {
+                        new_str = (name + ' (' +
+                                   null_or_d(d[0], format) + ', ' +
+                                   null_or_d(d[1], format) + ')\n');
+                    } 
+                    out = replace_gene_in_rule(out, g_obj.bigg_id, new_str);
+                }
             }
-            if (d.length==2) {
-                var new_str = (name + ' (' +
-                               null_or_d(d[0], format) + ', ' +
-                               null_or_d(d[1], format) + ': ' +
-                               null_or_d(f, format) +
-                               ')\n');
-                out = replace_gene_in_rule(out, gene_id, new_str);
-            }
-        }
-        out = out.replace(/\n\s*\)?\s*$/, ')');
+        });
+        // remove emtpy lines
+        out = out.replace(/\n\s*\n/g, '\n')
+        // remove trailing newline (with or without parens)
+            .replace(/\n\s*(\)*)\s*$/, '$1');
         return out;
         
         // definitions
         function null_or_d(d, format) {
-            return d===null ? 'nd' : format(d);
+            return d === null ? 'nd' : format(d);
         }
     }
     
@@ -309,14 +312,13 @@ define(['utils'], function(utils) {
             
             var all_null = true;
             for (var gene_id in gene_values) {
-                var val;
-                if (gene_values[gene_id][i] === null || gene_values[gene_id][i] < 0) {
-                    val = 0;
+                var f = _parse_float_or_null(gene_values[gene_id][i]);
+                if (f === null || f < 0) {
+                    f = 0;
                 } else {
-                    val = gene_values[gene_id][i];
                     all_null = false;
                 }
-                curr_val = replace_gene_in_rule(curr_val, gene_id, val);
+                curr_val = replace_gene_in_rule(curr_val, gene_id, f);
             }
             if (all_null) {
                 out.push(null);
@@ -381,5 +383,12 @@ define(['utils'], function(utils) {
         function escape_reg_exp(string) {
             return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
         }
+    }
+    
+    function _parse_float_or_null(x) {
+        // strict number casting
+        var f = Number(x);
+        // check for null and '', which haven't been caught yet
+        return (isNaN(f) || parseFloat(x) != f) ? null : f;
     }
 });

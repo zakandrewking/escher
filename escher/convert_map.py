@@ -9,10 +9,10 @@ maps.
 Usage:
 
 Using a Theseus model name (https://github.com/zakandrewking/Theseus).
-python convert_map.py old_map.json output_directory iJO1366
+python convert_map.py old_map.json iJO1366
 
-Using a SBML model path
-python convert_map.py another_old_map.json output_directory path/to/iJO1366.sbml
+Using a SBML or JSON model path
+python convert_map.py another_old_map.json path/to/iJO1366.sbml
 
 """
 
@@ -42,16 +42,19 @@ def main():
         in_file = sys.argv[1]
         model_path = sys.argv[2]
     except IndexError:
-        raise Exception("Not enough arguments")
+        raise Exception("Usage: python convert_map.py old_map.json path/to/model.sbml")
    
     # get the cobra model
     try:
         model = load_model(model_path)
     except Exception:
         try:
-            model = cobra.io.read_sbml_model(model_path)
-        except IOError:
-            raise Exception('Could not find model in theseus or filesystem: %s' % model_path)
+            model = cobra.io.load_json_model(model_path)
+        except IOError, ValueError:
+            try:
+                model = cobra.io.read_sbml_model(model_path)
+            except IOError:
+                raise Exception('Could not find model in theseus or filesystem: %s' % model_path)
 
     # get the current map
     with open(in_file, 'r') as f:

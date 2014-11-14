@@ -42,16 +42,31 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	     parse_url_components: parse_url_components };
 
     // definitions
-    function set_options(options, defaults) {
-        if (options===undefined) return defaults;
+    function set_options(options, defaults, must_be_float) {
+        if (options === undefined || options === null)
+            return defaults;
         var i = -1,
-            out = defaults;
-	for (var key in options) {
-	    var val = options[key];
-	    if (val===undefined) {
-		val = null;
-	    }
-	    out[key] = val;
+            out = {};
+	for (var key in defaults) {
+            var has_key = key in options;
+            var val = (has_key ? options[key] : defaults[key]);
+            if (must_be_float && key in must_be_float) {
+                val = parseFloat(val);
+                if (isNaN(val)) {
+                    if (has_key) {
+                        console.warn('Bad float for option ' + key);
+                        val = parseFloat(defaults[key]);
+                        if (isNaN(val)) {
+                            console.warn('Bad float for default ' + key);
+                            val = null;
+                        }
+                    } else {
+                        console.warn('Bad float for default ' + key);
+                        val = null;
+                    }
+                }
+            }
+            out[key] = val;
 	}
         return out;
     }

@@ -23,15 +23,19 @@ JavaScript API
 
         .. js:attribute:: options.primary_metabolite_radius
 
-            (Default: 15) The radius of primary metabolites.
+            (Default: 15) The radius of primary metabolites, in px.
 
         .. js:attribute:: options.secondary_metabolite_radius
 
-            (Default: 10) The radius of secondary metabolites.
+            (Default: 10) The radius of secondary metabolites, in px.
 
         .. js:attribute:: options.marker_radius
 
-            (Default: 5) The radius of marker nodes.
+            (Default: 5) The radius of marker nodes, in px.
+
+        .. js:attribute:: options.gene_font_size
+
+            (Default: 18) The font size of the gene reaction rules, in px.
 
         .. js:attribute:: options.hide_secondary_nodes
 

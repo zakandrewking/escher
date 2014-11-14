@@ -131,6 +131,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             identifiers_on_map = this.settings.get_option('identifiers_on_map'),
             reaction_data_styles = this.settings.get_option('reaction_styles'),
             show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules'),
+            gene_font_size = this.settings.get_option('gene_font_size'),
             label_click_fn = this.behavior.label_click,
             label_mouseover_fn = this.behavior.label_mouseover,
             label_mouseout_fn = this.behavior.label_mouseout;
@@ -158,20 +159,24 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                                             d.gene_string !== null),
                         show_gene_reaction_rule = ('gene_reaction_rule' in d &&
                                                    d.gene_reaction_rule !== null &&
-                                                   show_gene_reaction_rules);
+                                                   show_gene_reaction_rules); 
                     if (show_gene_string) {
                         return d.gene_string.split('\n');
                     } else if (show_gene_reaction_rule) {
-                        return [d.gene_reaction_rule];
+                        var rule = data_styles.gene_string_for_data(d.gene_reaction_rule, null,
+                                                                    d.genes, null, identifiers_on_map,
+                                                                    null);
+                        return rule.split('\n');
                     } else {
                         return [];
                     }
                 });
         gene_g.enter()
             .append('text')
-            .attr('class', 'gene-label');
+            .attr('class', 'gene-label')
+            .style('font-size', gene_font_size + 'px');
         gene_g.attr('transform', function(d, i) {
-            return 'translate(0, ' + (18 + 25*i) + ')';
+            return 'translate(0, ' + (gene_font_size * 1.5 * (i + 1)) + ')';
         })
             .text(function(d) { return d; });
         gene_g.exit()

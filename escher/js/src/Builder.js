@@ -58,6 +58,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             primary_metabolite_radius: 15,
             secondary_metabolite_radius: 10,
             marker_radius: 5,
+            gene_font_size: 18,
             hide_secondary_metabolites: false,
             show_gene_reaction_rules: false,
             // applied data
@@ -85,12 +86,19 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             // View and build options
             identifiers_on_map: 'bigg_id',
             highlight_missing: false,
-            allow_building_duplicate_reactions: true,
+            allow_building_duplicate_reactions: false,
             // Quick jump menu
             local_host: null,
             quick_jump: null,
             // Callbacks
             first_load_callback: null
+        }, {
+            primary_metabolite_radius: true,
+            secondary_metabolite_radius: true,
+            marker_radius: true,
+            gene_font_size: true,
+            reaction_no_data_size: true,
+            metabolite_no_data_size: true
         });
 
         // check the location

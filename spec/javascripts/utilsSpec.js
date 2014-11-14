@@ -7,6 +7,15 @@ describe('utils', function() {
         for (var x in options) {
             expect(options[x]).toBe(null);
         }
+        // must be float
+        var options = utils.set_options({ a: '5px',
+                                          b: 'asdfwe' },
+                                        { a: 6,
+                                          b: 7 },
+                                        { a: true,
+                                          b: true });
+        expect(options.a).toEqual(5);
+        expect(options.b).toEqual(7);
     });
 
     it('compare_arrays', function() {
