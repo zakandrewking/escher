@@ -35,9 +35,8 @@ try:
     from urllib.request import urlopen
 except ImportError:
     from urllib import urlopen
-import re
 
-from escher.validate import get_jsonschema, check_segments
+from escher.validate import validate_map, genes_for_gene_reaction_rule
 
 def main():
     """Load an old Escher map, and generate a validated map.
@@ -75,7 +74,8 @@ def main():
 
 def convert(map, model):
     # check for new, 2-level maps
-    if len(map) == 2:
+    has_head = isinstance(map, list) and len(map) == 2
+    if has_head:
         map_body = map[1]
     else:
         map_body = map
@@ -94,6 +94,7 @@ def convert(map, model):
     # keep track of deleted nodes and reactions
     nodes_to_delete = set()
     reactions_to_delete = set()
+    nodes_with_segments = set()
 
     # nodes
     for id, node in map_body['nodes'].items():
@@ -106,7 +107,7 @@ def convert(map, model):
                 nodes_to_delete.add(id)
                 
             # unsupported attributes
-            for key in node.keys():
+            for key in list(node.keys()):
                 if not key in ["node_type", "x", "y", "bigg_id", "name",
                                "label_x", "label_y", "node_is_primary"]:
                     del node[key]
@@ -127,13 +128,12 @@ def convert(map, model):
         # markers
         elif node['node_type'] in ['multimarker', 'midmarker']:
             # unsupported attributes
-            for key in node.keys():
+            for key in list(node.keys()):
                 if not key in ["node_type", "x", "y"]:
                     del node[key]
         # invalid node_type
         else:
             nodes_to_delete.add(id)
-            continue
         
     # update reactions
     for id, reaction in map_body['reactions'].items():
@@ -148,7 +148,7 @@ def convert(map, model):
             continue
 
         # unsupported attributes
-        for key in reaction.keys():
+        for key in list(reaction.keys()):
             if not key in ["name", "bigg_id","reversibility",
                            "label_x", "label_y", "gene_reaction_rule",
                            "genes", "metabolites", "segments"]:
@@ -156,9 +156,15 @@ def convert(map, model):
 
         # unsupported attributes in segments
         for s_id, segment in reaction['segments'].items():
-            for key in segment.keys():
+            for key in list(segment.keys()):
                 if not key in ["from_node_id", "to_node_id", "b1", "b2"]:
                     del segment[key]
+            # keep track of nodes that have appeared here
+            for key in ['from_node_id', 'to_node_id']:
+                try:
+                    nodes_with_segments.add(segment[key])
+                except KeyError:
+                    pass
 
         # get reaction
         try:
@@ -202,9 +208,19 @@ def convert(map, model):
     # delete those nodes
     for node_id in nodes_to_delete:
         del map_body['nodes'][node_id]
+
+    # delete any nodes with no segment
+    for node_id in list(map_body['nodes'].keys()):
+        if node_id not in nodes_with_segments:
+            # may not be there, if previously deleted
+            try:
+                del map_body['nodes'][node_id]
+                print('No segments for node %s. Deleting' % node_id)
+            except KeyError:
+                pass
         
     # delete unsupported elements
-    for key in map_body.keys():
+    for key in list(map_body.keys()):
         if not key in ["nodes", "reactions", "text_labels", "canvas"]:
             del map_body[key]
 
@@ -215,43 +231,15 @@ def convert(map, model):
         "map_id": "",
         "map_description": ""
         }
-    if len(map) == 2:
+    if has_head:
         for key, value in map[0].items():
             if key in ['schema', 'homepage']: continue
             header[key] = value
     
     the_map = [header, map_body]
-        
-    schema = get_jsonschema()
-    jsonschema.validate(the_map, schema)
 
-    nonvalid = check_segments(the_map)
-    if len(nonvalid) == 0:
-        print('Map is valid')
-        return the_map
-    else:
-        print('Error. No nodes for segments:')
-        print('\n'.join(str(x) for x in nonvalid))
-        return None
-
-def genes_for_gene_reaction_rule(rule):
-    """ Find genes in gene_reaction_rule string.
-
-    Arguments
-    ---------
-
-    rule: A boolean string containing gene names, parentheses, AND's and
-    OR's.
-
-    """
-    
-    # remove ANDs and ORs, surrounded by space or parentheses     
-    rule = re.sub(r'([()\s])(?:and|or)([)(\s])', r'\1\2', rule)
-    # remove parentheses
-    rule = re.sub(r'\(|\)', r'', rule)
-    # split on whitespace
-    genes = [x for x in rule.split(' ') if x != '']
-    return genes
+    validate_map(the_map) 
+    return the_map
 
 if __name__=="__main__":
     main()

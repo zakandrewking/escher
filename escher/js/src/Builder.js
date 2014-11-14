@@ -862,7 +862,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             try {
                 check_map(map_data);
                 this.load_map(map_data);
-                this.map.set_status('Loaded map ' + map_data[0].map_id, 3000);
+                this.map.set_status('Loaded map ' + map_data[0].map_name, 3000);
             } catch (e) {
                 console.warn(e);
                 this.map.set_status('Error loading map: ' + e, 2000);

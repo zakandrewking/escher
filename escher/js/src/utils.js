@@ -36,6 +36,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	     mean: mean,
              median: median,
              quartiles: quartiles,
+             random_characters: random_characters,
 	     check_for_parent_tag: check_for_parent_tag,
 	     check_name: check_name,
 	     name_to_url: name_to_url,
@@ -48,7 +49,9 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         var i = -1,
             out = {};
 	for (var key in defaults) {
-            var has_key = key in options;
+            var has_key = ((key in options) &&
+                           (options[key] !== null) &&
+                           (options[key] !== undefined));
             var val = (has_key ? options[key] : defaults[key]);
             if (must_be_float && key in must_be_float) {
                 val = parseFloat(val);
@@ -733,6 +736,16 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
             return [ median(array.slice(0, half)),
                      (array[half-1] + array[half]) / 2.0,
                      median(array.slice(half)) ];
+    }
+
+    function random_characters(num) {
+        // Thanks to @csharptest.net
+        // http://stackoverflow.com/questions/1349404/generate-a-string-of-5-random-characters-in-javascript
+        var text = '',
+            possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        for (var i = 0; i < num; i++)
+            text += possible.charAt(Math.floor(Math.random() * possible.length));
+        return text;
     }
 
     function check_for_parent_tag(el, tag) {
