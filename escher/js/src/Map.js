@@ -22,6 +22,12 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
      enable_search:
 
+     map_name: (Optional, Default: 'new map')
+
+     map_id: (Optional, Default: A string of random characters.)
+
+     map_description: (Optional, Default: '')
+
      Callbacks
      ---------
 
@@ -139,12 +145,26 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     // setup
 
     function init(svg, css, selection, zoom_container, settings,
-                  cobra_model, canvas_size_and_loc, enable_search) {
+                  cobra_model, canvas_size_and_loc, enable_search,
+                  map_name, map_id, map_description) {
         if (canvas_size_and_loc===null) {
             var size = zoom_container.get_size();
             canvas_size_and_loc = {x: -size.width, y: -size.height,
                                    width: size.width*3, height: size.height*3};
         }
+
+        if (map_name === undefined || map_name === null || map_name == '')
+            map_name = 'new_map';
+        else
+            map_name = String(map_name);
+        if (map_id === undefined || map_id === null || map_id == '')
+            map_id = utils.random_characters(12);
+        else
+            map_id = String(map_id);
+        if (map_description === undefined || map_description === null)
+            map_description = '';
+        else
+            map_description = String(map_description);
 
         // set up the callbacks
         this.callback_manager = new CallbackManager();
@@ -194,6 +214,11 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.enable_search = enable_search;
         this.search_index = new SearchIndex();
 
+        // map properties
+        this.map_name = map_name;
+        this.map_id = map_id;
+        this.map_description = map_description;
+        
         // deal with the window
         var window_translate = {'x': 0, 'y': 0},
             window_scale = 1;
@@ -235,8 +260,13 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                           'cobra_model', 'enable_search']);
 
         var canvas = map_data[1].canvas,
+            map_name = map_data[0].map_name,
+            map_id = map_data[0].map_id,
+            map_description = (map_data[0].map_description.replace(/(\nLast Modified.*)+$/g, '')
+                               + '\nLast Modified ' + Date(Date.now()).toString());
             map = new Map(svg, css, selection, zoom_container, settings,
-                          cobra_model, canvas, enable_search);
+                          cobra_model, canvas, enable_search,
+                          map_name, map_id, map_description);
 
         map.reactions = map_data[1].reactions;
         map.nodes = map_data[1].nodes;
@@ -1788,22 +1818,31 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             */
         var selected_node_ids = this.get_selected_node_ids(),
             go = function(ids) {
-                var node_ids_to_draw = [],
-                    reaction_ids_to_draw = [],
-                    hide_secondary_metabolites = this.get_option('hide_secondary_metabolites');
+                var nodes_to_draw = {},
+                    hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites');
                 ids.forEach(function(id) {
                     if (!(id in this.nodes)) {
                         console.warn('Could not find node: ' + id);
                         return;
                     }
                     var node = this.nodes[id];
-                    node.node_is_primary = !node.node_is_primary;
-                    node_ids_to_draw.push(id);
-                    if (hide_secondary_metabolites) console.log('Unfinished');
+                    if (node.node_type == 'metabolite') {
+                        node.node_is_primary = !node.node_is_primary;
+                        nodes_to_draw[id] = node;
+                    }
                 }.bind(this));
                 // draw the nodes
-                this.draw_these_nodes(node_ids_to_draw);
-                this.draw_these_reactions(reaction_ids_to_draw);
+                this.draw_these_nodes(Object.keys(nodes_to_draw));
+                // draw associated reactions
+                if (hide_secondary_metabolites) {
+                    var out = this.segments_and_reactions_for_nodes(nodes_to_draw),
+                        reaction_ids_to_draw_o = {};
+                    for (var id in out.segment_objs_w_segments) {
+                        var r_id = out.segment_objs_w_segments[id].reaction_id;
+                        reaction_ids_to_draw_o[r_id] = true;
+                    }
+                    this.draw_these_reactions(Object.keys(reaction_ids_to_draw_o));
+                }
             }.bind(this);
 
         // go
@@ -2030,12 +2069,12 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     // IO
 
     function save() {
-        utils.download_json(this.map_for_export(), 'saved_map');
+        utils.download_json(this.map_for_export(), this.map_name);
     }
     function map_for_export() {
-        var out = [{ "map_name": "",
-                     "map_id": "",
-                     "map_description": "",
+        var out = [{ "map_name": this.map_name,
+                     "map_id": this.map_id,
+                     "map_description": this.map_description,
                      "homepage": "https://zakandrewking.github.io/escher",
                      "schema": "https://zakandrewking.github.io/escher/escher/jsonschema/1-0-0#"
                    },

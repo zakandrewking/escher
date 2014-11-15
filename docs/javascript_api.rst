@@ -132,6 +132,7 @@ JavaScript API
         this.callback_manager.run('zoom_mode');
         this.callback_manager.run('rotate_mode');
         this.callback_manager.run('text_mode');
+        this.callback_manager.run('load_model', null, model_data, should_update_data);
         this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw);
 
     .. js:function:: load_map(map_data, [should_update_data])

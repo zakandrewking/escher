@@ -1,15 +1,21 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import print_function, unicode_literals
+
 from escher.quick_server import serve_and_open
 from escher.urls import get_url, name_to_url
+from escher.appdirs import user_cache_dir
 
 import os
 from os.path import dirname, abspath, join, isfile, isdir
 from warnings import warn
-from urllib2 import urlopen, HTTPError, URLError
+try:
+    from urllib.request import urlopen
+    from urllib.error import HTTPError, URLError
+except:
+    from urllib2 import urlopen, HTTPError, URLError
 import json
 import shutil
-import appdirs
 import re
 from jinja2 import Environment, PackageLoader, Template
 import codecs
@@ -25,7 +31,7 @@ def get_cache_dir(name=None):
     :param string name: An optional subdirectory within the cache
 
     """
-    cache_dir = join(appdirs.user_cache_dir('escher', appauthor='Zachary King'))
+    cache_dir = join(user_cache_dir('escher', appauthor='Zachary King'))
     if name is not None:
         cache_dir = join(cache_dir, name)
     try:
@@ -48,7 +54,7 @@ def list_cached_maps():
     try:
         return [x.replace('.json', '') for x in os.listdir(get_cache_dir(name='maps'))]
     except OSError:
-        print 'No cached maps'
+        print('No cached maps')
         return None
 
 def list_cached_models():
@@ -56,12 +62,12 @@ def list_cached_models():
     try:
         return [x.replace('.json', '') for x in os.listdir(get_cache_dir(name='models'))]
     except OSError:
-        print 'No cached maps'
+        print('No cached maps')
         return None
     
 def _get_an_id():
-    return unicode(''.join(random.choice(string.ascii_lowercase)
-                           for _ in range(10)))
+    return (''.join(random.choice(string.ascii_lowercase)
+                    for _ in range(10)))
 
 def _load_resource(resource, name, safe=False):
     """Load a resource that could be a file, URL, or json string."""
@@ -72,14 +78,20 @@ def _load_resource(resource, name, safe=False):
         except URLError as err:
             raise err
         else:
-            return download.read()
+            data = download.read()
+            encoding = download.headers.getparam('charset')
+            if encoding:
+                data = data.decode(encoding)
+            else:
+                data = data.decode('utf-8')
+            return data
     # if it's a filepath, load it
     if os.path.exists(resource):
         if (safe):
             raise Exception('Cannot load resource from file with safe mode enabled.')
         try:
-            with open(resource, 'r') as f:
-                loaded_resource = f.read()
+            with open(resource, 'rb') as f:
+                loaded_resource = f.read().decode('utf-8')
             _ = json.loads(loaded_resource)
         except ValueError as err:
             raise ValueError('%s not a valid json file' % name)
@@ -212,7 +224,7 @@ class Builder(object):
         self.model_name = model_name
         self.model_json = model_json
         self.loaded_model_json = None
-        if sum([x is not None for x in model, model_name, model_json]) >= 2:
+        if sum([x is not None for x in (model, model_name, model_json)]) >= 2:
             warn('model overrides model_json, and both override model_name')
         self._load_model()
         # set the args
@@ -223,7 +235,7 @@ class Builder(object):
         
         # remove illegal characters from css
         try:
-            self.embedded_css = unicode(embedded_css.replace('\n', ''))
+            self.embedded_css = (embedded_css.replace('\n', ''))
         except AttributeError:
             self.embedded_css = None
         # make the unique id
@@ -266,11 +278,11 @@ class Builder(object):
             setattr(self, '_%s' % option, None)
             
         # set the kwargs
-        for key, val in kwargs.iteritems():
+        for key, val in kwargs.items():
             try:
                 getattr(self, 'set_%s' % key)(val)
             except AttributeError:
-                print 'Unrecognized keywork argument %s' % key
+                print('Unrecognized keywork argument %s' % key)
         
     def _load_model(self):
         """Load the model.
@@ -304,8 +316,8 @@ class Builder(object):
                         outfile.write(download.read())
                 except HTTPError:
                     raise ValueError('No model found in cache or at %s' % model_url)
-            with open(model_filename) as f:
-                self.loaded_model_json = f.read()
+            with open(model_filename, 'rb') as f:
+                self.loaded_model_json = f.read().decode('utf-8')
                 
     def _load_map(self):
         """Load the map from input map_json using _load_resource, or, secondarily,
@@ -335,8 +347,8 @@ class Builder(object):
                         outfile.write(download.read())
                 except HTTPError:
                     raise ValueError('No map found in cache or at %s' % map_url)
-            with open(map_filename) as f:
-                self.loaded_map_json = f.read()
+            with open(map_filename, 'rb') as f:
+                self.loaded_map_json = f.read().decode('utf-8')
 
     def _embedded_css(self, url_source):
         """Return a css string to be embedded in the SVG.
@@ -363,43 +375,49 @@ class Builder(object):
             raise Exception(('Could not find builder_embed_css. Be sure to pass '
                              'a local_host argument to Builder if js_source is dev or local '
                              'and you are in an iPython notebook or a static html file.'))
-        return unicode(download.read().replace('\n', ' '))
+        data = download.read()
+        encoding = r.headers.getparam('charset')
+        if encoding:
+            data = data.decode(encoding)
+        else:
+            data = data.decode('utf-8')
+        return data.replace('\n', ' ')
 
     def _initialize_javascript(self, url_source):
-        javascript = (u"var map_data_{the_id} = {map_data};\n"
-                      u"var cobra_model_{the_id} = {cobra_model};\n"
-                      u"var reaction_data_{the_id} = {reaction_data};\n"
-                      u"var metabolite_data_{the_id} = {metabolite_data};\n"
-                      u"var gene_data_{the_id} = {gene_data};\n"
-                      u"var embedded_css_{the_id} = '{style}';\n").format(
+        javascript = ("var map_data_{the_id} = {map_data};\n"
+                      "var cobra_model_{the_id} = {cobra_model};\n"
+                      "var reaction_data_{the_id} = {reaction_data};\n"
+                      "var metabolite_data_{the_id} = {metabolite_data};\n"
+                      "var gene_data_{the_id} = {gene_data};\n"
+                      "var embedded_css_{the_id} = '{style}';\n").format(
                           the_id=self.the_id,
                           map_data=(self.loaded_map_json if self.loaded_map_json else
-                                    u'null'),
+                                    'null'),
                           cobra_model=(self.loaded_model_json if self.loaded_model_json else
-                                       u'null'),
+                                       'null'),
                           reaction_data=(json.dumps(self.reaction_data) if self.reaction_data else
-                                         u'null'),
+                                         'null'),
                           metabolite_data=(json.dumps(self.metabolite_data) if self.metabolite_data else
-                                           u'null'),
+                                           'null'),
                           gene_data=(json.dumps(self.gene_data) if self.gene_data else
-                                           u'null'),
+                                           'null'),
                           style=self._embedded_css(url_source))
         return javascript
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
                  fill_screen, scroll_behavior,
                  never_ask_before_quit, js_url_parse, local_host):
-        draw = (u"options = {{ selection: d3.select('#{the_id}'),\n"
-                u"enable_editing: {enable_editing},\n"
-                u"menu: {menu},\n"
-                u"enable_keys: {enable_keys},\n"
-                u"scroll_behavior: {scroll_behavior},\n"
-                u"fill_screen: {fill_screen},\n"
-                u"reaction_data: reaction_data_{the_id},\n"
-                u"metabolite_data: metabolite_data_{the_id},\n"
-                u"gene_data: gene_data_{the_id},\n"
-                u"never_ask_before_quit: {never_ask_before_quit},\n"
-                u"local_host: {local_host},\n").format(
+        draw = ("options = {{ selection: d3.select('#{the_id}'),\n"
+                "enable_editing: {enable_editing},\n"
+                "menu: {menu},\n"
+                "enable_keys: {enable_keys},\n"
+                "scroll_behavior: {scroll_behavior},\n"
+                "fill_screen: {fill_screen},\n"
+                "reaction_data: reaction_data_{the_id},\n"
+                "metabolite_data: metabolite_data_{the_id},\n"
+                "gene_data: gene_data_{the_id},\n"
+                "never_ask_before_quit: {never_ask_before_quit},\n"
+                "local_host: {local_host},\n").format(
                     the_id=the_id,
                     enable_editing=json.dumps(enable_editing),
                     menu=json.dumps(menu),
@@ -412,10 +430,10 @@ class Builder(object):
         for option in self.options:
             val = getattr(self, option)
             if val is None: continue
-            draw = draw + u"{option}: {value},\n".format(
+            draw = draw + "{option}: {value},\n".format(
                 option=option,
                 value=json.dumps(val)) 
-        draw = draw + u"};\n\n"
+        draw = draw + "};\n\n"
             
         # dev needs escher.
         dev_str = '' if dev else 'escher.'
@@ -423,11 +441,11 @@ class Builder(object):
         if js_url_parse:
             # get the relative location of the escher_download urls
             rel = get_url('escher_download_rel')
-            o = (u'options = %sutils.parse_url_components(window, '
+            o = ('options = %sutils.parse_url_components(window, '
                  'options, "%s");\n' % (dev_str, rel))
             draw = draw + o;
         # make the builder
-        draw = draw + u'{dev_str}Builder(map_data_{the_id}, cobra_model_{the_id}, embedded_css_{the_id}, options);\n'.format(
+        draw = draw + '{dev_str}Builder(map_data_{the_id}, cobra_model_{the_id}, embedded_css_{the_id}, options);\n'.format(
             dev_str=dev_str, the_id=the_id)
 
         return draw
@@ -490,11 +508,11 @@ class Builder(object):
 
         # if height is not a string
         if type(height) is int:
-            height = u"%dpx" % height
+            height = "%dpx" % height
         elif type(height) is float:
-            height = u"%fpx" % height
+            height = "%fpx" % height
         elif type(height) is str:
-            height = unicode(height)
+            height = str(height)
             
         # set the proper urls 
         url_source = 'local' if (js_source=='local' or js_source=='dev') else 'web'
@@ -697,13 +715,13 @@ class Builder(object):
                               never_ask_before_quit=never_ask_before_quit,
                               js_url_parse=js_url_parse)
         if filepath is not None:
-            with codecs.open(filepath, 'w', encoding='utf-8') as f:
-                f.write(html)
+            with open(filepath, 'wb') as f:
+                f.write(html.encode('utf-8'))
             return filepath
         else:
             from tempfile import mkstemp
             from os import write, close
-            os_file, filename = mkstemp(suffix=".html")
-            write(os_file, unicode(html).encode('utf-8'))
+            os_file, filename = mkstemp(suffix=".html", text=False) # binary
+            write(os_file, html.encode('utf-8'))
             close(os_file)
             return filename

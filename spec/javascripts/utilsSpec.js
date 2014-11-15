@@ -92,6 +92,12 @@ describe('utils', function() {
         expect(utils.quartiles([ 6, 7, 15, 36, 39, 40, 41, 42, 43, 47, 49]))
             .toEqual([15, 40, 43]);
     });
+
+    it('random_characters', function() {
+        for (var i = 5; i < 10; i++) {
+            expect(utils.random_characters(i).length).toEqual(i);
+        }
+    });
     
     it('check_for_parent_tag', function() {
         var sel = d3.select('body').append('div');

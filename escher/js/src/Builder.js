@@ -178,19 +178,18 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             should_update_data = true;
 
         // Check the cobra model
-        if (model_data === null) {
-            console.warn('No cobra model was loaded.');
+        if (model_data === null)
             this.cobra_model = null;
-        } else {
+        else
             this.cobra_model = CobraModel(model_data);
+        
+        if (this.map) this.map.cobra_model = this.cobra_model;
+        if (should_update_data)
+            this._update_data(true, false);
+        if (this.settings.get_option('highlight_missing'))
+            this.map.draw_all_reactions();
 
-            // TODO this doesn't seem like the best solution
-            if (this.map !== null && this.map !== undefined)
-                this.map.cobra_model = this.cobra_model;
-
-            if (should_update_data)
-                this._update_data(true, false);
-        }
+        this.callback_manager.run('load_model', null, model_data, should_update_data);
     }
 
     function load_map(map_data, should_update_data) {
@@ -571,7 +570,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         // map dropdown
         ui.dropdown_menu(menu, 'Map')
             .button({ key: keys.save,
-                      text: 'Save as JSON',
+                      text: 'Save map JSON',
                       key_text: (enable_keys ? ' (Ctrl+S)' : null) })
             .button({ text: 'Load map JSON',
                       key_text: (enable_keys ? ' (Ctrl+O)' : null),
@@ -591,7 +590,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             .button({ key: keys.clear_map,
                       text: 'Clear map' });
         // model dropdown
-        ui.dropdown_menu(menu, 'Model')
+        var model_menu = ui.dropdown_menu(menu, 'Model')
             .button({ text: 'Load COBRA model JSON',
                       key_text: (enable_keys ? ' (Ctrl+M)' : null),
                       input: { assign: key_manager.assigned_keys.load_model,
@@ -603,8 +602,21 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                                failure_fn: function() {
                                    map.set_status('');
                                } }
-                    });
-
+                    })
+            .button({ key: keys.clear_model,
+                      text: 'Clear model' });
+        // disable the clear button
+        var disable_model_clear = function() {
+            model_menu.dropdown.selectAll('li')
+                .classed('escher-disabled', function(d) {
+                    if (d.text == 'Clear model' && this.cobra_model === null)
+                        return true;
+                    return null;
+                }.bind(this));
+        }.bind(this);
+        disable_model_clear();
+        this.callback_manager.set('load_model', disable_model_clear);
+        
         // data dropdown
         var data_menu = ui.dropdown_menu(menu, 'Data')
                 .button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
@@ -850,7 +862,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             try {
                 check_map(map_data);
                 this.load_map(map_data);
-                this.map.set_status('Loaded map ' + map_data[0].map_id, 3000);
+                this.map.set_status('Loaded map ' + map_data[0].map_name, 3000);
             } catch (e) {
                 console.warn(e);
                 this.map.set_status('Error loading map: ' + e, 2000);
@@ -879,15 +891,12 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             }
 
             try {
-                this.load_model(data);
+                this.load_model(data, true);
                 this.build_input.toggle(false);
                 if ('id' in data)
                     this.map.set_status('Loaded model ' + data.id, 3000);
                 else
                     this.map.set_status('Loaded model (no model id)', 3000);
-                if (this.settings.highlight_missing) {
-                    this.map.draw_everything();
-                }
             } catch (e) {
                 console.warn(e);
                 this.map.set_status('Error loading model: ' + e, 2000);
@@ -1028,10 +1037,10 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                         fn: map.save_svg },
             load: { key: 79, modifiers: { control: true }, // ctrl-o
                     fn: null }, // defined by button
-            clear_map: { target: map,
-                         fn: function() { this.clear_map(); }},
+            clear_map: { fn: this.map.clear_map.bind(this.map) },
             load_model: { key: 77, modifiers: { control: true }, // ctrl-m
                           fn: null }, // defined by button
+            clear_model: { fn: this.load_model.bind(this, null, true) },
             load_reaction_data: { fn: null }, // defined by button
             clear_reaction_data: { target: this,
                                    fn: function() { this.set_reaction_data(null); }},

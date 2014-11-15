@@ -1,37 +1,92 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import print_function, unicode_literals
+
 from escher.server import directory
 from os.path import join
+import re
 import json
 
 def validate_map(map_data):
+    """Validate a map using the jsonschema, and some extra checks for consistency."""
     import jsonschema
     schema = get_jsonschema()
-    jsonschema.Draft4Validator.validate(map_data, schema)
+    jsonschema.validate(map_data, schema)
 
-    nonvalid = check_segments(map_data)
-    if len(nonvalid) == 0:
-        print 'Map is valid'
-    else:
-        print 'Error. No nodes for segments:'
-        print '\n'.join(str(x) for x in nonvalid)
-
+    # check that all segments have nodes, segments never connect midmarkers with
+    # metabolites, and check that every metabolite is represented with
+    # stoichiometry information
+    (bad_segments,
+     missing_multimarkers,
+     missing_stoich,
+     missing_gene_names) = check_map(map_data)
+     
+    error = ''
+    if len(bad_segments) > 0:
+        error += 'No nodes for segments: %s\n' % (', '.join(str(x) for x in bad_segments))
+    # if len(missing_multimarkers) > 0:
+    #     error += 'Segments connect midmarkers to metabolites: %s\n' % (', '.join(str(x) for x in missing_multimarkers))
+    if len(missing_stoich) > 0:
+        error += 'No non-zero stoichiometry for a connected metabolite node: %s\n' % (', '.join(str(x) for x in missing_stoich))
+    if len(missing_gene_names) > 0:
+        error += 'No gene name for gene in gene_reaction_rule: %s\n' % (', '.join(str(x) for x in missing_gene_names))
+    if error != '':
+        raise Exception(error)
+    
 def validate_schema():
     import jsonschema
     schema = get_jsonschema()
     jsonschema.Draft4Validator.check_schema(schema)    
 
-def check_segments(map_data):
-    """Make sure that nodes exist on either end of each segment.
+def check_map(map_data):
+    """Check reactions and metabolites.
+
+    1. Make sure that nodes exist on either end of each segment
+
+    2. that segments never connect midmarkers with metabolites.
+
+    3. check that every metabolite is represented with stoichiometry information
+
+    4. that every gene in the gene_reaction_rule has a name
 
     """
     reactions = map_data[1]['reactions'];
     nodes = map_data[1]['nodes'];
-    nonvalid = []
-    for _, reaction in reactions.iteritems():
-        for segment_id, segment in reaction['segments'].iteritems():
+    bad_segments = []
+    missing_multimarkers = []
+    missing_stoich = []
+    missing_gene_names = []
+    for _, reaction in reactions.items():
+        metabolites = reaction['metabolites']
+        for segment_id, segment in reaction['segments'].items():
+            ok_seg = True
             for n in ['to_node_id', 'from_node_id']:
+                # check that the node exists
                 if segment[n] not in nodes:
-                    nonvalid.append((n, segment_id))
-    return nonvalid
+                    bad_segments.append((n, segment_id))
+                    ok_seg = False
+                else:
+                    # check that the coefficients exist and are non-zero
+                    node = nodes[segment[n]]
+                    if node['node_type'] == 'metabolite':
+                        if not any((node['bigg_id'] == m['bigg_id'] and abs(m['coefficient']) > 0) for m in metabolites):
+                            missing_stoich.append((n, segment_id))
+
+            # check that metabolites and midmarkers are not connected
+            if ok_seg:
+                bad_conn = ((nodes[segment['from_node_id']]['node_type'] == 'metabolite' and
+                             nodes[segment['to_node_id']]['node_type'] == 'midmarker') or
+                            (nodes[segment['to_node_id']]['node_type'] == 'metabolite' and
+                             nodes[segment['from_node_id']]['node_type'] == 'midmarker'))
+                if bad_conn:
+                    missing_multimarkers.append(segment_id)
+
+        # check gene reaction rule
+        found_genes = genes_for_gene_reaction_rule(reaction['gene_reaction_rule'])
+        for found_gene in found_genes:
+            if not any((found_gene == g['bigg_id'] and 'name' in g) for g in reaction['genes']):
+                missing_gene_names.append(found_gene)
+    return bad_segments, missing_multimarkers, missing_stoich, missing_gene_names
 
 def get_jsonschema():
     """Get the local jsonschema.
@@ -39,6 +94,25 @@ def get_jsonschema():
     """
     with open(join(directory, 'jsonschema', '1-0-0'), 'r') as f:
         return json.load(f)
+
+def genes_for_gene_reaction_rule(rule):
+    """ Find genes in gene_reaction_rule string.
+
+    Arguments
+    ---------
+
+    rule: A boolean string containing gene names, parentheses, AND's and
+    OR's.
+
+    """
+    
+    # remove ANDs and ORs, surrounded by space or parentheses     
+    rule = re.sub(r'([()\s])(?:and|or)([)(\s])', r'\1\2', rule)
+    # remove parentheses
+    rule = re.sub(r'\(|\)', r'', rule)
+    # split on whitespace
+    genes = [x for x in rule.split(' ') if x != '']
+    return genes
 
 if __name__=="__main__":
     from sys import argv
@@ -48,3 +122,4 @@ if __name__=="__main__":
     with open(argv[1], 'r') as f:
         map_data = json.load(f)
     validate_map(map_data)
+    print('Your map passed inspection and is free of infection.')

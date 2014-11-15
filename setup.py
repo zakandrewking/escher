@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import sys
 from sys import argv
 from subprocess import call
@@ -39,7 +41,7 @@ class CleanCommand(Command):
         # remove site files
         for f in glob(join(directory, '*.html')):
             os.remove(f)
-        print 'done cleaning'
+        print('done cleaning')
 
 class JSBuildCommand(Command):
     description = "Custom build command that generates escher lib files"
@@ -59,7 +61,7 @@ class JSBuildCommand(Command):
               '-o', join('escher', 'js', 'build', 'build.js'),
               'out='+join('escher', 'lib', escher_min),
               'optimize=uglify'])
-        print 'done building js'
+        print('done building js')
         
 class BuildGHPagesCommand(Command):
     description = "Custom build command that generates static site, and copies escher libs"
@@ -77,7 +79,7 @@ class BuildGHPagesCommand(Command):
         # generate the static site
         call(['python', join('escher', 'static_site.py')])
         call(['python', join('escher', 'generate_index.py')])
-        print 'Done building gh-pages'
+        print('Done building gh-pages')
 
 class BuildRelease(Command):
     description = "Make file modifications for a new release version"
@@ -86,7 +88,7 @@ class BuildRelease(Command):
         self.version = None
     def finalize_options(self):
         if self.version is None:
-            print 'Usage: python setup.py build_release -v=[version_number]'
+            print('Usage: python setup.py build_release -v=[version_number]')
             sys.exit()
     def run(self):
         old_version = version
@@ -122,7 +124,7 @@ class BuildRelease(Command):
              join('escher', 'css', 'builder-%s.css' % new_version))
         move(join('escher', 'css', 'builder-embed-%s.css' % old_version),
              join('escher', 'css', 'builder-embed-%s.css' % new_version))
-        print 'Done building release %s' % new_version
+        print('Done building release %s' % new_version)
 
 class BuildDocs(Command):
     description = "Build the sphinx documentation"
@@ -132,7 +134,11 @@ class BuildDocs(Command):
     def finalize_options(self):
         pass
     def run(self):
-        call(['make', 'html', '-C', 'docs'])
+        import platform
+        if platform.system() == 'Windows':
+            call('cd docs & make.bat html & cd ..', shell=True)
+        else:
+            call(['make', 'html', '-C', 'docs'])
 
 class TestCommand(Command):
     description = "Custom test command that runs pytest and jasmine"
@@ -167,7 +173,8 @@ setup(name='Escher',
                                'example_data/*', 'lib/*.js', 'lib/*.css',
                                'lib/fonts/*', 'resources/*']},
       install_requires=['Jinja2>=2.7.3',
-                        'tornado>=4.0.2'],
+                        'tornado>=4.0.2',
+                        'pytest>=2.6.2'],
       cmdclass={'clean': CleanCommand,
                 'buildjs': JSBuildCommand,
                 'buildgh': BuildGHPagesCommand,
