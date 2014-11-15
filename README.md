@@ -1,4 +1,7 @@
-Cite Escher v1.0 Beta 3:  [![DOI](https://zenodo.org/badge/6078/zakandrewking/escher.png)](http://dx.doi.org/10.5281/zenodo.11712)
+[![Travis](https://api.travis-ci.org/zakandrewking/escher.svg?branch=master)](https://travis-ci.org/zakandrewking/escher)
+
+
+Cite Escher v1.0 Beta 3: &nbsp;&nbsp;[![DOI](https://zenodo.org/badge/6078/zakandrewking/escher.png)](http://dx.doi.org/10.5281/zenodo.11712)
 
 Escher
 ======
