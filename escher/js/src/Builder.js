@@ -160,8 +160,8 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 if (x == 'accepted') {
                     this._update_data(true, true, ['reaction', 'metabolite'], false);
                     if (this.map !== null) {
-                        this.map.draw_all_nodes();
-                        this.map.draw_all_reactions();
+                        this.map.draw_all_nodes(false);
+                        this.map.draw_all_reactions(true, false);
                     }
                 }
             }.bind(this));
@@ -187,7 +187,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         if (should_update_data)
             this._update_data(true, false);
         if (this.settings.get_option('highlight_missing'))
-            this.map.draw_all_reactions();
+            this.map.draw_all_reactions(false, false);
 
         this.callback_manager.run('load_model', null, model_data, should_update_data);
     }
@@ -480,86 +480,108 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         if (should_draw === undefined)
             should_draw = true;
 
-        // metabolite data
-        var update_metabolite_data = (kind.indexOf('metabolite') != -1);
-        if (update_metabolite_data) {
-            var data_object = data_styles.import_and_check(this.options.metabolite_data,
-                                                           'metabolite_data');
-            if (update_model && this.cobra_model !== null) {
-                this.cobra_model.apply_metabolite_data(data_object,
-                                                       this.options.metabolite_styles,
-                                                       this.options.metabolite_compare_style);
-            }
-            if (update_map && this.map !== null) {
-                this.map.apply_metabolite_data_to_map(data_object);
-                if (should_draw)
-                    this.map.draw_all_nodes();
-            }
-        }
+        var update_metabolite_data = (kind.indexOf('metabolite') != -1),
+            update_reaction_data = (kind.indexOf('reaction') != -1),
+            met_data_object,
+            reaction_data_object,
+            gene_data_object;
+        
+        // -------------------
+        // First map, and draw
 
-        // reaction data overrides gene data
-        var update_reaction_data = (kind.indexOf('reaction') != -1);
+        // metabolite data
+        if (update_metabolite_data && update_map && this.map !== null) {
+            met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+                                                           'metabolite_data'); 
+            this.map.apply_metabolite_data_to_map(met_data_object);
+            if (should_draw)
+                this.map.draw_all_nodes(false);
+        }
 
         // reaction data
         if (update_reaction_data) {
-            if (this.options.reaction_data !== null) {
-                data_object = data_styles.import_and_check(this.options.reaction_data,
-                                                           'reaction_data');
+            if (this.options.reaction_data !== null && update_map && this.map !== null) {
+                reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+                                                                    'reaction_data');
+                this.map.apply_reaction_data_to_map(reaction_data_object);
+                if (should_draw)
+                    this.map.draw_all_reactions(false, false);
+            } else if (this.options.gene_data !== null && update_map && this.map !== null) {
+                gene_data_object = make_gene_data_object(this.options.gene_data,
+                                                         this.cobra_model, this.map); 
+                this.map.apply_gene_data_to_map(gene_data_object);
+                if (should_draw)
+                    this.map.draw_all_reactions(false, false);
+            } else if (update_map && this.map !== null) {
+                // clear the data
+                this.map.apply_reaction_data_to_map(null);
+                if (should_draw)
+                    this.map.draw_all_reactions(false, false);
+            }
+        }
 
-                // only update the model if there is not going to be gene data
-                if (update_model && this.cobra_model !== null) {
-                    this.cobra_model.apply_reaction_data(data_object,
+        // ---------------------------------------------------------------- 
+        // Then the model, after drawing. Delay by 5ms so the the map draws
+        // first.
+
+        var delay = 5; 
+        window.setTimeout(function() {
+
+            // metabolite_data
+            if (update_metabolite_data && update_model && this.cobra_model !== null) {
+                // if we haven't already made this
+                if (!met_data_object)
+                    met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+                                                                   'metabolite_data');
+                this.cobra_model.apply_metabolite_data(met_data_object,
+                                                       this.options.metabolite_styles,
+                                                       this.options.metabolite_compare_style);
+            }
+            
+            // reaction data
+            if (update_reaction_data) {
+                if (this.options.reaction_data !== null && update_model && this.cobra_model !== null) {
+                    // if we haven't already made this
+                    if (!reaction_data_object)
+                        reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+                                                                            'reaction_data');
+                    this.cobra_model.apply_reaction_data(reaction_data_object,
                                                          this.options.reaction_styles,
                                                          this.options.reaction_compare_style);
-                }
-                if (update_map && this.map !== null) {
-                    this.map.apply_reaction_data_to_map(data_object);
-                    if (should_draw)
-                        this.map.draw_all_reactions();
-                }
-            } else if (this.options.gene_data !== null) {
-                // collect reactions from map and model
-                var all_reactions = {};
-                if (this.cobra_model !== null)
-                    utils.extend(all_reactions, this.cobra_model.reactions);
-                // extend, overwrite
-                if (this.map !== null)
-                    utils.extend(all_reactions, this.map.reactions, true);
-
-                // this object has reaction keys and values containing associated genes
-                data_object = data_styles.import_and_check(this.options.gene_data,
-                                                           'gene_data',
-                                                           all_reactions);
-
-                // update the model if data is applied to reactions
-                if (update_model && this.cobra_model !== null) {
-                    this.cobra_model.apply_gene_data(data_object,
+                } else if (this.options.gene_data !== null && update_model && this.cobra_model !== null) {
+                    if (!gene_data_object)
+                        gene_data_object = make_gene_data_object(this.options.gene_data,
+                                                                 this.cobra_model, this.map); 
+                    this.cobra_model.apply_gene_data(gene_data_object,
                                                      this.options.reaction_styles,
                                                      this.options.identifiers_on_map,
                                                      this.options.reaction_compare_style,
                                                      this.options.and_method_in_gene_reaction_rule);
-                }
-                if (update_map && this.map !== null) {
-                    this.map.apply_gene_data_to_map(data_object);
-                    if (should_draw)
-                        this.map.draw_all_reactions();
-                }
-            } else {
-                // clear the data
-                // only update the model if there is not going to be gene data
-                if (update_model && this.cobra_model !== null) {
+                } else if (update_model && this.cobra_model !== null) {
+                    // clear the data
                     this.cobra_model.apply_reaction_data(null,
                                                          this.options.reaction_styles,
                                                          this.options.reaction_compare_style);
                 }
-                if (update_map && this.map !== null) {
-                    this.map.apply_reaction_data_to_map(null);
-                    if (should_draw)
-                        this.map.draw_all_reactions();
-                }
             }
+
+            // callback
+            this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw);
+
+        }.bind(this), delay);
+            
+        // definitions
+        function make_gene_data_object(gene_data, cobra_model, map) {
+            var all_reactions = {};
+            if (cobra_model !== null)
+                utils.extend(all_reactions, cobra_model.reactions);
+            // extend, overwrite
+            if (map !== null)
+                utils.extend(all_reactions, map.reactions, true);
+
+            // this object has reaction keys and values containing associated genes
+            return data_styles.import_and_check(gene_data, 'gene_data', all_reactions);
         }
-        this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw);
     }
 
     function _setup_menu(menu_selection, button_selection, map, zoom_container,

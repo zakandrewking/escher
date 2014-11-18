@@ -113,11 +113,8 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // data
         has_cobra_model: has_cobra_model,
         apply_reaction_data_to_map: apply_reaction_data_to_map,
-        apply_reaction_data_to_reactions: apply_reaction_data_to_reactions,
         apply_metabolite_data_to_map: apply_metabolite_data_to_map,
-        apply_metabolite_data_to_nodes: apply_metabolite_data_to_nodes,
         apply_gene_data_to_map: apply_gene_data_to_map,
-        apply_gene_data_to_reactions: apply_gene_data_to_reactions,
         // data statistics
         get_data_statistics: get_data_statistics,
         calc_data_stats: calc_data_stats,
@@ -471,11 +468,12 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         /** Draw the all reactions, nodes, & text labels.
 
          */
-        this.draw_all_reactions(true); // also draw beziers
-        this.draw_all_nodes();
+        this.draw_all_reactions(true, true); // also draw beziers
+        this.draw_all_nodes(true);
         this.draw_all_text_labels();
     }
-    function draw_all_reactions(draw_beziers) {
+    
+    function draw_all_reactions(draw_beziers, clear_deleted) {
         /** Draw all reactions, and clear deleted reactions.
 
          Arguments
@@ -484,8 +482,12 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
          draw_beziers: (Boolean, default True) Whether to also draw the bezier
          control points.
 
+         clear_deleted: (Optional, Default: true) Boolean, if true, then also
+         clear deleted nodes.
+
          */
         if (draw_beziers===undefined) draw_beziers = true;
+        if (clear_deleted===undefined) clear_deleted = true;
 
         // Draw all reactions.
         var reaction_ids = [];
@@ -495,11 +497,12 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // If draw_beziers is true, just draw them all, rather than deciding
         // which ones to draw.
         this.draw_these_reactions(reaction_ids, false);
-        if (draw_beziers)
+        if (draw_beziers && this.beziers_enabled)
             this.draw_all_beziers();
 
         // Clear all deleted reactions.
-        this.clear_deleted_reactions(draw_beziers);
+        if (clear_deleted)
+            this.clear_deleted_reactions(draw_beziers);
     }
 
     function draw_these_reactions(reaction_ids, draw_beziers) {
@@ -520,8 +523,8 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         if (draw_beziers===undefined) draw_beziers = true;
 
         // find reactions for reaction_ids
-        var reaction_subset = utils.object_slice_for_ids(this.reactions,
-                                                         reaction_ids);
+        var reaction_subset = utils.object_slice_for_ids_ref(this.reactions,
+                                                             reaction_ids);
 
         // function to update reactions
         var update_fn = function(sel) {
@@ -573,10 +576,18 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         };
     }
 
-    function draw_all_nodes() {
+    function draw_all_nodes(clear_deleted) {
         /** Draw all nodes, and clear deleted nodes.
 
+         Arguments
+         ---------
+
+         clear_deleted: (Optional, Default: true) Boolean, if true, then also
+         clear deleted nodes.
+
          */
+        if (clear_deleted === undefined) clear_deleted = true;
+        
         var node_ids = [];
         for (var node_id in this.nodes) {
             node_ids.push(node_id);
@@ -584,7 +595,8 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.draw_these_nodes(node_ids);
 
         // clear the deleted nodes
-        this.clear_deleted_nodes();
+        if (clear_deleted)
+            this.clear_deleted_nodes();
     }
 
     function draw_these_nodes(node_ids) {
@@ -600,7 +612,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
          */
         // find reactions for reaction_ids
-        var node_subset = utils.object_slice_for_ids(this.nodes, node_ids);
+        var node_subset = utils.object_slice_for_ids_ref(this.nodes, node_ids);
 
         // functions to create and update nodes
         var create_fn = function(sel) {
@@ -662,7 +674,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
          */
         // find reactions for reaction_ids
-        var text_label_subset = utils.object_slice_for_ids(this.text_labels, text_label_ids);
+        var text_label_subset = utils.object_slice_for_ids_ref(this.text_labels, text_label_ids);
 
         // function to update text_labels
         var update_fn = function(sel) {
@@ -689,7 +701,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     function draw_all_beziers() {
         /** Draw all beziers, and clear deleted reactions.
 
-         */
+         */        
         var bezier_ids = [];
         for (var bezier_id in this.beziers) {
             bezier_ids.push(bezier_id);
@@ -711,19 +723,19 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
          beziers_ids: An array of bezier_ids to update.
 
-         */
+         */        
         // find reactions for reaction_ids
-        var bezier_subset = utils.object_slice_for_ids(this.beziers, bezier_ids);
+        var bezier_subset = utils.object_slice_for_ids_ref(this.beziers, bezier_ids);
 
         // function to update beziers
         var update_fn = function(sel) {
             return this.draw.update_bezier(sel,
-                                      this.beziers_enabled,
-                                      this.behavior.bezier_drag,
-                                      this.behavior.bezier_mouseover,
-                                      this.behavior.bezier_mouseout,
-                                      this.nodes,
-                                      this.reactions);
+                                           this.beziers_enabled,
+                                           this.behavior.bezier_drag,
+                                           this.behavior.bezier_mouseover,
+                                           this.behavior.bezier_mouseout,
+                                           this.nodes,
+                                           this.reactions);
         }.bind(this);
 
         // draw the beziers
@@ -761,98 +773,28 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         /**  Returns True if the scale has changed.
 
          */
-        return this.apply_reaction_data_to_reactions(this.reactions, data);
-    }
-
-    function apply_reaction_data_to_reactions(reactions, data) {
-        /**  Returns True if the scale has changed.
-
-         */
-
-        if (data === null) {
-            for (var reaction_id in reactions) {
-                var reaction = reactions[reaction_id];
-                reaction.data = null;
-                reaction.data_string = '';
-                for (var segment_id in reaction.segments) {
-                    var segment = reaction.segments[segment_id];
-                    segment.data = null;
-                }
-                reaction.gene_string = null;
-            }
-
-            // remember
-            this.has_data_on_reactions = false;
-
-            return this.calc_data_stats('reaction');
-        }
-
-        // apply the datasets to the reactions
         var styles = this.settings.get_option('reaction_styles'),
             compare_style = this.settings.get_option('reaction_compare_style');
-        for (var reaction_id in reactions) {
-            var reaction = reactions[reaction_id],
-                d = (reaction.bigg_id in data ? data[reaction.bigg_id] : null),
-                f = data_styles.float_for_data(d, styles, compare_style),
-                r = data_styles.reverse_flux_for_data(d),
-                s = data_styles.text_for_data(d, f);
-            reaction.data = f;
-            reaction.data_string = s;
-            reaction.reverse_flux = r;
-            reaction.gene_string = null;
-            // apply to the segments
-            for (var segment_id in reaction.segments) {
-                var segment = reaction.segments[segment_id];
-                segment.data = reaction.data;
-                segment.reverse_flux = reaction.reverse_flux;
-            }
-        }
-
-        // remember
-        this.has_data_on_reactions = true;
+        var has_data = data_styles.apply_reaction_data_to_reactions(this.reactions, data,
+                                                                    styles, compare_style);
+        this.has_data_on_reactions = has_data;
 
         return this.calc_data_stats('reaction');
     }
+    
     function apply_metabolite_data_to_map(data) {
         /**  Returns True if the scale has changed.
 
          */
-        return this.apply_metabolite_data_to_nodes(this.nodes, data);
-    }
-    function apply_metabolite_data_to_nodes(nodes, data) {
-        /**  Returns True if the scale has changed.
-
-         */
-        if (data === null) {
-            for (var node_id in nodes) {
-                nodes[node_id].data = null;
-                nodes[node_id].data_string = '';
-            }
-
-            // remember
-            this.has_data_on_nodes = false;
-
-            return this.calc_data_stats('metabolite');
-        }
-
-        // grab the data
         var styles = this.settings.get_option('metabolite_styles'),
             compare_style = this.settings.get_option('metabolite_compare_style');
-        for (var node_id in nodes) {
-            var node = nodes[node_id],
-                d = (node.bigg_id in data ? data[node.bigg_id] : null),
-                f = data_styles.float_for_data(d, styles, compare_style),
-                s = data_styles.text_for_data(d, f);
-            node.data = f;
-            node.data_string = s;
-        }
-
-        // remember
-        this.has_data_on_nodes = true;
+        
+        var has_data = data_styles.apply_metabolite_data_to_nodes(this.nodes, data,
+                                                                  styles, compare_style);
+        this.has_data_on_nodes = has_data;
 
         return this.calc_data_stats('metabolite');
     }
-
 
     function apply_gene_data_to_map(gene_data_obj) {
         /** Returns True if the scale has changed.
@@ -865,98 +807,17 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
          { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
 
          */
-        return this.apply_gene_data_to_reactions(this.reactions, gene_data_obj);
-    }
-    function apply_gene_data_to_reactions(reactions, gene_data_obj) {
-        /** Returns True if the scale has changed.
-
-         Arguments
-         ---------
-
-         reactions: The reactions to update.
-
-         gene_data_obj: The gene data object, with the following style:
-
-         { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
-
-         */
-
-        // TODO abstract out this function, and the equivalent CobraModel.apply_gene_data()
-
-        if (gene_data_obj === null) {
-            for (var reaction_id in reactions) {
-                var reaction = reactions[reaction_id];
-                reaction.data = null;
-                reaction.data_string = '';
-                reaction.reverse_flux = false;
-                for (var segment_id in reaction.segments) {
-                    var segment = reaction.segments[segment_id];
-                    segment.data = null;
-                }
-                reaction.gene_string = null;
-            }
-
-            // remember
-            this.has_data_on_reactions = false;
-
-            return false;
-        }
-
-        // get the null val
-        var null_val = [null];
-        // make an array of nulls as the default
-        for (var reaction_id in gene_data_obj) {
-            for (var gene_id in gene_data_obj[reaction_id].genes) {
-                null_val = gene_data_obj[reaction_id].genes[gene_id]
-                    .map(function() { return null; });
-                break;
-            }
-            break;
-        }
-
-        // apply the datasets to the reactions
         var styles = this.settings.get_option('reaction_styles'),
             compare_style = this.settings.get_option('reaction_compare_style'),
             identifiers_on_map = this.settings.get_option('identifiers_on_map'),
             and_method_in_gene_reaction_rule = this.settings.get_option('and_method_in_gene_reaction_rule');
-        for (var reaction_id in reactions) {
-            var reaction = reactions[reaction_id];
-            // find the data
-            var d, rule, gene_values;
-            if (reaction_id in gene_data_obj) {
-                rule = gene_data_obj[reaction_id].rule;
-                gene_values = gene_data_obj[reaction_id].genes;
-                d = data_styles.evaluate_gene_reaction_rule(rule, gene_values,
-                                                            and_method_in_gene_reaction_rule);
-            } else {
-                rule = '';
-                gene_values = {};
-                d = null_val;
-            }
-            var f = data_styles.float_for_data(d, styles, compare_style),
-                r = data_styles.reverse_flux_for_data(d),
-                s = data_styles.text_for_data(d, f);
-            reaction.data = f;
-            reaction.data_string = s;
-            reaction.reverse_flux = r;
-            // apply to the segments
-            for (var segment_id in reaction.segments) {
-                var segment = reaction.segments[segment_id];
-                segment.data = reaction.data;
-                segment.reverse_flux = reaction.reverse_flux;
-            }
-            // always update the gene string
-            reaction.gene_string = data_styles.gene_string_for_data(rule,
-                                                                    gene_values,
-                                                                    reaction.genes,
-                                                                    styles,
-                                                                    identifiers_on_map,
-                                                                    compare_style);
-        }
 
-        // remember
-        this.has_data_on_reactions = true;
-
+        var has_data = data_styles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
+                                                                styles, identifiers_on_map,
+                                                                compare_style,
+                                                                and_method_in_gene_reaction_rule);
+        this.has_data_on_reactions = has_data;
+        
         return this.calc_data_stats('reaction');
     }
 
@@ -1269,11 +1130,11 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 // redraw
                 if (should_draw) {
                     if (changed_r_scale)
-                        this.draw_all_reactions();
+                        this.draw_all_reactions(true, true);
                     else
                         this.clear_deleted_reactions(); // also clears segments and beziers
                     if (changed_m_scale)
-                        this.draw_all_nodes();
+                        this.draw_all_nodes(true);
                     else
                         this.clear_deleted_nodes();
                     this.clear_deleted_text_labels();
@@ -1323,7 +1184,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             // if the scale changes, redraw everything
             if (this.has_data_on_reactions) {
                 var scale_changed = this.calc_data_stats('reaction');
-                if (scale_changed) this.draw_all_reactions();
+                if (scale_changed) this.draw_all_reactions(true, false);
                 else this.draw_these_reactions(reaction_ids_to_draw);
             } else {
                 if (should_draw) this.draw_these_reactions(reaction_ids_to_draw);
@@ -1331,7 +1192,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             if (this.has_data_on_nodes) {
                 var scale_changed = this.calc_data_stats('metabolite');
                 if (should_draw) {
-                    if (scale_changed) this.draw_all_nodes();
+                    if (scale_changed) this.draw_all_nodes(false);
                     else this.draw_these_nodes(Object.keys(saved_nodes));
                 }
             } else {
@@ -1518,7 +1379,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             this.extend_nodes(new_nodes);
             if (this.has_data_on_nodes) {
                 var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
-                if (scale_changed) this.draw_all_nodes();
+                if (scale_changed) this.draw_all_nodes(false);
                 else this.draw_these_nodes([selected_node_id]);
             } else {
                 this.draw_these_nodes([selected_node_id]);
@@ -1628,14 +1489,14 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             // draw
             if (this.has_data_on_reactions) {
                 var scale_changed = this.calc_data_stats('reaction');
-                if (scale_changed) this.draw_all_reactions();
+                if (scale_changed) this.draw_all_reactions(true, true);
                 else this.draw_these_reactions(Object.keys(new_reactions));
             } else {
                 this.clear_deleted_reactions(true); // also clears segments and beziers
             }
             if (this.has_data_on_nodes) {
                 var scale_changed = this.calc_data_stats('metabolite');
-                if (scale_changed) this.draw_all_nodes();
+                if (scale_changed) this.draw_all_nodes(true);
                 else this.draw_these_nodes(Object.keys(new_nodes));
             } else {
                 this.clear_deleted_nodes();
@@ -1667,14 +1528,14 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             // if the scale changes, redraw everything
             if (this.has_data_on_reactions) {
                 var scale_changed = this.calc_data_stats('reaction');
-                if (scale_changed) this.draw_all_reactions();
+                if (scale_changed) this.draw_all_reactions(true, false);
                 else this.draw_these_reactions(Object.keys(new_reactions));
             } else {
                 this.draw_these_reactions(Object.keys(new_reactions));
             }
             if (this.has_data_on_nodes) {
                 var scale_changed = this.calc_data_stats('metabolite');
-                if (scale_changed) this.draw_all_nodes();
+                if (scale_changed) this.draw_all_nodes(false);
                 else this.draw_these_nodes(Object.keys(new_nodes));
             } else {
                 this.draw_these_nodes(Object.keys(new_nodes));

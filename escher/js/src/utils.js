@@ -17,6 +17,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	     extend: extend,
 	     unique_concat: unique_concat,
 	     object_slice_for_ids: object_slice_for_ids,
+	     object_slice_for_ids_ref: object_slice_for_ids_ref,
 	     c_plus_c: c_plus_c,
 	     c_minus_c: c_minus_c,
 	     c_times_scalar: c_times_scalar,
@@ -207,6 +208,9 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
             make sure none of the values in the *object* are undefined, and
             ignores those.
 
+         The create_function, update_function, and exit_function CAN modify the
+         input data object.
+
 	 Arguments
 	 ---------
 
@@ -240,7 +244,8 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         
 	var sel = container_sel.select(parent_node_selector)
 		.selectAll(children_selector)
-		.data(make_array(draw_object, id_key), function(d) { return d[id_key]; });
+		.data(make_array_ref(draw_object, id_key),
+                      function(d) { return d[id_key]; });
 	// enter: generate and place reaction
 	if (create_function)
 	    sel.enter().call(create_function);
@@ -257,6 +262,9 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 				  exit_function) {
 	/** Run through the d3 data binding steps for an object that is nested
 	 within another element with d3 data.
+
+         The create_function, update_function, and exit_function CAN modify the
+         input data object.
 
 	 Arguments
 	 ---------
@@ -280,7 +288,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	 */
 	var sel = container_sel.selectAll(children_selector)
 	    .data(function(d) {
-		return make_array(d[object_data_key], id_key);
+		return make_array_ref(d[object_data_key], id_key);
 	    }, function(d) { return d[id_key]; });
 	// enter: generate and place reaction
 	if (create_function)
@@ -339,27 +347,31 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     }
 
     function array_to_object(arr) {
+        /** Convert an array of objects to an object with all keys and values
+         that are arrays of the same length as arr. Fills in spaces with null.
+
+         For example, [ { a: 1 }, { b: 2 }] becomes { a: [1, null], b: [null, 2] }.
+
+         */
+        // new object
 	var obj = {};
-	for (var i=0, l=arr.length; i<l; i++) { // 0
-	    var a = arr[i];
-	    for (var id in a) {
-		if (id in obj) {
-		    obj[id][i] = a[id];
-		} else {
+        // for each element of the array
+	for (var i = 0, l = arr.length; i < l; i++) {
+	    var column = arr[i],
+                keys = Object.keys(column);
+            for (var k = 0, nk = keys.length; k < nk; k++) {
+                var id = keys[k];
+		if (!(id in obj)) {
 		    var n = [];
-		    // fill leading spaces with null
-		    for (var j=0; j<i; j++) {
+		    // fill spaces with null
+		    for (var j = 0; j < l; j++) {
 			n[j] = null;
 		    }
-		    n[i] = a[id];
+		    n[i] = column[id];
 		    obj[id] = n;
-		}
-	    }
-	    // fill trailing spaces with null
-	    for (var id in obj) {
-		for (var j=obj[id].length; j<=i; j++) {
-		    obj[id][j] = null;
-		}
+		} else {
+		    obj[id][i] = column[id];
+                }
 	    }
 	}
 	return obj;
@@ -439,6 +451,28 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         var subset = {}, i = -1;
         while (++i<ids.length) {
 	    subset[ids[i]] = clone(obj[ids[i]]);
+        }
+        if (ids.length != Object.keys(subset).length) {
+	    console.warn('did not find correct reaction subset');
+        }
+	return subset;
+    }
+    
+    function object_slice_for_ids_ref(obj, ids) {
+	/** Return a reference of the object with just the given ids. Faster
+	 than object_slice_for_ids.
+	 
+	 Arguments
+	 ---------
+
+	 obj: An object.
+
+	 ids: An array of id strings.
+
+	 */
+        var subset = {}, i = -1;
+        while (++i<ids.length) {
+	    subset[ids[i]] = obj[ids[i]];
         }
         if (ids.length != Object.keys(subset).length) {
 	    console.warn('did not find correct reaction subset');

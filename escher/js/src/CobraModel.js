@@ -125,24 +125,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
             apply_reaction_data overrides apply_gene_data.
 
         */
-
-        for (var reaction_id in this.reactions) {
-            var reaction = this.reactions[reaction_id];
-            if (reaction_data===null) {
-                reaction.data = null;
-                reaction.data_string = '';
-            } else {
-                var d = (reaction_id in reaction_data ?
-                         reaction_data[reaction_id] : null),
-                    f = data_styles.float_for_data(d, styles, compare_style),
-                    r = data_styles.reverse_flux_for_data(d),
-                    s = data_styles.text_for_data(d, f);
-                reaction.data = f;
-                reaction.data_string = s;
-                reaction.reverse_flux = r;
-            }
-            reaction.gene_string = null;
-        }
+        data_styles.apply_reaction_data_to_reactions(this.reactions, reaction_data,
+                                                     styles, compare_style);
     }
 
     function apply_metabolite_data(metabolite_data, styles, compare_style) {
@@ -150,20 +134,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
             BuildInput.
 
          */
-        for (var metabolite_id in this.metabolites) {
-            var metabolite = this.metabolites[metabolite_id];
-            if (metabolite_data===null) {
-                metabolite.data = null;
-                metabolite.data_string = '';
-            } else {
-                var d = (metabolite_id in metabolite_data ?
-                         metabolite_data[metabolite_id] : null),
-                    f = data_styles.float_for_data(d, styles, compare_style),
-                    s = data_styles.text_for_data(d, f);
-                metabolite.data = f;
-                metabolite.data_string = s;
-            }
-        }
+        data_styles.apply_metabolite_data_to_nodes(this.metabolites, metabolite_data,
+                                                   styles, compare_style);
     }
 
     function apply_gene_data(gene_data_obj, styles, identifiers_on_map,
@@ -173,64 +145,10 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
 
             apply_gene_data overrides apply_reaction_data.
 
-            Arguments
-            ---------
-
-            gene_data_obj: The gene data object, with the following style:
-
-            { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
-
-            style: Gene styles array.
-
-            compare_style: The comparison type.
-
-            and_method_in_gene_reaction_rule: Either 'mean' or 'min'.
-
         */
-
-        // TODO abstract out this function, and the equivalent Map.apply_gene_data_to_reactions();
-        
-        // get the null val
-        var null_val = [null];
-        // make an array of nulls as the default
-        for (var reaction_id in gene_data_obj) {
-            for (var gene_id in gene_data_obj[reaction_id].genes) {
-                null_val = gene_data_obj[reaction_id].genes[gene_id]
-                    .map(function() { return null; });
-                break;
-            }
-            break;
-        }
-
-        for (var reaction_id in this.reactions) {
-            var reaction = this.reactions[reaction_id];
-            if (gene_data_obj === null) {
-                reaction.data = null;
-                reaction.data_string = null;
-                reaction.gene_string = null;
-            } else {
-                var d, rule, gene_values;
-                if (reaction_id in gene_data_obj) {
-                    rule = gene_data_obj[reaction_id].rule;
-                    gene_values = gene_data_obj[reaction_id].genes;
-                    d = data_styles.evaluate_gene_reaction_rule(rule, gene_values,
-                                                                and_method_in_gene_reaction_rule);
-                } else {
-                    gene_values = {};
-                    d = null_val;
-                }
-                var f = data_styles.float_for_data(d, styles, compare_style),
-                    r = data_styles.reverse_flux_for_data(d),
-                    s = data_styles.text_for_data(d, f),
-                    g = data_styles.gene_string_for_data(rule, gene_values,
-                                                         reaction.genes, styles,
-                                                         identifiers_on_map,
-                                                         compare_style);
-                reaction.data = f;
-                reaction.data_string = s;
-                reaction.gene_string = g;
-                reaction.reverse_flux = r;
-            }
-        }
+        data_styles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
+                                                 styles, identifiers_on_map,
+                                                 compare_style,
+                                                 and_method_in_gene_reaction_rule);
     }
 });

@@ -206,9 +206,10 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
     }
     
     function update_segment(update_selection, scale, cobra_model,
-                            drawn_nodes, defs, 
-                            has_data_on_reactions) {
+                            drawn_nodes, defs, has_data_on_reactions) {
         var reaction_data_styles = this.settings.get_option('reaction_styles'),
+            should_size = (has_data_on_reactions && reaction_data_styles.indexOf('size') != -1),
+            should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') != -1),
             no_data_size = this.settings.get_option('reaction_no_data_size'),
             no_data_color = this.settings.get_option('reaction_no_data_color');
         
@@ -217,24 +218,21 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
 	    hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
 	    primary_r = this.settings.get_option('primary_metabolite_radius'),
 	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
-	    get_arrow_size = function(data) {
+	    get_arrow_size = function(data, should_size) {
 		var width = 20,
 		    height = 13;
-		if (has_data_on_reactions && reaction_data_styles.indexOf('size') !== -1) {
-                    var size = (data === null ? no_data_size : scale.reaction_size(data));
+		if (should_size) {
+                    height = (data === null ? no_data_size : scale.reaction_size(data));
                     // check for nan
-                    if (isNaN(size)) {
-                        // console.log('NaN size for data value ' + data); // TODO
-                        size = no_data_size;
-                    }
-                    width = size * 2;
-		    height = size;
+                    if (isNaN(height))
+                        height = no_data_size;
+                    width = height * 2;
 		}           
 		return { width: width, height: height };
 	    }, 
-            get_disp = function(reversibility, coefficient, node_is_primary, data) {
+            get_disp = function(arrow_size, reversibility, coefficient, node_is_primary) {
 		var arrow_height = ((reversibility || coefficient > 0) ?
-				    get_arrow_size(data).height :
+				    arrow_size.height :
 				    0),
 		    r = node_is_primary ? primary_r : secondary_r;
 		return r + arrow_height + 10;
@@ -255,53 +253,55 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
 		return null;
 	    })
             .attr('d', function(d) {
-                if (d.from_node_id==null || d.to_node_id==null)
+                if (d.from_node_id === null || d.to_node_id === null)
                     return null;
                 var start = drawn_nodes[d.from_node_id],
                     end = drawn_nodes[d.to_node_id],
                     b1 = d.b1,
                     b2 = d.b2;
                 // if metabolite, then displace the arrow
-                if (start['node_type']=='metabolite' && b1!==null) {
-                    var disp = get_disp(d.reversibility, d.from_node_coefficient,
-					start.node_is_primary, d.data);
+                if (start['node_type'] == 'metabolite') {
+                    var arrow_size = get_arrow_size(d.data, should_size),
+                        disp = get_disp(arrow_size, d.reversibility,
+                                        d.from_node_coefficient,
+                                        start.node_is_primary);
                     var direction = (b1 === null) ? end : b1;
                     start = displaced_coords(disp, start, direction, 'start');
                 }
-                if (end['node_type']=='metabolite') {
-                    var disp = get_disp(d.reversibility, d.to_node_coefficient,
-					end.node_is_primary, d.data);
+                if (end['node_type'] == 'metabolite') {
+                    var arrow_size = get_arrow_size(d.data, should_size),
+                        disp = get_disp(arrow_size, d.reversibility,
+                                        d.to_node_coefficient,
+					end.node_is_primary);
                     var direction = (b2 === null) ? start : b2;
                     end = displaced_coords(disp, direction, end, 'end');
                 }
-                var curve = ('M'+start.x+','+start.y+' ');
+                var curve = ('M' + start.x + ',' + start.y + ' ');
                 if (b1 !== null && b2 !== null) {
-                    curve += ('C'+b1.x+','+b1.y+' '+
-                              b2.x+','+b2.y+' ');
+                    curve += ('C' + b1.x + ',' + b1.y + ' ' +
+                              b2.x + ',' + b2.y + ' ');
                 }
-                curve += (end.x+','+end.y);
+                curve += (end.x + ',' + end.y);
                 return curve;
             })
             .style('stroke', function(d) {
                 var reaction_id = this.parentNode.parentNode.__data__.bigg_id,
                     show_missing = (highlight_missing &&
                                     cobra_model !== null &&
-                                    !(reaction_id in cobra_model.reactions)),
-                    should_color_data = (has_data_on_reactions &&
-                                         reaction_data_styles.indexOf('color') != -1);
+                                    !(reaction_id in cobra_model.reactions));
                 if (show_missing) {
                     return 'red';
                 }
-                if (should_color_data) {
+                if (should_color) {
                     var f = d.data;
-                    return f===null ? no_data_color : scale.reaction_color(f);
+                    return f === null ? no_data_color : scale.reaction_color(f);
                 }
                 return null;
             })
             .style('stroke-width', function(d) {
-                if (has_data_on_reactions && reaction_data_styles.indexOf('size') != -1) {
+                if (should_size) {
                     var f = d.data;
-                    return f===null ? no_data_size : scale.reaction_size(f);
+                    return f === null ? no_data_size : scale.reaction_size(f);
                 } else {
                     return null;
                 }
@@ -322,29 +322,35 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
 			 (start['node_type']=='metabolite' && !start.node_is_primary)))
 			return arrowheads;
 
-                    if (start.node_type=='metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
-                        var disp = get_disp(d.reversibility, d.from_node_coefficient,
-					    start.node_is_primary, d.data),
+                    if (start.node_type == 'metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
+                        var arrow_size = get_arrow_size(d.data, should_size),
+                            disp = get_disp(arrow_size, d.reversibility,
+                                            d.from_node_coefficient,
+					    start.node_is_primary),
                             direction = (b1 === null) ? end : b1,
                             rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90,
                             loc = displaced_coords(disp, start, direction, 'start');
                         arrowheads.push({ data: d.data,
                                           x: loc.x,
                                           y: loc.y,
+                                          size: arrow_size,
                                           rotation: rotation,
                                           show_arrowhead_flux: (((d.from_node_coefficient < 0)==(d.reverse_flux))
                                                                 || d.data==0)
                                         });
                     }
-                    if (end.node_type=='metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
-                        var disp = get_disp(d.reversibility, d.to_node_coefficient,
-					    end.node_is_primary, d.data),
+                    if (end.node_type == 'metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
+                        var arrow_size = get_arrow_size(d.data, should_size),
+                            disp = get_disp(arrow_size, d.reversibility,
+                                            d.to_node_coefficient,
+					    end.node_is_primary),
                             direction = (b2 === null) ? start : b2,
                             rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90,
                             loc = displaced_coords(disp, direction, end, 'end');
                         arrowheads.push({ data: d.data,
                                           x: loc.x,
                                           y: loc.y,
+                                          size: arrow_size,
                                           rotation: rotation,
                                           show_arrowhead_flux: (((d.to_node_coefficient < 0)==(d.reverse_flux))
                                                                 || d.data==0)
@@ -356,12 +362,13 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             .classed('arrowhead', true);
         // update arrowheads
         arrowheads.attr('d', function(d) {
-            var size = get_arrow_size(d.data);
-            return 'M'+[-size.width/2, 0]+' L'+[0, size.height]+' L'+[size.width/2, 0]+' Z';
+            return ('M' + [-d.size.width / 2, 0] +
+                    ' L' + [0, d.size.height] +
+                    ' L' + [d.size.width / 2, 0] + ' Z');
         }).attr('transform', function(d) {
-            return 'translate('+d.x+','+d.y+')rotate('+d.rotation+')';
+            return 'translate(' + d.x + ',' + d.y + ')rotate(' + d.rotation + ')';
         }).style('fill', function(d) {
-            if (has_data_on_reactions && reaction_data_styles.indexOf('color')!==-1) {
+            if (should_color) {
                 if (d.show_arrowhead_flux) {
                     // show the flux
                     var f = d.data;
@@ -374,7 +381,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             // default fill color
             return null;
         }).style('stroke', function(d) {
-            if (has_data_on_reactions && reaction_data_styles.indexOf('color')!==-1) {
+            if (should_color) {
                 // show the flux color in the stroke whether or not the fill is present
                 var f = d.data;
                 return f===null ? no_data_color : scale.reaction_color(f);
@@ -388,7 +395,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
         // new stoichiometry labels
         var stoichiometry_labels = update_selection.select('.stoichiometry-labels')
                 .selectAll('.stoichiometry-label')
-                .data(function (d) {
+                .data(function (d) {                    
                     var labels = [],
                         start = drawn_nodes[d.from_node_id],
                         b1 = d.b1,
@@ -401,7 +408,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
 			return labels;
 
                     if (start.node_type=='metabolite' && (Math.abs(d.from_node_coefficient) > 1)) {
-                        var disp = get_disp(false, 0, end.node_is_primary, d.data),
+                        var arrow_size = get_arrow_size(d.data, should_size),
+                            disp = get_disp(arrow_size, false, 0, end.node_is_primary),
                             direction = (b1 === null) ? end : b1;
                         direction = utils.c_plus_c(direction, utils.rotate_coords(direction, 0.5, start));
                         var loc = displaced_coords(disp, start, direction, 'start');
@@ -412,7 +420,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                                       data: d.data });
                     }
                     if (end.node_type=='metabolite' && (Math.abs(d.to_node_coefficient) > 1)) {
-                        var disp = get_disp(false, 0, end.node_is_primary, d.data),
+                        var arrow_size = get_arrow_size(d.data, should_size),
+                            disp = get_disp(arrow_size, false, 0, end.node_is_primary),
                             direction = (b2 === null) ? start : b2;
                         direction = utils.c_plus_c(direction, utils.rotate_coords(direction, 0.5, end));
                         var loc = displaced_coords(disp, direction, end, 'end');
@@ -439,7 +448,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                 return d.coefficient;
             })
             .style('fill', function (d) {
-                if (has_data_on_reactions && reaction_data_styles.indexOf('color')!==-1) {
+                if (should_color) {
                     // show the flux color
                     var f = d.data;
                     return f === null ? no_data_color : scale.reaction_color(f);
@@ -467,13 +476,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
         this.callback_manager.run('create_bezier', this, enter_selection);
     }
 
-    function update_bezier(update_selection, show_beziers,
-                           drag_behavior,
+    function update_bezier(update_selection, show_beziers, drag_behavior,
                            mouseover, mouseout, drawn_nodes, drawn_reactions) {
-        utils.check_undefined(arguments, ['update_selection', 'show_beziers',
-                                          'drag_behavior', 'mouseover', 'mouseout',
-                                          'drawn_nodes', 'drawn_reactions']);
-
         if (!show_beziers) {
             update_selection.attr('visibility', 'hidden');
             return;

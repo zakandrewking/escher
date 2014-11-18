@@ -1,4 +1,22 @@
 define(['utils'], function(utils) {
+    // globals
+    var FORMAT_4 = d3.format('.4g'),
+        FORMAT_3 = d3.format('.3g'),
+        RETURN_ARG = function(x) { return x; },
+        ESCAPE_REG = /([.*+?^=!:${}()|\[\]\/\\])/g,
+        EMPTY_LINES = /\n\s*\n/g,
+        TRAILING_NEWLINE = /\n\s*(\)*)\s*$/,
+        AND_OR = /([\(\) ])(?:and|or)([\)\( ])/ig,
+        ALL_PARENS = /[\(\)]/g,
+        // capture an expression surrounded by whitespace and a set of parentheses
+        EXCESS_PARENS = /\(\s*(\S+)\s*\)/g,
+        OR = /\s+or\s+/i,
+        AND = /\s+and\s+/i,
+        // find ORs
+        OR_EXPRESSION = /(^|\()(\s*-?[0-9.]+\s+(?:or\s+-?[0-9.]+\s*)+)(\)|$)/ig,
+        // find ANDS, respecting order of operations (and before or)
+        AND_EXPRESSION = /(^|\(|or\s)(\s*-?[0-9.]+\s+(?:and\s+-?[0-9.]+\s*)+)(\sor|\)|$)/ig; 
+    
     return { import_and_check: import_and_check,
              text_for_data: text_for_data,
              float_for_data: float_for_data,
@@ -7,7 +25,10 @@ define(['utils'], function(utils) {
              csv_converter: csv_converter,
              genes_for_gene_reaction_rule: genes_for_gene_reaction_rule,
              evaluate_gene_reaction_rule: evaluate_gene_reaction_rule,
-             replace_gene_in_rule: replace_gene_in_rule
+             replace_gene_in_rule: replace_gene_in_rule,
+             apply_reaction_data_to_reactions: apply_reaction_data_to_reactions,
+             apply_metabolite_data_to_nodes: apply_metabolite_data_to_nodes,
+             apply_gene_data_to_reactions: apply_gene_data_to_reactions
            };
 
     function import_and_check(data, name, all_reactions) {
@@ -69,13 +90,21 @@ define(['utils'], function(utils) {
             for (var reaction_id in reactions) {
                 var reaction = reactions[reaction_id],
                     this_gene_data = {}; 
-                if (!('gene_reaction_rule' in reaction))
-                    console.warn('No gene_reaction_rule for reaction ' % reaction_id);
                 // save to aligned
-                // get the genes
-                var genes = genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
+                
+                // get the genes if they aren't already there
+                var g = reaction.genes,
+                    genes;
+                if (typeof g === 'undefined')
+                    genes = genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
+                else
+                    genes = g.map(function(x) { return x.bigg_id; });
+
                 genes.forEach(function(gene_id) {
-                    this_gene_data[gene_id] = ((gene_id in data) ? data[gene_id] : null_val);
+                    var d = data[gene_id];
+                    if (typeof d === 'undefined')
+                        d = null_val;
+                    this_gene_data[gene_id] = d;
                 });
                 aligned[reaction_id] = { rule: reaction.gene_reaction_rule,
                                          genes: this_gene_data };
@@ -161,7 +190,7 @@ define(['utils'], function(utils) {
             } else {
                 var d = g_obj.bigg_id in gene_values ? gene_values[g_obj.bigg_id] : null,
                     f = float_for_data(d, styles, compare_style),
-                    format = (f === null ? function(x) { return x; } : d3.format('.3g')); 
+                    format = (f === null ? RETURN_ARG : FORMAT_3); 
                 if (d.length==1) {
                     out = replace_gene_in_rule(out, g_obj.bigg_id, (name + ' (' + null_or_d(d[0], format) + ')\n'));
                 }
@@ -187,9 +216,9 @@ define(['utils'], function(utils) {
             }
         });
         // remove emtpy lines
-        out = out.replace(/\n\s*\n/g, '\n')
+        out = out.replace(EMPTY_LINES, '\n')
         // remove trailing newline (with or without parens)
-            .replace(/\n\s*(\)*)\s*$/, '$1');
+            .replace(TRAILING_NEWLINE, '$1');
         return out;
         
         // definitions
@@ -197,24 +226,16 @@ define(['utils'], function(utils) {
             return d === null ? 'nd' : format(d);
         }
     }
-    
+
     function text_for_data(d, f) {
         if (d === null)
             return null_or_d(null);
         if (d.length == 1) {
-            var format = (f === null ? 
-                          // just return the string
-                          function(x) { return x; } : 
-                          // otherwise, format the string
-                          d3.format('.4g'));
+            var format = (f === null ? RETURN_ARG : FORMAT_4);
             return null_or_d(d[0], format);
         }
         if (d.length == 2) {
-            var format = (f === null ? 
-                          // just return the string
-                          function(x) { return x; } : 
-                          // otherwise, format the string
-                          d3.format('.3g')),
+            var format = (f === null ? RETURN_ARG : FORMAT_3),
                 t = null_or_d(d[0], format);
             t += ', ' + null_or_d(d[1], format);
             t += ': ' + null_or_d(f, format);
@@ -264,9 +285,9 @@ define(['utils'], function(utils) {
          */
         var genes = rule
         // remove ANDs and ORs, surrounded by space or parentheses
-                .replace(/([\(\) ])(?:and|or)([\)\( ])/ig, '$1$2')
+                .replace(AND_OR, '$1$2')
         // remove parentheses
-                .replace(/\(|\)/g, '')
+                .replace(ALL_PARENS, '')
         // split on whitespace
                 .split(' ')
                 .filter(function(x) { return x != ''; });
@@ -278,8 +299,6 @@ define(['utils'], function(utils) {
 
          With the current version, all negative values are converted to zero,
          OR's are sums and AND's are Min()'s.
-
-         TODO Deal with multiple datasets, e.g. Diff.
 
          Arguments
          ---------
@@ -309,7 +328,8 @@ define(['utils'], function(utils) {
         for (var i=0; i<l; i++) {
             // get the rule
             var curr_val = rule;
-            
+
+            // put all the numbers into the expression
             var all_null = true;
             for (var gene_id in gene_values) {
                 var f = _parse_float_or_null(gene_values[gene_id][i]);
@@ -328,33 +348,27 @@ define(['utils'], function(utils) {
             // recursively evaluate
             while (true) {
                 // arithemtic expressions
-                var new_curr_val = curr_val,
-                    // or's
-                    reg = /(^|\()[0-9+.\s]+\s+(or\s+[0-9+.\s]+)+(\)|$)/ig,
-                    matches = new_curr_val.match(reg);
-                if (matches !== null) {
-                    matches.forEach(function(match) {
-                        // remove parentheses, and sum
-                        var ev = match.replace(/[\(\)]/g, ''),
-                            nums = ev.split(/\s+or\s+/i).map(parseFloat),
-                            sum = nums.reduce(function(a, b) { return a + b;});
-                        new_curr_val = new_curr_val.replace(match, sum);
-                    });
-                }
+                var new_curr_val = curr_val;
+                
+                // take out excessive parentheses
+                new_curr_val = new_curr_val.replace(EXCESS_PARENS, ' $1 ');
+                
+                // or's
+                new_curr_val = new_curr_val.replace(OR_EXPRESSION, function(match, p1, p2, p3) {
+                    // sum
+                    var nums = p2.split(OR).map(parseFloat),
+                        sum = nums.reduce(function(a, b) { return a + b;});
+                    return p1 + sum + p3;
+                });
                 // and's
-                var reg = /(^|\()[0-9+.\s]+\s+(and\s+[0-9+.\s]+)+(\)|$)/ig,
-                    matches = new_curr_val.match(reg);
-                if (matches !== null) {
-                    matches.forEach(function(match) {
-                        // remove parentheses, and find min
-                        var ev = match.replace(/[\(\)]/g, ''),
-                            nums = ev.split(/\s+and\s+/i).map(parseFloat),
-                            val = (and_method_in_gene_reaction_rule=='min' ?
-                                   Math.min.apply(null, nums) :
-                                   nums.reduce(function(a, b){ return a + b; }) / nums.length);
-                        new_curr_val = new_curr_val.replace(match, val);
-                    });
-                }
+                new_curr_val = new_curr_val.replace(AND_EXPRESSION, function(match, p1, p2, p3) {
+                    // find min
+                    var nums = p2.split(AND).map(parseFloat),
+                        val = (and_method_in_gene_reaction_rule=='min' ?
+                               Math.min.apply(null, nums) :
+                               nums.reduce(function(a, b){ return a + b; }) / nums.length);
+                    return p1 + val + p3;
+                });
                 // break if there is no change
                 if (new_curr_val == curr_val)
                     break;
@@ -381,8 +395,161 @@ define(['utils'], function(utils) {
         
         // definitions
         function escape_reg_exp(string) {
-            return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+            return string.replace(ESCAPE_REG, "\\$1");
         }
+    }
+    
+    function apply_reaction_data_to_reactions(reactions, data, styles, compare_style) {
+        /**  Returns True if the scale has changed.
+
+         */
+
+        if (data === null) {
+            for (var reaction_id in reactions) {
+                var reaction = reactions[reaction_id];
+                reaction.data = null;
+                reaction.data_string = '';
+                for (var segment_id in reaction.segments) {
+                    var segment = reaction.segments[segment_id];
+                    segment.data = null;
+                }
+                reaction.gene_string = null;
+            }
+            return false;
+        }
+
+        // apply the datasets to the reactions
+        for (var reaction_id in reactions) {
+            var reaction = reactions[reaction_id],
+                d = (reaction.bigg_id in data ? data[reaction.bigg_id] : null),
+                f = float_for_data(d, styles, compare_style),
+                r = reverse_flux_for_data(d),
+                s = text_for_data(d, f);
+            reaction.data = f;
+            reaction.data_string = s;
+            reaction.reverse_flux = r;
+            reaction.gene_string = null;
+            // apply to the segments
+            for (var segment_id in reaction.segments) {
+                var segment = reaction.segments[segment_id];
+                segment.data = reaction.data;
+                segment.reverse_flux = reaction.reverse_flux;
+            }
+        }
+        return true;
+    }
+    
+    function apply_metabolite_data_to_nodes(nodes, data, styles, compare_style) {
+        /**  Returns True if the scale has changed.
+
+         */
+        if (data === null) {
+            for (var node_id in nodes) {
+                nodes[node_id].data = null;
+                nodes[node_id].data_string = '';
+            }
+            return false;
+        }
+
+        // grab the data
+        for (var node_id in nodes) {
+            var node = nodes[node_id],
+                d = (node.bigg_id in data ? data[node.bigg_id] : null),
+                f = float_for_data(d, styles, compare_style),
+                s = text_for_data(d, f);
+            node.data = f;
+            node.data_string = s;
+        }
+        return true;
+    }
+    
+    function apply_gene_data_to_reactions(reactions, gene_data_obj, styles, identifiers_on_map,
+                                          compare_style, and_method_in_gene_reaction_rule) {
+        /** Returns true if data is present
+
+         Arguments
+         ---------
+
+         reactions: The reactions to update.
+
+         gene_data_obj: The gene data object, with the following style:
+
+             { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+
+         styles:  Gene styles array.
+
+         identifiers_on_map:
+
+         compare_style:
+
+         and_method_in_gene_reaction_rule:
+
+         */
+
+        if (gene_data_obj === null) {
+            for (var reaction_id in reactions) {
+                var reaction = reactions[reaction_id];
+                reaction.data = null;
+                reaction.data_string = '';
+                reaction.reverse_flux = false;
+                for (var segment_id in reaction.segments) {
+                    var segment = reaction.segments[segment_id];
+                    segment.data = null;
+                }
+                reaction.gene_string = null;
+            }
+            return false;
+        }
+
+        // get the null val
+        var null_val = [null];
+        // make an array of nulls as the default
+        for (var reaction_id in gene_data_obj) {
+            for (var gene_id in gene_data_obj[reaction_id].genes) {
+                null_val = gene_data_obj[reaction_id].genes[gene_id]
+                    .map(function() { return null; });
+                break;
+            }
+            break;
+        }
+
+        // apply the datasets to the reactions
+        for (var reaction_id in reactions) {
+            var reaction = reactions[reaction_id];
+            // find the data
+            var d, rule, gene_values,
+                r_data = gene_data_obj[reaction_id];
+            if (typeof r_data !== 'undefined') {
+                rule = r_data.rule;
+                gene_values = r_data.genes;
+                d = evaluate_gene_reaction_rule(rule, gene_values,
+                                                and_method_in_gene_reaction_rule);
+            } else {
+                rule = '';
+                gene_values = {};
+                d = null_val;
+            }
+            var f = float_for_data(d, styles, compare_style),
+                r = reverse_flux_for_data(d),
+                s = text_for_data(d, f);
+            reaction.data = f;
+            reaction.data_string = s;
+            reaction.reverse_flux = r;
+            // apply to the segments
+            for (var segment_id in reaction.segments) {
+                var segment = reaction.segments[segment_id];
+                segment.data = reaction.data;
+                segment.reverse_flux = reaction.reverse_flux;
+            }
+            // always update the gene string
+            reaction.gene_string = gene_string_for_data(rule,
+                                                        gene_values,
+                                                        reaction.genes,
+                                                        styles,
+                                                        identifiers_on_map,
+                                                        compare_style);
+        }
+        return true;
     }
     
     function _parse_float_or_null(x) {
