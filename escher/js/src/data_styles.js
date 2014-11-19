@@ -106,8 +106,7 @@ define(['utils'], function(utils) {
                         d = null_val;
                     this_gene_data[gene_id] = d;
                 });
-                aligned[reaction_id] = { rule: reaction.gene_reaction_rule,
-                                         genes: this_gene_data };
+                aligned[reaction_id] = this_gene_data;
             }
             return aligned;
         }
@@ -188,8 +187,9 @@ define(['utils'], function(utils) {
             if (no_data) {
                 out = replace_gene_in_rule(out, g_obj.bigg_id, (name + '\n'));
             } else {
-                var d = g_obj.bigg_id in gene_values ? gene_values[g_obj.bigg_id] : null,
-                    f = float_for_data(d, styles, compare_style),
+                var d = gene_values[g_obj.bigg_id];
+                if (typeof d === 'undefined') d = null;
+                var f = float_for_data(d, styles, compare_style),
                     format = (f === null ? RETURN_ARG : FORMAT_3); 
                 if (d.length==1) {
                     out = replace_gene_in_rule(out, g_obj.bigg_id, (name + ' (' + null_or_d(d[0], format) + ')\n'));
@@ -474,7 +474,7 @@ define(['utils'], function(utils) {
 
          gene_data_obj: The gene data object, with the following style:
 
-             { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+             { reaction_id: { gene_id: value } }
 
          styles:  Gene styles array.
 
@@ -505,8 +505,8 @@ define(['utils'], function(utils) {
         var null_val = [null];
         // make an array of nulls as the default
         for (var reaction_id in gene_data_obj) {
-            for (var gene_id in gene_data_obj[reaction_id].genes) {
-                null_val = gene_data_obj[reaction_id].genes[gene_id]
+            for (var gene_id in gene_data_obj[reaction_id]) {
+                null_val = gene_data_obj[reaction_id][gene_id]
                     .map(function() { return null; });
                 break;
             }
@@ -515,17 +515,16 @@ define(['utils'], function(utils) {
 
         // apply the datasets to the reactions
         for (var reaction_id in reactions) {
-            var reaction = reactions[reaction_id];
+            var reaction = reactions[reaction_id],
+                rule = reaction.gene_reaction_rule;
             // find the data
-            var d, rule, gene_values,
-                r_data = gene_data_obj[reaction_id];
+            var d, gene_values,
+                r_data = gene_data_obj[reaction.bigg_id];
             if (typeof r_data !== 'undefined') {
-                rule = r_data.rule;
-                gene_values = r_data.genes;
+                gene_values = r_data;
                 d = evaluate_gene_reaction_rule(rule, gene_values,
                                                 and_method_in_gene_reaction_rule);
             } else {
-                rule = '';
                 gene_values = {};
                 d = null_val;
             }

@@ -9,38 +9,34 @@ describe('data_styles', function() {
 	// gene data, funny names
 	var gene_data = { G1ORF: 0, G2ANDHI: 4, 'G3-A': -12.3 },
 	    reactions = { reaction_1: { gene_reaction_rule: '(G1ORF AND G2ANDHI) OR G3-A' }},
-	    expected = { reaction_1: { rule: '(G1ORF AND G2ANDHI) OR G3-A',
-				     genes: { G1ORF: [0],
-					      G2ANDHI: [4],
-					      'G3-A': [-12.3] }}},
+	    expected = { reaction_1: { G1ORF: [0],
+				       G2ANDHI: [4],
+				       'G3-A': [-12.3] }},
 	    out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
 	expect(out).toEqual(expected);
 	
 	// gene data, multiple sets
 	var gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2: 6 }],
 	    reactions = { reaction_1: { gene_reaction_rule: '(G1 AND G2) OR G3' }},
-	    expected = { reaction_1: { rule: '(G1 AND G2) OR G3',
-				       genes: { G1: [0, 2],
-						G2: [4, 6],
-						G3: [-12.3, null] }}},
+	    expected = { reaction_1: { G1: [0, 2],
+				       G2: [4, 6],
+				       G3: [-12.3, null] }},
 	    out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
 	expect(out).toEqual(expected);
 
 	// gene data, null
 	var gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2: 6 }],
 	    reactions = { reaction_1: { gene_reaction_rule: '' }},
-	    expected = { reaction_1: { rule: '',
-				       genes: {} }},
+	    expected = { reaction_1: {} },
 	    out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
 	expect(out).toEqual(expected);
 
 	// empty dataset
 	var gene_data = {},
 	    reactions = { reaction_1: { gene_reaction_rule: '(G1 AND G2) OR G3' }},
-	    expected = { reaction_1: { rule: '(G1 AND G2) OR G3',
-				       genes: { G1: [null],
-					        G2: [null],
-					        G3: [null] } }},
+	    expected = { reaction_1: { G1: [null],
+				       G2: [null],
+				       G3: [null] } },
 	    out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
 	expect(out).toEqual(expected);
     });
@@ -271,4 +267,54 @@ describe('data_styles', function() {
         var time = new Date().getTime() - start;
         console.log('replace_gene_in_rule execution time per ' + n + ': ' + time + 'ms');
     });
+
+    it('apply_reaction_data_to_reactions', function() {
+        // for Map.reactions
+        var reactions = { 238: { bigg_id: 'GAPD',
+                                 segments: { 2: {}}}},
+            data = { GAPD: [0, 10] };
+        var out = escher.data_styles.apply_reaction_data_to_reactions(reactions, data, [], 'diff');
+        expect(out).toEqual(true);
+        expect(reactions).toEqual({ 238: { bigg_id: 'GAPD',
+                                           data: 10.0,
+                                           data_string: '0.00, 10.0: 10.0',
+                                           reverse_flux: false,
+                                           gene_string: null,
+                                           segments: { 2: { data: 10.0,
+                                                            reverse_flux: false }}}});
+    });
+    
+    it('apply_metabolite_data_to_nodes', function() {
+        // for Map.reactions
+        var nodes = { 238: { bigg_id: 'g3p_c' }},
+            data = { g3p_c: [0, 10] };
+        var out = escher.data_styles.apply_metabolite_data_to_nodes(nodes, data, [], 'diff');
+        expect(out).toEqual(true);
+        expect(nodes).toEqual({ 238: { bigg_id: 'g3p_c',
+                                       data: 10.0,
+                                       data_string: '0.00, 10.0: 10.0' }});
+    });
+    
+    it('apply_gene_data_to_reactions', function() {
+        // for Map.reactions
+        var reactions = { 238: { bigg_id: 'GAPD',
+                                 gene_reaction_rule: 'b1779',
+                                 genes: [ { bigg_id: 'b1779',
+                                            name: 'gapA' } ],
+                                 segments: { 2: {}}}},
+            data = { GAPD: { b1779: [0, 10] }};
+        var out = escher.data_styles.apply_gene_data_to_reactions(reactions, data, [],
+                                                                  'name', 'diff', 'min');
+        expect(out).toEqual(true);
+        expect(reactions).toEqual({ 238: { bigg_id: 'GAPD',
+                                           gene_reaction_rule: 'b1779',
+                                           genes: [ { bigg_id: 'b1779',
+                                                      name: 'gapA' } ],
+                                           data: 10.0,
+                                           data_string: '0.00, 10.0: 10.0',
+                                           gene_string: 'gapA (0.00, 10.0: 10.0)',
+                                           reverse_flux: false,
+                                           segments: { 2: { data: 10.0,
+                                                            reverse_flux: false }}}});
+    }); 
 });

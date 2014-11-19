@@ -71,11 +71,12 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
         }
 
         this.reactions = {};
-        for (var i=0, l=model_data.reactions.length; i<l; i++) {
+        for (var i = 0, l = model_data.reactions.length; i<l; i++) {
             var r = model_data.reactions[i],
                 the_id = r.id,
                 reaction = utils.clone(r);
             delete reaction.id;
+            reaction.bigg_id = the_id;
             // add the appropriate genes
             reaction.genes = [];
 
@@ -109,9 +110,11 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
         this.metabolites = {};
         for (var i=0, l=model_data.metabolites.length; i<l; i++) {
             var r = model_data.metabolites[i],
-                the_id = r.id;
-            this.metabolites[the_id] = utils.clone(r);
-            delete this.metabolites[the_id].id;
+                the_id = r.id,
+                met = utils.clone(r);
+            delete met.id;
+            met.bigg_id = the_id;
+            this.metabolites[the_id] = met;
         }
         
         this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',

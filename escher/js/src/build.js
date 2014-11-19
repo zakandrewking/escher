@@ -52,8 +52,7 @@ define(["utils"], function(utils) {
 	// new reaction structure
 	var new_reaction = utils.clone(cobra_reaction);
         utils.extend(new_reaction,
-                     { bigg_id: bigg_id,
-		       label_x: center.x + label_d.x,
+                     { label_x: center.x + label_d.x,
 		       label_y: center.y + label_d.y,
 		       segments: {} });
 
