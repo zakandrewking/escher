@@ -8,7 +8,8 @@ describe('data_styles', function() {
 	
 	// gene data, funny names
 	var gene_data = { G1ORF: 0, G2ANDHI: 4, 'G3-A': -12.3 },
-	    reactions = { reaction_1: { gene_reaction_rule: '(G1ORF AND G2ANDHI) OR G3-A' }},
+	    reactions = { '2': { bigg_id: 'reaction_1',
+                                 gene_reaction_rule: '(G1ORF AND G2ANDHI) OR G3-A' }},
 	    expected = { reaction_1: { G1ORF: [0],
 				       G2ANDHI: [4],
 				       'G3-A': [-12.3] }},
@@ -17,7 +18,8 @@ describe('data_styles', function() {
 	
 	// gene data, multiple sets
 	var gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2: 6 }],
-	    reactions = { reaction_1: { gene_reaction_rule: '(G1 AND G2) OR G3' }},
+	    reactions = { '3': { bigg_id: 'reaction_1',
+                                 gene_reaction_rule: '(G1 AND G2) OR G3' }},
 	    expected = { reaction_1: { G1: [0, 2],
 				       G2: [4, 6],
 				       G3: [-12.3, null] }},
@@ -26,14 +28,16 @@ describe('data_styles', function() {
 
 	// gene data, null
 	var gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2: 6 }],
-	    reactions = { reaction_1: { gene_reaction_rule: '' }},
+	    reactions = { '1': { bigg_id: 'reaction_1',
+                                 gene_reaction_rule: '' }},
 	    expected = { reaction_1: {} },
 	    out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
 	expect(out).toEqual(expected);
 
 	// empty dataset
 	var gene_data = {},
-	    reactions = { reaction_1: { gene_reaction_rule: '(G1 AND G2) OR G3' }},
+	    reactions = { r1: { bigg_id: 'reaction_1',
+                                gene_reaction_rule: '(G1 AND G2) OR G3' }},
 	    expected = { reaction_1: { G1: [null],
 				       G2: [null],
 				       G3: [null] } },

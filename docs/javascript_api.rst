@@ -14,7 +14,13 @@ JavaScript API
 
     :param string embedded_css: The stylesheet for the SVG elements in the Escher map.
 
-    :param object options: An object defining any of the following options:
+    :param object selection: (Optional, Default: In the body element) The d3
+                             selection of an element to place the Builder
+                             into. The selection cannot be inside an SVG
+                             element.
+                                
+    :param object options: (Optional) An object defining any of the following
+                           options:
 
         .. js:attribute:: options.unique_map_id
 

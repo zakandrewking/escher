@@ -89,6 +89,7 @@ define(['utils'], function(utils) {
             }
             for (var reaction_id in reactions) {
                 var reaction = reactions[reaction_id],
+                    bigg_id = reaction.bigg_id,
                     this_gene_data = {}; 
                 // save to aligned
                 
@@ -106,7 +107,7 @@ define(['utils'], function(utils) {
                         d = null_val;
                     this_gene_data[gene_id] = d;
                 });
-                aligned[reaction_id] = this_gene_data;
+                aligned[bigg_id] = this_gene_data;
             }
             return aligned;
         }

@@ -45,7 +45,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
      */
 
     var Map = utils.make_class();
-    // static methods
+    // class methods
     Map.from_data = from_data;
     // instance methods
     Map.prototype = {
@@ -252,15 +252,12 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         /** Load a json map and add necessary fields for rendering.
 
          */
-        utils.check_undefined(arguments, ['map_data', 'svg', 'css', 'selection',
-                                          'zoom_container', 'settings',
-                                          'cobra_model', 'enable_search']);
 
         var canvas = map_data[1].canvas,
             map_name = map_data[0].map_name,
             map_id = map_data[0].map_id,
             map_description = (map_data[0].map_description.replace(/(\nLast Modified.*)+$/g, '')
-                               + '\nLast Modified ' + Date(Date.now()).toString());
+                               + '\nLast Modified ' + Date(Date.now()).toString()),
             map = new Map(svg, css, selection, zoom_container, settings,
                           cobra_model, canvas, enable_search,
                           map_name, map_id, map_description);

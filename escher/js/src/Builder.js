@@ -29,21 +29,21 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
     return Builder;
 
     // definitions
-    function init(map_data, model_data, embedded_css, options) {
+    function init(map_data, model_data, embedded_css, selection, options) {
+
+        // default sel
+        if (!selection)
+            selection = d3.select('body').append('div');
+        if (!options)
+            options = {};
 
         this.map_data = map_data;
         this.model_data = model_data;
         this.embedded_css = embedded_css;
-
-        // default sel
-        var sel = null;
-        if (!('selection' in options) || options['selection'] === null)
-            sel = d3.select('body').append('div');
+        this.selection = selection;
 
         // set defaults
         this.options = utils.set_options(options, {
-            // location
-            selection: sel,
             // view options
             menu: 'all',
             scroll_behavior: 'pan',
@@ -102,7 +102,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         });
 
         // check the location
-        if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
+        if (utils.check_for_parent_tag(this.selection, 'svg')) {
             throw new Error('Builder cannot be placed within an svg node '+
                             'becuase UI elements are html-based.');
         }
@@ -181,7 +181,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         if (model_data === null)
             this.cobra_model = null;
         else
-            this.cobra_model = CobraModel(model_data);
+            this.cobra_model = CobraModel.from_cobra_json(model_data);
         
         if (this.map) this.map.cobra_model = this.cobra_model;
         if (should_update_data)
@@ -205,14 +205,14 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             shift_key_on = false;
 
         // remove the old builder
-        utils.remove_child_nodes(this.options.selection);
+        utils.remove_child_nodes(this.selection);
 
         // set up the svg
-        var svg = utils.setup_svg(this.options.selection, this.options.selection_is_svg,
+        var svg = utils.setup_svg(this.selection, false,
                                   this.options.fill_screen);
 
         // se up the zoom container
-        this.zoom_container = new ZoomContainer(svg, this.options.selection,
+        this.zoom_container = new ZoomContainer(svg, this.selection,
                                                 this.options.scroll_behavior);
         var zoomed_sel = this.zoom_container.zoomed_sel;
 
@@ -244,11 +244,11 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             this._update_data(false, true);
 
         // set up the reaction input with complete.ly
-        this.build_input = BuildInput(this.options.selection, this.map,
+        this.build_input = BuildInput(this.selection, this.map,
                                       this.zoom_container, this.settings);
 
         // set up the text edit input
-        this.text_edit_input = TextEditInput(this.options.selection, this.map,
+        this.text_edit_input = TextEditInput(this.selection, this.map,
                                              this.zoom_container);
 
         // set up the Brush
@@ -257,12 +257,12 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         // set up the modes
         this._setup_modes(this.map, this.brush, this.zoom_container);
 
-        var s = this.options.selection
+        var s = this.selection
                 .append('div').attr('class', 'search-menu-container')
                 .append('div').attr('class', 'search-menu-container-inline'),
             menu_div = s.append('div'),
             search_bar_div = s.append('div'),
-            button_div = this.options.selection.append('div');
+            button_div = this.selection.append('div');
 
         // set up the search bar
         this.search_bar = SearchBar(search_bar_div, this.map.search_index,
@@ -273,7 +273,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         }.bind(this));
 
         // set up the settings
-        var settings_div = this.options.selection.append('div');
+        var settings_div = this.selection.append('div');
         this.settings_bar = SettingsMenu(settings_div, this.settings, this.map,
                                          function(type, on_off) {
                                              // temporarily set the abs type, for
@@ -331,11 +331,11 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         }
 
         // status in both modes
-        var status = this._setup_status(this.options.selection, this.map);
+        var status = this._setup_status(this.selection, this.map);
 
         // set up quick jump
         if (this.options.quick_jump !== null) {
-            this._setup_quick_jump(this.options.selection,
+            this._setup_quick_jump(this.selection,
                                    this.options.quick_jump);
         }
 
@@ -524,8 +524,12 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         // Then the model, after drawing. Delay by 5ms so the the map draws
         // first.
 
-        var delay = 5; 
-        window.setTimeout(function() {
+        // if this function runs again, cancel the previous model update
+        if (this.update_model_timer)
+            window.clearTimeout(this.update_model_timer);
+
+        var delay = 5;        
+        this.update_model_timer = window.setTimeout(function() {
 
             // metabolite_data
             if (update_metabolite_data && update_model && this.cobra_model !== null) {
@@ -847,7 +851,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         // set up mode callbacks
         var select_button = function(id) {
             // toggle the button
-            $(this.options.selection.node()).find('#' + id)
+            $(this.selection.node()).find('#' + id)
                 .button('toggle');
 
             // menu buttons
@@ -856,7 +860,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                        'view-mode-menu-button', 'text-mode-menu-button'];
             ids.forEach(function(this_id) {
                 var b_id = this_id.replace('-menu', '');
-                this.options.selection.select('#' + this_id)
+                this.selection.select('#' + this_id)
                     .select('span')
                     .classed('glyphicon', b_id == id)
                     .classed('glyphicon-ok', b_id == id);

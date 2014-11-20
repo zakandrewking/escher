@@ -407,8 +407,7 @@ class Builder(object):
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
                  fill_screen, scroll_behavior,
                  never_ask_before_quit, js_url_parse, local_host):
-        draw = ("options = {{ selection: d3.select('#{the_id}'),\n"
-                "enable_editing: {enable_editing},\n"
+        draw = ("options = {{ enable_editing: {enable_editing},\n"
                 "menu: {menu},\n"
                 "enable_keys: {enable_keys},\n"
                 "scroll_behavior: {scroll_behavior},\n"
@@ -445,8 +444,8 @@ class Builder(object):
                  'options, "%s");\n' % (dev_str, rel))
             draw = draw + o;
         # make the builder
-        draw = draw + '{dev_str}Builder(map_data_{the_id}, cobra_model_{the_id}, embedded_css_{the_id}, options);\n'.format(
-            dev_str=dev_str, the_id=the_id)
+        draw = draw + ('{dev_str}Builder(map_data_{the_id}, cobra_model_{the_id}, embedded_css_{the_id}, '
+                       'd3.select("#{the_id}"), options);\n'.format(dev_str=dev_str, the_id=the_id))
 
         return draw
     
