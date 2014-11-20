@@ -16,3 +16,7 @@ Cache
 .. autofunction:: list_cached_maps
                   
 .. autofunction:: list_cached_models
+
+.. autofunction:: list_available_maps
+
+.. autofunction:: list_available_models

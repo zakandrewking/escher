@@ -1,93 +1,69 @@
-function convert_url(url) {
-    var parts = url.split('/');
-    if (parts.length==2)
-	return parts[1];
-    if (parts.length==4)
-	return parts[1] + '.' + parts[3];
-    if (parts.length==6)
-	return parts[1] + '.' + parts[3] + '.' + parts[5];
-    throw new Error('Bad url ' + id);
-}
+var CAN_DEV, MAP_DOWNLOAD, SERVER_INDEX, LOCAL_INDEX;
+
 function get_model(name) {
-    /** Get model from a map or model name.
+    /** Get model from a map name.
 
      */
-    var parts = name.replace('.json', '').split('.');
-    if (parts.length==2 || parts.length==3)
-	return parts[1];
-    return null;
-}
-function get_organism(name) {
-    /** Get organism from a map or model name.
-
-     */
-    var parts = name.replace('.json', '').split('.');
-    if (parts.length==2 || parts.length==3)
+    var parts = name.split('.');
+    if (parts.length == 2)
 	return parts[0];
     return null;
 }
-function get_organisms(l) {
-    /** Get organisms from a list of maps and models.
 
-     */
-    var organisms = [];
-    l.forEach(function(name) {
-	var org = get_organism(name);
-	if (org!==null)
-	    organisms.push(org);
-    });
-    return organisms;
-}
-function get_quick_jump(this_map, maps) {
+function get_quick_jump(this_map, server_index, local_index) {
     /** Find maps with the same model. Returns null if no quick jump options
-     * could be found.
-     *
+     could be found.
+     
      */
     var model = get_model(this_map);
     if (model === null)
 	return null;
     
-    var quick_jump = [],
+    var quick_jump = {},
 	all_maps = [];
-    if (maps.web !== null)
-	all_maps = all_maps.concat(maps.web);
-    if (maps.local !== null)
-	all_maps = all_maps.concat(maps.local);
-    all_maps.forEach(function(map) {
-	if (get_model(map) == model)
-	    quick_jump.push(map);
+    if (server_index !== null)
+	all_maps = all_maps.concat(server_index.maps);
+    if (local_index !== null)
+	all_maps = all_maps.concat(local_index.maps);
+    all_maps.forEach(function(o) {
+	if (get_model(o.map_name) == model)
+	    quick_jump[o.map_name] = true;
     });
+    quick_jump = Object.keys(quick_jump);
     return quick_jump.length == 0 ? null : quick_jump;
 }
-function submit(maps) {
+
+function submit(server_index, local_index, map_download, can_dev) {
     // get the selections
-    var map_value = d3.select('#maps').node().value,
-	model_value = d3.select('#models').node().value,
+    var maps = d3.select('#maps'),
+	map_data = (maps.selectAll('option')
+		    .filter(function(d, i) { 
+			return i == maps.node().selectedIndex; 
+		    }).node().__data__),
+	map_name = map_data ? map_data.map_name : null,
+	organism = map_data ? map_data.organism : null,
+	model_name = d3.select('#models').node().value,
 	options_value = d3.select('#tools').node().value,
 	scroll_value = d3.select('#scroll').node().checked,
 	never_ask_value = d3.select('#never_ask').node().checked,	    
 	add = [],
 	url;
-    if (model_value!='none')
-	add.push('model_name=' + model_value);
-    if (map_value!='none')
-	add.push('map_name=' + map_value);
+    if (model_name != 'none')
+	add.push('model_name=' + model_name);
+    if (map_name !== null)
+	add.push('map_name=' + map_name);
     if (scroll_value)
 	add.push('scroll_behavior=zoom');
     if (never_ask_value)
 	add.push('never_ask_before_quit=true');
 
     // choose the file
-    if (options_value=='local_viewer') {
+    if (options_value=='viewer') {
 	url = 'viewer.html';
         add.push('js_source=local');
-    } else if (options_value=='local_builder') {
-	url = 'builder.html';
-        add.push('js_source=local');
-    } else if (options_value=='viewer') {
-	url = 'viewer.html';
     } else if (options_value=='builder') {
 	url = 'builder.html';
+        add.push('js_source=local');
     } else if (can_dev && options_value=='dev_viewer') {
 	url = 'viewer.html';
         add.push('js_source=dev');
@@ -97,11 +73,14 @@ function submit(maps) {
     }
 
     // set the quick jump maps
-    var quick_jump = get_quick_jump(map_value, maps);
-    if (quick_jump !== null) {
-	quick_jump.forEach(function(o) {
-	    add.push('quick_jump[]=' + o);
-	});
+    if (map_name) {
+	var quick_jump = get_quick_jump(map_name, server_index, local_index);
+	if (quick_jump !== null) {
+	    quick_jump.forEach(function(o) {
+		add.push('quick_jump[]=' + o);
+	    });
+	    add.push('quick_jump_path=' + map_download + encodeURIComponent(organism));
+	}
     }
 
     url += '?';
@@ -112,23 +91,23 @@ function submit(maps) {
     window.open(url,'_blank');
 }
 
-function draw_models_select(models) {
+function draw_models_select(server_index, local_index) {
     /** Draw the models selector.
 
      */
 
-    var filter_models = function(model_id) {
+    var filter_models = function(d) {
 	var org = d3.select('#organisms').node().value;
-	if (org=='all')
+	if (org =='all')
 	    return true;
-	if (org==model_id.split('.')[0])
+	if (org == d.organism)
 	    return true;
 	return false;
     };
     
     var web_sel, local_sel,
 	select_sel = d3.select('#models');
-    if (models.local===null) {
+    if (local_index === null) {
 	web_sel = select_sel;
     } else {
 	select_sel.selectAll('optgroup')
@@ -141,58 +120,64 @@ function draw_models_select(models) {
 	local_sel = select_sel.select('#models-local');
     }
      
-    // web
-    if (models.web !== null) {
-	var model_data = models.web.filter(filter_models),
-	    models_sel = web_sel.selectAll('.model')
-	    .data(model_data, function(d) { return d; });
-	models_sel.enter()
-	    .append('option')
-	    .classed('model', true);
-	models_sel.attr('value', function(d) { return d; })
-	    .text(function(d) {
-		return d.split('.').slice(-1)[0];
-	    });
-	models_sel.exit().remove();
-    }
-    
     // cached
-    if (models.local !== null) {
-	var model_data = models.local.filter(filter_models),
-	    models_sel = local_sel.selectAll('.model')
-	    .data(model_data, function(d) { return d; });
+    var local_model_names = []; 
+    if (local_index !== null) {
+	var model_data = local_index.models.filter(filter_models);
+	local_model_names = model_data.map(function(x) { return x.model_name; });
+
+	var models_sel = local_sel.selectAll('.model')
+		.data(model_data, function(d) { return d.model_name; });
 	models_sel.enter()
 	    .append('option')
 	    .classed('model', true);
-	models_sel.attr('value', function(d) { return d; })
+	models_sel.attr('value', function(d) { return d.model_name; })
 	    .text(function(d) {
-		var parts = d.split('.');
+		var parts = d.model_name.split('.');
 		if (parts.length==2) {
-		    return d.split('.').slice(-1)[0];
+		    return d.model_name.split('.').slice(-1)[0];
 		} else {
-		    return d;
+		    return d.model_name;
 		}
 	    });
 	models_sel.exit().remove();
     }
+    
+    // web
+    if (server_index !== null) {
+	var model_data = server_index.models
+		.filter(filter_models)
+		.filter(function(o) { return local_model_names.indexOf(o.model_name) == -1; });
+	models_sel = web_sel.selectAll('.model')
+	    .data(model_data, function(d) { return d.model_name; });
+	models_sel.enter()
+	    .append('option')
+	    .classed('model', true);
+	models_sel.attr('value', function(d) { return d.model_name; })
+	    .text(function(d) {
+		return d.model_name.split('.').slice(-1)[0];
+	    });
+	models_sel.exit().remove();
+    }
+    
 }
-function draw_maps_select(maps) {
+
+function draw_maps_select(server_index, local_index) {
     /** Draw the models selector.
 
      */
-    var filter_maps = function(map_id) {
+    var filter_maps = function(d) {
 	var org = d3.select('#organisms').node().value;
-	if (org=='all')
+	if (org == 'all')
 	    return true;
-	if (org==map_id.split('.')[0])
+	if (org == d.organism)
 	    return true;
 	return false;
     };
 
-    var web_sel, local_sel,
-	select_sel = d3.select('#maps');
-    if (maps.local===null) {
-	web_sel = d3.select('#maps');
+    var select_sel = d3.select('#maps');
+    if (local_index === null) {
+	web_sel = select_sel;
     } else {
 	select_sel.selectAll('optgroup')
 	    .data([['local', 'Cached'], ['web', 'Web']])
@@ -200,57 +185,66 @@ function draw_maps_select(maps) {
 	    .append('optgroup')
 	    .attr('label', function(d) { return d[1]; })
 	    .attr('id', function(d) { return 'maps-' + d[0]; });
-	web_sel = d3.select('#maps-web');
-	local_sel = d3.select('#maps-local');
+	var web_sel = d3.select('#maps-web'),
+	    local_sel = d3.select('#maps-local');
     }
-    
-    // web
-    if (maps.web !== null) {
-	var map_data = maps.web.filter(filter_maps),
-	    maps_sel = web_sel.selectAll('.map')
-	    .data(map_data, function(d) { return d; });
+
+    // cached
+    var local_map_names = [],
+	has_maps = false;
+    if (local_index !== null) {
+	var map_data = local_index.maps.filter(filter_maps);
+	local_map_names = map_data.map(function(x) { return x.map_name; });
+	if (map_data.length > 0)
+	    has_maps = true;
+
+	var maps_sel = local_sel.selectAll('.map')
+		.data(map_data, function(d) { return d.map_name; });
 	maps_sel.enter()
 	    .append('option')
 	    .classed('map', true);
-	maps_sel.attr('value', function(d) { return d; })
+	maps_sel
 	    .text(function(d) {
-		var map = d.split('.').slice(-1)[0],
-		    model = d.split('.').slice(-2)[0];
+		var parts = d.map_name.split('.');
+		if (parts.length == 2) {
+		    var map = d.map_name.split('.').slice(-1)[0],
+			model = d.map_name.split('.').slice(-2)[0];
+		    return map + ' (' + model + ')';
+		} else {
+		    return d.map_name;
+		}
+	    });
+	maps_sel.exit().remove();
+    }
+    
+    // web
+    if (server_index !== null) {
+	var map_data = server_index.maps
+		.filter(filter_maps)
+	    	.filter(function(o) { return local_map_names.indexOf(o.map_name) == -1; });
+	if (map_data.length > 0)
+	    has_maps = true;
+
+	maps_sel = web_sel.selectAll('.map')
+	    .data(map_data, function(d) { return d.map_name; });
+	maps_sel.enter()
+	    .append('option')
+	    .classed('map', true);
+	maps_sel
+	    .text(function(d) {
+		var map = d.map_name.split('.').slice(-1)[0],
+		    model = d.map_name.split('.').slice(-2)[0];
 		return map + ' (' + model + ')';
 	    });
 	maps_sel.exit().remove();
     }
 
-    // cached
-    if (maps.local!==null) {
-	var map_data = maps.local.filter(filter_maps),
-	    maps_sel = local_sel.selectAll('.map')
-	    .data(map_data, function(d) { return d; });
-	maps_sel.enter()
-	    .append('option')
-	    .classed('map', true);
-	maps_sel.attr('value', function(d) { return d; })
-	    .text(function(d) {
-		var parts = d.split('.');
-		if (parts.length==3) {
-		    var map = d.split('.').slice(-1)[0],
-			model = d.split('.').slice(-2)[0];
-		    return map + ' (' + model + ')';
-		} else {
-		    return d;
-		}
-	    });
-	maps_sel.exit().remove();
-    }
-
-    // select the first model
+    // select the first map
     var n = select_sel.node();
-    if (map_data.length > 0 && n.selectedIndex==0)
+    if (has_maps && n.selectedIndex == 0)
 	n.selectedIndex = 1;
-
-    // show the map_name
-    
 }
+
 function draw_organisms_select(organisms) {
     var org = d3.select('#organisms').selectAll('.organism')
 	.data(organisms, function(d) { return d; });
@@ -258,13 +252,10 @@ function draw_organisms_select(organisms) {
 	.append('option')
 	.classed('organism', true);
     org.attr('value', function(d) { return d; })
-	.text(function(d) {
-	    var parts = d.split('_');
-	    return parts[0].toUpperCase() + '. ' + parts[1];
-	});
+	.text(function(d) { return d; });
 }
 
-function setup(data, local_maps, local_models) {
+function setup(server_index, local_index, map_download, can_dev) {
     // GO
     var uniq = function(a) {
 	var seen = {};
@@ -273,43 +264,32 @@ function setup(data, local_maps, local_models) {
 	});
     };
     var not_cached = function(web, local) {
-	if (local===null) return web;
+	if (local === null) return web;
 	return web.filter(function(m) {
-	    return local.indexOf(m)==-1;
+	    return local.indexOf(m) == -1;
 	});
     };
     
     // organisms
-    var organisms = [];
-    if (data!==null)
-	organisms = uniq(organisms.concat(data.organisms.map(convert_url)));
-    if (local_models!==null)
-	organisms = uniq(organisms.concat(get_organisms(local_models)));
-    if (local_maps!==null)
-	organisms = uniq(organisms.concat(get_organisms(local_maps)));
-    
-    // models
-    var models = {};
-    if (data===null)
-	models.web = null;
-    else
-	models.web = not_cached(data.models.map(convert_url), local_models);
-    models.local = local_models;
-    
-    // maps
-    var maps = {};
-    if (data===null)
-	maps.web = null;
-    else
-	maps.web = not_cached(data.maps.map(convert_url), local_maps);
-    maps.local = local_maps;
+    var organisms = {};
+    [local_index, server_index]
+	.filter(function(x) { return x !== null; })
+	.forEach(function(i) {
+	   ['maps', 'models'].forEach(function(n) {
+	       i[n].forEach(function(m) {
+		   organisms[m.organism] = true;
+	       });
+	   });
+	});
+    organisms = Object.keys(organisms);
     
     draw_organisms_select(organisms);
-    draw_models_select(models);
-    draw_maps_select(maps);
+    
+    draw_models_select(server_index, local_index);
+    draw_maps_select(server_index, local_index);
 
     // select offline if it looks like we're offline
-    if (data === null) {
+    if (server_index === null) {
 	var n = d3.select('#tools').node();
 	n.selectedIndex = 2;
     }
@@ -317,8 +297,8 @@ function setup(data, local_maps, local_models) {
     // update filters
     d3.select('#organisms')
 	.on('change', function() {
-	    draw_models_select(models);
-	    draw_maps_select(maps);
+	    draw_models_select(server_index, local_index);
+	    draw_maps_select(server_index, local_index);
 	});
 
     // make it a builder with a model, and vice-versa
@@ -339,14 +319,16 @@ function setup(data, local_maps, local_models) {
 	});
 
     // submit button
-    d3.select('#submit').on('click', submit.bind(null, maps));
+    d3.select('#submit')
+	.on('click', submit.bind(null, server_index, local_index, 
+				 map_download, can_dev));
 
     // submit on enter
     var selection = d3.select(window),
 	kc = 13;
     selection.on('keydown.'+kc, function() {
 	if (d3.event.keyCode==kc) {
-	    submit();
+	    submit(server_index, local_index, map_download, can_dev);
 	}
     });
 }

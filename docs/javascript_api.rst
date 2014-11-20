@@ -110,18 +110,6 @@ JavaScript API
             allowed. If false, then duplicate reactions are hidden in *Add
             reaction mode*.
 
-        *Quick jump menu*
-
-        .. js:attribute:: options.local_host
-
-            The host used to load maps for quick_jump. E.g.,
-            http://localhost:7778.
-
-        .. js:attribute:: options.quick_jump
-
-            A list of map names that can be reached by selecting them from a
-            quick jump menu on the map.
-
         *Callbacks*
 
         .. js:attribute:: options.first_load_callback

@@ -1,5 +1,5 @@
-from version import __version__
+from version import __version__, __schema_version__
 
 from plots import (Builder, get_cache_dir, clear_cache, list_cached_maps,
-                   list_cached_models)
+                   list_cached_models, list_available_maps, list_available_models)
 

@@ -832,7 +832,6 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
              quartiles: quartiles,
              random_characters: random_characters,
 	     check_for_parent_tag: check_for_parent_tag,
-	     check_name: check_name,
 	     name_to_url: name_to_url,
 	     parse_url_components: parse_url_components };
 
@@ -1595,21 +1594,9 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	return false;
     }
 
-    function check_name(name) {
-	/** Name cannot include:
-
-	    <>:"/\|?*
-
-	*/
-
-	if (/[<>:"\/\\\|\?\*]/.test(name))
-	    throw new Error('Name cannot include the characters <>:"/\|?*');
-    }
-   
     function name_to_url(name, download_url) {
-	/** Convert short name to url. The short name is separated by '+'
-	    characters.
-
+	/** Convert model or map name to url.
+	 
 	 Arguments
 	 ---------
 
@@ -1619,27 +1606,16 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 
 	*/
 
-	check_name(name);
-
-	var parts = name.split('.'),
-	    longname;
-	if (parts.length == 2) {
-	    longname = ['organisms', parts[0], 'models', parts[1]+'.json'].join('/');
-	} else if (parts.length == 3) {
-	    longname = ['organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json'].join('/');
-	} else {
-            throw Error('Bad short name');
-	}
 	if (download_url !== undefined && download_url !== null) {
 	    // strip download_url
 	    download_url = download_url.replace(/^\/|\/$/g, '');
-	    longname = [download_url, longname].join('/');
+	    name = [download_url, name].join('/');
 	}
 	// strip final path
-	return longname.replace(/^\/|\/$/g, '');
+	return name.replace(/^\/|\/$/g, '') + '.json';
     }
 
-    function parse_url_components(the_window, options, download_url) {
+    function parse_url_components(the_window, options) {
 	/** Parse the URL and return options based on the URL arguments.
 
 	 Arguments
@@ -1649,12 +1625,6 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	 
 	 options: (optional) an existing options object to which new options
 	 will be added. Overwrites existing arguments in options.
-
-	 map_download_url: (optional) If map_name is in options, then add map_path
-	 to options, with this url prepended.
-
-	 model_download_url: (optional) If model_name is in options, then add model_path
-	 to options, with this url prepended.
 
 	 Adapted from http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
 
@@ -1675,22 +1645,6 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 		options[pair[0]] = pair[1];
 	    }
 	}
-
-	// generate map_path and model_path
-	[
-	    ['map_name', 'map_path'],
-	    ['model_name', 'cobra_model_path']
-	].forEach(function(ar) {
-	    var key = ar[0], path = ar[1];
-	    if (key in options) {
-		try {
-		    options[path] = name_to_url(options[key], download_url);
-		} catch (e) {
-		    console.warn(key + ' ' + options[key] + ' cannot be converted to a URL.');
-		}
-	    }
-	});
-
 	return options;
     }    
 });
@@ -13166,7 +13120,7 @@ define('QuickJump',['utils'], function(utils) {
     return QuickJump;
 
     // instance methods
-    function init(sel, options, load_callback) {        
+    function init(sel, load_callback) {        
 	// set up the menu
 	var select_sel = sel.append('select')
 	    .attr('id', 'quick-jump-menu')
@@ -13176,6 +13130,8 @@ define('QuickJump',['utils'], function(utils) {
 	// get the options to show
 	var url_comp = utils.parse_url_components(window),
 	    current = ('map_name' in url_comp) ? url_comp.map_name : null,
+	    quick_jump_path = ('quick_jump_path' in url_comp) ? url_comp.quick_jump_path : null,
+	    options = ('quick_jump' in url_comp) ? url_comp.quick_jump : [],
             default_value = '— Jump to map —',
 	    view_options = [default_value].concat(options);
 	if (current !== null) {
@@ -13195,7 +13151,7 @@ define('QuickJump',['utils'], function(utils) {
 
         // on selection
         var change_map = function(map_name) {
-            load_callback(map_name, function(success) {
+            load_callback(map_name, quick_jump_path, function(success) {
                 if (success)
                     this.replace_state_for_map_name(map_name);
                 else
@@ -13316,9 +13272,6 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             identifiers_on_map: 'bigg_id',
             highlight_missing: false,
             allow_building_duplicate_reactions: false,
-            // Quick jump menu
-            local_host: null,
-            quick_jump: null,
             // Callbacks
             first_load_callback: null
         }, {
@@ -13563,10 +13516,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         var status = this._setup_status(this.selection, this.map);
 
         // set up quick jump
-        if (this.options.quick_jump !== null) {
-            this._setup_quick_jump(this.selection,
-                                   this.options.quick_jump);
-        }
+        this._setup_quick_jump(this.selection);
 
         // start in zoom mode for builder, view mode for viewer
         if (this.options.enable_editing)
@@ -14229,10 +14179,9 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         return status_bar;
     }
 
-    function _setup_quick_jump(selection, options) {
-
+    function _setup_quick_jump(selection) {
         // function to load a map
-        var load_fn = function(new_map_name, callback) {
+        var load_fn = function(new_map_name, quick_jump_path, callback) {
             if (this.options.enable_editing && !this.options.never_ask_before_quit) {
                 if (!(confirm(('You will lose any unsaved changes.\n\n' +
                                'Are you sure you want to switch maps?')))) {
@@ -14241,7 +14190,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 }
             }
             this.map.set_status('Loading map ' + new_map_name + ' ...');
-            var url = utils.name_to_url(new_map_name, this.options.local_host);
+            var url = utils.name_to_url(new_map_name, quick_jump_path);
             d3.json(url, function(error, data) {
                 if (error) {
                     console.warn('Could not load data: ' + error);
@@ -14257,7 +14206,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         }.bind(this);
         
         // make the quick jump object
-        this.quick_jump = QuickJump(selection, options, load_fn);
+        this.quick_jump = QuickJump(selection, load_fn);
     }
 
     function _setup_modes(map, brush, zoom_container) {
@@ -14498,8 +14447,59 @@ define('DataMenu',["utils"], function(utils) {
     };
 });
 
-define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStack", "CobraModel", "utils", "SearchIndex", "Settings", "data_styles", "ui"],
-       function(bu, mp, bh, km, dm, us, cm, ut, si, se, ds, ui) {
+define('static',["utils"], function(utils) {
+    return { load_map_model_from_url: load_map_model_from_url };
+    
+    function load_map_model_from_url(map_download_url, model_download_url,
+				     local_index, callback) {
+	var opt = utils.parse_url_components(window, {}),
+	    to_load = [],
+	    load_map = function (fn) { fn(null); },
+	    load_model = function (fn) { fn(null); };
+	if (opt.map_name) {
+	    var map_path = _get_path('map', opt.map_name,
+				     local_index, map_download_url);
+	    if (map_path) {
+		load_map = function (fn) {
+		    d3.json(map_path, function(error, data) {
+			if (error) console.warn(error);
+			fn(data);
+		    });
+		};
+	    }
+	}
+	if (opt.model_name) {
+	    var model_path = _get_path('model', opt.model_name,
+				       local_index, model_download_url);
+	    if (model_path) {
+		load_model = function (fn) {
+		    d3.json(model_path, function(error, data) {
+			if (error) console.warn(error);
+			fn(data);
+		    });
+		};
+	    }
+	}
+	load_map(function(map_data) {
+	    load_model(function(model_data) {
+		callback(map_data, model_data);
+	    });
+	});
+    }
+    
+    function _get_path(kind, name, index, url) {
+	var match = index[kind+'s'].filter(function(x) {
+	    return x[kind+'_name'] == name;
+	});
+	if (match.length == 0)
+	    throw new Error('Bad ' + kind + ' ' + name);
+	return (url + encodeURIComponent(match[0].organism) + 
+		'/' + encodeURIComponent(match[0][kind+'_name'])) + '.json';
+    }
+});
+
+define('main',['Builder', 'Map', 'Behavior', 'KeyManager', 'DataMenu', 'UndoStack', 'CobraModel', 'utils', 'SearchIndex', 'Settings', 'data_styles', 'ui', 'static'],
+       function(bu, mp, bh, km, dm, us, cm, ut, si, se, ds, ui, st) {
            return { Builder: bu,
 		    Map: mp,
 		    Behavior: bh,
@@ -14511,7 +14511,8 @@ define('main',["Builder", "Map", "Behavior", "KeyManager", "DataMenu", "UndoStac
 		    SearchIndex: si,
 		    Settings: se,
 		    data_styles: ds,
-                    ui: ui };
+                    ui: ui,
+		    static: st };
        });
 
     //The modules for your project will be inlined above

@@ -39,7 +39,6 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
              quartiles: quartiles,
              random_characters: random_characters,
 	     check_for_parent_tag: check_for_parent_tag,
-	     check_name: check_name,
 	     name_to_url: name_to_url,
 	     parse_url_components: parse_url_components };
 
@@ -802,21 +801,9 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	return false;
     }
 
-    function check_name(name) {
-	/** Name cannot include:
-
-	    <>:"/\|?*
-
-	*/
-
-	if (/[<>:"\/\\\|\?\*]/.test(name))
-	    throw new Error('Name cannot include the characters <>:"/\|?*');
-    }
-   
     function name_to_url(name, download_url) {
-	/** Convert short name to url. The short name is separated by '+'
-	    characters.
-
+	/** Convert model or map name to url.
+	 
 	 Arguments
 	 ---------
 
@@ -826,27 +813,16 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 
 	*/
 
-	check_name(name);
-
-	var parts = name.split('.'),
-	    longname;
-	if (parts.length == 2) {
-	    longname = ['organisms', parts[0], 'models', parts[1]+'.json'].join('/');
-	} else if (parts.length == 3) {
-	    longname = ['organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json'].join('/');
-	} else {
-            throw Error('Bad short name');
-	}
 	if (download_url !== undefined && download_url !== null) {
 	    // strip download_url
 	    download_url = download_url.replace(/^\/|\/$/g, '');
-	    longname = [download_url, longname].join('/');
+	    name = [download_url, name].join('/');
 	}
 	// strip final path
-	return longname.replace(/^\/|\/$/g, '');
+	return name.replace(/^\/|\/$/g, '') + '.json';
     }
 
-    function parse_url_components(the_window, options, download_url) {
+    function parse_url_components(the_window, options) {
 	/** Parse the URL and return options based on the URL arguments.
 
 	 Arguments
@@ -856,12 +832,6 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	 
 	 options: (optional) an existing options object to which new options
 	 will be added. Overwrites existing arguments in options.
-
-	 map_download_url: (optional) If map_name is in options, then add map_path
-	 to options, with this url prepended.
-
-	 model_download_url: (optional) If model_name is in options, then add model_path
-	 to options, with this url prepended.
 
 	 Adapted from http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
 
@@ -882,22 +852,6 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 		options[pair[0]] = pair[1];
 	    }
 	}
-
-	// generate map_path and model_path
-	[
-	    ['map_name', 'map_path'],
-	    ['model_name', 'cobra_model_path']
-	].forEach(function(ar) {
-	    var key = ar[0], path = ar[1];
-	    if (key in options) {
-		try {
-		    options[path] = name_to_url(options[key], download_url);
-		} catch (e) {
-		    console.warn(key + ' ' + options[key] + ' cannot be converted to a URL.');
-		}
-	    }
-	});
-
 	return options;
     }    
 });

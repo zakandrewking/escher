@@ -2,21 +2,25 @@
 
 from __future__ import print_function, unicode_literals
 
-from escher.version import __version__
+from escher.version import __version__, __schema_version__
 import os
 import re
+from os.path import dirname, realpath, join
 
-# TODO remove all os.path.join when using urls
+root_directory = realpath(join(dirname(__file__), '..'))
 
 _escher_local = {
-    'builder_embed_css': 'css/builder-embed-%s.css' % __version__,
-    'builder_css': 'css/builder-%s.css' % __version__,
-    'escher': 'lib/escher-%s.js' % __version__,
-    'escher_min': 'lib/escher-%s.min.js' % __version__,
-    'logo': 'resources/escher-logo@2x.png',
-    'index_js': 'js/web/index.js',
-    'index_gh_pages_js': 'js/web/index_gh_pages.js',
-    'index_css': 'css/web/index.css',
+    'builder_embed_css': 'escher/css/builder-embed-%s.css' % __version__,
+    'builder_css': 'escher/css/builder-%s.css' % __version__,
+    'escher': 'escher/lib/escher-%s.js' % __version__,
+    'escher_min': 'escher/lib/escher-%s.min.js' % __version__,
+    'logo': 'escher/resources/escher-logo@2x.png',
+    'index_js': 'escher/js/web/index.js',
+    'index_gh_pages_js': 'escher/js/web/index_gh_pages.js',
+    'index_css': 'escher/css/web/index.css',
+    'server_index': '%s/index.json' % __schema_version__,
+    'map_download': '%s/maps/' % __schema_version__,
+    'model_download': '%s/models/' % __schema_version__,
     }
 
 _escher_web = {
@@ -24,19 +28,22 @@ _escher_web = {
     'builder_css': 'builder-%s.css' % __version__,
     'escher': 'escher-%s.js' % __version__,
     'escher_min': 'escher-%s.min.js' % __version__,
+    'server_index': '%s/index.json' % __schema_version__,
+    'map_download': '%s/maps/' % __schema_version__,
+    'model_download': '%s/models/' % __schema_version__,
     }
     
 _dependencies = {
-    'd3': 'lib/d3.min.js',
-    'boot_js': 'lib/bootstrap-3.1.1.min.js',
-    'boot_css': 'lib/bootstrap-3.1.1.min.css',
-    'jquery': 'lib/jquery-2.1.0.min.js',
-    'require_js': 'lib/require.min.js',
-    'bacon': 'lib/bacon-0.7.12.min.js',
+    'd3': 'escher/lib/d3.min.js',
+    'boot_js': 'escher/lib/bootstrap-3.1.1.min.js',
+    'boot_css': 'escher/lib/bootstrap-3.1.1.min.css',
+    'jquery': 'escher/lib/jquery-2.1.0.min.js',
+    'require_js': 'escher/lib/require.min.js',
+    'bacon': 'escher/lib/bacon-0.7.12.min.js',
     }
     
 _dependencies_cdn = {
-    'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.js', # TODO use d3.min.js
+    'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js',
     'boot_js': '//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js',
     'boot_css': '//netdna.bootstrapcdn.com/bootswatch/3.1.1/simplex/bootstrap.min.css',
     'jquery': '//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js',
@@ -45,14 +52,10 @@ _dependencies_cdn = {
     }
 
 _links = {
-    'escher_download_rel': '1-0-0',
-    'escher_src': '//zakandrewking.github.io/escher/escher',
-    'escher_home': '//zakandrewking.github.io/escher',
-    'github': '//github.com/zakandrewking/escher',
+    'escher_root': '//zakandrewking.github.io/escher/',
+    'github': '//github.com/zakandrewking/escher/',
     }
-_links['escher_download'] = '/'.join([_links['escher_home'],
-                                      _links['escher_download_rel']])
-    
+
 # external dependencies
 names = list(_escher_local.keys()) + list(_escher_web.keys()) + list(_dependencies.keys()) + list(_links.keys())
 
@@ -85,7 +88,7 @@ def get_url(name, source='web', local_host=None, protocol=None):
         protocol = protocol + ':'
 
     def apply_local_host(url):
-        return '/'.join([local_host.rstrip('/'), url])
+        return '/'.join([local_host.rstrip('/'), url.lstrip('/')])
         
     # escher
     if name in _escher_local and source == 'local':
@@ -93,7 +96,8 @@ def get_url(name, source='web', local_host=None, protocol=None):
             return apply_local_host(_escher_local[name])
         return _escher_local[name]
     elif name in _escher_web and source == 'web':
-        return protocol + _links['escher_home'] + '/' + _escher_web[name]
+        return protocol + '/'.join([_links['escher_root'].rstrip('/'),
+                                    _escher_web[name].lstrip('/')])
     # links
     elif name in _links:
         if source=='local':
@@ -109,64 +113,3 @@ def get_url(name, source='web', local_host=None, protocol=None):
         return protocol + _dependencies_cdn[name]
     
     raise Exception('name not found')
-
-# See the corresponding javascript implementation in escher/js/src/utils.js
-
-def check_name(name):
-    """Name cannot include:
-
-    <>:"/\|?*
-
-    """
-    if re.search(r'[<>:"/\\\|\?\*]', name):
-        raise Exception('Name cannot include the characters <>:"/\|?*')
-
-def name_to_url(name, protocol='https'):
-    """Convert short name to url. The short name is separated by '+'
-    characters.
-
-    Arguments
-    ---------
-
-    name: the shorthand name for the map or model.
-
-    protocol: 'https' or 'http
-    
-    """
-
-    check_name(name)
-    
-    parts = name.split('.')
-    if len(parts) == 2:
-        longname = '/'.join(['organisms', parts[0], 'models',
-                             parts[1]+'.json'])
-    elif len(parts) == 3:
-        longname = '/'.join(['organisms', parts[0], 'models', parts[1], 'maps',
-                             parts[2]+'.json'])
-    else:
-        raise Exception('Bad short name')
-    return '/'.join([get_url('escher_download', source='web', protocol=protocol),
-                     longname])
-
-def url_to_name(url):
-    """Convert url to short name. The short name is separated by '+' characters.
-
-    Arguments
-    ---------
-
-    url: The url, which must contain at least 'organisms' and 'models'.
-
-    """
-
-    # get the section after organisms, removing the file extension
-    url = re.search('(?:^|/)organisms/(.*)\.\w+', url).group(1)
-    # separate
-    organism, model = [x.strip('/') for x in url.split('/models/')]
-    # if maps are present, separate
-    if '/maps/' in model:
-        model, map = [x.strip('/') for x in model.split('/maps/')]
-        name = '.'.join([organism, model, map])
-    else:
-        name = '.'.join([organism, model])
-    return name
-

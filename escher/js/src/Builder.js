@@ -87,9 +87,6 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             identifiers_on_map: 'bigg_id',
             highlight_missing: false,
             allow_building_duplicate_reactions: false,
-            // Quick jump menu
-            local_host: null,
-            quick_jump: null,
             // Callbacks
             first_load_callback: null
         }, {
@@ -334,10 +331,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         var status = this._setup_status(this.selection, this.map);
 
         // set up quick jump
-        if (this.options.quick_jump !== null) {
-            this._setup_quick_jump(this.selection,
-                                   this.options.quick_jump);
-        }
+        this._setup_quick_jump(this.selection);
 
         // start in zoom mode for builder, view mode for viewer
         if (this.options.enable_editing)
@@ -1000,10 +994,9 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         return status_bar;
     }
 
-    function _setup_quick_jump(selection, options) {
-
+    function _setup_quick_jump(selection) {
         // function to load a map
-        var load_fn = function(new_map_name, callback) {
+        var load_fn = function(new_map_name, quick_jump_path, callback) {
             if (this.options.enable_editing && !this.options.never_ask_before_quit) {
                 if (!(confirm(('You will lose any unsaved changes.\n\n' +
                                'Are you sure you want to switch maps?')))) {
@@ -1012,7 +1005,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 }
             }
             this.map.set_status('Loading map ' + new_map_name + ' ...');
-            var url = utils.name_to_url(new_map_name, this.options.local_host);
+            var url = utils.name_to_url(new_map_name, quick_jump_path);
             d3.json(url, function(error, data) {
                 if (error) {
                     console.warn('Could not load data: ' + error);
@@ -1028,7 +1021,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         }.bind(this);
         
         // make the quick jump object
-        this.quick_jump = QuickJump(selection, options, load_fn);
+        this.quick_jump = QuickJump(selection, load_fn);
     }
 
     function _setup_modes(map, brush, zoom_container) {

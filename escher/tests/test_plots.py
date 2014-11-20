@@ -1,9 +1,11 @@
 from __future__ import print_function, unicode_literals
 
+from escher import __schema_version__
 import escher.server
-from escher import (Builder, get_cache_dir, clear_cache, list_cached_maps,
-                    list_cached_models)
-from escher.plots import _load_resource
+from escher import Builder, get_cache_dir, clear_cache
+from escher.plots import (_load_resource, local_index, server_index,
+                          model_json_for_name, map_json_for_name)
+
 from escher.urls import get_url
 
 import os
@@ -21,30 +23,77 @@ if sys.version < '3':
 else:
     unicode_type = str
 
+# cache
+    
 def test_get_cache_dir():
     d = get_cache_dir()
     assert os.path.isdir(d)
     d = get_cache_dir(name='maps')
     assert os.path.isdir(d)
 
-# These are generally not run, because I don't want to casually loosen my cache
+def test_clear_cache(tmpdir, request):
+    (tmpdir.mkdir('maps').mkdir('Escherichia coli')
+     .join('iJO1366.central_metabolism.json').write('temp'))
+    (tmpdir.mkdir('models').mkdir('Escherichia coli')
+     .join('iJO1366.json').write('temp'))
+    clear_cache(str(tmpdir))
+    assert os.listdir(str(tmpdir)) == []
+    def fin():
+        tmpdir.remove()
+    request.addfinalizer(fin)
 
-# def test_clear_cache():
-#     clear_cache()
-#     d = get_cache_dir(name='maps')
-#     assert len(os.listdir(d)) == 0
-#     d = get_cache_dir(name='models')
-#     assert len(os.listdir(d)) == 0
+def test_local_index(tmpdir, request):
+    maps = tmpdir.mkdir('maps')
+    maps.mkdir('Escherichia coli').join('iJO1366.central_metabolism.json').write('temp')
+    maps.mkdir('none').join('my_map.json').write('temp')
+    # ignore these
+    maps.join('ignore_md.json').write('ignore')
+    tmpdir.mkdir('models').mkdir('Escherichia coli').join('iJO1366.json').write('temp')
+    assert local_index(str(tmpdir)) == { 'maps': [ { 'organism': 'Escherichia coli',
+                                                     'map_name': 'iJO1366.central_metabolism' },
+                                                   { 'organism': 'none',
+                                                     'map_name': 'my_map' } ],
+                                         'models': [ { 'organism': 'Escherichia coli',
+                                                       'model_name': 'iJO1366' } ] }
+    def fin():
+        tmpdir.remove()
+    request.addfinalizer(fin)
+    
+# server
 
-# def test_list_cached_maps():
-#     clear_cache()
-#     Builder(map_name='iJO1366_central_metabolism')
-#     assert list_cached_maps() == ['iJO1366_central_metabolism']
+@mark.web
+def test_server_index():
+    index = server_index()
+    map_0 = index['maps'][0]
+    assert 'organism' in map_0
+    assert 'map_name' in map_0
+    model_0 = index['models'][0]
+    assert 'organism' in model_0
+    assert 'model_name' in model_0
 
-# def test_list_cached_models():
-#     clear_cache()
-#     Builder(model_name='iJO1366')
-#     assert list_cached_models() == ['iJO1366']
+# model and maps
+
+def test_model_json_for_name(tmpdir):
+    models = tmpdir.mkdir('models')
+    models.mkdir('Escherichia coli').join('iJO1366.json').write('"temp"')
+    json = model_json_for_name('iJO1366', cache_dir=str(tmpdir))
+    assert json == '"temp"'
+
+@mark.web
+def test_model_json_for_name_web(tmpdir):
+    pass
+
+def test_map_json_for_name(tmpdir):
+    maps = tmpdir.mkdir('maps')
+    maps.mkdir('Escherichia coli').join('iJO1366.central_metabolism.json').write('"temp"')
+    json = map_json_for_name('iJO1366.central_metabolism', cache_dir=str(tmpdir))
+    assert json == '"temp"'
+
+@mark.web
+def test_map_json_for_name_web(tmpdir):
+    pass
+    
+# helper functions
     
 def test__load_resource(tmpdir):
     assert _load_resource('{"r": "val"}', 'name') == '{"r": "val"}'
@@ -62,7 +111,7 @@ def test__load_resource(tmpdir):
 @mark.web
 def test__load_resource_web(tmpdir): 
     url = '/'.join([get_url('escher_download', protocol='https'),
-                    'organisms/e_coli/models/iJO1366/maps/central_metabolism.json'])
+                    'maps/Escherichia coli/iJO1366.central_metabolism.json'])
     _ = json.loads(_load_resource(url, 'name'))
                 
 def test_Builder(tmpdir):
@@ -93,22 +142,22 @@ def test_Builder(tmpdir):
 @mark.web
 def test_Builder_download():
     # download
-    b = Builder(map_name='e_coli.iJO1366.central_metabolism',
-                model_name='e_coli.iJO1366')
+    b = Builder(map_name='iJO1366.central_metabolism',
+                model_name='iJO1366')
     assert b.loaded_map_json is not None
     assert b.loaded_model_json is not None
     b._get_html(js_source='web')
     b.display_in_notebook(height=200)
 
     # data
-    b = Builder(map_name='e_coli.iJO1366.central_metabolism',
-                model_name='e_coli.iJO1366',
+    b = Builder(map_name='iJO1366.central_metabolism',
+                model_name='iJO1366',
                 reaction_data=[{'GAPD': 123}, {'GAPD': 123}])
-    b = Builder(map_name='e_coli.iJO1366.central_metabolism',
-                model_name='e_coli.iJO1366',
+    b = Builder(map_name='iJO1366.central_metabolism',
+                model_name='iJO1366',
                 metabolite_data=[{'nadh_c': 123}, {'nadh_c': 123}])
-    b = Builder(map_name='e_coli.iJO1366.central_metabolism',
-                model_name='e_coli.iJO1366',
+    b = Builder(map_name='iJO1366.central_metabolism',
+                model_name='iJO1366',
                 gene_data=[{'gapA': 123}, {'adhE': 123}])
 
     assert type(b.the_id) is unicode_type
@@ -120,7 +169,3 @@ def test_Builder_options():
     assert b.metabolite_no_data_color=='white'
     html = b._get_html(js_source='local')
     assert 'metabolite_no_data_color: "white"' in html
-
-def test_Builder_kwargs():
-    b = Builder(quick_jump=['new_map'])
-    assert b.quick_jump == ['new_map']
