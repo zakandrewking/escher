@@ -32,6 +32,7 @@ _escher_web = {
     'server_index': '%s/index.json' % __schema_version__,
     'map_download': '%s/maps/' % __schema_version__,
     'model_download': '%s/models/' % __schema_version__,
+    'favicon': 'escher/resources/favicon.ico',
     }
     
 _dependencies = {

@@ -45,14 +45,11 @@ def test_clear_cache(tmpdir, request):
 def test_local_index(tmpdir, request):
     maps = tmpdir.mkdir('maps')
     maps.mkdir('Escherichia coli').join('iJO1366.central_metabolism.json').write('temp')
-    maps.mkdir('none').join('my_map.json').write('temp')
     # ignore these
     maps.join('ignore_md.json').write('ignore')
     tmpdir.mkdir('models').mkdir('Escherichia coli').join('iJO1366.json').write('temp')
     assert local_index(str(tmpdir)) == { 'maps': [ { 'organism': 'Escherichia coli',
-                                                     'map_name': 'iJO1366.central_metabolism' },
-                                                   { 'organism': 'none',
-                                                     'map_name': 'my_map' } ],
+                                                     'map_name': 'iJO1366.central_metabolism' } ],
                                          'models': [ { 'organism': 'Escherichia coli',
                                                        'model_name': 'iJO1366' } ] }
     def fin():
@@ -110,8 +107,8 @@ def test__load_resource(tmpdir):
 
 @mark.web
 def test__load_resource_web(tmpdir): 
-    url = '/'.join([get_url('escher_download', protocol='https'),
-                    'maps/Escherichia coli/iJO1366.central_metabolism.json'])
+    url = '/'.join([get_url('map_download', protocol='https'),
+                    'Escherichia%20coli/iJO1366.central_metabolism.json'])
     _ = json.loads(_load_resource(url, 'name'))
                 
 def test_Builder(tmpdir):

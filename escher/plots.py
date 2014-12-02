@@ -422,7 +422,7 @@ class Builder(object):
                              'a local_host argument to Builder if js_source is dev or local '
                              'and you are in an iPython notebook or a static html file.'))
         data = download.read()
-        encoding = r.headers.getparam('charset')
+        encoding = download.headers.getparam('charset')
         if encoding:
             data = data.decode(encoding)
         else:
