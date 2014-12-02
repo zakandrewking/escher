@@ -37,15 +37,12 @@ class CleanCommand(Command):
             if exists(x): rmtree(x)
         remove_if(join(directory, 'build'))
         remove_if(join(directory, 'dist'))
-        # TODO remove top level js, css files, favicon.ico
         # remove site files
         for f in glob(join(directory, '*.html')):
             os.remove(f)
         for f in glob(join(directory, 'builder-*.css')):
             os.remove(f)
         for f in glob(join(directory, 'escher-*.js')):
-            os.remove(f)
-        for f in glob(join(directory, 'favicon.ico')):
             os.remove(f)
         print('done cleaning')
 
@@ -86,7 +83,6 @@ class BuildGHPagesCommand(Command):
         copy(join('escher', 'lib', escher_min), 'escher-latest.min.js')
         copy(join('escher', 'css', builder_css), 'builder-latest.css')
         copy(join('escher', 'css', builder_embed_css), 'builder-embed-latest.css')
-        copy(join('escher', 'resources', 'favicon.ico'), 'favicon.ico')
         # generate the static site
         call(['python', join('escher', 'static_site.py')])
         call(['python', join('escher', 'generate_index.py')])

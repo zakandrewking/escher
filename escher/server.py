@@ -87,6 +87,7 @@ class IndexHandler(BaseHandler):
         data = template.render(d3=get_url('d3', 'local'),
                                boot_css=get_url('boot_css', 'local'),
                                index_css=get_url('index_css', 'local'),
+                               favicon=get_url('favicon', 'local'),
                                logo=get_url('logo', 'local'),
                                github=get_url('github'),
                                index_js=get_url('index_js', 'local'),
@@ -206,12 +207,6 @@ class StaticHandler(BaseHandler):
         print('getting path %s' % path)
         self.serve_path(path)
 
-class ResourceHandler(BaseHandler):
-    def get(self, path):
-        path = join(root_directory, 'escher', 'resources', path)
-        print('getting path %s' % path)
-        self.serve_path(path)
-
 class DocsHandler(BaseHandler):
     def get(self, path):
         path = join(root_directory, 'docs', '_build', 'html', path)
@@ -230,7 +225,6 @@ application = Application([
     (r"/(builder|viewer)(.*)", BuilderHandler),
     (r"/%s(/.*)" % __schema_version__, MapModelHandler),
     (r"/docs/(.*)", DocsHandler),
-    (r"/(favicon.ico)", ResourceHandler),
     (r"/", IndexHandler),
 ], **settings)
  

@@ -20,6 +20,7 @@ def generate_static_site():
     data = template.render(d3=get_url('d3', 'local'),
                            boot_css=get_url('boot_css', 'local'),
                            index_css=get_url('index_css', 'local'),
+                           favicon=get_url('favicon', 'local'),
                            logo=get_url('logo', 'local'),
                            github=get_url('github', protocol='https'),
                            index_js=get_url('index_js', 'local'),

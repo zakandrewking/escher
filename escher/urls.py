@@ -15,6 +15,7 @@ _escher_local = {
     'escher': 'escher/lib/escher-%s.js' % __version__,
     'escher_min': 'escher/lib/escher-%s.min.js' % __version__,
     'logo': 'escher/resources/escher-logo@2x.png',
+    'favicon': 'escher/resources/favicon.ico',
     'index_js': 'escher/js/web/index.js',
     'index_gh_pages_js': 'escher/js/web/index_gh_pages.js',
     'index_css': 'escher/css/web/index.css',

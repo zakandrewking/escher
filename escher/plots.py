@@ -575,6 +575,7 @@ class Builder(object):
                         get_url('boot_js', url_source, self.local_host))
         require_js_url = get_url('require_js', url_source, self.local_host)                     
         escher_css_url = get_url('builder_css', url_source, self.local_host)
+        favicon_url = get_url('favicon', url_source, self.local_host)
 
         lh_string = ('' if self.local_host is None else
                      (self.local_host + '/' if not self.local_host.endswith('/') else
@@ -591,6 +592,7 @@ class Builder(object):
                               require_js=require_js_url,
                               escher_css=escher_css_url,
                               wrapper=html_wrapper,
+                              favicon=favicon_url,
                               host=lh_string,
                               initialize_js=self._initialize_javascript(url_source),
                               draw_js=self._draw_js(self.the_id, enable_editing,
