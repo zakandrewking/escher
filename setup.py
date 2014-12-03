@@ -165,7 +165,7 @@ class TestCommand(Command):
             if self.noweb:
                 exit_code = pytest.main(['-m', 'not web'])
             else:
-                exit_code = pytest.main()
+                exit_code = pytest.main([])
         else:
             exit_code = 0
         if not self.pyonly:

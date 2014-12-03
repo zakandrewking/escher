@@ -318,6 +318,9 @@ class Builder(object):
         self.metabolite_data = metabolite_data
         self.gene_data = gene_data
         self.local_host = local_host
+
+        # for testing
+        self.static_site_index_json = None
         
         # remove illegal characters from css
         try:
@@ -429,17 +432,17 @@ class Builder(object):
             data = data.decode('utf-8')
         return data.replace('\n', ' ')
 
-    def _initialize_javascript(self, url_source):
+    def _initialize_javascript(self, the_id, url_source):
         javascript = ("var map_data_{the_id} = {map_data};\n"
-                      "var cobra_model_{the_id} = {cobra_model};\n"
+                      "var model_data_{the_id} = {model_data};\n"
                       "var reaction_data_{the_id} = {reaction_data};\n"
                       "var metabolite_data_{the_id} = {metabolite_data};\n"
                       "var gene_data_{the_id} = {gene_data};\n"
                       "var embedded_css_{the_id} = '{style}';\n").format(
-                          the_id=self.the_id,
+                          the_id=the_id,
                           map_data=(self.loaded_map_json if self.loaded_map_json else
                                     'null'),
-                          cobra_model=(self.loaded_model_json if self.loaded_model_json else
+                          model_data=(self.loaded_model_json if self.loaded_model_json else
                                        'null'),
                           reaction_data=(json.dumps(self.reaction_data) if self.reaction_data else
                                          'null'),
@@ -482,14 +485,18 @@ class Builder(object):
         dev_str = '' if dev else 'escher.'
         # parse the url in javascript, for building a static site
         if static_site_url_parse:
+            if self.static_site_index_json:
+                static_site_index_json = self.static_site_index_json
+            else:
+                static_site_index_json = json.dumps(local_index())
             # get the relative location of the escher_download urls
-            map_d= get_url('map_download', source='local')
-            model_d= get_url('model_download', source='local')
+            map_d = get_url('map_download', source='local')
+            model_d = get_url('model_download', source='local')
             o = ('%sstatic.load_map_model_from_url("%s", "%s", \n%s, \nfunction(map_data_%s, model_data_%s) {\n' %
-                 (dev_str, map_d, model_d, json.dumps(local_index()), the_id, the_id))
+                 (dev_str, map_d, model_d, static_site_index_json, the_id, the_id))
             draw = draw + o;
         # make the builder
-        draw = draw + ('{dev_str}Builder(map_data_{the_id}, cobra_model_{the_id}, embedded_css_{the_id}, '
+        draw = draw + ('{dev_str}Builder(map_data_{the_id}, model_data_{the_id}, embedded_css_{the_id}, '
                        'd3.select("#{the_id}"), options);\n'.format(dev_str=dev_str, the_id=the_id))
         if static_site_url_parse:
             draw = draw + '});\n'
@@ -594,7 +601,7 @@ class Builder(object):
                               wrapper=html_wrapper,
                               favicon=favicon_url,
                               host=lh_string,
-                              initialize_js=self._initialize_javascript(url_source),
+                              initialize_js=self._initialize_javascript(self.the_id, url_source),
                               draw_js=self._draw_js(self.the_id, enable_editing,
                                                     menu, enable_keys, is_dev,
                                                     fill_screen, scroll_behavior,
