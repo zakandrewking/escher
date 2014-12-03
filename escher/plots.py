@@ -318,9 +318,6 @@ class Builder(object):
         self.metabolite_data = metabolite_data
         self.gene_data = gene_data
         self.local_host = local_host
-
-        # for testing
-        self.static_site_index_json = None
         
         # remove illegal characters from css
         try:
@@ -454,8 +451,8 @@ class Builder(object):
         return javascript
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
-                 fill_screen, scroll_behavior,
-                 never_ask_before_quit, static_site_url_parse):
+                 fill_screen, scroll_behavior, never_ask_before_quit,
+                 static_site_index_json): 
         draw = ("options = {{ enable_editing: {enable_editing},\n"
                 "menu: {menu},\n"
                 "enable_keys: {enable_keys},\n"
@@ -484,28 +481,24 @@ class Builder(object):
         # dev needs escher.
         dev_str = '' if dev else 'escher.'
         # parse the url in javascript, for building a static site
-        if static_site_url_parse:
-            if self.static_site_index_json:
-                static_site_index_json = self.static_site_index_json
-            else:
-                static_site_index_json = json.dumps(local_index())
+        if static_site_index_json:
             # get the relative location of the escher_download urls
             map_d = get_url('map_download', source='local')
             model_d = get_url('model_download', source='local')
-            o = ('%sstatic.load_map_model_from_url("%s", "%s", \n%s, \nfunction(map_data_%s, model_data_%s) {\n' %
+            o = ('%sstatic.load_map_model_from_url("%s", "%s", \n%s, \noptions, function(map_data_%s, model_data_%s, options) {\n' %
                  (dev_str, map_d, model_d, static_site_index_json, the_id, the_id))
             draw = draw + o;
         # make the builder
         draw = draw + ('{dev_str}Builder(map_data_{the_id}, model_data_{the_id}, embedded_css_{the_id}, '
                        'd3.select("#{the_id}"), options);\n'.format(dev_str=dev_str, the_id=the_id))
-        if static_site_url_parse:
+        if static_site_index_json:
             draw = draw + '});\n'
         return draw
     
     def _get_html(self, js_source='web', menu='none', scroll_behavior='pan',
                   html_wrapper=False, enable_editing=False, enable_keys=False,
                   minified_js=True, fill_screen=False, height='800px',
-                  never_ask_before_quit=False, static_site_url_parse=False):
+                  never_ask_before_quit=False, static_site_index_json=None):
         """Generate the Escher HTML.
 
         Arguments
@@ -540,11 +533,11 @@ class Builder(object):
         never_ask_before_quit: Never display an alert asking if you want to
         leave the page. By default, this message is displayed if enable_editing
         is True.
-
-        static_site_url_parse: Use javascript to parse the URL options. Used for
-        generating static pages (see static_site.py), and only works if maps and
-        models are available locally.
         
+        static_site_index_json: The index, as a JSON string, for the static
+        site. Use javascript to parse the URL options. Used for
+        generating static pages (see static_site.py).        
+
         """
 
         if js_source not in ['web', 'local', 'dev']:
@@ -599,6 +592,7 @@ class Builder(object):
                               require_js=require_js_url,
                               escher_css=escher_css_url,
                               wrapper=html_wrapper,
+                              title='Escher ' + ('Builder' if enable_editing else 'Viewer'),
                               favicon=favicon_url,
                               host=lh_string,
                               initialize_js=self._initialize_javascript(self.the_id, url_source),
@@ -606,7 +600,7 @@ class Builder(object):
                                                     menu, enable_keys, is_dev,
                                                     fill_screen, scroll_behavior,
                                                     never_ask_before_quit,
-                                                    static_site_url_parse))
+                                                    static_site_index_json))
         return html
 
     def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',
@@ -715,7 +709,7 @@ class Builder(object):
         
     def save_html(self, filepath=None, js_source='web', menu='all', scroll_behavior='pan',
                   enable_editing=True, enable_keys=True, minified_js=True,
-                  never_ask_before_quit=False, static_site_url_parse=False):
+                  never_ask_before_quit=False, static_site_index_json=None):
         """Save an HTML file containing the map.
 
         :param string filepath: The HTML file will be saved to this location.
@@ -756,18 +750,18 @@ class Builder(object):
             Never display an alert asking if you want to leave the page. By
             default, this message is displayed if enable_editing is True.
 
-        :param Boolean static_site_url_parse:
+        :param string static_site_index_json:
 
-            Use JavaScript to parse the URL options. Used for generating static
-            pages (see static_site.py), and only works if maps and models are
-            available locally.
+            The index, as a JSON string, for the static site. Use javascript
+            to parse the URL options. Used for generating static pages (see
+            static_site.py).        
 
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
                               html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
                               minified_js=minified_js, fill_screen=True, height="100%",
                               never_ask_before_quit=never_ask_before_quit,
-                              static_site_url_parse=static_site_url_parse)
+                              static_site_index_json=static_site_index_json)
         if filepath is not None:
             with open(filepath, 'wb') as f:
                 f.write(html.encode('utf-8'))

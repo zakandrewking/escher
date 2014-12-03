@@ -84,8 +84,8 @@ class BuildGHPagesCommand(Command):
         copy(join('escher', 'css', builder_css), 'builder-latest.css')
         copy(join('escher', 'css', builder_embed_css), 'builder-embed-latest.css')
         # generate the static site
-        call(['python', join('escher', 'static_site.py')])
         call(['python', join('escher', 'generate_index.py')])
+        call(['python', join('escher', 'static_site.py')])
         print('Done building gh-pages')
 
 class BuildRelease(Command):

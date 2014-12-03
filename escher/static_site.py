@@ -51,11 +51,13 @@ def generate_static_site():
             
             filepath = join(root_directory,
                             '%s%s.html' % (kind, '' if minified_js else '_not_minified'))
+            with open(join(root_directory, get_url('server_index', source='local')), 'r') as f:
+                index_json = f.read()
             html = builder.save_html(filepath=filepath,
                                      js_source=js_source,
                                      minified_js=minified_js,
                                      enable_editing=enable_editing,
-                                     static_site_url_parse=True)
+                                     static_site_index_json=index_json)
     
 if __name__=='__main__':
     generate_static_site()

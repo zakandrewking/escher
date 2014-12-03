@@ -26,7 +26,7 @@ from escher.version import __version__, __schema_version__
 env = Environment(loader=PackageLoader('escher', 'templates'))
 
 # set directory to server
-NO_CACHE = True
+NO_CACHE = False
 PORT = 7778
 PUBLIC = False
 CAN_DEV = os.path.exists(join(root_directory, '.can_dev'))

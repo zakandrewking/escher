@@ -1634,15 +1634,16 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	var query = the_window.location.search.substring(1),
 	    vars = query.split("&");
 	for (var i = 0; i < vars.length; i++) {
-	    var pair = vars[i].split("=");
+	    var pair = vars[i].split("="),
+		val = decodeURIComponent(pair[1]);
 	    // deal with array options
 	    if (pair[0].indexOf('[]') == pair[0].length - 2) {
 		var o = pair[0].replace('[]', '');
 		if (!(o in options))
 		    options[o] = [];
-		options[o].push(pair[1]);
+		options[o].push(val);
 	    } else {
-		options[pair[0]] = pair[1];
+		options[pair[0]] = val;
 	    }
 	}
 	return options;
@@ -14451,8 +14452,8 @@ define('static',["utils"], function(utils) {
     return { load_map_model_from_url: load_map_model_from_url };
     
     function load_map_model_from_url(map_download_url, model_download_url,
-				     local_index, callback) {
-	var opt = utils.parse_url_components(window, {}),
+				     local_index, options, callback) {
+	var opt = utils.parse_url_components(window, options),
 	    to_load = [],
 	    load_map = function (fn) { fn(null); },
 	    load_model = function (fn) { fn(null); };
@@ -14482,7 +14483,7 @@ define('static',["utils"], function(utils) {
 	}
 	load_map(function(map_data) {
 	    load_model(function(model_data) {
-		callback(map_data, model_data);
+		callback(map_data, model_data, options);
 	    });
 	});
     }
