@@ -1,12 +1,12 @@
 from __future__ import print_function, unicode_literals
 
 from escher.convert_map import genes_for_gene_reaction_rule, convert
+from escher.urls import root_directory
 import cobra.io
 from os.path import join
-from escher.server import directory
 
 def test_convert():
-    model = cobra.io.load_json_model(join(directory, 'example_data', 'iJO1366.json'))
+    model = cobra.io.load_json_model(join(root_directory, 'escher', 'example_data', 'iJO1366.json'))
 
     # reverse the reaction
     model.reactions.get_by_id('GAPD').upper_bound = 0

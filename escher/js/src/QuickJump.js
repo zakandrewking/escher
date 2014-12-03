@@ -23,7 +23,7 @@ define(['utils'], function(utils) {
     return QuickJump;
 
     // instance methods
-    function init(sel, options, load_callback) {        
+    function init(sel, load_callback) {        
 	// set up the menu
 	var select_sel = sel.append('select')
 	    .attr('id', 'quick-jump-menu')
@@ -33,6 +33,8 @@ define(['utils'], function(utils) {
 	// get the options to show
 	var url_comp = utils.parse_url_components(window),
 	    current = ('map_name' in url_comp) ? url_comp.map_name : null,
+	    quick_jump_path = ('quick_jump_path' in url_comp) ? url_comp.quick_jump_path : null,
+	    options = ('quick_jump' in url_comp) ? url_comp.quick_jump : [],
             default_value = '— Jump to map —',
 	    view_options = [default_value].concat(options);
 	if (current !== null) {
@@ -52,7 +54,7 @@ define(['utils'], function(utils) {
 
         // on selection
         var change_map = function(map_name) {
-            load_callback(map_name, function(success) {
+            load_callback(map_name, quick_jump_path, function(success) {
                 if (success)
                     this.replace_state_for_map_name(map_name);
                 else

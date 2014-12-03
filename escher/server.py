@@ -2,11 +2,13 @@
 
 from __future__ import print_function, unicode_literals
 
-from escher.plots import Builder, list_cached_models, list_cached_maps
-from escher.urls import get_url, url_to_name
+from escher.plots import (Builder, local_index, model_json_for_name,
+                          map_json_for_name)
+from escher.urls import get_url
+from escher.urls import root_directory
 
 import os, subprocess
-from os.path import join, dirname, realpath
+from os.path import join
 import tornado.ioloop
 from tornado.web import RequestHandler, HTTPError, Application, asynchronous
 from tornado.httpclient import AsyncHTTPClient
@@ -18,24 +20,23 @@ import re
 from jinja2 import Environment, PackageLoader
 from mimetypes import guess_type
 
-from escher.version import __version__
+from escher.version import __version__, __schema_version__
 
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
 
 # set directory to server
-directory = dirname(realpath(__file__))
 NO_CACHE = True
 PORT = 7778
 PUBLIC = False
-CAN_DEV = os.path.exists(join(directory, '..', '.can_dev'))
+CAN_DEV = os.path.exists(join(root_directory, '.can_dev'))
 
 def run(port=PORT, public=PUBLIC):
     global PORT
     global PUBLIC
     PORT = port
     PUBLIC = public
-    print('serving directory %s on port %d' % (directory, PORT))
+    print('serving directory %s on port %d' % (root_directory, PORT))
     application.listen(port, None if public else "localhost")
     try:
         tornado.ioloop.IOLoop.instance().start()
@@ -72,31 +73,29 @@ class IndexHandler(BaseHandler):
     @gen.coroutine
     def get(self):
         # get the organisms, maps, and models
-        response = yield gen.Task(AsyncHTTPClient().fetch,
-                                  '/'.join([get_url('escher_download', protocol='https'),
-                                            'index.json']))
+        response = yield gen.Task(AsyncHTTPClient().fetch, get_url('server_index', protocol='https'))
         if response.code == 200 and response.body is not None:
-            json_data = response.body.decode('utf-8')
+            server_index = response.body.decode('utf-8')
         else:
-            json_data = json.dumps(None)
+            server_index = json.dumps(None)
 
         # get the cached maps and models
-        cached_maps = list_cached_maps()
-        cached_models = list_cached_models()
-        
+        index = local_index()
+
         # render the template
         template = env.get_template('index.html')
-        source = 'local'
-        data = template.render(d3=get_url('d3', source),
-                               boot_css=get_url('boot_css', source),
-                               index_css=get_url('index_css', source),
-                               logo=get_url('logo', source),
+        data = template.render(d3=get_url('d3', 'local'),
+                               boot_css=get_url('boot_css', 'local'),
+                               index_css=get_url('index_css', 'local'),
+                               favicon=get_url('favicon', 'local'),
+                               logo=get_url('logo', 'local'),
                                github=get_url('github'),
-                               index_js=get_url('index_js', source),
-                               index_gh_pages_js=get_url('index_gh_pages_js', source),
-                               data=json_data,
-                               local_maps=json.dumps(cached_maps),
-                               local_models=json.dumps(cached_models),
+                               index_js=get_url('index_js', 'local'),
+                               index_gh_pages_js=get_url('index_gh_pages_js', 'local'),
+                               map_download=get_url('map_download', 'local'),
+                               # server_index_url=
+                               server_index=server_index,
+                               local_index=json.dumps(index),
                                can_dev=CAN_DEV,
                                can_dev_js=json.dumps(CAN_DEV),
                                version=__version__,
@@ -153,14 +152,14 @@ class BuilderHandler(BaseHandler):
         def load_data_file(rel_path):
             """Load a JSON file with relative path."""
             try:
-                with open(join(directory, rel_path), 'r') as f:
+                with open(join(root_directory, rel_path), 'r') as f:
                     return json.load(f)
             except:
                 logging.warn('Could not load example_data file: %s' % rel_path)
         if len(self.get_arguments('example_data')) > 0:
-            r_filepath = 'example_data/reaction_data_iJO1366.json'
+            r_filepath = 'escher/example_data/reaction_data_iJO1366.json'
             builder_kwargs['reaction_data'] = load_data_file(r_filepath)
-            m_filepath = 'example_data/metabolite_data_iJO1366.json'
+            m_filepath = 'escher/example_data/metabolite_data_iJO1366.json'
             builder_kwargs['metabolite_data'] = load_data_file(m_filepath)
         
         # make the builder
@@ -189,56 +188,43 @@ class BuilderHandler(BaseHandler):
 
 class MapModelHandler(BaseHandler):
     def get(self, path):
-        name = url_to_name(path)
         try:
+            kind, organism, name = path.strip('/').split('/')
+        except (TypeError, ValueError):
+            raise Exception('invalid path %s' % path)
+        if kind == 'maps':
             b = Builder(map_name=name)
-        except ValueError as err:
-            print(err)
-            raise HTTPError(404)
-        self.set_header('Content-Type', 'application/json')
-        print(b.loaded_map_json)
-        self.serve(b.loaded_map_json)
-         
-class LibHandler(BaseHandler):
-    def get(self, path):
-        full_path = join(directory, 'lib', path)
-        if os.path.isfile(full_path):
-            path = full_path
+            self.set_header('Content-Type', 'application/json')
+            self.serve(b.loaded_map_json)
         else:
-            raise HTTPError(404)
-        self.serve_path(path)
-
+            b = Builder(model_name=name)
+            self.set_header('Content-Type', 'application/json')
+            self.serve(b.loaded_model_json)
+         
 class StaticHandler(BaseHandler):
     def get(self, path):
-        path = join(directory, path)
-        print('getting path %s' % path)
-        self.serve_path(path)
-
-class ResourceHandler(BaseHandler):
-    def get(self, path):
-        path = join(directory, 'resources', path)
+        path = join(root_directory, path)
         print('getting path %s' % path)
         self.serve_path(path)
 
 class DocsHandler(BaseHandler):
     def get(self, path):
-        path = join(directory, '..', 'docs', '_build', 'html', path)
+        path = join(root_directory, 'docs', '_build', 'html', path)
         print('getting path %s' % path)
         self.serve_path(path)
 
 settings = {"debug": "False"}
 
 application = Application([
-    (r"/lib/(.*)", LibHandler),
-    (r"/(fonts/.*)", LibHandler),
-    (r"/(js/.*)", StaticHandler),
-    (r"/(css/.*)", StaticHandler),
-    (r"/resources/(.*)", ResourceHandler),
-    (r"/(jsonschema/.*)", StaticHandler),
+    (r"/(escher/lib/.*)", StaticHandler),
+    (r"/(escher/fonts/.*)", StaticHandler),
+    (r"/(escher/js/.*)", StaticHandler),
+    (r"/(escher/css/.*)", StaticHandler),
+    (r"/(escher/resources/.*)", StaticHandler),
+    (r"/(escher/jsonschema/.*)", StaticHandler),
     (r"/(builder|viewer)(.*)", BuilderHandler),
-    (r"/(organisms/.*)", MapModelHandler),
+    (r"/%s(/.*)" % __schema_version__, MapModelHandler),
     (r"/docs/(.*)", DocsHandler),
-    (r"/(favicon.ico)", ResourceHandler),
     (r"/", IndexHandler),
 ], **settings)
  

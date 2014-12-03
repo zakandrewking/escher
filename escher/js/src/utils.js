@@ -17,6 +17,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	     extend: extend,
 	     unique_concat: unique_concat,
 	     object_slice_for_ids: object_slice_for_ids,
+	     object_slice_for_ids_ref: object_slice_for_ids_ref,
 	     c_plus_c: c_plus_c,
 	     c_minus_c: c_minus_c,
 	     c_times_scalar: c_times_scalar,
@@ -38,7 +39,6 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
              quartiles: quartiles,
              random_characters: random_characters,
 	     check_for_parent_tag: check_for_parent_tag,
-	     check_name: check_name,
 	     name_to_url: name_to_url,
 	     parse_url_components: parse_url_components };
 
@@ -207,6 +207,9 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
             make sure none of the values in the *object* are undefined, and
             ignores those.
 
+         The create_function, update_function, and exit_function CAN modify the
+         input data object.
+
 	 Arguments
 	 ---------
 
@@ -240,7 +243,8 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         
 	var sel = container_sel.select(parent_node_selector)
 		.selectAll(children_selector)
-		.data(make_array(draw_object, id_key), function(d) { return d[id_key]; });
+		.data(make_array_ref(draw_object, id_key),
+                      function(d) { return d[id_key]; });
 	// enter: generate and place reaction
 	if (create_function)
 	    sel.enter().call(create_function);
@@ -257,6 +261,9 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 				  exit_function) {
 	/** Run through the d3 data binding steps for an object that is nested
 	 within another element with d3 data.
+
+         The create_function, update_function, and exit_function CAN modify the
+         input data object.
 
 	 Arguments
 	 ---------
@@ -280,7 +287,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	 */
 	var sel = container_sel.selectAll(children_selector)
 	    .data(function(d) {
-		return make_array(d[object_data_key], id_key);
+		return make_array_ref(d[object_data_key], id_key);
 	    }, function(d) { return d[id_key]; });
 	// enter: generate and place reaction
 	if (create_function)
@@ -339,27 +346,31 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     }
 
     function array_to_object(arr) {
+        /** Convert an array of objects to an object with all keys and values
+         that are arrays of the same length as arr. Fills in spaces with null.
+
+         For example, [ { a: 1 }, { b: 2 }] becomes { a: [1, null], b: [null, 2] }.
+
+         */
+        // new object
 	var obj = {};
-	for (var i=0, l=arr.length; i<l; i++) { // 0
-	    var a = arr[i];
-	    for (var id in a) {
-		if (id in obj) {
-		    obj[id][i] = a[id];
-		} else {
+        // for each element of the array
+	for (var i = 0, l = arr.length; i < l; i++) {
+	    var column = arr[i],
+                keys = Object.keys(column);
+            for (var k = 0, nk = keys.length; k < nk; k++) {
+                var id = keys[k];
+		if (!(id in obj)) {
 		    var n = [];
-		    // fill leading spaces with null
-		    for (var j=0; j<i; j++) {
+		    // fill spaces with null
+		    for (var j = 0; j < l; j++) {
 			n[j] = null;
 		    }
-		    n[i] = a[id];
+		    n[i] = column[id];
 		    obj[id] = n;
-		}
-	    }
-	    // fill trailing spaces with null
-	    for (var id in obj) {
-		for (var j=obj[id].length; j<=i; j++) {
-		    obj[id][j] = null;
-		}
+		} else {
+		    obj[id][i] = column[id];
+                }
 	    }
 	}
 	return obj;
@@ -439,6 +450,28 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         var subset = {}, i = -1;
         while (++i<ids.length) {
 	    subset[ids[i]] = clone(obj[ids[i]]);
+        }
+        if (ids.length != Object.keys(subset).length) {
+	    console.warn('did not find correct reaction subset');
+        }
+	return subset;
+    }
+    
+    function object_slice_for_ids_ref(obj, ids) {
+	/** Return a reference of the object with just the given ids. Faster
+	 than object_slice_for_ids.
+	 
+	 Arguments
+	 ---------
+
+	 obj: An object.
+
+	 ids: An array of id strings.
+
+	 */
+        var subset = {}, i = -1;
+        while (++i<ids.length) {
+	    subset[ids[i]] = obj[ids[i]];
         }
         if (ids.length != Object.keys(subset).length) {
 	    console.warn('did not find correct reaction subset');
@@ -768,21 +801,9 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	return false;
     }
 
-    function check_name(name) {
-	/** Name cannot include:
-
-	    <>:"/\|?*
-
-	*/
-
-	if (/[<>:"\/\\\|\?\*]/.test(name))
-	    throw new Error('Name cannot include the characters <>:"/\|?*');
-    }
-   
     function name_to_url(name, download_url) {
-	/** Convert short name to url. The short name is separated by '+'
-	    characters.
-
+	/** Convert model or map name to url.
+	 
 	 Arguments
 	 ---------
 
@@ -792,27 +813,16 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 
 	*/
 
-	check_name(name);
-
-	var parts = name.split('.'),
-	    longname;
-	if (parts.length == 2) {
-	    longname = ['organisms', parts[0], 'models', parts[1]+'.json'].join('/');
-	} else if (parts.length == 3) {
-	    longname = ['organisms', parts[0], 'models', parts[1], 'maps', parts[2]+'.json'].join('/');
-	} else {
-            throw Error('Bad short name');
-	}
 	if (download_url !== undefined && download_url !== null) {
 	    // strip download_url
 	    download_url = download_url.replace(/^\/|\/$/g, '');
-	    longname = [download_url, longname].join('/');
+	    name = [download_url, name].join('/');
 	}
 	// strip final path
-	return longname.replace(/^\/|\/$/g, '');
+	return name.replace(/^\/|\/$/g, '') + '.json';
     }
 
-    function parse_url_components(the_window, options, download_url) {
+    function parse_url_components(the_window, options) {
 	/** Parse the URL and return options based on the URL arguments.
 
 	 Arguments
@@ -822,12 +832,6 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	 
 	 options: (optional) an existing options object to which new options
 	 will be added. Overwrites existing arguments in options.
-
-	 map_download_url: (optional) If map_name is in options, then add map_path
-	 to options, with this url prepended.
-
-	 model_download_url: (optional) If model_name is in options, then add model_path
-	 to options, with this url prepended.
 
 	 Adapted from http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
 
@@ -848,22 +852,6 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 		options[pair[0]] = pair[1];
 	    }
 	}
-
-	// generate map_path and model_path
-	[
-	    ['map_name', 'map_path'],
-	    ['model_name', 'cobra_model_path']
-	].forEach(function(ar) {
-	    var key = ar[0], path = ar[1];
-	    if (key in options) {
-		try {
-		    options[path] = name_to_url(options[key], download_url);
-		} catch (e) {
-		    console.warn(key + ' ' + options[key] + ' cannot be converted to a URL.');
-		}
-	    }
-	});
-
 	return options;
     }    
 });

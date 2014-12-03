@@ -113,7 +113,7 @@ describe('Map', function() {
 					],
                            genes: []
 			 },
-	    model = escher.CobraModel(model_data);
+	    model = escher.CobraModel.from_cobra_json(model_data);
 	map.cobra_model = model;
 
 	map.new_reaction_from_scratch('acc_tpp', {x: 0, y: 0, gene_reaction_rule: ''}, 0);

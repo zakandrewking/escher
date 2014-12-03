@@ -14,7 +14,13 @@ JavaScript API
 
     :param string embedded_css: The stylesheet for the SVG elements in the Escher map.
 
-    :param object options: An object defining any of the following options:
+    :param object selection: (Optional, Default: In the body element) The d3
+                             selection of an element to place the Builder
+                             into. The selection cannot be inside an SVG
+                             element.
+                                
+    :param object options: (Optional) An object defining any of the following
+                           options:
 
         .. js:attribute:: options.unique_map_id
 
@@ -103,18 +109,6 @@ JavaScript API
             (Default: true) If true, then building duplicate reactions is
             allowed. If false, then duplicate reactions are hidden in *Add
             reaction mode*.
-
-        *Quick jump menu*
-
-        .. js:attribute:: options.local_host
-
-            The host used to load maps for quick_jump. E.g.,
-            http://localhost:7778.
-
-        .. js:attribute:: options.quick_jump
-
-            A list of map names that can be reached by selecting them from a
-            quick jump menu on the map.
 
         *Callbacks*
 

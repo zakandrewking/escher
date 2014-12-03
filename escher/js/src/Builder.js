@@ -29,21 +29,21 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
     return Builder;
 
     // definitions
-    function init(map_data, model_data, embedded_css, options) {
+    function init(map_data, model_data, embedded_css, selection, options) {
+
+        // default sel
+        if (!selection)
+            selection = d3.select('body').append('div');
+        if (!options)
+            options = {};
 
         this.map_data = map_data;
         this.model_data = model_data;
         this.embedded_css = embedded_css;
-
-        // default sel
-        var sel = null;
-        if (!('selection' in options) || options['selection'] === null)
-            sel = d3.select('body').append('div');
+        this.selection = selection;
 
         // set defaults
         this.options = utils.set_options(options, {
-            // location
-            selection: sel,
             // view options
             menu: 'all',
             scroll_behavior: 'pan',
@@ -87,9 +87,6 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             identifiers_on_map: 'bigg_id',
             highlight_missing: false,
             allow_building_duplicate_reactions: false,
-            // Quick jump menu
-            local_host: null,
-            quick_jump: null,
             // Callbacks
             first_load_callback: null
         }, {
@@ -102,7 +99,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         });
 
         // check the location
-        if (utils.check_for_parent_tag(this.options.selection, 'svg')) {
+        if (utils.check_for_parent_tag(this.selection, 'svg')) {
             throw new Error('Builder cannot be placed within an svg node '+
                             'becuase UI elements are html-based.');
         }
@@ -160,8 +157,8 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 if (x == 'accepted') {
                     this._update_data(true, true, ['reaction', 'metabolite'], false);
                     if (this.map !== null) {
-                        this.map.draw_all_nodes();
-                        this.map.draw_all_reactions();
+                        this.map.draw_all_nodes(false);
+                        this.map.draw_all_reactions(true, false);
                     }
                 }
             }.bind(this));
@@ -181,13 +178,13 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         if (model_data === null)
             this.cobra_model = null;
         else
-            this.cobra_model = CobraModel(model_data);
+            this.cobra_model = CobraModel.from_cobra_json(model_data);
         
         if (this.map) this.map.cobra_model = this.cobra_model;
         if (should_update_data)
             this._update_data(true, false);
         if (this.settings.get_option('highlight_missing'))
-            this.map.draw_all_reactions();
+            this.map.draw_all_reactions(false, false);
 
         this.callback_manager.run('load_model', null, model_data, should_update_data);
     }
@@ -205,14 +202,14 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             shift_key_on = false;
 
         // remove the old builder
-        utils.remove_child_nodes(this.options.selection);
+        utils.remove_child_nodes(this.selection);
 
         // set up the svg
-        var svg = utils.setup_svg(this.options.selection, this.options.selection_is_svg,
+        var svg = utils.setup_svg(this.selection, false,
                                   this.options.fill_screen);
 
         // se up the zoom container
-        this.zoom_container = new ZoomContainer(svg, this.options.selection,
+        this.zoom_container = new ZoomContainer(svg, this.selection,
                                                 this.options.scroll_behavior);
         var zoomed_sel = this.zoom_container.zoomed_sel;
 
@@ -244,11 +241,11 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             this._update_data(false, true);
 
         // set up the reaction input with complete.ly
-        this.build_input = BuildInput(this.options.selection, this.map,
+        this.build_input = BuildInput(this.selection, this.map,
                                       this.zoom_container, this.settings);
 
         // set up the text edit input
-        this.text_edit_input = TextEditInput(this.options.selection, this.map,
+        this.text_edit_input = TextEditInput(this.selection, this.map,
                                              this.zoom_container);
 
         // set up the Brush
@@ -257,12 +254,12 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         // set up the modes
         this._setup_modes(this.map, this.brush, this.zoom_container);
 
-        var s = this.options.selection
+        var s = this.selection
                 .append('div').attr('class', 'search-menu-container')
                 .append('div').attr('class', 'search-menu-container-inline'),
             menu_div = s.append('div'),
             search_bar_div = s.append('div'),
-            button_div = this.options.selection.append('div');
+            button_div = this.selection.append('div');
 
         // set up the search bar
         this.search_bar = SearchBar(search_bar_div, this.map.search_index,
@@ -273,7 +270,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         }.bind(this));
 
         // set up the settings
-        var settings_div = this.options.selection.append('div');
+        var settings_div = this.selection.append('div');
         this.settings_bar = SettingsMenu(settings_div, this.settings, this.map,
                                          function(type, on_off) {
                                              // temporarily set the abs type, for
@@ -331,13 +328,10 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         }
 
         // status in both modes
-        var status = this._setup_status(this.options.selection, this.map);
+        var status = this._setup_status(this.selection, this.map);
 
         // set up quick jump
-        if (this.options.quick_jump !== null) {
-            this._setup_quick_jump(this.options.selection,
-                                   this.options.quick_jump);
-        }
+        this._setup_quick_jump(this.selection);
 
         // start in zoom mode for builder, view mode for viewer
         if (this.options.enable_editing)
@@ -480,86 +474,112 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         if (should_draw === undefined)
             should_draw = true;
 
-        // metabolite data
-        var update_metabolite_data = (kind.indexOf('metabolite') != -1);
-        if (update_metabolite_data) {
-            var data_object = data_styles.import_and_check(this.options.metabolite_data,
-                                                           'metabolite_data');
-            if (update_model && this.cobra_model !== null) {
-                this.cobra_model.apply_metabolite_data(data_object,
-                                                       this.options.metabolite_styles,
-                                                       this.options.metabolite_compare_style);
-            }
-            if (update_map && this.map !== null) {
-                this.map.apply_metabolite_data_to_map(data_object);
-                if (should_draw)
-                    this.map.draw_all_nodes();
-            }
-        }
+        var update_metabolite_data = (kind.indexOf('metabolite') != -1),
+            update_reaction_data = (kind.indexOf('reaction') != -1),
+            met_data_object,
+            reaction_data_object,
+            gene_data_object;
+        
+        // -------------------
+        // First map, and draw
 
-        // reaction data overrides gene data
-        var update_reaction_data = (kind.indexOf('reaction') != -1);
+        // metabolite data
+        if (update_metabolite_data && update_map && this.map !== null) {
+            met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+                                                           'metabolite_data'); 
+            this.map.apply_metabolite_data_to_map(met_data_object);
+            if (should_draw)
+                this.map.draw_all_nodes(false);
+        }
 
         // reaction data
         if (update_reaction_data) {
-            if (this.options.reaction_data !== null) {
-                data_object = data_styles.import_and_check(this.options.reaction_data,
-                                                           'reaction_data');
+            if (this.options.reaction_data !== null && update_map && this.map !== null) {
+                reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+                                                                    'reaction_data');
+                this.map.apply_reaction_data_to_map(reaction_data_object);
+                if (should_draw)
+                    this.map.draw_all_reactions(false, false);
+            } else if (this.options.gene_data !== null && update_map && this.map !== null) {
+                gene_data_object = make_gene_data_object(this.options.gene_data,
+                                                         this.cobra_model, this.map); 
+                this.map.apply_gene_data_to_map(gene_data_object);
+                if (should_draw)
+                    this.map.draw_all_reactions(false, false);
+            } else if (update_map && this.map !== null) {
+                // clear the data
+                this.map.apply_reaction_data_to_map(null);
+                if (should_draw)
+                    this.map.draw_all_reactions(false, false);
+            }
+        }
 
-                // only update the model if there is not going to be gene data
-                if (update_model && this.cobra_model !== null) {
-                    this.cobra_model.apply_reaction_data(data_object,
+        // ---------------------------------------------------------------- 
+        // Then the model, after drawing. Delay by 5ms so the the map draws
+        // first.
+
+        // if this function runs again, cancel the previous model update
+        if (this.update_model_timer)
+            window.clearTimeout(this.update_model_timer);
+
+        var delay = 5;        
+        this.update_model_timer = window.setTimeout(function() {
+
+            // metabolite_data
+            if (update_metabolite_data && update_model && this.cobra_model !== null) {
+                // if we haven't already made this
+                if (!met_data_object)
+                    met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+                                                                   'metabolite_data');
+                this.cobra_model.apply_metabolite_data(met_data_object,
+                                                       this.options.metabolite_styles,
+                                                       this.options.metabolite_compare_style);
+            }
+            
+            // reaction data
+            if (update_reaction_data) {
+                if (this.options.reaction_data !== null && update_model && this.cobra_model !== null) {
+                    // if we haven't already made this
+                    if (!reaction_data_object)
+                        reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+                                                                            'reaction_data');
+                    this.cobra_model.apply_reaction_data(reaction_data_object,
                                                          this.options.reaction_styles,
                                                          this.options.reaction_compare_style);
-                }
-                if (update_map && this.map !== null) {
-                    this.map.apply_reaction_data_to_map(data_object);
-                    if (should_draw)
-                        this.map.draw_all_reactions();
-                }
-            } else if (this.options.gene_data !== null) {
-                // collect reactions from map and model
-                var all_reactions = {};
-                if (this.cobra_model !== null)
-                    utils.extend(all_reactions, this.cobra_model.reactions);
-                // extend, overwrite
-                if (this.map !== null)
-                    utils.extend(all_reactions, this.map.reactions, true);
-
-                // this object has reaction keys and values containing associated genes
-                data_object = data_styles.import_and_check(this.options.gene_data,
-                                                           'gene_data',
-                                                           all_reactions);
-
-                // update the model if data is applied to reactions
-                if (update_model && this.cobra_model !== null) {
-                    this.cobra_model.apply_gene_data(data_object,
+                } else if (this.options.gene_data !== null && update_model && this.cobra_model !== null) {
+                    if (!gene_data_object)
+                        gene_data_object = make_gene_data_object(this.options.gene_data,
+                                                                 this.cobra_model, this.map); 
+                    this.cobra_model.apply_gene_data(gene_data_object,
                                                      this.options.reaction_styles,
                                                      this.options.identifiers_on_map,
                                                      this.options.reaction_compare_style,
                                                      this.options.and_method_in_gene_reaction_rule);
-                }
-                if (update_map && this.map !== null) {
-                    this.map.apply_gene_data_to_map(data_object);
-                    if (should_draw)
-                        this.map.draw_all_reactions();
-                }
-            } else {
-                // clear the data
-                // only update the model if there is not going to be gene data
-                if (update_model && this.cobra_model !== null) {
+                } else if (update_model && this.cobra_model !== null) {
+                    // clear the data
                     this.cobra_model.apply_reaction_data(null,
                                                          this.options.reaction_styles,
                                                          this.options.reaction_compare_style);
                 }
-                if (update_map && this.map !== null) {
-                    this.map.apply_reaction_data_to_map(null);
-                    if (should_draw)
-                        this.map.draw_all_reactions();
-                }
             }
+
+            // callback
+            this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw);
+
+        }.bind(this), delay);
+            
+        // definitions
+        function make_gene_data_object(gene_data, cobra_model, map) {
+            var all_reactions = {};
+            if (cobra_model !== null)
+                utils.extend(all_reactions, cobra_model.reactions);
+            // extend, overwrite
+            if (map !== null)
+                utils.extend(all_reactions, map.reactions, true);
+
+            // this object has reaction keys and values containing associated genes
+            return data_styles.import_and_check(gene_data, 'gene_data', all_reactions);
         }
-        this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw);
     }
 
     function _setup_menu(menu_selection, button_selection, map, zoom_container,
@@ -825,7 +845,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         // set up mode callbacks
         var select_button = function(id) {
             // toggle the button
-            $(this.options.selection.node()).find('#' + id)
+            $(this.selection.node()).find('#' + id)
                 .button('toggle');
 
             // menu buttons
@@ -834,7 +854,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                        'view-mode-menu-button', 'text-mode-menu-button'];
             ids.forEach(function(this_id) {
                 var b_id = this_id.replace('-menu', '');
-                this.options.selection.select('#' + this_id)
+                this.selection.select('#' + this_id)
                     .select('span')
                     .classed('glyphicon', b_id == id)
                     .classed('glyphicon-ok', b_id == id);
@@ -974,10 +994,9 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         return status_bar;
     }
 
-    function _setup_quick_jump(selection, options) {
-
+    function _setup_quick_jump(selection) {
         // function to load a map
-        var load_fn = function(new_map_name, callback) {
+        var load_fn = function(new_map_name, quick_jump_path, callback) {
             if (this.options.enable_editing && !this.options.never_ask_before_quit) {
                 if (!(confirm(('You will lose any unsaved changes.\n\n' +
                                'Are you sure you want to switch maps?')))) {
@@ -986,7 +1005,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 }
             }
             this.map.set_status('Loading map ' + new_map_name + ' ...');
-            var url = utils.name_to_url(new_map_name, this.options.local_host);
+            var url = utils.name_to_url(new_map_name, quick_jump_path);
             d3.json(url, function(error, data) {
                 if (error) {
                     console.warn('Could not load data: ' + error);
@@ -1002,7 +1021,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         }.bind(this);
         
         // make the quick jump object
-        this.quick_jump = QuickJump(selection, options, load_fn);
+        this.quick_jump = QuickJump(selection, load_fn);
     }
 
     function _setup_modes(map, brush, zoom_container) {

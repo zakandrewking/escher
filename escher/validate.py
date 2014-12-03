@@ -2,7 +2,8 @@
 
 from __future__ import print_function, unicode_literals
 
-from escher.server import directory
+from escher import __schema_version__
+from escher.urls import root_directory
 from os.path import join
 import re
 import json
@@ -92,7 +93,7 @@ def get_jsonschema():
     """Get the local jsonschema.
 
     """
-    with open(join(directory, 'jsonschema', '1-0-0'), 'r') as f:
+    with open(join(root_directory, 'escher', 'jsonschema', __schema_version__), 'r') as f:
         return json.load(f)
 
 def genes_for_gene_reaction_rule(rule):
