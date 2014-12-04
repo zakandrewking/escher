@@ -33,7 +33,7 @@ def test_get_cache_dir():
 
 def test_clear_cache(tmpdir, request):
     (tmpdir.mkdir('maps').mkdir('Escherichia coli')
-     .join('iJO1366.central_metabolism.json').write('temp'))
+     .join('iJO1366.Central metabolism.json').write('temp'))
     (tmpdir.mkdir('models').mkdir('Escherichia coli')
      .join('iJO1366.json').write('temp'))
     clear_cache(str(tmpdir))
@@ -44,12 +44,12 @@ def test_clear_cache(tmpdir, request):
 
 def test_local_index(tmpdir, request):
     maps = tmpdir.mkdir('maps')
-    maps.mkdir('Escherichia coli').join('iJO1366.central_metabolism.json').write('temp')
+    maps.mkdir('Escherichia coli').join('iJO1366.Central metabolism.json').write('temp')
     # ignore these
     maps.join('ignore_md.json').write('ignore')
     tmpdir.mkdir('models').mkdir('Escherichia coli').join('iJO1366.json').write('temp')
     assert local_index(str(tmpdir)) == { 'maps': [ { 'organism': 'Escherichia coli',
-                                                     'map_name': 'iJO1366.central_metabolism' } ],
+                                                     'map_name': 'iJO1366.Central metabolism' } ],
                                          'models': [ { 'organism': 'Escherichia coli',
                                                        'model_name': 'iJO1366' } ] }
     def fin():
@@ -78,17 +78,22 @@ def test_model_json_for_name(tmpdir):
 
 @mark.web
 def test_model_json_for_name_web(tmpdir):
-    pass
+    data = model_json_for_name('iJO1366', cache_dir=str(tmpdir))
+    assert 'reactions' in data
+    assert 'metabolites' in data
 
 def test_map_json_for_name(tmpdir):
     maps = tmpdir.mkdir('maps')
-    maps.mkdir('Escherichia coli').join('iJO1366.central_metabolism.json').write('"temp"')
-    json = map_json_for_name('iJO1366.central_metabolism', cache_dir=str(tmpdir))
+    maps.mkdir('Escherichia coli').join('iJO1366.Central metabolism.json').write('"temp"')
+    json = map_json_for_name('iJO1366.Central metabolism', cache_dir=str(tmpdir))
     assert json == '"temp"'
 
 @mark.web
 def test_map_json_for_name_web(tmpdir):
-    pass
+    data = map_json_for_name('iJO1366.Central metabolism', cache_dir=str(tmpdir))
+    root = get_url('escher_root', protocol='https').rstrip('/')
+    assert json.loads(data)[0]['schema'] == '/'.join([root, 'escher', 'jsonschema',
+                                                      __schema_version__ + '#'])
     
 # helper functions
     
@@ -108,7 +113,7 @@ def test__load_resource(tmpdir):
 @mark.web
 def test__load_resource_web(tmpdir): 
     url = '/'.join([get_url('map_download', protocol='https'),
-                    'Escherichia%20coli/iJO1366.central_metabolism.json'])
+                    'Escherichia%20coli/iJO1366.Central%20metabolism.json'])
     _ = json.loads(_load_resource(url, 'name'))
                 
 def test_Builder(tmpdir):
@@ -139,7 +144,7 @@ def test_Builder(tmpdir):
 @mark.web
 def test_Builder_download():
     # download
-    b = Builder(map_name='iJO1366.central_metabolism',
+    b = Builder(map_name='iJO1366.Central metabolism',
                 model_name='iJO1366')
     assert b.loaded_map_json is not None
     assert b.loaded_model_json is not None
@@ -147,13 +152,13 @@ def test_Builder_download():
     b.display_in_notebook(height=200)
 
     # data
-    b = Builder(map_name='iJO1366.central_metabolism',
+    b = Builder(map_name='iJO1366.Central metabolism',
                 model_name='iJO1366',
                 reaction_data=[{'GAPD': 123}, {'GAPD': 123}])
-    b = Builder(map_name='iJO1366.central_metabolism',
+    b = Builder(map_name='iJO1366.Central metabolism',
                 model_name='iJO1366',
                 metabolite_data=[{'nadh_c': 123}, {'nadh_c': 123}])
-    b = Builder(map_name='iJO1366.central_metabolism',
+    b = Builder(map_name='iJO1366.Central metabolism',
                 model_name='iJO1366',
                 gene_data=[{'gapA': 123}, {'adhE': 123}])
 
@@ -182,20 +187,18 @@ def test__draw_js():
 
     # no static parse, dev
     ijs = b._initialize_javascript('id', 'local')
-    js = b._draw_js('id', True, 'all', True, True, True, 'pan', True, False)
+    js = b._draw_js('id', True, 'all', True, True, True, 'pan', True, None)
     look_for_string(ijs, 'var map_data_id = "useless_map";')
     look_for_string(ijs, 'var model_data_id = "useless_model";')
     look_for_string(js, 'Builder(map_data_id, model_data_id, embedded_css_id, d3.select("#id"), options);')
 
     # static parse, not dev 
-    b.static_site_index_json = '{"my": ["useless", "index"]}'
     ijs = b._initialize_javascript('id', 'local')
-    js = b._draw_js('id', True, 'all', True, False, True, 'pan', True, True)
+    static_index = '{"my": ["useless", "index"]}'
+    js = b._draw_js('id', True, 'all', True, False, True, 'pan', True, static_index)
     look_for_string(ijs, 'var map_data_id = "useless_map";')
     look_for_string(ijs, 'var model_data_id = "useless_model";')
     look_for_string(js, 'escher.static.load_map_model_from_url("%s/maps/", "%s/models/",' % (__schema_version__, __schema_version__))
-    look_for_string(js, b.static_site_index_json)
-    look_for_string(js, 'function(map_data_id, model_data_id) {')
+    look_for_string(js, static_index)
+    look_for_string(js, 'options, function(map_data_id, model_data_id, options) {')
     look_for_string(js, 'escher.Builder(map_data_id, model_data_id, embedded_css_id, d3.select("#id"), options);')
-        
-    

@@ -116,27 +116,28 @@ describe('utils', function() {
 
     it('parse_url_components', function() {
         // standard name
-        var url = '?map_name=iJO1366.central_metabolism&model_name=iJO1366',
+        var url = '?map_name=iJO1366.Central%20metabolism&model_name=iJO1366%40%23%25',
             the_window = { location: { search: url } };
 
         var options = utils.parse_url_components(the_window, {});
-        expect(options).toEqual({ map_name: 'iJO1366.central_metabolism',
-                                  model_name: 'iJO1366' });
+        expect(options).toEqual({ map_name: 'iJO1366.Central metabolism',
+                                  model_name: 'iJO1366@#%' });
 
         // no host, and options
         options = { a: 'b',
                     model_name: 'old_model_name' };
         options = utils.parse_url_components(the_window, options);
-        expect(options).toEqual({ map_name: 'iJO1366.central_metabolism',
-                                  model_name: 'iJO1366',
+        expect(options).toEqual({ map_name: 'iJO1366.Central metabolism',
+                                  model_name: 'iJO1366@#%',
                                   a: 'b' });
 
         // array options
-        url = '?quick_jump[]=iJO1366.central_metabolism&quick_jump[]=iJO1366.fatty_acid_metabolism';
+        url = '?quick_jump[]=iJO1366.Central%20metabolism&quick_jump[]=iJO1366.Fatty%20acid%20metabolism';
         the_window = { location: { search: url } };
         options = { a: 'b' };
         options = utils.parse_url_components(the_window, options);
         expect(options).toEqual({ a: 'b',
-                                  quick_jump: ['iJO1366.central_metabolism', 'iJO1366.fatty_acid_metabolism'] });
+                                  quick_jump: ['iJO1366.Central metabolism',
+					       'iJO1366.Fatty acid metabolism'] });
     });
 });

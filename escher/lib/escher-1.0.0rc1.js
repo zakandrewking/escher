@@ -1634,15 +1634,16 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	var query = the_window.location.search.substring(1),
 	    vars = query.split("&");
 	for (var i = 0; i < vars.length; i++) {
-	    var pair = vars[i].split("=");
+	    var pair = vars[i].split("="),
+		val = decodeURIComponent(pair[1]);
 	    // deal with array options
 	    if (pair[0].indexOf('[]') == pair[0].length - 2) {
 		var o = pair[0].replace('[]', '');
 		if (!(o in options))
 		    options[o] = [];
-		options[o].push(pair[1]);
+		options[o].push(val);
 	    } else {
-		options[pair[0]] = pair[1];
+		options[pair[0]] = val;
 	    }
 	}
 	return options;
@@ -2236,9 +2237,7 @@ define('DirectionArrow',["utils"], function(utils) {
 
 define('data_styles',['utils'], function(utils) {
     // globals
-    var FORMAT_4 = d3.format('.4g'),
-        FORMAT_3 = d3.format('.3g'),
-        RETURN_ARG = function(x) { return x; },
+    var RETURN_ARG = function(x) { return x; },
         ESCAPE_REG = /([.*+?^=!:${}()|\[\]\/\\])/g,
         EMPTY_LINES = /\n\s*\n/g,
         TRAILING_NEWLINE = /\n\s*(\)*)\s*$/,
@@ -2427,7 +2426,7 @@ define('data_styles',['utils'], function(utils) {
                 var d = gene_values[g_obj.bigg_id];
                 if (typeof d === 'undefined') d = null;
                 var f = float_for_data(d, styles, compare_style),
-                    format = (f === null ? RETURN_ARG : FORMAT_3); 
+                    format = (f === null ? RETURN_ARG : d3.format('.3g')); 
                 if (d.length==1) {
                     out = replace_gene_in_rule(out, g_obj.bigg_id, (name + ' (' + null_or_d(d[0], format) + ')\n'));
                 }
@@ -2468,11 +2467,11 @@ define('data_styles',['utils'], function(utils) {
         if (d === null)
             return null_or_d(null);
         if (d.length == 1) {
-            var format = (f === null ? RETURN_ARG : FORMAT_4);
+            var format = (f === null ? RETURN_ARG : d3.format('.3g'));
             return null_or_d(d[0], format);
         }
         if (d.length == 2) {
-            var format = (f === null ? RETURN_ARG : FORMAT_3),
+            var format = (f === null ? RETURN_ARG : d3.format('.3g')),
                 t = null_or_d(d[0], format);
             t += ', ' + null_or_d(d[1], format);
             t += ': ' + null_or_d(f, format);
@@ -14451,8 +14450,8 @@ define('static',["utils"], function(utils) {
     return { load_map_model_from_url: load_map_model_from_url };
     
     function load_map_model_from_url(map_download_url, model_download_url,
-				     local_index, callback) {
-	var opt = utils.parse_url_components(window, {}),
+				     local_index, options, callback) {
+	var opt = utils.parse_url_components(window, options),
 	    to_load = [],
 	    load_map = function (fn) { fn(null); },
 	    load_model = function (fn) { fn(null); };
@@ -14482,7 +14481,7 @@ define('static',["utils"], function(utils) {
 	}
 	load_map(function(map_data) {
 	    load_model(function(model_data) {
-		callback(map_data, model_data);
+		callback(map_data, model_data, options);
 	    });
 	});
     }

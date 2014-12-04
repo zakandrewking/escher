@@ -1,8 +1,6 @@
 define(['utils'], function(utils) {
     // globals
-    var FORMAT_4 = d3.format('.4g'),
-        FORMAT_3 = d3.format('.3g'),
-        RETURN_ARG = function(x) { return x; },
+    var RETURN_ARG = function(x) { return x; },
         ESCAPE_REG = /([.*+?^=!:${}()|\[\]\/\\])/g,
         EMPTY_LINES = /\n\s*\n/g,
         TRAILING_NEWLINE = /\n\s*(\)*)\s*$/,
@@ -191,7 +189,7 @@ define(['utils'], function(utils) {
                 var d = gene_values[g_obj.bigg_id];
                 if (typeof d === 'undefined') d = null;
                 var f = float_for_data(d, styles, compare_style),
-                    format = (f === null ? RETURN_ARG : FORMAT_3); 
+                    format = (f === null ? RETURN_ARG : d3.format('.3g')); 
                 if (d.length==1) {
                     out = replace_gene_in_rule(out, g_obj.bigg_id, (name + ' (' + null_or_d(d[0], format) + ')\n'));
                 }
@@ -232,11 +230,11 @@ define(['utils'], function(utils) {
         if (d === null)
             return null_or_d(null);
         if (d.length == 1) {
-            var format = (f === null ? RETURN_ARG : FORMAT_4);
+            var format = (f === null ? RETURN_ARG : d3.format('.3g'));
             return null_or_d(d[0], format);
         }
         if (d.length == 2) {
-            var format = (f === null ? RETURN_ARG : FORMAT_3),
+            var format = (f === null ? RETURN_ARG : d3.format('.3g')),
                 t = null_or_d(d[0], format);
             t += ', ' + null_or_d(d[1], format);
             t += ': ' + null_or_d(f, format);

@@ -92,9 +92,9 @@ describe('data_styles', function() {
     
     it('text_for_data', function() {
         expect(escher.data_styles.text_for_data([10], 10))
-            .toEqual('10.00');
+            .toEqual('10.0');
         expect(escher.data_styles.text_for_data([-10], 10))
-            .toEqual('-10.00');
+            .toEqual('-10.0');
         expect(escher.data_styles.text_for_data([-10, 5], 10))
             .toEqual('-10.0, 5.00: 10.0');
     });

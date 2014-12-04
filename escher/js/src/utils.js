@@ -841,15 +841,16 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	var query = the_window.location.search.substring(1),
 	    vars = query.split("&");
 	for (var i = 0; i < vars.length; i++) {
-	    var pair = vars[i].split("=");
+	    var pair = vars[i].split("="),
+		val = decodeURIComponent(pair[1]);
 	    // deal with array options
 	    if (pair[0].indexOf('[]') == pair[0].length - 2) {
 		var o = pair[0].replace('[]', '');
 		if (!(o in options))
 		    options[o] = [];
-		options[o].push(pair[1]);
+		options[o].push(val);
 	    } else {
-		options[pair[0]] = pair[1];
+		options[pair[0]] = val;
 	    }
 	}
 	return options;
