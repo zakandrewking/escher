@@ -201,9 +201,9 @@ define(["utils", "build"], function(utils, build) {
                 enter = s.enter()
                     .append('g').attr('id', 'rotation-center');
             
-            enter.append('path').attr('d', 'M-22 0 L22 0')
+            enter.append('path').attr('d', 'M-32 0 L32 0')
                 .attr('class', 'rotation-center-line');
-            enter.append('path').attr('d', 'M0 -22 L0 22')
+            enter.append('path').attr('d', 'M0 -32 L0 32')
                 .attr('class', 'rotation-center-line');
 
             s.attr('transform', 'translate('+this.center.x+','+this.center.y+')')

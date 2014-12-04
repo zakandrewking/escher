@@ -56,6 +56,7 @@ _dependencies_cdn = {
 _links = {
     'escher_root': '//escher.github.io/',
     'github': '//github.com/zakandrewking/escher/',
+    'documentation': '//escher.readthedocs.org/',
     }
 
 # external dependencies

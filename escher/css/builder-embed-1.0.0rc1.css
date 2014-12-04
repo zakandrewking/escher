@@ -66,7 +66,7 @@ g.selected .metabolite-circle {
 }
 .segment {
     stroke: #334E75;
-    stroke-width: 6px;
+    stroke-width: 10px;
     fill: none;
 }
 .arrowhead {
@@ -121,7 +121,7 @@ g.selected .metabolite-circle {
 }
 .rotation-center-line {
     stroke: red;
-    stroke-width: 2px;
+    stroke-width: 5px;
 }
 .highlight {
     fill: #106F94;
