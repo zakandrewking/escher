@@ -1,8 +1,8 @@
 {
-    "id": "https://zakandrewking.github.io/escher/escher/jsonschema/1-0-0#",
+    "id": "https://escher.github.io/escher/jsonschema/1-0-0#",
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "Escher map",
-    "description": "A metabolic map for Escher: https://zakandrewking.github.io/escher",
+    "description": "A metabolic map for Escher: https://escher.github.io",
     "type": "array",
     "items": [
 	{
@@ -12,11 +12,11 @@
 	    "properties": {
 		"schema": {
 		    "type": "string",
-		    "enum": ["https://zakandrewking.github.io/escher/escher/jsonschema/1-0-0#"]
+		    "enum": ["https://escher.github.io/escher/jsonschema/1-0-0#"]
 		},
 		"homepage": {
 		    "type": "string",
-		    "enum": ["https://zakandrewking.github.io/escher"]
+		    "enum": ["https://escher.github.io"]
 		},
 		"map_id": {"type": "string"},
 		"map_name": {"type": "string"},

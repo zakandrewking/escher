@@ -12,7 +12,7 @@ See the [wiki](https://github.com/zakandrewking/escher/wiki) for documentation, 
 
 **NOTE**: Escher is still a Beta release, so please be patient with the early version as you may encounter bugs and other unexpected behavior. The documentation is also unfinished. Feel free to submit bugs and feature requests as Issues, or, better yet, Pull Requests.
 
-The easiest way to use Escher is to browse or build maps on the  [Escher website](http://zakandrewking.github.io/escher/).
+The easiest way to use Escher is to browse or build maps on the  [Escher website](http://escher.github.io/).
 
 ### Supported browsers
 
@@ -21,7 +21,7 @@ We recommend using Google Chrome for optimal performance and consistency, but Es
 1) Using the Escher web tool
 ======
 
-When you open [Escher](http://zakandrewking.github.io/escher/), you will see a few options:
+When you open [Escher](http://escher.github.io/), you will see a few options:
 
 - Filter by organism: Choose an organism to filter the Maps and Models.
 - Map: Try viewing and editing a pre-built map, or start from scratch with an empty builder by choosing None.

@@ -29,7 +29,8 @@ describe('Builder', function() {
     });
 
     it('fix scales', function () {
-	b = escher.Builder(null, null, '', null, { reaction_scale: [{ type: 'median', color: '#9696ff', size: 8 }] });
+	b = escher.Builder(null, null, '', null, { reaction_scale: [{ type: 'median', color: '#9696ff', size: 8 }],
+						   never_ask_before_quit: true });
 	expect(b.options.reaction_scale).toEqual([{ type: 'median', color: '#9696ff', size: 8 },
 						  { type: 'min', color: '#ffffff', size: 10 },
 						  { type: 'max', color: '#ffffff', size: 10 }]);
@@ -37,7 +38,8 @@ describe('Builder', function() {
         // after callback
 	b = escher.Builder(null, null, '', null, { metabolite_scale: [{ type: 'median', color: 'red', size: 0 },
 					                              { type: 'min', color: 'red', size: 0 },
-					                              { type: 'max', color: 'red', size: 0 } ]});
+					                              { type: 'max', color: 'red', size: 0 } ],
+						   never_ask_before_quit: true });
         b.settings.set_conditional('metabolite_scale', [{ type: 'median', color: '#9696ff', size: 8 }]);
 	expect(b.options.metabolite_scale).toEqual([{ type: 'median', color: '#9696ff', size: 8 },
 						    { type: 'min', color: '#ffffff', size: 10 },

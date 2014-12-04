@@ -11380,8 +11380,8 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         var out = [{ "map_name": this.map_name,
                      "map_id": this.map_id,
                      "map_description": this.map_description,
-                     "homepage": "https://zakandrewking.github.io/escher",
-                     "schema": "https://zakandrewking.github.io/escher/escher/jsonschema/1-0-0#"
+                     "homepage": "https://escher.github.io",
+                     "schema": "https://escher.github.io/escher/jsonschema/1-0-0#"
                    },
                    { reactions: utils.clone(this.reactions),
                      nodes: utils.clone(this.nodes),

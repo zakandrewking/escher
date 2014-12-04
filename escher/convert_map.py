@@ -225,8 +225,8 @@ def convert(map, model):
             del map_body[key]
 
     header = {
-        "schema": "https://zakandrewking.github.io/escher/escher/jsonschema/1-0-0#",
-        "homepage": "https://zakandrewking.github.io/escher",
+        "schema": "https://escher.github.io/escher/jsonschema/1-0-0#",
+        "homepage": "https://escher.github.io",
         "map_name": "",
         "map_id": "",
         "map_description": ""
