@@ -22,6 +22,7 @@ def generate_static_site():
                            index_css=get_url('index_css', 'local'),
                            favicon=get_url('favicon', 'local'),
                            logo=get_url('logo', 'local'),
+                           documentation=get_url('documentation', protocol='https'),
                            github=get_url('github', protocol='https'),
                            index_js=get_url('index_js', 'local'),
                            index_gh_pages_js=get_url('index_gh_pages_js', 'local'),
@@ -36,7 +37,7 @@ def generate_static_site():
                            )
     
     with open(join(root_directory, 'index.html'), 'w') as f:
-        f.write(data)
+        f.write(data.encode('utf-8'))
 
     # viewer and builder
     for kind in ['viewer', 'builder']:

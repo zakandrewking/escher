@@ -54,8 +54,9 @@ _dependencies_cdn = {
     }
 
 _links = {
-    'escher_root': '//zakandrewking.github.io/escher/',
+    'escher_root': '//escher.github.io/',
     'github': '//github.com/zakandrewking/escher/',
+    'documentation': '//escher.readthedocs.org/',
     }
 
 # external dependencies
@@ -72,8 +73,8 @@ def get_url(name, source='web', local_host=None, protocol=None):
     source: Either 'web' or 'local'. Cannot be 'local' for external links.
 
     protocol: The protocol can be 'http', 'https', or None which indicates a
-    'protocol relative URL', as in //zakandrewking.github.io/escher. Ignored if
-    source is local.
+    'protocol relative URL', as in //escher.github.io. Ignored if source is
+    local.
 
     local_host: A host url, including the protocol. e.g. http://localhost:7778.
 

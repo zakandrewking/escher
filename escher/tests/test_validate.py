@@ -10,8 +10,8 @@ def test_validate_map():
     the_map = [{ 'map_name': 'carbohydrate metabolism',
                  'map_id': 'h_sapiens_carb',
                  'map_description': 'A map of central carbon→ metabolism',
-                 'homepage': 'https://zakandrewking.github.io/escher',
-                 'schema': 'https://zakandrewking.github.io/escher/escher/jsonschema/1-0-0#'
+                 'homepage': 'https://escher.github.io',
+                 'schema': 'https://escher.github.io/escher/jsonschema/1-0-0#'
              },
                { 'reactions': { '1': {'name': 'glyceraldehyde-3-phosphate dehydrogenase',
                                       'bigg_id': 'GAPD',

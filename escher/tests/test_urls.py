@@ -8,11 +8,11 @@ from pytest import raises
 def test_urls():
     # online
     url = get_url('builder_embed_css', source='web', protocol='https')
-    assert url == 'https://zakandrewking.github.io/escher/builder-embed-%s.css' % __version__
+    assert url == 'https://escher.github.io/builder-embed-%s.css' % __version__
 
     # no protocol
     url = get_url('escher', 'web')
-    assert url == '//zakandrewking.github.io/escher/escher-%s.js' % __version__
+    assert url == '//escher.github.io/escher-%s.js' % __version__
 
     # local
     url = get_url('require_js', 'local')
@@ -31,7 +31,7 @@ def test_urls():
     url = get_url('server_index', source='local')
     assert url == __schema_version__ + '/index.json'
     url = get_url('map_download', protocol='https')
-    assert url == 'https://zakandrewking.github.io/escher/%s/maps/' % __schema_version__
+    assert url == 'https://escher.github.io/%s/maps/' % __schema_version__
     
     # raises
     with raises(Exception):

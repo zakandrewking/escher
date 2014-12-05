@@ -505,7 +505,7 @@ class Builder(object):
         --------
 
         js_source: Can be one of the following:
-            'web' - (Default) use js files from zakandrewking.github.io/escher.
+            'web' - (Default) use js files from escher.github.io.
             'local' - use compiled js files in the local escher installation. Works offline.
             'dev' - use the local, uncompiled development files. Works offline.
 
@@ -611,7 +611,7 @@ class Builder(object):
 
             Can be one of the following:
             
-            - *web* (Default) - Use JavaScript files from zakandrewking.github.io/escher.
+            - *web* (Default) - Use JavaScript files from escher.github.io.
             - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
             - *dev* - Use the local, uncompiled development files. Works offline.
             
@@ -670,7 +670,7 @@ class Builder(object):
 
             Can be one of the following:
             
-            - *web* (Default) - Use JavaScript files from zakandrewking.github.io/escher.
+            - *web* (Default) - Use JavaScript files from escher.github.io.
             - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
             - *dev* - Use the local, uncompiled development files. Works offline.
 
@@ -718,7 +718,7 @@ class Builder(object):
 
             Can be one of the following:
             
-            - *web* (Default) - Use JavaScript files from zakandrewking.github.io/escher.
+            - *web* (Default) - Use JavaScript files from escher.github.io.
             - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
             - *dev* - Use the local, uncompiled development files. Works offline.
             

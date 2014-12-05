@@ -5091,9 +5091,9 @@ define('Behavior',["utils", "build"], function(utils, build) {
                 enter = s.enter()
                     .append('g').attr('id', 'rotation-center');
             
-            enter.append('path').attr('d', 'M-22 0 L22 0')
+            enter.append('path').attr('d', 'M-32 0 L32 0')
                 .attr('class', 'rotation-center-line');
-            enter.append('path').attr('d', 'M0 -22 L0 22')
+            enter.append('path').attr('d', 'M0 -32 L0 32')
                 .attr('class', 'rotation-center-line');
 
             s.attr('transform', 'translate('+this.center.x+','+this.center.y+')')
@@ -11380,8 +11380,8 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         var out = [{ "map_name": this.map_name,
                      "map_id": this.map_id,
                      "map_description": this.map_description,
-                     "homepage": "https://zakandrewking.github.io/escher",
-                     "schema": "https://zakandrewking.github.io/escher/escher/jsonschema/1-0-0#"
+                     "homepage": "https://escher.github.io",
+                     "schema": "https://escher.github.io/escher/jsonschema/1-0-0#"
                    },
                    { reactions: utils.clone(this.reactions),
                      nodes: utils.clone(this.nodes),
@@ -13239,7 +13239,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             starting_reaction: null,
             never_ask_before_quit: false,
             unique_map_id: null,
-            primary_metabolite_radius: 15,
+            primary_metabolite_radius: 20,
             secondary_metabolite_radius: 10,
             marker_radius: 5,
             gene_font_size: 18,
@@ -13250,11 +13250,11 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             reaction_data: null,
             reaction_styles: ['color', 'size', 'text'],
             reaction_compare_style: 'log2_fold',
-            reaction_scale: [{ type: 'min', color: '#c8c8c8', size: 4 },
-                             { type: 'median', color: '#9696ff', size: 8 },
-                             { type: 'max', color: '#ff0000', size: 12 }],
+            reaction_scale: [{ type: 'min', color: '#c8c8c8', size: 12 },
+                             { type: 'median', color: '#9696ff', size: 20 },
+                             { type: 'max', color: '#ff0000', size: 25 }],
             reaction_no_data_color: '#dcdcdc',
-            reaction_no_data_size: 4,
+            reaction_no_data_size: 8,
             // gene
             gene_data: null,
             and_method_in_gene_reaction_rule: 'mean',
@@ -13262,11 +13262,11 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             metabolite_data: null,
             metabolite_styles: ['color', 'size', 'text'],
             metabolite_compare_style: 'log2_fold',
-            metabolite_scale: [ { type: 'min', color: '#fffaf0', size:12 },
-                                { type: 'median', color: '#f1c470', size: 14 },
-                                { type: 'max', color: '#800000', size: 20 } ],
+            metabolite_scale: [ { type: 'min', color: '#fffaf0', size: 20 },
+                                { type: 'median', color: '#f1c470', size: 30 },
+                                { type: 'max', color: '#800000', size: 40 } ],
             metabolite_no_data_color: '#ffffff',
-            metabolite_no_data_size: 6,
+            metabolite_no_data_size: 10,
             // View and build options
             identifiers_on_map: 'bigg_id',
             highlight_missing: false,
@@ -13953,7 +13953,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         menu.append('a')
             .attr('class', 'help-button')
             .attr('target', '#')
-            .attr('href', 'http://github.com/zakandrewking/escher/wiki')
+            .attr('href', 'https://escher.readthedocs.org')
             .text('?');
 
         var button_panel = button_selection.append('ul')

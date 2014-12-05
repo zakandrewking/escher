@@ -175,7 +175,7 @@ class TestCommand(Command):
 setup(name='Escher',
       version=version,
       author='Zachary King',
-      url='http://zakandrewking.github.io/escher/',
+      url='https://escher.github.io',
       packages=['escher'],
       package_data={'escher': ['css/web/*.css', 'css/*.css', 'templates/*',
                                'example_data/*', 'lib/*.js', 'lib/*.css',

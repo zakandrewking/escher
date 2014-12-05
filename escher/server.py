@@ -73,7 +73,7 @@ class IndexHandler(BaseHandler):
     @gen.coroutine
     def get(self):
         # get the organisms, maps, and models
-        response = yield gen.Task(AsyncHTTPClient().fetch, get_url('server_index', protocol='https'))
+        response = yield gen.Task(AsyncHTTPClient().fetch, get_url('server_index', protocol='http'))
         if response.code == 200 and response.body is not None:
             server_index = response.body.decode('utf-8')
         else:
@@ -89,8 +89,9 @@ class IndexHandler(BaseHandler):
                                index_css=get_url('index_css', 'local'),
                                favicon=get_url('favicon', 'local'),
                                logo=get_url('logo', 'local'),
+                               documentation=get_url('documentation', protocol='https'),
                                github=get_url('github'),
-                               index_js=get_url('index_js', 'local'),
+index_js=get_url('index_js', 'local'),
                                index_gh_pages_js=get_url('index_gh_pages_js', 'local'),
                                map_download=get_url('map_download', 'local'),
                                # server_index_url=

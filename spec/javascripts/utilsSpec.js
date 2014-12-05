@@ -107,8 +107,8 @@ describe('utils', function() {
     });
 
     it('test_name_to_url', function() {
-        var url = utils.name_to_url('iJO1366', 'https://zakandrewking.github.io/escher/1-0-0/models/Escherichia%20coli');
-        expect(url).toEqual('https://zakandrewking.github.io/escher/1-0-0/models/Escherichia%20coli/iJO1366.json');
+        var url = utils.name_to_url('iJO1366', 'https://escher.github.io/1-0-0/models/Escherichia%20coli');
+        expect(url).toEqual('https://escher.github.io/1-0-0/models/Escherichia%20coli/iJO1366.json');
 
         var url = utils.name_to_url('iJO1366.central_metabolism');
         expect(url).toEqual('iJO1366.central_metabolism.json');

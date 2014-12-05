@@ -58,7 +58,7 @@
       <div class="row">
 	<div class="col-sm-6">
 	  <h3>Options</h3>
-	    <div style="width: 100%"><input type="checkbox" id="scroll"> Scroll to zoom (instead scroll to pan)</div>
+	    <div style="width: 100%"><input type="checkbox" id="scroll"> Scroll to zoom (instead of scroll to pan)</div>
 	    <div style="width: 100%"><input type="checkbox" id="never_ask"> Never ask before reloading</div>
 	</div>
 	<div class="col-sm-6">
@@ -75,15 +75,18 @@
 	  <ol>
 	    <li><h4>What is Escher?</h4>
 	      <p>Escher is a web-based tool for building, viewing, and sharing
-	      visualizations of metabolic pathways. These 'pathway maps' are a
-	      great way to contextualize data about metabolism. More information
-	      and documentation can be found on <a href="{{github}}">Github</a>.
+		visualizations of metabolic pathways. These 'pathway maps' are a
+		great way to contextualize data about metabolism. To get started,
+		load a map by clicking the <b>Load Map</b> button above, or visit
+		the <a href="{{documentation}}">documentation</a> to learn more.
 	      </p>
 	    </li>
 	    <li><h4>Are there more maps available? Can I contribute maps?</h4>
-	      <p>Many maps for organisms in the <a href="http://bigg.ucsd.edu/">BIGG</a> database
-		will be uploaded to Escher before the v1.0 release. I will also
-		be providing details on how to submit maps <i>via</i> Github.</p>
+	      <p>We will be uploading maps for all of the organisms in the 
+		<a href="http://bigg.ucsd.edu/">BiGG</a> database. If you
+		would like to contribute maps, there is a
+		<a href="https://escher.readthedocs.org/en/latest/contribute_maps.html">guide</a>
+		available in the documentation.
 	    </li>
 	    <li><h4>How do I cite Escher?</h4>
 	      <p>Escher has not yet been published in a peer-reviewed journal,
@@ -91,12 +94,18 @@
 		<a href="http://dx.doi.org/10.5281/zenodo.11712"><img
 		src="https://zenodo.org/badge/6078/zakandrewking/escher.png"></a>.</p>
 	    </li>
+	    <li><h4>What browsers can I use?</h4>
+	      <p>We recommend using Google Chrome for optimal performance, but
+		Escher will also run in the latest versions of Firefox, Internet
+		Explorer, and Safari (including mobile Safari).</p>
+	    </li>
 	    <li><h4>I have more questions. Who do I ask?</h4>
-	      <p>You can follow <a href="https://twitter.com/zakandrewking">@zakandrewking</a>
-		for Escher updates, and ask for help on Stack Overflow with the
-		<a href="http://stackoverflow.com/questions/tagged/escher">Escher</a> tag. If
-		you find bugs or would like to contribute to the project, feel
-		free to submit an issue and or a pull request on <a href="{{github}}">Github</a>.</p> 
+	      <p>Visit the <a href="{{documentation}}">documentation</a>
+		to get started with Escher and explore the API. You can follow
+		<a href="https://twitter.com/zakandrewking">@zakandrewking</a>
+		for Escher updates. If you find bugs or would like to contribute
+		to the project, feel free to submit an issue and or a pull request
+		on <a href="{{github}}">Github</a>.</p> 
 	    </li>
 	  </ol>
 	</div>
@@ -107,7 +116,7 @@
   <footer>
     <div class="container">
       <p class="more">
-	Learn more about <a href="{{github}}">Escher</a>
+	<a href="{{documentation}}">Documentation</a> – <a href="{{github}}">GitHub</a>
       </p>
       <p class="version">
 	Version {{version}}
