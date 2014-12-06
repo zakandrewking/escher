@@ -4087,16 +4087,17 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                         start = drawn_nodes[d.from_node_id],
                         b1 = d.b1,
 		        end = drawn_nodes[d.to_node_id],
-                        b2 = d.b2;
+                        b2 = d.b2,
+			disp_factor = 1.5;
 		    // hide_secondary_metabolites option
 		    if (hide_secondary_metabolites &&
 			((end['node_type']=='metabolite' && !end.node_is_primary) ||
 			 (start['node_type']=='metabolite' && !start.node_is_primary)))
 			return labels;
 
-                    if (start.node_type=='metabolite' && (Math.abs(d.from_node_coefficient) > 1)) {
+                    if (start.node_type=='metabolite' && (Math.abs(d.from_node_coefficient) != 1)) {
                         var arrow_size = get_arrow_size(d.data, should_size),
-                            disp = get_disp(arrow_size, false, 0, end.node_is_primary),
+                            disp = disp_factor * get_disp(arrow_size, false, 0, end.node_is_primary),
                             direction = (b1 === null) ? end : b1;
                         direction = utils.c_plus_c(direction, utils.rotate_coords(direction, 0.5, start));
                         var loc = displaced_coords(disp, start, direction, 'start');
@@ -4106,9 +4107,9 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                                       y: loc.y,
                                       data: d.data });
                     }
-                    if (end.node_type=='metabolite' && (Math.abs(d.to_node_coefficient) > 1)) {
+                    if (end.node_type=='metabolite' && (Math.abs(d.to_node_coefficient) != 1)) {
                         var arrow_size = get_arrow_size(d.data, should_size),
-                            disp = get_disp(arrow_size, false, 0, end.node_is_primary),
+                            disp = disp_factor * get_disp(arrow_size, false, 0, end.node_is_primary),
                             direction = (b2 === null) ? start : b2;
                         direction = utils.c_plus_c(direction, utils.rotate_coords(direction, 0.5, end));
                         var loc = displaced_coords(disp, direction, end, 'end');
