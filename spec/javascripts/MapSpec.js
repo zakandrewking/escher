@@ -152,4 +152,19 @@ describe('Map', function() {
                        metabolite: { min: 5, median: 7.5, mean: 7.5,
                                      Q1: 5, Q3: 10, max: 10 } });
     });
+    
+    it('map_for_export', function() {
+        // check that unnecessary attributes are removed
+        ['reactions', 'nodes', 'text_labels'].forEach(function(type) {
+            for (var first in map[type]) {
+                map[type][first].to_remove = true;
+                var data = map.map_for_export();
+                expect(data[1][type][first].to_remove).not.toBeDefined();
+                break;
+            }
+        }); 
+        map.canvas.to_remove = true;
+        var data = map.map_for_export();
+        expect(data[1].canvas.to_remove).not.toBeDefined();
+    });
 });

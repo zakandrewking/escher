@@ -3024,15 +3024,7 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 
         // set up complete.ly
         var c = completely(new_sel.node(), { backgroundColor: '#eee' });
         
-        d3.select(c.input)
-        // .attr('placeholder', 'Reaction ID -- Flux')
-            .on('input', function() {
-                this.value = this.value
-                // .replace("/","")
-                    .replace(" ","")
-                    .replace("\\","")
-                    .replace("<","");
-            });
+        d3.select(c.input);
         this.completely = c;
         // close button
         new_sel.append('button').attr('class', "button input-close-button")
@@ -11426,6 +11418,23 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             });
             out[1].nodes[n_id] = new_node;
         }
+        for (var t_id in out[1].text_labels) {
+            var text_label = out[1].text_labels[t_id],
+                new_text_label = {},
+                attrs = ["x", "y", "text"];
+            attrs.forEach(function(attr) {
+                new_text_label[attr] = text_label[attr];
+            });
+            out[1].text_labels[t_id] = new_text_label;
+        }
+        // canvas
+        var canvas_el = out[1].canvas,
+            new_canvas_el = {},
+            attrs = ["x", "y", "width", "height"];
+        attrs.forEach(function(attr) {
+            new_canvas_el[attr] = canvas_el[attr];
+        });
+        out[1].canvas = new_canvas_el;
 
         if (this.debug) {
             d3.json('jsonschema/1-0-0', function(error, schema) {
@@ -13148,6 +13157,9 @@ define('QuickJump',['utils'], function(utils) {
 		// works whether or not a '.' is present
 		return d.split('.').slice(-1)[0];
 	    });
+        
+        // only show if there are options
+        select_sel.style('display', view_options.length > 1 ? 'block' : 'none');
 
         // on selection
         var change_map = function(map_name) {

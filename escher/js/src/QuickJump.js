@@ -51,6 +51,9 @@ define(['utils'], function(utils) {
 		// works whether or not a '.' is present
 		return d.split('.').slice(-1)[0];
 	    });
+        
+        // only show if there are options
+        select_sel.style('display', view_options.length > 1 ? 'block' : 'none');
 
         // on selection
         var change_map = function(map_name) {

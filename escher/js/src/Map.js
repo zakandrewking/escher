@@ -1978,6 +1978,23 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             });
             out[1].nodes[n_id] = new_node;
         }
+        for (var t_id in out[1].text_labels) {
+            var text_label = out[1].text_labels[t_id],
+                new_text_label = {},
+                attrs = ["x", "y", "text"];
+            attrs.forEach(function(attr) {
+                new_text_label[attr] = text_label[attr];
+            });
+            out[1].text_labels[t_id] = new_text_label;
+        }
+        // canvas
+        var canvas_el = out[1].canvas,
+            new_canvas_el = {},
+            attrs = ["x", "y", "width", "height"];
+        attrs.forEach(function(attr) {
+            new_canvas_el[attr] = canvas_el[attr];
+        });
+        out[1].canvas = new_canvas_el;
 
         if (this.debug) {
             d3.json('jsonschema/1-0-0', function(error, schema) {
