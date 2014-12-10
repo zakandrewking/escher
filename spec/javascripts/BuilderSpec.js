@@ -18,6 +18,11 @@ describe('Builder', function() {
 	    sel.remove();
 	});
     });
+    
+    it('check for model+highlight_missing bug', function() {
+	b = escher.Builder(get_map(), get_model(), '', d3.select('body').append('div'),
+			   { never_ask_before_quit: true, highlight_missing: true });
+    }); 
 
     it("SVG selection error", function () {
 	var sel = d3.select('body').append('svg').append('g');

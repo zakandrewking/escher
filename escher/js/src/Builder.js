@@ -180,11 +180,13 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         else
             this.cobra_model = CobraModel.from_cobra_json(model_data);
         
-        if (this.map) this.map.cobra_model = this.cobra_model;
-        if (should_update_data)
-            this._update_data(true, false);
-        if (this.settings.get_option('highlight_missing'))
-            this.map.draw_all_reactions(false, false);
+        if (this.map) {
+	    this.map.cobra_model = this.cobra_model;
+            if (should_update_data)
+		this._update_data(true, false);
+            if (this.settings.get_option('highlight_missing'))
+		this.map.draw_all_reactions(false, false);
+	}
 
         this.callback_manager.run('load_model', null, model_data, should_update_data);
     }

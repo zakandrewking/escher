@@ -280,7 +280,8 @@ class Builder(object):
         - metabolite_scale
         - metabolite_no_data_color
         - metabolite_no_data_size
-        - highlight_missing_color
+        - highlight_missing
+        - allow_building_duplicate_reactions
 
     All keyword arguments can also be set on an existing Builder object
     using setter functions, e.g.:
@@ -346,7 +347,8 @@ class Builder(object):
                         'metabolite_scale',
                         'metabolite_no_data_color',
                         'metabolite_no_data_size',
-                        'highlight_missing_color']
+                        'highlight_missing',
+                        'allow_building_duplicate_reactions']
         def get_getter_setter(o):
             """Use a closure."""
             # create local fget and fset functions 
@@ -377,6 +379,11 @@ class Builder(object):
         
         """
         if self.model is not None:
+            try:
+                import cobra.io
+            except ImportError:
+                raise Exception(('The COBRApy package must be available to load '
+                                 'a COBRA model object'))
             self.loaded_model_json = cobra.io.to_json(self.model)
         elif self.model_json is not None:
             self.loaded_model_json = _load_resource(self.model_json,
@@ -564,6 +571,7 @@ class Builder(object):
         is_dev = (js_source=='dev')
         
         d3_url = get_url('d3', url_source, self.local_host)
+        d3_rel_url = get_url('d3', url_source)
         escher_url = ('' if js_source=='dev' else
                       get_url('escher_min' if minified_js else 'escher',
                               url_source, self.local_host))
@@ -578,13 +586,13 @@ class Builder(object):
         favicon_url = get_url('favicon', url_source, self.local_host)
 
         lh_string = ('' if self.local_host is None else
-                     (self.local_host + '/' if not self.local_host.endswith('/') else
-                      self.local_host))
+                     self.local_host.rstrip('/') + '/')
         
         html = content.render(id=self.the_id,
                               height=height,
                               dev=is_dev,
                               d3=d3_url,
+                              d3_rel=d3_rel_url,
                               escher=escher_url,
                               jquery=jquery_url,
                               boot_css=boot_css_url,
