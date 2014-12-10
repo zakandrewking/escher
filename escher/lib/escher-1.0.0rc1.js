@@ -3029,7 +3029,7 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 
         // close button
         new_sel.append('button').attr('class', "button input-close-button")
             .text("×")
-            .on('click', function() { this.hide_dropdown(); }.bind(this));
+            .on('mousedown', function() { this.hide_dropdown(); }.bind(this));
 
         // map
         this.map = map;
@@ -3335,27 +3335,27 @@ define('BuildInput',['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 
         else
             this.start_reaction_listener = on_off;
         
-        if (this.start_reaction_listener) {;
-                                           this.map.sel.on('click.start_reaction', function(node) {
-                                               // TODO fix this hack
-                                               if (this.direction_arrow.dragging) return;
-                                               // reload the reaction input
-                                               var coords = { x: d3.mouse(node)[0],
-                                                              y: d3.mouse(node)[1] };
-                                               // unselect metabolites
-                                               this.map.deselect_nodes();
-                                               this.map.deselect_text_labels();
-                                               // reload the reaction input
-                                               this.reload(null, coords, true);
-                                               // generate the target symbol
-                                               this.show_target(this.map, coords);
-                                           }.bind(this, this.map.sel.node()));
-                                           this.map.sel.classed('start-reaction-cursor', true);
-                                          } else {
-                                              this.map.sel.on('click.start_reaction', null);
-                                              this.map.sel.classed('start-reaction-cursor', false);
-                                              this.hide_target();
-                                          }
+        if (this.start_reaction_listener) {
+            this.map.sel.on('click.start_reaction', function(node) {
+                // TODO fix this hack
+                if (this.direction_arrow.dragging) return;
+                // reload the reaction input
+                var coords = { x: d3.mouse(node)[0],
+                               y: d3.mouse(node)[1] };
+                // unselect metabolites
+                this.map.deselect_nodes();
+                this.map.deselect_text_labels();
+                // reload the reaction input
+                this.reload(null, coords, true);
+                // generate the target symbol
+                this.show_target(this.map, coords);
+            }.bind(this, this.map.sel.node()));
+            this.map.sel.classed('start-reaction-cursor', true);
+        } else {
+            this.map.sel.on('click.start_reaction', null);
+            this.map.sel.classed('start-reaction-cursor', false);
+            this.hide_target();
+        }
     }
 
     function hide_target() {
@@ -3811,7 +3811,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             reaction_data_styles = this.settings.get_option('reaction_styles'),
             show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules'),
             gene_font_size = this.settings.get_option('gene_font_size'),
-            label_click_fn = this.behavior.label_click,
+            label_mousedown_fn = this.behavior.label_mousedown,
             label_mouseover_fn = this.behavior.label_mouseover,
             label_mouseout_fn = this.behavior.label_mouseout;
             
@@ -3827,7 +3827,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                     t += ' ' + d.data_string;
                 return t;
             })
-            .on('click', label_click_fn)
+            .on('mousedown', label_mousedown_fn)
             .on('mouseover', label_mouseover_fn)
             .on('mouseout', label_mouseout_fn);
         // gene label
@@ -4218,13 +4218,8 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
 
     function update_node(update_selection, scale, has_data_on_nodes,
                          identifiers_on_map, metabolite_data_styles, no_data_style,
-                         click_fn, mouseover_fn, mouseout_fn,
+                         mousedown_fn, click_fn, mouseover_fn, mouseout_fn,
                          drag_behavior, label_drag_behavior) {
-        utils.check_undefined(arguments,
-                              ['update_selection', 'scale', 'has_data_on_nodes',
-                               'no_data_style', 'metabolite_data_styles',
-                               'click_fn', 'mouseover_fn', 'mouseout_fn',
-                               'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
 	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
@@ -4269,6 +4264,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                 })
                 .call(this.behavior.turn_off_drag)
                 .call(drag_behavior)
+                .on('mousedown', mousedown_fn)
                 .on('click', click_fn)
                 .on('mouseover', mouseover_fn)
                 .on('mouseout', mouseout_fn);
@@ -4304,7 +4300,8 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
     }
 
     function update_text_label(update_selection) {
-        var click_fn = this.behavior.text_label_click,
+        var mousedown_fn = this.behavior.text_label_mousedown,
+            click_fn = this.behavior.text_label_click,
             drag_behavior = this.behavior.selectable_drag,
             turn_off_drag = this.behavior.turn_off_drag;
         
@@ -4312,6 +4309,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             .select('.label')
             .text(function(d) { return d.text; })
             .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
+            .on('mousedown', mousedown_fn)
             .on('click', click_fn)
             .call(turn_off_drag)
             .call(drag_behavior);
@@ -4889,7 +4887,11 @@ define('Behavior',["utils", "build"], function(utils, build) {
 
      my_behavior.rotation_drag:
 
+     my_behavior.text_label_mousedown:
+
      my_behavior.text_label_click:
+
+     my_behavior.selectable_mousedown:
 
      my_behavior.selectable_click:
 
@@ -4899,7 +4901,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
 
      my_behavior.node_mouseout:
 
-     my_behavior.label_click:
+     my_behavior.label_mousedown:
 
      my_behavior.label_mouseover:
 
@@ -4929,7 +4931,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
                            toggle_text_label_edit: toggle_text_label_edit,
                            toggle_selectable_drag: toggle_selectable_drag,
                            toggle_label_drag: toggle_label_drag,
-                           toggle_label_click: toggle_label_click,
+                           toggle_label_mousedown: toggle_label_mousedown,
                            toggle_bezier_drag: toggle_bezier_drag,
                            // util
                            turn_off_drag: turn_off_drag,
@@ -4956,12 +4958,13 @@ define('Behavior',["utils", "build"], function(utils, build) {
         this.rotation_drag = d3.behavior.drag();
 
         // behaviors to be applied
-        this.selectable_click = null;
+        this.selectable_mousedown = null;
+        this.text_label_mousedown = null;
         this.text_label_click = null;
         this.selectable_drag = this.empty_behavior;
         this.node_mouseover = null;
         this.node_mouseout = null;
-        this.label_click = null;
+        this.label_mousedown = null;
         this.label_mouseover = null;
         this.label_mouseout = null;
         this.bezier_drag = this.empty_behavior;
@@ -4978,7 +4981,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
         this.toggle_selectable_click(true);
         this.toggle_selectable_drag(true);
         this.toggle_label_drag(true);
-        this.toggle_label_click(true);
+        this.toggle_label_mousedown(true);
     }
     function turn_everything_off() {
         /** Toggle everything except rotation mode and text mode.
@@ -4987,7 +4990,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
         this.toggle_selectable_click(false);
         this.toggle_selectable_drag(false);
         this.toggle_label_drag(false);
-        this.toggle_label_click(false);
+        this.toggle_label_mousedown(false);
     }
 
     function toggle_rotation_mode(on_off) {
@@ -5102,7 +5105,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
                    }.bind(this, s)));
             s.on('mouseover', function() {
                 var current = parseFloat(this.selectAll('path').style('stroke-width'));
-                this.selectAll('path').style('stroke-width', current*2+'px');
+                this.selectAll('path').style('stroke-width', current * 2 + 'px');
             }.bind(s));
             s.on('mouseout', function() {
                 this.selectAll('path').style('stroke-width', null);
@@ -5132,23 +5135,38 @@ define('Behavior',["utils", "build"], function(utils, build) {
          Pass in a boolean argument to set the on/off state.
 
          */
-        if (on_off===undefined) on_off = this.selectable_click==null;
+        if (on_off===undefined) on_off = this.selectable_mousedown==null;
         if (on_off) {
             var map = this.map;
-            this.selectable_click = function(d) {
-                if (d3.event.defaultPrevented) return; // click suppressed
-                map.select_selectable(this, d);
+            this.selectable_mousedown = function(d) {
+                // stop propogation for the buildinput to work right
                 d3.event.stopPropagation();
+                // this.parentNode.__data__.was_selected = d3.select(this.parentNode).classed('selected');
+                // d3.select(this.parentNode).classed('selected', true);
+            };
+            this.selectable_click = function(d) {
+                // stop propogation for the buildinput to work right
+                d3.event.stopPropagation();
+                // click suppressed. This DOES have en effect.
+                if (d3.event.defaultPrevented) return;
+                // turn off the temporary selection so select_selectable
+                // works. This is a bit of a hack.
+                // if (!this.parentNode.__data__.was_selected)
+                //     d3.select(this.parentNode).classed('selected', false); 
+                map.select_selectable(this, d);
+                // this.parentNode.__data__.was_selected = false;
             };
             this.node_mouseover = function(d) {    
                 d3.select(this).style('stroke-width', null);
                 var current = parseFloat(d3.select(this).style('stroke-width'));
-                d3.select(this).style('stroke-width', current*2+'px');
+                if (!d3.select(this.parentNode).classed('selected'))
+                    d3.select(this).style('stroke-width', current * 3 + 'px');
             };
             this.node_mouseout = function(d) {
                 d3.select(this).style('stroke-width', null);
             };
         } else {
+            this.selectable_mousedown = null;
             this.selectable_click = null;
             this.node_mouseover = null;
             this.node_mouseout = null;
@@ -5158,41 +5176,46 @@ define('Behavior',["utils", "build"], function(utils, build) {
     }
 
     function toggle_text_label_edit(on_off) {
-        /** With no argument, toggle the text edit on click on/off.
+        /** With no argument, toggle the text edit on mousedown on/off.
 
          Pass in a boolean argument to set the on/off state.
 
-         The backup state is equal to selectable_click.
+         The backup state is equal to selectable_mousedown.
 
          */
-        if (on_off===undefined) on_off = this.text_edit_click==null;
+        if (on_off===undefined) on_off = this.text_edit_mousedown == null;
         if (on_off) {
             var map = this.map,
                 selection = this.selection;
-            this.text_label_click = function() {
-                if (d3.event.defaultPrevented) return; // click suppressed
+            this.text_label_mousedown = function() {
+                if (d3.event.defaultPrevented) return; // mousedown suppressed
                 // run the callback
                 var coords_a = d3.transform(d3.select(this).attr('transform')).translate,
                     coords = {x: coords_a[0], y: coords_a[1]};
                 map.callback_manager.run('edit_text_label', null, d3.select(this), coords);
                 d3.event.stopPropagation();
             };
+            this.text_label_click = null;
             this.map.sel.select('#text-labels')
                 .selectAll('.label')
                 .classed('edit-text-cursor', true);
             // add the new-label listener
-            this.map.sel.on('click.new_text_label', function(node) {
+            this.map.sel.on('mousedown.new_text_label', function(node) {
+                // silence other listeners
+                d3.event.preventDefault();
                 var coords = { x: d3.mouse(node)[0],
                                y: d3.mouse(node)[1] };
                 this.map.callback_manager.run('new_text_label', null, coords);
             }.bind(this, this.map.sel.node()));
         } else {
+            this.text_label_mousedown = this.selectable_mousedown;
             this.text_label_click = this.selectable_click;
             this.map.sel.select('#text-labels')
                 .selectAll('.label')
                 .classed('edit-text-cursor', false);
             // remove the new-label listener
-            this.map.sel.on('click.new_text_label', null);
+            this.map.sel.on('mousedown.new_text_label', null);
+            this.map.callback_manager.run('hide_text_label_editor');
         }
     }
 
@@ -5227,8 +5250,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
         }
     }
     
-    function toggle_label_click(on_off) {
-        /** With no argument, toggle the reaction label click on or off.z
+    function toggle_label_mousedown(on_off) {
+        /** With no argument, toggle the reaction label mousedown on or off.z
 
          Arguments
          ---------
@@ -5236,36 +5259,38 @@ define('Behavior',["utils", "build"], function(utils, build) {
          on_off: A boolean argument to set the on/off state.
 
         */           
-        if (on_off===undefined) on_off = this.label_click==null;
+        if (on_off===undefined) on_off = this.label_mousedown==null;
         if (on_off) {
             var map = this.map;
-            this.label_click = function(d) {
-                if (d3.event.defaultPrevented) return; // click suppressed
-                // select reaction/node
-                d3.select(this.parentNode.parentNode)
-                    .each(function(d) {
-                        var node_ids = {};
-                        for (var seg_id in d.segments) {
-                            ['to_node_id', 'from_node_id'].forEach(function(n) {
-                                node_ids[d.segments[seg_id][n]] = true;
-                            });
-                        }
-                        map.sel.selectAll('.selected').classed('selected', false);
-                        map.sel.selectAll('.node')
-                            .classed('selected', function(d) {
-                                return (d.node_id in node_ids);
-                            });
-                    });                            
-                d3.event.stopPropagation();
+            // TODO turn this feature (reaction label selection) back on, but
+            // with correct shift key management
+            this.label_mousedown = function(d) {
+                // if (d3.event.defaultPrevented) return; // mousedown suppressed
+                // // select reaction/node
+                // d3.select(this.parentNode.parentNode)
+                //     .each(function(d) {
+                //         var node_ids = {};
+                //         for (var seg_id in d.segments) {
+                //             ['to_node_id', 'from_node_id'].forEach(function(n) {
+                //                 node_ids[d.segments[seg_id][n]] = true;
+                //             });
+                //         }
+                //         map.sel.selectAll('.selected').classed('selected', false);
+                //         map.sel.selectAll('.node')
+                //             .classed('selected', function(d) {
+                //                 return (d.node_id in node_ids);
+                //             });
+                //     });                            
+                // d3.event.stopPropagation();
             };
             this.label_mouseover = function(d) {
-                d3.select(this).style('fill', 'rgb(56, 56, 184)');
+                // d3.select(this).style('fill', 'rgb(56, 56, 184)');
             };
             this.label_mouseout = function(d) {
-                d3.select(this).style('fill', null);
+                // d3.select(this).style('fill', null);
             };
         } else {
-            this.label_click = null;
+            this.label_mousedown = null;
             this.label_mouseover = null;
             this.label_mouseout = null;
             this.map.sel.select('.node-label,.reaction-label')
@@ -5284,15 +5309,9 @@ define('Behavior',["utils", "build"], function(utils, build) {
             this.bezier_drag = this._get_bezier_drag(this.map);
             this.bezier_mouseover = function(d) {
                 d3.select(this).style('stroke-width', String(3)+'px');
-                // d3.select(this.parentNode.parentNode)
-                //     .selectAll('.connect-line')
-                //     .attr('visibility', 'visible');
             };
             this.bezier_mouseout = function(d) {
                 d3.select(this).style('stroke-width', String(1)+'px');
-                // d3.select(this.parentNode.parentNode)
-                //     .selectAll('.connect-line')
-                //     .attr('visibility', 'hidden');
             };
         } else {
             this.bezier_drag = this.empty_behavior;
@@ -5326,15 +5345,15 @@ define('Behavior',["utils", "build"], function(utils, build) {
                 text_label.y = text_label.y + displacement.y;
             };
 
-        behavior.on("dragstart", function () { 
-            // silence other listeners
+        behavior.on("dragstart", function (d) { 
+            // silence other listeners (e.g. nodes BELOW this one)
             d3.event.sourceEvent.stopPropagation();
             // remember the total displacement for later
             // total_displacement = {};
             total_displacement = {x: 0, y: 0};
 
             // If a text label is selected, the rest is not necessary
-            if (d3.select(this).attr('class').indexOf('label')==-1) {           
+            if (d3.select(this).attr('class').indexOf('label') == -1) {           
                 // Note that dragstart is called even for a click event
                 var data = this.parentNode.__data__,
                     bigg_id = data.bigg_id,
@@ -5361,7 +5380,12 @@ define('Behavior',["utils", "build"], function(utils, build) {
                     });
             }
         });
-        behavior.on("drag", function() {
+        behavior.on("drag", function(d) {
+            // if this node is not already selected, then select this one and
+            // deselect all other nodes. Otherwise, leave the selection alone.
+            if (!d3.select(this.parentNode).classed('selected'))
+                map.select_selectable(this, d);
+
             // get the grabbed id
             var grabbed = {};
             if (d3.select(this).attr('class').indexOf('label')==-1) {
@@ -10065,6 +10089,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                                         this.settings.get_option('metabolite_styles'),
                                         { color: this.settings.get_option('metabolite_no_data_color'),
                                           size: this.settings.get_option('metabolite_no_data_size') },
+                                        this.behavior.selectable_mousedown,
                                         this.behavior.selectable_click,
                                         this.behavior.node_mouseover,
                                         this.behavior.node_mouseout,
@@ -11547,6 +11572,10 @@ define('Brush',["utils"], function(utils) {
 	    height = size_and_location.height,
 	    x = size_and_location.x,
 	    y = size_and_location.y;
+
+        // clear existing brush
+        selection.selectAll('g').remove();
+
 	var brush_fn = d3.svg.brush()
 		.x(d3.scale.identity().domain([x, x+width]))
 		.y(d3.scale.identity().domain([y, y+height]))
@@ -11557,7 +11586,7 @@ define('Brush',["utils"], function(utils) {
 		    if (shift_key_on) {
 			// when shift is pressed, ignore the currently selected nodes
 			selection = selectable_selection
-			    .selectAll('.node,.text-label:not(.selected)');
+			    .selectAll('.node:not(.selected),.text-label:not(.selected)');
 		    } else {
 			// otherwise, brush all nodes
 			selection = selectable_selection
@@ -13004,6 +13033,10 @@ define('TextEditInput',['utils', 'PlacedDiv', 'build'], function(utils, PlacedDi
 	    this.hide();
 	    this._add_and_edit(coords);
 	}.bind(this));
+        
+        map.callback_manager.set('hide_text_label_editor.text_edit_input', function() {
+            this.hide();
+        }.bind(this));
     }
 
     function setup_zoom_callbacks(zoom_container) {
@@ -13398,7 +13431,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             should_update_data = true;
 
         // Begin with some definitions
-        var selectable_click_enabled = true,
+        var selectable_mousedown_enabled = true,
             shift_key_on = false;
 
         // remove the old builder
@@ -13450,6 +13483,9 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
 
         // set up the Brush
         this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
+        this.map.canvas.callback_manager.set('resize', function() {
+            this.brush.toggle(true);
+        }.bind(this));
 
         // set up the modes
         this._setup_modes(this.map, this.brush, this.zoom_container);
@@ -13565,7 +13601,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         this.map.behavior.toggle_selectable_click(mode=='build' || mode=='brush' || mode=='rotate');
         this.map.behavior.toggle_selectable_drag(mode=='brush' || mode=='rotate');
         this.map.behavior.toggle_label_drag(mode=='brush');
-        this.map.behavior.toggle_label_click(mode=='brush');
+        this.map.behavior.toggle_label_mousedown(mode=='brush');
         this.map.behavior.toggle_text_label_edit(mode=='text');
         this.map.behavior.toggle_bezier_drag(mode=='brush');
         // edit selections
@@ -14232,16 +14268,16 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             brush.toggle(false);
             was_enabled.zoom = zoom_container.zoom_on;
             zoom_container.toggle_zoom(false);
-            was_enabled.selectable_click = map.behavior.selectable_click!=null;
+            was_enabled.selectable_mousedown = map.behavior.selectable_mousedown!=null;
             map.behavior.toggle_selectable_click(false);
-            was_enabled.label_click = map.behavior.label_click!=null;
-            map.behavior.toggle_label_click(false);
+            was_enabled.label_mousedown = map.behavior.label_mousedown!=null;
+            map.behavior.toggle_label_mousedown(false);
         });
         map.callback_manager.set('end_rotation', function() {
             brush.toggle(was_enabled.brush);
             zoom_container.toggle_zoom(was_enabled.zoom);
-            map.behavior.toggle_selectable_click(was_enabled.selectable_click);
-            map.behavior.toggle_label_click(was_enabled.label_click);
+            map.behavior.toggle_selectable_click(was_enabled.selectable_mousedown);
+            map.behavior.toggle_label_mousedown(was_enabled.label_mousedown);
             was_enabled = {};
         });
     }

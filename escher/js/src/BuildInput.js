@@ -36,7 +36,7 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 'CobraModel']
         // close button
         new_sel.append('button').attr('class', "button input-close-button")
             .text("×")
-            .on('click', function() { this.hide_dropdown(); }.bind(this));
+            .on('mousedown', function() { this.hide_dropdown(); }.bind(this));
 
         // map
         this.map = map;
@@ -342,27 +342,27 @@ define(['utils', 'PlacedDiv', 'lib/complete.ly', 'DirectionArrow', 'CobraModel']
         else
             this.start_reaction_listener = on_off;
         
-        if (this.start_reaction_listener) {;
-                                           this.map.sel.on('click.start_reaction', function(node) {
-                                               // TODO fix this hack
-                                               if (this.direction_arrow.dragging) return;
-                                               // reload the reaction input
-                                               var coords = { x: d3.mouse(node)[0],
-                                                              y: d3.mouse(node)[1] };
-                                               // unselect metabolites
-                                               this.map.deselect_nodes();
-                                               this.map.deselect_text_labels();
-                                               // reload the reaction input
-                                               this.reload(null, coords, true);
-                                               // generate the target symbol
-                                               this.show_target(this.map, coords);
-                                           }.bind(this, this.map.sel.node()));
-                                           this.map.sel.classed('start-reaction-cursor', true);
-                                          } else {
-                                              this.map.sel.on('click.start_reaction', null);
-                                              this.map.sel.classed('start-reaction-cursor', false);
-                                              this.hide_target();
-                                          }
+        if (this.start_reaction_listener) {
+            this.map.sel.on('click.start_reaction', function(node) {
+                // TODO fix this hack
+                if (this.direction_arrow.dragging) return;
+                // reload the reaction input
+                var coords = { x: d3.mouse(node)[0],
+                               y: d3.mouse(node)[1] };
+                // unselect metabolites
+                this.map.deselect_nodes();
+                this.map.deselect_text_labels();
+                // reload the reaction input
+                this.reload(null, coords, true);
+                // generate the target symbol
+                this.show_target(this.map, coords);
+            }.bind(this, this.map.sel.node()));
+            this.map.sel.classed('start-reaction-cursor', true);
+        } else {
+            this.map.sel.on('click.start_reaction', null);
+            this.map.sel.classed('start-reaction-cursor', false);
+            this.hide_target();
+        }
     }
 
     function hide_target() {

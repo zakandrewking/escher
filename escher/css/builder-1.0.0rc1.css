@@ -43,7 +43,7 @@
     background-color: rgba(255, 255, 255, 0.95);
     border-radius: 0px;
 }
-    .help-button {
+.help-button {
     float: right;
     padding: 0 5px;
     font-size: 12px;
@@ -143,11 +143,11 @@
 .settings-button {
     position: absolute;
     top: 5px;
-    right: 5px;
+    right: 20px;
     z-index: 10;
 }
 .settings-button-close {
-    right: 45px;
+    right: 60px;
 }
 .settings-box {
     display: inline-block;

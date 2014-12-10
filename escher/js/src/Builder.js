@@ -200,7 +200,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             should_update_data = true;
 
         // Begin with some definitions
-        var selectable_click_enabled = true,
+        var selectable_mousedown_enabled = true,
             shift_key_on = false;
 
         // remove the old builder
@@ -252,6 +252,9 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
 
         // set up the Brush
         this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
+        this.map.canvas.callback_manager.set('resize', function() {
+            this.brush.toggle(true);
+        }.bind(this));
 
         // set up the modes
         this._setup_modes(this.map, this.brush, this.zoom_container);
@@ -367,7 +370,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         this.map.behavior.toggle_selectable_click(mode=='build' || mode=='brush' || mode=='rotate');
         this.map.behavior.toggle_selectable_drag(mode=='brush' || mode=='rotate');
         this.map.behavior.toggle_label_drag(mode=='brush');
-        this.map.behavior.toggle_label_click(mode=='brush');
+        this.map.behavior.toggle_label_mousedown(mode=='brush');
         this.map.behavior.toggle_text_label_edit(mode=='text');
         this.map.behavior.toggle_bezier_drag(mode=='brush');
         // edit selections
@@ -1034,16 +1037,16 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             brush.toggle(false);
             was_enabled.zoom = zoom_container.zoom_on;
             zoom_container.toggle_zoom(false);
-            was_enabled.selectable_click = map.behavior.selectable_click!=null;
+            was_enabled.selectable_mousedown = map.behavior.selectable_mousedown!=null;
             map.behavior.toggle_selectable_click(false);
-            was_enabled.label_click = map.behavior.label_click!=null;
-            map.behavior.toggle_label_click(false);
+            was_enabled.label_mousedown = map.behavior.label_mousedown!=null;
+            map.behavior.toggle_label_mousedown(false);
         });
         map.callback_manager.set('end_rotation', function() {
             brush.toggle(was_enabled.brush);
             zoom_container.toggle_zoom(was_enabled.zoom);
-            map.behavior.toggle_selectable_click(was_enabled.selectable_click);
-            map.behavior.toggle_label_click(was_enabled.label_click);
+            map.behavior.toggle_selectable_click(was_enabled.selectable_mousedown);
+            map.behavior.toggle_label_mousedown(was_enabled.label_mousedown);
             was_enabled = {};
         });
     }

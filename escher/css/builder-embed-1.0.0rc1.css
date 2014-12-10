@@ -51,7 +51,7 @@
     stroke: rgb(50, 50, 50);
 }
 g.selected .node-circle{
-    stroke-width: 3px;
+    stroke-width: 6px;
     stroke: rgb(20, 113, 199);
 }
 g.selected .label {

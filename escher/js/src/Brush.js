@@ -60,6 +60,10 @@ define(["utils"], function(utils) {
 	    height = size_and_location.height,
 	    x = size_and_location.x,
 	    y = size_and_location.y;
+
+        // clear existing brush
+        selection.selectAll('g').remove();
+
 	var brush_fn = d3.svg.brush()
 		.x(d3.scale.identity().domain([x, x+width]))
 		.y(d3.scale.identity().domain([y, y+height]))
@@ -70,7 +74,7 @@ define(["utils"], function(utils) {
 		    if (shift_key_on) {
 			// when shift is pressed, ignore the currently selected nodes
 			selection = selectable_selection
-			    .selectAll('.node,.text-label:not(.selected)');
+			    .selectAll('.node:not(.selected),.text-label:not(.selected)');
 		    } else {
 			// otherwise, brush all nodes
 			selection = selectable_selection

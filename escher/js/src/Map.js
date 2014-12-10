@@ -625,6 +625,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                         this.settings.get_option('metabolite_styles'),
                                         { color: this.settings.get_option('metabolite_no_data_color'),
                                           size: this.settings.get_option('metabolite_no_data_size') },
+                                        this.behavior.selectable_mousedown,
                                         this.behavior.selectable_click,
                                         this.behavior.node_mouseover,
                                         this.behavior.node_mouseout,
