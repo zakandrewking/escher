@@ -12572,13 +12572,13 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
     var SettingsMenu = utils.make_class();
     // instance methods
     SettingsMenu.prototype = { init: init,
-			    is_visible: is_visible,
-			    toggle: toggle,
-			    hold_changes: hold_changes,
-			    abandon_changes: abandon_changes,
-			    accept_changes: accept_changes,
-			    style_gui: style_gui,
-			    view_gui: view_gui };
+			       is_visible: is_visible,
+			       toggle: toggle,
+			       hold_changes: hold_changes,
+			       abandon_changes: abandon_changes,
+			       accept_changes: accept_changes,
+			       style_gui: style_gui,
+			       view_gui: view_gui };
 
     return SettingsMenu;
 
@@ -12594,34 +12594,41 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
 	var background = sel.append('div')
 		.attr('class', 'settings-box-background')
 		.style('display', 'none'),
-	    container = sel.append('div')
+	    container = background.append('div')
                 .attr('class', 'settings-box-container')
-		.style('display', 'none'),
-            box = container.append('div')
-		.attr('class', 'settings-box');
+		.style('display', 'none');
 
 	// done button
-	box.append('button')
-	    .attr("class", "btn btn-sm btn-default close-button")
+	container.append('button')
+	    .attr("class", "btn btn-sm btn-default settings-button")
 	    .on('click', function() {
 		this.accept_changes();
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-ok");
 	// quit button
-	box.append('button')
-	    .attr("class", "btn btn-sm btn-default close-button")
+	container.append('button')
+	    .attr("class", "btn btn-sm btn-default settings-button settings-button-close")
 	    .on('click', function() {
 		this.abandon_changes();
 	    }.bind(this))
 	    .append("span").attr("class",  "glyphicon glyphicon-remove");
 
+        var box = container.append('div')
+		.attr('class', 'settings-box');
+	
         // Tip
         box.append('div')
             .text('Tip: Hover over an option to see more details about it.')
             .style('font-style', 'italic');
         box.append('hr');
         
+	// view and build
+	box.append('div').text('View and build options')
+	    .attr('class', 'settings-section-heading-large');
+	this.view_gui(box.append('div'));
+	
         // reactions
+        box.append('hr');
 	box.append('div')
 	    .text('Reactions').attr('class', 'settings-section-heading-large');
         var rse = new ScaleEditor(box.append('div'), 'reaction', this.settings,
@@ -12664,12 +12671,6 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
             }
         });
         
-	// identifiers_on_map
-        box.append('hr');
-	box.append('div').text('View and build options')
-	    .attr('class', 'settings-section-heading-large');
-	this.view_gui(box.append('div'));
-	
 	this.callback_manager = new CallbackManager();
 
 	this.map = map;
@@ -12686,7 +12687,7 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
 	    // hold changes until accepting/abandoning
 	    this.hold_changes();
 	    // show the menu
-	    this.selection.style("display", "block");
+	    this.selection.style("display", "inline-block");
 	    this.background.style("display", "block");
 	    this.selection.select('input').node().focus();
 	    // escape key
