@@ -3,7 +3,7 @@ Escher in the IPython Notebook
 
 The Python package for Escher can be installed using pip::
 
-    pip install escher --pre
+    pip install escher
 
 Alternatively, one can download the `source files`_ and install the package
 directly::
@@ -23,4 +23,4 @@ Dependencies:
 .. _`Jinja2`: http://jinja.pocoo.org
 .. _`Tornado`: http://www.tornadoweb.org/en/stable
 .. _`COBRApy`: https://github.com/opencobra/cobrapy
-.. _`example notebook`: http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/multiple_maps.ipynb
+.. _`example notebook`: http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/COBRApy%20and%20Escher.ipynb

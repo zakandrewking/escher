@@ -42,7 +42,7 @@ Generating COBRA model JSON files
 Generating COBRA models that can be imported into Escher requires the latest
 beta version of COBRApy which can be found here_.
 
-Once you have COBRApy v0.3.0b1 (or later) installed, then you can generate a
+Once you have COBRApy v0.3.0b4 (or later) installed, then you can generate a
 JSON model by following this `example code`_.
 
 .. _loading-reaction-gene-and-metabolite-data:

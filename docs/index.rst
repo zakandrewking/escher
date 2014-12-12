@@ -13,6 +13,13 @@ the `Escher website`_.
 
 .. image:: _static/screen1.png
 
+Help! I just upgraded to v1.0 and my maps will not load!
+--------------------------------------------------------
+
+If you have been using a pre-release version of Escher, you will need to convert
+your maps to the v1.0 format by following these :doc:`directions <convert_maps>`.
+After version 1.0, the map format will not change until version 2.0.
+
 Features
 --------
 
@@ -57,6 +64,7 @@ Contents
 
    getting_started
    ipython_notebook
+   convert_maps
    development
    contribute_maps
    javascript_api
