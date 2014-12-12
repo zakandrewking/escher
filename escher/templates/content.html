@@ -32,7 +32,7 @@
        baseUrl: '{{host}}escher/js/src',
        paths: {
 	 lib: '../../lib',
-	 d3: "../../../{{ d3[:-3] }}"
+	 d3: "../../../{{ d3_rel[:-3] }}"
        }
      });
      require(["d3", "Builder", "utils"], function(d3, Builder, utils) {

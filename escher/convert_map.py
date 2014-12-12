@@ -170,7 +170,7 @@ def convert(map, model):
         try:
             cobra_reaction = model.reactions.get_by_id(reaction['bigg_id'])
         except KeyError:
-            print('Could not find metabolite %s in model. Deleting.' % node['bigg_id'])
+            print('Could not find reaction %s in model. Deleting.' % reaction['bigg_id'])
             reactions_to_delete.add(id)
             continue
         reaction['gene_reaction_rule'] = cobra_reaction.gene_reaction_rule
@@ -219,6 +219,19 @@ def convert(map, model):
             except KeyError:
                 pass
         
+    # text labels
+    for id, text_label in map_body['text_labels'].items():
+        # unsupported attributes
+        for key in list(text_label.keys()):
+            if not key in ["x", "y", "text"]:
+                del text_label[key]
+
+    # canvas
+    # unsupported attributes
+    for key in list(map_body['canvas'].keys()):
+        if not key in ["x", "y", "width", "height"]:
+            del map_body['canvas'][key]
+
     # delete unsupported elements
     for key in list(map_body.keys()):
         if not key in ["nodes", "reactions", "text_labels", "canvas"]:

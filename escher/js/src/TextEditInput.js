@@ -42,6 +42,10 @@ define(['utils', 'PlacedDiv', 'build'], function(utils, PlacedDiv, build) {
 	    this.hide();
 	    this._add_and_edit(coords);
 	}.bind(this));
+        
+        map.callback_manager.set('hide_text_label_editor.text_edit_input', function() {
+            this.hide();
+        }.bind(this));
     }
 
     function setup_zoom_callbacks(zoom_container) {

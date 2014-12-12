@@ -45,6 +45,8 @@ beta version of COBRApy which can be found here_.
 Once you have COBRApy v0.3.0b1 (or later) installed, then you can generate a
 JSON model by following this `example code`_.
 
+.. _loading-reaction-gene-and-metabolite-data:
+
 Loading reaction, gene, and metabolite data
 ===========================================
 
@@ -98,6 +100,8 @@ reaction data comparisons::
 
 Gene data and gene reaction rules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. _editing-and-building:
 
 Editing and building
 ====================

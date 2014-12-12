@@ -44,11 +44,9 @@ def check_map(map_data):
 
     1. Make sure that nodes exist on either end of each segment
 
-    2. that segments never connect midmarkers with metabolites.
+    2. check that every metabolite is represented with stoichiometry information
 
-    3. check that every metabolite is represented with stoichiometry information
-
-    4. that every gene in the gene_reaction_rule has a name
+    3. that every gene in the gene_reaction_rule has a name
 
     """
     reactions = map_data[1]['reactions'];
@@ -60,27 +58,16 @@ def check_map(map_data):
     for _, reaction in reactions.items():
         metabolites = reaction['metabolites']
         for segment_id, segment in reaction['segments'].items():
-            ok_seg = True
             for n in ['to_node_id', 'from_node_id']:
                 # check that the node exists
                 if segment[n] not in nodes:
                     bad_segments.append((n, segment_id))
-                    ok_seg = False
                 else:
                     # check that the coefficients exist and are non-zero
                     node = nodes[segment[n]]
                     if node['node_type'] == 'metabolite':
                         if not any((node['bigg_id'] == m['bigg_id'] and abs(m['coefficient']) > 0) for m in metabolites):
                             missing_stoich.append((n, segment_id))
-
-            # check that metabolites and midmarkers are not connected
-            if ok_seg:
-                bad_conn = ((nodes[segment['from_node_id']]['node_type'] == 'metabolite' and
-                             nodes[segment['to_node_id']]['node_type'] == 'midmarker') or
-                            (nodes[segment['to_node_id']]['node_type'] == 'metabolite' and
-                             nodes[segment['from_node_id']]['node_type'] == 'midmarker'))
-                if bad_conn:
-                    missing_multimarkers.append(segment_id)
 
         # check gene reaction rule
         found_genes = genes_for_gene_reaction_rule(reaction['gene_reaction_rule'])

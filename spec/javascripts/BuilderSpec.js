@@ -8,9 +8,9 @@ describe('Builder', function() {
 				   { never_ask_before_quit: true });
 	    expect(sel.select('svg').node()).toBe(b.map.svg.node());
 	    expect(sel.selectAll('#nodes')[0].length).toEqual(1);
-	    expect(sel.selectAll('.node')[0].length).toEqual(30);
+	    expect(sel.selectAll('.node')[0].length).toEqual(79);
 	    expect(sel.selectAll('#reactions')[0].length).toEqual(1);
-	    expect(sel.selectAll('.reaction')[0].length).toEqual(6);
+	    expect(sel.selectAll('.reaction')[0].length).toEqual(18);
 	    expect(sel.selectAll('#text-labels')[0].length).toEqual(1);
 	    sels.push(sel);
 	}
@@ -18,6 +18,11 @@ describe('Builder', function() {
 	    sel.remove();
 	});
     });
+    
+    it('check for model+highlight_missing bug', function() {
+	b = escher.Builder(get_map(), get_model(), '', d3.select('body').append('div'),
+			   { never_ask_before_quit: true, highlight_missing: true });
+    }); 
 
     it("SVG selection error", function () {
 	var sel = d3.select('body').append('svg').append('g');

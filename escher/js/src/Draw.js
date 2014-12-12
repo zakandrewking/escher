@@ -132,7 +132,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             reaction_data_styles = this.settings.get_option('reaction_styles'),
             show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules'),
             gene_font_size = this.settings.get_option('gene_font_size'),
-            label_click_fn = this.behavior.label_click,
+            label_mousedown_fn = this.behavior.label_mousedown,
             label_mouseover_fn = this.behavior.label_mouseover,
             label_mouseout_fn = this.behavior.label_mouseout;
             
@@ -148,7 +148,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                     t += ' ' + d.data_string;
                 return t;
             })
-            .on('click', label_click_fn)
+            .on('mousedown', label_mousedown_fn)
             .on('mouseover', label_mouseover_fn)
             .on('mouseout', label_mouseout_fn);
         // gene label
@@ -400,16 +400,17 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                         start = drawn_nodes[d.from_node_id],
                         b1 = d.b1,
 		        end = drawn_nodes[d.to_node_id],
-                        b2 = d.b2;
+                        b2 = d.b2,
+			disp_factor = 1.5;
 		    // hide_secondary_metabolites option
 		    if (hide_secondary_metabolites &&
 			((end['node_type']=='metabolite' && !end.node_is_primary) ||
 			 (start['node_type']=='metabolite' && !start.node_is_primary)))
 			return labels;
 
-                    if (start.node_type=='metabolite' && (Math.abs(d.from_node_coefficient) > 1)) {
+                    if (start.node_type=='metabolite' && (Math.abs(d.from_node_coefficient) != 1)) {
                         var arrow_size = get_arrow_size(d.data, should_size),
-                            disp = get_disp(arrow_size, false, 0, end.node_is_primary),
+                            disp = disp_factor * get_disp(arrow_size, false, 0, end.node_is_primary),
                             direction = (b1 === null) ? end : b1;
                         direction = utils.c_plus_c(direction, utils.rotate_coords(direction, 0.5, start));
                         var loc = displaced_coords(disp, start, direction, 'start');
@@ -419,9 +420,9 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                                       y: loc.y,
                                       data: d.data });
                     }
-                    if (end.node_type=='metabolite' && (Math.abs(d.to_node_coefficient) > 1)) {
+                    if (end.node_type=='metabolite' && (Math.abs(d.to_node_coefficient) != 1)) {
                         var arrow_size = get_arrow_size(d.data, should_size),
-                            disp = get_disp(arrow_size, false, 0, end.node_is_primary),
+                            disp = disp_factor * get_disp(arrow_size, false, 0, end.node_is_primary),
                             direction = (b2 === null) ? start : b2;
                         direction = utils.c_plus_c(direction, utils.rotate_coords(direction, 0.5, end));
                         var loc = displaced_coords(disp, direction, end, 'end');
@@ -538,13 +539,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
 
     function update_node(update_selection, scale, has_data_on_nodes,
                          identifiers_on_map, metabolite_data_styles, no_data_style,
-                         click_fn, mouseover_fn, mouseout_fn,
+                         mousedown_fn, click_fn, mouseover_fn, mouseout_fn,
                          drag_behavior, label_drag_behavior) {
-        utils.check_undefined(arguments,
-                              ['update_selection', 'scale', 'has_data_on_nodes',
-                               'no_data_style', 'metabolite_data_styles',
-                               'click_fn', 'mouseover_fn', 'mouseout_fn',
-                               'drag_behavior', 'label_drag_behavior']);
 
         // update circle and label location
 	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
@@ -589,6 +585,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                 })
                 .call(this.behavior.turn_off_drag)
                 .call(drag_behavior)
+                .on('mousedown', mousedown_fn)
                 .on('click', click_fn)
                 .on('mouseover', mouseover_fn)
                 .on('mouseout', mouseout_fn);
@@ -624,7 +621,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
     }
 
     function update_text_label(update_selection) {
-        var click_fn = this.behavior.text_label_click,
+        var mousedown_fn = this.behavior.text_label_mousedown,
+            click_fn = this.behavior.text_label_click,
             drag_behavior = this.behavior.selectable_drag,
             turn_off_drag = this.behavior.turn_off_drag;
         
@@ -632,6 +630,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             .select('.label')
             .text(function(d) { return d.text; })
             .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
+            .on('mousedown', mousedown_fn)
             .on('click', click_fn)
             .call(turn_off_drag)
             .call(drag_behavior);
