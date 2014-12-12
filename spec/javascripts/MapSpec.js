@@ -25,7 +25,7 @@ describe('Map', function() {
 				   new escher.Settings(set_option, get_option,
                                                        required_conditional_options),
 				   null,
-				   false);
+				   true);
     });
 
     afterEach(function() {
@@ -99,6 +99,70 @@ describe('Map', function() {
 	    expect(map.nodes[id].data).toBe(null);
 	}
     });
+    
+    it('Map search index', function() {
+        // reactions
+        expect(map.search_index.find('glyceraldehyde-3-phosphate dehydrogenase')[0])
+            .toEqual({ type: 'reaction', reaction_id: '1576769' });
+        expect(map.search_index.find('GAPD')[0])
+            .toEqual({ type: 'reaction', reaction_id: '1576769' });
+        expect(map.search_index.find('b1779')[0])
+            .toEqual({ type: 'reaction', reaction_id: '1576769' });
+        // metabolites
+        expect(map.search_index.find('Glyceraldehyde-3-phosphate')[0])
+            .toEqual({ type: 'metabolite', node_id: '1576545' });
+        expect(map.search_index.find('^g3p_c$')[0])
+            .toEqual({ type: 'metabolite', node_id: '1576545' });
+        // text_labels
+        expect(map.search_index.find('TEST')[0])
+            .toEqual({ type: 'text_label', text_label_id: '1' });
+
+        // delete reactions
+        map.delete_reaction_data(['1576769']);
+        expect(map.search_index.find('glyceraldehyde-3-phosphatedehydrogenase')).toEqual([]);
+        expect(map.search_index.find('GAPD')).toEqual([]);
+        expect(map.search_index.find('b1779')).toEqual([]);
+        // delete nodes
+        map.delete_node_data(['1576545', '1576575']);
+        expect(map.search_index.find('Glyceraldehyde-3-phosphate')).toEqual([]);
+        expect(map.search_index.find('^g3p_c$')).toEqual([]);
+        // delete text_labels
+        map.delete_text_label_data(['1']);
+        expect(map.search_index.find('TEST')).toEqual([]);
+
+        // new reaction
+        map.extend_reactions({ '123456789': { bigg_id: 'EX_glc__D_p',
+                                              name: 'periplasmic glucose exchange',
+                                              gene_reaction_rule: 's0001',
+                                              genes: [ { 'bigg_id': 's0001',
+                                                         'name': 'spontaneous'} ] } });
+        expect(map.search_index.find('EX_glc__D_p')[0])
+            .toEqual({ type: 'reaction', reaction_id: '123456789' });
+        expect(map.search_index.find('periplasmic glucose exchange')[0])
+            .toEqual({ type: 'reaction', reaction_id: '123456789' });
+        expect(map.search_index.find('s0001')[0])
+            .toEqual({ type: 'reaction', reaction_id: '123456789' });
+        expect(map.search_index.find('spontaneous')[0])
+            .toEqual({ type: 'reaction', reaction_id: '123456789' });
+        // new node
+        map.extend_nodes({ '123456789': { bigg_id: 'glc__D_p',
+                                          name: 'periplasmic glucose',
+                                          node_type: 'metabolite' }});
+        expect(map.search_index.find('^glc__D_p')[0])
+            .toEqual({ type: 'metabolite', node_id: '123456789' });
+        expect(map.search_index.find('periplasmic glucose$')[0])
+            .toEqual({ type: 'metabolite', node_id: '123456789' });
+        // new text label
+        var id = map.new_text_label({ x: 0, y: 0 }, 'TESTEST');
+        expect(map.search_index.find('TESTEST')[0])
+            .toEqual({ type: 'text_label', text_label_id: id });
+
+        // edit text label
+        map.edit_text_label(id, 'TESTESTEST', false);
+        expect(map.search_index.find('^TESTEST$')).toEqual([]);
+        expect(map.search_index.find('TESTESTEST')[0])
+            .toEqual({ type: 'text_label', text_label_id: id });
+    });
 
     it('Add reaction to map', function() {
 	var model_data = { reactions: [ { id: 'acc_tpp',
@@ -134,7 +198,7 @@ describe('Map', function() {
 
     it('calculate stats', function() {
         // accept numbers, and parseFloats for strings. ignore emtpy strings and nulls.
-        var data = { ENO: [10], PYRt2r: ['5'], TPI: [''], PGK: [null] };
+        var data = { PGI: [10], GAPD: ['5'], TPI: [''], PGK: [null] };
         map.apply_reaction_data_to_map(data);
         map.calc_data_stats('reaction');
         expect(map.get_data_statistics())
@@ -143,14 +207,14 @@ describe('Map', function() {
                        metabolite: { min: null, median: null, mean: null,
                                      Q1: null, Q3: null, max: null } });
         // metabolites 
-        data = { g3p_c: [10], pyr_c: ['5'] };
+        data = { g3p_c: [10], fdp_c: ['4'] };
         map.apply_metabolite_data_to_map(data);
         map.calc_data_stats('metabolite');
         expect(map.get_data_statistics())
             .toEqual({ reaction: { min: 5, median: 7.5, mean: 7.5,
                                    Q1: 5, Q3: 10, max: 10 },
-                       metabolite: { min: 5, median: 7.5, mean: 7.5,
-                                     Q1: 5, Q3: 10, max: 10 } });
+                       metabolite: { min: 4, median: 10, mean: 8,
+                                     Q1: 4, Q3: 10, max: 10 } });
     });
     
     it('map_for_export', function() {

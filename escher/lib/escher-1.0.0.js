@@ -9755,12 +9755,25 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
             // reaction search index
             if (enable_search) {
-                map.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
-                                                    'data': { type: 'reaction',
-                                                              reaction_id: r_id }});
-                map.search_index.insert('r_name'+r_id, { 'name': reaction.name,
-                                                         'data': { type: 'reaction',
-                                                                   reaction_id: r_id }});
+                map.search_index.insert('r' + r_id,
+                                        { 'name': reaction.bigg_id,
+                                          'data': { type: 'reaction',
+                                                    reaction_id: r_id }});
+                map.search_index.insert('r_name' + r_id,
+                                        { 'name': reaction.name,
+                                          'data': { type: 'reaction',
+                                                    reaction_id: r_id }});
+                for (var g_id in reaction.genes) {
+                    var gene = reaction.genes[g_id];
+                    map.search_index.insert('r' + r_id + '_g' + g_id,
+                                            { 'name': gene.bigg_id,
+                                              'data': { type: 'reaction',
+                                                        reaction_id: r_id }});
+                    map.search_index.insert('r' + r_id + '_g_name' + g_id,
+                                            { 'name': gene.name,
+                                              'data': { type: 'reaction',
+                                                        reaction_id: r_id }});
+                }
             }
 
             // keep track of any bad segments
@@ -10684,7 +10697,8 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
          */
         node_ids.forEach(function(node_id) {
             if (this.enable_search && this.nodes[node_id].node_type=='metabolite') {
-                var found = this.search_index.remove('n'+node_id);
+                var found = (this.search_index.remove('n' + node_id)
+                             && this.search_index.remove('n_name' + node_id));
                 if (!found)
                     console.warn('Could not find deleted metabolite in search index');
             }
@@ -10742,9 +10756,18 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             // delete reaction
             delete this.reactions[reaction_id];
             // remove from search index
-            var found = this.search_index.remove('r'+reaction_id);
+            var found = (this.search_index.remove('r' + reaction_id)
+                         && this.search_index.remove('r_name' + reaction_id));
             if (!found)
-                console.warn('Could not find deleted reaction in search index');
+                console.warn('Could not find deleted reaction ' +
+                             reaction_id + ' in search index');
+            for (var g_id in reaction.genes) {
+                var found = (this.search_index.remove('r' + reaction_id + '_g' + g_id)
+                             && this.search_index.remove('r' + reaction_id + '_g_name' + g_id));
+                if (!found)
+                    console.warn('Could not find deleted gene ' +
+                                 g_id + ' in search index');
+            }
         }.bind(this));
     }
     function delete_text_label_data(text_label_ids) {
@@ -10856,10 +10879,16 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         if (this.enable_search) {
             for (var node_id in new_nodes) {
                 var node = new_nodes[node_id];
-                if (node.node_type!='metabolite') continue;
-                this.search_index.insert('n'+node_id, { 'name': node.bigg_id,
-                                                        'data': { type: 'metabolite',
-                                                                  node_id: node_id }});
+                if (node.node_type != 'metabolite')
+                    continue;
+                this.search_index.insert('n' + node_id,
+                                         { 'name': node.bigg_id,
+                                           'data': { type: 'metabolite',
+                                                     node_id: node_id }});
+                this.search_index.insert('n_name' + node_id,
+                                         { 'name': node.name,
+                                           'data': { type: 'metabolite',
+                                                     node_id: node_id }});
             }
         }
         utils.extend(this.nodes, new_nodes);
@@ -10868,12 +10897,26 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         /** Add new reactions to data and search index.
 
          */
-        for (var r_id in new_reactions) {
-            var reaction = new_reactions[r_id];
-            if (this.enable_search) {
-                this.search_index.insert('r'+r_id, { 'name': reaction.bigg_id,
-                                                     'data': { type: 'reaction',
-                                                               reaction_id: r_id }});
+        if (this.enable_search) {
+            for (var r_id in new_reactions) {
+                var reaction = new_reactions[r_id];
+                this.search_index.insert('r' + r_id, { 'name': reaction.bigg_id,
+                                                       'data': { type: 'reaction',
+                                                                 reaction_id: r_id }});
+                this.search_index.insert('r_name' + r_id, { 'name': reaction.name,
+                                                            'data': { type: 'reaction',
+                                                                      reaction_id: r_id }});
+                for (var g_id in reaction.genes) {
+                    var gene = reaction.genes[g_id];
+                    this.search_index.insert('r' + r_id + '_g' + g_id,
+                                             { 'name': gene.bigg_id,
+                                               'data': { type: 'reaction',
+                                                         reaction_id: r_id }});
+                    this.search_index.insert('r' + r_id + '_g_name' + g_id,
+                                             { 'name': gene.name,
+                                               'data': { type: 'reaction',
+                                                         reaction_id: r_id }});
+                }
             }
         }
         utils.extend(this.reactions, new_reactions);
@@ -11225,7 +11268,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // make an label
 	var out = build.new_text_label(this.largest_ids, text, coords);
 	this.text_labels[out.id] = out.label;
-	sel = this.draw_these_text_labels([out.id]);
+	var sel = this.draw_these_text_labels([out.id]);
         // add to the search index
         this.search_index.insert('l' + out.id, { 'name': text,
                                                  'data': { type: 'text_label',
