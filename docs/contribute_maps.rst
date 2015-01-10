@@ -1,5 +1,5 @@
-Contribute Maps
-===============
+Contributing Maps
+=================
 
 If you would like to contribute maps to Escher, you can make a Pull Request to the GitHub
 repository escher.github.io_. Make sure there is a folder with the name of the

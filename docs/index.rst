@@ -7,9 +7,10 @@ Welcome to the documentation for **Escher**
 ===========================================
 
 Escher is a web-based tool for building, viewing, and sharing visualizations of
-metabolic pathways. These 'pathway maps' are a great way to contextualize data
-about metabolism. The easiest way to use Escher is to browse or build maps on
-the `Escher website`_.
+biological pathways. These 'pathway maps' are a great way to contextualize data
+about metabolism. The easiest way to use Escher is to browse and build maps on
+the `Escher website`_. New users may be interested in the :doc:`getting_started`
+guide.
 
 .. image:: _static/screen1.png
 
@@ -63,6 +64,7 @@ Contents
    :maxdepth: 2
 
    getting_started
+   escher_and_cobrapy
    ipython_notebook
    convert_maps
    development

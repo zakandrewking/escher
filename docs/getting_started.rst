@@ -1,6 +1,19 @@
 Getting Started
 ---------------
 
+..
+   Introduction
+   ============
+
+   Escher is a web-based tool for visualizing pathway maps. It 
+
+   However, all that information about organisms must come from somewhere, so
+   Escher uses models of metabolism called COBRA models [ref]. A COBRA model is a
+   collection of all the reactions that take place in a cell (for example, 
+
+   Beyond seeing the structure of a metabolic network, Escher allows you to map
+   data onto the network.
+
 The launch page
 ===============
 
@@ -8,19 +21,19 @@ When you open the Escher `launch page`_, you will see a number of options:
 
 .. image:: _static/launch_page.png
 
-- *Filter by organism*: Choose an organism to filter the Maps and Models.
-- *Map*: Choose a pre-built map, or start from scratch with an empty builder by
+- *Filter by organism:* Choose an organism to filter the Maps and Models.
+- *Map:* Choose a pre-built map, or start from scratch with an empty builder by
   choosing *None*.
-- *Model*: (Optional) Choose a COBRA_ model to load, for building reactions. You
+- *Model:* (Optional) Choose a COBRA_ model to load, for building reactions. You
   can also load your own model after you launch the tool.
-- *Tool*:
+- *Tool:*
 
     - The *Viewer* allows you to pan and zoom the map, and to assign data to
       reactions, genes, and metabolites.
     - The *Builder*, in addition to the Viewer features, allows you to add
       reactions, move and rotate existing reactions, and adjust the map canvas.
 
-- *Options*:
+- *Options:*
 
     - *Scroll to zoom (instead of scroll to pan)*: Determines the effect of using
       the mouse's scroll wheel over the map.
@@ -53,6 +66,12 @@ Loading reaction, gene, and metabolite data
 Datasets can be loaded as CSV files or JSON files, using the Data Menu.
 
 .. image:: _static/data_menu.png
+
+The structure of a CSV file
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Templates for CSV files
+^^^^^^^^^^^^^^^^^^^^^^^
 
 CSV files should have 1 header row, 1 ID column, and either 1 or 2 columns for
 data values. Here is an example with a single data value columns::

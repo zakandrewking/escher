@@ -23,7 +23,7 @@ This starts a server at `localhost:7778`_. You can also choose another port::
 
     python -m escher.server --port=8005
 
-Building and testing escher
+Building and testing Escher
 ===========================
 
 Build the minified and non-minified javascript files::
