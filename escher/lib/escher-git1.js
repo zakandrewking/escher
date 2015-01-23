@@ -2394,7 +2394,8 @@ define('data_styles',['utils'], function(utils) {
         }
         function fold(x, y, take_abs) {
             if (x == 0 || y == 0) return null;
-            return (y >= x ? y / x : - x / y);
+            var fold = (y >= x ? y / x : - x / y);
+            return take_abs ? Math.abs(fold) : fold;
         }
         function log2_fold(x, y, take_abs) {
             if (x == 0) return null;

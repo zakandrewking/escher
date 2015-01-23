@@ -58,11 +58,16 @@ describe('data_styles', function() {
         // abs diff
         expect(escher.data_styles.float_for_data([10, -5], ['abs'], 'diff'))
             .toEqual(15);
-        // fold
+        // log fold
         expect(escher.data_styles.float_for_data([10, 5], [], 'log2_fold'))
             .toEqual(-1);
         expect(escher.data_styles.float_for_data([10, 5], ['abs'], 'log2_fold'))
             .toEqual(1);
+        // fold
+        expect(escher.data_styles.float_for_data([10, 5], [], 'fold'))
+            .toEqual(-2);
+        expect(escher.data_styles.float_for_data([10, 5], ['abs'], 'fold'))
+            .toEqual(2);
         // infinity
         expect(escher.data_styles.float_for_data([0, 5], [], 'log2_fold'))
             .toEqual(null);
