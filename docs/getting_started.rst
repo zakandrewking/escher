@@ -193,6 +193,8 @@ reaction data comparisons::
     with open('out_comp.json', 'w') as f: 
 	json.dump(flux_comp, f)
 
+.. _gene-reaction-rules:
+
 Gene data and gene reaction rules
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

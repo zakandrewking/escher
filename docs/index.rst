@@ -9,7 +9,7 @@ Escher is a web-based tool for building, viewing, and sharing visualizations of
 biological pathways. These 'pathway maps' are a great way to contextualize
 biological datasets. The easiest way to use Escher is to browse and build maps
 on the `Escher website`_. New users may be interested in the
-:doc:`getting_started` guide and the :doc:`tutorials`.
+:doc:`getting_started` guide.
 
 .. image:: _static/screen1.png
 
@@ -64,7 +64,6 @@ Contents
    :numbered:
 
    getting_started
-   tutorials
    escher_and_cobrapy
    ipython_notebook
    convert_maps
