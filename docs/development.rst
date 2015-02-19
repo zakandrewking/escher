@@ -6,9 +6,10 @@ Using the static javascript files
 
 You can include the compiled Escher javascript file in any html document. The
 only dependencies are `d3.js`_, and `Twitter Bootstrap`_ if you are using the
-option menu='all'.
+option menu='all'. These files can be found in ``escher/lib``.
 
-These files can be found in ``escher/lib``.
+For an example of the boilerplate code that is required to begin developing with
+Escher, have a look at the `escher-demo repository`_.
 
 Running the local server
 ========================
@@ -48,3 +49,4 @@ The Escher file format
 .. _`d3.js`: http://d3js.org/
 .. _`Twitter Bootstrap`: http://getbootstrap.com
 .. _`localhost:7778`: http://localhost:7778
+.. _`escher-demo repository`: https://github.com/escher/escher-demo
