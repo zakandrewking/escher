@@ -127,7 +127,7 @@ def _json_for_name(name, kind, cache_dir):
         org, name = match[0]
         url = (get_url(kind + '_download', source='web', protocol='https') +
                '/'.join([url_escape(x, plus=False) for x in [org, name + '.json']]))
-        warn(('Model not in cache. Attempting download from %s' % url))
+        warn('%s not in cache. Attempting download from %s' % (kind.title(), url))
         try:
             download = urlopen(url)
         except HTTPError:

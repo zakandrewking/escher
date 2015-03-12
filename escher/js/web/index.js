@@ -10,6 +10,17 @@ function get_model(name) {
     return null;
 }
 
+function select_model(model_name) {
+    var sel = d3.select('#models'),
+	ind = 0;
+    sel.selectAll('option')
+	.each(function(d, i) {
+	    if (d && (d.model_name == model_name))
+		ind = i;
+	});
+    sel.node().selectedIndex = ind;
+}
+
 function get_quick_jump(this_map, server_index, local_index) {
     /** Find maps with the same model. Returns null if no quick jump options
      could be found.
@@ -48,7 +59,8 @@ function submit(server_index, local_index, map_download, can_dev) {
 	never_ask_value = d3.select('#never_ask').node().checked,	    
 	add = [],
 	url;
-    if (model_name != 'none')
+    // only add model for builder
+    if (model_name != 'none' && options_value.indexOf('viewer') == -1)
 	add.push('model_name=' + model_name);
     if (map_name !== null)
 	add.push('map_name=' + map_name);
@@ -96,6 +108,7 @@ function draw_models_select(server_index, local_index) {
 
      */
 
+    // filter function
     var filter_models = function(d) {
 	var org = d3.select('#organisms').node().value;
 	if (org =='all')
@@ -108,8 +121,10 @@ function draw_models_select(server_index, local_index) {
     var web_sel, local_sel,
 	select_sel = d3.select('#models');
     if (local_index === null) {
+	// no cache
 	web_sel = select_sel;
     } else {
+	// local cache
 	select_sel.selectAll('optgroup')
 	    .data([['local', 'Cached'], ['web', 'Web']])
 	    .enter()
@@ -164,6 +179,18 @@ function draw_models_select(server_index, local_index) {
 
 function draw_maps_select(server_index, local_index) {
     /** Draw the models selector.
+     
+     Arguments
+     ---------
+
+     server_index:
+
+     local_index:
+     
+     Returns
+     -------
+
+     True if there are maps, and false if no maps.
 
      */
     var filter_maps = function(d) {
@@ -177,8 +204,10 @@ function draw_maps_select(server_index, local_index) {
 
     var select_sel = d3.select('#maps');
     if (local_index === null) {
+	// no cache
 	web_sel = select_sel;
     } else {
+	// local cache
 	select_sel.selectAll('optgroup')
 	    .data([['local', 'Cached'], ['web', 'Web']])
 	    .enter()
@@ -208,7 +237,7 @@ function draw_maps_select(server_index, local_index) {
 		var parts = d.map_name.split('.');
 		if (parts.length == 2) {
 		    var map = d.map_name.split('.').slice(-1)[0],
-			model = d.map_name.split('.').slice(-2)[0];
+			model = get_model(d.map_name);
 		    return map + ' (' + model + ')';
 		} else {
 		    return d.map_name;
@@ -233,16 +262,23 @@ function draw_maps_select(server_index, local_index) {
 	maps_sel
 	    .text(function(d) {
 		var map = d.map_name.split('.').slice(-1)[0],
-		    model = d.map_name.split('.').slice(-2)[0];
+		    model = get_model(d.map_name);
 		return map + ' (' + model + ')';
 	    });
 	maps_sel.exit().remove();
     }
-
-    // select the first map
-    var n = select_sel.node();
-    if (has_maps && n.selectedIndex == 0)
-	n.selectedIndex = 1;
+    
+    // select the first map and model
+    if (has_maps && select_sel.node().selectedIndex == 0) {
+	select_sel.node().selectedIndex = 1;
+	select_sel
+	    .selectAll('option')
+	    .each(function(d, i) {
+		if (i == 1) select_model(get_model(d.map_name));
+	    });
+    }
+    
+    return has_maps;
 }
 
 function draw_organisms_select(organisms) {
@@ -283,16 +319,10 @@ function setup(server_index, local_index, map_download, can_dev) {
 	});
     organisms = Object.keys(organisms);
     
+    // draw dropdown menus
     draw_organisms_select(organisms);
-    
     draw_models_select(server_index, local_index);
-    draw_maps_select(server_index, local_index);
-
-    // select offline if it looks like we're offline
-    if (server_index === null) {
-	var n = d3.select('#tools').node();
-	n.selectedIndex = 2;
-    }
+    var has_maps = draw_maps_select(server_index, local_index);
     
     // update filters
     d3.select('#organisms')
@@ -301,22 +331,36 @@ function setup(server_index, local_index, map_download, can_dev) {
 	    draw_maps_select(server_index, local_index);
 	});
 
-    // make it a builder with a model, and vice-versa
-    d3.select('#models')
+    // select an appropriate model for selected map
+    d3.select('#maps')
 	.on('change', function() {
 	    var is_none = this.value == 'none';
-	    d3.select('#tools').selectAll('.tool')
-		.attr('disabled', function() {
-		    if (is_none || this.value.indexOf('viewer')==-1)
-			return null;
-		    return true;
+	    var selectedIndex = this.selectedIndex;
+	    d3.select(this)
+		.selectAll('option')
+		.each(function(d, i) {
+		    if (d && i == selectedIndex)
+			select_model(get_model(d.map_name));
 		});
-	    // make sure a disabled option is not selected
-	    var n = d3.select('#tools').node();
-	    if (!is_none && n.value.indexOf('viewer')!=-1) {
-		n.selectedIndex = n.selectedIndex + 1;
-	    }
 	});
+	    
+    // disable Model for viewer
+    d3.select('#tools')
+	.on('change', function() {
+	    d3.select('#models')
+		.attr('disabled', this.value.indexOf('viewer') == -1 ? null : true);
+	});
+    
+    // select the first map
+    var map_node = d3.select('#maps').node(); 
+    if (has_maps && map_node.selectedIndex == 0)
+	map_node.selectedIndex = 1;
+
+    // select offline if it looks like we're offline
+    if (server_index === null) {
+	var n = d3.select('#tools').node();
+	n.selectedIndex = 2;
+    }
 
     // submit button
     d3.select('#submit')

@@ -198,7 +198,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
 		style_cells = cell.selectAll('.option-group')
 		    .data(styles),
 		s = style_cells.enter()
-		    .append('span')
+		    .append('label')
 		    .attr('class', 'option-group');
 
 	    // make the checkbox
@@ -243,7 +243,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
 		style_cells = cell.selectAll('.option-group')
 		    .data(styles),
 		s = style_cells.enter()
-		    .append('span')
+		    .append('label')
 		    .attr('class', 'option-group');
             
 	    // make the radio
@@ -285,7 +285,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
 		    style_cells = cell.selectAll('.option-group')
 		        .data(styles),
 		    s = style_cells.enter()
-		        .append('span')
+		        .append('label')
 		        .attr('class', 'option-group');
 
 	        // make the radio
@@ -329,7 +329,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
 		style_cells = cell.selectAll('.option-group')
 		    .data(options),
 		s = style_cells.enter()
-		    .append('span')
+		    .append('label')
 		    .attr('class', 'option-group');
 
 	    // make the checkbox
@@ -352,38 +352,57 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
 
         }.bind(this));
 
-        var boolean_options = [['hide_secondary_metabolites', 'Hide secondary metabolites',
-                                ('If checked, then only the primary metabolites ' +
-                                 'will be displayed.')],
-                               ['show_gene_reaction_rules', 'Show gene reaction rules',
-                                ('If checked, then gene reaction rules will be displayed ' +
-                                 'below each reaction label. (Gene reaction rules are always ' +
-                                 'shown when gene data is loaded.)')],
-                               ['highlight_missing', 'Highlight reactions not in model',
-                                ('If checked, then highlight in red all the ' +
-                                 'reactions on the map that are not present in ' +
-                                 'the loaded model.')],
-                               ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
-                                ('If checked, then allow duplicate reactions during model building.')]];
+        var boolean_options = [
+	    ['scroll_behavior', 'Scroll to zoom (instead of scroll to pan)',
+             ('If checked, then the scroll wheel and trackpad will control zoom ' +
+              'rather than pan.'), {'zoom': true, 'pan': false}],
+	    ['hide_secondary_metabolites', 'Hide secondary metabolites',
+             ('If checked, then only the primary metabolites ' +
+              'will be displayed.')],
+            ['show_gene_reaction_rules', 'Show gene reaction rules',
+             ('If checked, then gene reaction rules will be displayed ' +
+              'below each reaction label. (Gene reaction rules are always ' +
+              'shown when gene data is loaded.)')],
+            ['highlight_missing', 'Highlight reactions not in model',
+             ('If checked, then highlight in red all the ' +
+              'reactions on the map that are not present in ' +
+              'the loaded model.')],
+            ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
+             ('If checked, then allow duplicate reactions during model building.')]
+	];
         
 	var opts = s.append('div').attr('class', 'settings-container')
                 .selectAll('.option-group')
                 .data(boolean_options);
         // enter
         var e = opts.enter()
-            .append('div')
-            .attr('class', 'option-group');
+            .append('label')
+            .attr('class', 'option-group full-line');
         e.append('input').attr('type', 'checkbox');
         e.append('span');
         // update
         opts.attr('title', function(d) { return d[2]; });
         opts.select('input')
             .on('change', function(d) {
-                settings.set_conditional(d[0], this.checked);
+		if (d.length >= 4) { // not a boolean setting
+		    console.log(d);
+		    for (var key in d[3]) {
+			if (d[3][key] == this.checked) {
+			    settings.set_conditional(d[0], key);
+			    break;
+			}
+		    }
+		} else { // boolean setting
+                    settings.set_conditional(d[0], this.checked);
+		}
             })
             .each(function(d) {
                 settings.streams[d[0]].onValue(function(value) {
-                    this.checked = value;
+		    if (d.length >= 4) { // not a boolean setting
+			this.checked = d[3][value];
+		    } else { // boolean setting
+			this.checked = value;
+		    }
                 }.bind(this));
             });
         opts.select('span')

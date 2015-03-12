@@ -13326,6 +13326,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             enable_keys: true,
             enable_search: true,
             fill_screen: false,
+	    zoom_to_element: null,
             // map, model, and styles
             starting_reaction: null,
             never_ask_before_quit: false,
@@ -13592,10 +13593,21 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         }
 
         // setup selection box
-        if (map_data!==null) {
+	if (this.options.zoom_to_element) {
+	    var type = this.options.zoom_to_element.type,
+		element_id = this.options.zoom_to_element.id;
+	    if (typeof type === 'undefined' || ['reaction', 'node'].indexOf(type) == -1)
+		throw new Error('zoom_to_element type must be "reaction" or "node"');
+	    if (typeof element_id === 'undefined')
+		throw new Error('zoom_to_element must include id');
+	    if (type == 'reaction')
+		this.map.zoom_to_reaction(element_id);
+	    else if (type == 'node')
+		this.map.zoom_to_node(element_id);
+	} else if (map_data !== null) {
             this.map.zoom_extent_canvas();
         } else {
-            if (this.options.starting_reaction!==null && this.cobra_model !== null) {
+            if (this.options.starting_reaction !== null && this.cobra_model !== null) {
                 // Draw default reaction if no map is provided
                 var size = this.zoom_container.get_size();
                 var start_coords = { x: size.width / 2,

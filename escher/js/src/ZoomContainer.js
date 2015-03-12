@@ -6,6 +6,7 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
      */
     var ZoomContainer = utils.make_class();
     ZoomContainer.prototype = { init: init,
+				update_scroll_behavior: update_scroll_behavior,
 				toggle_zoom: toggle_zoom,
 				go_to: go_to,
 				zoom_by: zoom_by,
@@ -43,8 +44,18 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
         selection.select("#zoom-container").remove();
         var container = selection.append("g")
                 .attr("id", "zoom-container");
+	this.container = container;
         this.zoomed_sel = container.append("g");
+	
+	// update the scroll behavior
+	this.update_scroll_behavior(scroll_behavior);
 
+	// initialize vars
+	this.saved_scale = null;
+	this.saved_translate = null;
+    }
+    
+    function update_scroll_behavior(scroll_behavior) {
 	// the zoom function and behavior
         var zoom = function(zoom_container, event) {
 	    if (zoom_container.zoom_on) {
@@ -56,19 +67,30 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 		zoom_container.callback_manager.run('zoom');
 	    }
         };
-	var zoom_container = this;
+	// clear all behaviors
+	this.container.on("mousewheel.zoom", null)
+	    .on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
+	    .on("wheel.zoom", null) // disables newer versions of Firefox
+	    .on('dblclick.zoom', null)
+	    .on('mousewheel.escher', wheel_fn)
+	    .on('DOMMouseScroll.escher', wheel_fn)
+	    .on('wheel.escher', wheel_fn);
+	
+	// new zoom
 	this.zoom_behavior = d3.behavior.zoom()
 	    .on("zoom", function() {
-		zoom(zoom_container, d3.event);
-	    });
-	container.call(this.zoom_behavior);	
+		zoom(this, d3.event);
+	    }.bind(this));
+	this.container.call(this.zoom_behavior);	
+
+	// options
 	if (scroll_behavior=='none' || scroll_behavior=='pan') {
-	    container.on("mousewheel.zoom", null)
+	    this.container.on("mousewheel.zoom", null)
 		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
 		.on("wheel.zoom", null) // disables newer versions of Firefox
 		.on('dblclick.zoom', null);
 	}
-	if (scroll_behavior=='pan') {
+	if (scroll_behavior == 'pan') {
 	    // Add the wheel listener
 	    var wheel_fn = function() {
 		var ev = d3.event,
@@ -85,13 +107,10 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
 			     (ev.wheelDeltaY!==undefined ? -ev.wheelDeltaY/1.5 : ev.deltaY) * sensitivity },
 			   false);
 	    }.bind(this);
-	    container.on('mousewheel.escher', wheel_fn);
-	    container.on('DOMMouseScroll.escher', wheel_fn);
-	    container.on('wheel.escher', wheel_fn);
+	    this.container.on('mousewheel.escher', wheel_fn);
+	    this.container.on('DOMMouseScroll.escher', wheel_fn);
+	    this.container.on('wheel.escher', wheel_fn);
 	}
-
-	this.saved_scale = null;
-	this.saved_translate = null;
     }
 
     function toggle_zoom(on_off) {

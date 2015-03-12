@@ -51,6 +51,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             enable_keys: true,
             enable_search: true,
             fill_screen: false,
+	    zoom_to_element: null,
             // map, model, and styles
             starting_reaction: null,
             never_ask_before_quit: false,
@@ -113,7 +114,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             }.bind(this),
             // the options that are erased when the settings menu is canceled
             conditional_options = ['hide_secondary_metabolites', 'show_gene_reaction_rules',
-                                   'reaction_styles',
+                                   'scroll_behavior', 'reaction_styles', 
                                    'reaction_compare_style', 'reaction_scale',
                                    'reaction_no_data_color', 'reaction_no_data_size',
                                    'and_method_in_gene_reaction_rule', 'metabolite_styles',
@@ -156,6 +157,10 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             .onValue(function(x) {
                 if (x == 'accepted') {
                     this._update_data(true, true, ['reaction', 'metabolite'], false);
+		    if (this.zoom_container !== null) {
+			var new_behavior = this.settings.get_option('scroll_behavior');
+			this.zoom_container.update_scroll_behavior(new_behavior);
+		    }
                     if (this.map !== null) {
                         this.map.draw_all_nodes(false);
                         this.map.draw_all_reactions(true, false);
@@ -317,10 +322,21 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         }
 
         // setup selection box
-        if (map_data!==null) {
+	if (this.options.zoom_to_element) {
+	    var type = this.options.zoom_to_element.type,
+		element_id = this.options.zoom_to_element.id;
+	    if (typeof type === 'undefined' || ['reaction', 'node'].indexOf(type) == -1)
+		throw new Error('zoom_to_element type must be "reaction" or "node"');
+	    if (typeof element_id === 'undefined')
+		throw new Error('zoom_to_element must include id');
+	    if (type == 'reaction')
+		this.map.zoom_to_reaction(element_id);
+	    else if (type == 'node')
+		this.map.zoom_to_node(element_id);
+	} else if (map_data !== null) {
             this.map.zoom_extent_canvas();
         } else {
-            if (this.options.starting_reaction!==null && this.cobra_model !== null) {
+            if (this.options.starting_reaction !== null && this.cobra_model !== null) {
                 // Draw default reaction if no map is provided
                 var size = this.zoom_container.get_size();
                 var start_coords = { x: size.width / 2,

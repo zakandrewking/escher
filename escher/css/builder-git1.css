@@ -201,16 +201,18 @@ td.options-label-wide {
     width: 23%;
     margin: 0 4px 0 4px;
 }
-.option-group {
+label.option-group {
     margin: 0 10px 0 0;
 }
-.option-group span {
+label.option-group span {
     margin: 0 0 0 4px;
 }
-/* .style-span input[type="radio"], .style-span input[type="checkbox"] { */
-/*     top: 2px; */
-/*     position: relative; */
-/* } */
+label.full-line {
+    width: 100%;
+}
+label {
+    font-weight: inherit;
+}
 /* Live scale */
 .scale-editor {
     position: relative;
