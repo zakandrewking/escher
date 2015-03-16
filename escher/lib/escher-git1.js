@@ -809,6 +809,8 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	     clone: clone,
 	     extend: extend,
 	     unique_concat: unique_concat,
+	     unique_strings_array: unique_strings_array,
+	     debounce: debounce,
 	     object_slice_for_ids: object_slice_for_ids,
 	     object_slice_for_ids_ref: object_slice_for_ids_ref,
 	     c_plus_c: c_plus_c,
@@ -1228,7 +1230,43 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 	});
 	return new_array;
     }
+    
+    function unique_strings_array(arr) {
+	/** Return unique values in array of strings.
 
+	 http://stackoverflow.com/questions/1960473/unique-values-in-an-array
+
+	 */
+	var a = [];
+	for (var i = 0, l = arr.length; i < l; i++)
+            if (a.indexOf(arr[i]) === -1)
+		a.push(arr[i]);
+	return a;
+    }
+
+    function debounce(func, wait, immediate) {
+    /** Returns a function, that, as long as it continues to be invoked, will
+     not be triggered.
+
+     The function will be called after it stops being called for N
+     milliseconds. If `immediate` is passed, trigger the function on the leading
+     edge, instead of the trailing.
+
+     */
+	var timeout;
+	return function() {
+	    var context = this, args = arguments;
+	    var later = function() {
+		timeout = null;
+		if (!immediate) func.apply(context, args);
+	    };
+	    var callNow = immediate && !timeout;
+	    window.clearTimeout(timeout);
+	    timeout = window.setTimeout(later, wait);
+	    if (callNow) func.apply(context, args);
+	};
+    }
+    
     function object_slice_for_ids(obj, ids) {
 	/** Return a copy of the object with just the given ids. 
 	 
@@ -2413,13 +2451,45 @@ define('data_styles',['utils'], function(utils) {
 
     function gene_string_for_data(rule, gene_values, genes, styles,
                                   identifiers_on_map, compare_style) {
+	/** Add gene values to the gene_reaction_rule string.
+	 
+	 Arguments
+	 ---------
+
+	 rule: (string) The gene reaction rule.
+
+	 gene_values: The values.
+
+	 genes: An array of objects specifying the gene bigg_id and name.
+
+	 styles: The reaction styles.
+
+	 identifiers_on_map: The type of identifiers ('bigg_id' or 'name').
+
+	 compare_style: The comparison style.
+
+	 Returns
+	 -------
+
+	 The new string with formatted data values.
+
+	 */
+
         var out = rule,
-            no_data = (gene_values === null);
+            no_data = (gene_values === null),
+	    // keep track of bigg_id's or names to remove repeats
+	    genes_found = {};
+
+	
         genes.forEach(function(g_obj) {
             // get id or name
             var name = g_obj[identifiers_on_map];
-            if (name === undefined)
+            if (typeof name === 'undefined')
                 throw new Error('Bad value for identifiers_on_map: ' + identifiers_on_map);
+	    // remove repeats that may have found their way into genes object
+	    if (typeof genes_found[name] !== 'undefined')
+		return;
+	    genes_found[name] = true;	
             // generate the string
             if (no_data) {
                 out = replace_gene_in_rule(out, g_obj.bigg_id, (name + '\n'));
@@ -2511,13 +2581,18 @@ define('data_styles',['utils'], function(utils) {
     }
     
     function genes_for_gene_reaction_rule(rule) {
-        /** Find genes in gene_reaction_rule string.
+        /** Find unique genes in gene_reaction_rule string.
 
          Arguments
          ---------
 
          rule: A boolean string containing gene names, parentheses, AND's and
          OR's.
+	 
+	 Returns
+	 -------
+
+	 An array of gene strings.
 
          */
         var genes = rule
@@ -2528,7 +2603,8 @@ define('data_styles',['utils'], function(utils) {
         // split on whitespace
                 .split(' ')
                 .filter(function(x) { return x != ''; });
-        return genes;
+	// unique strings
+        return utils.unique_strings_array(genes);
     }
     
     function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_reaction_rule) {
@@ -3455,6 +3531,7 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
      */
     var ZoomContainer = utils.make_class();
     ZoomContainer.prototype = { init: init,
+				update_scroll_behavior: update_scroll_behavior,
 				toggle_zoom: toggle_zoom,
 				go_to: go_to,
 				zoom_by: zoom_by,
@@ -3492,8 +3569,18 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
         selection.select("#zoom-container").remove();
         var container = selection.append("g")
                 .attr("id", "zoom-container");
+	this.container = container;
         this.zoomed_sel = container.append("g");
+	
+	// update the scroll behavior
+	this.update_scroll_behavior(scroll_behavior);
 
+	// initialize vars
+	this.saved_scale = null;
+	this.saved_translate = null;
+    }
+    
+    function update_scroll_behavior(scroll_behavior) {
 	// the zoom function and behavior
         var zoom = function(zoom_container, event) {
 	    if (zoom_container.zoom_on) {
@@ -3505,19 +3592,30 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 		zoom_container.callback_manager.run('zoom');
 	    }
         };
-	var zoom_container = this;
+	// clear all behaviors
+	this.container.on("mousewheel.zoom", null)
+	    .on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
+	    .on("wheel.zoom", null) // disables newer versions of Firefox
+	    .on('dblclick.zoom', null)
+	    .on('mousewheel.escher', wheel_fn)
+	    .on('DOMMouseScroll.escher', wheel_fn)
+	    .on('wheel.escher', wheel_fn);
+	
+	// new zoom
 	this.zoom_behavior = d3.behavior.zoom()
 	    .on("zoom", function() {
-		zoom(zoom_container, d3.event);
-	    });
-	container.call(this.zoom_behavior);	
+		zoom(this, d3.event);
+	    }.bind(this));
+	this.container.call(this.zoom_behavior);	
+
+	// options
 	if (scroll_behavior=='none' || scroll_behavior=='pan') {
-	    container.on("mousewheel.zoom", null)
+	    this.container.on("mousewheel.zoom", null)
 		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
 		.on("wheel.zoom", null) // disables newer versions of Firefox
 		.on('dblclick.zoom', null);
 	}
-	if (scroll_behavior=='pan') {
+	if (scroll_behavior == 'pan') {
 	    // Add the wheel listener
 	    var wheel_fn = function() {
 		var ev = d3.event,
@@ -3534,13 +3632,10 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
 			     (ev.wheelDeltaY!==undefined ? -ev.wheelDeltaY/1.5 : ev.deltaY) * sensitivity },
 			   false);
 	    }.bind(this);
-	    container.on('mousewheel.escher', wheel_fn);
-	    container.on('DOMMouseScroll.escher', wheel_fn);
-	    container.on('wheel.escher', wheel_fn);
+	    this.container.on('mousewheel.escher', wheel_fn);
+	    this.container.on('DOMMouseScroll.escher', wheel_fn);
+	    this.container.on('wheel.escher', wheel_fn);
 	}
-
-	this.saved_scale = null;
-	this.saved_translate = null;
     }
 
     function toggle_zoom(on_off) {
@@ -11884,11 +11979,12 @@ define('SearchBar',["utils", "CallbackManager"], function(utils, CallbackManager
         this.current = 1;
         this.results = null;
 
-        this.input.on('input', function(input) {
-            this.current = 1;
-            this.results = this.search_index.find(input.value);
-            this.update();
-        }.bind(this, this.input.node()));
+	var on_input_fn = function(input) {
+	    this.current = 1;
+	    this.results = this.search_index.find(input.value);
+	    this.update();
+	}.bind(this, this.input.node());
+        this.input.on('input', utils.debounce(on_input_fn, 200));
     }
     function is_visible() {
         return this.selection.style('display') != 'none';
@@ -11929,11 +12025,9 @@ define('SearchBar',["utils", "CallbackManager"], function(utils, CallbackManager
     function update() {
         if (this.results == null) {
             this.counter.text("");
-            this.map.zoom_extent_canvas();
             this.map.highlight(null);
         } else if (this.results.length == 0) {
             this.counter.text("0 / 0");
-            this.map.zoom_extent_canvas();
             this.map.highlight(null);
         } else {
             this.counter.text(this.current + " / " + this.results.length);
@@ -12838,7 +12932,7 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
 		style_cells = cell.selectAll('.option-group')
 		    .data(styles),
 		s = style_cells.enter()
-		    .append('span')
+		    .append('label')
 		    .attr('class', 'option-group');
 
 	    // make the checkbox
@@ -12883,7 +12977,7 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
 		style_cells = cell.selectAll('.option-group')
 		    .data(styles),
 		s = style_cells.enter()
-		    .append('span')
+		    .append('label')
 		    .attr('class', 'option-group');
             
 	    // make the radio
@@ -12925,7 +13019,7 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
 		    style_cells = cell.selectAll('.option-group')
 		        .data(styles),
 		    s = style_cells.enter()
-		        .append('span')
+		        .append('label')
 		        .attr('class', 'option-group');
 
 	        // make the radio
@@ -12969,7 +13063,7 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
 		style_cells = cell.selectAll('.option-group')
 		    .data(options),
 		s = style_cells.enter()
-		    .append('span')
+		    .append('label')
 		    .attr('class', 'option-group');
 
 	    // make the checkbox
@@ -12992,38 +13086,57 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
 
         }.bind(this));
 
-        var boolean_options = [['hide_secondary_metabolites', 'Hide secondary metabolites',
-                                ('If checked, then only the primary metabolites ' +
-                                 'will be displayed.')],
-                               ['show_gene_reaction_rules', 'Show gene reaction rules',
-                                ('If checked, then gene reaction rules will be displayed ' +
-                                 'below each reaction label. (Gene reaction rules are always ' +
-                                 'shown when gene data is loaded.)')],
-                               ['highlight_missing', 'Highlight reactions not in model',
-                                ('If checked, then highlight in red all the ' +
-                                 'reactions on the map that are not present in ' +
-                                 'the loaded model.')],
-                               ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
-                                ('If checked, then allow duplicate reactions during model building.')]];
+        var boolean_options = [
+	    ['scroll_behavior', 'Scroll to zoom (instead of scroll to pan)',
+             ('If checked, then the scroll wheel and trackpad will control zoom ' +
+              'rather than pan.'), {'zoom': true, 'pan': false}],
+	    ['hide_secondary_metabolites', 'Hide secondary metabolites',
+             ('If checked, then only the primary metabolites ' +
+              'will be displayed.')],
+            ['show_gene_reaction_rules', 'Show gene reaction rules',
+             ('If checked, then gene reaction rules will be displayed ' +
+              'below each reaction label. (Gene reaction rules are always ' +
+              'shown when gene data is loaded.)')],
+            ['highlight_missing', 'Highlight reactions not in model',
+             ('If checked, then highlight in red all the ' +
+              'reactions on the map that are not present in ' +
+              'the loaded model.')],
+            ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
+             ('If checked, then allow duplicate reactions during model building.')]
+	];
         
 	var opts = s.append('div').attr('class', 'settings-container')
                 .selectAll('.option-group')
                 .data(boolean_options);
         // enter
         var e = opts.enter()
-            .append('div')
-            .attr('class', 'option-group');
+            .append('label')
+            .attr('class', 'option-group full-line');
         e.append('input').attr('type', 'checkbox');
         e.append('span');
         // update
         opts.attr('title', function(d) { return d[2]; });
         opts.select('input')
             .on('change', function(d) {
-                settings.set_conditional(d[0], this.checked);
+		if (d.length >= 4) { // not a boolean setting
+		    console.log(d);
+		    for (var key in d[3]) {
+			if (d[3][key] == this.checked) {
+			    settings.set_conditional(d[0], key);
+			    break;
+			}
+		    }
+		} else { // boolean setting
+                    settings.set_conditional(d[0], this.checked);
+		}
             })
             .each(function(d) {
                 settings.streams[d[0]].onValue(function(value) {
-                    this.checked = value;
+		    if (d.length >= 4) { // not a boolean setting
+			this.checked = d[3][value];
+		    } else { // boolean setting
+			this.checked = value;
+		    }
                 }.bind(this));
             });
         opts.select('span')
@@ -13316,6 +13429,9 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         this.model_data = model_data;
         this.embedded_css = embedded_css;
         this.selection = selection;
+	
+	// apply this object as data for the selection
+	this.selection.datum(this);
 
         // set defaults
         this.options = utils.set_options(options, {
@@ -13389,7 +13505,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             }.bind(this),
             // the options that are erased when the settings menu is canceled
             conditional_options = ['hide_secondary_metabolites', 'show_gene_reaction_rules',
-                                   'reaction_styles',
+                                   'scroll_behavior', 'reaction_styles', 
                                    'reaction_compare_style', 'reaction_scale',
                                    'reaction_no_data_color', 'reaction_no_data_size',
                                    'and_method_in_gene_reaction_rule', 'metabolite_styles',
@@ -13432,6 +13548,10 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             .onValue(function(x) {
                 if (x == 'accepted') {
                     this._update_data(true, true, ['reaction', 'metabolite'], false);
+		    if (this.zoom_container !== null) {
+			var new_behavior = this.settings.get_option('scroll_behavior');
+			this.zoom_container.update_scroll_behavior(new_behavior);
+		    }
                     if (this.map !== null) {
                         this.map.draw_all_nodes(false);
                         this.map.draw_all_reactions(true, false);

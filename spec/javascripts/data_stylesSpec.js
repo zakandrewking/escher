@@ -125,6 +125,29 @@ describe('data_styles', function() {
                                                        [{bigg_id: 'G1', name: 'Gene1'}],
                                                        ['abs'], 'name', 'log2_fold'))
             .toEqual('( Gene1 (-10.0))');
+
+	// Repeated genes: If the genes object accidentally has repeats, then
+	// make sure they are removed.
+        expect(escher.data_styles
+	       .gene_string_for_data('((b0902 and b0903) or (b0902 and b3114) or (b3951 and b3952) or ((b0902 and b0903) and b2579))',
+				     {"b0902":[188.37366666666665,282.133],
+				      "b0903":[1866.04,11448.37],
+				      "b3114":[5.289776666666666,5.4111400000000005],
+				      "b3951":[8.291500000000001,5.966176666666666],
+				      "b3952":[3.6747133333333335,4.2879700000000005],
+				      "b2579":[5274.716666666667,1089.1643333333334]},
+                                     [{"bigg_id":"b0902","name":"b0902"},
+				      {"bigg_id":"b0903","name":"b0903"},
+				      {"bigg_id":"b2579","name":"b2579"},
+				      {"bigg_id":"b0902","name":"b0902"},
+				      {"bigg_id":"b0903","name":"b0903"},
+				      {"bigg_id":"b0902","name":"b0902"},
+				      {"bigg_id":"b3114","name":"b3114"},
+				      {"bigg_id":"b3951","name":"b3951"},
+				      {"bigg_id":"b3952","name":"b3952"}],
+                                     ['abs'], 'bigg_id', 'log2_fold'))
+            .toEqual('((b0902 (188, 282: 0.583)\n and b0903 (1.87e+3, 1.14e+4: 2.62)\n) or (b0902 (188, 282: 0.583)\n and b3114 (5.29, 5.41: 0.0327)\n) or (b3951 (8.29, 5.97: 0.475)\n and b3952 (3.67, 4.29: 0.223)\n) or ((b0902 (188, 282: 0.583)\n and b0903 (1.87e+3, 1.14e+4: 2.62)\n) and b2579 (5.27e+3, 1.09e+3: 2.28)))');
+
         // no data
         expect(escher.data_styles.gene_string_for_data('( G1 OR G2 )', null,
                                                        [{bigg_id: 'G1', name: 'Gene1'},
@@ -164,7 +187,10 @@ describe('data_styles', function() {
 	var rule = '(G1ORF AND G2ANDHI) or YER060W-A OR (G3-A AND G4)';
 	expect(escher.data_styles.genes_for_gene_reaction_rule(rule))
 	    .toEqual(['G1ORF', 'G2ANDHI', 'YER060W-A', 'G3-A', 'G4']);
-	
+	// repeats
+	rule = '((b0902 and b0903) or (b0902 and b3114) or (b3951 and b3952) or ((b0902 and b0903) and b2579))';
+	expect(escher.data_styles.genes_for_gene_reaction_rule(rule))
+	    .toEqual(['b0902', 'b0903', 'b3114', 'b3951', 'b3952', 'b2579']);
 	// empty
 	var rule = '';
 	expect(escher.data_styles.genes_for_gene_reaction_rule(rule))

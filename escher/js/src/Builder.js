@@ -41,6 +41,9 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         this.model_data = model_data;
         this.embedded_css = embedded_css;
         this.selection = selection;
+	
+	// apply this object as data for the selection
+	this.selection.datum(this);
 
         // set defaults
         this.options = utils.set_options(options, {

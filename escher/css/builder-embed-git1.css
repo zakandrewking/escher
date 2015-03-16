@@ -124,7 +124,8 @@ g.selected .metabolite-circle {
     stroke-width: 5px;
 }
 .highlight {
-    fill: #106F94;
+    fill: #D97000;
+    text-decoration: underline;
 }
 .cursor-grab {
     cursor: grab;
