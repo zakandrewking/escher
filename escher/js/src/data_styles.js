@@ -176,13 +176,45 @@ define(['utils'], function(utils) {
 
     function gene_string_for_data(rule, gene_values, genes, styles,
                                   identifiers_on_map, compare_style) {
+	/** Add gene values to the gene_reaction_rule string.
+	 
+	 Arguments
+	 ---------
+
+	 rule: (string) The gene reaction rule.
+
+	 gene_values: The values.
+
+	 genes: An array of objects specifying the gene bigg_id and name.
+
+	 styles: The reaction styles.
+
+	 identifiers_on_map: The type of identifiers ('bigg_id' or 'name').
+
+	 compare_style: The comparison style.
+
+	 Returns
+	 -------
+
+	 The new string with formatted data values.
+
+	 */
+
         var out = rule,
-            no_data = (gene_values === null);
+            no_data = (gene_values === null),
+	    // keep track of bigg_id's or names to remove repeats
+	    genes_found = {};
+
+	
         genes.forEach(function(g_obj) {
             // get id or name
             var name = g_obj[identifiers_on_map];
-            if (name === undefined)
+            if (typeof name === 'undefined')
                 throw new Error('Bad value for identifiers_on_map: ' + identifiers_on_map);
+	    // remove repeats that may have found their way into genes object
+	    if (typeof genes_found[name] !== 'undefined')
+		return;
+	    genes_found[name] = true;	
             // generate the string
             if (no_data) {
                 out = replace_gene_in_rule(out, g_obj.bigg_id, (name + '\n'));
@@ -274,13 +306,18 @@ define(['utils'], function(utils) {
     }
     
     function genes_for_gene_reaction_rule(rule) {
-        /** Find genes in gene_reaction_rule string.
+        /** Find unique genes in gene_reaction_rule string.
 
          Arguments
          ---------
 
          rule: A boolean string containing gene names, parentheses, AND's and
          OR's.
+	 
+	 Returns
+	 -------
+
+	 An array of gene strings.
 
          */
         var genes = rule
@@ -291,7 +328,8 @@ define(['utils'], function(utils) {
         // split on whitespace
                 .split(' ')
                 .filter(function(x) { return x != ''; });
-        return genes;
+	// unique strings
+        return utils.unique_strings_array(genes);
     }
     
     function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_reaction_rule) {

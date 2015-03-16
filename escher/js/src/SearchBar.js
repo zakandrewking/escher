@@ -46,11 +46,12 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
         this.current = 1;
         this.results = null;
 
-        this.input.on('input', function(input) {
-            this.current = 1;
-            this.results = this.search_index.find(input.value);
-            this.update();
-        }.bind(this, this.input.node()));
+	var on_input_fn = function(input) {
+	    this.current = 1;
+	    this.results = this.search_index.find(input.value);
+	    this.update();
+	}.bind(this, this.input.node());
+        this.input.on('input', utils.debounce(on_input_fn, 200));
     }
     function is_visible() {
         return this.selection.style('display') != 'none';
@@ -91,11 +92,9 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
     function update() {
         if (this.results == null) {
             this.counter.text("");
-            this.map.zoom_extent_canvas();
             this.map.highlight(null);
         } else if (this.results.length == 0) {
             this.counter.text("0 / 0");
-            this.map.zoom_extent_canvas();
             this.map.highlight(null);
         } else {
             this.counter.text(this.current + " / " + this.results.length);

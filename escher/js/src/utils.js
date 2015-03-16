@@ -16,6 +16,8 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	     clone: clone,
 	     extend: extend,
 	     unique_concat: unique_concat,
+	     unique_strings_array: unique_strings_array,
+	     debounce: debounce,
 	     object_slice_for_ids: object_slice_for_ids,
 	     object_slice_for_ids_ref: object_slice_for_ids_ref,
 	     c_plus_c: c_plus_c,
@@ -435,7 +437,43 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 	});
 	return new_array;
     }
+    
+    function unique_strings_array(arr) {
+	/** Return unique values in array of strings.
 
+	 http://stackoverflow.com/questions/1960473/unique-values-in-an-array
+
+	 */
+	var a = [];
+	for (var i = 0, l = arr.length; i < l; i++)
+            if (a.indexOf(arr[i]) === -1)
+		a.push(arr[i]);
+	return a;
+    }
+
+    function debounce(func, wait, immediate) {
+    /** Returns a function, that, as long as it continues to be invoked, will
+     not be triggered.
+
+     The function will be called after it stops being called for N
+     milliseconds. If `immediate` is passed, trigger the function on the leading
+     edge, instead of the trailing.
+
+     */
+	var timeout;
+	return function() {
+	    var context = this, args = arguments;
+	    var later = function() {
+		timeout = null;
+		if (!immediate) func.apply(context, args);
+	    };
+	    var callNow = immediate && !timeout;
+	    window.clearTimeout(timeout);
+	    timeout = window.setTimeout(later, wait);
+	    if (callNow) func.apply(context, args);
+	};
+    }
+    
     function object_slice_for_ids(obj, ids) {
 	/** Return a copy of the object with just the given ids. 
 	 
