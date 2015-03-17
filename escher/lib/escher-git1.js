@@ -5193,7 +5193,6 @@ define('Behavior',["utils", "build"], function(utils, build) {
                                                                 this.map.sel);
             selection_background.call(this.rotation_drag);
             this.selectable_drag = this.rotation_drag;
-            console.log(this.selectable_drag);
         } else {
             // turn off all listeners
             hide_center.call(this);
@@ -10223,7 +10222,6 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                                          this.reactions);
         }.bind(this),
             update_fn = function(sel) {
-                console.log(this.behavior.selectable_drag);
                 return this.draw.update_node(sel,
                                              this.scale,
                                              this.has_data_on_nodes,
@@ -13134,14 +13132,14 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
              ('If checked, then gene reaction rules will be displayed ' +
               'below each reaction label. (Gene reaction rules are always ' +
               'shown when gene data is loaded.)')],
+            ['hide_all_labels', 'Hide reaction, gene, and metabolite labels',
+             ('If checked, hide all reaction, gene, and metabolite labels')],
+            ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
+             ('If checked, then allow duplicate reactions during model building.')],
             ['highlight_missing', 'Highlight reactions not in model',
              ('If checked, then highlight in red all the ' +
               'reactions on the map that are not present in ' +
               'the loaded model.')],
-            ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
-             ('If checked, then allow duplicate reactions during model building.')],
-            ['hide_all_labels', 'Hide reaction, gene, and metabolite labels',
-             ('If checked, hide all reaction, gene, and metabolite labels')]
         ];
         
         var opts = s.append('div').attr('class', 'settings-container')
@@ -13158,7 +13156,6 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
         opts.select('input')
             .on('change', function(d) {
                 if (d.length >= 4) { // not a boolean setting
-                    console.log(d);
                     for (var key in d[3]) {
                         if (d[3][key] == this.checked) {
                             settings.set_conditional(d[0], key);
