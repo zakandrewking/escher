@@ -99,6 +99,11 @@ JavaScript API
 
 	  (Default: false) If true, then show the gene reaction rules, even
 	  without gene data.
+	  
+       .. js.attribute:: options.hide_all_labels
+
+	  (Default: false) If checked, hide all reaction, gene, metabolite, and
+	  annotation labels
 
        *Applied data*
 
@@ -275,8 +280,13 @@ JavaScript API
                            keys that are metabolite ID's and values that are data
                            points (numbers).
                            
-    .. js:function:: set_gene_data(data)
+    .. js:function:: set_gene_data(data, clear_gene_reaction_rules)
                       
         :param array data: An array of 1 or 2 objects, where each object has
                            keys that are gene ID's and values that are data
                            points (numbers).
+			   
+	:param Boolean clear_gene_reaction_rules: (Optional, Default: false) In
+                                                  addition to setting the data,
+                                                  also turn of the
+                                                  gene_reaction_rules.
