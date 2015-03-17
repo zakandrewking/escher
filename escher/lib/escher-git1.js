@@ -833,6 +833,7 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
              median: median,
              quartiles: quartiles,
              random_characters: random_characters,
+             generate_map_id: generate_map_id,
 	     check_for_parent_tag: check_for_parent_tag,
 	     name_to_url: name_to_url,
 	     parse_url_components: parse_url_components };
@@ -1610,6 +1611,10 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
         for (var i = 0; i < num; i++)
             text += possible.charAt(Math.floor(Math.random() * possible.length));
         return text;
+    }
+
+    function generate_map_id() {
+        return random_characters(12);
     }
 
     function check_for_parent_tag(el, tag) {
@@ -2610,9 +2615,6 @@ define('data_styles',['utils'], function(utils) {
     function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_reaction_rule) {
         /** Return a value given the rule and gene_values object.
 
-         With the current version, all negative values are converted to zero,
-         OR's are sums and AND's are Min()'s.
-
          Arguments
          ---------
 
@@ -2638,7 +2640,7 @@ define('data_styles',['utils'], function(utils) {
 
         // for each element in the arrays
         var out = [];
-        for (var i=0; i<l; i++) {
+        for (var i = 0; i < l; i++) {
             // get the rule
             var curr_val = rule;
 
@@ -2646,7 +2648,7 @@ define('data_styles',['utils'], function(utils) {
             var all_null = true;
             for (var gene_id in gene_values) {
                 var f = _parse_float_or_null(gene_values[gene_id][i]);
-                if (f === null || f < 0) {
+                if (f === null) {
                     f = 0;
                 } else {
                     all_null = false;
@@ -2677,9 +2679,9 @@ define('data_styles',['utils'], function(utils) {
                 new_curr_val = new_curr_val.replace(AND_EXPRESSION, function(match, p1, p2, p3) {
                     // find min
                     var nums = p2.split(AND).map(parseFloat),
-                        val = (and_method_in_gene_reaction_rule=='min' ?
+                        val = (and_method_in_gene_reaction_rule == 'min' ?
                                Math.min.apply(null, nums) :
-                               nums.reduce(function(a, b){ return a + b; }) / nums.length);
+                               nums.reduce(function(a, b) { return a + b; }) / nums.length);
                     return p1 + val + p3;
                 });
                 // break if there is no change
@@ -3821,7 +3823,6 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                        update_reaction_label: update_reaction_label,
                        create_segment: create_segment,
                        update_segment: update_segment
-                       
                      };
 
     return Draw;
@@ -4262,6 +4263,8 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
 
     function update_bezier(update_selection, show_beziers, drag_behavior,
                            mouseover, mouseout, drawn_nodes, drawn_reactions) {
+	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites');
+	    
         if (!show_beziers) {
             update_selection.attr('visibility', 'hidden');
             return;
@@ -4269,9 +4272,21 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             update_selection.attr('visibility', 'visible');
         }
         
-        // draw bezier points
+	// hide secondary
         update_selection
-            .select('.bezier-circle')
+	    .style('visibility', function(d) {
+                var seg_data = drawn_reactions[d.reaction_id].segments[d.segment_id],
+                    start = drawn_nodes[seg_data.from_node_id],
+                    end = drawn_nodes[seg_data.to_node_id];
+		if (hide_secondary_metabolites &&
+		    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+		     (start['node_type']=='metabolite' && !start.node_is_primary)))
+			return 'hidden';
+		return null;
+	    });
+
+        // draw bezier points
+        update_selection.select('.bezier-circle')
             .call(this.behavior.turn_off_drag)
             .call(drag_behavior)
             .on('mouseover', mouseover)
@@ -4412,20 +4427,16 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         var mousedown_fn = this.behavior.text_label_mousedown,
             click_fn = this.behavior.text_label_click,
             drag_behavior = this.behavior.selectable_drag,
-            turn_off_drag = this.behavior.turn_off_drag,
-	    hide_all_labels = this.settings.get_option('hide_all_labels');
+            turn_off_drag = this.behavior.turn_off_drag;
         
-        var s = update_selection
-		.select('.label')
-		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
-	if (!hide_all_labels) {
-            s.text(function(d) { return d.text; })
-		.attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
-		.on('mousedown', mousedown_fn)
-		.on('click', click_fn)
-		.call(turn_off_drag)
-		.call(drag_behavior);
-	}
+        update_selection
+	    .select('.label')
+            .text(function(d) { return d.text; })
+	    .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
+	    .on('mousedown', mousedown_fn)
+	    .on('click', click_fn)
+	    .call(turn_off_drag)
+	    .call(drag_behavior);
         
         this.callback_manager.run('update_text_label', this, update_selection);
     }
@@ -5181,8 +5192,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
                                                                 undo_fn, redo_fn, center_fn,
                                                                 this.map.sel);
             selection_background.call(this.rotation_drag);
-
-
+            this.selectable_drag = this.rotation_drag;
+            console.log(this.selectable_drag);
         } else {
             // turn off all listeners
             hide_center.call(this);
@@ -5191,6 +5202,7 @@ define('Behavior',["utils", "build"], function(utils, build) {
             selection_background.on('mousedown.drag', null);
             selection_background.on('touchstart.drag', null);
             this.rotation_drag = null;
+            this.selectable_drag = null;
         }
 
         // definitions
@@ -9732,7 +9744,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         else
             map_name = String(map_name);
         if (map_id === undefined || map_id === null || map_id == '')
-            map_id = utils.random_characters(12);
+            map_id = utils.generate_map_id();
         else
             map_id = String(map_id);
         if (map_description === undefined || map_description === null)
@@ -10042,6 +10054,9 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         this.beziers = {};
         this.nodes = {};
         this.text_labels = {};
+        this.map_name = 'new_map';
+        this.map_id = utils.generate_map_id();
+        this.map_description = '';
         // reaction_data onto existing map reactions
         this.apply_reaction_data_to_map(null);
         this.apply_metabolite_data_to_map(null);
@@ -10208,6 +10223,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                                     this.reactions);
         }.bind(this),
             update_fn = function(sel) {
+                console.log(this.behavior.selectable_drag);
                 return this.draw.update_node(sel,
                                         this.scale,
                                         this.has_data_on_nodes,
@@ -12417,8 +12433,12 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         // drag 
         var drag = d3.behavior.drag();
         drag.on('drag', function(d, i) {
-            if (scale[i].type != 'value')
-                return;
+	    // on drag, make it a value type
+            if (['value', 'min', 'max'].indexOf(scale[i].type) === -1) {
+		// get the current value and set it
+		scale[i].value = get_this_val(d);
+		scale[i].type = 'value';
+	    }
             // change the model on drag
             var new_d = scale[i].value + sc_size(d3.event.dx),
                 buf = sc_size(bar_w + 2);
@@ -13120,8 +13140,8 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
               'the loaded model.')],
             ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
              ('If checked, then allow duplicate reactions during model building.')],
-	    ['hide_all_labels', 'Hide all labels',
-	     ('If checked, hide all reaction, gene, metabolite, and annotation labels')]
+	    ['hide_all_labels', 'Hide reaction, gene, and metabolite labels',
+	     ('If checked, hide all reaction, gene, and metabolite labels')]
 	];
         
 	var opts = s.append('div').attr('class', 'settings-container')
@@ -13167,7 +13187,7 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
 	s.append('div')
 	    .style('margin-top', '16px')
 	    .classed('settings-tip', true)
-	.text('Tip: To increase map performance, turn off text boxes (e.g. gene reaction rules).');
+	.text('Tip: To increase map performance, turn off text boxes (i.e. labels and gene reaction rules).');
     }
 });
 
@@ -13798,10 +13818,16 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
         // resize canvas
         this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
-        // behavior
-        this.map.behavior.toggle_rotation_mode(mode=='rotate');
-        this.map.behavior.toggle_selectable_click(mode=='build' || mode=='brush' || mode=='rotate');
-        this.map.behavior.toggle_selectable_drag(mode=='brush' || mode=='rotate');
+        // Behavior. Be careful of the order becuase rotation and
+        // toggle_selectable_drag both use Behavior.selectable_drag.
+        if (mode == 'rotate') {
+            this.map.behavior.toggle_selectable_drag(false); // before toggle_rotation_mode
+            this.map.behavior.toggle_rotation_mode(true);
+        } else {
+            this.map.behavior.toggle_rotation_mode(mode=='rotate'); // before toggle_selectable_drag
+            this.map.behavior.toggle_selectable_drag(mode=='brush');
+        }
+        this.map.behavior.toggle_selectable_click(mode=='build' || mode=='brush');
         this.map.behavior.toggle_label_drag(mode=='brush');
         this.map.behavior.toggle_label_mousedown(mode=='brush');
         this.map.behavior.toggle_text_label_edit(mode=='text');
@@ -13811,9 +13837,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             this.map.select_none();
         if (mode=='rotate')
             this.map.deselect_text_labels();
-        // console.log('starting draw');
         this.map.draw_everything();
-        // console.log('finished draw');
     }
     
     function view_mode() {

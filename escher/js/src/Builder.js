@@ -385,10 +385,16 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
         // resize canvas
         this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
-        // behavior
-        this.map.behavior.toggle_rotation_mode(mode=='rotate');
-        this.map.behavior.toggle_selectable_click(mode=='build' || mode=='brush' || mode=='rotate');
-        this.map.behavior.toggle_selectable_drag(mode=='brush' || mode=='rotate');
+        // Behavior. Be careful of the order becuase rotation and
+        // toggle_selectable_drag both use Behavior.selectable_drag.
+        if (mode == 'rotate') {
+            this.map.behavior.toggle_selectable_drag(false); // before toggle_rotation_mode
+            this.map.behavior.toggle_rotation_mode(true);
+        } else {
+            this.map.behavior.toggle_rotation_mode(mode=='rotate'); // before toggle_selectable_drag
+            this.map.behavior.toggle_selectable_drag(mode=='brush');
+        }
+        this.map.behavior.toggle_selectable_click(mode=='build' || mode=='brush');
         this.map.behavior.toggle_label_drag(mode=='brush');
         this.map.behavior.toggle_label_mousedown(mode=='brush');
         this.map.behavior.toggle_text_label_edit(mode=='text');
@@ -398,9 +404,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             this.map.select_none();
         if (mode=='rotate')
             this.map.deselect_text_labels();
-        // console.log('starting draw');
         this.map.draw_everything();
-        // console.log('finished draw');
     }
     
     function view_mode() {

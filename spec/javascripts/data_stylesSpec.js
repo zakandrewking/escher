@@ -215,7 +215,7 @@ describe('data_styles', function() {
 	rule = 'YER056C';
 	gene_values = {"YER056C": [-151]};
 	out = escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min');
-	expect(out).toEqual([null]);
+	expect(out).toEqual([-151]);
 	
 	// multiple values
 	rule = '(G1 AND G2) OR (G3ANDHI aNd G4ORF)';
@@ -244,12 +244,6 @@ describe('data_styles', function() {
 	gene_values = {G1: [''], G2: [''], G3: [''], G4: ['']};
 	out = escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min');
 	expect(out).toEqual([null]);
-	
-	// illegal 
-	// rule = '(G1 AND G2) OR (G3 AND G4)';
-	// gene_values = {G1: [5], G2: [2], G3: [10], G4: 'DROP DATABASE db'};
-	// out = escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min');
-	// expect(out).toEqual([null]);
     });
     
     it('evaluate_gene_reaction_rule, complex cases', function() {
@@ -259,11 +253,11 @@ describe('data_styles', function() {
 			   "YGR032W":[12],
 			   "YLR343W":[2],
 			   "YMR215W":[null],
-			   "YMR306W":[-5.603479644538055],
-			   "YLR342W":[-8.560205416555595],
-			   "YOL132W":[-7.133712781035477],
-			   "YOL030W":[-6.097013023625431],
-			   "YMR307W":[-7.909738697562627]};
+			   "YMR306W":[null],
+			   "YLR342W":[null],
+			   "YOL132W":[null],
+			   "YOL030W":[null],
+			   "YMR307W":[null]};
 	expect(escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min'))
 	    .toEqual([2]);
 
@@ -279,11 +273,11 @@ describe('data_styles', function() {
 	    .toEqual([0]);
 
         rule = '(( (YJL130C) ) or (YJR109C and YOR303W))';
-        gene_values = { YJL130C: ['80.0'],
+        gene_values = { YJL130C: ['-80.0'],
                         YJR109C: ['70.5'],
                         YOR303W: ['200.5233'] };
 	expect(escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min'))
-	    .toEqual([150.5]);
+	    .toEqual([-10.5]);
     });
 
     it('replace_gene_in_rule', function() {

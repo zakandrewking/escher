@@ -164,8 +164,12 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // drag 
         var drag = d3.behavior.drag();
         drag.on('drag', function(d, i) {
-            if (scale[i].type != 'value')
-                return;
+	    // on drag, make it a value type
+            if (['value', 'min', 'max'].indexOf(scale[i].type) === -1) {
+		// get the current value and set it
+		scale[i].value = get_this_val(d);
+		scale[i].type = 'value';
+	    }
             // change the model on drag
             var new_d = scale[i].value + sc_size(d3.event.dx),
                 buf = sc_size(bar_w + 2);
