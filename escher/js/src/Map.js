@@ -155,7 +155,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         else
             map_name = String(map_name);
         if (map_id === undefined || map_id === null || map_id == '')
-            map_id = utils.random_characters(12);
+            map_id = utils.generate_map_id();
         else
             map_id = String(map_id);
         if (map_description === undefined || map_description === null)
@@ -465,6 +465,9 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.beziers = {};
         this.nodes = {};
         this.text_labels = {};
+        this.map_name = 'new_map';
+        this.map_id = utils.generate_map_id();
+        this.map_description = '';
         // reaction_data onto existing map reactions
         this.apply_reaction_data_to_map(null);
         this.apply_metabolite_data_to_map(null);
@@ -631,6 +634,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                     this.reactions);
         }.bind(this),
             update_fn = function(sel) {
+                console.log(this.behavior.selectable_drag);
                 return this.draw.update_node(sel,
                                         this.scale,
                                         this.has_data_on_nodes,

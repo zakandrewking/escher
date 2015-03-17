@@ -369,8 +369,8 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
               'the loaded model.')],
             ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
              ('If checked, then allow duplicate reactions during model building.')],
-	    ['hide_all_labels', 'Hide all labels',
-	     ('If checked, hide all reaction, gene, metabolite, and annotation labels')]
+	    ['hide_all_labels', 'Hide reaction, gene, and metabolite labels',
+	     ('If checked, hide all reaction, gene, and metabolite labels')]
 	];
         
 	var opts = s.append('div').attr('class', 'settings-container')
@@ -416,6 +416,6 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
 	s.append('div')
 	    .style('margin-top', '16px')
 	    .classed('settings-tip', true)
-	.text('Tip: To increase map performance, turn off text boxes (e.g. gene reaction rules).');
+	.text('Tip: To increase map performance, turn off text boxes (i.e. labels and gene reaction rules).');
     }
 });

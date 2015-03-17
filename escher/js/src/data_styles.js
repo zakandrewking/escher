@@ -335,9 +335,6 @@ define(['utils'], function(utils) {
     function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_reaction_rule) {
         /** Return a value given the rule and gene_values object.
 
-         With the current version, all negative values are converted to zero,
-         OR's are sums and AND's are Min()'s.
-
          Arguments
          ---------
 
@@ -363,7 +360,7 @@ define(['utils'], function(utils) {
 
         // for each element in the arrays
         var out = [];
-        for (var i=0; i<l; i++) {
+        for (var i = 0; i < l; i++) {
             // get the rule
             var curr_val = rule;
 
@@ -371,7 +368,7 @@ define(['utils'], function(utils) {
             var all_null = true;
             for (var gene_id in gene_values) {
                 var f = _parse_float_or_null(gene_values[gene_id][i]);
-                if (f === null || f < 0) {
+                if (f === null) {
                     f = 0;
                 } else {
                     all_null = false;
@@ -402,9 +399,9 @@ define(['utils'], function(utils) {
                 new_curr_val = new_curr_val.replace(AND_EXPRESSION, function(match, p1, p2, p3) {
                     // find min
                     var nums = p2.split(AND).map(parseFloat),
-                        val = (and_method_in_gene_reaction_rule=='min' ?
+                        val = (and_method_in_gene_reaction_rule == 'min' ?
                                Math.min.apply(null, nums) :
-                               nums.reduce(function(a, b){ return a + b; }) / nums.length);
+                               nums.reduce(function(a, b) { return a + b; }) / nums.length);
                     return p1 + val + p3;
                 });
                 // break if there is no change

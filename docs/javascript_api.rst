@@ -102,8 +102,7 @@ JavaScript API
 	  
        .. js.attribute:: options.hide_all_labels
 
-	  (Default: false) If checked, hide all reaction, gene, metabolite, and
-	  annotation labels
+	  (Default: false) If checked, hide all reaction, gene, and metabolite labels
 
        *Applied data*
 

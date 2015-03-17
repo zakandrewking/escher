@@ -187,8 +187,8 @@ define(["utils", "build"], function(utils, build) {
                                                                 undo_fn, redo_fn, center_fn,
                                                                 this.map.sel);
             selection_background.call(this.rotation_drag);
-
-
+            this.selectable_drag = this.rotation_drag;
+            console.log(this.selectable_drag);
         } else {
             // turn off all listeners
             hide_center.call(this);
@@ -197,6 +197,7 @@ define(["utils", "build"], function(utils, build) {
             selection_background.on('mousedown.drag', null);
             selection_background.on('touchstart.drag', null);
             this.rotation_drag = null;
+            this.selectable_drag = null;
         }
 
         // definitions

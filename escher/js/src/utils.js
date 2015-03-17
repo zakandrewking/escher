@@ -40,6 +40,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
              median: median,
              quartiles: quartiles,
              random_characters: random_characters,
+             generate_map_id: generate_map_id,
 	     check_for_parent_tag: check_for_parent_tag,
 	     name_to_url: name_to_url,
 	     parse_url_components: parse_url_components };
@@ -817,6 +818,10 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         for (var i = 0; i < num; i++)
             text += possible.charAt(Math.floor(Math.random() * possible.length));
         return text;
+    }
+
+    function generate_map_id() {
+        return random_characters(12);
     }
 
     function check_for_parent_tag(el, tag) {

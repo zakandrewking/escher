@@ -46,7 +46,6 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                        update_reaction_label: update_reaction_label,
                        create_segment: create_segment,
                        update_segment: update_segment
-                       
                      };
 
     return Draw;
@@ -487,6 +486,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
 
     function update_bezier(update_selection, show_beziers, drag_behavior,
                            mouseover, mouseout, drawn_nodes, drawn_reactions) {
+	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites');
+	    
         if (!show_beziers) {
             update_selection.attr('visibility', 'hidden');
             return;
@@ -494,9 +495,21 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             update_selection.attr('visibility', 'visible');
         }
         
-        // draw bezier points
+	// hide secondary
         update_selection
-            .select('.bezier-circle')
+	    .style('visibility', function(d) {
+                var seg_data = drawn_reactions[d.reaction_id].segments[d.segment_id],
+                    start = drawn_nodes[seg_data.from_node_id],
+                    end = drawn_nodes[seg_data.to_node_id];
+		if (hide_secondary_metabolites &&
+		    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+		     (start['node_type']=='metabolite' && !start.node_is_primary)))
+			return 'hidden';
+		return null;
+	    });
+
+        // draw bezier points
+        update_selection.select('.bezier-circle')
             .call(this.behavior.turn_off_drag)
             .call(drag_behavior)
             .on('mouseover', mouseover)
@@ -637,20 +650,16 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
         var mousedown_fn = this.behavior.text_label_mousedown,
             click_fn = this.behavior.text_label_click,
             drag_behavior = this.behavior.selectable_drag,
-            turn_off_drag = this.behavior.turn_off_drag,
-	    hide_all_labels = this.settings.get_option('hide_all_labels');
+            turn_off_drag = this.behavior.turn_off_drag;
         
-        var s = update_selection
-		.select('.label')
-		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
-	if (!hide_all_labels) {
-            s.text(function(d) { return d.text; })
-		.attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
-		.on('mousedown', mousedown_fn)
-		.on('click', click_fn)
-		.call(turn_off_drag)
-		.call(drag_behavior);
-	}
+        update_selection
+	    .select('.label')
+            .text(function(d) { return d.text; })
+	    .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
+	    .on('mousedown', mousedown_fn)
+	    .on('click', click_fn)
+	    .call(turn_off_drag)
+	    .call(drag_behavior);
         
         this.callback_manager.run('update_text_label', this, update_selection);
     }
