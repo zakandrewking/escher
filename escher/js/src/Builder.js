@@ -65,6 +65,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             gene_font_size: 18,
             hide_secondary_metabolites: false,
             show_gene_reaction_rules: false,
+	    hide_all_labels: false,
             // applied data
             // reaction
             reaction_data: null,
@@ -117,7 +118,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             }.bind(this),
             // the options that are erased when the settings menu is canceled
             conditional_options = ['hide_secondary_metabolites', 'show_gene_reaction_rules',
-                                   'scroll_behavior', 'reaction_styles', 
+                                   'hide_all_labels', 'scroll_behavior', 'reaction_styles', 
                                    'reaction_compare_style', 'reaction_scale',
                                    'reaction_no_data_color', 'reaction_no_data_size',
                                    'and_method_in_gene_reaction_rule', 'metabolite_styles',
@@ -456,14 +457,18 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          */
         this.options.reaction_data = data;
         this._update_data(true, true, 'reaction');
+	this.map.set_status('');
     }
     
-    function set_gene_data(data) {
+    function set_gene_data(data, clear_gene_reaction_rules) {
         /** For documentation of this function, see docs/javascript_api.rst.
 
          */
+	if (clear_gene_reaction_rules) // default undefined
+	    this.settings.set_conditional('show_gene_reaction_rules', false);
         this.options.gene_data = data;
         this._update_data(true, true, 'reaction');
+	this.map.set_status('');
     }
     
     function set_metabolite_data(data) {
@@ -472,6 +477,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          */
         this.options.metabolite_data = data;
         this._update_data(true, true, 'metabolite');
+	this.map.set_status('');
     }
 
     function _update_data(update_model, update_map, kind, should_draw) {
@@ -622,7 +628,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                                key: 'fn',
                                fn: load_map_for_file.bind(this),
                                pre_fn: function() {
-                                   map.set_status('Loading map...');
+                                   map.set_status('Loading map ...');
                                },
                                failure_fn: function() {
                                    map.set_status('');
@@ -641,7 +647,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                                key: 'fn',
                                fn: load_model_for_file.bind(this),
                                pre_fn: function() {
-                                   map.set_status('Loading model...');
+                                   map.set_status('Loading model ...');
                                },
                                failure_fn: function() {
                                    map.set_status('');
@@ -666,19 +672,37 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                 .button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
                                    key: 'fn',
                                    fn: load_reaction_data_for_file.bind(this),
-                                   accept_csv: true },
+                                   accept_csv: true,
+				   pre_fn: function() {
+				       map.set_status('Loading reaction data ...');
+				   },
+				   failure_fn: function() {
+				       map.set_status('');
+				   }},
                           text: 'Load reaction data' })
                 .button({ key: keys.clear_reaction_data,
                           text: 'Clear reaction data' })
                 .divider()
                 .button({ input: { fn: load_gene_data_for_file.bind(this),
-                                   accept_csv: true  },
+                                   accept_csv: true,
+				   pre_fn: function() {
+				       map.set_status('Loading gene data ...');
+				   },
+				   failure_fn: function() {
+				       map.set_status('');
+				   }},
                           text: 'Load gene data' })
                 .button({ key: keys.clear_gene_data,
                           text: 'Clear gene data' })
                 .divider()
                 .button({ input: { fn: load_metabolite_data_for_file.bind(this),
-                                   accept_csv: true  },
+                                   accept_csv: true, 
+				   pre_fn: function() {
+				       map.set_status('Loading metabolite data ...');
+				   },
+				   failure_fn: function() {
+				       map.set_status('');
+				   }},
                           text: 'Load metabolite data' })
                 .button({ key: keys.clear_metabolite_data,
                           text: 'Clear metabolite data' });
@@ -977,6 +1001,9 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             if (data !== null)
                 this.set_reaction_data(null);
 
+	    // turn on gene_reaction_rules
+	    this.settings.set_conditional('show_gene_reaction_rules', true);
+
             this.set_gene_data(data);
         }
     }
@@ -1091,8 +1118,9 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             clear_metabolite_data: { target: this,
                                      fn: function() { this.set_metabolite_data(null); }},
             load_gene_data: { fn: null }, // defined by button
-            clear_gene_data: { target: this,
-                               fn: function() { this.set_gene_data(null); }},
+            clear_gene_data: { fn: function() {
+				   this.set_gene_data(null, true);
+			       }.bind(this)},
             zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
                        target: zoom_container,
                        fn: zoom_container.zoom_in },

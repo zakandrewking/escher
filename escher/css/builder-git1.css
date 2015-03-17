@@ -213,6 +213,9 @@ label.full-line {
 label {
     font-weight: inherit;
 }
+.settings-tip {
+    font-style: italic;
+}
 /* Live scale */
 .scale-editor {
     position: relative;

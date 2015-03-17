@@ -131,35 +131,43 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             identifiers_on_map = this.settings.get_option('identifiers_on_map'),
             reaction_data_styles = this.settings.get_option('reaction_styles'),
             show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules'),
+	    hide_all_labels = this.settings.get_option('hide_all_labels'),
             gene_font_size = this.settings.get_option('gene_font_size'),
             label_mousedown_fn = this.behavior.label_mousedown,
             label_mouseover_fn = this.behavior.label_mouseover,
             label_mouseout_fn = this.behavior.label_mouseout;
-            
+        
         update_selection.attr('transform', function(d) {
             return 'translate('+d.label_x+','+d.label_y+')';
         })
             .call(this.behavior.turn_off_drag)
             .call(this.behavior.reaction_label_drag);
-        update_selection.select('.reaction-label')
-            .text(function(d) { 
-                var t = d[identifiers_on_map];
-                if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
-                    t += ' ' + d.data_string;
-                return t;
-            })
-            .on('mousedown', label_mousedown_fn)
-            .on('mouseover', label_mouseover_fn)
-            .on('mouseout', label_mouseout_fn);
+        var s = update_selection.select('.reaction-label')
+		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+	if (!hide_all_labels) {
+		s.text(function(d) { 
+                    var t = d[identifiers_on_map];
+                    if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
+			t += ' ' + d.data_string;
+                    return t;
+		})
+		.on('mousedown', label_mousedown_fn)
+		.on('mouseover', label_mouseover_fn)
+		.on('mouseout', label_mouseout_fn);
+	}
         // gene label
         var gene_g = update_selection.select('.gene-label-group')
                 .selectAll('text')
                 .data(function(d) {
                     var show_gene_string = ('gene_string' in d &&
-                                            d.gene_string !== null),
+                                            d.gene_string !== null &&
+					    show_gene_reaction_rules &&
+					    (!hide_all_labels) &&
+					    reaction_data_styles.indexOf('text') !== -1),
                         show_gene_reaction_rule = ('gene_reaction_rule' in d &&
                                                    d.gene_reaction_rule !== null &&
-                                                   show_gene_reaction_rules); 
+                                                   show_gene_reaction_rules &&
+						   (!hide_all_labels) ); 
                     if (show_gene_string) {
                         return d.gene_string.split('\n');
                     } else if (show_gene_reaction_rule) {
@@ -546,7 +554,9 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
 	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
 	    primary_r = this.settings.get_option('primary_metabolite_radius'),
 	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
-	    marker_r = this.settings.get_option('marker_radius');
+	    marker_r = this.settings.get_option('marker_radius'),
+	    hide_all_labels = this.settings.get_option('hide_all_labels');
+
         var mg = update_selection
                 .select('.node-circle')
                 .attr('transform', function(d) {
@@ -590,23 +600,26 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                 .on('mouseover', mouseover_fn)
                 .on('mouseout', mouseout_fn);
 
-        update_selection
-            .select('.node-label')
-            .style('visibility', function(d) {
-		return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
-	    })
-            .attr('transform', function(d) {
-                return 'translate('+d.label_x+','+d.label_y+')';
-            })
-            .text(function(d) { 
-                var t = d[identifiers_on_map];
-                if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
-                    t += ' ' + d.data_string;
-                return t;
-            })
-            .call(this.behavior.turn_off_drag)
-            .call(label_drag_behavior);
-        
+        var s = update_selection
+		.select('.node-label')
+		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+	if (!hide_all_labels) {
+		s.style('visibility', function(d) {
+		    return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
+		})
+		.attr('transform', function(d) {
+                    return 'translate('+d.label_x+','+d.label_y+')';
+		})
+		.text(function(d) { 
+                    var t = d[identifiers_on_map];
+                    if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
+			t += ' ' + d.data_string;
+                    return t;
+		})
+		.call(this.behavior.turn_off_drag)
+		.call(label_drag_behavior);
+	}
+            
         this.callback_manager.run('update_node', this, update_selection);
     }
 
@@ -624,16 +637,20 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
         var mousedown_fn = this.behavior.text_label_mousedown,
             click_fn = this.behavior.text_label_click,
             drag_behavior = this.behavior.selectable_drag,
-            turn_off_drag = this.behavior.turn_off_drag;
+            turn_off_drag = this.behavior.turn_off_drag,
+	    hide_all_labels = this.settings.get_option('hide_all_labels');
         
-        update_selection
-            .select('.label')
-            .text(function(d) { return d.text; })
-            .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
-            .on('mousedown', mousedown_fn)
-            .on('click', click_fn)
-            .call(turn_off_drag)
-            .call(drag_behavior);
+        var s = update_selection
+		.select('.label')
+		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+	if (!hide_all_labels) {
+            s.text(function(d) { return d.text; })
+		.attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
+		.on('mousedown', mousedown_fn)
+		.on('click', click_fn)
+		.call(turn_off_drag)
+		.call(drag_behavior);
+	}
         
         this.callback_manager.run('update_text_label', this, update_selection);
     }

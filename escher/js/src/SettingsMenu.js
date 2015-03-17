@@ -52,7 +52,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
         // Tip
         box.append('div')
             .text('Tip: Hover over an option to see more details about it.')
-            .style('font-style', 'italic');
+	    .classed('settings-tip', true);
         box.append('hr');
         
 	// view and build
@@ -192,7 +192,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
                            ('If checked, then color the ' +
                             (type == 'metabolite' ? 'metabolite circles ' : 'reaction lines ') +
                             'according to the value of the ' + type + ' data')],
-                          ['Text', 'text',
+                          ['Text (Show data in label)', 'text',
                            ('If checked, then show data values in the ' + type + ' ' +
                             'labels')]],
 		style_cells = cell.selectAll('.option-group')
@@ -368,7 +368,9 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
               'reactions on the map that are not present in ' +
               'the loaded model.')],
             ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
-             ('If checked, then allow duplicate reactions during model building.')]
+             ('If checked, then allow duplicate reactions during model building.')],
+	    ['hide_all_labels', 'Hide all labels',
+	     ('If checked, hide all reaction, gene, metabolite, and annotation labels')]
 	];
         
 	var opts = s.append('div').attr('class', 'settings-container')
@@ -409,5 +411,11 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
             .text(function(d) { return d[1]; });
         // exit
         opts.exit().remove();
+	
+	// message about text performance
+	s.append('div')
+	    .style('margin-top', '16px')
+	    .classed('settings-tip', true)
+	.text('Tip: To increase map performance, turn off text boxes (e.g. gene reaction rules).');
     }
 });

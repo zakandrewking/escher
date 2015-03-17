@@ -3906,35 +3906,43 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             identifiers_on_map = this.settings.get_option('identifiers_on_map'),
             reaction_data_styles = this.settings.get_option('reaction_styles'),
             show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules'),
+	    hide_all_labels = this.settings.get_option('hide_all_labels'),
             gene_font_size = this.settings.get_option('gene_font_size'),
             label_mousedown_fn = this.behavior.label_mousedown,
             label_mouseover_fn = this.behavior.label_mouseover,
             label_mouseout_fn = this.behavior.label_mouseout;
-            
+        
         update_selection.attr('transform', function(d) {
             return 'translate('+d.label_x+','+d.label_y+')';
         })
             .call(this.behavior.turn_off_drag)
             .call(this.behavior.reaction_label_drag);
-        update_selection.select('.reaction-label')
-            .text(function(d) { 
-                var t = d[identifiers_on_map];
-                if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
-                    t += ' ' + d.data_string;
-                return t;
-            })
-            .on('mousedown', label_mousedown_fn)
-            .on('mouseover', label_mouseover_fn)
-            .on('mouseout', label_mouseout_fn);
+        var s = update_selection.select('.reaction-label')
+		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+	if (!hide_all_labels) {
+		s.text(function(d) { 
+                    var t = d[identifiers_on_map];
+                    if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
+			t += ' ' + d.data_string;
+                    return t;
+		})
+		.on('mousedown', label_mousedown_fn)
+		.on('mouseover', label_mouseover_fn)
+		.on('mouseout', label_mouseout_fn);
+	}
         // gene label
         var gene_g = update_selection.select('.gene-label-group')
                 .selectAll('text')
                 .data(function(d) {
                     var show_gene_string = ('gene_string' in d &&
-                                            d.gene_string !== null),
+                                            d.gene_string !== null &&
+					    show_gene_reaction_rules &&
+					    (!hide_all_labels) &&
+					    reaction_data_styles.indexOf('text') !== -1),
                         show_gene_reaction_rule = ('gene_reaction_rule' in d &&
                                                    d.gene_reaction_rule !== null &&
-                                                   show_gene_reaction_rules); 
+                                                   show_gene_reaction_rules &&
+						   (!hide_all_labels) ); 
                     if (show_gene_string) {
                         return d.gene_string.split('\n');
                     } else if (show_gene_reaction_rule) {
@@ -4321,7 +4329,9 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
 	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
 	    primary_r = this.settings.get_option('primary_metabolite_radius'),
 	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
-	    marker_r = this.settings.get_option('marker_radius');
+	    marker_r = this.settings.get_option('marker_radius'),
+	    hide_all_labels = this.settings.get_option('hide_all_labels');
+
         var mg = update_selection
                 .select('.node-circle')
                 .attr('transform', function(d) {
@@ -4365,23 +4375,26 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                 .on('mouseover', mouseover_fn)
                 .on('mouseout', mouseout_fn);
 
-        update_selection
-            .select('.node-label')
-            .style('visibility', function(d) {
-		return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
-	    })
-            .attr('transform', function(d) {
-                return 'translate('+d.label_x+','+d.label_y+')';
-            })
-            .text(function(d) { 
-                var t = d[identifiers_on_map];
-                if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
-                    t += ' ' + d.data_string;
-                return t;
-            })
-            .call(this.behavior.turn_off_drag)
-            .call(label_drag_behavior);
-        
+        var s = update_selection
+		.select('.node-label')
+		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+	if (!hide_all_labels) {
+		s.style('visibility', function(d) {
+		    return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
+		})
+		.attr('transform', function(d) {
+                    return 'translate('+d.label_x+','+d.label_y+')';
+		})
+		.text(function(d) { 
+                    var t = d[identifiers_on_map];
+                    if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
+			t += ' ' + d.data_string;
+                    return t;
+		})
+		.call(this.behavior.turn_off_drag)
+		.call(label_drag_behavior);
+	}
+            
         this.callback_manager.run('update_node', this, update_selection);
     }
 
@@ -4399,16 +4412,20 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         var mousedown_fn = this.behavior.text_label_mousedown,
             click_fn = this.behavior.text_label_click,
             drag_behavior = this.behavior.selectable_drag,
-            turn_off_drag = this.behavior.turn_off_drag;
+            turn_off_drag = this.behavior.turn_off_drag,
+	    hide_all_labels = this.settings.get_option('hide_all_labels');
         
-        update_selection
-            .select('.label')
-            .text(function(d) { return d.text; })
-            .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
-            .on('mousedown', mousedown_fn)
-            .on('click', click_fn)
-            .call(turn_off_drag)
-            .call(drag_behavior);
+        var s = update_selection
+		.select('.label')
+		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+	if (!hide_all_labels) {
+            s.text(function(d) { return d.text; })
+		.attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
+		.on('mousedown', mousedown_fn)
+		.on('click', click_fn)
+		.call(turn_off_drag)
+		.call(drag_behavior);
+	}
         
         this.callback_manager.run('update_text_label', this, update_selection);
     }
@@ -12786,7 +12803,7 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
         // Tip
         box.append('div')
             .text('Tip: Hover over an option to see more details about it.')
-            .style('font-style', 'italic');
+	    .classed('settings-tip', true);
         box.append('hr');
         
 	// view and build
@@ -12926,7 +12943,7 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
                            ('If checked, then color the ' +
                             (type == 'metabolite' ? 'metabolite circles ' : 'reaction lines ') +
                             'according to the value of the ' + type + ' data')],
-                          ['Text', 'text',
+                          ['Text (Show data in label)', 'text',
                            ('If checked, then show data values in the ' + type + ' ' +
                             'labels')]],
 		style_cells = cell.selectAll('.option-group')
@@ -13102,7 +13119,9 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
               'reactions on the map that are not present in ' +
               'the loaded model.')],
             ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
-             ('If checked, then allow duplicate reactions during model building.')]
+             ('If checked, then allow duplicate reactions during model building.')],
+	    ['hide_all_labels', 'Hide all labels',
+	     ('If checked, hide all reaction, gene, metabolite, and annotation labels')]
 	];
         
 	var opts = s.append('div').attr('class', 'settings-container')
@@ -13143,6 +13162,12 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
             .text(function(d) { return d[1]; });
         // exit
         opts.exit().remove();
+	
+	// message about text performance
+	s.append('div')
+	    .style('margin-top', '16px')
+	    .classed('settings-tip', true)
+	.text('Tip: To increase map performance, turn off text boxes (e.g. gene reaction rules).');
     }
 });
 
@@ -13453,6 +13478,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             gene_font_size: 18,
             hide_secondary_metabolites: false,
             show_gene_reaction_rules: false,
+	    hide_all_labels: false,
             // applied data
             // reaction
             reaction_data: null,
@@ -13505,7 +13531,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             }.bind(this),
             // the options that are erased when the settings menu is canceled
             conditional_options = ['hide_secondary_metabolites', 'show_gene_reaction_rules',
-                                   'scroll_behavior', 'reaction_styles', 
+                                   'hide_all_labels', 'scroll_behavior', 'reaction_styles', 
                                    'reaction_compare_style', 'reaction_scale',
                                    'reaction_no_data_color', 'reaction_no_data_size',
                                    'and_method_in_gene_reaction_rule', 'metabolite_styles',
@@ -13844,14 +13870,18 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
          */
         this.options.reaction_data = data;
         this._update_data(true, true, 'reaction');
+	this.map.set_status('');
     }
     
-    function set_gene_data(data) {
+    function set_gene_data(data, clear_gene_reaction_rules) {
         /** For documentation of this function, see docs/javascript_api.rst.
 
          */
+	if (clear_gene_reaction_rules) // default undefined
+	    this.settings.set_conditional('show_gene_reaction_rules', false);
         this.options.gene_data = data;
         this._update_data(true, true, 'reaction');
+	this.map.set_status('');
     }
     
     function set_metabolite_data(data) {
@@ -13860,6 +13890,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
          */
         this.options.metabolite_data = data;
         this._update_data(true, true, 'metabolite');
+	this.map.set_status('');
     }
 
     function _update_data(update_model, update_map, kind, should_draw) {
@@ -14010,7 +14041,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                key: 'fn',
                                fn: load_map_for_file.bind(this),
                                pre_fn: function() {
-                                   map.set_status('Loading map...');
+                                   map.set_status('Loading map ...');
                                },
                                failure_fn: function() {
                                    map.set_status('');
@@ -14029,7 +14060,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                key: 'fn',
                                fn: load_model_for_file.bind(this),
                                pre_fn: function() {
-                                   map.set_status('Loading model...');
+                                   map.set_status('Loading model ...');
                                },
                                failure_fn: function() {
                                    map.set_status('');
@@ -14054,19 +14085,37 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                 .button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
                                    key: 'fn',
                                    fn: load_reaction_data_for_file.bind(this),
-                                   accept_csv: true },
+                                   accept_csv: true,
+				   pre_fn: function() {
+				       map.set_status('Loading reaction data ...');
+				   },
+				   failure_fn: function() {
+				       map.set_status('');
+				   }},
                           text: 'Load reaction data' })
                 .button({ key: keys.clear_reaction_data,
                           text: 'Clear reaction data' })
                 .divider()
                 .button({ input: { fn: load_gene_data_for_file.bind(this),
-                                   accept_csv: true  },
+                                   accept_csv: true,
+				   pre_fn: function() {
+				       map.set_status('Loading gene data ...');
+				   },
+				   failure_fn: function() {
+				       map.set_status('');
+				   }},
                           text: 'Load gene data' })
                 .button({ key: keys.clear_gene_data,
                           text: 'Clear gene data' })
                 .divider()
                 .button({ input: { fn: load_metabolite_data_for_file.bind(this),
-                                   accept_csv: true  },
+                                   accept_csv: true, 
+				   pre_fn: function() {
+				       map.set_status('Loading metabolite data ...');
+				   },
+				   failure_fn: function() {
+				       map.set_status('');
+				   }},
                           text: 'Load metabolite data' })
                 .button({ key: keys.clear_metabolite_data,
                           text: 'Clear metabolite data' });
@@ -14365,6 +14414,9 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             if (data !== null)
                 this.set_reaction_data(null);
 
+	    // turn on gene_reaction_rules
+	    this.settings.set_conditional('show_gene_reaction_rules', true);
+
             this.set_gene_data(data);
         }
     }
@@ -14479,8 +14531,9 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             clear_metabolite_data: { target: this,
                                      fn: function() { this.set_metabolite_data(null); }},
             load_gene_data: { fn: null }, // defined by button
-            clear_gene_data: { target: this,
-                               fn: function() { this.set_gene_data(null); }},
+            clear_gene_data: { fn: function() {
+				   this.set_gene_data(null, true);
+			       }.bind(this)},
             zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
                        target: zoom_container,
                        fn: zoom_container.zoom_in },
