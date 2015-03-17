@@ -634,7 +634,6 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                          this.reactions);
         }.bind(this),
             update_fn = function(sel) {
-                console.log(this.behavior.selectable_drag);
                 return this.draw.update_node(sel,
                                              this.scale,
                                              this.has_data_on_nodes,

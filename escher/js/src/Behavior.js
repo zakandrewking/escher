@@ -188,7 +188,6 @@ define(["utils", "build"], function(utils, build) {
                                                                 this.map.sel);
             selection_background.call(this.rotation_drag);
             this.selectable_drag = this.rotation_drag;
-            console.log(this.selectable_drag);
         } else {
             // turn off all listeners
             hide_center.call(this);

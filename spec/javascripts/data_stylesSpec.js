@@ -248,7 +248,8 @@ describe('data_styles', function() {
     
     it('evaluate_gene_reaction_rule, complex cases', function() {
         // complex cases
-        var rule = '( (( YCR034W      or  YGR032W)      and  YLR343W )       or  ( ( YCR034W  and  YGR032W )  and  YMR215W )  or  ( ( YCR034W  and  YMR306W )  and  YMR215W )  or  ( ( YCR034W  and  YLR342W )  and  YOL132W )  or  ( ( YCR034W  and  YMR306W )  and  YOL132W )  or  ( ( YCR034W  and  YGR032W )  and  YOL030W )  or  ( ( YCR034W  and  YLR342W )  and  YOL030W )  or  ( ( YCR034W  and  YMR306W )  and  YOL030W )  or  ( ( YCR034W  and  YLR342W )  and  YLR343W )  or  ( ( YCR034W  and  YMR306W )  and  YLR343W )  or  ( ( YCR034W  and  YGR032W )  and  YOL132W )  or  ( ( YCR034W  and  YLR342W )  and  YMR215W )  or  ( ( YCR034W  and  YGR032W )  and  YMR307W )  or  ( ( YCR034W  and  YLR342W )  and  YMR307W )  or  ( ( YCR034W  and  YMR306W )  and  YMR307W ) )',
+	// Members of OR connections can be null
+	var rule = '( (( YCR034W or YGR032W) and YLR343W ) or ( ( YCR034W and YGR032W ) and YMR215W ) or ( ( YCR034W and YMR306W ) and YMR215W ) or ( ( YCR034W and YLR342W ) and YOL132W ) or ( ( YCR034W and YMR306W ) and YOL132W ) or ( ( YCR034W and YGR032W ) and YOL030W ) or ( ( YCR034W and YLR342W ) and YOL030W ) or ( ( YCR034W and YMR306W ) and YOL030W ) or ( ( YCR034W and YLR342W ) and YLR343W ) or ( ( YCR034W and YMR306W ) and YLR343W ) or ( ( YCR034W and YGR032W ) and YOL132W ) or ( ( YCR034W and YLR342W ) and YMR215W ) or ( ( YCR034W and YGR032W ) and YMR307W ) or ( ( YCR034W and YLR342W ) and YMR307W ) or ( ( YCR034W and YMR306W ) and YMR307W ) )',
             gene_values = {"YCR034W":[8],
                            "YGR032W":[12],
                            "YLR343W":[2],
@@ -261,23 +262,24 @@ describe('data_styles', function() {
         expect(escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min'))
             .toEqual([2]);
 
-        rule = '( YOL096C  and  YDR204W  and  YML110C  and  YGR255C  and  YOR125C  and  YGL119W  and  YLR201C )';
-        gene_values = {"YOL096C":[-9.966322672776391],
-                       "YDR204W":[null],
-                       "YML110C":[5.727832840424934],
-                       "YGR255C":[null],
-                       "YOR125C":[null],
-                       "YGL119W":[null],
-                       "YLR201C":[-7.88335943096544]};
+	// treat nulls as 0
+	rule = '( YOL096C and YDR204W and YML110C and YGR255C and YOR125C and YGL119W and YLR201C )';
+        gene_values = {"YOL096C": [-9.966],
+                       "YDR204W": [null],
+                       "YML110C": [5.727832840424934],
+                       "YGR255C": [null],
+                       "YOR125C": [null],
+                       "YGL119W": [null],
+                       "YLR201C": [-7.88335943096544]};
         expect(escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min'))
-            .toEqual([0]);
+            .toEqual([-9.966]);
 
         rule = '(( (YJL130C) ) or (YJR109C and YOR303W))';
         gene_values = { YJL130C: ['-80.0'],
                         YJR109C: ['70.5'],
                         YOR303W: ['200.5233'] };
         expect(escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min'))
-            .toEqual([-10.5]);
+            .toEqual([-9.5]);
     });
 
     it('replace_gene_in_rule', function() {
