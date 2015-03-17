@@ -5,10 +5,10 @@ define(["utils"], function(utils) {
             getdatafiles: null,
             datafiles: null,
             update_callback: null,
-	    target: null});
+            target: null});
 
-	if (o.selection===null)
-	    throw new Error('No selection provided for DataMenu');
+        if (o.selection===null)
+            throw new Error('No selection provided for DataMenu');
 
         // setup dropdown menu
         // Append menu if it doesn't exist
@@ -18,7 +18,7 @@ define(["utils"], function(utils) {
                 .attr('class','data-menu');
         }
         var select_sel = menu.append('form')
-            .append('select').attr('class','dropdown-menu');
+                .append('select').attr('class','dropdown-menu');
 
         if (o.getdatafiles) {
             if (o.datafiles) {

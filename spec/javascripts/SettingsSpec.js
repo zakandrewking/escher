@@ -2,8 +2,8 @@ describe("SettingsSpy", function() {
     var settings, options, watch;
 
     beforeEach(function() {
-	// new settings object
-	options = {
+        // new settings object
+        options = {
             // location
             selection: null,
             // view options
@@ -17,10 +17,10 @@ describe("SettingsSpy", function() {
             starting_reaction: null,
             never_ask_before_quit: false,
             unique_map_id: null,
-	    primary_metabolite_radius: 15,
-	    secondary_metabolite_radius: 10,
-	    marker_radius: 5,
-	    hide_secondary_nodes: false,
+            primary_metabolite_radius: 15,
+            secondary_metabolite_radius: 10,
+            marker_radius: 5,
+            hide_secondary_nodes: false,
             show_gene_reaction_rules: false,
             // applied data
             // reaction
@@ -54,25 +54,25 @@ describe("SettingsSpy", function() {
             // Callbacks
             first_load_callback: null
         };
-	var set_option = function(key, val) { options[key] = val; },
-	    get_option = function(key) { return options[key]; };
+        var set_option = function(key, val) { options[key] = val; },
+            get_option = function(key) { return options[key]; };
 
-	settings = new escher.Settings(set_option, get_option, Object.keys(options));
-	// create a function to spy on
-	watch = { fn: function() {} };
-	spyOn(watch, 'fn').and.callThrough();
+        settings = new escher.Settings(set_option, get_option, Object.keys(options));
+        // create a function to spy on
+        watch = { fn: function() {} };
+        spyOn(watch, 'fn').and.callThrough();
     });
 
-    it("Test_stream", function() {	
-	var name = 'reaction_styles',
+    it("Test_stream", function() {  
+        var name = 'reaction_styles',
             val = ['new_style'];
-	// set up the callback
-	settings.streams[name].onValue(watch.fn);
-	// push a new value
-	settings.busses[name].push(val);
-	// make sure the callback fired
-	expect(watch.fn).toHaveBeenCalled();
-	// make sure the new value was added to the styles array
-	expect(options.reaction_styles).toEqual(val);
+        // set up the callback
+        settings.streams[name].onValue(watch.fn);
+        // push a new value
+        settings.busses[name].push(val);
+        // make sure the callback fired
+        expect(watch.fn).toHaveBeenCalled();
+        // make sure the new value was added to the styles array
+        expect(options.reaction_styles).toEqual(val);
     });
 });

@@ -342,7 +342,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 // build connected segments
                 [from_node, to_node].forEach(function(node) {
                     node.connected_segments.push({ segment_id: s_id,
-						   reaction_id: r_id });
+                                                   reaction_id: r_id });
                 });
 
                 // If the metabolite has no bezier points, then add them.
@@ -630,24 +630,24 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // functions to create and update nodes
         var create_fn = function(sel) {
             return this.draw.create_node(sel,
-                                    this.nodes,
-                                    this.reactions);
+                                         this.nodes,
+                                         this.reactions);
         }.bind(this),
             update_fn = function(sel) {
                 console.log(this.behavior.selectable_drag);
                 return this.draw.update_node(sel,
-                                        this.scale,
-                                        this.has_data_on_nodes,
-                                        this.settings.get_option('identifiers_on_map'),
-                                        this.settings.get_option('metabolite_styles'),
-                                        { color: this.settings.get_option('metabolite_no_data_color'),
-                                          size: this.settings.get_option('metabolite_no_data_size') },
-                                        this.behavior.selectable_mousedown,
-                                        this.behavior.selectable_click,
-                                        this.behavior.node_mouseover,
-                                        this.behavior.node_mouseout,
-                                        this.behavior.selectable_drag,
-                                        this.behavior.node_label_drag);
+                                             this.scale,
+                                             this.has_data_on_nodes,
+                                             this.settings.get_option('identifiers_on_map'),
+                                             this.settings.get_option('metabolite_styles'),
+                                             { color: this.settings.get_option('metabolite_no_data_color'),
+                                               size: this.settings.get_option('metabolite_no_data_size') },
+                                             this.behavior.selectable_mousedown,
+                                             this.behavior.selectable_click,
+                                             this.behavior.node_mouseover,
+                                             this.behavior.node_mouseout,
+                                             this.behavior.selectable_drag,
+                                             this.behavior.node_label_drag);
             }.bind(this);
 
         // draw the nodes
@@ -1484,7 +1484,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
          -------
 
          { undo: undo_function,
-           redo: redo_function }
+         redo: redo_function }
 
          */
 
@@ -1672,13 +1672,13 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
             console.warn('Too many connected segments for node ' + last_node.node_id);
         var last_segment_info = last_node.connected_segments[0], // guaranteed above to have only one
             last_segment;
-            try {
-                last_segment = reactions[last_segment_info.reaction_id].segments[last_segment_info.segment_id];
-                if (last_segment === undefined) throw new Error('undefined segment');
-            } catch (e) {
-                console.error('Could not find connected segment ' + last_segment_info.segment_id);
-                return;
-            }
+        try {
+            last_segment = reactions[last_segment_info.reaction_id].segments[last_segment_info.segment_id];
+            if (last_segment === undefined) throw new Error('undefined segment');
+        } catch (e) {
+            console.error('Could not find connected segment ' + last_segment_info.segment_id);
+            return;
+        }
         var last_bezier = { b1: last_segment.b1, b2: last_segment.b2 },
             primary_node_id;
         related_node_ids.forEach(function(related_node_id) {
@@ -1719,9 +1719,9 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     function toggle_selected_node_primary() {
         /** Toggle the primary/secondary status of each selected node.
 
-            Undoable.
+         Undoable.
 
-            */
+         */
         var selected_node_ids = this.get_selected_node_ids(),
             go = function(ids) {
                 var nodes_to_draw = {},
@@ -1806,9 +1806,9 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
     function new_text_label(coords, text) {
         // make an label
-	var out = build.new_text_label(this.largest_ids, text, coords);
-	this.text_labels[out.id] = out.label;
-	var sel = this.draw_these_text_labels([out.id]);
+        var out = build.new_text_label(this.largest_ids, text, coords);
+        this.text_labels[out.id] = out.label;
+        var sel = this.draw_these_text_labels([out.id]);
         // add to the search index
         this.search_index.insert('l' + out.id, { 'name': text,
                                                  'data': { type: 'text_label',

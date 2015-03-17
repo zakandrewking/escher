@@ -441,8 +441,8 @@ define(["utils", "build"], function(utils, build) {
     }
     
     function turn_off_drag(sel) {
-	sel.on('mousedown.drag', null);
-	sel.on('touchstart.drag', null);
+        sel.on('mousedown.drag', null);
+        sel.on('touchstart.drag', null);
     }    
 
     function _get_selectable_drag(map, undo_stack) {

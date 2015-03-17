@@ -46,11 +46,11 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
         this.current = 1;
         this.results = null;
 
-	var on_input_fn = function(input) {
-	    this.current = 1;
-	    this.results = this.search_index.find(input.value);
-	    this.update();
-	}.bind(this, this.input.node());
+        var on_input_fn = function(input) {
+            this.current = 1;
+            this.results = this.search_index.find(input.value);
+            this.update();
+        }.bind(this, this.input.node());
         this.input.on('input', utils.debounce(on_input_fn, 200));
     }
     function is_visible() {
