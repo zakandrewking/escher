@@ -4,21 +4,21 @@ define(["utils"], function(utils) {
 
     var Scale = utils.make_class();
     Scale.prototype = { init: init,
-			connect_to_settings: connect_to_settings };
+                        connect_to_settings: connect_to_settings };
 
     return Scale;
 
     // definitions
     function init() {
-	this.x = d3.scale.linear();
-	this.y = d3.scale.linear();
-	this.x_size = d3.scale.linear();
-	this.y_size = d3.scale.linear();
-	this.size = d3.scale.linear();
-	this.reaction_color = d3.scale.linear().clamp(true);
+        this.x = d3.scale.linear();
+        this.y = d3.scale.linear();
+        this.x_size = d3.scale.linear();
+        this.y_size = d3.scale.linear();
+        this.size = d3.scale.linear();
+        this.reaction_color = d3.scale.linear().clamp(true);
         this.reaction_size = d3.scale.linear().clamp(true);
-	this.metabolite_color = d3.scale.linear().clamp(true);
-	this.metabolite_size = d3.scale.linear().clamp(true);
+        this.metabolite_color = d3.scale.linear().clamp(true);
+        this.metabolite_size = d3.scale.linear().clamp(true);
         this.scale_path = function(path) {
             var x_fn = this.x, y_fn = this.y;
             // TODO: scale arrow width
@@ -46,21 +46,21 @@ define(["utils"], function(utils) {
     }
 
     function connect_to_settings(settings, map, get_data_statistics) {
-	// domains
+        // domains
         var update_reaction = function(s) {
-	    var out = sort_scale(s, get_data_statistics()['reaction']);
-	    this.reaction_color.domain(out.domain);
-	    this.reaction_size.domain(out.domain);
-	    this.reaction_color.range(out.color_range);
-	    this.reaction_size.range(out.size_range);
-	}.bind(this);
+            var out = sort_scale(s, get_data_statistics()['reaction']);
+            this.reaction_color.domain(out.domain);
+            this.reaction_size.domain(out.domain);
+            this.reaction_color.range(out.color_range);
+            this.reaction_size.range(out.size_range);
+        }.bind(this);
         var update_metabolite = function(s) {
-	    var out = sort_scale(s, get_data_statistics()['metabolite']);
-	    this.metabolite_color.domain(out.domain);
-	    this.metabolite_size.domain(out.domain);
-	    this.metabolite_color.range(out.color_range);
-	    this.metabolite_size.range(out.size_range);
-	}.bind(this);
+            var out = sort_scale(s, get_data_statistics()['metabolite']);
+            this.metabolite_color.domain(out.domain);
+            this.metabolite_size.domain(out.domain);
+            this.metabolite_color.range(out.color_range);
+            this.metabolite_size.range(out.size_range);
+        }.bind(this);
 
         // scale changes
         settings.streams['reaction_scale'].onValue(update_reaction);
@@ -74,24 +74,24 @@ define(["utils"], function(utils) {
         });
         
         // definitions
-	function sort_scale(scale, stats) {
-	    var sorted = scale.map(function(x) {
-		var v;
+        function sort_scale(scale, stats) {
+            var sorted = scale.map(function(x) {
+                var v;
                 if (x.type in stats)
                     v = stats[x.type];
                 else if (x.type == 'value')
                     v = x.value;
                 else
                     throw new Error('Bad domain type ' + x.type);
-		return { v: v,
-			 color: x.color,
-			 size: x.size };
+                return { v: v,
+                         color: x.color,
+                         size: x.size };
             }).sort(function(a, b) {
-		return a.v - b.v;
-	    });
-	    return { domain: sorted.map(function(x) { return x.v; }),
-		     color_range: sorted.map(function(x) { return x.color; }),
-		     size_range: sorted.map(function(x) { return x.size; }) };
+                return a.v - b.v;
+            });
+            return { domain: sorted.map(function(x) { return x.v; }),
+                     color_range: sorted.map(function(x) { return x.color; }),
+                     size_range: sorted.map(function(x) { return x.size; }) };
         }
     }
 });

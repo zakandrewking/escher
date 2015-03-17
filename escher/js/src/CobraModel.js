@@ -20,17 +20,17 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     function build_reaction_string(stoichiometries, is_reversible) {
         /** Return a reaction string for the given stoichiometries.
 
-            Adapted from cobra.core.Reaction.build_reaction_string().
+         Adapted from cobra.core.Reaction.build_reaction_string().
 
-            Arguments
-            ---------
+         Arguments
+         ---------
 
-            stoichiometries: An object with metabolites as keys and
-            stoichiometries as values.
+         stoichiometries: An object with metabolites as keys and
+         stoichiometries as values.
 
-            is_reversible: Boolean. Whether the reaction is reversible.
+         is_reversible: Boolean. Whether the reaction is reversible.
 
-        */
+         */
 
         var format = function(number) {
             if (number == 1)
@@ -105,8 +105,8 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
             reaction.reversibility = (reaction.lower_bound < 0 && reaction.upper_bound > 0);
             if (reaction.upper_bound <= 0 && reaction.lower_bound < 0) {
                 // reverse stoichiometries
-		for (var met_id in reaction.metabolites) {
-		    reaction.metabolites[met_id] = -reaction.metabolites[met_id];
+                for (var met_id in reaction.metabolites) {
+                    reaction.metabolites[met_id] = -reaction.metabolites[met_id];
                 }
             }
             delete reaction.lower_bound;
@@ -150,18 +150,18 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     
     function apply_reaction_data(reaction_data, styles, compare_style) {
         /** Apply data to model. This is only used to display options in
-            BuildInput.
-            
-            apply_reaction_data overrides apply_gene_data.
+         BuildInput.
+         
+         apply_reaction_data overrides apply_gene_data.
 
-        */
+         */
         data_styles.apply_reaction_data_to_reactions(this.reactions, reaction_data,
                                                      styles, compare_style);
     }
 
     function apply_metabolite_data(metabolite_data, styles, compare_style) {
         /** Apply data to model. This is only used to display options in
-            BuildInput.
+         BuildInput.
 
          */
         data_styles.apply_metabolite_data_to_nodes(this.metabolites, metabolite_data,
@@ -171,11 +171,11 @@ define(['utils', 'data_styles'], function(utils, data_styles) {
     function apply_gene_data(gene_data_obj, styles, identifiers_on_map,
                              compare_style, and_method_in_gene_reaction_rule) {
         /** Apply data to model. This is only used to display options in
-            BuildInput.
+         BuildInput.
 
-            apply_gene_data overrides apply_reaction_data.
+         apply_gene_data overrides apply_reaction_data.
 
-        */
+         */
         data_styles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
                                                  styles, identifiers_on_map,
                                                  compare_style,

@@ -130,7 +130,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             identifiers_on_map = this.settings.get_option('identifiers_on_map'),
             reaction_data_styles = this.settings.get_option('reaction_styles'),
             show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules'),
-	    hide_all_labels = this.settings.get_option('hide_all_labels'),
+            hide_all_labels = this.settings.get_option('hide_all_labels'),
             gene_font_size = this.settings.get_option('gene_font_size'),
             label_mousedown_fn = this.behavior.label_mousedown,
             label_mouseover_fn = this.behavior.label_mouseover,
@@ -142,31 +142,31 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             .call(this.behavior.turn_off_drag)
             .call(this.behavior.reaction_label_drag);
         var s = update_selection.select('.reaction-label')
-		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
-	if (!hide_all_labels) {
-		s.text(function(d) { 
-                    var t = d[identifiers_on_map];
-                    if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
-			t += ' ' + d.data_string;
-                    return t;
-		})
-		.on('mousedown', label_mousedown_fn)
-		.on('mouseover', label_mouseover_fn)
-		.on('mouseout', label_mouseout_fn);
-	}
+                .attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+        if (!hide_all_labels) {
+            s.text(function(d) { 
+                var t = d[identifiers_on_map];
+                if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
+                    t += ' ' + d.data_string;
+                return t;
+            })
+                .on('mousedown', label_mousedown_fn)
+                .on('mouseover', label_mouseover_fn)
+                .on('mouseout', label_mouseout_fn);
+        }
         // gene label
         var gene_g = update_selection.select('.gene-label-group')
                 .selectAll('text')
                 .data(function(d) {
                     var show_gene_string = ('gene_string' in d &&
                                             d.gene_string !== null &&
-					    show_gene_reaction_rules &&
-					    (!hide_all_labels) &&
-					    reaction_data_styles.indexOf('text') !== -1),
+                                            show_gene_reaction_rules &&
+                                            (!hide_all_labels) &&
+                                            reaction_data_styles.indexOf('text') !== -1),
                         show_gene_reaction_rule = ('gene_reaction_rule' in d &&
                                                    d.gene_reaction_rule !== null &&
                                                    show_gene_reaction_rules &&
-						   (!hide_all_labels) ); 
+                                                   (!hide_all_labels) ); 
                     if (show_gene_string) {
                         return d.gene_string.split('\n');
                     } else if (show_gene_reaction_rule) {
@@ -222,27 +222,27 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
         
         // update segment attributes
         var highlight_missing  = this.settings.get_option('highlight_missing'),
-	    hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
-	    primary_r = this.settings.get_option('primary_metabolite_radius'),
-	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
-	    get_arrow_size = function(data, should_size) {
-		var width = 20,
-		    height = 13;
-		if (should_size) {
+            hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
+            primary_r = this.settings.get_option('primary_metabolite_radius'),
+            secondary_r = this.settings.get_option('secondary_metabolite_radius'),
+            get_arrow_size = function(data, should_size) {
+                var width = 20,
+                    height = 13;
+                if (should_size) {
                     height = (data === null ? no_data_size : scale.reaction_size(data));
                     // check for nan
                     if (isNaN(height))
                         height = no_data_size;
                     width = height * 2;
-		}           
-		return { width: width, height: height };
-	    }, 
+                }           
+                return { width: width, height: height };
+            }, 
             get_disp = function(arrow_size, reversibility, coefficient, node_is_primary) {
-		var arrow_height = ((reversibility || coefficient > 0) ?
-				    arrow_size.height :
-				    0),
-		    r = node_is_primary ? primary_r : secondary_r;
-		return r + arrow_height + 10;
+                var arrow_height = ((reversibility || coefficient > 0) ?
+                                    arrow_size.height :
+                                    0),
+                    r = node_is_primary ? primary_r : secondary_r;
+                return r + arrow_height + 10;
             };
         // update arrows
         update_selection
@@ -250,15 +250,15 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             .datum(function() {
                 return this.parentNode.__data__;
             })
-	    .style('visibility', function(d) {
-		var start = drawn_nodes[d.from_node_id],
+            .style('visibility', function(d) {
+                var start = drawn_nodes[d.from_node_id],
                     end = drawn_nodes[d.to_node_id];
-		if (hide_secondary_metabolites &&
-		    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
-		     (start['node_type']=='metabolite' && !start.node_is_primary)))
-			return 'hidden';
-		return null;
-	    })
+                if (hide_secondary_metabolites &&
+                    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+                     (start['node_type']=='metabolite' && !start.node_is_primary)))
+                    return 'hidden';
+                return null;
+            })
             .attr('d', function(d) {
                 if (d.from_node_id === null || d.to_node_id === null)
                     return null;
@@ -279,7 +279,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                     var arrow_size = get_arrow_size(d.data, should_size),
                         disp = get_disp(arrow_size, d.reversibility,
                                         d.to_node_coefficient,
-					end.node_is_primary);
+                                        end.node_is_primary);
                     var direction = (b2 === null) ? start : b2;
                     end = displaced_coords(disp, direction, end, 'end');
                 }
@@ -321,19 +321,19 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                     var arrowheads = [],   
                         start = drawn_nodes[d.from_node_id],
                         b1 = d.b1,
-			end = drawn_nodes[d.to_node_id],
+                        end = drawn_nodes[d.to_node_id],
                         b2 = d.b2;
-		    // hide_secondary_metabolites option
-		    if (hide_secondary_metabolites &&
-			((end['node_type']=='metabolite' && !end.node_is_primary) ||
-			 (start['node_type']=='metabolite' && !start.node_is_primary)))
-			return arrowheads;
+                    // hide_secondary_metabolites option
+                    if (hide_secondary_metabolites &&
+                        ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+                         (start['node_type']=='metabolite' && !start.node_is_primary)))
+                        return arrowheads;
 
                     if (start.node_type == 'metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
                         var arrow_size = get_arrow_size(d.data, should_size),
                             disp = get_disp(arrow_size, d.reversibility,
                                             d.from_node_coefficient,
-					    start.node_is_primary),
+                                            start.node_is_primary),
                             direction = (b1 === null) ? end : b1,
                             rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90,
                             loc = displaced_coords(disp, start, direction, 'start');
@@ -350,7 +350,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                         var arrow_size = get_arrow_size(d.data, should_size),
                             disp = get_disp(arrow_size, d.reversibility,
                                             d.to_node_coefficient,
-					    end.node_is_primary),
+                                            end.node_is_primary),
                             direction = (b2 === null) ? start : b2,
                             rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90,
                             loc = displaced_coords(disp, direction, end, 'end');
@@ -406,14 +406,14 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                     var labels = [],
                         start = drawn_nodes[d.from_node_id],
                         b1 = d.b1,
-		        end = drawn_nodes[d.to_node_id],
+                        end = drawn_nodes[d.to_node_id],
                         b2 = d.b2,
-			disp_factor = 1.5;
-		    // hide_secondary_metabolites option
-		    if (hide_secondary_metabolites &&
-			((end['node_type']=='metabolite' && !end.node_is_primary) ||
-			 (start['node_type']=='metabolite' && !start.node_is_primary)))
-			return labels;
+                        disp_factor = 1.5;
+                    // hide_secondary_metabolites option
+                    if (hide_secondary_metabolites &&
+                        ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+                         (start['node_type']=='metabolite' && !start.node_is_primary)))
+                        return labels;
 
                     if (start.node_type=='metabolite' && (Math.abs(d.from_node_coefficient) != 1)) {
                         var arrow_size = get_arrow_size(d.data, should_size),
@@ -486,8 +486,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
 
     function update_bezier(update_selection, show_beziers, drag_behavior,
                            mouseover, mouseout, drawn_nodes, drawn_reactions) {
-	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites');
-	    
+        var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites');
+        
         if (!show_beziers) {
             update_selection.attr('visibility', 'hidden');
             return;
@@ -495,18 +495,18 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             update_selection.attr('visibility', 'visible');
         }
         
-	// hide secondary
+        // hide secondary
         update_selection
-	    .style('visibility', function(d) {
+            .style('visibility', function(d) {
                 var seg_data = drawn_reactions[d.reaction_id].segments[d.segment_id],
                     start = drawn_nodes[seg_data.from_node_id],
                     end = drawn_nodes[seg_data.to_node_id];
-		if (hide_secondary_metabolites &&
-		    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
-		     (start['node_type']=='metabolite' && !start.node_is_primary)))
-			return 'hidden';
-		return null;
-	    });
+                if (hide_secondary_metabolites &&
+                    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+                     (start['node_type']=='metabolite' && !start.node_is_primary)))
+                    return 'hidden';
+                return null;
+            });
 
         // draw bezier points
         update_selection.select('.bezier-circle')
@@ -564,20 +564,20 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                          drag_behavior, label_drag_behavior) {
 
         // update circle and label location
-	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
-	    primary_r = this.settings.get_option('primary_metabolite_radius'),
-	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
-	    marker_r = this.settings.get_option('marker_radius'),
-	    hide_all_labels = this.settings.get_option('hide_all_labels');
+        var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
+            primary_r = this.settings.get_option('primary_metabolite_radius'),
+            secondary_r = this.settings.get_option('secondary_metabolite_radius'),
+            marker_r = this.settings.get_option('marker_radius'),
+            hide_all_labels = this.settings.get_option('hide_all_labels');
 
         var mg = update_selection
                 .select('.node-circle')
                 .attr('transform', function(d) {
                     return 'translate('+d.x+','+d.y+')';
                 })
-		.style('visibility', function(d) {
-		    return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
-		})
+                .style('visibility', function(d) {
+                    return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
+                })
                 .attr('r', function(d) {
                     if (d.node_type == 'metabolite') {
                         var should_scale = (has_data_on_nodes &&
@@ -614,25 +614,25 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                 .on('mouseout', mouseout_fn);
 
         var s = update_selection
-		.select('.node-label')
-		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
-	if (!hide_all_labels) {
-		s.style('visibility', function(d) {
-		    return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
-		})
-		.attr('transform', function(d) {
+                .select('.node-label')
+                .attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+        if (!hide_all_labels) {
+            s.style('visibility', function(d) {
+                return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
+            })
+                .attr('transform', function(d) {
                     return 'translate('+d.label_x+','+d.label_y+')';
-		})
-		.text(function(d) { 
+                })
+                .text(function(d) { 
                     var t = d[identifiers_on_map];
                     if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
-			t += ' ' + d.data_string;
+                        t += ' ' + d.data_string;
                     return t;
-		})
-		.call(this.behavior.turn_off_drag)
-		.call(label_drag_behavior);
-	}
-            
+                })
+                .call(this.behavior.turn_off_drag)
+                .call(label_drag_behavior);
+        }
+        
         this.callback_manager.run('update_node', this, update_selection);
     }
 
@@ -653,13 +653,13 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             turn_off_drag = this.behavior.turn_off_drag;
         
         update_selection
-	    .select('.label')
+            .select('.label')
             .text(function(d) { return d.text; })
-	    .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
-	    .on('mousedown', mousedown_fn)
-	    .on('click', click_fn)
-	    .call(turn_off_drag)
-	    .call(drag_behavior);
+            .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
+            .on('mousedown', mousedown_fn)
+            .on('click', click_fn)
+            .call(turn_off_drag)
+            .call(drag_behavior);
         
         this.callback_manager.run('update_text_label', this, update_selection);
     }

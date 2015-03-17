@@ -794,49 +794,49 @@ self||"undefined"!==typeof window&&window||this.content);"undefined"!==typeof mo
 define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     return { set_options: set_options,
              setup_svg: setup_svg,
-	     remove_child_nodes: remove_child_nodes,
+             remove_child_nodes: remove_child_nodes,
              load_css: load_css,
              load_files: load_files,
              load_the_file: load_the_file,
-	     make_class: make_class,
-	     setup_defs: setup_defs,
-	     draw_an_object: draw_an_object,
-	     draw_a_nested_object: draw_a_nested_object,
-	     make_array: make_array,
+             make_class: make_class,
+             setup_defs: setup_defs,
+             draw_an_object: draw_an_object,
+             draw_a_nested_object: draw_a_nested_object,
+             make_array: make_array,
              make_array_ref: make_array_ref,
-	     compare_arrays: compare_arrays,
-	     array_to_object: array_to_object,
-	     clone: clone,
-	     extend: extend,
-	     unique_concat: unique_concat,
-	     unique_strings_array: unique_strings_array,
-	     debounce: debounce,
-	     object_slice_for_ids: object_slice_for_ids,
-	     object_slice_for_ids_ref: object_slice_for_ids_ref,
-	     c_plus_c: c_plus_c,
-	     c_minus_c: c_minus_c,
-	     c_times_scalar: c_times_scalar,
-	     download_json: download_json,
-	     load_json: load_json,
-	     load_json_or_csv: load_json_or_csv,
-	     export_svg: export_svg,
-	     rotate_coords_recursive: rotate_coords_recursive,
-	     rotate_coords: rotate_coords,
-	     get_angle: get_angle,
-	     to_degrees: to_degrees,
-	     angle_for_event: angle_for_event,
-	     distance: distance,
-	     check_undefined: check_undefined,
-	     compartmentalize: compartmentalize,
-	     decompartmentalize: decompartmentalize,
-	     mean: mean,
+             compare_arrays: compare_arrays,
+             array_to_object: array_to_object,
+             clone: clone,
+             extend: extend,
+             unique_concat: unique_concat,
+             unique_strings_array: unique_strings_array,
+             debounce: debounce,
+             object_slice_for_ids: object_slice_for_ids,
+             object_slice_for_ids_ref: object_slice_for_ids_ref,
+             c_plus_c: c_plus_c,
+             c_minus_c: c_minus_c,
+             c_times_scalar: c_times_scalar,
+             download_json: download_json,
+             load_json: load_json,
+             load_json_or_csv: load_json_or_csv,
+             export_svg: export_svg,
+             rotate_coords_recursive: rotate_coords_recursive,
+             rotate_coords: rotate_coords,
+             get_angle: get_angle,
+             to_degrees: to_degrees,
+             angle_for_event: angle_for_event,
+             distance: distance,
+             check_undefined: check_undefined,
+             compartmentalize: compartmentalize,
+             decompartmentalize: decompartmentalize,
+             mean: mean,
              median: median,
              quartiles: quartiles,
              random_characters: random_characters,
              generate_map_id: generate_map_id,
-	     check_for_parent_tag: check_for_parent_tag,
-	     name_to_url: name_to_url,
-	     parse_url_components: parse_url_components };
+             check_for_parent_tag: check_for_parent_tag,
+             name_to_url: name_to_url,
+             parse_url_components: parse_url_components };
 
     // definitions
     function set_options(options, defaults, must_be_float) {
@@ -844,7 +844,7 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
             return defaults;
         var i = -1,
             out = {};
-	for (var key in defaults) {
+        for (var key in defaults) {
             var has_key = ((key in options) &&
                            (options[key] !== null) &&
                            (options[key] !== undefined));
@@ -866,7 +866,7 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
                 }
             }
             out[key] = val;
-	}
+        }
         return out;
     }
 
@@ -875,19 +875,19 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
         var add_svg = function(f, s) {
             if (f) {
                 d3.select("body").classed('fill-screen-body', true);
-		s.classed('fill-screen-div', true);
+                s.classed('fill-screen-div', true);
             }
             var svg = s.append('svg')
-		    .attr("class", "escher-svg")
+                    .attr("class", "escher-svg")
                     .attr('xmlns', "http://www.w3.org/2000/svg");
-	    return svg;
+            return svg;
         };
 
         // run
         var out;
-	// set the selection class
-	selection.classed('escher-container', true);
-	// make the svg
+        // set the selection class
+        selection.classed('escher-container', true);
+        // make the svg
         if (selection_is_svg) {
             return selection;
         } else if (selection) {
@@ -898,13 +898,13 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     }
 
     function remove_child_nodes(selection) {
-	/** Removes all child nodes from a d3 selection
+        /** Removes all child nodes from a d3 selection
 
-	 */
-	var node =  selection.node();
-	while (node.hasChildNodes()) {
-	    node.removeChild(node.lastChild);
-	}
+         */
+        var node =  selection.node();
+        while (node.hasChildNodes()) {
+            node.removeChild(node.lastChild);
+        }
     }
 
     function load_css(css_path, callback) {
@@ -935,17 +935,17 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
             return;
         }
         if (ends_with(file, 'json'))
-	    d3.json(file, function(e, d) { callback(e, d, file); });
+            d3.json(file, function(e, d) { callback(e, d, file); });
         else if (ends_with(file, 'css'))
-	    d3.text(file, function(e, d) { callback(e, d, file); });
+            d3.text(file, function(e, d) { callback(e, d, file); });
         else
-	    callback.call(t, "Unrecognized file type", null, file);
+            callback.call(t, "Unrecognized file type", null, file);
         return;
 
         // definitions
         function ends_with(str, suffix) {
-	    return str.indexOf(suffix, str.length - suffix.length) !== -1;
-	}
+            return str.indexOf(suffix, str.length - suffix.length) !== -1;
+        }
     }
     function load_files(t, files_to_load, final_callback) {
         // load multiple files asynchronously
@@ -955,7 +955,7 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
             var this_file = files_to_load[i].file;
             callbacks[this_file] = files_to_load[i].callback;
             load_the_file(t,
-			  this_file,
+                          this_file,
                           function(e, d, file) {
                               callbacks[file].call(t, e, d);
                               if (!--remaining) final_callback.call(t);
@@ -967,29 +967,29 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     // original by John Resig (MIT Licensed).
     // http://stackoverflow.com/questions/7892884/simple-class-instantiation
     function make_class(){
-	var isInternal;
-	var constructor = function(args){
+        var isInternal;
+        var constructor = function(args){
             if ( this instanceof constructor ) {
-		if ( typeof this.init == "function" ) {
+                if ( typeof this.init == "function" ) {
                     this.init.apply( this, isInternal ? args : arguments );
-		}
+                }
             } else {
-		isInternal = true;
-		var instance = new constructor( arguments );
-		isInternal = false;
-		return instance;
+                isInternal = true;
+                var instance = new constructor( arguments );
+                isInternal = false;
+                return instance;
             }
-	};
-	return constructor;
+        };
+        return constructor;
     }
 
     function setup_defs(svg, style) {
         // add stylesheet
         svg.select("defs").remove();
-	var defs = svg.append("defs");
-	// make sure the defs is the first node
-	var node = defs.node();
-	node.parentNode.insertBefore(node, node.parentNode.firstChild);
+        var defs = svg.append("defs");
+        // make sure the defs is the first node
+        var node = defs.node();
+        node.parentNode.insertBefore(node, node.parentNode.firstChild);
         defs.append("style")
             .attr("type", "text/css")
             .text(style);
@@ -997,37 +997,37 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     }
 
     function draw_an_object(container_sel, parent_node_selector, children_selector,
-			    object, id_key, create_function, update_function,
-			    exit_function) {
-	/** Run through the d3 data binding steps for an object. Also checks to
-            make sure none of the values in the *object* are undefined, and
-            ignores those.
+                            object, id_key, create_function, update_function,
+                            exit_function) {
+        /** Run through the d3 data binding steps for an object. Also checks to
+         make sure none of the values in the *object* are undefined, and
+         ignores those.
 
          The create_function, update_function, and exit_function CAN modify the
          input data object.
 
-	 Arguments
-	 ---------
+         Arguments
+         ---------
 
-	 container_sel: A d3 selection containing all objects.
+         container_sel: A d3 selection containing all objects.
 
-	 parent_node_selector: A selector string for a subselection of
-	 container_sel.
+         parent_node_selector: A selector string for a subselection of
+         container_sel.
 
-	 children_selector: A selector string for each DOM element to bind.
+         children_selector: A selector string for each DOM element to bind.
 
-	 object: An object to bind to the selection.
+         object: An object to bind to the selection.
 
-	 id_key: The key that will be used to store object IDs in the bound data
-	 points.
+         id_key: The key that will be used to store object IDs in the bound data
+         points.
 
-	 create_function: A function for enter selection.
+         create_function: A function for enter selection.
 
-	 update_function: A function for update selection.
+         update_function: A function for update selection.
 
-	 exit_function: A function for exit selection.
-	 
-	*/
+         exit_function: A function for exit selection.
+         
+         */
         var draw_object = {};
         for (var id in object) {
             if (object[id] === undefined) {
@@ -1037,63 +1037,63 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
             }
         }
         
-	var sel = container_sel.select(parent_node_selector)
-		.selectAll(children_selector)
-		.data(make_array_ref(draw_object, id_key),
+        var sel = container_sel.select(parent_node_selector)
+                .selectAll(children_selector)
+                .data(make_array_ref(draw_object, id_key),
                       function(d) { return d[id_key]; });
-	// enter: generate and place reaction
-	if (create_function)
-	    sel.enter().call(create_function);
-	// update: update when necessary
-	if (update_function)
-	    sel.call(update_function);
-	// exit
-	if (exit_function) 
-	    sel.exit().call(exit_function);
+        // enter: generate and place reaction
+        if (create_function)
+            sel.enter().call(create_function);
+        // update: update when necessary
+        if (update_function)
+            sel.call(update_function);
+        // exit
+        if (exit_function) 
+            sel.exit().call(exit_function);
     }
 
     function draw_a_nested_object(container_sel, children_selector, object_data_key,
-				  id_key, create_function, update_function,
-				  exit_function) {
-	/** Run through the d3 data binding steps for an object that is nested
-	 within another element with d3 data.
+                                  id_key, create_function, update_function,
+                                  exit_function) {
+        /** Run through the d3 data binding steps for an object that is nested
+         within another element with d3 data.
 
          The create_function, update_function, and exit_function CAN modify the
          input data object.
 
-	 Arguments
-	 ---------
+         Arguments
+         ---------
 
-	 container_sel: A d3 selection containing all objects.
+         container_sel: A d3 selection containing all objects.
 
-	 children_selector: A selector string for each DOM element to bind.
+         children_selector: A selector string for each DOM element to bind.
 
-	 object_data_key: A key for the parent object containing data for the
-	 new selection.
+         object_data_key: A key for the parent object containing data for the
+         new selection.
 
-	 id_key: The key that will be used to store object IDs in the bound data
-	 points.
+         id_key: The key that will be used to store object IDs in the bound data
+         points.
 
-	 create_function: A function for enter selection.
+         create_function: A function for enter selection.
 
-	 update_function: A function for update selection.
+         update_function: A function for update selection.
 
-	 exit_function: A function for exit selection.
-	 
-	 */
-	var sel = container_sel.selectAll(children_selector)
-	    .data(function(d) {
-		return make_array_ref(d[object_data_key], id_key);
-	    }, function(d) { return d[id_key]; });
-	// enter: generate and place reaction
-	if (create_function)
-	    sel.enter().call(create_function);
-	// update: update when necessary
-	if (update_function)
-	    sel.call(update_function);
-	// exit
-	if (exit_function) 
-	    sel.exit().call(exit_function);
+         exit_function: A function for exit selection.
+         
+         */
+        var sel = container_sel.selectAll(children_selector)
+                .data(function(d) {
+                    return make_array_ref(d[object_data_key], id_key);
+                }, function(d) { return d[id_key]; });
+        // enter: generate and place reaction
+        if (create_function)
+            sel.enter().call(create_function);
+        // update: update when necessary
+        if (update_function)
+            sel.call(update_function);
+        // exit
+        if (exit_function) 
+            sel.exit().call(exit_function);
     }
 
     function make_array(obj, id_key) { // is this super slow?
@@ -1111,7 +1111,7 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 
     function make_array_ref(obj, id_key) {
         /** Turn the object into an array, but only by reference. Faster than
-            make_array.
+         make_array.
 
          */
         var array = [];
@@ -1127,18 +1127,18 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     }
 
     function compare_arrays(a1, a2) {
-	/** Compares two simple (not-nested) arrays.
+        /** Compares two simple (not-nested) arrays.
 
-	 */
-	if (!a1 || !a2) return false;
-	if (a1.length != a2.length) return false;
-	for (var i = 0, l=a1.length; i < l; i++) {
+         */
+        if (!a1 || !a2) return false;
+        if (a1.length != a2.length) return false;
+        for (var i = 0, l=a1.length; i < l; i++) {
             if (a1[i] != a2[i]) {
-		// Warning - two different object instances will never be equal: {x:20} != {x:20}
-		return false;
+                // Warning - two different object instances will never be equal: {x:20} != {x:20}
+                return false;
             }
-	}
-	return true;
+        }
+        return true;
     }
 
     function array_to_object(arr) {
@@ -1149,231 +1149,231 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
 
          */
         // new object
-	var obj = {};
+        var obj = {};
         // for each element of the array
-	for (var i = 0, l = arr.length; i < l; i++) {
-	    var column = arr[i],
+        for (var i = 0, l = arr.length; i < l; i++) {
+            var column = arr[i],
                 keys = Object.keys(column);
             for (var k = 0, nk = keys.length; k < nk; k++) {
                 var id = keys[k];
-		if (!(id in obj)) {
-		    var n = [];
-		    // fill spaces with null
-		    for (var j = 0; j < l; j++) {
-			n[j] = null;
-		    }
-		    n[i] = column[id];
-		    obj[id] = n;
-		} else {
-		    obj[id][i] = column[id];
+                if (!(id in obj)) {
+                    var n = [];
+                    // fill spaces with null
+                    for (var j = 0; j < l; j++) {
+                        n[j] = null;
+                    }
+                    n[i] = column[id];
+                    obj[id] = n;
+                } else {
+                    obj[id][i] = column[id];
                 }
-	    }
-	}
-	return obj;
+            }
+        }
+        return obj;
     }
 
     function clone(obj) {
-	// Handles the array and object types, and null or undefined
-	if (null == obj || "object" != typeof obj) return obj;
-	// Handle Array
-	if (obj instanceof Array) {
+        // Handles the array and object types, and null or undefined
+        if (null == obj || "object" != typeof obj) return obj;
+        // Handle Array
+        if (obj instanceof Array) {
             var copy = [];
             for (var i = 0, len = obj.length; i < len; i++) {
-		copy[i] = clone(obj[i]);
+                copy[i] = clone(obj[i]);
             }
             return copy;
-	}
-	// Handle Object
-	if (obj instanceof Object) {
+        }
+        // Handle Object
+        if (obj instanceof Object) {
             var copy = {};
             for (var attr in obj) {
-		if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+                if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
             }
             return copy;
-	}
-	throw new Error("Unable to copy obj! Its type isn't supported.");
+        }
+        throw new Error("Unable to copy obj! Its type isn't supported.");
     }
 
     function extend(obj1, obj2, overwrite) {
-	/** Extends obj1 with keys/values from obj2. Performs the extension
-	    cautiously, and does not override attributes, unless the overwrite
-	    argument is true.
+        /** Extends obj1 with keys/values from obj2. Performs the extension
+         cautiously, and does not override attributes, unless the overwrite
+         argument is true.
 
-	    Arguments
-	    ---------
+         Arguments
+         ---------
 
-	    obj1: Object to extend
-	    
-	    obj2: Object with which to extend.
+         obj1: Object to extend
+         
+         obj2: Object with which to extend.
 
-	    overwrite: (Optional, Default false) Overwrite attributes in obj1.
+         overwrite: (Optional, Default false) Overwrite attributes in obj1.
 
-	*/
+         */
 
-	if (overwrite === undefined)
-	    overwrite = false;
-	
-	for (var attrname in obj2) { 
-	    if (!(attrname in obj1) || overwrite) // UNIT TEST This
-		obj1[attrname] = obj2[attrname];
-	    else
-		throw new Error('Attribute ' + attrname + ' already in object.');
-	}
+        if (overwrite === undefined)
+            overwrite = false;
+        
+        for (var attrname in obj2) { 
+            if (!(attrname in obj1) || overwrite) // UNIT TEST This
+                obj1[attrname] = obj2[attrname];
+            else
+                throw new Error('Attribute ' + attrname + ' already in object.');
+        }
     }
 
     function unique_concat(arrays) {
-	var new_array = [];
-	arrays.forEach(function (a) {
-	    a.forEach(function(x) {
-		if (new_array.indexOf(x) < 0)
-		    new_array.push(x);
-	    });
-	});
-	return new_array;
+        var new_array = [];
+        arrays.forEach(function (a) {
+            a.forEach(function(x) {
+                if (new_array.indexOf(x) < 0)
+                    new_array.push(x);
+            });
+        });
+        return new_array;
     }
     
     function unique_strings_array(arr) {
-	/** Return unique values in array of strings.
+        /** Return unique values in array of strings.
 
-	 http://stackoverflow.com/questions/1960473/unique-values-in-an-array
+         http://stackoverflow.com/questions/1960473/unique-values-in-an-array
 
-	 */
-	var a = [];
-	for (var i = 0, l = arr.length; i < l; i++)
+         */
+        var a = [];
+        for (var i = 0, l = arr.length; i < l; i++)
             if (a.indexOf(arr[i]) === -1)
-		a.push(arr[i]);
-	return a;
+                a.push(arr[i]);
+        return a;
     }
 
     function debounce(func, wait, immediate) {
-    /** Returns a function, that, as long as it continues to be invoked, will
-     not be triggered.
+        /** Returns a function, that, as long as it continues to be invoked, will
+         not be triggered.
 
-     The function will be called after it stops being called for N
-     milliseconds. If `immediate` is passed, trigger the function on the leading
-     edge, instead of the trailing.
+         The function will be called after it stops being called for N
+         milliseconds. If `immediate` is passed, trigger the function on the leading
+         edge, instead of the trailing.
 
-     */
-	var timeout;
-	return function() {
-	    var context = this, args = arguments;
-	    var later = function() {
-		timeout = null;
-		if (!immediate) func.apply(context, args);
-	    };
-	    var callNow = immediate && !timeout;
-	    window.clearTimeout(timeout);
-	    timeout = window.setTimeout(later, wait);
-	    if (callNow) func.apply(context, args);
-	};
+         */
+        var timeout;
+        return function() {
+            var context = this, args = arguments;
+            var later = function() {
+                timeout = null;
+                if (!immediate) func.apply(context, args);
+            };
+            var callNow = immediate && !timeout;
+            window.clearTimeout(timeout);
+            timeout = window.setTimeout(later, wait);
+            if (callNow) func.apply(context, args);
+        };
     }
     
     function object_slice_for_ids(obj, ids) {
-	/** Return a copy of the object with just the given ids. 
-	 
-	 Arguments
-	 ---------
+        /** Return a copy of the object with just the given ids. 
+         
+         Arguments
+         ---------
 
-	 obj: An object.
+         obj: An object.
 
-	 ids: An array of id strings.
+         ids: An array of id strings.
 
-	 */
+         */
         var subset = {}, i = -1;
         while (++i<ids.length) {
-	    subset[ids[i]] = clone(obj[ids[i]]);
+            subset[ids[i]] = clone(obj[ids[i]]);
         }
         if (ids.length != Object.keys(subset).length) {
-	    console.warn('did not find correct reaction subset');
+            console.warn('did not find correct reaction subset');
         }
-	return subset;
+        return subset;
     }
     
     function object_slice_for_ids_ref(obj, ids) {
-	/** Return a reference of the object with just the given ids. Faster
-	 than object_slice_for_ids.
-	 
-	 Arguments
-	 ---------
+        /** Return a reference of the object with just the given ids. Faster
+         than object_slice_for_ids.
+         
+         Arguments
+         ---------
 
-	 obj: An object.
+         obj: An object.
 
-	 ids: An array of id strings.
+         ids: An array of id strings.
 
-	 */
+         */
         var subset = {}, i = -1;
         while (++i<ids.length) {
-	    subset[ids[i]] = obj[ids[i]];
+            subset[ids[i]] = obj[ids[i]];
         }
         if (ids.length != Object.keys(subset).length) {
-	    console.warn('did not find correct reaction subset');
+            console.warn('did not find correct reaction subset');
         }
-	return subset;
+        return subset;
     }
 
     function c_plus_c(coords1, coords2) {
-	if (coords1 === null || coords2 === null || 
-	    coords1 === undefined || coords2 === undefined)
-	    return null;
-	return { "x": coords1.x + coords2.x,
-		 "y": coords1.y + coords2.y };
+        if (coords1 === null || coords2 === null || 
+            coords1 === undefined || coords2 === undefined)
+            return null;
+        return { "x": coords1.x + coords2.x,
+                 "y": coords1.y + coords2.y };
     }
     function c_minus_c(coords1, coords2) {
-	if (coords1 === null || coords2 === null || 
-	    coords1 === undefined || coords2 === undefined)
-	    return null;
-	return { "x": coords1.x - coords2.x,
-		 "y": coords1.y - coords2.y };
+        if (coords1 === null || coords2 === null || 
+            coords1 === undefined || coords2 === undefined)
+            return null;
+        return { "x": coords1.x - coords2.x,
+                 "y": coords1.y - coords2.y };
     }
 
     function c_times_scalar(coords, scalar) {
-	return { "x": coords.x * scalar,
-		 "y": coords.y * scalar };
+        return { "x": coords.x * scalar,
+                 "y": coords.y * scalar };
     }
     
     function download_json(json, name) {
-	/** Download json file in a blob.
+        /** Download json file in a blob.
 
-	 */
-	var j = JSON.stringify(json),
-	    blob = new Blob([j], {type: "octet/stream"});
-	FileSaver(blob, name + '.json');
+         */
+        var j = JSON.stringify(json),
+            blob = new Blob([j], {type: "octet/stream"});
+        FileSaver(blob, name + '.json');
     }
 
     function load_json(f, callback, pre_fn, failure_fn) {
-	/** Try to load the file as JSON.
+        /** Try to load the file as JSON.
 
-	    Arguments
-	    ---------
+         Arguments
+         ---------
 
-	    f: The file path
+         f: The file path
 
-	    callback: A callback function that accepts arguments: error, data.
+         callback: A callback function that accepts arguments: error, data.
 
-            pre_fn: (optional) A function to call before loading the data.
+         pre_fn: (optional) A function to call before loading the data.
 
-            failure_fn: (optional) A function to call if the load fails or is aborted.
-            
-	*/
-	// Check for the various File API support.
-	if (!(window.File && window.FileReader && window.FileList && window.Blob))
-	    callback("The File APIs are not fully supported in this browser.", null);
+         failure_fn: (optional) A function to call if the load fails or is aborted.
+         
+         */
+        // Check for the various File API support.
+        if (!(window.File && window.FileReader && window.FileList && window.Blob))
+            callback("The File APIs are not fully supported in this browser.", null);
 
-	var reader = new window.FileReader();
-	// Closure to capture the file information.
-	reader.onload = function(event) {
-	    var result = event.target.result,
-		data;
-	    // try JSON
-	    try {
-		data = JSON.parse(result);
-	    } catch (e) {
-		// if it failed, return the error
-		callback(e, null);
-		return;
-	    }
-	    // if successful, return the data
-	    callback(null, data);
+        var reader = new window.FileReader();
+        // Closure to capture the file information.
+        reader.onload = function(event) {
+            var result = event.target.result,
+                data;
+            // try JSON
+            try {
+                data = JSON.parse(result);
+            } catch (e) {
+                // if it failed, return the error
+                callback(e, null);
+                return;
+            }
+            // if successful, return the data
+            callback(null, data);
         };
         if (pre_fn !== undefined && pre_fn !== null) {
             try { pre_fn(); }
@@ -1387,64 +1387,64 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
             try { failure_fn(); }
             catch (e) { console.warn(e); }
         }
-	// Read in the image file as a data URL.
-	reader.readAsText(f);
+        // Read in the image file as a data URL.
+        reader.readAsText(f);
     }
     
     function load_json_or_csv(f, csv_converter, callback, pre_fn, failure_fn,
                               debug_event) {
-	/** Try to load the file as JSON or CSV (JSON first).
+        /** Try to load the file as JSON or CSV (JSON first).
 
-	    Arguments
-	    ---------
+         Arguments
+         ---------
 
-	    f: The file path
+         f: The file path
 
-	    csv_converter: A function to convert the CSV output to equivalent JSON.
+         csv_converter: A function to convert the CSV output to equivalent JSON.
 
-	    callback: A callback function that accepts arguments: error, data.
+         callback: A callback function that accepts arguments: error, data.
 
-            pre_fn: (optional) A function to call before loading the data.
+         pre_fn: (optional) A function to call before loading the data.
 
-            failure_fn: (optional) A function to call if the load fails or is aborted.
+         failure_fn: (optional) A function to call if the load fails or is aborted.
 
-	    debug_event: (optional) An event, with a string at
-	    event.target.result, to load as though it was the contents of a
-	    loaded file.
+         debug_event: (optional) An event, with a string at
+         event.target.result, to load as though it was the contents of a
+         loaded file.
 
-	*/
-	// Check for the various File API support.
-	if (!(window.File && window.FileReader && window.FileList && window.Blob))
-	    callback("The File APIs are not fully supported in this browser.", null);
+         */
+        // Check for the various File API support.
+        if (!(window.File && window.FileReader && window.FileList && window.Blob))
+            callback("The File APIs are not fully supported in this browser.", null);
 
-	var reader = new window.FileReader(),
-	    // Closure to capture the file information.
-	    onload_function = function(event) {
+        var reader = new window.FileReader(),
+            // Closure to capture the file information.
+            onload_function = function(event) {
                 
-		var result = event.target.result,
-		    data, errors;
-		// try JSON
-		try {
-		    data = JSON.parse(result);
-		} catch (e) {
-		    errors = 'JSON error: ' + e;
-		    
-		    // try csv
-		    try {
-			data = csv_converter(d3.csv.parseRows(result));
-		    } catch (e) {
-			// if both failed, return the errors
-			callback(errors + '\nCSV error: ' + e, null);
-			return;
-		    }
-		}
-		// if successful, return the data
-		callback(null, data);
+                var result = event.target.result,
+                    data, errors;
+                // try JSON
+                try {
+                    data = JSON.parse(result);
+                } catch (e) {
+                    errors = 'JSON error: ' + e;
+                    
+                    // try csv
+                    try {
+                        data = csv_converter(d3.csv.parseRows(result));
+                    } catch (e) {
+                        // if both failed, return the errors
+                        callback(errors + '\nCSV error: ' + e, null);
+                        return;
+                    }
+                }
+                // if successful, return the data
+                callback(null, data);
             };
-	if (debug_event !== undefined && debug_event !== null) {
-	    console.warn('Debugging load_json_or_csv');
-	    return onload_function(debug_event);
-	}
+        if (debug_event !== undefined && debug_event !== null) {
+            console.warn('Debugging load_json_or_csv');
+            return onload_function(debug_event);
+        }
         if (pre_fn !== undefined && pre_fn !== null) {
             try { pre_fn(); }
             catch (e) { console.warn(e); }
@@ -1457,15 +1457,15 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
             try { failure_fn(); }
             catch (e) { console.warn(e); }
         }
-	// Read in the image file as a data URL.
-	reader.onload = onload_function;
-	reader.readAsText(f);
+        // Read in the image file as a data URL.
+        reader.onload = onload_function;
+        reader.readAsText(f);
     }
     
     function export_svg(name, svg_sel, do_beautify) {
         var a = document.createElement('a'), xml, ev;
         a.download = name + '.svg'; // file name
-	// convert node to xml string
+        // convert node to xml string
         xml = (new XMLSerializer()).serializeToString(svg_sel.node()); 
         if (do_beautify) xml = vkbeautify.xml(xml);
         xml = '<?xml version="1.0" encoding="utf-8"?>\n \
@@ -1478,105 +1478,105 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
         ev.initMouseEvent("click", true, false, self, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
         a.dispatchEvent(ev);
         
-	// definitions
+        // definitions
         function utf8_to_b64(str) {
             return window.btoa(unescape(encodeURIComponent( str )));
         }
     };
 
     function rotate_coords_recursive(coords_array, angle, center) {
-	var rot = function(c) { return rotate_coords(c, angle, center); };
+        var rot = function(c) { return rotate_coords(c, angle, center); };
         return coords_array.map(rot);
     }
 
     function rotate_coords(c, angle, center) {
-	/** Calculates displacement { x: dx, y: dy } based on rotating point c around 
-	 center with angle.
+        /** Calculates displacement { x: dx, y: dy } based on rotating point c around 
+         center with angle.
 
-	 */
+         */
         var dx = Math.cos(-angle) * (c.x - center.x) +
                 Math.sin(-angle) * (c.y - center.y)
-		+ center.x - c.x,
+                + center.x - c.x,
             dy = - Math.sin(-angle) * (c.x - center.x) +
                 Math.cos(-angle) * (c.y - center.y)
-		+ center.y - c.y;
+                + center.y - c.y;
         return { x: dx, y: dy };
     }
 
     function get_angle(coords) {
-	/* Takes an array of 2 coordinate objects {"x": 1, "y": 1}
-	 *
-	 * Returns angle between 0 and 2PI.
-	 */
-	var denominator = coords[1].x - coords[0].x,
-	    numerator = coords[1].y - coords[0].y;
-	if (denominator==0 && numerator >= 0) return Math.PI/2;
-	else if (denominator==0 && numerator < 0) return 3*Math.PI/2;
-	else if (denominator >= 0 && numerator >= 0) return Math.atan(numerator/denominator);
-	else if (denominator >= 0) return (Math.atan(numerator/denominator) + 2*Math.PI);
-	else return (Math.atan(numerator/denominator) + Math.PI);
+        /* Takes an array of 2 coordinate objects {"x": 1, "y": 1}
+         *
+         * Returns angle between 0 and 2PI.
+         */
+        var denominator = coords[1].x - coords[0].x,
+            numerator = coords[1].y - coords[0].y;
+        if (denominator==0 && numerator >= 0) return Math.PI/2;
+        else if (denominator==0 && numerator < 0) return 3*Math.PI/2;
+        else if (denominator >= 0 && numerator >= 0) return Math.atan(numerator/denominator);
+        else if (denominator >= 0) return (Math.atan(numerator/denominator) + 2*Math.PI);
+        else return (Math.atan(numerator/denominator) + Math.PI);
     }
 
     function to_degrees(radians) { return radians*180/Math.PI; }
 
     function angle_for_event(displacement, point, center) {
-	var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
-	    beta = Math.atan2((point.x - center.x + displacement.x), 
-			      (center.y - point.y - displacement.y)),
-	    angle = beta - gamma;
-	return angle;
+        var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
+            beta = Math.atan2((point.x - center.x + displacement.x), 
+                              (center.y - point.y - displacement.y)),
+            angle = beta - gamma;
+        return angle;
     }
 
     function distance(start, end) { return Math.sqrt(Math.pow(end.y-start.y, 2) + Math.pow(end.x-start.x, 2)); }
 
     function check_undefined(args, names) {
-	/** Report an error if any of the arguments are undefined.
+        /** Report an error if any of the arguments are undefined.
 
-	 Call by passing in *arguments* from any function and an array of
-	 argument names.
+         Call by passing in *arguments* from any function and an array of
+         argument names.
 
-	 */
-	names.map(function(name, i) {
-	    if (args[i]===undefined) {
-		console.error('Argument is undefined: '+String(names[i]));
-	    }
-	});
+         */
+        names.map(function(name, i) {
+            if (args[i]===undefined) {
+                console.error('Argument is undefined: '+String(names[i]));
+            }
+        });
     }
 
     function compartmentalize(bigg_id, compartment_id) {
-	return bigg_id + '_' + compartment_id;
+        return bigg_id + '_' + compartment_id;
     }
 
 
     // definitions
     function decompartmentalize(id) {
-	/** Convert ids to bigg_id and compartment_id.
-	 
-	 */
-	var out = no_compartment(id);
-	if (out===null) out = [id, null];
-	return out;
+        /** Convert ids to bigg_id and compartment_id.
+         
+         */
+        var out = no_compartment(id);
+        if (out===null) out = [id, null];
+        return out;
 
-	// definitions
-	function no_compartment(id) {
-	    /** Returns an array of [bigg_id, compartment id].
+        // definitions
+        function no_compartment(id) {
+            /** Returns an array of [bigg_id, compartment id].
 
-	     Matches compartment ids with length 1 or 2.
+             Matches compartment ids with length 1 or 2.
 
-	     Return null if no match is found.
+             Return null if no match is found.
 
-	     */
-	    var reg = /(.*)_([a-z0-9]{1,2})$/,
-		result = reg.exec(id);
-	    if (result===null) return null;
-	    return result.slice(1,3);
-	}
+             */
+            var reg = /(.*)_([a-z0-9]{1,2})$/,
+                result = reg.exec(id);
+            if (result===null) return null;
+            return result.slice(1,3);
+        }
     }
 
     function mean(array) {
-	var sum = array.reduce(function(a, b) { return a + b; });
-	var avg = sum / array.length;
-	return avg;
+        var sum = array.reduce(function(a, b) { return a + b; });
+        var avg = sum / array.length;
+        return avg;
     }
 
     function median(array) {
@@ -1618,78 +1618,78 @@ define('utils',["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSav
     }
 
     function check_for_parent_tag(el, tag) {
-	/** Check that the selection has the given parent tag.
+        /** Check that the selection has the given parent tag.
 
-	 el: A d3 selection or node.
+         el: A d3 selection or node.
 
-	 tag: A tag name (case insensitive)
+         tag: A tag name (case insensitive)
 
-	 */
-	// make sure it is a node
-	if (el instanceof Array)
-	    el = el.node();
-	while (el.parentNode !== null) {
-	    el = el.parentNode;
-	    if (el.tagName === undefined) continue;
-	    if (el.tagName.toLowerCase() === tag.toLowerCase())
-		return true;
-	}
-	return false;
+         */
+        // make sure it is a node
+        if (el instanceof Array)
+            el = el.node();
+        while (el.parentNode !== null) {
+            el = el.parentNode;
+            if (el.tagName === undefined) continue;
+            if (el.tagName.toLowerCase() === tag.toLowerCase())
+                return true;
+        }
+        return false;
     }
 
     function name_to_url(name, download_url) {
-	/** Convert model or map name to url.
-	 
-	 Arguments
-	 ---------
+        /** Convert model or map name to url.
+         
+         Arguments
+         ---------
 
-	 name: The short name, e.g. e_coli.iJO1366.central_metabolism.
+         name: The short name, e.g. e_coli.iJO1366.central_metabolism.
 
-	 download_url: The url to prepend (optional).
+         download_url: The url to prepend (optional).
 
-	*/
+         */
 
-	if (download_url !== undefined && download_url !== null) {
-	    // strip download_url
-	    download_url = download_url.replace(/^\/|\/$/g, '');
-	    name = [download_url, name].join('/');
-	}
-	// strip final path
-	return name.replace(/^\/|\/$/g, '') + '.json';
+        if (download_url !== undefined && download_url !== null) {
+            // strip download_url
+            download_url = download_url.replace(/^\/|\/$/g, '');
+            name = [download_url, name].join('/');
+        }
+        // strip final path
+        return name.replace(/^\/|\/$/g, '') + '.json';
     }
 
     function parse_url_components(the_window, options) {
-	/** Parse the URL and return options based on the URL arguments.
+        /** Parse the URL and return options based on the URL arguments.
 
-	 Arguments
-	 ---------
+         Arguments
+         ---------
 
-	 the_window: A reference to the global window.
-	 
-	 options: (optional) an existing options object to which new options
-	 will be added. Overwrites existing arguments in options.
+         the_window: A reference to the global window.
+         
+         options: (optional) an existing options object to which new options
+         will be added. Overwrites existing arguments in options.
 
-	 Adapted from http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
+         Adapted from http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
 
-	 */
-	if (options===undefined) options = {};
+         */
+        if (options===undefined) options = {};
 
-	var query = the_window.location.search.substring(1),
-	    vars = query.split("&");
-	for (var i = 0; i < vars.length; i++) {
-	    var pair = vars[i].split("="),
-		val = decodeURIComponent(pair[1]);
-	    // deal with array options
-	    if (pair[0].indexOf('[]') == pair[0].length - 2) {
-		var o = pair[0].replace('[]', '');
-		if (!(o in options))
-		    options[o] = [];
-		options[o].push(val);
-	    } else {
-		options[pair[0]] = val;
-	    }
-	}
-	return options;
+        var query = the_window.location.search.substring(1),
+            vars = query.split("&");
+        for (var i = 0; i < vars.length; i++) {
+            var pair = vars[i].split("="),
+                val = decodeURIComponent(pair[1]);
+            // deal with array options
+            if (pair[0].indexOf('[]') == pair[0].length - 2) {
+                var o = pair[0].replace('[]', '');
+                if (!(o in options))
+                    options[o] = [];
+                options[o].push(val);
+            } else {
+                options[pair[0]] = val;
+            }
+        }
+        return options;
     }    
 });
 
@@ -1701,52 +1701,52 @@ define('PlacedDiv',['utils'], function(utils) {
     var PlacedDiv = utils.make_class();
     // instance methods
     PlacedDiv.prototype = { init: init,
-			    is_visible: is_visible,
-			    place: place,
-			    hide: hide };
+                            is_visible: is_visible,
+                            place: place,
+                            hide: hide };
     return PlacedDiv;
 
     // definitions
     function init(div, map, displacement) {
-	// make the input box
-	this.div = div;
+        // make the input box
+        this.div = div;
 
-	if (displacement===undefined)
-	    displacement = {x: 0, y: 0};
-	this.displacement = displacement;
+        if (displacement===undefined)
+            displacement = {x: 0, y: 0};
+        this.displacement = displacement;
 
-	this.map = map;
+        this.map = map;
     }
 
     function is_visible() {
-	return this.div.style('display') != 'none';
+        return this.div.style('display') != 'none';
     }
 
     function place(coords) {
-	/** Position the html div to match the given SVG coordinates.
+        /** Position the html div to match the given SVG coordinates.
 
-	 */
-	// show the input
-	this.div.style('display', null);
+         */
+        // show the input
+        this.div.style('display', null);
 
-	// move the new input
-	var window_translate = this.map.zoom_container.window_translate,
-	    window_scale = this.map.zoom_container.window_scale,
-	    map_size = this.map.get_size(),
-	    left = Math.max(20,
-			    Math.min(map_size.width - 270,
-				     (window_scale * coords.x + window_translate.x - this.displacement.x))),
-	    top = Math.max(20,
-			   Math.min(map_size.height - 40,
-				    (window_scale * coords.y + window_translate.y - this.displacement.y)));
-	this.div.style('position', 'absolute')
-	    .style('display', 'block')
-	    .style('left', left+'px')
-	    .style('top', top+'px');
+        // move the new input
+        var window_translate = this.map.zoom_container.window_translate,
+            window_scale = this.map.zoom_container.window_scale,
+            map_size = this.map.get_size(),
+            left = Math.max(20,
+                            Math.min(map_size.width - 270,
+                                     (window_scale * coords.x + window_translate.x - this.displacement.x))),
+            top = Math.max(20,
+                           Math.min(map_size.height - 40,
+                                    (window_scale * coords.y + window_translate.y - this.displacement.y)));
+        this.div.style('position', 'absolute')
+            .style('display', 'block')
+            .style('left', left+'px')
+            .style('top', top+'px');
     }
     
     function hide() {
-	this.div.style('display', 'none');
+        this.div.style('display', 'none');
     }
 });
 
@@ -2161,120 +2161,120 @@ define('DirectionArrow',["utils"], function(utils) {
      */
     var DirectionArrow = utils.make_class();
     DirectionArrow.prototype = { init: init,
-				 set_location: set_location,
-				 set_rotation: set_rotation,
-				 displace_rotation: displace_rotation,
-				 get_rotation: get_rotation,
-				 toggle: toggle,
-				 show: show,
-				 hide: hide,
-				 right: right,
-				 left: left,
-				 up: up,
-				 down: down,
-				 _setup_drag: _setup_drag };
+                                 set_location: set_location,
+                                 set_rotation: set_rotation,
+                                 displace_rotation: displace_rotation,
+                                 get_rotation: get_rotation,
+                                 toggle: toggle,
+                                 show: show,
+                                 hide: hide,
+                                 right: right,
+                                 left: left,
+                                 up: up,
+                                 down: down,
+                                 _setup_drag: _setup_drag };
     return DirectionArrow;
 
     // definitions
     function init(sel) {
-	this.arrow_container = sel.append('g')
-	    .attr('id', 'direction-arrow-container')
-	    .attr('transform', 'translate(0,0)rotate(0)');
-	this.arrow = this.arrow_container.append('path')
-	    .classed('direction-arrow', true)
-	    .attr('d', path_for_arrow())
-	    .style('visibility', 'hidden')
-	    .attr('transform', 'translate(30,0)scale(2.5)');
+        this.arrow_container = sel.append('g')
+            .attr('id', 'direction-arrow-container')
+            .attr('transform', 'translate(0,0)rotate(0)');
+        this.arrow = this.arrow_container.append('path')
+            .classed('direction-arrow', true)
+            .attr('d', path_for_arrow())
+            .style('visibility', 'hidden')
+            .attr('transform', 'translate(30,0)scale(2.5)');
 
-	this.sel = sel;
-	this.center = { x: 0, y: 0 };
+        this.sel = sel;
+        this.center = { x: 0, y: 0 };
 
-	this._setup_drag();
-	this.dragging = false;
+        this._setup_drag();
+        this.dragging = false;
 
-	this.is_visible = false;
-	this.show();
+        this.is_visible = false;
+        this.show();
 
-	// definitions
-	function path_for_arrow() {
-	    return "M0 -5 L0 5 L20 5 L20 10 L30 0 L20 -10 L20 -5 Z";
-	}
+        // definitions
+        function path_for_arrow() {
+            return "M0 -5 L0 5 L20 5 L20 10 L30 0 L20 -10 L20 -5 Z";
+        }
     }
     function set_location(coords) {
-	/** Move the arrow to coords.
-	 */
-	this.center = coords;
-	var transform = d3.transform(this.arrow_container.attr('transform'));
-	this.arrow_container.attr('transform',
-				  'translate('+coords.x+','+coords.y+')rotate('+transform.rotate+')');
+        /** Move the arrow to coords.
+         */
+        this.center = coords;
+        var transform = d3.transform(this.arrow_container.attr('transform'));
+        this.arrow_container.attr('transform',
+                                  'translate('+coords.x+','+coords.y+')rotate('+transform.rotate+')');
     }
     function set_rotation(rotation) {
-	/** Rotate the arrow to rotation.
-	 */
-	var transform = d3.transform(this.arrow_container.attr('transform'));
-	this.arrow_container.attr('transform',
-				  'translate('+transform.translate+')rotate('+rotation+')');
+        /** Rotate the arrow to rotation.
+         */
+        var transform = d3.transform(this.arrow_container.attr('transform'));
+        this.arrow_container.attr('transform',
+                                  'translate('+transform.translate+')rotate('+rotation+')');
     }
     function displace_rotation(d_rotation) {
-	/** Displace the arrow rotation by a set amount.
-	 */
-	var transform = d3.transform(this.arrow_container.attr('transform'));
-	this.arrow_container.attr('transform',
-				  'translate('+transform.translate+')'+
-				  'rotate('+(transform.rotate+d_rotation)+')');
+        /** Displace the arrow rotation by a set amount.
+         */
+        var transform = d3.transform(this.arrow_container.attr('transform'));
+        this.arrow_container.attr('transform',
+                                  'translate('+transform.translate+')'+
+                                  'rotate('+(transform.rotate+d_rotation)+')');
     }
     function get_rotation() {
-	/** Returns the arrow rotation.
-	 */
-	return d3.transform(this.arrow_container.attr('transform')).rotate;
+        /** Returns the arrow rotation.
+         */
+        return d3.transform(this.arrow_container.attr('transform')).rotate;
     }
     function toggle(on_off) {
-	if (on_off===undefined) this.is_visible = !this.is_visible;
-	else this.is_visible = on_off;
-	this.arrow.style('visibility', this.is_visible ? 'visible' : 'hidden');
+        if (on_off===undefined) this.is_visible = !this.is_visible;
+        else this.is_visible = on_off;
+        this.arrow.style('visibility', this.is_visible ? 'visible' : 'hidden');
     }
     function show() {
-	this.toggle(true);
+        this.toggle(true);
     }
     function hide() {
-	this.toggle(false);
+        this.toggle(false);
     }
     function right() {
-	this.set_rotation(0);
+        this.set_rotation(0);
     }
     function down() {
-	this.set_rotation(90);
+        this.set_rotation(90);
     }
     function left() {
-	this.set_rotation(180);
+        this.set_rotation(180);
     }
     function up() {
-	this.set_rotation(270);
+        this.set_rotation(270);
     }
     
     function _setup_drag() {
-	var b = d3.behavior.drag()
-		.on("dragstart", function(d) {
-		    // silence other listeners
-		    d3.event.sourceEvent.stopPropagation();
-		    this.dragging = true;
-		}.bind(this))
-		.on("drag.direction_arrow", function(d) {
-		    var displacement = { x: d3.event.dx,
-					 y: d3.event.dy },
-			location = { x: d3.mouse(this.sel.node())[0],
-				     y: d3.mouse(this.sel.node())[1] },
-			d_angle = utils.angle_for_event(displacement,
-							location,
-							this.center);
-		    this.displace_rotation(utils.to_degrees(d_angle));
-		}.bind(this))
-		.on("dragend", function(d) {
-		    window.setTimeout(function() {
-			this.dragging = false;
-		    }.bind(this), 200);
-		}.bind(this));
-	this.arrow_container.call(b);
+        var b = d3.behavior.drag()
+                .on("dragstart", function(d) {
+                    // silence other listeners
+                    d3.event.sourceEvent.stopPropagation();
+                    this.dragging = true;
+                }.bind(this))
+                .on("drag.direction_arrow", function(d) {
+                    var displacement = { x: d3.event.dx,
+                                         y: d3.event.dy },
+                        location = { x: d3.mouse(this.sel.node())[0],
+                                     y: d3.mouse(this.sel.node())[1] },
+                        d_angle = utils.angle_for_event(displacement,
+                                                        location,
+                                                        this.center);
+                    this.displace_rotation(utils.to_degrees(d_angle));
+                }.bind(this))
+                .on("dragend", function(d) {
+                    window.setTimeout(function() {
+                        this.dragging = false;
+                    }.bind(this), 200);
+                }.bind(this));
+        this.arrow_container.call(b);
     }
 });
 
@@ -2425,9 +2425,9 @@ define('data_styles',['utils'], function(utils) {
         throw new Error('Bad data compare_style: ' + compare_style);
 
         // definitions
-	function check_finite(x) {
-	    return isFinite(x) ? x : null;
-	}
+        function check_finite(x) {
+            return isFinite(x) ? x : null;
+        }
         function abs(x, take_abs) {
             return take_abs ? Math.abs(x) : x;
         }
@@ -2456,45 +2456,45 @@ define('data_styles',['utils'], function(utils) {
 
     function gene_string_for_data(rule, gene_values, genes, styles,
                                   identifiers_on_map, compare_style) {
-	/** Add gene values to the gene_reaction_rule string.
-	 
-	 Arguments
-	 ---------
+        /** Add gene values to the gene_reaction_rule string.
+         
+         Arguments
+         ---------
 
-	 rule: (string) The gene reaction rule.
+         rule: (string) The gene reaction rule.
 
-	 gene_values: The values.
+         gene_values: The values.
 
-	 genes: An array of objects specifying the gene bigg_id and name.
+         genes: An array of objects specifying the gene bigg_id and name.
 
-	 styles: The reaction styles.
+         styles: The reaction styles.
 
-	 identifiers_on_map: The type of identifiers ('bigg_id' or 'name').
+         identifiers_on_map: The type of identifiers ('bigg_id' or 'name').
 
-	 compare_style: The comparison style.
+         compare_style: The comparison style.
 
-	 Returns
-	 -------
+         Returns
+         -------
 
-	 The new string with formatted data values.
+         The new string with formatted data values.
 
-	 */
+         */
 
         var out = rule,
             no_data = (gene_values === null),
-	    // keep track of bigg_id's or names to remove repeats
-	    genes_found = {};
+            // keep track of bigg_id's or names to remove repeats
+            genes_found = {};
 
-	
+        
         genes.forEach(function(g_obj) {
             // get id or name
             var name = g_obj[identifiers_on_map];
             if (typeof name === 'undefined')
                 throw new Error('Bad value for identifiers_on_map: ' + identifiers_on_map);
-	    // remove repeats that may have found their way into genes object
-	    if (typeof genes_found[name] !== 'undefined')
-		return;
-	    genes_found[name] = true;	
+            // remove repeats that may have found their way into genes object
+            if (typeof genes_found[name] !== 'undefined')
+                return;
+            genes_found[name] = true;   
             // generate the string
             if (no_data) {
                 out = replace_gene_in_rule(out, g_obj.bigg_id, (name + '\n'));
@@ -2593,11 +2593,11 @@ define('data_styles',['utils'], function(utils) {
 
          rule: A boolean string containing gene names, parentheses, AND's and
          OR's.
-	 
-	 Returns
-	 -------
+         
+         Returns
+         -------
 
-	 An array of gene strings.
+         An array of gene strings.
 
          */
         var genes = rule
@@ -2608,7 +2608,7 @@ define('data_styles',['utils'], function(utils) {
         // split on whitespace
                 .split(' ')
                 .filter(function(x) { return x != ''; });
-	// unique strings
+        // unique strings
         return utils.unique_strings_array(genes);
     }
     
@@ -2789,7 +2789,7 @@ define('data_styles',['utils'], function(utils) {
 
          gene_data_obj: The gene data object, with the following style:
 
-             { reaction_id: { gene_id: value } }
+         { reaction_id: { gene_id: value } }
 
          styles:  Gene styles array.
 
@@ -2896,17 +2896,17 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
     function build_reaction_string(stoichiometries, is_reversible) {
         /** Return a reaction string for the given stoichiometries.
 
-            Adapted from cobra.core.Reaction.build_reaction_string().
+         Adapted from cobra.core.Reaction.build_reaction_string().
 
-            Arguments
-            ---------
+         Arguments
+         ---------
 
-            stoichiometries: An object with metabolites as keys and
-            stoichiometries as values.
+         stoichiometries: An object with metabolites as keys and
+         stoichiometries as values.
 
-            is_reversible: Boolean. Whether the reaction is reversible.
+         is_reversible: Boolean. Whether the reaction is reversible.
 
-        */
+         */
 
         var format = function(number) {
             if (number == 1)
@@ -2981,8 +2981,8 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
             reaction.reversibility = (reaction.lower_bound < 0 && reaction.upper_bound > 0);
             if (reaction.upper_bound <= 0 && reaction.lower_bound < 0) {
                 // reverse stoichiometries
-		for (var met_id in reaction.metabolites) {
-		    reaction.metabolites[met_id] = -reaction.metabolites[met_id];
+                for (var met_id in reaction.metabolites) {
+                    reaction.metabolites[met_id] = -reaction.metabolites[met_id];
                 }
             }
             delete reaction.lower_bound;
@@ -3026,18 +3026,18 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
     
     function apply_reaction_data(reaction_data, styles, compare_style) {
         /** Apply data to model. This is only used to display options in
-            BuildInput.
-            
-            apply_reaction_data overrides apply_gene_data.
+         BuildInput.
+         
+         apply_reaction_data overrides apply_gene_data.
 
-        */
+         */
         data_styles.apply_reaction_data_to_reactions(this.reactions, reaction_data,
                                                      styles, compare_style);
     }
 
     function apply_metabolite_data(metabolite_data, styles, compare_style) {
         /** Apply data to model. This is only used to display options in
-            BuildInput.
+         BuildInput.
 
          */
         data_styles.apply_metabolite_data_to_nodes(this.metabolites, metabolite_data,
@@ -3047,11 +3047,11 @@ define('CobraModel',['utils', 'data_styles'], function(utils, data_styles) {
     function apply_gene_data(gene_data_obj, styles, identifiers_on_map,
                              compare_style, and_method_in_gene_reaction_rule) {
         /** Apply data to model. This is only used to display options in
-            BuildInput.
+         BuildInput.
 
-            apply_gene_data overrides apply_reaction_data.
+         apply_gene_data overrides apply_reaction_data.
 
-        */
+         */
         data_styles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
                                                  styles, identifiers_on_map,
                                                  compare_style,
@@ -3461,9 +3461,9 @@ define('CallbackManager',["utils"], function(utils) {
 
     var CallbackManager = utils.make_class();
     CallbackManager.prototype = { init: init,
-				  set: set,
-				  remove: remove,
-				  run: run };
+                                  set: set,
+                                  remove: remove,
+                                  run: run };
 
     return CallbackManager;
 
@@ -3471,57 +3471,57 @@ define('CallbackManager',["utils"], function(utils) {
 
     }
     function set(name, fn) {
-	/** As in d3 callbacks, you can namespace your callbacks after a period:
-	 
-	 select_metabolite.direction_arrow
-	 select_metabolite.input
+        /** As in d3 callbacks, you can namespace your callbacks after a period:
+         
+         select_metabolite.direction_arrow
+         select_metabolite.input
 
-	 Both are called by select_metabolite
-	 
-	 */
-	if (this.callbacks===undefined) this.callbacks = {};
-	if (this.callbacks[name]===undefined) this.callbacks[name] = [];
-	this.callbacks[name].push(fn);
+         Both are called by select_metabolite
+         
+         */
+        if (this.callbacks===undefined) this.callbacks = {};
+        if (this.callbacks[name]===undefined) this.callbacks[name] = [];
+        this.callbacks[name].push(fn);
 
-	return this;
+        return this;
     }
     function remove(name) {
-	/** Remove a callback by name
-	 
-	 */
-	if (this.callbacks===undefined || Object.keys(this.callbacks).length==0) {
-	    console.warn('No callbacks to remove');
-	}
-	delete this.callbacks[name];
-	return this;
+        /** Remove a callback by name
+         
+         */
+        if (this.callbacks===undefined || Object.keys(this.callbacks).length==0) {
+            console.warn('No callbacks to remove');
+        }
+        delete this.callbacks[name];
+        return this;
     }
     function run(name, this_arg) {
-	/** Run all callbacks that match the portion of name before the period ('.').
+        /** Run all callbacks that match the portion of name before the period ('.').
 
-            Arguments
-            ---------
+         Arguments
+         ---------
 
-            name: The callback name, which can include a tag after a '.' to
-            specificy a particular callback.
+         name: The callback name, which can include a tag after a '.' to
+         specificy a particular callback.
 
-            this_arg: (Optional, Default: null) The object assigned to `this` in
-            the callback.
+         this_arg: (Optional, Default: null) The object assigned to `this` in
+         the callback.
 
-	 */
-	if (this.callbacks===undefined) return this;
+         */
+        if (this.callbacks===undefined) return this;
         if (this_arg===undefined) this_arg = null;
-	// pass all but the first (name) argument to the callback
-	var pass_args = Array.prototype.slice.call(arguments, 2);
-	// look for matching callback names
-	for (var a_name in this.callbacks) {
-	    var split_name = a_name.split('.')[0];
-	    if (split_name==name) {
-		this.callbacks[a_name].forEach(function(fn) {
-		    fn.apply(this_arg, pass_args);
-		});
-	    }
-	}
-	return this;
+        // pass all but the first (name) argument to the callback
+        var pass_args = Array.prototype.slice.call(arguments, 2);
+        // look for matching callback names
+        for (var a_name in this.callbacks) {
+            var split_name = a_name.split('.')[0];
+            if (split_name==name) {
+                this.callbacks[a_name].forEach(function(fn) {
+                    fn.apply(this_arg, pass_args);
+                });
+            }
+        }
+        return this;
     }
 });
 
@@ -3533,245 +3533,245 @@ define('ZoomContainer',["utils", "CallbackManager"], function(utils, CallbackMan
      */
     var ZoomContainer = utils.make_class();
     ZoomContainer.prototype = { init: init,
-				update_scroll_behavior: update_scroll_behavior,
-				toggle_zoom: toggle_zoom,
-				go_to: go_to,
-				zoom_by: zoom_by,
-				zoom_in: zoom_in,
-				zoom_out: zoom_out,
-				get_size: get_size,
-				translate_off_screen: translate_off_screen,
-				reset: reset };
+                                update_scroll_behavior: update_scroll_behavior,
+                                toggle_zoom: toggle_zoom,
+                                go_to: go_to,
+                                zoom_by: zoom_by,
+                                zoom_in: zoom_in,
+                                zoom_out: zoom_out,
+                                get_size: get_size,
+                                translate_off_screen: translate_off_screen,
+                                reset: reset };
     return ZoomContainer;
 
     // definitions
     function init(selection, size_container, scroll_behavior) {
-	/** Make a container that will manage panning and zooming.
+        /** Make a container that will manage panning and zooming.
 
-	 selection: A d3 selection of an 'svg' or 'g' node to put the zoom
-	 container in.
+         selection: A d3 selection of an 'svg' or 'g' node to put the zoom
+         container in.
 
-	 size_container: A d3 selection of a 'div' node that has defined width
-	 and height.
+         size_container: A d3 selection of a 'div' node that has defined width
+         and height.
 
-	 */
+         */
 
-	this.zoom_on = true;
-	this.initial_zoom = 1.0;
-	this.window_translate = {x: 0, y: 0};
-	this.window_scale = 1.0;
+        this.zoom_on = true;
+        this.initial_zoom = 1.0;
+        this.window_translate = {x: 0, y: 0};
+        this.window_scale = 1.0;
 
-	// set up the callbacks
-	this.callback_manager = new CallbackManager();
+        // set up the callbacks
+        this.callback_manager = new CallbackManager();
 
-	// save the size_container
-	this.size_container = size_container;
+        // save the size_container
+        this.size_container = size_container;
 
         // set up the container
         selection.select("#zoom-container").remove();
         var container = selection.append("g")
                 .attr("id", "zoom-container");
-	this.container = container;
+        this.container = container;
         this.zoomed_sel = container.append("g");
-	
-	// update the scroll behavior
-	this.update_scroll_behavior(scroll_behavior);
+        
+        // update the scroll behavior
+        this.update_scroll_behavior(scroll_behavior);
 
-	// initialize vars
-	this.saved_scale = null;
-	this.saved_translate = null;
+        // initialize vars
+        this.saved_scale = null;
+        this.saved_translate = null;
     }
     
     function update_scroll_behavior(scroll_behavior) {
-	// the zoom function and behavior
+        // the zoom function and behavior
         var zoom = function(zoom_container, event) {
-	    if (zoom_container.zoom_on) {
+            if (zoom_container.zoom_on) {
                 zoom_container.zoomed_sel.attr("transform", "translate(" + event.translate + ")" +
-					       "scale(" + event.scale + ")");
-		zoom_container.window_translate = {'x': event.translate[0],
-						   'y': event.translate[1]};
-		zoom_container.window_scale = event.scale;
-		zoom_container.callback_manager.run('zoom');
-	    }
+                                               "scale(" + event.scale + ")");
+                zoom_container.window_translate = {'x': event.translate[0],
+                                                   'y': event.translate[1]};
+                zoom_container.window_scale = event.scale;
+                zoom_container.callback_manager.run('zoom');
+            }
         };
-	// clear all behaviors
-	this.container.on("mousewheel.zoom", null)
-	    .on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
-	    .on("wheel.zoom", null) // disables newer versions of Firefox
-	    .on('dblclick.zoom', null)
-	    .on('mousewheel.escher', wheel_fn)
-	    .on('DOMMouseScroll.escher', wheel_fn)
-	    .on('wheel.escher', wheel_fn);
-	
-	// new zoom
-	this.zoom_behavior = d3.behavior.zoom()
-	    .on("zoom", function() {
-		zoom(this, d3.event);
-	    }.bind(this));
-	this.container.call(this.zoom_behavior);	
+        // clear all behaviors
+        this.container.on("mousewheel.zoom", null)
+            .on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
+            .on("wheel.zoom", null) // disables newer versions of Firefox
+            .on('dblclick.zoom', null)
+            .on('mousewheel.escher', wheel_fn)
+            .on('DOMMouseScroll.escher', wheel_fn)
+            .on('wheel.escher', wheel_fn);
+        
+        // new zoom
+        this.zoom_behavior = d3.behavior.zoom()
+            .on("zoom", function() {
+                zoom(this, d3.event);
+            }.bind(this));
+        this.container.call(this.zoom_behavior);    
 
-	// options
-	if (scroll_behavior=='none' || scroll_behavior=='pan') {
-	    this.container.on("mousewheel.zoom", null)
-		.on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
-		.on("wheel.zoom", null) // disables newer versions of Firefox
-		.on('dblclick.zoom', null);
-	}
-	if (scroll_behavior == 'pan') {
-	    // Add the wheel listener
-	    var wheel_fn = function() {
-		var ev = d3.event,
-		    sensitivity = 0.5;
-		// stop scroll in parent elements
-		ev.stopPropagation();
-		ev.preventDefault();
-		ev.returnValue = false;
-		// change the location
-		this.go_to(this.window_scale,
-			   { x: this.window_translate.x -
-			     (ev.wheelDeltaX!==undefined ? -ev.wheelDeltaX/1.5 : ev.deltaX) * sensitivity,
-			     y: this.window_translate.y -
-			     (ev.wheelDeltaY!==undefined ? -ev.wheelDeltaY/1.5 : ev.deltaY) * sensitivity },
-			   false);
-	    }.bind(this);
-	    this.container.on('mousewheel.escher', wheel_fn);
-	    this.container.on('DOMMouseScroll.escher', wheel_fn);
-	    this.container.on('wheel.escher', wheel_fn);
-	}
+        // options
+        if (scroll_behavior=='none' || scroll_behavior=='pan') {
+            this.container.on("mousewheel.zoom", null)
+                .on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
+                .on("wheel.zoom", null) // disables newer versions of Firefox
+                .on('dblclick.zoom', null);
+        }
+        if (scroll_behavior == 'pan') {
+            // Add the wheel listener
+            var wheel_fn = function() {
+                var ev = d3.event,
+                    sensitivity = 0.5;
+                // stop scroll in parent elements
+                ev.stopPropagation();
+                ev.preventDefault();
+                ev.returnValue = false;
+                // change the location
+                this.go_to(this.window_scale,
+                           { x: this.window_translate.x -
+                             (ev.wheelDeltaX!==undefined ? -ev.wheelDeltaX/1.5 : ev.deltaX) * sensitivity,
+                             y: this.window_translate.y -
+                             (ev.wheelDeltaY!==undefined ? -ev.wheelDeltaY/1.5 : ev.deltaY) * sensitivity },
+                           false);
+            }.bind(this);
+            this.container.on('mousewheel.escher', wheel_fn);
+            this.container.on('DOMMouseScroll.escher', wheel_fn);
+            this.container.on('wheel.escher', wheel_fn);
+        }
     }
 
     function toggle_zoom(on_off) {
-	/** Toggle the zoom state, and remember zoom when the behavior is off.
+        /** Toggle the zoom state, and remember zoom when the behavior is off.
 
-	 */
-	if (on_off===undefined) {
-	    this.zoom_on = !this.zoom_on;
-	} else {
-	    this.zoom_on = on_off;
-	}
-	if (this.zoom_on) {
-	    if (this.saved_scale !== null){
-		this.zoom_behavior.scale(this.saved_scale);
-		this.saved_scale = null;
-	    }
-	    if (this.saved_translate !== null){
-		this.zoom_behavior.translate(this.saved_translate);
-		this.saved_translate = null;
-	    }
+         */
+        if (on_off===undefined) {
+            this.zoom_on = !this.zoom_on;
+        } else {
+            this.zoom_on = on_off;
+        }
+        if (this.zoom_on) {
+            if (this.saved_scale !== null){
+                this.zoom_behavior.scale(this.saved_scale);
+                this.saved_scale = null;
+            }
+            if (this.saved_translate !== null){
+                this.zoom_behavior.translate(this.saved_translate);
+                this.saved_translate = null;
+            }
 
-	    // turn on the hand
-	    this.zoomed_sel
-		.classed('cursor-grab', true).classed('cursor-grabbing', false);
-	    this.zoomed_sel
-		.on('mousedown.cursor', function(sel) {
-		    sel.classed('cursor-grab', false).classed('cursor-grabbing', true);
-		}.bind(null, this.zoomed_sel))
-		.on('mouseup.cursor', function(sel) {
-		    sel.classed('cursor-grab', true).classed('cursor-grabbing', false);
-		}.bind(null, this.zoomed_sel));
-	} else {
-	    if (this.saved_scale === null){
-		this.saved_scale = utils.clone(this.zoom_behavior.scale());
-	    }
-	    if (this.saved_translate === null){
-		this.saved_translate = utils.clone(this.zoom_behavior.translate());
-	    }
+            // turn on the hand
+            this.zoomed_sel
+                .classed('cursor-grab', true).classed('cursor-grabbing', false);
+            this.zoomed_sel
+                .on('mousedown.cursor', function(sel) {
+                    sel.classed('cursor-grab', false).classed('cursor-grabbing', true);
+                }.bind(null, this.zoomed_sel))
+                .on('mouseup.cursor', function(sel) {
+                    sel.classed('cursor-grab', true).classed('cursor-grabbing', false);
+                }.bind(null, this.zoomed_sel));
+        } else {
+            if (this.saved_scale === null){
+                this.saved_scale = utils.clone(this.zoom_behavior.scale());
+            }
+            if (this.saved_translate === null){
+                this.saved_translate = utils.clone(this.zoom_behavior.translate());
+            }
 
-	    // turn off the hand
-	    this.zoomed_sel.style('cursor', null)
-		.classed('cursor-grab', false)
-		.classed('cursor-grabbing', false);
-	    this.zoomed_sel.on('mousedown.cursor', null);
-	    this.zoomed_sel.on('mouseup.cursor', null);
-	}
+            // turn off the hand
+            this.zoomed_sel.style('cursor', null)
+                .classed('cursor-grab', false)
+                .classed('cursor-grabbing', false);
+            this.zoomed_sel.on('mousedown.cursor', null);
+            this.zoomed_sel.on('mouseup.cursor', null);
+        }
     }
 
     // functions to scale and translate
     function go_to(scale, translate, show_transition) {
-	utils.check_undefined(arguments, ['scale', 'translate']);
-	if (show_transition===undefined) show_transition = true;
+        utils.check_undefined(arguments, ['scale', 'translate']);
+        if (show_transition===undefined) show_transition = true;
 
-	if (!scale) throw new Error('Bad scale value');
-	if (!translate || !('x' in translate) || !('y' in translate) ||
-	    isNaN(translate.x) || isNaN(translate.y))
-	    return console.error('Bad translate value');
+        if (!scale) throw new Error('Bad scale value');
+        if (!translate || !('x' in translate) || !('y' in translate) ||
+            isNaN(translate.x) || isNaN(translate.y))
+            return console.error('Bad translate value');
 
-	this.zoom_behavior.scale(scale);
-	this.window_scale = scale;
-	if (this.saved_scale !== null) this.saved_scale = scale;
+        this.zoom_behavior.scale(scale);
+        this.window_scale = scale;
+        if (this.saved_scale !== null) this.saved_scale = scale;
 
-	var translate_array = [translate.x, translate.y];
-	this.zoom_behavior.translate(translate_array);
+        var translate_array = [translate.x, translate.y];
+        this.zoom_behavior.translate(translate_array);
         this.window_translate = translate;
-	if (this.saved_translate !== null) this.saved_translate = translate_array;
+        if (this.saved_translate !== null) this.saved_translate = translate_array;
 
-	var move_this = (show_transition ?
-			 this.zoomed_sel.transition() :
-			 this.zoomed_sel);
+        var move_this = (show_transition ?
+                         this.zoomed_sel.transition() :
+                         this.zoomed_sel);
         move_this.attr('transform',
-		  'translate('+this.window_translate.x+','+this.window_translate.y+')'+
-		  'scale('+this.window_scale+')');
+                       'translate('+this.window_translate.x+','+this.window_translate.y+')'+
+                       'scale('+this.window_scale+')');
 
-	this.callback_manager.run('go_to');
-	return null;
+        this.callback_manager.run('go_to');
+        return null;
     }
 
     function zoom_by(amount) {
-	var size = this.get_size(),
-	    shift = { x: size.width/2 - ((size.width/2 - this.window_translate.x) * amount +
-					 this.window_translate.x),
-	 	      y: size.height/2 - ((size.height/2 - this.window_translate.y) * amount +
-					  this.window_translate.y) };
-	this.go_to(this.window_scale*amount,
-		   utils.c_plus_c(this.window_translate, shift),
-		   true);
+        var size = this.get_size(),
+            shift = { x: size.width/2 - ((size.width/2 - this.window_translate.x) * amount +
+                                         this.window_translate.x),
+                      y: size.height/2 - ((size.height/2 - this.window_translate.y) * amount +
+                                          this.window_translate.y) };
+        this.go_to(this.window_scale*amount,
+                   utils.c_plus_c(this.window_translate, shift),
+                   true);
     }
     function zoom_in() {
-	this.zoom_by(1.5);
+        this.zoom_by(1.5);
     }
     function zoom_out() {
-	this.zoom_by(0.667);
+        this.zoom_by(0.667);
     }
 
     function get_size() {
-	return { width: parseInt(this.size_container.style('width'), 10),
-		 height: parseInt(this.size_container.style('height'), 10) };
+        return { width: parseInt(this.size_container.style('width'), 10),
+                 height: parseInt(this.size_container.style('height'), 10) };
     }
 
     function translate_off_screen(coords) {
         // shift window if new reaction will draw off the screen
         // TODO BUG not accounting for scale correctly
         var margin = 120, // pixels
-	    size = this.get_size(),
-	    current = {'x': {'min': - this.window_translate.x / this.window_scale +
-			     margin / this.window_scale,
-			     'max': - this.window_translate.x / this.window_scale +
-			     (size.width-margin) / this.window_scale },
-		       'y': {'min': - this.window_translate.y / this.window_scale +
-			     margin / this.window_scale,
-			     'max': - this.window_translate.y / this.window_scale +
-			     (size.height-margin) / this.window_scale } };
+            size = this.get_size(),
+            current = {'x': {'min': - this.window_translate.x / this.window_scale +
+                             margin / this.window_scale,
+                             'max': - this.window_translate.x / this.window_scale +
+                             (size.width-margin) / this.window_scale },
+                       'y': {'min': - this.window_translate.y / this.window_scale +
+                             margin / this.window_scale,
+                             'max': - this.window_translate.y / this.window_scale +
+                             (size.height-margin) / this.window_scale } };
         if (coords.x < current.x.min) {
             this.window_translate.x = this.window_translate.x -
-		(coords.x - current.x.min) * this.window_scale;
+                (coords.x - current.x.min) * this.window_scale;
             this.go_to(this.window_scale, this.window_translate);
         } else if (coords.x > current.x.max) {
             this.window_translate.x = this.window_translate.x -
-		(coords.x - current.x.max) * this.window_scale;
+                (coords.x - current.x.max) * this.window_scale;
             this.go_to(this.window_scale, this.window_translate);
         }
         if (coords.y < current.y.min) {
             this.window_translate.y = this.window_translate.y -
-		(coords.y - current.y.min) * this.window_scale;
+                (coords.y - current.y.min) * this.window_scale;
             this.go_to(this.window_scale, this.window_translate);
         } else if (coords.y > current.y.max) {
             this.window_translate.y = this.window_translate.y -
-		(coords.y - current.y.max) * this.window_scale;
+                (coords.y - current.y.max) * this.window_scale;
             this.go_to(this.window_scale, this.window_translate);
         }
     }
     function reset() {
-	this.go_to(1.0, {x: 0.0, y: 0.0});
+        this.go_to(1.0, {x: 0.0, y: 0.0});
     }
 });
 
@@ -3907,7 +3907,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             identifiers_on_map = this.settings.get_option('identifiers_on_map'),
             reaction_data_styles = this.settings.get_option('reaction_styles'),
             show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules'),
-	    hide_all_labels = this.settings.get_option('hide_all_labels'),
+            hide_all_labels = this.settings.get_option('hide_all_labels'),
             gene_font_size = this.settings.get_option('gene_font_size'),
             label_mousedown_fn = this.behavior.label_mousedown,
             label_mouseover_fn = this.behavior.label_mouseover,
@@ -3919,31 +3919,31 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             .call(this.behavior.turn_off_drag)
             .call(this.behavior.reaction_label_drag);
         var s = update_selection.select('.reaction-label')
-		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
-	if (!hide_all_labels) {
-		s.text(function(d) { 
-                    var t = d[identifiers_on_map];
-                    if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
-			t += ' ' + d.data_string;
-                    return t;
-		})
-		.on('mousedown', label_mousedown_fn)
-		.on('mouseover', label_mouseover_fn)
-		.on('mouseout', label_mouseout_fn);
-	}
+                .attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+        if (!hide_all_labels) {
+            s.text(function(d) { 
+                var t = d[identifiers_on_map];
+                if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
+                    t += ' ' + d.data_string;
+                return t;
+            })
+                .on('mousedown', label_mousedown_fn)
+                .on('mouseover', label_mouseover_fn)
+                .on('mouseout', label_mouseout_fn);
+        }
         // gene label
         var gene_g = update_selection.select('.gene-label-group')
                 .selectAll('text')
                 .data(function(d) {
                     var show_gene_string = ('gene_string' in d &&
                                             d.gene_string !== null &&
-					    show_gene_reaction_rules &&
-					    (!hide_all_labels) &&
-					    reaction_data_styles.indexOf('text') !== -1),
+                                            show_gene_reaction_rules &&
+                                            (!hide_all_labels) &&
+                                            reaction_data_styles.indexOf('text') !== -1),
                         show_gene_reaction_rule = ('gene_reaction_rule' in d &&
                                                    d.gene_reaction_rule !== null &&
                                                    show_gene_reaction_rules &&
-						   (!hide_all_labels) ); 
+                                                   (!hide_all_labels) ); 
                     if (show_gene_string) {
                         return d.gene_string.split('\n');
                     } else if (show_gene_reaction_rule) {
@@ -3999,27 +3999,27 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
         
         // update segment attributes
         var highlight_missing  = this.settings.get_option('highlight_missing'),
-	    hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
-	    primary_r = this.settings.get_option('primary_metabolite_radius'),
-	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
-	    get_arrow_size = function(data, should_size) {
-		var width = 20,
-		    height = 13;
-		if (should_size) {
+            hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
+            primary_r = this.settings.get_option('primary_metabolite_radius'),
+            secondary_r = this.settings.get_option('secondary_metabolite_radius'),
+            get_arrow_size = function(data, should_size) {
+                var width = 20,
+                    height = 13;
+                if (should_size) {
                     height = (data === null ? no_data_size : scale.reaction_size(data));
                     // check for nan
                     if (isNaN(height))
                         height = no_data_size;
                     width = height * 2;
-		}           
-		return { width: width, height: height };
-	    }, 
+                }           
+                return { width: width, height: height };
+            }, 
             get_disp = function(arrow_size, reversibility, coefficient, node_is_primary) {
-		var arrow_height = ((reversibility || coefficient > 0) ?
-				    arrow_size.height :
-				    0),
-		    r = node_is_primary ? primary_r : secondary_r;
-		return r + arrow_height + 10;
+                var arrow_height = ((reversibility || coefficient > 0) ?
+                                    arrow_size.height :
+                                    0),
+                    r = node_is_primary ? primary_r : secondary_r;
+                return r + arrow_height + 10;
             };
         // update arrows
         update_selection
@@ -4027,15 +4027,15 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             .datum(function() {
                 return this.parentNode.__data__;
             })
-	    .style('visibility', function(d) {
-		var start = drawn_nodes[d.from_node_id],
+            .style('visibility', function(d) {
+                var start = drawn_nodes[d.from_node_id],
                     end = drawn_nodes[d.to_node_id];
-		if (hide_secondary_metabolites &&
-		    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
-		     (start['node_type']=='metabolite' && !start.node_is_primary)))
-			return 'hidden';
-		return null;
-	    })
+                if (hide_secondary_metabolites &&
+                    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+                     (start['node_type']=='metabolite' && !start.node_is_primary)))
+                    return 'hidden';
+                return null;
+            })
             .attr('d', function(d) {
                 if (d.from_node_id === null || d.to_node_id === null)
                     return null;
@@ -4056,7 +4056,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                     var arrow_size = get_arrow_size(d.data, should_size),
                         disp = get_disp(arrow_size, d.reversibility,
                                         d.to_node_coefficient,
-					end.node_is_primary);
+                                        end.node_is_primary);
                     var direction = (b2 === null) ? start : b2;
                     end = displaced_coords(disp, direction, end, 'end');
                 }
@@ -4098,19 +4098,19 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                     var arrowheads = [],   
                         start = drawn_nodes[d.from_node_id],
                         b1 = d.b1,
-			end = drawn_nodes[d.to_node_id],
+                        end = drawn_nodes[d.to_node_id],
                         b2 = d.b2;
-		    // hide_secondary_metabolites option
-		    if (hide_secondary_metabolites &&
-			((end['node_type']=='metabolite' && !end.node_is_primary) ||
-			 (start['node_type']=='metabolite' && !start.node_is_primary)))
-			return arrowheads;
+                    // hide_secondary_metabolites option
+                    if (hide_secondary_metabolites &&
+                        ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+                         (start['node_type']=='metabolite' && !start.node_is_primary)))
+                        return arrowheads;
 
                     if (start.node_type == 'metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
                         var arrow_size = get_arrow_size(d.data, should_size),
                             disp = get_disp(arrow_size, d.reversibility,
                                             d.from_node_coefficient,
-					    start.node_is_primary),
+                                            start.node_is_primary),
                             direction = (b1 === null) ? end : b1,
                             rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90,
                             loc = displaced_coords(disp, start, direction, 'start');
@@ -4127,7 +4127,7 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                         var arrow_size = get_arrow_size(d.data, should_size),
                             disp = get_disp(arrow_size, d.reversibility,
                                             d.to_node_coefficient,
-					    end.node_is_primary),
+                                            end.node_is_primary),
                             direction = (b2 === null) ? start : b2,
                             rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90,
                             loc = displaced_coords(disp, direction, end, 'end');
@@ -4183,14 +4183,14 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                     var labels = [],
                         start = drawn_nodes[d.from_node_id],
                         b1 = d.b1,
-		        end = drawn_nodes[d.to_node_id],
+                        end = drawn_nodes[d.to_node_id],
                         b2 = d.b2,
-			disp_factor = 1.5;
-		    // hide_secondary_metabolites option
-		    if (hide_secondary_metabolites &&
-			((end['node_type']=='metabolite' && !end.node_is_primary) ||
-			 (start['node_type']=='metabolite' && !start.node_is_primary)))
-			return labels;
+                        disp_factor = 1.5;
+                    // hide_secondary_metabolites option
+                    if (hide_secondary_metabolites &&
+                        ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+                         (start['node_type']=='metabolite' && !start.node_is_primary)))
+                        return labels;
 
                     if (start.node_type=='metabolite' && (Math.abs(d.from_node_coefficient) != 1)) {
                         var arrow_size = get_arrow_size(d.data, should_size),
@@ -4263,8 +4263,8 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
 
     function update_bezier(update_selection, show_beziers, drag_behavior,
                            mouseover, mouseout, drawn_nodes, drawn_reactions) {
-	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites');
-	    
+        var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites');
+        
         if (!show_beziers) {
             update_selection.attr('visibility', 'hidden');
             return;
@@ -4272,18 +4272,18 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             update_selection.attr('visibility', 'visible');
         }
         
-	// hide secondary
+        // hide secondary
         update_selection
-	    .style('visibility', function(d) {
+            .style('visibility', function(d) {
                 var seg_data = drawn_reactions[d.reaction_id].segments[d.segment_id],
                     start = drawn_nodes[seg_data.from_node_id],
                     end = drawn_nodes[seg_data.to_node_id];
-		if (hide_secondary_metabolites &&
-		    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
-		     (start['node_type']=='metabolite' && !start.node_is_primary)))
-			return 'hidden';
-		return null;
-	    });
+                if (hide_secondary_metabolites &&
+                    ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+                     (start['node_type']=='metabolite' && !start.node_is_primary)))
+                    return 'hidden';
+                return null;
+            });
 
         // draw bezier points
         update_selection.select('.bezier-circle')
@@ -4341,20 +4341,20 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                          drag_behavior, label_drag_behavior) {
 
         // update circle and label location
-	var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
-	    primary_r = this.settings.get_option('primary_metabolite_radius'),
-	    secondary_r = this.settings.get_option('secondary_metabolite_radius'),
-	    marker_r = this.settings.get_option('marker_radius'),
-	    hide_all_labels = this.settings.get_option('hide_all_labels');
+        var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
+            primary_r = this.settings.get_option('primary_metabolite_radius'),
+            secondary_r = this.settings.get_option('secondary_metabolite_radius'),
+            marker_r = this.settings.get_option('marker_radius'),
+            hide_all_labels = this.settings.get_option('hide_all_labels');
 
         var mg = update_selection
                 .select('.node-circle')
                 .attr('transform', function(d) {
                     return 'translate('+d.x+','+d.y+')';
                 })
-		.style('visibility', function(d) {
-		    return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
-		})
+                .style('visibility', function(d) {
+                    return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
+                })
                 .attr('r', function(d) {
                     if (d.node_type == 'metabolite') {
                         var should_scale = (has_data_on_nodes &&
@@ -4391,25 +4391,25 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
                 .on('mouseout', mouseout_fn);
 
         var s = update_selection
-		.select('.node-label')
-		.attr('visibility', hide_all_labels ? 'hidden' : 'visible');
-	if (!hide_all_labels) {
-		s.style('visibility', function(d) {
-		    return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
-		})
-		.attr('transform', function(d) {
+                .select('.node-label')
+                .attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+        if (!hide_all_labels) {
+            s.style('visibility', function(d) {
+                return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
+            })
+                .attr('transform', function(d) {
                     return 'translate('+d.label_x+','+d.label_y+')';
-		})
-		.text(function(d) { 
+                })
+                .text(function(d) { 
                     var t = d[identifiers_on_map];
                     if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
-			t += ' ' + d.data_string;
+                        t += ' ' + d.data_string;
                     return t;
-		})
-		.call(this.behavior.turn_off_drag)
-		.call(label_drag_behavior);
-	}
-            
+                })
+                .call(this.behavior.turn_off_drag)
+                .call(label_drag_behavior);
+        }
+        
         this.callback_manager.run('update_node', this, update_selection);
     }
 
@@ -4430,13 +4430,13 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
             turn_off_drag = this.behavior.turn_off_drag;
         
         update_selection
-	    .select('.label')
+            .select('.label')
             .text(function(d) { return d.text; })
-	    .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
-	    .on('mousedown', mousedown_fn)
-	    .on('click', click_fn)
-	    .call(turn_off_drag)
-	    .call(drag_behavior);
+            .attr('transform', function(d) { return 'translate('+d.x+','+d.y+')';})
+            .on('mousedown', mousedown_fn)
+            .on('click', click_fn)
+            .call(turn_off_drag)
+            .call(drag_behavior);
         
         this.callback_manager.run('update_text_label', this, update_selection);
     }
@@ -4461,386 +4461,386 @@ define('Draw',['utils', 'data_styles', 'CallbackManager'], function(utils, data_
 
 define('build',["utils"], function(utils) {
     return { new_reaction: new_reaction,
-	     rotate_nodes: rotate_nodes,
-	     move_node_and_dependents: move_node_and_dependents,
-	     new_text_label: new_text_label,
-	     bezier_id_for_segment_id: bezier_id_for_segment_id,
-	     bezier_ids_for_reaction_ids: bezier_ids_for_reaction_ids,
-	     new_beziers_for_segments: new_beziers_for_segments,
-	     new_beziers_for_reactions: new_beziers_for_reactions };
+             rotate_nodes: rotate_nodes,
+             move_node_and_dependents: move_node_and_dependents,
+             new_text_label: new_text_label,
+             bezier_id_for_segment_id: bezier_id_for_segment_id,
+             bezier_ids_for_reaction_ids: bezier_ids_for_reaction_ids,
+             new_beziers_for_segments: new_beziers_for_segments,
+             new_beziers_for_reactions: new_beziers_for_reactions };
     
     // definitions
     function new_reaction(bigg_id, cobra_reaction, cobra_metabolites,
-			  selected_node_id, selected_node,
-			  largest_ids, cofactors, angle) {
+                          selected_node_id, selected_node,
+                          largest_ids, cofactors, angle) {
         /** New reaction.
 
-	 angle: clockwise from 'right', in degrees
+         angle: clockwise from 'right', in degrees
 
-	 */
-	
-	// rotate the new reaction around the selected metabolite
-	// convert to radians
-	angle = Math.PI / 180 * angle;
+         */
+        
+        // rotate the new reaction around the selected metabolite
+        // convert to radians
+        angle = Math.PI / 180 * angle;
 
-	// generate a new integer id
-	var new_reaction_id = String(++largest_ids.reactions);
+        // generate a new integer id
+        var new_reaction_id = String(++largest_ids.reactions);
 
         // calculate coordinates of reaction
-	var selected_node_coords = { x: selected_node.x,
-				     y: selected_node.y };
-		
-	// rotate main axis around angle with distance
-	var reaction_length = 300,
+        var selected_node_coords = { x: selected_node.x,
+                                     y: selected_node.y };
+        
+        // rotate main axis around angle with distance
+        var reaction_length = 300,
             main_axis = [ selected_node_coords,
-			  utils.c_plus_c(selected_node_coords,
-					 {'x': reaction_length, 'y': 0}) ],
-	    center = { 'x': (main_axis[0].x + main_axis[1].x)/2,  
+                          utils.c_plus_c(selected_node_coords,
+                                         {'x': reaction_length, 'y': 0}) ],
+            center = { 'x': (main_axis[0].x + main_axis[1].x)/2,  
                        'y': (main_axis[0].y + main_axis[1].y)/2 };
-	    
-	// relative label location
-	var label_d;
-	if (Math.abs(angle) < Math.PI/4 ||
-	    Math.abs(angle - Math.PI) < Math.PI/4 ) {
-	    label_d = { x: -50, y: -40 };
-	} else {
-	    label_d = { x: 30, y: 10 };
-	}
+        
+        // relative label location
+        var label_d;
+        if (Math.abs(angle) < Math.PI/4 ||
+            Math.abs(angle - Math.PI) < Math.PI/4 ) {
+                label_d = { x: -50, y: -40 };
+            } else {
+                label_d = { x: 30, y: 10 };
+            }
 
-	// relative anchor node distance
-	var anchor_distance = 20;
+        // relative anchor node distance
+        var anchor_distance = 20;
 
-	// new reaction structure
-	var new_reaction = utils.clone(cobra_reaction);
+        // new reaction structure
+        var new_reaction = utils.clone(cobra_reaction);
         utils.extend(new_reaction,
                      { label_x: center.x + label_d.x,
-		       label_y: center.y + label_d.y,
-		       segments: {} });
+                       label_y: center.y + label_d.y,
+                       segments: {} });
 
         // set primary metabolites and count reactants/products
 
-	// look for the selected metabolite, and record the indices
-	var reactant_ranks = [], product_ranks = [], 
+        // look for the selected metabolite, and record the indices
+        var reactant_ranks = [], product_ranks = [], 
             reactant_count = 0, product_count = 0,
-	    reaction_is_reversed = false;
-        for (var met_bigg_id in new_reaction.metabolites) {	
-	    // make the metabolites into objects
+            reaction_is_reversed = false;
+        for (var met_bigg_id in new_reaction.metabolites) { 
+            // make the metabolites into objects
             var metabolite = cobra_metabolites[met_bigg_id],
-		coefficient = new_reaction.metabolites[met_bigg_id],
-		formula = metabolite.formula,
-		new_metabolite = { coefficient: coefficient,
-				   bigg_id: met_bigg_id,
-				   name: metabolite.name };
-	    if (coefficient < 0) {
+                coefficient = new_reaction.metabolites[met_bigg_id],
+                formula = metabolite.formula,
+                new_metabolite = { coefficient: coefficient,
+                                   bigg_id: met_bigg_id,
+                                   name: metabolite.name };
+            if (coefficient < 0) {
                 new_metabolite.index = reactant_count;
-		// score the metabolites. Infinity == selected, >= 1 == carbon containing
-		var carbons = /C([0-9]+)/.exec(formula);
-		if (selected_node.bigg_id==new_metabolite.bigg_id) {
-		    reactant_ranks.push([new_metabolite.index, Infinity]);
-		} else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0])==-1) {
-		    reactant_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
-		}
+                // score the metabolites. Infinity == selected, >= 1 == carbon containing
+                var carbons = /C([0-9]+)/.exec(formula);
+                if (selected_node.bigg_id==new_metabolite.bigg_id) {
+                    reactant_ranks.push([new_metabolite.index, Infinity]);
+                } else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0])==-1) {
+                    reactant_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
+                }
                 reactant_count++;
-	    } else {
+            } else {
                 new_metabolite.index = product_count;
-		var carbons = /C([0-9]+)/.exec(formula);
-		if (selected_node.bigg_id==new_metabolite.bigg_id) {
-		    product_ranks.push([new_metabolite.index, Infinity]);
-		    reaction_is_reversed = true;
-		} else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0])==-1) {
-		    product_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
-		}
+                var carbons = /C([0-9]+)/.exec(formula);
+                if (selected_node.bigg_id==new_metabolite.bigg_id) {
+                    product_ranks.push([new_metabolite.index, Infinity]);
+                    reaction_is_reversed = true;
+                } else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0])==-1) {
+                    product_ranks.push([new_metabolite.index, parseInt(carbons[1])]);
+                }
                 product_count++;
-	    }
-	    new_reaction.metabolites[met_bigg_id] = new_metabolite;
-	}
+            }
+            new_reaction.metabolites[met_bigg_id] = new_metabolite;
+        }
 
-	// get the rank with the highest score
-	var max_rank = function(old, current) { return current[1] > old[1] ? current : old; },
+        // get the rank with the highest score
+        var max_rank = function(old, current) { return current[1] > old[1] ? current : old; },
             primary_reactant_index = reactant_ranks.reduce(max_rank, [0,0])[0],
             primary_product_index = product_ranks.reduce(max_rank, [0,0])[0];
 
-	// set primary metabolites, and keep track of the total counts
+        // set primary metabolites, and keep track of the total counts
         for (var met_bigg_id in new_reaction.metabolites) {
             var metabolite = new_reaction.metabolites[met_bigg_id];
             if (metabolite.coefficient < 0) {
                 if (metabolite.index==primary_reactant_index) metabolite.is_primary = true;
-		metabolite.count = reactant_count + 1;
+                metabolite.count = reactant_count + 1;
             } else {
                 if (metabolite.index==primary_product_index) metabolite.is_primary = true;
-		metabolite.count = product_count + 1;
+                metabolite.count = product_count + 1;
             }
         }
 
-	// generate anchor nodes
-	var new_anchors = {},
-	    anchors = [ { node_type: 'anchor_reactants',
-			  dis: { x: anchor_distance * (reaction_is_reversed ? 1 : -1), y: 0 } },
-			{ node_type: 'center',
-			  dis: { x: 0, y: 0 } },
-			{ node_type: 'anchor_products',
-			  dis: { x: anchor_distance * (reaction_is_reversed ? -1 : 1), y: 0 } } ],
-	    anchor_ids = {};
-	anchors.map(function(n) {
-	    var new_id = String(++largest_ids.nodes),
-		general_node_type = (n.node_type=='center' ? 'midmarker' : 'multimarker');
-	    new_anchors[new_id] = { node_type: general_node_type,
-				    x: center.x + n.dis.x,
-				    y: center.y + n.dis.y,
-				    connected_segments: [],
-				    name: null,
-				    bigg_id: null,
-				    label_x: null,
-				    label_y: null,
-				    node_is_primary: null };
-	    anchor_ids[n.node_type] = new_id;
-	});
+        // generate anchor nodes
+        var new_anchors = {},
+            anchors = [ { node_type: 'anchor_reactants',
+                          dis: { x: anchor_distance * (reaction_is_reversed ? 1 : -1), y: 0 } },
+                        { node_type: 'center',
+                          dis: { x: 0, y: 0 } },
+                        { node_type: 'anchor_products',
+                          dis: { x: anchor_distance * (reaction_is_reversed ? -1 : 1), y: 0 } } ],
+            anchor_ids = {};
+        anchors.map(function(n) {
+            var new_id = String(++largest_ids.nodes),
+                general_node_type = (n.node_type=='center' ? 'midmarker' : 'multimarker');
+            new_anchors[new_id] = { node_type: general_node_type,
+                                    x: center.x + n.dis.x,
+                                    y: center.y + n.dis.y,
+                                    connected_segments: [],
+                                    name: null,
+                                    bigg_id: null,
+                                    label_x: null,
+                                    label_y: null,
+                                    node_is_primary: null };
+            anchor_ids[n.node_type] = new_id;
+        });
 
-	// add the segments, outside to inside
-	var new_anchor_groups = [ [ anchor_ids['anchor_reactants'], anchor_ids['center'] ],
-				  [ anchor_ids['anchor_products'],  anchor_ids['center'] ] ];
-	new_anchor_groups.map(function(l) {
-	    var from_id = l[0], to_id = l[1],
-		new_segment_id = String(++largest_ids.segments);
-	    new_reaction.segments[new_segment_id] =  { b1: null,
-						       b2: null,
-						       from_node_id: from_id,
-						       to_node_id: to_id,
-						       from_node_coefficient: null,
-						       to_node_coefficient: null,
-						       reversibility: new_reaction.reversibility,
+        // add the segments, outside to inside
+        var new_anchor_groups = [ [ anchor_ids['anchor_reactants'], anchor_ids['center'] ],
+                                  [ anchor_ids['anchor_products'],  anchor_ids['center'] ] ];
+        new_anchor_groups.map(function(l) {
+            var from_id = l[0], to_id = l[1],
+                new_segment_id = String(++largest_ids.segments);
+            new_reaction.segments[new_segment_id] =  { b1: null,
+                                                       b2: null,
+                                                       from_node_id: from_id,
+                                                       to_node_id: to_id,
+                                                       from_node_coefficient: null,
+                                                       to_node_coefficient: null,
+                                                       reversibility: new_reaction.reversibility,
                                                        data: new_reaction.data,
                                                        reverse_flux: new_reaction.reverse_flux };
-	    new_anchors[from_id].connected_segments.push({ segment_id: new_segment_id,
-							   reaction_id: new_reaction_id });
-	    new_anchors[to_id].connected_segments.push({ segment_id: new_segment_id,
-							 reaction_id: new_reaction_id });
-	});
+            new_anchors[from_id].connected_segments.push({ segment_id: new_segment_id,
+                                                           reaction_id: new_reaction_id });
+            new_anchors[to_id].connected_segments.push({ segment_id: new_segment_id,
+                                                         reaction_id: new_reaction_id });
+        });
 
         // Add the metabolites, keeping track of total reactants and products.
-	var new_nodes = new_anchors;
+        var new_nodes = new_anchors;
         for (var met_bigg_id in new_reaction.metabolites) {
             var metabolite = new_reaction.metabolites[met_bigg_id],
-		primary_index, from_node_id;
+                primary_index, from_node_id;
             if (metabolite.coefficient < 0) {
                 // metabolite.count = reactant_count + 1;
                 primary_index = primary_reactant_index;
-		from_node_id = anchor_ids['anchor_reactants'];
+                from_node_id = anchor_ids['anchor_reactants'];
             } else {
                 // metabolite.count = product_count + 1;
                 primary_index = primary_product_index;
-		from_node_id = anchor_ids['anchor_products'];
+                from_node_id = anchor_ids['anchor_products'];
             }
-	    
+            
             // calculate coordinates of metabolite components
             var met_loc = calculate_new_metabolite_coordinates(metabolite,
-							       primary_index,
-							       main_axis,
-							       center,
-							       reaction_length,
-							       reaction_is_reversed);
+                                                               primary_index,
+                                                               main_axis,
+                                                               center,
+                                                               reaction_length,
+                                                               reaction_is_reversed);
 
-	    // if this is the existing metabolite
-	    if (selected_node.bigg_id==metabolite.bigg_id) {
-		var new_segment_id = String(++largest_ids.segments);
-		new_reaction.segments[new_segment_id] = { b1: met_loc.b1,
-							  b2: met_loc.b2,
-							  from_node_id: from_node_id,
-							  to_node_id: selected_node_id,
-							  from_node_coefficient: null,
-							  to_node_coefficient: metabolite.coefficient,
-							  reversibility: new_reaction.reversibility,
+            // if this is the existing metabolite
+            if (selected_node.bigg_id==metabolite.bigg_id) {
+                var new_segment_id = String(++largest_ids.segments);
+                new_reaction.segments[new_segment_id] = { b1: met_loc.b1,
+                                                          b2: met_loc.b2,
+                                                          from_node_id: from_node_id,
+                                                          to_node_id: selected_node_id,
+                                                          from_node_coefficient: null,
+                                                          to_node_coefficient: metabolite.coefficient,
+                                                          reversibility: new_reaction.reversibility,
                                                           data: new_reaction.data,
                                                           reverse_flux: new_reaction.reverse_flux };
-		// update the existing node
-		selected_node.connected_segments.push({ segment_id: new_segment_id,
-							reaction_id: new_reaction_id });
-		new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
-								  reaction_id: new_reaction_id });
-	    } else {
-		// save new metabolite
-		var new_segment_id = String(++largest_ids.segments),
-		    new_node_id = String(++largest_ids.nodes);
-		new_reaction.segments[new_segment_id] = { b1: met_loc.b1,
-							  b2: met_loc.b2,
-							  from_node_id: from_node_id,
-							  to_node_id: new_node_id,
-							  from_node_coefficient: null,
-							  to_node_coefficient: metabolite.coefficient,
-							  reversibility: new_reaction.reversibility,
+                // update the existing node
+                selected_node.connected_segments.push({ segment_id: new_segment_id,
+                                                        reaction_id: new_reaction_id });
+                new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
+                                                                  reaction_id: new_reaction_id });
+            } else {
+                // save new metabolite
+                var new_segment_id = String(++largest_ids.segments),
+                    new_node_id = String(++largest_ids.nodes);
+                new_reaction.segments[new_segment_id] = { b1: met_loc.b1,
+                                                          b2: met_loc.b2,
+                                                          from_node_id: from_node_id,
+                                                          to_node_id: new_node_id,
+                                                          from_node_coefficient: null,
+                                                          to_node_coefficient: metabolite.coefficient,
+                                                          reversibility: new_reaction.reversibility,
                                                           data: new_reaction.data,
                                                           reverse_flux: new_reaction.reverse_flux };
-		// save new node
-		new_nodes[new_node_id] = { connected_segments: [{ segment_id: new_segment_id,
-								  reaction_id: new_reaction_id }],
-					   x: met_loc.circle.x,
-					   y: met_loc.circle.y,
-					   node_is_primary: Boolean(metabolite.is_primary),
-					   label_x: met_loc.circle.x + label_d.x,
-					   label_y: met_loc.circle.y + label_d.y,
-					   name: metabolite.name,
-					   bigg_id: metabolite.bigg_id,
-					   node_type: 'metabolite' };
-		new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
-								  reaction_id: new_reaction_id });
-	    }
-	}
+                // save new node
+                new_nodes[new_node_id] = { connected_segments: [{ segment_id: new_segment_id,
+                                                                  reaction_id: new_reaction_id }],
+                                           x: met_loc.circle.x,
+                                           y: met_loc.circle.y,
+                                           node_is_primary: Boolean(metabolite.is_primary),
+                                           label_x: met_loc.circle.x + label_d.x,
+                                           label_y: met_loc.circle.y + label_d.y,
+                                           name: metabolite.name,
+                                           bigg_id: metabolite.bigg_id,
+                                           node_type: 'metabolite' };
+                new_nodes[from_node_id].connected_segments.push({ segment_id: new_segment_id,
+                                                                  reaction_id: new_reaction_id });
+            }
+        }
 
-	// now take out the extra reaction details
-	var metabolites_array = []
-	for (var bigg_id in new_reaction.metabolites) {
-	    metabolites_array.push({'bigg_id': bigg_id,
-				    'coefficient': new_reaction.metabolites[bigg_id].coefficient});
-	}
-	new_reaction.metabolites = metabolites_array;    
+        // now take out the extra reaction details
+        var metabolites_array = []
+        for (var bigg_id in new_reaction.metabolites) {
+            metabolites_array.push({'bigg_id': bigg_id,
+                                    'coefficient': new_reaction.metabolites[bigg_id].coefficient});
+        }
+        new_reaction.metabolites = metabolites_array;    
 
-	// new_reactions object
-	var new_reactions = {};
-	new_reactions[new_reaction_id] = new_reaction;
-	
-	// new_beziers object
-	var new_beziers = new_beziers_for_reactions(new_reactions);
+        // new_reactions object
+        var new_reactions = {};
+        new_reactions[new_reaction_id] = new_reaction;
+        
+        // new_beziers object
+        var new_beziers = new_beziers_for_reactions(new_reactions);
 
-	// add the selected node for rotation, and return it as a new (updated) node
-	new_nodes[selected_node_id] = selected_node;
-	rotate_nodes(new_nodes, new_reactions, new_beziers,
-		     angle, selected_node_coords);
+        // add the selected node for rotation, and return it as a new (updated) node
+        new_nodes[selected_node_id] = selected_node;
+        rotate_nodes(new_nodes, new_reactions, new_beziers,
+                     angle, selected_node_coords);
 
-	return { new_reactions: new_reactions,
-		 new_beziers: new_beziers,
-		 new_nodes: new_nodes };
+        return { new_reactions: new_reactions,
+                 new_beziers: new_beziers,
+                 new_nodes: new_nodes };
     }
 
     function rotate_nodes(selected_nodes, reactions, beziers, angle, center) {
-	/** Rotate the nodes around center.
+        /** Rotate the nodes around center.
 
-	 selected_nodes: Nodes to rotate.
-	 reactions: Only updates beziers for these reactions.
-	 beziers: Also update the bezier points.
-	 angle: Angle to rotate in radians.
-	 center: Point to rotate around.
+         selected_nodes: Nodes to rotate.
+         reactions: Only updates beziers for these reactions.
+         beziers: Also update the bezier points.
+         angle: Angle to rotate in radians.
+         center: Point to rotate around.
 
-	 */
-	
-	// functions
-	var rotate_around = function(coord) {
-	    if (coord === null)
-		return null;
-	    return utils.rotate_coords(coord, angle, center);
-	};
+         */
+        
+        // functions
+        var rotate_around = function(coord) {
+            if (coord === null)
+                return null;
+            return utils.rotate_coords(coord, angle, center);
+        };
 
-	// recalculate: node
-	var updated_node_ids = [], updated_reaction_ids = [];
-	for (var node_id in selected_nodes) {
-	    var node = selected_nodes[node_id],
-		// rotation distance
-		displacement = rotate_around({ x: node.x, y: node.y }),
-		// move the node
-		updated = move_node_and_labels(node, reactions,
-						   displacement);
-	    // move the bezier points
-	    node.connected_segments.map(function(segment_obj) {
-		var reaction = reactions[segment_obj.reaction_id];
-		// If the reaction was not passed in the reactions argument, then ignore
-		if (reaction === undefined) return;
+        // recalculate: node
+        var updated_node_ids = [], updated_reaction_ids = [];
+        for (var node_id in selected_nodes) {
+            var node = selected_nodes[node_id],
+                // rotation distance
+                displacement = rotate_around({ x: node.x, y: node.y }),
+                // move the node
+                updated = move_node_and_labels(node, reactions,
+                                               displacement);
+            // move the bezier points
+            node.connected_segments.map(function(segment_obj) {
+                var reaction = reactions[segment_obj.reaction_id];
+                // If the reaction was not passed in the reactions argument, then ignore
+                if (reaction === undefined) return;
 
-		// rotate the beziers
-		var segment_id = segment_obj.segment_id,
-		    segment = reaction.segments[segment_id];
-		if (segment.to_node_id==node_id && segment.b2) {
-		    var displacement = rotate_around(segment.b2),
-			bez_id = bezier_id_for_segment_id(segment_id, 'b2');
-		    segment.b2 = utils.c_plus_c(segment.b2, displacement);
-		    beziers[bez_id].x = segment.b2.x;
-		    beziers[bez_id].y = segment.b2.y; 
-		} else if (segment.from_node_id==node_id && segment.b1) {
-		    var displacement = rotate_around(segment.b1),
-			bez_id = bezier_id_for_segment_id(segment_id, 'b1');
-		    segment.b1 = utils.c_plus_c(segment.b1, displacement);
-		    beziers[bez_id].x = segment.b1.x;
-		    beziers[bez_id].y = segment.b1.y; 
-		}
-	    });
+                // rotate the beziers
+                var segment_id = segment_obj.segment_id,
+                    segment = reaction.segments[segment_id];
+                if (segment.to_node_id==node_id && segment.b2) {
+                    var displacement = rotate_around(segment.b2),
+                        bez_id = bezier_id_for_segment_id(segment_id, 'b2');
+                    segment.b2 = utils.c_plus_c(segment.b2, displacement);
+                    beziers[bez_id].x = segment.b2.x;
+                    beziers[bez_id].y = segment.b2.y; 
+                } else if (segment.from_node_id==node_id && segment.b1) {
+                    var displacement = rotate_around(segment.b1),
+                        bez_id = bezier_id_for_segment_id(segment_id, 'b1');
+                    segment.b1 = utils.c_plus_c(segment.b1, displacement);
+                    beziers[bez_id].x = segment.b1.x;
+                    beziers[bez_id].y = segment.b1.y; 
+                }
+            });
 
-	    updated_reaction_ids = utils.unique_concat([updated_reaction_ids,
-							updated.reaction_ids]);
-	    updated_node_ids.push(node_id);
-	}
+            updated_reaction_ids = utils.unique_concat([updated_reaction_ids,
+                                                        updated.reaction_ids]);
+            updated_node_ids.push(node_id);
+        }
 
-	return { node_ids: updated_node_ids,
-		 reaction_ids: updated_reaction_ids };
+        return { node_ids: updated_node_ids,
+                 reaction_ids: updated_reaction_ids };
     }
     
     function move_node_and_dependents(node, node_id, reactions, beziers, displacement) {
-	/** Move the node and its labels and beziers.
+        /** Move the node and its labels and beziers.
 
-	 */
-	var updated = move_node_and_labels(node, reactions, displacement);
+         */
+        var updated = move_node_and_labels(node, reactions, displacement);
 
-	// move beziers
-	node.connected_segments.map(function(segment_obj) {
-	    var reaction = reactions[segment_obj.reaction_id];
-	    // If the reaction was not passed in the reactions argument, then ignore
-	    if (reaction === undefined) return;
+        // move beziers
+        node.connected_segments.map(function(segment_obj) {
+            var reaction = reactions[segment_obj.reaction_id];
+            // If the reaction was not passed in the reactions argument, then ignore
+            if (reaction === undefined) return;
 
-	    // update beziers
-	    var segment_id = segment_obj.segment_id,
-		segment = reaction.segments[segment_id];
-	    [['b1', 'from_node_id'], ['b2', 'to_node_id']].forEach(function(c) {
-		var bez = c[0],
-		    node = c[1];
-		if (segment[node]==node_id && segment[bez]) {
-		    segment[bez] = utils.c_plus_c(segment[bez], displacement);
-		    var tbez = beziers[bezier_id_for_segment_id(segment_id, bez)];
-		    tbez.x = segment[bez].x;
-		    tbez.y = segment[bez].y;
-		}
-	    });
-	    
-	    // add to list of updated reaction ids if it isn't already there
-	    if (updated.reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
-	        updated.reaction_ids.push(segment_obj.reaction_id);
-	    }
-	});
-	return updated;
+            // update beziers
+            var segment_id = segment_obj.segment_id,
+                segment = reaction.segments[segment_id];
+            [['b1', 'from_node_id'], ['b2', 'to_node_id']].forEach(function(c) {
+                var bez = c[0],
+                    node = c[1];
+                if (segment[node]==node_id && segment[bez]) {
+                    segment[bez] = utils.c_plus_c(segment[bez], displacement);
+                    var tbez = beziers[bezier_id_for_segment_id(segment_id, bez)];
+                    tbez.x = segment[bez].x;
+                    tbez.y = segment[bez].y;
+                }
+            });
+            
+            // add to list of updated reaction ids if it isn't already there
+            if (updated.reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
+                updated.reaction_ids.push(segment_obj.reaction_id);
+            }
+        });
+        return updated;
     }
 
     function move_node_and_labels(node, reactions, displacement) {
-	node.x = node.x + displacement.x;
-	node.y = node.y + displacement.y;
-	    
-	// recalculate: node label
-	node.label_x = node.label_x + displacement.x;
-	node.label_y = node.label_y + displacement.y;
+        node.x = node.x + displacement.x;
+        node.y = node.y + displacement.y;
+        
+        // recalculate: node label
+        node.label_x = node.label_x + displacement.x;
+        node.label_y = node.label_y + displacement.y;
 
-	// recalculate: reaction label
-	var updated_reaction_ids = [];
-	node.connected_segments.map(function(segment_obj) {
-	    var reaction = reactions[segment_obj.reaction_id];
-	    // add to list of updated reaction ids if it isn't already there
-	    if (updated_reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
-		updated_reaction_ids.push(segment_obj.reaction_id);
+        // recalculate: reaction label
+        var updated_reaction_ids = [];
+        node.connected_segments.map(function(segment_obj) {
+            var reaction = reactions[segment_obj.reaction_id];
+            // add to list of updated reaction ids if it isn't already there
+            if (updated_reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
+                updated_reaction_ids.push(segment_obj.reaction_id);
 
-		// update reaction label (but only once per reaction
-		if (node.node_type == 'midmarker') {
-		    reaction.label_x = reaction.label_x + displacement.x;
-		    reaction.label_y = reaction.label_y + displacement.y;
-		}
-	    }
-	});
-	return { reaction_ids: updated_reaction_ids };
+                // update reaction label (but only once per reaction
+                if (node.node_type == 'midmarker') {
+                    reaction.label_x = reaction.label_x + displacement.x;
+                    reaction.label_y = reaction.label_y + displacement.y;
+                }
+            }
+        });
+        return { reaction_ids: updated_reaction_ids };
     }
 
     function calculate_new_metabolite_coordinates(met, primary_index, main_axis, center, dis, is_reversed) {
-	/** Calculate metabolite coordinates for a new reaction metabolite.
+        /** Calculate metabolite coordinates for a new reaction metabolite.
 
-	 */
-	// new local coordinate system
-	var displacement = main_axis[0],
-	    main_axis = [utils.c_minus_c(main_axis[0], displacement),
-			 utils.c_minus_c(main_axis[1], displacement)],
-	    center = utils.c_minus_c(center, displacement);
-	
+         */
+        // new local coordinate system
+        var displacement = main_axis[0],
+            main_axis = [utils.c_minus_c(main_axis[0], displacement),
+                         utils.c_minus_c(main_axis[1], displacement)],
+            center = utils.c_minus_c(center, displacement);
+        
         // Curve parameters
         var w = 80,  // distance between reactants and between products
             b1_strength = 0.4,
@@ -4878,7 +4878,7 @@ define('build',["utils"], function(utils) {
             circle = {'x': main_axis[0].x,
                       'y': main_axis[0].y};
         } else if ((met.coefficient < 0) != is_reversed) {
-	    end = {'x': reaction_axis[0].x + secondary_dis,
+            end = {'x': reaction_axis[0].x + secondary_dis,
                    'y': reaction_axis[0].y + (w2*draw_at_index - w2*(num_slots-1)/2)},
             b1 = {'x': center.x*(1-b1_strength) + reaction_axis[0].x*b1_strength,
                   'y': center.y*(1-b1_strength) + reaction_axis[0].y*b1_strength},
@@ -4905,101 +4905,101 @@ define('build',["utils"], function(utils) {
             circle = {'x': main_axis[1].x - secondary_dis,
                       'y': main_axis[1].y + (w*draw_at_index - w*(num_slots-1)/2)};
         }
-	var loc = {};
-	loc.b1 = utils.c_plus_c(displacement, b1);
-	loc.b2 = utils.c_plus_c(displacement, b2);
-	loc.circle = utils.c_plus_c(displacement, circle);
+        var loc = {};
+        loc.b1 = utils.c_plus_c(displacement, b1);
+        loc.b2 = utils.c_plus_c(displacement, b2);
+        loc.circle = utils.c_plus_c(displacement, circle);
         return loc;
     }
 
     function new_text_label(largest_ids, text, coords) {
-	var new_id = String(++largest_ids.text_labels),
-	    new_label = { text: text,
-			  x: coords.x,
-			  y: coords.y };
-	return {id: new_id, label: new_label};
+        var new_id = String(++largest_ids.text_labels),
+            new_label = { text: text,
+                          x: coords.x,
+                          y: coords.y };
+        return {id: new_id, label: new_label};
     }
 
     function bezier_id_for_segment_id(segment_id, bez) {
-	return segment_id+'_'+bez;
+        return segment_id+'_'+bez;
     }
 
     function bezier_ids_for_reaction_ids(reactions) {
-	/** Return an array of beziers ids for the array of reaction ids.
+        /** Return an array of beziers ids for the array of reaction ids.
 
-	 Arguments
-	 ---------
+         Arguments
+         ---------
 
-	 reactions: A reactions object, e.g. a subset of *escher.Map.reactions*.
+         reactions: A reactions object, e.g. a subset of *escher.Map.reactions*.
 
-	 */ 
-	var bezier_ids = [];
-	for (var reaction_id in reactions) {
-	    var reaction = reactions[reaction_id];
+         */ 
+        var bezier_ids = [];
+        for (var reaction_id in reactions) {
+            var reaction = reactions[reaction_id];
 
-	    for (var segment_id in reaction.segments) {
-		var segment = reaction.segments[segment_id];
+            for (var segment_id in reaction.segments) {
+                var segment = reaction.segments[segment_id];
 
-		['b1', 'b2'].forEach(function(bez) {
-		    var seg_bez = segment[bez];
-		    if (seg_bez !== null) {
-			bezier_ids.push(bezier_id_for_segment_id(segment_id, bez));
-		    }
-		});
-	    }
-	}
-	return bezier_ids;
+                ['b1', 'b2'].forEach(function(bez) {
+                    var seg_bez = segment[bez];
+                    if (seg_bez !== null) {
+                        bezier_ids.push(bezier_id_for_segment_id(segment_id, bez));
+                    }
+                });
+            }
+        }
+        return bezier_ids;
     }
 
     function new_beziers_for_segments(segments, reaction_id) {
-	/** Return an object containing beziers for the segments object.
+        /** Return an object containing beziers for the segments object.
 
-	 Arguments
-	 ---------
+         Arguments
+         ---------
 
-	 segments: A segments object, e.g. *escher.Map.segments*.
+         segments: A segments object, e.g. *escher.Map.segments*.
 
-	 reaction_id: The reaction id for the segments.
+         reaction_id: The reaction id for the segments.
 
-	 */
-	var beziers = {};
-	for (var segment_id in segments) {
-	    var segment = segments[segment_id];
+         */
+        var beziers = {};
+        for (var segment_id in segments) {
+            var segment = segments[segment_id];
 
-	    ['b1', 'b2'].forEach(function(bez) {
-		var seg_bez = segment[bez];
-		if (seg_bez !== null) {
-		    var bezier_id = bezier_id_for_segment_id(segment_id, bez);
-		    beziers[bezier_id] = {
-			bezier: bez,
-	    		x: seg_bez.x,
-	    		y: seg_bez.y,
-	    		reaction_id: reaction_id,
-	    		segment_id: segment_id
-		    };
-		}
-	    });
-	}
-	return beziers;
+            ['b1', 'b2'].forEach(function(bez) {
+                var seg_bez = segment[bez];
+                if (seg_bez !== null) {
+                    var bezier_id = bezier_id_for_segment_id(segment_id, bez);
+                    beziers[bezier_id] = {
+                        bezier: bez,
+                        x: seg_bez.x,
+                        y: seg_bez.y,
+                        reaction_id: reaction_id,
+                        segment_id: segment_id
+                    };
+                }
+            });
+        }
+        return beziers;
     }
 
     function new_beziers_for_reactions(reactions) {
-	/** Return an object containing beziers for the reactions object.
+        /** Return an object containing beziers for the reactions object.
 
-	 Arguments
-	 ---------
+         Arguments
+         ---------
 
-	 reactions: A reactions object, e.g. *escher.Map.reactions*.
+         reactions: A reactions object, e.g. *escher.Map.reactions*.
 
-	 */
-	var beziers = {};
-	for (var reaction_id in reactions) {
-	    var reaction = reactions[reaction_id];
+         */
+        var beziers = {};
+        for (var reaction_id in reactions) {
+            var reaction = reactions[reaction_id];
 
-	    var these = new_beziers_for_segments(reaction.segments, reaction_id);
-	    utils.extend(beziers, these);
-	}
-	return beziers;
+            var these = new_beziers_for_segments(reaction.segments, reaction_id);
+            utils.extend(beziers, these);
+        }
+        return beziers;
     }
 });
 
@@ -5446,8 +5446,8 @@ define('Behavior',["utils", "build"], function(utils, build) {
     }
     
     function turn_off_drag(sel) {
-	sel.on('mousedown.drag', null);
-	sel.on('touchstart.drag', null);
+        sel.on('mousedown.drag', null);
+        sel.on('touchstart.drag', null);
     }    
 
     function _get_selectable_drag(map, undo_stack) {
@@ -5935,21 +5935,21 @@ define('Scale',["utils"], function(utils) {
 
     var Scale = utils.make_class();
     Scale.prototype = { init: init,
-			connect_to_settings: connect_to_settings };
+                        connect_to_settings: connect_to_settings };
 
     return Scale;
 
     // definitions
     function init() {
-	this.x = d3.scale.linear();
-	this.y = d3.scale.linear();
-	this.x_size = d3.scale.linear();
-	this.y_size = d3.scale.linear();
-	this.size = d3.scale.linear();
-	this.reaction_color = d3.scale.linear().clamp(true);
+        this.x = d3.scale.linear();
+        this.y = d3.scale.linear();
+        this.x_size = d3.scale.linear();
+        this.y_size = d3.scale.linear();
+        this.size = d3.scale.linear();
+        this.reaction_color = d3.scale.linear().clamp(true);
         this.reaction_size = d3.scale.linear().clamp(true);
-	this.metabolite_color = d3.scale.linear().clamp(true);
-	this.metabolite_size = d3.scale.linear().clamp(true);
+        this.metabolite_color = d3.scale.linear().clamp(true);
+        this.metabolite_size = d3.scale.linear().clamp(true);
         this.scale_path = function(path) {
             var x_fn = this.x, y_fn = this.y;
             // TODO: scale arrow width
@@ -5977,21 +5977,21 @@ define('Scale',["utils"], function(utils) {
     }
 
     function connect_to_settings(settings, map, get_data_statistics) {
-	// domains
+        // domains
         var update_reaction = function(s) {
-	    var out = sort_scale(s, get_data_statistics()['reaction']);
-	    this.reaction_color.domain(out.domain);
-	    this.reaction_size.domain(out.domain);
-	    this.reaction_color.range(out.color_range);
-	    this.reaction_size.range(out.size_range);
-	}.bind(this);
+            var out = sort_scale(s, get_data_statistics()['reaction']);
+            this.reaction_color.domain(out.domain);
+            this.reaction_size.domain(out.domain);
+            this.reaction_color.range(out.color_range);
+            this.reaction_size.range(out.size_range);
+        }.bind(this);
         var update_metabolite = function(s) {
-	    var out = sort_scale(s, get_data_statistics()['metabolite']);
-	    this.metabolite_color.domain(out.domain);
-	    this.metabolite_size.domain(out.domain);
-	    this.metabolite_color.range(out.color_range);
-	    this.metabolite_size.range(out.size_range);
-	}.bind(this);
+            var out = sort_scale(s, get_data_statistics()['metabolite']);
+            this.metabolite_color.domain(out.domain);
+            this.metabolite_size.domain(out.domain);
+            this.metabolite_color.range(out.color_range);
+            this.metabolite_size.range(out.size_range);
+        }.bind(this);
 
         // scale changes
         settings.streams['reaction_scale'].onValue(update_reaction);
@@ -6005,24 +6005,24 @@ define('Scale',["utils"], function(utils) {
         });
         
         // definitions
-	function sort_scale(scale, stats) {
-	    var sorted = scale.map(function(x) {
-		var v;
+        function sort_scale(scale, stats) {
+            var sorted = scale.map(function(x) {
+                var v;
                 if (x.type in stats)
                     v = stats[x.type];
                 else if (x.type == 'value')
                     v = x.value;
                 else
                     throw new Error('Bad domain type ' + x.type);
-		return { v: v,
-			 color: x.color,
-			 size: x.size };
+                return { v: v,
+                         color: x.color,
+                         size: x.size };
             }).sort(function(a, b) {
-		return a.v - b.v;
-	    });
-	    return { domain: sorted.map(function(x) { return x.v; }),
-		     color_range: sorted.map(function(x) { return x.color; }),
-		     size_range: sorted.map(function(x) { return x.size; }) };
+                return a.v - b.v;
+            });
+            return { domain: sorted.map(function(x) { return x.v; }),
+                     color_range: sorted.map(function(x) { return x.color; }),
+                     size_range: sorted.map(function(x) { return x.size; }) };
         }
     }
 });
@@ -6032,72 +6032,72 @@ define('UndoStack',["utils"], function(utils) {
      */
     var UndoStack = utils.make_class();
     UndoStack.prototype = { init: init,
-			    push: push,
-			    undo: undo,
-			    redo: redo };
+                            push: push,
+                            undo: undo,
+                            redo: redo };
     return UndoStack;
 
     // definitions
     function init() {
-	var stack_size = 40;
-	this.stack = Array(stack_size);
-	this.current = -1;
-	this.oldest = -1;
-	this.newest = -1;
-	this.end_of_stack = true;
-	this.top_of_stack = true;
+        var stack_size = 40;
+        this.stack = Array(stack_size);
+        this.current = -1;
+        this.oldest = -1;
+        this.newest = -1;
+        this.end_of_stack = true;
+        this.top_of_stack = true;
     }
     function push(undo_fn, redo_fn) {
-	this.current = incr(this.current, this.stack.length);
-	// var p2 = incr(p1, this.stack.length);
-	// change the oldest
-	if (this.end_of_stack)
-	    this.oldest = this.current;
-	else if (this.oldest == this.current)
-	    this.oldest = incr(this.oldest, this.stack.length);
-	this.stack[this.current] = { undo: undo_fn, redo: redo_fn };
-	this.newest = this.current;
+        this.current = incr(this.current, this.stack.length);
+        // var p2 = incr(p1, this.stack.length);
+        // change the oldest
+        if (this.end_of_stack)
+            this.oldest = this.current;
+        else if (this.oldest == this.current)
+            this.oldest = incr(this.oldest, this.stack.length);
+        this.stack[this.current] = { undo: undo_fn, redo: redo_fn };
+        this.newest = this.current;
 
-	// top of the stack
-	this.top_of_stack = true;
-	this.end_of_stack = false;
+        // top of the stack
+        this.top_of_stack = true;
+        this.end_of_stack = false;
     }
     function undo() {
-	// check that we haven't reached the end
-	if (this.end_of_stack) return console.warn('End of stack.');
-	// run the lastest stack function
-	this.stack[this.current].undo();
-	if (this.current == this.oldest) {
-	    // if the next index is less than the oldest, then the stack is dead
-	    this.end_of_stack = true;
-	} else {
-	    // reference the next fn
-	    this.current = decr(this.current, this.stack.length);
-	}
+        // check that we haven't reached the end
+        if (this.end_of_stack) return console.warn('End of stack.');
+        // run the lastest stack function
+        this.stack[this.current].undo();
+        if (this.current == this.oldest) {
+            // if the next index is less than the oldest, then the stack is dead
+            this.end_of_stack = true;
+        } else {
+            // reference the next fn
+            this.current = decr(this.current, this.stack.length);
+        }
 
-	// not at the top of the stack
-	this.top_of_stack = false;
+        // not at the top of the stack
+        this.top_of_stack = false;
     }
     function redo() {
-	// check that we haven't reached the end
-	if (this.top_of_stack) return console.warn('Top of stack.');
+        // check that we haven't reached the end
+        if (this.top_of_stack) return console.warn('Top of stack.');
 
-	if (!this.end_of_stack)
-	    this.current = incr(this.current, this.stack.length);
-	this.stack[this.current].redo();
+        if (!this.end_of_stack)
+            this.current = incr(this.current, this.stack.length);
+        this.stack[this.current].redo();
 
-	// if at top of stack
-	if (this.current == this.newest)
-	    this.top_of_stack = true;
+        // if at top of stack
+        if (this.current == this.newest)
+            this.top_of_stack = true;
 
-	// not at the end of the stack
-	this.end_of_stack = false;
+        // not at the end of the stack
+        this.end_of_stack = false;
     }
     function incr(a, l) {
-	return a + 1 > l - 1 ? 0 : a + 1;
+        return a + 1 > l - 1 ? 0 : a + 1;
     }
     function decr(a, l) {
-	return a - 1 < 0 ? l - 1 : a -  1;
+        return a - 1 < 0 ? l - 1 : a -  1;
     }
 });
 
@@ -6110,54 +6110,54 @@ define('KeyManager',['utils'], function(utils) {
     KeyManager.reset_held_keys = reset_held_keys;
     // instance methods
     KeyManager.prototype = { init: init,
-			     update: update,
-			     toggle: toggle,
-			     add_escape_listener: add_escape_listener,
-			     add_enter_listener: add_enter_listener,
-			     add_key_listener: add_key_listener };
+                             update: update,
+                             toggle: toggle,
+                             add_escape_listener: add_escape_listener,
+                             add_enter_listener: add_enter_listener,
+                             add_key_listener: add_key_listener };
 
     return KeyManager;
 
     // static methods
     function reset_held_keys(h) {
         h.command = false;
-	h.control = false;
-	h.option = false;
-	h.shift = false;
+        h.control = false;
+        h.option = false;
+        h.shift = false;
     }
     // instance methods
     function init(unique_map_id, assigned_keys, input_list, ctrl_equals_cmd) {
-	/** Assign keys for commands.
+        /** Assign keys for commands.
 
-	 */
+         */
 
         // identify this key manager
         if (unique_map_id===undefined) unique_map_id = null;
         this.unique_string = (unique_map_id === null ? '' : '.' + unique_map_id);        
 
-	if (assigned_keys===undefined) this.assigned_keys = {};
-	else this.assigned_keys = assigned_keys;
-	if (input_list===undefined) this.input_list = [];
-	else this.input_list = input_list;
+        if (assigned_keys===undefined) this.assigned_keys = {};
+        else this.assigned_keys = assigned_keys;
+        if (input_list===undefined) this.input_list = [];
+        else this.input_list = input_list;
 
-	if (ctrl_equals_cmd===undefined) ctrl_equals_cmd = true;
-	this.ctrl_equals_cmd = ctrl_equals_cmd;
+        if (ctrl_equals_cmd===undefined) ctrl_equals_cmd = true;
+        this.ctrl_equals_cmd = ctrl_equals_cmd;
 
-	this.held_keys = {};
-	reset_held_keys(this.held_keys);
+        this.held_keys = {};
+        reset_held_keys(this.held_keys);
 
-	this.enabled = true;
+        this.enabled = true;
 
-	this.update();
+        this.update();
     }
 
     function update() {
-	var held_keys = this.held_keys,
-	    keys = this.assigned_keys,
-	    self = this;
+        var held_keys = this.held_keys,
+            keys = this.assigned_keys,
+            self = this;
 
         var modifier_keys = { command: 91,
-			      command_right: 93,
+                              command_right: 93,
                               control: 17,
                               option: 18,
                               shift: 16 };
@@ -6165,43 +6165,43 @@ define('KeyManager',['utils'], function(utils) {
         d3.select(window).on('keydown.key_manager' + this.unique_string, null);
         d3.select(window).on('keyup.key_manager' + this.unique_string, null);
 
-	if (!(this.enabled)) return;
+        if (!(this.enabled)) return;
 
         d3.select(window).on('keydown.key_manager' + this.unique_string, function(ctrl_equals_cmd, input_list) {
             var kc = d3.event.keyCode,
-		meaningless = true;
-	    // check the inputs
-	    var input_visible = false;
-	    input_list.forEach(function(input) {
-		if (input.is_visible()) input_visible = true;
-	    });
+                meaningless = true;
+            // check the inputs
+            var input_visible = false;
+            input_list.forEach(function(input) {
+                if (input.is_visible()) input_visible = true;
+            });
             toggle_modifiers(modifier_keys, held_keys, kc, true);
-	    for (var key_id in keys) {
-		var assigned_key = keys[key_id];
-		if (check_key(assigned_key, kc, held_keys, ctrl_equals_cmd)) {
-		    meaningless = false;
-		    if (!(assigned_key.ignore_with_input && input_visible)) {
-			if (assigned_key.fn) {
-			    assigned_key.fn.call(assigned_key.target);
-			} else {
-			    console.warn('No function for key');
-			}
-			// prevent browser action
-			d3.event.preventDefault();
-		    }
-		}
-	    }
-	    // Sometimes modifiers get 'stuck', so reset them once in a while.
-	    // Only do this when a meaningless key is pressed
-	    for (var k in modifier_keys)
-		if (modifier_keys[k] == kc) meaningless = false;
-	    if (meaningless) 
-		reset_held_keys(held_keys);
+            for (var key_id in keys) {
+                var assigned_key = keys[key_id];
+                if (check_key(assigned_key, kc, held_keys, ctrl_equals_cmd)) {
+                    meaningless = false;
+                    if (!(assigned_key.ignore_with_input && input_visible)) {
+                        if (assigned_key.fn) {
+                            assigned_key.fn.call(assigned_key.target);
+                        } else {
+                            console.warn('No function for key');
+                        }
+                        // prevent browser action
+                        d3.event.preventDefault();
+                    }
+                }
+            }
+            // Sometimes modifiers get 'stuck', so reset them once in a while.
+            // Only do this when a meaningless key is pressed
+            for (var k in modifier_keys)
+                if (modifier_keys[k] == kc) meaningless = false;
+            if (meaningless) 
+                reset_held_keys(held_keys);
         }.bind(null, this.ctrl_equals_cmd, this.input_list))
-	    .on('keyup.key_manager' + this.unique_string, function() {
-            toggle_modifiers(modifier_keys, held_keys,
-			     d3.event.keyCode, false);
-        });
+            .on('keyup.key_manager' + this.unique_string, function() {
+                toggle_modifiers(modifier_keys, held_keys,
+                                 d3.event.keyCode, false);
+            });
         function toggle_modifiers(mod, held, kc, on_off) {
             for (var k in mod)
                 if (mod[k] == kc)
@@ -6216,12 +6216,12 @@ define('KeyManager',['utils'], function(utils) {
                         option: false,
                         shift: false };
             for (var k in held) {
-		if (ctrl_equals_cmd &&
-		    mod['control'] &&
-		    (k=='command' || k=='command_right' || k=='control') &&
-		    (held['command'] || held['command_right'] || held['control'])) {
-		    continue;
-		}
+                if (ctrl_equals_cmd &&
+                    mod['control'] &&
+                    (k=='command' || k=='command_right' || k=='control') &&
+                    (held['command'] || held['command_right'] || held['control'])) {
+                    continue;
+                }
                 if (mod[k] === undefined) mod[k] = false;
                 if (mod[k] != held[k]) return false;
             }
@@ -6229,46 +6229,46 @@ define('KeyManager',['utils'], function(utils) {
         }
     }
     function toggle(on_off) {
-	/** Turn the brush on or off
+        /** Turn the brush on or off
 
-	 */
-	if (on_off===undefined) on_off = !this.enabled;
+         */
+        if (on_off===undefined) on_off = !this.enabled;
 
-	this.enabled = on_off;
-	this.update();
-    }	
+        this.enabled = on_off;
+        this.update();
+    }   
     function add_enter_listener(callback, id) {
-	/** Call the callback when the enter key is pressed, then
-	 unregisters the listener.
+        /** Call the callback when the enter key is pressed, then
+         unregisters the listener.
 
-	 */
-	return this.add_key_listener(callback, 13, id);
+         */
+        return this.add_key_listener(callback, 13, id);
     }
     function add_escape_listener(callback, id) {
-	/** Call the callback when the escape key is pressed, then
-	 unregisters the listener.
+        /** Call the callback when the escape key is pressed, then
+         unregisters the listener.
 
-	 */
-	return this.add_key_listener(callback, 27, id);
+         */
+        return this.add_key_listener(callback, 27, id);
     }
     function add_key_listener(callback, kc, id) {
-	/** Call the callback when the key is pressed, then unregisters the
-	 listener.
+        /** Call the callback when the key is pressed, then unregisters the
+         listener.
 
-	*/
+         */
 
         var event_name = 'keydown.' + kc;
         if (id !== undefined)
             event_name += ('.' + id);
         event_name += this.unique_string;
         
-	var selection = d3.select(window);
-	selection.on(event_name, function() {
-	    if (d3.event.keyCode==kc) {
-		callback();
-	    }
-	});
-	return {
+        var selection = d3.select(window);
+        selection.on(event_name, function() {
+            if (d3.event.keyCode==kc) {
+                callback();
+            }
+        });
+        return {
             clear: function() {
                 selection.on(event_name, null);
             }
@@ -6287,240 +6287,240 @@ define('Canvas',["utils", "CallbackManager"], function(utils, CallbackManager) {
 
     var Canvas = utils.make_class();
     Canvas.prototype = { init: init,
-			 toggle_resize: toggle_resize,
-			 setup: setup,
-			 size_and_location: size_and_location };
+                         toggle_resize: toggle_resize,
+                         setup: setup,
+                         size_and_location: size_and_location };
 
     return Canvas;
 
     function init(selection, size_and_location) {
-	this.selection = selection;
-	this.x = size_and_location.x;
-	this.y = size_and_location.y;
-	this.width = size_and_location.width;
-	this.height = size_and_location.height;
+        this.selection = selection;
+        this.x = size_and_location.x;
+        this.y = size_and_location.y;
+        this.width = size_and_location.width;
+        this.height = size_and_location.height;
 
-	// enable by default
-	this.resize_enabled = true;
+        // enable by default
+        this.resize_enabled = true;
 
-	// set up the callbacks
-	this.callback_manager = new CallbackManager();
+        // set up the callbacks
+        this.callback_manager = new CallbackManager();
 
-	this.setup();
+        this.setup();
     }
 
     function toggle_resize(on_off) {
-	/** Turn the resize on or off
+        /** Turn the resize on or off
 
-	 */
-	if (on_off===undefined) on_off = !this.resize_enabled;
+         */
+        if (on_off===undefined) on_off = !this.resize_enabled;
 
-	if (on_off) {
-	    this.selection.selectAll('.drag-rect')
-		.style('pointer-events', 'auto');
-	} else {
-	    this.selection.selectAll('.drag-rect')
-		.style('pointer-events', 'none');
-	}
-    }	
+        if (on_off) {
+            this.selection.selectAll('.drag-rect')
+                .style('pointer-events', 'auto');
+        } else {
+            this.selection.selectAll('.drag-rect')
+                .style('pointer-events', 'none');
+        }
+    }   
 
-    function setup() {	
-	var self = this,
-	    extent = {"x": this.width, "y": this.height},
-	    dragbar_width = 100,
-	    mouse_node_mult = 10,
-	    new_sel = this.selection.append('g')
-		.classed('canvas-group', true)
-		.data([{x: this.x, y: this.y}]);
-	
-	var mouse_node = new_sel.append('rect')
-		.attr('id', 'mouse-node')
-		.attr("width", this.width*mouse_node_mult)
-		.attr("height", this.height*mouse_node_mult)
-		.attr("transform", "translate("+[self.x - this.width*mouse_node_mult/2,
-						 self.y - this.height*mouse_node_mult/2]+")")
-		.attr('pointer-events', 'all');
-	this.mouse_node = mouse_node;
-	
-	var rect = new_sel.append('rect')
-		.attr('id', 'canvas')
-		.attr("width", this.width)
-		.attr("height", this.height)
-		.attr("transform", "translate("+[self.x, self.y]+")");
+    function setup() {  
+        var self = this,
+            extent = {"x": this.width, "y": this.height},
+            dragbar_width = 100,
+            mouse_node_mult = 10,
+            new_sel = this.selection.append('g')
+                .classed('canvas-group', true)
+                .data([{x: this.x, y: this.y}]);
+        
+        var mouse_node = new_sel.append('rect')
+                .attr('id', 'mouse-node')
+                .attr("width", this.width*mouse_node_mult)
+                .attr("height", this.height*mouse_node_mult)
+                .attr("transform", "translate("+[self.x - this.width*mouse_node_mult/2,
+                                                 self.y - this.height*mouse_node_mult/2]+")")
+                .attr('pointer-events', 'all');
+        this.mouse_node = mouse_node;
+        
+        var rect = new_sel.append('rect')
+                .attr('id', 'canvas')
+                .attr("width", this.width)
+                .attr("height", this.height)
+                .attr("transform", "translate("+[self.x, self.y]+")");
 
-	var drag_right = d3.behavior.drag()
-		.origin(Object)
-		.on("dragstart", stop_propagation)
-		.on("drag", rdragresize),
-	    drag_left = d3.behavior.drag()
-		.origin(Object)
-		.on("dragstart", stop_propagation)
-		.on("drag", ldragresize),
-	    drag_top = d3.behavior.drag()
-		.origin(Object)
-		.on("dragstart", stop_propagation)
-		.on("drag", tdragresize),
-	    drag_bottom = d3.behavior.drag()
-		.origin(Object)
-		.on("dragstart", stop_propagation)
-		.on("drag", bdragresize);
+        var drag_right = d3.behavior.drag()
+                .origin(Object)
+                .on("dragstart", stop_propagation)
+                .on("drag", rdragresize),
+            drag_left = d3.behavior.drag()
+                .origin(Object)
+                .on("dragstart", stop_propagation)
+                .on("drag", ldragresize),
+            drag_top = d3.behavior.drag()
+                .origin(Object)
+                .on("dragstart", stop_propagation)
+                .on("drag", tdragresize),
+            drag_bottom = d3.behavior.drag()
+                .origin(Object)
+                .on("dragstart", stop_propagation)
+                .on("drag", bdragresize);
 
-	var left = new_sel.append("rect")
-		.classed('drag-rect', true)
-		.attr('transform', function(d) {
-		    return 'translate('+[ d.x - (dragbar_width/2),
-					  d.y + (dragbar_width/2) ]+')';
-		})
-		.attr("height", this.height - dragbar_width)
-		.attr("id", "dragleft")
-		.attr("width", dragbar_width)
-		.attr("cursor", "ew-resize")
-		.classed('resize-rect', true)
-		.call(drag_left);
-	
-	var right = new_sel.append("rect")
-		.classed('drag-rect', true)
-		.attr('transform', function(d) {
-		    return 'translate('+[ d.x + self.width - (dragbar_width/2),
-					  d.y + (dragbar_width/2) ]+')';
-		})
-		.attr("id", "dragright")
-		.attr("height", this.height - dragbar_width)
-		.attr("width", dragbar_width)
-		.attr("cursor", "ew-resize")
-		.classed('resize-rect', true)
-		.call(drag_right);
-	
-	var top = new_sel.append("rect")
-		.classed('drag-rect', true)
-		.attr('transform', function(d) {
-		    return 'translate('+[ d.x + (dragbar_width/2),
-					  d.y - (dragbar_width/2) ]+')';
-		})
-		.attr("height", dragbar_width)
-		.attr("id", "dragtop")
-		.attr("width", this.width - dragbar_width)
-		.attr("cursor", "ns-resize")
-		.classed('resize-rect', true)
-		.call(drag_top);
-	
-	var bottom = new_sel.append("rect")
-		.classed('drag-rect', true)
-		.attr('transform', function(d) {
-		    return 'translate('+[ d.x + (dragbar_width/2),
-					  d.y + self.height - (dragbar_width/2) ]+')';
-		})
-		.attr("id", "dragbottom")
-		.attr("height", dragbar_width)
-		.attr("width", this.width - dragbar_width)
-		.attr("cursor", "ns-resize")
-		.classed('resize-rect', true)
-		.call(drag_bottom);
-	
-	// definitions
-	function stop_propagation() {
-	    d3.event.sourceEvent.stopPropagation();
-	}
-	function transform_string(x, y, current_transform) {
-	    var tr = d3.transform(current_transform),
-		translate = tr.translate;	    
-	    if (x!==null) translate[0] = x;
-	    if (y!==null) translate[1] = y;
-	    return 'translate('+translate+')';
-	}
-	function ldragresize(d) {
-	    var oldx = d.x; 
-	    d.x = Math.min(d.x + self.width - (dragbar_width / 2), d3.event.x);
-	    self.x = d.x;
-	    self.width = self.width + (oldx - d.x);
-	    left.attr("transform", function(d) {
-		return transform_string(d.x - (dragbar_width / 2), null, left.attr('transform'));
-	    });
-	    mouse_node.attr("transform", function(d) {
-		return transform_string(d.x, null, mouse_node.attr('transform'));
-	    }).attr("width", self.width*mouse_node_mult);
-	    rect.attr("transform", function(d) {
-		return transform_string(d.x, null, rect.attr('transform'));
-	    }).attr("width", self.width);
-	    top.attr("transform", function(d) {
-		return transform_string(d.x + (dragbar_width/2), null, top.attr('transform'));
-	    }).attr("width", self.width - dragbar_width);
-	    bottom.attr("transform", function(d) {
-		return transform_string(d.x + (dragbar_width/2), null, bottom.attr('transform'));
-	    }).attr("width", self.width - dragbar_width);
+        var left = new_sel.append("rect")
+                .classed('drag-rect', true)
+                .attr('transform', function(d) {
+                    return 'translate('+[ d.x - (dragbar_width/2),
+                                          d.y + (dragbar_width/2) ]+')';
+                })
+                .attr("height", this.height - dragbar_width)
+                .attr("id", "dragleft")
+                .attr("width", dragbar_width)
+                .attr("cursor", "ew-resize")
+                .classed('resize-rect', true)
+                .call(drag_left);
+        
+        var right = new_sel.append("rect")
+                .classed('drag-rect', true)
+                .attr('transform', function(d) {
+                    return 'translate('+[ d.x + self.width - (dragbar_width/2),
+                                          d.y + (dragbar_width/2) ]+')';
+                })
+                .attr("id", "dragright")
+                .attr("height", this.height - dragbar_width)
+                .attr("width", dragbar_width)
+                .attr("cursor", "ew-resize")
+                .classed('resize-rect', true)
+                .call(drag_right);
+        
+        var top = new_sel.append("rect")
+                .classed('drag-rect', true)
+                .attr('transform', function(d) {
+                    return 'translate('+[ d.x + (dragbar_width/2),
+                                          d.y - (dragbar_width/2) ]+')';
+                })
+                .attr("height", dragbar_width)
+                .attr("id", "dragtop")
+                .attr("width", this.width - dragbar_width)
+                .attr("cursor", "ns-resize")
+                .classed('resize-rect', true)
+                .call(drag_top);
+        
+        var bottom = new_sel.append("rect")
+                .classed('drag-rect', true)
+                .attr('transform', function(d) {
+                    return 'translate('+[ d.x + (dragbar_width/2),
+                                          d.y + self.height - (dragbar_width/2) ]+')';
+                })
+                .attr("id", "dragbottom")
+                .attr("height", dragbar_width)
+                .attr("width", this.width - dragbar_width)
+                .attr("cursor", "ns-resize")
+                .classed('resize-rect', true)
+                .call(drag_bottom);
+        
+        // definitions
+        function stop_propagation() {
+            d3.event.sourceEvent.stopPropagation();
+        }
+        function transform_string(x, y, current_transform) {
+            var tr = d3.transform(current_transform),
+                translate = tr.translate;       
+            if (x!==null) translate[0] = x;
+            if (y!==null) translate[1] = y;
+            return 'translate('+translate+')';
+        }
+        function ldragresize(d) {
+            var oldx = d.x; 
+            d.x = Math.min(d.x + self.width - (dragbar_width / 2), d3.event.x);
+            self.x = d.x;
+            self.width = self.width + (oldx - d.x);
+            left.attr("transform", function(d) {
+                return transform_string(d.x - (dragbar_width / 2), null, left.attr('transform'));
+            });
+            mouse_node.attr("transform", function(d) {
+                return transform_string(d.x, null, mouse_node.attr('transform'));
+            }).attr("width", self.width*mouse_node_mult);
+            rect.attr("transform", function(d) {
+                return transform_string(d.x, null, rect.attr('transform'));
+            }).attr("width", self.width);
+            top.attr("transform", function(d) {
+                return transform_string(d.x + (dragbar_width/2), null, top.attr('transform'));
+            }).attr("width", self.width - dragbar_width);
+            bottom.attr("transform", function(d) {
+                return transform_string(d.x + (dragbar_width/2), null, bottom.attr('transform'));
+            }).attr("width", self.width - dragbar_width);
 
-	    self.callback_manager.run('resize');
-	}
+            self.callback_manager.run('resize');
+        }
 
-	function rdragresize(d) {
-	    d3.event.sourceEvent.stopPropagation();
-	    var dragx = Math.max(d.x + (dragbar_width/2), d.x + self.width + d3.event.dx);
-	    //recalculate width
-	    self.width = dragx - d.x;
-	    //move the right drag handle
-	    right.attr("transform", function(d) {
-		return transform_string(dragx - (dragbar_width/2), null, right.attr('transform'));
-	    });
-	    //resize the drag rectangle
-	    //as we are only resizing from the right, the x coordinate does not need to change
-	    mouse_node.attr("width", self.width*mouse_node_mult);
-	    rect.attr("width", self.width);
-	    top.attr("width", self.width - dragbar_width);
-	    bottom.attr("width", self.width - dragbar_width);
+        function rdragresize(d) {
+            d3.event.sourceEvent.stopPropagation();
+            var dragx = Math.max(d.x + (dragbar_width/2), d.x + self.width + d3.event.dx);
+            //recalculate width
+            self.width = dragx - d.x;
+            //move the right drag handle
+            right.attr("transform", function(d) {
+                return transform_string(dragx - (dragbar_width/2), null, right.attr('transform'));
+            });
+            //resize the drag rectangle
+            //as we are only resizing from the right, the x coordinate does not need to change
+            mouse_node.attr("width", self.width*mouse_node_mult);
+            rect.attr("width", self.width);
+            top.attr("width", self.width - dragbar_width);
+            bottom.attr("width", self.width - dragbar_width);
 
-	    self.callback_manager.run('resize');
-	}
+            self.callback_manager.run('resize');
+        }
 
-	function tdragresize(d) {
-	    d3.event.sourceEvent.stopPropagation();	    
-	    var oldy = d.y; 
-	    d.y = Math.min(d.y + self.height - (dragbar_width / 2), d3.event.y);
-	    self.y = d.y;
-	    self.height = self.height + (oldy - d.y);
-	    top.attr("transform", function(d) {
-		return transform_string(null, d.y - (dragbar_width / 2), top.attr('transform'));
-	    });
-	    mouse_node.attr("transform", function(d) {
-		return transform_string(null, d.y, mouse_node.attr('transform'));
-	    }).attr("width", self.height*mouse_node_mult);
-	    rect.attr("transform", function(d) {
-		return transform_string(null, d.y, rect.attr('transform'));
-	    }).attr("height", self.height);
-	    left.attr("transform", function(d) {
-		return transform_string(null, d.y + (dragbar_width/2), left.attr('transform'));
-	    }).attr("height", self.height - dragbar_width);
-	    right.attr("transform", function(d) {
-		return transform_string(null, d.y + (dragbar_width/2), right.attr('transform'));
-	    }).attr("height", self.height - dragbar_width);
+        function tdragresize(d) {
+            d3.event.sourceEvent.stopPropagation();     
+            var oldy = d.y; 
+            d.y = Math.min(d.y + self.height - (dragbar_width / 2), d3.event.y);
+            self.y = d.y;
+            self.height = self.height + (oldy - d.y);
+            top.attr("transform", function(d) {
+                return transform_string(null, d.y - (dragbar_width / 2), top.attr('transform'));
+            });
+            mouse_node.attr("transform", function(d) {
+                return transform_string(null, d.y, mouse_node.attr('transform'));
+            }).attr("width", self.height*mouse_node_mult);
+            rect.attr("transform", function(d) {
+                return transform_string(null, d.y, rect.attr('transform'));
+            }).attr("height", self.height);
+            left.attr("transform", function(d) {
+                return transform_string(null, d.y + (dragbar_width/2), left.attr('transform'));
+            }).attr("height", self.height - dragbar_width);
+            right.attr("transform", function(d) {
+                return transform_string(null, d.y + (dragbar_width/2), right.attr('transform'));
+            }).attr("height", self.height - dragbar_width);
 
-	    self.callback_manager.run('resize');
-	}
+            self.callback_manager.run('resize');
+        }
 
-	function bdragresize(d) {
-	    d3.event.sourceEvent.stopPropagation();
-	    var dragy = Math.max(d.y + (dragbar_width/2), d.y + self.height + d3.event.dy);
-	    //recalculate width
-	    self.height = dragy - d.y;
-	    //move the right drag handle
-	    bottom.attr("transform", function(d) {
-		return transform_string(null, dragy - (dragbar_width/2), bottom.attr('transform'));
-	    });
-	    //resize the drag rectangle
-	    //as we are only resizing from the right, the x coordinate does not need to change
-	    mouse_node.attr("height", self.height*mouse_node_mult);
-	    rect.attr("height", self.height);
-	    left.attr("height", self.height - dragbar_width);
-	    right.attr("height", self.height - dragbar_width);
+        function bdragresize(d) {
+            d3.event.sourceEvent.stopPropagation();
+            var dragy = Math.max(d.y + (dragbar_width/2), d.y + self.height + d3.event.dy);
+            //recalculate width
+            self.height = dragy - d.y;
+            //move the right drag handle
+            bottom.attr("transform", function(d) {
+                return transform_string(null, dragy - (dragbar_width/2), bottom.attr('transform'));
+            });
+            //resize the drag rectangle
+            //as we are only resizing from the right, the x coordinate does not need to change
+            mouse_node.attr("height", self.height*mouse_node_mult);
+            rect.attr("height", self.height);
+            left.attr("height", self.height - dragbar_width);
+            right.attr("height", self.height - dragbar_width);
 
-	    self.callback_manager.run('resize');
-	}
+            self.callback_manager.run('resize');
+        }
     }
 
     function size_and_location() {
-	return { x: this.x,
-		 y: this.y,
-		 width: this.width,
-		 height: this.height };
+        return { x: this.x,
+                 y: this.y,
+                 width: this.width,
+                 height: this.height };
     }
 });
 
@@ -6533,76 +6533,76 @@ define('SearchIndex',["utils"], function(utils) {
 
     var SearchIndex = utils.make_class();
     SearchIndex.prototype = { init: init,
-			      insert: insert,
-			      remove: remove,
-			      find: find };
+                              insert: insert,
+                              remove: remove,
+                              find: find };
 
     return SearchIndex;
 
     // definitions
     function init() {
-	this.index = {};
+        this.index = {};
     }
 
     function insert(id, record, overwrite, check_record) {
-	/** Insert a record into the index.
+        /** Insert a record into the index.
 
-	 id: A unique string id.
+         id: A unique string id.
 
-	 record: Records have the form:
+         record: Records have the form:
 
-	 { 'name': '',
-	   'data': {} }
+         { 'name': '',
+         'data': {} }
 
-	 Search is performed on substrings of the name.
+         Search is performed on substrings of the name.
 
-	 overwrite: (Default false) For faster performance, make overwrite true,
-	 and records will be inserted without checking for an existing record.
+         overwrite: (Default false) For faster performance, make overwrite true,
+         and records will be inserted without checking for an existing record.
 
-	 check_record: (Default false) For faster performance, make check_record
-	 false. If true, records will be checked to make sure they have name and
-	 data attributes.
+         check_record: (Default false) For faster performance, make check_record
+         false. If true, records will be checked to make sure they have name and
+         data attributes.
 
-	 Returns undefined.
+         Returns undefined.
 
-	 */
-	if (!overwrite && (id in this.index))
-	    throw new Error("id is already in the index");
-	if (check_record && !(('name' in record) && ('data' in record)))
-	    throw new Error("malformed record");
-	this.index[id] = record;
+         */
+        if (!overwrite && (id in this.index))
+            throw new Error("id is already in the index");
+        if (check_record && !(('name' in record) && ('data' in record)))
+            throw new Error("malformed record");
+        this.index[id] = record;
     }
 
     function remove(record_id) {
-	/** Remove the matching record.
+        /** Remove the matching record.
 
-	 Returns true is a record is found, or false if no match is found.
+         Returns true is a record is found, or false if no match is found.
 
-	 */
-	if (record_id in this.index) {
-	    delete this.index[record_id];
-	    return true;
-	} else {
-	    return false;
-	}
+         */
+        if (record_id in this.index) {
+            delete this.index[record_id];
+            return true;
+        } else {
+            return false;
+        }
     }
 
     function find(substring) {
-	/** Find a record that matches the substring.
+        /** Find a record that matches the substring.
 
-	 Returns an array of data from matching records.
+         Returns an array of data from matching records.
 
-	 */
+         */
 
-	var re = RegExp(substring, "i"), // ignore case
-	    matches = [];
-	for (var id in this.index) {
-	    var record = this.index[id];
-	    if (re.exec(record.name))
-		matches.push(record.data);
-	}
-	return matches;
-	    
+        var re = RegExp(substring, "i"), // ignore case
+            matches = [];
+        for (var id in this.index) {
+            var record = this.index[id];
+            if (re.exec(record.name))
+                matches.push(record.data);
+        }
+        return matches;
+        
     }
 });
 
@@ -9931,7 +9931,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
                 // build connected segments
                 [from_node, to_node].forEach(function(node) {
                     node.connected_segments.push({ segment_id: s_id,
-						   reaction_id: r_id });
+                                                   reaction_id: r_id });
                 });
 
                 // If the metabolite has no bezier points, then add them.
@@ -10219,24 +10219,24 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
         // functions to create and update nodes
         var create_fn = function(sel) {
             return this.draw.create_node(sel,
-                                    this.nodes,
-                                    this.reactions);
+                                         this.nodes,
+                                         this.reactions);
         }.bind(this),
             update_fn = function(sel) {
                 console.log(this.behavior.selectable_drag);
                 return this.draw.update_node(sel,
-                                        this.scale,
-                                        this.has_data_on_nodes,
-                                        this.settings.get_option('identifiers_on_map'),
-                                        this.settings.get_option('metabolite_styles'),
-                                        { color: this.settings.get_option('metabolite_no_data_color'),
-                                          size: this.settings.get_option('metabolite_no_data_size') },
-                                        this.behavior.selectable_mousedown,
-                                        this.behavior.selectable_click,
-                                        this.behavior.node_mouseover,
-                                        this.behavior.node_mouseout,
-                                        this.behavior.selectable_drag,
-                                        this.behavior.node_label_drag);
+                                             this.scale,
+                                             this.has_data_on_nodes,
+                                             this.settings.get_option('identifiers_on_map'),
+                                             this.settings.get_option('metabolite_styles'),
+                                             { color: this.settings.get_option('metabolite_no_data_color'),
+                                               size: this.settings.get_option('metabolite_no_data_size') },
+                                             this.behavior.selectable_mousedown,
+                                             this.behavior.selectable_click,
+                                             this.behavior.node_mouseover,
+                                             this.behavior.node_mouseout,
+                                             this.behavior.selectable_drag,
+                                             this.behavior.node_label_drag);
             }.bind(this);
 
         // draw the nodes
@@ -11073,7 +11073,7 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
          -------
 
          { undo: undo_function,
-           redo: redo_function }
+         redo: redo_function }
 
          */
 
@@ -11261,13 +11261,13 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
             console.warn('Too many connected segments for node ' + last_node.node_id);
         var last_segment_info = last_node.connected_segments[0], // guaranteed above to have only one
             last_segment;
-            try {
-                last_segment = reactions[last_segment_info.reaction_id].segments[last_segment_info.segment_id];
-                if (last_segment === undefined) throw new Error('undefined segment');
-            } catch (e) {
-                console.error('Could not find connected segment ' + last_segment_info.segment_id);
-                return;
-            }
+        try {
+            last_segment = reactions[last_segment_info.reaction_id].segments[last_segment_info.segment_id];
+            if (last_segment === undefined) throw new Error('undefined segment');
+        } catch (e) {
+            console.error('Could not find connected segment ' + last_segment_info.segment_id);
+            return;
+        }
         var last_bezier = { b1: last_segment.b1, b2: last_segment.b2 },
             primary_node_id;
         related_node_ids.forEach(function(related_node_id) {
@@ -11308,9 +11308,9 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
     function toggle_selected_node_primary() {
         /** Toggle the primary/secondary status of each selected node.
 
-            Undoable.
+         Undoable.
 
-            */
+         */
         var selected_node_ids = this.get_selected_node_ids(),
             go = function(ids) {
                 var nodes_to_draw = {},
@@ -11395,9 +11395,9 @@ define('Map',['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'Callb
 
     function new_text_label(coords, text) {
         // make an label
-	var out = build.new_text_label(this.largest_ids, text, coords);
-	this.text_labels[out.id] = out.label;
-	var sel = this.draw_these_text_labels([out.id]);
+        var out = build.new_text_label(this.largest_ids, text, coords);
+        this.text_labels[out.id] = out.label;
+        var sel = this.draw_these_text_labels([out.id]);
         // add to the search index
         this.search_index.insert('l' + out.id, { 'name': text,
                                                  'data': { type: 'text_label',
@@ -11701,90 +11701,90 @@ define('Brush',["utils"], function(utils) {
 
     var Brush = utils.make_class();
     Brush.prototype = { init: init,
-			toggle: toggle,
-			setup_selection_brush: setup_selection_brush };
+                        toggle: toggle,
+                        setup_selection_brush: setup_selection_brush };
 
     return Brush;
 
     // definitions
     function init(selection, is_enabled, map, insert_after) {
-	this.brush_sel = selection.append('g')
-	    .attr('id', 'brush-container');
-	var node = this.brush_sel.node(),
-	    insert_before_node = selection.select(insert_after).node().nextSibling;
-	if (!(node===insert_before_node))
-	    node.parentNode.insertBefore(node, insert_before_node);
-	this.enabled = is_enabled;
-	this.map = map;
+        this.brush_sel = selection.append('g')
+            .attr('id', 'brush-container');
+        var node = this.brush_sel.node(),
+            insert_before_node = selection.select(insert_after).node().nextSibling;
+        if (!(node===insert_before_node))
+            node.parentNode.insertBefore(node, insert_before_node);
+        this.enabled = is_enabled;
+        this.map = map;
     };
 
     function brush_is_enabled() {
-	/** Returns a boolean for the on/off status of the brush
+        /** Returns a boolean for the on/off status of the brush
 
-	 */
-	return this.map.sel.select('.brush').empty();
+         */
+        return this.map.sel.select('.brush').empty();
     }
     function toggle(on_off) {
-	/** Turn the brush on or off
+        /** Turn the brush on or off
 
-	 */
-	if (on_off===undefined) on_off = !this.enabled;
+         */
+        if (on_off===undefined) on_off = !this.enabled;
 
-	if (on_off) {
-	    this.selection_brush = this.setup_selection_brush();
-	} else {
-	    this.brush_sel.selectAll('.brush').remove();
-	}
-    }	
+        if (on_off) {
+            this.selection_brush = this.setup_selection_brush();
+        } else {
+            this.brush_sel.selectAll('.brush').remove();
+        }
+    }   
     function setup_selection_brush() {
-	var selection = this.brush_sel, 
-	    selectable_selection = this.map.sel.selectAll('#nodes,#text-labels'),
-	    size_and_location = this.map.canvas.size_and_location(),
-	    width = size_and_location.width,
-	    height = size_and_location.height,
-	    x = size_and_location.x,
-	    y = size_and_location.y;
+        var selection = this.brush_sel, 
+            selectable_selection = this.map.sel.selectAll('#nodes,#text-labels'),
+            size_and_location = this.map.canvas.size_and_location(),
+            width = size_and_location.width,
+            height = size_and_location.height,
+            x = size_and_location.x,
+            y = size_and_location.y;
 
         // clear existing brush
         selection.selectAll('g').remove();
 
-	var brush_fn = d3.svg.brush()
-		.x(d3.scale.identity().domain([x, x+width]))
-		.y(d3.scale.identity().domain([y, y+height]))
-		.on("brush", function(key_manager) {	    
-		    var shift_key_on = key_manager.held_keys.shift,
-			extent = d3.event.target.extent(),
-			selection;
-		    if (shift_key_on) {
-			// when shift is pressed, ignore the currently selected nodes
-			selection = selectable_selection
-			    .selectAll('.node:not(.selected),.text-label:not(.selected)');
-		    } else {
-			// otherwise, brush all nodes
-			selection = selectable_selection
-			    .selectAll('.node,.text-label');
-		    }
-		    selection.classed("selected", function(d) { 
-			var sx = d.x, sy = d.y;
-			return extent[0][0] <= sx && sx < extent[1][0]
-			    && extent[0][1] <= sy && sy < extent[1][1];
-		    });
-		}.bind(null, this.map.key_manager))
-		.on("brushend", function() {
-		    d3.event.target.clear();
-		    d3.select(this).call(d3.event.target);
-		}),
-	    brush = selection.append("g")
-		.attr("class", "brush")
-		.call(brush_fn);
+        var brush_fn = d3.svg.brush()
+                .x(d3.scale.identity().domain([x, x+width]))
+                .y(d3.scale.identity().domain([y, y+height]))
+                .on("brush", function(key_manager) {        
+                    var shift_key_on = key_manager.held_keys.shift,
+                        extent = d3.event.target.extent(),
+                        selection;
+                    if (shift_key_on) {
+                        // when shift is pressed, ignore the currently selected nodes
+                        selection = selectable_selection
+                            .selectAll('.node:not(.selected),.text-label:not(.selected)');
+                    } else {
+                        // otherwise, brush all nodes
+                        selection = selectable_selection
+                            .selectAll('.node,.text-label');
+                    }
+                    selection.classed("selected", function(d) { 
+                        var sx = d.x, sy = d.y;
+                        return extent[0][0] <= sx && sx < extent[1][0]
+                            && extent[0][1] <= sy && sy < extent[1][1];
+                    });
+                }.bind(null, this.map.key_manager))
+                .on("brushend", function() {
+                    d3.event.target.clear();
+                    d3.select(this).call(d3.event.target);
+                }),
+            brush = selection.append("g")
+                .attr("class", "brush")
+                .call(brush_fn);
 
-	// turn off the mouse crosshair
-	selection.selectAll('.background')
-	    .classed('cursor-grab', false)
-	    .classed('cursor-grabbing', false)
-	    .style('cursor', null);
+        // turn off the mouse crosshair
+        selection.selectAll('.background')
+            .classed('cursor-grab', false)
+            .classed('cursor-grabbing', false)
+            .style('cursor', null);
 
-	return brush;
+        return brush;
     }
 });
 
@@ -12012,11 +12012,11 @@ define('SearchBar',["utils", "CallbackManager"], function(utils, CallbackManager
         this.current = 1;
         this.results = null;
 
-	var on_input_fn = function(input) {
-	    this.current = 1;
-	    this.results = this.search_index.find(input.value);
-	    this.update();
-	}.bind(this, this.input.node());
+        var on_input_fn = function(input) {
+            this.current = 1;
+            this.results = this.search_index.find(input.value);
+            this.update();
+        }.bind(this, this.input.node());
         this.input.on('input', utils.debounce(on_input_fn, 200));
     }
     function is_visible() {
@@ -12309,8 +12309,8 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
             .attr('class', 'input-label-group');
         // no data
         var nd = b.append('div')
-            .style('top', this.input_height * 3 + 56 + 10 + 'px')
-            .attr('class', 'no-data');
+                .style('top', this.input_height * 3 + 56 + 10 + 'px')
+                .attr('class', 'no-data');
         nd.append('span').text('Styles for ' + type + 's with no data')
             .attr('class', 'no-data-heading');
         this.no_data_container = nd.append('div');
@@ -12401,20 +12401,20 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
 
         // ---------------------------------------------------------------------
         // make the gradient
-	var sorted_domain = scale.map(function(d) {
-	    return { frac: (get_this_val(d) - stats.min) / (stats.max - stats.min),
-		     color: d.color };
-	}).filter(function(d) {
-	    return (d.frac >= 0 && d.frac <= 1.0);
-	}).sort(function(a, b) {
-	    return a.frac - b.frac;
-	});
+        var sorted_domain = scale.map(function(d) {
+            return { frac: (get_this_val(d) - stats.min) / (stats.max - stats.min),
+                     color: d.color };
+        }).filter(function(d) {
+            return (d.frac >= 0 && d.frac <= 1.0);
+        }).sort(function(a, b) {
+            return a.frac - b.frac;
+        });
         var stops = this.gradient.selectAll('stop')
                 .data(sorted_domain);
         stops.enter()
             .append('stop');
         stops.attr('offset', function(d) {
-	    return d.frac * 100 + '%';
+            return d.frac * 100 + '%';
         }).style('stop-color', function (d) {
             return d.color === null ? '#F1ECFA' : d.color;
         });
@@ -12433,12 +12433,12 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         // drag 
         var drag = d3.behavior.drag();
         drag.on('drag', function(d, i) {
-	    // on drag, make it a value type
+            // on drag, make it a value type
             if (['value', 'min', 'max'].indexOf(scale[i].type) === -1) {
-		// get the current value and set it
-		scale[i].value = get_this_val(d);
-		scale[i].type = 'value';
-	    }
+                // get the current value and set it
+                scale[i].value = get_this_val(d);
+                scale[i].type = 'value';
+            }
             // change the model on drag
             var new_d = scale[i].value + sc_size(d3.event.dx),
                 buf = sc_size(bar_w + 2);
@@ -12460,12 +12460,12 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         // update
         pickers.select('rect')
             .attr('x', function(d, i) {
-		var val = get_this_val(d),
-		    buf = bar_w + 2;
-		if (d.type == 'value' && val <= stats.min)
-		    return sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
-		if (d.type == 'value' && val >= stats.max)
-		    return sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
+                var val = get_this_val(d),
+                    buf = bar_w + 2;
+                if (d.type == 'value' && val <= stats.min)
+                    return sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
+                if (d.type == 'value' && val >= stats.max)
+                    return sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
                 return sc.invert(val) - (bar_w / 2) + x_disp;
             })
             .attr('width', bar_w + 'px')
@@ -12510,14 +12510,14 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
             .attr('class', 'add glyphicon glyphicon-plus');
         // update
         add.on('click', function (d) {
-	    if (data_not_loaded) return;
+            if (data_not_loaded) return;
 
             var new_d = (stats.max + stats.min) / 2,
                 buf = sc_size(bar_w + 2),
                 last_ind = 0;
             // try to make the new point not overlap
             for (var j = 0, l = scale.length; j < l; j++) {
-		var th = get_this_val(scale[j]);
+                var th = get_this_val(scale[j]);
                 if (Math.abs(th - new_d) < buf) {
                     new_d = new_d + buf;
                     if (new_d > stats.max - buf) new_d = stats.max - buf;
@@ -12528,10 +12528,10 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
             }
             // add
             scale.push({ type: 'value',
-			 value: new_d,
-			 color: scale[last_ind].color,
-			 size: scale[last_ind].size });
-	    set_scale(scale);
+                         value: new_d,
+                         color: scale[last_ind].color,
+                         size: scale[last_ind].size });
+            set_scale(scale);
         }.bind(this));
         // exit
         add.exit().remove();
@@ -12542,9 +12542,9 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
                 .data(['Value:', 'Color:', 'Size:']);
         // enter
         labels.enter().append('div')
-	    .attr('class', 'row-label')
-	    .style('height', this.input_height + 'px')
-	    .style('line-height', this.input_height + 'px');
+            .attr('class', 'row-label')
+            .style('height', this.input_height + 'px')
+            .style('line-height', this.input_height + 'px');
         // update
         labels
             .style('top', function(d, i) {
@@ -12569,7 +12569,7 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         // type picker
         i.append('select')
             .attr('class', 'domain-type-picker'),
-	// color input
+        // color input
         i.append('input')
             .attr('class', 'color-input')
             .style('width', this.input_width + 'px');
@@ -12588,21 +12588,21 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         inputs.style('height', this.input_height * 3 + 'px')
             .style('width', this.input_width + 'px')
             .style('left', function(d) {
-		var val = get_this_val(d),
-		    buf = bar_w + 2,
-		    l;
-		if (d.type == 'value' && val <= stats.min)
-		    l = sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
-		else if (d.type == 'value' && val >= stats.max)
-		    l = sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
-		else
+                var val = get_this_val(d),
+                    buf = bar_w + 2,
+                    l;
+                if (d.type == 'value' && val <= stats.min)
+                    l = sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
+                else if (d.type == 'value' && val >= stats.max)
+                    l = sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
+                else
                     l = sc.invert(val) - (bar_w / 2) + x_disp;
                 // don't go over the right edge of the bar
                 if (l + this.input_width > this.w + this.x)
                     l = l - this.input_width + (bar_w / 2);
                 return l + 'px';
             }.bind(this))
-	    .on('mousedown', bring_to_front);
+            .on('mousedown', bring_to_front);
 
         var format = d3.format('.4g');
         inputs.select('.domain-input')
@@ -12611,7 +12611,7 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
                 if (d.type == 'value') {
                     this.value = get_this_val(d);
                     this.disabled = false;
-		} else {
+                } else {
                     this.value = d.type + ' (' + format(get_this_val(d)) + ')';
                     this.disabled = true;
                 } 
@@ -12628,30 +12628,30 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
                           .filter(function(x) {
                               return x != 'min' && x != 'max';
                           })),
-	    opts = select.selectAll('option').data(stat_types);
-	opts.enter().append('option');
-	opts.attr('value', function(d) { return d; })
-	    .text(function(d) { return d; });
+            opts = select.selectAll('option').data(stat_types);
+        opts.enter().append('option');
+        opts.attr('value', function(d) { return d; })
+            .text(function(d) { return d; });
         opts.exit().remove();
         select.style('visibility', function(d) {
-                return (d.type == 'min' || d.type == 'max') ? 'hidden' : null;
-            })
+            return (d.type == 'min' || d.type == 'max') ? 'hidden' : null;
+        })
             .style('left', (this.input_width - 20) + 'px')
             .style('width', '20px')
             .each(function (d, i) {
                 var sind = 0;
-		d3.select(this).selectAll('option').each(function(_, i) {
-		    if (this.value == d.type)
-			sind = i;
-		});
-		this.selectedIndex = sind;
+                d3.select(this).selectAll('option').each(function(_, i) {
+                    if (this.value == d.type)
+                        sind = i;
+                });
+                this.selectedIndex = sind;
             }).on('change', function(d, i) {
-		// set the value to the current location
-		if (this.value == 'value')
-		    scale[i].value = stats[d.type];
-		// switch to the new type
-		scale[i].type = this.value;
-		// reload
+                // set the value to the current location
+                if (this.value == 'value')
+                    scale[i].value = stats[d.type];
+                // switch to the new type
+                scale[i].type = this.value;
+                // reload
                 set_scale(scale);
             });
         // update color input
@@ -12716,8 +12716,8 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
         // update
         ins.select('span')
             .text(function(d) { return d[1]; })
-	    .style('height', this.input_height + 'px')
-	    .style('line-height', this.input_height + 'px')
+            .style('height', this.input_height + 'px')
+            .style('line-height', this.input_height + 'px')
             .style('left', function(d, i) {
                 return ((label_w + this.input_width + 10) * i) + 'px';
             }.bind(this));
@@ -12742,7 +12742,7 @@ define('ScaleEditor',["utils", "lib/bacon"], function(utils, bacon) {
                 this.no_data[d[0]] = val;
                 this.settings.set_conditional(this.type + '_no_data_' + d[0], val);
                 this.update_no_data();
-	    }.bind(this));
+            }.bind(this));
         ins.select('.color-picker')
             .style('left', function(d, i) {
                 return ((label_w + this.input_width) * (i + 1) - this.input_height) + 'px';
@@ -12776,65 +12776,65 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
     var SettingsMenu = utils.make_class();
     // instance methods
     SettingsMenu.prototype = { init: init,
-			       is_visible: is_visible,
-			       toggle: toggle,
-			       hold_changes: hold_changes,
-			       abandon_changes: abandon_changes,
-			       accept_changes: accept_changes,
-			       style_gui: style_gui,
-			       view_gui: view_gui };
+                               is_visible: is_visible,
+                               toggle: toggle,
+                               hold_changes: hold_changes,
+                               abandon_changes: abandon_changes,
+                               accept_changes: accept_changes,
+                               style_gui: style_gui,
+                               view_gui: view_gui };
 
     return SettingsMenu;
 
     // instance methods
     function init(sel, settings, map, toggle_abs_and_apply_data) {
-	this.sel = sel;
-	this.settings = settings;
-	this.draw = false;
+        this.sel = sel;
+        this.settings = settings;
+        this.draw = false;
         
         var unique_map_id = this.settings.get_option('unique_map_id');
         this.unique_string = (unique_map_id === null ? '' : '.' + unique_map_id);
 
-	var background = sel.append('div')
-		.attr('class', 'settings-box-background')
-		.style('display', 'none'),
-	    container = background.append('div')
+        var background = sel.append('div')
+                .attr('class', 'settings-box-background')
+                .style('display', 'none'),
+            container = background.append('div')
                 .attr('class', 'settings-box-container')
-		.style('display', 'none');
+                .style('display', 'none');
 
-	// done button
-	container.append('button')
-	    .attr("class", "btn btn-sm btn-default settings-button")
-	    .on('click', function() {
-		this.accept_changes();
-	    }.bind(this))
-	    .append("span").attr("class",  "glyphicon glyphicon-ok");
-	// quit button
-	container.append('button')
-	    .attr("class", "btn btn-sm btn-default settings-button settings-button-close")
-	    .on('click', function() {
-		this.abandon_changes();
-	    }.bind(this))
-	    .append("span").attr("class",  "glyphicon glyphicon-remove");
+        // done button
+        container.append('button')
+            .attr("class", "btn btn-sm btn-default settings-button")
+            .on('click', function() {
+                this.accept_changes();
+            }.bind(this))
+            .append("span").attr("class",  "glyphicon glyphicon-ok");
+        // quit button
+        container.append('button')
+            .attr("class", "btn btn-sm btn-default settings-button settings-button-close")
+            .on('click', function() {
+                this.abandon_changes();
+            }.bind(this))
+            .append("span").attr("class",  "glyphicon glyphicon-remove");
 
         var box = container.append('div')
-		.attr('class', 'settings-box');
-	
+                .attr('class', 'settings-box');
+        
         // Tip
         box.append('div')
             .text('Tip: Hover over an option to see more details about it.')
-	    .classed('settings-tip', true);
+            .classed('settings-tip', true);
         box.append('hr');
         
-	// view and build
-	box.append('div').text('View and build options')
-	    .attr('class', 'settings-section-heading-large');
-	this.view_gui(box.append('div'));
-	
+        // view and build
+        box.append('div').text('View and build options')
+            .attr('class', 'settings-section-heading-large');
+        this.view_gui(box.append('div'));
+        
         // reactions
         box.append('hr');
-	box.append('div')
-	    .text('Reactions').attr('class', 'settings-section-heading-large');
+        box.append('div')
+            .text('Reactions').attr('class', 'settings-section-heading-large');
         var rse = new ScaleEditor(box.append('div'), 'reaction', this.settings,
                                   map.get_data_statistics.bind(map));
         map.callback_manager.set('calc_data_stats__reaction', function(changed) {
@@ -12843,9 +12843,9 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
                 rse.update_no_data();
             }
         });
-	box.append('div')
-	    .text('Reaction or Gene data').attr('class', 'settings-section-heading');
-	this.style_gui(box.append('div'), 'reaction', function(on_off) {
+        box.append('div')
+            .text('Reaction or Gene data').attr('class', 'settings-section-heading');
+        this.style_gui(box.append('div'), 'reaction', function(on_off) {
             if (toggle_abs_and_apply_data) {
                 toggle_abs_and_apply_data('reaction', on_off);
                 rse.update();
@@ -12853,10 +12853,10 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
             }
         });
 
-	// metabolite data
+        // metabolite data
         box.append('hr');
-	box.append('div').text('Metabolites')
-	    .attr('class', 'settings-section-heading-large');
+        box.append('div').text('Metabolites')
+            .attr('class', 'settings-section-heading-large');
         var mse = new ScaleEditor(box.append('div'), 'metabolite', this.settings,
                                   map.get_data_statistics.bind(map));
         map.callback_manager.set('calc_data_stats__metabolite', function(changed) {
@@ -12865,9 +12865,9 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
                 mse.update_no_data();
             }
         });
-	box.append('div').text('Metabolite data')
-	    .attr('class', 'settings-section-heading');
-	this.style_gui(box.append('div'), 'metabolite', function(on_off) {
+        box.append('div').text('Metabolite data')
+            .attr('class', 'settings-section-heading');
+        this.style_gui(box.append('div'), 'metabolite', function(on_off) {
             if (toggle_abs_and_apply_data) {
                 toggle_abs_and_apply_data('metabolite', on_off);
                 mse.update();
@@ -12875,84 +12875,84 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
             }
         });
         
-	this.callback_manager = new CallbackManager();
+        this.callback_manager = new CallbackManager();
 
-	this.map = map;
-	this.selection = container;
+        this.map = map;
+        this.selection = container;
         this.background = background;
     }
     function is_visible() {
-	return this.selection.style('display') != 'none';
+        return this.selection.style('display') != 'none';
     }
     function toggle(on_off) {
-	if (on_off===undefined) on_off = !this.is_visible();
+        if (on_off===undefined) on_off = !this.is_visible();
 
-	if (on_off) {
-	    // hold changes until accepting/abandoning
-	    this.hold_changes();
-	    // show the menu
-	    this.selection.style("display", "inline-block");
-	    this.background.style("display", "block");
-	    this.selection.select('input').node().focus();
-	    // escape key
-	    this.escape = this.map.key_manager
-		.add_escape_listener(function() {
-		    this.abandon_changes();
-		}.bind(this), 'settings');
-	    // enter key
-	    this.enter = this.map.key_manager
-		.add_enter_listener(function() {
-		    this.accept_changes();
-		}.bind(this), 'settings');
-	    // run the show callback
-	    this.callback_manager.run('show');
-	} else {
-	    // draw on finish
-	    if (this.draw) this.map.draw_everything();
-	    // hide the menu
-	    this.selection.style("display", "none");
-	    this.background.style("display", "none");
-	    if (this.escape) this.escape.clear();
-	    if (this.enter) this.enter.clear();
-	    this.escape = null;
-	    this.enter = null;
-	    // run the hide callback
-	    this.callback_manager.run('hide');
-	}
+        if (on_off) {
+            // hold changes until accepting/abandoning
+            this.hold_changes();
+            // show the menu
+            this.selection.style("display", "inline-block");
+            this.background.style("display", "block");
+            this.selection.select('input').node().focus();
+            // escape key
+            this.escape = this.map.key_manager
+                .add_escape_listener(function() {
+                    this.abandon_changes();
+                }.bind(this), 'settings');
+            // enter key
+            this.enter = this.map.key_manager
+                .add_enter_listener(function() {
+                    this.accept_changes();
+                }.bind(this), 'settings');
+            // run the show callback
+            this.callback_manager.run('show');
+        } else {
+            // draw on finish
+            if (this.draw) this.map.draw_everything();
+            // hide the menu
+            this.selection.style("display", "none");
+            this.background.style("display", "none");
+            if (this.escape) this.escape.clear();
+            if (this.enter) this.enter.clear();
+            this.escape = null;
+            this.enter = null;
+            // run the hide callback
+            this.callback_manager.run('hide');
+        }
     }
     function hold_changes() {
-	this.settings.hold_changes();
+        this.settings.hold_changes();
     }
     function abandon_changes() {
-	this.draw = false;
-	this.settings.abandon_changes();
-	this.toggle(false);
+        this.draw = false;
+        this.settings.abandon_changes();
+        this.toggle(false);
     }
     function accept_changes() {
-	this.sel.selectAll('input').each(function (s) { 
-	    this.blur();
-	});
-	this.draw = true;
-	this.settings.accept_changes();
-	this.toggle(false);
+        this.sel.selectAll('input').each(function (s) { 
+            this.blur();
+        });
+        this.draw = true;
+        this.settings.accept_changes();
+        this.toggle(false);
     }
-        
+    
     function style_gui(sel, type, abs_callback) {
-	/** A UI to edit style.
+        /** A UI to edit style.
 
          */
 
-	var t = sel.append('table').attr('class', 'settings-table'),
-	    settings = this.settings;
+        var t = sel.append('table').attr('class', 'settings-table'),
+            settings = this.settings;
 
-	// styles
-	t.append('tr').call(function(r) {
-	    r.append('td').text('Options:')
+        // styles
+        t.append('tr').call(function(r) {
+            r.append('td').text('Options:')
                 .attr('class', 'options-label')
                 .attr('title', ('Options for ' + type + ' data.'));
-	    var cell = r.append('td');
+            var cell = r.append('td');
 
-	    var styles = [['Absolute value', 'abs',
+            var styles = [['Absolute value', 'abs',
                            ('If checked, use the absolute value when ' +
                             'calculating colors and sizes of ' + type + 's on the map')],
                           ['Size', 'size',
@@ -12966,13 +12966,13 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
                           ['Text (Show data in label)', 'text',
                            ('If checked, then show data values in the ' + type + ' ' +
                             'labels')]],
-		style_cells = cell.selectAll('.option-group')
-		    .data(styles),
-		s = style_cells.enter()
-		    .append('label')
-		    .attr('class', 'option-group');
+                style_cells = cell.selectAll('.option-group')
+                    .data(styles),
+                s = style_cells.enter()
+                    .append('label')
+                    .attr('class', 'option-group');
 
-	    // make the checkbox
+            // make the checkbox
             var streams = [],
                 get_styles = function() {
                     var styles = [];
@@ -12980,154 +12980,154 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
                         .each(function(d) { if (this.checked) styles.push(d[1]); });
                     return styles;
                 };
-	    s.append('input').attr('type', 'checkbox')
+            s.append('input').attr('type', 'checkbox')
                 .on('change', function(d) {
                     settings.set_conditional(type + '_styles', get_styles());
                     if (d[1] == 'abs')
                         abs_callback(this.checked);
                 }).each(function(d) {
                     // subscribe to changes in the model
-		    settings.streams[type + '_styles'].onValue(function(ar) {
-		        // check the box if the style is present
-		        this.checked = (ar.indexOf(d[1]) != -1);
-		    }.bind(this));
+                    settings.streams[type + '_styles'].onValue(function(ar) {
+                        // check the box if the style is present
+                        this.checked = (ar.indexOf(d[1]) != -1);
+                    }.bind(this));
                 });
-	    s.append('span')
+            s.append('span')
                 .text(function(d) { return d[0]; })
                 .attr('title', function(d) { return d[2]; });
-	});
+        });
 
-	// compare_style
-	t.append('tr').call(function(r) {
-	    r.append('td')
+        // compare_style
+        t.append('tr').call(function(r) {
+            r.append('td')
                 .text('Comparison:')
                 .attr('class', 'options-label')
                 .attr('title', ('The function that will be used to compare ' +
                                 'datasets, when paired data is loaded'));
-	    var cell = r.append('td')
-                .attr('title', ('The function that will be used to compare ' +
-                                'datasets, when paired data is loaded'));;
+            var cell = r.append('td')
+                    .attr('title', ('The function that will be used to compare ' +
+                                    'datasets, when paired data is loaded'));;
 
-	    var styles = [['Fold Change', 'fold'],
+            var styles = [['Fold Change', 'fold'],
                           ['Log2(Fold Change)', 'log2_fold'],
                           ['Difference', 'diff']],
-		style_cells = cell.selectAll('.option-group')
-		    .data(styles),
-		s = style_cells.enter()
-		    .append('label')
-		    .attr('class', 'option-group');
+                style_cells = cell.selectAll('.option-group')
+                    .data(styles),
+                s = style_cells.enter()
+                    .append('label')
+                    .attr('class', 'option-group');
             
-	    // make the radio
-	    s.append('input').attr('type', 'radio')
+            // make the radio
+            s.append('input').attr('type', 'radio')
                 .attr('name', type + '_compare_style' + this.unique_string)
                 .attr('value', function(d) { return d[1]; })
                 .on('change', function() {
                     if (this.checked)
                         settings.set_conditional(type + '_compare_style', this.value);
                 })
-		.each(function() {
-		    // subscribe to changes in the model
-		    settings.streams[type + '_compare_style'].onValue(function(value) {
-		        // check the box for the new value
-		        this.checked = (this.value == value);
-		    }.bind(this));
-		});
-	    s.append('span')
+                .each(function() {
+                    // subscribe to changes in the model
+                    settings.streams[type + '_compare_style'].onValue(function(value) {
+                        // check the box for the new value
+                        this.checked = (this.value == value);
+                    }.bind(this));
+                });
+            s.append('span')
                 .text(function(d) { return d[0]; });
 
         }.bind(this));
 
         // gene-specific settings
         if (type=='reaction') {
-	    var t = sel.append('table').attr('class', 'settings-table')
+            var t = sel.append('table').attr('class', 'settings-table')
                     .attr('title', ('The function that will be used to evaluate ' +
                                     'AND connections in gene reaction rules (AND ' +
                                     'connections generally connect components of ' +
                                     'an enzyme complex)'));
             
-	    // and_method_in_gene_reaction_rule
-	    t.append('tr').call(function(r) {
-	        r.append('td')
+            // and_method_in_gene_reaction_rule
+            t.append('tr').call(function(r) {
+                r.append('td')
                     .text('Method for evaluating AND:')
                     .attr('class', 'options-label-wide');
-	        var cell = r.append('td');
+                var cell = r.append('td');
 
-	        var styles = [['Mean', 'mean'], ['Min', 'min']],
-		    style_cells = cell.selectAll('.option-group')
-		        .data(styles),
-		    s = style_cells.enter()
-		        .append('label')
-		        .attr('class', 'option-group');
+                var styles = [['Mean', 'mean'], ['Min', 'min']],
+                    style_cells = cell.selectAll('.option-group')
+                        .data(styles),
+                    s = style_cells.enter()
+                        .append('label')
+                        .attr('class', 'option-group');
 
-	        // make the radio
+                // make the radio
                 var name = 'and_method_in_gene_reaction_rule';
-	        s.append('input').attr('type', 'radio')
+                s.append('input').attr('type', 'radio')
                     .attr('name', name + this.unique_string)
                     .attr('value', function(d) { return d[1]; })
-                .on('change', function() {
-                    if (this.checked)
-                        settings.set_conditional(name, this.value);
-                })
-		.each(function() {
-		    // subscribe to changes in the model
-		    settings.streams[name].onValue(function(value) {
-		        // check the box for the new value
-		        this.checked = (this.value == value);
-		    }.bind(this));
-		});
+                    .on('change', function() {
+                        if (this.checked)
+                            settings.set_conditional(name, this.value);
+                    })
+                    .each(function() {
+                        // subscribe to changes in the model
+                        settings.streams[name].onValue(function(value) {
+                            // check the box for the new value
+                            this.checked = (this.value == value);
+                        }.bind(this));
+                    });
                 s.append('span')
                     .text(function(d) { return d[0]; });
             }.bind(this));
 
         }
     }
-        
+    
     function view_gui(s, option_name, string, options) {
 
-	// columns
-	var settings = this.settings;
+        // columns
+        var settings = this.settings;
 
-	var t = s.append('table').attr('class', 'settings-table');
-	t.append('tr').call(function(r) {
+        var t = s.append('table').attr('class', 'settings-table');
+        t.append('tr').call(function(r) {
             // identifiers
             r.attr('title', ('The identifiers that are show in the reaction, ' +
                              'gene, and metabolite labels on the map.'));
-	    r.append('td').text('Identifiers:')
+            r.append('td').text('Identifiers:')
                 .attr('class', 'options-label');
-	    var cell = r.append('td');
+            var cell = r.append('td');
 
-	    var options = [['ID\'s', 'bigg_id'], ['Descriptive names', 'name']],
-		style_cells = cell.selectAll('.option-group')
-		    .data(options),
-		s = style_cells.enter()
-		    .append('label')
-		    .attr('class', 'option-group');
+            var options = [['ID\'s', 'bigg_id'], ['Descriptive names', 'name']],
+                style_cells = cell.selectAll('.option-group')
+                    .data(options),
+                s = style_cells.enter()
+                    .append('label')
+                    .attr('class', 'option-group');
 
-	    // make the checkbox
+            // make the checkbox
             var name = 'identifiers_on_map';
-	    s.append('input').attr('type', 'radio')
-		.attr('name', name + this.unique_string)
-		.attr('value', function(d) { return d[1]; })
+            s.append('input').attr('type', 'radio')
+                .attr('name', name + this.unique_string)
+                .attr('value', function(d) { return d[1]; })
                 .on('change', function() {
                     if (this.checked)
                         settings.set_conditional(name, this.value);
                 })
-		.each(function() {
-		    // subscribe to changes in the model
-		    settings.streams[name].onValue(function(value) {
-		        // check the box for the new value
-		        this.checked = (this.value == value);
-		    }.bind(this));
-		});
+                .each(function() {
+                    // subscribe to changes in the model
+                    settings.streams[name].onValue(function(value) {
+                        // check the box for the new value
+                        this.checked = (this.value == value);
+                    }.bind(this));
+                });
             s.append('span').text(function(d) { return d[0]; });
 
         }.bind(this));
 
         var boolean_options = [
-	    ['scroll_behavior', 'Scroll to zoom (instead of scroll to pan)',
+            ['scroll_behavior', 'Scroll to zoom (instead of scroll to pan)',
              ('If checked, then the scroll wheel and trackpad will control zoom ' +
               'rather than pan.'), {'zoom': true, 'pan': false}],
-	    ['hide_secondary_metabolites', 'Hide secondary metabolites',
+            ['hide_secondary_metabolites', 'Hide secondary metabolites',
              ('If checked, then only the primary metabolites ' +
               'will be displayed.')],
             ['show_gene_reaction_rules', 'Show gene reaction rules',
@@ -13140,54 +13140,54 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
               'the loaded model.')],
             ['allow_building_duplicate_reactions', 'Allow duplicate reactions',
              ('If checked, then allow duplicate reactions during model building.')],
-	    ['hide_all_labels', 'Hide reaction, gene, and metabolite labels',
-	     ('If checked, hide all reaction, gene, and metabolite labels')]
-	];
+            ['hide_all_labels', 'Hide reaction, gene, and metabolite labels',
+             ('If checked, hide all reaction, gene, and metabolite labels')]
+        ];
         
-	var opts = s.append('div').attr('class', 'settings-container')
+        var opts = s.append('div').attr('class', 'settings-container')
                 .selectAll('.option-group')
                 .data(boolean_options);
         // enter
         var e = opts.enter()
-            .append('label')
-            .attr('class', 'option-group full-line');
+                .append('label')
+                .attr('class', 'option-group full-line');
         e.append('input').attr('type', 'checkbox');
         e.append('span');
         // update
         opts.attr('title', function(d) { return d[2]; });
         opts.select('input')
             .on('change', function(d) {
-		if (d.length >= 4) { // not a boolean setting
-		    console.log(d);
-		    for (var key in d[3]) {
-			if (d[3][key] == this.checked) {
-			    settings.set_conditional(d[0], key);
-			    break;
-			}
-		    }
-		} else { // boolean setting
+                if (d.length >= 4) { // not a boolean setting
+                    console.log(d);
+                    for (var key in d[3]) {
+                        if (d[3][key] == this.checked) {
+                            settings.set_conditional(d[0], key);
+                            break;
+                        }
+                    }
+                } else { // boolean setting
                     settings.set_conditional(d[0], this.checked);
-		}
+                }
             })
             .each(function(d) {
                 settings.streams[d[0]].onValue(function(value) {
-		    if (d.length >= 4) { // not a boolean setting
-			this.checked = d[3][value];
-		    } else { // boolean setting
-			this.checked = value;
-		    }
+                    if (d.length >= 4) { // not a boolean setting
+                        this.checked = d[3][value];
+                    } else { // boolean setting
+                        this.checked = value;
+                    }
                 }.bind(this));
             });
         opts.select('span')
             .text(function(d) { return d[1]; });
         // exit
         opts.exit().remove();
-	
-	// message about text performance
-	s.append('div')
-	    .style('margin-top', '16px')
-	    .classed('settings-tip', true)
-	.text('Tip: To increase map performance, turn off text boxes (i.e. labels and gene reaction rules).');
+        
+        // message about text performance
+        s.append('div')
+            .style('margin-top', '16px')
+            .classed('settings-tip', true)
+            .text('Tip: To increase map performance, turn off text boxes (i.e. labels and gene reaction rules).');
     }
 });
 
@@ -13198,43 +13198,43 @@ define('TextEditInput',['utils', 'PlacedDiv', 'build'], function(utils, PlacedDi
     var TextEditInput = utils.make_class();
     // instance methods
     TextEditInput.prototype = { init: init,
-				setup_map_callbacks: setup_map_callbacks,
-				setup_zoom_callbacks: setup_zoom_callbacks,
-				is_visible: is_visible,
-				show: show,
-				hide: hide,
-				_accept_changes: _accept_changes,
-				_add_and_edit: _add_and_edit };
+                                setup_map_callbacks: setup_map_callbacks,
+                                setup_zoom_callbacks: setup_zoom_callbacks,
+                                is_visible: is_visible,
+                                show: show,
+                                hide: hide,
+                                _accept_changes: _accept_changes,
+                                _add_and_edit: _add_and_edit };
 
     return TextEditInput;
 
     // definitions
     function init(selection, map, zoom_container) {
-	var div = selection.append('div')
-		.attr('id', 'text-edit-input');
-	this.placed_div = PlacedDiv(div, map);
-	this.placed_div.hide();
-	this.input = div.append('input');
+        var div = selection.append('div')
+                .attr('id', 'text-edit-input');
+        this.placed_div = PlacedDiv(div, map);
+        this.placed_div.hide();
+        this.input = div.append('input');
 
-	this.map = map;
-	this.setup_map_callbacks(map);
-	this.zoom_container = zoom_container;
-	this.setup_zoom_callbacks(zoom_container);
+        this.map = map;
+        this.setup_map_callbacks(map);
+        this.zoom_container = zoom_container;
+        this.setup_zoom_callbacks(zoom_container);
     }
 
     function setup_map_callbacks(map) {
-	// input
-	map.callback_manager.set('edit_text_label.text_edit_input', function(target, coords) {
-	    this.show(target, coords);
-	}.bind(this));
+        // input
+        map.callback_manager.set('edit_text_label.text_edit_input', function(target, coords) {
+            this.show(target, coords);
+        }.bind(this));
 
-	// new text_label
-	map.callback_manager.set('new_text_label.text_edit_input', function(coords) {
-	    if (this.active_target !== null)
-		this._accept_changes(this.active_target.target);
-	    this.hide();
-	    this._add_and_edit(coords);
-	}.bind(this));
+        // new text_label
+        map.callback_manager.set('new_text_label.text_edit_input', function(coords) {
+            if (this.active_target !== null)
+                this._accept_changes(this.active_target.target);
+            this.hide();
+            this._add_and_edit(coords);
+        }.bind(this));
         
         map.callback_manager.set('hide_text_label_editor.text_edit_input', function() {
             this.hide();
@@ -13242,117 +13242,117 @@ define('TextEditInput',['utils', 'PlacedDiv', 'build'], function(utils, PlacedDi
     }
 
     function setup_zoom_callbacks(zoom_container) {
-	zoom_container.callback_manager.set('zoom.text_edit_input', function() {
-	    if (this.active_target)
-		this._accept_changes(this.active_target.target);
-	    this.hide();
-	}.bind(this));
-	zoom_container.callback_manager.set('go_to.text_edit_input', function() {
-	    if (this.active_target)
-		this._accept_changes(this.active_target.target);
-	    this.hide();
-	}.bind(this));
+        zoom_container.callback_manager.set('zoom.text_edit_input', function() {
+            if (this.active_target)
+                this._accept_changes(this.active_target.target);
+            this.hide();
+        }.bind(this));
+        zoom_container.callback_manager.set('go_to.text_edit_input', function() {
+            if (this.active_target)
+                this._accept_changes(this.active_target.target);
+            this.hide();
+        }.bind(this));
     }
 
     function is_visible() {
-	return this.placed_div.is_visible();
+        return this.placed_div.is_visible();
     }
 
     function show(target, coords) {
-	// save any existing edit
-	if (this.active_target) {
-	    this._accept_changes(this.active_target.target);
-	}
+        // save any existing edit
+        if (this.active_target) {
+            this._accept_changes(this.active_target.target);
+        }
 
-	// set the current target
-	this.active_target = { target: target,
-			       coords: coords };
+        // set the current target
+        this.active_target = { target: target,
+                               coords: coords };
 
-	// set the new value
-	target.each(function(d) {
-	    this.input.node().value = d.text;
-	}.bind(this));
+        // set the new value
+        target.each(function(d) {
+            this.input.node().value = d.text;
+        }.bind(this));
 
-	// place the input
-	this.placed_div.place(coords);
-	this.input.node().focus();
+        // place the input
+        this.placed_div.place(coords);
+        this.input.node().focus();
 
-	// escape key
-	this.escape = this.map.key_manager
-	    .add_escape_listener(function() {
-		this._accept_changes(target);
-		this.hide();
-	    }.bind(this));
-	// enter key
-	this.enter = this.map.key_manager
-	    .add_enter_listener(function(target) {
-		this._accept_changes(target);
-		this.hide();
-	    }.bind(this, target));
+        // escape key
+        this.escape = this.map.key_manager
+            .add_escape_listener(function() {
+                this._accept_changes(target);
+                this.hide();
+            }.bind(this));
+        // enter key
+        this.enter = this.map.key_manager
+            .add_enter_listener(function(target) {
+                this._accept_changes(target);
+                this.hide();
+            }.bind(this, target));
     }
 
     function hide() {
-	// hide the input
-	this.placed_div.hide();
+        // hide the input
+        this.placed_div.hide();
 
-	// clear the value
-	this.input.attr('value', '');
-	this.active_target = null;
+        // clear the value
+        this.input.attr('value', '');
+        this.active_target = null;
 
-	// clear escape
-	if (this.escape)
-	    this.escape.clear();
-	this.escape = null;
-	// clear enter
-	if (this.enter)
-	    this.enter.clear();
-	this.enter = null;
-	// turn off click listener
-	// this.map.sel.on('click.', null);
+        // clear escape
+        if (this.escape)
+            this.escape.clear();
+        this.escape = null;
+        // clear enter
+        if (this.enter)
+            this.enter.clear();
+        this.enter = null;
+        // turn off click listener
+        // this.map.sel.on('click.', null);
     }
 
     function _accept_changes(target) {
-	if (this.input.node().value == '') {
-	    // delete the label
-	    target.each(function(d) {
-		var selected = {};
-		selected[d.text_label_id] = this.map.text_labels[d.text_label_id];
-		this.map.delete_selectable({}, selected, true);
-	    }.bind(this));
-	} else {
-	    // set the text
-	    var text_label_ids = [];
-	    target.each(function(d) {
-		this.map.edit_text_label(d.text_label_id, this.input.node().value, true);
-		text_label_ids.push(d.text_label_id);
-	    }.bind(this));
-	}
+        if (this.input.node().value == '') {
+            // delete the label
+            target.each(function(d) {
+                var selected = {};
+                selected[d.text_label_id] = this.map.text_labels[d.text_label_id];
+                this.map.delete_selectable({}, selected, true);
+            }.bind(this));
+        } else {
+            // set the text
+            var text_label_ids = [];
+            target.each(function(d) {
+                this.map.edit_text_label(d.text_label_id, this.input.node().value, true);
+                text_label_ids.push(d.text_label_id);
+            }.bind(this));
+        }
     }
 
     function _add_and_edit(coords) {
         // make an empty label
         var text_label_id = this.map.new_text_label(coords, '');
-	// apply the cursor to the new label
+        // apply the cursor to the new label
         var sel = this.map.sel.select('#text-labels').selectAll('.text-label')
-	    .filter(function(d) { return d.text_label_id == text_label_id; });
-	sel.select('text').classed('edit-text-cursor', true);
-	this.show(sel, coords);
+                .filter(function(d) { return d.text_label_id == text_label_id; });
+        sel.select('text').classed('edit-text-cursor', true);
+        this.show(sel, coords);
     }
 });
 
 define('QuickJump',['utils'], function(utils) {
     /** A QuickJump menu to move between maps.
 
-	Arguments
-	---------
+     Arguments
+     ---------
 
-	sel: The d3 selection of an html node to place the menu inside.
+     sel: The d3 selection of an html node to place the menu inside.
 
-	options: An array of map names to jump to.
+     options: An array of map names to jump to.
 
-        load_callback: A callback function that accepts two arguments: map_name,
-        and another callback which returns true or false for success or failure
-        (callback purgatory).
+     load_callback: A callback function that accepts two arguments: map_name,
+     and another callback which returns true or false for success or failure
+     (callback purgatory).
 
      */
 
@@ -13366,33 +13366,33 @@ define('QuickJump',['utils'], function(utils) {
 
     // instance methods
     function init(sel, load_callback) {        
-	// set up the menu
-	var select_sel = sel.append('select')
-	    .attr('id', 'quick-jump-menu')
-	    .attr('class', 'form-control'); 
+        // set up the menu
+        var select_sel = sel.append('select')
+                .attr('id', 'quick-jump-menu')
+                .attr('class', 'form-control'); 
         this.selector = select_sel;
 
-	// get the options to show
-	var url_comp = utils.parse_url_components(window),
-	    current = ('map_name' in url_comp) ? url_comp.map_name : null,
-	    quick_jump_path = ('quick_jump_path' in url_comp) ? url_comp.quick_jump_path : null,
-	    options = ('quick_jump' in url_comp) ? url_comp.quick_jump : [],
+        // get the options to show
+        var url_comp = utils.parse_url_components(window),
+            current = ('map_name' in url_comp) ? url_comp.map_name : null,
+            quick_jump_path = ('quick_jump_path' in url_comp) ? url_comp.quick_jump_path : null,
+            options = ('quick_jump' in url_comp) ? url_comp.quick_jump : [],
             default_value = '— Jump to map —',
-	    view_options = [default_value].concat(options);
-	if (current !== null) {
-	    view_options = view_options.filter(function(o) {
-		return o != current;
-	    });
-	}
+            view_options = [default_value].concat(options);
+        if (current !== null) {
+            view_options = view_options.filter(function(o) {
+                return o != current;
+            });
+        }
         
-	select_sel.selectAll('option')
-	    .data(view_options)
-	    .enter()
-	    .append('option')
-	    .text(function(d) {
-		// works whether or not a '.' is present
-		return d.split('.').slice(-1)[0];
-	    });
+        select_sel.selectAll('option')
+            .data(view_options)
+            .enter()
+            .append('option')
+            .text(function(d) {
+                // works whether or not a '.' is present
+                return d.split('.').slice(-1)[0];
+            });
         
         // only show if there are options
         select_sel.style('display', view_options.length > 1 ? 'block' : 'none');
@@ -13407,11 +13407,11 @@ define('QuickJump',['utils'], function(utils) {
             }.bind(this));
         }.bind(this);
         
-	select_sel.on('change', function() {
-	    // get the new map
-	    var map_name = this.options[this.selectedIndex].__data__;
+        select_sel.on('change', function() {
+            // get the new map
+            var map_name = this.options[this.selectedIndex].__data__;
             change_map(map_name);
-	});
+        });
     }
 
     function reset_selection() {
@@ -13420,9 +13420,9 @@ define('QuickJump',['utils'], function(utils) {
     
     function replace_state_for_map_name(map_name) {
         /** Just changes the url to match the new map name. Does not actually
-            manage the HTML5 history.
+         manage the HTML5 history.
 
-        */
+         */
         
         // update the url with the new map
         var url = window.location.href
@@ -13474,9 +13474,9 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         this.model_data = model_data;
         this.embedded_css = embedded_css;
         this.selection = selection;
-	
-	// apply this object as data for the selection
-	this.selection.datum(this);
+        
+        // apply this object as data for the selection
+        this.selection.datum(this);
 
         // set defaults
         this.options = utils.set_options(options, {
@@ -13487,7 +13487,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             enable_keys: true,
             enable_search: true,
             fill_screen: false,
-	    zoom_to_element: null,
+            zoom_to_element: null,
             // map, model, and styles
             starting_reaction: null,
             never_ask_before_quit: false,
@@ -13498,7 +13498,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             gene_font_size: 18,
             hide_secondary_metabolites: false,
             show_gene_reaction_rules: false,
-	    hide_all_labels: false,
+            hide_all_labels: false,
             // applied data
             // reaction
             reaction_data: null,
@@ -13594,10 +13594,10 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             .onValue(function(x) {
                 if (x == 'accepted') {
                     this._update_data(true, true, ['reaction', 'metabolite'], false);
-		    if (this.zoom_container !== null) {
-			var new_behavior = this.settings.get_option('scroll_behavior');
-			this.zoom_container.update_scroll_behavior(new_behavior);
-		    }
+                    if (this.zoom_container !== null) {
+                        var new_behavior = this.settings.get_option('scroll_behavior');
+                        this.zoom_container.update_scroll_behavior(new_behavior);
+                    }
                     if (this.map !== null) {
                         this.map.draw_all_nodes(false);
                         this.map.draw_all_reactions(true, false);
@@ -13623,12 +13623,12 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             this.cobra_model = CobraModel.from_cobra_json(model_data);
         
         if (this.map) {
-	    this.map.cobra_model = this.cobra_model;
+            this.map.cobra_model = this.cobra_model;
             if (should_update_data)
-		this._update_data(true, false);
+                this._update_data(true, false);
             if (this.settings.get_option('highlight_missing'))
-		this.map.draw_all_reactions(false, false);
-	}
+                this.map.draw_all_reactions(false, false);
+        }
 
         this.callback_manager.run('load_model', null, model_data, should_update_data);
     }
@@ -13759,18 +13759,18 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
         }
 
         // setup selection box
-	if (this.options.zoom_to_element) {
-	    var type = this.options.zoom_to_element.type,
-		element_id = this.options.zoom_to_element.id;
-	    if (typeof type === 'undefined' || ['reaction', 'node'].indexOf(type) == -1)
-		throw new Error('zoom_to_element type must be "reaction" or "node"');
-	    if (typeof element_id === 'undefined')
-		throw new Error('zoom_to_element must include id');
-	    if (type == 'reaction')
-		this.map.zoom_to_reaction(element_id);
-	    else if (type == 'node')
-		this.map.zoom_to_node(element_id);
-	} else if (map_data !== null) {
+        if (this.options.zoom_to_element) {
+            var type = this.options.zoom_to_element.type,
+                element_id = this.options.zoom_to_element.id;
+            if (typeof type === 'undefined' || ['reaction', 'node'].indexOf(type) == -1)
+                throw new Error('zoom_to_element type must be "reaction" or "node"');
+            if (typeof element_id === 'undefined')
+                throw new Error('zoom_to_element must include id');
+            if (type == 'reaction')
+                this.map.zoom_to_reaction(element_id);
+            else if (type == 'node')
+                this.map.zoom_to_node(element_id);
+        } else if (map_data !== null) {
             this.map.zoom_extent_canvas();
         } else {
             if (this.options.starting_reaction !== null && this.cobra_model !== null) {
@@ -13894,18 +13894,18 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
          */
         this.options.reaction_data = data;
         this._update_data(true, true, 'reaction');
-	this.map.set_status('');
+        this.map.set_status('');
     }
     
     function set_gene_data(data, clear_gene_reaction_rules) {
         /** For documentation of this function, see docs/javascript_api.rst.
 
          */
-	if (clear_gene_reaction_rules) // default undefined
-	    this.settings.set_conditional('show_gene_reaction_rules', false);
+        if (clear_gene_reaction_rules) // default undefined
+            this.settings.set_conditional('show_gene_reaction_rules', false);
         this.options.gene_data = data;
         this._update_data(true, true, 'reaction');
-	this.map.set_status('');
+        this.map.set_status('');
     }
     
     function set_metabolite_data(data) {
@@ -13914,7 +13914,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
          */
         this.options.metabolite_data = data;
         this._update_data(true, true, 'metabolite');
-	this.map.set_status('');
+        this.map.set_status('');
     }
 
     function _update_data(update_model, update_map, kind, should_draw) {
@@ -14034,7 +14034,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw);
 
         }.bind(this), delay);
-            
+        
         // definitions
         function make_gene_data_object(gene_data, cobra_model, map) {
             var all_reactions = {};
@@ -14078,20 +14078,20 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                       text: 'Clear map' });
         // model dropdown
         var model_menu = ui.dropdown_menu(menu, 'Model')
-            .button({ text: 'Load COBRA model JSON',
-                      key_text: (enable_keys ? ' (Ctrl+M)' : null),
-                      input: { assign: key_manager.assigned_keys.load_model,
-                               key: 'fn',
-                               fn: load_model_for_file.bind(this),
-                               pre_fn: function() {
-                                   map.set_status('Loading model ...');
-                               },
-                               failure_fn: function() {
-                                   map.set_status('');
-                               } }
-                    })
-            .button({ key: keys.clear_model,
-                      text: 'Clear model' });
+                .button({ text: 'Load COBRA model JSON',
+                          key_text: (enable_keys ? ' (Ctrl+M)' : null),
+                          input: { assign: key_manager.assigned_keys.load_model,
+                                   key: 'fn',
+                                   fn: load_model_for_file.bind(this),
+                                   pre_fn: function() {
+                                       map.set_status('Loading model ...');
+                                   },
+                                   failure_fn: function() {
+                                       map.set_status('');
+                                   } }
+                        })
+                .button({ key: keys.clear_model,
+                          text: 'Clear model' });
         // disable the clear button
         var disable_model_clear = function() {
             model_menu.dropdown.selectAll('li')
@@ -14110,36 +14110,36 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                    key: 'fn',
                                    fn: load_reaction_data_for_file.bind(this),
                                    accept_csv: true,
-				   pre_fn: function() {
-				       map.set_status('Loading reaction data ...');
-				   },
-				   failure_fn: function() {
-				       map.set_status('');
-				   }},
+                                   pre_fn: function() {
+                                       map.set_status('Loading reaction data ...');
+                                   },
+                                   failure_fn: function() {
+                                       map.set_status('');
+                                   }},
                           text: 'Load reaction data' })
                 .button({ key: keys.clear_reaction_data,
                           text: 'Clear reaction data' })
                 .divider()
                 .button({ input: { fn: load_gene_data_for_file.bind(this),
                                    accept_csv: true,
-				   pre_fn: function() {
-				       map.set_status('Loading gene data ...');
-				   },
-				   failure_fn: function() {
-				       map.set_status('');
-				   }},
+                                   pre_fn: function() {
+                                       map.set_status('Loading gene data ...');
+                                   },
+                                   failure_fn: function() {
+                                       map.set_status('');
+                                   }},
                           text: 'Load gene data' })
                 .button({ key: keys.clear_gene_data,
                           text: 'Clear gene data' })
                 .divider()
                 .button({ input: { fn: load_metabolite_data_for_file.bind(this),
                                    accept_csv: true, 
-				   pre_fn: function() {
-				       map.set_status('Loading metabolite data ...');
-				   },
-				   failure_fn: function() {
-				       map.set_status('');
-				   }},
+                                   pre_fn: function() {
+                                       map.set_status('Loading metabolite data ...');
+                                   },
+                                   failure_fn: function() {
+                                       map.set_status('');
+                                   }},
                           text: 'Load metabolite data' })
                 .button({ key: keys.clear_metabolite_data,
                           text: 'Clear metabolite data' });
@@ -14438,8 +14438,8 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             if (data !== null)
                 this.set_reaction_data(null);
 
-	    // turn on gene_reaction_rules
-	    this.settings.set_conditional('show_gene_reaction_rules', true);
+            // turn on gene_reaction_rules
+            this.settings.set_conditional('show_gene_reaction_rules', true);
 
             this.set_gene_data(data);
         }
@@ -14556,8 +14556,8 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
                                      fn: function() { this.set_metabolite_data(null); }},
             load_gene_data: { fn: null }, // defined by button
             clear_gene_data: { fn: function() {
-				   this.set_gene_data(null, true);
-			       }.bind(this)},
+                this.set_gene_data(null, true);
+            }.bind(this)},
             zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
                        target: zoom_container,
                        fn: zoom_container.zoom_in },
@@ -14667,10 +14667,10 @@ define('DataMenu',["utils"], function(utils) {
             getdatafiles: null,
             datafiles: null,
             update_callback: null,
-	    target: null});
+            target: null});
 
-	if (o.selection===null)
-	    throw new Error('No selection provided for DataMenu');
+        if (o.selection===null)
+            throw new Error('No selection provided for DataMenu');
 
         // setup dropdown menu
         // Append menu if it doesn't exist
@@ -14680,7 +14680,7 @@ define('DataMenu',["utils"], function(utils) {
                 .attr('class','data-menu');
         }
         var select_sel = menu.append('form')
-            .append('select').attr('class','dropdown-menu');
+                .append('select').attr('class','dropdown-menu');
 
         if (o.getdatafiles) {
             if (o.datafiles) {
@@ -14755,68 +14755,68 @@ define('static',["utils"], function(utils) {
     return { load_map_model_from_url: load_map_model_from_url };
     
     function load_map_model_from_url(map_download_url, model_download_url,
-				     local_index, options, callback) {
-	var opt = utils.parse_url_components(window, options),
-	    to_load = [],
-	    load_map = function (fn) { fn(null); },
-	    load_model = function (fn) { fn(null); };
-	if (opt.map_name) {
-	    var map_path = _get_path('map', opt.map_name,
-				     local_index, map_download_url);
-	    if (map_path) {
-		load_map = function (fn) {
-		    d3.json(map_path, function(error, data) {
-			if (error) console.warn(error);
-			fn(data);
-		    });
-		};
-	    }
-	}
-	if (opt.model_name) {
-	    var model_path = _get_path('model', opt.model_name,
-				       local_index, model_download_url);
-	    if (model_path) {
-		load_model = function (fn) {
-		    d3.json(model_path, function(error, data) {
-			if (error) console.warn(error);
-			fn(data);
-		    });
-		};
-	    }
-	}
-	load_map(function(map_data) {
-	    load_model(function(model_data) {
-		callback(map_data, model_data, options);
-	    });
-	});
+                                     local_index, options, callback) {
+        var opt = utils.parse_url_components(window, options),
+            to_load = [],
+            load_map = function (fn) { fn(null); },
+            load_model = function (fn) { fn(null); };
+        if (opt.map_name) {
+            var map_path = _get_path('map', opt.map_name,
+                                     local_index, map_download_url);
+            if (map_path) {
+                load_map = function (fn) {
+                    d3.json(map_path, function(error, data) {
+                        if (error) console.warn(error);
+                        fn(data);
+                    });
+                };
+            }
+        }
+        if (opt.model_name) {
+            var model_path = _get_path('model', opt.model_name,
+                                       local_index, model_download_url);
+            if (model_path) {
+                load_model = function (fn) {
+                    d3.json(model_path, function(error, data) {
+                        if (error) console.warn(error);
+                        fn(data);
+                    });
+                };
+            }
+        }
+        load_map(function(map_data) {
+            load_model(function(model_data) {
+                callback(map_data, model_data, options);
+            });
+        });
     }
     
     function _get_path(kind, name, index, url) {
-	var match = index[kind+'s'].filter(function(x) {
-	    return x[kind+'_name'] == name;
-	});
-	if (match.length == 0)
-	    throw new Error('Bad ' + kind + ' ' + name);
-	return (url + encodeURIComponent(match[0].organism) + 
-		'/' + encodeURIComponent(match[0][kind+'_name'])) + '.json';
+        var match = index[kind+'s'].filter(function(x) {
+            return x[kind+'_name'] == name;
+        });
+        if (match.length == 0)
+            throw new Error('Bad ' + kind + ' ' + name);
+        return (url + encodeURIComponent(match[0].organism) + 
+                '/' + encodeURIComponent(match[0][kind+'_name'])) + '.json';
     }
 });
 
 define('main',['Builder', 'Map', 'Behavior', 'KeyManager', 'DataMenu', 'UndoStack', 'CobraModel', 'utils', 'SearchIndex', 'Settings', 'data_styles', 'ui', 'static'],
        function(bu, mp, bh, km, dm, us, cm, ut, si, se, ds, ui, st) {
            return { Builder: bu,
-		    Map: mp,
-		    Behavior: bh,
-		    KeyManager: km,
-		    DataMenu: dm,
-		    UndoStack: us,
-		    CobraModel: cm,
-		    utils: ut,
-		    SearchIndex: si,
-		    Settings: se,
-		    data_styles: ds,
+                    Map: mp,
+                    Behavior: bh,
+                    KeyManager: km,
+                    DataMenu: dm,
+                    UndoStack: us,
+                    CobraModel: cm,
+                    utils: ut,
+                    SearchIndex: si,
+                    Settings: se,
+                    data_styles: ds,
                     ui: ui,
-		    static: st };
+                    static: st };
        });
 
     //The modules for your project will be inlined above

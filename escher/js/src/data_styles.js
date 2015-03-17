@@ -145,9 +145,9 @@ define(['utils'], function(utils) {
         throw new Error('Bad data compare_style: ' + compare_style);
 
         // definitions
-	function check_finite(x) {
-	    return isFinite(x) ? x : null;
-	}
+        function check_finite(x) {
+            return isFinite(x) ? x : null;
+        }
         function abs(x, take_abs) {
             return take_abs ? Math.abs(x) : x;
         }
@@ -176,45 +176,45 @@ define(['utils'], function(utils) {
 
     function gene_string_for_data(rule, gene_values, genes, styles,
                                   identifiers_on_map, compare_style) {
-	/** Add gene values to the gene_reaction_rule string.
-	 
-	 Arguments
-	 ---------
+        /** Add gene values to the gene_reaction_rule string.
+         
+         Arguments
+         ---------
 
-	 rule: (string) The gene reaction rule.
+         rule: (string) The gene reaction rule.
 
-	 gene_values: The values.
+         gene_values: The values.
 
-	 genes: An array of objects specifying the gene bigg_id and name.
+         genes: An array of objects specifying the gene bigg_id and name.
 
-	 styles: The reaction styles.
+         styles: The reaction styles.
 
-	 identifiers_on_map: The type of identifiers ('bigg_id' or 'name').
+         identifiers_on_map: The type of identifiers ('bigg_id' or 'name').
 
-	 compare_style: The comparison style.
+         compare_style: The comparison style.
 
-	 Returns
-	 -------
+         Returns
+         -------
 
-	 The new string with formatted data values.
+         The new string with formatted data values.
 
-	 */
+         */
 
         var out = rule,
             no_data = (gene_values === null),
-	    // keep track of bigg_id's or names to remove repeats
-	    genes_found = {};
+            // keep track of bigg_id's or names to remove repeats
+            genes_found = {};
 
-	
+        
         genes.forEach(function(g_obj) {
             // get id or name
             var name = g_obj[identifiers_on_map];
             if (typeof name === 'undefined')
                 throw new Error('Bad value for identifiers_on_map: ' + identifiers_on_map);
-	    // remove repeats that may have found their way into genes object
-	    if (typeof genes_found[name] !== 'undefined')
-		return;
-	    genes_found[name] = true;	
+            // remove repeats that may have found their way into genes object
+            if (typeof genes_found[name] !== 'undefined')
+                return;
+            genes_found[name] = true;   
             // generate the string
             if (no_data) {
                 out = replace_gene_in_rule(out, g_obj.bigg_id, (name + '\n'));
@@ -313,11 +313,11 @@ define(['utils'], function(utils) {
 
          rule: A boolean string containing gene names, parentheses, AND's and
          OR's.
-	 
-	 Returns
-	 -------
+         
+         Returns
+         -------
 
-	 An array of gene strings.
+         An array of gene strings.
 
          */
         var genes = rule
@@ -328,7 +328,7 @@ define(['utils'], function(utils) {
         // split on whitespace
                 .split(' ')
                 .filter(function(x) { return x != ''; });
-	// unique strings
+        // unique strings
         return utils.unique_strings_array(genes);
     }
     
@@ -509,7 +509,7 @@ define(['utils'], function(utils) {
 
          gene_data_obj: The gene data object, with the following style:
 
-             { reaction_id: { gene_id: value } }
+         { reaction_id: { gene_id: value } }
 
          styles:  Gene styles array.
 

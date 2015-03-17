@@ -138,6 +138,6 @@ describe('utils', function() {
         options = utils.parse_url_components(the_window, options);
         expect(options).toEqual({ a: 'b',
                                   quick_jump: ['iJO1366.Central metabolism',
-					       'iJO1366.Fatty acid metabolism'] });
+                                               'iJO1366.Fatty acid metabolism'] });
     });
 });

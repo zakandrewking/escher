@@ -41,9 +41,9 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         this.model_data = model_data;
         this.embedded_css = embedded_css;
         this.selection = selection;
-	
-	// apply this object as data for the selection
-	this.selection.datum(this);
+        
+        // apply this object as data for the selection
+        this.selection.datum(this);
 
         // set defaults
         this.options = utils.set_options(options, {
@@ -54,7 +54,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             enable_keys: true,
             enable_search: true,
             fill_screen: false,
-	    zoom_to_element: null,
+            zoom_to_element: null,
             // map, model, and styles
             starting_reaction: null,
             never_ask_before_quit: false,
@@ -65,7 +65,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             gene_font_size: 18,
             hide_secondary_metabolites: false,
             show_gene_reaction_rules: false,
-	    hide_all_labels: false,
+            hide_all_labels: false,
             // applied data
             // reaction
             reaction_data: null,
@@ -161,10 +161,10 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             .onValue(function(x) {
                 if (x == 'accepted') {
                     this._update_data(true, true, ['reaction', 'metabolite'], false);
-		    if (this.zoom_container !== null) {
-			var new_behavior = this.settings.get_option('scroll_behavior');
-			this.zoom_container.update_scroll_behavior(new_behavior);
-		    }
+                    if (this.zoom_container !== null) {
+                        var new_behavior = this.settings.get_option('scroll_behavior');
+                        this.zoom_container.update_scroll_behavior(new_behavior);
+                    }
                     if (this.map !== null) {
                         this.map.draw_all_nodes(false);
                         this.map.draw_all_reactions(true, false);
@@ -190,12 +190,12 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             this.cobra_model = CobraModel.from_cobra_json(model_data);
         
         if (this.map) {
-	    this.map.cobra_model = this.cobra_model;
+            this.map.cobra_model = this.cobra_model;
             if (should_update_data)
-		this._update_data(true, false);
+                this._update_data(true, false);
             if (this.settings.get_option('highlight_missing'))
-		this.map.draw_all_reactions(false, false);
-	}
+                this.map.draw_all_reactions(false, false);
+        }
 
         this.callback_manager.run('load_model', null, model_data, should_update_data);
     }
@@ -326,18 +326,18 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         }
 
         // setup selection box
-	if (this.options.zoom_to_element) {
-	    var type = this.options.zoom_to_element.type,
-		element_id = this.options.zoom_to_element.id;
-	    if (typeof type === 'undefined' || ['reaction', 'node'].indexOf(type) == -1)
-		throw new Error('zoom_to_element type must be "reaction" or "node"');
-	    if (typeof element_id === 'undefined')
-		throw new Error('zoom_to_element must include id');
-	    if (type == 'reaction')
-		this.map.zoom_to_reaction(element_id);
-	    else if (type == 'node')
-		this.map.zoom_to_node(element_id);
-	} else if (map_data !== null) {
+        if (this.options.zoom_to_element) {
+            var type = this.options.zoom_to_element.type,
+                element_id = this.options.zoom_to_element.id;
+            if (typeof type === 'undefined' || ['reaction', 'node'].indexOf(type) == -1)
+                throw new Error('zoom_to_element type must be "reaction" or "node"');
+            if (typeof element_id === 'undefined')
+                throw new Error('zoom_to_element must include id');
+            if (type == 'reaction')
+                this.map.zoom_to_reaction(element_id);
+            else if (type == 'node')
+                this.map.zoom_to_node(element_id);
+        } else if (map_data !== null) {
             this.map.zoom_extent_canvas();
         } else {
             if (this.options.starting_reaction !== null && this.cobra_model !== null) {
@@ -461,18 +461,18 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          */
         this.options.reaction_data = data;
         this._update_data(true, true, 'reaction');
-	this.map.set_status('');
+        this.map.set_status('');
     }
     
     function set_gene_data(data, clear_gene_reaction_rules) {
         /** For documentation of this function, see docs/javascript_api.rst.
 
          */
-	if (clear_gene_reaction_rules) // default undefined
-	    this.settings.set_conditional('show_gene_reaction_rules', false);
+        if (clear_gene_reaction_rules) // default undefined
+            this.settings.set_conditional('show_gene_reaction_rules', false);
         this.options.gene_data = data;
         this._update_data(true, true, 'reaction');
-	this.map.set_status('');
+        this.map.set_status('');
     }
     
     function set_metabolite_data(data) {
@@ -481,7 +481,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
          */
         this.options.metabolite_data = data;
         this._update_data(true, true, 'metabolite');
-	this.map.set_status('');
+        this.map.set_status('');
     }
 
     function _update_data(update_model, update_map, kind, should_draw) {
@@ -601,7 +601,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw);
 
         }.bind(this), delay);
-            
+        
         // definitions
         function make_gene_data_object(gene_data, cobra_model, map) {
             var all_reactions = {};
@@ -645,20 +645,20 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                       text: 'Clear map' });
         // model dropdown
         var model_menu = ui.dropdown_menu(menu, 'Model')
-            .button({ text: 'Load COBRA model JSON',
-                      key_text: (enable_keys ? ' (Ctrl+M)' : null),
-                      input: { assign: key_manager.assigned_keys.load_model,
-                               key: 'fn',
-                               fn: load_model_for_file.bind(this),
-                               pre_fn: function() {
-                                   map.set_status('Loading model ...');
-                               },
-                               failure_fn: function() {
-                                   map.set_status('');
-                               } }
-                    })
-            .button({ key: keys.clear_model,
-                      text: 'Clear model' });
+                .button({ text: 'Load COBRA model JSON',
+                          key_text: (enable_keys ? ' (Ctrl+M)' : null),
+                          input: { assign: key_manager.assigned_keys.load_model,
+                                   key: 'fn',
+                                   fn: load_model_for_file.bind(this),
+                                   pre_fn: function() {
+                                       map.set_status('Loading model ...');
+                                   },
+                                   failure_fn: function() {
+                                       map.set_status('');
+                                   } }
+                        })
+                .button({ key: keys.clear_model,
+                          text: 'Clear model' });
         // disable the clear button
         var disable_model_clear = function() {
             model_menu.dropdown.selectAll('li')
@@ -677,36 +677,36 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                                    key: 'fn',
                                    fn: load_reaction_data_for_file.bind(this),
                                    accept_csv: true,
-				   pre_fn: function() {
-				       map.set_status('Loading reaction data ...');
-				   },
-				   failure_fn: function() {
-				       map.set_status('');
-				   }},
+                                   pre_fn: function() {
+                                       map.set_status('Loading reaction data ...');
+                                   },
+                                   failure_fn: function() {
+                                       map.set_status('');
+                                   }},
                           text: 'Load reaction data' })
                 .button({ key: keys.clear_reaction_data,
                           text: 'Clear reaction data' })
                 .divider()
                 .button({ input: { fn: load_gene_data_for_file.bind(this),
                                    accept_csv: true,
-				   pre_fn: function() {
-				       map.set_status('Loading gene data ...');
-				   },
-				   failure_fn: function() {
-				       map.set_status('');
-				   }},
+                                   pre_fn: function() {
+                                       map.set_status('Loading gene data ...');
+                                   },
+                                   failure_fn: function() {
+                                       map.set_status('');
+                                   }},
                           text: 'Load gene data' })
                 .button({ key: keys.clear_gene_data,
                           text: 'Clear gene data' })
                 .divider()
                 .button({ input: { fn: load_metabolite_data_for_file.bind(this),
                                    accept_csv: true, 
-				   pre_fn: function() {
-				       map.set_status('Loading metabolite data ...');
-				   },
-				   failure_fn: function() {
-				       map.set_status('');
-				   }},
+                                   pre_fn: function() {
+                                       map.set_status('Loading metabolite data ...');
+                                   },
+                                   failure_fn: function() {
+                                       map.set_status('');
+                                   }},
                           text: 'Load metabolite data' })
                 .button({ key: keys.clear_metabolite_data,
                           text: 'Clear metabolite data' });
@@ -1005,8 +1005,8 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             if (data !== null)
                 this.set_reaction_data(null);
 
-	    // turn on gene_reaction_rules
-	    this.settings.set_conditional('show_gene_reaction_rules', true);
+            // turn on gene_reaction_rules
+            this.settings.set_conditional('show_gene_reaction_rules', true);
 
             this.set_gene_data(data);
         }
@@ -1123,8 +1123,8 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                                      fn: function() { this.set_metabolite_data(null); }},
             load_gene_data: { fn: null }, // defined by button
             clear_gene_data: { fn: function() {
-				   this.set_gene_data(null, true);
-			       }.bind(this)},
+                this.set_gene_data(null, true);
+            }.bind(this)},
             zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
                        target: zoom_container,
                        fn: zoom_container.zoom_in },

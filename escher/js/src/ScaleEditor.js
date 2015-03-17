@@ -40,8 +40,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             .attr('class', 'input-label-group');
         // no data
         var nd = b.append('div')
-            .style('top', this.input_height * 3 + 56 + 10 + 'px')
-            .attr('class', 'no-data');
+                .style('top', this.input_height * 3 + 56 + 10 + 'px')
+                .attr('class', 'no-data');
         nd.append('span').text('Styles for ' + type + 's with no data')
             .attr('class', 'no-data-heading');
         this.no_data_container = nd.append('div');
@@ -132,20 +132,20 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
 
         // ---------------------------------------------------------------------
         // make the gradient
-	var sorted_domain = scale.map(function(d) {
-	    return { frac: (get_this_val(d) - stats.min) / (stats.max - stats.min),
-		     color: d.color };
-	}).filter(function(d) {
-	    return (d.frac >= 0 && d.frac <= 1.0);
-	}).sort(function(a, b) {
-	    return a.frac - b.frac;
-	});
+        var sorted_domain = scale.map(function(d) {
+            return { frac: (get_this_val(d) - stats.min) / (stats.max - stats.min),
+                     color: d.color };
+        }).filter(function(d) {
+            return (d.frac >= 0 && d.frac <= 1.0);
+        }).sort(function(a, b) {
+            return a.frac - b.frac;
+        });
         var stops = this.gradient.selectAll('stop')
                 .data(sorted_domain);
         stops.enter()
             .append('stop');
         stops.attr('offset', function(d) {
-	    return d.frac * 100 + '%';
+            return d.frac * 100 + '%';
         }).style('stop-color', function (d) {
             return d.color === null ? '#F1ECFA' : d.color;
         });
@@ -164,12 +164,12 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // drag 
         var drag = d3.behavior.drag();
         drag.on('drag', function(d, i) {
-	    // on drag, make it a value type
+            // on drag, make it a value type
             if (['value', 'min', 'max'].indexOf(scale[i].type) === -1) {
-		// get the current value and set it
-		scale[i].value = get_this_val(d);
-		scale[i].type = 'value';
-	    }
+                // get the current value and set it
+                scale[i].value = get_this_val(d);
+                scale[i].type = 'value';
+            }
             // change the model on drag
             var new_d = scale[i].value + sc_size(d3.event.dx),
                 buf = sc_size(bar_w + 2);
@@ -191,12 +191,12 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // update
         pickers.select('rect')
             .attr('x', function(d, i) {
-		var val = get_this_val(d),
-		    buf = bar_w + 2;
-		if (d.type == 'value' && val <= stats.min)
-		    return sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
-		if (d.type == 'value' && val >= stats.max)
-		    return sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
+                var val = get_this_val(d),
+                    buf = bar_w + 2;
+                if (d.type == 'value' && val <= stats.min)
+                    return sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
+                if (d.type == 'value' && val >= stats.max)
+                    return sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
                 return sc.invert(val) - (bar_w / 2) + x_disp;
             })
             .attr('width', bar_w + 'px')
@@ -241,14 +241,14 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             .attr('class', 'add glyphicon glyphicon-plus');
         // update
         add.on('click', function (d) {
-	    if (data_not_loaded) return;
+            if (data_not_loaded) return;
 
             var new_d = (stats.max + stats.min) / 2,
                 buf = sc_size(bar_w + 2),
                 last_ind = 0;
             // try to make the new point not overlap
             for (var j = 0, l = scale.length; j < l; j++) {
-		var th = get_this_val(scale[j]);
+                var th = get_this_val(scale[j]);
                 if (Math.abs(th - new_d) < buf) {
                     new_d = new_d + buf;
                     if (new_d > stats.max - buf) new_d = stats.max - buf;
@@ -259,10 +259,10 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             }
             // add
             scale.push({ type: 'value',
-			 value: new_d,
-			 color: scale[last_ind].color,
-			 size: scale[last_ind].size });
-	    set_scale(scale);
+                         value: new_d,
+                         color: scale[last_ind].color,
+                         size: scale[last_ind].size });
+            set_scale(scale);
         }.bind(this));
         // exit
         add.exit().remove();
@@ -273,9 +273,9 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                 .data(['Value:', 'Color:', 'Size:']);
         // enter
         labels.enter().append('div')
-	    .attr('class', 'row-label')
-	    .style('height', this.input_height + 'px')
-	    .style('line-height', this.input_height + 'px');
+            .attr('class', 'row-label')
+            .style('height', this.input_height + 'px')
+            .style('line-height', this.input_height + 'px');
         // update
         labels
             .style('top', function(d, i) {
@@ -300,7 +300,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // type picker
         i.append('select')
             .attr('class', 'domain-type-picker'),
-	// color input
+        // color input
         i.append('input')
             .attr('class', 'color-input')
             .style('width', this.input_width + 'px');
@@ -319,21 +319,21 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         inputs.style('height', this.input_height * 3 + 'px')
             .style('width', this.input_width + 'px')
             .style('left', function(d) {
-		var val = get_this_val(d),
-		    buf = bar_w + 2,
-		    l;
-		if (d.type == 'value' && val <= stats.min)
-		    l = sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
-		else if (d.type == 'value' && val >= stats.max)
-		    l = sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
-		else
+                var val = get_this_val(d),
+                    buf = bar_w + 2,
+                    l;
+                if (d.type == 'value' && val <= stats.min)
+                    l = sc.invert(stats.min) - (bar_w / 2) + x_disp - buf;
+                else if (d.type == 'value' && val >= stats.max)
+                    l = sc.invert(stats.max) - (bar_w / 2) + x_disp + buf;
+                else
                     l = sc.invert(val) - (bar_w / 2) + x_disp;
                 // don't go over the right edge of the bar
                 if (l + this.input_width > this.w + this.x)
                     l = l - this.input_width + (bar_w / 2);
                 return l + 'px';
             }.bind(this))
-	    .on('mousedown', bring_to_front);
+            .on('mousedown', bring_to_front);
 
         var format = d3.format('.4g');
         inputs.select('.domain-input')
@@ -342,7 +342,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                 if (d.type == 'value') {
                     this.value = get_this_val(d);
                     this.disabled = false;
-		} else {
+                } else {
                     this.value = d.type + ' (' + format(get_this_val(d)) + ')';
                     this.disabled = true;
                 } 
@@ -359,30 +359,30 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                           .filter(function(x) {
                               return x != 'min' && x != 'max';
                           })),
-	    opts = select.selectAll('option').data(stat_types);
-	opts.enter().append('option');
-	opts.attr('value', function(d) { return d; })
-	    .text(function(d) { return d; });
+            opts = select.selectAll('option').data(stat_types);
+        opts.enter().append('option');
+        opts.attr('value', function(d) { return d; })
+            .text(function(d) { return d; });
         opts.exit().remove();
         select.style('visibility', function(d) {
-                return (d.type == 'min' || d.type == 'max') ? 'hidden' : null;
-            })
+            return (d.type == 'min' || d.type == 'max') ? 'hidden' : null;
+        })
             .style('left', (this.input_width - 20) + 'px')
             .style('width', '20px')
             .each(function (d, i) {
                 var sind = 0;
-		d3.select(this).selectAll('option').each(function(_, i) {
-		    if (this.value == d.type)
-			sind = i;
-		});
-		this.selectedIndex = sind;
+                d3.select(this).selectAll('option').each(function(_, i) {
+                    if (this.value == d.type)
+                        sind = i;
+                });
+                this.selectedIndex = sind;
             }).on('change', function(d, i) {
-		// set the value to the current location
-		if (this.value == 'value')
-		    scale[i].value = stats[d.type];
-		// switch to the new type
-		scale[i].type = this.value;
-		// reload
+                // set the value to the current location
+                if (this.value == 'value')
+                    scale[i].value = stats[d.type];
+                // switch to the new type
+                scale[i].type = this.value;
+                // reload
                 set_scale(scale);
             });
         // update color input
@@ -447,8 +447,8 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         // update
         ins.select('span')
             .text(function(d) { return d[1]; })
-	    .style('height', this.input_height + 'px')
-	    .style('line-height', this.input_height + 'px')
+            .style('height', this.input_height + 'px')
+            .style('line-height', this.input_height + 'px')
             .style('left', function(d, i) {
                 return ((label_w + this.input_width + 10) * i) + 'px';
             }.bind(this));
@@ -473,7 +473,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                 this.no_data[d[0]] = val;
                 this.settings.set_conditional(this.type + '_no_data_' + d[0], val);
                 this.update_no_data();
-	    }.bind(this));
+            }.bind(this));
         ins.select('.color-picker')
             .style('left', function(d, i) {
                 return ((label_w + this.input_width) * (i + 1) - this.input_height) + 'px';
