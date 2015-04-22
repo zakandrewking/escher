@@ -1,0 +1,25 @@
+#! /usr/bin/env bash
+
+python setup.py test --pyonly
+
+if [ $? = "1" ]; then
+    echo "Did not pass Python tests. Exiting."
+    exit 1
+fi
+
+python setup.py test --jsonly
+
+echo -n "Did the Jasmine tests pass? (y/n): "
+while true; do
+    read character
+    if [ $character = "n" ] ; then
+	echo "Did not pass Jasmine tests. Exiting."
+       exit 1
+    fi
+    if [ $character = "y" ] ; then
+       echo "Publishing."
+       python setup.py sdist bdist upload
+       exit $?
+    fi
+    echo -n "Did the Jasmine tests pass? Must enter 'y' or 'n': "
+done

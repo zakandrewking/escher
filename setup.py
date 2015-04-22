@@ -13,7 +13,10 @@ import re
 
 try:
     from setuptools import setup, Command
-except:
+    from setuptools.command.sdist import sdist as SDistCommand
+    from setuptools.command.bdist import bdist as BDistCommand
+    from setuptools.command.upload import upload as UploadCommand
+except ImportError:
     from distutils.core import setup, Command
 
 directory = dirname(realpath(__file__))

@@ -12,9 +12,9 @@ from os.path import dirname, abspath, join, isfile, isdir
 from warnings import warn
 try:
     from urllib.request import urlopen
-    from urllib.error import HTTPError, URLError
+    from urllib.error import URLError
 except:
-    from urllib2 import urlopen, HTTPError, URLError
+    from urllib2 import urlopen, URLError
 import json
 import shutil
 import re
@@ -81,7 +81,8 @@ def server_index():
         download = urlopen(url)
     except URLError:
         raise URLError('Could not contact Escher server')
-    index = json.loads(download.read())
+    data = _decode_response(download)
+    index = json.loads(data)
     return index
 
 def list_available_maps():
@@ -130,9 +131,9 @@ def _json_for_name(name, kind, cache_dir):
         warn('%s not in cache. Attempting download from %s' % (kind.title(), url))
         try:
             download = urlopen(url)
-        except HTTPError:
+        except URLError:
             raise ValueError('No %s found in cache or at %s' % (kind, url))
-        data = download.read()
+        data = _decode_response(download)
         # save the file
         org_path = join(cache_dir, kind + 's', org)
         try:
@@ -141,7 +142,7 @@ def _json_for_name(name, kind, cache_dir):
             pass
         with open(join(org_path, name + '.json'), 'w') as outfile:
             outfile.write(data)
-        return data.decode('utf-8')
+        return data
 
 def model_json_for_name(model_name, cache_dir=get_cache_dir()):
     return _json_for_name(model_name, 'model', cache_dir)
@@ -155,6 +156,19 @@ def _get_an_id():
     return (''.join(random.choice(string.ascii_lowercase)
                     for _ in range(10)))
 
+def _decode_response(download):
+    """Decode the urllib.response.addinfourl response."""
+    data = download.read()
+    try:                    # Python 2
+        encoding = download.headers.getparam('charset')
+    except AttributeError:  # Python 3
+        encoding = download.headers.get_param('charset')
+    if encoding:
+        data = data.decode(encoding)
+    else:
+        data = data.decode('utf-8')
+    return data
+
 def _load_resource(resource, name, safe=False):
     """Load a resource that could be a file, URL, or json string."""
     # if it's a url, download it
@@ -164,13 +178,7 @@ def _load_resource(resource, name, safe=False):
         except URLError as err:
             raise err
         else:
-            data = download.read()
-            encoding = download.headers.getparam('charset')
-            if encoding:
-                data = data.decode(encoding)
-            else:
-                data = data.decode('utf-8')
-            return data
+            return _decode_response(download)
     # if it's a filepath, load it
     if os.path.exists(resource):
         if (safe):
@@ -424,16 +432,11 @@ class Builder(object):
                       local_host=self.local_host, protocol='https')
         try:
             download = urlopen(loc)
-        except ValueError:
+        except URLError:
             raise Exception(('Could not find builder_embed_css. Be sure to pass '
                              'a local_host argument to Builder if js_source is dev or local '
                              'and you are in an iPython notebook or a static html file.'))
-        data = download.read()
-        encoding = download.headers.getparam('charset')
-        if encoding:
-            data = data.decode(encoding)
-        else:
-            data = data.decode('utf-8')
+        data = _decode_response(download)
         return data.replace('\n', ' ')
 
     def _initialize_javascript(self, the_id, url_source):

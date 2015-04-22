@@ -14,20 +14,31 @@ def test_convert():
 
     # map
     old_map = {'reactions': {'1': {'bigg_id': 'GAPD',
-                                   'label_x': 0,
+                                   'label_x': '0',
                                    'label_y': 0,
                                    'segments': {'2': {'from_node_id': '0',
                                                       'to_node_id': '1',
-                                                      'b1': None,
+                                                      'b1': {'x': None, 'y': None},
                                                       'b2': None}}},
                              '2': {'bigg_id': 'PDH'}},
-               'nodes': {'3': {'node_type': 'metabolite',
+               'nodes': {'0': {'node_type': 'multimarker',
+                               'x': 1,
+                               'y': 2},
+                         '1': {'node_type': 'metabolite',
+                               'label_x': 10,
+                               'label_y': 12.2,
+                               'x': 1,
+                               'y': 2,
+                               'bigg_id': 'g3p_c',
+                               'name': 'glycerol-3-phosphate'},
+                         '3': {'node_type': 'metabolite',
                                'x': 1,
                                'y': 2,
                                'bigg_id': 'glc__D_c',
                                'name': 'D-Glucose'}}}
     
     new_map = convert(old_map, model)
+    print(new_map)
 
     # no segments: delete reaction
     assert '2' not in new_map[1]['reactions']
@@ -43,6 +54,10 @@ def test_convert():
     # Remove unconnected nodes. These do not make the map invalid, but they are
     # annoying.
     assert '3' not in new_map[1]['nodes']
+
+    # casting
+    assert type(new_map[1]['reactions']['1']['label_x']) is float
+    assert new_map[1]['reactions']['1']['segments']['2']['b1'] is None
 
 def test_genes_for_gene_reaction_rule():
     assert genes_for_gene_reaction_rule('((G1 and G2)or G3and)') == ['G1', 'G2', 'G3and']
