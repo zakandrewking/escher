@@ -82,7 +82,7 @@ def convert(map, model):
 
     # add missing elements
     for k in ['nodes', 'reactions', 'text_labels']:
-        if k not in map_body:
+        if k not in map_body or len(map_body[k]) == 0:
             map_body[k] = {}
     # default canvas
     if 'canvas' not in map_body:
@@ -154,11 +154,21 @@ def convert(map, model):
                            "genes", "metabolites", "segments"]:
                 del reaction[key]
 
+        # cast attributes
+        for k in ['label_x', 'label_y']:
+            reaction[k] = float(reaction[k])
+
         # unsupported attributes in segments
         for s_id, segment in reaction['segments'].items():
             for key in list(segment.keys()):
                 if not key in ["from_node_id", "to_node_id", "b1", "b2"]:
                     del segment[key]
+
+            # cast attributes
+            for k in ['b1', 'b2']:
+                if segment[k] is not None and (segment[k]['x'] is None or segment[k]['y'] is None):
+                    segment[k] = None
+
             # keep track of nodes that have appeared here
             for key in ['from_node_id', 'to_node_id']:
                 try:

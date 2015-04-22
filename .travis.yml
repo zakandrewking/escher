@@ -10,6 +10,6 @@ before_install:
 install:
   - python setup.py develop
 # # command to run tests
-script: python setup.py test --noweb --pyonly
+script: python setup.py test --pyonly
 notifications:
   email: false
