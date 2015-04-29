@@ -1,137 +1,110 @@
-define(["utils", "CallbackManager"], function(utils, CallbackManager) {
-    /** ZoomContainer
+/* global define, d3 */
 
-     The zoom behavior is based on this SO question:
-     http://stackoverflow.com/questions/18788188/how-to-temporarily-disable-the-zooming-in-d3-js
-     */
+define(["utils", "CallbackManager", "lib/underscore"], function(utils, CallbackManager, _) {
     var ZoomContainer = utils.make_class();
     ZoomContainer.prototype = { init: init,
-                                update_scroll_behavior: update_scroll_behavior,
-                                toggle_zoom: toggle_zoom,
+                                set_scroll_behavior: set_scroll_behavior,
+                                _update_scroll: _update_scroll,
+                                toggle_pan_drag: toggle_pan_drag,
                                 go_to: go_to,
+                                _go_to_3d: _go_to_3d,
+                                _clear_3d: _clear_3d,
+                                _go_to_svg: _go_to_svg,
                                 zoom_by: zoom_by,
                                 zoom_in: zoom_in,
                                 zoom_out: zoom_out,
                                 get_size: get_size,
-                                translate_off_screen: translate_off_screen,
-                                reset: reset };
+                                translate_off_screen: translate_off_screen };
     return ZoomContainer;
 
     // definitions
-    function init(selection, size_container, scroll_behavior) {
-        /** Make a container that will manage panning and zooming.
+    function init(selection, scroll_behavior, fill_screen) {
+        /** Make a container that will manage panning and zooming. Creates a new
+         SVG element, with a parent div for CSS3 3D transforms.
 
-         selection: A d3 selection of an 'svg' or 'g' node to put the zoom
-         container in.
+         Arguments
+         ---------
 
-         size_container: A d3 selection of a 'div' node that has defined width
-         and height.
+         selection: A d3 selection of a HTML node to put the zoom container
+         in. Should have a defined width and height.
+
+         scroll_behavior: Either 'zoom' or 'pan'.
+
+         fill_screen: If true, then apply styles to body and selection that fill
+         the screen. The styled classes are "fill-screen-body" and
+         "fill-screen-div".
 
          */
 
-        this.zoom_on = true;
-        this.initial_zoom = 1.0;
+        // set the selection class
+        selection.classed('escher-container', true);
+
+        // fill screen classes
+        if (fill_screen) {
+            d3.select("body").classed('fill-screen-body', true);
+            selection.classed('fill-screen-div', true);
+        }
+
+        // make the svg
+        var css3_transform_container = selection.append('div')
+                .attr('class', 'escher-3d-transform-container');
+
+        var svg = css3_transform_container.append('svg')
+            .attr("class", "escher-svg")
+            .attr('xmlns', "http://www.w3.org/2000/svg");
+
+        // set up the zoom container
+        svg.select("#zoom-g").remove();
+        var zoomed_sel = svg.append("g")
+            .attr("id", "zoom-g");
+
+        // attributes
+        this.selection = selection;
+        this.css3_transform_container = css3_transform_container;
+        this.svg = svg;
+        this.zoomed_sel = zoomed_sel;
         this.window_translate = {x: 0, y: 0};
         this.window_scale = 1.0;
+
+        this._scroll_behavior = scroll_behavior;
+        this._pan_drag_on = true;
+        this._zoom_behavior = null;
+        this._zoom_timeout = null;
+        this._svg_scale = this.window_scale;
+        this._svg_translate = this.window_translate;
+        this._last_svg_ms = null;
 
         // set up the callbacks
         this.callback_manager = new CallbackManager();
 
-        // save the size_container
-        this.size_container = size_container;
-
-        // set up the container
-        selection.select("#zoom-container").remove();
-        var container = selection.append("g")
-                .attr("id", "zoom-container");
-        this.container = container;
-        this.zoomed_sel = container.append("g");
-        
         // update the scroll behavior
-        this.update_scroll_behavior(scroll_behavior);
-
-        // initialize vars
-        this.saved_scale = null;
-        this.saved_translate = null;
-    }
-    
-    function update_scroll_behavior(scroll_behavior) {
-        // the zoom function and behavior
-        var zoom = function(zoom_container, event) {
-            if (zoom_container.zoom_on) {
-                zoom_container.zoomed_sel.attr("transform", "translate(" + event.translate + ")" +
-                                               "scale(" + event.scale + ")");
-                zoom_container.window_translate = {'x': event.translate[0],
-                                                   'y': event.translate[1]};
-                zoom_container.window_scale = event.scale;
-                zoom_container.callback_manager.run('zoom');
-            }
-        };
-        // clear all behaviors
-        this.container.on("mousewheel.zoom", null)
-            .on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
-            .on("wheel.zoom", null) // disables newer versions of Firefox
-            .on('dblclick.zoom', null)
-            .on('mousewheel.escher', wheel_fn)
-            .on('DOMMouseScroll.escher', wheel_fn)
-            .on('wheel.escher', wheel_fn);
-        
-        // new zoom
-        this.zoom_behavior = d3.behavior.zoom()
-            .on("zoom", function() {
-                zoom(this, d3.event);
-            }.bind(this));
-        this.container.call(this.zoom_behavior);    
-
-        // options
-        if (scroll_behavior=='none' || scroll_behavior=='pan') {
-            this.container.on("mousewheel.zoom", null)
-                .on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
-                .on("wheel.zoom", null) // disables newer versions of Firefox
-                .on('dblclick.zoom', null);
-        }
-        if (scroll_behavior == 'pan') {
-            // Add the wheel listener
-            var wheel_fn = function() {
-                var ev = d3.event,
-                    sensitivity = 0.5;
-                // stop scroll in parent elements
-                ev.stopPropagation();
-                ev.preventDefault();
-                ev.returnValue = false;
-                // change the location
-                this.go_to(this.window_scale,
-                           { x: this.window_translate.x -
-                             (ev.wheelDeltaX!==undefined ? -ev.wheelDeltaX/1.5 : ev.deltaX) * sensitivity,
-                             y: this.window_translate.y -
-                             (ev.wheelDeltaY!==undefined ? -ev.wheelDeltaY/1.5 : ev.deltaY) * sensitivity },
-                           false);
-            }.bind(this);
-            this.container.on('mousewheel.escher', wheel_fn);
-            this.container.on('DOMMouseScroll.escher', wheel_fn);
-            this.container.on('wheel.escher', wheel_fn);
-        }
+        this._update_scroll();
     }
 
-    function toggle_zoom(on_off) {
-        /** Toggle the zoom state, and remember zoom when the behavior is off.
-
+    function set_scroll_behavior(scroll_behavior) {
+        /** Set up pan or zoom on scroll.
+         *
+         * Arguments
+         * ---------
+         *
+         * scroll_behavior: 'none', 'pan' or 'zoom'.
+         *
          */
-        if (on_off===undefined) {
-            this.zoom_on = !this.zoom_on;
-        } else {
-            this.zoom_on = on_off;
-        }
-        if (this.zoom_on) {
-            if (this.saved_scale !== null){
-                this.zoom_behavior.scale(this.saved_scale);
-                this.saved_scale = null;
-            }
-            if (this.saved_translate !== null){
-                this.zoom_behavior.translate(this.saved_translate);
-                this.saved_translate = null;
-            }
 
+        this._scroll_behavior = scroll_behavior;
+        this._update_scroll();
+    }
+
+    function toggle_pan_drag(on_off) {
+        /** Toggle the zoom drag and the cursor UI for it. */
+
+        if (_.isUndefined(on_off)) {
+            this._pan_drag_on = !this._pan_drag_on;
+        } else {
+            this._pan_drag_on = on_off;
+        }
+
+        if (this._pan_drag_on) {
             // turn on the hand
             this.zoomed_sel
                 .classed('cursor-grab', true).classed('cursor-grabbing', false);
@@ -143,13 +116,6 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
                     sel.classed('cursor-grab', true).classed('cursor-grabbing', false);
                 }.bind(null, this.zoomed_sel));
         } else {
-            if (this.saved_scale === null){
-                this.saved_scale = utils.clone(this.zoom_behavior.scale());
-            }
-            if (this.saved_translate === null){
-                this.saved_translate = utils.clone(this.zoom_behavior.translate());
-            }
-
             // turn off the hand
             this.zoomed_sel.style('cursor', null)
                 .classed('cursor-grab', false)
@@ -157,39 +123,240 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
             this.zoomed_sel.on('mousedown.cursor', null);
             this.zoomed_sel.on('mouseup.cursor', null);
         }
+
+        // update the behaviors
+        this._update_scroll();
+    }
+
+    function _update_scroll(on_off) {
+        /** Update the pan and zoom behaviors. */
+
+        if (['zoom', 'pan', 'none'].indexOf(this._scroll_behavior) === -1) {
+            throw Error('Bad value for scroll_behavior: ' + this._scroll_behavior);
+        }
+
+        // clear all behaviors
+        this.selection.on("mousewheel.zoom", null) // zoom scroll behaviors
+            .on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
+            .on("wheel.zoom", null) // disables newer versions of Firefox
+            .on('dblclick.zoom', null)
+            .on('mousewheel.escher', null) // pan scroll behaviors
+            .on('DOMMouseScroll.escher', null)
+            .on('wheel.escher', null)
+            .on("mousedown.zoom", null) // drag behaviors
+            .on("touchstart.zoom", null)
+            .on("touchmove.zoom", null)
+            .on("touchend.zoom", null);
+
+        // TODO what about touch? even when this is false, we probably want
+        // pinch events to be recongnized.
+        if (this._pan_drag_on || this._scroll_behavior === 'zoom') {
+            // this handles dragging to pan (in any scroll mode) and scrolling
+            // to zoom (only 'zoom' mode)
+            this._zoom_behavior = d3.behavior.zoom()
+                .on("zoom", function() {
+                    this.go_to(d3.event.scale, {x: d3.event.translate[0], y: d3.event.translate[1]});
+                }.bind(this));
+
+            // set current location
+            this._zoom_behavior.scale(this.window_scale);
+            var translate_array = [this.window_translate.x, this.window_translate.y];
+            this._zoom_behavior.translate(translate_array);
+
+            // set it up
+            this.selection.call(this._zoom_behavior);
+
+            if (!this._pan_drag_on) {
+                // if we are only using the zoom behavior for scrolling, then
+                // turn off the panning
+                this.selection.on("mousedown.zoom", null)
+                    .on("touchstart.zoom", null)
+                    .on("touchmove.zoom", null)
+                    .on("touchend.zoom", null);
+            }
+
+            if (this._scroll_behavior !== 'zoom') {
+                // If we are only using the zoom behavior for dragging, then
+                // turn off scrolling to zoom
+                this.selection.on("mousewheel.zoom", null) // zoom scroll behaviors
+                    .on("DOMMouseScroll.zoom", null) // disables older versions of Firefox
+                    .on("wheel.zoom", null) // disables newer versions of Firefox
+                    .on('dblclick.zoom', null);
+            }
+        } else {
+            this._zoom_behavior = null;
+        }
+
+        if (this._scroll_behavior === 'pan') {
+            // Add the wheel listener
+            var wheel_fn = function() {
+                var ev = d3.event,
+                    sensitivity = 0.5;
+                // stop scroll in parent elements
+                ev.stopPropagation();
+                ev.preventDefault();
+                ev.returnValue = false;
+                // change the location
+                var get_directional_disp = function(wheel_delta, delta) {
+                    var the_delt = _.isUndefined(wheel_delta) ? delta : -wheel_delta / 1.5;
+                    return the_delt * sensitivity;
+                };
+                var new_translate = {
+                    x: this.window_translate.x - get_directional_disp(ev.wheelDeltaX, ev.deltaX),
+                    y: this.window_translate.y - get_directional_disp(ev.wheelDeltaY, ev.deltaY)
+                };
+                this.go_to(this.window_scale, new_translate, false);
+            }.bind(this);
+
+            // apply it
+            this.selection.on('mousewheel.escher', wheel_fn);
+            this.selection.on('DOMMouseScroll.escher', wheel_fn);
+            this.selection.on('wheel.escher', wheel_fn);
+        }
     }
 
     // functions to scale and translate
-    function go_to(scale, translate, show_transition) {
-        utils.check_undefined(arguments, ['scale', 'translate']);
-        if (show_transition===undefined) show_transition = true;
+    function go_to(scale, translate, show_transition, use_3d_transform) {
+        /** Zoom the container to a specified location.
+         *
+         * Arguments
+         * ---------
+         *
+         * scale: The scale, between 0 and 1.
+         *
+         * translate: The location, of the form {x: 2.0, y: 3.0}.
+         *
+         * show_transition (Boolean, default true): If true, than use a
+         * transition to move to that location.
+         *
+         * use_3d_transform (Boolean, default true): If true, then use a CSS3 3D
+         * transform for immediate zoom & pan. The SVG elements will update when
+         * they are ready.
+         *
+         */
 
+        utils.check_undefined(arguments, ['scale', 'translate']);
+        if (_.isUndefined(show_transition)) show_transition = true;
+        if (_.isUndefined(use_3d_transform)) use_3d_transform = true;
+
+        // check inputs
         if (!scale) throw new Error('Bad scale value');
         if (!translate || !('x' in translate) || !('y' in translate) ||
             isNaN(translate.x) || isNaN(translate.y))
             return console.error('Bad translate value');
 
-        this.zoom_behavior.scale(scale);
+        // save inputs
         this.window_scale = scale;
-        if (this.saved_scale !== null) this.saved_scale = scale;
-
-        var translate_array = [translate.x, translate.y];
-        this.zoom_behavior.translate(translate_array);
         this.window_translate = translate;
-        if (this.saved_translate !== null) this.saved_translate = translate_array;
 
-        var move_this = (show_transition ?
-                         this.zoomed_sel.transition() :
-                         this.zoomed_sel);
-        move_this.attr('transform',
-                       'translate('+this.window_translate.x+','+this.window_translate.y+')'+
-                       'scale('+this.window_scale+')');
+        // save to zoom behavior
+        if (!_.isNull(this._zoom_behavior)) {
+            this._zoom_behavior.scale(scale);
+            var translate_array = [translate.x, translate.y];
+            this._zoom_behavior.translate(translate_array);
+        }
+
+        if (use_3d_transform) {
+            // 3d tranform
+            //
+            // cancel all timeouts
+            if (!_.isNull(this._zoom_timeout))
+                window.clearTimeout(this._zoom_timeout);
+            // set the 3d transform
+            this._go_to_3d(scale, translate,
+                           this._svg_scale, this._svg_translate);
+            // if another go_to does not happen within the delay time, then
+            // redraw the svg
+            this._zoom_timeout = _.delay(function() {
+                // redraw the svg
+                this._go_to_svg(scale, translate);
+            }.bind(this), 100); // between 100 and 600 seems to be usable
+        } else {
+            // no 3d transform
+            this._go_to_svg(scale, translate);
+        }
 
         this.callback_manager.run('go_to');
-        return null;
     }
 
-    function zoom_by(amount) {
+    function _go_to_3d(scale, translate, svg_scale, svg_translate) {
+        /** Zoom & pan the CSS 3D transform container */
+        var n_scale = scale / svg_scale,
+            n_translate = utils.c_minus_c(
+                translate,
+                utils.c_times_scalar(svg_translate, n_scale)
+            ),
+            tranform = ('translate(' + n_translate.x + 'px,' + n_translate.y + 'px) ' +
+                        'scale(' + n_scale + ')');
+        this.css3_transform_container.style('transform', tranform);
+        this.css3_transform_container.style('transform-origin', '0 0');
+    }
+
+    function _clear_3d() {
+        this.css3_transform_container.style('transform', null);
+        this.css3_transform_container.style('transform-origin', null);
+    }
+
+    function _go_to_svg(scale, translate) {
+        /** Zoom & pan the svg element.
+         *
+         * Also runs the svg_start and svg_finish callbacks, and saves the last
+         * update time as this._last_svg_ms.
+         *
+         */
+
+        this.callback_manager.run('svg_start');
+
+        // defer to update callbacks
+        _.defer(function() {
+
+            // start time
+            var start = new Date().getTime();
+
+            // reset the 3d transform
+            this._clear_3d();
+
+            // redraw the svg
+            this.zoomed_sel
+                .attr('transform',
+                      'translate(' + translate.x + ',' + translate.y + ') ' +
+                      'scale(' + scale + ')');
+            // save svg location
+            this._svg_scale = this.window_scale;
+            this._svg_translate = this.window_translate;
+
+            _.defer(function() {
+                // defer for callback after draw
+                this.callback_manager.run('svg_finish');
+
+                // wait a few ms to get a reliable end time
+                _.delay(function() {
+                    // end time
+                    var t = new Date().getTime() - start;
+                    console.log(t);
+                    this._last_svg_ms = t;
+                }.bind(this), 20);
+            }.bind(this));
+        }.bind(this));
+    }
+
+    function zoom_by(amount, show_transition, use_3d_transform) {
+        /** Zoom by a specified multiplier.
+         *
+         * Arguments
+         * ---------
+         *
+         * amount: A multiplier for the zoom. Greater than 1 zooms in and less
+         * than 1 zooms out.
+         *
+         * show_transition (Boolean, default true): If true, than use a
+         * transition to move to that location.
+         *
+         * use_3d_transform (Boolean, default true): If true, then use a CSS3 3D
+         * transform for immediate zoom & pan. The SVG elements will update when
+         * they are ready.
+         *
+         */
         var size = this.get_size(),
             shift = { x: size.width/2 - ((size.width/2 - this.window_translate.x) * amount +
                                          this.window_translate.x),
@@ -199,21 +366,32 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
                    utils.c_plus_c(this.window_translate, shift),
                    true);
     }
+
     function zoom_in() {
+        /** Zoom in by the default amount with the default options. */
         this.zoom_by(1.5);
     }
+
     function zoom_out() {
+        /** Zoom out by the default amount with the default options. */
         this.zoom_by(0.667);
     }
 
     function get_size() {
-        return { width: parseInt(this.size_container.style('width'), 10),
-                 height: parseInt(this.size_container.style('height'), 10) };
+        /** Return the size of the zoom container as coordinates.
+         *
+         * e.g. {x: 2, y: 3}
+         *
+         */
+        return { width: parseInt(this.selection.style('width'), 10),
+                 height: parseInt(this.selection.style('height'), 10) };
     }
 
     function translate_off_screen(coords) {
-        // shift window if new reaction will draw off the screen
+        /** Shift window if new reaction will draw off the screen */
+
         // TODO BUG not accounting for scale correctly
+
         var margin = 120, // pixels
             size = this.get_size(),
             current = {'x': {'min': - this.window_translate.x / this.window_scale +
@@ -242,8 +420,5 @@ define(["utils", "CallbackManager"], function(utils, CallbackManager) {
                 (coords.y - current.y.max) * this.window_scale;
             this.go_to(this.window_scale, this.window_translate);
         }
-    }
-    function reset() {
-        this.go_to(1.0, {x: 0.0, y: 0.0});
     }
 });

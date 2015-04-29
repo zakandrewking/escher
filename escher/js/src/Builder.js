@@ -159,11 +159,11 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         // the menu closes, everything is drawn.
         this.settings.status_bus
             .onValue(function(x) {
-                if (x == 'accepted') {
+                if (x === 'accepted') {
                     this._update_data(true, true, ['reaction', 'metabolite'], false);
                     if (this.zoom_container !== null) {
                         var new_behavior = this.settings.get_option('scroll_behavior');
-                        this.zoom_container.update_scroll_behavior(new_behavior);
+                        this.zoom_container.set_scroll_behavior(new_behavior);
                     }
                     if (this.map !== null) {
                         this.map.draw_all_nodes(false);
@@ -215,14 +215,12 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         // remove the old builder
         utils.remove_child_nodes(this.selection);
 
-        // set up the svg
-        var svg = utils.setup_svg(this.selection, false,
-                                  this.options.fill_screen);
-
-        // se up the zoom container
-        this.zoom_container = new ZoomContainer(svg, this.selection,
-                                                this.options.scroll_behavior);
+        // set up the zoom container
+        this.zoom_container = new ZoomContainer(this.selection,
+                                                this.options.scroll_behavior,
+                                                this.options.fill_screen);
         var zoomed_sel = this.zoom_container.zoomed_sel;
+        var svg = this.zoom_container.svg;
 
         if (map_data!==null) {
             // import map
@@ -234,7 +232,6 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                                      this.settings,
                                      this.cobra_model,
                                      this.options.enable_search);
-            this.zoom_container.reset();
         } else {
             // new map
             this.map = new Map(svg,
@@ -246,6 +243,13 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                                null,
                                this.options.enable_search);
         }
+        // zoom container status changes
+        this.zoom_container.callback_manager.set('svg_start', function() {
+            this.map.set_status('Drawing ...');
+        }.bind(this));
+        this.zoom_container.callback_manager.set('svg_finish', function() {
+            this.map.set_status('');
+        }.bind(this));
 
         // set the data for the map
         if (should_update_data)
@@ -382,7 +386,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         // brush
         this.brush.toggle(mode=='brush');
         // zoom
-        this.zoom_container.toggle_zoom(mode=='zoom' || mode=='view');
+        this.zoom_container.toggle_pan_drag(mode=='zoom' || mode=='view');
         // resize canvas
         this.map.canvas.toggle_resize(mode=='zoom' || mode=='brush');
         // Behavior. Be careful of the order becuase rotation and
@@ -1049,7 +1053,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
     function _setup_status(selection, map) {
         var status_bar = selection.append('div').attr('id', 'status');
         map.callback_manager.set('set_status', function(status) {
-            status_bar.text(status);
+            status_bar.html(status);
         });
         return status_bar;
     }
@@ -1091,7 +1095,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             was_enabled.brush = brush.enabled;
             brush.toggle(false);
             was_enabled.zoom = zoom_container.zoom_on;
-            zoom_container.toggle_zoom(false);
+            zoom_container.toggle_pan_drag(false);
             was_enabled.selectable_mousedown = map.behavior.selectable_mousedown!=null;
             map.behavior.toggle_selectable_click(false);
             was_enabled.label_mousedown = map.behavior.label_mousedown!=null;
@@ -1099,7 +1103,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         });
         map.callback_manager.set('end_rotation', function() {
             brush.toggle(was_enabled.brush);
-            zoom_container.toggle_zoom(was_enabled.zoom);
+            zoom_container.toggle_pan_drag(was_enabled.zoom);
             map.behavior.toggle_selectable_click(was_enabled.selectable_mousedown);
             map.behavior.toggle_label_mousedown(was_enabled.label_mousedown);
             was_enabled = {};
