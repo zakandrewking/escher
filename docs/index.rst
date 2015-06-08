@@ -11,7 +11,12 @@ biological datasets. The easiest way to use Escher is to browse and build maps
 on the `Escher website`_. New users may be interested in the
 :doc:`getting_started` guide.
 
-.. image:: _static/screen1.png
+Escher in 3 minutes
+-------------------
+
+.. raw:: html
+              
+         <iframe width="100%" height="315" src="https://www.youtube.com/embed/qUipX-xzZjQ" frameborder="0" allowfullscreen></iframe><br/><br/>
 
 Help! I just upgraded to v1.0 and my maps will not load!
 --------------------------------------------------------
@@ -56,6 +61,17 @@ To install the latest stable version of Escher, run::
 For more information, see the documentation on :doc:`ipython_notebook` and
 :doc:`development`.
 
+Citing Escher
+-------------
+
+You can help support Escher by citing our publication when you use Escher or
+EscherConverter:
+
+Zachary A. King, Andreas Dräger, Ali Ebrahim, Nikolaus Sonnenschein,
+Nathan E. Lewis, and Bernhard O. Palsson (2015) *Escher: A web application for
+building, sharing, and embedding data-rich visualizations of biological
+pathways*, PLOS Computational Biology, May 2015. Accepted for publication.
+
 Contents
 --------
 
@@ -69,15 +85,11 @@ Contents
    convert_maps
    development
    contribute_maps
+   escherconverter
    javascript_api
    python_api
+   license
    
 * :ref:`genindex`
 
-License
--------
-
-Escher is licensed under the `MIT license`_.
-
 .. _`Escher website`: http://escher.github.io/
-.. _`MIT license`: https://github.com/zakandrewking/escher/blob/master/LICENSE
