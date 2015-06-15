@@ -54,8 +54,7 @@ visualizations can be adapted and shared to demonstrate those biological
 discoveries.
 
 The rest of this guide will introduce the Escher user interface and the major
-features of Escher. You may also be interested in reading throught the
-:doc:`tutorials` for a more hands-on introduction to using Escher.
+features of Escher. 
 
 The launch page
 ===============
@@ -213,8 +212,6 @@ AND rules, Escher will either take the mean (the default) or the minimum of the
 components. The AND behavior (mean vs. minimum) is defined in the
 :ref:`settings` menu.
      
-You can look through the :doc:`tutorials` to see gene reaction rules in action.
-
 .. _editing-and-building:
 
 Editing and building

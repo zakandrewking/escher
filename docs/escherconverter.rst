@@ -357,5 +357,5 @@ FINE, FINER, FINEST, INFO, OFF, SEVERE, and WARNING. (Default value: INFO)
 This option allows you to specify a log file to which all information of the
 program will be written. Accepts (*.bp2, *.bp3, *.log, *.owl, *.xml).
 
-.. _here: https://github.com/SBRG/BioNetView/raw/master/dist/EscherConverter/0/EscherConverter-0.5.jar
+.. _here: https://escher.github.io/EscherConverter-0.5.jar
 .. _`EscherConverter 0.5`: here_
