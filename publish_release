@@ -18,7 +18,7 @@ while true; do
     fi
     if [ $character = "y" ] ; then
        echo "Publishing."
-       python setup.py sdist bdist upload
+       python setup.py sdist bdist_wheel --universal upload
        exit $?
     fi
     echo -n "Did the Jasmine tests pass? Must enter 'y' or 'n': "

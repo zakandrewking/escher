@@ -22,6 +22,7 @@ except ImportError:
 directory = dirname(realpath(__file__))
 sys.path.insert(0, join(directory, 'escher'))
 version = __import__('version').__version__
+full_version = __import__('version').__full_version__
 escher = 'escher-%s.js' % version
 escher_min = 'escher-%s.min.js' % version
 builder_css = 'builder-%s.css' % version
@@ -176,7 +177,7 @@ class TestCommand(Command):
         sys.exit(exit_code)
 
 setup(name='Escher',
-      version=version,
+      version=full_version,
       author='Zachary King',
       url='https://escher.github.io',
       license='MIT',
