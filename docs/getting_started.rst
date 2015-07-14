@@ -145,6 +145,15 @@ Datasets can be loaded as CSV files or JSON files, using the Data Menu.
 
 .. image:: _static/data_menu.png
 
+In Escher, reaction and gene datasets are visualized by changing the color,
+thickness, and labels of reaction arrows. Metabolite datasets are visualized by
+changing the color, size, and labels of metabolite circles. The specific
+visual styles can be modified in the :ref:`settings` menu. When data is not
+present for a specific reaction, gene, or metabolite, then the text label will
+say 'nd' which means 'no data.'
+
+.. image:: _static/reaction_data_with_nd.png
+
 The structure of a CSV file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
