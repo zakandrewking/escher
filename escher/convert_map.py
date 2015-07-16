@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """This script has two purposes:
 
 1. Apply the attributes from a cobra model to an existing Escher
@@ -15,7 +18,7 @@ from __future__ import print_function, unicode_literals
 usage_string = """
 Usage: 
 
-python convert_map.py {map path} {model path}
+./convert_map.py {map path} {model path}
 
 OR
 
