@@ -38,12 +38,16 @@ import random
 import string
 import hashlib
 from os.path import basename, join
+import logging
 try:
     from urllib.request import urlopen
 except ImportError:
     from urllib import urlopen
 
 from escher.validate import validate_map, genes_for_gene_reaction_rule
+
+# configure logger
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 
 
 def main():
@@ -74,7 +78,7 @@ def main():
     
     # don't replace the file
     out_file = in_file.replace('.json', '_converted.json')
-    print('Saving validated map to %s' % out_file)
+    logging.info('Saving validated map to %s' % out_file)
     with open(out_file, 'w') as f:
         json.dump(the_map, f, allow_nan=False)
 
@@ -134,7 +138,7 @@ def has_header_and_body(val):
 def dict_with_required_elements(the_dict, required_attributes, get_default=None,
                                 nullable=[], cast={}):
     """Remove unsupported elements and provide defaults for missing
-    elements.
+    elements or elements with zero length (e.g. {}, []).
 
     Arguments
     ---------
@@ -155,9 +159,16 @@ def dict_with_required_elements(the_dict, required_attributes, get_default=None,
     if type(the_dict) is not dict:
         raise MissingDefaultAttribute('(Bad object)')
 
+    def has_zero_length(o):
+        """Returns True if o has a length and it is zero."""
+        try:
+            return len(o) == 0
+        except TypeError:
+            return False
+
     def current_otherwise_default(name):
         """Take the value in the current dict, or else provide a default."""
-        if name not in the_dict:
+        if name not in the_dict or has_zero_length(the_dict[name]):
             if get_default is not None:
                 default = get_default(name, the_dict)
                 the_dict[name] = default
@@ -174,8 +185,18 @@ def dict_with_required_elements(the_dict, required_attributes, get_default=None,
             the_dict[name] = new
 
     # map over the dict
+    not_required = set(the_dict.keys()) 
     for name in required_attributes:
         current_otherwise_default(name)
+        # remember the keys that are not required
+        try:
+            not_required.remove(name)
+        except KeyError:
+            pass
+
+    # remove not required
+    for key in not_required:
+        del the_dict[key]
 
 def map_over_dict_with_deletions(the_dict, fix_function):
     """Use this to map over dictionary. The fix function updates values, and returns
@@ -228,6 +249,7 @@ def list_of_dicts_with_required_elements(a_list, required_attributes,
     MissingDefaultAttribute is raised when an attribute is not present.
 
     """
+
     def fix_a_value(val):
         try:
             dict_with_required_elements(val, required_attributes,
@@ -245,7 +267,7 @@ def collection_of_dicts_with_required_elements(collection, required_attributes,
                                                cast={}):
     """For a collection (dictionary) of dictionaries with required 
     attributes, check each one. Returns the new collection.
-
+    
     Arguments
     ---------
 
@@ -259,6 +281,7 @@ def collection_of_dicts_with_required_elements(collection, required_attributes,
     MissingDefaultAttribute is raised when an attribute is not present.
 
     """
+
     def fix_a_value(val):
         try:
             dict_with_required_elements(val, required_attributes,
@@ -276,6 +299,73 @@ def collection_of_dicts_with_required_elements(collection, required_attributes,
             collection[k] = new_value
 
     return collection
+
+# ------------------------------------------------------------------------------
+# Functions for cleaning up unconnected map elements
+# ------------------------------------------------------------------------------
+
+def remove_unconnected_nodes(nodes, reactions, node_ids_deleted=set()):
+    """Check for nodes with no connected segments in the reactions object, and
+    return a new nodes object with only connected nodes.
+
+    Arguments
+    ---------
+
+    nodes: A collection (dict) of nodes.
+
+    reactions: A collection (dict) of reactions.
+
+    node_ids_deleted: A set of previously deleted ids to update.
+
+    """
+    # update
+    def map_over_connected_node_ids(fn, reactions):
+        """Run fn with all node ids that have connected segments."""
+        for reaction in reactions.values():
+            for segment in reaction['segments'].values():
+                fn(segment['from_node_id'])
+                fn(segment['to_node_id'])
+
+    # use a set to keep track of connected nodes
+    nodes_with_segments = set()
+    add_node = nodes_with_segments.add
+    has_node = lambda x: x in nodes_with_segments
+    # update
+    map_over_connected_node_ids(add_node, reactions)
+
+    # filter the nodes
+    def check_fn(key, value):
+        if has_node(key):
+            return value
+        else:
+            logging.debug('No segments for node %s. Deleting' % key)
+            return None
+    map_over_dict_with_deletions(nodes, check_fn)
+
+def remove_unconnected_segments(reactions, nodes):
+    """Check for segments with no connected nodes.
+
+    Arguments
+    ---------
+
+    nodes: A collection (dict) of nodes.
+
+    reactions: A collection (dict) of reactions.
+
+    """
+    # use a set to keep track of connected nodes
+    node_ids = set(nodes.keys())
+    is_node = lambda x: x in node_ids
+
+    # filter the nodes
+    def check_fn(key, value):
+        if is_node(value['from_node_id']) and is_node(value['to_node_id']):
+            return value
+        else:
+            logging.debug('Missing node for segment %s. Deleting' % key)
+            return None
+    for reaction in reactions.values():
+        map_over_dict_with_deletions(reaction['segments'], check_fn)
 
 # ------------------------------------------------------------------------------
 # Functions for converting maps
@@ -306,7 +396,7 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
             def check_for(var, name):
                 """Print a warning if var is None."""
                 if var is None:
-                    print('Warning: No {} for map'.format(name))
+                    logging.info('Warning: No {} for map'.format(name))
                     return ''
                 return var
 
@@ -318,7 +408,7 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
                 "map_id": new_id,
                 "map_description": check_for(map_description, 'description')
             }
-            print('Map has the ID {}'.format(new_id))
+            logging.info('Map has the ID {}'.format(new_id))
             return make_map(default_header, body)
 
         if has_header_and_body(a_map):
@@ -390,7 +480,7 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
             """Return an updated node, or None if the node is invalid."""
 
             if not 'node_type' in node:
-                print('Deleting node %s with no node_type' % node_id)
+                logging.debug('Deleting node %s with no node_type' % node_id)
                 return None
 
             elif node['node_type'] == 'metabolite':
@@ -401,7 +491,7 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
                     dict_with_required_elements(node, met_keys, get_default_node_attr, cast=cast)
                     return node
                 except MissingDefaultAttribute as e:
-                    print('Deleting node %s with missing attribute %s' % (node_id, e))
+                    logging.debug('Deleting node %s with missing attribute %s' % (node_id, e))
                     return None
 
             elif node['node_type'] in ['multimarker', 'midmarker']:
@@ -411,11 +501,11 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
                     dict_with_required_elements(node, marker_keys, get_default_node_attr, cast=cast)
                     return node
                 except MissingDefaultAttribute as e:
-                    print('Deleting node %s with missing attribute %s' % (node_id, e))
+                    logging.debug('Deleting node %s with missing attribute %s' % (node_id, e))
                     return None
 
             else:
-                print('Deleting node %s with bad node_type %s' % (node_id, node['node_type']))
+                logging.debug('Deleting node %s with bad node_type %s' % (node_id, node['node_type']))
                 return None
 
         # run fix functions
@@ -456,20 +546,20 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
                                                     get_default_segment_attr,
                                                     nullable=['b1', 'b2'])
                     except MissingDefaultAttribute as e:
-                        print('Deleting segment %s with missing attribute %s' % (segment_id, e))
+                        logging.debug('Deleting segment %s with missing attribute %s' % (segment_id, e))
                         return None
 
                     # check the beziers too
                     required_bezier_keys = ['x', 'y']
                     cast = {'x': float, 'y': float}
-                    try:
-                        for b in ['b1', 'b2']:
+                    for b in ['b1', 'b2']:
+                        try:
                             dict_with_required_elements(segment[b],
                                                         required_bezier_keys,
                                                         cast=cast)
-                    except MissingDefaultAttribute as e:
-                        print('Deleting bezier %s with missing attribute %s in segment %s' % (b, e, segment_id))
-                        segment[b] = None
+                        except MissingDefaultAttribute as e:
+                            logging.debug('Deleting bezier %s with missing attribute %s in segment %s' % (b, e, segment_id))
+                            segment[b] = None
 
                     return segment
 
@@ -504,14 +594,14 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
                                             get_default_reaction_attr,
                                             cast=cast)
             except MissingDefaultAttribute as e:
-                print('Deleting reaction %s with missing attribute %s' % (reaction_id, e))
+                logging.debug('Deleting reaction %s with missing attribute %s' % (reaction_id, e))
                 return None
 
             # fix segments, metabolites, and genes
             fix_segments(reaction['segments'])
             # must have segments
             if len(reaction['segments']) == 0:
-                print('Deleting reaction %s with no segments' % reaction_id)
+                logging.debug('Deleting reaction %s with no segments' % reaction_id)
                 return None
             reaction['metabolites'] = fix_metabolites(reaction['metabolites'])
             reaction['genes'] = fix_genes(reaction['genes'])
@@ -521,68 +611,6 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
         # run the fix functions
         map_over_dict_with_deletions(reactions, fix_a_reaction)
 
-    def remove_unconnected_nodes(nodes, reactions, node_ids_deleted=set()):
-        """Check for nodes with no connected segments in the reactions object, and
-        return a new nodes object with only connected nodes.
-        
-        Arguments
-        ---------
-
-        nodes: A collection (dict) of nodes.
-
-        reactions: A collection (dict) of reactions.
-
-        node_ids_deleted: A set of previously deleted ids to update.
-
-        """
-        # update
-        def map_over_connected_node_ids(fn, reactions):
-            """Run fn with all node ids that have connected segments."""
-            for reaction in reactions.values():
-                for segment in reaction['segments'].values():
-                    fn(segment['from_node_id'])
-                    fn(segment['to_node_id'])
-                    
-        # use a set to keep track of connected nodes
-        nodes_with_segments = set()
-        add_node = nodes_with_segments.add
-        has_node = lambda x: x in nodes_with_segments
-        # update
-        map_over_connected_node_ids(add_node, reactions)
-
-        # filter the nodes
-        def check_fn(key, value):
-            if has_node(key):
-                return value
-            else:
-                print('No segments for node %s. Deleting' % key)
-                return None
-        map_over_dict_with_deletions(nodes, check_fn)
-
-    def remove_unconnected_segments(reactions, nodes):
-        """Check for segments with no connected nodes.
-        
-        Arguments
-        ---------
-
-        nodes: A collection (dict) of nodes.
-
-        reactions: A collection (dict) of reactions.
-
-        """
-        # use a set to keep track of connected nodes
-        node_ids = set(nodes.keys())
-        is_node = lambda x: x in node_ids
-
-        # filter the nodes
-        def check_fn(key, value):
-            if is_node(value['from_node_id']) and is_node(value['to_node_id']):
-                return value
-            else:
-                print('Missing node for segment %s. Deleting' % key)
-                return None
-        for reaction in reactions.values():
-            map_over_dict_with_deletions(reaction['segments'], check_fn)
             
     # make sure there is a body and a head
     the_map = add_header_if_missing(the_map)
@@ -663,6 +691,9 @@ def apply_id_mappings(the_map, reaction_id_mapping=None,
 def apply_cobra_model_to_map(the_map, model):
     """Apply the COBRA model attributes (descriptive names, gene reaction rules,
     reversibilities) to the map.
+    
+    Cleans up unconnected segments and nodes after deleting any nodes and
+    reactions not found in the cobra model.
 
     """
 
@@ -679,7 +710,7 @@ def apply_cobra_model_to_map(the_map, model):
         try:
             dl_object = dict_list.get_by_id(on_id)
         except KeyError:
-            print('Could not find %s in model. Deleting %s.' % (on_id, key))
+            logging.info('Could not find %s in model. Deleting.' % on_id)
             return None
         else:
             for attribute_fn in attribute_fns:
@@ -701,7 +732,6 @@ def apply_cobra_model_to_map(the_map, model):
                                     collection_on='bigg_id'):
         """For each attribute_fn, apply the values from the dict_list to the matching
         results in the list of dicts, using the given IDs. Returns a new list."""
-        print(a_list)
         return [y for y in (apply_model_attributes(x, dict_list, attribute_fns, collection_on) for x in a_list)
                 if y is not None]
 
@@ -711,7 +741,7 @@ def apply_cobra_model_to_map(the_map, model):
             try:
                 val[attribute] = getattr(dl_object, attribute)
             except AttributeError:
-                print('No %s found in DictList %s' % (attribute, on_id))
+                logging.debug('No %s found in DictList %s' % (attribute, on_id))
         return new_attr_fn
 
     def set_reversibility(reaction, cobra_reaction):
@@ -727,15 +757,26 @@ def apply_cobra_model_to_map(the_map, model):
 
     def set_genes(reaction, cobra_reaction):
         reaction['genes'] = [{'bigg_id': x.id, 'name': x.name} for x in cobra_reaction.genes]
+        
+    # vars
+    body = get_body(the_map)
     
+    # compare reactions to model 
     reaction_attributes = [get_attr_fn('name'), get_attr_fn('gene_reaction_rule'),
                            set_reversibility, set_genes]
-    apply_model_attributes_dict(get_reactions(get_body(the_map)), model.reactions,
+    apply_model_attributes_dict(get_reactions(body), model.reactions,
                                 reaction_attributes)
 
+    # compare metabolites to model 
     metabolite_attributes = [get_attr_fn('name')]
-    apply_model_attributes_dict(get_nodes(get_body(the_map)), model.metabolites,
+    apply_model_attributes_dict(get_nodes(body), model.metabolites,
                                 metabolite_attributes)
+
+    # delete any nodes with no segment
+    remove_unconnected_nodes(get_nodes(body), get_reactions(body))
+
+    # delete segments with no nodes
+    remove_unconnected_segments(get_reactions(body), get_nodes(body))
 
 
 def convert(the_map, model, map_name=None, map_description=None,

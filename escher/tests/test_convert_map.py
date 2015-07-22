@@ -13,8 +13,8 @@ def get_old_map():
                                 'label_y': 0,
                                 'segments': {'2': {'from_node_id': '0',
                                                    'to_node_id': '1',
-                                                   'b1': {'x': None, 'y': None},
-                                                   'b2': None},
+                                                   'b1': None,
+                                                   'b2': {'x': None, 'y': None}},
                                              '10': {'from_node_id': '11',
                                                     'to_node_id': '12'}}},
                           '2': {'bigg_id': 'PDH'}},
@@ -32,7 +32,8 @@ def get_old_map():
                             'x': 1,
                             'y': 2,
                             'bigg_id': 'glc__D_c',
-                            'name': 'D-Glucose'}}}
+                            'name': 'D-Glucose'}},
+            'text_labels': []}  # should be {}
 
 def get_new_map():
     return [
@@ -93,12 +94,13 @@ def test_is_valid_body():
     assert is_valid_body(get_old_map())
 
 def test_dict_with_required_elements():
-    out = {'my': 'dict'}
+    out = {'my': 'dict', 'remove': 'me'}
     dict_with_required_elements(out, ['my', 'also'],
                                 get_default=lambda x, _: 'this' if x == 'also' else None)
     assert out['also'] == 'this'
     assert 'my' in out
     assert out['my'] is out['my']
+    assert 'remove' not in out
 
     with raises(MissingDefaultAttribute):
         out = {'my': 'dict'}
@@ -123,6 +125,7 @@ def test_old_map_to_new_schema():
     assert 'schema' in get_header(new_map)
     assert 'reactions' in get_body(new_map)
     assert old_map['reactions'] is get_reactions(get_body(new_map))
+    assert get_body(new_map)['reactions']['1']['segments']['2']['b2'] is None
     assert get_body(new_map)['canvas']['x'] == -1440
     assert get_body(new_map)['text_labels'] == {}
 

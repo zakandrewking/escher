@@ -1,14 +1,22 @@
-Escher in the IPython Notebook
-------------------------------
+Run Escher locally and in IPython
+---------------------------------
 
-The Python package for Escher can be installed using pip::
+To run Escher on a local computer or to use Escher in Python/IPython, first
+install it. The Python package for Escher can be installed using pip::
 
-    pip install escher
+  pip install escher
+
+Depending on your installation of Python, you may need sudo::
+
+  sudo pip install escher
 
 Alternatively, one can download the `source files`_ and install the package
 directly::
 
-    python setup.py install
+  python setup.py install
+
+Escher in the IPython Notebook
+==============================
 
 Once you have installed Escher locally, you can interact with Escher maps in an
 IPython Notebook.
@@ -24,6 +32,22 @@ Dependencies:
 - `Jinja2`_
 - `Tornado`_
 - `COBRApy`_, 0.3.0 or later
+
+.. _`local-server`:
+
+Running the local server
+========================
+
+You can run your own local server if you want to use Escher offline or explore
+your own maps with the homepage browser. To get started, install the Python
+package and run from any directory by calling::
+
+  python -m escher.server
+
+This starts a server at http://localhost:7778. You can also choose another port::
+
+  python -m escher.server --port=8005
+
 
 .. _`source files`: https://github.com/zakandrewking/escher/releases
 .. _`Jinja2`: http://jinja.pocoo.org

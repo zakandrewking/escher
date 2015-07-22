@@ -83,8 +83,8 @@ Contents
    escher_and_cobrapy
    ipython_notebook
    convert_maps
-   development
    contribute_maps
+   development
    escherconverter
    javascript_api
    python_api

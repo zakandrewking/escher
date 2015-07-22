@@ -100,7 +100,7 @@ JavaScript API
 	  (Default: false) If true, then show the gene reaction rules, even
 	  without gene data.
 	  
-       .. js.attribute:: options.hide_all_labels
+       .. js:attribute:: options.hide_all_labels
 
 	  (Default: false) If checked, hide all reaction, gene, and metabolite labels
 

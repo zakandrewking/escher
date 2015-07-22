@@ -3,8 +3,10 @@ Escher, COBRA, and COBRApy
 
 Escher can be used as an independent application, but it draws heavily on the
 information in `COBRA`_ models. A COBRA model is a collection of all the
-reactions, metabolites, and genes known to exist in an organism (also called a
-genome-scale model (GEM) or constraint-based model (CBM)).
+reactions, metabolites, and genes known to exist in an organism. (In the
+literature, these are generally called genome-scale models (GEMs), but we refer
+to them as COBRA models here to emphasize that Escher interoperates with models
+that are exported from COBRApy_.)
 
 By loading a COBRA model into the Escher interface, you have access to every
 reaction and metabolite in that model. You also have the :ref:`gene reaction

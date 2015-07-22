@@ -11,19 +11,6 @@ option menu='all'. These files can be found in ``escher/lib``.
 For an example of the boilerplate code that is required to begin developing with
 Escher, have a look at the `escher-demo repository`_.
 
-Running the local server
-========================
-
-You can run your own local server if you want to modify the Escher code, or use
-Escher offline. To get started, install the Python package and run from any
-directory by calling::
-
-    python -m escher.server
-
-This starts a server at `localhost:7778`_. You can also choose another port::
-
-    python -m escher.server --port=8005
-
 Building and testing Escher
 ===========================
 
