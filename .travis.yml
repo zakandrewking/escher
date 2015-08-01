@@ -13,3 +13,5 @@ install:
 script: python setup.py test --pyonly
 notifications:
   email: false
+# run with containers
+sudo: false
