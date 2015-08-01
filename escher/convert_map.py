@@ -16,7 +16,7 @@ from __future__ import print_function, unicode_literals
 
 
 usage_string = """
-Usage: 
+Usage:
 
 ./convert_map.py {map path} {model path}
 
@@ -59,7 +59,7 @@ def main():
     except IndexError:
         print(usage_string)
         sys.exit()
-   
+
     # load the cobra model
     try:
         model = cobra.io.load_json_model(model_path)
@@ -75,7 +75,7 @@ def main():
 
     # convert the map
     the_map = convert(out, model)
-    
+
     # don't replace the file
     out_file = in_file.replace('.json', '_converted.json')
     logging.info('Saving validated map to %s' % out_file)
@@ -119,7 +119,7 @@ def set_reactions(body, value):
 def is_valid_header(val):
     """Header must have these values."""
     return (isinstance(val, dict) and
-            all(x in val for x in 
+            all(x in val for x in
                 ['schema', 'homepage', 'map_name', 'map_id', 'map_description']))
 
 def is_valid_body(val):
@@ -150,9 +150,9 @@ def dict_with_required_elements(the_dict, required_attributes, get_default=None,
     get_default: A function that takes the attribute name and the current
     object, and returns a default value. If not function is provided, then
     MissingDefaultAttribute is raised when an attribute is not present.
-    
+
     nullable: A list of attributes that can be None.
-    
+
     cast: A dictionary of attributes for keys and functions for values.
 
     """
@@ -185,7 +185,7 @@ def dict_with_required_elements(the_dict, required_attributes, get_default=None,
             the_dict[name] = new
 
     # map over the dict
-    not_required = set(the_dict.keys()) 
+    not_required = set(the_dict.keys())
     for name in required_attributes:
         current_otherwise_default(name)
         # remember the keys that are not required
@@ -265,9 +265,9 @@ def list_of_dicts_with_required_elements(a_list, required_attributes,
 def collection_of_dicts_with_required_elements(collection, required_attributes,
                                                get_default=None, nullable=[],
                                                cast={}):
-    """For a collection (dictionary) of dictionaries with required 
+    """For a collection (dictionary) of dictionaries with required
     attributes, check each one. Returns the new collection.
-    
+
     Arguments
     ---------
 
@@ -348,16 +348,16 @@ def remove_unconnected_segments(reactions, nodes):
     Arguments
     ---------
 
-    nodes: A collection (dict) of nodes.
-
     reactions: A collection (dict) of reactions.
+
+    nodes: A collection (dict) of nodes.
 
     """
     # use a set to keep track of connected nodes
     node_ids = set(nodes.keys())
     is_node = lambda x: x in node_ids
 
-    # filter the nodes
+    # filter the segments
     def check_fn(key, value):
         if is_node(value['from_node_id']) and is_node(value['to_node_id']):
             return value
@@ -366,6 +366,39 @@ def remove_unconnected_segments(reactions, nodes):
             return None
     for reaction in reactions.values():
         map_over_dict_with_deletions(reaction['segments'], check_fn)
+
+def remove_reactions_with_missing_metabolites(reactions, nodes):
+    """Check for reactions that do not have all of their metabolites.
+
+    Arguments
+    ---------
+
+    reactions: A collection (dict) of reactions.
+
+    nodes: A collection (dict) of nodes.
+
+    """
+    # filter the reactions
+    def check_fn(reaction_id, reaction):
+        # get the metabolites
+        metabolite_ids = {x['bigg_id'] for x in reaction['metabolites']}
+        # look for matching segments
+        for segment_id, segment in reaction['segments'].items():
+            # find node
+            for n in 'from_node_id', 'to_node_id':
+                node = nodes[segment[n]]
+                try:
+                    metabolite_ids.remove(node['bigg_id'])
+                except KeyError:
+                    pass
+        if len(metabolite_ids) > 0:
+            logging.info('Deleting reaction %s with missing metabolites %s' % (reaction['bigg_id'],
+                                                                               str(list(metabolite_ids))))
+            return None
+        else:
+            return reaction
+
+    map_over_dict_with_deletions(reactions, check_fn)
 
 # ------------------------------------------------------------------------------
 # Functions for converting maps
@@ -385,7 +418,7 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
     map_description: A description for the map. If a name is already present,
     this name overrides it.
 
-    """ 
+    """
 
     def add_header_if_missing(a_map):
         """Check for new, 2-level maps, and add the header."""
@@ -396,7 +429,7 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
             def check_for(var, name):
                 """Print a warning if var is None."""
                 if var is None:
-                    logging.info('Warning: No {} for map'.format(name))
+                    logging.warn('No {} for map'.format(name))
                     return ''
                 return var
 
@@ -512,7 +545,7 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
         map_over_dict_with_deletions(nodes, fix_a_node)
 
     def fix_reactions(reactions):
-        """Fill in necessary attributes for the reactions. 
+        """Fill in necessary attributes for the reactions.
 
         Returns reactions.
 
@@ -537,7 +570,7 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
                 def fix_a_segment(segment_id, segment):
                     segment_keys = ['from_node_id', 'to_node_id', 'b1', 'b2']
                     def get_default_segment_attr(key, _):
-                        if key in ['b1', 'b2']: 
+                        if key in ['b1', 'b2']:
                             return None
                         else:
                             raise MissingDefaultAttribute(key)
@@ -577,7 +610,7 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
                 """Return a list of genes with correct attributes."""
                 gene_keys = ['bigg_id', 'name']
                 def get_default_gene_attr(name, _):
-                    if name == 'name': 
+                    if name == 'name':
                         return ''
                     else:
                         raise MissingDefaultAttribute(name)
@@ -611,7 +644,7 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
         # run the fix functions
         map_over_dict_with_deletions(reactions, fix_a_reaction)
 
-            
+
     # make sure there is a body and a head
     the_map = add_header_if_missing(the_map)
     body = get_body(the_map)
@@ -630,6 +663,9 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
 
     # delete segments with no nodes
     remove_unconnected_segments(get_reactions(body), get_nodes(body))
+
+    # delete reactions with missing metabolite segments
+    remove_reactions_with_missing_metabolites(get_reactions(body), get_nodes(body))
 
     return the_map
 
@@ -691,7 +727,7 @@ def apply_id_mappings(the_map, reaction_id_mapping=None,
 def apply_cobra_model_to_map(the_map, model):
     """Apply the COBRA model attributes (descriptive names, gene reaction rules,
     reversibilities) to the map.
-    
+
     Cleans up unconnected segments and nodes after deleting any nodes and
     reactions not found in the cobra model.
 
@@ -757,17 +793,17 @@ def apply_cobra_model_to_map(the_map, model):
 
     def set_genes(reaction, cobra_reaction):
         reaction['genes'] = [{'bigg_id': x.id, 'name': x.name} for x in cobra_reaction.genes]
-        
+
     # vars
     body = get_body(the_map)
-    
-    # compare reactions to model 
+
+    # compare reactions to model
     reaction_attributes = [get_attr_fn('name'), get_attr_fn('gene_reaction_rule'),
                            set_reversibility, set_genes]
     apply_model_attributes_dict(get_reactions(body), model.reactions,
                                 reaction_attributes)
 
-    # compare metabolites to model 
+    # compare metabolites to model
     metabolite_attributes = [get_attr_fn('name')]
     apply_model_attributes_dict(get_nodes(body), model.metabolites,
                                 metabolite_attributes)
@@ -777,6 +813,9 @@ def apply_cobra_model_to_map(the_map, model):
 
     # delete segments with no nodes
     remove_unconnected_segments(get_reactions(body), get_nodes(body))
+
+    # delete reactions with missing metabolite segments
+    remove_reactions_with_missing_metabolites(get_reactions(body), get_nodes(body))
 
 
 def convert(the_map, model, map_name=None, map_description=None,
@@ -791,7 +830,7 @@ def convert(the_map, model, map_name=None, map_description=None,
     the_map: An Escher map loaded as a Python object (e.g. json.load('my_map.json')).
 
     model: A COBRA model.
-    
+
     map_name: A name for the map. If a name is already present, this name
     overrides it.
 
@@ -803,10 +842,10 @@ def convert(the_map, model, map_name=None, map_description=None,
 
     metabolite_id_mapping: A dictionary with existing metabolite IDs as keys and the
     new metabolite IDs as values.
-    
+
     gene_id_mapping: A dictionary with existing gene IDs as keys and the new
     gene IDs as values.
-    
+
     debug: Check the map against the schema at some intermediate steps.
 
     """
@@ -825,7 +864,7 @@ def convert(the_map, model, map_name=None, map_description=None,
 
     # apply the new model
     apply_cobra_model_to_map(new_map, model)
-    
+
     validate_map(new_map)
     return new_map
 

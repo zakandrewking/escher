@@ -11,13 +11,35 @@ def get_old_map():
     return {'reactions': {'1': {'bigg_id': 'GAPD',
                                 'label_x': '0',
                                 'label_y': 0,
+                                "metabolites": [{
+                                    "coefficient": -1,
+                                    "bigg_id": "g3p_c"
+                                }],
                                 'segments': {'2': {'from_node_id': '0',
                                                    'to_node_id': '1',
                                                    'b1': None,
                                                    'b2': {'x': None, 'y': None}},
                                              '10': {'from_node_id': '11',
                                                     'to_node_id': '12'}}},
-                          '2': {'bigg_id': 'PDH'}},
+                          '2': {'bigg_id': 'PDH'},
+                          '3': {'bigg_id': 'TTT',
+                                'label_x': 0,
+                                'label_y': 0,
+                                "metabolites": [
+                                    {
+                                        "coefficient": -1,
+                                        "bigg_id": "test_met_c"
+                                    },
+                                    {
+                                        "coefficient": -1,
+                                        "bigg_id": "glc__D_c"
+                                    }
+                                ],
+                                'segments': {
+                                    '10': {'from_node_id': '3',
+                                           'to_node_id': '4'}
+                                }
+                          }},
             'nodes': {'0': {'node_type': 'multimarker',
                             'x': 1,
                             'y': 2},
@@ -32,7 +54,11 @@ def get_old_map():
                             'x': 1,
                             'y': 2,
                             'bigg_id': 'glc__D_c',
-                            'name': 'D-Glucose'}},
+                            'name': 'D-Glucose'},
+                      '4': {'node_type': 'multimarker',
+                            'x': 9,
+                            'y': 9},
+            },
             'text_labels': []}  # should be {}
 
 def get_new_map():
@@ -71,7 +97,7 @@ def get_new_map():
                        },
          "nodes": {
              "1577006": {"node_type": "multimarker", "x": 1055, "y": 2345},
-             "1577007": {"node_type": "multimarker", "x": 1055, "y": 2435}, 
+             "1577007": {"node_type": "multimarker", "x": 1055, "y": 2435},
              "1577008": {"node_type": "midmarker", "x": 1055, "y": 2395},
              "1576575": {"node_type": "metabolite", "x": 1055, "y": 2195, "bigg_id": "g3p_c", "name": "Glyceraldehyde-3-phosphate", "label_x": 1085, "label_y": 2195, "node_is_primary": True},
              "1576487": {"node_type": "metabolite", "x": 1055, "y": 2565, "bigg_id": "13dpg_c", "name": "3-Phospho-D-glyceroyl-phosphate", "label_x": 1085, "label_y": 2565, "node_is_primary": True},
@@ -125,9 +151,12 @@ def test_old_map_to_new_schema():
     assert 'schema' in get_header(new_map)
     assert 'reactions' in get_body(new_map)
     assert old_map['reactions'] is get_reactions(get_body(new_map))
+    # fixed bezier attribute
     assert get_body(new_map)['reactions']['1']['segments']['2']['b2'] is None
     assert get_body(new_map)['canvas']['x'] == -1440
     assert get_body(new_map)['text_labels'] == {}
+    # removed reaction with missing metabolite
+    assert '3' not in get_body(new_map)['reactions']
 
 def test_apply_id_mappings():
     new_map = get_new_map()
@@ -164,10 +193,17 @@ def test_convert():
     model.reactions.get_by_id('GAPD').lower_bound = -1000
 
     new_map = convert(get_old_map(), model)
-    print(new_map)
 
     # no segments: delete reaction
     assert '2' not in new_map[1]['reactions']
+
+    # missing segments: delete reaction
+    assert '1' not in new_map[1]['reactions']
+
+    # now again with the correct number of segments
+    gapd = model.reactions.get_by_id('GAPD')
+    gapd.subtract_metabolites({k: v for k, v in gapd.metabolites.items() if k.id != 'g3p_c'})
+    new_map = convert(get_old_map(), model)
 
     # reversed the map
     for m in new_map[1]['reactions']['1']['metabolites']:

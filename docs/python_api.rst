@@ -6,6 +6,8 @@ Python API
 .. autoclass:: Builder
    :members:
 
+.. _`cache`:
+
 Cache
 -----
 

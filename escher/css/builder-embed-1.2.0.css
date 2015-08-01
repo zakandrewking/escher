@@ -14,11 +14,11 @@ svg.escher-svg .resize-rect {
   stroke: none;
 }
 svg.escher-svg .label {
-  font-family: sans-serif; 
-  font-style: italic; 
-  font-weight: bold; 
-  font-size: 8px; 
-  fill: black; 
+  font-family: sans-serif;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 8px;
+  fill: black;
   stroke: none;
   text-rendering: optimizelegibility;
   cursor: default;
@@ -84,7 +84,7 @@ svg.escher-svg .membrane {
   fill: none;
   stroke: rgb(255, 187, 0);
 }
-svg.escher-svg .brush .extent { 
+svg.escher-svg .brush .extent {
   fill-opacity: 0.1;
   fill: black;
   stroke: #fff;
@@ -94,7 +94,7 @@ svg.escher-svg #brush-container .background {
   fill: none;
 }
 svg.escher-svg .bezier-circle {
-  fill: rgb(255,255,255);     
+  fill: rgb(255,255,255);
 }
 svg.escher-svg .bezier-circle.b1 {
   stroke: red;
@@ -102,7 +102,7 @@ svg.escher-svg .bezier-circle.b1 {
 svg.escher-svg .bezier-circle.b2 {
   stroke: blue;
 }
-svg.escher-svg .connect-line{ 
+svg.escher-svg .connect-line{
   stroke: rgb(200,200,200);
 }
 svg.escher-svg .direction-arrow {

@@ -92,7 +92,7 @@
   display: inline-block;
   text-align: left;
   pointer-events: auto;
-}    
+}
 @media (min-width: 550px) {
   .escher-container .search-menu-container-inline {
     width: 400px;
@@ -173,7 +173,7 @@
   width: 100%;
 }
 .escher-container .settings-table td {
-  padding: 3px 5px;    
+  padding: 3px 5px;
 }
 .escher-container td.options-label {
   width: 88px;
@@ -288,7 +288,7 @@
   box-shadow: 0px 2px 14px rgb(197, 197, 197);
 }
 .escher-container .scale-editor .input-set.selected-set {
-  z-index: 5; 
+  z-index: 5;
 }
 .escher-container .scale-editor .domain-type-picker {
   position: absolute;
