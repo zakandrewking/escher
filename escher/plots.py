@@ -3,9 +3,11 @@
 from __future__ import print_function, unicode_literals
 
 from escher.quick_server import serve_and_open
-from escher.urls import get_url 
+from escher.urls import get_url
 from escher.appdirs import user_cache_dir
 from escher.generate_index import index
+from escher.version import __schema_version__, __map_model_version__
+from escher.util import query_yes_no
 
 import os
 from os.path import dirname, abspath, join, isfile, isdir
@@ -29,33 +31,52 @@ env = Environment(loader=PackageLoader('escher', 'templates'))
 
 # cache management
 
-def get_cache_dir(name=None):
-    """ Get the cache dir as a string.
+def get_cache_dir(versioned=True, name=None):
+    """Get the cache dir as a string, and make the directory if it does not already
+    exist.
 
-    :param string name: An optional subdirectory within the cache
+    :param Boolean versioned: Whether to return the versioned path in the
+                              cache. Escher maps for the latest version of
+                              Escher are found in the versioned directory
+                              (versioned = True), but maps for previous versions
+                              of Escher can be found by visiting the parent
+                              directory (versioned = False).
+
+    :param string name: An optional subdirectory within the cache. If versioned
+                        is False, then name is ignored.
 
     """
-    cache_dir = join(user_cache_dir('escher', appauthor='Zachary King'))
-    if name is not None:
-        cache_dir = join(cache_dir, name)
+    cache_dir = user_cache_dir('escher', appauthor='Zachary King')
+    # add version
+    if versioned:
+        cache_dir = join(cache_dir, __schema_version__, __map_model_version__)
+        # add subdirectory
+        if name is not None:
+            cache_dir = join(cache_dir, name)
     try:
         os.makedirs(cache_dir)
     except OSError:
         pass
     return cache_dir
 
-def clear_cache(different_cache_dir=None):
-    """Empty the contents of the cache directory.
+def clear_cache(different_cache_dir=None, ask=True):
+    """Empty the contents of the cache directory, including all versions of all maps
+    and models.
 
     :param string different_cache_dir: (Optional) The directory of another
                                        cache. This is mainly for testing.
 
+    :param Boolean ask: Whether to ask before deleting.
+
     """
+    if ask and not query_yes_no('Are you sure you want to delete the contents of the cache?'):
+        return
+
     if different_cache_dir is None:
-        cache_dir = get_cache_dir()
+        cache_dir = get_cache_dir(versioned=False)
     else:
-        cache_dir = different_cache_dir    
-        
+        cache_dir = different_cache_dir
+
     for root, dirs, files in os.walk(cache_dir):
         for f in files:
             os.unlink(join(root, f))
@@ -72,7 +93,7 @@ def list_cached_maps():
 def list_cached_models():
     """Return a list of all cached models."""
     return local_index()['models']
-    
+
 # server management
 
 def server_index():
@@ -102,7 +123,7 @@ def _json_for_name(name, kind, cache_dir):
     def match_in_index(name, index, kind):
         return [(obj['organism'], obj[kind + '_name']) for obj in index[kind + 's']
                 if obj[kind + '_name'] == name]
-    
+
     # first check the local index
     match = match_in_index(name, local_index(cache_dir=cache_dir), kind)
     if len(match) == 0:
@@ -146,7 +167,7 @@ def _json_for_name(name, kind, cache_dir):
 
 def model_json_for_name(model_name, cache_dir=get_cache_dir()):
     return _json_for_name(model_name, 'model', cache_dir)
-   
+
 def map_json_for_name(map_name, cache_dir=get_cache_dir()):
     return _json_for_name(map_name, 'map', cache_dir)
 
@@ -203,19 +224,19 @@ def _load_resource(resource, name, safe=False):
 
 class Builder(object):
     """A metabolic map that can be viewed, edited, and used to visualize data.
-    
+
     This map will also show metabolic fluxes passed in during consruction.  It
     can be viewed as a standalone html inside a browswer. Alternately, the
     respresentation inside an IPython notebook will also display the map.
 
     Maps are stored in json files and are stored in a cache directory. Maps
     which are not found will be downloaded from a map repository if found.
-    
+
     :param map_name:
 
         A string specifying a map to be downloaded from the Escher web server,
         or loaded from the cache.
-    
+
     :param map_json:
 
         A JSON string, or a file path to a JSON file, or a URL specifying a JSON
@@ -227,7 +248,7 @@ class Builder(object):
 
         A string specifying a model to be downloaded from the Escher web server,
         or loaded from the cache.
-    
+
     :param model_json:
 
         A JSON string, or a file path to a JSON file, or a URL specifying a JSON
@@ -236,7 +257,7 @@ class Builder(object):
     :param embedded_css:
 
         The CSS (as a string) to be embedded with the Escher SVG.
-    
+
     :param reaction_data:
 
         A dictionary with keys that correspond to reaction ids and values that
@@ -260,7 +281,7 @@ class Builder(object):
 
         Specify an id to make the javascript data definitions unique. A random
         id is chosen by default.
-    
+
     :param safe:
 
         If True, then loading files from the filesytem is not allowed. This is
@@ -295,18 +316,18 @@ class Builder(object):
     using setter functions, e.g.:
 
     .. code:: python
-    
+
         my_builder.set_reaction_styles(new_styles)
 
     """
-    
+
     def __init__(self, map_name=None, map_json=None, model=None,
         model_name=None, model_json=None, embedded_css=None,
         reaction_data=None, metabolite_data=None, gene_data=None,
         local_host=None, id=None, safe=False, **kwargs):
 
         self.safe = safe
-        
+
         # load the map
         self.map_name = map_name
         self.map_json = map_json
@@ -327,7 +348,7 @@ class Builder(object):
         self.metabolite_data = metabolite_data
         self.gene_data = gene_data
         self.local_host = local_host
-        
+
         # remove illegal characters from css
         try:
             self.embedded_css = (embedded_css.replace('\n', ''))
@@ -359,7 +380,7 @@ class Builder(object):
                         'allow_building_duplicate_reactions']
         def get_getter_setter(o):
             """Use a closure."""
-            # create local fget and fset functions 
+            # create local fget and fset functions
             fget = lambda self: getattr(self, '_%s' % o)
             fset = lambda self, value: setattr(self, '_%s' % o, value)
             return fget, fset
@@ -371,20 +392,20 @@ class Builder(object):
             setattr(self.__class__, option, property(fget))
             # add corresponding local variable
             setattr(self, '_%s' % option, None)
-            
+
         # set the kwargs
         for key, val in kwargs.items():
             try:
                 getattr(self, 'set_%s' % key)(val)
             except AttributeError:
                 print('Unrecognized keywork argument %s' % key)
-        
+
     def _load_model(self):
         """Load the model.
 
         Try first from self.model, second from self.model_json, and
         third from from self.model_name.
-        
+
         """
         if self.model is not None:
             try:
@@ -399,7 +420,7 @@ class Builder(object):
                                                     safe=self.safe)
         elif self.model_name is not None:
             self.loaded_model_json = model_json_for_name(self.model_name)
-                
+
     def _load_map(self):
         """Load the map from input map_json using _load_resource, or, secondarily,
            from map_name.
@@ -420,14 +441,14 @@ class Builder(object):
 
         Arguments
         ---------
-        
+
         url_source: Whether to load from 'web' or 'local'.
-        
+
 
         """
         if self.embedded_css is not None:
             return self.embedded_css
-            
+
         loc = get_url('builder_embed_css', source=url_source,
                       local_host=self.local_host, protocol='https')
         try:
@@ -462,7 +483,7 @@ class Builder(object):
 
     def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
                  fill_screen, scroll_behavior, never_ask_before_quit,
-                 static_site_index_json): 
+                 static_site_index_json):
         draw = ("options = {{ enable_editing: {enable_editing},\n"
                 "menu: {menu},\n"
                 "enable_keys: {enable_keys},\n"
@@ -485,9 +506,9 @@ class Builder(object):
             if val is None: continue
             draw = draw + "{option}: {value},\n".format(
                 option=option,
-                value=json.dumps(val)) 
+                value=json.dumps(val))
         draw = draw + "};\n\n"
-            
+
         # dev needs escher.
         dev_str = '' if dev else 'escher.'
         # parse the url in javascript, for building a static site
@@ -504,7 +525,7 @@ class Builder(object):
         if static_site_index_json:
             draw = draw + '});\n'
         return draw
-    
+
     def _get_html(self, js_source='web', menu='none', scroll_behavior='pan',
                   html_wrapper=False, enable_editing=False, enable_keys=False,
                   minified_js=True, fill_screen=False, height='800px',
@@ -531,7 +552,7 @@ class Builder(object):
 
         minified_js: If True, use the minified version of js files. If
         js_source is 'dev', then this option is ignored.
-            
+
         html_wrapper: If True, return a standalone html file.
 
         enable_editing: Enable the editing modes (build, rotate, etc.).
@@ -543,22 +564,22 @@ class Builder(object):
         never_ask_before_quit: Never display an alert asking if you want to
         leave the page. By default, this message is displayed if enable_editing
         is True.
-        
+
         static_site_index_json: The index, as a JSON string, for the static
         site. Use javascript to parse the URL options. Used for
-        generating static pages (see static_site.py).        
+        generating static pages (see static_site.py).
 
         """
 
         if js_source not in ['web', 'local', 'dev']:
             raise Exception('Bad value for js_source: %s' % js_source)
-        
+
         if menu not in ['none', 'zoom', 'all']:
             raise Exception('Bad value for menu: %s' % menu)
 
         if scroll_behavior not in ['pan', 'zoom', 'none']:
-            raise Exception('Bad value for scroll_behavior: %s' % scroll_behavior) 
-            
+            raise Exception('Bad value for scroll_behavior: %s' % scroll_behavior)
+
         content = env.get_template('content.html')
 
         # if height is not a string
@@ -568,11 +589,11 @@ class Builder(object):
             height = "%fpx" % height
         elif type(height) is str:
             height = str(height)
-            
-        # set the proper urls 
+
+        # set the proper urls
         url_source = 'local' if (js_source=='local' or js_source=='dev') else 'web'
         is_dev = (js_source=='dev')
-        
+
         d3_url = get_url('d3', url_source, self.local_host)
         d3_rel_url = get_url('d3', url_source)
         escher_url = ('' if js_source=='dev' else
@@ -584,13 +605,13 @@ class Builder(object):
                         get_url('boot_css', url_source, self.local_host))
         boot_js_url = ('' if not menu=='all' else
                         get_url('boot_js', url_source, self.local_host))
-        require_js_url = get_url('require_js', url_source, self.local_host)                     
+        require_js_url = get_url('require_js', url_source, self.local_host)
         escher_css_url = get_url('builder_css', url_source, self.local_host)
         favicon_url = get_url('favicon', url_source, self.local_host)
 
         lh_string = ('' if self.local_host is None else
                      self.local_host.rstrip('/') + '/')
-        
+
         html = content.render(id=self.the_id,
                               height=height,
                               dev=is_dev,
@@ -621,19 +642,19 @@ class Builder(object):
         :param string js_source:
 
             Can be one of the following:
-            
+
             - *web* (Default) - Use JavaScript files from escher.github.io.
             - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
             - *dev* - Use the local, uncompiled development files. Works offline.
-            
+
         :param string menu: Menu bar options include:
-        
+
             - *none* - No menu or buttons.
             - *zoom* - Just zoom buttons.
             - Note: The *all* menu option does not work in an IPython notebook.
 
         :param string scroll_behavior: Scroll behavior options:
-        
+
             - *pan* - Pan the map.
             - *zoom* - Zoom the map.
             - *none* - (Default) No scroll events.
@@ -659,7 +680,7 @@ class Builder(object):
             raise Exception('You need to be using the IPython notebook for this function to work')
         return HTML(html)
 
-    
+
     def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50, js_source='web',
                            menu='all', scroll_behavior='pan', enable_editing=True, enable_keys=True,
                            minified_js=True, never_ask_before_quit=False):
@@ -676,27 +697,27 @@ class Builder(object):
 
             The number of times the server will try to find a port before
             quitting.
-            
+
         :param string js_source:
 
             Can be one of the following:
-            
+
             - *web* (Default) - Use JavaScript files from escher.github.io.
             - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
             - *dev* - Use the local, uncompiled development files. Works offline.
 
         :param string menu: Menu bar options include:
-        
+
             - *none* - No menu or buttons.
             - *zoom* - Just zoom buttons.
             - *all* (Default) - Menu and button bar (requires Bootstrap).
 
         :param string scroll_behavior: Scroll behavior options:
-        
+
             - *pan* - Pan the map.
             - *zoom* - Zoom the map.
             - *none* (Default) - No scroll events.
-                
+
         :param Boolean enable_editing: Enable the map editing modes.
 
         :param Boolean enable_keys: Enable keyboard shortcuts.
@@ -717,7 +738,7 @@ class Builder(object):
                               minified_js=minified_js, fill_screen=True, height="100%",
                               never_ask_before_quit=never_ask_before_quit)
         serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
-        
+
     def save_html(self, filepath=None, js_source='web', menu='all', scroll_behavior='pan',
                   enable_editing=True, enable_keys=True, minified_js=True,
                   never_ask_before_quit=False, static_site_index_json=None):
@@ -728,23 +749,23 @@ class Builder(object):
         :param string js_source:
 
             Can be one of the following:
-            
+
             - *web* (Default) - Use JavaScript files from escher.github.io.
             - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
             - *dev* - Use the local, uncompiled development files. Works offline.
-            
+
         :param string menu: Menu bar options include:
-        
+
             - *none* - No menu or buttons.
             - *zoom* - Just zoom buttons.
             - *all* (Default) - Menu and button bar (requires Bootstrap).
 
         :param string scroll_behavior: Scroll behavior options:
-        
+
             - *pan* - Pan the map.
             - *zoom* - Zoom the map.
             - *none* (Default) - No scroll events.
-            
+
         :param Boolean enable_editing: Enable the map editing modes.
 
         :param Boolean enable_keys: Enable keyboard shortcuts.
@@ -765,7 +786,7 @@ class Builder(object):
 
             The index, as a JSON string, for the static site. Use javascript
             to parse the URL options. Used for generating static pages (see
-            static_site.py).        
+            static_site.py).
 
         """
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,

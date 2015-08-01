@@ -2,7 +2,7 @@
 
 from __future__ import print_function, unicode_literals
 
-from escher.version import __version__, __schema_version__
+from escher.version import __version__, __schema_version__, __map_model_version__
 import os
 import re
 from os.path import dirname, realpath, join
@@ -19,9 +19,9 @@ _escher_local = {
     'index_js': 'escher/js/web/index.js',
     'index_gh_pages_js': 'escher/js/web/index_gh_pages.js',
     'index_css': 'escher/css/web/index.css',
-    'server_index': '%s/index.json' % __schema_version__,
-    'map_download': '%s/maps/' % __schema_version__,
-    'model_download': '%s/models/' % __schema_version__,
+    'server_index': '%s/%s/index.json' % (__schema_version__, __map_model_version__),
+    'map_download': '%s/%s/maps/' % (__schema_version__, __map_model_version__),
+    'model_download': '%s/%s/models/' % (__schema_version__, __map_model_version__),
     }
 
 _escher_web = {
@@ -29,12 +29,12 @@ _escher_web = {
     'builder_css': 'builder-%s.css' % __version__,
     'escher': 'escher-%s.js' % __version__,
     'escher_min': 'escher-%s.min.js' % __version__,
-    'server_index': '%s/index.json' % __schema_version__,
-    'map_download': '%s/maps/' % __schema_version__,
-    'model_download': '%s/models/' % __schema_version__,
+    'server_index': '%s/%s/index.json' % (__schema_version__, __map_model_version__),
+    'map_download': '%s/%s/maps/' % (__schema_version__, __map_model_version__),
+    'model_download': '%s/%s/models/' % (__schema_version__, __map_model_version__),
     'favicon': 'escher/resources/favicon.ico',
     }
-    
+
 _dependencies = {
     'd3': 'escher/lib/d3.min.js',
     'boot_js': 'escher/lib/bootstrap-3.1.1.min.js',
@@ -43,7 +43,7 @@ _dependencies = {
     'require_js': 'escher/lib/require.min.js',
     'bacon': 'escher/lib/bacon-0.7.12.min.js',
     }
-    
+
 _dependencies_cdn = {
     'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js',
     'boot_js': '//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js',
@@ -56,6 +56,7 @@ _dependencies_cdn = {
 _links = {
     'escher_root': '//escher.github.io/',
     'github': '//github.com/zakandrewking/escher/',
+    'github_releases': '//github.com/zakandrewking/escher/releases',
     'documentation': '//escher.readthedocs.org/',
     }
 
@@ -81,7 +82,7 @@ def get_url(name, source='web', local_host=None, protocol=None):
     """
     if source not in ['web', 'local']:
         raise Exception('Bad source: %s' % source)
-    
+
     if protocol not in [None, 'http', 'https']:
         raise Exception('Bad protocol: %s' % protocol)
 
@@ -92,7 +93,7 @@ def get_url(name, source='web', local_host=None, protocol=None):
 
     def apply_local_host(url):
         return '/'.join([local_host.rstrip('/'), url.lstrip('/')])
-        
+
     # escher
     if name in _escher_local and source == 'local':
         if local_host is not None:
@@ -114,5 +115,5 @@ def get_url(name, source='web', local_host=None, protocol=None):
     # cdn dependencies
     elif name in _dependencies_cdn and source=='web':
         return protocol + _dependencies_cdn[name]
-    
+
     raise Exception('name not found')

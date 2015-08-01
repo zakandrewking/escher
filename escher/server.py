@@ -60,7 +60,7 @@ class BaseHandler(RequestHandler):
                                          if the_type is None
                                          else the_type))
         self.serve(data)
-        
+
     def serve(self, data):
         if (NO_CACHE):
             self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
@@ -91,7 +91,8 @@ class IndexHandler(BaseHandler):
                                logo=get_url('logo', 'local'),
                                documentation=get_url('documentation', protocol='https'),
                                github=get_url('github'),
-index_js=get_url('index_js', 'local'),
+                               github_releases=get_url('github_releases'),
+                               index_js=get_url('index_js', 'local'),
                                index_gh_pages_js=get_url('index_gh_pages_js', 'local'),
                                map_download=get_url('map_download', 'local'),
                                # server_index_url=
@@ -101,10 +102,10 @@ index_js=get_url('index_js', 'local'),
                                can_dev_js=json.dumps(CAN_DEV),
                                version=__version__,
                                web_version=False)
-        
+
         self.set_header("Content-Type", "text/html")
         self.serve(data)
-  
+
 class BuilderHandler(BaseHandler):
     @asynchronous
     @gen.coroutine
@@ -136,7 +137,7 @@ class BuilderHandler(BaseHandler):
 
         # if the server is running locally, then the embedded css must be loaded
         # asynchronously using the same server thread.
-        if js_source in ['dev', 'local']:  
+        if js_source in ['dev', 'local']:
             global PORT
             url = get_url('builder_embed_css',
                           source='local',
@@ -162,15 +163,15 @@ class BuilderHandler(BaseHandler):
             builder_kwargs['reaction_data'] = load_data_file(r_filepath)
             m_filepath = 'escher/example_data/metabolite_data_iJO1366.json'
             builder_kwargs['metabolite_data'] = load_data_file(m_filepath)
-        
+
         # make the builder
         builder = Builder(safe=True, **builder_kwargs)
-            
+
         # display options
         display_kwargs = {'minified_js': True,
                           'scroll_behavior': 'pan',
                           'menu': 'all'}
-            
+
         # keyword
         for a in ['menu', 'scroll_behavior', 'minified_js',
                   'auto_set_data_domain', 'never_ask_before_quit']:
@@ -183,7 +184,7 @@ class BuilderHandler(BaseHandler):
         html = builder._get_html(js_source=js_source, enable_editing=enable_editing,
                                  enable_keys=True, html_wrapper=True, fill_screen=True,
                                  height='100%', **display_kwargs)
-        
+
         self.set_header("Content-Type", "text/html")
         self.serve(html)
 
@@ -201,7 +202,7 @@ class MapModelHandler(BaseHandler):
             b = Builder(model_name=name)
             self.set_header('Content-Type', 'application/json')
             self.serve(b.loaded_model_json)
-         
+
 class StaticHandler(BaseHandler):
     def get(self, path):
         path = join(root_directory, path)
@@ -228,7 +229,7 @@ application = Application([
     (r"/docs/(.*)", DocsHandler),
     (r"/", IndexHandler),
 ], **settings)
- 
+
 if __name__ == "__main__":
     # define port
     define("port", default=PORT, type=int, help="Port to serve on.")

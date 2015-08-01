@@ -1,5 +1,5 @@
 from escher.urls import get_url, names, root_directory
-from escher.version import __version__, __schema_version__
+from escher.version import __version__, __schema_version__, __map_model_version__
 import os
 from os.path import join, exists
 
@@ -29,9 +29,9 @@ def test_urls():
 
     # download
     url = get_url('server_index', source='local')
-    assert url == __schema_version__ + '/index.json'
+    assert url == __schema_version__ + '/' + __map_model_version__ + '/index.json'
     url = get_url('map_download', protocol='https')
-    assert url == 'https://escher.github.io/%s/maps/' % __schema_version__
+    assert url == 'https://escher.github.io/%s/%s/maps/' % (__schema_version__, __map_model_version__)
     
     # raises
     with raises(Exception):

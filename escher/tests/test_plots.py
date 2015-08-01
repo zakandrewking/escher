@@ -1,6 +1,6 @@
 from __future__ import print_function, unicode_literals
 
-from escher import __schema_version__
+from escher import __schema_version__, __map_model_version__
 import escher.server
 from escher import Builder, get_cache_dir, clear_cache
 from escher.plots import (_load_resource, local_index, server_index,
@@ -10,7 +10,7 @@ from escher.urls import get_url
 
 import os
 import sys
-from os.path import join
+from os.path import join, basename
 import json
 from pytest import raises, mark
 try:
@@ -24,19 +24,25 @@ else:
     unicode_type = str
 
 # cache
-    
+
 def test_get_cache_dir():
+    d = get_cache_dir(versioned=False)
+    assert os.path.isdir(d)
+    assert basename(d) != __map_model_version__
     d = get_cache_dir()
     assert os.path.isdir(d)
+    assert basename(d) == __map_model_version__
+    assert __schema_version__ in d
     d = get_cache_dir(name='maps')
     assert os.path.isdir(d)
 
 def test_clear_cache(tmpdir, request):
-    (tmpdir.mkdir('maps').mkdir('Escherichia coli')
+    (tmpdir.mkdir('2').mkdir('maps').mkdir('Escherichia coli')
      .join('iJO1366.Central metabolism.json').write('temp'))
-    (tmpdir.mkdir('models').mkdir('Escherichia coli')
+    (tmpdir.join('2').mkdir('models').mkdir('Escherichia coli')
      .join('iJO1366.json').write('temp'))
-    clear_cache(str(tmpdir))
+    (tmpdir.mkdir('x').mkdir('y').mkdir('z'))
+    clear_cache(str(tmpdir), ask=False)
     assert os.listdir(str(tmpdir)) == []
     def fin():
         tmpdir.remove()
@@ -55,7 +61,7 @@ def test_local_index(tmpdir, request):
     def fin():
         tmpdir.remove()
     request.addfinalizer(fin)
-    
+
 # server
 
 @mark.web
@@ -94,15 +100,15 @@ def test_map_json_for_name_web(tmpdir):
     root = get_url('escher_root', protocol='https').rstrip('/')
     assert json.loads(data)[0]['schema'] == '/'.join([root, 'escher', 'jsonschema',
                                                       __schema_version__ + '#'])
-    
+
 # helper functions
-    
+
 def test__load_resource(tmpdir):
     assert _load_resource('{"r": "val"}', 'name') == '{"r": "val"}'
-    
+
     directory = os.path.abspath(os.path.dirname(__file__))
     assert _load_resource(join(directory, 'example.json'), 'name').strip() == '{"r": "val"}'
-    
+
     with raises(ValueError) as err:
         p = join(str(tmpdir), 'dummy')
         with open(p, 'w') as f:
@@ -111,11 +117,11 @@ def test__load_resource(tmpdir):
         assert 'not a valid json file' in err.value
 
 @mark.web
-def test__load_resource_web(tmpdir): 
+def test__load_resource_web(tmpdir):
     url = '/'.join([get_url('map_download', protocol='https'),
                     'Escherichia%20coli/iJO1366.Central%20metabolism.json'])
     _ = json.loads(_load_resource(url, 'name'))
-                
+
 def test_Builder(tmpdir):
     b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}')
     # Cannot load dev/local version without an explicit css string property.
@@ -192,13 +198,13 @@ def test__draw_js():
     look_for_string(ijs, 'var model_data_id = "useless_model";')
     look_for_string(js, 'Builder(map_data_id, model_data_id, embedded_css_id, d3.select("#id"), options);')
 
-    # static parse, not dev 
+    # static parse, not dev
     ijs = b._initialize_javascript('id', 'local')
     static_index = '{"my": ["useless", "index"]}'
     js = b._draw_js('id', True, 'all', True, False, True, 'pan', True, static_index)
     look_for_string(ijs, 'var map_data_id = "useless_map";')
     look_for_string(ijs, 'var model_data_id = "useless_model";')
-    look_for_string(js, 'escher.static.load_map_model_from_url("%s/maps/", "%s/models/",' % (__schema_version__, __schema_version__))
+    look_for_string(js, 'escher.static.load_map_model_from_url("{0}/{1}/maps/", "{0}/{1}/models/",'.format(__schema_version__, __map_model_version__))
     look_for_string(js, static_index)
     look_for_string(js, 'options, function(map_data_id, model_data_id, options) {')
     look_for_string(js, 'escher.Builder(map_data_id, model_data_id, embedded_css_id, d3.select("#id"), options);')
