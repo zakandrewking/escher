@@ -20,7 +20,7 @@ import re
 from jinja2 import Environment, PackageLoader
 from mimetypes import guess_type
 
-from escher.version import __version__, __schema_version__
+from escher.version import __version__, __schema_version__, __map_model_version__
 
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
@@ -225,7 +225,7 @@ application = Application([
     (r"/(escher/resources/.*)", StaticHandler),
     (r"/(escher/jsonschema/.*)", StaticHandler),
     (r"/(builder|viewer)(.*)", BuilderHandler),
-    (r"/%s(/.*)" % __schema_version__, MapModelHandler),
+    (r"/%s/%s(/.*)" % (__schema_version__, __map_model_version__), MapModelHandler),
     (r"/docs/(.*)", DocsHandler),
     (r"/", IndexHandler),
 ], **settings)

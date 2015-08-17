@@ -18,17 +18,17 @@ Escher in 3 minutes
               
          <iframe width="100%" height="315" src="https://www.youtube.com/embed/qUipX-xzZjQ" frameborder="0" allowfullscreen></iframe><br/><br/>
 
-Help! I just upgraded to v1.3 and my map and model caches are empty!
+Help! I just upgraded to v1.2 and my map and model caches are empty!
 --------------------------------------------------------------------
 
-Starting with Escher v1.3, the maps and models available from the Escher website
+Starting with Escher v1.2, the maps and models available from the Escher website
 are versioned. Each time you upgrade Escher, you will have access to the new
 versions of the Escher maps and models. Any maps and models you were using
 before are still saved in the Escher cache in case you need them. For more
 details on finding, managing, and clearing the cache, see :ref:`the Python cache
 functions<cache>`.
 
-Also starting with Escher v1.3, the maps and models in Escher are the same as
+Also starting with Escher v1.2, the maps and models in Escher are the same as
 those in the `BiGG Database`_.
 
 Features

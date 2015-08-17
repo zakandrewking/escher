@@ -1,3 +1,5 @@
+/* global describe, it, expect, d3, escher */
+
 describe('data_styles', function() {
     it('import_and_check', function() {
         // reaction data
@@ -5,7 +7,7 @@ describe('data_styles', function() {
             expected = { R1: [0], R2: [4], R3: [-12.3] };
         out = escher.data_styles.import_and_check(reaction_data, 'reaction_data');
         expect(out).toEqual(expected);
-        
+
         // gene data, funny names
         var gene_data = { G1ORF: 0, G2ANDHI: 4, 'G3-A': -12.3 },
             reactions = { '2': { bigg_id: 'reaction_1',
@@ -15,7 +17,7 @@ describe('data_styles', function() {
                                        'G3-A': [-12.3] }},
             out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
         expect(out).toEqual(expected);
-        
+
         // gene data, multiple sets
         var gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2: 6 }],
             reactions = { '3': { bigg_id: 'reaction_1',
@@ -76,7 +78,7 @@ describe('data_styles', function() {
             .toEqual(null);
         // both neg fold
         expect(escher.data_styles.float_for_data([-10, -5], [], 'log2_fold'))
-            .toEqual(-1); 
+            .toEqual(-1);
         // one neg, no abs
         expect(escher.data_styles.float_for_data([10, -5], [], 'log2_fold'))
             .toEqual(null);
@@ -85,7 +87,7 @@ describe('data_styles', function() {
             .toEqual(null);
         expect(escher.data_styles.float_for_data([0, 10], [], 'log2_fold'))
             .toEqual(null);
-        // null values 
+        // null values
         expect(escher.data_styles.float_for_data([null], [], 'log2_fold'))
             .toEqual(null);
         expect(escher.data_styles.float_for_data([''], [], 'log2_fold'))
@@ -94,7 +96,7 @@ describe('data_styles', function() {
         expect(escher.data_styles.float_for_data.bind(null, [10, 5], [], 'd'))
             .toThrow();
     });
-    
+
     it('text_for_data', function() {
         expect(escher.data_styles.text_for_data([10], 10))
             .toEqual('10.0');
@@ -116,15 +118,21 @@ describe('data_styles', function() {
         expect(escher.data_styles.gene_string_for_data('( G1 )', { G1: [-10] },
                                                        [{bigg_id: 'G1', name: 'Gene1'}],
                                                        ['abs'], 'bigg_id', 'log2_fold'))
-            .toEqual('( G1 (-10.0))');
+            .toEqual([{ bigg_id: 'G1',
+                        name: 'Gene1',
+                        text: '( G1 (-10.0))' }]);
         expect(escher.data_styles.gene_string_for_data('G1', { G1: [-10] },
                                                        [{bigg_id: 'G1', name: 'Gene1'}],
                                                        ['abs'], 'bigg_id', 'log2_fold'))
-            .toEqual('G1 (-10.0)');
+            .toEqual([{ bigg_id: 'G1',
+                        name: 'Gene1',
+                        text: 'G1 (-10.0)' }]);
         expect(escher.data_styles.gene_string_for_data('( G1 )', { G1: [-10] },
                                                        [{bigg_id: 'G1', name: 'Gene1'}],
                                                        ['abs'], 'name', 'log2_fold'))
-            .toEqual('( Gene1 (-10.0))');
+            .toEqual([{ bigg_id: 'G1',
+                        name: 'Gene1',
+                        text: '( Gene1 (-10.0))' }]);
 
         // Repeated genes: If the genes object accidentally has repeats, then
         // make sure they are removed.
@@ -146,16 +154,29 @@ describe('data_styles', function() {
                                       {"bigg_id":"b3951","name":"b3951"},
                                       {"bigg_id":"b3952","name":"b3952"}],
                                      ['abs'], 'bigg_id', 'log2_fold'))
-            .toEqual('((b0902 (188, 282: 0.583)\n and b0903 (1.87e+3, 1.14e+4: 2.62)\n) or (b0902 (188, 282: 0.583)\n and b3114 (5.29, 5.41: 0.0327)\n) or (b3951 (8.29, 5.97: 0.475)\n and b3952 (3.67, 4.29: 0.223)\n) or ((b0902 (188, 282: 0.583)\n and b0903 (1.87e+3, 1.14e+4: 2.62)\n) and b2579 (5.27e+3, 1.09e+3: 2.28)))');
+            .toEqual([
+                { bigg_id:'b0902', name:'b0902', text: '((b0902 (188, 282: 0.583)' },
+                { bigg_id:'b0903', name:'b0903', text: ' and b0903 (1.87e+3, 1.14e+4: 2.62)' },
+                {'bigg_id':'b0902','name':'b0902', text: ') or (b0902 (188, 282: 0.583)' },
+                {'bigg_id':'b3114','name':'b3114', text: ' and b3114 (5.29, 5.41: 0.0327)' },
+                {'bigg_id':'b3951','name':'b3951', text: ') or (b3951 (8.29, 5.97: 0.475)' },
+                {'bigg_id':'b3952','name':'b3952', text: ' and b3952 (3.67, 4.29: 0.223)' },
+                {'bigg_id':'b0902','name':'b0902', text: ') or ((b0902 (188, 282: 0.583)' },
+                {'bigg_id':'b0903','name':'b0903', text: ' and b0903 (1.87e+3, 1.14e+4: 2.62)' },
+                {'bigg_id':'b2579','name':'b2579', text: ') and b2579 (5.27e+3, 1.09e+3: 2.28)))' }
+            ]);
 
         // no data
         expect(escher.data_styles.gene_string_for_data('( G1 OR G2 )', null,
                                                        [{bigg_id: 'G1', name: 'Gene1'},
                                                         {bigg_id: 'G2', name: 'Gene2'}],
                                                        ['abs'], 'name', 'log2_fold'))
-            .toEqual('( Gene1\n OR Gene2)');
+            .toEqual([
+                {bigg_id: 'G1', name: 'Gene1', text: '( Gene1' },
+                {bigg_id: 'G2', name: 'Gene2', text: ' OR Gene2)'}
+            ]);
     });
-    
+
     it('stores text for non-numeric data', function() {
         expect(escher.data_styles.float_for_data(['2dmmql8_c + fum_c --> 2dmmq8_c + s'], [], 'log2_fold'))
             .toEqual(null);
@@ -166,13 +187,13 @@ describe('data_styles', function() {
         expect(escher.data_styles.gene_string_for_data('( G1 )', { G1: ['my favorite gene✓', '8'] },
                                                        [{bigg_id: 'G1', name: 'Gene1'}],
                                                        ['abs'], 'name', 'log2_fold'))
-            .toEqual('( Gene1 (my favorite gene✓, 8: nd))');
+            .toEqual([{bigg_id: 'G1', name: 'Gene1', text: '( Gene1 (my favorite gene✓, 8: nd))' }]);
         expect(escher.data_styles.gene_string_for_data('( G1 )', { G1: ['my favorite gene✓', 'text'] },
                                                        [{bigg_id: 'G1', name: 'Gene1'}],
                                                        ['abs'], 'name', 'log2_fold'))
-            .toEqual('( Gene1 (my favorite gene✓, text))');
+            .toEqual([{bigg_id: 'G1', name: 'Gene1', text: '( Gene1 (my favorite gene✓, text))' }]);
     });
-    
+
     it('csv_converter', function() {
         var csv_rows = [['gene', 'v1', 'v2'],
                         ['g1', '10', '20'],
@@ -181,7 +202,7 @@ describe('data_styles', function() {
         expect(escher.data_styles.csv_converter(csv_rows))
             .toEqual([{'g1': '10', 'g2': '15', g3: 'text'}, {g1: '20', g2: '25', g3: 'data'}]);
     });
-    
+
     it('genes_for_gene_reaction_rule', function() {
         // funny names
         var rule = '(G1ORF AND G2ANDHI) or YER060W-A OR (G3-A AND G4)';
@@ -216,7 +237,7 @@ describe('data_styles', function() {
         gene_values = {"YER056C": [-151]};
         out = escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min');
         expect(out).toEqual([-151]);
-        
+
         // multiple values
         rule = '(G1 AND G2) OR (G3ANDHI aNd G4ORF)';
         gene_values = {G1: [5, 0], G2: [2, 0], G3ANDHI: [10, 0], G4ORF: [11.5, 6]};
@@ -228,11 +249,11 @@ describe('data_styles', function() {
         gene_values = { YEL039C: ['1'], YKR066C: ['2'], YJR048W: ['4'] };
         out = escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min');
         expect(out).toEqual([3]);
-        
+
         // empty
         out = escher.data_styles.evaluate_gene_reaction_rule('', {}, 'min');
         expect(out).toEqual([null]);
-        
+
         // null values
         rule = '(G1 AND G2) OR (G3 AND G4)';
         gene_values = {G1: [5], G2: [2], G3: [''], G4: [null]};
@@ -245,7 +266,7 @@ describe('data_styles', function() {
         out = escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min');
         expect(out).toEqual([null]);
     });
-    
+
     it('evaluate_gene_reaction_rule, complex cases', function() {
         // complex cases
 	// Members of OR connections can be null
@@ -314,7 +335,7 @@ describe('data_styles', function() {
                                            segments: { 2: { data: 10.0,
                                                             reverse_flux: false }}}});
     });
-    
+
     it('apply_metabolite_data_to_nodes', function() {
         // for Map.reactions
         var nodes = { 238: { bigg_id: 'g3p_c' }},
@@ -325,7 +346,7 @@ describe('data_styles', function() {
                                        data: 10.0,
                                        data_string: '0.00, 10.0: 10.0' }});
     });
-    
+
     it('apply_gene_data_to_reactions', function() {
         // for Map.reactions
         var reactions = { 238: { bigg_id: 'GAPD',
@@ -343,9 +364,9 @@ describe('data_styles', function() {
                                                       name: 'gapA' } ],
                                            data: 10.0,
                                            data_string: '0.00, 10.0: 10.0',
-                                           gene_string: 'gapA (0.00, 10.0: 10.0)',
+                                           gene_string: [{bigg_id: 'b1779', name: 'gapA', text: 'gapA (0.00, 10.0: 10.0)'}],
                                            reverse_flux: false,
                                            segments: { 2: { data: 10.0,
                                                             reverse_flux: false }}}});
-    }); 
+    });
 });

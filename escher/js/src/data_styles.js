@@ -13,8 +13,8 @@ define(['utils'], function(utils) {
         // find ORs
         OR_EXPRESSION = /(^|\()(\s*-?[0-9.]+\s+(?:or\s+-?[0-9.]+\s*)+)(\)|$)/ig,
         // find ANDS, respecting order of operations (and before or)
-        AND_EXPRESSION = /(^|\(|or\s)(\s*-?[0-9.]+\s+(?:and\s+-?[0-9.]+\s*)+)(\sor|\)|$)/ig; 
-    
+        AND_EXPRESSION = /(^|\(|or\s)(\s*-?[0-9.]+\s+(?:and\s+-?[0-9.]+\s*)+)(\sor|\)|$)/ig;
+
     return { import_and_check: import_and_check,
              text_for_data: text_for_data,
              float_for_data: float_for_data,
@@ -44,12 +44,12 @@ define(['utils'], function(utils) {
          GPRs for the map and model.
 
          */
-        
+
         // check arguments
         if (data===null)
             return null;
         if (['reaction_data', 'metabolite_data', 'gene_data'].indexOf(name) == -1)
-            throw new Error('Invalid name argument: ' + name);  
+            throw new Error('Invalid name argument: ' + name);
 
         // make array
         if (!(data instanceof Array)) {
@@ -73,7 +73,7 @@ define(['utils'], function(utils) {
                 throw new Error('Must pass all_reactions argument for gene_data');
             data = align_gene_data_to_reactions(data, all_reactions);
         }
-        
+
         return data;
 
         // definitions
@@ -88,9 +88,9 @@ define(['utils'], function(utils) {
             for (var reaction_id in reactions) {
                 var reaction = reactions[reaction_id],
                     bigg_id = reaction.bigg_id,
-                    this_gene_data = {}; 
+                    this_gene_data = {};
                 // save to aligned
-                
+
                 // get the genes if they aren't already there
                 var g = reaction.genes,
                     genes;
@@ -118,19 +118,19 @@ define(['utils'], function(utils) {
 
         // absolute value
         var take_abs = (styles.indexOf('abs') != -1);
-        
+
         if (d.length==1) { // 1 set
             // 1 null
             var f = _parse_float_or_null(d[0]);
             if (f === null)
                 return null;
             return abs(f, take_abs);
-        } else if (d.length==2) { // 2 sets            
+        } else if (d.length==2) { // 2 sets
             // 2 null
             var fs = d.map(_parse_float_or_null);
             if (fs[0] === null || fs[1] === null)
                 return null;
-            
+
             if (compare_style == 'diff') {
                 return diff(fs[0], fs[1], take_abs);
             } else if (compare_style == 'fold') {
@@ -177,7 +177,7 @@ define(['utils'], function(utils) {
     function gene_string_for_data(rule, gene_values, genes, styles,
                                   identifiers_on_map, compare_style) {
         /** Add gene values to the gene_reaction_rule string.
-         
+
          Arguments
          ---------
 
@@ -196,16 +196,22 @@ define(['utils'], function(utils) {
          Returns
          -------
 
-         The new string with formatted data values.
+         A list of objects with {
+           bigg_id: The bigg ID.
+           name: The name.
+           text: The new string with formatted data values.
+         }
+
+         The text elements should each appear on a new line.
 
          */
 
-        var out = rule,
+        var out_text = rule,
             no_data = (gene_values === null),
             // keep track of bigg_id's or names to remove repeats
             genes_found = {};
 
-        
+
         genes.forEach(function(g_obj) {
             // get id or name
             var name = g_obj[identifiers_on_map];
@@ -214,17 +220,17 @@ define(['utils'], function(utils) {
             // remove repeats that may have found their way into genes object
             if (typeof genes_found[name] !== 'undefined')
                 return;
-            genes_found[name] = true;   
+            genes_found[name] = true;
             // generate the string
             if (no_data) {
-                out = replace_gene_in_rule(out, g_obj.bigg_id, (name + '\n'));
+                out_text = replace_gene_in_rule(out_text, g_obj.bigg_id, (name + '\n'));
             } else {
                 var d = gene_values[g_obj.bigg_id];
                 if (typeof d === 'undefined') d = null;
                 var f = float_for_data(d, styles, compare_style),
-                    format = (f === null ? RETURN_ARG : d3.format('.3g')); 
+                    format = (f === null ? RETURN_ARG : d3.format('.3g'));
                 if (d.length==1) {
-                    out = replace_gene_in_rule(out, g_obj.bigg_id, (name + ' (' + null_or_d(d[0], format) + ')\n'));
+                    out_text = replace_gene_in_rule(out_text, g_obj.bigg_id, (name + ' (' + null_or_d(d[0], format) + ')\n'));
                 }
                 else if (d.length==2) {
                     // check if they are all text
@@ -242,17 +248,30 @@ define(['utils'], function(utils) {
                         new_str = (name + ' (' +
                                    null_or_d(d[0], format) + ', ' +
                                    null_or_d(d[1], format) + ')\n');
-                    } 
-                    out = replace_gene_in_rule(out, g_obj.bigg_id, new_str);
+                    }
+                    out_text = replace_gene_in_rule(out_text, g_obj.bigg_id, new_str);
                 }
             }
         });
         // remove emtpy lines
-        out = out.replace(EMPTY_LINES, '\n')
+        out_text = out_text.replace(EMPTY_LINES, '\n')
         // remove trailing newline (with or without parens)
             .replace(TRAILING_NEWLINE, '$1');
-        return out;
-        
+
+        // split by newlines
+        var result = out_text.split('\n').map(function(text) {
+            for (var i = 0, l = genes.length; i < l; i++) {
+                var gene = genes[i];
+                if (text.indexOf(gene[identifiers_on_map]) != -1) {
+                    return { bigg_id: gene.bigg_id, name: gene.name, text: text };
+                    continue;
+                }
+            }
+            // not found, then none
+            return { bigg_id: null, name: null, text: text };
+        });
+        return result;
+
         // definitions
         function null_or_d(d, format) {
             return d === null ? 'nd' : format(d);
@@ -304,7 +323,7 @@ define(['utils'], function(utils) {
         });
         return converted;
     }
-    
+
     function genes_for_gene_reaction_rule(rule) {
         /** Find unique genes in gene_reaction_rule string.
 
@@ -313,7 +332,7 @@ define(['utils'], function(utils) {
 
          rule: A boolean string containing gene names, parentheses, AND's and
          OR's.
-         
+
          Returns
          -------
 
@@ -331,7 +350,7 @@ define(['utils'], function(utils) {
         // unique strings
         return utils.unique_strings_array(genes);
     }
-    
+
     function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_reaction_rule) {
         /** Return a value given the rule and gene_values object.
 
@@ -355,7 +374,7 @@ define(['utils'], function(utils) {
             l = null_val.length;
             break;
         }
-        
+
         if (rule == '') return null_val;
 
         // for each element in the arrays
@@ -384,10 +403,10 @@ define(['utils'], function(utils) {
             while (true) {
                 // arithemtic expressions
                 var new_curr_val = curr_val;
-                
+
                 // take out excessive parentheses
                 new_curr_val = new_curr_val.replace(EXCESS_PARENS, ' $1 ');
-                
+
                 // or's
                 new_curr_val = new_curr_val.replace(OR_EXPRESSION, function(match, p1, p2, p3) {
                     // sum
@@ -408,7 +427,7 @@ define(['utils'], function(utils) {
                 if (new_curr_val == curr_val)
                     break;
                 curr_val = new_curr_val;
-            } 
+            }
             // strict test for number
             var num = Number(curr_val);
             if (isNaN(num)) {
@@ -420,20 +439,20 @@ define(['utils'], function(utils) {
         }
         return out;
     }
-    
+
     function replace_gene_in_rule(rule, gene_id, val) {
         // get the escaped string, with surrounding space or parentheses
         var space_or_par_start = '(^|[\\\s\\\(\\\)])',
             space_or_par_finish = '([\\\s\\\(\\\)]|$)',
             escaped = space_or_par_start + escape_reg_exp(gene_id) + space_or_par_finish;
         return rule.replace(new RegExp(escaped, 'g'),  '$1' + val + '$2');
-        
+
         // definitions
         function escape_reg_exp(string) {
             return string.replace(ESCAPE_REG, "\\$1");
         }
     }
-    
+
     function apply_reaction_data_to_reactions(reactions, data, styles, compare_style) {
         /**  Returns True if the scale has changed.
 
@@ -473,7 +492,7 @@ define(['utils'], function(utils) {
         }
         return true;
     }
-    
+
     function apply_metabolite_data_to_nodes(nodes, data, styles, compare_style) {
         /**  Returns True if the scale has changed.
 
@@ -497,7 +516,7 @@ define(['utils'], function(utils) {
         }
         return true;
     }
-    
+
     function apply_gene_data_to_reactions(reactions, gene_data_obj, styles, identifiers_on_map,
                                           compare_style, and_method_in_gene_reaction_rule) {
         /** Returns true if data is present
@@ -585,7 +604,7 @@ define(['utils'], function(utils) {
         }
         return true;
     }
-    
+
     function _parse_float_or_null(x) {
         // strict number casting
         var f = Number(x);

@@ -63,11 +63,18 @@ Building from an existing map for a similar organism
 Follow the instruction above, except, rather than starting from scratch, load an
 existing Escher map for a different organism.
 
-In the Settings menu, activate the **Highlight reactions not in model**
-option. Reactions that do not match your loaded COBRA model turn red, and you
-can delete these and replace them with appropriate reactions from the new model.
+Once you have the new model loaded, use the **Update names and gene reaction
+rules using model** button in the Model menu to convert all descriptive names
+and gene reaction rules in the model to those in the map. Reactions that do not
+match the model will be highlighted in red. (This can be turned off again in the
+settings menu by deselecting *Highlight reactions not in model*.)
 
-You can repeat this for as many subsystems as you like.
+Now, visit each highlighted reaction and see if you can replace it with an
+equivalent biochemical pathway from the model. If not, then delete the reaction
+and move on.
+
+Finally, when there are no highlighted reactions left, you can repeat this for
+other subsystems.
 
 Submitting maps to the Escher website
 -------------------------------------

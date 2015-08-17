@@ -35,6 +35,7 @@ svg.escher-svg .gene-label {
   font-size: 18px;
   fill: rgb(32, 32, 120);
   text-rendering: optimizelegibility;
+  cursor: default;
 }
 svg.escher-svg .text-label .label {
   font-size: 50px;

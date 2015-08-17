@@ -1,3 +1,5 @@
+/* global define, d3 */
+
 define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles, CallbackManager) {
     /** Manages creating, updating, and removing objects during d3 data binding.
 
@@ -141,7 +143,7 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
         group.append('text')
             .attr('class', 'reaction-label label');
         group.append('g')
-            .attr('class', 'gene-label-group');
+            .attr('class', 'all-genes-label-group');
 
         this.callback_manager.run('create_reaction_label', this, enter_selection);
     }
@@ -199,8 +201,8 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
             });
         }
         // gene label
-        var gene_g = update_selection.select('.gene-label-group')
-                .selectAll('text')
+        var all_genes_g = update_selection.select('.all-genes-label-group')
+                .selectAll('.gene-label-group')
                 .data(function(d) {
                     var show_gene_string = ('gene_string' in d &&
                                             d.gene_string !== null &&
@@ -212,25 +214,38 @@ define(['utils', 'data_styles', 'CallbackManager'], function(utils, data_styles,
                                                    show_gene_reaction_rules &&
                                                    (!hide_all_labels) );
                     if (show_gene_string) {
-                        return d.gene_string.split('\n');
+                        return d.gene_string;
                     } else if (show_gene_reaction_rule) {
-                        var rule = data_styles.gene_string_for_data(d.gene_reaction_rule, null,
-                                                                    d.genes, null, identifiers_on_map,
-                                                                    null);
-                        return rule.split('\n');
+                        // make the gene string with no data
+                        return data_styles.gene_string_for_data(d.gene_reaction_rule, null,
+                                                                d.genes, null, identifiers_on_map,
+                                                                null);
                     } else {
                         return [];
                     }
                 });
-        gene_g.enter()
-            .append('text')
+        // enter
+        var gene_g = all_genes_g.enter()
+                .append('g')
+                .attr('class', 'gene-label-group');
+        gene_g.append('text')
             .attr('class', 'gene-label')
             .style('font-size', gene_font_size + 'px');
-        gene_g.attr('transform', function(d, i) {
+        gene_g.append('title');
+        // update
+        all_genes_g.attr('transform', function(d, i) {
             return 'translate(0, ' + (gene_font_size * 1.5 * (i + 1)) + ')';
-        })
-            .text(function(d) { return d; });
-        gene_g.exit()
+        });
+        // update text
+        all_genes_g.select('text').text(function(d) {
+            return d['text'];
+        });
+        // update tooltip
+        all_genes_g.select('title').text(function(d) {
+            return d[identifiers_in_tooltip];
+        });
+        // exit
+        all_genes_g.exit()
             .remove();
 
         this.callback_manager.run('update_reaction_label', this, update_selection);

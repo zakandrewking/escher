@@ -134,6 +134,16 @@ Choose **Load COBRA model JSON** to open a COBRA model. Read more about COBRA
 models in :doc:`escher_and_cobrapy`. Once you have COBRApy v0.3.0 or later
 installed, then you can generate a JSON model by following this `example code`_.
 
+Once you have loaded a COBRA model, there may be inconsistencies between the
+content in the map and the model (e.g. reaction IDs, descriptive names and gene
+reaction rules). You click **Update names and gene reaction rules using model**
+to find matching reactions and metabolites between the map and the model (based
+on their IDs) and then apply the names and gene reaction rules from the model to
+the map. The reactions that do not match will be highlighted in red. (This can
+be turned off again in the settings menu by deselecting *Highlight reactions not
+in model*.)  More advice on building maps is available in
+:doc:`contribute_maps`.
+
 Click **Clear Model** to clear the current model.
 
 .. _loading-reaction-gene-and-metabolite-data:
