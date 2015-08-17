@@ -1,4 +1,6 @@
-define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
+/* global define, d3, Blob, XMLSerializer */
+
+define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, saveAs) {
     return { set_options: set_options,
              setup_svg: setup_svg,
              remove_child_nodes: remove_child_nodes,
@@ -26,7 +28,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
              download_json: download_json,
              load_json: load_json,
              load_json_or_csv: load_json_or_csv,
-             export_svg: export_svg,
+             download_svg: download_svg,
              rotate_coords_recursive: rotate_coords_recursive,
              rotate_coords: rotate_coords,
              get_angle: get_angle,
@@ -46,6 +48,15 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
              parse_url_components: parse_url_components };
 
     // definitions
+    function _check_filesaver() {
+        /** Check if Blob is available, and alert if it is not. */
+        try {
+            var isFileSaverSupported = !!new Blob();
+        } catch (e) {
+            alert("Blob not supported");
+        }
+    }
+
     function set_options(options, defaults, must_be_float) {
         if (options === undefined || options === null)
             return defaults;
@@ -233,7 +244,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
          update_function: A function for update selection.
 
          exit_function: A function for exit selection.
-         
+
          */
         var draw_object = {};
         for (var id in object) {
@@ -243,7 +254,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
                 draw_object[id] = object[id];
             }
         }
-        
+
         var sel = container_sel.select(parent_node_selector)
                 .selectAll(children_selector)
                 .data(make_array_ref(draw_object, id_key),
@@ -255,7 +266,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         if (update_function)
             sel.call(update_function);
         // exit
-        if (exit_function) 
+        if (exit_function)
             sel.exit().call(exit_function);
     }
 
@@ -286,7 +297,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
          update_function: A function for update selection.
 
          exit_function: A function for exit selection.
-         
+
          */
         var sel = container_sel.selectAll(children_selector)
                 .data(function(d) {
@@ -299,7 +310,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         if (update_function)
             sel.call(update_function);
         // exit
-        if (exit_function) 
+        if (exit_function)
             sel.exit().call(exit_function);
     }
 
@@ -410,7 +421,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
          ---------
 
          obj1: Object to extend
-         
+
          obj2: Object with which to extend.
 
          overwrite: (Optional, Default false) Overwrite attributes in obj1.
@@ -419,8 +430,8 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 
         if (overwrite === undefined)
             overwrite = false;
-        
-        for (var attrname in obj2) { 
+
+        for (var attrname in obj2) {
             if (!(attrname in obj1) || overwrite) // UNIT TEST This
                 obj1[attrname] = obj2[attrname];
             else
@@ -438,7 +449,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         });
         return new_array;
     }
-    
+
     function unique_strings_array(arr) {
         /** Return unique values in array of strings.
 
@@ -474,10 +485,10 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
             if (callNow) func.apply(context, args);
         };
     }
-    
+
     function object_slice_for_ids(obj, ids) {
-        /** Return a copy of the object with just the given ids. 
-         
+        /** Return a copy of the object with just the given ids.
+
          Arguments
          ---------
 
@@ -495,11 +506,11 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         }
         return subset;
     }
-    
+
     function object_slice_for_ids_ref(obj, ids) {
         /** Return a reference of the object with just the given ids. Faster
          than object_slice_for_ids.
-         
+
          Arguments
          ---------
 
@@ -519,14 +530,14 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     }
 
     function c_plus_c(coords1, coords2) {
-        if (coords1 === null || coords2 === null || 
+        if (coords1 === null || coords2 === null ||
             coords1 === undefined || coords2 === undefined)
             return null;
         return { "x": coords1.x + coords2.x,
                  "y": coords1.y + coords2.y };
     }
     function c_minus_c(coords1, coords2) {
-        if (coords1 === null || coords2 === null || 
+        if (coords1 === null || coords2 === null ||
             coords1 === undefined || coords2 === undefined)
             return null;
         return { "x": coords1.x - coords2.x,
@@ -537,14 +548,18 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         return { "x": coords.x * scalar,
                  "y": coords.y * scalar };
     }
-    
+
     function download_json(json, name) {
         /** Download json file in a blob.
 
          */
+
+        // alert if blob isn't going to work
+        _check_filesaver();
+
         var j = JSON.stringify(json),
-            blob = new Blob([j], {type: "octet/stream"});
-        FileSaver(blob, name + '.json');
+            blob = new Blob([j], {type: "application/json"});
+        saveAs(blob, name + '.json');
     }
 
     function load_json(f, callback, pre_fn, failure_fn) {
@@ -560,7 +575,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
          pre_fn: (optional) A function to call before loading the data.
 
          failure_fn: (optional) A function to call if the load fails or is aborted.
-         
+
          */
         // Check for the various File API support.
         if (!(window.File && window.FileReader && window.FileList && window.Blob))
@@ -597,7 +612,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         // Read in the image file as a data URL.
         reader.readAsText(f);
     }
-    
+
     function load_json_or_csv(f, csv_converter, callback, pre_fn, failure_fn,
                               debug_event) {
         /** Try to load the file as JSON or CSV (JSON first).
@@ -627,7 +642,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         var reader = new window.FileReader(),
             // Closure to capture the file information.
             onload_function = function(event) {
-                
+
                 var result = event.target.result,
                     data, errors;
                 // try JSON
@@ -635,7 +650,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
                     data = JSON.parse(result);
                 } catch (e) {
                     errors = 'JSON error: ' + e;
-                    
+
                     // try csv
                     try {
                         data = csv_converter(d3.csv.parseRows(result));
@@ -659,36 +674,43 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
         reader.onabort = function(event) {
             try { failure_fn(); }
             catch (e) { console.warn(e); }
-        }
+        };
         reader.onerror = function(event) {
             try { failure_fn(); }
             catch (e) { console.warn(e); }
-        }
+        };
         // Read in the image file as a data URL.
         reader.onload = onload_function;
         reader.readAsText(f);
     }
-    
-    function export_svg(name, svg_sel, do_beautify) {
-        var a = document.createElement('a'), xml, ev;
-        a.download = name + '.svg'; // file name
-        // convert node to xml string
-        xml = (new XMLSerializer()).serializeToString(svg_sel.node()); 
+
+    function download_svg(name, svg_sel, do_beautify) {
+        /** Download an svg file using FileSaver.js.
+         *
+         * Arguments
+         * ---------
+         *
+         * name: The filename (without extension).
+         *
+         * svg_sel: The d3 selection for the SVG element.
+         *
+         * do_beautify: (Boolean) If true, then beautify the SVG output.
+         *
+         */
+
+        // alert if blob isn't going to work
+        _check_filesaver();
+
+        // make the xml string
+        var xml = (new XMLSerializer()).serializeToString(svg_sel.node());
         if (do_beautify) xml = vkbeautify.xml(xml);
         xml = '<?xml version="1.0" encoding="utf-8"?>\n \
             <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n \
         "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' + xml;
-        a.setAttribute("href-lang", "image/svg+xml");
-        a.href = 'data:image/svg+xml;base64,' + utf8_to_b64(xml); // create data uri
-        // <a> constructed, simulate mouse click on it
-        ev = document.createEvent("MouseEvents");
-        ev.initMouseEvent("click", true, false, self, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        a.dispatchEvent(ev);
-        
-        // definitions
-        function utf8_to_b64(str) {
-            return window.btoa(unescape(encodeURIComponent( str )));
-        }
+
+        // save
+        var blob = new Blob([xml], {type: "image/svg+xml"});
+        saveAs(blob, name + '.svg');
     };
 
     function rotate_coords_recursive(coords_array, angle, center) {
@@ -697,7 +719,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     }
 
     function rotate_coords(c, angle, center) {
-        /** Calculates displacement { x: dx, y: dy } based on rotating point c around 
+        /** Calculates displacement { x: dx, y: dy } based on rotating point c around
          center with angle.
 
          */
@@ -728,7 +750,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 
     function angle_for_event(displacement, point, center) {
         var gamma =  Math.atan2((point.x - center.x), (center.y - point.y)),
-            beta = Math.atan2((point.x - center.x + displacement.x), 
+            beta = Math.atan2((point.x - center.x + displacement.x),
                               (center.y - point.y - displacement.y)),
             angle = beta - gamma;
         return angle;
@@ -758,7 +780,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
     // definitions
     function decompartmentalize(id) {
         /** Convert ids to bigg_id and compartment_id.
-         
+
          */
         var out = no_compartment(id);
         if (out===null) out = [id, null];
@@ -846,7 +868,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
 
     function name_to_url(name, download_url) {
         /** Convert model or map name to url.
-         
+
          Arguments
          ---------
 
@@ -872,7 +894,7 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
          ---------
 
          the_window: A reference to the global window.
-         
+
          options: (optional) an existing options object to which new options
          will be added. Overwrites existing arguments in options.
 
@@ -897,5 +919,5 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, FileSaver) {
             }
         }
         return options;
-    }    
+    }
 });

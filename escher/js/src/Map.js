@@ -2076,7 +2076,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 .style('visibility', 'hidden');
 
         // do the epxort
-        utils.export_svg('saved_map', this.svg, true);
+        utils.download_svg('saved_map', this.svg, true);
 
         // revert everything
         this.zoom_container.go_to(window_scale, window_translate, false);
