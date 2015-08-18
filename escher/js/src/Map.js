@@ -1,3 +1,5 @@
+/* global define, d3 */
+
 define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackManager', 'KeyManager', 'Canvas', 'data_styles', 'SearchIndex', 'lib/bacon', 'lib/tv4'], function(utils, Draw, Behavior, Scale, build, UndoStack, CallbackManager, KeyManager, Canvas, data_styles, SearchIndex, bacon, tv4) {
     /** Defines the metabolic map data, and manages drawing and building.
 
@@ -39,6 +41,8 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
      map.callback_manager.run('select_text_label');
      map.callback_manager.run('before_svg_export');
      map.callback_manager.run('after_svg_export');
+     map.callback_manager.run('before_convert_map');
+     map.callback_manager.run('after_convert_map');
      this.callback_manager.run('calc_data_stats__reaction', null, changed);
      this.callback_manager.run('calc_data_stats__metabolite', null, changed);
 
@@ -133,7 +137,8 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         // io
         save: save,
         map_for_export: map_for_export,
-        save_svg: save_svg
+        save_svg: save_svg,
+        convert_map: convert_map
     };
 
     return Map;
@@ -165,7 +170,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // set up the callbacks
         this.callback_manager = new CallbackManager();
-        
+
         // set up the defs
         this.svg = svg;
         this.defs = utils.setup_defs(svg, css);
@@ -215,7 +220,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.map_name = map_name;
         this.map_id = map_id;
         this.map_description = map_description;
-        
+
         // deal with the window
         var window_translate = {'x': 0, 'y': 0},
             window_scale = 1;
@@ -485,7 +490,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.draw_all_nodes(true);
         this.draw_all_text_labels();
     }
-    
+
     function draw_all_reactions(draw_beziers, clear_deleted) {
         /** Draw all reactions, and clear deleted reactions.
 
@@ -600,7 +605,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
          */
         if (clear_deleted === undefined) clear_deleted = true;
-        
+
         var node_ids = [];
         for (var node_id in this.nodes) {
             node_ids.push(node_id);
@@ -711,7 +716,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     function draw_all_beziers() {
         /** Draw all beziers, and clear deleted reactions.
 
-         */        
+         */
         var bezier_ids = [];
         for (var bezier_id in this.beziers) {
             bezier_ids.push(bezier_id);
@@ -733,7 +738,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
          beziers_ids: An array of bezier_ids to update.
 
-         */        
+         */
         // find reactions for reaction_ids
         var bezier_subset = utils.object_slice_for_ids_ref(this.beziers, bezier_ids);
 
@@ -791,14 +796,14 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         return this.calc_data_stats('reaction');
     }
-    
+
     function apply_metabolite_data_to_map(data) {
         /**  Returns True if the scale has changed.
 
          */
         var styles = this.settings.get_option('metabolite_styles'),
             compare_style = this.settings.get_option('metabolite_compare_style');
-        
+
         var has_data = data_styles.apply_metabolite_data_to_nodes(this.nodes, data,
                                                                   styles, compare_style);
         this.has_data_on_nodes = has_data;
@@ -827,7 +832,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                                                 compare_style,
                                                                 and_method_in_gene_reaction_rule);
         this.has_data_on_reactions = has_data;
-        
+
         return this.calc_data_stats('reaction');
     }
 
@@ -836,13 +841,13 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
     function get_data_statistics() {
         return this.data_statistics;
     }
-    
+
     function calc_data_stats(type) {
         /** Returns True if the stats have changed.
 
          Arguments
          ---------
-         
+
          type: Either 'metabolite' or 'reaction'
 
          */
@@ -857,7 +862,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         } else if (!(type in this.data_statistics)) {
             this.data_statistics[type] = {};
         }
-        
+
         var same = true;
         // default min and max
         var vals = [];
@@ -897,7 +902,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 same = false;
             this.data_statistics[type][name] = new_val;
         }.bind(this));
-        
+
         if (type == 'reaction')
             this.callback_manager.run('calc_data_stats__reaction', null, !same);
         else
@@ -1136,7 +1141,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                     changed_r_scale = this.calc_data_stats('reaction');
                 if (this.has_data_on_nodes)
                     changed_m_scale = this.calc_data_stats('metabolite');
-                
+
                 // redraw
                 if (should_draw) {
                     if (changed_r_scale)
@@ -1370,7 +1375,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                                    direction, false),
             reaction_redo = out.redo,
             reaction_undo = out.undo;
-        
+
         // add to undo/redo stack
         this.undo_stack.push(function() {
             // undo
@@ -1456,7 +1461,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         }
         utils.extend(this.reactions, new_reactions);
     }
-    
+
     function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id,
                                          direction, apply_undo_redo) {
         /** Build a new reaction starting with selected_met.
@@ -1485,7 +1490,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // default args
         if (apply_undo_redo === undefined) apply_undo_redo = true;
-        
+
         // get the metabolite node
         var selected_node = this.nodes[selected_node_id];
 
@@ -1710,7 +1715,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this.select_metabolite_with_id(primary_node_id);
         return;
     }
-    
+
     function toggle_selected_node_primary() {
         /** Toggle the primary/secondary status of each selected node.
 
@@ -1810,7 +1815,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                                                            text_label_id: out.id }});
         return out.id;
     }
-    
+
     function edit_text_label(text_label_id, new_value, should_draw) {
         // save old value
         var saved_value = this.text_labels[text_label_id].text,
@@ -1945,19 +1950,19 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                         y: - text_label.y * new_zoom + size.height/2 };
         this.zoom_container.go_to(new_zoom, new_pos);
     }
-    
+
     function highlight_reaction(reaction_id) {
         this.highlight(this.sel.selectAll('#r'+reaction_id).selectAll('text'));
     }
-    
+
     function highlight_node(node_id) {
         this.highlight(this.sel.selectAll('#n'+node_id).selectAll('text'));
     }
-    
+
     function highlight_text_label(text_label_id) {
         this.highlight(this.sel.selectAll('#l'+text_label_id).selectAll('text'));
     }
-    
+
     function highlight(sel) {
         this.sel.selectAll('.highlight')
             .classed('highlight', false);
@@ -2071,7 +2076,7 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
                 .style('visibility', 'hidden');
 
         // do the epxort
-        utils.export_svg('saved_map', this.svg, true);
+        utils.download_svg('saved_map', this.svg, true);
 
         // revert everything
         this.zoom_container.go_to(window_scale, window_translate, false);
@@ -2085,5 +2090,93 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
 
         // run the after callback
         this.callback_manager.run('after_svg_export');
+    }
+
+    function convert_map() {
+        /** Assign the descriptive names and gene_reaction_rules from the model
+         to the map.
+
+         If no map is loaded, then throw an Error.
+
+         If some reactions are not in the model, then warn in the status.
+
+         */
+        // run the before callback
+        this.callback_manager.run('before_convert_map');
+
+        // check the model
+        if (!this.has_cobra_model()) throw Error('No COBRA model loaded.');
+        var model = this.cobra_model;
+
+        // ids for reactions and metabolites not found in the model
+        var reactions_not_found = {},
+            reaction_attrs = ['name', 'gene_reaction_rule', 'genes'],
+            met_nodes_not_found = {},
+            metabolite_attrs = ['name'],
+            found;
+        // convert reactions
+        for (var reaction_id in this.reactions) {
+            var reaction = this.reactions[reaction_id];
+            found = false;
+            // find in cobra model
+            for (var model_reaction_id in model.reactions) {
+                var model_reaction = model.reactions[model_reaction_id];
+                if (model_reaction.bigg_id == reaction.bigg_id) {
+                    reaction_attrs.forEach(function(attr) {
+                        reaction[attr] = model_reaction[attr];
+                    });
+                    found = true;
+                }
+            }
+            if (!found)
+                reactions_not_found[reaction_id] = true;
+        }
+        // convert metabolites
+        for (var node_id in this.nodes) {
+            var node = this.nodes[node_id];
+            // only look at metabolites
+            if (node.node_type != 'metabolite') continue;
+            found = false;
+            // find in cobra model
+            for (var model_metabolite_id in model.metabolites) {
+                var model_metabolite = model.metabolites[model_metabolite_id];
+                if (model_metabolite.bigg_id == node.bigg_id) {
+                    metabolite_attrs.forEach(function(attr) {
+                        node[attr] = model_metabolite[attr];
+                    });
+                    found = true;
+                }
+            }
+            if (!found)
+                met_nodes_not_found[node_id] = true;
+        }
+
+        // status
+        var n_reactions_not_found = Object.keys(reactions_not_found).length,
+            n_met_nodes_not_found = Object.keys(met_nodes_not_found).length,
+            status_delay = 3000;
+        if (n_reactions_not_found == 0 &&
+            n_met_nodes_not_found == 0) {
+            this.set_status('Successfully converted attributes.', status_delay);
+        } else if (n_met_nodes_not_found == 0) {
+            this.set_status('Converted attributes, but count not find ' + n_reactions_not_found +
+                            ' reactions in the model.', status_delay);
+            this.settings.set_conditional('highlight_missing', true);
+        } else if (n_reactions_not_found == 0) {
+            this.set_status('Converted attributes, but count not find ' + n_met_nodes_not_found +
+                            ' metabolites in the model.', status_delay);
+            this.settings.set_conditional('highlight_missing', true);
+        } else {
+            this.set_status('Converted attributes, but count not find ' + n_reactions_not_found +
+                            ' reactions and ' + n_met_nodes_not_found + ' metabolites in the model.',
+                            status_delay);
+            this.settings.set_conditional('highlight_missing', true);
+        }
+
+        // redraw
+        this.draw_everything();
+
+        // run the after callback
+        this.callback_manager.run('after_convert_map');
     }
 });

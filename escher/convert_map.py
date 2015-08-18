@@ -420,34 +420,37 @@ def old_map_to_new_schema(the_map, map_name=None, map_description=None):
 
     """
 
+    def add_default_header(body, name, description):
+        """Return a map with header and body."""
+
+        def check_for(var, name):
+            """Print a warning if var is None."""
+            if var is None:
+                logging.warn('No {} for map'.format(name))
+                return ''
+            return var
+
+        new_id = hashlib.md5(json.dumps(body).encode('utf-8')).hexdigest()
+        default_header = {
+            "schema": "https://escher.github.io/escher/jsonschema/1-0-0#",
+            "homepage": "https://escher.github.io",
+            "map_name": check_for(name, 'name'),
+            "map_id": new_id,
+            "map_description": check_for(description, 'description')
+        }
+        logging.info('Map has the ID {}'.format(new_id))
+        return make_map(default_header, body)
+
     def add_header_if_missing(a_map):
         """Check for new, 2-level maps, and add the header."""
 
-        def add_default_header(body):
-            """Return a map with header and body."""
-
-            def check_for(var, name):
-                """Print a warning if var is None."""
-                if var is None:
-                    logging.warn('No {} for map'.format(name))
-                    return ''
-                return var
-
-            new_id = hashlib.md5(json.dumps(body).encode('utf-8')).hexdigest()
-            default_header = {
-                "schema": "https://escher.github.io/escher/jsonschema/1-0-0#",
-                "homepage": "https://escher.github.io",
-                "map_name": check_for(map_name, 'name'),
-                "map_id": new_id,
-                "map_description": check_for(map_description, 'description')
-            }
-            logging.info('Map has the ID {}'.format(new_id))
-            return make_map(default_header, body)
-
         if has_header_and_body(a_map):
-            return a_map
+            use_name = (get_header(a_map)['map_name'] if map_name is None else map_name)
+            use_description = (get_header(a_map)['map_description']
+                               if map_description is None else map_description)
+            return add_default_header(get_body(a_map), use_name, use_description)
         elif is_valid_body(a_map):
-            return add_default_header(a_map)
+            return add_default_header(a_map, map_name, map_description)
         else:
             raise Exception('The map provided cannot be converted. It is not a valid Escher map.')
 
