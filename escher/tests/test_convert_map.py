@@ -67,7 +67,7 @@ def get_new_map():
          "homepage": "https://escher.github.io",
          "map_name": "",
          "map_id": "",
-         "map_description": ""},
+         "map_description": "my new map"},
         {"reactions": {"1576769": {"name": "glyceraldehyde-3-phosphate dehydrogenase",
                                    "bigg_id": "GAPD",
                                    "reversibility": True,
@@ -157,6 +157,24 @@ def test_old_map_to_new_schema():
     assert get_body(new_map)['text_labels'] == {}
     # removed reaction with missing metabolite
     assert '3' not in get_body(new_map)['reactions']
+
+def test_old_map_to_new_schema__map_name():
+    """Make sure the arguments are being used."""
+    new_map = get_new_map()
+    converted = old_map_to_new_schema(new_map, map_name='Tosche',
+                                      map_description='Station')
+    assert converted[0]['map_name'] == 'Tosche'
+    assert converted[0]['map_description'] == 'Station'
+    new_map = get_new_map()
+    converted = old_map_to_new_schema(new_map, map_name='Tosche',
+                                      map_description=None)
+    assert converted[0]['map_name'] == 'Tosche'
+    assert converted[0]['map_description'] == 'my new map'
+    new_map = get_new_map()
+    converted = old_map_to_new_schema(new_map, map_name=None,
+                                      map_description='Station')
+    assert converted[0]['map_name'] == ''
+    assert converted[0]['map_description'] == 'Station'
 
 def test_apply_id_mappings():
     new_map = get_new_map()
