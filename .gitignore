@@ -9,6 +9,7 @@ Escher.egg-info/
 .ipynb_checkpoints/
 build/
 env/
+commonjs/
 envset/
 builder.html
 builder_not_minified.html
@@ -17,3 +18,4 @@ viewer_not_minified.html
 index.html
 _build/
 .can_dev
+node_modules/
