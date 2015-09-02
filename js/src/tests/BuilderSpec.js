@@ -1,28 +1,27 @@
 // Should test for the broken function that use utils.draw_array/object
-var describe = require('mocha').describe;
-var before = require('mocha').before;
-var it = require('mocha').it;
-var expect = require('expect');
 
-describe('Builder', function() {
-    it("Small map, no model. Multiple instances.", function () {
-        var sels = [];
-        for (var i=0, l=3; i < l; i++) {
-            var sel = d3.select('body').append('div'),
-                b = escher.Builder(get_map(), null, '', sel,
-                                   { never_ask_before_quit: true });
-            expect(sel.select('svg').node()).toBe(b.map.svg.node());
-            expect(sel.selectAll('#nodes')[0].length).toEqual(1);
-            expect(sel.selectAll('.node')[0].length).toEqual(79);
-            expect(sel.selectAll('#reactions')[0].length).toEqual(1);
-            expect(sel.selectAll('.reaction')[0].length).toEqual(18);
-            expect(sel.selectAll('#text-labels')[0].length).toEqual(1);
-            sels.push(sel);
-        }
-        sels.forEach(function(sel) {
-            sel.remove();
-        });
+var test = require('tape');
+var Builder = require('Builder');
+var d3 = require('d3');
+
+test("Small map, no model. Multiple instances.", function (t) {
+    var sels = [];
+    for (var i=0, l=3; i < l; i++) {
+        var sel = d3.select('body').append('div'),
+            b = Builder(get_map(), null, '', sel,
+                               { never_ask_before_quit: true });
+        t.equal(sel.select('svg').node(), b.map.svg.node());
+        t.equal(sel.selectAll('#nodes')[0].length, 1);
+        t.equal(sel.selectAll('.node')[0].length, 79);
+        t.equal(sel.selectAll('#reactions')[0].length, 1);
+        t.equal(sel.selectAll('.reaction')[0].length, 18);
+        t.equal(sel.selectAll('#text-labels')[0].length, 1);
+        sels.push(sel);
+    }
+    sels.forEach(function(sel) {
+        sel.remove();
     });
+});
 
     it('check for model+highlight_missing bug', function() {
         b = escher.Builder(get_map(), get_model(), '', d3.select('body').append('div'),
