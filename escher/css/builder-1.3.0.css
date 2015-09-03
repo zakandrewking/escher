@@ -28,14 +28,8 @@ resizes. */
   right: 0px;
 }
 
-/*  */
-.escher-3d-transform-container {
-  width: 100% !important;
-  height: 100% !important;
-}
-
-/*  */
-svg.escher-svg {
+/* The zoom container classes. */
+.escher-zoom-container, .escher-3d-transform-container, svg.escher-svg {
   width: 100% !important;
   height: 100% !important;
 }

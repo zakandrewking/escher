@@ -50,6 +50,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             // view options
             menu: 'all',
             scroll_behavior: 'pan',
+            use_3d_transform: true,
             enable_editing: true,
             enable_keys: true,
             enable_search: true,
@@ -118,7 +119,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             }.bind(this),
             // the options that are erased when the settings menu is canceled
             conditional_options = ['hide_secondary_metabolites', 'show_gene_reaction_rules',
-                                   'hide_all_labels', 'scroll_behavior', 'reaction_styles',
+                                   'hide_all_labels', 'scroll_behavior', 'use_3d_transform', 'reaction_styles',
                                    'reaction_compare_style', 'reaction_scale',
                                    'reaction_no_data_color', 'reaction_no_data_size',
                                    'and_method_in_gene_reaction_rule', 'metabolite_styles',
@@ -164,6 +165,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
                     if (this.zoom_container !== null) {
                         var new_behavior = this.settings.get_option('scroll_behavior');
                         this.zoom_container.set_scroll_behavior(new_behavior);
+                        this.zoom_container.set_use_3d_transform(this.settings.get_option('use_3d_transform'));
                     }
                     if (this.map !== null) {
                         this.map.draw_all_nodes(false);
@@ -218,6 +220,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
         // set up the zoom container
         this.zoom_container = new ZoomContainer(this.selection,
                                                 this.options.scroll_behavior,
+                                                this.options.use_3d_transform,
                                                 this.options.fill_screen);
         var zoomed_sel = this.zoom_container.zoomed_sel;
         var svg = this.zoom_container.svg;
