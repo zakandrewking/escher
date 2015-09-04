@@ -5153,9 +5153,9 @@ define('ZoomContainer',["utils", "CallbackManager", "lib/underscore"], function(
             .attr('xmlns', "http://www.w3.org/2000/svg");
 
         // set up the zoom container
-        svg.select("#zoom-g").remove();
+        svg.select(".zoom-g").remove();
         var zoomed_sel = svg.append("g")
-            .attr("id", "zoom-g");
+            .attr("class", "zoom-g");
 
         // attributes
         this.selection = selection;
@@ -16755,8 +16755,8 @@ define('static',["utils"], function(utils) {
     }
 });
 
-define('main',['Builder', 'Map', 'Behavior', 'KeyManager', 'DataMenu', 'UndoStack', 'CobraModel', 'utils', 'SearchIndex', 'Settings', 'data_styles', 'ui', 'static'],
-       function(bu, mp, bh, km, dm, us, cm, ut, si, se, ds, ui, st) {
+define('main',['Builder', 'Map', 'Behavior', 'KeyManager', 'DataMenu', 'UndoStack', 'CobraModel', 'utils', 'SearchIndex', 'Settings', 'data_styles', 'ui', 'static', 'ZoomContainer'],
+       function(bu, mp, bh, km, dm, us, cm, ut, si, se, ds, ui, st, zc) {
            return { Builder: bu,
                     Map: mp,
                     Behavior: bh,
@@ -16769,9 +16769,9 @@ define('main',['Builder', 'Map', 'Behavior', 'KeyManager', 'DataMenu', 'UndoStac
                     Settings: se,
                     data_styles: ds,
                     ui: ui,
-                    static: st };
+                    static: st,
+                    ZoomContainer: zc };
        });
-
     //The modules for your project will be inlined above
     //this snippet. Ask almond to synchronously require the
     //module value for 'main' here and return it as the

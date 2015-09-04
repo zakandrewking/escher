@@ -61,9 +61,9 @@ define(["utils", "CallbackManager", "lib/underscore"], function(utils, CallbackM
             .attr('xmlns', "http://www.w3.org/2000/svg");
 
         // set up the zoom container
-        svg.select("#zoom-g").remove();
+        svg.select(".zoom-g").remove();
         var zoomed_sel = svg.append("g")
-            .attr("id", "zoom-g");
+            .attr("class", "zoom-g");
 
         // attributes
         this.selection = selection;
