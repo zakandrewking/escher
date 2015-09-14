@@ -69,7 +69,7 @@ class JSBuildCommand(Command):
               'out='+join('escher', 'lib', escher_min),
               'optimize=uglify'])
         print('done building js')
-        
+
 class BuildGHPagesCommand(Command):
     description = "Custom build command that generates static site, and copies escher libs"
     user_options = []
@@ -117,7 +117,7 @@ class BuildRelease(Command):
             lines = f.readlines()
         with open(file, 'w') as f:
             for line in lines:
-                f.write(line.replace('escher-%s.js' % old_version, 'escher-%s.js' % new_version)) 
+                f.write(line.replace('escher-%s.js' % old_version, 'escher-%s.js' % new_version))
         # update the docs
         file = join('docs', 'conf.py')
         with open(file, 'r') as f:
@@ -176,44 +176,48 @@ class TestCommand(Command):
             call(['jasmine', '--port=%d' % port])
         sys.exit(exit_code)
 
-setup(name='Escher',
-      version=full_version,
-      author='Zachary King',
-      url='https://escher.github.io',
-      license='MIT',
-      classifiers=[
-          'Development Status :: 5 - Production/Stable',
-          'License :: OSI Approved :: MIT License',
-          'Topic :: Scientific/Engineering',
-          'Topic :: Scientific/Engineering :: Visualization',
-          'Programming Language :: Python :: 2',
-          'Programming Language :: Python :: 2.7',
-          'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.3',
-          'Programming Language :: Python :: 3.4'
-      ],
-      keywords='visualization, pathway maps, web application, D3.js',
-      packages=['escher'],
-      package_data={'escher': ['css/web/*.css', 'css/*.css', 'templates/*',
-                               'example_data/*', 'lib/*.js', 'lib/*.css',
-                               'fonts/*', 'js/src/*.js', 'js/web/*.js',
-                               'resources/*', 'jsonschema/*']},
-      install_requires=['Jinja2>=2.7.3',
-                        'tornado>=4.0.2',
-                        'pytest>=2.6.2',
-                        'jsonschema>=2.4.0'],
-      extras_require={'docs': ['sphinx>=1.2',
-                               'sphinx-rtd-theme>=0.1.6'],
-                      'all': ['sphinx>=1.2',
-                              'sphinx-rtd-theme>=0.1.6',
-                              'jasmine>=2.2.0',
-                              'ipython>=2.3.1',
-                              'cobra>=0.3.0b4',
-                              'wheel>=0.24.0',
-                              'twine>=1.5.0'] },
-      cmdclass={'clean': CleanCommand,
-                'buildjs': JSBuildCommand,
-                'buildgh': BuildGHPagesCommand,
-                'build_release': BuildRelease,
-                'build_docs': BuildDocs,
-                'test': TestCommand})
+setup(
+    name='Escher',
+    version=full_version,
+    author='Zachary King',
+    url='https://escher.github.io',
+    description='Escher: A Web Application for Building, Sharing, and Embedding Data-Rich Visualizations of Biological Pathways',
+    license='MIT',
+    classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        'License :: OSI Approved :: MIT License',
+        'Topic :: Scientific/Engineering',
+        'Topic :: Scientific/Engineering :: Visualization',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
+        'Operating System :: OS Independent'
+    ],
+    keywords='visualization, pathway maps, web application, D3.js',
+    packages=['escher'],
+    package_data={'escher': ['css/web/*.css', 'css/*.css', 'templates/*',
+                             'example_data/*', 'lib/*.js', 'lib/*.css',
+                             'fonts/*', 'js/src/*.js', 'js/web/*.js',
+                             'resources/*', 'jsonschema/*']},
+    install_requires=['Jinja2>=2.7.3',
+                      'tornado>=4.0.2',
+                      'pytest>=2.6.2',
+                      'jsonschema>=2.4.0'],
+    extras_require={'docs': ['sphinx>=1.2',
+                             'sphinx-rtd-theme>=0.1.6'],
+                    'all': ['sphinx>=1.2',
+                            'sphinx-rtd-theme>=0.1.6',
+                            'jasmine>=2.2.0',
+                            'ipython>=2.3.1',
+                            'cobra>=0.3.0b4',
+                            'wheel>=0.24.0',
+                            'twine>=1.5.0'] },
+    cmdclass={'clean': CleanCommand,
+              'buildjs': JSBuildCommand,
+              'buildgh': BuildGHPagesCommand,
+              'build_release': BuildRelease,
+              'build_docs': BuildDocs,
+              'test': TestCommand}
+)
