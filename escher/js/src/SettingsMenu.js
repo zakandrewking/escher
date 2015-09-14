@@ -1,5 +1,5 @@
 define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackManager, ScaleEditor) {
-    /** 
+    /**
      */
 
     var SettingsMenu = utils.make_class();
@@ -20,7 +20,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
         this.sel = sel;
         this.settings = settings;
         this.draw = false;
-        
+
         var unique_map_id = this.settings.get_option('unique_map_id');
         this.unique_string = (unique_map_id === null ? '' : '.' + unique_map_id);
 
@@ -48,18 +48,18 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
 
         var box = container.append('div')
                 .attr('class', 'settings-box');
-        
+
         // Tip
         box.append('div')
             .text('Tip: Hover over an option to see more details about it.')
             .classed('settings-tip', true);
         box.append('hr');
-        
+
         // view and build
         box.append('div').text('View and build options')
             .attr('class', 'settings-section-heading-large');
         this.view_gui(box.append('div'));
-        
+
         // reactions
         box.append('hr');
         box.append('div')
@@ -103,7 +103,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
                 mse.update_no_data();
             }
         });
-        
+
         this.callback_manager = new CallbackManager();
 
         this.map = map;
@@ -158,14 +158,14 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
         this.toggle(false);
     }
     function accept_changes() {
-        this.sel.selectAll('input').each(function (s) { 
+        this.sel.selectAll('input').each(function (s) {
             this.blur();
         });
         this.draw = true;
         this.settings.accept_changes();
         this.toggle(false);
     }
-    
+
     function style_gui(sel, type, abs_callback) {
         /** A UI to edit style.
 
@@ -245,7 +245,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
                 s = style_cells.enter()
                     .append('label')
                     .attr('class', 'option-group');
-            
+
             // make the radio
             s.append('input').attr('type', 'radio')
                 .attr('name', type + '_compare_style' + this.unique_string)
@@ -273,7 +273,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
                                     'AND connections in gene reaction rules (AND ' +
                                     'connections generally connect components of ' +
                                     'an enzyme complex)'));
-            
+
             // and_method_in_gene_reaction_rule
             t.append('tr').call(function(r) {
                 r.append('td')
@@ -310,7 +310,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
 
         }
     }
-    
+
     function view_gui(s, option_name, string, options) {
 
         // columns
@@ -356,6 +356,9 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
             ['scroll_behavior', 'Scroll to zoom (instead of scroll to pan)',
              ('If checked, then the scroll wheel and trackpad will control zoom ' +
               'rather than pan.'), {'zoom': true, 'pan': false}],
+            ['use_3d_transform', 'Use CSS3 for faster pan and zoom (only works in new browsers)',
+             ('Depending on your browser, this option may help or hurt ' +
+              'performance when panning and zooming. Try both options')],
             ['hide_secondary_metabolites', 'Hide secondary metabolites',
              ('If checked, then only the primary metabolites ' +
               'will be displayed.')],
@@ -372,7 +375,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
               'reactions on the map that are not present in ' +
               'the loaded model.')],
         ];
-        
+
         var opts = s.append('div').attr('class', 'settings-container')
                 .selectAll('.option-group')
                 .data(boolean_options);
@@ -410,7 +413,7 @@ define(["utils", "CallbackManager", "ScaleEditor"], function(utils, CallbackMana
             .text(function(d) { return d[1]; });
         // exit
         opts.exit().remove();
-        
+
         // message about text performance
         s.append('div')
             .style('margin-top', '16px')
