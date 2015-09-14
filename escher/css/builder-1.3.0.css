@@ -32,6 +32,7 @@ resizes. */
 .escher-zoom-container, .escher-3d-transform-container, svg.escher-svg {
   width: 100% !important;
   height: 100% !important;
+  overflow: hidden;
 }
 
 /* Status */
