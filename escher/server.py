@@ -164,9 +164,6 @@ class BuilderHandler(BaseHandler):
             m_filepath = 'escher/example_data/metabolite_data_iJO1366.json'
             builder_kwargs['metabolite_data'] = load_data_file(m_filepath)
 
-        # make the builder
-        builder = Builder(safe=True, **builder_kwargs)
-
         # display options
         display_kwargs = {'minified_js': True,
                           'scroll_behavior': 'pan',
@@ -180,7 +177,16 @@ class BuilderHandler(BaseHandler):
                 display_kwargs[a] = (True if args[0].lower()=='true' else
                                      (False if args[0].lower()=='false' else
                                       args[0]))
+        # build options
+        for a in ['use_3d_transform']:
+            args = self.get_arguments(a)
+            if len(args) == 1:
+                builder_kwargs[a] = (True if args[0].lower()=='true' else
+                                     (False if args[0].lower()=='false' else
+                                      args[0]))
 
+        # make the builder
+        builder = Builder(safe=True, **builder_kwargs)
         html = builder._get_html(js_source=js_source, enable_editing=enable_editing,
                                  enable_keys=True, html_wrapper=True, fill_screen=True,
                                  height='100%', **display_kwargs)

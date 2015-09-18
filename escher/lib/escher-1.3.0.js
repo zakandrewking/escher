@@ -15068,9 +15068,9 @@ define('SettingsMenu',["utils", "CallbackManager", "ScaleEditor"], function(util
             ['scroll_behavior', 'Scroll to zoom (instead of scroll to pan)',
              ('If checked, then the scroll wheel and trackpad will control zoom ' +
               'rather than pan.'), {'zoom': true, 'pan': false}],
-            ['use_3d_transform', 'Use CSS3 for faster pan and zoom (only works in new browsers)',
+            ['use_3d_transform', 'Responsive pan and zoom (best for latest Chrome, Firefox, and IE)',
              ('Depending on your browser, this option may help or hurt ' +
-              'performance when panning and zooming. Try both options')],
+              'performance when panning and zooming.')],
             ['hide_secondary_metabolites', 'Hide secondary metabolites',
              ('If checked, then only the primary metabolites ' +
               'will be displayed.')],
@@ -15426,7 +15426,7 @@ define('Builder',['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', '
             // view options
             menu: 'all',
             scroll_behavior: 'pan',
-            use_3d_transform: true,
+            use_3d_transform: false,
             enable_editing: true,
             enable_keys: true,
             enable_search: true,

@@ -50,7 +50,7 @@ define(['utils', 'BuildInput', 'ZoomContainer', 'Map', 'CobraModel', 'Brush', 'C
             // view options
             menu: 'all',
             scroll_behavior: 'pan',
-            use_3d_transform: true,
+            use_3d_transform: false,
             enable_editing: true,
             enable_keys: true,
             enable_search: true,

@@ -88,6 +88,11 @@ The options on the launch page are:
       the mouse's scroll wheel over the map.
     - **Never ask before reloading**: If this is checked, then you will not be
       warned before leaving the page, even if you have unsaved changes.
+    - **Responsive pan and zoom**: If this is checked, then the panning and
+      zooming will take place without drawing the map, in order to make panning
+      and zooming more responsive. This feature works best in the latest
+      versions of Chrome, Firefox and Internet Explorer. In Safari it is better
+      to leave this off.
 
 Choose **Load map** to open the Escher viewer or builder in a new tab, and
 prepare to be delighted by your very own pathway map.
