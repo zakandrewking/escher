@@ -24,12 +24,12 @@ function select_model(model_name) {
 function get_quick_jump(this_map, server_index, local_index) {
     /** Find maps with the same model. Returns null if no quick jump options
      could be found.
-     
+
      */
     var model = get_model(this_map);
     if (model === null)
         return null;
-    
+
     var quick_jump = {},
         all_maps = [];
     if (server_index !== null)
@@ -48,15 +48,16 @@ function submit(server_index, local_index, map_download, can_dev) {
     // get the selections
     var maps = d3.select('#maps'),
         map_data = (maps.selectAll('option')
-                    .filter(function(d, i) { 
-                        return i == maps.node().selectedIndex; 
+                    .filter(function(d, i) {
+                        return i == maps.node().selectedIndex;
                     }).node().__data__),
         map_name = map_data ? map_data.map_name : null,
         organism = map_data ? map_data.organism : null,
         model_name = d3.select('#models').node().value,
         options_value = d3.select('#tools').node().value,
         scroll_value = d3.select('#scroll').node().checked,
-        never_ask_value = d3.select('#never_ask').node().checked,       
+        never_ask_value = d3.select('#never_ask').node().checked,
+        use_3d_transform_value = d3.select('#use_3d_transform').node().checked,
         add = [],
         url;
     // only add model for builder
@@ -68,6 +69,8 @@ function submit(server_index, local_index, map_download, can_dev) {
         add.push('scroll_behavior=zoom');
     if (never_ask_value)
         add.push('never_ask_before_quit=true');
+    if (use_3d_transform_value)
+        add.push('use_3d_transform=true');
 
     // choose the file
     if (options_value=='viewer') {
@@ -117,7 +120,7 @@ function draw_models_select(server_index, local_index) {
             return true;
         return false;
     };
-    
+
     var web_sel, local_sel,
         select_sel = d3.select('#models');
     if (local_index === null) {
@@ -134,9 +137,9 @@ function draw_models_select(server_index, local_index) {
         web_sel = select_sel.select('#models-web');
         local_sel = select_sel.select('#models-local');
     }
-    
+
     // cached
-    var local_model_names = []; 
+    var local_model_names = [];
     if (local_index !== null) {
         var model_data = local_index.models.filter(filter_models);
         local_model_names = model_data.map(function(x) { return x.model_name; });
@@ -157,7 +160,7 @@ function draw_models_select(server_index, local_index) {
             });
         models_sel.exit().remove();
     }
-    
+
     // web
     if (server_index !== null) {
         var model_data = server_index.models
@@ -174,19 +177,19 @@ function draw_models_select(server_index, local_index) {
             });
         models_sel.exit().remove();
     }
-    
+
 }
 
 function draw_maps_select(server_index, local_index) {
     /** Draw the models selector.
-     
+
      Arguments
      ---------
 
      server_index:
 
      local_index:
-     
+
      Returns
      -------
 
@@ -245,7 +248,7 @@ function draw_maps_select(server_index, local_index) {
             });
         maps_sel.exit().remove();
     }
-    
+
     // web
     if (server_index !== null) {
         var map_data = server_index.maps
@@ -267,7 +270,7 @@ function draw_maps_select(server_index, local_index) {
             });
         maps_sel.exit().remove();
     }
-    
+
     // select the first map and model
     if (has_maps && select_sel.node().selectedIndex == 0) {
         select_sel.node().selectedIndex = 1;
@@ -277,7 +280,7 @@ function draw_maps_select(server_index, local_index) {
                 if (i == 1) select_model(get_model(d.map_name));
             });
     }
-    
+
     return has_maps;
 }
 
@@ -305,7 +308,7 @@ function setup(server_index, local_index, map_download, can_dev) {
             return local.indexOf(m) == -1;
         });
     };
-    
+
     // organisms
     var organisms = {};
     [local_index, server_index]
@@ -318,12 +321,12 @@ function setup(server_index, local_index, map_download, can_dev) {
             });
         });
     organisms = Object.keys(organisms);
-    
+
     // draw dropdown menus
     draw_organisms_select(organisms);
     draw_models_select(server_index, local_index);
     var has_maps = draw_maps_select(server_index, local_index);
-    
+
     // update filters
     d3.select('#organisms')
         .on('change', function() {
@@ -343,16 +346,16 @@ function setup(server_index, local_index, map_download, can_dev) {
                         select_model(get_model(d.map_name));
                 });
         });
-    
+
     // disable Model for viewer
     d3.select('#tools')
         .on('change', function() {
             d3.select('#models')
                 .attr('disabled', this.value.indexOf('viewer') == -1 ? null : true);
         });
-    
+
     // select the first map
-    var map_node = d3.select('#maps').node(); 
+    var map_node = d3.select('#maps').node();
     if (has_maps && map_node.selectedIndex == 0)
         map_node.selectedIndex = 1;
 
@@ -364,7 +367,7 @@ function setup(server_index, local_index, map_download, can_dev) {
 
     // submit button
     d3.select('#submit')
-        .on('click', submit.bind(null, server_index, local_index, 
+        .on('click', submit.bind(null, server_index, local_index,
                                  map_download, can_dev));
 
     // submit on enter

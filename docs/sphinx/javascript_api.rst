@@ -35,6 +35,13 @@ JavaScript API
 	  wheel will have on an Escher map. Can be 'pan' to pan the map or
 	  'zoom' to zoom the map when the user moves the scroll wheel.
 
+       .. js:attribute:: options.use_3d_transform
+
+	  (Default: false) If true, then use CSS3 3D transforms to speed up panning
+	  and zooming. This feature will only work on browsers that `support the 3D
+	  transforms`_. It works best in the latest versions of Chrome, Firefox and
+	  Internet Explorer. Safari works better with this turned off.
+
        .. js:attribute:: options.enable_editing
 
 	  (Default: true) If true then display the map editing functions. If
@@ -289,3 +296,5 @@ JavaScript API
                                                   addition to setting the data,
                                                   also turn of the
                                                   gene_reaction_rules.
+
+.. _`support the 3D transforms`: http://caniuse.com/#feat=transforms3d

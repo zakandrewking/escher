@@ -358,7 +358,8 @@ class Builder(object):
         self.the_id = _get_an_id() if id is None else id
 
         # set up the options
-        self.options = ['identifiers_on_map',
+        self.options = ['use_3d_transform',
+                        'identifiers_on_map',
                         'show_gene_reaction_rules',
                         'unique_map_id',
                         'primary_metabolite_radius',

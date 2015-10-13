@@ -76,7 +76,8 @@ EscherConverter:
 Zachary A. King, Andreas Dräger, Ali Ebrahim, Nikolaus Sonnenschein,
 Nathan E. Lewis, and Bernhard O. Palsson (2015) *Escher: A web application for
 building, sharing, and embedding data-rich visualizations of biological
-pathways*, PLOS Computational Biology, May 2015. Accepted for publication.
+pathways*, PLOS Computational Biology 11(8): e1004321.
+doi:`10.1371/journal.pcbi.1004321`_
 
 Contents
 --------
@@ -100,3 +101,4 @@ Contents
 
 .. _`Escher website`: http://escher.github.io
 .. _`BiGG Database`: http://bigg.ucsd.edu
+.. _`10.1371/journal.pcbi.1004321`: http://dx.doi.org/10.1371/journal.pcbi.1004321
