@@ -2,7 +2,6 @@
 
 define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, saveAs) {
     return { set_options: set_options,
-             setup_svg: setup_svg,
              remove_child_nodes: remove_child_nodes,
              load_css: load_css,
              load_files: load_files,
@@ -86,33 +85,6 @@ define(["lib/vkbeautify", "lib/FileSaver"], function(vkbeautify, saveAs) {
             out[key] = val;
         }
         return out;
-    }
-
-    function setup_svg(selection, selection_is_svg, fill_screen) {
-        // sub selection places the graph in an existing svg environment
-        var add_svg = function(f, s) {
-            if (f) {
-                d3.select("body").classed('fill-screen-body', true);
-                s.classed('fill-screen-div', true);
-            }
-            var svg = s.append('svg')
-                    .attr("class", "escher-svg")
-                    .attr('xmlns', "http://www.w3.org/2000/svg");
-            return svg;
-        };
-
-        // run
-        var out;
-        // set the selection class
-        selection.classed('escher-container', true);
-        // make the svg
-        if (selection_is_svg) {
-            return selection;
-        } else if (selection) {
-            return add_svg(fill_screen, selection);
-        } else {
-            throw new Error('No selection');
-        }
     }
 
     function remove_child_nodes(selection) {

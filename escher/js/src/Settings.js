@@ -1,3 +1,5 @@
+/* global define, d3 */
+
 define(["utils", "lib/bacon"], function(utils, bacon) {
     /** A class to manage settings for a Map.
 
@@ -30,7 +32,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     function init(set_option, get_option, conditional_options) {
         this.set_option = set_option;
         this.get_option = get_option;
-        
+
         // manage accepting/abandoning changes
         this.status_bus = new bacon.Bus();
 
@@ -52,7 +54,7 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
             this.streams[name] = out.stream;
         }
     }
-    
+
     function _convert_to_conditional_stream(status_stream) {
         /** Hold on to event when hold_property is true, and only keep them
          if accept_property is true (when hold_property becomes false).
@@ -103,14 +105,14 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
         return unheld.merge(held);
     }
 
-    function _force_update_with_bus(bus) {        
+    function _force_update_with_bus(bus) {
         return bacon
             .combineAsArray(this, bus.toProperty(false))
             .map(function(t) {
                 return t[0];
             });
     }
-    
+
     function _create_conditional_setting(name, initial_value, set_option,
                                          status_bus, force_update_bus) {
         // set up the bus
@@ -121,12 +123,12 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
                 .convert_to_conditional_stream(status_bus)
         // force updates
                 .force_update_with_bus(force_update_bus);
-        
+
         // get the latest
         stream.onValue(function(v) {
             set_option(name, v);
         });
-        
+
         // push the initial value
         bus.push(initial_value);
 
@@ -154,16 +156,15 @@ define(["utils", "lib/bacon"], function(utils, bacon) {
     function hold_changes() {
         this.status_bus.push('hold');
     }
-    
+
     function abandon_changes() {
         this.status_bus.push('reject');
         this.status_bus.push('rejected');
         this.force_update_bus.push(true);
     }
-    
+
     function accept_changes() {
         this.status_bus.push('accept');
         this.status_bus.push('accepted');
     }
 });
-

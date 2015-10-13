@@ -45,7 +45,7 @@ _dependencies = {
     }
 
 _dependencies_cdn = {
-    'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js',
+    'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js',
     'boot_js': '//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js',
     'boot_css': '//netdna.bootstrapcdn.com/bootswatch/3.1.1/simplex/bootstrap.min.css',
     'jquery': '//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js',

@@ -1,4 +1,4 @@
-define(["utils"], function(utils) {
+define(["utils", "lib/underscore"], function(utils, _) {
     /** CallbackManager()
 
      */
@@ -16,12 +16,15 @@ define(["utils"], function(utils) {
     }
     function set(name, fn) {
         /** As in d3 callbacks, you can namespace your callbacks after a period:
-         
+
          select_metabolite.direction_arrow
          select_metabolite.input
 
          Both are called by select_metabolite
-         
+
+
+         TODO add *arguments to set, as in _.defer()
+
          */
         if (this.callbacks===undefined) this.callbacks = {};
         if (this.callbacks[name]===undefined) this.callbacks[name] = [];
@@ -31,7 +34,7 @@ define(["utils"], function(utils) {
     }
     function remove(name) {
         /** Remove a callback by name
-         
+
          */
         if (this.callbacks===undefined || Object.keys(this.callbacks).length==0) {
             console.warn('No callbacks to remove');
@@ -52,8 +55,8 @@ define(["utils"], function(utils) {
          the callback.
 
          */
-        if (this.callbacks===undefined) return this;
-        if (this_arg===undefined) this_arg = null;
+        if (_.isUndefined(this.callbacks)) return this;
+        if (_.isUndefined(this_arg)) this_arg = null;
         // pass all but the first (name) argument to the callback
         var pass_args = Array.prototype.slice.call(arguments, 2);
         // look for matching callback names

@@ -1,15 +1,23 @@
 @charset "utf-8";
 
 /* Containers */
+
+/* The top level container for an Escher Builder */
 .escher-container {
   background-color: #F3F3F3;
   text-align: center;
   position: relative;
 }
+
+/* Applied to the body when Escher fills the screen. This stops browser from
+showing scroll-end animations. */
 .fill-screen-body {
-  /* Stop Chrome from showing scroll-end animation */
   overflow: hidden;
 }
+
+/* Applied to top level container (generally .escher-container) when Escher
+fills the screen. These make sure Escher completely fills the screen, even after
+resizes. */
 .fill-screen-div {
   margin: 0;
   padding: 0;
@@ -19,9 +27,12 @@
   left: 0px;
   right: 0px;
 }
-.escher-svg {
+
+/* The zoom container classes. */
+.escher-zoom-container, .escher-3d-transform-container, svg.escher-svg {
   width: 100% !important;
   height: 100% !important;
+  overflow: hidden;
 }
 
 /* Status */
@@ -95,7 +106,7 @@
 }
 @media (min-width: 550px) {
   .escher-container .search-menu-container-inline {
-    width: 400px;
+    width: 410px;
   }
 }
 .escher-container .search-container {

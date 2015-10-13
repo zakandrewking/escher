@@ -1868,12 +1868,15 @@ define(['utils', 'Draw', 'Behavior', 'Scale', 'build', 'UndoStack', 'CallbackMan
         this._zoom_extent(margin, 'canvas');
     }
     function _zoom_extent(margin, mode) {
-        /** Zoom to fit all the nodes.
+        /** Zoom to fit the canvas or all the nodes. Returns error if one is
+         raised.
+
+         Arguments
+         ---------
 
          margin: optional argument to set the margins.
-         mode: Values are 'nodes', 'canvas'.
 
-         Returns error if one is raised.
+         mode: Values are 'nodes', 'canvas'.
 
          */
 
