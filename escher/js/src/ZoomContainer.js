@@ -165,9 +165,8 @@ define(["utils", "CallbackManager", "lib/underscore"], function(utils, CallbackM
             .on("touchmove.zoom", null)
             .on("touchend.zoom", null);
 
-        // This handles dragging to pan, double-clicking to zoom, and touch
-        // events (in any scroll mode). It also handles scrolling to zoom (only
-        // 'zoom' mode).
+        // This handles dragging to pan, and touch events (in any scroll
+        // mode). It also handles scrolling to zoom (only 'zoom' mode).
         this._zoom_behavior = d3.behavior.zoom()
             .on("zoom", function() {
                 this.go_to(d3.event.scale, {x: d3.event.translate[0], y: d3.event.translate[1]});
@@ -180,6 +179,9 @@ define(["utils", "CallbackManager", "lib/underscore"], function(utils, CallbackM
 
         // set it up
         this.zoom_container.call(this._zoom_behavior);
+
+        // always turn off double-clicking to zoom
+        this.zoom_container.on('dblclick.zoom', null);
 
         // if panning is off, then turn off these listeners
         if (!this._pan_drag_on) {

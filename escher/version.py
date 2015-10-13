@@ -16,4 +16,4 @@ __full_version__ = get_full_version(__version__, __post_version__)
 # the map specification, and the map version is an additional level so that maps
 # can be released with the same spec but new layouts.
 __schema_version__ = '1-0-0'
-__map_model_version__ = '3'
+__map_model_version__ = '4'
