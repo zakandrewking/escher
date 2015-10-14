@@ -13,7 +13,7 @@ module.exports = function(grunt) {
             },
             dist: {
                 files: {
-                    'js/build/escher.js': ['js/src/*.js']
+                    'js/build/escher.js': ['js/src/main.js']
                 }
             }
         },
@@ -51,6 +51,11 @@ module.exports = function(grunt) {
                 livereload: true
             }
         },
+        mochaTest: {
+            options: {
+            },
+            files: ['js/src/tests/test_Builder.js']
+        },
         clean: ['js/build/*.js', 'js/build/*.js.map',
                 'js/dist/*.js', 'js/dist/*.js.map']
     });
@@ -61,7 +66,9 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-browserify');
     grunt.loadNpmTasks('grunt-extract-sourcemap');
     grunt.loadNpmTasks('grunt-contrib-clean');
+    grunt.loadNpmTasks('grunt-mocha-test');
 
     // register tasks
     grunt.registerTask('default', tasks);
+    grunt.registerTask('test', ['mochaTest']);
 };

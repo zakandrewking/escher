@@ -50,6 +50,25 @@ class CleanCommand(Command):
             os.remove(f)
         print('done cleaning')
 
+class JSBuildCommand(Command):
+    description = "Custom build command that generates escher lib files"
+    user_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    def run(self):
+        call(['node',
+              join(directory, 'bin', 'r.js'),
+              '-o', join('escher', 'js', 'build', 'build.js'),
+              'out='+join('escher', 'lib', escher),
+              'optimize=none'])
+        call(['node',
+              join(directory, 'bin', 'r.js'),
+              '-o', join('escher', 'js', 'build', 'build.js'),
+              'out='+join('escher', 'lib', escher_min),
+              'optimize=uglify'])
+        print('done building js')
 
 class BuildGHPagesCommand(Command):
     description = "Custom build command that generates static site, and copies escher libs"
@@ -57,7 +76,7 @@ class BuildGHPagesCommand(Command):
     def initialize_options(self):
         pass
     def finalize_options(self):
-       pass
+        pass
     def run(self):
         # copy files to top level
         copy(join('escher', 'lib', escher), '.')
@@ -72,7 +91,6 @@ class BuildGHPagesCommand(Command):
         call(['python', join('escher', 'generate_index.py')])
         call(['python', join('escher', 'static_site.py')])
         print('Done building gh-pages')
-
 
 class BuildRelease(Command):
     description = "Make file modifications for a new release version"
@@ -120,7 +138,6 @@ class BuildRelease(Command):
              join('escher', 'css', 'builder-embed-%s.css' % new_version))
         print('Done building release %s' % new_version)
 
-
 class BuildDocs(Command):
     description = "Build the sphinx documentation"
     user_options = []
@@ -134,7 +151,6 @@ class BuildDocs(Command):
             call('cd docs & make.bat html & cd ..', shell=True)
         else:
             call(['make', 'html', '-C', 'docs'])
-
 
 class TestCommand(Command):
     description = "Custom test command that runs pytest and jasmine"
@@ -159,7 +175,6 @@ class TestCommand(Command):
         if not self.pyonly:
             call(['jasmine', '--port=%d' % port])
         sys.exit(exit_code)
-
 
 setup(
     name='Escher',
