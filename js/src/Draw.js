@@ -29,8 +29,6 @@
 
 /* global d3 */
 
-'use strict';
-
 var utils = require('./utils');
 var data_styles = require('./data_styles');
 var CallbackManager = require('./CallbackManager');

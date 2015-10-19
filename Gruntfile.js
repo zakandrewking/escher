@@ -52,9 +52,7 @@ module.exports = function(grunt) {
             }
         },
         mochaTest: {
-            options: {
-            },
-            files: ['js/src/tests/test_Builder.js']
+            files: ['js/src/tests/*.js']
         },
         clean: ['js/build/*.js', 'js/build/*.js.map',
                 'js/dist/*.js', 'js/dist/*.js.map']

@@ -1,7 +1,5 @@
 /** SearchBar */
 
-'use strict';
-
 var utils = require('./utils');
 var CallbackManager = require('./CallbackManager');
 

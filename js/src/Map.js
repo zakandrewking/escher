@@ -49,8 +49,6 @@
 
 /* global d3 */
 
-'use strict';
-
 var utils = require('./utils');
 var Draw = require('./Draw');
 var Behavior = require('./Behavior');
@@ -1934,6 +1932,7 @@ function _zoom_extent(margin, mode) {
     } else {
         return console.error('Did not recognize mode');
     }
+    debugger;
     this.zoom_container.go_to(new_zoom, new_pos);
     return null;
 }

@@ -2,8 +2,6 @@
 
 /* global d3 */
 
-'use strict';
-
 var utils = require('./utils');
 var PlacedDiv = require('./PlacedDiv');
 var completely = require('./complete.ly');

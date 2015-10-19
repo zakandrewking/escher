@@ -11,7 +11,12 @@
  *
  **/
 
+var utils = require('./utils');
+
 module.exports = function(container, config) {
+    document = utils.get_document(container);
+    window = utils.get_window(container);
+
     config = config || {};
     config.fontSize =                       config.fontSize   || '13px';
     config.fontFamily =                     config.fontFamily || 'sans-serif';

@@ -3,8 +3,6 @@
 
 /* global d3 */
 
-'use strict';
-
 var utils = require('./utils');
 
 
@@ -56,21 +54,21 @@ function set_location(coords) {
     /** Move the arrow to coords.
      */
     this.center = coords;
-    var transform = d3.transform(this.arrow_container.attr('transform'));
+    var transform = utils.d3_transform_catch(this.arrow_container.attr('transform'));
     this.arrow_container.attr('transform',
                               'translate('+coords.x+','+coords.y+')rotate('+transform.rotate+')');
 }
 function set_rotation(rotation) {
     /** Rotate the arrow to rotation.
      */
-    var transform = d3.transform(this.arrow_container.attr('transform'));
+    var transform = utils.d3_transform_catch(this.arrow_container.attr('transform'));
     this.arrow_container.attr('transform',
                               'translate('+transform.translate+')rotate('+rotation+')');
 }
 function displace_rotation(d_rotation) {
     /** Displace the arrow rotation by a set amount.
      */
-    var transform = d3.transform(this.arrow_container.attr('transform'));
+    var transform = utils.d3_transform_catch(this.arrow_container.attr('transform'));
     this.arrow_container.attr('transform',
                               'translate('+transform.translate+')'+
                               'rotate('+(transform.rotate+d_rotation)+')');
@@ -78,7 +76,7 @@ function displace_rotation(d_rotation) {
 function get_rotation() {
     /** Returns the arrow rotation.
      */
-    return d3.transform(this.arrow_container.attr('transform')).rotate;
+    return utils.d3_transform_catch(this.arrow_container.attr('transform')).rotate;
 }
 function toggle(on_off) {
     if (on_off===undefined) this.is_visible = !this.is_visible;

@@ -1,8 +1,6 @@
 /** PlacedDiv. A container to position an html div to match the coordinates of a
  SVG element. */
 
-'use strict';
-
 var utils = require('./utils');
 
 

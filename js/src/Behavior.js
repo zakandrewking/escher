@@ -16,8 +16,6 @@
 
 /* global d3 */
 
-'use strict';
-
 var utils = require('./utils');
 var build = require('./build');
 
@@ -201,7 +199,7 @@ function toggle_rotation_mode(on_off) {
 
         s.call(d3.behavior.drag()
                .on('drag', function(sel) {
-                   var cur = d3.transform(sel.attr('transform')),
+                   var cur = utils.d3_transform_catch(sel.attr('transform')),
                        new_loc = [d3.event.dx + cur.translate[0],
                                   d3.event.dy + cur.translate[1]];
                    sel.attr('transform', 'translate('+new_loc+')');
@@ -239,7 +237,7 @@ function toggle_selectable_click(on_off) {
      Pass in a boolean argument to set the on/off state.
 
      */
-    if (on_off===undefined) on_off = this.selectable_mousedown==null;
+    if (on_off===undefined) on_off = this.selectable_mousedown === null;
     if (on_off) {
         var map = this.map;
         this.selectable_mousedown = function(d) {
@@ -294,7 +292,7 @@ function toggle_text_label_edit(on_off) {
         this.text_label_mousedown = function() {
             if (d3.event.defaultPrevented) return; // mousedown suppressed
             // run the callback
-            var coords_a = d3.transform(d3.select(this).attr('transform')).translate,
+            var coords_a = utils.d3_transform_catch(d3.select(this).attr('transform')).translate,
                 coords = {x: coords_a[0], y: coords_a[1]};
             map.callback_manager.run('edit_text_label', null, d3.select(this), coords);
             d3.event.stopPropagation();

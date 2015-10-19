@@ -8,8 +8,6 @@
 
 /* global d3 */
 
-'use strict';
-
 var utils = require('./utils');
 var CallbackManager = require('./CallbackManager');
 
@@ -153,7 +151,7 @@ function setup() {
         d3.event.sourceEvent.stopPropagation();
     }
     function transform_string(x, y, current_transform) {
-        var tr = d3.transform(current_transform),
+        var tr = utils.d3_transform_catch(current_transform),
             translate = tr.translate;
         if (x!==null) translate[0] = x;
         if (y!==null) translate[1] = y;

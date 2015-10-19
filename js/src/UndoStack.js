@@ -1,7 +1,5 @@
 /** UndoStack. A constructor that can be used to store undo info. */
 
-'use strict';
-
 var utils = require('./utils');
 
 

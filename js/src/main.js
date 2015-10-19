@@ -28,9 +28,6 @@
 * THE SOFTWARE.
 */
 
-'use strict';
-
-
 module.exports = {
     Builder: require('./Builder'),
     Map: require('./Map'),

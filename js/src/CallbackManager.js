@@ -1,7 +1,5 @@
 /** CallbackManager */
 
-'use strict';
-
 var utils = require('./utils');
 var _ = require('underscore');
 

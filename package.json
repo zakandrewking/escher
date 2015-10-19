@@ -12,6 +12,7 @@
     "vkbeautify": "^0.99.1"
   },
   "devDependencies": {
+    "chai": "^3.3.0",
     "grunt": "^0.4.5",
     "grunt-browserify": "^4.0.0",
     "grunt-cli": "^0.1.13",
@@ -20,9 +21,7 @@
     "grunt-contrib-watch": "^0.6.1",
     "grunt-extract-sourcemap": "^0.1.16",
     "grunt-mocha-test": "^0.12.7",
-    "http-server": "^0.8.5",
     "jsdom": "^6.3.0",
-    "mocha": "^2.3.3",
-    "systemjs": "^0.18.17"
+    "mocha": "^2.3.3"
   }
 }

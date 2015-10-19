@@ -4,8 +4,6 @@
 
 /* global d3, $ */
 
-'use strict';
-
 var utils = require('./utils');
 var BuildInput = require('./BuildInput');
 var ZoomContainer = require('./ZoomContainer');

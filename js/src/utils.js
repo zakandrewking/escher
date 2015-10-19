@@ -1,8 +1,5 @@
-/* global Blob, XMLSerializer */
+/* global d3, Blob, XMLSerializer */
 
-'use strict';
-
-var d3 = require('d3');
 var vkbeautify = require('vkbeautify');
 var saveAs = require('FileSaver');
 
@@ -51,7 +48,10 @@ module.exports = {
     generate_map_id: generate_map_id,
     check_for_parent_tag: check_for_parent_tag,
     name_to_url: name_to_url,
-    parse_url_components: parse_url_components
+    parse_url_components: parse_url_components,
+    get_document: get_document,
+    get_window: get_window,
+    d3_transform_catch: d3_transform_catch
 };
 
 
@@ -96,15 +96,17 @@ function set_options(options, defaults, must_be_float) {
     return out;
 }
 
+
 function remove_child_nodes(selection) {
     /** Removes all child nodes from a d3 selection
 
      */
-    var node =  selection.node();
+    var node = selection.node();
     while (node.hasChildNodes()) {
         node.removeChild(node.lastChild);
     }
 }
+
 
 function load_css(css_path, callback) {
     var css = "";
@@ -585,11 +587,11 @@ function load_json(f, callback, pre_fn, failure_fn) {
     reader.onabort = function(event) {
         try { failure_fn(); }
         catch (e) { console.warn(e); }
-    }
+    };
     reader.onerror = function(event) {
         try { failure_fn(); }
         catch (e) { console.warn(e); }
-    }
+    };
     // Read in the image file as a data URL.
     reader.readAsText(f);
 }
@@ -611,43 +613,43 @@ function load_json_or_csv(f, csv_converter, callback, pre_fn, failure_fn,
 
      failure_fn: (optional) A function to call if the load fails or is aborted.
 
-     debug_event: (optional) An event, with a string at
-     event.target.result, to load as though it was the contents of a
-     loaded file.
+     debug_event: (optional) An event, with a string at event.target.result, to
+     load as though it was the contents of a loaded file.
 
      */
-    // Check for the various File API support.
-    if (!(window.File && window.FileReader && window.FileList && window.Blob))
-        callback("The File APIs are not fully supported in this browser.", null);
 
-    var reader = new window.FileReader(),
-        // Closure to capture the file information.
-        onload_function = function(event) {
+    // Capture the file information.
+    var onload_function = function(event) {
+        var result = event.target.result,
+            data, errors;
+        // try JSON
+        try {
+            data = JSON.parse(result);
+        } catch (e) {
+            errors = 'JSON error: ' + e;
 
-            var result = event.target.result,
-                data, errors;
-            // try JSON
+            // try csv
             try {
-                data = JSON.parse(result);
+                data = csv_converter(d3.csv.parseRows(result));
             } catch (e) {
-                errors = 'JSON error: ' + e;
-
-                // try csv
-                try {
-                    data = csv_converter(d3.csv.parseRows(result));
-                } catch (e) {
-                    // if both failed, return the errors
-                    callback(errors + '\nCSV error: ' + e, null);
-                    return;
-                }
+                // if both failed, return the errors
+                callback(errors + '\nCSV error: ' + e, null);
+                return;
             }
-            // if successful, return the data
-            callback(null, data);
-        };
+        }
+        // if successful, return the data
+        callback(null, data);
+    };
     if (debug_event !== undefined && debug_event !== null) {
         console.warn('Debugging load_json_or_csv');
         return onload_function(debug_event);
     }
+
+    // Check for the various File API support.
+    if (!(window.File && window.FileReader && window.FileList && window.Blob))
+        callback("The File APIs are not fully supported in this browser.", null);
+    var reader = new window.FileReader();
+
     if (pre_fn !== undefined && pre_fn !== null) {
         try { pre_fn(); }
         catch (e) { console.warn(e); }
@@ -900,4 +902,31 @@ function parse_url_components(the_window, options) {
         }
     }
     return options;
+}
+
+
+function get_document(node) {
+    /** Get the document for the node */
+    return node.ownerDocument;
+}
+
+
+function get_window(node) {
+    /** Get the window for the node */
+    return get_document(node).defaultView;
+}
+
+
+function d3_transform_catch(transform_attr) {
+    /** Return the result of d3.transform, but catch errors if we are in
+     node/jsdom. See also https://github.com/mbostock/d3/issues/1545
+
+     */
+    try {
+        return d3.transform(transform_attr);
+    } catch (err) {
+        console.error('Cannot run d3.transform, probably becuase this is a node/jsdom test. ' +
+                      'Returning a tranform object for testing.');
+        return { translate: [0, 0], rotate: 0 };
+    }
 }

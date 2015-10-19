@@ -1,7 +1,5 @@
 /** TextEditInput */
 
-'use strict';
-
 var utils = require('./utils');
 var PlacedDiv = require('./PlacedDiv');
 var build = require('./build');

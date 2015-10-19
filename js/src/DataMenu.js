@@ -2,8 +2,6 @@
 
 /* global d3 */
 
-'use strict';
-
 var utils = require('./utils');
 
 
