@@ -24,13 +24,17 @@ describe('data_styles', function() {
         expect(out).toEqual(expected);
 
         // gene data, multiple sets, mix of ids and names
-        gene_data = [{ G1: 0, G2_name: 4, G3: -12.3 }, { G1: 2, G2: 6 }];
-        reactions = { '3': { bigg_id: 'reaction_1',
+        gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2_name: 6 }];
+        reactions = { '4': { bigg_id: 'reaction_2',
+                             gene_reaction_rule: 'G4',
+                             genes: [{ bigg_id: 'G4', name: '' }]},
+                      '3': { bigg_id: 'reaction_1',
                              gene_reaction_rule: '(G1 AND G2) OR G3',
                              genes: [{ bigg_id: 'G1', name: '' },
                                      { bigg_id: 'G2', name: 'G2_name' },
                                      { bigg_id: 'G3', name: '' }]}};
-        expected = { reaction_1: { G1: [0, 2],
+        expected = { reaction_2: { G4: [null, null]},
+                     reaction_1: { G1: [0, 2],
                                    G2: [4, 6],
                                    G3: [-12.3, null] }};
         out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);

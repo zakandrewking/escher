@@ -93,7 +93,7 @@ define(['utils'], function(utils) {
                 reaction.genes.forEach(function(gene) {
                     // check both gene id and gene name
                     ['bigg_id', 'name'].forEach(function(kind) {
-                        var d = data[gene[kind]] || null_val;
+                        var d = data[gene[kind]] || utils.clone(null_val);
                         // merger with existing data if present
                         var existing_d = this_gene_data[gene.bigg_id];
                         if (typeof existing_d === 'undefined') {
@@ -377,7 +377,7 @@ define(['utils'], function(utils) {
             break;
         }
 
-        if (rule == '') return null_val;
+        if (rule == '') return utils.clone(null_val);
 
         // for each element in the arrays
         var out = [];
@@ -588,7 +588,7 @@ define(['utils'], function(utils) {
                                                 and_method_in_gene_reaction_rule);
             } else {
                 gene_values = {};
-                d = null_val;
+                d = utils.clone(null_val);
             }
             var f = float_for_data(d, styles, compare_style),
                 r = reverse_flux_for_data(d),
