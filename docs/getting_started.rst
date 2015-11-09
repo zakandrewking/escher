@@ -173,7 +173,9 @@ The structure of a CSV file
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 CSV files should have 1 header row, 1 ID column, and either 1 or 2 columns for
-data values. Here is an example with a single data value columns::
+data values. The ID column can contain BiGG IDs or descriptive names for the
+reactions, metabolites, or genes in the dataset. Here is an example with a
+single data value columns::
 
     ID,time 0sec
     glc__D_c,5.4
@@ -187,7 +189,7 @@ ID        time 0sec
 glc__D_c  5.4
 g6p_c     2.3
 ========= =========
-   
+
 If two datasets are provided, then the Escher map will display the difference
 between the datasets. In the Settings menu, the **Comparison** setting allows
 you to choose between comparison functions (Fold Change, Log2(Fold Change), and
@@ -199,7 +201,20 @@ ID        time 0sec time 5s
 glc__D_c  5.4       10.2
 g6p_c     2.3        8.1
 ========= ========= =========
-    
+
+..
+   For gene data, an example file could contain the BiGG IDs (generally the locus
+   IDs) or the descriptive names (generally gene names). So, for the RECON1 human
+   model, the following gene data files would be equivalent:
+
+       ID,reads
+       glc__D_c,1220
+       g6p__D_c,35
+
+       descriptive name,reads
+       glc__D_c,1220
+       g6p__D_c,35
+
 Data can also be loaded from a JSON file. This Python code snippet provides an
 example of generating the proper format for single reaction data values and for
 reaction data comparisons::
