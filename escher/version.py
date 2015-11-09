@@ -6,7 +6,7 @@ def get_full_version(main_version, post_version=None):
         return '%s.post%s' % (main_version, post_version)
 
 # software version
-__version__ = '1.3.0'
+__version__ = '1.3.1'
 # post-release version (required by PyPI & PEP440)
 __post_version__ = None
 # full version with post-release

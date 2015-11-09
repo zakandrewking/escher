@@ -2,48 +2,64 @@
 
 describe('data_styles', function() {
     it('import_and_check', function() {
+        var reaction_data, expected, gene_data, reactions, out;
+
         // reaction data
-        var reaction_data = { R1: 0, R2: 4, R3: -12.3 },
-            expected = { R1: [0], R2: [4], R3: [-12.3] };
+        reaction_data = { R1: 0, R2: 4, R3: -12.3 };
+        expected = { R1: [0], R2: [4], R3: [-12.3] };
         out = escher.data_styles.import_and_check(reaction_data, 'reaction_data');
         expect(out).toEqual(expected);
 
         // gene data, funny names
-        var gene_data = { G1ORF: 0, G2ANDHI: 4, 'G3-A': -12.3 },
-            reactions = { '2': { bigg_id: 'reaction_1',
-                                 gene_reaction_rule: '(G1ORF AND G2ANDHI) OR G3-A' }},
-            expected = { reaction_1: { G1ORF: [0],
-                                       G2ANDHI: [4],
-                                       'G3-A': [-12.3] }},
-            out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
+        gene_data = { G1ORF: 0, G2ANDHI: 4, 'G3-A': -12.3 };
+        reactions = { '2': { bigg_id: 'reaction_1',
+                             gene_reaction_rule: '(G1ORF AND G2ANDHI) OR G3-A',
+                             genes: [{ bigg_id: 'G1ORF', name: '' },
+                                     { bigg_id: 'G2ANDHI', name: '' },
+                                     { bigg_id: 'G3-A', name: '' }]}};
+        expected = { reaction_1: { G1ORF: [0],
+                                   G2ANDHI: [4],
+                                   'G3-A': [-12.3] }};
+        out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
         expect(out).toEqual(expected);
 
-        // gene data, multiple sets
-        var gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2: 6 }],
-            reactions = { '3': { bigg_id: 'reaction_1',
-                                 gene_reaction_rule: '(G1 AND G2) OR G3' }},
-            expected = { reaction_1: { G1: [0, 2],
-                                       G2: [4, 6],
-                                       G3: [-12.3, null] }},
-            out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
+        // gene data, multiple sets, mix of ids and names
+        gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2_name: 6 }];
+        reactions = { '4': { bigg_id: 'reaction_2',
+                             gene_reaction_rule: 'G4',
+                             genes: [{ bigg_id: 'G4', name: '' }]},
+                      '3': { bigg_id: 'reaction_1',
+                             gene_reaction_rule: '(G1 AND G2) OR G3',
+                             genes: [{ bigg_id: 'G1', name: '' },
+                                     { bigg_id: 'G2', name: 'G2_name' },
+                                     { bigg_id: 'G3', name: '' }]}};
+        expected = { reaction_2: { G4: [null, null]},
+                     reaction_1: { G1: [0, 2],
+                                   G2: [4, 6],
+                                   G3: [-12.3, null] }};
+        out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
         expect(out).toEqual(expected);
 
         // gene data, null
-        var gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2: 6 }],
-            reactions = { '1': { bigg_id: 'reaction_1',
-                                 gene_reaction_rule: '' }},
-            expected = { reaction_1: {} },
-            out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
+        gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2: 6 }];
+        reactions = { '1': { bigg_id: 'reaction_1',
+                             gene_reaction_rule: '',
+                             genes: []}};
+        expected = { reaction_1: {} };
+        out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
         expect(out).toEqual(expected);
 
         // empty dataset
-        var gene_data = {},
-            reactions = { r1: { bigg_id: 'reaction_1',
-                                gene_reaction_rule: '(G1 AND G2) OR G3' }},
-            expected = { reaction_1: { G1: [null],
-                                       G2: [null],
-                                       G3: [null] } },
-            out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
+        gene_data = {};
+        reactions = { r1: { bigg_id: 'reaction_1',
+                            gene_reaction_rule: '(G1 AND G2) OR G3',
+                            genes: [{ bigg_id: 'G1', name: '' },
+                                    { bigg_id: 'G2', name: 'G2_name' },
+                                    { bigg_id: 'G3', name: '' }]}};
+        expected = { reaction_1: { G1: [null],
+                                   G2: [null],
+                                   G3: [null] } };
+        out = escher.data_styles.import_and_check(gene_data, 'gene_data', reactions);
         expect(out).toEqual(expected);
     });
 
@@ -269,8 +285,8 @@ describe('data_styles', function() {
 
     it('evaluate_gene_reaction_rule, complex cases', function() {
         // complex cases
-	// Members of OR connections can be null
-	var rule = '( (( YCR034W or YGR032W) and YLR343W ) or ( ( YCR034W and YGR032W ) and YMR215W ) or ( ( YCR034W and YMR306W ) and YMR215W ) or ( ( YCR034W and YLR342W ) and YOL132W ) or ( ( YCR034W and YMR306W ) and YOL132W ) or ( ( YCR034W and YGR032W ) and YOL030W ) or ( ( YCR034W and YLR342W ) and YOL030W ) or ( ( YCR034W and YMR306W ) and YOL030W ) or ( ( YCR034W and YLR342W ) and YLR343W ) or ( ( YCR034W and YMR306W ) and YLR343W ) or ( ( YCR034W and YGR032W ) and YOL132W ) or ( ( YCR034W and YLR342W ) and YMR215W ) or ( ( YCR034W and YGR032W ) and YMR307W ) or ( ( YCR034W and YLR342W ) and YMR307W ) or ( ( YCR034W and YMR306W ) and YMR307W ) )',
+        // Members of OR connections can be null
+        var rule = '( (( YCR034W or YGR032W) and YLR343W ) or ( ( YCR034W and YGR032W ) and YMR215W ) or ( ( YCR034W and YMR306W ) and YMR215W ) or ( ( YCR034W and YLR342W ) and YOL132W ) or ( ( YCR034W and YMR306W ) and YOL132W ) or ( ( YCR034W and YGR032W ) and YOL030W ) or ( ( YCR034W and YLR342W ) and YOL030W ) or ( ( YCR034W and YMR306W ) and YOL030W ) or ( ( YCR034W and YLR342W ) and YLR343W ) or ( ( YCR034W and YMR306W ) and YLR343W ) or ( ( YCR034W and YGR032W ) and YOL132W ) or ( ( YCR034W and YLR342W ) and YMR215W ) or ( ( YCR034W and YGR032W ) and YMR307W ) or ( ( YCR034W and YLR342W ) and YMR307W ) or ( ( YCR034W and YMR306W ) and YMR307W ) )',
             gene_values = {"YCR034W":[8],
                            "YGR032W":[12],
                            "YLR343W":[2],
@@ -283,8 +299,8 @@ describe('data_styles', function() {
         expect(escher.data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min'))
             .toEqual([2]);
 
-	// treat nulls as 0
-	rule = '( YOL096C and YDR204W and YML110C and YGR255C and YOR125C and YGL119W and YLR201C )';
+        // treat nulls as 0
+        rule = '( YOL096C and YDR204W and YML110C and YGR255C and YOR125C and YGL119W and YLR201C )';
         gene_values = {"YOL096C": [-9.966],
                        "YDR204W": [null],
                        "YML110C": [5.727832840424934],
