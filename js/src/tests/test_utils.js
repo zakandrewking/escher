@@ -1,5 +1,7 @@
-var utils = require('../utils');
-var data_styles = require('../data_styles');
+var require_helper = require('./helpers/require_helper');
+
+var utils = require_helper('utils');
+var data_styles = require_helper('data_styles');
 
 var describe = require('mocha').describe;
 var it = require('mocha').it;

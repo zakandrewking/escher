@@ -19,3 +19,4 @@ index.html
 _build/
 .can_dev
 node_modules/
+js/src/coverage/

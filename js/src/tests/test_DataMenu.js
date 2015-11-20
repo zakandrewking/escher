@@ -1,4 +1,6 @@
-var DataMenu = require('../DataMenu');
+var require_helper = require('./helpers/require_helper');
+
+var DataMenu = require_helper('DataMenu');
 
 var describe = require('mocha').describe;
 var it = require('mocha').it;

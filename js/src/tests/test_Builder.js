@@ -1,3 +1,7 @@
+var require_helper = require('./helpers/require_helper');
+
+var Builder = require_helper('Builder');
+
 // These tests require d3 features that are currently not available in
 // node/jsdom (e.g. d3.tranform). Hopefully these will eventually be available
 // for running and testing all of Escher from the command line.
@@ -13,7 +17,6 @@
 //     global.v8debug.Debug.setBreakOnException();
 
 
-// var Builder = require('../Builder');
 // var get_map = require('./helpers/get_map');
 // var get_model = require('./helpers/get_model');
 

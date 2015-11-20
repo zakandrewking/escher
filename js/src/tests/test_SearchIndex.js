@@ -1,4 +1,6 @@
-var SearchIndex = require('../SearchIndex');
+var require_helper = require('./helpers/require_helper');
+
+var SearchIndex = require_helper('SearchIndex');
 
 var describe = require('mocha').describe;
 var it = require('mocha').it;

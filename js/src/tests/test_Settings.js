@@ -1,4 +1,6 @@
-var Settings = require('../Settings');
+var require_helper = require('./helpers/require_helper');
+
+var Settings = require_helper('Settings');
 
 var describe = require('mocha').describe;
 var it = require('mocha').it;

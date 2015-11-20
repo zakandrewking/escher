@@ -1,3 +1,0 @@
-For development, you can run the following command to install Escher with all its dependencies:
-
-pip install -e '.[all]'

@@ -1,6 +1,8 @@
-var Map = require('../Map');
-var Settings = require('../Settings');
-var CobraModel = require('../CobraModel');
+var require_helper = require('./helpers/require_helper');
+
+var Map = require_helper('Map');
+var Settings = require_helper('Settings');
+var CobraModel = require_helper('CobraModel');
 
 var describe = require('mocha').describe;
 var it = require('mocha').it;

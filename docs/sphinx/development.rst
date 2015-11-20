@@ -24,7 +24,7 @@ Test Python and start Jasmine for JavaScript testing::
 
 Build the static website::
 
-    python setup.py buildgh
+    python setup.py build_gh
 
 Clear static website files::
 

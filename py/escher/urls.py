@@ -10,19 +10,19 @@ from os.path import dirname, realpath, join
 root_directory = realpath(join(dirname(__file__), '..'))
 
 _escher_local = {
-    'builder_embed_css': 'escher/css/builder-embed-%s.css' % __version__,
-    'builder_css': 'escher/css/builder-%s.css' % __version__,
-    'escher': 'escher/lib/escher-%s.js' % __version__,
-    'escher_min': 'escher/lib/escher-%s.min.js' % __version__,
-    'logo': 'escher/resources/escher-logo@2x.png',
-    'favicon': 'escher/resources/favicon.ico',
-    'index_js': 'escher/js/web/index.js',
-    'index_gh_pages_js': 'escher/js/web/index_gh_pages.js',
-    'index_css': 'escher/css/web/index.css',
+    'builder_embed_css': 'escher/static/escher/builder-embed.css',
+    'builder_css': 'escher/static/escher/builder.css',
+    'escher': 'escher/static/escher/escher.js',
+    'escher_min': 'escher/static/escher/escher.min.js',
+    'logo': 'escher/static/img/escher-logo@2x.png',
+    'favicon': 'escher/static/img/favicon.ico',
+    'index_js': 'escher/static/homepage/index.js',
+    'index_gh_pages_js': 'escher/static/homepage/index_gh_pages.js',
+    'index_css': 'escher/static/homepage/index.css',
     'server_index': '%s/%s/index.json' % (__schema_version__, __map_model_version__),
     'map_download': '%s/%s/maps/' % (__schema_version__, __map_model_version__),
     'model_download': '%s/%s/models/' % (__schema_version__, __map_model_version__),
-    }
+}
 
 _escher_web = {
     'builder_embed_css': 'builder-embed-%s.css' % __version__,
@@ -32,33 +32,31 @@ _escher_web = {
     'server_index': '%s/%s/index.json' % (__schema_version__, __map_model_version__),
     'map_download': '%s/%s/maps/' % (__schema_version__, __map_model_version__),
     'model_download': '%s/%s/models/' % (__schema_version__, __map_model_version__),
-    'favicon': 'escher/resources/favicon.ico',
-    }
+    'favicon': 'escher/static/img/favicon.ico',
+}
 
 _dependencies = {
-    'd3': 'escher/lib/d3.min.js',
-    'boot_js': 'escher/lib/bootstrap-3.1.1.min.js',
-    'boot_css': 'escher/lib/bootstrap-3.1.1.min.css',
-    'jquery': 'escher/lib/jquery-2.1.0.min.js',
-    'require_js': 'escher/lib/require.min.js',
-    'bacon': 'escher/lib/bacon-0.7.12.min.js',
-    }
+    'd3': 'escher/static/lib/d3-3.5.9.min.js',
+    'boot_js': 'escher/static/lib/bootstrap-3.1.1.min.js',
+    'boot_css': 'escher/static/lib/bootstrap-simplex-3.1.1.min.css',
+    'jquery': 'escher/static/lib/jquery-2.1.4.min.js',
+    'require_js': 'escher/static/lib/require-2.1.21.min.js',
+}
 
 _dependencies_cdn = {
-    'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js',
+    'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.5.9/d3.min.js',
     'boot_js': '//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js',
     'boot_css': '//netdna.bootstrapcdn.com/bootswatch/3.1.1/simplex/bootstrap.min.css',
-    'jquery': '//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.0/jquery.min.js',
-    'require_js': '//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.11/require.min.js',
-    'bacon': '//cdnjs.cloudflare.com/ajax/libs/bacon.js/0.7.12/bacon.min.js',
-    }
+    'jquery': '//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js',
+    'require_js': '//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.21/require.min.js',
+}
 
 _links = {
     'escher_root': '//escher.github.io/',
     'github': '//github.com/zakandrewking/escher/',
     'github_releases': '//github.com/zakandrewking/escher/releases',
     'documentation': '//escher.readthedocs.org/',
-    }
+}
 
 # external dependencies
 names = list(_escher_local.keys()) + list(_escher_web.keys()) + list(_dependencies.keys()) + list(_links.keys())

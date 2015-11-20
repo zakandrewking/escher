@@ -224,12 +224,7 @@ class DocsHandler(BaseHandler):
 settings = {"debug": "False"}
 
 application = Application([
-    (r"/(escher/lib/.*)", StaticHandler),
-    (r"/(escher/fonts/.*)", StaticHandler),
-    (r"/(escher/js/.*)", StaticHandler),
-    (r"/(escher/css/.*)", StaticHandler),
-    (r"/(escher/resources/.*)", StaticHandler),
-    (r"/(escher/jsonschema/.*)", StaticHandler),
+    (r"/(escher/static/.*)", StaticHandler),
     (r"/(builder|viewer)(.*)", BuilderHandler),
     (r"/%s/%s(/.*)" % (__schema_version__, __map_model_version__), MapModelHandler),
     (r"/docs/(.*)", DocsHandler),

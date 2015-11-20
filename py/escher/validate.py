@@ -21,7 +21,7 @@ def validate_map(map_data):
      missing_multimarkers,
      missing_stoich,
      missing_gene_names) = check_map(map_data)
-     
+
     error = ''
     if len(bad_segments) > 0:
         error += 'No nodes for segments: %s\n' % (', '.join(str(x) for x in bad_segments))
@@ -33,11 +33,11 @@ def validate_map(map_data):
         error += 'No gene name for gene in gene_reaction_rule: %s\n' % (', '.join(str(x) for x in missing_gene_names))
     if error != '':
         raise Exception(error)
-    
+
 def validate_schema():
     import jsonschema
     schema = get_jsonschema()
-    jsonschema.Draft4Validator.check_schema(schema)    
+    jsonschema.Draft4Validator.check_schema(schema)
 
 def check_map(map_data):
     """Check reactions and metabolites.
@@ -80,7 +80,7 @@ def get_jsonschema():
     """Get the local jsonschema.
 
     """
-    with open(join(root_directory, 'escher', 'jsonschema', __schema_version__), 'r') as f:
+    with open(join(root_directory, '..', 'jsonschema', __schema_version__), 'r') as f:
         return json.load(f)
 
 def genes_for_gene_reaction_rule(rule):
@@ -93,8 +93,8 @@ def genes_for_gene_reaction_rule(rule):
     OR's.
 
     """
-    
-    # remove ANDs and ORs, surrounded by space or parentheses     
+
+    # remove ANDs and ORs, surrounded by space or parentheses
     rule = re.sub(r'([()\s])(?:and|or)([)(\s])', r'\1\2', rule)
     # remove parentheses
     rule = re.sub(r'\(|\)', r'', rule)

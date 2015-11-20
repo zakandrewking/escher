@@ -1,7 +1,7 @@
 /* global d3, Blob, XMLSerializer */
 
 var vkbeautify = require('vkbeautify');
-var saveAs = require('FileSaver');
+var saveAs = require('filesaver');
 
 
 module.exports = {
