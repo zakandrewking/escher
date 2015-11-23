@@ -11,15 +11,18 @@ describe('data_styles', function() {
     it('import_and_check', function() {
         it('checks reaction data', function() {
             var reaction_data = { R1: 0, R2: 4, R3: -12.3 },
-                expected = { R1: [0], R2: [4], R3: [-12.3] };
-            out = data_styles.import_and_check(reaction_data, 'reaction_data');
+                expected = { R1: [0], R2: [4], R3: [-12.3] },
+                out = data_styles.import_and_check(reaction_data, 'reaction_data');
             assert.deepEqual(out, expected);
         });
 
         it('checks gene data and funny names', function() {
             var gene_data = { G1ORF: 0, G2ANDHI: 4, 'G3-A': -12.3 },
                 reactions = { '2': { bigg_id: 'reaction_1',
-                                     gene_reaction_rule: '(G1ORF AND G2ANDHI) OR G3-A' }},
+                                     gene_reaction_rule: '(G1ORF AND G2ANDHI) OR G3-A',
+                             genes: [{ bigg_id: 'G1ORF', name: '' },
+                                     { bigg_id: 'G2ANDHI', name: '' },
+                                     { bigg_id: 'G3-A', name: '' }]}},
                 expected = { reaction_1: { G1ORF: [0],
                                            G2ANDHI: [4],
                                            'G3-A': [-12.3] }},
@@ -29,9 +32,16 @@ describe('data_styles', function() {
 
         it('checks gene data with multiple sets', function() {
             var gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2: 6 }],
-                reactions = { '3': { bigg_id: 'reaction_1',
-                                     gene_reaction_rule: '(G1 AND G2) OR G3' }},
-                expected = { reaction_1: { G1: [0, 2],
+                reactions = { '4': { bigg_id: 'reaction_2',
+                                     gene_reaction_rule: 'G4',
+                                     genes: [{ bigg_id: 'G4', name: '' }]},
+                              '3': { bigg_id: 'reaction_1',
+                                     gene_reaction_rule: '(G1 AND G2) OR G3',
+                                     genes: [{ bigg_id: 'G1', name: '' },
+                                             { bigg_id: 'G2', name: 'G2_name' },
+                                             { bigg_id: 'G3', name: '' }]}},
+                expected = { reaction_2: { G4: [null, null]},
+                             reaction_1: { G1: [0, 2],
                                            G2: [4, 6],
                                            G3: [-12.3, null] }},
                 out = data_styles.import_and_check(gene_data, 'gene_data', reactions);
@@ -50,7 +60,10 @@ describe('data_styles', function() {
         it('checks gene data with empty data set', function() {
             var gene_data = {},
                 reactions = { r1: { bigg_id: 'reaction_1',
-                                    gene_reaction_rule: '(G1 AND G2) OR G3' }},
+                                    gene_reaction_rule: '(G1 AND G2) OR G3',
+                                    genes: [{ bigg_id: 'G1', name: '' },
+                                            { bigg_id: 'G2', name: 'G2_name' },
+                                            { bigg_id: 'G3', name: '' }]}},
                 expected = { reaction_1: { G1: [null],
                                            G2: [null],
                                            G3: [null] } },

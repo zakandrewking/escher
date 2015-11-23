@@ -74,21 +74,6 @@ class BuildGHPagesCommand(Command):
         print('Done building gh-pages')
 
 
-class BuildDocs(Command):
-    description = "Build the sphinx documentation"
-    user_options = []
-    def initialize_options(self):
-        pass
-    def finalize_options(self):
-        pass
-    def run(self):
-        import platform
-        if platform.system() == 'Windows':
-            call('cd docs & make.bat html & cd ..', shell=True)
-        else:
-            call(['make', 'html', '-C', 'docs'])
-
-
 class TestCommand(Command):
     description = "Custom test command that runs pytest"
     user_options = [('noweb', None, 'Skip run tests that require the Escher website')]
@@ -142,6 +127,5 @@ setup(
                             'twine>=1.5.0'] },
     cmdclass={'clean': CleanCommand,
               'build_gh': BuildGHPagesCommand,
-              'build_docs': BuildDocs,
               'test': TestCommand}
 )

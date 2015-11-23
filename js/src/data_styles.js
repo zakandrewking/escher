@@ -90,29 +90,31 @@ function import_and_check(data, name, all_reactions) {
         var aligned = {},
             null_val = [null];
         // make an array of nulls as the default
-        for (var gene_id in data) {
-            null_val = data[gene_id].map(function() { return null; });
+        for (var first_gene_id in data) {
+            null_val = data[first_gene_id].map(function() { return null; });
             break;
         }
         for (var reaction_id in reactions) {
             var reaction = reactions[reaction_id],
                 bigg_id = reaction.bigg_id,
                 this_gene_data = {};
-            // save to aligned
 
-            // get the genes if they aren't already there
-            var g = reaction.genes,
-                genes;
-            if (typeof g === 'undefined')
-                genes = genes_for_gene_reaction_rule(reaction.gene_reaction_rule);
-            else
-                genes = g.map(function(x) { return x.bigg_id; });
-
-            genes.forEach(function(gene_id) {
-                var d = data[gene_id];
-                if (typeof d === 'undefined')
-                    d = null_val;
-                this_gene_data[gene_id] = d;
+            reaction.genes.forEach(function(gene) {
+                // check both gene id and gene name
+                ['bigg_id', 'name'].forEach(function(kind) {
+                    var d = data[gene[kind]] || utils.clone(null_val);
+                    // merger with existing data if present
+                    var existing_d = this_gene_data[gene.bigg_id];
+                    if (typeof existing_d === 'undefined') {
+                        this_gene_data[gene.bigg_id] = d;
+                    } else {
+                        for (var i = 0; i < d.length; i++) {
+                            var pnt = d[i];
+                            if (pnt !== null)
+                                existing_d[i] = pnt;
+                        }
+                    }
+                });
             });
             aligned[bigg_id] = this_gene_data;
         }
@@ -384,7 +386,7 @@ function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_react
         break;
     }
 
-    if (rule == '') return null_val;
+    if (rule == '') return utils.clone(null_val);
 
     // for each element in the arrays
     var out = [];
@@ -467,13 +469,15 @@ function apply_reaction_data_to_reactions(reactions, data, styles, compare_style
 
      */
 
+    var reaction_id, reaction, segment_id, segment;
+
     if (data === null) {
-        for (var reaction_id in reactions) {
-            var reaction = reactions[reaction_id];
+        for (reaction_id in reactions) {
+            reaction = reactions[reaction_id];
             reaction.data = null;
             reaction.data_string = '';
-            for (var segment_id in reaction.segments) {
-                var segment = reaction.segments[segment_id];
+            for (segment_id in reaction.segments) {
+                segment = reaction.segments[segment_id];
                 segment.data = null;
             }
             reaction.gene_string = null;
@@ -482,9 +486,10 @@ function apply_reaction_data_to_reactions(reactions, data, styles, compare_style
     }
 
     // apply the datasets to the reactions
-    for (var reaction_id in reactions) {
-        var reaction = reactions[reaction_id],
-            d = (reaction.bigg_id in data ? data[reaction.bigg_id] : null),
+    for (reaction_id in reactions) {
+        reaction = reactions[reaction_id];
+        // check bigg_id and name
+        var d = data[reaction.bigg_id] || data[reaction.name] || null,
             f = float_for_data(d, styles, compare_style),
             r = reverse_flux_for_data(d),
             s = text_for_data(d, f);
@@ -493,8 +498,8 @@ function apply_reaction_data_to_reactions(reactions, data, styles, compare_style
         reaction.reverse_flux = r;
         reaction.gene_string = null;
         // apply to the segments
-        for (var segment_id in reaction.segments) {
-            var segment = reaction.segments[segment_id];
+        for (segment_id in reaction.segments) {
+            segment = reaction.segments[segment_id];
             segment.data = reaction.data;
             segment.reverse_flux = reaction.reverse_flux;
         }
@@ -506,8 +511,11 @@ function apply_metabolite_data_to_nodes(nodes, data, styles, compare_style) {
     /**  Returns True if the scale has changed.
 
      */
+
+    var node_id;
+
     if (data === null) {
-        for (var node_id in nodes) {
+        for (node_id in nodes) {
             nodes[node_id].data = null;
             nodes[node_id].data_string = '';
         }
@@ -515,9 +523,10 @@ function apply_metabolite_data_to_nodes(nodes, data, styles, compare_style) {
     }
 
     // grab the data
-    for (var node_id in nodes) {
-        var node = nodes[node_id],
-            d = (node.bigg_id in data ? data[node.bigg_id] : null),
+    for (node_id in nodes) {
+        var node = nodes[node_id];
+            // check bigg_id and name
+        var d = data[node.bigg_id] || data[node.name] || null,
             f = float_for_data(d, styles, compare_style),
             s = text_for_data(d, f);
         node.data = f;
@@ -589,7 +598,7 @@ function apply_gene_data_to_reactions(reactions, gene_data_obj, styles, identifi
                                             and_method_in_gene_reaction_rule);
         } else {
             gene_values = {};
-            d = null_val;
+            d = utils.clone(null_val);
         }
         var f = float_for_data(d, styles, compare_style),
             r = reverse_flux_for_data(d),

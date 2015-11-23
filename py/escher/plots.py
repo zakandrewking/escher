@@ -291,6 +291,7 @@ class Builder(object):
 
     These are defined in the Javascript API:
 
+        - use_3d_transform
         - identifiers_on_map
         - show_gene_reaction_rules
         - unique_map_id
