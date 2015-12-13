@@ -6,6 +6,7 @@ from escher.plots import (Builder, local_index, model_json_for_name,
                           map_json_for_name)
 from escher.urls import get_url
 from escher.urls import root_directory
+from escher.escape import json_dump_and_escape, escape_json_or_null
 
 import os, subprocess
 from os.path import join
@@ -29,7 +30,6 @@ env = Environment(loader=PackageLoader('escher', 'templates'))
 NO_CACHE = False
 PORT = 7778
 PUBLIC = False
-CAN_DEV = os.path.exists(join(root_directory, '.can_dev'))
 
 def run(port=PORT, public=PUBLIC):
     global PORT
@@ -75,31 +75,27 @@ class IndexHandler(BaseHandler):
         # get the organisms, maps, and models
         response = yield gen.Task(AsyncHTTPClient().fetch, get_url('server_index', protocol='http'))
         if response.code == 200 and response.body is not None:
-            server_index = response.body.decode('utf-8')
+            server_index_json = response.body.decode('utf-8')
         else:
-            server_index = json.dumps(None)
+            server_index_json = None
 
         # get the cached maps and models
         index = local_index()
 
         # render the template
-        template = env.get_template('index.html')
+        template = env.get_template('homepage.html')
         data = template.render(d3=get_url('d3', 'local'),
                                boot_css=get_url('boot_css', 'local'),
-                               index_css=get_url('index_css', 'local'),
+                               homepage_css=get_url('homepage_css', 'local'),
                                favicon=get_url('favicon', 'local'),
                                logo=get_url('logo', 'local'),
                                documentation=get_url('documentation', protocol='https'),
                                github=get_url('github'),
                                github_releases=get_url('github_releases'),
-                               index_js=get_url('index_js', 'local'),
-                               index_gh_pages_js=get_url('index_gh_pages_js', 'local'),
-                               map_download=get_url('map_download', 'local'),
-                               # server_index_url=
-                               server_index=server_index,
-                               local_index=json.dumps(index),
-                               can_dev=CAN_DEV,
-                               can_dev_js=json.dumps(CAN_DEV),
+                               homepage_js=get_url('homepage_js', 'local'),
+                               map_download_url=get_url('map_download', 'local'),
+                               server_index_json=escape_json_or_null(server_index_json),
+                               local_index_json=json_dump_and_escape(index),
                                version=__version__,
                                web_version=False)
 
@@ -109,16 +105,13 @@ class IndexHandler(BaseHandler):
 class BuilderHandler(BaseHandler):
     @asynchronous
     @gen.coroutine
-    def get(self, kind, path):
-        # builder vs. viewer
-        enable_editing = (kind=='builder')
-
+    def get(self):
         # Builder options
         builder_kwargs = {}
         for a in ['starting_reaction', 'model_name', 'map_name', 'map_json',
                   'reaction_no_data_color', 'reaction_no_data_size',
                   'metabolite_no_data_color', 'metabolite_no_data_size',
-                  'hide_secondary_nodes']:
+                  'hide_secondary_nodes', 'use_3d_transform']:
             args = self.get_arguments(a)
             if len(args)==1:
                 builder_kwargs[a] = (True if args[0].lower()=='true' else
@@ -134,21 +127,6 @@ class BuilderHandler(BaseHandler):
         # js source
         args = self.get_arguments('js_source')
         js_source = args[0] if len(args) == 1 else 'web'
-
-        # if the server is running locally, then the embedded css must be loaded
-        # asynchronously using the same server thread.
-        if js_source in ['dev', 'local']:
-            global PORT
-            url = get_url('builder_embed_css',
-                          source='local',
-                          local_host='http://localhost:%d' % PORT)
-            response = yield gen.Task(AsyncHTTPClient().fetch, url)
-            if response.code != 200 or response.body is None:
-                raise Exception('Could not load embedded_css from %s' % url)
-
-            builder_kwargs['embedded_css'] = (response.body
-                                              .decode('utf-8')
-                                              .replace('\n', ' '))
 
         # example data
         def load_data_file(rel_path):
@@ -171,24 +149,18 @@ class BuilderHandler(BaseHandler):
 
         # keyword
         for a in ['menu', 'scroll_behavior', 'minified_js',
-                  'auto_set_data_domain', 'never_ask_before_quit']:
+                  'auto_set_data_domain', 'never_ask_before_quit',
+                  'enable_editing']:
             args = self.get_arguments(a)
             if len(args)==1:
                 display_kwargs[a] = (True if args[0].lower()=='true' else
                                      (False if args[0].lower()=='false' else
                                       args[0]))
-        # build options
-        for a in ['use_3d_transform']:
-            args = self.get_arguments(a)
-            if len(args) == 1:
-                builder_kwargs[a] = (True if args[0].lower()=='true' else
-                                     (False if args[0].lower()=='false' else
-                                      args[0]))
 
         # make the builder
         builder = Builder(safe=True, **builder_kwargs)
-        html = builder._get_html(js_source=js_source, enable_editing=enable_editing,
-                                 enable_keys=True, html_wrapper=True, fill_screen=True,
+        html = builder._get_html(js_source=js_source, enable_keys=True,
+                                 html_wrapper=True, fill_screen=True,
                                  height='100%', **display_kwargs)
 
         self.set_header("Content-Type", "text/html")
@@ -221,21 +193,21 @@ class DocsHandler(BaseHandler):
         print('getting path %s' % path)
         self.serve_path(path)
 
-settings = {"debug": "False"}
+settings = {'debug': True}
 
 application = Application([
-    (r"/(escher/static/.*)", StaticHandler),
-    (r"/(builder|viewer)(.*)", BuilderHandler),
-    (r"/%s/%s(/.*)" % (__schema_version__, __map_model_version__), MapModelHandler),
-    (r"/docs/(.*)", DocsHandler),
-    (r"/", IndexHandler),
+    (r'.*(escher/static/.*)', StaticHandler),
+    (r'/builder/index.html', BuilderHandler),
+    (r'/%s/%s(/.*)' % (__schema_version__, __map_model_version__), MapModelHandler),
+    (r'/docs/(.*)', DocsHandler),
+    (r'/', IndexHandler),
 ], **settings)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # define port
-    define("port", default=PORT, type=int, help="Port to serve on.")
-    define("public", default=PUBLIC, type=bool,
-           help=("If False, listen only on localhost. If True, listen on "
-                 "all available addresses."))
+    define('port', default=PORT, type=int, help='Port to serve on.')
+    define('public', default=PUBLIC, type=bool,
+           help=('If False, listen only on localhost. If True, listen on '
+                 'all available addresses.'))
     parse_command_line()
     run(port=options.port, public=options.public)

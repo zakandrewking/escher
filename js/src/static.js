@@ -40,6 +40,9 @@ function load_map_model_from_url(map_download_url, model_download_url,
             };
         }
     }
+    if (opt.hasOwnProperty('enable_editing')) {
+        options.enable_editing = opt.enable_editing;
+    }
     load_map(function(map_data) {
         load_model(function(model_data) {
             callback(map_data, model_data, options);

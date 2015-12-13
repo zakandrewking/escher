@@ -1,9 +1,9 @@
-var CAN_DEV, MAP_DOWNLOAD, SERVER_INDEX, LOCAL_INDEX;
+/* global d3 */
+
+var MAP_DOWNLOAD, SERVER_INDEX, LOCAL_INDEX;
 
 function get_model(name) {
-    /** Get model from a map name.
-
-     */
+    /** Get model from a map name. */
     var parts = name.split('.');
     if (parts.length == 2)
         return parts[0];
@@ -44,7 +44,7 @@ function get_quick_jump(this_map, server_index, local_index) {
     return quick_jump.length == 0 ? null : quick_jump;
 }
 
-function submit(server_index, local_index, map_download, can_dev) {
+function submit(server_index, local_index, map_download) {
     // get the selections
     var maps = d3.select('#maps'),
         map_data = (maps.selectAll('option')
@@ -61,7 +61,7 @@ function submit(server_index, local_index, map_download, can_dev) {
         add = [],
         url;
     // only add model for builder
-    if (model_name != 'none' && options_value.indexOf('viewer') == -1)
+    if (model_name != 'none' && options_value == 'builder')
         add.push('model_name=' + model_name);
     if (map_name !== null)
         add.push('map_name=' + map_name);
@@ -71,21 +71,14 @@ function submit(server_index, local_index, map_download, can_dev) {
         add.push('never_ask_before_quit=true');
     if (use_3d_transform_value)
         add.push('use_3d_transform=true');
+    if (options_value == 'viewer')
+        add.push('enable_editing=false');
+    else
+        add.push('enable_editing=true');
 
     // choose the file
-    if (options_value=='viewer') {
-        url = 'viewer.html';
-        add.push('js_source=local');
-    } else if (options_value=='builder') {
-        url = 'builder.html';
-        add.push('js_source=local');
-    } else if (can_dev && options_value=='dev_viewer') {
-        url = 'viewer.html';
-        add.push('js_source=dev');
-    } else if (can_dev && options_value=='dev_builder') {
-        url = 'builder.html';
-        add.push('js_source=dev');
-    }
+    url = 'builder/index.html';
+    add.push('js_source=local');
 
     // set the quick jump maps
     if (map_name) {
@@ -139,9 +132,9 @@ function draw_models_select(server_index, local_index) {
     }
 
     // cached
-    var local_model_names = [];
+    var local_model_names = [], model_data, map_data;
     if (local_index !== null) {
-        var model_data = local_index.models.filter(filter_models);
+        model_data = local_index.models.filter(filter_models);
         local_model_names = model_data.map(function(x) { return x.model_name; });
 
         var models_sel = local_sel.selectAll('.model')
@@ -163,9 +156,9 @@ function draw_models_select(server_index, local_index) {
 
     // web
     if (server_index !== null) {
-        var model_data = server_index.models
-                .filter(filter_models)
-                .filter(function(o) { return local_model_names.indexOf(o.model_name) == -1; });
+        model_data = server_index.models
+            .filter(filter_models)
+            .filter(function(o) { return local_model_names.indexOf(o.model_name) == -1; });
         models_sel = web_sel.selectAll('.model')
             .data(model_data, function(d) { return d.model_name; });
         models_sel.enter()
@@ -223,9 +216,10 @@ function draw_maps_select(server_index, local_index) {
 
     // cached
     var local_map_names = [],
-        has_maps = false;
+        has_maps = false,
+        map_data;
     if (local_index !== null) {
-        var map_data = local_index.maps.filter(filter_maps);
+        map_data = local_index.maps.filter(filter_maps);
         local_map_names = map_data.map(function(x) { return x.map_name; });
         if (map_data.length > 0)
             has_maps = true;
@@ -251,7 +245,7 @@ function draw_maps_select(server_index, local_index) {
 
     // web
     if (server_index !== null) {
-        var map_data = server_index.maps
+        map_data = server_index.maps
                 .filter(filter_maps)
                 .filter(function(o) { return local_map_names.indexOf(o.map_name) == -1; });
         if (map_data.length > 0)
@@ -294,7 +288,7 @@ function draw_organisms_select(organisms) {
         .text(function(d) { return d; });
 }
 
-function setup(server_index, local_index, map_download, can_dev) {
+function setup(server_index, local_index, map_download) {
     // GO
     var uniq = function(a) {
         var seen = {};
@@ -367,15 +361,14 @@ function setup(server_index, local_index, map_download, can_dev) {
 
     // submit button
     d3.select('#submit')
-        .on('click', submit.bind(null, server_index, local_index,
-                                 map_download, can_dev));
+        .on('click', submit.bind(null, server_index, local_index, map_download));
 
     // submit on enter
     var selection = d3.select(window),
         kc = 13;
     selection.on('keydown.'+kc, function() {
         if (d3.event.keyCode==kc) {
-            submit(server_index, local_index, map_download, can_dev);
+            submit(server_index, local_index, map_download);
         }
     });
 }

@@ -2,11 +2,12 @@
 <html lang="en">
   <head>
     <title>{% block title %}{{ title }}{% endblock %}</title>
-    {% block head %}{% endblock %}
-    <!-- Require only loaded in standalone file. -->
-    <script src="{{require_js}}"></script>
 
-    <link rel="shortcut icon" href="{{favicon}}" />
+    {% block head %}{% endblock %}
+
+    {% if favicon_url %}
+      <link rel="shortcut icon" href="{{ favicon_url }}" />
+    {% endif %}
 
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, height=device-height,
@@ -14,16 +15,5 @@
   </head>
   <body>
     {% block content %}{% endblock %}
-
-    <script>
-     // temporary fixes for mobile browsers (currently iOS)
-     if (navigator.userAgent.match(/.*OS 7_\d/i)) {
-         $(".fill-screen-div").css('height', window.innerHeight +"px");
-         $(window).resize(function(){
-             $(".fill-screen-div").css('height', window.innerHeight +"px");
-             document.body.scrollTop = 0;
-         })
-     }
-    </script>
   </body>
 </html>

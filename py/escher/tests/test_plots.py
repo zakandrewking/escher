@@ -123,18 +123,10 @@ def test__load_resource_web(tmpdir):
     _ = json.loads(_load_resource(url, 'name'))
 
 def test_Builder(tmpdir):
-    b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}')
-    # Cannot load dev/local version without an explicit css string property.
-    # TODO include a test where these do not raise.
-    with raises(Exception):
-        b.display_in_notebook(js_source='dev')
-    with raises(Exception):
-        b.display_in_notebook(js_source='local')
-
     # ok with embedded_css arg
     b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}', embedded_css='')
-    b.display_in_notebook(js_source='dev')
-    b.save_html(join(str(tmpdir), 'Builder.html'), js_source='dev')
+    b.display_in_notebook(js_source='local')
+    b.save_html(join(str(tmpdir), 'Builder.html'), js_source='local')
 
     # test options
     with raises(Exception):
@@ -176,9 +168,10 @@ def test_Builder_options():
     b.set_metabolite_no_data_color('white')
     assert b.metabolite_no_data_color=='white'
     html = b._get_html(js_source='local')
-    assert 'metabolite_no_data_color: "white"' in html
+    assert '"metabolite_no_data_color": "white"' in html
 
-def test__draw_js():
+
+def test__get_html():
     b = Builder(map_json='"useless_map"', model_json='"useless_model"',
                 embedded_css='')
 
@@ -191,20 +184,18 @@ def test__draw_js():
         except AssertionError:
             raise AssertionError('Could not find\n\n%s\n\nin\n\n%s' % (substring, st))
 
-    # no static parse, dev
-    ijs = b._initialize_javascript('id', 'local')
-    js = b._draw_js('id', True, 'all', True, True, True, 'pan', True, None)
-    look_for_string(ijs, 'var map_data_id = "useless_map";')
-    look_for_string(ijs, 'var model_data_id = "useless_model";')
-    look_for_string(js, 'Builder(map_data_id, model_data_id, embedded_css_id, d3.select("#id"), options);')
+    # no static parse, local
+    html = b._get_html(js_source='local')
+    look_for_string(html, 'map_data: JSON.parse(\'"useless_map"\'),')
+    look_for_string(html, 'model_data: JSON.parse(\'"useless_model"\'),')
+    look_for_string(html, 'escher.Builder(t_map_data, t_model_data, data.builder_embed_css,')
 
     # static parse, not dev
-    ijs = b._initialize_javascript('id', 'local')
     static_index = '{"my": ["useless", "index"]}'
-    js = b._draw_js('id', True, 'all', True, False, True, 'pan', True, static_index)
-    look_for_string(ijs, 'var map_data_id = "useless_map";')
-    look_for_string(ijs, 'var model_data_id = "useless_model";')
-    look_for_string(js, 'escher.static.load_map_model_from_url("{0}/{1}/maps/", "{0}/{1}/models/",'.format(__schema_version__, __map_model_version__))
-    look_for_string(js, static_index)
-    look_for_string(js, 'options, function(map_data_id, model_data_id, options) {')
-    look_for_string(js, 'escher.Builder(map_data_id, model_data_id, embedded_css_id, d3.select("#id"), options);')
+    html = b._get_html(static_site_index_json=static_index, protocol='https')
+    look_for_string(html, 'map_data: JSON.parse(\'"useless_map"\'),')
+    look_for_string(html, 'model_data: JSON.parse(\'"useless_model"\'),')
+    look_for_string(html, 'map_download_url: JSON.parse(\'"https://escher.github.io/%s/%s/maps/"\'),' % (__schema_version__, __map_model_version__))
+    look_for_string(html, 'model_download_url: JSON.parse(\'"https://escher.github.io/%s/%s/models/"\'),' % (__schema_version__, __map_model_version__))
+    look_for_string(html, static_index)
+    look_for_string(html, 'escher.Builder(t_map_data, t_model_data, data.builder_embed_css,')

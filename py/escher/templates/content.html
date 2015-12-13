@@ -1,66 +1,103 @@
 {% if wrapper %}{% extends 'standalone.html' %}{% endif %}
 
 {% block head %}
-  <!-- These are not generally used within the notebook. -->
-  <script src="{{jquery}}"></script>
-  <script src="{{boot_js}}"></script>
+  {% if jquery_url %}
+    <script src="{{ jquery_url }}"></script>
+  {% endif %}
+  {% if boot_js_url %}
+    <script src="{{ boot_js_url }}"></script>
+  {% endif %}
 
-  <link rel="stylesheet" href="{{boot_css}}"/>
-  <link rel="stylesheet" href="{{escher_css}}"/>
+  {% if boot_css_url %}
+    <link rel="stylesheet" href="{{ boot_css_url }}"/>
+  {% endif %}
+  {% if escher_css_url %}
+    <link rel="stylesheet" href="{{ escher_css_url }}"/>
+  {% endif %}
 {% endblock %}
 
 {% block content %}
-  <div style="height: {{height}}; width: 100%;" id="{{id}}"></div>
+  <div style="height: {{ height }}; width: 100%;" id="{{ id }}"></div>
 
   <script>
-   {{ initialize_js }}
-  </script>
-  <script>
-   function escher_load_lib(url, callback){
-       var s = document.createElement('script');
-       s.src = url;
-       s.async = true;
-       s.onreadystatechange = s.onload = callback;
-       s.onerror = function() { console.warn("failed to load library " + url); };
-       document.getElementsByTagName("head")[0].appendChild(s);
-   }
+   /* Closure to make sure data only applies to this map. */
+   (function() {
+       /* data from python */
+       var data = get_data();
 
-   if (typeof define === "function" && define.amd) {
-       // require.js is available: use it to load d3 and escher
-       {% if dev %}
-       requirejs.config({
-           baseUrl: '{{host}}escher/js/src',
-           paths: {
-               lib: '../../lib',
-               d3: "../../../{{ d3_rel[:-3] }}"
+       function load_lib(url, callback) {
+           /** Dynamically load a JavaScript file */
+           var s = document.createElement('script');
+           s.src = url;
+           s.async = true;
+           s.onreadystatechange = s.onload = callback;
+           s.onerror = function() {
+               console.warn('Failed to load library ' + url);
+           };
+           document.getElementsByTagName('head')[0].appendChild(s);
+       }
+
+       function check_global_and_load(name, url, callback) {
+           /** Look for the name in the global scope. If it isn't present, then
+              load the library at url. Returns the object. */
+           if (window[name] !== undefined) {
+               callback(window[name]);
+           } else {
+               load_lib(url, function() {
+                   callback(window[name]);
+               });
            }
-       });
-       require(["d3", "Builder", "utils"], function(d3, Builder, utils) {
-           window.d3 = d3;
-           {{ draw_js }}
-       });
-       {% else %}
-       require.config({paths: { d3: "{{ d3[:-3] }}",
-                                escher: "{{ escher[:-3] }}" }});
-       require(["d3", "escher"], function(d3, escher) {
-           window.d3 = d3;
-           {{ draw_js }}
-       });
-       {% endif %}
-   } else {
-       if (window.escher !== undefined && window.d3 !== undefined) {
-           // already loaded: just create the figure
-           !function(escher, d3) {
-               {{ draw_js }}
-           }(window.escher, window.d3);
+       }
+
+       function draw_escher(d3, escher) {
+           /** Get data and draw */
+           var load = function(t_map_data, t_model_data, t_options) {
+               escher.Builder(t_map_data, t_model_data, data.builder_embed_css,
+                              d3.select('#' + data.id), t_options);
+           }
+
+           // for the static site, use the url attributes for the map and model
+           // information
+           if (data.static_site_index !== null) {
+               escher.static.load_map_model_from_url(data.map_download_url, data.model_download_url,
+                                                     data.static_site_index, data.options, load);
+           } else {
+               load(data.map_data, data.model_data, data.options);
+           }
+       }
+
+       // Load dependencies and draw 
+       if (typeof define === 'function' && define.amd) {
+           // require.js is available: use it to load d3 and escher
+           require.config({ paths: { d3: '{{ d3_url[:-3] }}',
+                                     escher: '{{ escher_url[:-3] }}' }
+           });
+           require(['d3', 'escher'], function(d3, escher) {
+               draw_escher(d3, escher);
+           });
        } else {
            // require.js not available: dynamically load d3 & escher
-           escher_load_lib("{{ d3 }}", function() {
-               escher_load_lib("{{ escher }}", function() {
-                   {{ draw_js }}
+           check_global_and_load('d3', '{{ d3_url }}', function(d3) {
+               check_global_and_load('escher', '{{ escher_url }}', function(escher) {
+                   draw_escher(d3, escher);
                })
            });
        }
-   }
+
+       // Put this at the end so Chrome doesn't cut off the code above.
+       function get_data() {
+           /** Return the data passed in by the Python module. */
+           return {
+               id: JSON.parse('{{ id_json }}'),
+               map_download_url: JSON.parse('{{ map_download_url_json }}'),
+               model_download_url: JSON.parse('{{ model_download_url_json }}'),
+               options: JSON.parse('{{ options_json }}'),
+               builder_embed_css: JSON.parse('{{ builder_embed_css_json }}'),
+               map_data: JSON.parse('{{ map_data_json }}'),
+               model_data: JSON.parse('{{ model_data_json }}'),
+               static_site_index: JSON.parse('{{ static_site_index_json }}'),
+           };
+       }
+   })();
   </script>
 {% endblock %}

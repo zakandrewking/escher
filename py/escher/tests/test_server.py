@@ -10,31 +10,22 @@ class TestBuilder(AsyncHTTPTestCase):
     def get_app(self):
         return escher.server.application
 
+    def test_index(self):
+        escher.server.PORT = self.get_http_port()
+        response = self.fetch('/')
+        assert response.code==200
+
     @mark.web
     def test_builder_request(self):
-        # set the correct port
         escher.server.PORT = self.get_http_port()
-        print(escher.server.PORT)
-        
-        response = self.fetch('/builder.html')
+        response = self.fetch('/builder/index.html')
         assert response.code==200
-        
-    def test_dev_builder_request(self):
-        # set the correct port
-        escher.server.PORT = self.get_http_port()
-        print(escher.server.PORT)
 
-        response = self.fetch('/builder.html?js_source=dev')
-        assert response.code==200
-        
     def test_local_builder_request(self):
-        # set the correct port
         escher.server.PORT = self.get_http_port()
-        print(escher.server.PORT)
-
-        response = self.fetch('/builder.html?js_source=local')
+        response = self.fetch('/builder/index.html?js_source=local')
         assert response.code==200
-        
+
 def test_server():
     tornado.ioloop.IOLoop.instance().add_timeout(100, escher.server.stop)
     escher.server.run(port = 8123)

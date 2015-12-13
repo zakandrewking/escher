@@ -8,25 +8,25 @@ import re
 from os.path import dirname, realpath, join
 
 root_directory = realpath(join(dirname(__file__), '..'))
+top_directory = realpath(join(dirname(__file__), '..', '..'))
 
 _escher_local = {
-    'builder_embed_css': 'escher/static/escher/builder-embed.css',
     'builder_css': 'escher/static/escher/builder.css',
+    'builder_css_min': 'escher/static/escher/builder.min.css',
     'escher': 'escher/static/escher/escher.js',
     'escher_min': 'escher/static/escher/escher.min.js',
     'logo': 'escher/static/img/escher-logo@2x.png',
     'favicon': 'escher/static/img/favicon.ico',
-    'index_js': 'escher/static/homepage/index.js',
-    'index_gh_pages_js': 'escher/static/homepage/index_gh_pages.js',
-    'index_css': 'escher/static/homepage/index.css',
-    'server_index': '%s/%s/index.json' % (__schema_version__, __map_model_version__),
-    'map_download': '%s/%s/maps/' % (__schema_version__, __map_model_version__),
-    'model_download': '%s/%s/models/' % (__schema_version__, __map_model_version__),
+    'homepage_js': 'escher/static/homepage/main.js',
+    'homepage_css': 'escher/static/homepage/main.css',
+    'server_index': '../%s/%s/index.json' % (__schema_version__, __map_model_version__),
+    'map_download': '../%s/%s/maps/' % (__schema_version__, __map_model_version__),
+    'model_download': '../%s/%s/models/' % (__schema_version__, __map_model_version__),
 }
 
 _escher_web = {
-    'builder_embed_css': 'builder-embed-%s.css' % __version__,
     'builder_css': 'builder-%s.css' % __version__,
+    'builder_css_min': 'builder-%s.min.css' % __version__,
     'escher': 'escher-%s.js' % __version__,
     'escher_min': 'escher-%s.min.js' % __version__,
     'server_index': '%s/%s/index.json' % (__schema_version__, __map_model_version__),
@@ -40,7 +40,10 @@ _dependencies = {
     'boot_js': 'escher/static/lib/bootstrap-3.1.1.min.js',
     'boot_css': 'escher/static/lib/bootstrap-simplex-3.1.1.min.css',
     'jquery': 'escher/static/lib/jquery-2.1.4.min.js',
-    'require_js': 'escher/static/lib/require-2.1.21.min.js',
+    'boot_font_eot': 'escher/static/fonts/glyphicons-halflings-regular.eot',
+    'boot_font_svg': 'escher/static/fonts/glyphicons-halflings-regular.svg',
+    'boot_font_woff': 'escher/static/fonts/glyphicons-halflings-regular.woff',
+    'boot_font_ttf': 'escher/static/fonts/glyphicons-halflings-regular.ttf',
 }
 
 _dependencies_cdn = {
@@ -48,7 +51,6 @@ _dependencies_cdn = {
     'boot_js': '//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js',
     'boot_css': '//netdna.bootstrapcdn.com/bootswatch/3.1.1/simplex/bootstrap.min.css',
     'jquery': '//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js',
-    'require_js': '//cdnjs.cloudflare.com/ajax/libs/require.js/2.1.21/require.min.js',
 }
 
 _links = {
@@ -106,7 +108,7 @@ def get_url(name, source='web', local_host=None, protocol=None):
             raise Exception('Source cannot be "local" for external links')
         return protocol + _links[name]
     # local dependencies
-    elif name in _dependencies and source=='local':
+    elif name in _dependencies and source == 'local':
         if local_host is not None:
             return apply_local_host(_dependencies[name])
         return _dependencies[name]

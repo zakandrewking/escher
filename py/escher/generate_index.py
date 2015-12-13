@@ -6,7 +6,7 @@ from os.path import join, dirname, realpath, exists, isdir, relpath
 import sys
 from collections import defaultdict
 from escher import __schema_version__, __map_model_version__
-from escher.urls import root_directory
+from escher.urls import top_directory
 
 def index(directory):
     def list_cached(directory, kind):
@@ -25,7 +25,7 @@ def index(directory):
              'models': list_cached(join(directory, 'models'), 'model') }
 
 if __name__=='__main__':
-    directory = join(root_directory, __schema_version__, __map_model_version__)
+    directory = join(top_directory, __schema_version__, __map_model_version__)
     if not exists(directory):
         print('No directory to index')
         sys.exit()

@@ -23,10 +23,6 @@ directory = dirname(realpath(__file__))
 sys.path.insert(0, join(directory, 'escher'))
 version = __import__('version').__version__
 full_version = __import__('version').__full_version__
-escher = 'escher-%s.js' % version
-escher_min = 'escher-%s.min.js' % version
-builder_css = 'builder-%s.css' % version
-builder_embed_css = 'builder-embed-%s.css' % version
 port = 8789
 
 class CleanCommand(Command):
@@ -42,11 +38,12 @@ class CleanCommand(Command):
         remove_if(join(directory, 'build'))
         remove_if(join(directory, 'dist'))
         # remove site files
-        for f in glob(join(directory, '*.html')):
+        remove_if(join(directory, '..', 'builder'))
+        for f in glob(join(directory, '..', 'index.html')):
             os.remove(f)
-        for f in glob(join(directory, 'builder-*.css')):
+        for f in glob(join(directory, '..', 'builder-*.css*')):
             os.remove(f)
-        for f in glob(join(directory, 'escher-*.js')):
+        for f in glob(join(directory, '..', 'escher-*.js*')):
             os.remove(f)
         print('done cleaning')
 
@@ -60,14 +57,18 @@ class BuildGHPagesCommand(Command):
        pass
     def run(self):
         # copy files to top level
-        copy(join('escher', 'lib', escher), '.')
-        copy(join('escher', 'lib', escher_min), '.')
-        copy(join('escher', 'css', builder_css), '.')
-        copy(join('escher', 'css', builder_embed_css), '.')
-        copy(join('escher', 'lib', escher), 'escher-latest.js')
-        copy(join('escher', 'lib', escher_min), 'escher-latest.min.js')
-        copy(join('escher', 'css', builder_css), 'builder-latest.css')
-        copy(join('escher', 'css', builder_embed_css), 'builder-embed-latest.css')
+        copy(join('..', 'js', 'dist', 'escher.js'),
+             join('..', 'escher-%s.js' % version))
+        copy(join('..', 'js', 'dist', 'escher.min.js'),
+             join('..', 'escher-%s.min.js' % version))
+        copy(join('..', 'js', 'dist', 'escher.min.js.map'),
+             join('..', 'escher-%s.min.js.map' % version))
+        copy(join('..', 'css', 'dist', 'builder.css'),
+             join('..', 'builder-%s.css' % version))
+        copy(join('..', 'css', 'dist', 'builder.min.css'),
+             join('..', 'builder-%s.min.css' % version))
+        copy(join('..', 'css', 'dist', 'builder.min.css.map'),
+             join('..', 'builder-%s.min.css.map' % version))
         # generate the static site
         call(['python', join('escher', 'generate_index.py')])
         call(['python', join('escher', 'static_site.py')])
@@ -122,7 +123,7 @@ setup(
                     'all': ['sphinx>=1.2',
                             'sphinx-rtd-theme>=0.1.6',
                             'ipython>=2.3.1',
-                            'cobra>=0.3.0b4',
+                            'cobra>=0.3.0',
                             'wheel>=0.24.0',
                             'twine>=1.5.0'] },
     cmdclass={'clean': CleanCommand,

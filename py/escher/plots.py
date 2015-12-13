@@ -8,9 +8,10 @@ from escher.appdirs import user_cache_dir
 from escher.generate_index import index
 from escher.version import __schema_version__, __map_model_version__
 from escher.util import query_yes_no
+from escher.escape import json_dump_and_escape, escape_json_or_null
 
 import os
-from os.path import dirname, abspath, join, isfile, isdir
+from os.path import dirname, basename, abspath, join, isfile, isdir, exists
 from warnings import warn
 try:
     from urllib.request import urlopen
@@ -25,6 +26,7 @@ import codecs
 import random
 import string
 from tornado.escape import url_escape
+import shutil
 
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
@@ -201,7 +203,7 @@ def _load_resource(resource, name, safe=False):
         else:
             return _decode_response(download)
     # if it's a filepath, load it
-    if os.path.exists(resource):
+    if exists(resource):
         if (safe):
             raise Exception('Cannot load resource from file with safe mode enabled.')
         try:
@@ -275,7 +277,10 @@ class Builder(object):
 
     :param local_host:
 
-        A hostname that will be used for any local files in dev mode.
+        A hostname that will be used for any local files. This is generally used
+        for using the notebook offline and for testing in the IPython Notebook
+        with modified Escher code. An example value for local_host is
+        'http://localhost:7778/'.
 
     :param id:
 
@@ -285,7 +290,7 @@ class Builder(object):
     :param safe:
 
         If True, then loading files from the filesytem is not allowed. This is
-        to ensure the safety of using Builder with a web server.
+        to ensure the safety of using Builder within a web server.
 
     **Keyword Arguments**
 
@@ -402,6 +407,7 @@ class Builder(object):
             except AttributeError:
                 print('Unrecognized keywork argument %s' % key)
 
+
     def _load_model(self):
         """Load the model.
 
@@ -423,6 +429,7 @@ class Builder(object):
         elif self.model_name is not None:
             self.loaded_model_json = model_json_for_name(self.model_name)
 
+
     def _load_map(self):
         """Load the map from input map_json using _load_resource, or, secondarily,
            from map_name.
@@ -435,103 +442,12 @@ class Builder(object):
         elif self.map_name is not None:
             self.loaded_map_json = map_json_for_name(self.map_name)
 
-    def _embedded_css(self, url_source):
-        """Return a css string to be embedded in the SVG.
-
-        Returns self.embedded_css if it has been assigned. Otherwise, attempts
-        to download the css file.
-
-        Arguments
-        ---------
-
-        url_source: Whether to load from 'web' or 'local'.
-
-
-        """
-        if self.embedded_css is not None:
-            return self.embedded_css
-
-        loc = get_url('builder_embed_css', source=url_source,
-                      local_host=self.local_host, protocol='https')
-        try:
-            download = urlopen(loc)
-        except URLError:
-            raise Exception(('Could not find builder_embed_css. Be sure to pass '
-                             'a local_host argument to Builder if js_source is dev or local '
-                             'and you are in an iPython notebook or a static html file.'))
-        data = _decode_response(download)
-        return data.replace('\n', ' ')
-
-    def _initialize_javascript(self, the_id, url_source):
-        javascript = ("var map_data_{the_id} = {map_data};\n"
-                      "var model_data_{the_id} = {model_data};\n"
-                      "var reaction_data_{the_id} = {reaction_data};\n"
-                      "var metabolite_data_{the_id} = {metabolite_data};\n"
-                      "var gene_data_{the_id} = {gene_data};\n"
-                      "var embedded_css_{the_id} = '{style}';\n").format(
-                          the_id=the_id,
-                          map_data=(self.loaded_map_json if self.loaded_map_json else
-                                    'null'),
-                          model_data=(self.loaded_model_json if self.loaded_model_json else
-                                       'null'),
-                          reaction_data=(json.dumps(self.reaction_data) if self.reaction_data else
-                                         'null'),
-                          metabolite_data=(json.dumps(self.metabolite_data) if self.metabolite_data else
-                                           'null'),
-                          gene_data=(json.dumps(self.gene_data) if self.gene_data else
-                                           'null'),
-                          style=self._embedded_css(url_source))
-        return javascript
-
-    def _draw_js(self, the_id, enable_editing, menu, enable_keys, dev,
-                 fill_screen, scroll_behavior, never_ask_before_quit,
-                 static_site_index_json):
-        draw = ("options = {{ enable_editing: {enable_editing},\n"
-                "menu: {menu},\n"
-                "enable_keys: {enable_keys},\n"
-                "scroll_behavior: {scroll_behavior},\n"
-                "fill_screen: {fill_screen},\n"
-                "reaction_data: reaction_data_{the_id},\n"
-                "metabolite_data: metabolite_data_{the_id},\n"
-                "gene_data: gene_data_{the_id},\n"
-                "never_ask_before_quit: {never_ask_before_quit},\n").format(
-                    the_id=the_id,
-                    enable_editing=json.dumps(enable_editing),
-                    menu=json.dumps(menu),
-                    enable_keys=json.dumps(enable_keys),
-                    scroll_behavior=json.dumps(scroll_behavior),
-                    fill_screen=json.dumps(fill_screen),
-                    never_ask_before_quit=json.dumps(never_ask_before_quit))
-        # Add the specified options
-        for option in self.options:
-            val = getattr(self, option)
-            if val is None: continue
-            draw = draw + "{option}: {value},\n".format(
-                option=option,
-                value=json.dumps(val))
-        draw = draw + "};\n\n"
-
-        # dev needs escher.
-        dev_str = '' if dev else 'escher.'
-        # parse the url in javascript, for building a static site
-        if static_site_index_json:
-            # get the relative location of the escher_download urls
-            map_d = get_url('map_download', source='local')
-            model_d = get_url('model_download', source='local')
-            o = ('%sstatic.load_map_model_from_url("%s", "%s", \n%s, \noptions, function(map_data_%s, model_data_%s, options) {\n' %
-                 (dev_str, map_d, model_d, static_site_index_json, the_id, the_id))
-            draw = draw + o;
-        # make the builder
-        draw = draw + ('{dev_str}Builder(map_data_{the_id}, model_data_{the_id}, embedded_css_{the_id}, '
-                       'd3.select("#{the_id}"), options);\n'.format(dev_str=dev_str, the_id=the_id))
-        if static_site_index_json:
-            draw = draw + '});\n'
-        return draw
 
     def _get_html(self, js_source='web', menu='none', scroll_behavior='pan',
                   html_wrapper=False, enable_editing=False, enable_keys=False,
                   minified_js=True, fill_screen=False, height='800px',
-                  never_ask_before_quit=False, static_site_index_json=None):
+                  never_ask_before_quit=False, static_site_index_json=None,
+                  protocol=None):
         """Generate the Escher HTML.
 
         Arguments
@@ -552,8 +468,8 @@ class Builder(object):
             'zoom' - Zoom the map.
             'none' - No scroll events.
 
-        minified_js: If True, use the minified version of js files. If
-        js_source is 'dev', then this option is ignored.
+        minified_js: If True, use the minified version of JavaScript and CSS
+        files.
 
         html_wrapper: If True, return a standalone html file.
 
@@ -570,6 +486,10 @@ class Builder(object):
         static_site_index_json: The index, as a JSON string, for the static
         site. Use javascript to parse the URL options. Used for
         generating static pages (see static_site.py).
+
+        protocol: The protocol can be 'http', 'https', or None which indicates a
+        'protocol relative URL', as in //escher.github.io. Ignored if source is
+        local.
 
         """
 
@@ -594,48 +514,76 @@ class Builder(object):
 
         # set the proper urls
         url_source = 'local' if (js_source=='local' or js_source=='dev') else 'web'
-        is_dev = (js_source=='dev')
+        local_host = self.local_host
 
-        d3_url = get_url('d3', url_source, self.local_host)
-        d3_rel_url = get_url('d3', url_source)
-        escher_url = ('' if js_source=='dev' else
-                      get_url('escher_min' if minified_js else 'escher',
-                              url_source, self.local_host))
-        jquery_url = ('' if not menu=='all' else
-                      get_url('jquery', url_source, self.local_host))
-        boot_css_url = ('' if not menu=='all' else
-                        get_url('boot_css', url_source, self.local_host))
-        boot_js_url = ('' if not menu=='all' else
-                        get_url('boot_js', url_source, self.local_host))
-        require_js_url = get_url('require_js', url_source, self.local_host)
-        escher_css_url = get_url('builder_css', url_source, self.local_host)
-        favicon_url = get_url('favicon', url_source, self.local_host)
+        # get the urls
+        d3_url = get_url('d3', url_source, local_host, protocol)
+        escher_url = get_url(('escher_min' if minified_js else 'escher'),
+                             url_source, local_host, protocol)
+        if menu == 'all':
+            jquery_url = get_url('jquery', url_source, local_host, protocol)
+            boot_css_url = get_url('boot_css', url_source, local_host, protocol)
+            boot_js_url = get_url('boot_js', url_source, local_host, protocol)
+        else:
+            jquery_url = boot_css_url = boot_js_url = None
+        escher_css_url = get_url(('builder_css_min' if minified_js else 'builder_css'),
+                                 url_source, local_host, protocol)
+        favicon_url = get_url('favicon', url_source, local_host, protocol)
+        # for static site
+        map_download_url = get_url('map_download', url_source, local_host, protocol)
+        model_download_url = get_url('model_download', url_source, local_host, protocol)
 
-        lh_string = ('' if self.local_host is None else
-                     self.local_host.rstrip('/') + '/')
+        # local host
+        lh_string = ('' if local_host is None else
+                     local_host.rstrip('/') + '/')
 
-        html = content.render(id=self.the_id,
-                              height=height,
-                              dev=is_dev,
-                              d3=d3_url,
-                              d3_rel=d3_rel_url,
-                              escher=escher_url,
-                              jquery=jquery_url,
-                              boot_css=boot_css_url,
-                              boot_js=boot_js_url,
-                              require_js=require_js_url,
-                              escher_css=escher_css_url,
-                              wrapper=html_wrapper,
-                              title='Escher ' + ('Builder' if enable_editing else 'Viewer'),
-                              favicon=favicon_url,
-                              host=lh_string,
-                              initialize_js=self._initialize_javascript(self.the_id, url_source),
-                              draw_js=self._draw_js(self.the_id, enable_editing,
-                                                    menu, enable_keys, is_dev,
-                                                    fill_screen, scroll_behavior,
-                                                    never_ask_before_quit,
-                                                    static_site_index_json))
+        # options
+        options = {
+            'menu': menu,
+            'enable_keys': enable_keys,
+            'enable_editing': enable_editing,
+            'scroll_behavior': scroll_behavior,
+            'fill_screen': fill_screen,
+            'never_ask_before_quit': never_ask_before_quit,
+            'reaction_data': self.reaction_data,
+            'metabolite_data': self.metabolite_data,
+            'gene_data': self.gene_data,
+        }
+        # Add the specified options
+        for option in self.options:
+            val = getattr(self, option)
+            if val is None:
+                continue
+            options[option] = val
+
+        html = content.render(
+            # standalone
+            title='Escher ' + ('Builder' if enable_editing else 'Viewer'),
+            jquery_url=jquery_url,
+            boot_js_url=boot_js_url,
+            boot_css_url=boot_css_url,
+            escher_css_url=escher_css_url,
+            favicon_url=favicon_url,
+            # content
+            wrapper=html_wrapper,
+            height=height,
+            id=self.the_id,
+            d3_url=d3_url,
+            escher_url=escher_url,
+            # dump json
+            id_json=json_dump_and_escape(self.the_id),
+            options_json=json_dump_and_escape(options),
+            map_download_url_json=json_dump_and_escape(map_download_url),
+            model_download_url_json=json_dump_and_escape(model_download_url),
+            builder_embed_css_json=json_dump_and_escape(self.embedded_css),
+            # alreay json
+            map_data_json=escape_json_or_null(self.loaded_map_json),
+            model_data_json=escape_json_or_null(self.loaded_model_json),
+            static_site_index_json=escape_json_or_null(static_site_index_json),
+        )
+
         return html
+
 
     def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',
                             minified_js=True, height=500):
@@ -647,7 +595,8 @@ class Builder(object):
 
             - *web* (Default) - Use JavaScript files from escher.github.io.
             - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
-            - *dev* - Use the local, uncompiled development files. Works offline.
+            - *dev* - No longer necessary with source maps. This now gives the
+                      same behavior as 'local'.
 
         :param string menu: Menu bar options include:
 
@@ -663,8 +612,7 @@ class Builder(object):
 
         :param Boolean minified_js:
 
-            If True, use the minified version of js files. If js_source is
-            *dev*, then this option is ignored.
+            If True, use the minified version of JavaScript and CSS files.
 
         :param height: Height of the HTML container.
 
@@ -706,7 +654,8 @@ class Builder(object):
 
             - *web* (Default) - Use JavaScript files from escher.github.io.
             - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
-            - *dev* - Use the local, uncompiled development files. Works offline.
+            - *dev* - No longer necessary with source maps. This now gives the
+                      same behavior as 'local'.
 
         :param string menu: Menu bar options include:
 
@@ -726,8 +675,7 @@ class Builder(object):
 
         :param Boolean minified_js:
 
-            If True, use the minified version of js files. If js_source is
-            *dev*, then this option is ignored.
+            If True, use the minified version of JavaScript and CSS files.
 
         :param Boolean never_ask_before_quit:
 
@@ -741,20 +689,39 @@ class Builder(object):
                               never_ask_before_quit=never_ask_before_quit)
         serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
 
-    def save_html(self, filepath=None, js_source='web', menu='all', scroll_behavior='pan',
+
+    def save_html(self, filepath=None, overwrite=False, js_source='web',
+                  protocol='https', menu='all', scroll_behavior='pan',
                   enable_editing=True, enable_keys=True, minified_js=True,
                   never_ask_before_quit=False, static_site_index_json=None):
         """Save an HTML file containing the map.
 
-        :param string filepath: The HTML file will be saved to this location.
+        :param string filepath:
+
+            The HTML file will be saved to this location. When js_source is
+            'local', then a new directory will be created with this name.
+
+        :param Boolean overwrite:
+
+            Overwrite existing files.
 
         :param string js_source:
 
             Can be one of the following:
 
             - *web* (Default) - Use JavaScript files from escher.github.io.
-            - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
-            - *dev* - Use the local, uncompiled development files. Works offline.
+            - *local* - Use compiled JavaScript files in the local Escher
+                        installation. Works offline. To make the dependencies
+                        available to the downloaded file, a new directory will
+                        be made with the name specified by filepath.
+            - *dev* - No longer necessary with source maps. This now gives the
+                      same behavior as 'local'.
+
+        :param string protocol:
+
+            The protocol can be 'http', 'https', or None which indicates a
+            'protocol relative URL', as in //escher.github.io. Ignored if source
+            is local.
 
         :param string menu: Menu bar options include:
 
@@ -774,8 +741,7 @@ class Builder(object):
 
         :param Boolean minified_js:
 
-            If True, use the minified version of js files. If js_source is
-            *dev*, then this option is ignored.
+            If True, use the minified version of JavaScript and CSS files.
 
         :param number height: Height of the HTML container.
 
@@ -791,11 +757,57 @@ class Builder(object):
             static_site.py).
 
         """
-        html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
-                              html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
-                              minified_js=minified_js, fill_screen=True, height="100%",
+
+        if js_source in ['local', 'dev']:
+            if filepath is None:
+                raise Exception('Must provide a filepath when js_source is not "web"')
+
+            # make a directory
+            directory = re.sub(r'\.html$', '', filepath)
+            if exists(directory):
+                if not overwrite:
+                    raise Exception('Directory already exists: %s' % directory)
+            else:
+                os.makedirs(directory)
+            # add dependencies to the directory
+            escher = get_url('escher_min' if minified_js else 'escher', 'local')
+            builder_css = get_url('builder_css_min' if minified_js else 'builder_css', 'local')
+            d3 = get_url('d3', 'local')
+            favicon = get_url('favicon', 'local')
+            if menu == 'all':
+                boot_css = get_url('boot_css', 'local')
+                boot_js = get_url('boot_js', 'local')
+                jquery = get_url('jquery', 'local')
+                boot_font_eot = get_url('boot_font_eot', 'local')
+                boot_font_svg = get_url('boot_font_svg', 'local')
+                boot_font_woff = get_url('boot_font_woff', 'local')
+                boot_font_ttf = get_url('boot_font_ttf', 'local')
+            else:
+                boot_css = boot_js = jquery = None
+                boot_font_eot = boot_font_svg = boot_font_woff = boot_font_ttf = None
+            for path in [escher, builder_css, boot_css, boot_js, jquery, d3,
+                         favicon, boot_font_eot, boot_font_svg, boot_font_woff,
+                         boot_font_ttf]:
+                dest = join(directory, path)
+                dest_dir = dirname(dest)
+                if not exists(dest_dir):
+                    os.makedirs(dest_dir)
+                shutil.copy(path, dest)
+            filepath = join(directory, 'index.html')
+        else:
+            if not filepath.endswith('.html'):
+                filepath += '.html'
+            if exists(filepath) and not overwrite:
+                raise Exception('File already exists: %s' % filepath)
+
+        html = self._get_html(js_source=js_source, menu=menu,
+                              scroll_behavior=scroll_behavior,
+                              html_wrapper=True, enable_editing=enable_editing,
+                              enable_keys=enable_keys, minified_js=minified_js,
+                              fill_screen=True, height="100%",
                               never_ask_before_quit=never_ask_before_quit,
-                              static_site_index_json=static_site_index_json)
+                              static_site_index_json=static_site_index_json,
+                              protocol=protocol)
         if filepath is not None:
             with open(filepath, 'wb') as f:
                 f.write(html.encode('utf-8'))

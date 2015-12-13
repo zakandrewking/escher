@@ -6,7 +6,9 @@ install:
   - npm install
 # run tests
 script:
-  - cd py; python setup.py test --noweb; cd ..
+  - cd py
+  - python setup.py test --noweb
+  - cd ..
   - ./node_modules/grunt-cli/bin/grunt coverage
 # no emails
 notifications:
