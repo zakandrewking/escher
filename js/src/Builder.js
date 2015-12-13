@@ -18,6 +18,7 @@ var SettingsMenu = require('./SettingsMenu');
 var TextEditInput = require('./TextEditInput');
 var QuickJump = require('./QuickJump');
 var data_styles = require('./data_styles');
+var builder_embed = require('./inline').builder_embed;
 
 
 var Builder = utils.make_class();
@@ -51,11 +52,13 @@ module.exports = Builder;
 // definitions
 function init(map_data, model_data, embedded_css, selection, options) {
 
-    // default sel
+    // defaults
     if (!selection)
         selection = d3.select('body').append('div');
     if (!options)
         options = {};
+    if (!embedded_css)
+        embedded_css = builder_embed;
 
     this.map_data = map_data;
     this.model_data = model_data;

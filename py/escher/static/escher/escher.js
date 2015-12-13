@@ -906,7 +906,7 @@ function _get_generic_angular_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn,
     return behavior;
 }
 
-},{"./build":24,"./utils":30}],2:[function(require,module,exports){
+},{"./build":24,"./utils":31}],2:[function(require,module,exports){
 /** Brush. Define a brush to select elements in a map.
 
  Arguments
@@ -1018,7 +1018,7 @@ function setup_selection_brush() {
     return brush;
 }
 
-},{"./utils":30}],3:[function(require,module,exports){
+},{"./utils":31}],3:[function(require,module,exports){
 /** BuildInput */
 
 /* global d3 */
@@ -1410,7 +1410,7 @@ function show_target(map, coords) {
     this.target_coords = coords;
 }
 
-},{"./CobraModel":7,"./DirectionArrow":9,"./PlacedDiv":13,"./complete.ly":25,"./utils":30}],4:[function(require,module,exports){
+},{"./CobraModel":7,"./DirectionArrow":9,"./PlacedDiv":13,"./complete.ly":25,"./utils":31}],4:[function(require,module,exports){
 /** For documentation of this class, see docs/javascript_api.rst
 
  */
@@ -1431,6 +1431,7 @@ var SettingsMenu = require('./SettingsMenu');
 var TextEditInput = require('./TextEditInput');
 var QuickJump = require('./QuickJump');
 var data_styles = require('./data_styles');
+var builder_embed = require('./inline').builder_embed;
 
 
 var Builder = utils.make_class();
@@ -1464,11 +1465,13 @@ module.exports = Builder;
 // definitions
 function init(map_data, model_data, embedded_css, selection, options) {
 
-    // default sel
+    // defaults
     if (!selection)
         selection = d3.select('body').append('div');
     if (!options)
         options = {};
+    if (!embedded_css)
+        embedded_css = builder_embed;
 
     this.map_data = map_data;
     this.model_data = model_data;
@@ -2673,7 +2676,7 @@ function _setup_confirm_before_exit() {
     }.bind(this);
 }
 
-},{"./Brush":2,"./BuildInput":3,"./CallbackManager":5,"./CobraModel":7,"./Map":12,"./QuickJump":14,"./SearchBar":17,"./Settings":19,"./SettingsMenu":20,"./TextEditInput":21,"./ZoomContainer":23,"./data_styles":26,"./ui":29,"./utils":30}],5:[function(require,module,exports){
+},{"./Brush":2,"./BuildInput":3,"./CallbackManager":5,"./CobraModel":7,"./Map":12,"./QuickJump":14,"./SearchBar":17,"./Settings":19,"./SettingsMenu":20,"./TextEditInput":21,"./ZoomContainer":23,"./data_styles":26,"./inline":27,"./ui":30,"./utils":31}],5:[function(require,module,exports){
 /** CallbackManager */
 
 var utils = require('./utils');
@@ -2756,7 +2759,7 @@ function run(name, this_arg) {
     return this;
 }
 
-},{"./utils":30,"underscore":39}],6:[function(require,module,exports){
+},{"./utils":31,"underscore":40}],6:[function(require,module,exports){
 /** Canvas. Defines a canvas that accepts drag/zoom events and can be resized.
 
  Canvas(selection, x, y, width, height)
@@ -3011,7 +3014,7 @@ function size_and_location() {
              height: this.height };
 }
 
-},{"./CallbackManager":5,"./utils":30}],7:[function(require,module,exports){
+},{"./CallbackManager":5,"./utils":31}],7:[function(require,module,exports){
 /** CobraModel
  *
  */
@@ -3214,7 +3217,7 @@ function model_for_export() {
              metabolites: this.metabolites };
 }
 
-},{"./data_styles":26,"./utils":30}],8:[function(require,module,exports){
+},{"./data_styles":26,"./utils":31}],8:[function(require,module,exports){
 /** DataMenu */
 
 /* global d3 */
@@ -3311,7 +3314,7 @@ module.exports = function(options) {
     };
 };
 
-},{"./utils":30}],9:[function(require,module,exports){
+},{"./utils":31}],9:[function(require,module,exports){
 /** DirectionArrow. A constructor for an arrow that can be rotated and dragged,
  and supplies its direction. */
 
@@ -3441,7 +3444,7 @@ function _setup_drag() {
     this.arrow_container.call(b);
 }
 
-},{"./utils":30}],10:[function(require,module,exports){
+},{"./utils":31}],10:[function(require,module,exports){
 /** Draw. Manages creating, updating, and removing objects during d3 data binding.
 
  Arguments
@@ -4240,7 +4243,7 @@ function displaced_coords(reaction_arrow_displacement, start, end, displace) {
     return {x: new_x, y: new_y};
 }
 
-},{"./CallbackManager":5,"./data_styles":26,"./utils":30}],11:[function(require,module,exports){
+},{"./CallbackManager":5,"./data_styles":26,"./utils":31}],11:[function(require,module,exports){
 /** KeyManager */
 
 /* global d3 */
@@ -4428,7 +4431,7 @@ function add_key_listener(callback, kc, id) {
     };
 }
 
-},{"./utils":30}],12:[function(require,module,exports){
+},{"./utils":31}],12:[function(require,module,exports){
 /** Map
 
  Defines the metabolic map data, and manages drawing and building.
@@ -6620,7 +6623,7 @@ function convert_map() {
     this.callback_manager.run('after_convert_map');
 }
 
-},{"./Behavior":1,"./CallbackManager":5,"./Canvas":6,"./Draw":10,"./KeyManager":11,"./Scale":15,"./SearchIndex":18,"./UndoStack":22,"./build":24,"./data_styles":26,"./utils":30,"baconjs":31}],13:[function(require,module,exports){
+},{"./Behavior":1,"./CallbackManager":5,"./Canvas":6,"./Draw":10,"./KeyManager":11,"./Scale":15,"./SearchIndex":18,"./UndoStack":22,"./build":24,"./data_styles":26,"./utils":31,"baconjs":32}],13:[function(require,module,exports){
 /** PlacedDiv. A container to position an html div to match the coordinates of a
  SVG element. */
 
@@ -6681,7 +6684,7 @@ function hide() {
     this.div.style('display', 'none');
 }
 
-},{"./utils":30}],14:[function(require,module,exports){
+},{"./utils":31}],14:[function(require,module,exports){
 /** A QuickJump menu to move between maps.
 
  Arguments
@@ -6776,7 +6779,7 @@ function replace_state_for_map_name(map_name) {
     window.history.replaceState('Not implemented', '', url);
 }
 
-},{"./utils":30}],15:[function(require,module,exports){
+},{"./utils":31}],15:[function(require,module,exports){
 /** Scale */
 
 /* global d3 */
@@ -6878,7 +6881,7 @@ function connect_to_settings(settings, map, get_data_statistics) {
     }
 }
 
-},{"./utils":30}],16:[function(require,module,exports){
+},{"./utils":31}],16:[function(require,module,exports){
 /** ScaleEditor. An interactive UI to edit color and size scales.
 
  Attributes
@@ -7388,7 +7391,7 @@ function _data_not_loaded() {
     return (stats.max === null || stats.min === null);
 }
 
-},{"./utils":30,"baconjs":31}],17:[function(require,module,exports){
+},{"./utils":31,"baconjs":32}],17:[function(require,module,exports){
 /** SearchBar */
 
 var utils = require('./utils');
@@ -7525,7 +7528,7 @@ function previous() {
     this.update();
 }
 
-},{"./CallbackManager":5,"./utils":30}],18:[function(require,module,exports){
+},{"./CallbackManager":5,"./utils":31}],18:[function(require,module,exports){
 /** SearchIndex. Define an index for searching for reaction and metabolites in
  the map.
 
@@ -7614,7 +7617,7 @@ function find(substring) {
 
 }
 
-},{"./utils":30}],19:[function(require,module,exports){
+},{"./utils":31}],19:[function(require,module,exports){
 /** Settings. A class to manage settings for a Map.
 
  Arguments
@@ -7791,7 +7794,7 @@ function accept_changes() {
     this.status_bus.push('accepted');
 }
 
-},{"./utils":30,"baconjs":31}],20:[function(require,module,exports){
+},{"./utils":31,"baconjs":32}],20:[function(require,module,exports){
 /** SettingsMenu */
 
 'strict mode';
@@ -8222,7 +8225,7 @@ function view_gui(s, option_name, string, options) {
         .text('Tip: To increase map performance, turn off text boxes (i.e. labels and gene reaction rules).');
 }
 
-},{"./CallbackManager":5,"./ScaleEditor":16,"./utils":30}],21:[function(require,module,exports){
+},{"./CallbackManager":5,"./ScaleEditor":16,"./utils":31}],21:[function(require,module,exports){
 /** TextEditInput */
 
 var utils = require('./utils');
@@ -8376,7 +8379,7 @@ function _add_and_edit(coords) {
     this.show(sel, coords);
 }
 
-},{"./PlacedDiv":13,"./build":24,"./utils":30}],22:[function(require,module,exports){
+},{"./PlacedDiv":13,"./build":24,"./utils":31}],22:[function(require,module,exports){
 /** UndoStack. A constructor that can be used to store undo info. */
 
 var utils = require('./utils');
@@ -8464,7 +8467,7 @@ function redo() {
     this.end_of_stack = false;
 }
 
-},{"./utils":30}],23:[function(require,module,exports){
+},{"./utils":31}],23:[function(require,module,exports){
 /** ZoomContainer
  *
  *
@@ -8910,7 +8913,7 @@ function translate_off_screen(coords) {
     }
 }
 
-},{"./CallbackManager":5,"./utils":30,"underscore":39}],24:[function(require,module,exports){
+},{"./CallbackManager":5,"./utils":31,"underscore":40}],24:[function(require,module,exports){
 /** build */
 
 var utils = require('./utils');
@@ -9461,7 +9464,7 @@ function new_beziers_for_reactions(reactions) {
     return beziers;
 }
 
-},{"./utils":30}],25:[function(require,module,exports){
+},{"./utils":31}],25:[function(require,module,exports){
 /**
  * @license
  *
@@ -9872,7 +9875,7 @@ module.exports = function(container, config) {
     return rs;
 };
 
-},{"./utils":30}],26:[function(require,module,exports){
+},{"./utils":31}],26:[function(require,module,exports){
 /** data_styles */
 
 /* global d3 */
@@ -10505,7 +10508,9 @@ function _parse_float_or_null(x) {
     return (isNaN(f) || parseFloat(x) != f) ? null : f;
 }
 
-},{"./utils":30}],27:[function(require,module,exports){
+},{"./utils":31}],27:[function(require,module,exports){
+module.exports = {'version': '1.3.1-dev', builder_embed: 'svg.escher-svg .gene-label,svg.escher-svg .label{text-rendering:optimizelegibility;cursor:default}svg.escher-svg #mouse-node{fill:none}svg.escher-svg #canvas{stroke:#ccc;stroke-width:7px;fill:#fff}svg.escher-svg .resize-rect{fill:#000;opacity:0;stroke:none}svg.escher-svg .label{font-family:sans-serif;font-style:italic;font-weight:700;font-size:8px;fill:#000;stroke:none}svg.escher-svg .reaction-label{font-size:30px;fill:#202078;text-rendering:optimizelegibility}svg.escher-svg .node-label{font-size:20px}svg.escher-svg .gene-label{font-size:18px;fill:#202078}svg.escher-svg .text-label .label,svg.escher-svg .text-label-input{font-size:50px}svg.escher-svg .node-circle{stroke-width:2px}svg.escher-svg .midmarker-circle,svg.escher-svg .multimarker-circle{fill:#fff;fill-opacity:.2;stroke:#323232}svg.escher-svg g.selected .node-circle{stroke-width:6px;stroke:#1471c7}svg.escher-svg g.selected .label{fill:#1471c7}svg.escher-svg .metabolite-circle{stroke:#a24510;fill:#e0865b}svg.escher-svg g.selected .metabolite-circle{stroke:#050200}svg.escher-svg .segment{stroke:#334E75;stroke-width:10px;fill:none}svg.escher-svg .arrowhead{fill:#334E75}svg.escher-svg .stoichiometry-label-rect{fill:#fff;opacity:.5}svg.escher-svg .stoichiometry-label{fill:#334E75;font-size:17px}svg.escher-svg .membrane{fill:none;stroke:#fb0}svg.escher-svg .brush .extent{fill-opacity:.1;fill:#000;stroke:#fff;shape-rendering:crispEdges}svg.escher-svg #brush-container .background{fill:none}svg.escher-svg .bezier-circle{fill:#fff}svg.escher-svg .bezier-circle.b1{stroke:red}svg.escher-svg .bezier-circle.b2{stroke:#00f}svg.escher-svg .connect-line{stroke:#c8c8c8}svg.escher-svg .direction-arrow{stroke:#000;stroke-width:1px;fill:#fff;opacity:.3}svg.escher-svg .start-reaction-cursor{cursor:pointer}svg.escher-svg .start-reaction-target{stroke:#646464;fill:none;opacity:.5}svg.escher-svg .rotation-center-line{stroke:red;stroke-width:5px}svg.escher-svg .highlight{fill:#D97000;text-decoration:underline}svg.escher-svg .cursor-grab{cursor:grab;cursor:-webkit-grab}svg.escher-svg .cursor-grabbing{cursor:grabbing;cursor:-webkit-grabbing}svg.escher-svg .edit-text-cursor{cursor:text}'};
+},{}],28:[function(require,module,exports){
 /**
 * @license
 *
@@ -10537,6 +10542,7 @@ function _parse_float_or_null(x) {
 */
 
 module.exports = {
+    version: require('./inline').version,
     Builder: require('./Builder'),
     Map: require('./Map'),
     Behavior: require('./Behavior'),
@@ -10553,7 +10559,7 @@ module.exports = {
     ZoomContainer: require('./ZoomContainer')
 };
 
-},{"./Behavior":1,"./Builder":4,"./CobraModel":7,"./DataMenu":8,"./KeyManager":11,"./Map":12,"./SearchIndex":18,"./Settings":19,"./UndoStack":22,"./ZoomContainer":23,"./data_styles":26,"./static":28,"./ui":29,"./utils":30}],28:[function(require,module,exports){
+},{"./Behavior":1,"./Builder":4,"./CobraModel":7,"./DataMenu":8,"./KeyManager":11,"./Map":12,"./SearchIndex":18,"./Settings":19,"./UndoStack":22,"./ZoomContainer":23,"./data_styles":26,"./inline":27,"./static":29,"./ui":30,"./utils":31}],29:[function(require,module,exports){
 /** static */
 
 /* global d3 */
@@ -10613,7 +10619,7 @@ function _get_path(kind, name, index, url) {
             '/' + encodeURIComponent(match[0][kind+'_name'])) + '.json';
 }
 
-},{"./utils":30}],29:[function(require,module,exports){
+},{"./utils":31}],30:[function(require,module,exports){
 /** ui */
 
 /* global d3 */
@@ -10797,7 +10803,7 @@ function set_json_or_csv_input_button(b, s, pre_fn, post_fn, failure_fn) {
     return function() { input.node().click(); };
 }
 
-},{"./data_styles":26,"./utils":30}],30:[function(require,module,exports){
+},{"./data_styles":26,"./utils":31}],31:[function(require,module,exports){
 /* global d3, Blob, XMLSerializer */
 
 var vkbeautify = require('vkbeautify');
@@ -11731,7 +11737,7 @@ function d3_transform_catch(transform_attr) {
     }
 }
 
-},{"filesaver":34,"vkbeautify":40}],31:[function(require,module,exports){
+},{"filesaver":35,"vkbeautify":41}],32:[function(require,module,exports){
 (function (global){
 (function() {
 var _slice = Array.prototype.slice;
@@ -15130,7 +15136,7 @@ if (typeof define !== "undefined" && define !== null && define.amd != null) {
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 (function (process){
 var path = require('path');
 var fs = require('fs');
@@ -15233,7 +15239,7 @@ mkdirP.sync = function sync (p, opts, made) {
 
 }).call(this,require('_process'))
 
-},{"_process":38,"fs":36,"path":37}],33:[function(require,module,exports){
+},{"_process":39,"fs":37,"path":38}],34:[function(require,module,exports){
 'use strict';
 
 (function() {
@@ -15398,7 +15404,7 @@ mkdirP.sync = function sync (p, opts, made) {
 		window.safename = safename;
 	}
 })();
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 'use strict';
 
 var mkdirp = require('mkdirp'),
@@ -15613,7 +15619,7 @@ Filesaver.prototype.add = function (folder, oldPath, newPath, callback) {
 
 module.exports = Filesaver;
 
-},{"./changename":35,"fs":36,"mkdirp":32,"path":37,"safename":33}],35:[function(require,module,exports){
+},{"./changename":36,"fs":37,"mkdirp":33,"path":38,"safename":34}],36:[function(require,module,exports){
 var fs = require('fs');
 
 /*!
@@ -15696,9 +15702,9 @@ var finalName = function (route) {
 
 module.exports = finalName;
 
-},{"fs":36}],36:[function(require,module,exports){
+},{"fs":37}],37:[function(require,module,exports){
 
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 (function (process){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -15927,7 +15933,7 @@ var substr = 'ab'.substr(-1) === 'b'
 
 }).call(this,require('_process'))
 
-},{"_process":38}],38:[function(require,module,exports){
+},{"_process":39}],39:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -16020,7 +16026,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -17570,7 +17576,7 @@ process.umask = function() { return 0; };
   }
 }.call(this));
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 /**
 * vkBeautify - javascript plugin to pretty-print or minify text in XML, JSON, CSS and SQL formats.
 *  
@@ -17925,6 +17931,6 @@ vkbeautify.prototype.sqlmin = function(text) {
 module.exports = new vkbeautify();
 
 
-},{}]},{},[27])(27)
+},{}]},{},[28])(28)
 });
 //# sourceMappingURL=escher.js.map

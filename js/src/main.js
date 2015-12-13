@@ -29,6 +29,7 @@
 */
 
 module.exports = {
+    version: require('./inline').version,
     Builder: require('./Builder'),
     Map: require('./Map'),
     Behavior: require('./Behavior'),

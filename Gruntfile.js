@@ -1,9 +1,43 @@
+var package = require('./package.json');
+
 module.exports = function(grunt) {
     // common tasks
-    var tasks = ['browserify', 'extract_sourcemap', 'uglify', 'copy'];
+    var tasks = ['cssmin', 'concat', 'browserify', 'extract_sourcemap',
+                 'uglify', 'copy'];
 
     // Project configuration
     grunt.initConfig({
+        // css
+        cssmin: {
+            build: {
+                files: {
+                    'css/build/builder-embed.nomap.min.css': 'css/src/builder-embed.css'
+                }
+            },
+            dist: {
+                options: {
+                    sourceMap: true,
+                    sourceMapInlineSources: true
+                },
+                files: {
+                    'css/dist/builder.min.css': 'css/src/builder.css'
+                }
+            }
+
+        },
+        concat: {
+            builder_embed: {
+                options: {
+                    separator: '',
+                    banner: "module.exports = {'version': '" + package.version + "', builder_embed: '",
+                    footer: "'};"
+                },
+                files: {
+                    'js/src/inline.js': 'css/build/builder-embed.nomap.min.css'
+                }
+            }
+        },
+        // js
         browserify: {
             options: {
                 browserifyOptions: {
@@ -28,8 +62,7 @@ module.exports = function(grunt) {
         uglify: {
             options: {
                 sourceMap: true,
-                sourceMapIn: 'js/dist/escher.js.map',
-                preserveComments: 'some'
+                sourceMapIn: 'js/dist/escher.js.map'
             },
             dist: {
                 files: {
@@ -39,6 +72,12 @@ module.exports = function(grunt) {
 
         },
         copy: {
+            css: {
+                src: 'css/src/builder.css',
+                dest: 'css/dist/',
+                expand: true,
+                flatten: true
+            },
             package: {
                 src: 'package.json',
                 dest: 'py/escher/',
@@ -46,7 +85,7 @@ module.exports = function(grunt) {
                 flatten: true
             },
             escher: {
-                src: ['js/dist/*', 'css/*'],
+                src: ['js/dist/*', 'css/dist/*'],
                 dest: 'py/escher/static/escher/',
                 expand: true,
                 flatten: true
@@ -102,8 +141,8 @@ module.exports = function(grunt) {
             src: 'js/src/coverage/reports/lcov.info'
         },
         clean: [
-            'js/build/*.js', 'js/build/*.js.map',
-            'js/dist/*.js', 'js/dist/*.js.map',
+            'js/build/*', 'js/dist/*', 'css/build/*', 'css/dist/*',
+            'js/src/inline.js',
             'js/src/coverage/instrument/*', 'js/src/coverage/reports/*',
             'py/escher/package.json', 'py/escher/static/escher/*'
         ]
@@ -113,6 +152,9 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks('grunt-contrib-copy');
+    // css
+    grunt.loadNpmTasks('grunt-contrib-cssmin');
+    grunt.loadNpmTasks('grunt-contrib-concat');
     // js
     grunt.loadNpmTasks('grunt-browserify');
     grunt.loadNpmTasks('grunt-extract-sourcemap');
