@@ -121,26 +121,37 @@ function load_css(css_path, callback) {
     }
     return false;
 };
-function update() {
-    return 'omg yes';
-};
+
+
 function load_the_file(t, file, callback, value) {
-    // if the value is specified, don't even need to do the ajax query
+    /** Load a file.
+
+     t: this context for callback. Should be an object.
+
+     files_to_load: A filename to load. Must be JSON or CSS.
+
+     callback: Function to run after the file is loaded. Takes the arguments
+     error and data.
+
+     value: If the value is specified, just assign it and do not execute the
+     ajax query.
+
+     */
     if (value) {
         if (file) console.warn('File ' + file + ' overridden by value.');
-        callback.call(t, null, value, file);
+        callback.call(t, null, value);
         return;
     }
     if (!file) {
-        callback.call(t, "No filename", null, file);
+        callback.call(t, 'No filename', null);
         return;
     }
     if (ends_with(file, 'json'))
-        d3.json(file, function(e, d) { callback(e, d, file); });
+        d3.json(file, function(e, d) { callback.call(t, e, d); });
     else if (ends_with(file, 'css'))
-        d3.text(file, function(e, d) { callback(e, d, file); });
+        d3.text(file, function(e, d) { callback.call(t, e, d); });
     else
-        callback.call(t, "Unrecognized file type", null, file);
+        callback.call(t, 'Unrecognized file type', null);
     return;
 
     // definitions
@@ -148,41 +159,62 @@ function load_the_file(t, file, callback, value) {
         return str.indexOf(suffix, str.length - suffix.length) !== -1;
     }
 }
+
+
 function load_files(t, files_to_load, final_callback) {
-    // load multiple files asynchronously
-    // Takes a list of objects: { file: a_filename.json, callback: a_callback_fn }
-    var i = -1, remaining = files_to_load.length, callbacks = {};
+    /** Load multiple files asynchronously by calling utils.load_the_file.
+
+     t: this context for callback. Should be an object.
+
+     files_to_load: A list of objects with the attributes:
+
+        { file: a_filename.json, callback: a_callback_fn }
+
+        File must be JSON or CSS.
+
+     final_callback: Function that runs after all files have loaded.
+
+     */
+    var i = -1,
+        remaining = files_to_load.length;
     while (++i < files_to_load.length) {
-        var this_file = files_to_load[i].file;
-        callbacks[this_file] = files_to_load[i].callback;
-        load_the_file(t,
-                      this_file,
-                      function(e, d, file) {
-                          callbacks[file].call(t, e, d);
-                          if (!--remaining) final_callback.call(t);
-                      },
-                      files_to_load[i].value);
+        load_the_file(
+            t,
+            files_to_load[i].file,
+            function(e, d) {
+                this.call(t, e, d);
+                if (!--remaining) final_callback.call(t);
+            }.bind(files_to_load[i].callback),
+            files_to_load[i].value
+        );
     }
 }
-// makeClass - By Hubert Kauker (MIT Licensed)
-// original by John Resig (MIT Licensed).
-// http://stackoverflow.com/questions/7892884/simple-class-instantiation
+
+
 function make_class(){
-    var isInternal;
-    var constructor = function(args){
-        if ( this instanceof constructor ) {
-            if ( typeof this.init == "function" ) {
-                this.init.apply( this, isInternal ? args : arguments );
+    /** Create a constructor that returns a new object with our without the
+     'new' keyword.
+
+     Adapted from Hubert Kauker (MIT Licensed), John Resig (MIT Licensed).
+     http://stackoverflow.com/questions/7892884/simple-class-instantiation
+
+     */
+    var is_internal,
+        constructor = function(args) {
+            if (this instanceof constructor) {
+                if (typeof this.init === 'function') {
+                    this.init.apply(this, is_internal ? args : arguments);
+                }
+            } else {
+                is_internal = true;
+                var instance = new constructor(arguments);
+                is_internal = false;
+                return instance;
             }
-        } else {
-            isInternal = true;
-            var instance = new constructor( arguments );
-            isInternal = false;
-            return instance;
-        }
-    };
+        };
     return constructor;
 }
+
 
 function setup_defs(svg, style) {
     // add stylesheet

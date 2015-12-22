@@ -1,3 +1,5 @@
+// helper for d3.xhr
+require('./helpers/XMLHttpRequest');
 var require_helper = require('./helpers/require_helper');
 
 var utils = require_helper('utils');
@@ -25,6 +27,108 @@ describe('utils.set_options', function() {
                                         { a: true, b: true });
         assert.strictEqual(options.a, 5);
         assert.strictEqual(options.b, 7);
+    });
+});
+
+
+describe('utils.load_the_file', function() {
+    it('loads json', function(done) {
+        utils.load_the_file({my: 'this'}, 'js/src/tests/data/test_file.json', function(e, d) {
+            assert.deepEqual(this, {my: 'this'});
+            assert.isNull(e);
+            assert.deepEqual(d, {'test': 'data'});
+            done();
+        });
+    });
+
+    it('loads css', function(done) {
+        utils.load_the_file({my: 'this'}, 'js/src/tests/data/test_file.css', function(e, d) {
+            assert.deepEqual(this, {my: 'this'});
+            assert.isNull(e);
+            assert.strictEqual(d, 'test\ndata\n');
+            done();
+        });
+    });
+
+    it('takes value', function(done) {
+        utils.load_the_file({my: 'this'}, null, function(e, d) {
+            assert.deepEqual(this, {my: 'this'});
+            assert.isNull(e);
+            assert.strictEqual(d, 'value');
+            done();
+        }, 'value');
+    });
+
+    it('no filename', function(done) {
+        utils.load_the_file({my: 'this'}, null, function(e, d) {
+            assert.deepEqual(this, {my: 'this'});
+            assert.strictEqual(e, 'No filename');
+            assert.isNull(d);
+            done();
+        });
+    });
+
+    it('unrecognized file type', function(done) {
+        utils.load_the_file({my: 'this'}, 'js/src/tests/data/bad_path', function(e, d, f) {
+            assert.deepEqual(this, {my: 'this'});
+            assert.strictEqual(e, 'Unrecognized file type');
+            assert.isNull(d);
+            done();
+        });
+    });
+});
+
+
+describe('utils.load_files', function() {
+    it('loads multiple files', function(done) {
+        var first = false, second = false, files = [
+            {
+                file: 'js/src/tests/data/test_file.json',
+                callback: function(e, d, f) { first = d; }
+            },
+            {
+                file: 'js/src/tests/data/test_file.css',
+                callback: function(e, d, f) { second = d; }
+            },
+        ];
+        utils.load_files({my: 'this'}, files, function() {
+            assert.deepEqual(this, {my: 'this'});
+            assert.deepEqual(first, {'test': 'data'});
+            assert.strictEqual(second, 'test\ndata\n');
+            done();
+        });
+    });
+
+    it('loads same file twice', function (done) {
+        var first = false, second = false, files = [
+            {
+                file: 'test_file.json',
+                callback: function() { first = true; }
+            },
+            {
+                file: 'test_file.json',
+                callback: function() { second = true; }
+            },
+        ];
+        utils.load_files(null, files, function () {
+            assert.isTrue(first);
+            assert.isTrue(second);
+            done();
+        });
+    });
+});
+
+
+describe('utils.make_class', function() {
+    it('works with our without "new"', function() {
+        var MyClass = utils.make_class();
+        var obj1 = new MyClass();
+        var obj2 = MyClass();
+
+        assert.isTrue(obj1 instanceof MyClass);
+        assert.isTrue(obj2 instanceof MyClass);
+        assert.isTrue(obj1.constructor == MyClass);
+        assert.isTrue(obj2.constructor == MyClass);
     });
 });
 
