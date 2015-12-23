@@ -1,7 +1,11 @@
 /* global d3, Blob, XMLSerializer */
 
 var vkbeautify = require('vkbeautify');
-var saveAs = require('filesaver');
+try {
+    var saveAs = require('filesaverjs').saveAs;
+} catch (e) {
+    console.warn('filesaverjs not available');
+}
 
 
 module.exports = {
@@ -719,12 +723,13 @@ function download_svg(name, svg_sel, do_beautify) {
     // make the xml string
     var xml = (new XMLSerializer()).serializeToString(svg_sel.node());
     if (do_beautify) xml = vkbeautify.xml(xml);
-    xml = '<?xml version="1.0" encoding="utf-8"?>\n \
-            <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n \
-        "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' + xml;
+    xml = ('<?xml version="1.0" encoding="utf-8"?>\n' +
+           '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n' +
+           ' "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
+           xml);
 
     // save
-    var blob = new Blob([xml], {type: "image/svg+xml"});
+    var blob = new Blob([xml], { type: 'image/svg+xml' });
     saveAs(blob, name + '.svg');
 };
 

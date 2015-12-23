@@ -2759,7 +2759,7 @@ function run(name, this_arg) {
     return this;
 }
 
-},{"./utils":31,"underscore":40}],6:[function(require,module,exports){
+},{"./utils":31,"underscore":34}],6:[function(require,module,exports){
 /** Canvas. Defines a canvas that accepts drag/zoom events and can be resized.
 
  Canvas(selection, x, y, width, height)
@@ -6428,6 +6428,8 @@ function highlight(sel) {
 function save() {
     utils.download_json(this.map_for_export(), this.map_name);
 }
+
+
 function map_for_export() {
     var out = [{ "map_name": this.map_name,
                  "map_id": this.map_id,
@@ -6497,7 +6499,12 @@ function map_for_export() {
 
     return out;
 }
+
+
 function save_svg() {
+    /** Rescale the canvas and save svg.
+
+     */
     // run the before callback
     this.callback_manager.run('before_svg_export');
 
@@ -6505,35 +6512,40 @@ function save_svg() {
     var window_scale = this.zoom_container.window_scale,
         window_translate = this.zoom_container.window_translate,
         canvas_size_and_loc = this.canvas.size_and_location(),
-        mouse_node_size_and_trans = { w: this.canvas.mouse_node.attr('width'),
-                                      h: this.canvas.mouse_node.attr('height'),
-                                      transform:  this.canvas.mouse_node.attr('transform')};
-    this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, false);
-    this.svg.attr('width', canvas_size_and_loc.width);
-    this.svg.attr('height', canvas_size_and_loc.height);
-    this.canvas.mouse_node.attr('width', '0px');
-    this.canvas.mouse_node.attr('height', '0px');
-    this.canvas.mouse_node.attr('transform', null);
-    // hide the segment control points
-    var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas')
-            .style('visibility', 'hidden');
+        mouse_node_size_and_trans = {
+            w: this.canvas.mouse_node.attr('width'),
+            h: this.canvas.mouse_node.attr('height'),
+            transform: this.canvas.mouse_node.attr('transform')
+        };
+    this.zoom_container._go_to_svg(1.0, { x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y }, function() {
+        this.svg.attr('width', canvas_size_and_loc.width);
+        this.svg.attr('height', canvas_size_and_loc.height);
+        this.canvas.mouse_node.attr('width', '0px');
+        this.canvas.mouse_node.attr('height', '0px');
+        this.canvas.mouse_node.attr('transform', null);
+        // hide the segment control points
+        var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas')
+                .style('visibility', 'hidden');
 
-    // do the epxort
-    utils.download_svg('saved_map', this.svg, true);
+        // do the epxort
+        utils.download_svg('saved_map', this.svg, true);
 
-    // revert everything
-    this.zoom_container.go_to(window_scale, window_translate, false);
-    this.svg.attr('width', null);
-    this.svg.attr('height', null);
-    this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
-    this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
-    this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
-    // unhide the segment control points
-    hidden_sel.style('visibility', null);
+        // revert everything
+        this.zoom_container._go_to_svg(window_scale, window_translate, function() {
+            this.svg.attr('width', null);
+            this.svg.attr('height', null);
+            this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
+            this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
+            this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
+            // unhide the segment control points
+            hidden_sel.style('visibility', null);
 
-    // run the after callback
-    this.callback_manager.run('after_svg_export');
+            // run the after callback
+            this.callback_manager.run('after_svg_export');
+        }.bind(this));
+    }.bind(this));
 }
+
 
 function convert_map() {
     /** Assign the descriptive names and gene_reaction_rules from the model
@@ -8709,7 +8721,7 @@ function _update_scroll() {
                 x: this.window_translate.x - get_directional_disp(ev.wheelDeltaX, ev.deltaX),
                 y: this.window_translate.y - get_directional_disp(ev.wheelDeltaY, ev.deltaY)
             };
-            this.go_to(this.window_scale, new_translate, false);
+            this.go_to(this.window_scale, new_translate);
         }.bind(this);
 
         // apply it
@@ -8722,14 +8734,14 @@ function _update_scroll() {
 // functions to scale and translate
 function go_to(scale, translate) {
     /** Zoom the container to a specified location.
-     *
-     * Arguments
-     * ---------
-     *
-     * scale: The scale, between 0 and 1.
-     *
-     * translate: The location, of the form {x: 2.0, y: 3.0}.
-     *
+
+     Arguments
+     ---------
+
+     scale: The scale, between 0 and 1.
+
+     translate: The location, of the form {x: 2.0, y: 3.0}.
+
      */
 
     utils.check_undefined(arguments, ['scale', 'translate']);
@@ -8798,11 +8810,20 @@ function _clear_3d() {
     this.css3_transform_container.style('-webkit-transform-origin', null);
 }
 
-function _go_to_svg(scale, translate) {
+function _go_to_svg(scale, translate, callback) {
     /** Zoom & pan the svg element.
-     *
-     * Also runs the svg_start and svg_finish callbacks.
-     *
+
+     Also runs the svg_start and svg_finish callbacks.
+
+     Arguments
+     ---------
+
+     scale: The scale, between 0 and 1.
+
+     translate: The location, of the form {x: 2.0, y: 3.0}.
+
+     callback: (optional) A callback to run after scaling.
+
      */
 
     this.callback_manager.run('svg_start');
@@ -8828,6 +8849,8 @@ function _go_to_svg(scale, translate) {
         _.defer(function() {
             // defer for callback after draw
             this.callback_manager.run('svg_finish');
+
+            if (!_.isUndefined(callback)) callback();
 
             // wait a few ms to get a reliable end time
             // _.delay(function() {
@@ -8913,7 +8936,7 @@ function translate_off_screen(coords) {
     }
 }
 
-},{"./CallbackManager":5,"./utils":31,"underscore":40}],24:[function(require,module,exports){
+},{"./CallbackManager":5,"./utils":31,"underscore":34}],24:[function(require,module,exports){
 /** build */
 
 var utils = require('./utils');
@@ -10810,7 +10833,11 @@ function set_json_or_csv_input_button(b, s, pre_fn, post_fn, failure_fn) {
 /* global d3, Blob, XMLSerializer */
 
 var vkbeautify = require('vkbeautify');
-var saveAs = require('filesaver');
+try {
+    var saveAs = require('filesaverjs').saveAs;
+} catch (e) {
+    console.warn('filesaverjs not available');
+}
 
 
 module.exports = {
@@ -11528,12 +11555,13 @@ function download_svg(name, svg_sel, do_beautify) {
     // make the xml string
     var xml = (new XMLSerializer()).serializeToString(svg_sel.node());
     if (do_beautify) xml = vkbeautify.xml(xml);
-    xml = '<?xml version="1.0" encoding="utf-8"?>\n \
-            <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n \
-        "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' + xml;
+    xml = ('<?xml version="1.0" encoding="utf-8"?>\n' +
+           '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n' +
+           ' "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
+           xml);
 
     // save
-    var blob = new Blob([xml], {type: "image/svg+xml"});
+    var blob = new Blob([xml], { type: 'image/svg+xml' });
     saveAs(blob, name + '.svg');
 };
 
@@ -11772,7 +11800,7 @@ function d3_transform_catch(transform_attr) {
     }
 }
 
-},{"filesaver":35,"vkbeautify":41}],32:[function(require,module,exports){
+},{"filesaverjs":33,"vkbeautify":35}],32:[function(require,module,exports){
 (function (global){
 (function() {
 var _slice = Array.prototype.slice;
@@ -15172,896 +15200,278 @@ if (typeof define !== "undefined" && define !== null && define.amd != null) {
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 
 },{}],33:[function(require,module,exports){
-(function (process){
-var path = require('path');
-var fs = require('fs');
-var _0777 = parseInt('0777', 8);
+/* FileSaver.js
+ * A saveAs() FileSaver implementation.
+ * 1.1.20151003
+ *
+ * By Eli Grey, http://eligrey.com
+ * License: X11/MIT
+ *   See https://github.com/eligrey/FileSaver.js/blob/master/LICENSE.md
+ */
 
-module.exports = mkdirP.mkdirp = mkdirP.mkdirP = mkdirP;
+/*global self */
+/*jslint bitwise: true, indent: 4, laxbreak: true, laxcomma: true, smarttabs: true, plusplus: true */
 
-function mkdirP (p, opts, f, made) {
-    if (typeof opts === 'function') {
-        f = opts;
-        opts = {};
-    }
-    else if (!opts || typeof opts !== 'object') {
-        opts = { mode: opts };
-    }
-    
-    var mode = opts.mode;
-    var xfs = opts.fs || fs;
-    
-    if (mode === undefined) {
-        mode = _0777 & (~process.umask());
-    }
-    if (!made) made = null;
-    
-    var cb = f || function () {};
-    p = path.resolve(p);
-    
-    xfs.mkdir(p, mode, function (er) {
-        if (!er) {
-            made = made || p;
-            return cb(null, made);
-        }
-        switch (er.code) {
-            case 'ENOENT':
-                mkdirP(path.dirname(p), opts, function (er, made) {
-                    if (er) cb(er, made);
-                    else mkdirP(p, opts, cb, made);
-                });
-                break;
+/*! @source http://purl.eligrey.com/github/FileSaver.js/blob/master/FileSaver.js */
 
-            // In the case of any other error, just see if there's a dir
-            // there already.  If so, then hooray!  If not, then something
-            // is borked.
-            default:
-                xfs.stat(p, function (er2, stat) {
-                    // if the stat fails, then that's super weird.
-                    // let the original error be the failure reason.
-                    if (er2 || !stat.isDirectory()) cb(er, made)
-                    else cb(null, made);
-                });
-                break;
-        }
-    });
-}
-
-mkdirP.sync = function sync (p, opts, made) {
-    if (!opts || typeof opts !== 'object') {
-        opts = { mode: opts };
-    }
-    
-    var mode = opts.mode;
-    var xfs = opts.fs || fs;
-    
-    if (mode === undefined) {
-        mode = _0777 & (~process.umask());
-    }
-    if (!made) made = null;
-
-    p = path.resolve(p);
-
-    try {
-        xfs.mkdirSync(p, mode);
-        made = made || p;
-    }
-    catch (err0) {
-        switch (err0.code) {
-            case 'ENOENT' :
-                made = sync(path.dirname(p), opts, made);
-                sync(p, opts, made);
-                break;
-
-            // In the case of any other error, just see if there's a dir
-            // there already.  If so, then hooray!  If not, then something
-            // is borked.
-            default:
-                var stat;
-                try {
-                    stat = xfs.statSync(p);
-                }
-                catch (err1) {
-                    throw err0;
-                }
-                if (!stat.isDirectory()) throw err0;
-                break;
-        }
-    }
-
-    return made;
-};
-
-}).call(this,require('_process'))
-
-},{"_process":39,"fs":37,"path":38}],34:[function(require,module,exports){
-'use strict';
-
-(function() {
-	var diacritics = [
-		{'base':'A', 'letters':'\u0041\u24B6\uFF21\u00C0\u00C1\u00C2\u1EA6\u1EA4\u1EAA\u1EA8\u00C3\u0100\u0102\u1EB0\u1EAE\u1EB4\u1EB2\u0226\u01E0\u00C4\u01DE\u1EA2\u00C5\u01FA\u01CD\u0200\u0202\u1EA0\u1EAC\u1EB6\u1E00\u0104\u023A\u2C6F'},
-		{'base':'AA','letters':'\uA732'},
-		{'base':'AE','letters':'\u00C6\u01FC\u01E2'},
-		{'base':'AO','letters':'\uA734'},
-		{'base':'AU','letters':'\uA736'},
-		{'base':'AV','letters':'\uA738\uA73A'},
-		{'base':'AY','letters':'\uA73C'},
-		{'base':'B', 'letters':'\u0042\u24B7\uFF22\u1E02\u1E04\u1E06\u0243\u0182\u0181'},
-		{'base':'C', 'letters':'\u0043\u24B8\uFF23\u0106\u0108\u010A\u010C\u00C7\u1E08\u0187\u023B\uA73E'},
-		{'base':'D', 'letters':'\u0044\u24B9\uFF24\u1E0A\u010E\u1E0C\u1E10\u1E12\u1E0E\u0110\u018B\u018A\u0189\uA779'},
-		{'base':'DZ','letters':'\u01F1\u01C4'},
-		{'base':'Dz','letters':'\u01F2\u01C5'},
-		{'base':'E', 'letters':'\u0045\u24BA\uFF25\u00C8\u00C9\u00CA\u1EC0\u1EBE\u1EC4\u1EC2\u1EBC\u0112\u1E14\u1E16\u0114\u0116\u00CB\u1EBA\u011A\u0204\u0206\u1EB8\u1EC6\u0228\u1E1C\u0118\u1E18\u1E1A\u0190\u018E'},
-		{'base':'F', 'letters':'\u0046\u24BB\uFF26\u1E1E\u0191\uA77B'},
-		{'base':'G', 'letters':'\u0047\u24BC\uFF27\u01F4\u011C\u1E20\u011E\u0120\u01E6\u0122\u01E4\u0193\uA7A0\uA77D\uA77E'},
-		{'base':'H', 'letters':'\u0048\u24BD\uFF28\u0124\u1E22\u1E26\u021E\u1E24\u1E28\u1E2A\u0126\u2C67\u2C75\uA78D'},
-		{'base':'I', 'letters':'\u0049\u24BE\uFF29\u00CC\u00CD\u00CE\u0128\u012A\u012C\u0130\u00CF\u1E2E\u1EC8\u01CF\u0208\u020A\u1ECA\u012E\u1E2C\u0197'},
-		{'base':'J', 'letters':'\u004A\u24BF\uFF2A\u0134\u0248'},
-		{'base':'K', 'letters':'\u004B\u24C0\uFF2B\u1E30\u01E8\u1E32\u0136\u1E34\u0198\u2C69\uA740\uA742\uA744\uA7A2'},
-		{'base':'L', 'letters':'\u004C\u24C1\uFF2C\u013F\u0139\u013D\u1E36\u1E38\u013B\u1E3C\u1E3A\u0141\u023D\u2C62\u2C60\uA748\uA746\uA780'},
-		{'base':'LJ','letters':'\u01C7'},
-		{'base':'Lj','letters':'\u01C8'},
-		{'base':'M', 'letters':'\u004D\u24C2\uFF2D\u1E3E\u1E40\u1E42\u2C6E\u019C'},
-		{'base':'N', 'letters':'\u004E\u24C3\uFF2E\u01F8\u0143\u00D1\u1E44\u0147\u1E46\u0145\u1E4A\u1E48\u0220\u019D\uA790\uA7A4'},
-		{'base':'NJ','letters':'\u01CA'},
-		{'base':'Nj','letters':'\u01CB'},
-		{'base':'O', 'letters':'\u004F\u24C4\uFF2F\u00D2\u00D3\u00D4\u1ED2\u1ED0\u1ED6\u1ED4\u00D5\u1E4C\u022C\u1E4E\u014C\u1E50\u1E52\u014E\u022E\u0230\u00D6\u022A\u1ECE\u0150\u01D1\u020C\u020E\u01A0\u1EDC\u1EDA\u1EE0\u1EDE\u1EE2\u1ECC\u1ED8\u01EA\u01EC\u00D8\u01FE\u0186\u019F\uA74A\uA74C'},
-		{'base':'OI','letters':'\u01A2'},
-		{'base':'OO','letters':'\uA74E'},
-		{'base':'OU','letters':'\u0222'},
-		{'base':'P', 'letters':'\u0050\u24C5\uFF30\u1E54\u1E56\u01A4\u2C63\uA750\uA752\uA754'},
-		{'base':'Q', 'letters':'\u0051\u24C6\uFF31\uA756\uA758\u024A'},
-		{'base':'R', 'letters':'\u0052\u24C7\uFF32\u0154\u1E58\u0158\u0210\u0212\u1E5A\u1E5C\u0156\u1E5E\u024C\u2C64\uA75A\uA7A6\uA782'},
-		{'base':'S', 'letters':'\u0053\u24C8\uFF33\u1E9E\u015A\u1E64\u015C\u1E60\u0160\u1E66\u1E62\u1E68\u0218\u015E\u2C7E\uA7A8\uA784'},
-		{'base':'T', 'letters':'\u0054\u24C9\uFF34\u1E6A\u0164\u1E6C\u021A\u0162\u1E70\u1E6E\u0166\u01AC\u01AE\u023E\uA786'},
-		{'base':'TZ','letters':'\uA728'},
-		{'base':'U', 'letters':'\u0055\u24CA\uFF35\u00D9\u00DA\u00DB\u0168\u1E78\u016A\u1E7A\u016C\u00DC\u01DB\u01D7\u01D5\u01D9\u1EE6\u016E\u0170\u01D3\u0214\u0216\u01AF\u1EEA\u1EE8\u1EEE\u1EEC\u1EF0\u1EE4\u1E72\u0172\u1E76\u1E74\u0244'},
-		{'base':'V', 'letters':'\u0056\u24CB\uFF36\u1E7C\u1E7E\u01B2\uA75E\u0245'},
-		{'base':'VY','letters':'\uA760'},
-		{'base':'W', 'letters':'\u0057\u24CC\uFF37\u1E80\u1E82\u0174\u1E86\u1E84\u1E88\u2C72'},
-		{'base':'X', 'letters':'\u0058\u24CD\uFF38\u1E8A\u1E8C'},
-		{'base':'Y', 'letters':'\u0059\u24CE\uFF39\u1EF2\u00DD\u0176\u1EF8\u0232\u1E8E\u0178\u1EF6\u1EF4\u01B3\u024E\u1EFE'},
-		{'base':'Z', 'letters':'\u005A\u24CF\uFF3A\u0179\u1E90\u017B\u017D\u1E92\u1E94\u01B5\u0224\u2C7F\u2C6B\uA762'},
-		{'base':'a', 'letters':'\u0061\u24D0\uFF41\u1E9A\u00E0\u00E1\u00E2\u1EA7\u1EA5\u1EAB\u1EA9\u00E3\u0101\u0103\u1EB1\u1EAF\u1EB5\u1EB3\u0227\u01E1\u00E4\u01DF\u1EA3\u00E5\u01FB\u01CE\u0201\u0203\u1EA1\u1EAD\u1EB7\u1E01\u0105\u2C65\u0250'},
-		{'base':'aa','letters':'\uA733'},
-		{'base':'ae','letters':'\u00E6\u01FD\u01E3'},
-		{'base':'ao','letters':'\uA735'},
-		{'base':'au','letters':'\uA737'},
-		{'base':'av','letters':'\uA739\uA73B'},
-		{'base':'ay','letters':'\uA73D'},
-		{'base':'b', 'letters':'\u0062\u24D1\uFF42\u1E03\u1E05\u1E07\u0180\u0183\u0253'},
-		{'base':'c', 'letters':'\u0063\u24D2\uFF43\u0107\u0109\u010B\u010D\u00E7\u1E09\u0188\u023C\uA73F\u2184'},
-		{'base':'d', 'letters':'\u0064\u24D3\uFF44\u1E0B\u010F\u1E0D\u1E11\u1E13\u1E0F\u0111\u018C\u0256\u0257\uA77A'},
-		{'base':'dz','letters':'\u01F3\u01C6'},
-		{'base':'e', 'letters':'\u0065\u24D4\uFF45\u00E8\u00E9\u00EA\u1EC1\u1EBF\u1EC5\u1EC3\u1EBD\u0113\u1E15\u1E17\u0115\u0117\u00EB\u1EBB\u011B\u0205\u0207\u1EB9\u1EC7\u0229\u1E1D\u0119\u1E19\u1E1B\u0247\u025B\u01DD'},
-		{'base':'f', 'letters':'\u0066\u24D5\uFF46\u1E1F\u0192\uA77C'},
-		{'base':'g', 'letters':'\u0067\u24D6\uFF47\u01F5\u011D\u1E21\u011F\u0121\u01E7\u0123\u01E5\u0260\uA7A1\u1D79\uA77F'},
-		{'base':'h', 'letters':'\u0068\u24D7\uFF48\u0125\u1E23\u1E27\u021F\u1E25\u1E29\u1E2B\u1E96\u0127\u2C68\u2C76\u0265'},
-		{'base':'hv','letters':'\u0195'},
-		{'base':'i', 'letters':'\u0069\u24D8\uFF49\u00EC\u00ED\u00EE\u0129\u012B\u012D\u00EF\u1E2F\u1EC9\u01D0\u0209\u020B\u1ECB\u012F\u1E2D\u0268\u0131'},
-		{'base':'j', 'letters':'\u006A\u24D9\uFF4A\u0135\u01F0\u0249'},
-		{'base':'k', 'letters':'\u006B\u24DA\uFF4B\u1E31\u01E9\u1E33\u0137\u1E35\u0199\u2C6A\uA741\uA743\uA745\uA7A3'},
-		{'base':'l', 'letters':'\u006C\u24DB\uFF4C\u0140\u013A\u013E\u1E37\u1E39\u013C\u1E3D\u1E3B\u017F\u0142\u019A\u026B\u2C61\uA749\uA781\uA747'},
-		{'base':'lj','letters':'\u01C9'},
-		{'base':'m', 'letters':'\u006D\u24DC\uFF4D\u1E3F\u1E41\u1E43\u0271\u026F'},
-		{'base':'n', 'letters':'\u006E\u24DD\uFF4E\u01F9\u0144\u00F1\u1E45\u0148\u1E47\u0146\u1E4B\u1E49\u019E\u0272\u0149\uA791\uA7A5'},
-		{'base':'nj','letters':'\u01CC'},
-		{'base':'o', 'letters':'\u006F\u24DE\uFF4F\u00F2\u00F3\u00F4\u1ED3\u1ED1\u1ED7\u1ED5\u00F5\u1E4D\u022D\u1E4F\u014D\u1E51\u1E53\u014F\u022F\u0231\u00F6\u022B\u1ECF\u0151\u01D2\u020D\u020F\u01A1\u1EDD\u1EDB\u1EE1\u1EDF\u1EE3\u1ECD\u1ED9\u01EB\u01ED\u00F8\u01FF\u0254\uA74B\uA74D\u0275'},
-		{'base':'oi','letters':'\u01A3'},
-		{'base':'ou','letters':'\u0223'},
-		{'base':'oo','letters':'\uA74F'},
-		{'base':'p','letters':'\u0070\u24DF\uFF50\u1E55\u1E57\u01A5\u1D7D\uA751\uA753\uA755'},
-		{'base':'q','letters':'\u0071\u24E0\uFF51\u024B\uA757\uA759'},
-		{'base':'r','letters':'\u0072\u24E1\uFF52\u0155\u1E59\u0159\u0211\u0213\u1E5B\u1E5D\u0157\u1E5F\u024D\u027D\uA75B\uA7A7\uA783'},
-		{'base':'s','letters':'\u0073\u24E2\uFF53\u00DF\u015B\u1E65\u015D\u1E61\u0161\u1E67\u1E63\u1E69\u0219\u015F\u023F\uA7A9\uA785\u1E9B'},
-		{'base':'t','letters':'\u0074\u24E3\uFF54\u1E6B\u1E97\u0165\u1E6D\u021B\u0163\u1E71\u1E6F\u0167\u01AD\u0288\u2C66\uA787'},
-		{'base':'tz','letters':'\uA729'},
-		{'base':'u','letters': '\u0075\u24E4\uFF55\u00F9\u00FA\u00FB\u0169\u1E79\u016B\u1E7B\u016D\u00FC\u01DC\u01D8\u01D6\u01DA\u1EE7\u016F\u0171\u01D4\u0215\u0217\u01B0\u1EEB\u1EE9\u1EEF\u1EED\u1EF1\u1EE5\u1E73\u0173\u1E77\u1E75\u0289'},
-		{'base':'v','letters':'\u0076\u24E5\uFF56\u1E7D\u1E7F\u028B\uA75F\u028C'},
-		{'base':'vy','letters':'\uA761'},
-		{'base':'w','letters':'\u0077\u24E6\uFF57\u1E81\u1E83\u0175\u1E87\u1E85\u1E98\u1E89\u2C73'},
-		{'base':'x','letters':'\u0078\u24E7\uFF58\u1E8B\u1E8D'},
-		{'base':'y','letters':'\u0079\u24E8\uFF59\u1EF3\u00FD\u0177\u1EF9\u0233\u1E8F\u00FF\u1EF7\u1E99\u1EF5\u01B4\u024F\u1EFF'},
-		{'base':'z','letters':'\u007A\u24E9\uFF5A\u017A\u1E91\u017C\u017E\u1E93\u1E95\u01B6\u0225\u0240\u2C6C\uA763'}
-	];
-
-
-	var diaMap = {};
-	for (var i=0; i < diacritics.length; i++){
-		var letters = diacritics[i].letters.split('');
-		for (var j=0; j < letters.length ; j++){
-			diaMap[letters[j]] = diacritics[i].base;
+var saveAs = saveAs || (function(view) {
+	"use strict";
+	// IE <10 is explicitly unsupported
+	if (typeof navigator !== "undefined" && /MSIE [1-9]\./.test(navigator.userAgent)) {
+		return;
+	}
+	var
+		  doc = view.document
+		  // only get URL when necessary in case Blob.js hasn't overridden it yet
+		, get_URL = function() {
+			return view.URL || view.webkitURL || view;
 		}
-	}
-
-	var removeDiacritics = function (str) {
-		var letters = str.split('');
-		var newStr = '';
-		for(var i=0; i< letters.length; i++) {
-			newStr += letters[i] in diaMap ? diaMap[letters[i]] : letters[i];
+		, save_link = doc.createElementNS("http://www.w3.org/1999/xhtml", "a")
+		, can_use_save_link = "download" in save_link
+		, click = function(node) {
+			var event = new MouseEvent("click");
+			node.dispatchEvent(event);
 		}
-		return newStr;
-	};
-
-	var transformName = function (name, space) {
-		var n = removeDiacritics( name );
-		n = n.replace(/ /g, space);
-		n = n.replace(/[^A-Za-z0-9-_\.]/g, '');
-		n = n.replace(/\.+/g, '.');
-		n = n.replace(/-+/g, '-');
-		n = n.replace(/_+/g, '_');
-		return n;
-	};
-
-	/**
-	 * Get safe name for files
-	 * @param  {String} name string to transform
-	 * @param  {String} space    replace for spaces. Optional, low dash ('_') by default
-	 * @return {String}          safe name
-	 */
-	var safename = function (name, space) {
-		space = space || '_';
-		return transformName( name, space);
-	};
-
-	/**
-	 * Safe name with low dash '_'.
-	 *
-	 * Same as `safename('your file name.txt', '_');`
-	 */
-	safename.low = function (name) {
-		return transformName( name, '_');
-	};
-
-	/**
-	 * Safe name with middle dash '-'.
-	 *
-	 * Same as `safename('your file name.txt', '-');`
-	 */
-	safename.middle = function (name) {
-		return transformName( name, '-');
-	};
-
-	/**
-	 * Safe name with dots '.'.
-	 *
-	 * Same as `safename('your file name.txt', '.');`
-	 */
-	safename.dot = function (name) {
-		return transformName( name, '.');
-	};
-
-	// node.js
-	if((typeof module !== 'undefined') && (typeof module.exports !== 'undefined')) {
-		module.exports = safename;
-	// browser
-	} else if(typeof window !== 'undefined') {
-		window.safename = safename;
-	}
-})();
-},{}],35:[function(require,module,exports){
-'use strict';
-
-var mkdirp = require('mkdirp'),
-	fs = require('fs'),
-	changeName = require('./changename'),
-	path = require('path'),
-	safename = require('safename');
-
-
-
-/*!
- * Rename file and launch callback
- * @param  {String}   oldPath  path to file to move
- * @param  {String}   newPath  path of destination
- * @param  {Function} callback signature: null, {filename, filepath}
- */
-var move = function (oldPath, newPath, callback) {
-	fs.rename( oldPath, newPath, function (err) {
-		if (err) {
-			callback( err );
-		} else {
-			callback( null, {
-				filename: newPath.split( '/' ).pop(),
-				filepath: newPath
-			});
+		, is_safari = /Version\/[\d\.]+.*Safari/.test(navigator.userAgent)
+		, webkit_req_fs = view.webkitRequestFileSystem
+		, req_fs = view.requestFileSystem || webkit_req_fs || view.mozRequestFileSystem
+		, throw_outside = function(ex) {
+			(view.setImmediate || view.setTimeout)(function() {
+				throw ex;
+			}, 0);
 		}
-	});
-};
-
-/*!
- * return safename file path
- * @param  {String} route target to analyze
- * @return {String}       route analyze
- */
-var checkSafeName = function (route) {
-	if ( this.safenames ) {
-		route = route.split( '/' );
-		var name = route.pop();
-		name = safename( name );
-		route.push( name );
-		return route.join( '/' );
-	} else {
-		return route;
-	}
-};
-
-
-/*!
- * check if params are right
- */
-var checker = function (folder, oldPath, newPath, callback) {
-	var cb = callback || function () {};
-	if (typeof newPath === 'function') {
-		cb = newPath;
-		newPath = oldPath.split( '/' ).pop();
-	} else if (!newPath) {
-		newPath = oldPath.split( '/' ).pop();
-	}
-	// check for valid arguments
-	if (folder && oldPath && (typeof folder === 'string') && (typeof oldPath === 'string') && fs.existsSync( oldPath )) {
-		// check for existing folder
-		if (this.folders[folder]) {
-			// set target
-			newPath = path.resolve( this.folders[folder], newPath );
-			newPath = checkSafeName.call( this, newPath );
-			return {newPath: newPath, callback: cb};
-		} else {
-			cb( 'invalid folder' );
-			return false;
-		}
-	} else {
-		cb( 'folder or origin not valid' );
-		return false;
-	}
-};
-
-
-/**
- * Filesaver constructor.
- *
- * Options:
- *
- * - folders: *Object*		with folder routes
- * - safename: *Boolean*	use safe name for files
- *
- * Example:
- *
- * ```js
- * var folders = {
- *     images: './images',
- *     books: './books'
- * }
- * var filesaver = new Filesaver({
- *     folders: folders,
- *     safenames: true
- * });
- * ```
- *
- * @param {Object} options folders and safenames
- */
-
-var Filesaver = function (options) {
-	var x;
-	options = options || {};
-	// Store folders
-	this.folders = options.folders || {};
-	this.safenames = options.safenames || false;
-
-	// check for existing folders
-	for (x in this.folders) {
-		if (!fs.existsSync( this.folders[x] )){
-			// create folder if not exists
-			mkdirp( this.folders[x] );
-		}
-	}
-};
-
-
-/**
- * Add a new folder
- *
- * Example:
- *
- * ```js
- * filesaver.folder( 'documents', './path/to/folder', function () {
- *     // do something
- * });
- * ```
- * @param  {String}   name       name of new folder collection
- * @param  {Object}   path       path to its folder
- * @param  {Function} callback   no signature callback
- */
-
-Filesaver.prototype.folder = function (name, folderPath, callback) {
-	var _this = this;
-
-	fs.exists( folderPath, function (exists) {
-		if (!exists) {
-			// create folder if not exists
-			mkdirp( folderPath );
-		}
-		// add folder
-		_this.folders[name] = folderPath;
-		// optional callback
-		if (callback){
-			callback();
-		}
-	});
-};
-
-
-/**
- * Write or overwrite file
- *
- * Example:
- *
- * ```js
- * filesaver.put( 'images', '/path/temp/file.jpg', 'photo.jpg', function (err, data) {
- *     console.log( data );
- *     // ->
- *     // filename: 'photo.jpg',
- *     // filepath: './images/photo.jpg'
- *     });
- * ```
- *
- * @param  {String}   folder     name of parent folder folder
- * @param  {String}   oldPath     path to origin file
- * @param  {String}   newPath     name of newPath file
- * @param  {Function} callback   Signature: error, data. Data signature:{filename, filepath}
- */
-
-Filesaver.prototype.put = function (folder, oldPath, newPath, callback) {
-	var data = checker.call( this, folder, oldPath, newPath, callback );
-
-	if (data) {
-		move( oldPath, data.newPath, data.callback );
-	}
-};
-
-
-
-/**
- * Write a file without overwriting anyone.
- *
- * Example:
- *
- * ```js
- * filesaver.add( 'images', '/path/temp/file.jpg', 'photo_1.jpg', function (err, data) {
- *     console.log( data );
- *     // ->
- *     // filename: 'photo_2.jpg',
- *     // filepath: './images/photo_2.jpg'
- *     });
- * ```
- *
- * @param  {String}   folder     name of parent folder folder
- * @param  {String}   oldPath     path to origin file
- * @param  {String}   newPath     Optional: name of newPath file
- * @param  {Function} callback   Optional: Signature: error, data. Data signature:{filename, filepath}
- */
-
-Filesaver.prototype.add = function (folder, oldPath, newPath, callback) {
-
-	var data = checker.call( this, folder, oldPath, newPath, callback );
-
-	if (data) {
-		newPath = changeName( data.newPath );
-		move( oldPath, newPath, data.callback );
-	}
-};
-
-
-module.exports = Filesaver;
-
-},{"./changename":36,"fs":37,"mkdirp":33,"path":38,"safename":34}],36:[function(require,module,exports){
-var fs = require('fs');
-
-/*!
- * add 1 to suffix number
- * @param {String} name file basename
- * @return {String} name with addition
- */
-var addOne = function (name) {
-	name = name.split( '_' );
-	var n = Number( name.pop()) + 1;
-	name.push( n );
-	return name.join( '_' );
-};
-
-
-/*!
- * detect if name has a number suffix after '_'
- * (example: picture_5.jpg)
- * @param  {string}  name basename to examinate
- * @return {Boolean|Number}      if has not suffix: false, else: name with addition
- */
-var hasSuffix = function (name) {
-	var suffix, splitted;
-	if (!isNaN( name )) {
-		return false;
-	} else {
-		splitted = name.split( '_' );
-		if (splitted.length > 1) {
-			suffix = splitted.pop();
-			if (isNaN( suffix )) {
-				return false;
+		, force_saveable_type = "application/octet-stream"
+		, fs_min_size = 0
+		// See https://code.google.com/p/chromium/issues/detail?id=375297#c7 and
+		// https://github.com/eligrey/FileSaver.js/commit/485930a#commitcomment-8768047
+		// for the reasoning behind the timeout and revocation flow
+		, arbitrary_revoke_timeout = 500 // in ms
+		, revoke = function(file) {
+			var revoker = function() {
+				if (typeof file === "string") { // file is an object URL
+					get_URL().revokeObjectURL(file);
+				} else { // file is a File
+					file.remove();
+				}
+			};
+			if (view.chrome) {
+				revoker();
 			} else {
-				return addOne( name );
+				setTimeout(revoker, arbitrary_revoke_timeout);
 			}
-		} else {
-			return false;
 		}
+		, dispatch = function(filesaver, event_types, event) {
+			event_types = [].concat(event_types);
+			var i = event_types.length;
+			while (i--) {
+				var listener = filesaver["on" + event_types[i]];
+				if (typeof listener === "function") {
+					try {
+						listener.call(filesaver, event || filesaver);
+					} catch (ex) {
+						throw_outside(ex);
+					}
+				}
+			}
+		}
+		, auto_bom = function(blob) {
+			// prepend BOM for UTF-8 XML and text/* types (including HTML)
+			if (/^\s*(?:text\/\S*|application\/xml|\S*\/\S*\+xml)\s*;.*charset\s*=\s*utf-8/i.test(blob.type)) {
+				return new Blob(["\ufeff", blob], {type: blob.type});
+			}
+			return blob;
+		}
+		, FileSaver = function(blob, name, no_auto_bom) {
+			if (!no_auto_bom) {
+				blob = auto_bom(blob);
+			}
+			// First try a.download, then web filesystem, then object URLs
+			var
+				  filesaver = this
+				, type = blob.type
+				, blob_changed = false
+				, object_url
+				, target_view
+				, dispatch_all = function() {
+					dispatch(filesaver, "writestart progress write writeend".split(" "));
+				}
+				// on any filesys errors revert to saving with object URLs
+				, fs_error = function() {
+					if (target_view && is_safari && typeof FileReader !== "undefined") {
+						// Safari doesn't allow downloading of blob urls
+						var reader = new FileReader();
+						reader.onloadend = function() {
+							var base64Data = reader.result;
+							target_view.location.href = "data:attachment/file" + base64Data.slice(base64Data.search(/[,;]/));
+							filesaver.readyState = filesaver.DONE;
+							dispatch_all();
+						};
+						reader.readAsDataURL(blob);
+						filesaver.readyState = filesaver.INIT;
+						return;
+					}
+					// don't create more object URLs than needed
+					if (blob_changed || !object_url) {
+						object_url = get_URL().createObjectURL(blob);
+					}
+					if (target_view) {
+						target_view.location.href = object_url;
+					} else {
+						var new_tab = view.open(object_url, "_blank");
+						if (new_tab == undefined && is_safari) {
+							//Apple do not allow window.open, see http://bit.ly/1kZffRI
+							view.location.href = object_url
+						}
+					}
+					filesaver.readyState = filesaver.DONE;
+					dispatch_all();
+					revoke(object_url);
+				}
+				, abortable = function(func) {
+					return function() {
+						if (filesaver.readyState !== filesaver.DONE) {
+							return func.apply(this, arguments);
+						}
+					};
+				}
+				, create_if_not_found = {create: true, exclusive: false}
+				, slice
+			;
+			filesaver.readyState = filesaver.INIT;
+			if (!name) {
+				name = "download";
+			}
+			if (can_use_save_link) {
+				object_url = get_URL().createObjectURL(blob);
+				save_link.href = object_url;
+				save_link.download = name;
+				setTimeout(function() {
+					click(save_link);
+					dispatch_all();
+					revoke(object_url);
+					filesaver.readyState = filesaver.DONE;
+				});
+				return;
+			}
+			// Object and web filesystem URLs have a problem saving in Google Chrome when
+			// viewed in a tab, so I force save with application/octet-stream
+			// http://code.google.com/p/chromium/issues/detail?id=91158
+			// Update: Google errantly closed 91158, I submitted it again:
+			// https://code.google.com/p/chromium/issues/detail?id=389642
+			if (view.chrome && type && type !== force_saveable_type) {
+				slice = blob.slice || blob.webkitSlice;
+				blob = slice.call(blob, 0, blob.size, force_saveable_type);
+				blob_changed = true;
+			}
+			// Since I can't be sure that the guessed media type will trigger a download
+			// in WebKit, I append .download to the filename.
+			// https://bugs.webkit.org/show_bug.cgi?id=65440
+			if (webkit_req_fs && name !== "download") {
+				name += ".download";
+			}
+			if (type === force_saveable_type || webkit_req_fs) {
+				target_view = view;
+			}
+			if (!req_fs) {
+				fs_error();
+				return;
+			}
+			fs_min_size += blob.size;
+			req_fs(view.TEMPORARY, fs_min_size, abortable(function(fs) {
+				fs.root.getDirectory("saved", create_if_not_found, abortable(function(dir) {
+					var save = function() {
+						dir.getFile(name, create_if_not_found, abortable(function(file) {
+							file.createWriter(abortable(function(writer) {
+								writer.onwriteend = function(event) {
+									target_view.location.href = file.toURL();
+									filesaver.readyState = filesaver.DONE;
+									dispatch(filesaver, "writeend", event);
+									revoke(file);
+								};
+								writer.onerror = function() {
+									var error = writer.error;
+									if (error.code !== error.ABORT_ERR) {
+										fs_error();
+									}
+								};
+								"writestart progress write abort".split(" ").forEach(function(event) {
+									writer["on" + event] = filesaver["on" + event];
+								});
+								writer.write(blob);
+								filesaver.abort = function() {
+									writer.abort();
+									filesaver.readyState = filesaver.DONE;
+								};
+								filesaver.readyState = filesaver.WRITING;
+							}), fs_error);
+						}), fs_error);
+					};
+					dir.getFile(name, {create: false}, abortable(function(file) {
+						// delete file if it already exists
+						file.remove();
+						save();
+					}), abortable(function(ex) {
+						if (ex.code === ex.NOT_FOUND_ERR) {
+							save();
+						} else {
+							fs_error();
+						}
+					}));
+				}), fs_error);
+			}), fs_error);
+		}
+		, FS_proto = FileSaver.prototype
+		, saveAs = function(blob, name, no_auto_bom) {
+			return new FileSaver(blob, name, no_auto_bom);
+		}
+	;
+	// IE 10+ (native saveAs)
+	if (typeof navigator !== "undefined" && navigator.msSaveOrOpenBlob) {
+		return function(blob, name, no_auto_bom) {
+			if (!no_auto_bom) {
+				blob = auto_bom(blob);
+			}
+			return navigator.msSaveOrOpenBlob(blob, name || "download");
+		};
 	}
-};
 
-/*!
- * separate basename from file path and send it to rename
- * @param  {String} route route of the file
- * @return {String}       new name
- */
-var newName = function ( route ) {
-	// get filename
-	route = route.split( '/' );
-	var filename = route.pop();
-	var splitted = filename.split( '.' );
-	var basename = splitted.shift();
-	var ext = splitted.join( '.' );
-	var suffix = hasSuffix( basename );
-	// check if filefileName has suffix
-	if (suffix) {
-		basename = suffix;
-	} else {
-		basename = basename + '_1';
-	}
-	filename = [basename, ext].join( '.' );
-	route.push( filename );
-	return route.join('/');
-};
+	FS_proto.abort = function() {
+		var filesaver = this;
+		filesaver.readyState = filesaver.DONE;
+		dispatch(filesaver, "abort");
+	};
+	FS_proto.readyState = FS_proto.INIT = 0;
+	FS_proto.WRITING = 1;
+	FS_proto.DONE = 2;
 
-/*!
- * detects if file route exist and send it to rename
- * @param  {String} route file path
- * @return {String}       unique path
- */
-var finalName = function (route) {
-	if (fs.existsSync( route )) {
-		return finalName( newName( route ));
-	} else {
-		return route;
-	}
-};
+	FS_proto.error =
+	FS_proto.onwritestart =
+	FS_proto.onprogress =
+	FS_proto.onwrite =
+	FS_proto.onabort =
+	FS_proto.onerror =
+	FS_proto.onwriteend =
+		null;
 
+	return saveAs;
+}(
+	   typeof self !== "undefined" && self
+	|| typeof window !== "undefined" && window
+	|| this.content
+));
+// `self` is undefined in Firefox for Android content script context
+// while `this` is nsIContentFrameMessageManager
+// with an attribute `content` that corresponds to the window
 
-
-
-module.exports = finalName;
-
-},{"fs":37}],37:[function(require,module,exports){
-
-},{}],38:[function(require,module,exports){
-(function (process){
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-// resolves . and .. elements in a path array with directory names there
-// must be no slashes, empty elements, or device names (c:\) in the array
-// (so also no leading and trailing slashes - it does not distinguish
-// relative and absolute paths)
-function normalizeArray(parts, allowAboveRoot) {
-  // if the path tries to go above the root, `up` ends up > 0
-  var up = 0;
-  for (var i = parts.length - 1; i >= 0; i--) {
-    var last = parts[i];
-    if (last === '.') {
-      parts.splice(i, 1);
-    } else if (last === '..') {
-      parts.splice(i, 1);
-      up++;
-    } else if (up) {
-      parts.splice(i, 1);
-      up--;
-    }
-  }
-
-  // if the path is allowed to go above the root, restore leading ..s
-  if (allowAboveRoot) {
-    for (; up--; up) {
-      parts.unshift('..');
-    }
-  }
-
-  return parts;
+if (typeof module !== "undefined" && module.exports) {
+  module.exports.saveAs = saveAs;
+} else if ((typeof define !== "undefined" && define !== null) && (define.amd != null)) {
+  define([], function() {
+    return saveAs;
+  });
 }
 
-// Split a filename into [root, dir, basename, ext], unix version
-// 'root' is just a slash, or nothing.
-var splitPathRe =
-    /^(\/?|)([\s\S]*?)((?:\.{1,2}|[^\/]+?|)(\.[^.\/]*|))(?:[\/]*)$/;
-var splitPath = function(filename) {
-  return splitPathRe.exec(filename).slice(1);
-};
-
-// path.resolve([from ...], to)
-// posix version
-exports.resolve = function() {
-  var resolvedPath = '',
-      resolvedAbsolute = false;
-
-  for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
-    var path = (i >= 0) ? arguments[i] : process.cwd();
-
-    // Skip empty and invalid entries
-    if (typeof path !== 'string') {
-      throw new TypeError('Arguments to path.resolve must be strings');
-    } else if (!path) {
-      continue;
-    }
-
-    resolvedPath = path + '/' + resolvedPath;
-    resolvedAbsolute = path.charAt(0) === '/';
-  }
-
-  // At this point the path should be resolved to a full absolute path, but
-  // handle relative paths to be safe (might happen when process.cwd() fails)
-
-  // Normalize the path
-  resolvedPath = normalizeArray(filter(resolvedPath.split('/'), function(p) {
-    return !!p;
-  }), !resolvedAbsolute).join('/');
-
-  return ((resolvedAbsolute ? '/' : '') + resolvedPath) || '.';
-};
-
-// path.normalize(path)
-// posix version
-exports.normalize = function(path) {
-  var isAbsolute = exports.isAbsolute(path),
-      trailingSlash = substr(path, -1) === '/';
-
-  // Normalize the path
-  path = normalizeArray(filter(path.split('/'), function(p) {
-    return !!p;
-  }), !isAbsolute).join('/');
-
-  if (!path && !isAbsolute) {
-    path = '.';
-  }
-  if (path && trailingSlash) {
-    path += '/';
-  }
-
-  return (isAbsolute ? '/' : '') + path;
-};
-
-// posix version
-exports.isAbsolute = function(path) {
-  return path.charAt(0) === '/';
-};
-
-// posix version
-exports.join = function() {
-  var paths = Array.prototype.slice.call(arguments, 0);
-  return exports.normalize(filter(paths, function(p, index) {
-    if (typeof p !== 'string') {
-      throw new TypeError('Arguments to path.join must be strings');
-    }
-    return p;
-  }).join('/'));
-};
-
-
-// path.relative(from, to)
-// posix version
-exports.relative = function(from, to) {
-  from = exports.resolve(from).substr(1);
-  to = exports.resolve(to).substr(1);
-
-  function trim(arr) {
-    var start = 0;
-    for (; start < arr.length; start++) {
-      if (arr[start] !== '') break;
-    }
-
-    var end = arr.length - 1;
-    for (; end >= 0; end--) {
-      if (arr[end] !== '') break;
-    }
-
-    if (start > end) return [];
-    return arr.slice(start, end - start + 1);
-  }
-
-  var fromParts = trim(from.split('/'));
-  var toParts = trim(to.split('/'));
-
-  var length = Math.min(fromParts.length, toParts.length);
-  var samePartsLength = length;
-  for (var i = 0; i < length; i++) {
-    if (fromParts[i] !== toParts[i]) {
-      samePartsLength = i;
-      break;
-    }
-  }
-
-  var outputParts = [];
-  for (var i = samePartsLength; i < fromParts.length; i++) {
-    outputParts.push('..');
-  }
-
-  outputParts = outputParts.concat(toParts.slice(samePartsLength));
-
-  return outputParts.join('/');
-};
-
-exports.sep = '/';
-exports.delimiter = ':';
-
-exports.dirname = function(path) {
-  var result = splitPath(path),
-      root = result[0],
-      dir = result[1];
-
-  if (!root && !dir) {
-    // No dirname whatsoever
-    return '.';
-  }
-
-  if (dir) {
-    // It has a dirname, strip trailing slash
-    dir = dir.substr(0, dir.length - 1);
-  }
-
-  return root + dir;
-};
-
-
-exports.basename = function(path, ext) {
-  var f = splitPath(path)[2];
-  // TODO: make this comparison case-insensitive on windows?
-  if (ext && f.substr(-1 * ext.length) === ext) {
-    f = f.substr(0, f.length - ext.length);
-  }
-  return f;
-};
-
-
-exports.extname = function(path) {
-  return splitPath(path)[3];
-};
-
-function filter (xs, f) {
-    if (xs.filter) return xs.filter(f);
-    var res = [];
-    for (var i = 0; i < xs.length; i++) {
-        if (f(xs[i], i, xs)) res.push(xs[i]);
-    }
-    return res;
-}
-
-// String.prototype.substr - negative index don't work in IE8
-var substr = 'ab'.substr(-1) === 'b'
-    ? function (str, start, len) { return str.substr(start, len) }
-    : function (str, start, len) {
-        if (start < 0) start = str.length + start;
-        return str.substr(start, len);
-    }
-;
-
-}).call(this,require('_process'))
-
-},{"_process":39}],39:[function(require,module,exports){
-// shim for using process in browser
-
-var process = module.exports = {};
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = setTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    clearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        setTimeout(drainQueue, 0);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-},{}],40:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -17611,7 +17021,7 @@ process.umask = function() { return 0; };
   }
 }.call(this));
 
-},{}],41:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 /**
 * vkBeautify - javascript plugin to pretty-print or minify text in XML, JSON, CSS and SQL formats.
 *  

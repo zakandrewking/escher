@@ -1994,6 +1994,8 @@ function highlight(sel) {
 function save() {
     utils.download_json(this.map_for_export(), this.map_name);
 }
+
+
 function map_for_export() {
     var out = [{ "map_name": this.map_name,
                  "map_id": this.map_id,
@@ -2063,7 +2065,12 @@ function map_for_export() {
 
     return out;
 }
+
+
 function save_svg() {
+    /** Rescale the canvas and save svg.
+
+     */
     // run the before callback
     this.callback_manager.run('before_svg_export');
 
@@ -2071,35 +2078,40 @@ function save_svg() {
     var window_scale = this.zoom_container.window_scale,
         window_translate = this.zoom_container.window_translate,
         canvas_size_and_loc = this.canvas.size_and_location(),
-        mouse_node_size_and_trans = { w: this.canvas.mouse_node.attr('width'),
-                                      h: this.canvas.mouse_node.attr('height'),
-                                      transform:  this.canvas.mouse_node.attr('transform')};
-    this.zoom_container.go_to(1.0, {x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y}, false);
-    this.svg.attr('width', canvas_size_and_loc.width);
-    this.svg.attr('height', canvas_size_and_loc.height);
-    this.canvas.mouse_node.attr('width', '0px');
-    this.canvas.mouse_node.attr('height', '0px');
-    this.canvas.mouse_node.attr('transform', null);
-    // hide the segment control points
-    var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas')
-            .style('visibility', 'hidden');
+        mouse_node_size_and_trans = {
+            w: this.canvas.mouse_node.attr('width'),
+            h: this.canvas.mouse_node.attr('height'),
+            transform: this.canvas.mouse_node.attr('transform')
+        };
+    this.zoom_container._go_to_svg(1.0, { x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y }, function() {
+        this.svg.attr('width', canvas_size_and_loc.width);
+        this.svg.attr('height', canvas_size_and_loc.height);
+        this.canvas.mouse_node.attr('width', '0px');
+        this.canvas.mouse_node.attr('height', '0px');
+        this.canvas.mouse_node.attr('transform', null);
+        // hide the segment control points
+        var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas')
+                .style('visibility', 'hidden');
 
-    // do the epxort
-    utils.download_svg('saved_map', this.svg, true);
+        // do the epxort
+        utils.download_svg('saved_map', this.svg, true);
 
-    // revert everything
-    this.zoom_container.go_to(window_scale, window_translate, false);
-    this.svg.attr('width', null);
-    this.svg.attr('height', null);
-    this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
-    this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
-    this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
-    // unhide the segment control points
-    hidden_sel.style('visibility', null);
+        // revert everything
+        this.zoom_container._go_to_svg(window_scale, window_translate, function() {
+            this.svg.attr('width', null);
+            this.svg.attr('height', null);
+            this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
+            this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
+            this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
+            // unhide the segment control points
+            hidden_sel.style('visibility', null);
 
-    // run the after callback
-    this.callback_manager.run('after_svg_export');
+            // run the after callback
+            this.callback_manager.run('after_svg_export');
+        }.bind(this));
+    }.bind(this));
 }
+
 
 function convert_map() {
     /** Assign the descriptive names and gene_reaction_rules from the model

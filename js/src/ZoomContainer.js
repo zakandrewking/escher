@@ -239,7 +239,7 @@ function _update_scroll() {
                 x: this.window_translate.x - get_directional_disp(ev.wheelDeltaX, ev.deltaX),
                 y: this.window_translate.y - get_directional_disp(ev.wheelDeltaY, ev.deltaY)
             };
-            this.go_to(this.window_scale, new_translate, false);
+            this.go_to(this.window_scale, new_translate);
         }.bind(this);
 
         // apply it
@@ -252,14 +252,14 @@ function _update_scroll() {
 // functions to scale and translate
 function go_to(scale, translate) {
     /** Zoom the container to a specified location.
-     *
-     * Arguments
-     * ---------
-     *
-     * scale: The scale, between 0 and 1.
-     *
-     * translate: The location, of the form {x: 2.0, y: 3.0}.
-     *
+
+     Arguments
+     ---------
+
+     scale: The scale, between 0 and 1.
+
+     translate: The location, of the form {x: 2.0, y: 3.0}.
+
      */
 
     utils.check_undefined(arguments, ['scale', 'translate']);
@@ -328,11 +328,20 @@ function _clear_3d() {
     this.css3_transform_container.style('-webkit-transform-origin', null);
 }
 
-function _go_to_svg(scale, translate) {
+function _go_to_svg(scale, translate, callback) {
     /** Zoom & pan the svg element.
-     *
-     * Also runs the svg_start and svg_finish callbacks.
-     *
+
+     Also runs the svg_start and svg_finish callbacks.
+
+     Arguments
+     ---------
+
+     scale: The scale, between 0 and 1.
+
+     translate: The location, of the form {x: 2.0, y: 3.0}.
+
+     callback: (optional) A callback to run after scaling.
+
      */
 
     this.callback_manager.run('svg_start');
@@ -358,6 +367,8 @@ function _go_to_svg(scale, translate) {
         _.defer(function() {
             // defer for callback after draw
             this.callback_manager.run('svg_finish');
+
+            if (!_.isUndefined(callback)) callback();
 
             // wait a few ms to get a reliable end time
             // _.delay(function() {

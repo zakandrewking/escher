@@ -9,7 +9,7 @@
   "dependencies": {
     "baconjs": "^0.7.71",
     "d3": "^3.5.6",
-    "filesaver": "0.0.13",
+    "filesaverjs": "^0.2.1",
     "underscore": "^1.8.3",
     "vkbeautify": "^0.99.1"
   },
