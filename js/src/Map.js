@@ -62,6 +62,7 @@ var data_styles = require('./data_styles');
 var SearchIndex = require('./SearchIndex');
 
 var bacon = require('baconjs');
+var _ = require('underscore');
 
 
 var Map = utils.make_class();
@@ -226,7 +227,8 @@ function init(svg, css, selection, zoom_container, settings,
     this.draw = new Draw(this.behavior, this.settings);
 
     // make a key manager
-    this.key_manager = new KeyManager(this.settings.get_option('unique_map_id'));
+    this.key_manager = new KeyManager();
+    this.key_manager.ctrl_equals_cmd = true;
 
     // make the search index
     this.enable_search = enable_search;
@@ -1021,13 +1023,12 @@ function select_metabolite_with_id(node_id) {
     this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
     this.callback_manager.run('select_metabolite_with_id', null, selected_node, coords);
 }
-function select_selectable(node, d) {
-    /** Select a metabolite or text label, and manage the shift key.
 
-     */
+function select_selectable(node, d, shift_key_on) {
+    /** Select a metabolite or text label, and manage the shift key. */
+    shift_key_on = _.isUndefined(shift_key_on) ? false : shift_key_on;
     var classable_selection = this.sel.selectAll('#nodes,#text-labels')
             .selectAll('.node,.text-label'),
-        shift_key_on = this.key_manager.held_keys.shift,
         classable_node;
     if (d3.select(node).attr('class').indexOf('text-label') == -1) {
         // node
@@ -1058,6 +1059,7 @@ function select_selectable(node, d) {
     });
     this.callback_manager.run('select_selectable', null, node_count, selected_node, coords);
 }
+
 function select_single_node() {
     /** Unselect all but one selected node, and return the node.
 
@@ -1096,6 +1098,7 @@ function select_text_label(sel, d) {
     });
     this.callback_manager.run('select_text_label');
 }
+
 function deselect_text_labels() {
     var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
     text_label_selection.classed('selected', false);
@@ -1116,6 +1119,7 @@ function delete_selected() {
         Object.keys(selected_text_labels).length >= 1)
         this.delete_selectable(selected_nodes, selected_text_labels, true);
 }
+
 function delete_selectable(selected_nodes, selected_text_labels, should_draw) {
     /** Delete the nodes and associated segments and reactions. Undoable.
 

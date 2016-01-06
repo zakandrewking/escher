@@ -73,8 +73,8 @@ function setup_selection_brush() {
     var brush_fn = d3.svg.brush()
             .x(d3.scale.identity().domain([x, x+width]))
             .y(d3.scale.identity().domain([y, y+height]))
-            .on("brush", function(key_manager) {
-                var shift_key_on = key_manager.held_keys.shift,
+            .on("brush", function() {
+                var shift_key_on = d3.event.sourceEvent.shiftKey,
                     extent = d3.event.target.extent(),
                     selection;
                 if (shift_key_on) {
@@ -91,7 +91,7 @@ function setup_selection_brush() {
                     return extent[0][0] <= sx && sx < extent[1][0]
                         && extent[0][1] <= sy && sy < extent[1][1];
                 });
-            }.bind(null, this.map.key_manager))
+            })
             .on("brushend", function() {
                 d3.event.target.clear();
                 d3.select(this).call(d3.event.target);

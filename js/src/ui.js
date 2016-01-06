@@ -122,6 +122,7 @@ function dropdown_menu(s, name, pull_right) {
                                                         input.fn, input.failure_fn) :
                            set_json_input_button(link, li, input.pre_fn,
                                                  input.fn, input.failure_fn));
+                // assign a function to the key
                 if ('assign' in input && 'key' in input)
                     input.assign[input.key] = out;
             }

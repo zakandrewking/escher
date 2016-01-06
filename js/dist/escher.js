@@ -256,7 +256,7 @@ function toggle_selectable_click(on_off) {
             // works. This is a bit of a hack.
             // if (!this.parentNode.__data__.was_selected)
             //     d3.select(this.parentNode).classed('selected', false);
-            map.select_selectable(this, d);
+            map.select_selectable(this, d, d3.event.shiftKey);
             // this.parentNode.__data__.was_selected = false;
         };
         this.node_mouseover = function(d) {
@@ -491,7 +491,7 @@ function _get_selectable_drag(map, undo_stack) {
 
         // get the grabbed id
         var grabbed = {};
-        if (d3.select(this).attr('class').indexOf('label')==-1) {
+        if (d3.select(this).attr('class').indexOf('label') === -1) {
             // if it is a node
             grabbed['type'] = 'node';
             grabbed['id'] = this.parentNode.__data__.node_id;
@@ -982,8 +982,8 @@ function setup_selection_brush() {
     var brush_fn = d3.svg.brush()
             .x(d3.scale.identity().domain([x, x+width]))
             .y(d3.scale.identity().domain([y, y+height]))
-            .on("brush", function(key_manager) {
-                var shift_key_on = key_manager.held_keys.shift,
+            .on("brush", function() {
+                var shift_key_on = d3.event.sourceEvent.shiftKey,
                     extent = d3.event.target.extent(),
                     selection;
                 if (shift_key_on) {
@@ -1000,7 +1000,7 @@ function setup_selection_brush() {
                     return extent[0][0] <= sx && sx < extent[1][0]
                         && extent[0][1] <= sy && sy < extent[1][1];
                 });
-            }.bind(null, this.map.key_manager))
+            })
             .on("brushend", function() {
                 d3.event.target.clear();
                 d3.select(this).call(d3.event.target);
@@ -1019,7 +1019,20 @@ function setup_selection_brush() {
 }
 
 },{"./utils":31}],3:[function(require,module,exports){
-/** BuildInput */
+/** BuildInput
+
+ Arguments
+ ---------
+
+ selection: A d3 selection for the BuildInput.
+
+ map: A Map instance.
+
+ zoom_container: A ZoomContainer instance.
+
+ settings: A Settings instance.
+
+  */
 
 /* global d3 */
 
@@ -1028,6 +1041,8 @@ var PlacedDiv = require('./PlacedDiv');
 var completely = require('./complete.ly');
 var DirectionArrow = require('./DirectionArrow');
 var CobraModel = require('./CobraModel');
+
+var _ = require('underscore');
 
 
 var BuildInput = utils.make_class();
@@ -1050,7 +1065,6 @@ BuildInput.prototype = {
 module.exports = BuildInput;
 
 
-// definitions
 function init(selection, map, zoom_container, settings) {
     // set up container
     var new_sel = selection.append('div').attr('id', 'rxn-input');
@@ -1090,13 +1104,17 @@ function init(selection, map, zoom_container, settings) {
 function setup_map_callbacks(map) {
     // input
     map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
-        if (this.is_active) this.reload(selected_node, coords, false);
+        if (this.is_active) {
+            this.reload(selected_node, coords, false);
+            this.show_dropdown(coords);
+        }
         this.hide_target();
     }.bind(this));
     map.callback_manager.set('select_selectable.input', function(count, selected_node, coords) {
         this.hide_target();
         if (count == 1 && this.is_active && coords) {
             this.reload(selected_node, coords, false);
+            this.show_dropdown(coords);
         } else {
             this.toggle(false);
         }
@@ -1130,43 +1148,46 @@ function toggle(on_off) {
     else this.is_active = on_off;
     if (this.is_active) {
         this.toggle_start_reaction_listener(true);
-        if (this.target_coords !== null)
-            this.show_dropdown(this.target_coords);
-        else this.reload_at_selected();
+        if (_.isNull(this.target_coords))
+            this.reload_at_selected();
+        else
+            this.placed_div.place(this.target_coords);
+        this.show_dropdown();
         this.map.set_status('Click on the canvas or an existing metabolite');
         this.direction_arrow.show();
-        // escape key
-        this.escape = this.map.key_manager
-            .add_escape_listener(function() {
-                this.hide_dropdown();
-            }.bind(this), 'build_input');
     } else {
         this.toggle_start_reaction_listener(false);
-        this.placed_div.hide();
-        this.completely.input.blur();
-        this.completely.hideDropDown();
+        this.hide_dropdown();
         this.map.set_status(null);
         this.direction_arrow.hide();
-        if (this.escape) this.escape.clear();
-        this.escape = null;
     }
 }
+
 function show_dropdown(coords) {
-    this.placed_div.place(coords);
+    // escape key
+    this.clear_escape = this.map.key_manager
+        .add_escape_listener(function() {
+            this.hide_dropdown();
+        }.bind(this), true);
+    // dropdown
     this.completely.input.blur();
     this.completely.repaint();
-    this.completely.setText("");
+    this.completely.setText('');
     this.completely.input.focus();
 }
+
 function hide_dropdown() {
+    // escape key
+    if (this.clear_escape) this.clear_escape();
+    this.clear_escape = null;
+    // dropdown
     this.placed_div.hide();
+    this.completely.input.blur();
     this.completely.hideDropDown();
 }
+
 function place_at_selected() {
-    /** Place autocomplete box at the first selected node.
-
-     */
-
+    /** Place autocomplete box at the first selected node. */
     // get the selected node
     this.map.deselect_text_labels();
     var selected_node = this.map.select_single_node();
@@ -1174,6 +1195,7 @@ function place_at_selected() {
     var coords = { x: selected_node.x, y: selected_node.y };
     this.place(coords);
 }
+
 function place(coords) {
     this.placed_div.place(coords);
     this.direction_arrow.set_location(coords);
@@ -1181,10 +1203,8 @@ function place(coords) {
 }
 
 function reload_at_selected() {
-    /** Reload data for autocomplete box and redraw box at the first
-     selected node.
-
-     */
+    /** Reload data for autocomplete box and redraw box at the first selected
+     node. */
     // get the selected node
     this.map.deselect_text_labels();
     var selected_node = this.map.select_single_node();
@@ -1194,11 +1214,10 @@ function reload_at_selected() {
     this.reload(selected_node, coords, false);
     return true;
 }
+
 function reload(selected_node, coords, starting_from_scratch) {
     /** Reload data for autocomplete box and redraw box at the new
-     coordinates.
-
-     */
+     coordinates. */
 
     // try finding the selected node
     if (!starting_from_scratch && !selected_node) {
@@ -1207,10 +1226,6 @@ function reload(selected_node, coords, starting_from_scratch) {
     }
 
     this.place(coords);
-
-    // blur
-    this.completely.input.blur();
-    this.completely.repaint(); // put in place()?
 
     if (this.map.cobra_model===null) {
         this.completely.setText('Cannot add: No model.');
@@ -1321,7 +1336,7 @@ function reload(selected_node, coords, starting_from_scratch) {
     // TODO test this behavior
     // if (strings_to_display.length==1) complete.setText(strings_to_display[0]);
     // else complete.setText("");
-    complete.setText("");
+    complete.setText('');
 
     var direction_arrow = this.direction_arrow,
         check_and_build = function(id) {
@@ -1344,12 +1359,10 @@ function reload(selected_node, coords, starting_from_scratch) {
             }
         }.bind(this);
     complete.onEnter = function(id) {
-        this.setText("");
-        this.onChange("");
+        this.setText('');
+        this.onChange('');
         check_and_build(id);
     };
-    complete.repaint();
-    this.completely.input.focus();
 
     //definitions
     function already_drawn(bigg_id, reactions) {
@@ -1360,10 +1373,9 @@ function reload(selected_node, coords, starting_from_scratch) {
         return false;
     };
 }
-function toggle_start_reaction_listener(on_off) {
-    /** Toggle listening for a click to place a new reaction on the canvas.
 
-     */
+function toggle_start_reaction_listener(on_off) {
+    /** Toggle listening for a click to place a new reaction on the canvas. */
     if (on_off===undefined)
         this.start_reaction_listener = !this.start_reaction_listener;
     else if (this.start_reaction_listener==on_off)
@@ -1385,6 +1397,8 @@ function toggle_start_reaction_listener(on_off) {
             this.reload(null, coords, true);
             // generate the target symbol
             this.show_target(this.map, coords);
+            // show the dropdown
+            this.show_dropdown(coords);
         }.bind(this, this.map.sel.node()));
         this.map.sel.classed('start-reaction-cursor', true);
     } else {
@@ -1399,6 +1413,7 @@ function hide_target() {
         this.map.sel.selectAll('.start-reaction-target').remove();
     this.target_coords = null;
 }
+
 function show_target(map, coords) {
     var s = map.sel.selectAll('.start-reaction-target').data([12, 5]);
     s.enter().append('circle')
@@ -1410,12 +1425,12 @@ function show_target(map, coords) {
     this.target_coords = coords;
 }
 
-},{"./CobraModel":7,"./DirectionArrow":9,"./PlacedDiv":13,"./complete.ly":25,"./utils":31}],4:[function(require,module,exports){
+},{"./CobraModel":7,"./DirectionArrow":9,"./PlacedDiv":13,"./complete.ly":25,"./utils":31,"underscore":35}],4:[function(require,module,exports){
 /** For documentation of this class, see docs/javascript_api.rst
 
  */
 
-/* global d3, $ */
+/* global d3 */
 
 var utils = require('./utils');
 var BuildInput = require('./BuildInput');
@@ -1462,7 +1477,6 @@ Builder.prototype = {
 module.exports = Builder;
 
 
-// definitions
 function init(map_data, model_data, embedded_css, selection, options) {
 
     // defaults
@@ -1613,7 +1627,6 @@ function init(map_data, model_data, embedded_css, selection, options) {
     this.callback_manager.run('first_load', this);
 }
 
-// Definitions
 function load_model(model_data, should_update_data) {
     /** For documentation of this function, see docs/javascript_api.rst.
 
@@ -1926,7 +1939,6 @@ function set_metabolite_data(data) {
     this._update_data(true, true, 'metabolite');
     this.map.set_status('');
 }
-
 
 function _update_data(update_model, update_map, kind, should_draw) {
     /** Set data and settings for the model.
@@ -2552,112 +2564,195 @@ function _setup_modes(map, brush, zoom_container) {
 
 function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing) {
     var keys = {
-        save: { key: 83, modifiers: { control: true }, // ctrl-s
-                target: map,
-                fn: map.save },
-        save_svg: { key: 83, modifiers: { control: true, shift: true },
-                    target: map,
-                    fn: map.save_svg },
-        load: { key: 79, modifiers: { control: true }, // ctrl-o
-                fn: null }, // defined by button
-        convert_map: { fn: this.map.convert_map.bind(this.map) },
-        clear_map: { fn: this.map.clear_map.bind(this.map) },
-        load_model: { key: 77, modifiers: { control: true }, // ctrl-m
-                      fn: null }, // defined by button
-        clear_model: { fn: this.load_model.bind(this, null, true) },
+        save: {
+            key: 'ctrl+s',
+            target: map,
+            fn: map.save
+        },
+        save_svg: {
+            key: 'ctrl+shift+s',
+            target: map,
+            fn: map.save_svg
+        },
+        load: {
+            key: 'ctrl+o',
+            fn: null  // defined by button
+        },
+        convert_map: {
+            target: map,
+            fn: map.convert_map
+        },
+        clear_map: {
+            target: map,
+            fn: map.clear_map
+        },
+        load_model: {
+            key: 'ctrl+m',
+            fn: null // defined by button
+        },
+        clear_model: {
+            fn: this.load_model.bind(this, null, true)
+        },
         load_reaction_data: { fn: null }, // defined by button
-        clear_reaction_data: { target: this,
-                               fn: function() { this.set_reaction_data(null); }},
+        clear_reaction_data: {
+            target: this,
+            fn: function() { this.set_reaction_data(null); }
+        },
         load_metabolite_data: { fn: null }, // defined by button
-        clear_metabolite_data: { target: this,
-                                 fn: function() { this.set_metabolite_data(null); }},
+        clear_metabolite_data: {
+            target: this,
+            fn: function() { this.set_metabolite_data(null); }
+        },
         load_gene_data: { fn: null }, // defined by button
-        clear_gene_data: { fn: function() {
-            this.set_gene_data(null, true);
-        }.bind(this)},
-        zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
-                   target: zoom_container,
-                   fn: zoom_container.zoom_in },
-        zoom_out: { key: 189, modifiers: { control: true }, // ctrl -
-                    target: zoom_container,
-                    fn: zoom_container.zoom_out },
-        extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
-                        target: map,
-                        fn: map.zoom_extent_nodes },
-        extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
-                         target: map,
-                         fn: map.zoom_extent_canvas },
-        search: { key: 70, modifiers: { control: true }, // ctrl-f
-                  fn: search_bar.toggle.bind(search_bar, true) },
-        view_mode: { fn: this.view_mode.bind(this),
-                     ignore_with_input: true },
-        show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
-                         fn: settings_bar.toggle.bind(settings_bar) }
+        clear_gene_data: {
+            target: this,
+            fn: function() { this.set_gene_data(null, true); }
+        },
+        zoom_in: {
+            key: 'ctrl+=',
+            target: zoom_container,
+            fn: zoom_container.zoom_in
+        },
+        zoom_out: {
+            key: 'ctrl+-',
+            target: zoom_container,
+            fn: zoom_container.zoom_out
+        },
+        extent_nodes: {
+            key: 'ctrl+0',
+            target: map,
+            fn: map.zoom_extent_nodes
+        },
+        extent_canvas: {
+            key: 'ctrl+1',
+            target: map,
+            fn: map.zoom_extent_canvas
+        },
+        search: {
+            key: 'ctrl+f',
+            fn: search_bar.toggle.bind(search_bar, true)
+        },
+        view_mode: {
+            target: this,
+            fn: this.view_mode,
+            ignore_with_input: true
+        },
+        show_settings: {
+            key: 'ctrl+,',
+            target: settings_bar,
+            fn: settings_bar.toggle
+        }
     };
     if (enable_editing) {
         utils.extend(keys, {
-            build_mode: { key: 78, // n
-                          fn: this.build_mode.bind(this),
-                          ignore_with_input: true },
-            zoom_mode: { key: 90, // z
-                         fn: this.zoom_mode.bind(this),
-                         ignore_with_input: true },
-            brush_mode: { key: 86, // v
-                          fn: this.brush_mode.bind(this),
-                          ignore_with_input: true },
-            rotate_mode: { key: 82, // r
-                           fn: this.rotate_mode.bind(this),
-                           ignore_with_input: true },
-            text_mode: { key: 84, // t
-                         fn: this.text_mode.bind(this),
-                         ignore_with_input: true },
-            toggle_beziers: { key: 66,
-                              target: map,
-                              fn: map.toggle_beziers,
-                              ignore_with_input: true  }, // b
-            delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
-                      target: map,
-                      fn: map.delete_selected,
-                      ignore_with_input: true },
-            delete_del: { key: 46, modifiers: { control: false }, // Del
-                          target: map,
-                          fn: map.delete_selected,
-                          ignore_with_input: true },
-            toggle_primary: { key: 80, // p
-                              target: map,
-                              fn: map.toggle_selected_node_primary,
-                              ignore_with_input: true },
-            cycle_primary: { key: 67, // c
-                             target: map,
-                             fn: map.cycle_primary_node,
-                             ignore_with_input: true },
-            direction_arrow_right: { key: 39, // right
-                                     fn: this.build_input.direction_arrow.right
-                                     .bind(this.build_input.direction_arrow),
-                                     ignore_with_input: true },
-            direction_arrow_down: { key: 40, // down
-                                    fn: this.build_input.direction_arrow.down
-                                    .bind(this.build_input.direction_arrow),
-                                    ignore_with_input: true },
-            direction_arrow_left: { key: 37, // left
-                                    fn: this.build_input.direction_arrow.left
-                                    .bind(this.build_input.direction_arrow),
-                                    ignore_with_input: true },
-            direction_arrow_up: { key: 38, // up
-                                  fn: this.build_input.direction_arrow.up
-                                  .bind(this.build_input.direction_arrow),
-                                  ignore_with_input: true },
-            undo: { key: 90, modifiers: { control: true },
-                    target: map.undo_stack,
-                    fn: map.undo_stack.undo },
-            redo: { key: 90, modifiers: { control: true, shift: true },
-                    target: map.undo_stack,
-                    fn: map.undo_stack.redo },
-            select_all: { key: 65, modifiers: { control: true }, // Ctrl Shift a
-                          fn: map.select_all.bind(map) },
-            select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
-                           fn: map.select_none.bind(map) },
-            invert_selection: { fn: map.invert_selection.bind(map) }
+            build_mode: {
+                key: 'n',
+                target: this,
+                fn: this.build_mode,
+                ignore_with_input: true
+            },
+            zoom_mode: {
+                key: 'z',
+                target: this,
+                fn: this.zoom_mode,
+                ignore_with_input: true
+            },
+            brush_mode: {
+                key: 'v',
+                target: this,
+                fn: this.brush_mode,
+                ignore_with_input: true
+            },
+            rotate_mode: {
+                key: 'r',
+                target: this,
+                fn: this.rotate_mode,
+                ignore_with_input: true
+            },
+            text_mode: {
+                key: 't',
+                target: this,
+                fn: this.text_mode,
+                ignore_with_input: true
+            },
+            toggle_beziers: {
+                key: 'b',
+                target: map,
+                fn: map.toggle_beziers,
+                ignore_with_input: true
+            },
+            delete: {
+                key: 'ctrl+backspace',
+                target: map,
+                fn: map.delete_selected,
+                ignore_with_input: true
+            },
+            delete_del: {
+                key: 'del',
+                target: map,
+                fn: map.delete_selected,
+                ignore_with_input: true
+            },
+            toggle_primary: {
+                key: 'p',
+                target: map,
+                fn: map.toggle_selected_node_primary,
+                ignore_with_input: true
+            },
+            cycle_primary: {
+                key: 'c',
+                target: map,
+                fn: map.cycle_primary_node,
+                ignore_with_input: true
+            },
+            direction_arrow_right: {
+                key: 'right',
+                target: this.build_input.direction_arrow,
+                fn: this.build_input.direction_arrow.right,
+                ignore_with_input: true
+            },
+            direction_arrow_down: {
+                key: 'down',
+                target: this.build_input.direction_arrow,
+                fn: this.build_input.direction_arrow.down,
+                ignore_with_input: true
+            },
+            direction_arrow_left: {
+                key: 'left',
+                target: this.build_input.direction_arrow,
+                fn: this.build_input.direction_arrow.left,
+                ignore_with_input: true
+            },
+            direction_arrow_up: {
+                key: 'up',
+                target: this.build_input.direction_arrow,
+                fn: this.build_input.direction_arrow.up,
+                ignore_with_input: true
+            },
+            undo: {
+                key: 'ctrl+z',
+                target: map.undo_stack,
+                fn: map.undo_stack.undo
+            },
+            redo: {
+                key: 'ctrl+shift+z',
+                target: map.undo_stack,
+                fn: map.undo_stack.redo
+            },
+            select_all: {
+                key: 'ctrl+a',
+                target: map,
+                fn: map.select_all
+            },
+            select_none: {
+                key: 'ctrl+shift+a',
+                target: map,
+                fn: map.select_none
+            },
+            invert_selection: {
+                target: map,
+                fn: map.invert_selection
+            }
         });
     }
     return keys;
@@ -2759,7 +2854,7 @@ function run(name, this_arg) {
     return this;
 }
 
-},{"./utils":31,"underscore":34}],6:[function(require,module,exports){
+},{"./utils":31,"underscore":35}],6:[function(require,module,exports){
 /** Canvas. Defines a canvas that accepts drag/zoom events and can be resized.
 
  Canvas(selection, x, y, width, height)
@@ -4244,16 +4339,32 @@ function displaced_coords(reaction_arrow_displacement, start, end, displace) {
 }
 
 },{"./CallbackManager":5,"./data_styles":26,"./utils":31}],11:[function(require,module,exports){
-/** KeyManager */
+/** KeyManager
 
-/* global d3 */
+ Manage key listeners and events.
+
+ Arguments
+ ---------
+
+ assigned_keys (default: {}): An object defining keys to bind.
+
+ input_list (default: []): A list of inputs that will override keyboard
+ shortcuts when in focus.
+
+ selection (default: global): A node to bind the events to.
+
+ ctrl_equals_cmd (default: false): If true, then control and command have the
+ same effect.
+
+ */
+
 
 var utils = require('./utils');
+var Mousetrap = require('mousetrap');
+var _ = require('underscore');
 
 
 var KeyManager = utils.make_class();
-// static methods
-KeyManager.reset_held_keys = reset_held_keys;
 // instance methods
 KeyManager.prototype = {
     init: init,
@@ -4266,172 +4377,125 @@ KeyManager.prototype = {
 module.exports = KeyManager;
 
 
-// static methods
-function reset_held_keys(h) {
-    h.command = false;
-    h.control = false;
-    h.option = false;
-    h.shift = false;
+// instance methods
+function init(assigned_keys, input_list, selection, ctrl_equals_cmd) {
+    // default Arguments
+    this.assigned_keys = assigned_keys || {};
+    this.input_list = input_list || [];
+    this.mousetrap = selection ? new Mousetrap(selection) : new Mousetrap;
+    this.ctrl_equals_cmd = (!_.isBoolean(ctrl_equals_cmd)) ? false : ctrl_equals_cmd;
+
+    // Fix mousetrap behavior; by default, it ignore shortcuts when inputs are
+    // in focus.
+    // TODO NOT WORKING https://craig.is/killing/mice
+    this.mousetrap.stopCallback = function() { return false; };
+
+    this.enabled = true;
+    this.update();
 }
 
 
-// instance methods
-function init(unique_map_id, assigned_keys, input_list, ctrl_equals_cmd) {
-    /** Assign keys for commands.
+function _add_cmd(key, ctrl_equals_cmd) {
+    /** If ctrl_equals_cmd is true and key has ctrl+ in it, return an array with
+     ctrl+ and meta+ variations.
 
      */
-
-    // identify this key manager
-    if (unique_map_id===undefined) unique_map_id = null;
-    this.unique_string = (unique_map_id === null ? '' : '.' + unique_map_id);
-
-    if (assigned_keys===undefined) this.assigned_keys = {};
-    else this.assigned_keys = assigned_keys;
-    if (input_list===undefined) this.input_list = [];
-    else this.input_list = input_list;
-
-    if (ctrl_equals_cmd===undefined) ctrl_equals_cmd = true;
-    this.ctrl_equals_cmd = ctrl_equals_cmd;
-
-    this.held_keys = {};
-    reset_held_keys(this.held_keys);
-
-    this.enabled = true;
-
-    this.update();
+    if (!ctrl_equals_cmd) return key;
+    var replaced = key.replace('ctrl+', 'meta+');
+    if (replaced === key) return key;
+    else return [key, replaced];
 }
 
 
 function update() {
-    var held_keys = this.held_keys,
-        keys = this.assigned_keys,
-        self = this;
-
-    var modifier_keys = { command: 91,
-                          command_right: 93,
-                          control: 17,
-                          option: 18,
-                          shift: 16 };
-
-    try {
-        d3.select(window).on('keydown.key_manager' + this.unique_string, null);
-        d3.select(window).on('keyup.key_manager' + this.unique_string, null);
-    } catch (err) {
-        console.log('Not in a browser, so key manager does not work');
-        return;
-    }
-
-    if (!(this.enabled)) return;
-
-    d3.select(window).on('keydown.key_manager' + this.unique_string, function(ctrl_equals_cmd, input_list) {
-        var kc = d3.event.keyCode,
-            meaningless = true;
-        // check the inputs
-        var input_visible = false;
-        input_list.forEach(function(input) {
-            if (input.is_visible()) input_visible = true;
-        });
-        toggle_modifiers(modifier_keys, held_keys, kc, true);
-        for (var key_id in keys) {
-            var assigned_key = keys[key_id];
-            if (check_key(assigned_key, kc, held_keys, ctrl_equals_cmd)) {
-                meaningless = false;
-                if (!(assigned_key.ignore_with_input && input_visible)) {
-                    if (assigned_key.fn) {
-                        assigned_key.fn.call(assigned_key.target);
-                    } else {
-                        console.warn('No function for key');
-                    }
-                    // prevent browser action
-                    d3.event.preventDefault();
-                }
-            }
-        }
-        // Sometimes modifiers get 'stuck', so reset them once in a while.
-        // Only do this when a meaningless key is pressed
-        for (var k in modifier_keys)
-            if (modifier_keys[k] == kc) meaningless = false;
-        if (meaningless)
-            reset_held_keys(held_keys);
-    }.bind(null, this.ctrl_equals_cmd, this.input_list))
-        .on('keyup.key_manager' + this.unique_string, function() {
-            toggle_modifiers(modifier_keys, held_keys,
-                             d3.event.keyCode, false);
-        });
-    function toggle_modifiers(mod, held, kc, on_off) {
-        for (var k in mod)
-            if (mod[k] == kc)
-                held[k] = on_off;
-    }
-    function check_key(key, pressed, held, ctrl_equals_cmd) {
-        if (key.key != pressed) return false;
-        var mod = utils.clone(key.modifiers);
-        if (mod === undefined)
-            mod = { control: false,
-                    command: false,
-                    option: false,
-                    shift: false };
-        for (var k in held) {
-            if (ctrl_equals_cmd &&
-                mod['control'] &&
-                (k=='command' || k=='command_right' || k=='control') &&
-                (held['command'] || held['command_right'] || held['control'])) {
-                continue;
-            }
-            if (mod[k] === undefined) mod[k] = false;
-            if (mod[k] != held[k]) return false;
-        }
-        return true;
-    }
-}
-function toggle(on_off) {
-    /** Turn the brush on or off
+    /** Updated key bindings if attributes have changed.
 
      */
-    if (on_off===undefined) on_off = !this.enabled;
+    this.mousetrap.reset();
+    if (!this.enabled) return;
 
+    // loop through keys
+    for (var key_id in this.assigned_keys) {
+        var assigned_key = this.assigned_keys[key_id];
+
+        // OK if this is missing
+        if (!assigned_key.key) continue;
+
+        var key_to_bind = _add_cmd(assigned_key.key, this.ctrl_equals_cmd);
+        // remember the input_list
+        assigned_key.input_list = this.input_list;
+        this.mousetrap.bind(key_to_bind, function(e) {
+            // check inputs
+            var input_blocking = false;
+            if (this.ignore_with_input) {
+                for (var i = 0, l = this.input_list.length; i < l; i++) {
+                    if (this.input_list[i].is_visible()) {
+                        input_blocking = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!input_blocking) {
+                if (this.fn) this.fn.call(this.target);
+                else console.warn('No function for key: ' + this.key);
+                e.preventDefault();
+            }
+        }.bind(assigned_key), 'keydown');
+    }
+}
+
+
+function toggle(on_off) {
+    /** Turn the key manager on or off.
+
+     */
+    if (_.isUndefined(on_off)) on_off = !this.enabled;
     this.enabled = on_off;
     this.update();
 }
-function add_enter_listener(callback, id) {
+
+
+function add_enter_listener(callback, one_time) {
     /** Call the callback when the enter key is pressed, then
      unregisters the listener.
 
      */
-    return this.add_key_listener(callback, 13, id);
+    return this.add_key_listener(callback, 'enter', one_time);
 }
-function add_escape_listener(callback, id) {
+
+
+function add_escape_listener(callback, one_time) {
     /** Call the callback when the escape key is pressed, then
      unregisters the listener.
 
      */
-    return this.add_key_listener(callback, 27, id);
+    return this.add_key_listener(callback, 'escape', one_time);
 }
-function add_key_listener(callback, kc, id) {
+
+
+function add_key_listener(callback, key_name, one_time) {
     /** Call the callback when the key is pressed, then unregisters the
-     listener.
+     listener. Returns a function that will unbind the event.
 
      */
 
-    var event_name = 'keydown.' + kc;
-    if (id !== undefined)
-        event_name += ('.' + id);
-    event_name += this.unique_string;
+    if (_.isUndefined(one_time)) one_time = false;
 
-    var selection = d3.select(window);
-    selection.on(event_name, function() {
-        if (d3.event.keyCode==kc) {
-            callback();
-        }
+    // unbind function ready to go
+    var unbind = this.mousetrap.unbind.bind(this.mousetrap, key_name);
+
+    this.mousetrap.bind(key_name, function(e) {
+        console.log('key_listener', key_name, one_time);
+        e.preventDefault();
+        callback();
+        if (one_time) unbind();
     });
-    return {
-        clear: function() {
-            selection.on(event_name, null);
-        }
-    };
+
+    return unbind;
 }
 
-},{"./utils":31}],12:[function(require,module,exports){
+},{"./utils":31,"mousetrap":34,"underscore":35}],12:[function(require,module,exports){
 /** Map
 
  Defines the metabolic map data, and manages drawing and building.
@@ -4496,6 +4560,7 @@ var data_styles = require('./data_styles');
 var SearchIndex = require('./SearchIndex');
 
 var bacon = require('baconjs');
+var _ = require('underscore');
 
 
 var Map = utils.make_class();
@@ -4660,7 +4725,8 @@ function init(svg, css, selection, zoom_container, settings,
     this.draw = new Draw(this.behavior, this.settings);
 
     // make a key manager
-    this.key_manager = new KeyManager(this.settings.get_option('unique_map_id'));
+    this.key_manager = new KeyManager();
+    this.key_manager.ctrl_equals_cmd = true;
 
     // make the search index
     this.enable_search = enable_search;
@@ -5455,13 +5521,12 @@ function select_metabolite_with_id(node_id) {
     this.sel.selectAll('.start-reaction-target').style('visibility', 'hidden');
     this.callback_manager.run('select_metabolite_with_id', null, selected_node, coords);
 }
-function select_selectable(node, d) {
-    /** Select a metabolite or text label, and manage the shift key.
 
-     */
+function select_selectable(node, d, shift_key_on) {
+    /** Select a metabolite or text label, and manage the shift key. */
+    shift_key_on = _.isUndefined(shift_key_on) ? false : shift_key_on;
     var classable_selection = this.sel.selectAll('#nodes,#text-labels')
             .selectAll('.node,.text-label'),
-        shift_key_on = this.key_manager.held_keys.shift,
         classable_node;
     if (d3.select(node).attr('class').indexOf('text-label') == -1) {
         // node
@@ -5492,6 +5557,7 @@ function select_selectable(node, d) {
     });
     this.callback_manager.run('select_selectable', null, node_count, selected_node, coords);
 }
+
 function select_single_node() {
     /** Unselect all but one selected node, and return the node.
 
@@ -5530,6 +5596,7 @@ function select_text_label(sel, d) {
     });
     this.callback_manager.run('select_text_label');
 }
+
 function deselect_text_labels() {
     var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label');
     text_label_selection.classed('selected', false);
@@ -5550,6 +5617,7 @@ function delete_selected() {
         Object.keys(selected_text_labels).length >= 1)
         this.delete_selectable(selected_nodes, selected_text_labels, true);
 }
+
 function delete_selectable(selected_nodes, selected_text_labels, should_draw) {
     /** Delete the nodes and associated segments and reactions. Undoable.
 
@@ -6635,7 +6703,7 @@ function convert_map() {
     this.callback_manager.run('after_convert_map');
 }
 
-},{"./Behavior":1,"./CallbackManager":5,"./Canvas":6,"./Draw":10,"./KeyManager":11,"./Scale":15,"./SearchIndex":18,"./UndoStack":22,"./build":24,"./data_styles":26,"./utils":31,"baconjs":32}],13:[function(require,module,exports){
+},{"./Behavior":1,"./CallbackManager":5,"./Canvas":6,"./Draw":10,"./KeyManager":11,"./Scale":15,"./SearchIndex":18,"./UndoStack":22,"./build":24,"./data_styles":26,"./utils":31,"baconjs":32,"underscore":35}],13:[function(require,module,exports){
 /** PlacedDiv. A container to position an html div to match the coordinates of a
  SVG element. */
 
@@ -7476,25 +7544,25 @@ function toggle(on_off) {
         this.input.node().value = "";
         this.input.node().focus();
         // escape key
-        this.escape = this.map.key_manager
+        this.clear_escape = this.map.key_manager
             .add_escape_listener(function() {
                 this.toggle(false);
-            }.bind(this), 'settings');
+            }.bind(this), true);
         // enter key
-        this.enter = this.map.key_manager
+        this.clear_enter = this.map.key_manager
             .add_enter_listener(function() {
                 this.next();
-            }.bind(this), 'settings');
+            }.bind(this), false);
         // run the show callback
         this.callback_manager.run('show');
     } else {
         this.map.highlight(null);
         this.selection.style("display", "none");
         this.results = null;
-        if (this.escape) this.escape.clear();
-        this.escape = null;
-        if (this.enter) this.enter.clear();
-        this.enter = null;
+        if (this.clear_escape) this.clear_escape();
+        this.clear_escape = null;
+        if (this.clear_enter) this.clear_enter();
+        this.clear_enter = null;
         // run the hide callback
         this.callback_manager.run('hide');
     }
@@ -7940,15 +8008,15 @@ function toggle(on_off) {
         this.background.style("display", "block");
         this.selection.select('input').node().focus();
         // escape key
-        this.escape = this.map.key_manager
+        this.clear_escape = this.map.key_manager
             .add_escape_listener(function() {
                 this.abandon_changes();
-            }.bind(this), 'settings');
+            }.bind(this), true);
         // enter key
-        this.enter = this.map.key_manager
+        this.clear_enter = this.map.key_manager
             .add_enter_listener(function() {
                 this.accept_changes();
-            }.bind(this), 'settings');
+            }.bind(this), true);
         // run the show callback
         this.callback_manager.run('show');
     } else {
@@ -7957,10 +8025,10 @@ function toggle(on_off) {
         // hide the menu
         this.selection.style("display", "none");
         this.background.style("display", "none");
-        if (this.escape) this.escape.clear();
-        if (this.enter) this.enter.clear();
-        this.escape = null;
-        this.enter = null;
+        if (this.clear_escape) this.clear_escape();
+        this.clear_escape = null;
+        if (this.clear_enter) this.clear_enter();
+        this.clear_enter = null;
         // run the hide callback
         this.callback_manager.run('hide');
     }
@@ -8330,17 +8398,17 @@ function show(target, coords) {
     this.input.node().focus();
 
     // escape key
-    this.escape = this.map.key_manager
+    this.clear_escape = this.map.key_manager
         .add_escape_listener(function() {
             this._accept_changes(target);
             this.hide();
-        }.bind(this));
+        }.bind(this), true);
     // enter key
-    this.enter = this.map.key_manager
+    this.clear_enter = this.map.key_manager
         .add_enter_listener(function(target) {
             this._accept_changes(target);
             this.hide();
-        }.bind(this, target));
+        }.bind(this, target), true);
 }
 
 function hide() {
@@ -8352,13 +8420,11 @@ function hide() {
     this.active_target = null;
 
     // clear escape
-    if (this.escape)
-        this.escape.clear();
-    this.escape = null;
+    if (this.clear_escape) this.clear_escape();
+    this.clear_escape = null;
     // clear enter
-    if (this.enter)
-        this.enter.clear();
-    this.enter = null;
+    if (this.clear_enter) this.clear_enter();
+    this.clear_enter = null;
     // turn off click listener
     // this.map.sel.on('click.', null);
 }
@@ -8936,7 +9002,7 @@ function translate_off_screen(coords) {
     }
 }
 
-},{"./CallbackManager":5,"./utils":31,"underscore":34}],24:[function(require,module,exports){
+},{"./CallbackManager":5,"./utils":31,"underscore":35}],24:[function(require,module,exports){
 /** build */
 
 var utils = require('./utils');
@@ -10770,6 +10836,7 @@ function dropdown_menu(s, name, pull_right) {
                                                         input.fn, input.failure_fn) :
                            set_json_input_button(link, li, input.pre_fn,
                                                  input.fn, input.failure_fn));
+                // assign a function to the key
                 if ('assign' in input && 'key' in input)
                     input.assign[input.key] = out;
             }
@@ -11800,7 +11867,7 @@ function d3_transform_catch(transform_attr) {
     }
 }
 
-},{"filesaverjs":33,"vkbeautify":35}],32:[function(require,module,exports){
+},{"filesaverjs":33,"vkbeautify":36}],32:[function(require,module,exports){
 (function (global){
 (function() {
 var _slice = Array.prototype.slice;
@@ -15472,6 +15539,1028 @@ if (typeof module !== "undefined" && module.exports) {
 }
 
 },{}],34:[function(require,module,exports){
+/*global define:false */
+/**
+ * Copyright 2015 Craig Campbell
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Mousetrap is a simple keyboard shortcut library for Javascript with
+ * no external dependencies
+ *
+ * @version 1.5.3
+ * @url craig.is/killing/mice
+ */
+(function(window, document, undefined) {
+
+    /**
+     * mapping of special keycodes to their corresponding keys
+     *
+     * everything in this dictionary cannot use keypress events
+     * so it has to be here to map to the correct keycodes for
+     * keyup/keydown events
+     *
+     * @type {Object}
+     */
+    var _MAP = {
+        8: 'backspace',
+        9: 'tab',
+        13: 'enter',
+        16: 'shift',
+        17: 'ctrl',
+        18: 'alt',
+        20: 'capslock',
+        27: 'esc',
+        32: 'space',
+        33: 'pageup',
+        34: 'pagedown',
+        35: 'end',
+        36: 'home',
+        37: 'left',
+        38: 'up',
+        39: 'right',
+        40: 'down',
+        45: 'ins',
+        46: 'del',
+        91: 'meta',
+        93: 'meta',
+        224: 'meta'
+    };
+
+    /**
+     * mapping for special characters so they can support
+     *
+     * this dictionary is only used incase you want to bind a
+     * keyup or keydown event to one of these keys
+     *
+     * @type {Object}
+     */
+    var _KEYCODE_MAP = {
+        106: '*',
+        107: '+',
+        109: '-',
+        110: '.',
+        111 : '/',
+        186: ';',
+        187: '=',
+        188: ',',
+        189: '-',
+        190: '.',
+        191: '/',
+        192: '`',
+        219: '[',
+        220: '\\',
+        221: ']',
+        222: '\''
+    };
+
+    /**
+     * this is a mapping of keys that require shift on a US keypad
+     * back to the non shift equivelents
+     *
+     * this is so you can use keyup events with these keys
+     *
+     * note that this will only work reliably on US keyboards
+     *
+     * @type {Object}
+     */
+    var _SHIFT_MAP = {
+        '~': '`',
+        '!': '1',
+        '@': '2',
+        '#': '3',
+        '$': '4',
+        '%': '5',
+        '^': '6',
+        '&': '7',
+        '*': '8',
+        '(': '9',
+        ')': '0',
+        '_': '-',
+        '+': '=',
+        ':': ';',
+        '\"': '\'',
+        '<': ',',
+        '>': '.',
+        '?': '/',
+        '|': '\\'
+    };
+
+    /**
+     * this is a list of special strings you can use to map
+     * to modifier keys when you specify your keyboard shortcuts
+     *
+     * @type {Object}
+     */
+    var _SPECIAL_ALIASES = {
+        'option': 'alt',
+        'command': 'meta',
+        'return': 'enter',
+        'escape': 'esc',
+        'plus': '+',
+        'mod': /Mac|iPod|iPhone|iPad/.test(navigator.platform) ? 'meta' : 'ctrl'
+    };
+
+    /**
+     * variable to store the flipped version of _MAP from above
+     * needed to check if we should use keypress or not when no action
+     * is specified
+     *
+     * @type {Object|undefined}
+     */
+    var _REVERSE_MAP;
+
+    /**
+     * loop through the f keys, f1 to f19 and add them to the map
+     * programatically
+     */
+    for (var i = 1; i < 20; ++i) {
+        _MAP[111 + i] = 'f' + i;
+    }
+
+    /**
+     * loop through to map numbers on the numeric keypad
+     */
+    for (i = 0; i <= 9; ++i) {
+        _MAP[i + 96] = i;
+    }
+
+    /**
+     * cross browser add event method
+     *
+     * @param {Element|HTMLDocument} object
+     * @param {string} type
+     * @param {Function} callback
+     * @returns void
+     */
+    function _addEvent(object, type, callback) {
+        if (object.addEventListener) {
+            object.addEventListener(type, callback, false);
+            return;
+        }
+
+        object.attachEvent('on' + type, callback);
+    }
+
+    /**
+     * takes the event and returns the key character
+     *
+     * @param {Event} e
+     * @return {string}
+     */
+    function _characterFromEvent(e) {
+
+        // for keypress events we should return the character as is
+        if (e.type == 'keypress') {
+            var character = String.fromCharCode(e.which);
+
+            // if the shift key is not pressed then it is safe to assume
+            // that we want the character to be lowercase.  this means if
+            // you accidentally have caps lock on then your key bindings
+            // will continue to work
+            //
+            // the only side effect that might not be desired is if you
+            // bind something like 'A' cause you want to trigger an
+            // event when capital A is pressed caps lock will no longer
+            // trigger the event.  shift+a will though.
+            if (!e.shiftKey) {
+                character = character.toLowerCase();
+            }
+
+            return character;
+        }
+
+        // for non keypress events the special maps are needed
+        if (_MAP[e.which]) {
+            return _MAP[e.which];
+        }
+
+        if (_KEYCODE_MAP[e.which]) {
+            return _KEYCODE_MAP[e.which];
+        }
+
+        // if it is not in the special map
+
+        // with keydown and keyup events the character seems to always
+        // come in as an uppercase character whether you are pressing shift
+        // or not.  we should make sure it is always lowercase for comparisons
+        return String.fromCharCode(e.which).toLowerCase();
+    }
+
+    /**
+     * checks if two arrays are equal
+     *
+     * @param {Array} modifiers1
+     * @param {Array} modifiers2
+     * @returns {boolean}
+     */
+    function _modifiersMatch(modifiers1, modifiers2) {
+        return modifiers1.sort().join(',') === modifiers2.sort().join(',');
+    }
+
+    /**
+     * takes a key event and figures out what the modifiers are
+     *
+     * @param {Event} e
+     * @returns {Array}
+     */
+    function _eventModifiers(e) {
+        var modifiers = [];
+
+        if (e.shiftKey) {
+            modifiers.push('shift');
+        }
+
+        if (e.altKey) {
+            modifiers.push('alt');
+        }
+
+        if (e.ctrlKey) {
+            modifiers.push('ctrl');
+        }
+
+        if (e.metaKey) {
+            modifiers.push('meta');
+        }
+
+        return modifiers;
+    }
+
+    /**
+     * prevents default for this event
+     *
+     * @param {Event} e
+     * @returns void
+     */
+    function _preventDefault(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+            return;
+        }
+
+        e.returnValue = false;
+    }
+
+    /**
+     * stops propogation for this event
+     *
+     * @param {Event} e
+     * @returns void
+     */
+    function _stopPropagation(e) {
+        if (e.stopPropagation) {
+            e.stopPropagation();
+            return;
+        }
+
+        e.cancelBubble = true;
+    }
+
+    /**
+     * determines if the keycode specified is a modifier key or not
+     *
+     * @param {string} key
+     * @returns {boolean}
+     */
+    function _isModifier(key) {
+        return key == 'shift' || key == 'ctrl' || key == 'alt' || key == 'meta';
+    }
+
+    /**
+     * reverses the map lookup so that we can look for specific keys
+     * to see what can and can't use keypress
+     *
+     * @return {Object}
+     */
+    function _getReverseMap() {
+        if (!_REVERSE_MAP) {
+            _REVERSE_MAP = {};
+            for (var key in _MAP) {
+
+                // pull out the numeric keypad from here cause keypress should
+                // be able to detect the keys from the character
+                if (key > 95 && key < 112) {
+                    continue;
+                }
+
+                if (_MAP.hasOwnProperty(key)) {
+                    _REVERSE_MAP[_MAP[key]] = key;
+                }
+            }
+        }
+        return _REVERSE_MAP;
+    }
+
+    /**
+     * picks the best action based on the key combination
+     *
+     * @param {string} key - character for key
+     * @param {Array} modifiers
+     * @param {string=} action passed in
+     */
+    function _pickBestAction(key, modifiers, action) {
+
+        // if no action was picked in we should try to pick the one
+        // that we think would work best for this key
+        if (!action) {
+            action = _getReverseMap()[key] ? 'keydown' : 'keypress';
+        }
+
+        // modifier keys don't work as expected with keypress,
+        // switch to keydown
+        if (action == 'keypress' && modifiers.length) {
+            action = 'keydown';
+        }
+
+        return action;
+    }
+
+    /**
+     * Converts from a string key combination to an array
+     *
+     * @param  {string} combination like "command+shift+l"
+     * @return {Array}
+     */
+    function _keysFromString(combination) {
+        if (combination === '+') {
+            return ['+'];
+        }
+
+        combination = combination.replace(/\+{2}/g, '+plus');
+        return combination.split('+');
+    }
+
+    /**
+     * Gets info for a specific key combination
+     *
+     * @param  {string} combination key combination ("command+s" or "a" or "*")
+     * @param  {string=} action
+     * @returns {Object}
+     */
+    function _getKeyInfo(combination, action) {
+        var keys;
+        var key;
+        var i;
+        var modifiers = [];
+
+        // take the keys from this pattern and figure out what the actual
+        // pattern is all about
+        keys = _keysFromString(combination);
+
+        for (i = 0; i < keys.length; ++i) {
+            key = keys[i];
+
+            // normalize key names
+            if (_SPECIAL_ALIASES[key]) {
+                key = _SPECIAL_ALIASES[key];
+            }
+
+            // if this is not a keypress event then we should
+            // be smart about using shift keys
+            // this will only work for US keyboards however
+            if (action && action != 'keypress' && _SHIFT_MAP[key]) {
+                key = _SHIFT_MAP[key];
+                modifiers.push('shift');
+            }
+
+            // if this key is a modifier then add it to the list of modifiers
+            if (_isModifier(key)) {
+                modifiers.push(key);
+            }
+        }
+
+        // depending on what the key combination is
+        // we will try to pick the best event for it
+        action = _pickBestAction(key, modifiers, action);
+
+        return {
+            key: key,
+            modifiers: modifiers,
+            action: action
+        };
+    }
+
+    function _belongsTo(element, ancestor) {
+        if (element === null || element === document) {
+            return false;
+        }
+
+        if (element === ancestor) {
+            return true;
+        }
+
+        return _belongsTo(element.parentNode, ancestor);
+    }
+
+    function Mousetrap(targetElement) {
+        var self = this;
+
+        targetElement = targetElement || document;
+
+        if (!(self instanceof Mousetrap)) {
+            return new Mousetrap(targetElement);
+        }
+
+        /**
+         * element to attach key events to
+         *
+         * @type {Element}
+         */
+        self.target = targetElement;
+
+        /**
+         * a list of all the callbacks setup via Mousetrap.bind()
+         *
+         * @type {Object}
+         */
+        self._callbacks = {};
+
+        /**
+         * direct map of string combinations to callbacks used for trigger()
+         *
+         * @type {Object}
+         */
+        self._directMap = {};
+
+        /**
+         * keeps track of what level each sequence is at since multiple
+         * sequences can start out with the same sequence
+         *
+         * @type {Object}
+         */
+        var _sequenceLevels = {};
+
+        /**
+         * variable to store the setTimeout call
+         *
+         * @type {null|number}
+         */
+        var _resetTimer;
+
+        /**
+         * temporary state where we will ignore the next keyup
+         *
+         * @type {boolean|string}
+         */
+        var _ignoreNextKeyup = false;
+
+        /**
+         * temporary state where we will ignore the next keypress
+         *
+         * @type {boolean}
+         */
+        var _ignoreNextKeypress = false;
+
+        /**
+         * are we currently inside of a sequence?
+         * type of action ("keyup" or "keydown" or "keypress") or false
+         *
+         * @type {boolean|string}
+         */
+        var _nextExpectedAction = false;
+
+        /**
+         * resets all sequence counters except for the ones passed in
+         *
+         * @param {Object} doNotReset
+         * @returns void
+         */
+        function _resetSequences(doNotReset) {
+            doNotReset = doNotReset || {};
+
+            var activeSequences = false,
+                key;
+
+            for (key in _sequenceLevels) {
+                if (doNotReset[key]) {
+                    activeSequences = true;
+                    continue;
+                }
+                _sequenceLevels[key] = 0;
+            }
+
+            if (!activeSequences) {
+                _nextExpectedAction = false;
+            }
+        }
+
+        /**
+         * finds all callbacks that match based on the keycode, modifiers,
+         * and action
+         *
+         * @param {string} character
+         * @param {Array} modifiers
+         * @param {Event|Object} e
+         * @param {string=} sequenceName - name of the sequence we are looking for
+         * @param {string=} combination
+         * @param {number=} level
+         * @returns {Array}
+         */
+        function _getMatches(character, modifiers, e, sequenceName, combination, level) {
+            var i;
+            var callback;
+            var matches = [];
+            var action = e.type;
+
+            // if there are no events related to this keycode
+            if (!self._callbacks[character]) {
+                return [];
+            }
+
+            // if a modifier key is coming up on its own we should allow it
+            if (action == 'keyup' && _isModifier(character)) {
+                modifiers = [character];
+            }
+
+            // loop through all callbacks for the key that was pressed
+            // and see if any of them match
+            for (i = 0; i < self._callbacks[character].length; ++i) {
+                callback = self._callbacks[character][i];
+
+                // if a sequence name is not specified, but this is a sequence at
+                // the wrong level then move onto the next match
+                if (!sequenceName && callback.seq && _sequenceLevels[callback.seq] != callback.level) {
+                    continue;
+                }
+
+                // if the action we are looking for doesn't match the action we got
+                // then we should keep going
+                if (action != callback.action) {
+                    continue;
+                }
+
+                // if this is a keypress event and the meta key and control key
+                // are not pressed that means that we need to only look at the
+                // character, otherwise check the modifiers as well
+                //
+                // chrome will not fire a keypress if meta or control is down
+                // safari will fire a keypress if meta or meta+shift is down
+                // firefox will fire a keypress if meta or control is down
+                if ((action == 'keypress' && !e.metaKey && !e.ctrlKey) || _modifiersMatch(modifiers, callback.modifiers)) {
+
+                    // when you bind a combination or sequence a second time it
+                    // should overwrite the first one.  if a sequenceName or
+                    // combination is specified in this call it does just that
+                    //
+                    // @todo make deleting its own method?
+                    var deleteCombo = !sequenceName && callback.combo == combination;
+                    var deleteSequence = sequenceName && callback.seq == sequenceName && callback.level == level;
+                    if (deleteCombo || deleteSequence) {
+                        self._callbacks[character].splice(i, 1);
+                    }
+
+                    matches.push(callback);
+                }
+            }
+
+            return matches;
+        }
+
+        /**
+         * actually calls the callback function
+         *
+         * if your callback function returns false this will use the jquery
+         * convention - prevent default and stop propogation on the event
+         *
+         * @param {Function} callback
+         * @param {Event} e
+         * @returns void
+         */
+        function _fireCallback(callback, e, combo, sequence) {
+            // if this event should not happen stop here
+            if (self.stopCallback(e, e.target || e.srcElement, combo, sequence)) {
+                return;
+            }
+
+            if (callback(e, combo) === false) {
+                _preventDefault(e);
+                _stopPropagation(e);
+            }
+        }
+
+        /**
+         * handles a character key event
+         *
+         * @param {string} character
+         * @param {Array} modifiers
+         * @param {Event} e
+         * @returns void
+         */
+        self._handleKey = function(character, modifiers, e) {
+            var callbacks = _getMatches(character, modifiers, e);
+            var i;
+            var doNotReset = {};
+            var maxLevel = 0;
+            var processedSequenceCallback = false;
+
+            // Calculate the maxLevel for sequences so we can only execute the longest callback sequence
+            for (i = 0; i < callbacks.length; ++i) {
+                if (callbacks[i].seq) {
+                    maxLevel = Math.max(maxLevel, callbacks[i].level);
+                }
+            }
+
+            // loop through matching callbacks for this key event
+            for (i = 0; i < callbacks.length; ++i) {
+
+                // fire for all sequence callbacks
+                // this is because if for example you have multiple sequences
+                // bound such as "g i" and "g t" they both need to fire the
+                // callback for matching g cause otherwise you can only ever
+                // match the first one
+                if (callbacks[i].seq) {
+
+                    // only fire callbacks for the maxLevel to prevent
+                    // subsequences from also firing
+                    //
+                    // for example 'a option b' should not cause 'option b' to fire
+                    // even though 'option b' is part of the other sequence
+                    //
+                    // any sequences that do not match here will be discarded
+                    // below by the _resetSequences call
+                    if (callbacks[i].level != maxLevel) {
+                        continue;
+                    }
+
+                    processedSequenceCallback = true;
+
+                    // keep a list of which sequences were matches for later
+                    doNotReset[callbacks[i].seq] = 1;
+                    _fireCallback(callbacks[i].callback, e, callbacks[i].combo, callbacks[i].seq);
+                    continue;
+                }
+
+                // if there were no sequence matches but we are still here
+                // that means this is a regular match so we should fire that
+                if (!processedSequenceCallback) {
+                    _fireCallback(callbacks[i].callback, e, callbacks[i].combo);
+                }
+            }
+
+            // if the key you pressed matches the type of sequence without
+            // being a modifier (ie "keyup" or "keypress") then we should
+            // reset all sequences that were not matched by this event
+            //
+            // this is so, for example, if you have the sequence "h a t" and you
+            // type "h e a r t" it does not match.  in this case the "e" will
+            // cause the sequence to reset
+            //
+            // modifier keys are ignored because you can have a sequence
+            // that contains modifiers such as "enter ctrl+space" and in most
+            // cases the modifier key will be pressed before the next key
+            //
+            // also if you have a sequence such as "ctrl+b a" then pressing the
+            // "b" key will trigger a "keypress" and a "keydown"
+            //
+            // the "keydown" is expected when there is a modifier, but the
+            // "keypress" ends up matching the _nextExpectedAction since it occurs
+            // after and that causes the sequence to reset
+            //
+            // we ignore keypresses in a sequence that directly follow a keydown
+            // for the same character
+            var ignoreThisKeypress = e.type == 'keypress' && _ignoreNextKeypress;
+            if (e.type == _nextExpectedAction && !_isModifier(character) && !ignoreThisKeypress) {
+                _resetSequences(doNotReset);
+            }
+
+            _ignoreNextKeypress = processedSequenceCallback && e.type == 'keydown';
+        };
+
+        /**
+         * handles a keydown event
+         *
+         * @param {Event} e
+         * @returns void
+         */
+        function _handleKeyEvent(e) {
+
+            // normalize e.which for key events
+            // @see http://stackoverflow.com/questions/4285627/javascript-keycode-vs-charcode-utter-confusion
+            if (typeof e.which !== 'number') {
+                e.which = e.keyCode;
+            }
+
+            var character = _characterFromEvent(e);
+
+            // no character found then stop
+            if (!character) {
+                return;
+            }
+
+            // need to use === for the character check because the character can be 0
+            if (e.type == 'keyup' && _ignoreNextKeyup === character) {
+                _ignoreNextKeyup = false;
+                return;
+            }
+
+            self.handleKey(character, _eventModifiers(e), e);
+        }
+
+        /**
+         * called to set a 1 second timeout on the specified sequence
+         *
+         * this is so after each key press in the sequence you have 1 second
+         * to press the next key before you have to start over
+         *
+         * @returns void
+         */
+        function _resetSequenceTimer() {
+            clearTimeout(_resetTimer);
+            _resetTimer = setTimeout(_resetSequences, 1000);
+        }
+
+        /**
+         * binds a key sequence to an event
+         *
+         * @param {string} combo - combo specified in bind call
+         * @param {Array} keys
+         * @param {Function} callback
+         * @param {string=} action
+         * @returns void
+         */
+        function _bindSequence(combo, keys, callback, action) {
+
+            // start off by adding a sequence level record for this combination
+            // and setting the level to 0
+            _sequenceLevels[combo] = 0;
+
+            /**
+             * callback to increase the sequence level for this sequence and reset
+             * all other sequences that were active
+             *
+             * @param {string} nextAction
+             * @returns {Function}
+             */
+            function _increaseSequence(nextAction) {
+                return function() {
+                    _nextExpectedAction = nextAction;
+                    ++_sequenceLevels[combo];
+                    _resetSequenceTimer();
+                };
+            }
+
+            /**
+             * wraps the specified callback inside of another function in order
+             * to reset all sequence counters as soon as this sequence is done
+             *
+             * @param {Event} e
+             * @returns void
+             */
+            function _callbackAndReset(e) {
+                _fireCallback(callback, e, combo);
+
+                // we should ignore the next key up if the action is key down
+                // or keypress.  this is so if you finish a sequence and
+                // release the key the final key will not trigger a keyup
+                if (action !== 'keyup') {
+                    _ignoreNextKeyup = _characterFromEvent(e);
+                }
+
+                // weird race condition if a sequence ends with the key
+                // another sequence begins with
+                setTimeout(_resetSequences, 10);
+            }
+
+            // loop through keys one at a time and bind the appropriate callback
+            // function.  for any key leading up to the final one it should
+            // increase the sequence. after the final, it should reset all sequences
+            //
+            // if an action is specified in the original bind call then that will
+            // be used throughout.  otherwise we will pass the action that the
+            // next key in the sequence should match.  this allows a sequence
+            // to mix and match keypress and keydown events depending on which
+            // ones are better suited to the key provided
+            for (var i = 0; i < keys.length; ++i) {
+                var isFinal = i + 1 === keys.length;
+                var wrappedCallback = isFinal ? _callbackAndReset : _increaseSequence(action || _getKeyInfo(keys[i + 1]).action);
+                _bindSingle(keys[i], wrappedCallback, action, combo, i);
+            }
+        }
+
+        /**
+         * binds a single keyboard combination
+         *
+         * @param {string} combination
+         * @param {Function} callback
+         * @param {string=} action
+         * @param {string=} sequenceName - name of sequence if part of sequence
+         * @param {number=} level - what part of the sequence the command is
+         * @returns void
+         */
+        function _bindSingle(combination, callback, action, sequenceName, level) {
+
+            // store a direct mapped reference for use with Mousetrap.trigger
+            self._directMap[combination + ':' + action] = callback;
+
+            // make sure multiple spaces in a row become a single space
+            combination = combination.replace(/\s+/g, ' ');
+
+            var sequence = combination.split(' ');
+            var info;
+
+            // if this pattern is a sequence of keys then run through this method
+            // to reprocess each pattern one key at a time
+            if (sequence.length > 1) {
+                _bindSequence(combination, sequence, callback, action);
+                return;
+            }
+
+            info = _getKeyInfo(combination, action);
+
+            // make sure to initialize array if this is the first time
+            // a callback is added for this key
+            self._callbacks[info.key] = self._callbacks[info.key] || [];
+
+            // remove an existing match if there is one
+            _getMatches(info.key, info.modifiers, {type: info.action}, sequenceName, combination, level);
+
+            // add this call back to the array
+            // if it is a sequence put it at the beginning
+            // if not put it at the end
+            //
+            // this is important because the way these are processed expects
+            // the sequence ones to come first
+            self._callbacks[info.key][sequenceName ? 'unshift' : 'push']({
+                callback: callback,
+                modifiers: info.modifiers,
+                action: info.action,
+                seq: sequenceName,
+                level: level,
+                combo: combination
+            });
+        }
+
+        /**
+         * binds multiple combinations to the same callback
+         *
+         * @param {Array} combinations
+         * @param {Function} callback
+         * @param {string|undefined} action
+         * @returns void
+         */
+        self._bindMultiple = function(combinations, callback, action) {
+            for (var i = 0; i < combinations.length; ++i) {
+                _bindSingle(combinations[i], callback, action);
+            }
+        };
+
+        // start!
+        _addEvent(targetElement, 'keypress', _handleKeyEvent);
+        _addEvent(targetElement, 'keydown', _handleKeyEvent);
+        _addEvent(targetElement, 'keyup', _handleKeyEvent);
+    }
+
+    /**
+     * binds an event to mousetrap
+     *
+     * can be a single key, a combination of keys separated with +,
+     * an array of keys, or a sequence of keys separated by spaces
+     *
+     * be sure to list the modifier keys first to make sure that the
+     * correct key ends up getting bound (the last key in the pattern)
+     *
+     * @param {string|Array} keys
+     * @param {Function} callback
+     * @param {string=} action - 'keypress', 'keydown', or 'keyup'
+     * @returns void
+     */
+    Mousetrap.prototype.bind = function(keys, callback, action) {
+        var self = this;
+        keys = keys instanceof Array ? keys : [keys];
+        self._bindMultiple.call(self, keys, callback, action);
+        return self;
+    };
+
+    /**
+     * unbinds an event to mousetrap
+     *
+     * the unbinding sets the callback function of the specified key combo
+     * to an empty function and deletes the corresponding key in the
+     * _directMap dict.
+     *
+     * TODO: actually remove this from the _callbacks dictionary instead
+     * of binding an empty function
+     *
+     * the keycombo+action has to be exactly the same as
+     * it was defined in the bind method
+     *
+     * @param {string|Array} keys
+     * @param {string} action
+     * @returns void
+     */
+    Mousetrap.prototype.unbind = function(keys, action) {
+        var self = this;
+        return self.bind.call(self, keys, function() {}, action);
+    };
+
+    /**
+     * triggers an event that has already been bound
+     *
+     * @param {string} keys
+     * @param {string=} action
+     * @returns void
+     */
+    Mousetrap.prototype.trigger = function(keys, action) {
+        var self = this;
+        if (self._directMap[keys + ':' + action]) {
+            self._directMap[keys + ':' + action]({}, keys);
+        }
+        return self;
+    };
+
+    /**
+     * resets the library back to its initial state.  this is useful
+     * if you want to clear out the current keyboard shortcuts and bind
+     * new ones - for example if you switch to another page
+     *
+     * @returns void
+     */
+    Mousetrap.prototype.reset = function() {
+        var self = this;
+        self._callbacks = {};
+        self._directMap = {};
+        return self;
+    };
+
+    /**
+     * should we stop this event before firing off callbacks
+     *
+     * @param {Event} e
+     * @param {Element} element
+     * @return {boolean}
+     */
+    Mousetrap.prototype.stopCallback = function(e, element) {
+        var self = this;
+
+        // if the element has the class "mousetrap" then no need to stop
+        if ((' ' + element.className + ' ').indexOf(' mousetrap ') > -1) {
+            return false;
+        }
+
+        if (_belongsTo(element, self.target)) {
+            return false;
+        }
+
+        // stop for input, select, and textarea
+        return element.tagName == 'INPUT' || element.tagName == 'SELECT' || element.tagName == 'TEXTAREA' || element.isContentEditable;
+    };
+
+    /**
+     * exposes _handleKey publicly so it can be overwritten by extensions
+     */
+    Mousetrap.prototype.handleKey = function() {
+        var self = this;
+        return self._handleKey.apply(self, arguments);
+    };
+
+    /**
+     * Init the global mousetrap functions
+     *
+     * This method is needed to allow the global mousetrap functions to work
+     * now that mousetrap is a constructor function.
+     */
+    Mousetrap.init = function() {
+        var documentMousetrap = Mousetrap(document);
+        for (var method in documentMousetrap) {
+            if (method.charAt(0) !== '_') {
+                Mousetrap[method] = (function(method) {
+                    return function() {
+                        return documentMousetrap[method].apply(documentMousetrap, arguments);
+                    };
+                } (method));
+            }
+        }
+    };
+
+    Mousetrap.init();
+
+    // expose mousetrap to the global object
+    window.Mousetrap = Mousetrap;
+
+    // expose as a common js module
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = Mousetrap;
+    }
+
+    // expose mousetrap as an AMD module
+    if (typeof define === 'function' && define.amd) {
+        define(function() {
+            return Mousetrap;
+        });
+    }
+}) (window, document);
+
+},{}],35:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -17021,7 +18110,7 @@ if (typeof module !== "undefined" && module.exports) {
   }
 }.call(this));
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 /**
 * vkBeautify - javascript plugin to pretty-print or minify text in XML, JSON, CSS and SQL formats.
 *  

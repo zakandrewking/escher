@@ -90,17 +90,17 @@ function show(target, coords) {
     this.input.node().focus();
 
     // escape key
-    this.escape = this.map.key_manager
+    this.clear_escape = this.map.key_manager
         .add_escape_listener(function() {
             this._accept_changes(target);
             this.hide();
-        }.bind(this));
+        }.bind(this), true);
     // enter key
-    this.enter = this.map.key_manager
+    this.clear_enter = this.map.key_manager
         .add_enter_listener(function(target) {
             this._accept_changes(target);
             this.hide();
-        }.bind(this, target));
+        }.bind(this, target), true);
 }
 
 function hide() {
@@ -112,13 +112,11 @@ function hide() {
     this.active_target = null;
 
     // clear escape
-    if (this.escape)
-        this.escape.clear();
-    this.escape = null;
+    if (this.clear_escape) this.clear_escape();
+    this.clear_escape = null;
     // clear enter
-    if (this.enter)
-        this.enter.clear();
-    this.enter = null;
+    if (this.clear_enter) this.clear_enter();
+    this.clear_enter = null;
     // turn off click listener
     // this.map.sel.on('click.', null);
 }

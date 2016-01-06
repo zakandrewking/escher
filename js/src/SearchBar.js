@@ -70,25 +70,25 @@ function toggle(on_off) {
         this.input.node().value = "";
         this.input.node().focus();
         // escape key
-        this.escape = this.map.key_manager
+        this.clear_escape = this.map.key_manager
             .add_escape_listener(function() {
                 this.toggle(false);
-            }.bind(this), 'settings');
+            }.bind(this), true);
         // enter key
-        this.enter = this.map.key_manager
+        this.clear_enter = this.map.key_manager
             .add_enter_listener(function() {
                 this.next();
-            }.bind(this), 'settings');
+            }.bind(this), false);
         // run the show callback
         this.callback_manager.run('show');
     } else {
         this.map.highlight(null);
         this.selection.style("display", "none");
         this.results = null;
-        if (this.escape) this.escape.clear();
-        this.escape = null;
-        if (this.enter) this.enter.clear();
-        this.enter = null;
+        if (this.clear_escape) this.clear_escape();
+        this.clear_escape = null;
+        if (this.clear_enter) this.clear_enter();
+        this.clear_enter = null;
         // run the hide callback
         this.callback_manager.run('hide');
     }

@@ -1,13 +1,29 @@
-/** KeyManager */
+/** KeyManager
 
-/* global d3 */
+ Manage key listeners and events.
+
+ Arguments
+ ---------
+
+ assigned_keys (default: {}): An object defining keys to bind.
+
+ input_list (default: []): A list of inputs that will override keyboard
+ shortcuts when in focus.
+
+ selection (default: global): A node to bind the events to.
+
+ ctrl_equals_cmd (default: false): If true, then control and command have the
+ same effect.
+
+ */
+
 
 var utils = require('./utils');
+var Mousetrap = require('mousetrap');
+var _ = require('underscore');
 
 
 var KeyManager = utils.make_class();
-// static methods
-KeyManager.reset_held_keys = reset_held_keys;
 // instance methods
 KeyManager.prototype = {
     init: init,
@@ -20,167 +36,120 @@ KeyManager.prototype = {
 module.exports = KeyManager;
 
 
-// static methods
-function reset_held_keys(h) {
-    h.command = false;
-    h.control = false;
-    h.option = false;
-    h.shift = false;
+// instance methods
+function init(assigned_keys, input_list, selection, ctrl_equals_cmd) {
+    // default Arguments
+    this.assigned_keys = assigned_keys || {};
+    this.input_list = input_list || [];
+    this.mousetrap = selection ? new Mousetrap(selection) : new Mousetrap;
+    this.ctrl_equals_cmd = (!_.isBoolean(ctrl_equals_cmd)) ? false : ctrl_equals_cmd;
+
+    // Fix mousetrap behavior; by default, it ignore shortcuts when inputs are
+    // in focus.
+    // TODO NOT WORKING https://craig.is/killing/mice
+    this.mousetrap.stopCallback = function() { return false; };
+
+    this.enabled = true;
+    this.update();
 }
 
 
-// instance methods
-function init(unique_map_id, assigned_keys, input_list, ctrl_equals_cmd) {
-    /** Assign keys for commands.
+function _add_cmd(key, ctrl_equals_cmd) {
+    /** If ctrl_equals_cmd is true and key has ctrl+ in it, return an array with
+     ctrl+ and meta+ variations.
 
      */
-
-    // identify this key manager
-    if (unique_map_id===undefined) unique_map_id = null;
-    this.unique_string = (unique_map_id === null ? '' : '.' + unique_map_id);
-
-    if (assigned_keys===undefined) this.assigned_keys = {};
-    else this.assigned_keys = assigned_keys;
-    if (input_list===undefined) this.input_list = [];
-    else this.input_list = input_list;
-
-    if (ctrl_equals_cmd===undefined) ctrl_equals_cmd = true;
-    this.ctrl_equals_cmd = ctrl_equals_cmd;
-
-    this.held_keys = {};
-    reset_held_keys(this.held_keys);
-
-    this.enabled = true;
-
-    this.update();
+    if (!ctrl_equals_cmd) return key;
+    var replaced = key.replace('ctrl+', 'meta+');
+    if (replaced === key) return key;
+    else return [key, replaced];
 }
 
 
 function update() {
-    var held_keys = this.held_keys,
-        keys = this.assigned_keys,
-        self = this;
-
-    var modifier_keys = { command: 91,
-                          command_right: 93,
-                          control: 17,
-                          option: 18,
-                          shift: 16 };
-
-    try {
-        d3.select(window).on('keydown.key_manager' + this.unique_string, null);
-        d3.select(window).on('keyup.key_manager' + this.unique_string, null);
-    } catch (err) {
-        console.log('Not in a browser, so key manager does not work');
-        return;
-    }
-
-    if (!(this.enabled)) return;
-
-    d3.select(window).on('keydown.key_manager' + this.unique_string, function(ctrl_equals_cmd, input_list) {
-        var kc = d3.event.keyCode,
-            meaningless = true;
-        // check the inputs
-        var input_visible = false;
-        input_list.forEach(function(input) {
-            if (input.is_visible()) input_visible = true;
-        });
-        toggle_modifiers(modifier_keys, held_keys, kc, true);
-        for (var key_id in keys) {
-            var assigned_key = keys[key_id];
-            if (check_key(assigned_key, kc, held_keys, ctrl_equals_cmd)) {
-                meaningless = false;
-                if (!(assigned_key.ignore_with_input && input_visible)) {
-                    if (assigned_key.fn) {
-                        assigned_key.fn.call(assigned_key.target);
-                    } else {
-                        console.warn('No function for key');
-                    }
-                    // prevent browser action
-                    d3.event.preventDefault();
-                }
-            }
-        }
-        // Sometimes modifiers get 'stuck', so reset them once in a while.
-        // Only do this when a meaningless key is pressed
-        for (var k in modifier_keys)
-            if (modifier_keys[k] == kc) meaningless = false;
-        if (meaningless)
-            reset_held_keys(held_keys);
-    }.bind(null, this.ctrl_equals_cmd, this.input_list))
-        .on('keyup.key_manager' + this.unique_string, function() {
-            toggle_modifiers(modifier_keys, held_keys,
-                             d3.event.keyCode, false);
-        });
-    function toggle_modifiers(mod, held, kc, on_off) {
-        for (var k in mod)
-            if (mod[k] == kc)
-                held[k] = on_off;
-    }
-    function check_key(key, pressed, held, ctrl_equals_cmd) {
-        if (key.key != pressed) return false;
-        var mod = utils.clone(key.modifiers);
-        if (mod === undefined)
-            mod = { control: false,
-                    command: false,
-                    option: false,
-                    shift: false };
-        for (var k in held) {
-            if (ctrl_equals_cmd &&
-                mod['control'] &&
-                (k=='command' || k=='command_right' || k=='control') &&
-                (held['command'] || held['command_right'] || held['control'])) {
-                continue;
-            }
-            if (mod[k] === undefined) mod[k] = false;
-            if (mod[k] != held[k]) return false;
-        }
-        return true;
-    }
-}
-function toggle(on_off) {
-    /** Turn the brush on or off
+    /** Updated key bindings if attributes have changed.
 
      */
-    if (on_off===undefined) on_off = !this.enabled;
+    this.mousetrap.reset();
+    if (!this.enabled) return;
 
+    // loop through keys
+    for (var key_id in this.assigned_keys) {
+        var assigned_key = this.assigned_keys[key_id];
+
+        // OK if this is missing
+        if (!assigned_key.key) continue;
+
+        var key_to_bind = _add_cmd(assigned_key.key, this.ctrl_equals_cmd);
+        // remember the input_list
+        assigned_key.input_list = this.input_list;
+        this.mousetrap.bind(key_to_bind, function(e) {
+            // check inputs
+            var input_blocking = false;
+            if (this.ignore_with_input) {
+                for (var i = 0, l = this.input_list.length; i < l; i++) {
+                    if (this.input_list[i].is_visible()) {
+                        input_blocking = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!input_blocking) {
+                if (this.fn) this.fn.call(this.target);
+                else console.warn('No function for key: ' + this.key);
+                e.preventDefault();
+            }
+        }.bind(assigned_key), 'keydown');
+    }
+}
+
+
+function toggle(on_off) {
+    /** Turn the key manager on or off.
+
+     */
+    if (_.isUndefined(on_off)) on_off = !this.enabled;
     this.enabled = on_off;
     this.update();
 }
-function add_enter_listener(callback, id) {
+
+
+function add_enter_listener(callback, one_time) {
     /** Call the callback when the enter key is pressed, then
      unregisters the listener.
 
      */
-    return this.add_key_listener(callback, 13, id);
+    return this.add_key_listener(callback, 'enter', one_time);
 }
-function add_escape_listener(callback, id) {
+
+
+function add_escape_listener(callback, one_time) {
     /** Call the callback when the escape key is pressed, then
      unregisters the listener.
 
      */
-    return this.add_key_listener(callback, 27, id);
+    return this.add_key_listener(callback, 'escape', one_time);
 }
-function add_key_listener(callback, kc, id) {
+
+
+function add_key_listener(callback, key_name, one_time) {
     /** Call the callback when the key is pressed, then unregisters the
-     listener.
+     listener. Returns a function that will unbind the event.
 
      */
 
-    var event_name = 'keydown.' + kc;
-    if (id !== undefined)
-        event_name += ('.' + id);
-    event_name += this.unique_string;
+    if (_.isUndefined(one_time)) one_time = false;
 
-    var selection = d3.select(window);
-    selection.on(event_name, function() {
-        if (d3.event.keyCode==kc) {
-            callback();
-        }
+    // unbind function ready to go
+    var unbind = this.mousetrap.unbind.bind(this.mousetrap, key_name);
+
+    this.mousetrap.bind(key_name, function(e) {
+        console.log('key_listener', key_name, one_time);
+        e.preventDefault();
+        callback();
+        if (one_time) unbind();
     });
-    return {
-        clear: function() {
-            selection.on(event_name, null);
-        }
-    };
+
+    return unbind;
 }

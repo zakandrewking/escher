@@ -255,7 +255,7 @@ function toggle_selectable_click(on_off) {
             // works. This is a bit of a hack.
             // if (!this.parentNode.__data__.was_selected)
             //     d3.select(this.parentNode).classed('selected', false);
-            map.select_selectable(this, d);
+            map.select_selectable(this, d, d3.event.shiftKey);
             // this.parentNode.__data__.was_selected = false;
         };
         this.node_mouseover = function(d) {
@@ -490,7 +490,7 @@ function _get_selectable_drag(map, undo_stack) {
 
         // get the grabbed id
         var grabbed = {};
-        if (d3.select(this).attr('class').indexOf('label')==-1) {
+        if (d3.select(this).attr('class').indexOf('label') === -1) {
             // if it is a node
             grabbed['type'] = 'node';
             grabbed['id'] = this.parentNode.__data__.node_id;

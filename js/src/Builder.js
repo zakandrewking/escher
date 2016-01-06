@@ -2,7 +2,7 @@
 
  */
 
-/* global d3, $ */
+/* global d3 */
 
 var utils = require('./utils');
 var BuildInput = require('./BuildInput');
@@ -49,7 +49,6 @@ Builder.prototype = {
 module.exports = Builder;
 
 
-// definitions
 function init(map_data, model_data, embedded_css, selection, options) {
 
     // defaults
@@ -200,7 +199,6 @@ function init(map_data, model_data, embedded_css, selection, options) {
     this.callback_manager.run('first_load', this);
 }
 
-// Definitions
 function load_model(model_data, should_update_data) {
     /** For documentation of this function, see docs/javascript_api.rst.
 
@@ -513,7 +511,6 @@ function set_metabolite_data(data) {
     this._update_data(true, true, 'metabolite');
     this.map.set_status('');
 }
-
 
 function _update_data(update_model, update_map, kind, should_draw) {
     /** Set data and settings for the model.
@@ -1139,112 +1136,195 @@ function _setup_modes(map, brush, zoom_container) {
 
 function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing) {
     var keys = {
-        save: { key: 83, modifiers: { control: true }, // ctrl-s
-                target: map,
-                fn: map.save },
-        save_svg: { key: 83, modifiers: { control: true, shift: true },
-                    target: map,
-                    fn: map.save_svg },
-        load: { key: 79, modifiers: { control: true }, // ctrl-o
-                fn: null }, // defined by button
-        convert_map: { fn: this.map.convert_map.bind(this.map) },
-        clear_map: { fn: this.map.clear_map.bind(this.map) },
-        load_model: { key: 77, modifiers: { control: true }, // ctrl-m
-                      fn: null }, // defined by button
-        clear_model: { fn: this.load_model.bind(this, null, true) },
+        save: {
+            key: 'ctrl+s',
+            target: map,
+            fn: map.save
+        },
+        save_svg: {
+            key: 'ctrl+shift+s',
+            target: map,
+            fn: map.save_svg
+        },
+        load: {
+            key: 'ctrl+o',
+            fn: null  // defined by button
+        },
+        convert_map: {
+            target: map,
+            fn: map.convert_map
+        },
+        clear_map: {
+            target: map,
+            fn: map.clear_map
+        },
+        load_model: {
+            key: 'ctrl+m',
+            fn: null // defined by button
+        },
+        clear_model: {
+            fn: this.load_model.bind(this, null, true)
+        },
         load_reaction_data: { fn: null }, // defined by button
-        clear_reaction_data: { target: this,
-                               fn: function() { this.set_reaction_data(null); }},
+        clear_reaction_data: {
+            target: this,
+            fn: function() { this.set_reaction_data(null); }
+        },
         load_metabolite_data: { fn: null }, // defined by button
-        clear_metabolite_data: { target: this,
-                                 fn: function() { this.set_metabolite_data(null); }},
+        clear_metabolite_data: {
+            target: this,
+            fn: function() { this.set_metabolite_data(null); }
+        },
         load_gene_data: { fn: null }, // defined by button
-        clear_gene_data: { fn: function() {
-            this.set_gene_data(null, true);
-        }.bind(this)},
-        zoom_in: { key: 187, modifiers: { control: true }, // ctrl +
-                   target: zoom_container,
-                   fn: zoom_container.zoom_in },
-        zoom_out: { key: 189, modifiers: { control: true }, // ctrl -
-                    target: zoom_container,
-                    fn: zoom_container.zoom_out },
-        extent_nodes: { key: 48, modifiers: { control: true }, // ctrl-0
-                        target: map,
-                        fn: map.zoom_extent_nodes },
-        extent_canvas: { key: 49, modifiers: { control: true }, // ctrl-1
-                         target: map,
-                         fn: map.zoom_extent_canvas },
-        search: { key: 70, modifiers: { control: true }, // ctrl-f
-                  fn: search_bar.toggle.bind(search_bar, true) },
-        view_mode: { fn: this.view_mode.bind(this),
-                     ignore_with_input: true },
-        show_settings: { key: 188, modifiers: { control: true }, // Ctrl ,
-                         fn: settings_bar.toggle.bind(settings_bar) }
+        clear_gene_data: {
+            target: this,
+            fn: function() { this.set_gene_data(null, true); }
+        },
+        zoom_in: {
+            key: 'ctrl+=',
+            target: zoom_container,
+            fn: zoom_container.zoom_in
+        },
+        zoom_out: {
+            key: 'ctrl+-',
+            target: zoom_container,
+            fn: zoom_container.zoom_out
+        },
+        extent_nodes: {
+            key: 'ctrl+0',
+            target: map,
+            fn: map.zoom_extent_nodes
+        },
+        extent_canvas: {
+            key: 'ctrl+1',
+            target: map,
+            fn: map.zoom_extent_canvas
+        },
+        search: {
+            key: 'ctrl+f',
+            fn: search_bar.toggle.bind(search_bar, true)
+        },
+        view_mode: {
+            target: this,
+            fn: this.view_mode,
+            ignore_with_input: true
+        },
+        show_settings: {
+            key: 'ctrl+,',
+            target: settings_bar,
+            fn: settings_bar.toggle
+        }
     };
     if (enable_editing) {
         utils.extend(keys, {
-            build_mode: { key: 78, // n
-                          fn: this.build_mode.bind(this),
-                          ignore_with_input: true },
-            zoom_mode: { key: 90, // z
-                         fn: this.zoom_mode.bind(this),
-                         ignore_with_input: true },
-            brush_mode: { key: 86, // v
-                          fn: this.brush_mode.bind(this),
-                          ignore_with_input: true },
-            rotate_mode: { key: 82, // r
-                           fn: this.rotate_mode.bind(this),
-                           ignore_with_input: true },
-            text_mode: { key: 84, // t
-                         fn: this.text_mode.bind(this),
-                         ignore_with_input: true },
-            toggle_beziers: { key: 66,
-                              target: map,
-                              fn: map.toggle_beziers,
-                              ignore_with_input: true  }, // b
-            delete: { key: 8, modifiers: { control: true }, // ctrl-backspace
-                      target: map,
-                      fn: map.delete_selected,
-                      ignore_with_input: true },
-            delete_del: { key: 46, modifiers: { control: false }, // Del
-                          target: map,
-                          fn: map.delete_selected,
-                          ignore_with_input: true },
-            toggle_primary: { key: 80, // p
-                              target: map,
-                              fn: map.toggle_selected_node_primary,
-                              ignore_with_input: true },
-            cycle_primary: { key: 67, // c
-                             target: map,
-                             fn: map.cycle_primary_node,
-                             ignore_with_input: true },
-            direction_arrow_right: { key: 39, // right
-                                     fn: this.build_input.direction_arrow.right
-                                     .bind(this.build_input.direction_arrow),
-                                     ignore_with_input: true },
-            direction_arrow_down: { key: 40, // down
-                                    fn: this.build_input.direction_arrow.down
-                                    .bind(this.build_input.direction_arrow),
-                                    ignore_with_input: true },
-            direction_arrow_left: { key: 37, // left
-                                    fn: this.build_input.direction_arrow.left
-                                    .bind(this.build_input.direction_arrow),
-                                    ignore_with_input: true },
-            direction_arrow_up: { key: 38, // up
-                                  fn: this.build_input.direction_arrow.up
-                                  .bind(this.build_input.direction_arrow),
-                                  ignore_with_input: true },
-            undo: { key: 90, modifiers: { control: true },
-                    target: map.undo_stack,
-                    fn: map.undo_stack.undo },
-            redo: { key: 90, modifiers: { control: true, shift: true },
-                    target: map.undo_stack,
-                    fn: map.undo_stack.redo },
-            select_all: { key: 65, modifiers: { control: true }, // Ctrl Shift a
-                          fn: map.select_all.bind(map) },
-            select_none: { key: 65, modifiers: { control: true, shift: true }, // Ctrl Shift a
-                           fn: map.select_none.bind(map) },
-            invert_selection: { fn: map.invert_selection.bind(map) }
+            build_mode: {
+                key: 'n',
+                target: this,
+                fn: this.build_mode,
+                ignore_with_input: true
+            },
+            zoom_mode: {
+                key: 'z',
+                target: this,
+                fn: this.zoom_mode,
+                ignore_with_input: true
+            },
+            brush_mode: {
+                key: 'v',
+                target: this,
+                fn: this.brush_mode,
+                ignore_with_input: true
+            },
+            rotate_mode: {
+                key: 'r',
+                target: this,
+                fn: this.rotate_mode,
+                ignore_with_input: true
+            },
+            text_mode: {
+                key: 't',
+                target: this,
+                fn: this.text_mode,
+                ignore_with_input: true
+            },
+            toggle_beziers: {
+                key: 'b',
+                target: map,
+                fn: map.toggle_beziers,
+                ignore_with_input: true
+            },
+            delete: {
+                key: 'ctrl+backspace',
+                target: map,
+                fn: map.delete_selected,
+                ignore_with_input: true
+            },
+            delete_del: {
+                key: 'del',
+                target: map,
+                fn: map.delete_selected,
+                ignore_with_input: true
+            },
+            toggle_primary: {
+                key: 'p',
+                target: map,
+                fn: map.toggle_selected_node_primary,
+                ignore_with_input: true
+            },
+            cycle_primary: {
+                key: 'c',
+                target: map,
+                fn: map.cycle_primary_node,
+                ignore_with_input: true
+            },
+            direction_arrow_right: {
+                key: 'right',
+                target: this.build_input.direction_arrow,
+                fn: this.build_input.direction_arrow.right,
+                ignore_with_input: true
+            },
+            direction_arrow_down: {
+                key: 'down',
+                target: this.build_input.direction_arrow,
+                fn: this.build_input.direction_arrow.down,
+                ignore_with_input: true
+            },
+            direction_arrow_left: {
+                key: 'left',
+                target: this.build_input.direction_arrow,
+                fn: this.build_input.direction_arrow.left,
+                ignore_with_input: true
+            },
+            direction_arrow_up: {
+                key: 'up',
+                target: this.build_input.direction_arrow,
+                fn: this.build_input.direction_arrow.up,
+                ignore_with_input: true
+            },
+            undo: {
+                key: 'ctrl+z',
+                target: map.undo_stack,
+                fn: map.undo_stack.undo
+            },
+            redo: {
+                key: 'ctrl+shift+z',
+                target: map.undo_stack,
+                fn: map.undo_stack.redo
+            },
+            select_all: {
+                key: 'ctrl+a',
+                target: map,
+                fn: map.select_all
+            },
+            select_none: {
+                key: 'ctrl+shift+a',
+                target: map,
+                fn: map.select_none
+            },
+            invert_selection: {
+                target: map,
+                fn: map.invert_selection
+            }
         });
     }
     return keys;

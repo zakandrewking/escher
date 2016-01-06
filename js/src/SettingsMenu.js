@@ -131,15 +131,15 @@ function toggle(on_off) {
         this.background.style("display", "block");
         this.selection.select('input').node().focus();
         // escape key
-        this.escape = this.map.key_manager
+        this.clear_escape = this.map.key_manager
             .add_escape_listener(function() {
                 this.abandon_changes();
-            }.bind(this), 'settings');
+            }.bind(this), true);
         // enter key
-        this.enter = this.map.key_manager
+        this.clear_enter = this.map.key_manager
             .add_enter_listener(function() {
                 this.accept_changes();
-            }.bind(this), 'settings');
+            }.bind(this), true);
         // run the show callback
         this.callback_manager.run('show');
     } else {
@@ -148,10 +148,10 @@ function toggle(on_off) {
         // hide the menu
         this.selection.style("display", "none");
         this.background.style("display", "none");
-        if (this.escape) this.escape.clear();
-        if (this.enter) this.enter.clear();
-        this.escape = null;
-        this.enter = null;
+        if (this.clear_escape) this.clear_escape();
+        this.clear_escape = null;
+        if (this.clear_enter) this.clear_enter();
+        this.clear_enter = null;
         // run the hide callback
         this.callback_manager.run('hide');
     }

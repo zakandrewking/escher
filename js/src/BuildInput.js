@@ -1,4 +1,17 @@
-/** BuildInput */
+/** BuildInput
+
+ Arguments
+ ---------
+
+ selection: A d3 selection for the BuildInput.
+
+ map: A Map instance.
+
+ zoom_container: A ZoomContainer instance.
+
+ settings: A Settings instance.
+
+  */
 
 /* global d3 */
 
@@ -7,6 +20,8 @@ var PlacedDiv = require('./PlacedDiv');
 var completely = require('./complete.ly');
 var DirectionArrow = require('./DirectionArrow');
 var CobraModel = require('./CobraModel');
+
+var _ = require('underscore');
 
 
 var BuildInput = utils.make_class();
@@ -29,7 +44,6 @@ BuildInput.prototype = {
 module.exports = BuildInput;
 
 
-// definitions
 function init(selection, map, zoom_container, settings) {
     // set up container
     var new_sel = selection.append('div').attr('id', 'rxn-input');
@@ -69,13 +83,17 @@ function init(selection, map, zoom_container, settings) {
 function setup_map_callbacks(map) {
     // input
     map.callback_manager.set('select_metabolite_with_id.input', function(selected_node, coords) {
-        if (this.is_active) this.reload(selected_node, coords, false);
+        if (this.is_active) {
+            this.reload(selected_node, coords, false);
+            this.show_dropdown(coords);
+        }
         this.hide_target();
     }.bind(this));
     map.callback_manager.set('select_selectable.input', function(count, selected_node, coords) {
         this.hide_target();
         if (count == 1 && this.is_active && coords) {
             this.reload(selected_node, coords, false);
+            this.show_dropdown(coords);
         } else {
             this.toggle(false);
         }
@@ -109,43 +127,46 @@ function toggle(on_off) {
     else this.is_active = on_off;
     if (this.is_active) {
         this.toggle_start_reaction_listener(true);
-        if (this.target_coords !== null)
-            this.show_dropdown(this.target_coords);
-        else this.reload_at_selected();
+        if (_.isNull(this.target_coords))
+            this.reload_at_selected();
+        else
+            this.placed_div.place(this.target_coords);
+        this.show_dropdown();
         this.map.set_status('Click on the canvas or an existing metabolite');
         this.direction_arrow.show();
-        // escape key
-        this.escape = this.map.key_manager
-            .add_escape_listener(function() {
-                this.hide_dropdown();
-            }.bind(this), 'build_input');
     } else {
         this.toggle_start_reaction_listener(false);
-        this.placed_div.hide();
-        this.completely.input.blur();
-        this.completely.hideDropDown();
+        this.hide_dropdown();
         this.map.set_status(null);
         this.direction_arrow.hide();
-        if (this.escape) this.escape.clear();
-        this.escape = null;
     }
 }
+
 function show_dropdown(coords) {
-    this.placed_div.place(coords);
+    // escape key
+    this.clear_escape = this.map.key_manager
+        .add_escape_listener(function() {
+            this.hide_dropdown();
+        }.bind(this), true);
+    // dropdown
     this.completely.input.blur();
     this.completely.repaint();
-    this.completely.setText("");
+    this.completely.setText('');
     this.completely.input.focus();
 }
+
 function hide_dropdown() {
+    // escape key
+    if (this.clear_escape) this.clear_escape();
+    this.clear_escape = null;
+    // dropdown
     this.placed_div.hide();
+    this.completely.input.blur();
     this.completely.hideDropDown();
 }
+
 function place_at_selected() {
-    /** Place autocomplete box at the first selected node.
-
-     */
-
+    /** Place autocomplete box at the first selected node. */
     // get the selected node
     this.map.deselect_text_labels();
     var selected_node = this.map.select_single_node();
@@ -153,6 +174,7 @@ function place_at_selected() {
     var coords = { x: selected_node.x, y: selected_node.y };
     this.place(coords);
 }
+
 function place(coords) {
     this.placed_div.place(coords);
     this.direction_arrow.set_location(coords);
@@ -160,10 +182,8 @@ function place(coords) {
 }
 
 function reload_at_selected() {
-    /** Reload data for autocomplete box and redraw box at the first
-     selected node.
-
-     */
+    /** Reload data for autocomplete box and redraw box at the first selected
+     node. */
     // get the selected node
     this.map.deselect_text_labels();
     var selected_node = this.map.select_single_node();
@@ -173,11 +193,10 @@ function reload_at_selected() {
     this.reload(selected_node, coords, false);
     return true;
 }
+
 function reload(selected_node, coords, starting_from_scratch) {
     /** Reload data for autocomplete box and redraw box at the new
-     coordinates.
-
-     */
+     coordinates. */
 
     // try finding the selected node
     if (!starting_from_scratch && !selected_node) {
@@ -186,10 +205,6 @@ function reload(selected_node, coords, starting_from_scratch) {
     }
 
     this.place(coords);
-
-    // blur
-    this.completely.input.blur();
-    this.completely.repaint(); // put in place()?
 
     if (this.map.cobra_model===null) {
         this.completely.setText('Cannot add: No model.');
@@ -300,7 +315,7 @@ function reload(selected_node, coords, starting_from_scratch) {
     // TODO test this behavior
     // if (strings_to_display.length==1) complete.setText(strings_to_display[0]);
     // else complete.setText("");
-    complete.setText("");
+    complete.setText('');
 
     var direction_arrow = this.direction_arrow,
         check_and_build = function(id) {
@@ -323,12 +338,10 @@ function reload(selected_node, coords, starting_from_scratch) {
             }
         }.bind(this);
     complete.onEnter = function(id) {
-        this.setText("");
-        this.onChange("");
+        this.setText('');
+        this.onChange('');
         check_and_build(id);
     };
-    complete.repaint();
-    this.completely.input.focus();
 
     //definitions
     function already_drawn(bigg_id, reactions) {
@@ -339,10 +352,9 @@ function reload(selected_node, coords, starting_from_scratch) {
         return false;
     };
 }
-function toggle_start_reaction_listener(on_off) {
-    /** Toggle listening for a click to place a new reaction on the canvas.
 
-     */
+function toggle_start_reaction_listener(on_off) {
+    /** Toggle listening for a click to place a new reaction on the canvas. */
     if (on_off===undefined)
         this.start_reaction_listener = !this.start_reaction_listener;
     else if (this.start_reaction_listener==on_off)
@@ -364,6 +376,8 @@ function toggle_start_reaction_listener(on_off) {
             this.reload(null, coords, true);
             // generate the target symbol
             this.show_target(this.map, coords);
+            // show the dropdown
+            this.show_dropdown(coords);
         }.bind(this, this.map.sel.node()));
         this.map.sel.classed('start-reaction-cursor', true);
     } else {
@@ -378,6 +392,7 @@ function hide_target() {
         this.map.sel.selectAll('.start-reaction-target').remove();
     this.target_coords = null;
 }
+
 function show_target(map, coords) {
     var s = map.sel.selectAll('.start-reaction-target').data([12, 5]);
     s.enter().append('circle')
