@@ -1283,23 +1283,24 @@ function reload(selected_node, coords, starting_from_scratch) {
                 } else {
                     // get the metabolite names or IDs
                     var mets = {},
-                        show_met_names = [];
+                        show_met_names = [],
+                        met_id;
                     if (show_names) {
-                        for (var met_id in reaction.metabolites) {
+                        for (met_id in reaction.metabolites) {
                             var name = cobra_metabolites[met_id].name;
                             mets[name] = reaction.metabolites[met_id];
                             show_met_names.push(name);
                         }
                     } else {
                         mets = utils.clone(reaction.metabolites);
-                        for (var met_id in reaction.metabolites) {
+                        for (met_id in reaction.metabolites) {
                             show_met_names.push(met_id);
                         }
                     }
-                    var key = show_names ? 'name' : 'bigg_id',
-                        show_gene_names = reaction.genes.map(function(g_obj) {
-                            return g_obj[key];
-                        });
+                    var show_gene_names = _.flatten(reaction.genes.map(function(g_obj) {
+                        return [g_obj.name, g_obj.bigg_id];
+                    }));
+                    console.log(show_gene_names);
                     // get the reaction string
                     var reaction_string = CobraModel.build_reaction_string(mets,
                                                                            reaction.reversibility,
@@ -1328,9 +1329,8 @@ function reload(selected_node, coords, starting_from_scratch) {
         };
     }
     options = options.sort(sort_fn);
-    // set up the box with data, searching for first num results
-    var num = 20,
-        complete = this.completely;
+    // set up the box with data
+    var complete = this.completely;
     complete.options = options;
 
     // TODO test this behavior
@@ -1500,7 +1500,7 @@ function init(map_data, model_data, embedded_css, selection, options) {
         // view options
         menu: 'all',
         scroll_behavior: 'pan',
-        use_3d_transform: false,
+        use_3d_transform: !utils.check_browser('safari'),
         enable_editing: true,
         enable_keys: true,
         enable_search: true,
@@ -1569,7 +1569,7 @@ function init(map_data, model_data, embedded_css, selection, options) {
         }.bind(this),
         // the options that are erased when the settings menu is canceled
         conditional_options = ['hide_secondary_metabolites', 'show_gene_reaction_rules',
-                               'hide_all_labels', 'scroll_behavior', 'use_3d_transform', 'reaction_styles',
+                               'hide_all_labels', 'scroll_behavior', 'reaction_styles',
                                'reaction_compare_style', 'reaction_scale',
                                'reaction_no_data_color', 'reaction_no_data_size',
                                'and_method_in_gene_reaction_rule', 'metabolite_styles',
@@ -1615,7 +1615,6 @@ function init(map_data, model_data, embedded_css, selection, options) {
                 if (this.zoom_container !== null) {
                     var new_behavior = this.settings.get_option('scroll_behavior');
                     this.zoom_container.set_scroll_behavior(new_behavior);
-                    this.zoom_container.set_use_3d_transform(this.settings.get_option('use_3d_transform'));
                 }
                 if (this.map !== null) {
                     this.map.draw_all_nodes(false);
@@ -4401,9 +4400,13 @@ function _add_cmd(key, ctrl_equals_cmd) {
 
      */
     if (!ctrl_equals_cmd) return key;
-    var replaced = key.replace('ctrl+', 'meta+');
-    if (replaced === key) return key;
-    else return [key, replaced];
+    var key_ar = _.isArray(key) ? key : [key];
+    var new_ar = key_ar.reduce(function(c, k) {
+        var n = k.replace('ctrl+', 'meta+');
+        if (n !== k) c.push(n);
+        return c;
+    }, key_ar.slice());
+    return new_ar.length === key_ar.length ? key : new_ar;
 }
 
 
@@ -4461,7 +4464,7 @@ function add_enter_listener(callback, one_time) {
      unregisters the listener.
 
      */
-    return this.add_key_listener(callback, 'enter', one_time);
+    return this.add_key_listener('enter', callback, one_time);
 }
 
 
@@ -4470,13 +4473,20 @@ function add_escape_listener(callback, one_time) {
      unregisters the listener.
 
      */
-    return this.add_key_listener(callback, 'escape', one_time);
+    return this.add_key_listener('escape', callback, one_time);
 }
 
 
-function add_key_listener(callback, key_name, one_time) {
+function add_key_listener(key_name, callback, one_time) {
     /** Call the callback when the key is pressed, then unregisters the
      listener. Returns a function that will unbind the event.
+
+     callback: The callback function with no arguments.
+
+     key_name: A key name, or list of key names, as defined by the mousetrap
+     library: https://craig.is/killing/mice
+
+     one_time: If True, then cancel the listener after the first execution.
 
      */
 
@@ -4485,8 +4495,7 @@ function add_key_listener(callback, key_name, one_time) {
     // unbind function ready to go
     var unbind = this.mousetrap.unbind.bind(this.mousetrap, key_name);
 
-    this.mousetrap.bind(key_name, function(e) {
-        console.log('key_listener', key_name, one_time);
+    this.mousetrap.bind(_add_cmd(key_name, this.ctrl_equals_cmd), function(e) {
         e.preventDefault();
         callback();
         if (one_time) unbind();
@@ -7476,7 +7485,7 @@ function _data_not_loaded() {
 
 var utils = require('./utils');
 var CallbackManager = require('./CallbackManager');
-
+var _ = require('underscore');
 
 var SearchBar = utils.make_class();
 // instance methods
@@ -7490,8 +7499,6 @@ SearchBar.prototype = {
 };
 module.exports = SearchBar;
 
-
-// instance methods
 function init(sel, search_index, map) {
     var container = sel.attr('class', 'search-container')
             .style('display', 'none');
@@ -7499,21 +7506,21 @@ function init(sel, search_index, map) {
         .attr('class', 'search-bar');
     var group = container.append('div').attr('class', 'btn-group btn-group-sm');
     group.append('button')
-        .attr("class", "btn btn-default")
+        .attr('class', 'btn btn-default')
         .on('click', this.previous.bind(this))
-        .append('span').attr('class', "glyphicon glyphicon-chevron-left");
+        .append('span').attr('class', 'glyphicon glyphicon-chevron-left');
     group.append('button')
-        .attr("class", "btn btn-default")
+        .attr('class', 'btn btn-default')
         .on('click', this.next.bind(this))
-        .append('span').attr('class', "glyphicon glyphicon-chevron-right");
+        .append('span').attr('class', 'glyphicon glyphicon-chevron-right');
     this.counter = container.append('div')
         .attr('class', 'search-counter');
     container.append('button')
-        .attr("class", "btn btn-sm btn-default close-button")
+        .attr('class', 'btn btn-sm btn-default close-button')
         .on('click', function() {
             this.toggle(false);
         }.bind(this))
-        .append("span").attr("class",  "glyphicon glyphicon-remove");
+        .append('span').attr('class',  'glyphicon glyphicon-remove');
 
     this.callback_manager = new CallbackManager();
 
@@ -7526,56 +7533,79 @@ function init(sel, search_index, map) {
 
     var on_input_fn = function(input) {
         this.current = 1;
-        this.results = this.search_index.find(input.value);
+        this.results = _drop_duplicates(this.search_index.find(input.value));
         this.update();
     }.bind(this, this.input.node());
     this.input.on('input', utils.debounce(on_input_fn, 200));
 }
-function is_visible() {
-    return this.selection.style('display') != 'none';
+
+var comp_keys = {
+    metabolite: ['m', 'node_id'],
+    reaction: ['r', 'reaction_id'],
+    text_label: ['t', 'text_label_id']
+};
+function _drop_duplicates(results) {
+    return _.uniq(results, function(item) {
+        // make a string for fast comparison
+        var t = comp_keys[item.type];
+        return t[0] + item[t[1]];
+    });
 }
+
+function is_visible() {
+    return this.selection.style('display') !== 'none';
+}
+
 function toggle(on_off) {
     if (on_off===undefined) this.is_active = !this.is_active;
     else this.is_active = on_off;
 
     if (this.is_active) {
         this.selection.style('display', null);
-        this.counter.text("");
-        this.input.node().value = "";
+        this.counter.text('');
+        this.input.node().value = '';
         this.input.node().focus();
         // escape key
         this.clear_escape = this.map.key_manager
             .add_escape_listener(function() {
                 this.toggle(false);
             }.bind(this), true);
-        // enter key
-        this.clear_enter = this.map.key_manager
-            .add_enter_listener(function() {
+        // next keys
+        this.clear_next = this.map.key_manager
+            .add_key_listener(['enter', 'ctrl+g'], function() {
                 this.next();
+            }.bind(this), false);
+        // previous keys
+        this.clear_previous = this.map.key_manager
+            .add_key_listener(['shift+enter', 'shift+ctrl+g'], function() {
+                this.previous();
             }.bind(this), false);
         // run the show callback
         this.callback_manager.run('show');
     } else {
         this.map.highlight(null);
-        this.selection.style("display", "none");
+        this.selection.style('display', 'none');
         this.results = null;
         if (this.clear_escape) this.clear_escape();
         this.clear_escape = null;
-        if (this.clear_enter) this.clear_enter();
-        this.clear_enter = null;
+        if (this.clear_next) this.clear_next();
+        this.clear_next = null;
+        if (this.clear_previous) this.clear_previous();
+        this.clear_previous = null;
         // run the hide callback
         this.callback_manager.run('hide');
     }
 }
+
 function update() {
-    if (this.results == null) {
-        this.counter.text("");
+    if (this.results === null) {
+        this.counter.text('');
         this.map.highlight(null);
-    } else if (this.results.length == 0) {
-        this.counter.text("0 / 0");
+    } else if (this.results.length === 0) {
+        this.counter.text('0 / 0');
         this.map.highlight(null);
     } else {
-        this.counter.text(this.current + " / " + this.results.length);
+        this.counter.text(this.current + ' / ' + this.results.length);
         var r = this.results[this.current - 1];
         if (r.type=='reaction') {
             this.map.zoom_to_reaction(r.reaction_id);
@@ -7591,24 +7621,26 @@ function update() {
         }
     }
 }
+
 function next() {
-    if (this.results == null) return;
-    if (this.current==this.results.length)
+    if (this.results === null) return;
+    if (this.current === this.results.length)
         this.current = 1;
     else
         this.current += 1;
     this.update();
 }
+
 function previous() {
-    if (this.results == null) return;
-    if (this.current==1)
+    if (this.results === null) return;
+    if (this.current === 1)
         this.current = this.results.length;
     else
         this.current -= 1;
     this.update();
 }
 
-},{"./CallbackManager":5,"./utils":31}],18:[function(require,module,exports){
+},{"./CallbackManager":5,"./utils":31,"underscore":35}],18:[function(require,module,exports){
 /** SearchIndex. Define an index for searching for reaction and metabolites in
  the map.
 
@@ -7617,7 +7649,6 @@ function previous() {
  */
 
 var utils = require('./utils');
-
 
 var SearchIndex = utils.make_class();
 SearchIndex.prototype = {
@@ -7662,7 +7693,6 @@ function insert(id, record, overwrite, check_record) {
     this.index[id] = record;
 }
 
-
 function remove(record_id) {
     /** Remove the matching record.
 
@@ -7692,7 +7722,6 @@ function find(substring) {
             matches.push(record.data);
     }
     return matches;
-
 }
 
 },{"./utils":31}],19:[function(require,module,exports){
@@ -8238,9 +8267,6 @@ function view_gui(s, option_name, string, options) {
         ['scroll_behavior', 'Scroll to zoom (instead of scroll to pan)',
          ('If checked, then the scroll wheel and trackpad will control zoom ' +
           'rather than pan.'), {'zoom': true, 'pan': false}],
-        ['use_3d_transform', 'Responsive pan and zoom (best for latest Chrome, Firefox, and IE)',
-         ('Depending on your browser, this option may help or hurt ' +
-          'performance when panning and zooming.')],
         ['hide_secondary_metabolites', 'Hide secondary metabolites',
          ('If checked, then only the primary metabolites ' +
           'will be displayed.')],
@@ -9561,6 +9587,7 @@ function new_beziers_for_reactions(reactions) {
  *
  * This Software shall be used for doing good things, not bad things.
  *
+ *
  * Modified by Zachary King (c) 2014.
  *
  **/
@@ -9706,8 +9733,14 @@ module.exports = function(container, config) {
                     divRow.innerHTML = options[i].html;
                     rows.push(divRow);
                     elem.appendChild(divRow);
-                    if (rows.length >= rs.display_limit)
+                    // limit results and add a note at the buttom
+                    if (rows.length >= rs.display_limit) {
+                        var divRow2 = document.createElement('div');
+                        divRow2.innerHTML = ' ' + (options.length - rows.length) + ' more';
+                        rows.push(divRow2);
+                        elem.appendChild(divRow2);
                         break;
+                    }
                 }
                 if (rows.length===0) {
                     return; // nothing to show.
@@ -9803,7 +9836,7 @@ module.exports = function(container, config) {
 
     var rs = {
         get_hint :    function(x) { return x; },
-        display_limit: 100,
+        display_limit: 1000,
         onArrowDown : function() {},               // defaults to no action.
         onArrowUp :   function() {},               // defaults to no action.
         onEnter :     function() {},               // defaults to no action.
@@ -10898,6 +10931,7 @@ function set_json_or_csv_input_button(b, s, pre_fn, post_fn, failure_fn) {
 /* global d3, Blob, XMLSerializer */
 
 var vkbeautify = require('vkbeautify');
+var _ = require('underscore');
 try {
     var saveAs = require('filesaverjs').saveAs;
 } catch (e) {
@@ -10952,7 +10986,8 @@ module.exports = {
     parse_url_components: parse_url_components,
     get_document: get_document,
     get_window: get_window,
-    d3_transform_catch: d3_transform_catch
+    d3_transform_catch: d3_transform_catch,
+    check_browser: check_browser
 };
 
 
@@ -11076,6 +11111,7 @@ function load_files(t, files_to_load, final_callback) {
      final_callback: Function that runs after all files have loaded.
 
      */
+    if (files_to_load.length === 0) final_callback.call(t);
     var i = -1,
         remaining = files_to_load.length;
     while (++i < files_to_load.length) {
@@ -11844,12 +11880,10 @@ function get_document(node) {
     return node.ownerDocument;
 }
 
-
 function get_window(node) {
     /** Get the window for the node */
     return get_document(node).defaultView;
 }
-
 
 function d3_transform_catch(transform_attr) {
     /** Return the result of d3.transform, but catch errors if we are in
@@ -11865,7 +11899,35 @@ function d3_transform_catch(transform_attr) {
     }
 }
 
-},{"filesaverjs":33,"vkbeautify":36}],32:[function(require,module,exports){
+function check_browser(name) {
+    /** Look for name in the user agent string */
+    var browser = function() {
+        /** Thanks to http://stackoverflow.com/questions/2400935/browser-detection-in-javascript */
+        var ua = navigator.userAgent,
+            M = ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [],
+            tem;
+        if (/trident/i.test(M[1])) {
+            tem = /\brv[ :]+(\d+)/g.exec(ua) || [];
+            return 'IE '+ (tem[1] || '');
+        }
+        if (M[1] === 'Chrome') {
+            tem = ua.match(/\b(OPR|Edge)\/(\d+)/);
+            if (tem != null) return tem.slice(1).join(' ').replace('OPR', 'Opera');
+        }
+        M = M[2] ? [ M[1], M[2] ]: [ navigator.appName, navigator.appVersion, '-?' ];
+        if((tem= ua.match(/version\/(\d+)/i))!= null) M.splice(1, 1, tem[1]);
+        return M.join(' ');
+    };
+
+    try {
+        // navigator.userAgent is deprecated, so don't count on it
+        return browser().toLowerCase().indexOf(name) > -1;
+    } catch (e) {
+        return false;
+    }
+}
+
+},{"filesaverjs":33,"underscore":35,"vkbeautify":36}],32:[function(require,module,exports){
 (function (global){
 (function() {
 var _slice = Array.prototype.slice;

@@ -363,9 +363,6 @@ function view_gui(s, option_name, string, options) {
         ['scroll_behavior', 'Scroll to zoom (instead of scroll to pan)',
          ('If checked, then the scroll wheel and trackpad will control zoom ' +
           'rather than pan.'), {'zoom': true, 'pan': false}],
-        ['use_3d_transform', 'Responsive pan and zoom (best for latest Chrome, Firefox, and IE)',
-         ('Depending on your browser, this option may help or hurt ' +
-          'performance when panning and zooming.')],
         ['hide_secondary_metabolites', 'Hide secondary metabolites',
          ('If checked, then only the primary metabolites ' +
           'will be displayed.')],

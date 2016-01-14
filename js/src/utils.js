@@ -1,6 +1,7 @@
 /* global d3, Blob, XMLSerializer */
 
 var vkbeautify = require('vkbeautify');
+var _ = require('underscore');
 try {
     var saveAs = require('filesaverjs').saveAs;
 } catch (e) {
@@ -55,7 +56,8 @@ module.exports = {
     parse_url_components: parse_url_components,
     get_document: get_document,
     get_window: get_window,
-    d3_transform_catch: d3_transform_catch
+    d3_transform_catch: d3_transform_catch,
+    check_browser: check_browser
 };
 
 
@@ -179,6 +181,7 @@ function load_files(t, files_to_load, final_callback) {
      final_callback: Function that runs after all files have loaded.
 
      */
+    if (files_to_load.length === 0) final_callback.call(t);
     var i = -1,
         remaining = files_to_load.length;
     while (++i < files_to_load.length) {
@@ -947,12 +950,10 @@ function get_document(node) {
     return node.ownerDocument;
 }
 
-
 function get_window(node) {
     /** Get the window for the node */
     return get_document(node).defaultView;
 }
-
 
 function d3_transform_catch(transform_attr) {
     /** Return the result of d3.transform, but catch errors if we are in
@@ -965,5 +966,33 @@ function d3_transform_catch(transform_attr) {
         console.error('Cannot run d3.transform, probably becuase this is a node/jsdom test. ' +
                       'Returning a tranform object for testing.');
         return { translate: [0, 0], rotate: 0 };
+    }
+}
+
+function check_browser(name) {
+    /** Look for name in the user agent string */
+    var browser = function() {
+        /** Thanks to http://stackoverflow.com/questions/2400935/browser-detection-in-javascript */
+        var ua = navigator.userAgent,
+            M = ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [],
+            tem;
+        if (/trident/i.test(M[1])) {
+            tem = /\brv[ :]+(\d+)/g.exec(ua) || [];
+            return 'IE '+ (tem[1] || '');
+        }
+        if (M[1] === 'Chrome') {
+            tem = ua.match(/\b(OPR|Edge)\/(\d+)/);
+            if (tem != null) return tem.slice(1).join(' ').replace('OPR', 'Opera');
+        }
+        M = M[2] ? [ M[1], M[2] ]: [ navigator.appName, navigator.appVersion, '-?' ];
+        if((tem= ua.match(/version\/(\d+)/i))!= null) M.splice(1, 1, tem[1]);
+        return M.join(' ');
+    };
+
+    try {
+        // navigator.userAgent is deprecated, so don't count on it
+        return browser().toLowerCase().indexOf(name) > -1;
+    } catch (e) {
+        return false;
     }
 }

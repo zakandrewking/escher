@@ -60,9 +60,13 @@ function _add_cmd(key, ctrl_equals_cmd) {
 
      */
     if (!ctrl_equals_cmd) return key;
-    var replaced = key.replace('ctrl+', 'meta+');
-    if (replaced === key) return key;
-    else return [key, replaced];
+    var key_ar = _.isArray(key) ? key : [key];
+    var new_ar = key_ar.reduce(function(c, k) {
+        var n = k.replace('ctrl+', 'meta+');
+        if (n !== k) c.push(n);
+        return c;
+    }, key_ar.slice());
+    return new_ar.length === key_ar.length ? key : new_ar;
 }
 
 
@@ -120,7 +124,7 @@ function add_enter_listener(callback, one_time) {
      unregisters the listener.
 
      */
-    return this.add_key_listener(callback, 'enter', one_time);
+    return this.add_key_listener('enter', callback, one_time);
 }
 
 
@@ -129,13 +133,20 @@ function add_escape_listener(callback, one_time) {
      unregisters the listener.
 
      */
-    return this.add_key_listener(callback, 'escape', one_time);
+    return this.add_key_listener('escape', callback, one_time);
 }
 
 
-function add_key_listener(callback, key_name, one_time) {
+function add_key_listener(key_name, callback, one_time) {
     /** Call the callback when the key is pressed, then unregisters the
      listener. Returns a function that will unbind the event.
+
+     callback: The callback function with no arguments.
+
+     key_name: A key name, or list of key names, as defined by the mousetrap
+     library: https://craig.is/killing/mice
+
+     one_time: If True, then cancel the listener after the first execution.
 
      */
 
@@ -144,8 +155,7 @@ function add_key_listener(callback, key_name, one_time) {
     // unbind function ready to go
     var unbind = this.mousetrap.unbind.bind(this.mousetrap, key_name);
 
-    this.mousetrap.bind(key_name, function(e) {
-        console.log('key_listener', key_name, one_time);
+    this.mousetrap.bind(_add_cmd(key_name, this.ctrl_equals_cmd), function(e) {
         e.preventDefault();
         callback();
         if (one_time) unbind();

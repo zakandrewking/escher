@@ -72,7 +72,7 @@ function init(map_data, model_data, embedded_css, selection, options) {
         // view options
         menu: 'all',
         scroll_behavior: 'pan',
-        use_3d_transform: false,
+        use_3d_transform: !utils.check_browser('safari'),
         enable_editing: true,
         enable_keys: true,
         enable_search: true,
@@ -141,7 +141,7 @@ function init(map_data, model_data, embedded_css, selection, options) {
         }.bind(this),
         // the options that are erased when the settings menu is canceled
         conditional_options = ['hide_secondary_metabolites', 'show_gene_reaction_rules',
-                               'hide_all_labels', 'scroll_behavior', 'use_3d_transform', 'reaction_styles',
+                               'hide_all_labels', 'scroll_behavior', 'reaction_styles',
                                'reaction_compare_style', 'reaction_scale',
                                'reaction_no_data_color', 'reaction_no_data_size',
                                'and_method_in_gene_reaction_rule', 'metabolite_styles',
@@ -187,7 +187,6 @@ function init(map_data, model_data, embedded_css, selection, options) {
                 if (this.zoom_container !== null) {
                     var new_behavior = this.settings.get_option('scroll_behavior');
                     this.zoom_container.set_scroll_behavior(new_behavior);
-                    this.zoom_container.set_use_3d_transform(this.settings.get_option('use_3d_transform'));
                 }
                 if (this.map !== null) {
                     this.map.draw_all_nodes(false);

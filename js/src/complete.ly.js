@@ -7,6 +7,7 @@
  *
  * This Software shall be used for doing good things, not bad things.
  *
+ *
  * Modified by Zachary King (c) 2014.
  *
  **/
@@ -152,8 +153,14 @@ module.exports = function(container, config) {
                     divRow.innerHTML = options[i].html;
                     rows.push(divRow);
                     elem.appendChild(divRow);
-                    if (rows.length >= rs.display_limit)
+                    // limit results and add a note at the buttom
+                    if (rows.length >= rs.display_limit) {
+                        var divRow2 = document.createElement('div');
+                        divRow2.innerHTML = ' ' + (options.length - rows.length) + ' more';
+                        rows.push(divRow2);
+                        elem.appendChild(divRow2);
                         break;
+                    }
                 }
                 if (rows.length===0) {
                     return; // nothing to show.
@@ -249,7 +256,7 @@ module.exports = function(container, config) {
 
     var rs = {
         get_hint :    function(x) { return x; },
-        display_limit: 100,
+        display_limit: 1000,
         onArrowDown : function() {},               // defaults to no action.
         onArrowUp :   function() {},               // defaults to no action.
         onEnter :     function() {},               // defaults to no action.

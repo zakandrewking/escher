@@ -111,7 +111,7 @@ class BuilderHandler(BaseHandler):
         for a in ['starting_reaction', 'model_name', 'map_name', 'map_json',
                   'reaction_no_data_color', 'reaction_no_data_size',
                   'metabolite_no_data_color', 'metabolite_no_data_size',
-                  'hide_secondary_nodes', 'use_3d_transform']:
+                  'hide_secondary_nodes']:
             args = self.get_arguments(a)
             if len(args)==1:
                 builder_kwargs[a] = (True if args[0].lower()=='true' else

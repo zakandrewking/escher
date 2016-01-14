@@ -57,7 +57,6 @@ function submit(server_index, local_index, map_download) {
         options_value = d3.select('#tools').node().value,
         scroll_value = d3.select('#scroll').node().checked,
         never_ask_value = d3.select('#never_ask').node().checked,
-        use_3d_transform_value = d3.select('#use_3d_transform').node().checked,
         add = [],
         url;
     // only add model for builder
@@ -69,8 +68,6 @@ function submit(server_index, local_index, map_download) {
         add.push('scroll_behavior=zoom');
     if (never_ask_value)
         add.push('never_ask_before_quit=true');
-    if (use_3d_transform_value)
-        add.push('use_3d_transform=true');
     if (options_value == 'viewer')
         add.push('enable_editing=false');
     else

@@ -262,23 +262,24 @@ function reload(selected_node, coords, starting_from_scratch) {
                 } else {
                     // get the metabolite names or IDs
                     var mets = {},
-                        show_met_names = [];
+                        show_met_names = [],
+                        met_id;
                     if (show_names) {
-                        for (var met_id in reaction.metabolites) {
+                        for (met_id in reaction.metabolites) {
                             var name = cobra_metabolites[met_id].name;
                             mets[name] = reaction.metabolites[met_id];
                             show_met_names.push(name);
                         }
                     } else {
                         mets = utils.clone(reaction.metabolites);
-                        for (var met_id in reaction.metabolites) {
+                        for (met_id in reaction.metabolites) {
                             show_met_names.push(met_id);
                         }
                     }
-                    var key = show_names ? 'name' : 'bigg_id',
-                        show_gene_names = reaction.genes.map(function(g_obj) {
-                            return g_obj[key];
-                        });
+                    var show_gene_names = _.flatten(reaction.genes.map(function(g_obj) {
+                        return [g_obj.name, g_obj.bigg_id];
+                    }));
+                    console.log(show_gene_names);
                     // get the reaction string
                     var reaction_string = CobraModel.build_reaction_string(mets,
                                                                            reaction.reversibility,
@@ -307,9 +308,8 @@ function reload(selected_node, coords, starting_from_scratch) {
         };
     }
     options = options.sort(sort_fn);
-    // set up the box with data, searching for first num results
-    var num = 20,
-        complete = this.completely;
+    // set up the box with data
+    var complete = this.completely;
     complete.options = options;
 
     // TODO test this behavior
