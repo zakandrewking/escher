@@ -7629,11 +7629,9 @@ SearchIndex.prototype = {
 module.exports = SearchIndex;
 
 
-// definitions
 function init() {
     this.index = {};
 }
-
 
 function insert(id, record, overwrite, check_record) {
     /** Insert a record into the index.

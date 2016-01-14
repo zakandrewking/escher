@@ -7,7 +7,6 @@
 
 var utils = require('./utils');
 
-
 var SearchIndex = utils.make_class();
 SearchIndex.prototype = {
     init: init,
@@ -18,11 +17,9 @@ SearchIndex.prototype = {
 module.exports = SearchIndex;
 
 
-// definitions
 function init() {
     this.index = {};
 }
-
 
 function insert(id, record, overwrite, check_record) {
     /** Insert a record into the index.
@@ -53,7 +50,6 @@ function insert(id, record, overwrite, check_record) {
     this.index[id] = record;
 }
 
-
 function remove(record_id) {
     /** Remove the matching record.
 
@@ -83,5 +79,4 @@ function find(substring) {
             matches.push(record.data);
     }
     return matches;
-
 }
