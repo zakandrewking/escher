@@ -13,9 +13,11 @@ easiest way to use Escher is to browse or build maps on the
 Visit the [documentation](http://escher.readthedocs.org/) to get started with
 Escher and explore the API.
 
-Check out the [wiki](https://github.com/zakandrewking/escher/wiki) for
-information on Escher development. Anyone should feel free to submit bugs and
-feature requests as Issues, or, better yet, Pull Requests.
+Check out the
+[developer docs](https://escher.readthedocs.org/en/latest/development.html) and
+the [wiki](https://github.com/zakandrewking/escher/wiki) for information on
+Escher development. Anyone should feel free to submit bugs and feature requests
+as Issues, or, better yet, Pull Requests.
 
 Follow [@zakandrewking](https://twitter.com/zakandrewking) for Escher updates.
 

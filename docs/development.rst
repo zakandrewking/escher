@@ -14,21 +14,25 @@ Escher, have a look at the `escher-demo repository`_.
 Building and testing Escher
 ===========================
 
-Build the minified and non-minified javascript files::
+Escher uses grunt to manage the build process. To run typical build steps, just run::
 
-    python setup.py buildjs
+  grunt
 
-Test Python and start Jasmine for JavaScript testing::
+To test the JavaScript files, run::
 
-    python setup.py test
+  grunt test
+
+For Python testing, run this in the ``py`` directory::
+
+  python setup.py test
 
 Build the static website::
 
-    python setup.py build_gh
+  python setup.py build_gh
 
 Clear static website files::
 
-    python setup.py clean
+  python setup.py clean
 
 
 Generating and reading Escher and COBRA files

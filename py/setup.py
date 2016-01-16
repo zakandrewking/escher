@@ -23,6 +23,7 @@ directory = dirname(realpath(__file__))
 sys.path.insert(0, join(directory, 'escher'))
 version = __import__('version').__version__
 full_version = __import__('version').__full_version__
+package = __import__('version').package
 port = 8789
 
 class CleanCommand(Command):
@@ -94,10 +95,11 @@ class TestCommand(Command):
 setup(
     name='Escher',
     version=full_version,
-    author='Zachary King',
-    url='https://escher.github.io',
-    description='Escher: A Web Application for Building, Sharing, and Embedding Data-Rich Visualizations of Biological Pathways',
-    license='MIT',
+    author=package['author'],
+    url=package['homepage'],
+    description=package['description'],
+    keywords=', '.join(package['keywords']),
+    license=package['license'],
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
@@ -110,7 +112,6 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Operating System :: OS Independent'
     ],
-    keywords='visualization, pathway maps, web application, D3.js',
     packages=['escher'],
     package_data={'escher': ['static/*', 'static/*', 'templates/*',
                              'resources/*']},
