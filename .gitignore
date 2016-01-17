@@ -15,3 +15,5 @@ _build/
 node_modules/
 js/src/coverage/
 .cache/
+*.tar.gz
+*.whl

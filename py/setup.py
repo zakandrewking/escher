@@ -113,8 +113,9 @@ setup(
         'Operating System :: OS Independent'
     ],
     packages=['escher'],
-    package_data={'escher': ['static/*', 'static/*', 'templates/*',
-                             'resources/*']},
+    package_data={'escher': ['static/escher/*', 'static/fonts/*',
+                             'static/homepage/*', 'static/img/*/',
+                             'static/lib/*', 'templates/*', 'resources/*']},
     install_requires=['Jinja2>=2.7.3',
                       'tornado>=4.0.2',
                       'pytest>=2.6.2',
