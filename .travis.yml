@@ -6,6 +6,7 @@ install:
   - npm install
 # run tests
 script:
+  - ./node_modules/grunt-cli/bin/grunt default
   - cd py
   - python setup.py test --noweb
   - cd ..

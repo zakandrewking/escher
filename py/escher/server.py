@@ -187,19 +187,12 @@ class StaticHandler(BaseHandler):
         print('getting path %s' % path)
         self.serve_path(path)
 
-class DocsHandler(BaseHandler):
-    def get(self, path):
-        path = join(root_directory, 'docs', '_build', 'html', path)
-        print('getting path %s' % path)
-        self.serve_path(path)
-
 settings = {'debug': True}
 
 application = Application([
     (r'.*(escher/static/.*)', StaticHandler),
     (r'/builder/index.html', BuilderHandler),
     (r'/%s/%s(/.*)' % (__schema_version__, __map_model_version__), MapModelHandler),
-    (r'/docs/(.*)', DocsHandler),
     (r'/', IndexHandler),
 ], **settings)
 

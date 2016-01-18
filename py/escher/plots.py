@@ -317,6 +317,7 @@ class Builder(object):
         - metabolite_no_data_size
         - highlight_missing
         - allow_building_duplicate_reactions
+        - cofactors
 
     All keyword arguments can also be set on an existing Builder object
     using setter functions, e.g.:
@@ -365,9 +366,8 @@ class Builder(object):
 
         # set up the options
         self.options = ['use_3d_transform',
-                        'identifiers_on_map',
-                        'show_gene_reaction_rules',
                         'unique_map_id',
+                        'show_gene_reaction_rules',
                         'primary_metabolite_radius',
                         'secondary_metabolite_radius',
                         'marker_radius',
@@ -383,8 +383,10 @@ class Builder(object):
                         'metabolite_scale',
                         'metabolite_no_data_color',
                         'metabolite_no_data_size',
+                        'identifiers_on_map',
                         'highlight_missing',
-                        'allow_building_duplicate_reactions']
+                        'allow_building_duplicate_reactions',
+                        'cofactors']
         def get_getter_setter(o):
             """Use a closure."""
             # create local fget and fset functions

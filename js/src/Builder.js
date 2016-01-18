@@ -115,6 +115,8 @@ function init(map_data, model_data, embedded_css, selection, options) {
         identifiers_on_map: 'bigg_id',
         highlight_missing: false,
         allow_building_duplicate_reactions: false,
+        cofactors: ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp', 'gdp',
+                    'h', 'coa', 'ump', 'h20', 'ppi'],
         // Callbacks
         first_load_callback: null
     }, {

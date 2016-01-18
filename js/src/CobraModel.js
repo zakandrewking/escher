@@ -151,8 +151,6 @@ function from_cobra_json(model_data) {
 function init() {
     this.reactions = {};
     this.metabolites = {};
-    this.cofactors = ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
-                      'gdp', 'h', 'coa'];
 }
 
 function apply_reaction_data(reaction_data, styles, compare_style) {

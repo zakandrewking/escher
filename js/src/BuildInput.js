@@ -279,7 +279,6 @@ function reload(selected_node, coords, starting_from_scratch) {
                     var show_gene_names = _.flatten(reaction.genes.map(function(g_obj) {
                         return [g_obj.name, g_obj.bigg_id];
                     }));
-                    console.log(show_gene_names);
                     // get the reaction string
                     var reaction_string = CobraModel.build_reaction_string(mets,
                                                                            reaction.reversibility,

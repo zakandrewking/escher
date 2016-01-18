@@ -29,7 +29,8 @@ describe('Map', () => {
                              reaction_styles: [],
                              reaction_compare_style: 'diff',
                              metabolite_styles: [],
-                             metabolite_compare_style: 'diff' },
+                             metabolite_compare_style: 'diff',
+                             cofactors: [] },
         required_conditional_options = [ 'reaction_scale', 'metabolite_scale' ],
         set_option = function(key, val) { required_options[key] = val; },
         get_option = function(key) { return required_options[key]; }
@@ -136,12 +137,12 @@ describe('Map', () => {
     assert.deepEqual(map.search_index.find('^g3p_c$')[0],
                      { type: 'metabolite', node_id: '1576545' })
   })
-  
+
   it('search index text labels', () => {
     assert.deepEqual(map.search_index.find('TEST')[0],
                      { type: 'text_label', text_label_id: '1' })
   })
-  
+
   it('search index delete', () => {
     // delete reactions
     map.delete_reaction_data(['1576769'])

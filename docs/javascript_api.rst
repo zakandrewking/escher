@@ -37,11 +37,11 @@ JavaScript API
 
        .. js:attribute:: options.use_3d_transform
 
-          (Default: ``false``) If true, then use CSS3 3D transforms to speed up
-          panning and zooming. This feature will only work on browsers that
-          `support the 3D transforms`_. It works best in the latest versions of
-          Chrome, Firefox and Internet Explorer. Safari works better with this
-          turned off.
+          (Default: Chooses a good option by testing the browser) If true, then
+          use CSS3 3D transforms to speed up panning and zooming. This feature
+          will only work on browsers that `support the 3D transforms`_. It works
+          best in the latest versions of Chrome, Firefox and Internet
+          Explorer. Safari works better with this turned off.
 
        .. js:attribute:: options.enable_editing
 
@@ -255,6 +255,13 @@ JavaScript API
           (Default: ``true``) If true, then building duplicate reactions is
           allowed. If false, then duplicate reactions are hidden in *Add
           reaction mode*.
+
+       .. js:attribute:: options.cofactors
+
+          (Default: ``['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp',
+          'gdp', 'h', 'coa', 'ump', 'h20', 'ppi']``) A list of metabolite IDs to
+          treat as cofactors. These will be secondary metabolites in new
+          reactions.
 
        **Callbacks**
 

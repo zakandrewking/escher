@@ -350,12 +350,6 @@ function setup(server_index, local_index, map_download) {
     if (has_maps && map_node.selectedIndex == 0)
         map_node.selectedIndex = 1;
 
-    // select offline if it looks like we're offline
-    if (server_index === null) {
-        var n = d3.select('#tools').node();
-        n.selectedIndex = 2;
-    }
-
     // submit button
     d3.select('#submit')
         .on('click', submit.bind(null, server_index, local_index, map_download));

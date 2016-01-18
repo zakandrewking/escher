@@ -12,14 +12,6 @@ describe('CobraModel', function() {
         assert.ok(new CobraModel());
     });
 
-    it('has a list of cofactors', function () {
-        var model_data = { reactions: [],
-                           metabolites: [],
-                           genes: [] },
-            model = CobraModel.from_cobra_json(model_data);
-        assert.include(model.cofactors, 'atp');
-    });
-
     it('can be imported and exported', function() {
         // set up
         var model_data = { reactions: [ { id: 'acc_tpp',

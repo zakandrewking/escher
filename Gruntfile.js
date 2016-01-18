@@ -156,7 +156,6 @@ module.exports = function(grunt) {
       ],
       site: 'site/'
     },
-    gitadd: '*',
     gitpush: {
       tracking: {
         options: {
@@ -167,7 +166,7 @@ module.exports = function(grunt) {
     release: {
       // bump the version and commit, but do not push anything
       options: {
-        beforeRelease: tasks.concat(['gitadd']),
+        beforeRelease: 'clean',
         tagName: 'v<%= version %>',
         push: false,
         pushTags: false,

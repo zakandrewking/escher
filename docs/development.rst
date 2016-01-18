@@ -14,6 +14,10 @@ Escher, have a look at the `escher-demo repository`_.
 Building and testing Escher
 ===========================
 
+First, install dependencies with npm::
+
+  npm install
+
 Escher uses grunt to manage the build process. To run typical build steps, just run::
 
   grunt
