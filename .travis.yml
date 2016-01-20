@@ -2,15 +2,15 @@ language: node_js
 node_js: "4.1"
 # install dependencies
 install:
-  - cd py; pip install --user -e '.[all]'; cd ..
   - npm install
+  - ./node_modules/grunt-cli/bin/grunt default
+  - cd py; pip install --user -e '.[all]'; cd ..
 # run tests
 script:
-  - ./node_modules/grunt-cli/bin/grunt default
+  - ./node_modules/grunt-cli/bin/grunt coverage
   - cd py
   - python setup.py test --noweb
   - cd ..
-  - ./node_modules/grunt-cli/bin/grunt coverage
 # no emails
 notifications:
   email: false
