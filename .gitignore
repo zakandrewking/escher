@@ -17,3 +17,10 @@ js/src/coverage/
 .cache/
 *.tar.gz
 *.whl
+
+# built files
+js/dist/
+css/dist
+js/src/inline.js
+py/escher/package.json
+py/escher/static/escher/

@@ -18,10 +18,11 @@
   "repository": "github:zakandrewking/escher",
   "bugs": "https://github.com/zakandrewking/escher/issues",
   "files": [
+    "js/src/*.js",
     "js/dist/*",
     "css/dist/*"
   ],
-  "main": "js/dist/escher.js",
+  "main": "js/src/main.js",
   "devDependencies": {
     "baconjs": "^0.7.71",
     "chai": "^3.3.0",
@@ -51,6 +52,7 @@
     "vkbeautify": "^0.99.1"
   },
   "scripts": {
-    "test": "node debug ./node_modules/.bin/grunt test"
+    "test": "node debug ./node_modules/.bin/grunt test",
+    "compile": "./node_modules/grunt-cli/bin/grunt"
   }
 }
