@@ -1,7 +1,7 @@
 JavaScript API
 ==============
 
-.. js:class:: escher.Builder(map_data, model_data, embedded_css, options)
+.. js:class:: escher.Builder(map_data, model_data, embedded_css, selection, options)
 
     A Builder object contains all the UI and logic to generate a map builder or viewer.
 

@@ -4,7 +4,9 @@ node_js: "4.1"
 install:
   - npm install
   - ./node_modules/grunt-cli/bin/grunt default
-  - cd py; pip install --user -e '.[all]'; cd ..
+  - cd py
+  - pip install --user -e '.[all]'
+  - cd ..
 # run tests
 script:
   - ./node_modules/grunt-cli/bin/grunt coverage
