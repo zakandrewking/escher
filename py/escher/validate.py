@@ -7,6 +7,28 @@ from escher.urls import root_directory
 from os.path import join
 import re
 import json
+import sys
+
+usage_string = """
+Usage:
+
+./validate my_map.json
+
+OR
+
+python -m escher.validate my_map.json
+
+"""
+
+def main():
+    if len(sys.argv) < 2:
+        print(usage_string)
+        sys.exit(1)
+
+    with open(sys.argv[1], 'r') as f:
+        map_data = json.load(f)
+    validate_map(map_data)
+    print('Your map passed inspection and is free of infection.')
 
 def validate_map(map_data):
     """Validate a map using the jsonschema, and some extra checks for consistency."""
@@ -103,11 +125,4 @@ def genes_for_gene_reaction_rule(rule):
     return genes
 
 if __name__=="__main__":
-    from sys import argv
-    if len(argv) < 2:
-        raise Exception('Must supply a map JSON file')
-
-    with open(argv[1], 'r') as f:
-        map_data = json.load(f)
-    validate_map(map_data)
-    print('Your map passed inspection and is free of infection.')
+    main()
