@@ -151,6 +151,8 @@ Map.prototype = {
     highlight_node: highlight_node,
     highlight_text_label: highlight_text_label,
     highlight: highlight,
+    // full screen
+    full_screen: full_screen,
     // io
     save: save,
     map_for_export: map_for_export,
@@ -1989,6 +1991,41 @@ function highlight(sel) {
     if (sel !== null) {
         sel.classed('highlight', true);
     }
+}
+
+// -------------------------------------------------------------------------
+// Full screen
+
+function full_screen() {
+    //First, request the fullscreen,
+    // then after it becomes fullscreen, click on the zoom_to_extend button by index (i == 2)
+
+    var builder = d3.select('.escher-container').datum();
+    var container = builder.selection[0][0];
+    var cont = $(container).attr('id');
+    var elem = document.getElementById(cont);
+
+    if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+        document.addEventListener("fullscreenchange", function () {
+            d3.selectAll(".simple-button").filter(function (d, i) {if (i == 2) this.click();});}, false);
+    } else if (elem.msRequestFullscreen) {
+        elem.msRequestFullscreen();
+        document.addEventListener("MSFullscreenChange", function () {
+            d3.selectAll(".simple-button").filter(function (d, i) {if (i == 2) this.click();});}, false);
+    } else if (elem.mozRequestFullScreen) {
+        elem.mozRequestFullScreen();
+        document.addEventListener("mozfullscreenchange", function () {
+            d3.selectAll(".simple-button").filter(function (d, i) {if (i == 2) this.click();});}, false);
+    } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+        document.addEventListener("webkitfullscreenchange", function () {
+            d3.selectAll(".simple-button").filter(function (d, i) {if (i == 2) this.click();});}, false);
+    } else {
+        console.error("full screen does not seem to be supported on this system.");
+    }
+
+    return null;
 }
 
 // -------------------------------------------------------------------------
