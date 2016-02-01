@@ -3,6 +3,8 @@
 Escher
 ======
 
+[![Join the chat at https://gitter.im/zakandrewking/escher](https://badges.gitter.im/zakandrewking/escher.svg)](https://gitter.im/zakandrewking/escher?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Escher is a web-based tool to build, view, share, and embed metabolic maps. The easiest way to use Escher is to browse or build maps on the  [Escher website](http://escher.github.io/).
 
 Visit the [documentation](http://escher.readthedocs.org/) to get started with Escher and explore the API.
