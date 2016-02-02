@@ -20,17 +20,15 @@ function individual_button(s, button) {
         c = b.append('span');
     if ('id' in button) b.attr('id', button.id);
     if ('classes' in button) b.attr('class', button.classes);
-
-    // text
-    if ('key_text' in button && 'text' in button && button.key_text !== null)
-        c.text(button.text + button.key_text);
-    else if ('text' in button)
-        c.text(button.text);
-
+    if ('text' in button) c.text(button.text);
     if ('icon' in button) c.classed(button.icon, true);
     if ('key' in button) set_button(b, button.key);
-    // if ('tooltip' in button)
-    b.attr('title', button.tooltip);
+
+    // tooltip
+    if ('key_text' in button && 'tooltip' in button && button.key_text !== null)
+        b.attr('title', button.tooltip + button.key_text);
+    else if ('tooltip' in button)
+        b.attr('title', button.tooltip);
 }
 
 function radio_button_group(s) {

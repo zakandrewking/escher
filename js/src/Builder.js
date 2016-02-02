@@ -351,9 +351,11 @@ function load_map(map_data, should_update_data) {
     // set up menu and status bars
     if (this.options.menu=='all') {
         this._setup_menu(menu_div, button_div, this.map, this.zoom_container, this.map.key_manager, keys,
-                         this.options.enable_editing, this.options.enable_keys, this.options.full_screen_button);
+                         this.options.enable_editing, this.options.enable_keys, this.options.full_screen_button)
     } else if (this.options.menu=='zoom') {
-        this._setup_simple_zoom_buttons(button_div, keys, this.options.full_screen_button);
+      this._setup_simple_zoom_buttons(button_div, keys,
+                                      this.options.full_screen_button,
+                                      this.options.enable_keys)
     }
 
     // setup selection box
@@ -1063,7 +1065,8 @@ function _setup_menu(menu_selection, button_selection, map, zoom_container,
     }
 }
 
-function _setup_simple_zoom_buttons(button_selection, keys, full_screen_button) {
+function _setup_simple_zoom_buttons(button_selection, keys, full_screen_button,
+                                    enable_keys) {
     var button_panel = button_selection.append('div')
             .attr('id', 'simple-button-panel');
 
@@ -1072,23 +1075,27 @@ function _setup_simple_zoom_buttons(button_selection, keys, full_screen_button) 
                          { key: keys.zoom_in,
                            text: '+',
                            classes: 'simple-button',
-                           tooltip: 'Zoom in (Ctrl +)' });
+                           tooltip: 'Zoom in',
+                           key_text: (enable_keys ? ' (Ctrl and +)' : null) })
     ui.individual_button(button_panel.append('div'),
                          { key: keys.zoom_out,
                            text: '–',
                            classes: 'simple-button',
-                           tooltip: 'Zoom out (Ctrl -)' });
+                           tooltip: 'Zoom out',
+                           key_text: (enable_keys ? ' (Ctrl and -)' : null) })
     ui.individual_button(button_panel.append('div'),
                          { key: keys.extent_canvas,
                            text: '↔',
                            classes: 'simple-button',
-                           tooltip: 'Zoom to canvas (Ctrl 1)' });
+                           tooltip: 'Zoom to canvas',
+                           key_text: (enable_keys ? ' (Ctrl+1)' : null) })
     if (full_screen_button) {
         ui.individual_button(button_panel.append('div'),
                              { key: keys.full_screen,
                                text: '▣',
                                classes: 'simple-button',
-                               tooltip: 'Full screen (Ctrl 2)' })
+                               tooltip: 'Full screen',
+                               key_text: (enable_keys ? ' (Ctrl+2)' : null) })
     }
 }
 

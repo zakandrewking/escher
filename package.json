@@ -23,6 +23,7 @@
     "css/dist/*"
   ],
   "main": "js/src/main.js",
+  "engines": { "node": ">=5.0" },
   "devDependencies": {
     "baconjs": "^0.7.71",
     "chai": "^3.3.0",
@@ -52,7 +53,8 @@
     "vkbeautify": "^0.99.1"
   },
   "scripts": {
-    "test": "node debug ./node_modules/.bin/grunt test",
-    "compile": "./node_modules/grunt-cli/bin/grunt"
+    "compile": "./node_modules/.bin/grunt default",
+    "test": "./node_modules/.bin/grunt test",
+    "test-debug": "node debug ./node_modules/.bin/grunt test"
   }
 }

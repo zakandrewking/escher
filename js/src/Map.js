@@ -2038,11 +2038,14 @@ function unlisten_for_full_screen () {
  * Enter full screen if supported by the browser.
  */
 function full_screen() {
-    var e = this.sel.node()
+    var sel = this.zoom_container.selection
+    var e = sel.node()
     var d = document
     var full_screen_on = (d.fullscreenElement || d.mozFullScreenElement ||
                           d.webkitFullscreenElement || d.msFullscreenElement)
     if (full_screen_on) {
+        // apply full heigh/width 100%
+        sel.classed('full-screen-on', false)
         // exit
         if      (d.exitFullscreen)       d.exitFullscreen()
         else if (d.mozCancelFullScreen)  d.mozCancelFullScreen()
@@ -2050,6 +2053,7 @@ function full_screen() {
         else if (d.msExitFullscreen)     d.msExitFullscreen()
         else throw Error('Cannot exit full screen')
     } else {
+        sel.classed('full-screen-on', true)
         // enter
         if      (e.requestFullscreen)       e.requestFullscreen()
         else if (e.mozRequestFullScreen)    e.mozRequestFullScreen()

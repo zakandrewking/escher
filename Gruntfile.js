@@ -167,7 +167,7 @@ module.exports = function(grunt) {
     release: {
       // bump the version and commit, but do not push anything
       options: {
-        beforeRelease: tasks.concat(['gitadd']),
+        beforeRelease: [...tasks, 'gitadd'],
         tagName: 'v<%= version %>',
         push: false,
         pushTags: false,
@@ -211,5 +211,5 @@ module.exports = function(grunt) {
   grunt.registerTask('test', ['mochaTest'])
   grunt.registerTask('coverage', ['env:coverage', 'instrument', 'mochaTest',
                                   'storeCoverage', 'makeReport', 'coveralls'])
-  grunt.registerTask('publish', ['gitpush', 'shell:npm', 'shell:pypi'])
+  grunt.registerTask('publish', ['gitpush', ...tasks, 'shell:npm', 'shell:pypi'])
 }

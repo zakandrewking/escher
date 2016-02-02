@@ -25,10 +25,6 @@ _escher_local = {
 }
 
 _escher_web = {
-    'builder_css': 'builder-%s.css' % __version__,
-    'builder_css_min': 'builder-%s.min.css' % __version__,
-    'escher': 'escher-%s.js' % __version__,
-    'escher_min': 'escher-%s.min.js' % __version__,
     'server_index': '%s/%s/index.json' % (__schema_version__, __map_model_version__),
     'map_download': '%s/%s/maps/' % (__schema_version__, __map_model_version__),
     'model_download': '%s/%s/models/' % (__schema_version__, __map_model_version__),
@@ -47,6 +43,10 @@ _dependencies = {
 }
 
 _dependencies_cdn = {
+    'builder_css': '//npmcdn.com/escher-vis@%s/css/dist/builder.css' % __version__,
+    'builder_css_min': '//npmcdn.com/escher-vis@%s/css/dist/builder.min.css' % __version__,
+    'escher': '//npmcdn.com/escher-vis@%s/js/dist/escher.js' % __version__,
+    'escher_min': '//npmcdn.com/escher-vis@%s/js/dist/escher.min.js' % __version__,
     'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.5.9/d3.min.js',
     'boot_js': '//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js',
     'boot_css': '//netdna.bootstrapcdn.com/bootswatch/3.1.1/simplex/bootstrap.min.css',
@@ -113,7 +113,7 @@ def get_url(name, source='web', local_host=None, protocol=None):
             return apply_local_host(_dependencies[name])
         return _dependencies[name]
     # cdn dependencies
-    elif name in _dependencies_cdn and source=='web':
+    elif name in _dependencies_cdn and source == 'web':
         return protocol + _dependencies_cdn[name]
 
     raise Exception('name not found')
