@@ -58,8 +58,9 @@ function init(selection, scroll_behavior, use_3d_transform, fill_screen) {
 
     // fill screen classes
     if (fill_screen) {
-        d3.select("body").classed('fill-screen-body', true);
-        selection.classed('fill-screen-div', true);
+        d3.select('html').classed('fill-screen', true)
+        d3.select('body').classed('fill-screen', true)
+        selection.classed('fill-screen-div', true)
     }
 
     // make the svg

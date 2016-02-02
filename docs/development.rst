@@ -20,11 +20,11 @@ First, install dependencies with npm::
 
 Escher uses grunt to manage the build process. To run typical build steps, just run::
 
-  grunt
+  npm run compile
 
 To test the JavaScript files, run::
 
-  grunt test
+  npm run test
 
 For Python testing, run this in the ``py`` directory::
 
@@ -54,7 +54,7 @@ The Escher layout schema is designed to be as simple as possible. For example,
 the `core metabolism map`_ of Escherichia coli is layed out like this:
 
 ::
-   
+
     [
         {
             "map_name": "E coli core.Core metabolism",
@@ -67,7 +67,7 @@ the `core metabolism map`_ of Escherichia coli is layed out like this:
             "reactions": { ... },
             "nodes": { ... },
             "text_label": { ... },
-            "canvas": { 
+            "canvas": {
                 "x": 7.857062530517567,
                 "y": 314.36893920898433,
                 "width": 5894.515691375733,
@@ -85,7 +85,7 @@ exactly these values for the Escher map to be valid.
 In the next section, the reactions, nodes, labels, and canvas are all
 defined. For reactions, nodes, and text labels, each element has a key that is
 an arbitrary integer. As long as there are no repeated IDs (e.g. no 2 segments
-with the ID 517), then everything should work fine. 
+with the ID 517), then everything should work fine.
 
 Read through the schema (here_) for more detail on the format.
 

@@ -152,6 +152,8 @@ Map.prototype = {
     highlight_text_label: highlight_text_label,
     highlight: highlight,
     // full screen
+    listen_for_full_screen: listen_for_full_screen,
+    unlisten_for_full_screen: unlisten_for_full_screen,
     full_screen: full_screen,
     // io
     save: save,
@@ -168,7 +170,7 @@ module.exports = Map;
 function init(svg, css, selection, zoom_container, settings,
               cobra_model, canvas_size_and_loc, enable_search,
               map_name, map_id, map_description) {
-    if (canvas_size_and_loc===null) {
+    if (canvas_size_and_loc === null) {
         var size = zoom_container.get_size();
         canvas_size_and_loc = {x: -size.width, y: -size.height,
                                width: size.width*3, height: size.height*3};
@@ -264,7 +266,14 @@ function init(svg, css, selection, zoom_container, settings,
 
     // rotation mode off
     this.rotation_on = false;
-};
+
+    // set up full screen listener
+    this.listen_for_full_screen(function () {
+        setTimeout(function() {
+            this.zoom_extent_canvas()
+        }.bind(this), 50)
+    }.bind(this))
+}
 
 // -------------------------------------------------------------------------
 // Import
@@ -419,8 +428,8 @@ function from_data(map_data, svg, css, selection, zoom_container, settings,
     // definitions
     function get_largest_id(obj, current_largest) {
         /** Return the largest integer key in obj, or current_largest, whichever is bigger. */
-        if (current_largest===undefined) current_largest = 0;
-        if (obj===undefined) return current_largest;
+        if (_.isUndefined(current_largest)) current_largest = 0;
+        if (_.isUndefined(obj)) return current_largest;
         return Math.max.apply(null, Object.keys(obj).map(function(x) {
             return parseInt(x);
         }).concat([current_largest]));
@@ -521,8 +530,8 @@ function draw_all_reactions(draw_beziers, clear_deleted) {
      clear deleted nodes.
 
      */
-    if (draw_beziers===undefined) draw_beziers = true;
-    if (clear_deleted===undefined) clear_deleted = true;
+    if (_.isUndefined(draw_beziers)) draw_beziers = true;
+    if (_.isUndefined(clear_deleted)) clear_deleted = true;
 
     // Draw all reactions.
     var reaction_ids = [];
@@ -555,7 +564,7 @@ function draw_these_reactions(reaction_ids, draw_beziers) {
      control points.
 
      */
-    if (draw_beziers===undefined) draw_beziers = true;
+    if (_.isUndefined(draw_beziers)) draw_beziers = true;
 
     // find reactions for reaction_ids
     var reaction_subset = utils.object_slice_for_ids_ref(this.reactions,
@@ -590,7 +599,7 @@ function clear_deleted_reactions(draw_beziers) {
      bezier control points.
 
      */
-    if (draw_beziers===undefined) draw_beziers = true;
+    if (_.isUndefined(draw_beziers)) draw_beziers = true;
 
     // remove deleted reactions and segments
     utils.draw_an_object(this.sel, '#reactions', '.reaction', this.reactions, 'reaction_id',
@@ -795,7 +804,7 @@ function hide_beziers() {
 }
 
 function toggle_beziers(on_off) {
-    if (on_off===undefined) this.beziers_enabled = !this.beziers_enabled;
+    if (_.isUndefined(on_off)) this.beziers_enabled = !this.beziers_enabled;
     else this.beziers_enabled = on_off;
     this.draw_all_beziers();
     this.callback_manager.run('toggle_beziers', null, this.beziers_enabled);
@@ -1876,6 +1885,7 @@ function zoom_extent_nodes(margin) {
      */
     this._zoom_extent(margin, 'nodes');
 }
+
 function zoom_extent_canvas(margin) {
     /** Zoom to fit the canvas.
 
@@ -1886,6 +1896,7 @@ function zoom_extent_canvas(margin) {
      */
     this._zoom_extent(margin, 'canvas');
 }
+
 function _zoom_extent(margin, mode) {
     /** Zoom to fit the canvas or all the nodes. Returns error if one is
      raised.
@@ -1900,8 +1911,8 @@ function _zoom_extent(margin, mode) {
      */
 
     // optional args
-    if (margin===undefined) margin = (mode=='nodes' ? 0.2 : 0);
-    if (mode===undefined) mode = 'canvas';
+    if (_.isUndefined(margin)) margin = (mode=='nodes' ? 0.2 : 0);
+    if (_.isUndefined(mode)) mode = 'canvas';
 
     var new_zoom, new_pos,
         size = this.get_size();
@@ -1995,37 +2006,57 @@ function highlight(sel) {
 
 // -------------------------------------------------------------------------
 // Full screen
+// -------------------------------------------------------------------------
 
+function full_screen_event () {
+    if      (document.fullscreenEnabled)       return 'fullscreenchange'
+    else if (document.mozFullScreenEnabled)    return 'mozfullscreenchange'
+    else if (document.webkitFullscreenEnabled) return 'webkitfullscreenchange'
+    else if (document.msFullscreenEnabled)     return 'MSFullscreenChange'
+    else                                       return null
+}
+
+/**
+ * Call the function when full screen is enabled.
+ *
+ * To unregister the event listener for the full screen event,
+ * unlisten_for_full_screen.
+ */
+function listen_for_full_screen (fn) {
+    document.addEventListener(full_screen_event(), fn)
+    this.full_screen_listener = fn
+}
+
+/**
+ * Remove the listener created by listen_for_full_screen.
+ */
+function unlisten_for_full_screen () {
+    document.removeEventListener(full_screen_event(), this.full_screen_listener)
+}
+
+/**
+ * Enter full screen if supported by the browser.
+ */
 function full_screen() {
-    //First, request the fullscreen,
-    // then after it becomes fullscreen, click on the zoom_to_extend button by index (i == 2)
-
-    var builder = d3.select('.escher-container').datum();
-    var container = builder.selection[0][0];
-    var cont = $(container).attr('id');
-    var elem = document.getElementById(cont);
-
-    if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-        document.addEventListener("fullscreenchange", function () {
-            d3.selectAll(".simple-button").filter(function (d, i) {if (i == 2) this.click();});}, false);
-    } else if (elem.msRequestFullscreen) {
-        elem.msRequestFullscreen();
-        document.addEventListener("MSFullscreenChange", function () {
-            d3.selectAll(".simple-button").filter(function (d, i) {if (i == 2) this.click();});}, false);
-    } else if (elem.mozRequestFullScreen) {
-        elem.mozRequestFullScreen();
-        document.addEventListener("mozfullscreenchange", function () {
-            d3.selectAll(".simple-button").filter(function (d, i) {if (i == 2) this.click();});}, false);
-    } else if (elem.webkitRequestFullscreen) {
-        elem.webkitRequestFullscreen();
-        document.addEventListener("webkitfullscreenchange", function () {
-            d3.selectAll(".simple-button").filter(function (d, i) {if (i == 2) this.click();});}, false);
+    var e = this.sel.node()
+    var d = document
+    var full_screen_on = (d.fullscreenElement || d.mozFullScreenElement ||
+                          d.webkitFullscreenElement || d.msFullscreenElement)
+    if (full_screen_on) {
+        // exit
+        if      (d.exitFullscreen)       d.exitFullscreen()
+        else if (d.mozCancelFullScreen)  d.mozCancelFullScreen()
+        else if (d.webkitExitFullscreen) d.webkitExitFullscreen()
+        else if (d.msExitFullscreen)     d.msExitFullscreen()
+        else throw Error('Cannot exit full screen')
     } else {
-        console.error("full screen does not seem to be supported on this system.");
+        // enter
+        if      (e.requestFullscreen)       e.requestFullscreen()
+        else if (e.mozRequestFullScreen)    e.mozRequestFullScreen()
+        else if (e.webkitRequestFullscreen) e.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT)
+        else if (e.msRequestFullscreen)     e.msRequestFullscreen()
+        else throw Error('Full screen does not seem to be supported on this system.')
     }
-
-    return null;
 }
 
 // -------------------------------------------------------------------------
@@ -2106,7 +2137,6 @@ function map_for_export() {
     return out;
 }
 
-
 function save_svg() {
     /** Rescale the canvas and save svg.
 
@@ -2151,7 +2181,6 @@ function save_svg() {
         }.bind(this));
     }.bind(this));
 }
-
 
 function convert_map() {
     /** Assign the descriptive names and gene_reaction_rules from the model

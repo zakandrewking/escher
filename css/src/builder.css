@@ -40,8 +40,14 @@
 
 /* Applied to the body when Escher fills the screen. This stops browser from
 showing scroll-end animations. */
-.fill-screen-body {
+html.fill-screen {
+  height: 100%;
+  width: 100%;
+}
+body.fill-screen {
   overflow: hidden;
+  height: 100%;
+  width: 100%;
 }
 
 /* Applied to top level container (generally .escher-container) when Escher

@@ -18,7 +18,7 @@ JavaScript API
                              selection of an element to place the Builder
                              into. The selection cannot be inside an SVG
                              element.
-                                
+
     :param object options: (Optional) An object defining any of the following options:
 
        .. js:attribute:: options.menu
@@ -51,33 +51,48 @@ JavaScript API
        .. js:attribute:: option.enable_keys
 
           (Default: ``true``) If true then enable keyboard shortcuts.
-             
+
        .. js:attribute:: options.enable_search
 
           (Default: ``true``) If true, then enable indexing of the map for
           search. Use false to disable searching and potentially improve the map
           performance.
-                       
+
        .. js:attribute:: options.fill_screen
 
           (Default: ``false``) Use true to fill the screen when an Escher
           Builder is placed in a top-level container (e.g. a div in the body
           element).
-      
+
+       .. js.attribute:: options.zoom_to_element
+
+          (Default: ``null``) A reference to an element on the map that will be
+          centered after the map loads. The value should be an object with the
+          following form, where the type is either ``'reaction'`` or
+          ``'metabolite'`` and the element ID refers to the ID of the drawn
+          element in the Escher map (not the BiGG ID):
+
+          ``{ type: <TYPE>, id: <ELEMENT ID> }``
+
+       .. js:attribute:: options.full_screen_button
+
+          (Default: ``false``) Include a button in the user interface for
+          entering full screen mode.
+
        **Map, model, and styles**
 
        .. js:attribute:: options.starting_reaction
 
           (Default: ``null``) The ID (as a string) of a reaction to draw when
           the Builder loads.
-      
+
        .. js:attribute:: options.never_ask_before_quit
 
           (Default: ``false``) If false, then display a warning before the user
           closes an Escher map. If true, then never display the warning. This
           options is only respected if options.enable_editing == true. If
           enable_editing is false, then the warnings are not displayed.
-                       
+
        .. js:attribute:: options.unique_map_id
 
           (Default: ``null``) A unique ID that will be used to UI elements don't
@@ -108,7 +123,7 @@ JavaScript API
 
           (Default: ``false``) If true, then show the gene reaction rules, even
           without gene data.
-      
+
        .. js:attribute:: options.hide_all_labels
 
           (Default: ``false``) If checked, hide all reaction, gene, and metabolite labels
@@ -121,7 +136,7 @@ JavaScript API
           data points for values.
 
        .. js:attribute:: options.reaction_styles
-             
+
           Default: ``['color', 'size', 'text']``
 
           An array of style types. The array can contain any of the following:
@@ -139,7 +154,7 @@ JavaScript API
           'log2_fold', or 'diff'.
 
        .. js:attribute:: options.reaction_scale
-             
+
           Default::
 
             [ { type: 'min', color: '#c8c8c8', size: 12 },
@@ -178,11 +193,11 @@ JavaScript API
           that reactions near 8.5 value have the given color and size.
 
        .. js:attribute:: options.reaction_no_data_color
-             
+
           (Default: ``'#dcdcdc'``) The color of reactions with no data value.
 
        .. js:attribute:: options.reaction_no_data_size
-             
+
           (Default: ``8``) The size of reactions with no data value.
 
        .. js:attribute:: options.gene_data
@@ -201,7 +216,7 @@ JavaScript API
           metabolite data points for values.
 
        .. js:attribute:: options.metabolite_styles
-             
+
           Default: ``['color', 'size', 'text']``
 
           An array of style types. The array can contain any of the following:
@@ -219,7 +234,7 @@ JavaScript API
           'log2_fold' or 'diff'.
 
        .. js:attribute:: options.metabolite_scale
-             
+
           Default::
 
             [ { type: 'min', color: '#fffaf0', size: 20 },
@@ -231,7 +246,7 @@ JavaScript API
           format.
 
        .. js:attribute:: options.metabolite_no_data_color
-             
+
           (Default: ``'#ffffff'``) The color of metabolites with no data value.
 
        .. js:attribute:: options.metabolite_no_data_size
@@ -267,7 +282,7 @@ JavaScript API
 
        .. js:attribute:: options.first_load_callback
 
-          A function to run after loading the Builder. 
+          A function to run after loading the Builder.
 
     ..
        **Callbacks**
@@ -284,7 +299,7 @@ JavaScript API
        this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw);
 
     .. js:function:: load_map(map_data, [should_update_data])
-                      
+
        Load a map for the loaded data. Also reloads most of the Builder content.
 
        :param map_data: The data for a map.
@@ -293,7 +308,7 @@ JavaScript API
                                           should be applied to the map.
 
     .. js:function:: load_model(model_data, [should_update_data])
-                      
+
        Load the cobra model from model data.
 
        :param model_data: The data for a Cobra model. (Parsing in done by
@@ -305,45 +320,45 @@ JavaScript API
     .. js:function:: view_mode()
 
        Enter view mode.
-                      
+
     .. js:function:: build_mode()
 
        Enter build mode.
-                      
+
     .. js:function:: brush_mode()
 
        Enter brush mode.
-                      
+
     .. js:function:: zoom_mode()
 
        Enter zoom mode.
-                      
+
     .. js:function:: rotate_mode()
 
        Enter rotate mode.
-                      
+
     .. js:function:: text_mode()
 
        Enter text mode.
-                      
+
     .. js:function:: set_reaction_data(data)
 
        :param array data: An array of 1 or 2 objects, where each object has keys
                           that are reaction ID's and values that are data points
                           (numbers).
-                      
+
     .. js:function:: set_metabolite_data(data)
 
        :param array data: An array of 1 or 2 objects, where each object has keys
                           that are metabolite ID's and values that are data
                           points (numbers).
-                           
+
     .. js:function:: set_gene_data(data, clear_gene_reaction_rules)
-                      
+
        :param array data: An array of 1 or 2 objects, where each object has keys
                           that are gene ID's and values that are data points
                           (numbers).
-               
+
     :param Boolean clear_gene_reaction_rules: (Optional, Default: ``false``) In
                                               addition to setting the data, also
                                               turn of the gene_reaction_rules.

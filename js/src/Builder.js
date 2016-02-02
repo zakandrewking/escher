@@ -353,7 +353,7 @@ function load_map(map_data, should_update_data) {
         this._setup_menu(menu_div, button_div, this.map, this.zoom_container, this.map.key_manager, keys,
                          this.options.enable_editing, this.options.enable_keys, this.options.full_screen_button);
     } else if (this.options.menu=='zoom') {
-            this._setup_simple_zoom_buttons(button_div, keys, this.options.full_screen_button);
+        this._setup_simple_zoom_buttons(button_div, keys, this.options.full_screen_button);
     }
 
     // setup selection box
@@ -582,6 +582,7 @@ function _update_data(update_model, update_map, kind, should_draw) {
     // ----------------------------------------------------------------
     // Then the model, after drawing. Delay by 5ms so the the map draws
     // first.
+    // ----------------------------------------------------------------
 
     // if this function runs again, cancel the previous model update
     if (this.update_model_timer)
@@ -835,10 +836,10 @@ function _setup_menu(menu_selection, button_selection, map, zoom_container,
             .button({ key: keys.search,
                       text: 'Find',
                       key_text: (enable_keys ? ' (Ctrl+F)' : null) });
-    if (full_screen_button){
-        view_menu.button({key: keys.full_screen,
-            text: 'Full screen',
-            key_text: (enable_keys ? ' (Ctrl+2)' : null)});
+    if (full_screen_button) {
+        view_menu.button({ key: keys.full_screen,
+                           text: 'Full screen',
+                           key_text: (enable_keys ? ' (Ctrl+2)' : null) })
     }
     if (enable_editing) {
         view_menu.button({ key: keys.toggle_beziers,
@@ -1084,12 +1085,10 @@ function _setup_simple_zoom_buttons(button_selection, keys, full_screen_button) 
                            tooltip: 'Zoom to canvas (Ctrl 1)' });
     if (full_screen_button) {
         ui.individual_button(button_panel.append('div'),
-            {
-                key: keys.full_screen,
-                icon: 'glyphicon glyphicon-fullscreen',
-                classes: 'simple-button',
-                tooltip: 'Full screen (Ctrl 2)'
-            });
+                             { key: keys.full_screen,
+                               text: '▣',
+                               classes: 'simple-button',
+                               tooltip: 'Full screen (Ctrl 2)' })
     }
 }
 
@@ -1241,12 +1240,14 @@ function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing
             fn: settings_bar.toggle
         }
     };
-    if (full_screen_button){
+    if (full_screen_button) {
         utils.extend(keys, {
             full_screen: {
                 key: 'ctrl+2',
                 target: map,
-                fn: map.full_screen }});
+                fn: map.full_screen
+            }
+        })
     }
     if (enable_editing) {
         utils.extend(keys, {
