@@ -1,23 +1,33 @@
 Developing with Escher
 ----------------------
 
-Using the static javascript files
-=================================
+Using the static JavaScript and CSS files
+=========================================
 
-You can include the compiled Escher javascript file in any html document. The
-only dependencies are `d3.js`_, and `Twitter Bootstrap`_ if you are using the
-option menu='all'. These files can be found in at npmcdn.
+You can include the compiled Escher JavaScript and CSS files in any HTML
+document. The only dependencies are `d3.js`_, and optionally `Twitter
+Bootstrap`_ if you are using the option ``menu='all'``.
+
+The compiled files are available form npmcdn::
 
 https://npmcdn.com/escher-vis/js/dist/escher.js
-https://npmcdn.com/escher-vis/js/dist/escher.js.map
 https://npmcdn.com/escher-vis/js/dist/escher.min.js
-https://npmcdn.com/escher-vis/js/dist/escher.min.js.map
 https://npmcdn.com/escher-vis/css/dist/builder.css
 https://npmcdn.com/escher-vis/css/dist/builder.min.css
+
+Source maps are also hosted there::
+
+https://npmcdn.com/escher-vis/js/dist/escher.js.map
+https://npmcdn.com/escher-vis/js/dist/escher.min.js.map
 https://npmcdn.com/escher-vis/css/dist/builder.min.css.map
 
+If you want a particular version of escher, add a version tag like this::
+
+https://npmcdn.com/escher-vis@1.4.0-beta.3/js/dist/escher.js
+
 For an example of the boilerplate code that is required to begin developing with
-Escher, have a look at the `escher-demo repository`_.
+Escher, have a look at the `escher-demo repository`_. For projects built with
+npm, use the `escher-test repository`_ as a guide.
 
 Building and testing Escher
 ===========================
@@ -115,6 +125,7 @@ than what is provided in the documentation, please contact Zachary King
 .. _`Twitter Bootstrap`: http://getbootstrap.com
 .. _`localhost:7778`: http://localhost:7778
 .. _`escher-demo repository`: https://github.com/escher/escher-demo
+.. _`escher-test repository`: https://github.com/escher/escher-test
 .. _`json schema`: http://json-schema.org/
 .. _here: https://github.com/zakandrewking/escher/blob/master/escher/jsonschema/1-0-0
 .. _SchemaVer: http://snowplowanalytics.com/blog/2014/05/13/introducing-schemaver-for-semantic-versioning-of-schemas/
