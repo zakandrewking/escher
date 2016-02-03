@@ -32,10 +32,10 @@ _escher_web = {
 }
 
 _dependencies = {
-    'd3': 'escher/static/lib/d3-3.5.9.min.js',
-    'boot_js': 'escher/static/lib/bootstrap-3.1.1.min.js',
-    'boot_css': 'escher/static/lib/bootstrap-simplex-3.1.1.min.css',
-    'jquery': 'escher/static/lib/jquery-2.1.4.min.js',
+    'd3': 'escher/static/lib/d3.min.js',
+    'boot_js': 'escher/static/lib/bootstrap.min.js',
+    'boot_css': 'escher/static/lib/bootstrap.min.css',
+    'jquery': 'escher/static/lib/jquery.min.js',
     'boot_font_eot': 'escher/static/fonts/glyphicons-halflings-regular.eot',
     'boot_font_svg': 'escher/static/fonts/glyphicons-halflings-regular.svg',
     'boot_font_woff': 'escher/static/fonts/glyphicons-halflings-regular.woff',
@@ -47,10 +47,10 @@ _dependencies_cdn = {
     'builder_css_min': '//npmcdn.com/escher-vis@%s/css/dist/builder.min.css' % __version__,
     'escher': '//npmcdn.com/escher-vis@%s/js/dist/escher.js' % __version__,
     'escher_min': '//npmcdn.com/escher-vis@%s/js/dist/escher.min.js' % __version__,
-    'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.5.9/d3.min.js',
-    'boot_js': '//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js',
-    'boot_css': '//netdna.bootstrapcdn.com/bootswatch/3.1.1/simplex/bootstrap.min.css',
-    'jquery': '//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js',
+    'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.5.14/d3.min.js',
+    'boot_js': '//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js',
+    'boot_css': '//cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.6/simplex/bootstrap.min.css',
+    'jquery': '//cdnjs.cloudflare.com/ajax/libs/jquery/2.2.0/jquery.min.js',
 }
 
 _links = {

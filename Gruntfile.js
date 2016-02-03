@@ -2,8 +2,7 @@ var package = require('./package.json')
 
 module.exports = function(grunt) {
   // common tasks
-  var tasks = ['cssmin', 'concat', 'browserify', 'extract_sourcemap',
-               'uglify', 'copy:css', 'copy:package', 'copy:escher']
+  var tasks = ['cssmin', 'concat', 'browserify', 'extract_sourcemap', 'uglify', 'copy']
 
   // Project configuration
   grunt.initConfig({
@@ -76,27 +75,36 @@ module.exports = function(grunt) {
         src: 'css/src/builder.css',
         dest: 'css/dist/',
         expand: true,
-        flatten: true
+        flatten: true,
       },
       package: {
         src: 'package.json',
         dest: 'py/escher/',
         expand: true,
-        flatten: true
+        flatten: true,
       },
       escher: {
         src: ['js/dist/*', 'css/dist/*'],
         dest: 'py/escher/static/escher/',
         expand: true,
-        flatten: true
+        flatten: true,
       },
-      site: {
-        src: ['js/dist/*', 'css/dist/*'],
-        dest: 'site/',
-        rename: (dest, src) => dest + src.replace(/(\.min)?\.(js|css)(\.map)?/,
-                                                  '-' + package.version + '$1.$2$3'),
+      lib: {
+        src: [
+          'node_modules/bootstrap/dist/js/bootstrap.min.js',
+          'node_modules/bootswatch/simplex/bootstrap.min.css',
+          'node_modules/d3/d3.min.js',
+          'node_modules/jquery/dist/jquery.min.js',
+        ],
+        dest: 'py/escher/static/lib/',
         expand: true,
-        flatten: true
+        flatten: true,
+      },
+      fonts: {
+        src: 'node_modules/bootstrap/dist/fonts/*',
+        dest: 'py/escher/static/fonts/',
+        expand: true,
+        flatten: true,
       }
     },
     watch: {
@@ -152,9 +160,9 @@ module.exports = function(grunt) {
       main: [
         'js/build/', 'js/dist/', 'css/build/', 'css/dist/', 'js/src/inline.js',
         'js/src/coverage/instrument/', 'js/src/coverage/reports/',
-        'py/escher/package.json', 'py/escher/static/escher/'
-      ],
-      site: 'site/'
+        'py/escher/package.json', 'py/escher/static/escher/',
+        'py/escher/static/lib/', 'py/escher/static/fonts/',
+      ]
     },
     gitadd: '*',
     gitpush: {
