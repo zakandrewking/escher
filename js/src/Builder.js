@@ -1119,28 +1119,30 @@ function _setup_quick_jump(selection) {
         if (this.options.enable_editing && !this.options.never_ask_before_quit) {
             if (!(confirm(('You will lose any unsaved changes.\n\n' +
                            'Are you sure you want to switch maps?')))) {
-                if (callback) callback(false);
-                return;
+                if (callback) callback(false)
+                return
             }
         }
         this.map.set_status('Loading map ' + new_map_name + ' ...');
         var url = utils.name_to_url(new_map_name, quick_jump_path);
         d3.json(url, function(error, data) {
             if (error) {
-                console.warn('Could not load data: ' + error);
-                if (callback) callback(false);
+                console.warn('Could not load data: ' + error)
+                this.map.set_status('Could not load map', 2000)
+                if (callback) callback(false)
+                return
             }
             // run callback before load_map so the new map has the correct
             // quick_jump menu
-            if (callback) callback(true);
+            if (callback) callback(true)
             // now reload
-            this.load_map(data);
-            this.map.set_status('');
-        }.bind(this));
-    }.bind(this);
+            this.load_map(data)
+            this.map.set_status('')
+        }.bind(this))
+    }.bind(this)
 
     // make the quick jump object
-    this.quick_jump = QuickJump(selection, load_fn);
+    this.quick_jump = QuickJump(selection, load_fn)
 }
 
 function _setup_modes(map, brush, zoom_container) {

@@ -10,20 +10,20 @@ Bootstrap`_ if you are using the option ``menu='all'``.
 
 The compiled files are available form npmcdn::
 
-https://npmcdn.com/escher-vis/js/dist/escher.js
-https://npmcdn.com/escher-vis/js/dist/escher.min.js
-https://npmcdn.com/escher-vis/css/dist/builder.css
-https://npmcdn.com/escher-vis/css/dist/builder.min.css
+  https://npmcdn.com/escher-vis/js/dist/escher.js
+  https://npmcdn.com/escher-vis/js/dist/escher.min.js
+  https://npmcdn.com/escher-vis/css/dist/builder.css
+  https://npmcdn.com/escher-vis/css/dist/builder.min.css
 
 Source maps are also hosted there::
 
-https://npmcdn.com/escher-vis/js/dist/escher.js.map
-https://npmcdn.com/escher-vis/js/dist/escher.min.js.map
-https://npmcdn.com/escher-vis/css/dist/builder.min.css.map
+  https://npmcdn.com/escher-vis/js/dist/escher.js.map
+  https://npmcdn.com/escher-vis/js/dist/escher.min.js.map
+  https://npmcdn.com/escher-vis/css/dist/builder.min.css.map
 
 If you want a particular version of escher, add a version tag like this::
 
-https://npmcdn.com/escher-vis@1.4.0-beta.3/js/dist/escher.js
+  https://npmcdn.com/escher-vis@1.4.0-beta.3/js/dist/escher.js
 
 For an example of the boilerplate code that is required to begin developing with
 Escher, have a look at the `escher-demo repository`_. For projects built with
@@ -56,6 +56,13 @@ Clear static website files::
 
   python setup.py clean
 
+Build and run the docs::
+
+  cd docs
+  make html
+  cd _build/html
+  python -m SimpleHTTPServer # python 2
+  python -m http.server # python 3
 
 Generating and reading Escher and COBRA files
 =============================================

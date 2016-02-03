@@ -42,10 +42,6 @@ class CleanCommand(Command):
         remove_if(join(directory, '..', 'builder'))
         for f in glob(join(directory, '..', 'index.html')):
             os.remove(f)
-        for f in glob(join(directory, '..', 'builder-*.css*')):
-            os.remove(f)
-        for f in glob(join(directory, '..', 'escher-*.js*')):
-            os.remove(f)
         print('done cleaning')
 
 
@@ -57,19 +53,6 @@ class BuildGHPagesCommand(Command):
     def finalize_options(self):
        pass
     def run(self):
-        # copy files to top level
-        copy(join('..', 'js', 'dist', 'escher.js'),
-             join('..', 'escher-%s.js' % version))
-        copy(join('..', 'js', 'dist', 'escher.min.js'),
-             join('..', 'escher-%s.min.js' % version))
-        copy(join('..', 'js', 'dist', 'escher.min.js.map'),
-             join('..', 'escher-%s.min.js.map' % version))
-        copy(join('..', 'css', 'dist', 'builder.css'),
-             join('..', 'builder-%s.css' % version))
-        copy(join('..', 'css', 'dist', 'builder.min.css'),
-             join('..', 'builder-%s.min.css' % version))
-        copy(join('..', 'css', 'dist', 'builder.min.css.map'),
-             join('..', 'builder-%s.min.css.map' % version))
         # generate the static site
         call(['python', join('escher', 'generate_index.py')])
         call(['python', join('escher', 'static_site.py')])

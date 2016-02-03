@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="{{ homepage_css }}"/>
 
   <link rel="shortcut icon" href="{{ favicon }}" />
-  
+
   <!-- This font cannot be downloaded. -->
   <script src="//use.edgefonts.net/tulpen-one.js"></script>
 {% endblock %}
@@ -26,7 +26,7 @@
           </div>
         </div>
       </header>
-      <div class="row">  
+      <div class="row">
         <div class="col-sm-12">
           <h3>Filter by organism</h3>
           <select id="organisms" class="form-control">
@@ -83,7 +83,7 @@
         <div id="demos" class="row">
           <div class="col-sm-2">
             <h2>Demos</h2>
-          </div>  
+          </div>
           <div class="col-sm-5">
             <div>
               <a href="/escher-demo/knockout">
@@ -104,12 +104,12 @@
 
         <hr/>
 
-        
+
         <!-- EscherConverter -->
         <div id="escherconverter" class="row">
           <div class="col-sm-5">
             <h2>EscherConverter</h2>
-          </div>  
+          </div>
           <div class="col-sm-7">
             <div>
               <p>EscherConverter is a standalone program that reads files
@@ -122,7 +122,7 @@
 
         <hr/>
 
-      {% endif %}  
+      {% endif %}
 
       <!-- FAQ  -->
       <div id="faq" class="row">
@@ -147,14 +147,14 @@
                 PLOS Computational Biology 11(8): e1004321.
                 doi:<a href="http://dx.doi.org/10.1371/journal.pcbi.1004321">10.1371/journal.pcbi.1004321</a></p>
               <li><h4>Are there more maps available? Can I contribute maps?</h4>
-                <p>We will be uploading maps for all of the organisms in the 
+                <p>We will be uploading maps for all of the organisms in the
                   <a href="http://bigg.ucsd.edu/">BiGG</a> database. If you
                   would like to contribute maps, there is a
                   <a href="https://escher.readthedocs.org/en/latest/contribute_maps.html">guide</a>
                   available in the documentation.
               </li>
               <li><h4>How is Escher licensed?</h4>
-                <p>Escher and EscherConverter are distributed under the 
+                <p>Escher and EscherConverter are distributed under the
                   <a href="https://github.com/zakandrewking/escher/blob/master/LICENSE">MIT license</a>.</p>
                 <li><h4>What browsers can I use?</h4>
                   <p>We recommend using Google Chrome for optimal performance, but
@@ -167,11 +167,11 @@
                     <a href="https://twitter.com/zakandrewking">@zakandrewking</a>
                     for Escher updates. If you find bugs or would like to contribute
                     to the project, feel free to submit an issue and or a pull request
-                    on <a href="{{ github }}">Github</a>.</p> 
+                    on <a href="{{ github }}">Github</a>.</p>
                 </li>
           </ol>
         </div>
-        
+
       </div>
     </div>
     <div id="push"></div>
@@ -189,16 +189,17 @@
 
   <script src="{{ homepage_js }}"></script>
   <script>
-   {% if web_version %} 
+   {% if web_version %}
    // get the models
    d3.json('{{ server_index_url }}', function(d) {
-       var server_index = d, local_index = null;
-       setup(server_index, local_index, '{{ map_download_url }}', false);
+     var server_index = d,
+         local_index = null
+     setup(server_index, local_index, '{{ map_download_url }}', false)
    });
    {% else %}
    setup(JSON.parse('{{ server_index_json }}'),
          JSON.parse('{{ local_index_json }}'),
-         '{{ map_download_url }}');
-   {% endif %}   
+         '{{ map_download_url }}')
+   {% endif %}
   </script>
 {% endblock %}

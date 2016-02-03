@@ -924,24 +924,24 @@ function parse_url_components(the_window, options) {
      Adapted from http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
 
      */
-    if (options===undefined) options = {};
+    if (_.isUndefined(options)) options = {}
 
     var query = the_window.location.search.substring(1),
-        vars = query.split("&");
+        vars = query.split('&')
     for (var i = 0; i < vars.length; i++) {
-        var pair = vars[i].split("="),
-            val = decodeURIComponent(pair[1]);
+        var pair = vars[i].split('='),
+            val = decodeURIComponent(pair[1])
         // deal with array options
         if (pair[0].indexOf('[]') == pair[0].length - 2) {
-            var o = pair[0].replace('[]', '');
+            var o = pair[0].replace('[]', '')
             if (!(o in options))
-                options[o] = [];
-            options[o].push(val);
+                options[o] = []
+            options[o].push(val)
         } else {
-            options[pair[0]] = val;
+            options[pair[0]] = val
         }
     }
-    return options;
+    return options
 }
 
 

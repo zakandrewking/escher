@@ -26,12 +26,12 @@ def generate_static_site():
                            homepage_css=static_rel(get_url('homepage_css', 'local')),
                            favicon=static_rel(get_url('favicon', 'local')),
                            logo=static_rel(get_url('logo', 'local')),
-                           documentation=static_rel(get_url('documentation', protocol='https')),
-                           github=static_rel(get_url('github', protocol='https')),
-                           github_releases=static_rel(get_url('github_releases', protocol='https')),
+                           documentation=get_url('documentation', protocol='https'),
+                           github=get_url('github', protocol='https'),
+                           github_releases=get_url('github_releases', protocol='https'),
                            homepage_js=static_rel(get_url('homepage_js', 'local')),
                            version=__version__,
-                           map_download=static_rel(get_url('map_download', 'local')),
+                           map_download_url=get_url('map_download', 'local'),
                            web_version=True,
                            server_index_url=static_rel(get_url('server_index', 'local')))
 
