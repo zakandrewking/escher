@@ -3,7 +3,7 @@
 from __future__ import print_function, unicode_literals
 
 from escher.quick_server import serve_and_open
-from escher.urls import get_url
+from escher.urls import get_url, root_directory
 from escher.appdirs import user_cache_dir
 from escher.generate_index import index
 from escher.version import __schema_version__, __map_model_version__
@@ -11,7 +11,8 @@ from escher.util import query_yes_no
 from escher.escape import json_dump_and_escape, escape_json_or_null
 
 import os
-from os.path import dirname, basename, abspath, join, isfile, isdir, exists
+from os.path import (dirname, basename, abspath, join, isfile, isdir, exists,
+                     expanduser)
 from warnings import warn
 try:
     from urllib.request import urlopen
@@ -774,6 +775,8 @@ class Builder(object):
 
         """
 
+        filepath = expanduser(filepath)
+
         if js_source in ['local', 'dev']:
             if filepath is None:
                 raise Exception('Must provide a filepath when js_source is not "web"')
@@ -801,14 +804,18 @@ class Builder(object):
             else:
                 boot_css = boot_js = jquery = None
                 boot_font_eot = boot_font_svg = boot_font_woff = boot_font_ttf = None
+
             for path in [escher, builder_css, boot_css, boot_js, jquery, d3,
                          favicon, boot_font_eot, boot_font_svg, boot_font_woff,
                          boot_font_ttf]:
+                if path is None:
+                    continue
+                src = join(root_directory, path)
                 dest = join(directory, path)
                 dest_dir = dirname(dest)
                 if not exists(dest_dir):
                     os.makedirs(dest_dir)
-                shutil.copy(path, dest)
+                shutil.copy(src, dest)
             filepath = join(directory, 'index.html')
         else:
             if not filepath.endswith('.html'):
