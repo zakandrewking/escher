@@ -166,9 +166,14 @@ module.exports = function(grunt) {
     },
     gitadd: '*',
     gitpush: {
-      tracking: {
+      tracking_tags: {
         options: {
           tags: true
+        }
+      },
+      tracking: {
+        options: {
+          tags: false
         }
       }
     },
