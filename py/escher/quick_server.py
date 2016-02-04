@@ -60,7 +60,7 @@ def generate_handler(html, files=None):
                 self.send_response(200)
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
-                self.wfile.write(html)
+                self.wfile.write(html.encode('utf-8'))
             elif self.path in files:
                 content_type, content = files[self.path]
                 self.send_response(200)
@@ -117,7 +117,7 @@ def serve_and_open(html, ip='127.0.0.1', port=8888, n_retries=50, files=None,
             print(IPYTHON_WARNING)
 
     # Start the server
-    print(("Serving to http://{0}:{1}/\n".format(ip, port) + 
+    print(("Serving to http://{0}:{1}/\n".format(ip, port) +
            "[Ctrl-C to exit from terminal, or Ctrl-M i i to interrupt notebook kernel]"))
     sys.stdout.flush()
 
