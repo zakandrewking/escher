@@ -25,4 +25,4 @@ Follow [@zakandrewking](https://twitter.com/zakandrewking) for Escher updates.
 Built at SBRG
 =============
 
-[![SBRG](https://raw.githubusercontent.com/zakandrewking/escher/master/escher/resources/sbrg-logo.png)](http://systemsbiology.ucsd.edu/)
+[![SBRG](https://raw.githubusercontent.com/zakandrewking/escher/master/py/escher/static/img/sbrg-logo.png)](http://systemsbiology.ucsd.edu/)
