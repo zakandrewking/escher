@@ -1,0 +1,7 @@
+git fetch escher
+git merge escher/1.1.2-fix --no-commit --no-ff 
+source env/bin/activate
+python setup.py build_gh
+git add -A :/
+gc -m"version 1.1.2"
+git push

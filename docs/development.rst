@@ -1,35 +1,68 @@
 Developing with Escher
 ----------------------
 
-Using the static javascript files
-=================================
+Using the static JavaScript and CSS files
+=========================================
 
-You can include the compiled Escher javascript file in any html document. The
-only dependencies are `d3.js`_, and `Twitter Bootstrap`_ if you are using the
-option menu='all'. These files can be found in ``escher/lib``.
+You can include the compiled Escher JavaScript and CSS files in any HTML
+document. The only dependencies are `d3.js`_, and optionally `Twitter
+Bootstrap`_ if you are using the option ``menu='all'``.
+
+The compiled files are available form npmcdn::
+
+  https://npmcdn.com/escher-vis/js/dist/escher.js
+  https://npmcdn.com/escher-vis/js/dist/escher.min.js
+  https://npmcdn.com/escher-vis/css/dist/builder.css
+  https://npmcdn.com/escher-vis/css/dist/builder.min.css
+
+Source maps are also hosted there::
+
+  https://npmcdn.com/escher-vis/js/dist/escher.js.map
+  https://npmcdn.com/escher-vis/js/dist/escher.min.js.map
+  https://npmcdn.com/escher-vis/css/dist/builder.min.css.map
+
+If you want a particular version of escher, add a version tag like this::
+
+  https://npmcdn.com/escher-vis@1.4.0-beta.3/js/dist/escher.js
 
 For an example of the boilerplate code that is required to begin developing with
-Escher, have a look at the `escher-demo repository`_.
+Escher, have a look at the `escher-demo repository`_. For projects built with
+npm, use the `escher-test repository`_ as a guide.
 
 Building and testing Escher
 ===========================
 
-Build the minified and non-minified javascript files::
+First, install dependencies with npm::
 
-    python setup.py buildjs
+  npm install
 
-Test Python and start Jasmine for JavaScript testing::
+Escher uses grunt to manage the build process. To run typical build steps, just run::
 
-    python setup.py test
+  npm run compile
+
+To test the JavaScript files, run::
+
+  npm run test
+
+For Python testing, run this in the ``py`` directory::
+
+  python setup.py test
 
 Build the static website::
 
-    python setup.py buildgh
+  python setup.py build_gh
 
 Clear static website files::
 
-    python setup.py clean
+  python setup.py clean
 
+Build and run the docs::
+
+  cd docs
+  make html
+  cd _build/html
+  python -m SimpleHTTPServer # python 2
+  python -m http.server # python 3
 
 Generating and reading Escher and COBRA files
 =============================================
@@ -46,7 +79,7 @@ The Escher layout schema is designed to be as simple as possible. For example,
 the `core metabolism map`_ of Escherichia coli is layed out like this:
 
 ::
-   
+
     [
         {
             "map_name": "E coli core.Core metabolism",
@@ -59,7 +92,7 @@ the `core metabolism map`_ of Escherichia coli is layed out like this:
             "reactions": { ... },
             "nodes": { ... },
             "text_label": { ... },
-            "canvas": { 
+            "canvas": {
                 "x": 7.857062530517567,
                 "y": 314.36893920898433,
                 "width": 5894.515691375733,
@@ -77,7 +110,7 @@ exactly these values for the Escher map to be valid.
 In the next section, the reactions, nodes, labels, and canvas are all
 defined. For reactions, nodes, and text labels, each element has a key that is
 an arbitrary integer. As long as there are no repeated IDs (e.g. no 2 segments
-with the ID 517), then everything should work fine. 
+with the ID 517), then everything should work fine.
 
 Read through the schema (here_) for more detail on the format.
 
@@ -99,6 +132,7 @@ than what is provided in the documentation, please contact Zachary King
 .. _`Twitter Bootstrap`: http://getbootstrap.com
 .. _`localhost:7778`: http://localhost:7778
 .. _`escher-demo repository`: https://github.com/escher/escher-demo
+.. _`escher-test repository`: https://github.com/escher/escher-test
 .. _`json schema`: http://json-schema.org/
 .. _here: https://github.com/zakandrewking/escher/blob/master/escher/jsonschema/1-0-0
 .. _SchemaVer: http://snowplowanalytics.com/blog/2014/05/13/introducing-schemaver-for-semantic-versioning-of-schemas/

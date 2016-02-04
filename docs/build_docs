@@ -1,0 +1,9 @@
+#! /usr/bin/env python
+
+import platform
+from subprocess import call
+
+if platform.system() == 'Windows':
+    call('make.bat html', shell=True)
+else:
+    call(['make', 'html'])

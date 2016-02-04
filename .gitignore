@@ -4,16 +4,27 @@
 *.pyc
 .#*
 TAGS
-dist/
 Escher.egg-info/
 .ipynb_checkpoints/
 build/
-env/
-envset/
-builder.html
-builder_not_minified.html
-viewer.html
-viewer_not_minified.html
-index.html
 _build/
-.can_dev
+env/
+commonjs/
+envset/
+node_modules/
+.cache/
+*.tar.gz
+*.whl
+
+# built files
+dist/
+js/src/inline.js
+js/src/coverage/
+py/escher/package.json
+py/escher/static/escher/
+py/escher/static/lib/
+py/escher/static/fonts/
+
+# site files
+1-0-0
+link-site

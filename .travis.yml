@@ -1,16 +1,19 @@
-language: python
-python:
- - "2.7"
- - "3.3"
- - "3.4"
-# command to install dependencies
-before_install:
-  - pip install cython jsonschema ipython
-  - pip install -e git+https://github.com/opencobra/cobrapy.git\#egg=cobra
+language: node_js
+node_js: "5"
+# install dependencies
 install:
-  - python setup.py develop
-# # command to run tests
-script: python setup.py test --pyonly
+  - npm install
+  - ./node_modules/grunt-cli/bin/grunt default
+  - cd py
+  - pip install --user -e '.[all]'
+  - cd ..
+# run tests
+script:
+  - ./node_modules/grunt-cli/bin/grunt coverage
+  - cd py
+  - python setup.py test
+  - cd ..
+# no emails
 notifications:
   email: false
 # run with containers
