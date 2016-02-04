@@ -11,7 +11,7 @@ install:
 script:
   - ./node_modules/grunt-cli/bin/grunt coverage
   - cd py
-  - python setup.py test --noweb
+  - python setup.py test
   - cd ..
 # no emails
 notifications:

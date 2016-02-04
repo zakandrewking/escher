@@ -54,6 +54,7 @@ JavaScript API
 
        .. js:attribute:: options.enable_search
 
+
           (Default: ``true``) If true, then enable indexing of the map for
           search. Use false to disable searching and potentially improve the map
           performance.

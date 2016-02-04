@@ -28,6 +28,15 @@
 * THE SOFTWARE.
 */
 
+/* Basics */
+
+body, .btn {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+}
+
+body {
+  font-size: 14px;
+}
 
 /* Containers */
 
@@ -381,16 +390,16 @@ resizes. */
 .escher-container ul#button-panel {
   position: absolute;
   left: 4px;
-  top: 81px;
+  top: 20%;
+  margin-top: -30px;
+  /* top: 81px; //max */
+  /* top: 20px; //min */
   pointer-events: none;
+  padding-left: 0;
 }
 .escher-container ul#button-panel li {
   pointer-events: auto;
-}
-.escher-container #simple-button-panel {
-  position: absolute;
-  left: 4px;
-  top: 20px;
+  list-style: none;
 }
 .escher-container .input-close-button {
   position: absolute;

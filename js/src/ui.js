@@ -16,19 +16,22 @@ module.exports = {
 
 
 function individual_button(s, button) {
-    var b = s.append('button'),
-        c = b.append('span');
-    if ('id' in button) b.attr('id', button.id);
-    if ('classes' in button) b.attr('class', button.classes);
-    if ('text' in button) c.text(button.text);
-    if ('icon' in button) c.classed(button.icon, true);
-    if ('key' in button) set_button(b, button.key);
+    var b = s.append('button')
+            .attr('class', 'btn btn-default simple-button'),
+        // icon
+        c = b.append('span'),
+        // bootstrap fallback
+        t = c.append('span').attr('class', 'hidden')
+    if ('id' in button) b.attr('id', button.id)
+    if ('text' in button) t.text(button.text)
+    if ('icon' in button) c.classed(button.icon, true)
+    if ('key' in button) set_button(b, button.key)
 
     // tooltip
     if ('key_text' in button && 'tooltip' in button && button.key_text !== null)
-        b.attr('title', button.tooltip + button.key_text);
+        b.attr('title', button.tooltip + button.key_text)
     else if ('tooltip' in button)
-        b.attr('title', button.tooltip);
+        b.attr('title', button.tooltip)
 }
 
 function radio_button_group(s) {

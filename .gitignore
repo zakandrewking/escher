@@ -7,21 +7,19 @@ TAGS
 Escher.egg-info/
 .ipynb_checkpoints/
 build/
+_build/
 env/
 commonjs/
 envset/
-_build/
-.can_dev
 node_modules/
-js/src/coverage/
 .cache/
 *.tar.gz
 *.whl
 
 # built files
-js/dist/
-css/dist/
+dist/
 js/src/inline.js
+js/src/coverage/
 py/escher/package.json
 py/escher/static/escher/
 py/escher/static/lib/
