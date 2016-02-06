@@ -464,7 +464,7 @@ class Builder(object):
                   html_wrapper=False, enable_editing=False, enable_keys=False,
                   minified_js=True, fill_screen=False, height='800px',
                   never_ask_before_quit=False, static_site_index_json=None,
-                  protocol=None):
+                  protocol=None, ignore_bootstrap=False):
         """Generate the Escher HTML.
 
         Arguments
@@ -508,6 +508,10 @@ class Builder(object):
         'protocol relative URL', as in //escher.github.io. Ignored if source is
         local.
 
+        ignore_bootstrap: Do not use Bootstrap for buttons, even if it
+        available. This is used to embed Escher in a Jupyter notebook where it
+        conflicts with the Jupyter Boostrap installation.
+
         """
 
         if js_source not in ['web', 'local', 'dev']:
@@ -537,7 +541,7 @@ class Builder(object):
         d3_url = get_url('d3', url_source, local_host, protocol)
         escher_url = get_url(('escher_min' if minified_js else 'escher'),
                              url_source, local_host, protocol)
-        if menu == 'all':
+        if menu == 'all' and not ignore_bootstrap:
             jquery_url = get_url('jquery', url_source, local_host, protocol)
             boot_css_url = get_url('boot_css', url_source, local_host, protocol)
             boot_js_url = get_url('boot_js', url_source, local_host, protocol)
@@ -561,6 +565,7 @@ class Builder(object):
             'enable_editing': enable_editing,
             'scroll_behavior': scroll_behavior,
             'fill_screen': fill_screen,
+            'ignore_bootstrap': ignore_bootstrap,
             'never_ask_before_quit': never_ask_before_quit,
             'reaction_data': self.reaction_data,
             'metabolite_data': self.metabolite_data,
@@ -603,7 +608,7 @@ class Builder(object):
 
 
     def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',
-                            minified_js=True, height=500):
+                            minified_js=True, height=500, enable_editing=False):
         """Embed the Map within the current IPython Notebook.
 
         :param string js_source:
@@ -633,13 +638,18 @@ class Builder(object):
 
         :param height: Height of the HTML container.
 
+        :param Boolean enable_editing: Enable the map editing modes.
+
         """
+        if (enable_editing and menu == 'zoom'):
+            menu = 'all'
+        if enable_editing:
+            print('Some functions (e.g. saving maps) are not available in the notebook. Use '
+                  'Builder.display_in_browser() for a full-featured Escher Builder.')
         html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
-                              html_wrapper=False, enable_editing=False, enable_keys=False,
+                              html_wrapper=False, enable_editing=enable_editing, enable_keys=False,
                               minified_js=minified_js, fill_screen=False, height=height,
-                              never_ask_before_quit=True)
-        if menu=='all':
-            raise Exception("The 'all' menu option cannot be used in an IPython notebook.")
+                              never_ask_before_quit=True, ignore_bootstrap=True)
         # import here, in case users don't have requirements installed
         try:
             from IPython.display import HTML

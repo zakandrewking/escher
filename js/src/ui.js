@@ -14,17 +14,17 @@ module.exports = {
     set_json_or_csv_input_button: set_json_or_csv_input_button
 };
 
-
-function individual_button(s, button) {
-    var b = s.append('button')
-            .attr('class', 'btn btn-default simple-button'),
-        // icon
-        c = b.append('span'),
-        // bootstrap fallback
-        t = c.append('span').attr('class', 'hidden')
+function _button_with_sel(b, button) {
+    var ignore_bootstrap = button.ignore_bootstrap || false
+    b.attr('class', 'btn btn-default simple-button')
+    // icon
+    var c = b.append('span')
+    // text / bootstrap fallback
+    var t = c.append('span')
     if ('id' in button) b.attr('id', button.id)
     if ('text' in button) t.text(button.text)
-    if ('icon' in button) c.classed(button.icon, true)
+    if ('icon' in button && !ignore_bootstrap) c.classed(button.icon, true)
+    if (!ignore_bootstrap) t.attr('class', 'hidden')
     if ('key' in button) set_button(b, button.key)
 
     // tooltip
@@ -34,47 +34,29 @@ function individual_button(s, button) {
         b.attr('title', button.tooltip)
 }
 
+function individual_button(s, button) {
+    var b = s.append('button')
+    _button_with_sel(b, button)
+}
+
 function radio_button_group(s) {
     var s2 = s.append('li')
             .attr('class', 'btn-group-vertical')
-            .attr('data-toggle', 'buttons');
+            .attr('data-toggle', 'buttons')
     return { button: function(button) {
-        var b = s2.append("label")
-                .attr("class", "btn btn-default");
-        b.append('input').attr('type', 'radio');
-        var c = b.append("span");
-        if ('id' in button) b.attr('id', button.id);
-
-        // text
-        if ('key_text' in button && 'text' in button && button.key_text !== null)
-            c.text(button.text + button.key_text);
-        else if ('text' in button)
-            c.text(button.text);
-
-        if ('icon' in button) c.classed(button.icon, true);
-        if ('key' in button) set_button(b, button.key);
-        if ('tooltip' in button) b.attr('title', button.tooltip);
-        return this;
-    }};
+        var ignore_bootstrap = button.ignore_bootstrap || false
+        var b = s2.append('label')
+        b.append('input').attr('type', 'radio')
+        _button_with_sel(b, button)
+        return this
+    }}
 }
 
 function button_group(s) {
     var s2 = s.attr('class', 'btn-group-vertical');
     return { button: function(button) {
         var b = s2.append("button")
-                .attr("class", "btn btn-default");
-        var c = b.append("span");
-        if ('id' in button) b.attr('id', button.id);
-
-        // text
-        if ('key_text' in button && 'text' in button && button.key_text !== null)
-            c.text(button.text + button.key_text);
-        else if ('text' in button)
-            c.text(button.text);
-
-        if ('icon' in button) c.classed(button.icon, true);
-        if ('key' in button) set_button(b, button.key);
-        if ('tooltip' in button) b.attr('title', button.tooltip);
+        _button_with_sel(b, button)
         return this;
     }};
 }

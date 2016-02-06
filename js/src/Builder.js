@@ -1,5 +1,5 @@
-/** For documentation of this class, see docs/javascript_api.rst
-
+/**
+ * For documentation of this class, see docs/javascript_api.rst
  */
 
 /* global d3 */
@@ -19,7 +19,7 @@ var TextEditInput = require('./TextEditInput');
 var QuickJump = require('./QuickJump');
 var data_styles = require('./data_styles');
 var builder_embed = require('./inline').builder_embed;
-
+var _ = require('underscore')
 
 var Builder = utils.make_class();
 Builder.prototype = {
@@ -79,6 +79,7 @@ function init(map_data, model_data, embedded_css, selection, options) {
         fill_screen: false,
         zoom_to_element: null,
         full_screen_button: false,
+        ignore_bootstrap: false,
         // map, model, and styles
         starting_reaction: null,
         never_ask_before_quit: false,
@@ -349,14 +350,19 @@ function load_map(map_data, should_update_data) {
     this.map.key_manager.toggle(this.options.enable_keys);
 
     // set up menu and status bars
-    if (this.options.menu === 'all')
-        this._set_up_menu(menu_div, this.map, this.map.key_manager, keys,
-                          this.options.enable_editing, this.options.enable_keys,
-                          this.options.full_screen_button)
+    if (this.options.menu === 'all') {
+        if (this.options.ignore_bootstrap)
+            console.error('Cannot create the dropdown menus if ignore_bootstrap = true')
+        else
+            this._set_up_menu(menu_div, this.map, this.map.key_manager, keys,
+                              this.options.enable_editing, this.options.enable_keys,
+                              this.options.full_screen_button)
+    }
 
     this._set_up_button_panel(button_div, keys, this.options.enable_editing,
                               this.options.enable_keys,
-                              this.options.full_screen_button, this.options.menu)
+                              this.options.full_screen_button,
+                              this.options.menu, this.options.ignore_bootstrap)
 
     // setup selection box
     if (this.options.zoom_to_element) {
@@ -651,7 +657,7 @@ function _update_data(update_model, update_map, kind, should_draw) {
 }
 
 function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
-                      enable_keys, full_screen_button) {
+                      enable_keys, full_screen_button, ignore_bootstrap) {
     var menu = menu_selection.attr('id', 'menu')
             .append('ul')
             .attr('class', 'nav nav-pills')
@@ -984,7 +990,8 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
 }
 
 function _set_up_button_panel(button_selection, keys, enable_editing,
-                              enable_keys, full_screen_button, menu_option) {
+                              enable_keys, full_screen_button, menu_option,
+                              ignore_bootstrap) {
     var button_panel = button_selection.append('ul')
             .attr('class', 'nav nav-pills nav-stacked')
             .attr('id', 'button-panel')
@@ -995,26 +1002,30 @@ function _set_up_button_panel(button_selection, keys, enable_editing,
                            text: '+',
                            icon: 'glyphicon glyphicon-plus-sign',
                            tooltip: 'Zoom in',
-                           key_text: (enable_keys ? ' (Ctrl and +)' : null) })
+                           key_text: (enable_keys ? ' (Ctrl and +)' : null),
+                           ignore_bootstrap: ignore_bootstrap })
     ui.individual_button(button_panel.append('li'),
                          { key: keys.zoom_out,
                            text: '–',
                            icon: 'glyphicon glyphicon-minus-sign',
                            tooltip: 'Zoom out',
-                           key_text: (enable_keys ? ' (Ctrl and -)' : null) })
+                           key_text: (enable_keys ? ' (Ctrl and -)' : null),
+                           ignore_bootstrap: ignore_bootstrap  })
     ui.individual_button(button_panel.append('li'),
                          { key: keys.extent_canvas,
                            text: '↔',
                            icon: 'glyphicon glyphicon-resize-full',
                            tooltip: 'Zoom to canvas',
-                           key_text: (enable_keys ? ' (Ctrl+1)' : null) })
+                           key_text: (enable_keys ? ' (Ctrl+1)' : null),
+                           ignore_bootstrap: ignore_bootstrap  })
     if (full_screen_button) {
         ui.individual_button(button_panel.append('li'),
             {   key: keys.full_screen,
                 text: '▣',
                 icon: 'glyphicon glyphicon-fullscreen',
                 tooltip: 'Full screen',
-                key_text: (enable_keys ? ' (Ctrl+2)' : null)
+                key_text: (enable_keys ? ' (Ctrl+2)' : null),
+                ignore_bootstrap: ignore_bootstrap
             })
     }
 
@@ -1023,52 +1034,70 @@ function _set_up_button_panel(button_selection, keys, enable_editing,
         ui.radio_button_group(button_panel.append('li'))
             .button({ key: keys.zoom_mode,
                       id: 'zoom-mode-button',
+                      text: 'Z',
                       icon: 'glyphicon glyphicon-move',
                       tooltip: 'Pan mode',
-                      key_text: (enable_keys ? ' (Z)' : null) })
+                      key_text: (enable_keys ? ' (Z)' : null),
+                      ignore_bootstrap: ignore_bootstrap  })
             .button({ key: keys.brush_mode,
+                      text: 'V',
                       id: 'brush-mode-button',
                       icon: 'glyphicon glyphicon-hand-up',
                       tooltip: 'Select mode',
-                      key_text: (enable_keys ? ' (V)' : null) })
+                      key_text: (enable_keys ? ' (V)' : null),
+                      ignore_bootstrap: ignore_bootstrap  })
             .button({ key: keys.build_mode,
+                      text: 'N',
                       id: 'build-mode-button',
                       icon: 'glyphicon glyphicon-plus',
                       tooltip: 'Add reaction mode',
-                      key_text: (enable_keys ? ' (N)' : null) })
+                      key_text: (enable_keys ? ' (N)' : null),
+                      ignore_bootstrap: ignore_bootstrap  })
             .button({ key: keys.rotate_mode,
+                      text: 'R',
                       id: 'rotate-mode-button',
                       icon: 'glyphicon glyphicon-repeat',
                       tooltip: 'Rotate mode',
-                      key_text: (enable_keys ? ' (R)' : null) })
+                      key_text: (enable_keys ? ' (R)' : null),
+                      ignore_bootstrap: ignore_bootstrap  })
             .button({ key: keys.text_mode,
+                      text: 'T',
                       id: 'text-mode-button',
                       icon: 'glyphicon glyphicon-font',
                       tooltip: 'Text mode',
-                      key_text: (enable_keys ? ' (T)' : null) })
+                      key_text: (enable_keys ? ' (T)' : null),
+                      ignore_bootstrap: ignore_bootstrap  })
 
         // arrow buttons
         this.direction_buttons = button_panel.append('li')
         var o = ui.button_group(this.direction_buttons)
                 .button({ key: keys.direction_arrow_left,
+                          text: '←',
                           icon: 'glyphicon glyphicon-arrow-left',
-                          tooltip: 'Direction arrow (←)' })
+                          tooltip: 'Direction arrow (←)',
+                          ignore_bootstrap: ignore_bootstrap  })
                 .button({ key: keys.direction_arrow_right,
+                          text: '→',
                           icon: 'glyphicon glyphicon-arrow-right',
-                          tooltip: 'Direction arrow (→)' })
+                          tooltip: 'Direction arrow (→)',
+                          ignore_bootstrap: ignore_bootstrap  })
                 .button({ key: keys.direction_arrow_up,
+                          text: '↑',
                           icon: 'glyphicon glyphicon-arrow-up',
-                          tooltip: 'Direction arrow (↑)' })
+                          tooltip: 'Direction arrow (↑)',
+                          ignore_bootstrap: ignore_bootstrap  })
                 .button({ key: keys.direction_arrow_down,
+                          text: '↓',
                           icon: 'glyphicon glyphicon-arrow-down',
-                          tooltip: 'Direction arrow (↓)' })
+                          tooltip: 'Direction arrow (↓)',
+                          ignore_bootstrap: ignore_bootstrap  })
     }
 }
 
 function _toggle_direction_buttons(on_off) {
-    if (on_off===undefined)
-        on_off = !this.direction_buttons.style('visibility')=='visible';
-    this.direction_buttons.style('visibility', on_off ? 'visible' : 'hidden');
+    if (_.isUndefined(on_off))
+        on_off = !this.direction_buttons.style('display') === 'block'
+    this.direction_buttons.style('display', on_off ? 'block' : 'none')
 }
 
 function _setup_status(selection, map) {

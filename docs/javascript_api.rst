@@ -80,6 +80,12 @@ JavaScript API
           (Default: ``false``) Include a button in the user interface for
           entering full screen mode.
 
+       .. js:attribute:: options.ignore_bootstrap
+
+          (Default: ``false``) Do not use Bootstrap for buttons, even if it
+          available. This is used to embed Escher in a Jupyter notebook where it
+          conflicts with the Jupyter Boostrap installation.
+
        **Map, model, and styles**
 
        .. js:attribute:: options.starting_reaction
