@@ -226,30 +226,33 @@ function load_model(model_data, should_update_data) {
     this.callback_manager.run('load_model', null, model_data, should_update_data);
 }
 
+/**
+ * For documentation of this function, see docs/javascript_api.rst
+ */
 function load_map(map_data, should_update_data) {
-    /** For documentation of this function, see docs/javascript_api.rst
-
-     */
-
-    if (should_update_data === undefined)
-        should_update_data = true;
+    if (_.isUndefined(should_update_data))
+        should_update_data = true
 
     // Begin with some definitions
-    var selectable_mousedown_enabled = true,
-        shift_key_on = false;
+    var selectable_mousedown_enabled = true
+    var shift_key_on = false
 
     // remove the old builder
-    utils.remove_child_nodes(this.selection);
+    utils.remove_child_nodes(this.selection)
 
     // set up the zoom container
     this.zoom_container = new ZoomContainer(this.selection,
                                             this.options.scroll_behavior,
                                             this.options.use_3d_transform,
-                                            this.options.fill_screen);
-    var zoomed_sel = this.zoom_container.zoomed_sel;
-    var svg = this.zoom_container.svg;
+                                            this.options.fill_screen)
+    var zoomed_sel = this.zoom_container.zoomed_sel
+    var svg = this.zoom_container.svg
 
-    if (map_data!==null) {
+    // remove the old map side effects
+    if (this.map)
+        this.map.key_manager.toggle(false)
+
+    if (map_data !== null) {
         // import map
         this.map = Map.from_data(map_data,
                                  svg,
@@ -258,7 +261,7 @@ function load_map(map_data, should_update_data) {
                                  this.zoom_container,
                                  this.settings,
                                  this.cobra_model,
-                                 this.options.enable_search);
+                                 this.options.enable_search)
     } else {
         // new map
         this.map = new Map(svg,
@@ -268,86 +271,86 @@ function load_map(map_data, should_update_data) {
                            this.settings,
                            this.cobra_model,
                            null,
-                           this.options.enable_search);
+                           this.options.enable_search)
     }
     // zoom container status changes
     this.zoom_container.callback_manager.set('svg_start', function() {
-        this.map.set_status('Drawing ...');
-    }.bind(this));
+        this.map.set_status('Drawing ...')
+    }.bind(this))
     this.zoom_container.callback_manager.set('svg_finish', function() {
-        this.map.set_status('');
-    }.bind(this));
+        this.map.set_status('')
+    }.bind(this))
 
     // set the data for the map
     if (should_update_data)
-        this._update_data(false, true);
+        this._update_data(false, true)
 
     // set up the reaction input with complete.ly
-    this.build_input = BuildInput(this.selection, this.map,
-                                  this.zoom_container, this.settings);
+    this.build_input = new BuildInput(this.selection, this.map,
+                                      this.zoom_container, this.settings)
 
     // set up the text edit input
-    this.text_edit_input = TextEditInput(this.selection, this.map,
-                                         this.zoom_container);
+    this.text_edit_input = new TextEditInput(this.selection, this.map,
+                                             this.zoom_container)
 
     // set up the Brush
-    this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group');
+    this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group')
     this.map.canvas.callback_manager.set('resize', function() {
-        this.brush.toggle(true);
-    }.bind(this));
+        this.brush.toggle(true)
+    }.bind(this))
 
     // set up the modes
-    this._setup_modes(this.map, this.brush, this.zoom_container);
+    this._setup_modes(this.map, this.brush, this.zoom_container)
 
     var s = this.selection
             .append('div').attr('class', 'search-menu-container')
             .append('div').attr('class', 'search-menu-container-inline'),
         menu_div = s.append('div'),
         search_bar_div = s.append('div'),
-        button_div = this.selection.append('div');
+        button_div = this.selection.append('div')
 
     // set up the search bar
-    this.search_bar = SearchBar(search_bar_div, this.map.search_index,
-                                this.map);
+    this.search_bar = new SearchBar(search_bar_div, this.map.search_index,
+                                this.map)
     // set up the hide callbacks
     this.search_bar.callback_manager.set('show', function() {
-        this.settings_bar.toggle(false);
-    }.bind(this));
+        this.settings_bar.toggle(false)
+    }.bind(this))
 
     // set up the settings
-    var settings_div = this.selection.append('div');
-    this.settings_bar = SettingsMenu(settings_div, this.settings, this.map,
-                                     function(type, on_off) {
-                                         // temporarily set the abs type, for
-                                         // previewing it in the Settings
-                                         // menu
-                                         var o = this.options[type + '_styles'];
-                                         if (on_off && o.indexOf('abs') == -1)
-                                             o.push('abs');
-                                         else if (!on_off) {
-                                             var i = o.indexOf('abs');
-                                             if (i != -1)
-                                                 this.options[type + '_styles'] = o.slice(0, i).concat(o.slice(i + 1));
-                                         }
-                                         this._update_data(false, true, type);
-                                     }.bind(this));
+    var settings_div = this.selection.append('div')
+    this.settings_bar = new SettingsMenu(settings_div, this.settings, this.map,
+                                         function(type, on_off) {
+                                             // temporarily set the abs type, for
+                                             // previewing it in the Settings
+                                             // menu
+                                             var o = this.options[type + '_styles']
+                                             if (on_off && o.indexOf('abs') == -1)
+                                                 o.push('abs')
+                                             else if (!on_off) {
+                                                 var i = o.indexOf('abs')
+                                                 if (i != -1)
+                                                     this.options[type + '_styles'] = o.slice(0, i).concat(o.slice(i + 1))
+                                             }
+                                             this._update_data(false, true, type)
+                                         }.bind(this))
     this.settings_bar.callback_manager.set('show', function() {
-        this.search_bar.toggle(false);
-    }.bind(this));
+        this.search_bar.toggle(false)
+    }.bind(this))
 
     // set up key manager
     var keys = this._get_keys(this.map, this.zoom_container,
                               this.search_bar, this.settings_bar,
                               this.options.enable_editing,
-                              this.options.full_screen_button);
-    this.map.key_manager.assigned_keys = keys;
+                              this.options.full_screen_button)
+    this.map.key_manager.assigned_keys = keys
     // tell the key manager about the reaction input and search bar
     this.map.key_manager.input_list = [this.build_input, this.search_bar,
-                                       this.settings_bar, this.text_edit_input];
+                                       this.settings_bar, this.text_edit_input]
     // make sure the key manager remembers all those changes
-    this.map.key_manager.update();
+    this.map.key_manager.update()
     // turn it on/off
-    this.map.key_manager.toggle(this.options.enable_keys);
+    this.map.key_manager.toggle(this.options.enable_keys)
 
     // set up menu and status bars
     if (this.options.menu === 'all') {
@@ -367,48 +370,48 @@ function load_map(map_data, should_update_data) {
     // setup selection box
     if (this.options.zoom_to_element) {
         var type = this.options.zoom_to_element.type,
-            element_id = this.options.zoom_to_element.id;
+            element_id = this.options.zoom_to_element.id
         if (typeof type === 'undefined' || ['reaction', 'node'].indexOf(type) == -1)
-            throw new Error('zoom_to_element type must be "reaction" or "node"');
+            throw new Error('zoom_to_element type must be "reaction" or "node"')
         if (typeof element_id === 'undefined')
-            throw new Error('zoom_to_element must include id');
+            throw new Error('zoom_to_element must include id')
         if (type == 'reaction')
-            this.map.zoom_to_reaction(element_id);
+            this.map.zoom_to_reaction(element_id)
         else if (type == 'node')
-            this.map.zoom_to_node(element_id);
+            this.map.zoom_to_node(element_id)
     } else if (map_data !== null) {
-        this.map.zoom_extent_canvas();
+        this.map.zoom_extent_canvas()
     } else {
         if (this.options.starting_reaction !== null && this.cobra_model !== null) {
             // Draw default reaction if no map is provided
-            var size = this.zoom_container.get_size();
+            var size = this.zoom_container.get_size()
             var start_coords = { x: size.width / 2,
-                                 y: size.height / 4 };
-            this.map.new_reaction_from_scratch(this.options.starting_reaction, start_coords, 90);
-            this.map.zoom_extent_nodes();
+                                 y: size.height / 4 }
+            this.map.new_reaction_from_scratch(this.options.starting_reaction, start_coords, 90)
+            this.map.zoom_extent_nodes()
         } else {
-            this.map.zoom_extent_canvas();
+            this.map.zoom_extent_canvas()
         }
     }
 
     // status in both modes
-    var status = this._setup_status(this.selection, this.map);
+    var status = this._setup_status(this.selection, this.map)
 
     // set up quick jump
-    this._setup_quick_jump(this.selection);
+    this._setup_quick_jump(this.selection)
 
     // start in zoom mode for builder, view mode for viewer
     if (this.options.enable_editing)
-        this.zoom_mode();
+        this.zoom_mode()
     else
-        this.view_mode();
+        this.view_mode()
 
     // confirm before leaving the page
     if (this.options.enable_editing)
-        this._setup_confirm_before_exit();
+        this._setup_confirm_before_exit()
 
     // draw
-    this.map.draw_everything();
+    this.map.draw_everything()
 }
 
 function _set_mode(mode) {

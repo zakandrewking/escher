@@ -171,101 +171,101 @@ function init(svg, css, selection, zoom_container, settings,
               cobra_model, canvas_size_and_loc, enable_search,
               map_name, map_id, map_description) {
     if (canvas_size_and_loc === null) {
-        var size = zoom_container.get_size();
+        var size = zoom_container.get_size()
         canvas_size_and_loc = {x: -size.width, y: -size.height,
-                               width: size.width*3, height: size.height*3};
+                               width: size.width*3, height: size.height*3}
     }
 
-    if (map_name === undefined || map_name === null || map_name == '')
-        map_name = 'new_map';
+    if (_.isUndefined(map_name) || map_name === null || map_name == '')
+        map_name = 'new_map'
     else
-        map_name = String(map_name);
-    if (map_id === undefined || map_id === null || map_id == '')
-        map_id = utils.generate_map_id();
+        map_name = String(map_name)
+    if (_.isUndefined(map_id) || map_id === null || map_id == '')
+        map_id = utils.generate_map_id()
     else
-        map_id = String(map_id);
-    if (map_description === undefined || map_description === null)
-        map_description = '';
+        map_id = String(map_id)
+    if (_.isUndefined(map_description) || map_description === null)
+        map_description = ''
     else
-        map_description = String(map_description);
+        map_description = String(map_description)
 
     // set up the callbacks
-    this.callback_manager = new CallbackManager();
+    this.callback_manager = new CallbackManager()
 
     // set up the defs
-    this.svg = svg;
-    this.defs = utils.setup_defs(svg, css);
+    this.svg = svg
+    this.defs = utils.setup_defs(svg, css)
 
     // make the canvas
-    this.canvas = new Canvas(selection, canvas_size_and_loc);
+    this.canvas = new Canvas(selection, canvas_size_and_loc)
 
-    this.setup_containers(selection);
-    this.sel = selection;
-    this.zoom_container = zoom_container;
+    this.setup_containers(selection)
+    this.sel = selection
+    this.zoom_container = zoom_container
 
-    this.settings = settings;
+    this.settings = settings
 
     // set the model AFTER loading the datasets
-    this.cobra_model = cobra_model;
+    this.cobra_model = cobra_model
 
     this.largest_ids = { reactions: -1,
                          nodes: -1,
                          segments: -1,
-                         text_labels: -1 };
+                         text_labels: -1 }
 
     // make the scales
-    this.scale = new Scale();
+    this.scale = new Scale()
     // initialize stats
-    this.calc_data_stats('reaction');
-    this.calc_data_stats('metabolite');
+    this.calc_data_stats('reaction')
+    this.calc_data_stats('metabolite')
     this.scale.connect_to_settings(this.settings, this,
-                                   get_data_statistics.bind(this));
+                                   get_data_statistics.bind(this))
 
     // make the undo/redo stack
-    this.undo_stack = new UndoStack();
+    this.undo_stack = new UndoStack()
 
     // make a behavior object
-    this.behavior = new Behavior(this, this.undo_stack);
+    this.behavior = new Behavior(this, this.undo_stack)
 
     // draw manager
-    this.draw = new Draw(this.behavior, this.settings);
+    this.draw = new Draw(this.behavior, this.settings)
 
     // make a key manager
-    this.key_manager = new KeyManager();
-    this.key_manager.ctrl_equals_cmd = true;
+    this.key_manager = new KeyManager()
+    this.key_manager.ctrl_equals_cmd = true
 
     // make the search index
-    this.enable_search = enable_search;
-    this.search_index = new SearchIndex();
+    this.enable_search = enable_search
+    this.search_index = new SearchIndex()
 
     // map properties
-    this.map_name = map_name;
-    this.map_id = map_id;
-    this.map_description = map_description;
+    this.map_name = map_name
+    this.map_id = map_id
+    this.map_description = map_description
 
     // deal with the window
     var window_translate = {'x': 0, 'y': 0},
-        window_scale = 1;
+        window_scale = 1
 
     // hide beziers
-    this.beziers_enabled = false;
+    this.beziers_enabled = false
 
     // data
-    this.has_data_on_reactions = false;
-    this.has_data_on_nodes = false;
+    this.has_data_on_reactions = false
+    this.has_data_on_nodes = false
 
-    this.nodes = {};
-    this.reactions = {};
-    this.beziers = {};
-    this.text_labels = {};
+    this.nodes = {}
+    this.reactions = {}
+    this.beziers = {}
+    this.text_labels = {}
 
     // update data with null to populate data-specific attributes
-    this.apply_reaction_data_to_map(null);
-    this.apply_metabolite_data_to_map(null);
-    this.apply_gene_data_to_map(null);
+    this.apply_reaction_data_to_map(null)
+    this.apply_metabolite_data_to_map(null)
+    this.apply_gene_data_to_map(null)
 
     // rotation mode off
-    this.rotation_on = false;
+    this.rotation_on = false
 
     // set up full screen listener
     this.listen_for_full_screen(function () {

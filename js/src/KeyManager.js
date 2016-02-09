@@ -47,6 +47,7 @@ function init(assigned_keys, input_list, selection, ctrl_equals_cmd) {
     // Fix mousetrap behavior; by default, it ignore shortcuts when inputs are
     // in focus.
     // TODO NOT WORKING https://craig.is/killing/mice
+    // consider swithching to https://github.com/PolicyStat/combokeys
     this.mousetrap.stopCallback = function() { return false; };
 
     this.enabled = true;
@@ -69,11 +70,10 @@ function _add_cmd(key, ctrl_equals_cmd) {
     return new_ar.length === key_ar.length ? key : new_ar;
 }
 
-
+/**
+ * Updated key bindings if attributes have changed.
+ */
 function update() {
-    /** Updated key bindings if attributes have changed.
-
-     */
     this.mousetrap.reset();
     if (!this.enabled) return;
 
