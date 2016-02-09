@@ -102,7 +102,7 @@ def get_jsonschema():
     """Get the local jsonschema.
 
     """
-    with open(join(root_directory, '..', 'jsonschema', __schema_version__), 'r') as f:
+    with open(join(root_directory, 'escher', 'static', 'jsonschema', __schema_version__), 'r') as f:
         return json.load(f)
 
 def genes_for_gene_reaction_rule(rule):

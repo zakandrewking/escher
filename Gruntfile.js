@@ -105,6 +105,12 @@ module.exports = function(grunt) {
         dest: 'py/escher/static/fonts/',
         expand: true,
         flatten: true,
+      },
+      jsonschema: {
+        src: 'jsonschema/*',
+        dest: 'py/escher/static/jsonschema/',
+        expand: true,
+        flatten: true,
       }
     },
     watch: {
@@ -162,6 +168,7 @@ module.exports = function(grunt) {
         'js/src/coverage/instrument/', 'js/src/coverage/reports/',
         'py/escher/package.json', 'py/escher/static/escher/',
         'py/escher/static/lib/', 'py/escher/static/fonts/',
+        'py/escher/static/fonts/',
       ]
     },
     gitadd: '*',
