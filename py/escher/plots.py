@@ -810,14 +810,16 @@ class Builder(object):
                 boot_font_eot = get_url('boot_font_eot', 'local')
                 boot_font_svg = get_url('boot_font_svg', 'local')
                 boot_font_woff = get_url('boot_font_woff', 'local')
+                boot_font_woff2 = get_url('boot_font_woff2', 'local')
                 boot_font_ttf = get_url('boot_font_ttf', 'local')
             else:
                 boot_css = boot_js = jquery = None
-                boot_font_eot = boot_font_svg = boot_font_woff = boot_font_ttf = None
+                boot_font_eot = boot_font_svg = None
+                boot_font_woff = boot_font_woff2 = boot_font_ttf = None
 
             for path in [escher, builder_css, boot_css, boot_js, jquery, d3,
                          favicon, boot_font_eot, boot_font_svg, boot_font_woff,
-                         boot_font_ttf]:
+                         boot_font_woff2, boot_font_ttf]:
                 if path is None:
                     continue
                 src = join(root_directory, path)

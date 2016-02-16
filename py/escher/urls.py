@@ -39,6 +39,7 @@ _dependencies = {
     'boot_font_eot': 'escher/static/fonts/glyphicons-halflings-regular.eot',
     'boot_font_svg': 'escher/static/fonts/glyphicons-halflings-regular.svg',
     'boot_font_woff': 'escher/static/fonts/glyphicons-halflings-regular.woff',
+    'boot_font_woff2': 'escher/static/fonts/glyphicons-halflings-regular.woff2',
     'boot_font_ttf': 'escher/static/fonts/glyphicons-halflings-regular.ttf',
 }
 
