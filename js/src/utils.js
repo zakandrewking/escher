@@ -412,26 +412,19 @@ function array_to_object(arr) {
     return obj;
 }
 
-function clone(obj) {
-    // Handles the array and object types, and null or undefined
-    if (null == obj || "object" != typeof obj) return obj;
-    // Handle Array
-    if (obj instanceof Array) {
-        var copy = [];
-        for (var i = 0, len = obj.length; i < len; i++) {
-            copy[i] = clone(obj[i]);
-        }
-        return copy;
-    }
-    // Handle Object
-    if (obj instanceof Object) {
-        var copy = {};
-        for (var attr in obj) {
-            if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
-        }
-        return copy;
-    }
-    throw new Error("Unable to copy obj! Its type isn't supported.");
+/**
+ * Deep copy for array and object types. All other types are returned by
+ * reference.
+ * @param {T<Object|Array|*>} obj - The object to copy.
+ * @return {T} The copied object.
+ */
+function clone (obj) {
+    if (_.isArray(obj))
+        return _.map(obj, function(t) { return clone(t) })
+    else if (_.isObject(obj))
+        return _.mapObject(obj, function (t, k) { return clone(t) })
+    else
+        return obj
 }
 
 function extend(obj1, obj2, overwrite) {

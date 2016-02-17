@@ -164,6 +164,16 @@ describe('utils.array_to_object', () => {
   })
 })
 
+describe('utils.clone', () => {
+  it('deep copies objects', () => {
+    const first = { a: 140, b: [ 'c', 'd' ] }
+    const second = utils.clone(first)
+    first.a += 1
+    assert.strictEqual(second.a, 140)
+    assert.notStrictEqual(first.b, second.b)
+  })
+})
+
 describe('utils.extend', () => {
   it('adds attributes of second object to first', () => {
     // extend

@@ -1,7 +1,6 @@
 'use strict'
 
 const require_helper = require('./helpers/require_helper')
-
 const Map = require_helper('Map')
 const Settings = require_helper('Settings')
 const CobraModel = require_helper('CobraModel')
@@ -14,6 +13,19 @@ const assert = require('chai').assert
 const d3_body = require('./helpers/d3_body')
 const get_map = require('./helpers/get_map')
 
+const _ = require('underscore')
+
+function matching_reaction (reactions, id) {
+  let match = null
+  for (let r_id in reactions) {
+    const r = reactions[r_id]
+    if (r.bigg_id === id) {
+      match = r
+      break
+    }
+  }
+  return match
+}
 
 describe('Map', () => {
   let map, svg
@@ -194,35 +206,57 @@ describe('Map', () => {
                      { type: 'text_label', text_label_id: id })
   })
 
-  it('can accept new reactions', () => {
+  it('new_reaction_from_scratch', () => {
     const model_data = { reactions: [ { id: 'acc_tpp',
-                                      metabolites: { acc_c: 1, acc_p: -1 },
-                                      gene_reaction_rule: 'Y1234'
-                                    }
-                                  ],
-                       metabolites: [ { id: 'acc_c',
-                                        formula: 'C3H2' },
-                                      { id: 'acc_p',
-                                        formula: 'C3H2' }
+                                        metabolites: { acc_c: 1, acc_p: -1 },
+                                        gene_reaction_rule: 'Y1234'
+                                      }
                                     ],
-                       genes: []
-                     },
-        model = CobraModel.from_cobra_json(model_data)
+                         metabolites: [ { id: 'acc_c',
+                                          formula: 'C3H2' },
+                                        { id: 'acc_p',
+                                          formula: 'C3H2' }
+                                      ],
+                         genes: []
+                       }
+    const model = CobraModel.from_cobra_json(model_data)
     map.cobra_model = model
 
-    map.new_reaction_from_scratch('acc_tpp', {x: 0, y: 0, gene_reaction_rule: ''}, 0)
+    map.new_reaction_from_scratch('acc_tpp', { x: 0, y: 0 }, 0)
 
     // find the reaction
-    let match = null
-    for (let r_id in map.reactions) {
-      const r = map.reactions[r_id]
-      if (r.bigg_id == 'acc_tpp')
-        match = r
-    }
+    const match = matching_reaction(map.reactions, 'acc_tpp')
     assert.ok(match)
     // gene reaction rule
     assert.strictEqual(match.gene_reaction_rule,
                        model_data.reactions[0].gene_reaction_rule)
+  })
+
+  it('new_reaction_from_scratch exchanges', () => {
+    ['uptake', 'secretion'].map(direction => {
+      const model_data = {
+        reactions: [{
+          id: 'EX_glc__D_e',
+          metabolites: { glc__D_e: direction === 'uptake' ? 1 : -1 },
+          gene_reaction_rule: ''
+        }],
+        metabolites: [{
+          id: 'glc__D_e',
+          formula: 'C6H12O6',
+        }],
+        genes: []
+      }
+      const model = CobraModel.from_cobra_json(model_data)
+      map.cobra_model = model
+
+      map.new_reaction_from_scratch('EX_glc__D_e', { x: 0, y: 0 }, 30)
+
+      // find the reaction
+      const match = matching_reaction(map.reactions, 'EX_glc__D_e')
+      assert.ok(match)
+      // segments
+      assert.strictEqual(_.size(match.segments), 3)
+    })
   })
 
   it('get_data_statistics accepts numbers or strings as floats; ignores empty strings and nulls', () => {

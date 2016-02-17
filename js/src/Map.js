@@ -1353,89 +1353,96 @@ function delete_text_label_data(text_label_ids) {
 
 // ---------------------------------------------------------------------
 // Building
+// ---------------------------------------------------------------------
 
+/**
+ * Draw a reaction on a blank canvas.
+ * @param {String} starting_reaction - bigg_id for a reaction to draw.
+ * @param {Coords} coords - coordinates to start drawing
+ */
 function new_reaction_from_scratch(starting_reaction, coords, direction) {
-    /** Draw a reaction on a blank canvas.
-
-     starting_reaction: bigg_id for a reaction to draw.
-     coords: coordinates to start drawing
-
-     */
-
     // If there is no cobra model, error
-    if (!this.cobra_model) return console.error('No CobraModel. Cannot build new reaction');
-
-    // set reaction coordinates and angle
-    // be sure to copy the reaction recursively
-    var cobra_reaction = utils.clone(this.cobra_model.reactions[starting_reaction]);
-
-    // create the first node
-    for (var metabolite_id in cobra_reaction.metabolites) {
-        var coefficient = cobra_reaction.metabolites[metabolite_id],
-            metabolite = this.cobra_model.metabolites[metabolite_id];
-        if (coefficient < 0) {
-            var selected_node_id = String(++this.largest_ids.nodes),
-                label_d = { x: 30, y: 10 },
-                selected_node = { connected_segments: [],
-                                  x: coords.x,
-                                  y: coords.y,
-                                  node_is_primary: true,
-                                  label_x: coords.x + label_d.x,
-                                  label_y: coords.y + label_d.y,
-                                  name: metabolite.name,
-                                  bigg_id: metabolite_id,
-                                  node_type: 'metabolite' },
-                new_nodes = {};
-            new_nodes[selected_node_id] = selected_node;
-            break;
-        }
+    if (!this.cobra_model) {
+        console.error('No CobraModel. Cannot build new reaction')
+        return
     }
 
+    // Set reaction coordinates and angle. Be sure to clone the reaction.
+    var cobra_reaction = utils.clone(this.cobra_model.reactions[starting_reaction])
+
+    // check for empty reactions
+    if (_.size(cobra_reaction.metabolites) === 0)
+        throw Error('No metabolites in reaction ' + cobra_reaction.bigg_id)
+
+    // create the first node
+    var reactant_ids = _.map(cobra_reaction.metabolites,
+                             function (coeff, met_id) { return [ coeff, met_id ] })
+            .filter(function (x) { return x[0] < 0 }) // coeff < 0
+            .map(function(x) { return x[1] }) // metabolite id
+    // get the first reactant or else the first product
+    var metabolite_id = (reactant_ids.length > 0 ?
+                         reactant_ids[0] :
+                         Object.keys(cobra_reaction.metabolites)[0])
+    var metabolite = this.cobra_model.metabolites[metabolite_id]
+    var selected_node_id = String(++this.largest_ids.nodes)
+    var label_d = { x: 30, y: 10 }
+    var selected_node = { connected_segments: [],
+                          x: coords.x,
+                          y: coords.y,
+                          node_is_primary: true,
+                          label_x: coords.x + label_d.x,
+                          label_y: coords.y + label_d.y,
+                          name: metabolite.name,
+                          bigg_id: metabolite_id,
+                          node_type: 'metabolite' }
+    var new_nodes = {}
+    new_nodes[selected_node_id] = selected_node
+
     // draw
-    extend_and_draw_metabolite.apply(this, [new_nodes, selected_node_id]);
+    extend_and_draw_metabolite.apply(this, [ new_nodes, selected_node_id ])
 
     // clone the nodes and reactions, to redo this action later
-    var saved_nodes = utils.clone(new_nodes);
+    var saved_nodes = utils.clone(new_nodes)
 
     // draw the reaction
     var out = this.new_reaction_for_metabolite(starting_reaction,
                                                selected_node_id,
                                                direction, false),
         reaction_redo = out.redo,
-        reaction_undo = out.undo;
+        reaction_undo = out.undo
 
     // add to undo/redo stack
     this.undo_stack.push(function() {
         // undo
         // first undo the reaction
-        reaction_undo();
+        reaction_undo()
         // get the nodes to delete
-        this.delete_node_data(Object.keys(new_nodes));
+        this.delete_node_data(Object.keys(new_nodes))
         // save the nodes and reactions again, for redo
-        new_nodes = utils.clone(saved_nodes);
+        new_nodes = utils.clone(saved_nodes)
         // draw
-        this.clear_deleted_nodes();
+        this.clear_deleted_nodes()
         // deselect
-        this.deselect_nodes();
+        this.deselect_nodes()
     }.bind(this), function () {
         // redo
         // clone the nodes and reactions, to redo this action later
-        extend_and_draw_metabolite.apply(this, [new_nodes, selected_node_id]);
+        extend_and_draw_metabolite.apply(this, [new_nodes, selected_node_id])
         // now redo the reaction
-        reaction_redo();
-    }.bind(this));
+        reaction_redo()
+    }.bind(this))
 
-    return null;
+    return
 
     // definitions
     function extend_and_draw_metabolite(new_nodes, selected_node_id) {
-        this.extend_nodes(new_nodes);
+        this.extend_nodes(new_nodes)
         if (this.has_data_on_nodes) {
-            var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes);
-            if (scale_changed) this.draw_all_nodes(false);
-            else this.draw_these_nodes([selected_node_id]);
+            var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes)
+            if (scale_changed) this.draw_all_nodes(false)
+            else this.draw_these_nodes([selected_node_id])
         } else {
-            this.draw_these_nodes([selected_node_id]);
+            this.draw_these_nodes([selected_node_id])
         }
     }
 }
@@ -1490,32 +1497,18 @@ function extend_reactions(new_reactions) {
     utils.extend(this.reactions, new_reactions);
 }
 
+/**
+ * Build a new reaction starting with selected_met. Undoable.
+ * @param {String} reaction_bigg_id - The BiGG ID of the reaction to draw.
+ * @param {String} selected_node_id - The ID of the node to begin drawing with.
+ * @param {Number} direction - The direction to draw in.
+ * @param {Boolean} [apply_undo_redo=true] - If true, then add to the undo
+ * stack. Otherwise, just return the undo and redo functions.
+ * @return An object of undo and redo functions:
+ *   { undo: undo_function, redo: redo_function }
+ */
 function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id,
                                      direction, apply_undo_redo) {
-    /** Build a new reaction starting with selected_met.
-
-     Undoable
-
-     Arguments
-     ---------
-
-     reaction_bigg_id: The BiGG ID of the reaction to draw.
-
-     selected_node_id: The ID of the node to begin drawing with.
-
-     direction: The direction to draw in.
-
-     apply_undo_redo: (Optional, Default: true) If true, then add to the
-     undo stack. Otherwise, just return the undo and redo functions.
-
-     Returns
-     -------
-
-     { undo: undo_function,
-     redo: redo_function }
-
-     */
-
     // default args
     if (apply_undo_redo === undefined) apply_undo_redo = true;
 
