@@ -177,29 +177,29 @@ function init(map_data, model_data, embedded_css, selection, options) {
         this.callback_manager.set('first_load', this.options.first_load_callback);
 
     // load the model, map, and update data in both
-    this.load_model(this.model_data, false);
-    this.load_map(this.map_data, false);
-    this._update_data(true, true);
+    this.load_model(this.model_data, false)
+    this.load_map(this.map_data, false)
+    this._update_data(true, true)
 
-    // setting callbacks
-    // TODO enable atomic updates. Right now, every time
-    // the menu closes, everything is drawn.
+    // Setting callbacks. TODO enable atomic updates. Right now, every time the
+    // menu closes, everything is drawn.
     this.settings.status_bus
         .onValue(function(x) {
             if (x === 'accepted') {
-                this._update_data(true, true, ['reaction', 'metabolite'], false);
+                this._update_data(true, true, ['reaction', 'metabolite'], false)
                 if (this.zoom_container !== null) {
-                    var new_behavior = this.settings.get_option('scroll_behavior');
-                    this.zoom_container.set_scroll_behavior(new_behavior);
+                    var new_behavior = this.settings.get_option('scroll_behavior')
+                    this.zoom_container.set_scroll_behavior(new_behavior)
                 }
                 if (this.map !== null) {
-                    this.map.draw_all_nodes(false);
-                    this.map.draw_all_reactions(true, false);
+                    this.map.draw_all_nodes(false)
+                    this.map.draw_all_reactions(true, false)
+                    this.map.select_none()
                 }
             }
-        }.bind(this));
+        }.bind(this))
 
-    this.callback_manager.run('first_load', this);
+    this.callback_manager.run('first_load', this)
 }
 
 function load_model(model_data, should_update_data) {

@@ -637,118 +637,110 @@ function create_node(enter_selection, drawn_nodes, drawn_reactions) {
     this.callback_manager.run('create_node', this, enter_selection);
 }
 
-function update_node(update_selection, scale, has_data_on_nodes,
-                     mousedown_fn, click_fn, mouseover_fn, mouseout_fn,
-                     drag_behavior, label_drag_behavior) {
-    /** Run on the update selection for nodes.
-
-     Arguments
-     ---------
-
-     update_selection: The D3.js update selection.
-
-     scale: A Scale object.
-
-     has_data_on_nodes: Boolean to determine whether data needs to be drawn.
-
-     mousedown_fn: A function to call on mousedown for a node.
-
-     click_fn: A function to call on click for a node.
-
-     mouseover_fn: A function to call on mouseover for a node.
-
-     mouseout_fn: A function to call on mouseout for a node.
-
-     drag_behavior: The D3.js drag behavior object for the nodes.
-
-     label_drag_behavior: The D3.js drag behavior object for the node labels.
-
-     */
-
+/**
+ * Run on the update selection for nodes.
+ * @param {D3 Selection} update_selection - The D3.js update selection.
+ * @param {Scale} scale - A Scale object.
+ * @param {Boolean} has_data_on_nodes - Boolean to determine whether data needs to be drawn.
+ * @param {Function} mousedown_fn - A function to call on mousedown for a node.
+ * @param {Function} click_fn - A function to call on click for a node.
+ * @param {Function} mouseover_fn - A function to call on mouseover for a node.
+ * @param {Function} mouseout_fn - A function to call on mouseout for a node.
+ * @param {D3 Behavior} drag_behavior - The D3.js drag behavior object for the nodes.
+ * @param {D3 Behavior} label_drag_behavior - The D3.js drag behavior object for the node labels.
+ */
+function update_node (update_selection, scale, has_data_on_nodes,
+                      mousedown_fn, click_fn, mouseover_fn, mouseout_fn,
+                      drag_behavior, label_drag_behavior) {
     // update circle and label location
-    var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
-        primary_r = this.settings.get_option('primary_metabolite_radius'),
-        secondary_r = this.settings.get_option('secondary_metabolite_radius'),
-        marker_r = this.settings.get_option('marker_radius'),
-        hide_all_labels = this.settings.get_option('hide_all_labels'),
-        identifiers_on_map = this.settings.get_option('identifiers_on_map'),
-        identifiers_in_tooltip = (identifiers_on_map == 'bigg_id' ? 'name' : 'bigg_id'),
-        metabolite_data_styles = this.settings.get_option('metabolite_styles'),
-        no_data_style = { color: this.settings.get_option('metabolite_no_data_color'),
-                          size: this.settings.get_option('metabolite_no_data_size') };
-
+    var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
+    var primary_r = this.settings.get_option('primary_metabolite_radius')
+    var secondary_r = this.settings.get_option('secondary_metabolite_radius')
+    var marker_r = this.settings.get_option('marker_radius')
+    var hide_all_labels = this.settings.get_option('hide_all_labels')
+    var identifiers_on_map = this.settings.get_option('identifiers_on_map')
+    var identifiers_in_tooltip = (identifiers_on_map === 'bigg_id' ? 'name' : 'bigg_id')
+    var metabolite_data_styles = this.settings.get_option('metabolite_styles')
+    var no_data_style = { color: this.settings.get_option('metabolite_no_data_color'),
+                          size: this.settings.get_option('metabolite_no_data_size') }
 
     var mg = update_selection
             .select('.node-circle')
             .attr('transform', function(d) {
-                return 'translate('+d.x+','+d.y+')';
+                return 'translate('+d.x+','+d.y+')'
             })
             .style('visibility', function(d) {
-                return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
+                return hideNode(d, hide_secondary_metabolites) ? 'hidden' : null
             })
             .attr('r', function(d) {
-                if (d.node_type == 'metabolite') {
+                if (d.node_type === 'metabolite') {
                     var should_scale = (has_data_on_nodes &&
-                                        metabolite_data_styles.indexOf('size') != -1);
+                                        metabolite_data_styles.indexOf('size') !== -1)
                     if (should_scale) {
-                        var f = d.data;
-                        return f===null ? no_data_style['size'] : scale.metabolite_size(f);
+                        var f = d.data
+                        return f === null ? no_data_style['size'] : scale.metabolite_size(f)
                     } else {
-                        return d.node_is_primary ? primary_r : secondary_r;
+                        return d.node_is_primary ? primary_r : secondary_r
                     }
                 }
                 // midmarkers and multimarkers
-                return marker_r;
+                return marker_r
             })
             .style('fill', function(d) {
                 if (d.node_type=='metabolite') {
                     var should_color_data = (has_data_on_nodes &&
-                                             metabolite_data_styles.indexOf('color') != -1);
+                                             metabolite_data_styles.indexOf('color') != -1)
                     if (should_color_data) {
-                        var f = d.data;
-                        return f===null ? no_data_style['color'] : scale.metabolite_color(f);
+                        var f = d.data
+                        return f===null ? no_data_style['color'] : scale.metabolite_color(f)
                     } else {
-                        return null;
+                        return null
                     }
                 }
                 // midmarkers and multimarkers
-                return null;
+                return null
             })
             .call(this.behavior.turn_off_drag)
             .call(drag_behavior)
             .on('mousedown', mousedown_fn)
             .on('click', click_fn)
             .on('mouseover', mouseover_fn)
-            .on('mouseout', mouseout_fn);
+            .on('mouseout', mouseout_fn)
 
     // update node label visibility
     var node_label = update_selection
             .select('.node-label')
-            .attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+            .attr('visibility', hide_all_labels ? 'hidden' : 'visible')
     if (!hide_all_labels) {
         node_label
             .style('visibility', function(d) {
-                return (hide_secondary_metabolites && !d.node_is_primary) ? 'hidden' : null;
+                return hideNode(d, hide_secondary_metabolites) ? 'hidden' : null
             })
             .attr('transform', function(d) {
-                return 'translate('+d.label_x+','+d.label_y+')';
+                return 'translate(' + d.label_x + ',' + d.label_y + ')'
             })
             .text(function(d) {
-                var t = d[identifiers_on_map];
-                if (has_data_on_nodes && metabolite_data_styles.indexOf('text') != -1)
-                    t += ' ' + d.data_string;
-                return t;
+                var t = d[identifiers_on_map]
+                if (has_data_on_nodes && metabolite_data_styles.indexOf('text') !== -1)
+                    t += ' ' + d.data_string
+                return t
             })
             .call(this.behavior.turn_off_drag)
-            .call(label_drag_behavior);
+            .call(label_drag_behavior)
 
         // tooltip
         update_selection.select('title').text(function(d) {
-            return d[identifiers_in_tooltip];
-        });
+            return d[identifiers_in_tooltip]
+        })
     }
 
-    this.callback_manager.run('update_node', this, update_selection);
+    this.callback_manager.run('update_node', this, update_selection)
+
+    function hideNode (d, hide_secondary_metabolites) {
+        return (d.node_type === 'metabolite' &&
+                hide_secondary_metabolites &&
+                !d.node_is_primary)
+    }
 }
 
 function create_text_label(enter_selection) {
