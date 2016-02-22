@@ -54,7 +54,7 @@ visualizations can be adapted and shared to demonstrate those biological
 discoveries.
 
 The rest of this guide will introduce the Escher user interface and the major
-features of Escher. 
+features of Escher.
 
 The launch page
 ===============
@@ -65,11 +65,11 @@ this:
 .. image:: _static/launch_page.png
 
 The options on the launch page are:
-	   
+
 - **Filter by organism:** Choose an organism to filter the Maps and Models.
 - **Map:** Choose a pre-built map, or start from scratch with an empty builder by
   choosing **None**. In parentheses next to the map name, you will see the name of
-  the model that was used to build this map. 
+  the model that was used to build this map.
 - **Model:** (Optional) If you choose a COBRA model to load, then you can add new
   reactions to the pathway map. You can also load your own model later, after
   you launch the tool. For an explanation of maps, models, and COBRA, see
@@ -88,11 +88,6 @@ The options on the launch page are:
       the mouse's scroll wheel over the map.
     - **Never ask before reloading**: If this is checked, then you will not be
       warned before leaving the page, even if you have unsaved changes.
-    - **Responsive pan and zoom**: If this is checked, then the panning and
-      zooming will take place without drawing the map, in order to make panning
-      and zooming more responsive. This feature works best in the latest
-      versions of Chrome, Firefox and Internet Explorer. In Safari it is better
-      to leave this off.
 
 Choose **Load map** to open the Escher viewer or builder in a new tab, and
 prepare to be delighted by your very own pathway map.
@@ -101,7 +96,7 @@ The menu bar
 ============
 
 Once you have loaded an Escher map, you will see a menu bar along the top of the
-screen. Click the question mark to bring up the Escher documentation: 
+screen. Click the question mark to bring up the Escher documentation:
 
 .. image:: _static/menu.png
 
@@ -111,10 +106,20 @@ Loading and saving maps
 Using the map menu, you can load and save maps at any time:
 
 .. image:: _static/map_menu.png
-	   
+
 Click **Save map JSON** to save the Escher map as a JSON file, which is the
-standard file representing an Escher map. **NOTE**: The JSON file does NOT save any
-datasets you have loaded. This may be changed in a future version of Escher.
+standard file representing an Escher map.
+
+**NOTE**: The JSON file does NOT save any datasets you have loaded. This may be
+changed in a future version of Escher.
+
+**NOTE 2**: In Safari, saving files from Escher works a little differently than
+in the other major browsers. After clicking **Save map JSON**, Safari will load
+a new tab with the raw content of the Escher map file. To save the file, choose
+File>Save As... from the Safari menu. A new dialog appears; in the dropdown menu
+near the bottom, select Page Source (rather than Web Archive), give your file an
+appropriate name (e.g. ``map.json`` for an Escher map or ``map.svg`` for an SVG
+export), and click Save.
 
 Later, you can can load a JSON file to view and edit a map by clicking **Load map
 JSON**.
@@ -134,7 +139,7 @@ Loading models
 Use the model menu to manage the COBRA model loaded in Escher:
 
 .. image:: _static/model_menu.png
-	   
+
 Choose **Load COBRA model JSON** to open a COBRA model. Read more about COBRA
 models in :doc:`escher_and_cobrapy`. Once you have COBRApy v0.3.0 or later
 installed, then you can generate a JSON model by following this `example code`_.
@@ -181,7 +186,7 @@ single data value columns::
     glc__D_c,5.4
     g6p__D_c,2.3
 
-Which might look like this is Excel:    
+Which might look like this is Excel:
 
 ========= =========
 ID        time 0sec
@@ -194,7 +199,7 @@ If two datasets are provided, then the Escher map will display the difference
 between the datasets. In the Settings menu, the **Comparison** setting allows
 you to choose between comparison functions (Fold Change, Log2(Fold Change), and
 Difference). With two datasets, the CSV file looks like this:
- 
+
 ========= ========= =========
 ID        time 0sec time 5s
 ========= ========= =========
@@ -224,11 +229,11 @@ reaction data comparisons::
     # save a single flux vector as JSON
     flux_dictionary = {'glc__D_c': 5.4, 'g6p_c': 2.3}
     with open('out.json', 'w') as f:
-	json.dump(flux_dictionary, f) 
+	json.dump(flux_dictionary, f)
 
-    # save a flux comparison as JSON 
+    # save a flux comparison as JSON
     flux_comp = [{'glc__D_c': 5.4, 'g6p_c': 2.3}, {'glc__D_c': 10.2, 'g6p_c': 8.1}]
-    with open('out_comp.json', 'w') as f: 
+    with open('out_comp.json', 'w') as f:
 	json.dump(flux_comp, f)
 
 .. _gene-reaction-rules:
@@ -239,7 +244,7 @@ Gene data and gene reaction rules
 Escher uses *gene reaction rules* to connect gene data to the reactions on a
 metabolic pathway. You can see these gene reaction rules on the map by selecting
 *Show gene reaction rules* in the :ref:`settings` menu.
-     
+
 Gene reaction rules show the genes whose gene products are required to catalyze
 a reaction. Gene are connected using AND and OR rules. AND rules are
 used when two genes are required for enzymatic activity, e.g. they are members
@@ -250,7 +255,7 @@ With OR rules, Escher will take the sum of the data values for each gene. With
 AND rules, Escher will either take the mean (the default) or the minimum of the
 components. The AND behavior (mean vs. minimum) is defined in the
 :ref:`settings` menu.
-     
+
 .. _editing-and-building:
 
 Editing and building
@@ -259,7 +264,7 @@ Editing and building
 The Edit menu gives you access to function for editing the map:
 
 .. image:: _static/edit_menu.png
-	   
+
 Escher has five major modes, and you can switch between those modes using the
 buttons in the Edit menu, or using the buttons in the :ref:`button bar
 <button-bar>` on the left of the screen.
@@ -292,7 +297,7 @@ following commands:
 - **Delete:** Delete the currently selected node(s).
 
 - **Undo**: Undo the last action. NOTE: Certain actions, such as editing the
-  canvas, cannot be undone in the current version of Escher. 
+  canvas, cannot be undone in the current version of Escher.
 
 - **Redo**: Redo the last action that was undone.
 
@@ -375,7 +380,7 @@ View and build options
 
 - **Hide reaction, gene, and metabolite labels:** Another option to visually
   simplify the map, this will hide all labels that are not text annotations.
-  
+
 - **Allow duplicate reactions:** By default, duplicate reactions are hidden in the
   add reaction dropdown menu. However, you can turn this option on to show the
   duplicate reactions.
@@ -383,7 +388,7 @@ View and build options
 - **Highlight reactions not in model:** Highlight in red any reactions that are on
   the map but are not in the model. This is useful when you are adapting a map
   from one model for use with another model
-  
+
 Reaction data settings
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -438,6 +443,6 @@ metabolite circles.
 .. _`Adobe Illustrator`: http://www.adobe.com/products/illustrator.html
 .. _`Inkscape`: https://inkscape.org/
 .. _here: https://github.com/opencobra/cobrapy/releases
-.. _`example code`: http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/Generate%20JSON%20models%20in%20COBRApy.ipynb 
+.. _`example code`: http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/Generate%20JSON%20models%20in%20COBRApy.ipynb
 .. _hex: http://en.wikipedia.org/wiki/Web_colors#Hex_triplet
 .. _`CSS-style color`: https://developer.mozilla.org/en-US/docs/Web/CSS/color
