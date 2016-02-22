@@ -65,7 +65,8 @@ function init(map_data, model_data, embedded_css, selection, options) {
     this.selection = selection;
 
     // apply this object as data for the selection
-    this.selection.datum(this);
+    this.selection.datum(this)
+    this.selection.__builder__ = this
 
     // set defaults
     this.options = utils.set_options(options, {

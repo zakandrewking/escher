@@ -3,7 +3,7 @@
 /* global d3 */
 
 var utils = require('./utils');
-
+var _ = require('underscore');
 
 module.exports = {
     import_and_check: import_and_check,
@@ -185,107 +185,97 @@ function reverse_flux_for_data(d) {
     return (d[0] < 0);
 }
 
-function gene_string_for_data(rule, gene_values, genes, styles,
-                              identifiers_on_map, compare_style) {
-    /** Add gene values to the gene_reaction_rule string.
-
-     Arguments
-     ---------
-
-     rule: (string) The gene reaction rule.
-
-     gene_values: The values.
-
-     genes: An array of objects specifying the gene bigg_id and name.
-
-     styles: The reaction styles.
-
-     identifiers_on_map: The type of identifiers ('bigg_id' or 'name').
-
-     compare_style: The comparison style.
-
-     Returns
-     -------
-
-     A list of objects with {
-     bigg_id: The bigg ID.
-     name: The name.
-     text: The new string with formatted data values.
-     }
-
-     The text elements should each appear on a new line.
-
-     */
-
-    var out_text = rule,
-        no_data = (gene_values === null),
-        // keep track of bigg_id's or names to remove repeats
-        genes_found = {};
-
+/**
+ * Add gene values to the gene_reaction_rule string.
+ * @param {String} rule - The gene reaction rule.
+ * @param {} gene_values - The values.
+ * @param {} genes - An array of objects specifying the gene bigg_id and name.
+ * @param {} styles - The reaction styles.
+ * @param {String} identifiers_on_map - The type of identifiers ('bigg_id' or 'name').
+ * @param {} compare_style - The comparison style.
+ *
+ * @return {Array} A list of objects with:
+ *
+ * {
+ *    bigg_id: The bigg ID.
+ *    name: The name.
+ *    text: The new string with formatted data values.
+ * }
+ *
+ * The text elements should each appear on a new line.
+ */
+function gene_string_for_data (rule, gene_values, genes, styles,
+                               identifiers_on_map, compare_style) {
+    var out_text = rule
+    var no_data = (gene_values === null)
+    // keep track of bigg_ids to remove repeats
+    var genes_found = {}
 
     genes.forEach(function(g_obj) {
-        // get id or name
-        var name = g_obj[identifiers_on_map];
-        if (typeof name === 'undefined')
-            throw new Error('Bad value for identifiers_on_map: ' + identifiers_on_map);
-        // remove repeats that may have found their way into genes object
-        if (typeof genes_found[name] !== 'undefined')
-            return;
-        genes_found[name] = true;
+        var bigg_id = g_obj.bigg_id
+
+        // ignore repeats that may have found their way into the genes object
+        if (bigg_id in genes_found) return
+        genes_found[bigg_id] = true
+
         // generate the string
         if (no_data) {
-            out_text = replace_gene_in_rule(out_text, g_obj.bigg_id, (name + '\n'));
+            out_text = replace_gene_in_rule(out_text, bigg_id, bigg_id + '\n')
         } else {
-            var d = gene_values[g_obj.bigg_id];
-            if (typeof d === 'undefined') d = null;
-            var f = float_for_data(d, styles, compare_style),
-                format = (f === null ? RETURN_ARG : d3.format('.3g'));
-            if (d.length==1) {
-                out_text = replace_gene_in_rule(out_text, g_obj.bigg_id, (name + ' (' + null_or_d(d[0], format) + ')\n'));
-            }
-            else if (d.length==2) {
+            if (!(bigg_id in gene_values))
+                return
+            var d = gene_values[bigg_id]
+            var f = float_for_data(d, styles, compare_style)
+            var format = (f === null ? RETURN_ARG : d3.format('.3g'))
+            if (d.length === 1) {
+                out_text = replace_gene_in_rule(out_text, bigg_id,
+                                                bigg_id + ' (' + null_or_d(d[0], format) + ')\n')
+            } else if (d.length === 2) {
+                var new_str
                 // check if they are all text
-                var new_str,
-                    any_num = d.reduce(function(c, x) {
-                        return c || _parse_float_or_null(x) !== null;
-                    }, false);
+                var any_num = _.any(d, function (x) {
+                    return _parse_float_or_null(x) !== null
+                })
                 if (any_num) {
-                    new_str = (name + ' (' +
+                    new_str = (bigg_id + ' (' +
                                null_or_d(d[0], format) + ', ' +
                                null_or_d(d[1], format) + ': ' +
                                null_or_d(f, format) +
                                ')\n');
                 } else {
-                    new_str = (name + ' (' +
+                    new_str = (bigg_id + ' (' +
                                null_or_d(d[0], format) + ', ' +
-                               null_or_d(d[1], format) + ')\n');
+                               null_or_d(d[1], format) + ')\n')
                 }
-                out_text = replace_gene_in_rule(out_text, g_obj.bigg_id, new_str);
+                out_text = replace_gene_in_rule(out_text, bigg_id, new_str)
             }
         }
-    });
-    // remove emtpy lines
-    out_text = out_text.replace(EMPTY_LINES, '\n')
-    // remove trailing newline (with or without parens)
-        .replace(TRAILING_NEWLINE, '$1');
+    })
+    out_text = (out_text
+                // remove empty lines
+                .replace(EMPTY_LINES, '\n')
+                // remove trailing newline (with or without parens)
+                .replace(TRAILING_NEWLINE, '$1'))
 
-    // split by newlines
-    var result = out_text.split('\n').map(function(text) {
+    // split by newlines, and switch to names if necessary
+    var result = out_text.split('\n').map(function (text) {
         for (var i = 0, l = genes.length; i < l; i++) {
-            var gene = genes[i];
-            if (text.indexOf(gene[identifiers_on_map]) != -1) {
-                return { bigg_id: gene.bigg_id, name: gene.name, text: text };
-                continue;
+            var gene = genes[i]
+            if (text.indexOf(gene.bigg_id) !== -1) {
+                // replace with names
+                if (identifiers_on_map === 'name')
+                    text = replace_gene_in_rule(text, gene.bigg_id, gene.name)
+                return { bigg_id: gene.bigg_id, name: gene.name, text: text }
             }
         }
         // not found, then none
-        return { bigg_id: null, name: null, text: text };
-    });
-    return result;
+        return { bigg_id: null, name: null, text: text }
+    })
+    return result
 
     // definitions
-    function null_or_d(d, format) {
-        return d === null ? 'nd' : format(d);
+    function null_or_d (d, format) {
+        return d === null ? 'nd' : format(d)
     }
 }
 
@@ -451,16 +441,16 @@ function evaluate_gene_reaction_rule(rule, gene_values, and_method_in_gene_react
     return out;
 }
 
-function replace_gene_in_rule(rule, gene_id, val) {
+function replace_gene_in_rule (rule, gene_id, val) {
     // get the escaped string, with surrounding space or parentheses
-    var space_or_par_start = '(^|[\\\s\\\(\\\)])',
-        space_or_par_finish = '([\\\s\\\(\\\)]|$)',
-        escaped = space_or_par_start + escape_reg_exp(gene_id) + space_or_par_finish;
-    return rule.replace(new RegExp(escaped, 'g'),  '$1' + val + '$2');
+    var space_or_par_start = '(^|[\\\s\\\(\\\)])'
+    var space_or_par_finish = '([\\\s\\\(\\\)]|$)'
+    var escaped = space_or_par_start + escape_reg_exp(gene_id) + space_or_par_finish
+    return rule.replace(new RegExp(escaped, 'g'),  '$1' + val + '$2')
 
     // definitions
     function escape_reg_exp(string) {
-        return string.replace(ESCAPE_REG, "\\$1");
+        return string.replace(ESCAPE_REG, "\\$1")
     }
 }
 

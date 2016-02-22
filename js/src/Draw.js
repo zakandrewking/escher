@@ -151,57 +151,50 @@ function create_reaction_label(enter_selection) {
     this.callback_manager.run('create_reaction_label', this, enter_selection);
 }
 
-function update_reaction_label(update_selection, has_data_on_reactions) {
-    /** Run on the update selection for reaction labels.
-
-     Arguments
-     ---------
-
-     update_selection: The D3.js update selection.
-
-     has_data_on_reactions: Boolean to determine whether data needs to be
-     drawn.
-
-     */
-
-    var decimal_format = d3.format('.4g'),
-        identifiers_on_map = this.settings.get_option('identifiers_on_map'),
-        identifiers_in_tooltip = (identifiers_on_map == 'bigg_id' ? 'name' : 'bigg_id'),
-        reaction_data_styles = this.settings.get_option('reaction_styles'),
-        show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules'),
-        hide_all_labels = this.settings.get_option('hide_all_labels'),
-        gene_font_size = this.settings.get_option('gene_font_size'),
-        label_mousedown_fn = this.behavior.label_mousedown,
-        label_mouseover_fn = this.behavior.label_mouseover,
-        label_mouseout_fn = this.behavior.label_mouseout;
+/**
+ * Run on the update selection for reaction labels.
+ * @param {D3 Selection} update_selection - The D3.js update selection.
+ * @param {Boolean} has_data_on_reactions - Whether data needs to be drawn.
+ */
+function update_reaction_label (update_selection, has_data_on_reactions) {
+    var decimal_format = d3.format('.4g')
+    var identifiers_on_map = this.settings.get_option('identifiers_on_map')
+    var identifiers_in_tooltip = (identifiers_on_map == 'bigg_id' ? 'name' : 'bigg_id')
+    var reaction_data_styles = this.settings.get_option('reaction_styles')
+    var show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules')
+    var hide_all_labels = this.settings.get_option('hide_all_labels')
+    var gene_font_size = this.settings.get_option('gene_font_size')
+    var label_mousedown_fn = this.behavior.label_mousedown
+    var label_mouseover_fn = this.behavior.label_mouseover
+    var label_mouseout_fn = this.behavior.label_mouseout
 
     // label location
     update_selection
         .attr('transform', function(d) {
-            return 'translate(' + d.label_x + ',' + d.label_y + ')';
+            return 'translate(' + d.label_x + ',' + d.label_y + ')'
         })
         .call(this.behavior.turn_off_drag)
-        .call(this.behavior.reaction_label_drag);
+        .call(this.behavior.reaction_label_drag)
 
     // update label visibility
     var label = update_selection.select('.reaction-label')
-            .attr('visibility', hide_all_labels ? 'hidden' : 'visible');
+            .attr('visibility', hide_all_labels ? 'hidden' : 'visible')
     if (!hide_all_labels) {
         label
             .text(function(d) {
                 var t = d[identifiers_on_map];
                 if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
-                    t += ' ' + d.data_string;
-                return t;
+                    t += ' ' + d.data_string
+                return t
             })
             .on('mousedown', label_mousedown_fn)
             .on('mouseover', label_mouseover_fn)
-            .on('mouseout', label_mouseout_fn);
+            .on('mouseout', label_mouseout_fn)
 
         // tooltip
         update_selection.select('title').text(function(d) {
-            return d[identifiers_in_tooltip];
-        });
+            return d[identifiers_in_tooltip]
+        })
     }
     // gene label
     var all_genes_g = update_selection.select('.all-genes-label-group')
@@ -211,47 +204,47 @@ function update_reaction_label(update_selection, has_data_on_reactions) {
                                         d.gene_string !== null &&
                                         show_gene_reaction_rules &&
                                         (!hide_all_labels) &&
-                                        reaction_data_styles.indexOf('text') !== -1),
-                    show_gene_reaction_rule = ('gene_reaction_rule' in d &&
+                                        reaction_data_styles.indexOf('text') !== -1)
+                var show_gene_reaction_rule = ('gene_reaction_rule' in d &&
                                                d.gene_reaction_rule !== null &&
                                                show_gene_reaction_rules &&
-                                               (!hide_all_labels) );
+                                               (!hide_all_labels) )
                 if (show_gene_string) {
-                    return d.gene_string;
+                    return d.gene_string
                 } else if (show_gene_reaction_rule) {
                     // make the gene string with no data
                     return data_styles.gene_string_for_data(d.gene_reaction_rule, null,
                                                             d.genes, null, identifiers_on_map,
-                                                            null);
+                                                            null)
                 } else {
-                    return [];
+                    return []
                 }
-            });
+            })
     // enter
     var gene_g = all_genes_g.enter()
             .append('g')
-            .attr('class', 'gene-label-group');
+            .attr('class', 'gene-label-group')
     gene_g.append('text')
         .attr('class', 'gene-label')
-        .style('font-size', gene_font_size + 'px');
-    gene_g.append('title');
+        .style('font-size', gene_font_size + 'px')
+    gene_g.append('title')
     // update
     all_genes_g.attr('transform', function(d, i) {
-        return 'translate(0, ' + (gene_font_size * 1.5 * (i + 1)) + ')';
+        return 'translate(0, ' + (gene_font_size * 1.5 * (i + 1)) + ')'
     });
     // update text
     all_genes_g.select('text').text(function(d) {
-        return d['text'];
+        return d['text']
     });
     // update tooltip
     all_genes_g.select('title').text(function(d) {
-        return d[identifiers_in_tooltip];
+        return d[identifiers_in_tooltip]
     });
     // exit
     all_genes_g.exit()
-        .remove();
+        .remove()
 
-    this.callback_manager.run('update_reaction_label', this, update_selection);
+    this.callback_manager.run('update_reaction_label', this, update_selection)
 }
 
 function create_segment(enter_selection) {
