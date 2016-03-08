@@ -1,7 +1,7 @@
 {
   "name": "escher-vis",
   "author": "Zachary King",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "schema_version": "1-0-0",
   "map_model_version": "5",
   "description": "Escher: A Web Application for Building, Sharing, and Embedding Data-Rich Visualizations of Biological Pathways",
@@ -67,9 +67,16 @@
     "test-debug": "node debug ./node_modules/.bin/grunt test"
   },
   "sniper": {
-    "js": [ "/js/dist/escher.min.js", "https://d3js.org/d3.v3.min.js" ],
-    "css": [ "/css/dist/builder.min.css" ],
-    "snippets": [ "snippets" ],
+    "js": [
+      "/js/dist/escher.min.js",
+      "https://d3js.org/d3.v3.min.js"
+    ],
+    "css": [
+      "/css/dist/builder.min.css"
+    ],
+    "snippets": [
+      "snippets"
+    ],
     "first": "map"
   }
 }
