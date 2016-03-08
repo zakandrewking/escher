@@ -7,5 +7,6 @@ d3.json(url, function (error, map_data) {
   escher.Builder(map_data, null, null, d3.select(rootDiv), {
     fill_screen: true,
     menu: 'zoom',
+    never_ask_before_quit: true,
   })
 })

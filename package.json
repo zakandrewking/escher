@@ -72,7 +72,7 @@
       "https://d3js.org/d3.v3.min.js"
     ],
     "css": [
-      "/css/dist/builder.min.css"
+      "/css/src/builder.css"
     ],
     "snippets": [
       "snippets"
