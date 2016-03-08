@@ -28,6 +28,7 @@
     "node": ">=5.0"
   },
   "devDependencies": {
+    "biojs-sniper": "^0.2.9",
     "bootstrap": "^3.3.6",
     "bootswatch": "^3.3.6",
     "chai": "^3.3.0",
@@ -64,5 +65,11 @@
     "compile": "./node_modules/.bin/grunt default",
     "test": "./node_modules/.bin/grunt test",
     "test-debug": "node debug ./node_modules/.bin/grunt test"
+  },
+  "sniper": {
+    "js": [ "/js/dist/escher.min.js", "https://d3js.org/d3.v3.min.js" ],
+    "css": [ "/css/dist/builder.min.css" ],
+    "snippets": [ "snippets" ],
+    "first": "map"
   }
 }
