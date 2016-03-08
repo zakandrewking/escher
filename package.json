@@ -11,7 +11,8 @@
     "metabolism",
     "genome-scale-model",
     "web application",
-    "D3.js"
+    "D3.js",
+    "biojs"
   ],
   "license": "MIT",
   "homepage": "https://escher.github.io",
