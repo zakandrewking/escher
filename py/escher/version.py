@@ -1,5 +1,8 @@
 import json
+from collections import defaultdict
+import os
 from os.path import join, dirname
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
 def get_full_version(main_version, post_version=None):
     """Generate a PEP440 compliant version with an optional post-release."""
@@ -8,8 +11,13 @@ def get_full_version(main_version, post_version=None):
     else:
         return '%s.post%s' % (main_version, post_version)
 
-with open(join(dirname(__file__), 'package.json'), 'r') as f:
-    package = json.load(f)
+if on_rtd:
+    # ReadTheDocs does not have a full environment, so fill in some empty values
+    # to get autodoc going
+    package = defaultdict(str)
+else:
+    with open(join(dirname(__file__), 'package.json'), 'r') as f:
+        package = json.load(f)
 
 # software version
 __version__ = package['version']
