@@ -40,6 +40,8 @@
  map.callback_manager.run('select_text_label');
  map.callback_manager.run('before_svg_export');
  map.callback_manager.run('after_svg_export');
+ map.callback_manager.run('before_png_export');
+ map.callback_manager.run('after_png_export');
  map.callback_manager.run('before_convert_map');
  map.callback_manager.run('after_convert_map');
  this.callback_manager.run('calc_data_stats__reaction', null, changed);
@@ -159,6 +161,7 @@ Map.prototype = {
     save: save,
     map_for_export: map_for_export,
     save_svg: save_svg,
+    save_png: save_png,
     convert_map: convert_map
 };
 module.exports = Map;
@@ -2175,6 +2178,51 @@ function save_svg() {
 
             // run the after callback
             this.callback_manager.run('after_svg_export');
+        }.bind(this));
+    }.bind(this));
+}
+
+function save_png() {
+    /** Rescale the canvas and save png image.
+
+     */
+    // run the before callback
+    this.callback_manager.run('before_png_export');
+
+    // turn of zoom and translate so that illustrator likes the map
+    var window_scale = this.zoom_container.window_scale,
+        window_translate = this.zoom_container.window_translate,
+        canvas_size_and_loc = this.canvas.size_and_location(),
+        mouse_node_size_and_trans = {
+            w: this.canvas.mouse_node.attr('width'),
+            h: this.canvas.mouse_node.attr('height'),
+            transform: this.canvas.mouse_node.attr('transform')
+        };
+    this.zoom_container._go_to_svg(1.0, { x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y }, function() {
+        this.svg.attr('width', canvas_size_and_loc.width);
+        this.svg.attr('height', canvas_size_and_loc.height);
+        this.canvas.mouse_node.attr('width', '0px');
+        this.canvas.mouse_node.attr('height', '0px');
+        this.canvas.mouse_node.attr('transform', null);
+        // hide the segment control points
+        var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas')
+            .style('visibility', 'hidden');
+
+        // do the export
+        utils.download_png('saved_map', this.svg, true);
+
+        // revert everything
+        this.zoom_container._go_to_svg(window_scale, window_translate, function() {
+            this.svg.attr('width', null);
+            this.svg.attr('height', null);
+            this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
+            this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
+            this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
+            // unhide the segment control points
+            hidden_sel.style('visibility', null);
+
+            // run the after callback
+            this.callback_manager.run('after_png_export');
         }.bind(this));
     }.bind(this));
 }

@@ -37,6 +37,7 @@ module.exports = {
     load_json: load_json,
     load_json_or_csv: load_json_or_csv,
     download_svg: download_svg,
+    download_png: download_png,
     rotate_coords_recursive: rotate_coords_recursive,
     rotate_coords: rotate_coords,
     get_angle: get_angle,
@@ -727,6 +728,40 @@ function download_svg(name, svg_sel, do_beautify) {
     // save
     var blob = new Blob([xml], { type: 'image/svg+xml' });
     saveAs(blob, name + '.svg');
+};
+
+function download_png(name, svg_sel, do_beautify) {
+    /** Download an png file using FileSaver.js.
+     *
+     * Arguments
+     * ---------
+     *
+     * name: The filename (without extension).
+     *
+     * svg_sel: The d3 selection for the SVG element.
+     *
+     * do_beautify: (Boolean) If true, then beautify the SVG output.
+     *
+     */
+
+    // alert if blob isn't going to work
+    _check_filesaver();
+
+    // make the xml string
+    var xml = (new XMLSerializer()).serializeToString(svg_sel.node());
+    /*if (do_beautify) xml = vkbeautify.xml(xml);
+    xml = ('<?xml version="1.0" encoding="utf-8"?>\n' +
+    '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n' +
+    ' "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
+    xml);*/
+
+    var pngBase64 = window.btoa(xml);
+
+    console.log(pngBase64);
+
+    // save
+    var blob = new Blob([pngBase64], { type: 'data:image/png;base64' });
+    saveAs(blob, name + '.png');
 };
 
 function rotate_coords_recursive(coords_array, angle, center) {
