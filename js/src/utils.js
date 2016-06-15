@@ -731,7 +731,7 @@ function download_svg(name, svg_sel, do_beautify) {
 };
 
 function download_png(name, svg_sel, do_beautify) {
-    /** Download an png file using FileSaver.js.
+    /** Download a png file using FileSaver.js.
      *
      * Arguments
      * ---------
@@ -759,10 +759,24 @@ function download_png(name, svg_sel, do_beautify) {
     var canvas = document.createElement('canvas');
     var context = canvas.getContext('2d');
 
-    // Canvas size = SVG size
+    // Get SVG size
     var svg_size = svg_sel.node().getBBox();
-    canvas.width = svg_size.width;
-    canvas.height = svg_size.height;
+    var svg_width = svg_size.width + svg_size.x;
+    var svg_height = svg_size.height + svg_size.y;
+
+    // Canvas size = SVG size. Constrained to 10000px for very large SVGs
+    if (svg_width < 10000 && svg_height < 10000) {
+        canvas.width = svg_width;
+        canvas.height = svg_height;
+    } else {
+        if (canvas.width > canvas.height) {
+            canvas.width = 10000;
+            canvas.height = 10000*(svg_height/svg_width);
+        } else {
+            canvas.width = 10000*(svg_width/svg_height);
+            canvas.height = 10000;
+        }
+    }
 
     // Image element appended with data
     var base_image = new Image();
@@ -770,7 +784,7 @@ function download_png(name, svg_sel, do_beautify) {
 
     base_image.onload = function() {
         // Draw image to canvas
-        context.drawImage(base_image, 0, 0);
+        context.drawImage(base_image, 0, 0, canvas.width, canvas.height);
 
         // Save image
         canvas.toBlob(function(blob) {
