@@ -744,24 +744,39 @@ function download_png(name, svg_sel, do_beautify) {
      *
      */
 
-    // alert if blob isn't going to work
+    // Alert if blob isn't going to work
     _check_filesaver();
 
-    // make the xml string
+    // Make the xml string
     var xml = (new XMLSerializer()).serializeToString(svg_sel.node());
-    /*if (do_beautify) xml = vkbeautify.xml(xml);
+    if (do_beautify) xml = vkbeautify.xml(xml);
     xml = ('<?xml version="1.0" encoding="utf-8"?>\n' +
-    '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n' +
-    ' "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
-    xml);*/
+           '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n' +
+           ' "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
+           xml);
 
-    var pngBase64 = window.btoa(xml);
+    // Canvas to hold the image
+    var canvas = document.createElement('canvas');
+    var context = canvas.getContext('2d');
 
-    console.log(pngBase64);
+    // Canvas size = SVG size
+    var svg_size = svg_sel.node().getBBox();
+    canvas.width = svg_size.width;
+    canvas.height = svg_size.height;
 
-    // save
-    var blob = new Blob([pngBase64], { type: 'data:image/png;base64' });
-    saveAs(blob, name + '.png');
+    // Image element appended with data
+    var base_image = new Image();
+    base_image.src = 'data:image/svg+xml;base64,' + btoa(xml);
+
+    base_image.onload = function() {
+        // Draw image to canvas
+        context.drawImage(base_image, 0, 0);
+
+        // Save image
+        canvas.toBlob(function(blob) {
+            saveAs(blob, name + ".png");
+        });
+    };
 };
 
 function rotate_coords_recursive(coords_array, angle, center) {
