@@ -2137,94 +2137,64 @@ function map_for_export() {
     return out;
 }
 
-function save_svg() {
-    /** Rescale the canvas and save svg.
+function save_map(obj, callback_before, callback_after, map_type) {
+    /** Rescale the canvas and save as svg/png.
 
      */
+
     // run the before callback
-    this.callback_manager.run('before_svg_export');
+    obj.callback_manager.run(callback_before);
 
-    // turn of zoom and translate so that illustrator likes the map
-    var window_scale = this.zoom_container.window_scale,
-        window_translate = this.zoom_container.window_translate,
-        canvas_size_and_loc = this.canvas.size_and_location(),
+    // turn ofo zoom and translate so that illustrator likes the map
+    var window_scale = obj.zoom_container.window_scale,
+        window_translate = obj.zoom_container.window_translate,
+        canvas_size_and_loc = obj.canvas.size_and_location(),
         mouse_node_size_and_trans = {
-            w: this.canvas.mouse_node.attr('width'),
-            h: this.canvas.mouse_node.attr('height'),
-            transform: this.canvas.mouse_node.attr('transform')
+            w: obj.canvas.mouse_node.attr('width'),
+            h: obj.canvas.mouse_node.attr('height'),
+            transform: obj.canvas.mouse_node.attr('transform')
         };
-    this.zoom_container._go_to_svg(1.0, { x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y }, function() {
-        this.svg.attr('width', canvas_size_and_loc.width);
-        this.svg.attr('height', canvas_size_and_loc.height);
-        this.canvas.mouse_node.attr('width', '0px');
-        this.canvas.mouse_node.attr('height', '0px');
-        this.canvas.mouse_node.attr('transform', null);
+
+    obj.zoom_container._go_to_svg(1.0, { x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y }, function() {
+        obj.svg.attr('width', canvas_size_and_loc.width);
+        obj.svg.attr('height', canvas_size_and_loc.height);
+        obj.canvas.mouse_node.attr('width', '0px');
+        obj.canvas.mouse_node.attr('height', '0px');
+        obj.canvas.mouse_node.attr('transform', null);
+
         // hide the segment control points
-        var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas')
-                .style('visibility', 'hidden');
-
-        // do the epxort
-        utils.download_svg('saved_map', this.svg, true);
-
-        // revert everything
-        this.zoom_container._go_to_svg(window_scale, window_translate, function() {
-            this.svg.attr('width', null);
-            this.svg.attr('height', null);
-            this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
-            this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
-            this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
-            // unhide the segment control points
-            hidden_sel.style('visibility', null);
-
-            // run the after callback
-            this.callback_manager.run('after_svg_export');
-        }.bind(this));
-    }.bind(this));
-}
-
-function save_png() {
-    /** Rescale the canvas and save png image.
-
-     */
-    // run the before callback
-    this.callback_manager.run('before_png_export');
-
-    // turn of zoom and translate so that illustrator likes the map
-    var window_scale = this.zoom_container.window_scale,
-        window_translate = this.zoom_container.window_translate,
-        canvas_size_and_loc = this.canvas.size_and_location(),
-        mouse_node_size_and_trans = {
-            w: this.canvas.mouse_node.attr('width'),
-            h: this.canvas.mouse_node.attr('height'),
-            transform: this.canvas.mouse_node.attr('transform')
-        };
-    this.zoom_container._go_to_svg(1.0, { x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y }, function() {
-        this.svg.attr('width', canvas_size_and_loc.width);
-        this.svg.attr('height', canvas_size_and_loc.height);
-        this.canvas.mouse_node.attr('width', '0px');
-        this.canvas.mouse_node.attr('height', '0px');
-        this.canvas.mouse_node.attr('transform', null);
-        // hide the segment control points
-        var hidden_sel = this.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas')
+        var hidden_sel = obj.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas')
             .style('visibility', 'hidden');
 
         // do the export
-        utils.download_png('saved_map', this.svg, true);
+        if(map_type == 'svg') {
+            utils.download_svg('saved_map', obj.svg, true);
+        } else if(map_type == 'png') {
+            utils.download_png('saved_map', obj.svg, true);
+        }
 
         // revert everything
-        this.zoom_container._go_to_svg(window_scale, window_translate, function() {
-            this.svg.attr('width', null);
-            this.svg.attr('height', null);
-            this.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
-            this.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
-            this.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
+        obj.zoom_container._go_to_svg(window_scale, window_translate, function() {
+            obj.svg.attr('width', null);
+            obj.svg.attr('height', null);
+            obj.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w);
+            obj.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h);
+            obj.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform);
             // unhide the segment control points
             hidden_sel.style('visibility', null);
 
             // run the after callback
-            this.callback_manager.run('after_png_export');
-        }.bind(this));
-    }.bind(this));
+            obj.callback_manager.run(callback_after);
+        }.bind(obj));
+    }.bind(obj));
+}
+
+function save_svg() {
+    save_map(this, 'before_svg_export', 'after_svg_export', 'svg');
+}
+
+function save_png() {
+    save_map(this, 'before_png_export', 'after_png_export', 'png');
 }
 
 function convert_map() {
