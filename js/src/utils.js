@@ -783,7 +783,9 @@ function download_png(name, svg_sel, do_beautify) {
     base_image.src = 'data:image/svg+xml;base64,' + btoa(xml);
 
     base_image.onload = function() {
-        // Draw image to canvas
+        // Draw image to canvas with white background
+        context.fillStyle="#FFF";
+        context.fillRect( 0, 0, canvas.width, canvas.height);
         context.drawImage(base_image, 0, 0, canvas.width, canvas.height);
 
         // Save image
