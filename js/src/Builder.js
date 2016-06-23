@@ -685,6 +685,9 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
         .button({ key: keys.save_svg,
                   text: 'Export as SVG',
                   key_text: (enable_keys ? ' (Ctrl+Shift+S)' : null) })
+        .button({ key: keys.save_png,
+                  text: 'Export as PNG',
+                  key_text: (enable_keys ? ' (Ctrl+Shift+P)' : null) })
         .button({ key: keys.clear_map,
                   text: 'Clear map' })
     // model dropdown
@@ -1178,6 +1181,11 @@ function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing
             key: 'ctrl+shift+s',
             target: map,
             fn: map.save_svg
+        },
+        save_png: {
+            key: 'ctrl+shift+p',
+            target: map,
+            fn: map.save_png
         },
         load: {
             key: 'ctrl+o',
