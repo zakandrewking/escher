@@ -103,12 +103,20 @@ def test_map_json_for_name_web(tmpdir):
 
 # helper functions
 
-def test__load_resource(tmpdir):
-    assert _load_resource('{"r": "val"}', 'name') == '{"r": "val"}'
+def test_load_resource_json(tmpdir):
+    test_json = '{"r": "val"}'
+    assert _load_resource(test_json, 'name') == test_json
 
+def test_load_resource_long_json(tmpdir):
+    # this used to fail on Windows with Python 3
+    test_json = '{"r": "' + ('val' * 100000) + '"}'
+    assert _load_resource(test_json, 'name') == test_json
+
+def test_load_resource_directory(tmpdir):
     directory = os.path.abspath(os.path.dirname(__file__))
     assert _load_resource(join(directory, 'example.json'), 'name').strip() == '{"r": "val"}'
 
+def test_load_resource_invalid_file(tmpdir):
     with raises(ValueError) as err:
         p = join(str(tmpdir), 'dummy')
         with open(p, 'w') as f:
@@ -117,7 +125,7 @@ def test__load_resource(tmpdir):
         assert 'not a valid json file' in err.value
 
 @mark.web
-def test__load_resource_web(tmpdir):
+def test_load_resource_web(tmpdir):
     url = '/'.join([get_url('map_download', protocol='https'),
                     'Escherichia%20coli/iJO1366.Central%20metabolism.json'])
     _ = json.loads(_load_resource(url, 'name'))
@@ -125,7 +133,7 @@ def test__load_resource_web(tmpdir):
 def test_Builder(tmpdir):
     # ok with embedded_css arg
     b = Builder(map_json='{"r": "val"}', model_json='{"r": "val"}', embedded_css='')
-    b.display_in_notebook(js_source='local')
+    # b.display_in_notebook(js_source='local')
     b.save_html(join(str(tmpdir), 'Builder.html'), js_source='local')
 
     # test options
@@ -147,7 +155,7 @@ def test_Builder_download():
     assert b.loaded_map_json is not None
     assert b.loaded_model_json is not None
     b._get_html(js_source='web')
-    b.display_in_notebook(height=200)
+    # b.display_in_notebook(height=200)
 
     # data
     b = Builder(map_name='iJO1366.Central metabolism',

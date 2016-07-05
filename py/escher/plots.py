@@ -203,7 +203,7 @@ def _load_resource(resource, name, safe=False):
             raise err
         else:
             return _decode_response(download)
-    # if it's a filepath, load it
+    # If it's a filepath, load it
     try:
         is_file = isfile(resource)
     except ValueError:
