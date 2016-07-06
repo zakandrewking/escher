@@ -11,11 +11,11 @@ install:
   - npm install
   - npm run-script compile
   - cd py
-  - pip install --user -e .
+  - pip install -e .
   - cd ..
 # run tests
 script:
-  - if [[ $TRAVIS_PYTHON_VERSION = '3.5' ]]; then export $SCRIPT="coverage"; else export $SCRIPT="test"; fi
+  - if [[ $TRAVIS_PYTHON_VERSION = '3.5' ]]; then SCRIPT="coverage"; else SCRIPT="test"; fi
   - npm run-script $SCRIPT
   - cd py
   - python setup.py test

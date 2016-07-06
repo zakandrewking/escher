@@ -20,9 +20,9 @@ install:
   - npm install
   - npm run-script compile
   # install python packages
-  - python -m pip install --user --upgrade pip
+  - python -m pip install --upgrade pip
   - cd py
-  - python -m pip install --user -e .
+  - python -m pip install -e .
   - cd ..
 
 build: off
