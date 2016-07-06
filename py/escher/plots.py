@@ -203,8 +203,13 @@ def _load_resource(resource, name, safe=False):
             raise err
         else:
             return _decode_response(download)
-    # if it's a filepath, load it
-    if exists(resource):
+    # If it's a filepath, load it
+    try:
+        is_file = isfile(resource)
+    except ValueError:
+        # check for error with long filepath (or URL) on Windows
+        is_file = False
+    if is_file:
         if (safe):
             raise Exception('Cannot load resource from file with safe mode enabled.')
         try:

@@ -64,7 +64,8 @@
   "scripts": {
     "compile": "./node_modules/.bin/grunt default",
     "test": "./node_modules/.bin/grunt test",
-    "test-debug": "node debug ./node_modules/.bin/grunt test"
+    "test-debug": "node debug ./node_modules/.bin/grunt test",
+    "coverage": "./node_modules/.bin/grunt coverage"
   },
   "sniper": {
     "js": [
