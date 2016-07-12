@@ -5,21 +5,25 @@ JavaScript API
 
     A Builder object contains all the UI and logic to generate a map builder or viewer.
 
-    :param object map_data: The data for a map, to be passed to
-                            escher.Map.from_data(). If null, then an empty
-                            Builder is initialized
+    :param object map_data: The data for an Escher map layout. Optional: Pass
+                            ``null`` to load an empty Builder.
 
-    :param object model_data: The data for a cobra model, to be passed to
-                             escher.CobraModel(). Can be null.
+    :param object model_data: The data for a Cobra model that will be used with
+                              the Add Reaction tool to build a layout. Optional:
+                              Pass ``null`` to load the Builder without a model.
 
-    :param string embedded_css: The stylesheet for the SVG elements in the Escher map.
+    :param string embedded_css: The stylesheet for the SVG elements in the
+                                Escher map. Optional: Pass ``null`` to use the
+                                default style.
 
-    :param object selection: (Optional, Default: In the body element) The d3
-                             selection of an element to place the Builder
-                             into. The selection cannot be inside an SVG
-                             element.
+    :param object selection: The D3 selection of a HTML element that will hold
+                             the Builder. (The selection cannot be a SVG
+                             element.) Optional: Pass ``null`` to load the
+                             Builder in the HTML body.
 
-    :param object options: (Optional) An object defining any of the following options:
+    :param object options: An object defining any of the following
+                           options. Optional: Pass ``null`` to use all default
+                           options.
 
        .. js:attribute:: options.menu
 
