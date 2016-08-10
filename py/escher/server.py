@@ -11,7 +11,7 @@ from escher.escape import json_dump_and_escape, escape_json_or_null
 import os, subprocess
 from os.path import join
 import tornado.ioloop
-from tornado.web import RequestHandler, HTTPError, Application, asynchronous
+from tornado.web import RequestHandler, HTTPError, Application, asynchronous, StaticFileHandler
 from tornado.httpclient import AsyncHTTPClient
 from tornado import gen
 import tornado.escape
@@ -181,16 +181,10 @@ class MapModelHandler(BaseHandler):
             self.set_header('Content-Type', 'application/json')
             self.serve(b.loaded_model_json)
 
-class StaticHandler(BaseHandler):
-    def get(self, path):
-        path = join(root_directory, path)
-        print('getting path %s' % path)
-        self.serve_path(path)
-
 settings = {'debug': True}
 
 application = Application([
-    (r'.*(escher/static/.*)', StaticHandler),
+    (r'.*escher/static/(.*)', StaticFileHandler, {'path': join(root_directory, 'escher', 'static')}),
     (r'/builder/index.html', BuilderHandler),
     (r'/%s/%s(/.*)' % (__schema_version__, __map_model_version__), MapModelHandler),
     (r'/', IndexHandler),
