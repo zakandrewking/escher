@@ -35,6 +35,7 @@ _dependencies = {
     'd3': 'escher/static/lib/d3.min.js',
     'boot_js': 'escher/static/lib/bootstrap.min.js',
     'boot_css': 'escher/static/lib/bootstrap.min.css',
+    'boot_slider_css': 'escher/static/lib/bootstrap-slider.min.css',
     'jquery': 'escher/static/lib/jquery.min.js',
     'boot_font_eot': 'escher/static/fonts/glyphicons-halflings-regular.eot',
     'boot_font_svg': 'escher/static/fonts/glyphicons-halflings-regular.svg',

@@ -65,7 +65,7 @@ function import_and_check(data, name, all_reactions) {
         data = [data];
     }
     // check data
-    var check = function() {
+    /*var check = function() {
         if (data===null)
             return null;
         if (data.length==1)
@@ -74,7 +74,7 @@ function import_and_check(data, name, all_reactions) {
             return null;
         return console.warn('Bad data style: ' + name);
     };
-    check();
+    check();*/
     data = utils.array_to_object(data);
 
     if (name == 'gene_data') {
@@ -136,7 +136,8 @@ function float_for_data(d, styles, compare_style) {
         if (f === null)
             return null;
         return abs(f, take_abs);
-    } else if (d.length==2) { // 2 sets
+    }
+    /*else if (d.length==2) { // 2 sets
         // 2 null
         var fs = d.map(_parse_float_or_null);
         if (fs[0] === null || fs[1] === null)
@@ -150,8 +151,14 @@ function float_for_data(d, styles, compare_style) {
         else if (compare_style == 'log2_fold') {
             return check_finite(log2_fold(fs[0], fs[1], take_abs));
         }
-    } else {
-        throw new Error('Data array must be of length 1 or 2');
+    } */
+    else {
+        var fs = d.map(_parse_float_or_null);
+        for (var i = 0, l = d.length; i < l; i++) {
+            if (fs[i] === null)
+                return null;
+        }
+        return abs(fs[0], take_abs);
     }
     throw new Error('Bad data compare_style: ' + compare_style);
 
@@ -286,12 +293,16 @@ function text_for_data(d, f) {
         var format = (f === null ? RETURN_ARG : d3.format('.3g'));
         return null_or_d(d[0], format);
     }
-    if (d.length == 2) {
+    /*if (d.length == 2) {
         var format = (f === null ? RETURN_ARG : d3.format('.3g')),
             t = null_or_d(d[0], format);
         t += ', ' + null_or_d(d[1], format);
         t += ': ' + null_or_d(f, format);
         return t;
+    }*/
+    else {
+        var format = (f === null ? RETURN_ARG : d3.format('.3g'));
+        return null_or_d(d[0], format);
     }
     return '';
 
@@ -310,8 +321,8 @@ function csv_converter(csv_rows) {
     // count rows
     var c = csv_rows[0].length,
         converted = [];
-    if (c < 2 || c > 3)
-        throw new Error('CSV file must have 2 or 3 columns');
+    /*if (c < 2 || c > 3)
+        throw new Error('CSV file must have 2 or 3 columns');*/
     // set up rows
     for (var i = 1; i < c; i++) {
         converted[i - 1] = {};

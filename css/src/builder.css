@@ -439,7 +439,7 @@ resizes. */
   font-weight: bold;
 }
 .escher-container .light {
-  color: #8b8b8be;
+  color: #8b8b8b;
   font-weight: normal;
 }
 /* text edit input */
@@ -459,4 +459,9 @@ resizes. */
   .escher-container #quick-jump-menu {
 	  display: none;
   }
+}
+/* Slider */
+.escher-container .slider-container {
+  display: block;
+  text-align: center;
 }

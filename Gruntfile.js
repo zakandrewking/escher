@@ -93,6 +93,7 @@ module.exports = function(grunt) {
         src: [
           'node_modules/bootstrap/dist/js/bootstrap.min.js',
           'node_modules/bootswatch/simplex/bootstrap.min.css',
+          'node_modules/bootstrap-slider/dist/css/bootstrap-slider.min.css',
           'node_modules/d3/d3.min.js',
           'node_modules/jquery/dist/jquery.min.js',
         ],

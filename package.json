@@ -55,6 +55,7 @@
   },
   "dependencies": {
     "baconjs": "^0.7.71",
+    "bootstrap-slider": "^9.1.1",
     "d3": "^3.5.14",
     "filesaverjs": "^0.2.1",
     "mousetrap": "^1.5.3",

@@ -15,6 +15,7 @@ var ui = require('./ui');
 var SearchBar = require('./SearchBar');
 var Settings = require('./Settings');
 var SettingsMenu = require('./SettingsMenu');
+var DataSlider = require('./DataSlider');
 var TextEditInput = require('./TextEditInput');
 var QuickJump = require('./QuickJump');
 var data_styles = require('./data_styles');
@@ -200,6 +201,20 @@ function init(map_data, model_data, embedded_css, selection, options) {
             }
         }.bind(this))
 
+    // Slider on change calls.
+    this.slider.data_slider.on('change', function() {
+        var index = this.slider.data_slider.getValue();
+        var data = this.slider.data;
+        var type = this.slider.type;
+
+        if (type == 'reaction')
+            this.set_reaction_data(data[index]);
+        if (type == 'metabolite')
+            this.set_metabolite_data(data[index]);
+        if (type == 'gene')
+            this.set_gene_data(data[index]);
+    }.bind(this));
+
     this.callback_manager.run('first_load', this)
 }
 
@@ -308,11 +323,16 @@ function load_map(map_data, should_update_data) {
             .append('div').attr('class', 'search-menu-container-inline'),
         menu_div = s.append('div'),
         search_bar_div = s.append('div'),
+        slider_div = s.append('div'),
         button_div = this.selection.append('div')
 
     // set up the search bar
     this.search_bar = new SearchBar(search_bar_div, this.map.search_index,
                                 this.map)
+
+    // set up the slider
+    this.slider = new DataSlider(slider_div)
+
     // set up the hide callbacks
     this.search_bar.callback_manager.set('show', function() {
         this.settings_bar.toggle(false)
@@ -343,11 +363,12 @@ function load_map(map_data, should_update_data) {
     var keys = this._get_keys(this.map, this.zoom_container,
                               this.search_bar, this.settings_bar,
                               this.options.enable_editing,
-                              this.options.full_screen_button)
+                              this.options.full_screen_button,
+                              this.slider)
     this.map.key_manager.assigned_keys = keys
     // tell the key manager about the reaction input and search bar
     this.map.key_manager.input_list = [this.build_input, this.search_bar,
-                                       this.settings_bar, this.text_edit_input]
+                                       this.settings_bar, this.text_edit_input, this.slider]
     // make sure the key manager remembers all those changes
     this.map.key_manager.update()
     // turn it on/off
@@ -417,6 +438,7 @@ function load_map(map_data, should_update_data) {
 
 function _set_mode(mode) {
     this.search_bar.toggle(false);
+    this.slider.toggle(false);
     // input
     this.build_input.toggle(mode=='build');
     this.build_input.direction_arrow.toggle(mode=='build');
@@ -726,7 +748,7 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
     // data dropdown
     var data_menu = ui.dropdown_menu(menu, 'Data')
             .button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
-                               key: 'fn',
+                               key: keys.slider,
                                fn: load_reaction_data_for_file.bind(this),
                                accept_csv: true,
                                pre_fn: function() {
@@ -739,7 +761,9 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
             .button({ key: keys.clear_reaction_data,
                       text: 'Clear reaction data' })
             .divider()
-            .button({ input: { fn: load_gene_data_for_file.bind(this),
+            .button({ input: { assign: key_manager.assigned_keys.load_gene_data,
+                               key: keys.slider,
+                               fn: load_gene_data_for_file.bind(this),
                                accept_csv: true,
                                pre_fn: function() {
                                    map.set_status('Loading gene data ...')
@@ -751,7 +775,9 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
             .button({ key: keys.clear_gene_data,
                       text: 'Clear gene data' })
             .divider()
-            .button({ input: { fn: load_metabolite_data_for_file.bind(this),
+            .button({ input: { assign: key_manager.assigned_keys.load_metabolite_data,
+                               key: keys.slider,
+                               fn: load_metabolite_data_for_file.bind(this),
                                accept_csv: true,
                                pre_fn: function() {
                                    map.set_status('Loading metabolite data ...')
@@ -969,6 +995,7 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
         if (data !== null)
             this.set_gene_data(null)
 
+        this.slider.on_load(data, 'reaction')
         this.set_reaction_data(data)
     }
     function load_metabolite_data_for_file(error, data) {
@@ -977,6 +1004,8 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
             this.map.set_status('Could not parse file as JSON or CSV', 2000)
             return
         }
+
+        this.slider.on_load(data, 'metabolite')
         this.set_metabolite_data(data)
     }
     function load_gene_data_for_file(error, data) {
@@ -988,10 +1017,10 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
         // turn off reaction data
         if (data !== null)
             this.set_reaction_data(null)
-
         // turn on gene_reaction_rules
         this.settings.set_conditional('show_gene_reaction_rules', true)
 
+        this.slider.on_load(data, 'gene')
         this.set_gene_data(data)
     }
 }
@@ -1169,7 +1198,7 @@ function _setup_modes(map, brush, zoom_container) {
     });
 }
 
-function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing, full_screen_button) {
+function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing, full_screen_button, slider) {
 
         var keys = {
         save: {
@@ -1209,17 +1238,29 @@ function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing
         load_reaction_data: { fn: null }, // defined by button
         clear_reaction_data: {
             target: this,
-            fn: function() { this.set_reaction_data(null); }
+            fn: function() {
+                this.set_reaction_data(null);
+                if (this.slider.type == 'reaction')
+                    this.slider.toggle(false);
+            }
         },
         load_metabolite_data: { fn: null }, // defined by button
         clear_metabolite_data: {
             target: this,
-            fn: function() { this.set_metabolite_data(null); }
+            fn: function() {
+                this.set_metabolite_data(null);
+                if (this.slider.type == 'metabolite')
+                    this.slider.toggle(false);
+            }
         },
         load_gene_data: { fn: null }, // defined by button
         clear_gene_data: {
             target: this,
-            fn: function() { this.set_gene_data(null, true); }
+            fn: function() {
+                this.set_gene_data(null, true);
+                if (this.slider.type == 'gene')
+                    this.slider.toggle(false);
+            }
         },
         zoom_in: {
             key: 'ctrl+=',
@@ -1244,6 +1285,9 @@ function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing
         search: {
             key: 'ctrl+f',
             fn: search_bar.toggle.bind(search_bar, true)
+        },
+        slider: {
+            fn: slider.toggle.bind(slider, true)
         },
         view_mode: {
             target: this,
