@@ -134,7 +134,7 @@ than what is provided in the documentation, please contact Zachary King
 .. _`escher-demo repository`: https://github.com/escher/escher-demo
 .. _`escher-test repository`: https://github.com/escher/escher-test
 .. _`json schema`: http://json-schema.org/
-.. _here: https://github.com/zakandrewking/escher/blob/master/escher/jsonschema/1-0-0
+.. _here: https://github.com/zakandrewking/escher/blob/master/jsonschema/1-0-0
 .. _SchemaVer: http://snowplowanalytics.com/blog/2014/05/13/introducing-schemaver-for-semantic-versioning-of-schemas/
 .. _`core metabolism map`: https://raw.githubusercontent.com/escher/escher.github.io/master/1-0-0/maps/Escherichia%20coli/E%20coli%20core.Core%20metabolism.json
 .. _`core metabolism model`: https://raw.githubusercontent.com/escher/escher.github.io/master/1-0-0/models/Escherichia%20coli/E%20coli%20core.json
