@@ -8,22 +8,22 @@ You can include the compiled Escher JavaScript and CSS files in any HTML
 document. The only dependencies are `d3.js`_, and optionally `Twitter
 Bootstrap`_ if you are using the option ``menu='all'``.
 
-The compiled files are available form npmcdn::
+The compiled files are available form unpkg::
 
-  https://npmcdn.com/escher-vis/js/dist/escher.js
-  https://npmcdn.com/escher-vis/js/dist/escher.min.js
-  https://npmcdn.com/escher-vis/css/dist/builder.css
-  https://npmcdn.com/escher-vis/css/dist/builder.min.css
+  https://unpkg.com/escher-vis/js/dist/escher.js
+  https://unpkg.com/escher-vis/js/dist/escher.min.js
+  https://unpkg.com/escher-vis/css/dist/builder.css
+  https://unpkg.com/escher-vis/css/dist/builder.min.css
 
 Source maps are also hosted there::
 
-  https://npmcdn.com/escher-vis/js/dist/escher.js.map
-  https://npmcdn.com/escher-vis/js/dist/escher.min.js.map
-  https://npmcdn.com/escher-vis/css/dist/builder.min.css.map
+  https://unpkg.com/escher-vis/js/dist/escher.js.map
+  https://unpkg.com/escher-vis/js/dist/escher.min.js.map
+  https://unpkg.com/escher-vis/css/dist/builder.min.css.map
 
 If you want a particular version of escher, add a version tag like this::
 
-  https://npmcdn.com/escher-vis@1.4.0-beta.3/js/dist/escher.js
+  https://unpkg.com/escher-vis@1.4.0-beta.3/js/dist/escher.js
 
 For an example of the boilerplate code that is required to begin developing with
 Escher, have a look at the `escher-demo repository`_. For projects built with
