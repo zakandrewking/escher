@@ -30,13 +30,25 @@ env = Environment(loader=PackageLoader('escher', 'templates'))
 NO_CACHE = False
 PORT = 7778
 PUBLIC = False
+PREFIX = ''
 
-def run(port=PORT, public=PUBLIC):
+def run(port=PORT, public=PUBLIC, prefix=''):
     global PORT
     global PUBLIC
+    global PREFIX
     PORT = port
     PUBLIC = public
     print('serving directory %s on port %d' % (root_directory, PORT))
+    settings = {'debug': True}
+    PREFIX = '{}/'.format(prefix) if prefix else ''
+
+    application = Application([
+        (r'/{prefix}builder/index.html'.format(prefix=PREFIX), BuilderHandler),
+        (r'/{prefix}{schema_version}/{model_version}(/.*)'.format(prefix=PREFIX, schema_version=__schema_version__, model_version=__map_model_version__), MapModelHandler),
+        (r'/{prefix}/?'.format(prefix=PREFIX[:-1]), IndexHandler),
+        (r'.*escher/static/(.*)', StaticFileHandler, {'path': join(root_directory, 'escher', 'static')}),
+    ], **settings)
+
     application.listen(port, None if public else "localhost")
     try:
         tornado.ioloop.IOLoop.instance().start()
@@ -181,20 +193,13 @@ class MapModelHandler(BaseHandler):
             self.set_header('Content-Type', 'application/json')
             self.serve(b.loaded_model_json)
 
-settings = {'debug': True}
-
-application = Application([
-    (r'.*escher/static/(.*)', StaticFileHandler, {'path': join(root_directory, 'escher', 'static')}),
-    (r'/builder/index.html', BuilderHandler),
-    (r'/%s/%s(/.*)' % (__schema_version__, __map_model_version__), MapModelHandler),
-    (r'/', IndexHandler),
-], **settings)
 
 if __name__ == '__main__':
     # define port
+    define('prefix', default='', type=str, help='Url prefix for application')
     define('port', default=PORT, type=int, help='Port to serve on.')
     define('public', default=PUBLIC, type=bool,
            help=('If False, listen only on localhost. If True, listen on '
                  'all available addresses.'))
     parse_command_line()
-    run(port=options.port, public=options.public)
+    run(port=options.port, public=options.public, prefix=options.prefix)

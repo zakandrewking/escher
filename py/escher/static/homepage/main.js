@@ -60,7 +60,8 @@ function submit(server_index, local_index, map_download) {
       scroll_value = d3.select('#scroll').node().checked,
       never_ask_value = d3.select('#never_ask').node().checked,
       add = [],
-      url
+      url,
+      url_base
   // only add model for builder
   if (model_name != 'none' && options_value == 'builder')
     add.push('model_name=' + model_name)
@@ -76,7 +77,11 @@ function submit(server_index, local_index, map_download) {
     add.push('enable_editing=true')
 
   // choose the file
-  url = (window.location.pathname ? window.location.pathname + '/' : '') + 'builder/index.html'
+  url_base = window.location.pathname
+  if (url_base && !(url_base.endsWith('/'))) {
+    url_base += '/'
+  }
+  url = url_base + 'builder/index.html'
   add.push('js_source=local')
 
   // set the quick jump maps
