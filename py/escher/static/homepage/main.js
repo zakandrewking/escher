@@ -76,7 +76,7 @@ function submit(server_index, local_index, map_download) {
     add.push('enable_editing=true')
 
   // choose the file
-  url = 'builder/index.html'
+  url = (window.location.pathname ? window.location.pathname + '/' : '') + 'builder/index.html'
   add.push('js_source=local')
 
   // set the quick jump maps
