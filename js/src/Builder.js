@@ -206,6 +206,11 @@ function init(map_data, model_data, embedded_css, selection, options) {
         var index = this.slider.data_slider.getValue();
         var data = this.slider.data;
         var type = this.slider.type;
+        var columns = this.slider.columns;
+        var rows = this.slider.rows;
+
+        columns.text('Dataset: ' + (index + 1) + '/' + data.length);
+        rows.text('Points: ' + Object.keys(data[index]).length);
 
         if (type == 'reaction')
             this.set_reaction_data(data[index]);

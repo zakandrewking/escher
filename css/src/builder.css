@@ -463,5 +463,18 @@ resizes. */
 /* Slider */
 .escher-container .slider-container {
   display: block;
-  text-align: center;
+  background: rgba(255,255,255,.95);
+  border: 1px solid #DDD;
+  margin: 2px 0 0;
+  padding: 3px 15px;
+}
+
+.escher-container #data-columns {
+  display: inline-block;
+  padding: 0 0 0 15px;
+}
+
+.escher-container #data-rows {
+  display: inline-block;
+  padding: 0 0 0 15px;
 }

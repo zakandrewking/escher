@@ -21,6 +21,12 @@ function init(sel) {
     this.input = container.append('input')
         .attr('id', 'data-slider');
 
+    this.columns = container.append('div')
+        .attr('id', 'data-columns');
+
+    this.rows = container.append('div')
+        .attr('id', 'data-rows');
+
     this.data_slider = new Slider("#data-slider", {
         id: 'data-slider-container',
         min: 0,
@@ -68,4 +74,7 @@ function on_load(data, type) {
 
     this.data_slider.setValue(0)
         .setAttribute('max', data.length-1);
+
+    this.columns.text('Dataset: 1/' + data.length);
+    this.rows.text('Points: ' + Object.keys(data[0]).length);
 }
