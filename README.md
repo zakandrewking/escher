@@ -15,12 +15,22 @@ Visit the [documentation](http://escher.readthedocs.org/) to get started with
 Escher and explore the API.
 
 Check out the
-[developer docs](https://escher.readthedocs.org/en/latest/development.html) and
-the [wiki](https://github.com/zakandrewking/escher/wiki) for information on
-Escher development. Anyone should feel free to submit bugs and feature requests
-as Issues, or, better yet, Pull Requests.
+[developer docs](https://escher.readthedocs.org/en/latest/development.html),
+the [Gitter chat room](https://gitter.im/zakandrewking/escher), and the
+[Development Roadmap](https://github.com/zakandrewking/escher/wiki/Development-Roadmap) for information
+on Escher development. Feel free to submit bugs and feature requests as Issues,
+or, better yet, Pull Requests.
 
 Follow [@zakandrewking](https://twitter.com/zakandrewking) for Escher updates.
+
+You can help support Escher by citing our publication when you use Escher or
+EscherConverter:
+
+Zachary A. King, Andreas Dräger, Ali Ebrahim, Nikolaus Sonnenschein, Nathan
+E. Lewis, and Bernhard O. Palsson (2015) *Escher: A web application for
+building, sharing, and embedding data-rich visualizations of biological
+pathways*, PLOS Computational Biology 11(8):
+e1004321. doi:[10.1371/journal.pcbi.1004321](http://dx.doi.org/10.1371/journal.pcbi.1004321)
 
 Built at SBRG
 =============

@@ -1,6 +1,10 @@
 Developing with Escher
 ----------------------
 
+If you are interested in developing Escher or just want to try out the source
+code, this is the place to start.  You might also want to check out the the
+`Gitter chat room`_ and the `Development Roadmap`_.
+
 Using the static JavaScript and CSS files
 =========================================
 
@@ -128,6 +132,8 @@ If you are interested in developing with Escher and you need more information
 than what is provided in the documentation, please contact Zachary King
 (zaking-AT-ucsd-DOT-edu).
 
+.. _`Gitter chat room`: https://gitter.im/zakandrewking/escher
+.. _`Development roadmap`: https://github.com/zakandrewking/escher/wiki/Development-Roadmap
 .. _`d3.js`: http://d3js.org/
 .. _`Twitter Bootstrap`: http://getbootstrap.com
 .. _`localhost:7778`: http://localhost:7778
