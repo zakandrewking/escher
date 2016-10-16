@@ -38,6 +38,7 @@ Builder.prototype = {
     set_metabolite_data: set_metabolite_data,
     set_gene_data: set_gene_data,
     _update_data: _update_data,
+    _on_change: _on_change,
     _toggle_direction_buttons: _toggle_direction_buttons,
     _set_up_menu: _set_up_menu,
     _set_up_button_panel: _set_up_button_panel,
@@ -201,23 +202,21 @@ function init(map_data, model_data, embedded_css, selection, options) {
             }
         }.bind(this))
 
-    // Slider on change calls.
+    // Sliders and Checkbox on change calls.
     this.slider.data_slider.on('change', function() {
-        var index = this.slider.data_slider.getValue();
-        var data = this.slider.data;
-        var type = this.slider.type;
-        var columns = this.slider.columns;
-        var rows = this.slider.rows;
+        this._on_change();
+    }.bind(this));
 
-        columns.text('Dataset: ' + (index + 1) + '/' + data.length);
-        rows.text('Points: ' + Object.keys(data[index]).length);
+    this.slider.compare_data_slider.on('change', function() {
+        this._on_change();
+    }.bind(this));
 
-        if (type == 'reaction')
-            this.set_reaction_data(data[index]);
-        if (type == 'metabolite')
-            this.set_metabolite_data(data[index]);
-        if (type == 'gene')
-            this.set_gene_data(data[index]);
+    this.slider.checkbox.on('change', function() {
+        if(document.getElementById('compare_checkbox').checked)
+            this.slider.toggle_compare(true);
+        else
+            this.slider.toggle_compare(false);
+        this._on_change();
     }.bind(this));
 
     this.callback_manager.run('first_load', this)
@@ -685,6 +684,57 @@ function _update_data(update_model, update_map, kind, should_draw) {
         // this object has reaction keys and values containing associated genes
         return data_styles.import_and_check(gene_data, 'gene_data', all_reactions);
     }
+}
+
+function _on_change() {
+    var index = this.slider.data_slider.getValue();
+    var compare_index = this.slider.compare_data_slider.getValue();
+    var data = this.slider.data;
+    var type = this.slider.type;
+    var columns = this.slider.columns;
+    var rows = this.slider.rows;
+
+    columns.text('Dataset: ' + (index + 1) + '/' + data.length);
+    rows.text('Data Points: ' + Object.keys(data[index]).length);
+
+    if (document.getElementById('compare_checkbox').checked == true) {
+        if (type == 'reaction') {
+            if (this.options.reaction_compare_style == null)
+                this.options.reaction_compare_style = this.compare_reaction;
+        } else if (type == 'metabolite') {
+            if (this.options.metabolite_compare_style == null)
+                this.options.metabolite_compare_style = this.compare_metabolite;
+        }
+    } else {
+        if (type == 'reaction') {
+            if (this.options.reaction_compare_style != null)
+                this.compare_reaction = this.options.reaction_compare_style;
+            this.options.reaction_compare_style = null;
+        } else if (type == 'metabolite') {
+            if (this.options.metabolite_compare_style != null)
+                this.compare_metabolite = this.options.metabolite_compare_style;
+            this.options.metabolite_compare_style = null;
+        }
+    }
+
+    if(compare_index < index) {
+        compare_reindex = compare_index;
+    } else {
+        compare_reindex = compare_index + 1;
+    }
+
+    if (type == 'reaction') {
+        if (this.options.reaction_compare_style == null)
+            this.set_reaction_data(data[index]);
+        else
+            this.set_reaction_data([data[index], data[compare_reindex]]);
+    } else if (type == 'metabolite') {
+        if (this.options.metabolite_compare_style == null)
+            this.set_metabolite_data(data[index]);
+        else
+            this.set_metabolite_data([data[index], data[compare_reindex]]);
+    } else if (type == 'gene')
+        this.set_gene_data(data[index]);
 }
 
 function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
