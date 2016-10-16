@@ -471,10 +471,22 @@ resizes. */
 
 .escher-container #data-columns {
   display: inline-block;
-  padding: 0 0 0 15px;
+  padding: 0;
 }
 
 .escher-container #data-rows {
   display: inline-block;
   padding: 0 0 0 15px;
+}
+
+.escher-container #data-slider-container {
+  display: block;
+}
+
+.escher-container #compare-data-slider-container {
+  display: block;
+}
+
+.escher-container #compare_checkbox {
+  margin-right: 4px;
 }
