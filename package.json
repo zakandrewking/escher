@@ -58,11 +58,14 @@
     "d3": "^3.5.14",
     "filesaverjs": "^0.2.1",
     "mousetrap": "^1.5.3",
+    "tinier": "^0.4.0",
+    "tinier-dom": "^0.4.0",
     "underscore": "^1.8.3",
     "vkbeautify": "^0.99.1"
   },
   "scripts": {
     "compile": "./node_modules/.bin/grunt default",
+    "compilew": "./node_modules/.bin/grunt watch",
     "test": "./node_modules/.bin/grunt test",
     "test-debug": "node debug ./node_modules/.bin/grunt test",
     "coverage": "./node_modules/.bin/grunt coverage"

@@ -135,20 +135,20 @@ function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
     this.callback_manager.run('update_reaction', this, update_selection);
 }
 
-function create_reaction_label(enter_selection) {
-    /** Draw reaction label for selection.
+function create_reaction_label(enter_selection, tool) {
+  /** Draw reaction label for selection.
 
-     */
+   */
 
-    var group = enter_selection.append('g')
-            .attr('class', 'reaction-label-group');
-    group.append('title'); // tooltip
-    group.append('text')
-        .attr('class', 'reaction-label label');
-    group.append('g')
-        .attr('class', 'all-genes-label-group');
+  var group = enter_selection.append('g')
+        .attr('class', 'reaction-label-group')
+  group.append('title') // tooltip
+  group.append('text')
+    .attr('class', 'reaction-label label')
+  group.append('g')
+    .attr('class', 'all-genes-label-group')
 
-    this.callback_manager.run('create_reaction_label', this, enter_selection);
+  this.callback_manager.run('create_reaction_label', this, enter_selection);
 }
 
 /**

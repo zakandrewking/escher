@@ -19,6 +19,8 @@ var TextEditInput = require('./TextEditInput');
 var QuickJump = require('./QuickJump');
 var data_styles = require('./data_styles');
 var builder_embed = require('./inline').builder_embed;
+var TooltipContainer = require('./TooltipContainer')
+var DefaultTooltip = require('./Tooltip').DefaultTooltip
 var _ = require('underscore')
 
 var Builder = utils.make_class();
@@ -120,6 +122,8 @@ function init(map_data, model_data, embedded_css, selection, options) {
         allow_building_duplicate_reactions: false,
         cofactors: ['atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp', 'gdp',
                     'h', 'coa', 'ump', 'h20', 'ppi'],
+        // Extensions
+        tooltip_component: DefaultTooltip,
         // Callbacks
         first_load_callback: null
     }, {
@@ -293,6 +297,11 @@ function load_map(map_data, should_update_data) {
     // set up the text edit input
     this.text_edit_input = new TextEditInput(this.selection, this.map,
                                              this.zoom_container)
+
+    // set up the tooltip container
+    this.tooltip_container = new TooltipContainer(this.selection, this.map,
+                                                  this.options.tooltip_component,
+                                                  this.zoom_container)
 
     // set up the Brush
     this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group')

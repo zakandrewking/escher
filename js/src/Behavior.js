@@ -352,52 +352,55 @@ function toggle_label_drag(on_off) {
     }
 }
 
-function toggle_label_mousedown(on_off) {
-    /** With no argument, toggle the reaction label mousedown on or off.z
+/** With no argument, toggle the reaction label mousedown on or off.z
+ * @param {Boolean} on_off - The new on/off state.
+ */
+function toggle_label_mousedown (on_off) {
+  if (on_off === undefined) {
+    on_off = this.label_mousedown === null
+  }
+  var map = this.map
 
-     Arguments
-     ---------
+  if (on_off) {
+    // TODO turn this feature (reaction label selection) back on, but
+    // with correct shift key management
+    // this.label_mousedown = function(d) {
+      // if (d3.event.defaultPrevented) return; // mousedown suppressed
+      // // select reaction/node
+      // d3.select(this.parentNode.parentNode)
+      //     .each(function(d) {
+      //         var node_ids = {};
+      //         for (var seg_id in d.segments) {
+      //             ['to_node_id', 'from_node_id'].forEach(function(n) {
+      //                 node_ids[d.segments[seg_id][n]] = true;
+      //             });
+      //         }
+      //         map.sel.selectAll('.selected').classed('selected', false);
+      //         map.sel.selectAll('.node')
+      //             .classed('selected', function(d) {
+      //                 return (d.node_id in node_ids);
+      //             });
+      //     });
+      // d3.event.stopPropagation();
+    // }
+    // this.label_mouseover = function(d) {
+    //   d3.select(this).style('fill', 'rgb(56, 56, 184)')
+    // }
+    // this.label_mouseout = function(d) {
+    //   d3.select(this).style('fill', null)
+    // }
+  } else {
+    this.label_mousedown = null
+    this.map.sel.select('.node-label,.reaction-label').style('fill', null)
+  }
 
-     on_off: A boolean argument to set the on/off state.
-
-     */
-    if (on_off===undefined) on_off = this.label_mousedown==null;
-    if (on_off) {
-        var map = this.map;
-        // TODO turn this feature (reaction label selection) back on, but
-        // with correct shift key management
-        this.label_mousedown = function(d) {
-            // if (d3.event.defaultPrevented) return; // mousedown suppressed
-            // // select reaction/node
-            // d3.select(this.parentNode.parentNode)
-            //     .each(function(d) {
-            //         var node_ids = {};
-            //         for (var seg_id in d.segments) {
-            //             ['to_node_id', 'from_node_id'].forEach(function(n) {
-            //                 node_ids[d.segments[seg_id][n]] = true;
-            //             });
-            //         }
-            //         map.sel.selectAll('.selected').classed('selected', false);
-            //         map.sel.selectAll('.node')
-            //             .classed('selected', function(d) {
-            //                 return (d.node_id in node_ids);
-            //             });
-            //     });
-            // d3.event.stopPropagation();
-        };
-        this.label_mouseover = function(d) {
-            // d3.select(this).style('fill', 'rgb(56, 56, 184)');
-        };
-        this.label_mouseout = function(d) {
-            // d3.select(this).style('fill', null);
-        };
-    } else {
-        this.label_mousedown = null;
-        this.label_mouseover = null;
-        this.label_mouseout = null;
-        this.map.sel.select('.node-label,.reaction-label')
-            .style('fill', null);
-    }
+  // show/hide tooltip
+  this.label_mouseover = function (d) {
+    map.callback_manager.run('show_tooltip', null, 'reaction_label', d)
+  }
+  this.label_mouseout = function (d) {
+    map.callback_manager.run('hide_tooltip')
+  }
 }
 
 function toggle_bezier_drag(on_off) {
