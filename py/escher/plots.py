@@ -550,8 +550,9 @@ class Builder(object):
             jquery_url = get_url('jquery', url_source, local_host, protocol)
             boot_css_url = get_url('boot_css', url_source, local_host, protocol)
             boot_js_url = get_url('boot_js', url_source, local_host, protocol)
+            boot_slider_css_url = get_url('boot_slider_css', url_source, local_host, protocol)
         else:
-            jquery_url = boot_css_url = boot_js_url = None
+            jquery_url = boot_css_url = boot_js_url = boot_slider_css_url = None
         escher_css_url = get_url(('builder_css_min' if minified_js else 'builder_css'),
                                  url_source, local_host, protocol)
         favicon_url = get_url('favicon', url_source, local_host, protocol)
@@ -590,6 +591,7 @@ class Builder(object):
             boot_js_url=boot_js_url,
             boot_css_url=boot_css_url,
             escher_css_url=escher_css_url,
+            boot_slider_css_url=boot_slider_css_url,
             favicon_url=favicon_url,
             # content
             wrapper=html_wrapper,
@@ -817,14 +819,15 @@ class Builder(object):
                 boot_font_woff = get_url('boot_font_woff', 'local')
                 boot_font_woff2 = get_url('boot_font_woff2', 'local')
                 boot_font_ttf = get_url('boot_font_ttf', 'local')
+                boot_slider_css = get_url('boot_slider_css', 'local')
             else:
-                boot_css = boot_js = jquery = None
+                boot_css = boot_js = jquery = boot_slider_css = None
                 boot_font_eot = boot_font_svg = None
                 boot_font_woff = boot_font_woff2 = boot_font_ttf = None
 
             for path in [escher, builder_css, boot_css, boot_js, jquery, d3,
                          favicon, boot_font_eot, boot_font_svg, boot_font_woff,
-                         boot_font_woff2, boot_font_ttf]:
+                         boot_font_woff2, boot_font_ttf, boot_slider_css]:
                 if path is None:
                     continue
                 src = join(root_directory, path)

@@ -64,17 +64,7 @@ function import_and_check(data, name, all_reactions) {
     if (!(data instanceof Array)) {
         data = [data];
     }
-    // check data
-    var check = function() {
-        if (data===null)
-            return null;
-        if (data.length==1)
-            return null;
-        if (data.length==2)
-            return null;
-        return console.warn('Bad data style: ' + name);
-    };
-    check();
+
     data = utils.array_to_object(data);
 
     if (name == 'gene_data') {
@@ -136,22 +126,30 @@ function float_for_data(d, styles, compare_style) {
         if (f === null)
             return null;
         return abs(f, take_abs);
-    } else if (d.length==2) { // 2 sets
+    }
+    else if (d.length==2) { // 2 sets
         // 2 null
         var fs = d.map(_parse_float_or_null);
         if (fs[0] === null || fs[1] === null)
             return null;
 
-        if (compare_style == 'diff') {
+        if (compare_style == null) {
+            return abs(fs[0], take_abs);
+        } else if (compare_style == 'diff') {
             return diff(fs[0], fs[1], take_abs);
         } else if (compare_style == 'fold') {
             return check_finite(fold(fs[0], fs[1], take_abs));
-        }
-        else if (compare_style == 'log2_fold') {
+        } else if (compare_style == 'log2_fold') {
             return check_finite(log2_fold(fs[0], fs[1], take_abs));
         }
-    } else {
-        throw new Error('Data array must be of length 1 or 2');
+    }
+    else {
+        var fs = d.map(_parse_float_or_null);
+        for (var i = 0, l = d.length; i < l; i++) {
+            if (fs[i] === null)
+                return null;
+        }
+        return abs(fs[0], take_abs);
     }
     throw new Error('Bad data compare_style: ' + compare_style);
 
@@ -279,7 +277,7 @@ function gene_string_for_data (rule, gene_values, genes, styles,
     }
 }
 
-function text_for_data(d, f) {
+function text_for_data(d, f, compare_style) {
     if (d === null)
         return null_or_d(null);
     if (d.length == 1) {
@@ -287,11 +285,20 @@ function text_for_data(d, f) {
         return null_or_d(d[0], format);
     }
     if (d.length == 2) {
-        var format = (f === null ? RETURN_ARG : d3.format('.3g')),
-            t = null_or_d(d[0], format);
-        t += ', ' + null_or_d(d[1], format);
-        t += ': ' + null_or_d(f, format);
-        return t;
+        if (compare_style == null) {
+            var format = (f === null ? RETURN_ARG : d3.format('.3g'));
+            return null_or_d(d[0], format);
+        } else {
+            var format = (f === null ? RETURN_ARG : d3.format('.3g')),
+                t = null_or_d(d[0], format);
+            t += ', ' + null_or_d(d[1], format);
+            t += ': ' + null_or_d(f, format);
+            return t;
+        }
+    }
+    else {
+        var format = (f === null ? RETURN_ARG : d3.format('.3g'));
+        return null_or_d(d[0], format);
     }
     return '';
 
@@ -310,9 +317,7 @@ function csv_converter(csv_rows) {
     // count rows
     var c = csv_rows[0].length,
         converted = [];
-    if (c < 2 || c > 3)
-        throw new Error('CSV file must have 2 or 3 columns');
-    // set up rows
+    
     for (var i = 1; i < c; i++) {
         converted[i - 1] = {};
     }
@@ -482,7 +487,7 @@ function apply_reaction_data_to_reactions(reactions, data, styles, compare_style
         var d = data[reaction.bigg_id] || data[reaction.name] || null,
             f = float_for_data(d, styles, compare_style),
             r = reverse_flux_for_data(d),
-            s = text_for_data(d, f);
+            s = text_for_data(d, f, compare_style);
         reaction.data = f;
         reaction.data_string = s;
         reaction.reverse_flux = r;
@@ -518,7 +523,7 @@ function apply_metabolite_data_to_nodes(nodes, data, styles, compare_style) {
             // check bigg_id and name
         var d = data[node.bigg_id] || data[node.name] || null,
             f = float_for_data(d, styles, compare_style),
-            s = text_for_data(d, f);
+            s = text_for_data(d, f, compare_style);
         node.data = f;
         node.data_string = s;
     }
@@ -592,7 +597,7 @@ function apply_gene_data_to_reactions(reactions, gene_data_obj, styles, identifi
         }
         var f = float_for_data(d, styles, compare_style),
             r = reverse_flux_for_data(d),
-            s = text_for_data(d, f);
+            s = text_for_data(d, f, compare_style);
         reaction.data = f;
         reaction.data_string = s;
         reaction.reverse_flux = r;

@@ -15,6 +15,7 @@ var ui = require('./ui');
 var SearchBar = require('./SearchBar');
 var Settings = require('./Settings');
 var SettingsMenu = require('./SettingsMenu');
+var DataSlider = require('./DataSlider');
 var TextEditInput = require('./TextEditInput');
 var QuickJump = require('./QuickJump');
 var data_styles = require('./data_styles');
@@ -37,6 +38,7 @@ Builder.prototype = {
     set_metabolite_data: set_metabolite_data,
     set_gene_data: set_gene_data,
     _update_data: _update_data,
+    _on_change: _on_change,
     _toggle_direction_buttons: _toggle_direction_buttons,
     _set_up_menu: _set_up_menu,
     _set_up_button_panel: _set_up_button_panel,
@@ -200,6 +202,23 @@ function init(map_data, model_data, embedded_css, selection, options) {
             }
         }.bind(this))
 
+    // Sliders and Checkbox on change calls.
+    this.slider.data_slider.on('change', function() {
+        this._on_change();
+    }.bind(this));
+
+    this.slider.compare_data_slider.on('change', function() {
+        this._on_change();
+    }.bind(this));
+
+    this.slider.checkbox.on('change', function() {
+        if(document.getElementById('compare_checkbox').checked)
+            this.slider.toggle_compare(true);
+        else
+            this.slider.toggle_compare(false);
+        this._on_change();
+    }.bind(this));
+
     this.callback_manager.run('first_load', this)
 }
 
@@ -308,11 +327,16 @@ function load_map(map_data, should_update_data) {
             .append('div').attr('class', 'search-menu-container-inline'),
         menu_div = s.append('div'),
         search_bar_div = s.append('div'),
+        slider_div = s.append('div'),
         button_div = this.selection.append('div')
 
     // set up the search bar
     this.search_bar = new SearchBar(search_bar_div, this.map.search_index,
                                 this.map)
+
+    // set up the slider
+    this.slider = new DataSlider(slider_div)
+
     // set up the hide callbacks
     this.search_bar.callback_manager.set('show', function() {
         this.settings_bar.toggle(false)
@@ -343,11 +367,12 @@ function load_map(map_data, should_update_data) {
     var keys = this._get_keys(this.map, this.zoom_container,
                               this.search_bar, this.settings_bar,
                               this.options.enable_editing,
-                              this.options.full_screen_button)
+                              this.options.full_screen_button,
+                              this.slider)
     this.map.key_manager.assigned_keys = keys
     // tell the key manager about the reaction input and search bar
     this.map.key_manager.input_list = [this.build_input, this.search_bar,
-                                       this.settings_bar, this.text_edit_input]
+                                       this.settings_bar, this.text_edit_input, this.slider]
     // make sure the key manager remembers all those changes
     this.map.key_manager.update()
     // turn it on/off
@@ -417,6 +442,7 @@ function load_map(map_data, should_update_data) {
 
 function _set_mode(mode) {
     this.search_bar.toggle(false);
+    this.slider.toggle(false);
     // input
     this.build_input.toggle(mode=='build');
     this.build_input.direction_arrow.toggle(mode=='build');
@@ -660,6 +686,57 @@ function _update_data(update_model, update_map, kind, should_draw) {
     }
 }
 
+function _on_change() {
+    var index = this.slider.data_slider.getValue();
+    var compare_index = this.slider.compare_data_slider.getValue();
+    var data = this.slider.data;
+    var type = this.slider.type;
+    var columns = this.slider.columns;
+    var rows = this.slider.rows;
+
+    columns.text('Dataset: ' + (index + 1) + '/' + data.length);
+    rows.text('Data Points: ' + Object.keys(data[index]).length);
+
+    if (document.getElementById('compare_checkbox').checked == true) {
+        if (type == 'reaction') {
+            if (this.options.reaction_compare_style == null)
+                this.options.reaction_compare_style = this.compare_reaction;
+        } else if (type == 'metabolite') {
+            if (this.options.metabolite_compare_style == null)
+                this.options.metabolite_compare_style = this.compare_metabolite;
+        }
+    } else {
+        if (type == 'reaction') {
+            if (this.options.reaction_compare_style != null)
+                this.compare_reaction = this.options.reaction_compare_style;
+            this.options.reaction_compare_style = null;
+        } else if (type == 'metabolite') {
+            if (this.options.metabolite_compare_style != null)
+                this.compare_metabolite = this.options.metabolite_compare_style;
+            this.options.metabolite_compare_style = null;
+        }
+    }
+
+    if(compare_index < index) {
+        compare_reindex = compare_index;
+    } else {
+        compare_reindex = compare_index + 1;
+    }
+
+    if (type == 'reaction') {
+        if (this.options.reaction_compare_style == null)
+            this.set_reaction_data(data[index]);
+        else
+            this.set_reaction_data([data[index], data[compare_reindex]]);
+    } else if (type == 'metabolite') {
+        if (this.options.metabolite_compare_style == null)
+            this.set_metabolite_data(data[index]);
+        else
+            this.set_metabolite_data([data[index], data[compare_reindex]]);
+    } else if (type == 'gene')
+        this.set_gene_data(data[index]);
+}
+
 function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
                       enable_keys, full_screen_button, ignore_bootstrap) {
     var menu = menu_selection.attr('id', 'menu')
@@ -726,7 +803,7 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
     // data dropdown
     var data_menu = ui.dropdown_menu(menu, 'Data')
             .button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
-                               key: 'fn',
+                               key: keys.slider,
                                fn: load_reaction_data_for_file.bind(this),
                                accept_csv: true,
                                pre_fn: function() {
@@ -739,7 +816,9 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
             .button({ key: keys.clear_reaction_data,
                       text: 'Clear reaction data' })
             .divider()
-            .button({ input: { fn: load_gene_data_for_file.bind(this),
+            .button({ input: { assign: key_manager.assigned_keys.load_gene_data,
+                               key: keys.slider,
+                               fn: load_gene_data_for_file.bind(this),
                                accept_csv: true,
                                pre_fn: function() {
                                    map.set_status('Loading gene data ...')
@@ -751,7 +830,9 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
             .button({ key: keys.clear_gene_data,
                       text: 'Clear gene data' })
             .divider()
-            .button({ input: { fn: load_metabolite_data_for_file.bind(this),
+            .button({ input: { assign: key_manager.assigned_keys.load_metabolite_data,
+                               key: keys.slider,
+                               fn: load_metabolite_data_for_file.bind(this),
                                accept_csv: true,
                                pre_fn: function() {
                                    map.set_status('Loading metabolite data ...')
@@ -969,6 +1050,7 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
         if (data !== null)
             this.set_gene_data(null)
 
+        this.slider.on_load(data, 'reaction')
         this.set_reaction_data(data)
     }
     function load_metabolite_data_for_file(error, data) {
@@ -977,6 +1059,8 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
             this.map.set_status('Could not parse file as JSON or CSV', 2000)
             return
         }
+
+        this.slider.on_load(data, 'metabolite')
         this.set_metabolite_data(data)
     }
     function load_gene_data_for_file(error, data) {
@@ -988,10 +1072,10 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
         // turn off reaction data
         if (data !== null)
             this.set_reaction_data(null)
-
         // turn on gene_reaction_rules
         this.settings.set_conditional('show_gene_reaction_rules', true)
 
+        this.slider.on_load(data, 'gene')
         this.set_gene_data(data)
     }
 }
@@ -1169,7 +1253,7 @@ function _setup_modes(map, brush, zoom_container) {
     });
 }
 
-function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing, full_screen_button) {
+function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing, full_screen_button, slider) {
 
         var keys = {
         save: {
@@ -1209,17 +1293,29 @@ function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing
         load_reaction_data: { fn: null }, // defined by button
         clear_reaction_data: {
             target: this,
-            fn: function() { this.set_reaction_data(null); }
+            fn: function() {
+                this.set_reaction_data(null);
+                if (this.slider.type == 'reaction')
+                    this.slider.toggle(false);
+            }
         },
         load_metabolite_data: { fn: null }, // defined by button
         clear_metabolite_data: {
             target: this,
-            fn: function() { this.set_metabolite_data(null); }
+            fn: function() {
+                this.set_metabolite_data(null);
+                if (this.slider.type == 'metabolite')
+                    this.slider.toggle(false);
+            }
         },
         load_gene_data: { fn: null }, // defined by button
         clear_gene_data: {
             target: this,
-            fn: function() { this.set_gene_data(null, true); }
+            fn: function() {
+                this.set_gene_data(null, true);
+                if (this.slider.type == 'gene')
+                    this.slider.toggle(false);
+            }
         },
         zoom_in: {
             key: 'ctrl+=',
@@ -1244,6 +1340,9 @@ function _get_keys(map, zoom_container, search_bar, settings_bar, enable_editing
         search: {
             key: 'ctrl+f',
             fn: search_bar.toggle.bind(search_bar, true)
+        },
+        slider: {
+            fn: slider.toggle.bind(slider, true)
         },
         view_mode: {
             target: this,

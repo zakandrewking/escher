@@ -439,7 +439,7 @@ resizes. */
   font-weight: bold;
 }
 .escher-container .light {
-  color: #8b8b8be;
+  color: #8b8b8b;
   font-weight: normal;
 }
 /* text edit input */
@@ -459,4 +459,34 @@ resizes. */
   .escher-container #quick-jump-menu {
 	  display: none;
   }
+}
+/* Slider */
+.escher-container .slider-container {
+  display: block;
+  background: rgba(255,255,255,.95);
+  border: 1px solid #DDD;
+  margin: 2px 0 0;
+  padding: 3px 15px;
+}
+
+.escher-container #data-columns {
+  display: inline-block;
+  padding: 0;
+}
+
+.escher-container #data-rows {
+  display: inline-block;
+  padding: 0 0 0 15px;
+}
+
+.escher-container #data-slider-container {
+  display: block;
+}
+
+.escher-container #compare-data-slider-container {
+  display: block;
+}
+
+.escher-container #compare_checkbox {
+  margin-right: 4px;
 }
