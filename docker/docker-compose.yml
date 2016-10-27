@@ -1,0 +1,11 @@
+version: '2'
+
+services:
+  escher:
+    image: escher:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    ports: 
+      - "80:80"
+
