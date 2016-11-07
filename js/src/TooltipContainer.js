@@ -35,23 +35,13 @@ function init (selection, map, tooltip_component, zoom_container) {
   this.setup_zoom_callbacks(zoom_container)
 
   // keep a reference to tinier tooltip
-  var initialState = {
-    isVisible: false,
-    biggId: null,
-    name: null,
-    loc: null,
-    data: null,
-    status: null,
-  }
-  this.tinier_tooltip = tinier.run(tooltip_component, div.node(),
-                                   { initialState: initialState })
+  this.tooltip_component = tooltip_component
+  this.tinier_tooltip = tinier.run(tooltip_component, div.node())
 }
 
 function setup_map_callbacks(map) {
   map.callback_manager.set('show_tooltip.tooltip_container',
                            this.show.bind(this))
-  // map.callback_manager.set('hide_tooltip.tooltip_container',
-  //                          this.hide.bind(this))
 }
 
 function setup_zoom_callbacks(zoom_container) {
@@ -82,15 +72,14 @@ function show (type, d) {
   if (type === 'reaction_label') {
     var coords = { x: d.label_x, y: d.label_y + 10 }
     this.placed_div.place(coords)
-    var new_state = {
+    this.tinier_tooltip.setInterfaceState.call({
       biggId: d.bigg_id,
       name: d.name,
       loc: coords,
       data: d.data,
       type: 'reaction',
       status: null,
-    }
-    this.tinier_tooltip.setState(new_state)
+    })
   } else {
     throw new Error('Tooltip not supported for object type ' + type)
   }

@@ -6,10 +6,39 @@
 
 var createComponent = require('tinier').createComponent
 var createInterface = require('tinier').createInterface
-var interfaceTypes = require('tinier').interfaceTypes
+var typ = require('tinier').interfaceTypes
 var h = require('tinier-dom').h
 var render = require('tinier-dom').render
 
+// Define the interface
+var TooltipInterface = createInterface({
+  state: {
+    type: typ.string.default().nullable,
+    biggId: typ.string.nullable.default(),
+    name: typ.string,
+    dataString: typ.string,
+    data: typ.any,
+    loc: {
+      x: typ.number,
+      y: typ.number,
+    },
+    visibleArea: {
+      left: typ.number,
+      right: typ.number,
+      top: typ.number,
+      bottom: typ.number,
+    },
+    isPrimary: typ.boolean,
+  },
+
+  signals: {
+    changeIsPrimary: typ.boolean.nullable,
+    didHide: typ.noArgument.default('a'), // <-- should warn that this does nothing
+    pinTooltip: typ.boolean.default(), // <-- should error, no argument
+  },
+})
+
+// Define styles
 var containerStyle = {
   'min-width': '300px',
   'min-height': '120px',
@@ -34,6 +63,7 @@ var buttonStyle = {
   'border': '1px solid #ddd',
 }
 
+// Deal with the BiGG Models button
 function getButtonText (status, biggId) {
   if (status === 'error') {
     return biggId + ' not found in BiGG Models'
@@ -43,12 +73,16 @@ function getButtonText (status, biggId) {
   }
 }
 
+// Create the component
 var DefaultTooltip = createComponent({
   displayName: 'DefaultTooltip',
 
-  // reaplce with interface:
-  init: function (arg) { return arg },
-  signalNames: [ 'changeIsPrimary', 'didHide', ],
+  interface: TooltipInterface,
+
+  init: function (initState) {
+    initState.status = null
+    return initState
+  },
 
   reducers: {
     changeBiggStatus: function (args) {
@@ -101,31 +135,7 @@ var DefaultTooltip = createComponent({
   },
 })
 
-// var TooltipInterface = createInterface({
-//   state: {
-//     biggId: interfaceTypes.string,
-//     name: interfaceTypes.string,
-//     loc: {
-//       x: interfaceTypes.number,
-//       y: interfaceTypes.number,
-//     },
-//     visibleArea: {
-//       left: interfaceTypes.number,
-//       right: interfaceTypes.number,
-//       top: interfaceTypes.number,
-//       bottom: interfaceTypes.number,
-//     },
-//     //
-//     shouldDisplay: interfaceTypes.boolean,
-//     isPrimary: interfaceTypes.boolean,
-//   },
-
-//   signals: {
-//     changeIsPrimary: interfaceTypes.noArgument,
-//   },
-// })
-
 module.exports = {
   DefaultTooltip: DefaultTooltip,
-  // TooltipInterface: TooltipInterface,
+  TooltipInterface: TooltipInterface,
 }
