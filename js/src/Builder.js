@@ -36,6 +36,7 @@ Builder.prototype = {
     set_reaction_data: set_reaction_data,
     set_metabolite_data: set_metabolite_data,
     set_gene_data: set_gene_data,
+    set_knockout_reactions: set_knockout_reactions,
     _update_data: _update_data,
     _toggle_direction_buttons: _toggle_direction_buttons,
     _set_up_menu: _set_up_menu,
@@ -102,6 +103,7 @@ function init(map_data, model_data, embedded_css, selection, options) {
                          { type: 'max', color: '#ff0000', size: 25 }],
         reaction_no_data_color: '#dcdcdc',
         reaction_no_data_size: 8,
+        reaction_knockout: [],
         // gene
         gene_data: null,
         and_method_in_gene_reaction_rule: 'mean',
@@ -505,6 +507,17 @@ function set_reaction_data(data) {
     this.options.reaction_data = data;
     this._update_data(true, true, 'reaction');
     this.map.set_status('');
+}
+
+function set_knockout_reactions(data) {
+    if (data.length > this.options.reaction_knockout.length) {
+        this.map.draw_these_knockouts(_.difference(data, this.options.reaction_knockout));
+    } else {
+        this.map.clear_these_knockouts(_.difference(this.options.reaction_knockout, data));
+    }
+
+    this.options.reaction_knockout = data;
+    this.map.set_status('')
 }
 
 function set_gene_data(data, clear_gene_reaction_rules) {

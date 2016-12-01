@@ -118,6 +118,9 @@ Map.prototype = {
     draw_all_reactions: draw_all_reactions,
     draw_these_reactions: draw_these_reactions,
     clear_deleted_reactions: clear_deleted_reactions,
+    // draw knockouts
+    draw_these_knockouts: draw_these_knockouts,
+    clear_these_knockouts: clear_these_knockouts,
     // draw nodes
     draw_all_nodes: draw_all_nodes,
     draw_these_nodes: draw_these_nodes,
@@ -621,6 +624,39 @@ function clear_deleted_reactions(draw_beziers) {
                                    null,
                                    function(sel) { sel.remove(); });
     };
+}
+
+function draw_these_knockouts(reaction_ids) {
+
+    // find reactions for reaction_ids
+    var knocked_out = utils.object_slice_for_bigg(this.reactions, reaction_ids);
+
+    // get central nodes for reactions
+    var node_ids = _.values(utils.get_central_nodes(knocked_out));
+    var node_subset = utils.object_slice_for_ids_ref(this.nodes, node_ids);
+
+    // draw the mark
+    utils.draw_an_object(this.sel, '#nodes', '.node', node_subset, 'node_id',
+                         null, this.draw.update_knockout_mark.bind(this.draw));
+
+}
+
+function clear_these_knockouts(reaction_ids) {
+
+    // find reactions for reaction_ids
+    var knocked_out = utils.object_slice_for_bigg(this.reactions, reaction_ids);
+
+    // get central nodes for reactions
+    var node_ids = _.values(utils.get_central_nodes(knocked_out));
+    var node_subset = utils.object_slice_for_ids_ref(this.nodes, node_ids);
+
+    var clear_mark = function(selection) {
+        return selection.selectAll('.ko-mark').remove();
+    }
+
+     // draw the mark
+    utils.draw_an_object(this.sel, '#nodes', '.node', node_subset, 'node_id',
+                         null, clear_mark);
 }
 
 function draw_all_nodes(clear_deleted) {

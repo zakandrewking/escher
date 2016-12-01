@@ -30,6 +30,8 @@ module.exports = {
     debounce: debounce,
     object_slice_for_ids: object_slice_for_ids,
     object_slice_for_ids_ref: object_slice_for_ids_ref,
+    object_slice_for_bigg: object_slice_for_bigg,
+    get_central_nodes: get_central_nodes,
     c_plus_c: c_plus_c,
     c_minus_c: c_minus_c,
     c_times_scalar: c_times_scalar,
@@ -543,6 +545,52 @@ function object_slice_for_ids_ref(obj, ids) {
         console.warn('did not find correct reaction subset');
     }
     return subset;
+}
+
+function object_slice_for_bigg(obj, bigg_ids) {
+    /** Return a copy of the object with just the given bigg ids.
+
+     Arguments
+     ---------
+
+     obj: An object.
+
+     ids: An array of bigg id strings.
+
+     */
+    var subset = {};
+
+    _.each(_.keys(obj), function(key) {
+        if (_.contains(bigg_ids, obj[key].bigg_id)) subset[key] = obj[key];
+    });
+
+    return subset;
+}
+
+function get_central_nodes(reactions) {
+
+    var central_nodes = {};
+
+    _.each(_.keys(reactions), function(key) {
+
+        no_segments = _.keys(reactions[key].segments).length;
+
+        if (no_segments < 5) {
+            var nodes = _.map(reactions[key].segments, function(seg) {
+                return [seg.from_node_id, seg.to_node_id];
+            });
+        } else {
+            var nodes = _.map(_.filter(reactions[key].segments, function(segment) {
+                return (segment.b1 === null && segment.b2 === null);
+            }), function(seg) {
+                return [seg.from_node_id, seg.to_node_id];
+            });
+        }
+
+        central_nodes[key] = _.intersection(nodes[0], nodes[1]);
+    });
+
+    return central_nodes;
 }
 
 function c_plus_c(coords1, coords2) {
