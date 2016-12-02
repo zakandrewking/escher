@@ -45,12 +45,12 @@ function setup_map_callbacks(map) {
 }
 
 function setup_zoom_callbacks(zoom_container) {
-  zoom_container.callback_manager.set('zoom.tooltip_container', function() {
+  zoom_container.callback_manager.set('zoom.tooltip_container', function () {
     if (this.is_visible()) {
       this.hide()
     }
   }.bind(this))
-  zoom_container.callback_manager.set('go_to.tooltip_container', function() {
+  zoom_container.callback_manager.set('go_to.tooltip_container', function () {
     if (this.is_visible()) {
       this.hide()
     }
@@ -72,7 +72,7 @@ function show (type, d) {
   if (type === 'reaction_label') {
     var coords = { x: d.label_x, y: d.label_y + 10 }
     this.placed_div.place(coords)
-    this.tinier_tooltip.setInterfaceState.call({
+    this.tinier_tooltip.reducers.setContainerData({
       biggId: d.bigg_id,
       name: d.name,
       loc: coords,

@@ -54,8 +54,12 @@ class BuildGHPagesCommand(Command):
        pass
     def run(self):
         # generate the static site
-        call(['python', join('escher', 'generate_index.py')])
-        call(['python', join('escher', 'static_site.py')])
+        try:
+            from escher import generate_index, static_site
+        except ImportError:
+            raise Exception('Escher not installed')
+        generate_index.main()
+        static_site.generate_static_site()
         print('Done building gh-pages')
 
 

@@ -24,7 +24,7 @@ def index(directory):
     return { 'maps': list_cached(join(directory, 'maps'), 'map'),
              'models': list_cached(join(directory, 'models'), 'model') }
 
-if __name__=='__main__':
+def main():
     directory = join(top_directory, __schema_version__, __map_model_version__)
     if not exists(directory):
         print('No directory to index')
@@ -34,3 +34,6 @@ if __name__=='__main__':
     with open(join(directory, 'index.json'), 'w') as f:
         json.dump(index, f)
     print('Saved index.json')
+
+if __name__=='__main__':
+    main()

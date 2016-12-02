@@ -4,39 +4,12 @@
  * Define a Tooltip component and interface with Tinier.
  */
 
-var createComponent = require('tinier').createComponent
-var createInterface = require('tinier').createInterface
-var typ = require('tinier').interfaceTypes
-var h = require('tinier-dom').h
-var render = require('tinier-dom').render
-
-// Define the interface
-var TooltipInterface = createInterface({
-  state: {
-    type: typ.string.default().nullable,
-    biggId: typ.string.nullable.default(),
-    name: typ.string,
-    dataString: typ.string,
-    data: typ.any,
-    loc: {
-      x: typ.number,
-      y: typ.number,
-    },
-    visibleArea: {
-      left: typ.number,
-      right: typ.number,
-      top: typ.number,
-      bottom: typ.number,
-    },
-    isPrimary: typ.boolean,
-  },
-
-  signals: {
-    changeIsPrimary: typ.boolean.nullable,
-    didHide: typ.noArgument.default('a'), // <-- should warn that this does nothing
-    pinTooltip: typ.boolean.default(), // <-- should error, no argument
-  },
-})
+var tinier = require('tinier')
+var createComponent = tinier.createComponent
+var createInterface = tinier.createInterface
+var typ = tinier.interfaceTypes
+var h = tinier.createElement
+var render = tinier.render
 
 // Define styles
 var containerStyle = {
@@ -77,14 +50,29 @@ function getButtonText (status, biggId) {
 var DefaultTooltip = createComponent({
   displayName: 'DefaultTooltip',
 
-  interface: TooltipInterface,
-
-  init: function (initState) {
-    initState.status = null
-    return initState
+  init: function () {
+    return {
+      biggId: '',
+      name: '',
+      loc: { x: 0, y: 0 },
+      data: null,
+      type: null,
+      status: null,
+    }
   },
 
   reducers: {
+    setContainerData: function (args) {
+      return Object.assign({}, args.state, {
+        biggId: args.biggId,
+        name: args.name,
+        loc: args.loc,
+        data: args.data,
+        type: args.type,
+        status: args.status,
+      })
+    },
+
     changeBiggStatus: function (args) {
       return Object.assign({}, args.state, {
         status: args.status,
@@ -115,7 +103,7 @@ var DefaultTooltip = createComponent({
   },
 
   render: function (args) {
-    var isPrimary = args.state.isPrimary
+    console.log(args.state.biggId)
     return render(
       args.el,
       h('div',
@@ -137,5 +125,4 @@ var DefaultTooltip = createComponent({
 
 module.exports = {
   DefaultTooltip: DefaultTooltip,
-  TooltipInterface: TooltipInterface,
 }
