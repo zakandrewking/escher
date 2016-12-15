@@ -167,7 +167,7 @@ function update_knockout_mark(update_selection) {
         .append('tspan')
         .text('X')
         .style('fill', 'red')
-        .style('font-size', '75px')
+        .style('font-size', '95px')
         .attr('dx', -25)
         .attr('dy', 30);
 
