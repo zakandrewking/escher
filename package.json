@@ -16,7 +16,10 @@
   ],
   "license": "MIT",
   "homepage": "https://escher.github.io",
-  "repository": "github:zakandrewking/escher",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/zakandrewking/escher.git"
+  },
   "bugs": "https://github.com/zakandrewking/escher/issues",
   "files": [
     "js/src/*.js",
@@ -79,5 +82,16 @@
       "snippets"
     ],
     "first": "map"
+  },
+  "jspm": {
+    "registry": "jspm",
+    "dependencies": {
+      "baconjs": "npm:baconjs@^0.7.71",
+      "d3": "npm:d3@^3.5.14",
+      "filesaverjs": "npm:filesaverjs@^0.2.1",
+      "mousetrap": "npm:mousetrap@^1.5.3",
+      "underscore": "npm:underscore@^1.8.3",
+      "vkbeautify": "npm:vkbeautify@^0.99.1"
+    }
   }
 }
