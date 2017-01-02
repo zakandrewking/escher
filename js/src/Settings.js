@@ -35,37 +35,38 @@ module.exports = Settings;
 
 
 // instance methods
-function init(set_option, get_option, conditional_options) {
-    this.set_option = set_option;
-    this.get_option = get_option;
+function init (set_option, get_option, conditional_options) {
+  this.set_option = set_option
+  this.get_option = get_option
 
-    // manage accepting/abandoning changes
-    this.status_bus = new bacon.Bus();
+  // manage accepting/abandoning changes
+  this.status_bus = new bacon.Bus()
 
-    // force an update of ui components
-    this.force_update_bus = new bacon.Bus();
+  // force an update of ui components
+  this.force_update_bus = new bacon.Bus()
 
-    // modify bacon.observable
-    bacon.Observable.prototype.convert_to_conditional_stream = _convert_to_conditional_stream;
-    bacon.Observable.prototype.force_update_with_bus = _force_update_with_bus;
+  // modify bacon.observable
+  bacon.Observable.prototype.convert_to_conditional_stream = _convert_to_conditional_stream
+  bacon.Observable.prototype.force_update_with_bus = _force_update_with_bus
 
-    // create the options
-    this.busses = {};
-    this.streams = {};
-    for (var i = 0, l = conditional_options.length; i < l; i++) {
-        var name = conditional_options[i],
-            out = _create_conditional_setting(name, get_option(name), set_option,
-                                              this.status_bus, this.force_update_bus);
-        this.busses[name] = out.bus;
-        this.streams[name] = out.stream;
-    }
+  // create the options
+  this.busses = {}
+  this.streams = {}
+  for (var i = 0, l = conditional_options.length; i < l; i++) {
+    var name = conditional_options[i]
+    var out = _create_conditional_setting(name, get_option(name), set_option,
+                                          this.status_bus,
+                                          this.force_update_bus)
+    this.busses[name] = out.bus
+    this.streams[name] = out.stream
+  }
 }
 
-function _convert_to_conditional_stream(status_stream) {
-    /** Hold on to event when hold_property is true, and only keep them
-     if accept_property is true (when hold_property becomes false).
-
-     */
+/**
+ * Hold on to event when hold_property is true, and only keep them if
+ * accept_property is true (when hold_property becomes false).
+ */
+function _convert_to_conditional_stream (status_stream) {
 
     // true if hold is pressed
     var is_not_hold_event = status_stream

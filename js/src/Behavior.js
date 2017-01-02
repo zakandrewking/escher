@@ -32,7 +32,7 @@ Behavior.prototype = {
     toggle_text_label_edit: toggle_text_label_edit,
     toggle_selectable_drag: toggle_selectable_drag,
     toggle_label_drag: toggle_label_drag,
-    toggle_label_mousedown: toggle_label_mousedown,
+    toggle_label_mouseover: toggle_label_mouseover,
     toggle_bezier_drag: toggle_bezier_drag,
     // util
     turn_off_drag: turn_off_drag,
@@ -48,51 +48,53 @@ module.exports = Behavior;
 
 
 // definitions
-function init(map, undo_stack) {
-    this.map = map;
-    this.undo_stack = undo_stack;
+function init( map, undo_stack) {
+  this.map = map
+  this.undo_stack = undo_stack
 
-    // make an empty function that can be called as a behavior and does nothing
-    this.empty_behavior = function() {};
+  // make an empty function that can be called as a behavior and does nothing
+  this.empty_behavior = function () {}
 
-    // rotation mode operates separately from the rest
-    this.rotation_mode_enabled = false;
-    this.rotation_drag = d3.behavior.drag();
+  // rotation mode operates separately from the rest
+  this.rotation_mode_enabled = false
+  this.rotation_drag = d3.behavior.drag()
 
-    // behaviors to be applied
-    this.selectable_mousedown = null;
-    this.text_label_mousedown = null;
-    this.text_label_click = null;
-    this.selectable_drag = this.empty_behavior;
-    this.node_mouseover = null;
-    this.node_mouseout = null;
-    this.label_mousedown = null;
-    this.label_mouseover = null;
-    this.label_mouseout = null;
-    this.bezier_drag = this.empty_behavior;
-    this.bezier_mouseover = null;
-    this.bezier_mouseout = null;
-    this.reaction_label_drag = this.empty_behavior;
-    this.node_label_drag = this.empty_behavior;
-    this.turn_everything_on();
+  // behaviors to be applied
+  this.selectable_mousedown = null
+  this.text_label_mousedown = null
+  this.text_label_click = null
+  this.selectable_drag = this.empty_behavior
+  this.node_mouseover = null
+  this.node_mouseout = null
+  this.label_mousedown = null
+  this.label_mouseover = null
+  this.label_mouseout = null
+  this.bezier_drag = this.empty_behavior
+  this.bezier_mouseover = null
+  this.bezier_mouseout = null
+  this.reaction_label_drag = this.empty_behavior
+  this.node_label_drag = this.empty_behavior
+  this.turn_everything_on()
 }
-function turn_everything_on() {
-    /** Toggle everything except rotation mode and text mode.
 
-     */
-    this.toggle_selectable_click(true);
-    this.toggle_selectable_drag(true);
-    this.toggle_label_drag(true);
-    this.toggle_label_mousedown(true);
+/**
+ * Toggle everything except rotation mode and text mode.
+ */
+function turn_everything_on () {
+  this.toggle_selectable_click(true)
+  this.toggle_selectable_drag(true)
+  this.toggle_label_drag(true)
+  this.toggle_label_mouseover(true)
 }
-function turn_everything_off() {
-    /** Toggle everything except rotation mode and text mode.
 
-     */
-    this.toggle_selectable_click(false);
-    this.toggle_selectable_drag(false);
-    this.toggle_label_drag(false);
-    this.toggle_label_mousedown(false);
+/**
+ * Toggle everything except rotation mode and text mode.
+ */
+function turn_everything_off () {
+  this.toggle_selectable_click(false)
+  this.toggle_selectable_drag(false)
+  this.toggle_label_drag(false)
+  this.toggle_label_mouseover(false)
 }
 
 function toggle_rotation_mode(on_off) {
@@ -336,70 +338,50 @@ function toggle_selectable_drag(on_off) {
         this.bezier_drag = this.empty_behavior;
     }
 }
-function toggle_label_drag(on_off) {
-    /** With no argument, toggle the label drag on or off.
 
-     Pass in a boolean argument to set the on/off state.
-
-     */
-    if (on_off===undefined) on_off = this.label_drag===this.empty_behavior;
-    if (on_off) {
-        this.reaction_label_drag = this._get_reaction_label_drag(this.map);
-        this.node_label_drag = this._get_node_label_drag(this.map);
-    } else {
-        this.reaction_label_drag = this.empty_behavior;
-        this.node_label_drag = this.empty_behavior;
-    }
-}
-
-/** With no argument, toggle the reaction label mousedown on or off.z
+/**
+ * With no argument, toggle the label drag on or off. Pass in a boolean argument
+ * to set the on/off state.
  * @param {Boolean} on_off - The new on/off state.
  */
-function toggle_label_mousedown (on_off) {
+function toggle_label_drag (on_off) {
   if (on_off === undefined) {
-    on_off = this.label_mousedown === null
+    on_off = this.label_drag === this.empty_behavior
   }
-  var map = this.map
+  if (on_off) {
+    this.reaction_label_drag = this._get_reaction_label_drag(this.map)
+    this.node_label_drag = this._get_node_label_drag(this.map)
+  } else {
+    this.reaction_label_drag = this.empty_behavior
+    this.node_label_drag = this.empty_behavior
+  }
+}
+
+/**
+ * With no argument, toggle the tooltips on mouseover labels.
+ * @param {Boolean} on_off - The new on/off state.
+ */
+function toggle_label_mouseover (on_off) {
+  if (on_off === undefined) {
+    on_off = this.label_mouseover === null
+  }
 
   if (on_off) {
-    // TODO turn this feature (reaction label selection) back on, but
-    // with correct shift key management
-    // this.label_mousedown = function(d) {
-      // if (d3.event.defaultPrevented) return; // mousedown suppressed
-      // // select reaction/node
-      // d3.select(this.parentNode.parentNode)
-      //     .each(function(d) {
-      //         var node_ids = {};
-      //         for (var seg_id in d.segments) {
-      //             ['to_node_id', 'from_node_id'].forEach(function(n) {
-      //                 node_ids[d.segments[seg_id][n]] = true;
-      //             });
-      //         }
-      //         map.sel.selectAll('.selected').classed('selected', false);
-      //         map.sel.selectAll('.node')
-      //             .classed('selected', function(d) {
-      //                 return (d.node_id in node_ids);
-      //             });
-      //     });
-      // d3.event.stopPropagation();
-    // }
-    // this.label_mouseover = function(d) {
-    //   d3.select(this).style('fill', 'rgb(56, 56, 184)')
-    // }
-    // this.label_mouseout = function(d) {
-    //   d3.select(this).style('fill', null)
-    // }
-  } else {
-    this.label_mousedown = null
-    this.map.sel.select('.node-label,.reaction-label').style('fill', null)
-  }
 
-  // show/hide tooltip
-  this.label_mouseover = function (d) {
-    map.callback_manager.run('show_tooltip', null, 'reaction_label', d)
-  }
-  this.label_mouseout = function (d) {
-    map.callback_manager.run('hide_tooltip')
+    /**
+     * Show/hide tooltip.
+     * @param {String} type - 'reaction_label' or 'node_label'
+     * @param {Object} d - D3 data for DOM element
+     */
+    this.label_mouseover = function (type, d) {
+      this.map.callback_manager.run('show_tooltip', null, type, d)
+    }.bind(this)
+    this.label_mouseout = function () {
+      this.map.callback_manager.run('delay_hide_tooltip')
+    }.bind(this)
+
+  } else {
+    this.label_mouseover = null
   }
 }
 
@@ -727,57 +709,63 @@ function _get_bezier_drag(map) {
     return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
                                   redo_fn, this.map.sel);
 }
-function _get_reaction_label_drag(map) {
-    var move_label = function(reaction_id, displacement) {
-        var reaction = map.reactions[reaction_id];
-        reaction.label_x = reaction.label_x + displacement.x;
-        reaction.label_y = reaction.label_y + displacement.y;
-    },
-        start_fn = function(d) {
-        },
-        drag_fn = function(d, displacement, total_displacement) {
-            // draw
-            move_label(d.reaction_id, displacement);
-            map.draw_these_reactions([d.reaction_id]);
-        },
-        end_fn = function(d) {
-        },
-        undo_fn = function(d, displacement) {
-            move_label(d.reaction_id, utils.c_times_scalar(displacement, -1));
-            map.draw_these_reactions([d.reaction_id]);
-        },
-        redo_fn = function(d, displacement) {
-            move_label(d.reaction_id, displacement);
-            map.draw_these_reactions([d.reaction_id]);
-        };
-    return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-                                  redo_fn, this.map.sel);
+
+function _get_reaction_label_drag (map) {
+  var move_label = function (reaction_id, displacement) {
+    var reaction = map.reactions[reaction_id]
+    reaction.label_x = reaction.label_x + displacement.x
+    reaction.label_y = reaction.label_y + displacement.y
+  }
+  var start_fn = function (d) {
+    // hide tooltips when drag starts
+    map.callback_manager.run('hide_tooltip')
+  }
+  var drag_fn = function (d, displacement, total_displacement) {
+    // draw
+    move_label(d.reaction_id, displacement)
+    map.draw_these_reactions([ d.reaction_id ])
+  }
+  var end_fn = function (d) {
+  }
+  var undo_fn = function (d, displacement) {
+    move_label(d.reaction_id, utils.c_times_scalar(displacement, -1))
+    map.draw_these_reactions([ d.reaction_id ])
+  }
+  var redo_fn = function (d, displacement) {
+    move_label(d.reaction_id, displacement)
+    map.draw_these_reactions([ d.reaction_id ])
+  }
+  return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn,
+                                this.map.sel)
 }
-function _get_node_label_drag(map) {
-    var move_label = function(node_id, displacement) {
-        var node = map.nodes[node_id];
-        node.label_x = node.label_x + displacement.x;
-        node.label_y = node.label_y + displacement.y;
-    },
-        start_fn = function(d) {
-        },
-        drag_fn = function(d, displacement, total_displacement) {
-            // draw
-            move_label(d.node_id, displacement);
-            map.draw_these_nodes([d.node_id]);
-        },
-        end_fn = function(d) {
-        },
-        undo_fn = function(d, displacement) {
-            move_label(d.node_id, utils.c_times_scalar(displacement, -1));
-            map.draw_these_nodes([d.node_id]);
-        },
-        redo_fn = function(d, displacement) {
-            move_label(d.node_id, displacement);
-            map.draw_these_nodes([d.node_id]);
-        };
-    return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn,
-                                  redo_fn, this.map.sel);
+
+function _get_node_label_drag (map) {
+  var move_label = function (node_id, displacement) {
+    var node = map.nodes[node_id]
+    node.label_x = node.label_x + displacement.x
+    node.label_y = node.label_y + displacement.y
+  }
+  var start_fn = function (d) {
+    // hide tooltips when drag starts
+    map.callback_manager.run('hide_tooltip')
+  }
+  var drag_fn = function (d, displacement, total_displacement) {
+    // draw
+    move_label(d.node_id, displacement)
+    map.draw_these_nodes([ d.node_id ])
+  }
+  var end_fn = function (d) {
+  }
+  var undo_fn = function(d, displacement) {
+    move_label(d.node_id, utils.c_times_scalar(displacement, -1))
+    map.draw_these_nodes ([ d.node_id ])
+  }
+  var redo_fn = function (d, displacement) {
+    move_label(d.node_id, displacement)
+    map.draw_these_nodes([ d.node_id ])
+  }
+  return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn,
+                                this.map.sel)
 }
 
 function _get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn, relative_to_selection) {

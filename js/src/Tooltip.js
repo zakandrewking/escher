@@ -4,46 +4,62 @@
  * Define a Tooltip component and interface with Tinier.
  */
 
+var utils = require('./utils')
 var tinier = require('tinier')
 var createComponent = tinier.createComponent
 var createInterface = tinier.createInterface
 var typ = tinier.interfaceTypes
 var h = tinier.createElement
 var render = tinier.render
+var _ = require('underscore')
 
 // Define styles
 var containerStyle = {
-  'min-width': '300px',
-  'min-height': '120px',
-  'border-radius': '4px',
-  'border': '2px solid #333',
+  'min-width': '270px',
+  'min-height': '100px',
+  'border-radius': '2px',
+  'border': '1px solid #b58787',
   'padding': '7px',
   'background-color': '#fff',
-  'opacity': '0.9',
   'text-align': 'left',
-  'font-size': '18px',
+  'font-size': '16px',
   'font-family': 'sans-serif',
   'color': '#111',
+  'box-shadow': '4px 6px 20px 0px rgba(0, 0, 0, 0.4)',
 }
 
 var idStyle = {
-  'font-size': '22px',
+  'font-size': '18px',
+  'font-weight': 'bold',
 }
 
 var buttonStyle = {
   'border-radius': '3px',
   'background-color': '#eee',
   'border': '1px solid #ddd',
+  'margin-top': '4px',
 }
 
-// Deal with the BiGG Models button
-function getButtonText (status, biggId) {
-  if (status === 'error') {
-    return biggId + ' not found in BiGG Models'
-  } else {
-    return ((status === 'checking' ? '(Checking) ' : '') +
-            'Open ' + biggId + ' in BiGG Models.')
-  }
+var typeLabelStyle = {
+  'position': 'absolute',
+  'top': '4px',
+  'right': '4px',
+  'color': '#d27066',
+  'background-color': '#ffeded',
+  'border-radius': '2px',
+  'font-size': '14px',
+  'text-align': 'right',
+  'padding': '0px 5px',
+}
+
+function decompartmentalizeCheck (id, type) {
+  // ID without compartment, if metabolite.
+  return type === 'metabolite' ? utils.decompartmentalize(id)[0] : id
+
+}
+
+function capitalizeFirstLetter (s) {
+  return s === null ? s : s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 // Create the component
@@ -57,7 +73,6 @@ var DefaultTooltip = createComponent({
       loc: { x: 0, y: 0 },
       data: null,
       type: null,
-      status: null,
     }
   },
 
@@ -69,56 +84,50 @@ var DefaultTooltip = createComponent({
         loc: args.loc,
         data: args.data,
         type: args.type,
-        status: args.status,
-      })
-    },
-
-    changeBiggStatus: function (args) {
-      return Object.assign({}, args.state, {
-        status: args.status,
-        url: args.status === 'found' ? args.url : null,
       })
     },
   },
 
   methods: {
-    checkOpenBigg: function (args) {
-      var url = ('http://bigg.ucsd.edu/universal/' + args.state.type + 's/' +
-                 args.state.biggId)
-      if (args.state.status === 'found') {
-        window.open(url)
-      } else {
-        args.reducers.changeBiggStatus({ status: 'checking' })
-        const req = new XMLHttpRequest()
-        d3.xhr(url, function (error, data) {
-          if (error) {
-            args.reducers.changeBiggStatus({ status: 'error' })
-          } else {
-            window.open(url)
-            args.reducers.changeBiggStatus({ status: 'found', url: url })
-          }
-        })
-      }
+    openBigg: function (args) {
+      var type = args.state.type
+      var biggId = args.state.biggId
+      var pref = 'http://bigg.ucsd.edu/'
+      var url = (type === 'gene' ?
+                 pref + 'search?query=' + biggId :
+                 pref + 'universal/' + type + 's/' + decompartmentalizeCheck(biggId, type))
+      window.open(url)
     },
   },
 
   render: function (args) {
-    console.log(args.state.biggId)
+    var decomp = decompartmentalizeCheck(args.state.biggId, args.state.type)
+    var biggButtonText = 'Open ' + decomp + ' in BiGG Models.'
+
     return render(
+      // parent node
       args.el,
+      // the new tooltip element
       h('div',
+        // tooltip style
         { style: containerStyle },
+        // id
         h('span', { style: idStyle }, args.state.biggId),
         h('br'),
+        // descriptive name
         'name: ' + args.state.name,
         h('br'),
+        // data
         'data: ' + (args.state.data ? args.state.data : 'no data'),
         h('br'),
+        // BiGG Models button
         h('button',
-          { style: buttonStyle,
-            onClick: (args.state.status === 'checking' ? null :
-                      args.methods.checkOpenBigg), },
-          getButtonText(args.state.status, args.state.biggId)))
+          { style: buttonStyle, onClick: args.methods.openBigg, },
+          biggButtonText),
+        // type label
+        h('div',
+          { style: typeLabelStyle },
+          capitalizeFirstLetter(args.state.type)))
     )
   },
 })

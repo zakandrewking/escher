@@ -54,6 +54,9 @@ function place(coords) {
         .style('top', top+'px');
 }
 
-function hide() {
-    this.div.style('display', 'none');
+/**
+ * Hide the PlacedDiv.
+ */
+function hide () {
+  this.div.style('display', 'none')
 }

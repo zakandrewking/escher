@@ -1,6 +1,7 @@
 var utils = require('./utils')
 var PlacedDiv = require('./PlacedDiv')
 var tinier = require('tinier')
+var _ = require('underscore')
 
 /**
  * Manage the tooltip that lives in a PlacedDiv.
@@ -18,6 +19,8 @@ TooltipContainer.prototype = {
   is_visible: is_visible,
   show: show,
   hide: hide,
+  delay_hide: delay_hide,
+  cancel_hide_tooltip: cancel_hide_tooltip,
 }
 module.exports = TooltipContainer
 
@@ -27,6 +30,7 @@ function init (selection, map, tooltip_component, zoom_container) {
   this.placed_div = PlacedDiv(div, map)
   this.placed_div.hide()
 
+  div.on('mouseover', this.cancel_hide_tooltip.bind(this))
   div.on('mouseleave', this.hide.bind(this))
 
   this.map = map
@@ -37,14 +41,20 @@ function init (selection, map, tooltip_component, zoom_container) {
   // keep a reference to tinier tooltip
   this.tooltip_component = tooltip_component
   this.tinier_tooltip = tinier.run(tooltip_component, div.node())
+
+  this.delay_hide_timeout = null
 }
 
 function setup_map_callbacks(map) {
   map.callback_manager.set('show_tooltip.tooltip_container',
                            this.show.bind(this))
+  map.callback_manager.set('hide_tooltip.tooltip_container',
+                           this.hide.bind(this))
+  map.callback_manager.set('delay_hide_tooltip.tooltip_container',
+                           this.delay_hide.bind(this))
 }
 
-function setup_zoom_callbacks(zoom_container) {
+function setup_zoom_callbacks (zoom_container) {
   zoom_container.callback_manager.set('zoom.tooltip_container', function () {
     if (this.is_visible()) {
       this.hide()
@@ -67,9 +77,16 @@ function is_visible () {
 
 /**
  * Show and place the input.
+ * @param {String} type - 'reaction_label', 'node_label', or 'gene_label'
+ * @param {Object} d - D3 data for DOM element
+ * @param {Object} coords - Object with x and y coords. Cannot use coords from
+ *                          'd' because gene labels do not have them.
  */
 function show (type, d) {
-  if (type === 'reaction_label') {
+  // get rid of a lingering delayed hide
+  this.cancel_hide_tooltip()
+
+  if (_.contains([ 'reaction_label', 'node_label', 'gene_label' ], type)) {
     var coords = { x: d.label_x, y: d.label_y + 10 }
     this.placed_div.place(coords)
     this.tinier_tooltip.reducers.setContainerData({
@@ -77,8 +94,7 @@ function show (type, d) {
       name: d.name,
       loc: coords,
       data: d.data,
-      type: 'reaction',
-      status: null,
+      type: type.replace('_label', '').replace('node', 'metabolite'),
     })
   } else {
     throw new Error('Tooltip not supported for object type ' + type)
@@ -90,5 +106,20 @@ function show (type, d) {
  */
 function hide () {
   this.placed_div.hide()
-  this.tinier_tooltip.signals.didHide.call()
+}
+
+/**
+ * Hide the input after a short delay, so that mousing onto the tooltip does not
+ * cause it to hide.
+ */
+function delay_hide () {
+  this.delay_hide_timeout = setTimeout(function () {
+    this.hide()
+  }.bind(this), 100)
+}
+
+function cancel_hide_tooltip () {
+  if (this.delay_hide_timeout !== null) {
+    clearTimeout(this.delay_hide_timeout)
+  }
 }
