@@ -331,6 +331,7 @@ class Builder(object):
         - highlight_missing
         - allow_building_duplicate_reactions
         - cofactors
+        - enable_tooltips
 
     All keyword arguments can also be set on an existing Builder object
     using setter functions, e.g.:
@@ -378,35 +379,38 @@ class Builder(object):
         self.the_id = _get_an_id() if id is None else id
 
         # set up the options
-        self.options = ['use_3d_transform',
-                        'enable_search',
-                        'fill_screen',
-                        'zoom_to_element',
-                        'full_screen_button',
-                        'starting_reaction',
-                        'unique_map_id',
-                        'primary_metabolite_radius',
-                        'secondary_metabolite_radius',
-                        'marker_radius',
-                        'gene_font_size',
-                        'hide_secondary_metabolites',
-                        'show_gene_reaction_rules',
-                        'hide_all_labels',
-                        'reaction_styles',
-                        'reaction_compare_style',
-                        'reaction_scale',
-                        'reaction_no_data_color',
-                        'reaction_no_data_size',
-                        'and_method_in_gene_reaction_rule',
-                        'metabolite_styles',
-                        'metabolite_compare_style',
-                        'metabolite_scale',
-                        'metabolite_no_data_color',
-                        'metabolite_no_data_size',
-                        'identifiers_on_map',
-                        'highlight_missing',
-                        'allow_building_duplicate_reactions',
-                        'cofactors']
+        self.options = [
+            'use_3d_transform',
+            'enable_search',
+            'fill_screen',
+            'zoom_to_element',
+            'full_screen_button',
+            'starting_reaction',
+            'unique_map_id',
+            'primary_metabolite_radius',
+            'secondary_metabolite_radius',
+            'marker_radius',
+            'gene_font_size',
+            'hide_secondary_metabolites',
+            'show_gene_reaction_rules',
+            'hide_all_labels',
+            'reaction_styles',
+            'reaction_compare_style',
+            'reaction_scale',
+            'reaction_no_data_color',
+            'reaction_no_data_size',
+            'and_method_in_gene_reaction_rule',
+            'metabolite_styles',
+            'metabolite_compare_style',
+            'metabolite_scale',
+            'metabolite_no_data_color',
+            'metabolite_no_data_size',
+            'identifiers_on_map',
+            'highlight_missing',
+            'allow_building_duplicate_reactions',
+            'cofactors',
+            'enable_tooltips',
+        ]
         def get_getter_setter(o):
             """Use a closure."""
             # create local fget and fset functions

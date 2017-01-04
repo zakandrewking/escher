@@ -118,7 +118,8 @@ var DefaultTooltip = createComponent({
         'name: ' + args.state.name,
         h('br'),
         // data
-        'data: ' + (args.state.data ? args.state.data : 'no data'),
+        'data: ' + (args.state.data && args.state.data !== '(nd)' ?
+                    args.state.data : 'no data'),
         h('br'),
         // BiGG Models button
         h('button',
