@@ -8,7 +8,7 @@ from collections import defaultdict
 from escher import __schema_version__, __map_model_version__
 from escher.urls import top_directory
 
-def index(directory):
+def generate_index(directory):
     def list_cached(directory, kind):
         l = []
         if isdir(directory):
@@ -30,7 +30,7 @@ def main():
         print('No directory to index')
         sys.exit()
     print('Indexing %s' % directory)
-    index = index(directory)
+    index = generate_index(directory)
     with open(join(directory, 'index.json'), 'w') as f:
         json.dump(index, f)
     print('Saved index.json')

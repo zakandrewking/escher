@@ -1,6 +1,6 @@
 from __future__ import print_function, unicode_literals
 
-from escher.generate_index import index
+from escher.generate_index import generate_index
 from os.path import join
 from os import makedirs
 from shutil import rmtree
@@ -14,9 +14,9 @@ def index_dir(request, tmpdir):
         tmpdir.remove()
     request.addfinalizer(fin)
     return str(tmpdir)
-    
+
 def test_generate_index(index_dir):
-    out = index(index_dir)
+    out = generate_index(index_dir)
     assert out['models'] == [ { 'organism': 'Escherichia coli',
                                 'model_name': 'iJO1366' } ]
     assert out['maps'] == [ { 'organism': 'Escherichia coli',

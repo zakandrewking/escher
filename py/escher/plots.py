@@ -5,7 +5,7 @@ from __future__ import print_function, unicode_literals
 from escher.quick_server import serve_and_open
 from escher.urls import get_url, root_directory
 from escher.appdirs import user_cache_dir
-from escher.generate_index import index
+from escher.generate_index import generate_index
 from escher.version import __schema_version__, __map_model_version__
 from escher.util import query_yes_no
 from escher.escape import json_dump_and_escape, escape_json_or_null
@@ -87,7 +87,7 @@ def clear_cache(different_cache_dir=None, ask=True):
             shutil.rmtree(join(root, d))
 
 def local_index(cache_dir=get_cache_dir()):
-    return index(cache_dir)
+    return generate_index(cache_dir)
 
 def list_cached_maps():
     """Return a list of all cached maps."""
