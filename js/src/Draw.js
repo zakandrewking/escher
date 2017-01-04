@@ -142,7 +142,6 @@ function create_reaction_label(enter_selection, tool) {
 
   var group = enter_selection.append('g')
         .attr('class', 'reaction-label-group')
-  group.append('title') // tooltip
   group.append('text')
     .attr('class', 'reaction-label label')
   group.append('g')
@@ -159,7 +158,6 @@ function create_reaction_label(enter_selection, tool) {
 function update_reaction_label (update_selection, has_data_on_reactions) {
   var decimal_format = d3.format('.4g')
   var identifiers_on_map = this.settings.get_option('identifiers_on_map')
-  var identifiers_in_tooltip = (identifiers_on_map == 'bigg_id' ? 'name' : 'bigg_id')
   var reaction_data_styles = this.settings.get_option('reaction_styles')
   var show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules')
   var hide_all_labels = this.settings.get_option('hide_all_labels')
@@ -192,11 +190,6 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
         label_mouseover_fn('reaction_label', d)
       })
       .on('mouseout', label_mouseout_fn)
-
-    // tooltip
-    update_selection.select('title').text(function(d) {
-      return d[identifiers_in_tooltip]
-    })
   }
 
   var add_gene_height = function (y, i) {
@@ -247,7 +240,6 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
       label_mouseover_fn('gene_label', d)
     })
     .on('mouseout', label_mouseout_fn)
-  gene_g.append('title')
   // update
   all_genes_g.attr('transform', function (d, i) {
     return 'translate(0, ' + add_gene_height(0, i) + ')'
@@ -255,10 +247,6 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
   // update text
   all_genes_g.select('text').text(function (d) {
     return d['text']
-  })
-  // update tooltip
-  all_genes_g.select('title').text(function(d) {
-    return d[identifiers_in_tooltip]
   })
   // exit
   all_genes_g.exit()
@@ -645,7 +633,6 @@ function create_node(enter_selection, drawn_nodes, drawn_reactions) {
     });
     metabolite_groups.append('text')
         .attr('class', 'node-label label');
-    metabolite_groups.append('title'); // tooltip
 
     this.callback_manager.run('create_node', this, enter_selection);
 }
@@ -672,7 +659,6 @@ function update_node (update_selection, scale, has_data_on_nodes,
   var marker_r = this.settings.get_option('marker_radius')
   var hide_all_labels = this.settings.get_option('hide_all_labels')
   var identifiers_on_map = this.settings.get_option('identifiers_on_map')
-  var identifiers_in_tooltip = (identifiers_on_map === 'bigg_id' ? 'name' : 'bigg_id')
   var metabolite_data_styles = this.settings.get_option('metabolite_styles')
   var no_data_style = { color: this.settings.get_option('metabolite_no_data_color'),
                         size: this.settings.get_option('metabolite_no_data_size') }
@@ -748,11 +734,6 @@ function update_node (update_selection, scale, has_data_on_nodes,
         label_mouseover_fn('node_label', d)
       })
       .on('mouseout', label_mouseout_fn)
-
-    // tooltip
-    update_selection.select('title').text(function(d) {
-      return d[identifiers_in_tooltip]
-    })
   }
 
   this.callback_manager.run('update_node', this, update_selection)
