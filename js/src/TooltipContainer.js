@@ -93,7 +93,7 @@ function show (type, d) {
       biggId: d.bigg_id,
       name: d.name,
       loc: coords,
-      data: d.data,
+      data: d.data_string,
       type: type.replace('_label', '').replace('node', 'metabolite'),
     })
   } else {

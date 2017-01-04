@@ -75,6 +75,7 @@ function init( map, undo_stack) {
   this.bezier_mouseout = null
   this.reaction_label_drag = this.empty_behavior
   this.node_label_drag = this.empty_behavior
+  this.dragging = false
   this.turn_everything_on()
 }
 
@@ -440,16 +441,20 @@ function _get_selectable_drag (map, undo_stack) {
     text_label.x = text_label.x + displacement.x
     text_label.y = text_label.y + displacement.y
   }
+  var set_dragging = function (on_off) {
+    this.dragging = on_off
+  }.bind(this)
 
-  behavior.on("dragstart", function (d) {
+  behavior.on('dragstart', function (d) {
+    set_dragging(true)
+
     // silence other listeners (e.g. nodes BELOW this one)
     d3.event.sourceEvent.stopPropagation()
     // remember the total displacement for later
-    // total_displacement = {}
-    total_displacement = {x: 0, y: 0}
+    total_displacement = { x: 0, y: 0 }
 
     // If a text label is selected, the rest is not necessary
-    if (d3.select(this).attr('class').indexOf('label') == -1) {
+    if (d3.select(this).attr('class').indexOf('label') === -1) {
       // Note that dragstart is called even for a click event
       var data = this.parentNode.__data__,
       bigg_id = data.bigg_id,
@@ -459,29 +464,33 @@ function _get_selectable_drag (map, undo_stack) {
       // deleted before the click event gets called, and selection
       // will stop working.
       the_timeout = setTimeout(function () {
-        node_group.parentNode.insertBefore(node_group,node_group.parentNode.firstChild)
+        node_group.parentNode.insertBefore(node_group,
+                                           node_group.parentNode.firstChild)
       }, 200)
       // prepare to combine metabolites
       map.sel.selectAll('.metabolite-circle')
         .on('mouseover.combine', function (d) {
-          if (d.bigg_id==bigg_id && d.node_id!=data.node_id) {
-            d3.select(this).style('stroke-width', String(12)+'px')
+          if (d.bigg_id === bigg_id && d.node_id !== data.node_id) {
+            d3.select(this).style('stroke-width', String(12) + 'px')
               .classed('node-to-combine', true)
           }
-        }).on('mouseout.combine', function (d) {
-          if (d.bigg_id==bigg_id) {
-            map.sel.selectAll('.node-to-combine').style('stroke-width', String(2)+'px')
+        })
+        .on('mouseout.combine', function (d) {
+          if (d.bigg_id === bigg_id) {
+            map.sel.selectAll('.node-to-combine')
+              .style('stroke-width', String(2) + 'px')
               .classed('node-to-combine', false)
           }
         })
     }
   })
 
-  behavior.on("drag", function (d) {
+  behavior.on('drag', function (d) {
     // if this node is not already selected, then select this one and
     // deselect all other nodes. Otherwise, leave the selection alone.
-    if (!d3.select(this.parentNode).classed('selected'))
+    if (!d3.select(this.parentNode).classed('selected')) {
       map.select_selectable(this, d)
+    }
 
     // get the grabbed id
     var grabbed = {}
@@ -495,23 +504,25 @@ function _get_selectable_drag (map, undo_stack) {
       grabbed['id'] = this.__data__.text_label_id
     }
 
-    var selected_node_ids = map.get_selected_node_ids(),
-    selected_text_label_ids = map.get_selected_text_label_ids()
+    var selected_node_ids = map.get_selected_node_ids()
+    var selected_text_label_ids = map.get_selected_text_label_ids()
     node_ids_to_drag = []; text_label_ids_to_drag = []
     // choose the nodes and text labels to drag
     if (grabbed['type']=='node' &&
-        selected_node_ids.indexOf(grabbed['id'])==-1) {
+        selected_node_ids.indexOf(grabbed['id']) === -1) {
       node_ids_to_drag.push(grabbed['id'])
-    } else if (grabbed['type']=='label' &&
-               selected_text_label_ids.indexOf(grabbed['id'])==-1) {
+    } else if (grabbed['type'] === 'label' &&
+               selected_text_label_ids.indexOf(grabbed['id']) === -1) {
       text_label_ids_to_drag.push(grabbed['id'])
     } else {
       node_ids_to_drag = selected_node_ids
       text_label_ids_to_drag = selected_text_label_ids
     }
     reaction_ids = []
-    var displacement = { x: d3.event.dx,
-                         y: d3.event.dy }
+    var displacement = {
+      x: d3.event.dx,
+      y: d3.event.dy,
+    }
     total_displacement = utils.c_plus_c(total_displacement, displacement)
     node_ids_to_drag.forEach(function (node_id) {
       // update data
@@ -520,7 +531,7 @@ function _get_selectable_drag (map, undo_stack) {
                                                map.reactions,
                                                map.beziers,
                                                displacement)
-      reaction_ids = utils.unique_concat([reaction_ids, updated.reaction_ids])
+      reaction_ids = utils.unique_concat([ reaction_ids, updated.reaction_ids ])
       // remember the displacements
       // if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 }
       // total_displacement[node_id] = utils.c_plus_c(total_displacement[node_id], displacement)
@@ -538,6 +549,8 @@ function _get_selectable_drag (map, undo_stack) {
   })
 
   behavior.on('dragend', function () {
+    set_dragging(false)
+
     if (node_ids_to_drag === null) {
       // Dragend can be called when drag has not been called. In this,
       // case, do nothing.
@@ -553,7 +566,7 @@ function _get_selectable_drag (map, undo_stack) {
     map.sel.selectAll('.node-to-combine').each(function (d) {
       node_to_combine_array.push(d.node_id)
     })
-    if (node_to_combine_array.length==1) {
+    if (node_to_combine_array.length === 1) {
       // If a node is ready for it, combine nodes
       var fixed_node_id = node_to_combine_array[0],
       dragged_node_id = this.parentNode.__data__.node_id,
@@ -808,11 +821,13 @@ function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
   var rel = relative_to_selection.node()
 
   behavior.on('dragstart', function (d) {
+    this.dragging = true
+
     // silence other listeners
     d3.event.sourceEvent.stopPropagation()
     total_displacement = { x: 0, y: 0 }
     start_fn(d)
-  })
+  }.bind(this))
 
   behavior.on('drag', function (d) {
     // update data
@@ -828,9 +843,11 @@ function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
     // remember the displacement
     total_displacement = utils.c_plus_c(total_displacement, displacement)
     drag_fn(d, displacement, total_displacement, location)
-  })
+  }.bind(this))
 
   behavior.on('dragend', function (d) {
+    this.dragging = false
+
     // add to undo/redo stack
     // remember the displacement, dragged nodes, and reactions
     var saved_d = utils.clone(d)
@@ -848,7 +865,7 @@ function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
       redo_fn(saved_d, saved_displacement, saved_location)
     })
     end_fn(d)
-  })
+  }.bind(this))
 
   return behavior
 }
@@ -882,11 +899,14 @@ function _get_generic_angular_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
   var rel = relative_to_selection.node()
 
   behavior.on('dragstart', function (d) {
+    this.dragging = true
+
     // silence other listeners
     d3.event.sourceEvent.stopPropagation()
     total_angle = 0
     start_fn(d)
-  })
+  }.bind(this))
+
   behavior.on('drag', function (d) {
     // update data
     var displacement = {
@@ -902,9 +922,11 @@ function _get_generic_angular_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
     // remember the displacement
     total_angle = total_angle + angle
     drag_fn(d, angle, total_angle, center)
-  })
+  }.bind(this))
 
   behavior.on('dragend', function (d) {
+    this.dragging = false
+
     // add to undo/redo stack
     // remember the displacement, dragged nodes, and reactions
     var saved_d = utils.clone(d)
@@ -919,6 +941,7 @@ function _get_generic_angular_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
       redo_fn(saved_d, saved_angle, saved_center)
     })
     end_fn(d)
-  })
+  }.bind(this))
+
   return behavior
 }
