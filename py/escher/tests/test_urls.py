@@ -7,11 +7,11 @@ from pytest import raises
 
 def test_online():
     url = get_url('builder_css', source='web', protocol='https')
-    assert url == 'https://npmcdn.com/escher-vis@%s/css/dist/builder.css' % __version__
+    assert url == 'https://unpkg.com/escher-vis@%s/css/dist/builder.css' % __version__
 
 def test_no_protocol():
     url = get_url('escher', 'web')
-    assert url == '//npmcdn.com/escher-vis@%s/js/dist/escher.js' % __version__
+    assert url == '//unpkg.com/escher-vis@%s/js/dist/escher.js' % __version__
 
 def test_local():
     url = get_url('boot_js', 'local')

@@ -44,10 +44,10 @@ _dependencies = {
 }
 
 _dependencies_cdn = {
-    'builder_css': '//npmcdn.com/escher-vis@%s/css/dist/builder.css' % __version__,
-    'builder_css_min': '//npmcdn.com/escher-vis@%s/css/dist/builder.min.css' % __version__,
-    'escher': '//npmcdn.com/escher-vis@%s/js/dist/escher.js' % __version__,
-    'escher_min': '//npmcdn.com/escher-vis@%s/js/dist/escher.min.js' % __version__,
+    'builder_css': '//unpkg.com/escher-vis@%s/css/dist/builder.css' % __version__,
+    'builder_css_min': '//unpkg.com/escher-vis@%s/css/dist/builder.min.css' % __version__,
+    'escher': '//unpkg.com/escher-vis@%s/js/dist/escher.js' % __version__,
+    'escher_min': '//unpkg.com/escher-vis@%s/js/dist/escher.min.js' % __version__,
     'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.5.14/d3.min.js',
     'boot_js': '//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js',
     'boot_css': '//cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.6/simplex/bootstrap.min.css',
