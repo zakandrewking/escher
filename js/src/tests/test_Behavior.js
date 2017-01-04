@@ -44,16 +44,12 @@ function assert_label_drag_attrs_off(behavior) {
     assert.strictEqual(behavior.node_label_drag, behavior.empty_behavior);
 }
 
-function assert_label_mousedown_attrs_on(behavior) {
-    assert.isFunction(behavior.label_mousedown);
-    assert.isFunction(behavior.label_mouseover);
-    assert.isFunction(behavior.label_mouseout);
+function assert_label_mouseover_attrs_on (behavior) {
+  assert.isFunction(behavior.label_mouseover)
 }
 
-function assert_label_mousedown_attrs_off(behavior) {
-    assert.strictEqual(behavior.label_mousedown, null);
-    assert.strictEqual(behavior.label_mouseover, null);
-    assert.strictEqual(behavior.label_mouseout, null);
+function assert_label_mouseover_attrs_off (behavior) {
+  assert.isNull(behavior.label_mouseover)
 }
 
 
@@ -73,7 +69,7 @@ describe('Behavior', function() {
         assert_selectable_click_attrs_on(behavior);
         assert_selectable_drag_attrs_on(behavior);
         assert_label_drag_attrs_on(behavior);
-        assert_label_mousedown_attrs_on(behavior);
+        assert_label_mouseover_attrs_on(behavior)
     });
     it('turn_everything_off', function() {
         behavior.turn_everything_on();
@@ -81,7 +77,7 @@ describe('Behavior', function() {
         assert_selectable_click_attrs_off(behavior);
         assert_selectable_drag_attrs_off(behavior);
         assert_label_drag_attrs_off(behavior);
-        assert_label_mousedown_attrs_off(behavior);
+        assert_label_mouseover_attrs_off(behavior)
     });
     it('toggle_selectable_click', function() {
         behavior.toggle_selectable_click(true);
@@ -101,10 +97,10 @@ describe('Behavior', function() {
         behavior.toggle_label_drag(false);
         assert_label_drag_attrs_off(behavior);
     });
-    it('toggle_label_mousedown', function() {
-        behavior.toggle_label_mousedown(true);
-        assert_label_mousedown_attrs_on(behavior);
-        behavior.toggle_label_mousedown(false);
-        assert_label_mousedown_attrs_off(behavior);
-    });
-});
+  it('toggle_label_mouseover', function () {
+    behavior.toggle_label_mouseover(true)
+    assert_label_mouseover_attrs_on(behavior)
+    behavior.toggle_label_mouseover(false)
+    assert_label_mouseover_attrs_off(behavior)
+  })
+})

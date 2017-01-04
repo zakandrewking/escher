@@ -59,5 +59,5 @@ def generate_static_site():
     shutil.copy(join(root_directory, builder_css_map), join(top_directory, 'builder', builder_css_map))
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     generate_static_site()

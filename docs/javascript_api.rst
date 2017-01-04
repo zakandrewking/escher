@@ -289,6 +289,18 @@ JavaScript API
           treat as cofactors. These will be secondary metabolites in new
           reactions.
 
+       .. js:attribute:: options.tooltip_component
+
+          (Default: ``escher.Tooltip.DefaultTooltip``) A `tinier`_ component to
+          show when hoving over reactions, metabolites, and genes. See
+          ``escher.Tooltip.DefaultTooltip`` in the source code for an example of
+          a tinier component that defines the default tooltips.
+
+       .. js:attribute:: options.enable_tooltips
+
+          (Default: ``true``) If true, then show tooltips when hoving over
+          reactions, metabolites, and genes.
+
        **Callbacks**
 
        .. js:attribute:: options.first_load_callback
@@ -375,3 +387,4 @@ JavaScript API
                                               turn of the gene_reaction_rules.
 
 .. _`support the 3D transforms`: http://caniuse.com/#feat=transforms3d
+.. _`tinier`: https://github.com/zakandrewking/tinier

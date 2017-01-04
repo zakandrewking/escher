@@ -29,19 +29,27 @@
 */
 
 module.exports = {
-    version: require('./inline').version,
-    Builder: require('./Builder'),
-    Map: require('./Map'),
-    Behavior: require('./Behavior'),
-    KeyManager: require('./KeyManager'),
-    DataMenu: require('./DataMenu'),
-    UndoStack: require('./UndoStack'),
-    CobraModel: require('./CobraModel'),
-    utils: require('./utils'),
-    SearchIndex: require('./SearchIndex'),
-    Settings: require('./Settings'),
-    data_styles: require('./data_styles'),
-    ui: require('./ui'),
-    static: require('./static'),
-    ZoomContainer: require('./ZoomContainer')
-};
+  version: require('./inline').version,
+  Builder: require('./Builder'),
+  Map: require('./Map'),
+  Behavior: require('./Behavior'),
+  KeyManager: require('./KeyManager'),
+  DataMenu: require('./DataMenu'),
+  UndoStack: require('./UndoStack'),
+  CobraModel: require('./CobraModel'),
+  utils: require('./utils'),
+  SearchIndex: require('./SearchIndex'),
+  Settings: require('./Settings'),
+  data_styles: require('./data_styles'),
+  ui: require('./ui'),
+  static: require('./static'),
+  ZoomContainer: require('./ZoomContainer'),
+  libs: {
+    '_': require('underscore'),
+    'underscore': require('underscore'),
+    'tinier': require('tinier'),
+    'baconjs': require('baconjs'),
+    'mousetrap': require('mousetrap'),
+    'vkbeautify': require('vkbeautify'),
+  },
+}
