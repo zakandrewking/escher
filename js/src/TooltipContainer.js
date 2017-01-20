@@ -40,7 +40,14 @@ function init (selection, map, tooltip_component, zoom_container) {
 
   // keep a reference to tinier tooltip
   this.tooltip_component = tooltip_component
-  this.tinier_tooltip = tinier.run(tooltip_component, div.node())
+  // if they pass in a function, then use that
+  this.tooltip_function = (_.isFunction(tooltip_component) ?
+                           function (state) { tooltip_component({ state: state, el: div.node() })} :
+                           null)
+  // if they pass in a tinier component, use that
+  this.tinier_tooltip = (tinier.checkType(tinier.COMPONENT, tooltip_component) ?
+                         tinier.run(tooltip_component, div.node()) :
+                         null)
 
   this.delay_hide_timeout = null
 }
@@ -92,13 +99,18 @@ function show (type, d) {
   if (_.contains([ 'reaction_label', 'node_label', 'gene_label' ], type)) {
     var coords = { x: d.label_x, y: d.label_y + 10 }
     this.placed_div.place(coords)
-    this.tinier_tooltip.reducers.setContainerData({
+    const data = {
       biggId: d.bigg_id,
       name: d.name,
       loc: coords,
       data: d.data_string,
       type: type.replace('_label', '').replace('node', 'metabolite'),
-    })
+    }
+    if (this.tooltip_function !== null) {
+      this.tooltip_function(data)
+    } else if (this.tinier_tooltip) {
+      this.tinier_tooltip.reducers.setContainerData(data)
+    }
   } else {
     throw new Error('Tooltip not supported for object type ' + type)
   }

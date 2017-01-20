@@ -291,8 +291,13 @@ JavaScript API
 
        .. js:attribute:: options.tooltip_component
 
-          (Default: ``escher.Tooltip.DefaultTooltip``) A `tinier`_ component to
-          show when hoving over reactions, metabolites, and genes. See
+          (Default: ``escher.Tooltip.DefaultTooltip``) A function or `tinier`_
+          component to show when hoving over reactions, metabolites, and
+          genes. If a function is passed, the function will be called with a
+          single object as an argument with two attributes: state - containing
+          the data associated with that reaction, metabolite or gene; and el - a
+          HTML node that you can render content in. If you need to manage state
+          for your tooltip, you can alternatively pass a tinier component.  See
           ``escher.Tooltip.DefaultTooltip`` in the source code for an example of
           a tinier component that defines the default tooltips.
 
