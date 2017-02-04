@@ -173,6 +173,12 @@ function _update_scroll () {
   // d3 related to d3 using the global this.document. TODO look into this.
   try {
     this._zoom_behavior = d3.behavior.zoom()
+      .on('zoomstart', function () {
+        // prevent default zoom behavior, specifically for mobile pinch
+        // zoom
+        d3.event.sourceEvent.stopPropagation()
+        d3.event.sourceEvent.preventDefault()
+      }.bind(this))
       .on('zoom', function () {
         this.go_to(d3.event.scale, {x: d3.event.translate[0], y: d3.event.translate[1]})
       }.bind(this))
