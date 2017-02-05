@@ -11,11 +11,13 @@
 
  */
 
-/* global d3 */
-
 var utils = require('./utils');
 var bacon = require('baconjs');
-
+var d3_scaleLinear = require('d3-scale').scaleLinear
+var d3_format = require('d3-format').format
+var d3_drag = require('d3-drag').drag
+var d3_select = require('d3-selection').select
+var d3_event = require('d3-selection').event
 
 var ScaleEditor = utils.make_class();
 // instance methods
@@ -112,10 +114,10 @@ function update() {
         stats = { 'min': 0, 'max': 1 };
     }
 
-    var sc = d3.scale.linear()
+    var sc = d3_scaleLinear()
             .domain([0, this.w])
             .range([stats.min, stats.max]),
-        sc_size = d3.scale.linear()
+        sc_size = d3_scaleLinear()
             .domain([0, this.w])
             .range([0, stats.max - stats.min]);
 
@@ -124,7 +126,7 @@ function update() {
     var bring_to_front = function(d, i) {
         // bring an input set to the front
         this.input_group.selectAll('.input-set').each(function(d2) {
-            d3.select(this).classed('selected-set', d === d2);
+            d3_select(this).classed('selected-set', d === d2);
         });
     }.bind(this);
 
@@ -170,7 +172,7 @@ function update() {
             .selectAll('.picker')
             .data(scale);
     // drag
-    var drag = d3.behavior.drag();
+    var drag = d3_drag();
     drag.on('drag', function(d, i) {
         // on drag, make it a value type
         if (['value', 'min', 'max'].indexOf(scale[i].type) === -1) {
@@ -179,7 +181,7 @@ function update() {
             scale[i].type = 'value';
         }
         // change the model on drag
-        var new_d = scale[i].value + sc_size(d3.event.dx),
+        var new_d = scale[i].value + sc_size(d3_event.dx),
             buf = sc_size(bar_w + 2);
         if (new_d > stats.max - buf) new_d = stats.max - buf;
         if (new_d < stats.min + buf) new_d = stats.min + buf;
@@ -343,7 +345,7 @@ function update() {
         }.bind(this))
         .on('mousedown', bring_to_front);
 
-    var format = d3.format('.4g');
+    var format = d3_format('.4g');
     inputs.select('.domain-input')
         .style('height', this.input_height + 'px')
         .each(function (d, i) {
@@ -379,7 +381,7 @@ function update() {
         .style('width', '20px')
         .each(function (d, i) {
             var sind = 0;
-            d3.select(this).selectAll('option').each(function(_, i) {
+            d3_select(this).selectAll('option').each(function(_, i) {
                 if (this.value == d.type)
                     sind = i;
             });
@@ -475,7 +477,7 @@ function update_no_data() {
             this.disabled = data_not_loaded;
         })
         .on('change', function(d) {
-            var val = d3.event.target.value;
+            var val = d3_event.target.value;
             if (d[0] == 'size')
                 val = parseFloat(val);
             this.no_data[d[0]] = val;
@@ -493,7 +495,7 @@ function update_no_data() {
             this.disabled = data_not_loaded;
         })
         .on('change', function(d, i) {
-            var val = d3.event.target.value;
+            var val = d3_event.target.value;
             this.no_data[d[0]] = val;
             this.settings.set_conditional(this.type + '_no_data_' + d[0], val);
             this.update_no_data();

@@ -1,10 +1,10 @@
 /** DirectionArrow. A constructor for an arrow that can be rotated and dragged,
  and supplies its direction. */
 
-/* global d3 */
-
 var utils = require('./utils');
-
+var d3_drag = require('d3-drag').drag
+var d3_mouse = require('d3-selection').mouse
+var d3_event = require('d3-selection').event
 
 var DirectionArrow = utils.make_class();
 DirectionArrow.prototype = {
@@ -103,17 +103,17 @@ function up() {
 }
 
 function _setup_drag() {
-    var b = d3.behavior.drag()
+    var b = d3_drag()
             .on("dragstart", function(d) {
                 // silence other listeners
-                d3.event.sourceEvent.stopPropagation();
+                d3_event.sourceEvent.stopPropagation();
                 this.dragging = true;
             }.bind(this))
             .on("drag.direction_arrow", function(d) {
-                var displacement = { x: d3.event.dx,
-                                     y: d3.event.dy },
-                    location = { x: d3.mouse(this.sel.node())[0],
-                                 y: d3.mouse(this.sel.node())[1] },
+                var displacement = { x: d3_event.dx,
+                                     y: d3_event.dy },
+                    location = { x: d3_mouse(this.sel.node())[0],
+                                 y: d3_mouse(this.sel.node())[1] },
                     d_angle = utils.angle_for_event(displacement,
                                                     location,
                                                     this.center);

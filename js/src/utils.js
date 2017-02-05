@@ -1,7 +1,11 @@
-/* global d3, Blob, XMLSerializer */
+/* global Blob, XMLSerializer */
 
 var vkbeautify = require('vkbeautify');
 var _ = require('underscore');
+var d3_json = require('d3-request').json
+var d3_text = require('d3-request').text
+var d3_csvParseRows = require('d3-dsv').csvParseRows
+
 try {
     var saveAs = require('filesaverjs').saveAs;
 } catch (e) {
@@ -118,7 +122,7 @@ function remove_child_nodes(selection) {
 function load_css(css_path, callback) {
     var css = "";
     if (css_path) {
-        d3.text(css_path, function(error, text) {
+        d3_text(css_path, function(error, text) {
             if (error) {
                 console.warn(error);
             }
@@ -154,9 +158,9 @@ function load_the_file(t, file, callback, value) {
         return;
     }
     if (ends_with(file, 'json'))
-        d3.json(file, function(e, d) { callback.call(t, e, d); });
+        d3_json(file, function(e, d) { callback.call(t, e, d); });
     else if (ends_with(file, 'css'))
-        d3.text(file, function(e, d) { callback.call(t, e, d); });
+        d3_text(file, function(e, d) { callback.call(t, e, d); });
     else
         callback.call(t, 'Unrecognized file type', null);
     return;
@@ -663,7 +667,7 @@ function load_json_or_csv(f, csv_converter, callback, pre_fn, failure_fn,
 
             // try csv
             try {
-                data = csv_converter(d3.csv.parseRows(result));
+                data = csv_converter(d3_csvParseRows(result));
             } catch (e) {
                 // if both failed, return the errors
                 callback(errors + '\nCSV error: ' + e, null);
@@ -1014,18 +1018,55 @@ function get_window(node) {
     return get_document(node).defaultView;
 }
 
-function d3_transform_catch(transform_attr) {
-    /** Return the result of d3.transform, but catch errors if we are in
-     node/jsdom. See also https://github.com/mbostock/d3/issues/1545
+/**
+ * Get translation and rotation values for a transform string. This used to be
+ * in d3, but since v4, I just adapted a solution from SO:
+ *
+ * http://stackoverflow.com/questions/38224875/replacing-d3-transform-in-d3-v4
+ *
+ * To get skew and scale out, go back to that example.
+ *
+ * TODO rename function without "catch"
+ *
+ * @param {String} transform_attr - A transform string.
+ */
+function d3_transform_catch (transform_attr) {
+  // Create a dummy g for calculation purposes only. This will new be appended
+  // to the DOM and will be discarded once this function returns.
+  var g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
 
-     */
-    try {
-        return d3.transform(transform_attr);
-    } catch (err) {
-        console.error('Cannot run d3.transform, probably becuase this is a node/jsdom test. ' +
-                      'Returning a tranform object for testing.');
-        return { translate: [0, 0], rotate: 0 };
-    }
+  // Set the transform attribute to the provided string value.
+  g.setAttributeNS(null, 'transform', transform_attr)
+
+  // Consolidate the SVGTransformList containing all Try to a single
+  // SVGTransform of type SVG_TRANSFORM_MATRIX and get its SVGMatrix.
+
+  var matrix = g.transform.baseVal.consolidate().matrix
+
+  // Below calculations are taken and adapted from the private func
+  // transform/decompose.js of D3's module d3-interpolate.
+  var a = matrix.a
+  var b = matrix.b
+  var c = matrix.c
+  var d = matrix.d
+  var e = matrix.e
+  var f = matrix.f
+  var scaleX = Math.sqrt(a * a + b * b)
+
+  if (scaleX) {
+    a /= scaleX
+    b /= scaleX
+  }
+
+  if (a * d < b * c) {
+    a = -a
+    b = -b
+  }
+
+  return {
+    translate: [ e, f ],
+    rotate: Math.atan2(b, a) * Math.PI / 180,
+  }
 }
 
 function check_browser(name) {

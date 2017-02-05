@@ -1,4 +1,4 @@
-/* global d3, window, XMLHttpRequest */
+/* global window, XMLHttpRequest */
 
 /**
  * Define a Tooltip component and interface with Tinier.

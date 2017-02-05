@@ -6,11 +6,10 @@
 
  */
 
-/* global d3 */
-
 var utils = require('./utils');
 var CallbackManager = require('./CallbackManager');
-
+var d3_drag = require('d3-drag').drag
+var d3_event = require('d3-selection').event
 
 var Canvas = utils.make_class();
 Canvas.prototype = {
@@ -77,19 +76,19 @@ function setup() {
             .attr("height", this.height)
             .attr("transform", "translate("+[self.x, self.y]+")");
 
-    var drag_right = d3.behavior.drag()
+    var drag_right = d3_drag()
             .origin(Object)
             .on("dragstart", stop_propagation)
             .on("drag", rdragresize),
-        drag_left = d3.behavior.drag()
+        drag_left = d3_drag()
             .origin(Object)
             .on("dragstart", stop_propagation)
             .on("drag", ldragresize),
-        drag_top = d3.behavior.drag()
+        drag_top = d3_drag()
             .origin(Object)
             .on("dragstart", stop_propagation)
             .on("drag", tdragresize),
-        drag_bottom = d3.behavior.drag()
+        drag_bottom = d3_drag()
             .origin(Object)
             .on("dragstart", stop_propagation)
             .on("drag", bdragresize);
@@ -148,7 +147,7 @@ function setup() {
 
     // definitions
     function stop_propagation() {
-        d3.event.sourceEvent.stopPropagation();
+        d3_event.sourceEvent.stopPropagation();
     }
     function transform_string(x, y, current_transform) {
         var tr = utils.d3_transform_catch(current_transform),
@@ -159,7 +158,7 @@ function setup() {
     }
     function ldragresize(d) {
         var oldx = d.x;
-        d.x = Math.min(d.x + self.width - (dragbar_width / 2), d3.event.x);
+        d.x = Math.min(d.x + self.width - (dragbar_width / 2), d3_event.x);
         self.x = d.x;
         self.width = self.width + (oldx - d.x);
         left.attr("transform", function(d) {
@@ -182,8 +181,8 @@ function setup() {
     }
 
     function rdragresize(d) {
-        d3.event.sourceEvent.stopPropagation();
-        var dragx = Math.max(d.x + (dragbar_width/2), d.x + self.width + d3.event.dx);
+        d3_event.sourceEvent.stopPropagation();
+        var dragx = Math.max(d.x + (dragbar_width/2), d.x + self.width + d3_event.dx);
         //recalculate width
         self.width = dragx - d.x;
         //move the right drag handle
@@ -201,9 +200,9 @@ function setup() {
     }
 
     function tdragresize(d) {
-        d3.event.sourceEvent.stopPropagation();
+        d3_event.sourceEvent.stopPropagation();
         var oldy = d.y;
-        d.y = Math.min(d.y + self.height - (dragbar_width / 2), d3.event.y);
+        d.y = Math.min(d.y + self.height - (dragbar_width / 2), d3_event.y);
         self.y = d.y;
         self.height = self.height + (oldy - d.y);
         top.attr("transform", function(d) {
@@ -226,8 +225,8 @@ function setup() {
     }
 
     function bdragresize(d) {
-        d3.event.sourceEvent.stopPropagation();
-        var dragy = Math.max(d.y + (dragbar_width/2), d.y + self.height + d3.event.dy);
+        d3_event.sourceEvent.stopPropagation();
+        var dragy = Math.max(d.y + (dragbar_width/2), d.y + self.height + d3_event.dy);
         //recalculate width
         self.height = dragy - d.y;
         //move the right drag handle

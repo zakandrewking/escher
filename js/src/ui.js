@@ -1,7 +1,5 @@
 /** ui */
 
-/* global d3 */
-
 var utils = require('./utils');
 var data_styles = require('./data_styles');
 

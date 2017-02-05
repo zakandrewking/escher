@@ -1,9 +1,8 @@
 /** data_styles */
 
-/* global d3 */
-
 var utils = require('./utils');
 var _ = require('underscore');
+var d3_format = require('d3-format').format
 
 module.exports = {
     import_and_check: import_and_check,
@@ -226,7 +225,7 @@ function gene_string_for_data (rule, gene_values, genes, styles,
                 return
             var d = gene_values[bigg_id]
             var f = float_for_data(d, styles, compare_style)
-            var format = (f === null ? RETURN_ARG : d3.format('.3g'))
+            var format = (f === null ? RETURN_ARG : d3_format('.3g'))
             if (d.length === 1) {
                 out_text = replace_gene_in_rule(out_text, bigg_id,
                                                 bigg_id + ' (' + null_or_d(d[0], format) + ')\n')
@@ -283,11 +282,11 @@ function text_for_data(d, f) {
     if (d === null)
         return null_or_d(null);
     if (d.length == 1) {
-        var format = (f === null ? RETURN_ARG : d3.format('.3g'));
+        var format = (f === null ? RETURN_ARG : d3_format('.3g'));
         return null_or_d(d[0], format);
     }
     if (d.length == 2) {
-        var format = (f === null ? RETURN_ARG : d3.format('.3g')),
+        var format = (f === null ? RETURN_ARG : d3_format('.3g')),
             t = null_or_d(d[0], format);
         t += ', ' + null_or_d(d[1], format);
         t += ': ' + null_or_d(f, format);

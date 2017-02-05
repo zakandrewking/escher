@@ -28,6 +28,7 @@ describe('utils.set_options', () => {
     const options = utils.set_options({ a: '5px', b: 'asdfwe' },
                                     { a: 6, b: 7 },
                                     { a: true, b: true })
+
     assert.strictEqual(options.a, 5)
     assert.strictEqual(options.b, 7)
   })
@@ -288,6 +289,19 @@ describe('utils.parse_url_components', () => {
     assert.deepEqual(options, { a: 'b',
                                 quick_jump: ['iJO1366.Central metabolism',
                                              'iJO1366.Fatty acid metabolism'] })
+  })
+})
+
+describe('utils.d3_transform_catch', () => {
+  it('gets translate and rotate', () => {
+    assert.deepEqual(
+      utils.d3_transform_catch('translate(20,30)'),
+      { translate: [ 20, 30 ], rotate: 0 }
+    )
+    assert.deepEqual(
+      utils.d3_transform_catch('rotate(45) skewX(20) translate(20,30) translate(-5,40)'),
+      { translate: [ -20.87526550928195, 78.1196838568347 ], rotate: 0.013707783890401884 }
+    )
   })
 })
 

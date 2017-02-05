@@ -49,8 +49,6 @@
 
  */
 
-/* global d3 */
-
 var utils = require('./utils');
 var Draw = require('./Draw');
 var Behavior = require('./Behavior');
@@ -65,7 +63,7 @@ var SearchIndex = require('./SearchIndex');
 
 var bacon = require('baconjs');
 var _ = require('underscore');
-
+var d3_select = require('d3-selection').select
 
 var Map = utils.make_class();
 // class methods
@@ -1011,7 +1009,7 @@ function invert_selection() {
     var selection = this.sel.selectAll('#nodes,#text-labels')
             .selectAll('.node,.text-label');
     selection.classed('selected', function() {
-        return !d3.select(this).classed('selected');
+        return !d3_select(this).classed('selected');
     });
 }
 
@@ -1044,7 +1042,7 @@ function select_selectable(node, d, shift_key_on) {
     var classable_selection = this.sel.selectAll('#nodes,#text-labels')
             .selectAll('.node,.text-label'),
         classable_node;
-    if (d3.select(node).attr('class').indexOf('text-label') == -1) {
+    if (d3_select(node).attr('class').indexOf('text-label') == -1) {
         // node
         classable_node = node.parentNode;
     } else {
@@ -1054,12 +1052,12 @@ function select_selectable(node, d, shift_key_on) {
     // toggle selection
     if (shift_key_on) {
         // toggle this node
-        d3.select(classable_node)
-            .classed('selected', !d3.select(classable_node).classed('selected'));
+        d3_select(classable_node)
+            .classed('selected', !d3_select(classable_node).classed('selected'));
     } else {
         // unselect all other nodes, and select this one
         classable_selection.classed('selected', false);
-        d3.select(classable_node).classed('selected', true);
+        d3_select(classable_node).classed('selected', true);
     }
     // run the select_metabolite callback
     var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),

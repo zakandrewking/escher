@@ -1,9 +1,7 @@
 /** DataMenu */
 
-/* global d3 */
-
 var utils = require('./utils');
-
+var d3_json = require('d3-request').json
 
 module.exports = function(options) {
     var o = utils.set_options(options, {
@@ -30,7 +28,7 @@ module.exports = function(options) {
         if (o.datafiles) {
             console.warn('DataMenu: getdatafiles option overrides datafiles');
         }
-        d3.json(o.getdatafiles, function(error, d) {
+        d3_json(o.getdatafiles, function(error, d) {
             // returns json object:  { data: [file0, file1, ...] }
             if (error) {
                 return console.warn(error);

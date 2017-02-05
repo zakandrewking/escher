@@ -1,7 +1,3 @@
-/* global d3 */
-
-var utils = require('./utils')
-
 /**
  * Define a brush to select elements in a map.
  * @param {D3 Selection} selection - A d3 selection to place the brush in.
@@ -11,6 +7,13 @@ var utils = require('./utils')
  *                                that the brush will be inserted after. Often a
  *                                canvas element (e.g. '.canvas-group').
  */
+
+var utils = require('./utils')
+var d3_brush = require('d3-brush').brush
+var d3_scaleIdentity = require('d3-scale').scaleIdentity
+var d3_event = require('d3-selection').event
+var d3_select = require('d3-selection').select
+
 var Brush = utils.make_class()
 Brush.prototype = {
   init: init,
@@ -67,9 +70,9 @@ function setup_selection_brush () {
   // clear existing brush
   selection.selectAll('g').remove()
 
-  var brush_fn = d3.svg.brush()
-        .x(d3.scale.identity().domain([ x, x + width ]))
-        .y(d3.scale.identity().domain([ y, y + height ]))
+  var brush_fn = d3_brush()
+        .x(d3_scaleIdentity().domain([ x, x + width ]))
+        .y(d3_scaleIdentity().domain([ y, y + height ]))
         .on('brushstart', function () {
           // unhide secondary metabolites if they are hidden
           if (map.settings.get_option('hide_secondary_metabolites')) {
@@ -80,8 +83,8 @@ function setup_selection_brush () {
           }
         })
         .on('brush', function () {
-          var shift_key_on = d3.event.sourceEvent.shiftKey
-          var extent = d3.event.target.extent()
+          var shift_key_on = d3_event.sourceEvent.shiftKey
+          var extent = d3_event.target.extent()
           // When shift is pressed, ignore the currently selected nodes.
           // Otherwise, brush all nodes.
           var selection = shift_key_on ?
@@ -95,8 +98,8 @@ function setup_selection_brush () {
           })
         })
         .on('brushend', function () {
-          d3.event.target.clear()
-          d3.select(this).call(d3.event.target)
+          d3_event.target.clear()
+          d3_select(this).call(d3_event.target)
         })
   var brush = selection.append('g')
         .attr('class', 'brush')

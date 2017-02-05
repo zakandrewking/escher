@@ -13,16 +13,14 @@
 
   */
 
-/* global d3 */
-
 var utils = require('./utils');
 var PlacedDiv = require('./PlacedDiv');
 var completely = require('./complete.ly');
 var DirectionArrow = require('./DirectionArrow');
 var CobraModel = require('./CobraModel');
-
 var _ = require('underscore');
-
+var d3_select = require('d3-selection').select
+var d3_mouse = require('d3-selection').mouse
 
 var BuildInput = utils.make_class();
 BuildInput.prototype = {
@@ -53,7 +51,7 @@ function init(selection, map, zoom_container, settings) {
     // set up complete.ly
     var c = completely(new_sel.node(), { backgroundColor: '#eee' });
 
-    d3.select(c.input);
+    d3_select(c.input);
     this.completely = c;
     // close button
     new_sel.append('button').attr('class', "button input-close-button")
@@ -366,8 +364,8 @@ function toggle_start_reaction_listener(on_off) {
             // TODO fix this hack
             if (this.direction_arrow.dragging) return;
             // reload the reaction input
-            var coords = { x: d3.mouse(node)[0],
-                           y: d3.mouse(node)[1] };
+            var coords = { x: d3_mouse(node)[0],
+                           y: d3_mouse(node)[1] };
             // unselect metabolites
             this.map.deselect_nodes();
             this.map.deselect_text_labels();

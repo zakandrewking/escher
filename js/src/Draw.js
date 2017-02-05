@@ -27,12 +27,10 @@
 
  */
 
-/* global d3 */
-
 var utils = require('./utils');
 var data_styles = require('./data_styles');
 var CallbackManager = require('./CallbackManager');
-
+var d3_format = require('d3-selection').format
 
 var Draw = utils.make_class();
 // instance methods
@@ -156,7 +154,7 @@ function create_reaction_label(enter_selection, tool) {
  * @param {Boolean} has_data_on_reactions - Whether data needs to be drawn.
  */
 function update_reaction_label (update_selection, has_data_on_reactions) {
-  var decimal_format = d3.format('.4g')
+  var decimal_format = d3_format('.4g')
   var identifiers_on_map = this.settings.get_option('identifiers_on_map')
   var reaction_data_styles = this.settings.get_option('reaction_styles')
   var show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules')

@@ -1,9 +1,8 @@
 /** Scale */
 
-/* global d3 */
-
 var utils = require('./utils');
-
+var d3_scaleLinear = require('d3-scale').scaleLinear
+var d3_format = require('d3-format').format
 
 var Scale = utils.make_class();
 Scale.prototype = {
@@ -14,19 +13,19 @@ module.exports = Scale;
 
 
 function init() {
-    this.x = d3.scale.linear();
-    this.y = d3.scale.linear();
-    this.x_size = d3.scale.linear();
-    this.y_size = d3.scale.linear();
-    this.size = d3.scale.linear();
-    this.reaction_color = d3.scale.linear().clamp(true);
-    this.reaction_size = d3.scale.linear().clamp(true);
-    this.metabolite_color = d3.scale.linear().clamp(true);
-    this.metabolite_size = d3.scale.linear().clamp(true);
+    this.x = d3_scaleLinear();
+    this.y = d3_scaleLinear();
+    this.x_size = d3_scaleLinear();
+    this.y_size = d3_scaleLinear();
+    this.size = d3_scaleLinear();
+    this.reaction_color = d3_scaleLinear().clamp(true);
+    this.reaction_size = d3_scaleLinear().clamp(true);
+    this.metabolite_color = d3_scaleLinear().clamp(true);
+    this.metabolite_size = d3_scaleLinear().clamp(true);
     this.scale_path = function(path) {
         var x_fn = this.x, y_fn = this.y;
         // TODO: scale arrow width
-        var str = d3.format(".2f"),
+        var str = d3_format(".2f"),
             path = path.replace(/(M|L)([0-9-.]+),?\s*([0-9-.]+)/g, function (match, p0, p1, p2) {
                 return p0 + [str(x_fn(parseFloat(p1))), str(y_fn(parseFloat(p2)))].join(', ');
             }),
@@ -41,7 +40,7 @@ function init() {
         return path;
     }.bind(this);
     this.scale_decimals = function(path, scale_fn, precision) {
-        var str = d3.format("."+String(precision)+"f");
+        var str = d3_format("."+String(precision)+"f");
         path = path.replace(/([0-9.]+)/g, function (match, p1) {
             return str(scale_fn(parseFloat(p1)));
         });

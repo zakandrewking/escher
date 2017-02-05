@@ -2,12 +2,12 @@
  * ZoomContainer
  */
 
-/* global d3 */
-
 var utils = require('./utils')
 var CallbackManager = require('./CallbackManager')
-
 var _ = require('underscore')
+var d3_zoom = require('d3-zoom').zoom
+var d3_select = require('d3-selection').select
+var d3_event = require('d3-selection').event
 
 var ZoomContainer = utils.make_class()
 ZoomContainer.prototype = {
@@ -50,8 +50,8 @@ function init (selection, scroll_behavior, use_3d_transform, fill_screen) {
 
   // fill screen classes
   if (fill_screen) {
-    d3.select('html').classed('fill-screen', true)
-    d3.select('body').classed('fill-screen', true)
+    d3_select('html').classed('fill-screen', true)
+    d3_select('body').classed('fill-screen', true)
     selection.classed('fill-screen-div', true)
   }
 
@@ -172,18 +172,18 @@ function _update_scroll () {
   // exception in node, so catch that during testing. This may be a bug with
   // d3 related to d3 using the global this.document. TODO look into this.
   try {
-    this._zoom_behavior = d3.behavior.zoom()
+    this._zoom_behavior = d3_zoom()
       .on('zoomstart', function () {
         // prevent default zoom behavior, specifically for mobile pinch
         // zoom
-        d3.event.sourceEvent.stopPropagation()
-        d3.event.sourceEvent.preventDefault()
+        d3_event.sourceEvent.stopPropagation()
+        d3_event.sourceEvent.preventDefault()
       }.bind(this))
       .on('zoom', function () {
-        this.go_to(d3.event.scale, {x: d3.event.translate[0], y: d3.event.translate[1]})
+        this.go_to(d3_event.scale, {x: d3_event.translate[0], y: d3_event.translate[1]})
       }.bind(this))
   } catch (err) {
-    console.log('Not in a browser, so d3.behavior.zoom does not work.')
+    console.log('Not in a browser, so d3.zoom does not work.')
     this._zoom_behavior = null
     return
   }
@@ -219,7 +219,7 @@ function _update_scroll () {
   if (this._scroll_behavior === 'pan') {
     // Add the wheel listener
     var wheel_fn = function () {
-      var ev = d3.event
+      var ev = d3_event
       var sensitivity = 0.5
       // stop scroll in parent elements
       ev.stopPropagation()

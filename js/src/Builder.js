@@ -2,8 +2,6 @@
  * For documentation of this class, see docs/javascript_api.rst
  */
 
-/* global d3 */
-
 var utils = require('./utils');
 var BuildInput = require('./BuildInput');
 var ZoomContainer = require('./ZoomContainer');
@@ -22,6 +20,8 @@ var builder_embed = require('./inline').builder_embed;
 var TooltipContainer = require('./TooltipContainer')
 var DefaultTooltip = require('./Tooltip').DefaultTooltip
 var _ = require('underscore')
+var d3_select = require('d3-selection').select
+var d3_json = require('d3-request').json
 
 var Builder = utils.make_class();
 Builder.prototype = {
@@ -55,7 +55,7 @@ function init (map_data, model_data, embedded_css, selection, options) {
 
   // defaults
   if (!selection) {
-    selection = d3.select('body').append('div')
+    selection = d3_select('body').append('div')
   }
   if (!options) {
     options = {}
@@ -1143,7 +1143,7 @@ function _setup_quick_jump(selection) {
         }
         this.map.set_status('Loading map ' + new_map_name + ' ...');
         var url = utils.name_to_url(new_map_name, quick_jump_path);
-        d3.json(url, function(error, data) {
+        d3_json(url, function(error, data) {
             if (error) {
                 console.warn('Could not load data: ' + error)
                 this.map.set_status('Could not load map', 2000)
