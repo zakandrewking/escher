@@ -5,11 +5,12 @@ var _ = require('underscore');
 var d3_json = require('d3-request').json
 var d3_text = require('d3-request').text
 var d3_csvParseRows = require('d3-dsv').csvParseRows
+var d3_selection = require('d3-selection').selection
 
 try {
     var saveAs = require('filesaverjs').saveAs;
 } catch (e) {
-    console.warn('filesaverjs not available');
+    console.warn('Not a browser, so filesaverjs not available.');
 }
 
 
@@ -241,104 +242,111 @@ function setup_defs(svg, style) {
     return defs;
 }
 
-function draw_an_object(container_sel, parent_node_selector, children_selector,
-                        object, id_key, create_function, update_function,
-                        exit_function) {
-    /** Run through the d3 data binding steps for an object. Also checks to
-     make sure none of the values in the *object* are undefined, and
-     ignores those.
+/**
+ * Run through the d3 data binding steps for an object. Also checks to make sure
+ * none of the values in the *object* are undefined, and ignores those.
+ *
+ * The create_function, update_function, and exit_function CAN modify the input
+ * data object.
+ *
+ * @param {} container_sel - A d3 selection containing all objects.
+ *
+ * @param {} parent_node_selector - A selector string for a subselection of
+ * container_sel.
+ *
+ * @param {} children_selector - A selector string for each DOM element to bind.
+ *
+ * @param {} object - An object to bind to the selection.
+ *
+ * @param {} id_key - The key that will be used to store object IDs in the bound
+ * data points.
+ *
+ * @param {} create_function - A function for enter selection. Create function
+ * must return a selection of the new nodes.
+ *
+ * @param {} update_function - A function for update selection.
+ *
+ * @param {} exit_function - A function for exit selection.
+ */
+function draw_an_object (container_sel, parent_node_selector, children_selector,
+                         object, id_key, create_function, update_function,
+                         exit_function) {
+  var draw_object = {}
 
-     The create_function, update_function, and exit_function CAN modify the
-     input data object.
-
-     Arguments
-     ---------
-
-     container_sel: A d3 selection containing all objects.
-
-     parent_node_selector: A selector string for a subselection of
-     container_sel.
-
-     children_selector: A selector string for each DOM element to bind.
-
-     object: An object to bind to the selection.
-
-     id_key: The key that will be used to store object IDs in the bound data
-     points.
-
-     create_function: A function for enter selection.
-
-     update_function: A function for update selection.
-
-     exit_function: A function for exit selection.
-
-     */
-    var draw_object = {};
-    for (var id in object) {
-        if (object[id] === undefined) {
-            console.warn('Undefined value for id ' + id + ' in object. Ignoring.');
-        } else {
-            draw_object[id] = object[id];
-        }
+  for (var id in object) {
+    if (object[id] === undefined) {
+      console.warn('Undefined value for id ' + id + ' in object. Ignoring.')
+    } else {
+      draw_object[id] = object[id]
     }
+  }
 
-    var sel = container_sel.select(parent_node_selector)
-            .selectAll(children_selector)
-            .data(make_array_ref(draw_object, id_key),
-                  function(d) { return d[id_key]; });
-    // enter: generate and place reaction
-    if (create_function)
-        sel.enter().call(create_function);
-    // update: update when necessary
-    if (update_function)
-        sel.call(update_function);
-    // exit
-    if (exit_function)
-        sel.exit().call(exit_function);
+  var sel = container_sel.select(parent_node_selector)
+    .selectAll(children_selector)
+    .data(make_array_ref(draw_object, id_key),
+          function(d) { return d[id_key] })
+
+  // enter: generate and place reaction
+  var update_sel = (create_function ?
+                    create_function(sel.enter()).merge(sel) :
+                    sel)
+
+  // update: update when necessary
+  if (update_function) {
+    update_sel.call(update_function)
+  }
+
+  // exit
+  if (exit_function) {
+    sel.exit().call(exit_function)
+  }
 }
 
-function draw_a_nested_object(container_sel, children_selector, object_data_key,
-                              id_key, create_function, update_function,
-                              exit_function) {
-    /** Run through the d3 data binding steps for an object that is nested
-     within another element with d3 data.
+/**
+ * Run through the d3 data binding steps for an object that is nested within
+ * another element with D3 data.
+ *
+ * The create_function, update_function, and exit_function CAN modify the input
+ * data object.
+ *
+ * @param {} container_sel - A d3 selection containing all objects.
+ *
+ * @param {} children_selector - A selector string for each DOM element to bind.
+ *
+ * @param {} object_data_key - A key for the parent object containing data for
+ * the new selection.
+ *
+ * @param {} id_key - The key that will be used to store object IDs in the bound
+ * data points.
+ *
+ * @param {} create_function - A function for enter selection. Create function
+ * must return a selection of the new nodes.
+ *
+ * @param {} update_function - A function for update selection.
+ *
+ * @param {} exit_function - A function for exit selection.
+ */
+function draw_a_nested_object (container_sel, children_selector, object_data_key,
+                               id_key, create_function, update_function,
+                               exit_function) {
+  var sel = container_sel.selectAll(children_selector)
+      .data(function(d) { return make_array_ref(d[object_data_key], id_key) },
+            function(d) { return d[id_key] })
 
-     The create_function, update_function, and exit_function CAN modify the
-     input data object.
+  // enter: generate and place reaction
+  var update_sel = (create_function ?
+                    create_function(sel.enter()).merge(sel) :
+                    sel)
 
-     Arguments
-     ---------
+  // update: update when necessary
+  if (update_function) {
+    update_sel.call(update_function)
+  }
 
-     container_sel: A d3 selection containing all objects.
-
-     children_selector: A selector string for each DOM element to bind.
-
-     object_data_key: A key for the parent object containing data for the
-     new selection.
-
-     id_key: The key that will be used to store object IDs in the bound data
-     points.
-
-     create_function: A function for enter selection.
-
-     update_function: A function for update selection.
-
-     exit_function: A function for exit selection.
-
-     */
-    var sel = container_sel.selectAll(children_selector)
-            .data(function(d) {
-                return make_array_ref(d[object_data_key], id_key);
-            }, function(d) { return d[id_key]; });
-    // enter: generate and place reaction
-    if (create_function)
-        sel.enter().call(create_function);
-    // update: update when necessary
-    if (update_function)
-        sel.call(update_function);
-    // exit
-    if (exit_function)
-        sel.exit().call(exit_function);
+  // exit
+  if (exit_function) {
+    sel.exit().call(exit_function)
+  }
 }
 
 function make_array(obj, id_key) { // is this super slow?
@@ -932,24 +940,26 @@ function generate_map_id() {
     return random_characters(12);
 }
 
-function check_for_parent_tag(el, tag) {
-    /** Check that the selection has the given parent tag.
-
-     el: A d3 selection or node.
-
-     tag: A tag name (case insensitive)
-
-     */
-    // make sure it is a node
-    if (el instanceof Array)
-        el = el.node();
-    while (el.parentNode !== null) {
-        el = el.parentNode;
-        if (el.tagName === undefined) continue;
-        if (el.tagName.toLowerCase() === tag.toLowerCase())
-            return true;
+/**
+ * Check that the selection has the given parent tag.
+ * @param {D3 Selection|DOM Node} el - A D3 Selection or DOM Node to check.
+ * @param {String} tag - A tag name (case insensitive).
+ */
+function check_for_parent_tag (el, tag) {
+  // make sure it is a node
+  if (el instanceof d3_selection) {
+    el = el.node()
+  }
+  while (el.parentNode !== null) {
+    el = el.parentNode
+    if (el.tagName === undefined) {
+      continue
     }
-    return false;
+    if (el.tagName.toLowerCase() === tag.toLowerCase()) {
+      return true
+    }
+  }
+  return false
 }
 
 function name_to_url(name, download_url) {
@@ -1031,42 +1041,62 @@ function get_window(node) {
  * @param {String} transform_attr - A transform string.
  */
 function d3_transform_catch (transform_attr) {
-  // Create a dummy g for calculation purposes only. This will new be appended
-  // to the DOM and will be discarded once this function returns.
-  var g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
-
-  // Set the transform attribute to the provided string value.
-  g.setAttributeNS(null, 'transform', transform_attr)
-
-  // Consolidate the SVGTransformList containing all Try to a single
-  // SVGTransform of type SVG_TRANSFORM_MATRIX and get its SVGMatrix.
-
-  var matrix = g.transform.baseVal.consolidate().matrix
-
-  // Below calculations are taken and adapted from the private func
-  // transform/decompose.js of D3's module d3-interpolate.
-  var a = matrix.a
-  var b = matrix.b
-  var c = matrix.c
-  var d = matrix.d
-  var e = matrix.e
-  var f = matrix.f
-  var scaleX = Math.sqrt(a * a + b * b)
-
-  if (scaleX) {
-    a /= scaleX
-    b /= scaleX
+  if (transform_attr.indexOf('skew') !== -1 ||
+      transform_attr.indexOf('matrix') !== -1) {
+    throw new Error('d3_transform_catch does not work with skew or matrix')
   }
 
-  if (a * d < b * c) {
-    a = -a
-    b = -b
-  }
+  var translate_res = (/translate\s*\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*\)/
+                       .exec(transform_attr))
+  var tn = _.isNull(translate_res)
+  var tx = tn ? 0.0 : Number(translate_res[1])
+  var ty = tn ? 0.0 : Number(translate_res[2])
 
-  return {
-    translate: [ e, f ],
-    rotate: Math.atan2(b, a) * Math.PI / 180,
-  }
+  var rotate_res = (/rotate\s*\(\s*([0-9.]+)\s*\)/
+                    .exec(transform_attr))
+  var rn = _.isNull(rotate_res)
+  var r = rn ? 0.0 : Number(rotate_res[1])
+
+  return { translate: [ tx, ty ], rotate: r }
+
+  // // Create a dummy g for calculation purposes only. This will new be appended
+  // // to the DOM and will be discarded once this function returns.
+  // var g = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+
+  // // Set the transform attribute to the provided string value.
+  // g.setAttributeNS(null, 'transform', transform_attr)
+
+  // // Consolidate the SVGTransformList containing all Try to a single
+  // // SVGTransform of type SVG_TRANSFORM_MATRIX and get its SVGMatrix.
+
+  // console.log(transform_attr, g.transform)
+
+  // var matrix = g.transform.baseVal.consolidate().matrix
+
+  // // Below calculations are taken and adapted from the private func
+  // // transform/decompose.js of D3's module d3-interpolate.
+  // var a = matrix.a
+  // var b = matrix.b
+  // var c = matrix.c
+  // var d = matrix.d
+  // var e = matrix.e
+  // var f = matrix.f
+  // var scaleX = Math.sqrt(a * a + b * b)
+
+  // if (scaleX) {
+  //   a /= scaleX
+  //   b /= scaleX
+  // }
+
+  // if (a * d < b * c) {
+  //   a = -a
+  //   b = -b
+  // }
+
+  // return {
+  //   translate: [ e, f ],
+  //   rotate: Math.atan2(b, a) * Math.PI / 180,
+  // }
 }
 
 function check_browser(name) {

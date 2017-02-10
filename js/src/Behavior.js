@@ -50,7 +50,7 @@ module.exports = Behavior
 
 
 // definitions
-function init( map, undo_stack) {
+function init (map, undo_stack) {
   this.map = map
   this.undo_stack = undo_stack
 
@@ -188,7 +188,7 @@ function toggle_rotation_mode (on_off) {
   }
 
   // definitions
-  function show_center() {
+  function show_center () {
     var s = this.map.sel.selectAll('#rotation-center').data([0])
     var enter = s.enter().append('g').attr('id', 'rotation-center')
 
@@ -197,7 +197,9 @@ function toggle_rotation_mode (on_off) {
     enter.append('path').attr('d', 'M0 -32 L0 32')
       .attr('class', 'rotation-center-line')
 
-    s.attr('transform', 'translate('+this.center.x+','+this.center.y+')')
+    enter.merge(s)
+      .attr('transform',
+            'translate(' + this.center.x + ',' + this.center.y + ')')
       .attr('visibility', 'visible')
 
     s.call(d3_drag()
@@ -425,9 +427,10 @@ function turn_off_drag (sel) {
 
 /**
  * Drag the selected nodes and text labels.
+ * @param {} map -
+ * @param {} undo_stack -
  */
 function _get_selectable_drag (map, undo_stack) {
-
   // define some variables
   var behavior = d3_drag()
   var the_timeout = null
@@ -446,7 +449,7 @@ function _get_selectable_drag (map, undo_stack) {
     this.dragging = on_off
   }.bind(this)
 
-  behavior.on('dragstart', function (d) {
+  behavior.on('start', function (d) {
     set_dragging(true)
 
     // silence other listeners (e.g. nodes BELOW this one)
@@ -456,7 +459,7 @@ function _get_selectable_drag (map, undo_stack) {
 
     // If a text label is selected, the rest is not necessary
     if (d3_select(this).attr('class').indexOf('label') === -1) {
-      // Note that dragstart is called even for a click event
+      // Note that drag start is called even for a click event
       var data = this.parentNode.__data__,
       bigg_id = data.bigg_id,
       node_group = this.parentNode
@@ -549,12 +552,12 @@ function _get_selectable_drag (map, undo_stack) {
     map.draw_these_text_labels(text_label_ids_to_drag)
   })
 
-  behavior.on('dragend', function () {
+  behavior.on('end', function () {
     set_dragging(false)
 
     if (node_ids_to_drag === null) {
-      // Dragend can be called when drag has not been called. In this,
-      // case, do nothing.
+      // Drag end can be called when drag has not been called. In this, case, do
+      // nothing.
       total_displacement = null
       node_ids_to_drag = null
       text_label_ids_to_drag = null
@@ -799,7 +802,7 @@ function _get_node_label_drag (map) {
 /**
  * Make a generic drag behavior, with undo/redo.
  *
- * start_fn: function (d) Called at dragstart.
+ * start_fn: function (d) Called at drag start.
  *
  * drag_fn: function (d, displacement, total_displacement) Called during drag.
  *
@@ -821,7 +824,7 @@ function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
   var undo_stack = this.undo_stack
   var rel = relative_to_selection.node()
 
-  behavior.on('dragstart', function (d) {
+  behavior.on('start', function (d) {
     this.dragging = true
 
     // silence other listeners
@@ -846,7 +849,7 @@ function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
     drag_fn(d, displacement, total_displacement, location)
   }.bind(this))
 
-  behavior.on('dragend', function (d) {
+  behavior.on('end', function (d) {
     this.dragging = false
 
     // add to undo/redo stack
@@ -874,7 +877,7 @@ function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
 /** Make a generic drag behavior, with undo/redo. Supplies angles in place of
  * displacements.
  *
- * start_fn: function (d) Called at dragstart.
+ * start_fn: function (d) Called at drag start.
  *
  * drag_fn: function (d, displacement, total_displacement) Called during drag.
  *
@@ -899,7 +902,7 @@ function _get_generic_angular_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
   var undo_stack = this.undo_stack
   var rel = relative_to_selection.node()
 
-  behavior.on('dragstart', function (d) {
+  behavior.on('start', function (d) {
     this.dragging = true
 
     // silence other listeners
@@ -925,7 +928,7 @@ function _get_generic_angular_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
     drag_fn(d, angle, total_angle, center)
   }.bind(this))
 
-  behavior.on('dragend', function (d) {
+  behavior.on('end', function (d) {
     this.dragging = false
 
     // add to undo/redo stack

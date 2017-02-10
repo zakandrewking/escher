@@ -1,11 +1,8 @@
 /* global global */
 
-'use strict'
-
 // helper for d3.xhr
-require('./helpers/XMLHttpRequest')
+require('./helpers/XMLHttpRequest') // TODO still necessary?
 const require_helper = require('./helpers/require_helper')
-
 const utils = require_helper('utils')
 const data_styles = require_helper('data_styles')
 
@@ -293,15 +290,23 @@ describe('utils.parse_url_components', () => {
 })
 
 describe('utils.d3_transform_catch', () => {
+  it('gets translate', () => {
+    assert.deepEqual(utils.d3_transform_catch('translate  ( 20, 30  )'),
+                     { translate: [ 20, 30 ], rotate: 0 })
+  })
+
   it('gets translate and rotate', () => {
     assert.deepEqual(
-      utils.d3_transform_catch('translate(20,30)'),
-      { translate: [ 20, 30 ], rotate: 0 }
+      utils.d3_transform_catch('translate  ( 0, 30.2  )rotate(5.1 )'),
+      { translate: [ 0, 30.2 ], rotate: 5.1 }
     )
-    assert.deepEqual(
-      utils.d3_transform_catch('rotate(45) skewX(20) translate(20,30) translate(-5,40)'),
-      { translate: [ -20.87526550928195, 78.1196838568347 ], rotate: 0.013707783890401884 }
-    )
+  })
+
+  it('gets translate and rotate -- skew', () => {
+    assert.throws(() => {
+      utils.d3_transform_catch('rotate(45) skewX(20) translate(20,30) translate(-5,40)')
+      // { translate: [ -20.87526550928195, 78.1196838568347 ], rotate: 0.013707783890401884 }
+    })
   })
 })
 

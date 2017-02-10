@@ -104,7 +104,7 @@ function up() {
 
 function _setup_drag() {
     var b = d3_drag()
-            .on("dragstart", function(d) {
+            .on("start", function(d) {
                 // silence other listeners
                 d3_event.sourceEvent.stopPropagation();
                 this.dragging = true;
@@ -119,7 +119,7 @@ function _setup_drag() {
                                                     this.center);
                 this.displace_rotation(utils.to_degrees(d_angle));
             }.bind(this))
-            .on("dragend", function(d) {
+            .on("end", function(d) {
                 setTimeout(function() {
                     this.dragging = false;
                 }.bind(this), 200);

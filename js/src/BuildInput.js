@@ -384,19 +384,22 @@ function toggle_start_reaction_listener(on_off) {
     }
 }
 
-function hide_target() {
-    if (this.target_coords)
-        this.map.sel.selectAll('.start-reaction-target').remove();
-    this.target_coords = null;
+function hide_target () {
+  if (this.target_coords) {
+    this.map.sel.selectAll('.start-reaction-target').remove()
+  }
+  this.target_coords = null
 }
 
-function show_target(map, coords) {
-    var s = map.sel.selectAll('.start-reaction-target').data([12, 5]);
-    s.enter().append('circle')
-        .classed('start-reaction-target', true)
-        .attr('r', function(d) { return d; })
-        .style('stroke-width', 4);
-    s.style('visibility', 'visible')
-        .attr('transform', 'translate('+coords.x+','+coords.y+')');
-    this.target_coords = coords;
+function show_target (map, coords) {
+  var s = map.sel.selectAll('.start-reaction-target').data([12, 5])
+  s.enter()
+    .append('circle')
+    .classed('start-reaction-target', true)
+    .attr('r', function (d) { return d })
+    .style('stroke-width', 4)
+    .merge(s)
+    .style('visibility', 'visible')
+    .attr('transform', 'translate(' + coords.x + ',' + coords.y + ')')
+  this.target_coords = coords
 }

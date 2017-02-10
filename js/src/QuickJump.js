@@ -27,57 +27,57 @@ module.exports = QuickJump;
 
 
 // instance methods
-function init(sel, load_callback) {
-    // set up the menu
-    var select_sel = sel.append('select')
-            .attr('id', 'quick-jump-menu')
-            .attr('class', 'form-control');
-    this.selector = select_sel;
+function init (sel, load_callback) {
+  // set up the menu
+  var select_sel = sel.append('select')
+      .attr('id', 'quick-jump-menu')
+      .attr('class', 'form-control')
+  this.selector = select_sel
 
-    // get the options to show
-    var url_comp = utils.parse_url_components(window),
-        current = ('map_name' in url_comp) ? url_comp.map_name : null,
-        quick_jump_path = ('quick_jump_path' in url_comp) ? url_comp.quick_jump_path : null,
-        options = ('quick_jump' in url_comp) ? url_comp.quick_jump : [],
-        default_value = '— Jump to map —',
-        view_options = [default_value].concat(options);
-    if (current !== null) {
-        view_options = view_options.filter(function(o) {
-            return o != current;
-        });
-    }
+  // get the options to show
+  var url_comp = utils.parse_url_components(window)
+  var current = ('map_name' in url_comp) ? url_comp.map_name : null
+  var quick_jump_path = ('quick_jump_path' in url_comp) ? url_comp.quick_jump_path : null
+  var options = ('quick_jump' in url_comp) ? url_comp.quick_jump : []
+  var default_value = '— Jump to map —'
+  var view_options = [default_value].concat(options)
+  if (current !== null) {
+    view_options = view_options.filter(function (o) {
+      return o != current
+    })
+  }
 
-    select_sel.selectAll('option')
-        .data(view_options)
-        .enter()
-        .append('option')
-        .text(function(d) {
-            // works whether or not a '.' is present
-            return d.split('.').slice(-1)[0];
-        });
+  // on selection
+  var change_map = function (map_name) {
+    load_callback(map_name, quick_jump_path, function (success) {
+      if (success) {
+        this.replace_state_for_map_name(map_name)
+      } else {
+        this.reset_selection()
+      }
+    }.bind(this))
+  }.bind(this)
 
+  select_sel.selectAll('option')
+    .data(view_options)
+    .enter()
+    .append('option')
+    .text(function (d) {
+      // works whether or not a '.' is present
+      return d.split('.').slice(-1)[0]
+    })
+    .merge(select_sel)
     // only show if there are options
-    select_sel.style('display', view_options.length > 1 ? 'block' : 'none');
-
-    // on selection
-    var change_map = function(map_name) {
-        load_callback(map_name, quick_jump_path, function(success) {
-            if (success)
-                this.replace_state_for_map_name(map_name);
-            else
-                this.reset_selection();
-        }.bind(this));
-    }.bind(this);
-
-    select_sel.on('change', function() {
-        // get the new map
-        var map_name = this.options[this.selectedIndex].__data__;
-        change_map(map_name);
-    });
+    .style('display', view_options.length > 1 ? 'block' : 'none')
+    .on('change', function () {
+      // get the new map
+      var map_name = this.options[this.selectedIndex].__data__
+      change_map(map_name)
+    })
 }
 
-function reset_selection() {
-    this.selector.node().selectedIndex = 0;
+function reset_selection () {
+  this.selector.node().selectedIndex = 0
 }
 
 function replace_state_for_map_name(map_name) {

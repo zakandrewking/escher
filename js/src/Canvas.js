@@ -76,21 +76,22 @@ function setup() {
             .attr("height", this.height)
             .attr("transform", "translate("+[self.x, self.y]+")");
 
-    var drag_right = d3_drag()
-            .origin(Object)
-            .on("dragstart", stop_propagation)
+  var drag_right = d3_drag()
+            // TODO do we need these? in d3 v4, origin is now subject
+            // .origin(Object)
+            .on("start", stop_propagation)
             .on("drag", rdragresize),
         drag_left = d3_drag()
-            .origin(Object)
-            .on("dragstart", stop_propagation)
+            // .origin(Object)
+            .on("start", stop_propagation)
             .on("drag", ldragresize),
         drag_top = d3_drag()
-            .origin(Object)
-            .on("dragstart", stop_propagation)
+            // .origin(Object)
+            .on("start", stop_propagation)
             .on("drag", tdragresize),
         drag_bottom = d3_drag()
-            .origin(Object)
-            .on("dragstart", stop_propagation)
+            // .origin(Object)
+            .on("start", stop_propagation)
             .on("drag", bdragresize);
 
     var left = new_sel.append("rect")
