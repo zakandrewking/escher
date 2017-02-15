@@ -9,7 +9,7 @@
 var utils = require('./utils');
 var CallbackManager = require('./CallbackManager');
 var d3_drag = require('d3-drag').drag
-var d3_event = require('d3-selection').event
+var d3_selection = require('d3-selection')
 
 var Canvas = utils.make_class();
 Canvas.prototype = {
@@ -148,7 +148,7 @@ function setup() {
 
     // definitions
     function stop_propagation() {
-        d3_event.sourceEvent.stopPropagation();
+        d3_selection.event.sourceEvent.stopPropagation();
     }
     function transform_string(x, y, current_transform) {
         var tr = utils.d3_transform_catch(current_transform),
@@ -159,7 +159,7 @@ function setup() {
     }
     function ldragresize(d) {
         var oldx = d.x;
-        d.x = Math.min(d.x + self.width - (dragbar_width / 2), d3_event.x);
+        d.x = Math.min(d.x + self.width - (dragbar_width / 2), d3_selection.event.x);
         self.x = d.x;
         self.width = self.width + (oldx - d.x);
         left.attr("transform", function(d) {
@@ -182,8 +182,8 @@ function setup() {
     }
 
     function rdragresize(d) {
-        d3_event.sourceEvent.stopPropagation();
-        var dragx = Math.max(d.x + (dragbar_width/2), d.x + self.width + d3_event.dx);
+        d3_selection.event.sourceEvent.stopPropagation();
+        var dragx = Math.max(d.x + (dragbar_width/2), d.x + self.width + d3_selection.event.dx);
         //recalculate width
         self.width = dragx - d.x;
         //move the right drag handle
@@ -201,9 +201,9 @@ function setup() {
     }
 
     function tdragresize(d) {
-        d3_event.sourceEvent.stopPropagation();
+        d3_selection.event.sourceEvent.stopPropagation();
         var oldy = d.y;
-        d.y = Math.min(d.y + self.height - (dragbar_width / 2), d3_event.y);
+        d.y = Math.min(d.y + self.height - (dragbar_width / 2), d3_selection.event.y);
         self.y = d.y;
         self.height = self.height + (oldy - d.y);
         top.attr("transform", function(d) {
@@ -226,8 +226,8 @@ function setup() {
     }
 
     function bdragresize(d) {
-        d3_event.sourceEvent.stopPropagation();
-        var dragy = Math.max(d.y + (dragbar_width/2), d.y + self.height + d3_event.dy);
+        d3_selection.event.sourceEvent.stopPropagation();
+        var dragy = Math.max(d.y + (dragbar_width/2), d.y + self.height + d3_selection.event.dy);
         //recalculate width
         self.height = dragy - d.y;
         //move the right drag handle

@@ -7,13 +7,14 @@ const after = require('mocha').after
 const it = require('mocha').it
 const assert = require('chai').assert
 const d3_body = require('./helpers/d3_body')
+const d3_zoomTransform = require('d3-zoom').zoomTransform
 
-describe('ZoomContainer', function () {
-  it('initializes', function () {
+describe('ZoomContainer', () => {
+  it('initializes', () => {
     // make a div
-    var sel = d3_body.append('div')
+    const sel = d3_body.append('div')
     // make a zoom container
-    var zc = ZoomContainer(sel, 'none', true, true)
+    const zc = ZoomContainer(sel, 'none', true, true)
     // check basic attributes
     assert.strictEqual(sel.select('.escher-zoom-container').node(),
                        zc.zoom_container.node())
@@ -26,6 +27,32 @@ describe('ZoomContainer', function () {
                        zc.zoomed_sel.node())
     // clean the dom
     sel.remove()
+  })
+
+  it('get_size, defined', () => {
+    const sel = d3_body.append('div')
+          .style('width', '100px').style('height', '100px')
+    const zc = ZoomContainer(sel, 'none', true, true)
+    const res = zc.get_size()
+    assert.deepEqual(res, { width: 100, height: 100 })
+  })
+
+  it('get_size, undefined', () => {
+    const sel = d3_body.append('div')
+    const zc = ZoomContainer(sel, 'none', true, true)
+    assert.throws(() => {
+      zc.get_size()
+    }, /Size not defined for ZoomContainer element/)
+  })
+
+  it('go_to', () => {
+    const sel = d3_body.append('div')
+    const zc = ZoomContainer(sel, 'none', true, true)
+    sel.go_to(2.0, { x: 10.0, y: -20.5 })
+    const zoom_transform = d3_zoomTransform(sel)
+    assert.strictEqual(zoom_transform.k, 2.0)
+    assert.strictEqual(zoom_transform.x, 10.0)
+    assert.strictEqual(zoom_transform.y, -20.5)
   })
 })
 

@@ -1,89 +1,69 @@
-var require_helper = require('./helpers/require_helper');
-var Builder = require_helper('Builder');
+const require_helper = require('./helpers/require_helper')
+const Builder = require_helper('Builder')
 
-var d3_body = require('./helpers/d3_body')
-
-// These tests require d3 features that are currently not available in
-// node/jsdom (e.g. d3.tranform). Hopefully these will eventually be available
-// for running and testing all of Escher from the command line.
-
+const d3_body = require('./helpers/d3_body')
 
 // Should test for the broken function that use utils.draw_array/object
 
-/* global global */
+const get_map = require('./helpers/get_map')
+const get_model = require('./helpers/get_model')
 
+const describe = require('mocha').describe
+const it = require('mocha').it
+const mocha = require('mocha')
+const assert = require('assert')
 
-// break on exception
-// if (global.v8debug)
-//     global.v8debug.Debug.setBreakOnException();
+function make_parent_sel (s) {
+  return s.append('div').style('width', '100px').style('height', '100px')
+}
 
+describe('Builder', () => {
+  it('Small map, no model. Multiple instances.', () => {
+    const sels = []
+    for (let i = 0, l = 3; i < l; i++) {
+      const sel = make_parent_sel(d3_body)
+      const b = Builder(get_map(), null, '', sel,
+                        { never_ask_before_quit: true })
 
-var get_map = require('./helpers/get_map');
-var get_model = require('./helpers/get_model');
+      assert.strictEqual(sel.select('svg').node(), b.map.svg.node())
+      assert.strictEqual(sel.selectAll('#nodes').size(), 1)
+      assert.strictEqual(sel.selectAll('.node').size(), 79)
+      assert.strictEqual(sel.selectAll('#reactions').size(), 1)
+      assert.strictEqual(sel.selectAll('.reaction').size(), 18)
+      assert.strictEqual(sel.selectAll('#text-labels').size(), 1)
+      sels.push(sel)
+    }
+    sels.map(sel => sel.remove())
+  })
 
-var describe = require('mocha').describe;
-var it = require('mocha').it;
-var mocha = require('mocha');
-var assert = require('assert');
-var jsdom = require('jsdom');
-// var d3 = require('d3');
+  it('check for model+highlight_missing bug', () => {
+    const b = Builder(get_map(), get_model(), '', make_parent_sel(d3_body),
+                      { never_ask_before_quit: true, highlight_missing: true })
+  })
 
-// // global d3 and body selection
-// global.d3 = d3;
-// var document = jsdom.jsdom();
-// d3.set_document(document);
+  it('SVG selection error', () => {
+    const sel = make_parent_sel(d3_body).append('g')
+    assert.throws(() => {
+      Builder(null, null, '', sel, { never_ask_before_quit: true  })
+    }, /Builder cannot be placed within an svg node/)
+  })
 
+  it('fix scales', () => {
+    const sel = make_parent_sel(d3_body)
+    const b = Builder(null, null, '', sel, { reaction_scale: [{ type: 'median', color: '#9696ff', size: 8 }],
+                                             never_ask_before_quit: true })
+    assert(b.options.reaction_scale).equal([{ type: 'median', color: '#9696ff', size: 8 },
+                                            { type: 'min', color: '#ffffff', size: 10 },
+                                            { type: 'max', color: '#ffffff', size: 10 }])
 
-describe('Builder', function () {
-
-    it("Small map, no model. Multiple instances.", function (t) {
-        var sels = [];
-        for (var i=0, l=3; i < l; i++) {
-            var sel = d3_body.append('div'),
-                b = Builder(get_map(), null, '', sel,
-                            { never_ask_before_quit: true });
-
-            t.equal(sel.select('svg').node(), b.map.svg.node());
-            t.equal(sel.selectAll('#nodes')[0].length, 1);
-            t.equal(sel.selectAll('.node')[0].length, 79);
-            t.equal(sel.selectAll('#reactions')[0].length, 1);
-            t.equal(sel.selectAll('.reaction')[0].length, 18);
-            t.equal(sel.selectAll('#text-labels')[0].length, 1);
-            sels.push(sel);
-        }
-        sels.forEach(function(sel) {
-            sel.remove();
-        });
-    });
-
-    it('check for model+highlight_missing bug', function() {
-        var b = Builder(get_map(), get_model(), '', d3_body.append('div'),
-                        { never_ask_before_quit: true, highlight_missing: true });
-    });
-
-    it("SVG selection error", function () {
-        var sel = d3_body.append('svg').append('g');
-        assert.throws(function () {
-            Builder(null, null, '', sel, { never_ask_before_quit: true  });
-        }, /Builder cannot be placed within an svg node/);
-    });
-
-    it('fix scales', function () {
-        var sel = d3_body.append('div'),
-            b = Builder(null, null, '', sel, { reaction_scale: [{ type: 'median', color: '#9696ff', size: 8 }],
-                                               never_ask_before_quit: true });
-        assert(b.options.reaction_scale).equal([{ type: 'median', color: '#9696ff', size: 8 },
-                                                { type: 'min', color: '#ffffff', size: 10 },
-                                                { type: 'max', color: '#ffffff', size: 10 }]);
-
-        // after callback
-        b = Builder(null, null, '', sel, { metabolite_scale: [{ type: 'median', color: 'red', size: 0 },
-                                                              { type: 'min', color: 'red', size: 0 },
-                                                              { type: 'max', color: 'red', size: 0 } ],
-                                           never_ask_before_quit: true });
-        b.settings.set_conditional('metabolite_scale', [{ type: 'median', color: '#9696ff', size: 8 }]);
-        assert(b.options.metabolite_scale).equal([{ type: 'median', color: '#9696ff', size: 8 },
-                                                  { type: 'min', color: '#ffffff', size: 10 },
-                                                  { type: 'max', color: '#ffffff', size: 10 }]);
-    });
-});
+    // after callback
+    b = Builder(null, null, '', sel, { metabolite_scale: [{ type: 'median', color: 'red', size: 0 },
+                                                          { type: 'min', color: 'red', size: 0 },
+                                                          { type: 'max', color: 'red', size: 0 } ],
+                                       never_ask_before_quit: true })
+    b.settings.set_conditional('metabolite_scale', [{ type: 'median', color: '#9696ff', size: 8 }])
+    assert(b.options.metabolite_scale).equal([{ type: 'median', color: '#9696ff', size: 8 },
+                                              { type: 'min', color: '#ffffff', size: 10 },
+                                              { type: 'max', color: '#ffffff', size: 10 }])
+  })
+})

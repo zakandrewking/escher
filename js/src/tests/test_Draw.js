@@ -13,16 +13,7 @@ const d3_select = require('d3-selection').select
 const draw = new Draw()
 
 function get_all_attrs (selection, attr) {
-  return selection.nodes().map(n => {
-    console.log(n.constructor.name)//, d3_select(n).attr('class'))
-    return d3_select(n).attr(attr)
-  })
-  // const out = []
-  // selection.each(function () {
-  //   console.log(d3_select(this).node())
-  //   out.push(d3_select(this).attr(attr))
-  // })
-  // return out
+  return selection.nodes().map(n => d3_select(n).attr(attr))
 }
 
 describe('Draw', function () {

@@ -17,7 +17,7 @@ var d3_scaleLinear = require('d3-scale').scaleLinear
 var d3_format = require('d3-format').format
 var d3_drag = require('d3-drag').drag
 var d3_select = require('d3-selection').select
-var d3_event = require('d3-selection').event
+var d3_selection = require('d3-selection')
 
 var ScaleEditor = utils.make_class();
 // instance methods
@@ -184,7 +184,7 @@ function update () {
       scale[i].type = 'value'
     }
     // change the model on drag
-    var new_d = scale[i].value + sc_size(d3_event.dx)
+    var new_d = scale[i].value + sc_size(d3_selection.event.dx)
     var buf = sc_size(bar_w + 2)
     if (new_d > stats.max - buf) {
       new_d = stats.max - buf
@@ -486,7 +486,7 @@ function update_no_data () {
     })
     .attr('class', 'color-picker')
   // update
-  var ins_update = ins_enter.merget(ins)
+  var ins_update = ins_enter.merge(ins)
   ins_update.select('span')
     .text(function(d) { return d[1] })
     .style('height', this.input_height + 'px')
@@ -509,7 +509,7 @@ function update_no_data () {
       this.disabled = data_not_loaded
     })
     .on('change', function (d) {
-      var val = d3_event.target.value
+      var val = d3_selection.event.target.value
       if (d[0] === 'size') {
         val = parseFloat(val)
       }
@@ -528,7 +528,7 @@ function update_no_data () {
       this.disabled = data_not_loaded
     })
     .on('change', function (d, i) {
-      var val = d3_event.target.value
+      var val = d3_selection.event.target.value
       this.no_data[d[0]] = val
       this.settings.set_conditional(this.type + '_no_data_' + d[0], val)
       this.update_no_data()

@@ -4,7 +4,7 @@
 var utils = require('./utils');
 var d3_drag = require('d3-drag').drag
 var d3_mouse = require('d3-selection').mouse
-var d3_event = require('d3-selection').event
+var d3_selection = require('d3-selection')
 
 var DirectionArrow = utils.make_class();
 DirectionArrow.prototype = {
@@ -106,12 +106,12 @@ function _setup_drag() {
     var b = d3_drag()
             .on("start", function(d) {
                 // silence other listeners
-                d3_event.sourceEvent.stopPropagation();
+                d3_selection.event.sourceEvent.stopPropagation();
                 this.dragging = true;
             }.bind(this))
             .on("drag.direction_arrow", function(d) {
-                var displacement = { x: d3_event.dx,
-                                     y: d3_event.dy },
+                var displacement = { x: d3_selection.event.dx,
+                                     y: d3_selection.event.dy },
                     location = { x: d3_mouse(this.sel.node())[0],
                                  y: d3_mouse(this.sel.node())[1] },
                     d_angle = utils.angle_for_event(displacement,

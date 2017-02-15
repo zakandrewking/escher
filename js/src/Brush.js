@@ -11,7 +11,7 @@
 var utils = require('./utils')
 var d3_brush = require('d3-brush').brush
 var d3_scaleIdentity = require('d3-scale').scaleIdentity
-var d3_event = require('d3-selection').event
+var d3_selection = require('d3-selection')
 var d3_select = require('d3-selection').select
 
 var Brush = utils.make_class()
@@ -83,8 +83,8 @@ function setup_selection_brush () {
           }
         })
         .on('brush', function () {
-          var shift_key_on = d3_event.sourceEvent.shiftKey
-          var extent = d3_event.target.extent()
+          var shift_key_on = d3_selection.event.sourceEvent.shiftKey
+          var extent = d3_selection.event.target.extent()
           // When shift is pressed, ignore the currently selected nodes.
           // Otherwise, brush all nodes.
           var selection = shift_key_on ?
@@ -98,8 +98,8 @@ function setup_selection_brush () {
           })
         })
         .on('brushend', function () {
-          d3_event.target.clear()
-          d3_select(this).call(d3_event.target)
+          d3_selection.event.target.clear()
+          d3_select(this).call(d3_selection.event.target)
         })
   var brush = selection.append('g')
         .attr('class', 'brush')

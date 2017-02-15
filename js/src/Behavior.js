@@ -20,7 +20,7 @@ var build = require('./build')
 var d3_drag = require('d3-drag').drag
 var d3_select = require('d3-selection').select
 var d3_mouse = require('d3-selection').mouse
-var d3_event = require('d3-selection').event
+var d3_selection = require('d3-selection')
 
 var Behavior = utils.make_class()
 // methods
@@ -135,7 +135,7 @@ function toggle_rotation_mode (on_off) {
 
     var start_fn = function (d) {
       // silence other listeners
-      d3_event.sourceEvent.stopPropagation()
+      d3_selection.event.sourceEvent.stopPropagation()
     }
     var drag_fn = function (d, angle, total_angle, center) {
       var updated = build.rotate_nodes(selected_nodes, reactions,
@@ -205,8 +205,8 @@ function toggle_rotation_mode (on_off) {
     s.call(d3_drag()
            .on('drag', function (sel) {
              var cur = utils.d3_transform_catch(sel.attr('transform')),
-             new_loc = [d3_event.dx + cur.translate[0],
-                        d3_event.dy + cur.translate[1]]
+             new_loc = [d3_selection.event.dx + cur.translate[0],
+                        d3_selection.event.dy + cur.translate[1]]
              sel.attr('transform', 'translate('+new_loc+')')
              this.center = { x: new_loc[0], y: new_loc[1] }
            }.bind(this, s)))
@@ -249,20 +249,20 @@ function toggle_selectable_click (on_off) {
     var map = this.map
     this.selectable_mousedown = function (d) {
       // stop propogation for the buildinput to work right
-      d3_event.stopPropagation()
+      d3_selection.event.stopPropagation()
       // this.parentNode.__data__.was_selected = d3_select(this.parentNode).classed('selected')
       // d3_select(this.parentNode).classed('selected', true)
     }
     this.selectable_click = function (d) {
       // stop propogation for the buildinput to work right
-      d3_event.stopPropagation()
+      d3_selection.event.stopPropagation()
       // click suppressed. This DOES have en effect.
-      if (d3_event.defaultPrevented) return
+      if (d3_selection.event.defaultPrevented) return
       // turn off the temporary selection so select_selectable
       // works. This is a bit of a hack.
       // if (!this.parentNode.__data__.was_selected)
       //     d3_select(this.parentNode).classed('selected', false)
-      map.select_selectable(this, d, d3_event.shiftKey)
+      map.select_selectable(this, d, d3_selection.event.shiftKey)
       // this.parentNode.__data__.was_selected = false
     }
     this.node_mouseover = function (d) {
@@ -297,7 +297,7 @@ function toggle_text_label_edit (on_off) {
     var map = this.map
     var selection = this.selection
     this.text_label_mousedown = function () {
-      if (d3_event.defaultPrevented) {
+      if (d3_selection.event.defaultPrevented) {
         return // mousedown suppressed
       }
       // run the callback
@@ -305,7 +305,7 @@ function toggle_text_label_edit (on_off) {
           .translate
       var coords = { x: coords_a[0], y: coords_a[1] }
       map.callback_manager.run('edit_text_label', null, d3_select(this), coords)
-      d3_event.stopPropagation()
+      d3_selection.event.stopPropagation()
     }
     this.text_label_click = null
     this.map.sel.select('#text-labels')
@@ -314,7 +314,7 @@ function toggle_text_label_edit (on_off) {
     // add the new-label listener
     this.map.sel.on('mousedown.new_text_label', function (node) {
       // silence other listeners
-      d3_event.preventDefault()
+      d3_selection.event.preventDefault()
       var coords = {
         x: d3_mouse(node)[0],
         y: d3_mouse(node)[1],
@@ -453,7 +453,7 @@ function _get_selectable_drag (map, undo_stack) {
     set_dragging(true)
 
     // silence other listeners (e.g. nodes BELOW this one)
-    d3_event.sourceEvent.stopPropagation()
+    d3_selection.event.sourceEvent.stopPropagation()
     // remember the total displacement for later
     total_displacement = { x: 0, y: 0 }
 
@@ -524,8 +524,8 @@ function _get_selectable_drag (map, undo_stack) {
     }
     reaction_ids = []
     var displacement = {
-      x: d3_event.dx,
-      y: d3_event.dy,
+      x: d3_selection.event.dx,
+      y: d3_selection.event.dy,
     }
     total_displacement = utils.c_plus_c(total_displacement, displacement)
     node_ids_to_drag.forEach(function (node_id) {
@@ -828,7 +828,7 @@ function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
     this.dragging = true
 
     // silence other listeners
-    d3_event.sourceEvent.stopPropagation()
+    d3_selection.event.sourceEvent.stopPropagation()
     total_displacement = { x: 0, y: 0 }
     start_fn(d)
   }.bind(this))
@@ -836,8 +836,8 @@ function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
   behavior.on('drag', function (d) {
     // update data
     var displacement = {
-      x: d3_event.dx,
-      y: d3_event.dy,
+      x: d3_selection.event.dx,
+      y: d3_selection.event.dy,
     }
     var location = {
       x: d3_mouse(rel)[0],
@@ -906,7 +906,7 @@ function _get_generic_angular_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
     this.dragging = true
 
     // silence other listeners
-    d3_event.sourceEvent.stopPropagation()
+    d3_selection.event.sourceEvent.stopPropagation()
     total_angle = 0
     start_fn(d)
   }.bind(this))
@@ -914,8 +914,8 @@ function _get_generic_angular_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
   behavior.on('drag', function (d) {
     // update data
     var displacement = {
-      x: d3_event.dx,
-      y: d3_event.dy,
+      x: d3_selection.event.dx,
+      y: d3_selection.event.dy,
     }
     var location = {
       x: d3_mouse(rel)[0],

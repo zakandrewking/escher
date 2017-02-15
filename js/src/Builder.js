@@ -2,6 +2,8 @@
  * For documentation of this class, see docs/javascript_api.rst
  */
 
+/* global $ */
+
 var utils = require('./utils');
 var BuildInput = require('./BuildInput');
 var ZoomContainer = require('./ZoomContainer');
@@ -898,15 +900,14 @@ function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
         .text('?')
 
     // set up mode callbacks
-    var select_button = function(id) {
+    var select_button = function (id) {
         // toggle the button
-        $(this.selection.node()).find('#' + id)
-            .button('toggle')
+        $(this.selection.node()).find('#' + id).button('toggle')
 
         // menu buttons
-        var ids = ['zoom-mode-menu-button', 'brush-mode-menu-button',
-                   'build-mode-menu-button', 'rotate-mode-menu-button',
-                   'view-mode-menu-button', 'text-mode-menu-button']
+        var ids = [ 'zoom-mode-menu-button', 'brush-mode-menu-button',
+                    'build-mode-menu-button', 'rotate-mode-menu-button',
+                    'view-mode-menu-button', 'text-mode-menu-button', ]
         ids.forEach(function(this_id) {
             var b_id = this_id.replace('-menu', '')
             this.selection.select('#' + this_id)
