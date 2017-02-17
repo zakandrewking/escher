@@ -1,16 +1,15 @@
 /* global global */
 
-// helper for d3.xhr
-require('./helpers/XMLHttpRequest') // TODO still necessary?
 const require_helper = require('./helpers/require_helper')
 const utils = require_helper('utils')
 const data_styles = require_helper('data_styles')
+const d3_body = require('./helpers/d3_body')
 
 const describe = require('mocha').describe
 const it = require('mocha').it
+const before = require('mocha').before
+const after = require('mocha').after
 const assert = require('chai').assert
-
-const d3_body = require('./helpers/d3_body')
 
 describe('utils.set_options', () => {
   it('defaults to null', () => {
@@ -31,101 +30,116 @@ describe('utils.set_options', () => {
   })
 })
 
-describe('utils.load_the_file', () => {
-  it('loads json', done => {
-    utils.load_the_file({my: 'this'}, 'js/src/tests/data/test_file.json', function(e, d) {
-      assert.deepEqual(this, {my: 'this'})
-      assert.isNull(e)
-      assert.deepEqual(d, {'test': 'data'})
-      done()
-    })
-  })
+// TODO waiting on result of
+// http://stackoverflow.com/questions/41812098/using-d3-request-from-node
+// describe('utils.load_the_file', () => {
+//   before(() => {
+//     test_server.listen(8000)
+//   })
 
-  it('loads css', done => {
-    utils.load_the_file({my: 'this'}, 'js/src/tests/data/test_file.css', function(e, d) {
-      assert.deepEqual(this, {my: 'this'})
-      assert.isNull(e)
-      assert.strictEqual(d, 'test\ndata\n')
-      done()
-    })
-  })
+//   after(() => {
+//     test_server.close()
+//   })
 
-  it('takes value', done => {
-    utils.load_the_file({my: 'this'}, null, function(e, d) {
-      assert.deepEqual(this, {my: 'this'})
-      assert.isNull(e)
-      assert.strictEqual(d, 'value')
-      done()
-    }, 'value')
-  })
+//   it('loads json', done => {
+//     utils.load_the_file(
+//       { my: 'this' },
+//       'http://localhost:8000/test_file.json',
+//       function (e, d) {
+//         console.log(e, d)
+//         assert.deepEqual(this, { my: 'this' })
+//         assert.isNull(e)
+//         assert.deepEqual(d, { test: 'data' })
+//         done()
+//       }
+//     )
+//   })
 
-  it('no filename', done => {
-    utils.load_the_file({my: 'this'}, null, function(e, d) {
-      assert.deepEqual(this, {my: 'this'})
-      assert.strictEqual(e, 'No filename')
-      assert.isNull(d)
-      done()
-    })
-  })
+//   it('loads css', done => {
+//     utils.load_the_file({my: 'this'}, 'js/src/tests/data/test_file.css', function(e, d) {
+//       assert.deepEqual(this, {my: 'this'})
+//       assert.isNull(e)
+//       assert.strictEqual(d, 'test\ndata\n')
+//       done()
+//     })
+//   })
 
-  it('unrecognized file type', done => {
-    utils.load_the_file({my: 'this'}, 'js/src/tests/data/bad_path', function(e, d, f) {
-      assert.deepEqual(this, {my: 'this'})
-      assert.strictEqual(e, 'Unrecognized file type')
-      assert.isNull(d)
-      done()
-    })
-  })
-})
+//   it('takes value', done => {
+//     utils.load_the_file({my: 'this'}, null, function(e, d) {
+//       assert.deepEqual(this, {my: 'this'})
+//       assert.isNull(e)
+//       assert.strictEqual(d, 'value')
+//       done()
+//     }, 'value')
+//   })
 
-describe('utils.load_files', () => {
-  it('loads multiple files', done => {
-    let first = false
-    let second = false
-    const files = [
-      {
-        file: 'js/src/tests/data/test_file.json',
-        callback: function(e, d, f) { first = d; }
-      },
-      {
-        file: 'js/src/tests/data/test_file.css',
-        callback: function(e, d, f) { second = d; }
-      },
-    ]
-    utils.load_files({my: 'this'}, files, function() {
-      assert.deepEqual(this, {my: 'this'})
-      assert.deepEqual(first, {'test': 'data'})
-      assert.strictEqual(second, 'test\ndata\n')
-      done()
-    })
-  })
+//   it('no filename', done => {
+//     utils.load_the_file({my: 'this'}, null, function(e, d) {
+//       assert.deepEqual(this, {my: 'this'})
+//       assert.strictEqual(e, 'No filename')
+//       assert.isNull(d)
+//       done()
+//     })
+//   })
 
-  it('callback if empty', done => {
-    utils.load_files(null, [], () => {
-      done()
-    })
-  })
+//   it('unrecognized file type', done => {
+//     utils.load_the_file({my: 'this'}, 'js/src/tests/data/bad_path', function(e, d, f) {
+//       assert.deepEqual(this, {my: 'this'})
+//       assert.strictEqual(e, 'Unrecognized file type')
+//       assert.isNull(d)
+//       done()
+//     })
+//   })
+// })
 
-  it('loads same file twice', done => {
-    let first = false
-    let second = false
-    const files = [
-      {
-        file: 'test_file.json',
-        callback: () => { first = true; }
-      },
-      {
-        file: 'test_file.json',
-        callback: () => { second = true; }
-      },
-    ]
-    utils.load_files(null, files, () => {
-      assert.isTrue(first)
-      assert.isTrue(second)
-      done()
-    })
-  })
-})
+// describe('utils.load_files', () => {
+//   it('loads multiple files', done => {
+//     let first = false
+//     let second = false
+//     const files = [
+//       {
+//         file: 'js/src/tests/data/test_file.json',
+//         callback: function(e, d, f) { first = d; }
+//       },
+//       {
+//         file: 'js/src/tests/data/test_file.css',
+//         callback: function(e, d, f) { second = d; }
+//       },
+//     ]
+//     utils.load_files({my: 'this'}, files, function() {
+//       assert.deepEqual(this, {my: 'this'})
+//       assert.deepEqual(first, {'test': 'data'})
+//       assert.strictEqual(second, 'test\ndata\n')
+//       done()
+//     })
+//   })
+
+//   it('callback if empty', done => {
+//     utils.load_files(null, [], () => {
+//       done()
+//     })
+//   })
+
+//   it('loads same file twice', done => {
+//     let first = false
+//     let second = false
+//     const files = [
+//       {
+//         file: 'test_file.json',
+//         callback: () => { first = true; }
+//       },
+//       {
+//         file: 'test_file.json',
+//         callback: () => { second = true; }
+//       },
+//     ]
+//     utils.load_files(null, files, () => {
+//       assert.isTrue(first)
+//       assert.isTrue(second)
+//       done()
+//     })
+//   })
+// })
 
 describe('utils.make_class', () => {
   it('works with our without "new"', () => {
@@ -218,6 +232,22 @@ describe('utils.load_json_or_csv', () => {
   })
 })
 
+describe('utils.compartmentalize', () => {
+  it('adds compartment', () => {
+    assert.deepEqual(utils.compartmentalize('atp', 'c1'), 'atp_c1')
+  })
+})
+
+describe('utils.decompartmentalize', () => {
+  it('gets compartment', () => {
+    assert.deepEqual(utils.decompartmentalize('atp_c1'), [ 'atp', 'c1' ])
+  })
+
+  it('returns null compartment if not found', () => {
+    assert.deepEqual(utils.decompartmentalize('atp'), [ 'atp', null ])
+  })
+})
+
 it('utils.mean', () => {
   assert.strictEqual(utils.mean([1, 2, 3]), 2)
 })
@@ -292,21 +322,14 @@ describe('utils.parse_url_components', () => {
 describe('utils.d3_transform_catch', () => {
   it('gets translate', () => {
     assert.deepEqual(utils.d3_transform_catch('translate  ( 20, 30  )'),
-                     { translate: [ 20, 30 ], rotate: 0 })
+                     { translate: [ 20, 30 ], rotate: 0, scale: 0 })
   })
 
-  it('gets translate and rotate', () => {
+  it('gets translate, rotate, scale', () => {
     assert.deepEqual(
-      utils.d3_transform_catch('translate  ( 0, 30.2  )rotate(5.1 )'),
-      { translate: [ 0, 30.2 ], rotate: 5.1 }
+      utils.d3_transform_catch('translate  ( 0, -30.2  )rotate(5.1 ) scale(-3)'),
+      { translate: [ 0, -30.2 ], rotate: 5.1, scale: -3.0 }
     )
-  })
-
-  it('gets translate and rotate -- skew', () => {
-    assert.throws(() => {
-      utils.d3_transform_catch('rotate(45) skewX(20) translate(20,30) translate(-5,40)')
-      // { translate: [ -20.87526550928195, 78.1196838568347 ], rotate: 0.013707783890401884 }
-    })
   })
 })
 

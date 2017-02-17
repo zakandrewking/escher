@@ -34,7 +34,7 @@ describe('Builder', () => {
       sels.push(sel)
     }
     sels.map(sel => sel.remove())
-  })
+  }).timeout(5000)
 
   it('check for model+highlight_missing bug', () => {
     const b = Builder(get_map(), get_model(), '', make_parent_sel(d3_body),
@@ -42,7 +42,7 @@ describe('Builder', () => {
   })
 
   it('SVG selection error', () => {
-    const sel = make_parent_sel(d3_body).append('g')
+    const sel = make_parent_sel(d3_body).append('svg').append('g')
     assert.throws(() => {
       Builder(null, null, '', sel, { never_ask_before_quit: true  })
     }, /Builder cannot be placed within an svg node/)
@@ -52,18 +52,26 @@ describe('Builder', () => {
     const sel = make_parent_sel(d3_body)
     const b = Builder(null, null, '', sel, { reaction_scale: [{ type: 'median', color: '#9696ff', size: 8 }],
                                              never_ask_before_quit: true })
-    assert(b.options.reaction_scale).equal([{ type: 'median', color: '#9696ff', size: 8 },
-                                            { type: 'min', color: '#ffffff', size: 10 },
-                                            { type: 'max', color: '#ffffff', size: 10 }])
+    assert.deepEqual(b.options.reaction_scale,
+                     [
+                       { type: 'median', color: '#9696ff', size: 8 },
+                       { type: 'min', color: '#ffffff', size: 10 },
+                       { type: 'max', color: '#ffffff', size: 10 },
+                     ])
+  })
 
-    // after callback
-    b = Builder(null, null, '', sel, { metabolite_scale: [{ type: 'median', color: 'red', size: 0 },
-                                                          { type: 'min', color: 'red', size: 0 },
-                                                          { type: 'max', color: 'red', size: 0 } ],
-                                       never_ask_before_quit: true })
-    b.settings.set_conditional('metabolite_scale', [{ type: 'median', color: '#9696ff', size: 8 }])
-    assert(b.options.metabolite_scale).equal([{ type: 'median', color: '#9696ff', size: 8 },
-                                              { type: 'min', color: '#ffffff', size: 10 },
-                                              { type: 'max', color: '#ffffff', size: 10 }])
+  it('fix scales after callback', () => {
+    const sel = make_parent_sel(d3_body)
+    const b2 = Builder(null, null, '', sel, { metabolite_scale: [{ type: 'median', color: 'red', size: 0 },
+                                                                 { type: 'min', color: 'red', size: 0 },
+                                                                 { type: 'max', color: 'red', size: 0 } ],
+                                              never_ask_before_quit: true })
+    b2.settings.set_conditional('metabolite_scale', [{ type: 'median', color: '#9696ff', size: 8 }])
+    assert.deepEqual(b2.options.metabolite_scale,
+                     [
+                       { type: 'median', color: '#9696ff', size: 8 },
+                       { type: 'min', color: '#ffffff', size: 10 },
+                       { type: 'max', color: '#ffffff', size: 10 },
+                     ])
   })
 })

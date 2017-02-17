@@ -272,21 +272,22 @@ function go_to (scale, translate) {
   var new_zoom = d3_zoomIdentity
       .translate(translate.x, translate.y)
       .scale(scale)
-  this._zoom_behavior.transform(this.zoom_container, new_zoom)
+  this.zoom_container.call(this._zoom_behavior.transform, new_zoom)
 }
 
 /**
  * Execute the zoom called by the d3 zoom behavior.
- * @param {Number} scale - The scale, between 0 and 1.
- * @param {Object} translate - The location, of the form {x: 2.0, y: 3.0}.
+ * @param {Number} scale - The scale, between 0 and 1
+ * @param {Object} translate - The location, of the form { x: 2.0, y: 3.0 }
  */
 function _go_to_callback (scale, translate) {
   var use_3d_transform = this._use_3d_transform
 
   if (use_3d_transform) { // 3d tranform
     // cancel all timeouts
-    if (!_.isNull(this._zoom_timeout))
+    if (!_.isNull(this._zoom_timeout)) {
       clearTimeout(this._zoom_timeout)
+    }
 
     // set the 3d transform
     this._go_to_3d(scale, translate, this._svg_scale, this._svg_translate)
@@ -312,10 +313,10 @@ function _go_to_3d (scale, translate, svg_scale, svg_translate) {
   var n_scale = scale / svg_scale
   var n_translate = utils.c_minus_c(translate,
                                     utils.c_times_scalar(svg_translate, n_scale))
-  var tranform = ('translate(' + n_translate.x + 'px,' + n_translate.y + 'px) ' +
-                  'scale(' + n_scale + ')')
-  this.css3_transform_container.style('transform', tranform)
-  this.css3_transform_container.style('-webkit-transform', tranform)
+  var transform = ('translate(' + n_translate.x + 'px,' + n_translate.y + 'px) '
+                   + 'scale(' + n_scale + ')')
+  this.css3_transform_container.style('transform', transform)
+  this.css3_transform_container.style('-webkit-transform', transform)
   this.css3_transform_container.style('transform-origin', '0 0')
   this.css3_transform_container.style('-webkit-transform-origin', '0 0')
 }
