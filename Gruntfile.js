@@ -1,8 +1,9 @@
 var package = require('./package.json')
 
-module.exports = function(grunt) {
+module.exports = function (grunt) {
   // common tasks
-  var tasks = ['cssmin', 'concat', 'browserify', 'extract_sourcemap', 'uglify', 'copy']
+  var tasks = [ 'cssmin', 'concat', 'browserify', 'extract_sourcemap', 'uglify',
+                'copy', ]
 
   // Project configuration
   grunt.initConfig({
@@ -10,65 +11,62 @@ module.exports = function(grunt) {
     cssmin: {
       build: {
         files: {
-          'css/build/builder-embed.nomap.min.css': 'css/src/builder-embed.css'
-        }
+          'css/build/builder-embed.nomap.min.css': 'css/src/builder-embed.css',
+        },
       },
       dist: {
         options: {
           sourceMap: true,
-          sourceMapInlineSources: true
+          sourceMapInlineSources: true,
         },
         files: {
-          'css/dist/builder.min.css': 'css/src/builder.css'
-        }
-      }
-
+          'css/dist/builder.min.css': 'css/src/builder.css',
+        },
+      },
     },
     concat: {
       builder_embed: {
         options: {
           separator: '',
           banner: "module.exports = {'version': '" + package.version + "', builder_embed: '",
-          footer: "'};"
+          footer: "'};",
         },
         files: {
-          'js/src/inline.js': 'css/build/builder-embed.nomap.min.css'
-        }
-      }
+          'js/src/inline.js': 'css/build/builder-embed.nomap.min.css',
+        },
+      },
     },
     // js
     browserify: {
       options: {
         browserifyOptions: {
           standalone: 'escher',
-          debug: true
-        }
+          debug: true,
+        },
       },
       dist: {
         files: {
-          'js/build/escher.js': ['js/src/main.js']
-        }
-      }
+          'js/build/escher.js': [ 'js/src/main.js' ],
+        },
+      },
     },
     extract_sourcemap: {
       dist: {
         files: {
-          'js/dist': 'js/build/escher.js'
-        }
-      }
-
+          'js/dist': 'js/build/escher.js',
+        },
+      },
     },
     uglify: {
       options: {
         sourceMap: true,
-        sourceMapIn: 'js/dist/escher.js.map'
+        sourceMapIn: 'js/dist/escher.js.map',
       },
       dist: {
         files: {
-          'js/dist/escher.min.js': 'js/dist/escher.js'
-        }
-      }
-
+          'js/dist/escher.min.js': 'js/dist/escher.js',
+        },
+      },
     },
     copy: {
       css: {
@@ -84,7 +82,7 @@ module.exports = function(grunt) {
         flatten: true,
       },
       escher: {
-        src: ['js/dist/*', 'css/dist/*'],
+        src: [ 'js/dist/*', 'css/dist/*' ],
         dest: 'py/escher/static/escher/',
         expand: true,
         flatten: true,
@@ -93,7 +91,6 @@ module.exports = function(grunt) {
         src: [
           'node_modules/bootstrap/dist/js/bootstrap.min.js',
           'node_modules/bootswatch/simplex/bootstrap.min.css',
-          'node_modules/d3/d3.min.js',
           'node_modules/jquery/dist/jquery.min.js',
         ],
         dest: 'py/escher/static/lib/',
@@ -111,56 +108,56 @@ module.exports = function(grunt) {
         dest: 'py/escher/static/jsonschema/',
         expand: true,
         flatten: true,
-      }
+      },
     },
     watch: {
       grunt: {
         files: 'Gruntfile.js',
-        tasks: tasks
+        tasks: tasks,
       },
       scripts: {
         files: 'js/src/*.js',
-        tasks: tasks
+        tasks: tasks,
       },
       package: {
         files: 'package.json',
-        tasks: 'copy'
+        tasks: 'copy',
       },
       options: {
-        livereload: true
-      }
+        livereload: true,
+      },
     },
     // testing and coverage
     env: {
       coverage: {
-        APP_DIR_FOR_CODE_COVERAGE: '../../coverage/instrument/js/src/'
-      }
+        APP_DIR_FOR_CODE_COVERAGE: '../../coverage/instrument/js/src/',
+      },
     },
     instrument: {
       files: 'js/src/*.js',
       options: {
         lazy: true,
-        basePath: 'js/src/coverage/instrument/'
-      }
+        basePath: 'js/src/coverage/instrument/',
+      },
     },
     mochaTest: {
-      files: 'js/src/tests/*.js'
+      files: 'js/src/tests/*.js',
     },
     storeCoverage: {
       options: {
-        dir: 'js/src/coverage/reports'
-      }
+        dir: 'js/src/coverage/reports',
+      },
     },
     makeReport: {
       src: 'js/src/coverage/reports/**/*.json',
       options: {
         type: 'lcov',
         dir: 'js/src/coverage/reports',
-        print: 'detail'
-      }
+        print: 'detail',
+      },
     },
     coveralls: {
-      src: 'js/src/coverage/reports/lcov.info'
+      src: 'js/src/coverage/reports/lcov.info',
     },
     clean: {
       main: [
@@ -169,20 +166,20 @@ module.exports = function(grunt) {
         'py/escher/package.json', 'py/escher/static/escher/',
         'py/escher/static/lib/', 'py/escher/static/fonts/',
         'py/escher/static/fonts/',
-      ]
+      ],
     },
     gitadd: '*',
     gitpush: {
       tracking_tags: {
         options: {
-          tags: true
-        }
+          tags: true,
+        },
       },
       tracking: {
         options: {
-          tags: false
-        }
-      }
+          tags: false,
+        },
+      },
     },
     release: {
       // bump the version and commit, but do not push anything
@@ -191,18 +188,18 @@ module.exports = function(grunt) {
         tagName: 'v<%= version %>',
         push: false,
         pushTags: false,
-        npm: false
-      }
+        npm: false,
+      },
     },
     shell: {
       // publish to npm and pypi
       npm: {
-        command: 'npm publish'
+        command: 'npm publish',
       },
       pypi: {
-        command: 'cd py && python setup.py sdist bdist_wheel --universal upload'
-      }
-    }
+        command: 'cd py && python setup.py sdist bdist_wheel --universal upload',
+      },
+    },
   })
 
   // basics
@@ -228,8 +225,9 @@ module.exports = function(grunt) {
 
   // register tasks
   grunt.registerTask('default', tasks)
-  grunt.registerTask('test', ['mochaTest'])
-  grunt.registerTask('coverage', ['env:coverage', 'instrument', 'mochaTest',
-                                  'storeCoverage', 'makeReport', 'coveralls'])
-  grunt.registerTask('publish', ['gitpush', ...tasks, 'shell:npm', 'shell:pypi'])
+  grunt.registerTask('test', [ 'mochaTest' ])
+  grunt.registerTask('coverage', [ 'env:coverage', 'instrument', 'mochaTest',
+                                   'storeCoverage', 'makeReport', 'coveralls', ])
+  grunt.registerTask('publish', [ 'gitpush', ...tasks, 'shell:npm',
+                                  'shell:pypi', ])
 }
