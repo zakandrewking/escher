@@ -58,6 +58,9 @@ function init (map_data, model_data, embedded_css, selection, options) {
   // defaults
   if (!selection) {
     selection = d3_select('body').append('div')
+  } else {
+    // if user passes in a selection from an different d3 version, reselect
+    selection = d3_select(selection.node())
   }
   if (!options) {
     options = {}

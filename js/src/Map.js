@@ -1109,11 +1109,13 @@ function select_single_node() {
   })
   return out
 }
+
 function deselect_nodes() {
   var node_selection = this.sel.select('#nodes').selectAll('.node')
   node_selection.classed('selected', false)
   this.callback_manager.run('deselect_nodes')
 }
+
 function select_text_label(sel, d) {
   // deselect all nodes
   this.deselect_nodes()

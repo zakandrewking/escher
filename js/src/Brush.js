@@ -9,7 +9,8 @@
  */
 
 var utils = require('./utils')
-var d3_brush = require('d3-brush').brush
+var d3_brush = require('./d3-brush').brush
+var d3_brushSelection = require('./d3-brush').brushSelection
 var d3_scaleIdentity = require('d3-scale').scaleIdentity
 var d3_selection = require('d3-selection')
 var d3_select = require('d3-selection').select
@@ -57,6 +58,13 @@ function toggle (on_off) {
   }
 }
 
+/**
+ * Turn off the mouse crosshair
+ */
+function turn_off_crosshair (sel) {
+  sel.selectAll('rect').attr('cursor', null)
+}
+
 function setup_selection_brush () {
   var map = this.map
   var selection = this.brush_sel
@@ -70,46 +78,72 @@ function setup_selection_brush () {
   // clear existing brush
   selection.selectAll('g').remove()
 
-  var brush_fn = d3_brush()
-        .x(d3_scaleIdentity().domain([ x, x + width ]))
-        .y(d3_scaleIdentity().domain([ y, y + height ]))
-        .on('brushstart', function () {
-          // unhide secondary metabolites if they are hidden
-          if (map.settings.get_option('hide_secondary_metabolites')) {
-            map.settings.set_conditional('hide_secondary_metabolites', false)
-            map.draw_everything()
-            map.set_status('Showing secondary metabolites. You can hide them ' +
-                           'again in Settings.', 2000)
-          }
-        })
-        .on('brush', function () {
-          var shift_key_on = d3_selection.event.sourceEvent.shiftKey
-          var extent = d3_selection.event.target.extent()
+  // Create SVG container for brush.
+  // TODO is this g necessary?
+  var brush_g = selection.append('g').attr('class', 'brush')
+
+  // Set a flag so we know that the brush is being cleared at the end of a
+  // successful brush
+  var clearing_flag = false
+
+  var brush = d3_brush()
+      .extent([ [ x, y ], [ x + width, y + height ] ])
+      .on('start', function () {
+        turn_off_crosshair(brush_g)
+        // unhide secondary metabolites if they are hidden
+        if (map.settings.get_option('hide_secondary_metabolites')) {
+          map.settings.set_conditional('hide_secondary_metabolites', false)
+          map.draw_everything()
+          map.set_status('Showing secondary metabolites. You can hide them ' +
+                         'again in Settings.', 2000)
+        }
+      })
+      .on('brush', function () {
+        var shift_key_on = d3_selection.event.sourceEvent.shiftKey
+        var rect = d3_brushSelection(this)
+        // Check for no selection (e.g. after clearing brush)
+        if (rect !== null) {
           // When shift is pressed, ignore the currently selected nodes.
           // Otherwise, brush all nodes.
-          var selection = shift_key_on ?
-                selectable_selection.selectAll('.node:not(.selected),.text-label:not(.selected)') :
-                selectable_selection.selectAll('.node,.text-label')
+          var selection = (
+            shift_key_on ?
+              selectable_selection.selectAll('.node:not(.selected),.text-label:not(.selected)') :
+              selectable_selection.selectAll('.node,.text-label')
+          )
           selection.classed('selected', function (d) {
             var sx = d.x
             var sy = d.y
-            return (extent[0][0] <= sx && sx < extent[1][0] &&
-                    extent[0][1] <= sy && sy < extent[1][1])
+            return (rect[0][0] <= sx && sx < rect[1][0] &&
+                    rect[0][1] <= sy && sy < rect[1][1])
           })
-        })
-        .on('brushend', function () {
-          d3_selection.event.target.clear()
-          d3_select(this).call(d3_selection.event.target)
-        })
-  var brush = selection.append('g')
-        .attr('class', 'brush')
-        .call(brush_fn)
+        }
+      })
+      .on('end', function () {
+        turn_off_crosshair(brush_g)
+        // Clear brush
+        var rect = d3_brushSelection(this)
+        if (rect === null) {
+          if (clearing_flag) {
+            clearing_flag = false
+          } else {
+            // Empty selection, deselect all
+            map.select_none()
+          }
+        } else {
+          // Not empty, then clear the box
+          clearing_flag = true
+          brush_g.call(brush.move, null)
+        }
+      })
 
-  // turn off the mouse crosshair
+  // Initialize brush
+  brush_g.call(brush)
+
+  // Turn off the pan grab icons
   selection.selectAll('.background')
     .classed('cursor-grab', false)
     .classed('cursor-grabbing', false)
-    .style('cursor', null)
+  turn_off_crosshair(brush_g)
 
-  return brush
+  return brush_g
 }

@@ -33,29 +33,24 @@ describe('Map', () => {
   beforeEach(() => {
     // set up map
     svg = d3_body.append('svg')
+    const sel = svg.append('g')
+    // streams are required for these options
+    const required_options = { reaction_scale: [],
+                               metabolite_scale: [],
+                               reaction_styles: [],
+                               reaction_compare_style: 'diff',
+                               metabolite_styles: [],
+                               metabolite_compare_style: 'diff',
+                               cofactors: [], }
+    const required_conditional_options = [ 'reaction_scale',
+                                           'metabolite_scale', ]
+    const set_option = (key, val) => { required_options[key] = val }
+    const get_option = (key) => required_options[key]
 
-    const sel = svg.append('g'),
-        // streams are required for these options
-        required_options = { reaction_scale: [],
-                             metabolite_scale: [],
-                             reaction_styles: [],
-                             reaction_compare_style: 'diff',
-                             metabolite_styles: [],
-                             metabolite_compare_style: 'diff',
-                             cofactors: [] },
-        required_conditional_options = [ 'reaction_scale', 'metabolite_scale' ],
-        set_option = function(key, val) { required_options[key] = val; },
-        get_option = function(key) { return required_options[key]; }
-
-    map = Map.from_data(get_map(),
-                        svg,
-                        null,
-                        sel,
-                        null,
+    map = Map.from_data(get_map(), svg, null, sel, null,
                         new Settings(set_option, get_option,
                                      required_conditional_options),
-                        null,
-                        true)
+                        null, true)
   })
 
   it('initializes', () => {

@@ -275,6 +275,7 @@ it('utils.random_characters', () => {
 it('utils.check_for_parent_tag', () => {
   const sel = d3_body.append('div')
   assert.strictEqual(utils.check_for_parent_tag(sel, 'body'), true)
+  assert.strictEqual(utils.check_for_parent_tag(sel.node(), 'body'), true)
   assert.strictEqual(utils.check_for_parent_tag(sel, 'BODY'), true)
   assert.strictEqual(utils.check_for_parent_tag(sel, 'svg'), false)
 })
