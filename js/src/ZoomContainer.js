@@ -127,21 +127,13 @@ function toggle_pan_drag (on_off) {
   if (this._pan_drag_on) {
     // turn on the hand
     this.zoomed_sel
-      .classed('cursor-grab', true).classed('cursor-grabbing', false)
-    this.zoomed_sel
-      .on('mousedown.cursor', function (sel) {
-        sel.classed('cursor-grab', false).classed('cursor-grabbing', true)
-      }.bind(null, this.zoomed_sel))
-      .on('mouseup.cursor', function (sel) {
-        sel.classed('cursor-grab', true).classed('cursor-grabbing', false)
-      }.bind(null, this.zoomed_sel))
+      .classed('cursor-grab', true)
+      .classed('cursor-grabbing', false)
   } else {
     // turn off the hand
     this.zoomed_sel.style('cursor', null)
       .classed('cursor-grab', false)
       .classed('cursor-grabbing', false)
-    this.zoomed_sel.on('mousedown.cursor', null)
-    this.zoomed_sel.on('mouseup.cursor', null)
   }
 
   // update the behaviors
@@ -176,6 +168,12 @@ function _update_scroll () {
   // d3 related to d3 using the global this.document. TODO look into this.
   this._zoom_behavior = d3_zoom()
     .on('start', function () {
+      if (d3_selection.event.sourceEvent &&
+          d3_selection.event.sourceEvent.type === 'mousedown') {
+        this.zoomed_sel
+          .classed('cursor-grab', false)
+          .classed('cursor-grabbing', true)
+      }
       // Prevent default zoom behavior, specifically for mobile pinch zoom
       if (d3_selection.event.sourceEvent !== null) {
         d3_selection.event.sourceEvent.stopPropagation()
@@ -187,6 +185,14 @@ function _update_scroll () {
         x: d3_selection.event.transform.x,
         y: d3_selection.event.transform.y,
       })
+    }.bind(this))
+    .on('end', function () {
+      if (d3_selection.event.sourceEvent &&
+          d3_selection.event.sourceEvent.type === 'mouseup') {
+        this.zoomed_sel
+          .classed('cursor-grab', true)
+          .classed('cursor-grabbing', false)
+      }
     }.bind(this))
 
   // Set it up
@@ -264,10 +270,6 @@ function go_to (scale, translate) {
     throw new Error('Bad translate value')
   }
 
-  // Save inputs
-  this.window_scale = scale
-  this.window_translate = translate
-
   // Save to zoom behavior, which will call _go_to_callback
   var new_zoom = d3_zoomIdentity
       .translate(translate.x, translate.y)
@@ -281,6 +283,9 @@ function go_to (scale, translate) {
  * @param {Object} translate - The location, of the form { x: 2.0, y: 3.0 }
  */
 function _go_to_callback (scale, translate) {
+  this.window_scale = scale
+  this.window_translate = translate
+
   var use_3d_transform = this._use_3d_transform
 
   if (use_3d_transform) { // 3d tranform
@@ -352,8 +357,8 @@ function _go_to_svg (scale, translate, callback) {
             'translate(' + translate.x + ',' + translate.y + ') ' +
             'scale(' + scale + ')')
     // save svg location
-    this._svg_scale = this.window_scale
-    this._svg_translate = this.window_translate
+    this._svg_scale = scale
+    this._svg_translate = translate
 
     _.defer(function () {
       // defer for callback after draw

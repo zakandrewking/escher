@@ -140,9 +140,6 @@ function setup_selection_brush () {
   brush_g.call(brush)
 
   // Turn off the pan grab icons
-  selection.selectAll('.background')
-    .classed('cursor-grab', false)
-    .classed('cursor-grabbing', false)
   turn_off_crosshair(brush_g)
 
   return brush_g
