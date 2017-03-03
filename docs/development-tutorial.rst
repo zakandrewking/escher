@@ -1,6 +1,9 @@
 Tutorial: Custom tooltips
 -------------------------
 
+Introduction to extending Escher by adding custom text, images, or plots to a
+tooltips on the Escher pathway visualization.
+
 In this tutorial, we will learn to build custom tooltips for Escher.
 
 There is a live demo of the custom tooltips here:
