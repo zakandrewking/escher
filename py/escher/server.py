@@ -135,11 +135,11 @@ class BuilderHandler(BaseHandler):
                 with open(join(root_directory, rel_path), 'r') as f:
                     return json.load(f)
             except:
-                logging.warn('Could not load example_data file: %s' % rel_path)
-        if len(self.get_arguments('example_data')) > 0:
-            r_filepath = 'escher/example_data/reaction_data_iJO1366.json'
+                logging.warn('Could not load testing_data file: %s' % rel_path)
+        if len(self.get_arguments('testing_data')) > 0:
+            r_filepath = 'escher/testing_data/reaction_data_iJO1366.json'
             builder_kwargs['reaction_data'] = load_data_file(r_filepath)
-            m_filepath = 'escher/example_data/metabolite_data_iJO1366.json'
+            m_filepath = 'escher/testing_data/metabolite_data_iJO1366.json'
             builder_kwargs['metabolite_data'] = load_data_file(m_filepath)
 
         # display options

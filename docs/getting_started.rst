@@ -174,8 +174,35 @@ say 'nd' which means 'no data.'
 
 .. image:: _static/reaction_data_with_nd.png
 
-The structure of a CSV file
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Example data files
+^^^^^^^^^^^^^^^^^^
+
+It is often easiest to learn by example, so here are some example datasets that
+work with Escher maps for the *Escherichia coli* model iJO1366:
+
+**Reaction data**
+
+- `S3_iJO1366_anaerobic_FBA_flux.json`_: FBA flux simulation data for iJO1366 as JSON.
+- `reaction_data_iJO1366.json`_: A JSON file with one dataset of fluxes.
+- `reaction_data_diff_iJO1366.json`_: A JSON file with two dataset of fluxes.
+
+**Metabolite data**
+
+- `S4_McCloskey2013_aerobic_metabolomics.csv`_: Aerobic metabolomics for E. coli as CSV.
+- `metabolite_data_iJO1366.json`_: A JSON file with one dataset of metabolite
+  concentrations.
+- `metabolite_data_diff_iJO1366.json`_: A JSON file with two datasets of
+  metabolite concentrations.
+
+**Gene data**
+
+- `S6_RNA-seq_aerobic_to_anaerobic.csv`_: Comparison of two gene datasets
+  (RNA-seq) as CSV.
+- `gene_data_names_iJO1366.json`_: A single gene dataset using descriptive
+  (gene) names for identifiers as JSON.
+
+Creating data files as CSV and JSON
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 CSV files should have 1 header row, 1 ID column, and either 1 or 2 columns for
 data values. The ID column can contain BiGG IDs or descriptive names for the
@@ -446,3 +473,11 @@ metabolite circles.
 .. _`example code`: http://nbviewer.ipython.org/github/zakandrewking/escher/blob/master/docs/notebooks/Generate%20JSON%20models%20in%20COBRApy.ipynb
 .. _hex: http://en.wikipedia.org/wiki/Web_colors#Hex_triplet
 .. _`CSS-style color`: https://developer.mozilla.org/en-US/docs/Web/CSS/color
+.. _`S3_iJO1366_anaerobic_FBA_flux.json`: _static/example_data/S3_iJO1366_anaerobic_FBA_flux.json
+.. _`reaction_data_iJO1366.json`: _static/example_data/reaction_data_iJO1366.json
+.. _`reaction_data_diff_iJO1366.json`: _static/example_data/reaction_data_diff_iJO1366.json
+.. _`S4_McCloskey2013_aerobic_metabolomics.csv`: _static/example_data/S4_McCloskey2013_aerobic_metabolomics.csv
+.. _`metabolite_data_iJO1366.json`: _static/example_data/metabolite_data_iJO1366.json
+.. _`metabolite_data_diff_iJO1366.json`: _static/example_data/metabolite_data_diff_iJO1366.json
+.. _`S6_RNA-seq_aerobic_to_anaerobic.csv`: _static/example_data/S6_RNA-seq_aerobic_to_anaerobic.csv
+.. _`gene_data_names_iJO1366.json`: _static/example_data/gene_data_names_iJO1366.json

@@ -1,8 +1,9 @@
-Run Escher locally and in IPython
----------------------------------
+Escher in Python and Jupyter
+----------------------------
 
-To run Escher on a local computer or to use Escher in Python/IPython, first
-install it. The Python package for Escher can be installed using pip::
+In addition to the web application, Escher has a Python package that allows you
+to generate maps from within Python and embed them in a Jupyter Notebook. The
+Python package for Escher can be installed using pip::
 
   pip install escher
 
@@ -15,23 +16,47 @@ directly::
 
   python setup.py install
 
-Escher in the IPython Notebook
+Dependencies should install automatically, but they are:
+
+- `Jinja2`_
+- `Tornado`_
+- `COBRApy`_, 0.5.0 or later
+
+Launching Escher in Python
+==========================
+
+The main entrypoint for Escher in Python is the Builder class. You can create a
+new map by calling Builder::
+
+  from escher import Builder
+  b = Builder(map_name="iJO1366.Central metabolism")
+  b.display_in_browser()
+
+These commands will create a new builder instance, download a map from our
+server, then launch a new browser tab to display the map.
+
+The specific arguments available for `Builder` are described in the
+:doc:`python_api`.
+
+You can also pass a COBRApy model directly into the Builder::
+
+  import cobra
+  from escher import Builder
+  my_cobra_model = cobra.io.read_sbml_model('model.xml')
+  b = Builder(model=my_cobra_model)
+
+Escher in the Jupyter Notebook
 ==============================
 
-Once you have installed Escher locally, you can interact with Escher maps in an
-IPython Notebook.
+Once you have installed Escher locally, you can interact with Escher maps in a
+Jupyter Notebook. The commands are the same as above, but instead of calling
+`display_in_browser()`, call `display_in_notebook()`
 
 Here are example notebooks to get started with:
 
 - `COBRApy and Escher`_
 - `JavaScript development and offline maps`_
 - `Generate JSON models in COBRApy`_
-
-Dependencies:
-
-- `Jinja2`_
-- `Tornado`_
-- `COBRApy`_, 0.3.0 or later
 
 .. _`local-server`:
 

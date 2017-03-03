@@ -189,7 +189,7 @@ def test_apply_id_mappings():
 
 def test_apply_cobra_model_to_map():
     new_map = get_new_map()
-    model = cobra.io.load_json_model(join(root_directory, 'escher', 'example_data', 'iJO1366.json'))
+    model = cobra.io.load_json_model(join(root_directory, 'escher', 'testing_data', 'iJO1366.json'))
     model.reactions.get_by_id('GAPD').gene_reaction_rule = '12345'
     model.reactions.get_by_id('GAPD').name = '54321'
     assert model.reactions.get_by_id('GAPD').lower_bound < 0
@@ -204,7 +204,7 @@ def test_apply_cobra_model_to_map():
 
 
 def test_convert():
-    model = cobra.io.load_json_model(join(root_directory, 'escher', 'example_data', 'iJO1366.json'))
+    model = cobra.io.load_json_model(join(root_directory, 'escher', 'testing_data', 'iJO1366.json'))
 
     # reverse the reaction
     model.reactions.get_by_id('GAPD').upper_bound = 0
@@ -241,7 +241,7 @@ def test_convert():
 
 
 def test_convert_2():
-    model = cobra.io.load_json_model(join(root_directory, 'escher', 'example_data', 'iJO1366.json'))
+    model = cobra.io.load_json_model(join(root_directory, 'escher', 'testing_data', 'iJO1366.json'))
     convert(get_new_map(), model)
 
 

@@ -12,7 +12,7 @@ You can include the compiled Escher JavaScript and CSS files in any HTML
 document. The only dependencies are `d3.js`_, and optionally `Twitter
 Bootstrap`_ if you are using the option ``menu='all'``.
 
-The compiled files are available form unpkg::
+The compiled files are available from unpkg::
 
   https://unpkg.com/escher-vis/js/dist/escher.js
   https://unpkg.com/escher-vis/js/dist/escher.min.js
@@ -28,6 +28,11 @@ Source maps are also hosted there::
 If you want a particular version of escher, add a version tag like this::
 
   https://unpkg.com/escher-vis@1.4.0-beta.3/js/dist/escher.js
+
+Or, if you use NPM, you can simply install `escher-vis` -- the name `escher` was
+already taken::
+
+  npm install --save escher-vis
 
 For an example of the boilerplate code that is required to begin developing with
 Escher, have a look at the `escher-demo repository`_. For projects built with
