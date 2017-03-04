@@ -51,6 +51,11 @@ function init (selection, scroll_behavior, use_3d_transform, fill_screen) {
   // set the selection class
   selection.classed('escher-container', true)
 
+  // Stop scrolling on mobile
+  selection.on('touchstart touchmove', function () {
+    d3_selection.event.stopPropagation()
+  })
+
   // fill screen classes
   if (fill_screen) {
     d3_select('html').classed('fill-screen', true)

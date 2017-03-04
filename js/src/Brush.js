@@ -23,7 +23,13 @@ Brush.prototype = {
 }
 module.exports = Brush
 
-// definitions
+/**
+ * Initialize the brush.
+ * @param {D3 Selection} selection - The selection for the brush.
+ * @param {Boolean} is_enabled - Whether to enable right away.
+ * @param {escher.Map} map - The Escher Map object.
+ * @param {Node} insert_after - A node within selection to insert after.
+ */
 function init (selection, is_enabled, map, insert_after) {
   this.brush_sel = selection.append('g').attr('id', 'brush-container')
   var node = this.brush_sel.node()
@@ -52,9 +58,9 @@ function toggle (on_off) {
     on_off = !this.enabled
   }
   if (on_off) {
-    this.selection_brush = this.setup_selection_brush()
+    this.setup_selection_brush()
   } else {
-    this.brush_sel.selectAll('.brush').remove()
+    this.brush_sel.selectAll('*').remove()
   }
 }
 
@@ -75,12 +81,8 @@ function setup_selection_brush () {
   var x = size_and_location.x
   var y = size_and_location.y
 
-  // clear existing brush
-  selection.selectAll('g').remove()
-
-  // Create SVG container for brush.
-  // TODO is this g necessary?
-  var brush_g = selection.append('g').attr('class', 'brush')
+  // Clear existing brush
+  selection.selectAll('*').remove()
 
   // Set a flag so we know that the brush is being cleared at the end of a
   // successful brush
@@ -89,7 +91,7 @@ function setup_selection_brush () {
   var brush = d3_brush()
       .extent([ [ x, y ], [ x + width, y + height ] ])
       .on('start', function () {
-        turn_off_crosshair(brush_g)
+        turn_off_crosshair(selection)
         // unhide secondary metabolites if they are hidden
         if (map.settings.get_option('hide_secondary_metabolites')) {
           map.settings.set_conditional('hide_secondary_metabolites', false)
@@ -119,7 +121,7 @@ function setup_selection_brush () {
         }
       })
       .on('end', function () {
-        turn_off_crosshair(brush_g)
+        turn_off_crosshair(selection)
         // Clear brush
         var rect = d3_brushSelection(this)
         if (rect === null) {
@@ -132,15 +134,14 @@ function setup_selection_brush () {
         } else {
           // Not empty, then clear the box
           clearing_flag = true
-          brush_g.call(brush.move, null)
+          selection.call(brush.move, null)
         }
       })
 
-  // Initialize brush
-  brush_g.call(brush)
+  selection
+    // Initialize brush
+    .call(brush)
 
   // Turn off the pan grab icons
-  turn_off_crosshair(brush_g)
-
-  return brush_g
+  turn_off_crosshair(selection)
 }
