@@ -1,21 +1,35 @@
 Tutorial: Custom tooltips
 -------------------------
 
-Introduction to extending Escher by adding custom text, images, or plots to a
-tooltips on the Escher pathway visualization.
+We designed Escher to be easily extended by anyone willing to learn a little
+JavaScript. A few extensions to Escher already exist; you can check out our
+`demos`_ and see Escher in action on the `Protein Data Bank`_ for
+examples. Escher uses standard web technologies (JavaScript, CSS, HTML, SVG), so
+you can embed it in any web page. We also hope to see users extend the maps by
+integrating plots, dynamic interactions, and more.
 
-In this tutorial, we will learn to build custom tooltips for Escher.
+In this tutorial, I will introduce a new extension mechanism in Escher: custom
+tooltips. The tooltips are already available on Escher maps when you hover over
+a reaction, metabolite, or gene. The default tooltips provide some information
+about the object you are hovering over, and they have a link to our BiGG Models
+database.
 
-There is a live demo of the custom tooltips here:
+With a little bit of JavaScript, you can add your own content to the
+tooltips. This could be custom text, images, or plots or anything else possible
+in a website. We use D3.js for many plots, and, while D3.js is optional here,
+you might want to check out their `example gallery`_ for inspiration.
 
-  https://escher.github.io/escher-demo/custom_tooltips
+To follow along with this tutorial, you will probably need a basic understanding
+of HTML, CSS, JavaScript, and SVG.
 
 Getting ready to develop with Escher
 ====================================
 
 Before you can make any changes to an Escher map, you will download some source
-code an set up a local web server. Here, I will give some simple instructions
-with a basic static file server.
+code and set up a local web server. Your local version of Escher will have all
+of the features from the main website, but you will be able to modify the
+website. Here, I will give some simple instructions with a basic static file
+server.
 
 NOTE: If you already have experience with JavaScript development, you might want
 to download Escher from NPM (as `escher-vis`). If you like Webpack, check out
@@ -53,6 +67,14 @@ about the Builder class and its options and methods.
 
 .. _`escher-test`: https://github.com/escher/escher-test
 .. _`ZIP file`: https://github.com/escher/escher-demo/archive/master.zip
+
+Custom tooltips
+===============
+
+There is a live demo of the custom tooltips here:
+
+  https://escher.github.io/escher-demo/custom_tooltips
+
 
 Method 1: Callback function
 ===========================
@@ -142,3 +164,6 @@ Here is the code.
 state === memory
 
 .. _`Tinier`: https://github.com/zakandrewking/tinier
+.. _`demos`: https://escher.github.io/escher-demo
+.. _`Protein Data Bank`: http://www.rcsb.org/pdb/secondary.do?p=v2/secondary/visualize.jsp#visualize_pathway
+.. _`example gallery`: https://github.com/d3/d3/wiki/Gallery
