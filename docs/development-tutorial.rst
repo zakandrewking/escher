@@ -3,10 +3,10 @@ Tutorial: Custom tooltips
 
 We designed Escher to be easily extended by anyone willing to learn a little
 JavaScript. A few extensions to Escher already exist; you can check out our
-`demos`_ and see Escher in action on the `Protein Data Bank`_ for
-examples. Escher uses standard web technologies (JavaScript, CSS, HTML, SVG), so
-you can embed it in any web page. We also hope to see users extend the maps by
-integrating plots, dynamic interactions, and more.
+`demos`_ and see Escher in action on the `Protein Data Bank`_. Escher uses
+standard web technologies (JavaScript, CSS, HTML, SVG), so you can embed it in
+any web page. We also hope to see users extend the maps by integrating plots,
+dynamic interactions, and more.
 
 In this tutorial, I will introduce a new extension mechanism in Escher: custom
 tooltips. The tooltips are already available on Escher maps when you hover over
@@ -15,16 +15,17 @@ about the object you are hovering over, but any text, links, or pictures could
 potentially be displayed there.
 
 With a little bit of JavaScript, you can add your own content to the
-tooltips. This could be custom text, images, or plots or anything else possible
-in a website. We use `D3.js`_ for many plots, and, while D3.js is optional here,
-you might want to check out their `example gallery`_ for inspiration.
+tooltips. In this tutorial, we will add custom text, images, and then plots with
+`D3.js`_ to the tooltips. Here's what were are building up to (`live demo`_):
+
+.. image:: _static/tooltip_bar.png
 
 To follow along with this tutorial, you will need a basic understanding of HTML,
 CSS, JavaScript, and SVG. If you have never used these before, check out
 `codecademy`_.
 
 On the other hand, if you already know JavaScript and the basic Escher API, you
-can skip to section :ref:`custom-tooltips`.
+can skip to the section :ref:`custom-tooltips`.
 
 Getting ready to develop with Escher
 ====================================
@@ -78,7 +79,7 @@ display, whether to allow editing, how to style the map, and more. These options
 are documented in the :doc:`javascript_api`.
 
 The most basic demo is in the folder ``embedded_map_builder``. Look for the
-``index.html`` file that contains a section of JavaScript code that looks like
+``main.js`` file that contains a section of JavaScript code that looks like
 this:
 
 .. code-block:: javascript
@@ -116,7 +117,7 @@ Method 1: Callback function
 ===========================
 
 The simplest tooltip is just a function that Escher will call whenever a user
-pilots the mouse over a metabolite, reaction, or gene. In the ``index.html`` for
+pilots the mouse over a metabolite, reaction, or gene. In the ``main.js`` for
 ``custom_tooltips``, we can set our tooltip function with the ``tooltip_component``
 option.
 
@@ -127,23 +128,28 @@ option.
     fill_screen: true,
     // --------------------------------------------------
     // CHANGE ME
-    tooltip_component: tooltips_1,
+    tooltip_component: tooltips_4,
     // --------------------------------------------------
   }
 
-That tooltip ``tooltip2_1`` is a function that we defined earlier in
-``index.html``. Here's what it looks like:
+First, let's change ``tooltips_4`` to the simplest tooltip,
+``tooltips_1``. ``tooltips_1`` is a function that we define earlier in
+``main.js``. Here's what it looks like:
 
 .. code-block:: javascript
 
   var tooltips_1 = function (args) {
+    // Check if there is already text in the tooltip
     if (args.el.childNodes.length === 0) {
+      // If not, add new text
       var node = document.createTextNode('Hello ')
       args.el.appendChild(node)
+      // Style the text based on our tooltip_style object
       Object.keys(tooltip_style).map(function (key) {
         args.el.style[key] = tooltip_style[key]
       })
     }
+    // Update the text to read out the identifier biggId
     args.el.childNodes[0].textContent = 'Hello ' + args.state.biggId
   }
 
@@ -160,11 +166,12 @@ to the function and reloading:
 
   var tooltips_1 = function (args) {
     console.log(args) // NEW
+    // Check if there is already text in the tooltip
     if (args.el.childNodes.length === 0) {
 
-Now, open your developer tools when you hover, and you can see exactly what
-we're working with. After you hover a few times, the console should contain
-something like this:
+Now, open your developer tools, and, when you hover over a reaction, and you can
+see exactly what we're working with. After you hover a few times, the console
+should contain something like this:
 
 .. image:: _static/console.png
 
@@ -182,42 +189,200 @@ that's what the next section is all about.
 Method 2: Callback function with Tinier for rendering
 =====================================================
 
-`Tinier`_
+The shortcuts we will use are part a the `Tinier`_ library. Tinier looks a lot
+like the popular JavaScript framework `React`_, but it is meant to be tiny (get
+it?) and modular so you can use it just to render a few DOM elements inside a
+tooltip. (In place of Tinier, you could also use a library like JQuery. That's
+not a bad idea if you alreay have experience with it.)
 
-Here is the code.
+The reasons for using Tinier will be a lot more obvious if we look at the second
+tooltip. Here is the code. NOTE: If you look at the code in escher-demo,
+``tooltip_2`` is more complicated. We are working up to that version.
 
 .. code-block:: javascript
 
-     var tooltips_2 = function (args) {
-       tinier.render(
-         args.el,
-         tinier.createElement(
-           'div', { style: tooltip_style},
-           'Hello tinier ' + args.state.biggId
-         )
-       )
-     }
+  var tooltips_2 = function (args) {
+    // Use the tinier.render function to render any changes each time the
+    // tooltip gets called
+    tinier.render(
+      args.el,
+      // Create a new div element inside args.el
+      tinier.createElement(
+        'div',
+        // Style the text based on our tooltip_style object
+        { style: tooltip_style},
+        // Update the text to read out the identifier biggId
+        'Hello tinier ' + args.state.biggId
+      )
+    )
+  }
 
-In place of Tinier, you could also use a library like JQuery here.
+OK, let's compare ``tooltips_2`` to ``tooltips_1``. Both functions take
+``args``, and both function render something inside of ``args.el``. The new
+function uses two pieces of Tinier. First, ``tinier.render`` will take a
+location on the page (``args.el``) and render a Tinier element. Second,
+``tinier.createElement`` defines a Tinier version of a DOM element, in this case
+a ``div``. To create an Alement, you pass in a tag name, an object with
+attributes for the element like styles, and any children of the ``div``. In this
+case, the only child is some text that says 'Hello tinier' with the biggId.
 
+If you compare ``tootips_2`` and ``tooltips_1`` in detail, you might notice that
+``tooltips_2`` does not have any ``if`` statements. That's becuase Tinier lets
+you define your interface once, up front, and then it will determine whether any
+changes need to be made. If a ``div`` already exists, Tinier will just modify it
+instead of creating a new one. In the old version, we would have to use ``if``
+to check whether changes are necessary.
 
+Change ``tooltips_1`` to ``tooltips_2`` in this block, and refresh to see our
+new tooltip in action.
 
-Method 3: Tinier Component with state
+.. code-block:: javascript
+
+  var options = {
+    menu: 'zoom',
+    fill_screen: true,
+    // --------------------------------------------------
+    // CHANGE ME
+    tooltip_component: tooltips_2,
+    // --------------------------------------------------
+  }
+
+Method 3: Tooltip with random pics
+==================================
+
+We have a pretty simple tooltip, so let's add something interesting to it. Try
+replacing ``tooltips_2`` with ``tooltips_3``, which looks like this:
+
+.. code-block:: javascript
+
+  var tooltips_3 = function (args) {
+    // Use the tinier.render function to render any changes each time the
+    // tooltip gets called
+    tinier.render(
+      args.el,
+      // Create a new div element inside args.el
+      tinier.createElement(
+        'div',
+        // Style the text based on our tooltip_style object
+        { style: tooltip_style},
+        // Update the text to read out the identifier biggId
+        'Hello tinier ' + args.state.biggId,
+        // Line break
+        tinier.createElement('br'),
+        // Add a picture
+        tinier.createElement(
+          'img',
+          // Get a random pic from unsplash, with ID between 0 and 1000
+          { src: 'https://unsplash.it/100/100?image=' +  Math.floor(Math.random() * 1000) }
+        )
+      )
+    )
+  }
+
+So what happened there? We just added two new elements inside our div. The
+``br`` creates a linebreak. And the ``img`` creates a new image. We are pulling
+images from a website call unsplash that will return a different image for each
+of our random integer values.
+
+Try it out! You should get a tooltip like this, with a different picture every
+time:
+
+.. image:: _static/tooltip_image.png
+
+Method 4: Tooltip with a D3 plot
+================================
+
+What if we want a data plot in the tooltip? `D3.js`_ is great for creating
+custom plots, so let's start with this example of a bar plot in D3:
+
+https://bl.ocks.org/mbostock/3310560
+
+D3 takes a little while to learn, so, if you are interested in expanding on what
+we show here, I recommend you read through some D3 `tutorials`_. I will only
+explain the main points here, and you can work through the details as you learn
+D3.
+
+The complete code for ``tooltips_4`` with bar charts is in
+``custom_tooltips/main.js``.
+
+.. code-block:: javascript
+
+  var tooltips_4 = function (args) {
+    // Use the tinier.render function to render any changes each time the
+    // tooltip gets called
+    tinier.render(
+      args.el,
+      // Create a new div element inside args.el
+      tinier.createElement(
+        'div',
+        // Style the text based on our tooltip_style object
+        { style: tooltip_style }
+      )
+    )
+    ...
+
+So we still create and style a tooltip, but now we are going to fill it with a
+plot. Next, we take the biggID for our reaction, metabolite, or gene, and we
+calculate the frequency of each letter.
+
+.. code-block:: javascript
+
+  // Let's calculate the frequency of letters in the ID
+  var letters = calculateLetterFrequency(args.state.biggId)
+
+You can look at the ``calculateLetterFrequency`` function; basic JavaScript.
+
+.. code-block:: javascript
+
+  function calculateLetterFrequency (s) {
+    var counts = {}
+    s.toUpperCase().split('').map(function (c) {
+      if (!(c in counts)) {
+        counts[c] = 1
+      } else {
+        counts[c] += 1
+      }
+    })
+    return Object.keys(counts).map(function (k) {
+      return { letter: k, frequency: counts[k] }
+    })
+  }
+
+The rest of ``tooltips_4`` takes our frequency data and turns it into a bar
+chart. This code is just an adaptation of the example we mentioned above:
+
+https://bl.ocks.org/mbostock/3310560
+
+For the details on how this works, check out the `tutorials`_ called "How to build
+a bar chart." The end result looks like this:
+
+.. image:: _static/tooltip_bar.png
+
+Pretty cool! This is also the version that's live on the `demo website`_, so you
+can see it in action there as well.
+
+Method 5: Tinier Component with state
 =====================================
 
-Here is the code.
+We have just one more example before you have complete control over all things
+tooltip. As you develop more components like tooltips, you might find a need for
+some kind of memory in your component. A function, like the ones we have seen so
+far, runs from scratch every time. You can keep memory in global variables, but
+that gets hairy, fast.
+
+We take an approach inspired by the `Redux`_ library, and you can read more
+about this approach in the excellent Redux documentation. Tinier uses some of
+the concepts from Redux, specifically *reducers* and *immutable state*.
+
+Here is our example of a tooltip with memory; it will count the number of times
+you hover:
 
 .. code-block:: javascript
 
-     var tooltips_3 = tinier.createComponent({
+     var tooltips_5 = tinier.createComponent({
        init: function () {
          return {
            biggId: '',
-           name: '',
-           loc: { x: 0, y: 0 },
-           data: null,
-           type: null,
-           // custom data
            count: 0,
          }
        },
@@ -226,10 +391,6 @@ Here is the code.
          setContainerData: function (args) {
            return Object.assign({}, args.state, {
              biggId: args.biggId,
-             name: args.name,
-             loc: args.loc,
-             data: args.data,
-             type: args.type,
              count: args.state.count + 1,
            })
          },
@@ -246,7 +407,17 @@ Here is the code.
        }
      })
 
-state === memory
+We can pass this Tinier component right into our Escher Builder. Just like in
+Redux, every time we want to change the state (memory) of our component, we will
+call a reducer function. Escher expects you to define a reducer called
+``setContainerData`` that will be called every time the data for the tooltip
+updates, and this will trigger the render if the state changes.
+
+The `Tinier`_ documentation has some more details on the concepts. Tinier is
+still beta software and is in active development. If you get this far in the
+tutorial, and you want to ask questions about how Tinier works and the plans for
+its future, you can make an issue on GitHub, or email zaking@ucsd.edu and he (I)
+will excited to talk about it.
 
 .. _`Tinier`: https://github.com/zakandrewking/tinier
 .. _`demos`: https://escher.github.io/escher-demo
@@ -261,3 +432,8 @@ state === memory
 .. _`Chrome`: https://developer.chrome.com/devtools
 .. _`Firefox`: https://developer.mozilla.org/en-US/docs/Tools
 .. _`MDN`: https://developer.mozilla.org/
+.. _`React`: https://facebook.github.io/react/
+.. _`tutorials`: https://github.com/d3/d3/wiki/Tutorials
+.. _`demo website`: http://escher.github.io/escher-demo/custom_tooltips/
+.. _`live demo`: http://escher.github.io/escher-demo/custom_tooltips/
+.. _`Redux`: http://redux.js.org
