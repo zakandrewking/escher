@@ -34,7 +34,7 @@ describe('Builder', () => {
       sels.push(sel)
     }
     sels.map(sel => sel.remove())
-  }).timeout(5000)
+  }).timeout(10000)
 
   it('check for model+highlight_missing bug', () => {
     const b = Builder(get_map(), get_model(), '', make_parent_sel(d3_body),
