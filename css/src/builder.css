@@ -30,11 +30,8 @@
 
 /* Basics */
 
-body, .btn {
+.escher-container, .escher-container .btn {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
-}
-
-body {
   font-size: 14px;
 }
 
@@ -429,6 +426,9 @@ resizes. */
   vertical-align: middle;
   cursor: pointer;
   margin: 3px 0 0 0;
+}
+.escher-container .simple-button.active {
+  background-image: linear-gradient(#8F4F3F, #834c3c 6%, #8d3a2d);
 }
 /* Reaction input */
 .escher-container #rxn-input {
