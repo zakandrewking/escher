@@ -1140,7 +1140,7 @@ function _setup_status (selection, map) {
 
 function _setup_quick_jump (selection) {
   // function to load a map
-  var load_fn = function(new_map_name, quick_jump_path, callback) {
+  var load_fn = function (new_map_name, quick_jump_path, callback) {
     if (this.options.enable_editing && !this.options.never_ask_before_quit) {
       if (!(confirm(('You will lose any unsaved changes.\n\n' +
                      'Are you sure you want to switch maps?')))) {

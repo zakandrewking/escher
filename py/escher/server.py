@@ -84,7 +84,7 @@ class IndexHandler(BaseHandler):
 
         # render the template
         template = env.get_template('homepage.html')
-        data = template.render(d3=get_url('d3', 'local'),
+        data = template.render(escher=get_url('escher_min', 'local'),
                                boot_css=get_url('boot_css', 'local'),
                                homepage_css=get_url('homepage_css', 'local'),
                                favicon=get_url('favicon', 'local'),

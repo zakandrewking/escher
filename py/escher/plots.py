@@ -547,7 +547,6 @@ class Builder(object):
         local_host = self.local_host
 
         # get the urls
-        d3_url = get_url('d3', url_source, local_host, protocol)
         escher_url = get_url(('escher_min' if minified_js else 'escher'),
                              url_source, local_host, protocol)
         if menu == 'all' and not ignore_bootstrap:
@@ -599,7 +598,6 @@ class Builder(object):
             wrapper=html_wrapper,
             height=height,
             id=self.the_id,
-            d3_url=d3_url,
             escher_url=escher_url,
             # dump json
             id_json=json_dump_and_escape(self.the_id),
@@ -810,7 +808,6 @@ class Builder(object):
             # add dependencies to the directory
             escher = get_url('escher_min' if minified_js else 'escher', 'local')
             builder_css = get_url('builder_css_min' if minified_js else 'builder_css', 'local')
-            d3 = get_url('d3', 'local')
             favicon = get_url('favicon', 'local')
             if menu == 'all':
                 boot_css = get_url('boot_css', 'local')
@@ -826,7 +823,7 @@ class Builder(object):
                 boot_font_eot = boot_font_svg = None
                 boot_font_woff = boot_font_woff2 = boot_font_ttf = None
 
-            for path in [escher, builder_css, boot_css, boot_js, jquery, d3,
+            for path in [escher, builder_css, boot_css, boot_js, jquery,
                          favicon, boot_font_eot, boot_font_svg, boot_font_woff,
                          boot_font_woff2, boot_font_ttf]:
                 if path is None:
