@@ -20,7 +20,9 @@ function init (div, map, displacement) {
   this.map = map
   this.displacement = displacement === undefined ? { x: 0, y: 0 } : displacement
 
-  this.visible = false
+  // begin hidden
+  this.visible = true
+  this.hide()
 }
 
 function is_visible () {
@@ -48,8 +50,8 @@ function place (coords) {
                                this.displacement.y)))
   this.div.style('position', 'absolute')
     .style('display', 'block')
-    .style('left', left+'px')
-    .style('top', top+'px')
+    .style('left', left + 'px')
+    .style('top', top + 'px')
 
   this.visible = true
 }
