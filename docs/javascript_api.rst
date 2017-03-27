@@ -139,6 +139,10 @@ JavaScript API
 
           (Default: ``false``) If checked, hide all reaction, gene, and metabolite labels
 
+       .. js:attribute:: options.canvas_size_and_loc
+
+          (Default: ``null``) An object with attributes x, y, width, and height.
+
        **Applied data**
 
        .. js:attribute:: options.reaction_data

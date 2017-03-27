@@ -101,6 +101,7 @@ function init (map_data, model_data, embedded_css, selection, options) {
     hide_secondary_metabolites: false,
     show_gene_reaction_rules: false,
     hide_all_labels: false,
+    canvas_size_and_loc: null,
     // applied data
     // reaction
     reaction_data: null,
@@ -289,7 +290,7 @@ function load_map (map_data, should_update_data) {
                        this.zoom_container,
                        this.settings,
                        this.cobra_model,
-                       null,
+                       this.options.canvas_size_and_loc,
                        this.options.enable_search)
   }
   // zoom container status changes

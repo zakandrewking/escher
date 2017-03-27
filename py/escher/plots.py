@@ -316,6 +316,7 @@ class Builder(object):
         - hide_secondary_metabolites
         - show_gene_reaction_rules
         - hide_all_labels
+        - canvas_size_and_loc
         - reaction_styles
         - reaction_compare_style
         - reaction_scale
@@ -394,6 +395,7 @@ class Builder(object):
             'hide_secondary_metabolites',
             'show_gene_reaction_rules',
             'hide_all_labels',
+            'canvas_size_and_loc',
             'reaction_styles',
             'reaction_compare_style',
             'reaction_scale',

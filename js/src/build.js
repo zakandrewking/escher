@@ -54,8 +54,8 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
     bigg_id: cobra_reaction.bigg_id,
     reversibility: cobra_reaction.reversibility,
     gene_reaction_rule: cobra_reaction.gene_reaction_rule,
-    genes: cobra_reaction.genes,
-    metabolites: cobra_reaction.metabolites
+    genes: utils.clone(cobra_reaction.genes),
+    metabolites: utils.clone(cobra_reaction.metabolites)
   }
   utils.extend(new_reaction,
                { label_x: center.x + label_d.x,
@@ -508,7 +508,8 @@ function bezier_ids_for_reaction_ids (reactions) {
     for (var segment_id in reaction.segments) {
       var segment = reaction.segments[segment_id]
 
-      ;[ 'b1', 'b2' ].forEach(function (bez) {
+      var bezs = [ 'b1', 'b2' ]
+      bezs.forEach(function (bez) {
         var seg_bez = segment[bez]
         if (seg_bez !== null) {
           bezier_ids.push(bezier_id_for_segment_id(segment_id, bez))
