@@ -522,10 +522,10 @@ function text_mode() {
   this._set_mode('text')
 }
 
-function set_reaction_data(data) {
-  /** For documentation of this function, see docs/javascript_api.rst.
-
-   */
+/**
+ * For documentation of this function, see docs/javascript_api.rst.
+ */
+function set_reaction_data (data) {
   this.options.reaction_data = data
   this._update_data(true, true, 'reaction')
   this.map.set_status('')
@@ -551,46 +551,42 @@ function set_metabolite_data(data) {
   this.map.set_status('')
 }
 
-function _update_data(update_model, update_map, kind, should_draw) {
-  /** Set data and settings for the model.
-
-      Arguments
-      ---------
-
-      update_model: (Boolean) Update data for the model.
-
-      update_map: (Boolean) Update data for the map.
-
-      kind: (Optional, Default: all) An array defining which data is being
-      updated that can include any of: ['reaction', 'metabolite'].
-
-      should_draw: (Optional, Default: true) Whether to redraw the update
-      sections of the map.
-
-  */
-
+/**
+ * Set data and settings for the model.
+ * update_model: (Boolean) Update data for the model.
+ * update_map: (Boolean) Update data for the map.
+ * kind: (Optional, Default: all) An array defining which data is being updated
+ * that can include any of: ['reaction', 'metabolite'].
+ * should_draw: (Optional, Default: true) Whether to redraw the update sections
+ * of the map.
+ */
+function _update_data (update_model, update_map, kind, should_draw) {
   // defaults
-  if (kind === undefined)
-    kind = ['reaction', 'metabolite']
-  if (should_draw === undefined)
+  if (kind === undefined) {
+    kind = [ 'reaction', 'metabolite' ]
+  }
+  if (should_draw === undefined) {
     should_draw = true
+  }
 
-  var update_metabolite_data = (kind.indexOf('metabolite') != -1),
-  update_reaction_data = (kind.indexOf('reaction') != -1),
-  met_data_object,
-  reaction_data_object,
-  gene_data_object
+  var update_metabolite_data = (kind.indexOf('metabolite') !== -1)
+  var update_reaction_data = (kind.indexOf('reaction') !== -1)
+  var met_data_object
+  var reaction_data_object
+  var gene_data_object
 
   // -------------------
   // First map, and draw
+  // -------------------
 
   // metabolite data
   if (update_metabolite_data && update_map && this.map !== null) {
     met_data_object = data_styles.import_and_check(this.options.metabolite_data,
                                                    'metabolite_data')
     this.map.apply_metabolite_data_to_map(met_data_object)
-    if (should_draw)
+    if (should_draw) {
       this.map.draw_all_nodes(false)
+    }
   }
 
   // reaction data
@@ -625,14 +621,15 @@ function _update_data(update_model, update_map, kind, should_draw) {
     clearTimeout(this.update_model_timer)
 
   var delay = 5
-  this.update_model_timer = setTimeout(function() {
+  this.update_model_timer = setTimeout(function () {
 
     // metabolite_data
     if (update_metabolite_data && update_model && this.cobra_model !== null) {
       // if we haven't already made this
-      if (!met_data_object)
+      if (!met_data_object) {
         met_data_object = data_styles.import_and_check(this.options.metabolite_data,
                                                        'metabolite_data')
+      }
       this.cobra_model.apply_metabolite_data(met_data_object,
                                              this.options.metabolite_styles,
                                              this.options.metabolite_compare_style)
@@ -642,16 +639,18 @@ function _update_data(update_model, update_map, kind, should_draw) {
     if (update_reaction_data) {
       if (this.options.reaction_data !== null && update_model && this.cobra_model !== null) {
         // if we haven't already made this
-        if (!reaction_data_object)
+        if (!reaction_data_object) {
           reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
                                                               'reaction_data')
+        }
         this.cobra_model.apply_reaction_data(reaction_data_object,
                                              this.options.reaction_styles,
                                              this.options.reaction_compare_style)
       } else if (this.options.gene_data !== null && update_model && this.cobra_model !== null) {
-        if (!gene_data_object)
+        if (!gene_data_object) {
           gene_data_object = make_gene_data_object(this.options.gene_data,
                                                    this.cobra_model, this.map)
+        }
         this.cobra_model.apply_gene_data(gene_data_object,
                                          this.options.reaction_styles,
                                          this.options.identifiers_on_map,

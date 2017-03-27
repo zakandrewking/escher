@@ -1,63 +1,63 @@
-/** Draw. Manages creating, updating, and removing objects during d3 data binding.
-
- Arguments
- ---------
-
- behavior: An escher.Behavior object.
-
- settings: An escher.Settings object.
-
- Callbacks
- ---------
-
- draw.callback_manager.run('create_membrane', draw, enter_selection);
- draw.callback_manager.run('update_membrane', draw, update_selection);
- draw.callback_manager.run('create_reaction', draw, enter_selection);
- draw.callback_manager.run('update_reaction', draw, update_selection);
- draw.callback_manager.run('create_reaction_label', draw, enter_selection);
- draw.callback_manager.run('update_reaction_label', draw, update_selection);
- draw.callback_manager.run('create_segment', draw, enter_selection);
- draw.callback_manager.run('update_segment', draw, update_selection);
- draw.callback_manager.run('create_bezier', draw, enter_selection);
- draw.callback_manager.run('update_bezier', draw, update_selection);
- draw.callback_manager.run('create_node', draw, enter_selection);
- draw.callback_manager.run('update_node', draw, update_selection);
- draw.callback_manager.run('create_text_label', draw, enter_selection);
- draw.callback_manager.run('update_text_label', draw, update_selection);
-
+/**
+ * Draw. Manages creating, updating, and removing objects during d3 data
+ * binding.
+ *
+ * Arguments
+ * ---------
+ *
+ * behavior: An escher.Behavior object.
+ * settings: An escher.Settings object.
+ *
+ * Callbacks
+ * ---------
+ *
+ * draw.callback_manager.run('create_membrane', draw, enter_selection)
+ * draw.callback_manager.run('update_membrane', draw, update_selection)
+ * draw.callback_manager.run('create_reaction', draw, enter_selection)
+ * draw.callback_manager.run('update_reaction', draw, update_selection)
+ * draw.callback_manager.run('create_reaction_label', draw, enter_selection)
+ * draw.callback_manager.run('update_reaction_label', draw, update_selection)
+ * draw.callback_manager.run('create_segment', draw, enter_selection)
+ * draw.callback_manager.run('update_segment', draw, update_selection)
+ * draw.callback_manager.run('create_bezier', draw, enter_selection)
+ * draw.callback_manager.run('update_bezier', draw, update_selection)
+ * draw.callback_manager.run('create_node', draw, enter_selection)
+ * draw.callback_manager.run('update_node', draw, update_selection)
+ * draw.callback_manager.run('create_text_label', draw, enter_selection)
+ * draw.callback_manager.run('update_text_label', draw, update_selection)
+ *
  */
 
-var utils = require('./utils');
-var data_styles = require('./data_styles');
-var CallbackManager = require('./CallbackManager');
+var utils = require('./utils')
+var data_styles = require('./data_styles')
+var CallbackManager = require('./CallbackManager')
 var d3_format = require('d3-format').format
 
-var Draw = utils.make_class();
+var Draw = utils.make_class()
 // instance methods
 Draw.prototype = {
-    init: init,
-    create_reaction: create_reaction,
-    update_reaction: update_reaction,
-    create_bezier: create_bezier,
-    update_bezier: update_bezier,
-    create_node: create_node,
-    update_node: update_node,
-    create_text_label: create_text_label,
-    update_text_label: update_text_label,
-    create_membrane: create_membrane,
-    update_membrane: update_membrane,
-    create_reaction_label: create_reaction_label,
-    update_reaction_label: update_reaction_label,
-    create_segment: create_segment,
-    update_segment: update_segment
-};
-module.exports = Draw;
+  init: init,
+  create_reaction: create_reaction,
+  update_reaction: update_reaction,
+  create_bezier: create_bezier,
+  update_bezier: update_bezier,
+  create_node: create_node,
+  update_node: update_node,
+  create_text_label: create_text_label,
+  update_text_label: update_text_label,
+  create_membrane: create_membrane,
+  update_membrane: update_membrane,
+  create_reaction_label: create_reaction_label,
+  update_reaction_label: update_reaction_label,
+  create_segment: create_segment,
+  update_segment: update_segment
+}
+module.exports = Draw
 
-// definitions
-function init(behavior, settings) {
-    this.behavior = behavior;
-    this.settings = settings;
-    this.callback_manager = new CallbackManager();
+function init (behavior, settings) {
+  this.behavior = behavior
+  this.settings = settings
+  this.callback_manager = new CallbackManager()
 }
 
 /**
@@ -67,8 +67,8 @@ function init(behavior, settings) {
  */
 function create_membrane (enter_selection) {
   var rect = enter_selection
-      .append('rect')
-      .attr('class', 'membrane')
+    .append('rect')
+    .attr('class', 'membrane')
 
   this.callback_manager.run('create_membrane', this, enter_selection)
 
@@ -85,9 +85,9 @@ function update_membrane (update_selection) {
     .attr('transform', function(d){return 'translate('+d.x+','+d.y+')';})
     .style('stroke-width', function(d) { return 10; })
     .attr('rx', function(d){ return 20; })
-    .attr('ry', function(d){ return 20; });
+    .attr('ry', function(d){ return 20; })
 
-  this.callback_manager.run('update_membrane', this, update_selection);
+  this.callback_manager.run('update_membrane', this, update_selection)
 }
 
 /**
@@ -98,8 +98,8 @@ function update_membrane (update_selection) {
 function create_reaction (enter_selection) {
   // attributes for new reaction group
   var group = enter_selection.append('g')
-      .attr('id', function (d) { return 'r' + d.reaction_id })
-      .attr('class', 'reaction')
+    .attr('id', function (d) { return 'r' + d.reaction_id })
+    .attr('class', 'reaction')
   this.create_reaction_label(group)
 
   this.callback_manager.run('create_reaction', this, enter_selection)
@@ -107,48 +107,37 @@ function create_reaction (enter_selection) {
   return group
 }
 
-function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
-                         defs, has_data_on_reactions) {
-    /** Run on the update selection for reactions.
+/**
+ * Run on the update selection for reactions.
+ * update_selection: The D3.js update selection.
+ * scale: A Scale object.
+ * cobra_model: A CobraModel object.
+ * drawn_nodes: The nodes object (e.g. Map.nodes).
+ * defs: The defs object generated by utils.setup_defs() (e.g. Map.defs).
+ * has_data_on_reactions: Boolean to determine whether data needs to be drawn.
+ */
+function update_reaction (update_selection, scale, cobra_model, drawn_nodes,
+                          defs, has_data_on_reactions) {
+  // Update reaction label
+  update_selection.select('.reaction-label-group')
+    .call(function(sel) {
+      return this.update_reaction_label(sel, has_data_on_reactions)
+    }.bind(this))
 
-     Arguments
-     ---------
+  // draw segments
+  utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
+                             this.create_segment.bind(this),
+                             function(sel) {
+                               return this.update_segment(sel, scale, cobra_model,
+                                                          drawn_nodes, defs,
+                                                          has_data_on_reactions)
+                             }.bind(this),
+                             function(sel) {
+                               sel.remove()
+                             })
 
-     update_selection: The D3.js update selection.
-
-     scale: A Scale object.
-
-     cobra_model: A CobraModel object.
-
-     drawn_nodes: The nodes object (e.g. Map.nodes).
-
-     defs: The defs object generated by utils.setup_defs() (e.g. Map.defs).
-
-     has_data_on_reactions: Boolean to determine whether data needs to be
-     drawn.
-
-     */
-
-    // update reaction label
-    update_selection.select('.reaction-label-group')
-        .call(function(sel) {
-            return this.update_reaction_label(sel, has_data_on_reactions);
-        }.bind(this));
-
-    // draw segments
-    utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
-                               this.create_segment.bind(this),
-                               function(sel) {
-                                   return this.update_segment(sel, scale, cobra_model,
-                                                              drawn_nodes, defs,
-                                                              has_data_on_reactions);
-                               }.bind(this),
-                               function(sel) {
-                                   sel.remove();
-                               });
-
-    // run the callback
-    this.callback_manager.run('update_reaction', this, update_selection);
+  // run the callback
+  this.callback_manager.run('update_reaction', this, update_selection)
 }
 
 /**
@@ -158,12 +147,12 @@ function update_reaction(update_selection, scale, cobra_model, drawn_nodes,
  */
 function create_reaction_label (enter_selection, tool) {
   var group = enter_selection
-      .append('g')
-      .attr('class', 'reaction-label-group')
+    .append('g')
+    .attr('class', 'reaction-label-group')
   group.append('text').attr('class', 'reaction-label label')
   group.append('g').attr('class', 'all-genes-label-group')
 
-  this.callback_manager.run('create_reaction_label', this, enter_selection);
+  this.callback_manager.run('create_reaction_label', this, enter_selection)
 
   return group
 }
@@ -194,12 +183,12 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
 
   // update label visibility
   var label = update_selection.select('.reaction-label')
-      .attr('visibility', hide_all_labels ? 'hidden' : 'visible')
+    .attr('visibility', hide_all_labels ? 'hidden' : 'visible')
 
   if (!hide_all_labels) {
     label
       .text(function(d) {
-        var t = d[identifiers_on_map];
+        var t = d[identifiers_on_map]
         if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
           t += ' ' + d.data_string
         return t
@@ -250,8 +239,8 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
 
   // enter
   var gene_g = all_genes_g.enter()
-      .append('g')
-      .attr('class', 'gene-label-group')
+    .append('g')
+    .attr('class', 'gene-label-group')
   gene_g.append('text')
     .attr('class', 'gene-label')
     .style('font-size', gene_font_size + 'px')
@@ -286,20 +275,20 @@ function create_segment (enter_selection) {
   // create segments
   var g = enter_selection
       .append('g')
-      .attr('class', 'segment-group')
-      .attr('id', function (d) { return 's' + d.segment_id })
+    .attr('class', 'segment-group')
+    .attr('id', function (d) { return 's' + d.segment_id })
 
   // create reaction arrow
   g.append('path')
     .attr('class', 'segment')
 
   g.append('g')
-    .attr('class', 'arrowheads');
+    .attr('class', 'arrowheads')
 
   g.append('g')
-    .attr('class', 'stoichiometry-labels');
+    .attr('class', 'stoichiometry-labels')
 
-  this.callback_manager.run('create_segment', this, enter_selection);
+  this.callback_manager.run('create_segment', this, enter_selection)
 
   return g
 }
@@ -318,127 +307,127 @@ function update_segment (update_selection, scale, cobra_model,
                          drawn_nodes, defs, has_data_on_reactions) {
   var reaction_data_styles = this.settings.get_option('reaction_styles'),
   should_size = (has_data_on_reactions && reaction_data_styles.indexOf('size') != -1),
-      should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') != -1),
-      no_data_size = this.settings.get_option('reaction_no_data_size'),
-  no_data_color = this.settings.get_option('reaction_no_data_color');
+  should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') != -1),
+  no_data_size = this.settings.get_option('reaction_no_data_size'),
+  no_data_color = this.settings.get_option('reaction_no_data_color')
 
   // update segment attributes
   var highlight_missing  = this.settings.get_option('highlight_missing'),
   hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
-      primary_r = this.settings.get_option('primary_metabolite_radius'),
+  primary_r = this.settings.get_option('primary_metabolite_radius'),
   secondary_r = this.settings.get_option('secondary_metabolite_radius'),
   get_arrow_size = function(data, should_size) {
     var width = 20,
-    height = 13;
+    height = 13
     if (should_size) {
-      height = (data === null ? no_data_size : scale.reaction_size(data));
+      height = (data === null ? no_data_size : scale.reaction_size(data))
       // check for nan
       if (isNaN(height))
-        height = no_data_size;
-      width = height * 2;
+        height = no_data_size
+      width = height * 2
     }
-    return { width: width, height: height };
+    return { width: width, height: height }
   },
   get_disp = function(arrow_size, reversibility, coefficient, node_is_primary) {
     var arrow_height = ((reversibility || coefficient > 0) ?
                         arrow_size.height :
                         0),
-        r = node_is_primary ? primary_r : secondary_r;
-    return r + arrow_height + 10;
-  };
+    r = node_is_primary ? primary_r : secondary_r
+    return r + arrow_height + 10
+  }
   // update arrows
   update_selection
     .selectAll('.segment')
     .datum(function() {
-      return this.parentNode.__data__;
+      return this.parentNode.__data__
     })
     .style('visibility', function(d) {
       var start = drawn_nodes[d.from_node_id],
-        end = drawn_nodes[d.to_node_id];
+          end = drawn_nodes[d.to_node_id]
       if (hide_secondary_metabolites &&
           ((end['node_type']=='metabolite' && !end.node_is_primary) ||
            (start['node_type']=='metabolite' && !start.node_is_primary)))
-        return 'hidden';
-      return null;
+        return 'hidden'
+      return null
     })
     .attr('d', function(d) {
       if (d.from_node_id === null || d.to_node_id === null)
-        return null;
+        return null
       var start = drawn_nodes[d.from_node_id],
-          end = drawn_nodes[d.to_node_id],
-          b1 = d.b1,
-          b2 = d.b2;
+      end = drawn_nodes[d.to_node_id],
+      b1 = d.b1,
+      b2 = d.b2
       // if metabolite, then displace the arrow
       if (start['node_type'] == 'metabolite') {
         var arrow_size = get_arrow_size(d.data, should_size),
-        disp = get_disp(arrow_size, d.reversibility,
-                        d.from_node_coefficient,
-                        start.node_is_primary);
-        var direction = (b1 === null) ? end : b1;
-        start = displaced_coords(disp, start, direction, 'start');
+            disp = get_disp(arrow_size, d.reversibility,
+                            d.from_node_coefficient,
+                            start.node_is_primary)
+        var direction = (b1 === null) ? end : b1
+        start = displaced_coords(disp, start, direction, 'start')
       }
       if (end['node_type'] == 'metabolite') {
         var arrow_size = get_arrow_size(d.data, should_size),
-        disp = get_disp(arrow_size, d.reversibility,
-                        d.to_node_coefficient,
-                        end.node_is_primary);
-        var direction = (b2 === null) ? start : b2;
-        end = displaced_coords(disp, direction, end, 'end');
+            disp = get_disp(arrow_size, d.reversibility,
+                            d.to_node_coefficient,
+                            end.node_is_primary)
+        var direction = (b2 === null) ? start : b2
+        end = displaced_coords(disp, direction, end, 'end')
       }
-      var curve = ('M' + start.x + ',' + start.y + ' ');
+      var curve = ('M' + start.x + ',' + start.y + ' ')
       if (b1 !== null && b2 !== null) {
         curve += ('C' + b1.x + ',' + b1.y + ' ' +
-                  b2.x + ',' + b2.y + ' ');
+                  b2.x + ',' + b2.y + ' ')
       }
-      curve += (end.x + ',' + end.y);
-      return curve;
+      curve += (end.x + ',' + end.y)
+      return curve
     })
     .style('stroke', function(d) {
       var reaction_id = this.parentNode.parentNode.__data__.bigg_id,
-      show_missing = (highlight_missing &&
-                      cobra_model !== null &&
-                      !(reaction_id in cobra_model.reactions));
+          show_missing = (highlight_missing &&
+                          cobra_model !== null &&
+                          !(reaction_id in cobra_model.reactions))
       if (show_missing) {
-        return 'red';
+        return 'red'
       }
       if (should_color) {
-        var f = d.data;
-        return f === null ? no_data_color : scale.reaction_color(f);
+        var f = d.data
+        return f === null ? no_data_color : scale.reaction_color(f)
       }
-      return null;
+      return null
     })
     .style('stroke-width', function(d) {
       if (should_size) {
-        var f = d.data;
-        return f === null ? no_data_size : scale.reaction_size(f);
+        var f = d.data
+        return f === null ? no_data_size : scale.reaction_size(f)
       } else {
-        return null;
+        return null
       }
-    });
+    })
 
   // new arrowheads
   var arrowheads = update_selection.select('.arrowheads')
-      .selectAll('.arrowhead')
+    .selectAll('.arrowhead')
     .data(function (d) {
       var arrowheads = [],
-          start = drawn_nodes[d.from_node_id],
-          b1 = d.b1,
-          end = drawn_nodes[d.to_node_id],
-          b2 = d.b2;
+      start = drawn_nodes[d.from_node_id],
+      b1 = d.b1,
+      end = drawn_nodes[d.to_node_id],
+      b2 = d.b2
       // hide_secondary_metabolites option
       if (hide_secondary_metabolites &&
           ((end['node_type']=='metabolite' && !end.node_is_primary) ||
            (start['node_type']=='metabolite' && !start.node_is_primary)))
-        return arrowheads;
+        return arrowheads
 
       if (start.node_type == 'metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
         var arrow_size = get_arrow_size(d.data, should_size),
-            disp = get_disp(arrow_size, d.reversibility,
-                            d.from_node_coefficient,
-                            start.node_is_primary),
-            direction = (b1 === null) ? end : b1,
-            rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90,
-            loc = displaced_coords(disp, start, direction, 'start');
+        disp = get_disp(arrow_size, d.reversibility,
+                        d.from_node_coefficient,
+                        start.node_is_primary),
+        direction = (b1 === null) ? end : b1,
+        rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90,
+        loc = displaced_coords(disp, start, direction, 'start')
         arrowheads.push({ data: d.data,
                           x: loc.x,
                           y: loc.y,
@@ -446,7 +435,7 @@ function update_segment (update_selection, scale, cobra_model,
                           rotation: rotation,
                           show_arrowhead_flux: (((d.from_node_coefficient < 0)==(d.reverse_flux))
                                                 || d.data==0)
-                        });
+                        })
       }
       if (end.node_type == 'metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
         var arrow_size = get_arrow_size(d.data, should_size),
@@ -455,7 +444,7 @@ function update_segment (update_selection, scale, cobra_model,
                         end.node_is_primary),
         direction = (b2 === null) ? start : b2,
         rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90,
-        loc = displaced_coords(disp, direction, end, 'end');
+        loc = displaced_coords(disp, direction, end, 'end')
         arrowheads.push({ data: d.data,
                           x: loc.x,
                           y: loc.y,
@@ -463,10 +452,10 @@ function update_segment (update_selection, scale, cobra_model,
                           rotation: rotation,
                           show_arrowhead_flux: (((d.to_node_coefficient < 0)==(d.reverse_flux))
                                                 || d.data==0)
-                        });
+                        })
       }
-      return arrowheads;
-    });
+      return arrowheads
+    })
   arrowheads.enter().append('path')
     .classed('arrowhead', true)
   // update arrowheads
@@ -474,30 +463,30 @@ function update_segment (update_selection, scale, cobra_model,
     .attr('d', function(d) {
       return ('M' + [-d.size.width / 2, 0] +
               ' L' + [0, d.size.height] +
-              ' L' + [d.size.width / 2, 0] + ' Z');
+              ' L' + [d.size.width / 2, 0] + ' Z')
     }).attr('transform', function(d) {
-      return 'translate(' + d.x + ',' + d.y + ')rotate(' + d.rotation + ')';
+      return 'translate(' + d.x + ',' + d.y + ')rotate(' + d.rotation + ')'
     }).style('fill', function(d) {
       if (should_color) {
         if (d.show_arrowhead_flux) {
           // show the flux
-          var f = d.data;
-          return f===null ? no_data_color : scale.reaction_color(f);
+          var f = d.data
+          return f===null ? no_data_color : scale.reaction_color(f)
         } else {
           // if the arrowhead is not filled because it is reversed
-          return '#FFFFFF';
+          return '#FFFFFF'
         }
       }
       // default fill color
-      return null;
+      return null
     }).style('stroke', function(d) {
       if (should_color) {
         // show the flux color in the stroke whether or not the fill is present
-        var f = d.data;
-        return f===null ? no_data_color : scale.reaction_color(f);
+        var f = d.data
+        return f===null ? no_data_color : scale.reaction_color(f)
       }
       // default stroke color
-      return null;
+      return null
     })
   // remove
   arrowheads.exit().remove()
@@ -558,7 +547,7 @@ function update_segment (update_selection, scale, cobra_model,
     .append('text')
     .attr('class', 'stoichiometry-label')
     .attr('text-anchor', 'middle')
-    // update stoichiometry_labels
+  // update stoichiometry_labels
     .merge(stoichiometry_labels)
     .attr('transform', function(d) {
       return 'translate(' + d.x + ',' + d.y + ')'
@@ -589,8 +578,8 @@ function update_segment (update_selection, scale, cobra_model,
  */
 function create_bezier (enter_selection) {
   var g = enter_selection.append('g')
-      .attr('id', function (d) { return d.bezier_id })
-      .attr('class', function (d) { return 'bezier' })
+    .attr('id', function (d) { return d.bezier_id })
+    .attr('class', function (d) { return 'bezier' })
   g.append('path')
     .attr('class', 'connect-line')
   g.append('circle')
@@ -608,54 +597,54 @@ function create_bezier (enter_selection) {
  */
 function update_bezier(update_selection, show_beziers, drag_behavior,
                        mouseover, mouseout, drawn_nodes, drawn_reactions) {
-    var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites');
+  var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
 
-    if (!show_beziers) {
-        update_selection.attr('visibility', 'hidden');
-        return;
-    } else {
-        update_selection.attr('visibility', 'visible');
-    }
+  if (!show_beziers) {
+    update_selection.attr('visibility', 'hidden')
+    return
+  } else {
+    update_selection.attr('visibility', 'visible')
+  }
 
-    // hide secondary
-    update_selection
-        .style('visibility', function(d) {
-            var seg_data = drawn_reactions[d.reaction_id].segments[d.segment_id],
-                start = drawn_nodes[seg_data.from_node_id],
-                end = drawn_nodes[seg_data.to_node_id];
-            if (hide_secondary_metabolites &&
-                ((end['node_type']=='metabolite' && !end.node_is_primary) ||
-                 (start['node_type']=='metabolite' && !start.node_is_primary)))
-                return 'hidden';
-            return null;
-        });
+  // hide secondary
+  update_selection
+    .style('visibility', function(d) {
+      var seg_data = drawn_reactions[d.reaction_id].segments[d.segment_id],
+          start = drawn_nodes[seg_data.from_node_id],
+          end = drawn_nodes[seg_data.to_node_id]
+      if (hide_secondary_metabolites &&
+          ((end['node_type']=='metabolite' && !end.node_is_primary) ||
+           (start['node_type']=='metabolite' && !start.node_is_primary)))
+        return 'hidden'
+      return null
+    })
 
-    // draw bezier points
-    update_selection.select('.bezier-circle')
-        .call(this.behavior.turn_off_drag)
-        .call(drag_behavior)
-        .on('mouseover', mouseover)
-        .on('mouseout', mouseout)
-        .attr('transform', function(d) {
-            if (d.x==null || d.y==null) return '';
-            return 'translate('+d.x+','+d.y+')';
-        });
+  // draw bezier points
+  update_selection.select('.bezier-circle')
+    .call(this.behavior.turn_off_drag)
+    .call(drag_behavior)
+    .on('mouseover', mouseover)
+    .on('mouseout', mouseout)
+    .attr('transform', function(d) {
+      if (d.x==null || d.y==null) return ''
+      return 'translate('+d.x+','+d.y+')'
+    })
 
-    // update bezier line
-    update_selection
-        .select('.connect-line')
-        .attr('d', function(d) {
-            var node,
-                segment_d = drawn_reactions[d.reaction_id].segments[d.segment_id];
-            node = (d.bezier=='b1' ?
-                    drawn_nodes[segment_d.from_node_id] :
-                    drawn_nodes[segment_d.to_node_id]);
-            if (d.x==null || d.y==null || node.x==null || node.y==null)
-                return '';
-            return 'M'+d.x+', '+d.y+' '+(node.x)+','+(node.y);
-        });
+  // update bezier line
+  update_selection
+    .select('.connect-line')
+    .attr('d', function(d) {
+      var node,
+      segment_d = drawn_reactions[d.reaction_id].segments[d.segment_id]
+      node = (d.bezier=='b1' ?
+              drawn_nodes[segment_d.from_node_id] :
+              drawn_nodes[segment_d.to_node_id])
+      if (d.x==null || d.y==null || node.x==null || node.y==null)
+        return ''
+      return 'M'+d.x+', '+d.y+' '+(node.x)+','+(node.y)
+    })
 
-    this.callback_manager.run('update_bezier', this, update_selection);
+  this.callback_manager.run('update_bezier', this, update_selection)
 }
 
 /**
@@ -724,7 +713,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
   var label_mouseout_fn = this.behavior.label_mouseout
 
   var mg = update_selection
-    .select('.node-circle')
+      .select('.node-circle')
     .attr('transform', function(d) {
       return 'translate(' + d.x + ',' + d.y + ')'
     })
@@ -769,7 +758,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
   // update node label visibility
   var node_label = update_selection
       .select('.node-label')
-    .attr('visibility', hide_all_labels ? 'hidden' : 'visible')
+      .attr('visibility', hide_all_labels ? 'hidden' : 'visible')
   if (!hide_all_labels) {
     node_label
       .style('visibility', function(d) {
@@ -839,19 +828,25 @@ function update_text_label (update_selection) {
   this.callback_manager.run('update_text_label', this, update_selection)
 }
 
-function displaced_coords(reaction_arrow_displacement, start, end, displace) {
-    utils.check_undefined(arguments, ['reaction_arrow_displacement', 'start', 'end', 'displace']);
+function displaced_coords (reaction_arrow_displacement, start, end, displace) {
+  utils.check_undefined(arguments, [ 'reaction_arrow_displacement', 'start',
+                                     'end', 'displace' ])
 
-    var length = reaction_arrow_displacement,
-        hyp = utils.distance(start, end),
-        new_x, new_y;
-    if (!length || !hyp) console.error('Bad value');
-    if (displace=='start') {
-        new_x = start.x + length * (end.x - start.x) / hyp,
-        new_y = start.y + length * (end.y - start.y) / hyp;
-    } else if (displace=='end') {
-        new_x = end.x - length * (end.x - start.x) / hyp,
-        new_y = end.y - length * (end.y - start.y) / hyp;
-    } else { console.error('bad displace value: ' + displace); }
-    return {x: new_x, y: new_y};
+  var length = reaction_arrow_displacement
+  var hyp = utils.distance(start, end)
+  var new_x
+  var new_y
+  if (!length || !hyp) {
+    console.error('Bad value')
+  }
+  if (displace === 'start') {
+    new_x = start.x + length * (end.x - start.x) / hyp
+    new_y = start.y + length * (end.y - start.y) / hyp
+  } else if (displace === 'end') {
+    new_x = end.x - length * (end.x - start.x) / hyp
+    new_y = end.y - length * (end.y - start.y) / hyp
+  } else {
+    console.error('bad displace value: ' + displace)
+  }
+  return { x: new_x, y: new_y }
 }

@@ -265,6 +265,9 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
   // data
   this.has_data_on_reactions = false
   this.has_data_on_nodes = false
+  this.imported_reaction_data = null
+  this.imported_metabolite_data = null
+  this.imported_gene_data = null
 
   this.nodes = {}
   this.reactions = {}
@@ -809,59 +812,63 @@ function clear_deleted_beziers() {
                        function(sel) { sel.remove(); })
 }
 
-function show_beziers() {
+function show_beziers () {
   this.toggle_beziers(true)
 }
 
-function hide_beziers() {
+function hide_beziers () {
   this.toggle_beziers(false)
 }
 
-function toggle_beziers(on_off) {
+function toggle_beziers (on_off) {
   if (_.isUndefined(on_off)) this.beziers_enabled = !this.beziers_enabled
   else this.beziers_enabled = on_off
   this.draw_all_beziers()
   this.callback_manager.run('toggle_beziers', null, this.beziers_enabled)
 }
 
-function apply_reaction_data_to_map(data) {
-  /**  Returns True if the scale has changed.
-
-   */
+/**
+ * Returns True if the scale has changed.
+ * @param {Array} keys - (Optional) The keys in reactions to apply data to.
+ */
+function apply_reaction_data_to_map (data, keys) {
   var styles = this.settings.get_option('reaction_styles'),
   compare_style = this.settings.get_option('reaction_compare_style')
-  var has_data = data_styles.apply_reaction_data_to_reactions(this.reactions, data,
-                                                              styles, compare_style)
+  var has_data = data_styles.apply_reaction_data_to_reactions(this.reactions,
+                                                              data, styles,
+                                                              compare_style,
+                                                              keys)
   this.has_data_on_reactions = has_data
+  this.imported_reaction_data = has_data ? data : null
 
   return this.calc_data_stats('reaction')
 }
 
-function apply_metabolite_data_to_map(data) {
-  /**  Returns True if the scale has changed.
+/**
+ * Returns True if the scale has changed.
+ * @param {Array} keys - (Optional) The keys in nodes to apply data to.
+ */
+function apply_metabolite_data_to_map (data, keys) {
+  var styles = this.settings.get_option('metabolite_styles')
+  var compare_style = this.settings.get_option('metabolite_compare_style')
 
-   */
-  var styles = this.settings.get_option('metabolite_styles'),
-  compare_style = this.settings.get_option('metabolite_compare_style')
-
-  var has_data = data_styles.apply_metabolite_data_to_nodes(this.nodes, data,
-                                                            styles, compare_style)
+  var has_data = data_styles.apply_metabolite_data_to_nodes(this.nodes,
+                                                            data, styles,
+                                                            compare_style,
+                                                            keys)
   this.has_data_on_nodes = has_data
+  this.imported_metabolite_data = has_data ? data : null
 
   return this.calc_data_stats('metabolite')
 }
 
-function apply_gene_data_to_map(gene_data_obj) {
-  /** Returns True if the scale has changed.
-
-      Arguments
-      ---------
-
-      gene_data_obj: The gene data object, with the following style:
-
-      { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
-
-  */
+/**
+ * Returns True if the scale has changed.
+ * gene_data_obj: The gene data object, with the following style:
+ * { reaction_id: { rule: 'rule_string', genes: { gene_id: value } } }
+ * @param {Array} keys - (Optional) The keys in reactions to apply data to.
+ */
+function apply_gene_data_to_map (gene_data_obj, keys) {
   var styles = this.settings.get_option('reaction_styles'),
   compare_style = this.settings.get_option('reaction_compare_style'),
   identifiers_on_map = this.settings.get_option('identifiers_on_map'),
@@ -870,30 +877,30 @@ function apply_gene_data_to_map(gene_data_obj) {
   var has_data = data_styles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
                                                           styles, identifiers_on_map,
                                                           compare_style,
-                                                          and_method_in_gene_reaction_rule)
+                                                          and_method_in_gene_reaction_rule,
+                                                          keys)
   this.has_data_on_reactions = has_data
+  this.imported_gene_data = has_data ? gene_data_obj : null
 
   return this.calc_data_stats('reaction')
 }
 
 // ------------------------------------------------
 // Data domains
-function get_data_statistics() {
+// ------------------------------------------------
+
+function get_data_statistics () {
   return this.data_statistics
 }
 
-function calc_data_stats(type) {
-  /** Returns True if the stats have changed.
-
-      Arguments
-      ---------
-
-      type: Either 'metabolite' or 'reaction'
-
-  */
-
-  if (['reaction', 'metabolite'].indexOf(type) == -1)
+/**
+ * Returns True if the stats have changed.
+ * @param {String} type - Either 'metabolite' or 'reaction'
+ */
+function calc_data_stats (type) {
+  if ([ 'reaction', 'metabolite' ].indexOf(type) === -1) {
     throw new Error('Bad type ' + type)
+  }
 
   // make the data structure
   if (!('data_statistics' in this)) {
@@ -906,19 +913,25 @@ function calc_data_stats(type) {
   var same = true
   // default min and max
   var vals = []
-  if (type == 'metabolite') {
+  if (type === 'metabolite') {
     for (var node_id in this.nodes) {
       var node = this.nodes[node_id]
       // check number
-      if (node.data !== null)
+      if (_.isUndefined(node.data)) {
+        console.error('metabolite missing ')
+      } else if (node.data !== null) {
         vals.push(node.data)
+      }
     }
   } else if (type == 'reaction') {
     for (var reaction_id in this.reactions) {
       var reaction = this.reactions[reaction_id]
       // check number
-      if (reaction.data !== null)
+      if (_.isUndefined(reaction.data)) {
+        console.error('reaction data missing ')
+      } else if (reaction.data !== null) {
         vals.push(reaction.data)
+      }
     }
   }
 
@@ -962,22 +975,24 @@ function calc_data_stats(type) {
 
 // ---------------------------------------------------------------------
 // Node interaction
+// ---------------------------------------------------------------------
 
-function get_coords_for_node(node_id) {
+function get_coords_for_node (node_id) {
   var node = this.nodes[node_id],
-  coords = {'x': node.x, 'y': node.y}
+  coords = { x: node.x, y: node.y }
   return coords
 }
-function get_selected_node_ids() {
+
+function get_selected_node_ids () {
   var selected_node_ids = []
   this.sel.select('#nodes')
     .selectAll('.selected')
-    .each(function(d) { selected_node_ids.push(d.node_id); })
+    .each(function (d) { selected_node_ids.push(d.node_id) })
   return selected_node_ids
 }
-function get_selected_nodes() {
-  var selected_nodes = {},
-  self = this
+
+function get_selected_nodes () {
+  var selected_nodes = {}
   this.sel.select('#nodes')
     .selectAll('.selected')
     .each(function(d) {
@@ -985,16 +1000,17 @@ function get_selected_nodes() {
     }.bind(this))
   return selected_nodes
 }
-function get_selected_text_label_ids() {
+
+function get_selected_text_label_ids () {
   var selected_text_label_ids = []
   this.sel.select('#text-labels')
     .selectAll('.selected')
-    .each(function(d) { selected_text_label_ids.push(d.text_label_id); })
+    .each(function (d) { selected_text_label_ids.push(d.text_label_id) })
   return selected_text_label_ids
 }
-function get_selected_text_labels() {
-  var selected_text_labels = {},
-  self = this
+
+function get_selected_text_labels () {
+  var selected_text_labels = {}
   this.sel.select('#text-labels')
     .selectAll('.selected')
     .each(function(d) {
@@ -1090,17 +1106,15 @@ function select_selectable(node, d, shift_key_on) {
   this.callback_manager.run('select_selectable', null, node_count, selected_node, coords)
 }
 
-function select_single_node() {
-  /** Unselect all but one selected node, and return the node.
-
-      If no nodes are selected, return null.
-
-  */
-  var out = null,
-  self = this,
-  node_selection = this.sel.select('#nodes').selectAll('.selected')
-  node_selection.classed('selected', function(d, i) {
-    if (i==0) {
+/**
+ * Unselect all but one selected node, and return the node. If no nodes are
+ * selected, return null.
+ */
+function select_single_node () {
+  var out = null
+  var node_selection = this.sel.select('#nodes').selectAll('.selected')
+  node_selection.classed('selected', function (d, i) {
+    if (i === 0) {
       out = d
       return true
     } else {
@@ -1110,13 +1124,13 @@ function select_single_node() {
   return out
 }
 
-function deselect_nodes() {
+function deselect_nodes () {
   var node_selection = this.sel.select('#nodes').selectAll('.node')
   node_selection.classed('selected', false)
   this.callback_manager.run('deselect_nodes')
 }
 
-function select_text_label(sel, d) {
+function select_text_label (sel, d) {
   // deselect all nodes
   this.deselect_nodes()
   // find the new selection
@@ -1131,20 +1145,20 @@ function select_text_label(sel, d) {
   this.callback_manager.run('select_text_label')
 }
 
-function deselect_text_labels() {
+function deselect_text_labels () {
   var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label')
   text_label_selection.classed('selected', false)
 }
 
 // ---------------------------------------------------------------------
 // Delete
+// ---------------------------------------------------------------------
 
-function delete_selected() {
-  /** Delete the selected nodes and associated segments and reactions, and selected labels.
-
-      Undoable.
-
-  */
+/**
+ * Delete the selected nodes and associated segments and reactions, and selected
+ * labels. Undoable.
+ */
+function delete_selected () {
   var selected_nodes = this.get_selected_nodes(),
   selected_text_labels = this.get_selected_text_labels()
   if (Object.keys(selected_nodes).length >= 1 ||
@@ -1152,31 +1166,25 @@ function delete_selected() {
     this.delete_selectable(selected_nodes, selected_text_labels, true)
 }
 
-function delete_selectable(selected_nodes, selected_text_labels, should_draw) {
-  /** Delete the nodes and associated segments and reactions. Undoable.
-
-      Arguments
-      ---------
-
-      selected_nodes: An object that is a subset of map.nodes.
-
-      selected_text_labels: An object that is a subset of map.text_labels.
-
-      should_draw: A boolean argument to determine whether to draw the changes to the map.
-
-  */
-
-  var out = this.segments_and_reactions_for_nodes(selected_nodes),
-  segment_objs_w_segments = out.segment_objs_w_segments, // TODO repeated values here
-  reactions = out.reactions
+/**
+ * Delete the nodes and associated segments and reactions. Undoable.
+ * selected_nodes: An object that is a subset of map.nodes.
+ * selected_text_labels: An object that is a subset of map.text_labels.
+ * should_draw: A boolean argument to determine whether to draw the changes to
+ * the map.
+ */
+function delete_selectable (selected_nodes, selected_text_labels, should_draw) {
+  var out = this.segments_and_reactions_for_nodes(selected_nodes)
+  var segment_objs_w_segments = out.segment_objs_w_segments // TODO repeated values here
+  var reactions = out.reactions
 
   // copy nodes to undelete
-  var saved_nodes = utils.clone(selected_nodes),
-  saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments),
-  saved_reactions = utils.clone(reactions),
-  saved_text_labels = utils.clone(selected_text_labels),
-  delete_and_draw = function(nodes, reactions, segment_objs,
-                             selected_text_labels) {
+  var saved_nodes = utils.clone(selected_nodes)
+  var saved_segment_objs_w_segments = utils.clone(segment_objs_w_segments)
+  var saved_reactions = utils.clone(reactions)
+  var saved_text_labels = utils.clone(selected_text_labels)
+  var delete_and_draw = function (nodes, reactions, segment_objs,
+                                  selected_text_labels) {
     // delete nodes, segments, and reactions with no segments
     this.delete_node_data(Object.keys(selected_nodes))
     this.delete_segment_data(segment_objs); // also deletes beziers
@@ -1184,12 +1192,14 @@ function delete_selectable(selected_nodes, selected_text_labels, should_draw) {
     this.delete_text_label_data(Object.keys(selected_text_labels))
 
     // apply the reaction and node data
-    var changed_r_scale = false,
-    changed_m_scale = false
-    if (this.has_data_on_reactions)
+    var changed_r_scale = false
+    var changed_m_scale = false
+    if (this.has_data_on_reactions) {
       changed_r_scale = this.calc_data_stats('reaction')
-    if (this.has_data_on_nodes)
+    }
+    if (this.has_data_on_nodes) {
       changed_m_scale = this.calc_data_stats('metabolite')
+    }
 
     // redraw
     if (should_draw) {
@@ -1210,7 +1220,7 @@ function delete_selectable(selected_nodes, selected_text_labels, should_draw) {
                   selected_text_labels)
 
   // add to undo/redo stack
-  this.undo_stack.push(function() {
+  this.undo_stack.push(function () {
     // undo
     // redraw the saved nodes, reactions, and segments
 
@@ -1225,7 +1235,8 @@ function delete_selectable(selected_nodes, selected_text_labels, should_draw) {
         .segments[segment_obj.segment_id] = segment
 
       // updated connected nodes
-      ;[segment.from_node_id, segment.to_node_id].forEach(function(node_id) {
+      var to_from = [ segment.from_node_id, segment.to_node_id ]
+      to_from.forEach(function(node_id) {
         // not necessary for the deleted nodes
         if (node_id in saved_nodes) return
         var node = this.nodes[node_id]
@@ -1240,12 +1251,13 @@ function delete_selectable(selected_nodes, selected_text_labels, should_draw) {
       seg_o[seg_id] = segment_obj.segment
       utils.extend(this.beziers, build.new_beziers_for_segments(seg_o, r_id))
 
-      if (reaction_ids_to_draw.indexOf(segment_obj.reaction_id)==-1)
+      if (reaction_ids_to_draw.indexOf(segment_obj.reaction_id) === -1) {
         reaction_ids_to_draw.push(segment_obj.reaction_id)
+      }
     }
 
-    // apply the reaction and node data
-    // if the scale changes, redraw everything
+    // Apply the reaction and node data. If the scale changes, redraw
+    // everything.
     if (this.has_data_on_reactions) {
       var scale_changed = this.calc_data_stats('reaction')
       if (scale_changed) this.draw_all_reactions(true, false)
@@ -1281,9 +1293,10 @@ function delete_selectable(selected_nodes, selected_text_labels, should_draw) {
   }.bind(this))
 }
 
-function delete_node_data(node_ids) {
-  /** Delete nodes, and remove from search index.
-   */
+/**
+ * Delete nodes, and remove from search index.
+ */
+function delete_node_data (node_ids) {
   node_ids.forEach(function(node_id) {
     if (this.enable_search && this.nodes[node_id].node_type=='metabolite') {
       var found = (this.search_index.remove('n' + node_id)
@@ -1295,13 +1308,13 @@ function delete_node_data(node_ids) {
   }.bind(this))
 }
 
-function delete_segment_data(segment_objs) {
-  /** Delete segments, update connected_segments in nodes, and delete
-      bezier points.
-
-      segment_objs: Object with values like { reaction_id: '123', segment_id: '456' }
-
-  */
+/**
+ * Delete segments, update connected_segments in nodes, and delete bezier
+ * points.
+ * @param {Object} segment_objs - Object with values like
+ *                                { reaction_id: '123', segment_id: '456' }
+ */
+function delete_segment_data (segment_objs) {
   for (var segment_id in segment_objs) {
     var segment_obj = segment_objs[segment_id]
     var reaction = this.reactions[segment_obj.reaction_id]
@@ -1359,9 +1372,11 @@ function delete_reaction_data(reaction_ids) {
     }
   }.bind(this))
 }
-function delete_text_label_data(text_label_ids) {
-  /** delete text labels for an array of ids
-   */
+
+/**
+ * Delete text labels for an array of IDs
+ */
+function delete_text_label_data (text_label_ids) {
   text_label_ids.forEach(function(text_label_id) {
     // delete label
     delete this.text_labels[text_label_id]
@@ -1376,12 +1391,32 @@ function delete_text_label_data(text_label_ids) {
 // Building
 // ---------------------------------------------------------------------
 
+
+function _extend_and_draw_metabolite (new_nodes, selected_node_id) {
+  this.extend_nodes(new_nodes)
+  var keys = [ selected_node_id ]
+  if (this.has_data_on_nodes) {
+    if (this.imported_metabolite_data === null) {
+      throw new Error('imported_metabolite_data should not be null')
+    }
+    var scale_changed = this.apply_metabolite_data_to_map(this.imported_metabolite_data,
+                                                          keys)
+    if (scale_changed) {
+      this.draw_all_nodes(false)
+    } else {
+      this.draw_these_nodes(keys)
+    }
+  } else {
+    this.draw_these_nodes(keys)
+  }
+}
+
 /**
  * Draw a reaction on a blank canvas.
  * @param {String} starting_reaction - bigg_id for a reaction to draw.
  * @param {Coords} coords - coordinates to start drawing
  */
-function new_reaction_from_scratch(starting_reaction, coords, direction) {
+function new_reaction_from_scratch (starting_reaction, coords, direction) {
   // If there is no cobra model, error
   if (!this.cobra_model) {
     console.error('No CobraModel. Cannot build new reaction')
@@ -1392,14 +1427,15 @@ function new_reaction_from_scratch(starting_reaction, coords, direction) {
   var cobra_reaction = utils.clone(this.cobra_model.reactions[starting_reaction])
 
   // check for empty reactions
-  if (_.size(cobra_reaction.metabolites) === 0)
+  if (_.size(cobra_reaction.metabolites) === 0) {
     throw Error('No metabolites in reaction ' + cobra_reaction.bigg_id)
+  }
 
   // create the first node
   var reactant_ids = _.map(cobra_reaction.metabolites,
                            function (coeff, met_id) { return [ coeff, met_id ] })
     .filter(function (x) { return x[0] < 0 }) // coeff < 0
-    .map(function(x) { return x[1] }) // metabolite id
+    .map(function (x) { return x[1] }) // metabolite id
   // get the first reactant or else the first product
   var metabolite_id = (reactant_ids.length > 0 ?
                        reactant_ids[0] :
@@ -1420,7 +1456,7 @@ function new_reaction_from_scratch(starting_reaction, coords, direction) {
   new_nodes[selected_node_id] = selected_node
 
   // draw
-  extend_and_draw_metabolite.apply(this, [ new_nodes, selected_node_id ])
+  _extend_and_draw_metabolite.apply(this, [ new_nodes, selected_node_id ])
 
   // clone the nodes and reactions, to redo this action later
   var saved_nodes = utils.clone(new_nodes)
@@ -1428,12 +1464,12 @@ function new_reaction_from_scratch(starting_reaction, coords, direction) {
   // draw the reaction
   var out = this.new_reaction_for_metabolite(starting_reaction,
                                              selected_node_id,
-                                             direction, false),
-  reaction_redo = out.redo,
-  reaction_undo = out.undo
+                                             direction, false)
+  var reaction_redo = out.redo
+  var reaction_undo = out.undo
 
   // add to undo/redo stack
-  this.undo_stack.push(function() {
+  this.undo_stack.push(function () {
     // undo
     // first undo the reaction
     reaction_undo()
@@ -1448,30 +1484,18 @@ function new_reaction_from_scratch(starting_reaction, coords, direction) {
   }.bind(this), function () {
     // redo
     // clone the nodes and reactions, to redo this action later
-    extend_and_draw_metabolite.apply(this, [new_nodes, selected_node_id])
+    _extend_and_draw_metabolite.apply(this, [ new_nodes, selected_node_id ])
     // now redo the reaction
     reaction_redo()
   }.bind(this))
 
   return
-
-  // definitions
-  function extend_and_draw_metabolite(new_nodes, selected_node_id) {
-    this.extend_nodes(new_nodes)
-    if (this.has_data_on_nodes) {
-      var scale_changed = this.apply_metabolite_data_to_nodes(new_nodes)
-      if (scale_changed) this.draw_all_nodes(false)
-      else this.draw_these_nodes([selected_node_id])
-    } else {
-      this.draw_these_nodes([selected_node_id])
-    }
-  }
 }
 
-function extend_nodes(new_nodes) {
-  /** Add new nodes to data and search index.
-
-   */
+/**
+ * Add new nodes to data and search index.
+ */
+function extend_nodes (new_nodes) {
   if (this.enable_search) {
     for (var node_id in new_nodes) {
       var node = new_nodes[node_id]
@@ -1489,10 +1513,11 @@ function extend_nodes(new_nodes) {
   }
   utils.extend(this.nodes, new_nodes)
 }
-function extend_reactions(new_reactions) {
-  /** Add new reactions to data and search index.
 
-   */
+/**
+ * Add new reactions to data and search index.
+ */
+function extend_reactions (new_reactions) {
   if (this.enable_search) {
     for (var r_id in new_reactions) {
       var reaction = new_reactions[r_id]
@@ -1518,6 +1543,67 @@ function extend_reactions(new_reactions) {
   utils.extend(this.reactions, new_reactions)
 }
 
+
+function _extend_and_draw_reaction (new_nodes, new_reactions, new_beziers,
+                                    selected_node_id) {
+  this.extend_reactions(new_reactions)
+  utils.extend(this.beziers, new_beziers)
+  // Remove the selected node so it can be updated
+  this.delete_node_data([ selected_node_id ]) // TODO this is a hack. fix
+  this.extend_nodes(new_nodes)
+
+  // Apply the reaction and node data to the scales. If the scale changes,
+  // redraw everything.
+  var keys = Object.keys(new_reactions)
+  if (this.has_data_on_reactions) {
+    var scale_changed = false
+    if (this.imported_reaction_data) {
+      scale_changed = this.apply_reaction_data_to_map(this.imported_reaction_data,
+                                                      keys)
+    } else if (this.imported_gene_data) {
+      scale_changed = this.apply_gene_data_to_map(this.imported_gene_data, keys)
+    } else {
+      throw new Error('imported_gene_data or imported_reaction_data should ' +
+                      'not be null')
+    }
+    if (scale_changed) {
+      this.draw_all_reactions(true, false)
+    } else {
+      this.draw_these_reactions(keys)
+    }
+  } else {
+    this.draw_these_reactions(keys)
+  }
+
+  var node_keys = Object.keys(new_nodes)
+  if (this.has_data_on_nodes) {
+    if (this.imported_metabolite_data === null) {
+      throw new Error('imported_metabolite_data should not be null')
+    }
+    var scale_changed = this.apply_metabolite_data_to_map(this.imported_metabolite_data,
+                                                          node_keys)
+    if (scale_changed) {
+      this.draw_all_nodes(false)
+    } else {
+      this.draw_these_nodes(node_keys)
+    }
+  } else {
+    this.draw_these_nodes(node_keys)
+  }
+
+  // select new primary metabolite
+  for (var node_id in new_nodes) {
+    var node = new_nodes[node_id]
+    if (node.node_is_primary && node_id!=selected_node_id) {
+      this.select_metabolite_with_id(node_id)
+      var new_coords = { x: node.x, y: node.y }
+      if (this.zoom_container) {
+        this.zoom_container.translate_off_screen(new_coords)
+      }
+    }
+  }
+}
+
 /**
  * Build a new reaction starting with selected_met. Undoable.
  * @param {String} reaction_bigg_id - The BiGG ID of the reaction to draw.
@@ -1528,16 +1614,16 @@ function extend_reactions(new_reactions) {
  * @return An object of undo and redo functions:
  *   { undo: undo_function, redo: redo_function }
  */
-function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id,
-                                     direction, apply_undo_redo) {
+function new_reaction_for_metabolite (reaction_bigg_id, selected_node_id,
+                                      direction, apply_undo_redo) {
   // default args
   if (apply_undo_redo === undefined) apply_undo_redo = true
 
   // get the metabolite node
   var selected_node = this.nodes[selected_node_id]
 
-  // set reaction coordinates and angle
-  // be sure to copy the reaction recursively
+  // Set reaction coordinates and angle. Be sure to copy the reaction
+  // recursively.
   var cobra_reaction = this.cobra_model.reactions[reaction_bigg_id]
 
   // build the new reaction
@@ -1547,22 +1633,22 @@ function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id,
                                utils.clone(selected_node),
                                this.largest_ids,
                                this.settings.get_option('cofactors'),
-                               direction),
-      new_nodes = out.new_nodes,
-      new_reactions = out.new_reactions,
-      new_beziers = out.new_beziers
+                               direction)
+  var new_nodes = out.new_nodes
+  var new_reactions = out.new_reactions
+  var new_beziers = out.new_beziers
 
-  // draw
-  extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
-                                        new_beziers, selected_node_id])
+  // Draw
+  _extend_and_draw_reaction.apply(this, [ new_nodes, new_reactions,
+                                          new_beziers, selected_node_id ])
 
-  // clone the nodes and reactions, to redo this action later
-  var saved_nodes = utils.clone(new_nodes),
-  saved_reactions = utils.clone(new_reactions),
-      saved_beziers = utils.clone(new_beziers)
+  // Clone the nodes and reactions, to redo this action later
+  var saved_nodes = utils.clone(new_nodes)
+  var saved_reactions = utils.clone(new_reactions)
+  var saved_beziers = utils.clone(new_beziers)
 
   // add to undo/redo stack
-  var undo_fn = function() {
+  var undo_fn = function () {
     // undo
     // get the nodes to delete
     delete new_nodes[selected_node_id]
@@ -1579,7 +1665,7 @@ function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id,
       if (scale_changed) this.draw_all_reactions(true, true)
       else this.draw_these_reactions(Object.keys(new_reactions))
     } else {
-      this.clear_deleted_reactions(true); // also clears segments and beziers
+      this.clear_deleted_reactions(true) // also clears segments and beziers
     }
     if (this.has_data_on_nodes) {
       var scale_changed = this.calc_data_stats('metabolite')
@@ -1588,66 +1674,28 @@ function new_reaction_for_metabolite(reaction_bigg_id, selected_node_id,
     } else {
       this.clear_deleted_nodes()
     }
-  }.bind(this),
-      redo_fn = function () {
-        // redo
-        // clone the nodes and reactions, to redo this action later
-        extend_and_draw_reaction.apply(this, [new_nodes, new_reactions,
-                                              new_beziers, selected_node_id])
-      }.bind(this)
+  }.bind(this)
+  var redo_fn = function () {
+    // redo
+    // clone the nodes and reactions, to redo this action later
+    _extend_and_draw_reaction.apply(this, [ new_nodes, new_reactions,
+                                            new_beziers, selected_node_id ])
+  }.bind(this)
 
-  if (apply_undo_redo)
+  if (apply_undo_redo) {
     this.undo_stack.push(undo_fn, redo_fn)
-
-  return { undo: undo_fn,
-           redo: redo_fn }
-
-  // definitions
-  function extend_and_draw_reaction(new_nodes, new_reactions, new_beziers,
-                                    selected_node_id) {
-    this.extend_reactions(new_reactions)
-    utils.extend(this.beziers, new_beziers)
-    // remove the selected node so it can be updated
-    this.delete_node_data([selected_node_id]); // TODO this is a hack. fix
-    this.extend_nodes(new_nodes)
-
-    // apply the reaction and node data to the scales
-    // if the scale changes, redraw everything
-    if (this.has_data_on_reactions) {
-      var scale_changed = this.calc_data_stats('reaction')
-      if (scale_changed) this.draw_all_reactions(true, false)
-      else this.draw_these_reactions(Object.keys(new_reactions))
-    } else {
-      this.draw_these_reactions(Object.keys(new_reactions))
-    }
-    if (this.has_data_on_nodes) {
-      var scale_changed = this.calc_data_stats('metabolite')
-      if (scale_changed) this.draw_all_nodes(false)
-      else this.draw_these_nodes(Object.keys(new_nodes))
-    } else {
-      this.draw_these_nodes(Object.keys(new_nodes))
-    }
-
-    // select new primary metabolite
-    for (var node_id in new_nodes) {
-      var node = new_nodes[node_id]
-      if (node.node_is_primary && node_id!=selected_node_id) {
-        this.select_metabolite_with_id(node_id)
-        var new_coords = { x: node.x, y: node.y }
-        if (this.zoom_container)
-          this.zoom_container.translate_off_screen(new_coords)
-      }
-    }
   }
 
+  return { undo: undo_fn, redo: redo_fn }
 }
-function cycle_primary_node() {
+
+function cycle_primary_node () {
   var selected_nodes = this.get_selected_nodes()
-  // get the first node
-  var node_id = Object.keys(selected_nodes)[0],
-      node = selected_nodes[node_id],
-      reactions = this.reactions,
-      nodes = this.nodes
+  // Get the first node
+  var node_id = Object.keys(selected_nodes)[0]
+  var node = selected_nodes[node_id]
+  var reactions = this.reactions
+  var nodes = this.nodes
   // make the other reactants or products secondary
   // 1. Get the connected anchor nodes for the node
   var connected_anchor_ids = [],
@@ -1705,11 +1753,11 @@ function cycle_primary_node() {
   }
   // 4. change the primary node, and change coords, label coords, and beziers
   var nodes_to_draw = [],
-  last_i = related_node_ids.length - 1,
-  last_node = nodes[related_node_ids[last_i]],
-  last_is_primary = last_node.node_is_primary,
-  last_coords = { x: last_node.x, y: last_node.y,
-                  label_x: last_node.label_x, label_y: last_node.label_y }
+      last_i = related_node_ids.length - 1,
+      last_node = nodes[related_node_ids[last_i]],
+      last_is_primary = last_node.node_is_primary,
+      last_coords = { x: last_node.x, y: last_node.y,
+                      label_x: last_node.label_x, label_y: last_node.label_y }
   if (last_node.connected_segments.length > 1)
     console.warn('Too many connected segments for node ' + last_node.node_id)
   var last_segment_info = last_node.connected_segments[0], // guaranteed above to have only one
@@ -1722,7 +1770,7 @@ function cycle_primary_node() {
     return
   }
   var last_bezier = { b1: last_segment.b1, b2: last_segment.b2 },
-  primary_node_id
+      primary_node_id
   related_node_ids.forEach(function(related_node_id) {
     var node = nodes[related_node_id],
     this_is_primary = node.node_is_primary,
@@ -1743,8 +1791,8 @@ function cycle_primary_node() {
   })
   // 5. cycle the connected_segments array so the next time, it cycles differently
   var old_connected_segments = nodes[connected_anchor_id].connected_segments,
-  last_i = old_connected_segments.length - 1,
-  new_connected_segments = [old_connected_segments[last_i]]
+      last_i = old_connected_segments.length - 1,
+      new_connected_segments = [old_connected_segments[last_i]]
   old_connected_segments.forEach(function(segment, i) {
     if (last_i==i) return
     new_connected_segments.push(segment)
@@ -1888,6 +1936,7 @@ function edit_text_label(text_label_id, new_value, should_draw) {
 
 // -------------------------------------------------------------------------
 // Zoom
+// -------------------------------------------------------------------------
 
 function zoom_extent_nodes(margin) {
   /** Zoom to fit all the nodes.
@@ -2078,12 +2127,11 @@ function full_screen() {
 // -------------------------------------------------------------------------
 // IO
 
-function save() {
+function save () {
   utils.download_json(this.map_for_export(), this.map_name)
 }
 
-
-function map_for_export() {
+function map_for_export () {
   var out = [{ "map_name": this.map_name,
                "map_id": this.map_id,
                "map_description": this.map_description,
@@ -2153,11 +2201,10 @@ function map_for_export() {
   return out
 }
 
-function save_map(obj, callback_before, callback_after, map_type) {
-  /** Rescale the canvas and save as svg/png.
-
-   */
-
+/**
+ * Rescale the canvas and save as svg/png.
+ */
+function save_map (obj, callback_before, callback_after, map_type) {
   // run the before callback
   obj.callback_manager.run(callback_before)
 
@@ -2205,15 +2252,15 @@ function save_map(obj, callback_before, callback_after, map_type) {
   }.bind(obj))
 }
 
-function save_svg() {
+function save_svg () {
   save_map(this, 'before_svg_export', 'after_svg_export', 'svg')
 }
 
-function save_png() {
+function save_png () {
   save_map(this, 'before_png_export', 'after_png_export', 'png')
 }
 
-function convert_map() {
+function convert_map () {
   /** Assign the descriptive names and gene_reaction_rules from the model
       to the map.
 

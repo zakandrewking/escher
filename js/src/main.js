@@ -53,6 +53,6 @@ module.exports = {
     'vkbeautify': require('vkbeautify'),
     'd3_selection': require('d3-selection'),
     'd3_select': require('d3-selection').select,
-    'd3_json': require('d3-request').json,
-  },
+    'd3_json': require('d3-request').json
+  }
 }
