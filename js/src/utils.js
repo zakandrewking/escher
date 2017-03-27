@@ -1,4 +1,4 @@
-/* global Blob, XMLSerializer */
+/* global Blob, XMLSerializer, Image, btoa */
 
 var vkbeautify = require('vkbeautify')
 var _ = require('underscore')
@@ -8,9 +8,9 @@ var d3_csvParseRows = require('d3-dsv').csvParseRows
 var d3_selection = require('d3-selection').selection
 
 try {
-  var saveAs = require('filesaverjs').saveAs
+  var saveAs = require('file-saver').saveAs
 } catch (e) {
-  console.warn('Not a browser, so filesaverjs not available.')
+  console.warn('Not a browser, so FileSaver.js not available.')
 }
 
 module.exports = {
@@ -66,21 +66,23 @@ module.exports = {
 }
 
 
-// definitions
+/**
+ * Check if Blob is available, and alert if it is not.
+ */
 function _check_filesaver() {
-  /** Check if Blob is available, and alert if it is not. */
   try {
     var isFileSaverSupported = !!new Blob()
   } catch (e) {
-    alert("Blob not supported")
+    alert('Blob not supported')
   }
 }
 
 function set_options(options, defaults, must_be_float) {
-  if (options === undefined || options === null)
+  if (options === undefined || options === null) {
     return defaults
-  var i = -1,
-  out = {}
+  }
+  var i = -1
+  var out = {}
   for (var key in defaults) {
     var has_key = ((key in options) &&
                    (options[key] !== null) &&
@@ -603,9 +605,9 @@ function load_json (f, callback, pre_fn, failure_fn) {
 
   var reader = new window.FileReader()
   // Closure to capture the file information.
-  reader.onload = function(event) {
-    var result = event.target.result,
-        data
+  reader.onload = function (event) {
+    var result = event.target.result
+    var data
     // Try JSON
     try {
       data = JSON.parse(result)
