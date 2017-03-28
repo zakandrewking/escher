@@ -281,12 +281,12 @@ function draw_an_object (container_sel, parent_node_selector, children_selector,
   var sel = container_sel.select(parent_node_selector)
       .selectAll(children_selector)
       .data(make_array_ref(draw_object, id_key),
-            function(d) { return d[id_key] })
+            function (d) { return d[id_key] })
 
   // enter: generate and place reaction
-  var update_sel = (create_function ?
-                    create_function(sel.enter()).merge(sel) :
-                    sel)
+  var update_sel = create_function
+      ? create_function(sel.enter()).merge(sel)
+      : sel
 
   // update: update when necessary
   if (update_function) {

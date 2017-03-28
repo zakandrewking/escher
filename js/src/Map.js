@@ -95,6 +95,7 @@ Map.prototype = {
   new_reaction_for_metabolite: new_reaction_for_metabolite,
   cycle_primary_node: cycle_primary_node,
   toggle_selected_node_primary: toggle_selected_node_primary,
+  add_label_to_search_index: add_label_to_search_index,
   new_text_label: new_text_label,
   edit_text_label: edit_text_label,
   // delete
@@ -566,21 +567,14 @@ function draw_all_reactions(draw_beziers, clear_deleted) {
     this.clear_deleted_reactions(draw_beziers)
 }
 
-function draw_these_reactions(reaction_ids, draw_beziers) {
-  /** Draw specific reactions.
-
-      Does nothing with exit selection. Use clear_deleted_reactions to remove
-      reactions from the DOM.
-
-      Arguments
-      ---------
-
-      reactions_ids: An array of reaction_ids to update.
-
-      draw_beziers: (Boolean, default True) Whether to also draw the bezier
-      control points.
-
-  */
+/**
+ * Draw specific reactions. Does nothing with exit selection. Use
+ * clear_deleted_reactions to remove reactions from the DOM.
+ * reactions_ids: An array of reaction_ids to update.
+ * draw_beziers: (Boolean, default True) Whether to also draw the bezier control
+ * points.
+ */
+function draw_these_reactions (reaction_ids, draw_beziers) {
   if (_.isUndefined(draw_beziers)) draw_beziers = true
 
   // find reactions for reaction_ids
@@ -606,34 +600,31 @@ function draw_these_reactions(reaction_ids, draw_beziers) {
   }
 }
 
-function clear_deleted_reactions(draw_beziers) {
-  /** Remove any reactions that are not in *this.reactions*.
-
-      Arguments
-      ---------
-
-      draw_beziers: (Boolean, default True) Whether to also clear deleted
-      bezier control points.
-
-  */
+/**
+ * Remove any reactions that are not in *this.reactions*.
+ * draw_beziers: (Boolean, default True) Whether to also clear deleted bezier
+ * control points.
+ */
+function clear_deleted_reactions (draw_beziers) {
   if (_.isUndefined(draw_beziers)) draw_beziers = true
 
-  // remove deleted reactions and segments
-  utils.draw_an_object(this.sel, '#reactions', '.reaction', this.reactions, 'reaction_id',
-                       null,
-                       clear_deleted_segments,
-                       function(sel) { sel.remove(); })
+  // Remove deleted reactions and segments
+  utils.draw_an_object(
+    this.sel, '#reactions', '.reaction', this.reactions, 'reaction_id', null,
+    function (update_selection) {
+      // Draw segments
+      utils.draw_a_nested_object(
+        update_selection, '.segment-group', 'segments', 'segment_id', null,
+        null, function(sel) { sel.remove() }
+      )
+    },
+    function (sel) {
+      sel.remove()
+    }
+  )
 
-  if (draw_beziers==true)
+  if (draw_beziers === true) {
     this.clear_deleted_beziers()
-
-  // definitions
-  function clear_deleted_segments(update_selection) {
-    // draw segments
-    utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
-                               null,
-                               null,
-                               function(sel) { sel.remove(); })
   }
 }
 
@@ -680,8 +671,8 @@ function draw_these_nodes(node_ids) {
     return this.draw.create_node(sel,
                                  this.nodes,
                                  this.reactions)
-  }.bind(this),
-  update_fn = function(sel) {
+  }.bind(this)
+  var update_fn = function (sel) {
     return this.draw.update_node(sel,
                                  this.scale,
                                  this.has_data_on_nodes,
@@ -698,68 +689,54 @@ function draw_these_nodes(node_ids) {
                        create_fn, update_fn)
 }
 
+/**
+ * Remove any nodes that are not in *this.nodes*.
+ */
 function clear_deleted_nodes() {
-  /** Remove any nodes that are not in *this.nodes*.
-
-   */
-  // run remove for exit selection
+  // Run remove for exit selection
   utils.draw_an_object(this.sel, '#nodes', '.node', this.nodes, 'node_id',
-                       null, null, function(sel) { sel.remove(); })
+                       null, null, function (sel) { sel.remove() })
 }
 
-function draw_all_text_labels() {
-  // Draw all text_labels.
-  var text_label_ids = []
-  for (var text_label_id in this.text_labels) {
-    text_label_ids.push(text_label_id)
-  }
-  this.draw_these_text_labels(text_label_ids)
+/**
+ * Draw all text_labels.
+ */
+function draw_all_text_labels () {
+  this.draw_these_text_labels(Object.keys(this.text_labels))
 
-  // Clear all deleted text_labels.
+  // Clear all deleted text_labels
   this.clear_deleted_text_labels()
 }
 
-function draw_these_text_labels(text_label_ids) {
-  /** Draw specific text_labels.
-
-      Does nothing with exit selection. Use clear_deleted_text_labels to remove
-      text_labels from the DOM.
-
-      Arguments
-      ---------
-
-      text_labels_ids: An array of text_label_ids to update.
-
-  */
-  // find reactions for reaction_ids
+/**
+ * Draw specific text_labels. Does nothing with exit selection. Use
+ * clear_deleted_text_labels to remove text_labels from the DOM.
+ * @param {Array} text_labels_ids - An array of text_label_ids to update.
+ */
+function draw_these_text_labels (text_label_ids) {
+  // Find reactions for reaction_ids
   var text_label_subset = utils.object_slice_for_ids_ref(this.text_labels, text_label_ids)
 
-  // function to update text_labels
-  var update_fn = function(sel) {
-    return this.draw.update_text_label(sel, this.behavior);
-  }.bind(this)
-
-  // draw the text_labels
+  // Draw the text_labels
   utils.draw_an_object(this.sel, '#text-labels', '.text-label',
                        text_label_subset, 'text_label_id',
                        this.draw.create_text_label.bind(this.draw),
-                       update_fn)
+                       this.draw.update_text_label.bind(this.draw))
 }
 
-function clear_deleted_text_labels() {
-  /** Remove any text_labels that are not in *this.text_labels*.
-
-   */
-  // clear deleted
+/**
+ * Remove any text_labels that are not in *this.text_labels*.
+ */
+function clear_deleted_text_labels () {
   utils.draw_an_object(this.sel, '#text-labels', '.text-label',
                        this.text_labels, 'text_label_id', null, null,
-                       function(sel) { sel.remove(); })
+                       function (sel) { sel.remove() })
 }
 
-function draw_all_beziers() {
-  /** Draw all beziers, and clear deleted reactions.
-
-   */
+/**
+ * Draw all beziers, and clear deleted reactions.
+ */
+function draw_all_beziers () {
   var bezier_ids = []
   for (var bezier_id in this.beziers) {
     bezier_ids.push(bezier_id)
@@ -1341,11 +1318,12 @@ function delete_segment_data (segment_objs) {
     delete reaction.segments[segment_obj.segment_id]
   }
 }
-function delete_reaction_data(reaction_ids) {
-  /** Delete reactions, segments, and beziers, and remove reaction from
-      search index.
 
-  */
+/**
+ * Delete reactions, segments, and beziers, and remove reaction from search
+ * index.
+ */
+function delete_reaction_data (reaction_ids) {
   reaction_ids.forEach(function(reaction_id) {
     // remove beziers
     var reaction = this.reactions[reaction_id]
@@ -1377,20 +1355,20 @@ function delete_reaction_data(reaction_ids) {
  * Delete text labels for an array of IDs
  */
 function delete_text_label_data (text_label_ids) {
-  text_label_ids.forEach(function(text_label_id) {
+  text_label_ids.forEach(function (text_label_id) {
     // delete label
     delete this.text_labels[text_label_id]
     // remove from search index
-    var found = this.search_index.remove('l'+text_label_id)
-    if (!found)
+    var found = this.search_index.remove('l' + text_label_id)
+    if (!found) {
       console.warn('Could not find deleted text label in search index')
+    }
   }.bind(this))
 }
 
 // ---------------------------------------------------------------------
 // Building
 // ---------------------------------------------------------------------
-
 
 function _extend_and_draw_metabolite (new_nodes, selected_node_id) {
   this.extend_nodes(new_nodes)
@@ -1437,22 +1415,24 @@ function new_reaction_from_scratch (starting_reaction, coords, direction) {
     .filter(function (x) { return x[0] < 0 }) // coeff < 0
     .map(function (x) { return x[1] }) // metabolite id
   // get the first reactant or else the first product
-  var metabolite_id = (reactant_ids.length > 0 ?
-                       reactant_ids[0] :
-                       Object.keys(cobra_reaction.metabolites)[0])
+  var metabolite_id = reactant_ids.length > 0
+      ? reactant_ids[0]
+      : Object.keys(cobra_reaction.metabolites)[0]
   var metabolite = this.cobra_model.metabolites[metabolite_id]
   var selected_node_id = String(++this.largest_ids.nodes)
   var label_d = build.get_met_label_loc(Math.PI / 180 * direction, 0, 1, true,
                                         metabolite_id)
-  var selected_node = { connected_segments: [],
-                        x: coords.x,
-                        y: coords.y,
-                        node_is_primary: true,
-                        label_x: coords.x + label_d.x,
-                        label_y: coords.y + label_d.y,
-                        name: metabolite.name,
-                        bigg_id: metabolite_id,
-                        node_type: 'metabolite' }
+  var selected_node = {
+    connected_segments: [],
+    x: coords.x,
+    y: coords.y,
+    node_is_primary: true,
+    label_x: coords.x + label_d.x,
+    label_y: coords.y + label_d.y,
+    name: metabolite.name,
+    bigg_id: metabolite_id,
+    node_type: 'metabolite'
+  }
   var new_nodes = {}
   new_nodes[selected_node_id] = selected_node
 
@@ -1471,22 +1451,20 @@ function new_reaction_from_scratch (starting_reaction, coords, direction) {
 
   // add to undo/redo stack
   this.undo_stack.push(function () {
-    // undo
-    // first undo the reaction
+    // Undo. First undo the reaction.
     reaction_undo()
-    // get the nodes to delete
+    // Get the nodes to delete
     this.delete_node_data(Object.keys(new_nodes))
-    // save the nodes and reactions again, for redo
+    // Save the nodes and reactions again, for redo
     new_nodes = utils.clone(saved_nodes)
-    // draw
+    // Draw
     this.clear_deleted_nodes()
-    // deselect
+    // Deselect
     this.deselect_nodes()
   }.bind(this), function () {
-    // redo
-    // clone the nodes and reactions, to redo this action later
+    // Redo. Clone the nodes and reactions, to redo this action later.
     _extend_and_draw_metabolite.apply(this, [ new_nodes, selected_node_id ])
-    // now redo the reaction
+    // Now redo the reaction
     reaction_redo()
   }.bind(this))
 
@@ -1648,30 +1626,37 @@ function new_reaction_for_metabolite (reaction_bigg_id, selected_node_id,
   var saved_reactions = utils.clone(new_reactions)
   var saved_beziers = utils.clone(new_beziers)
 
-  // add to undo/redo stack
+  // Add to undo/redo stack
   var undo_fn = function () {
-    // undo
-    // get the nodes to delete
+    // Undo. Get the nodes to delete.
     delete new_nodes[selected_node_id]
     this.delete_node_data(Object.keys(new_nodes))
-    this.delete_reaction_data(Object.keys(new_reactions)); // also deletes beziers
-    select_metabolite_with_id.apply(this, [selected_node_id])
-    // save the nodes and reactions again, for redo
+    this.delete_reaction_data(Object.keys(new_reactions)) // also deletes beziers
+    select_metabolite_with_id.apply(this, [ selected_node_id ])
+    // Save the nodes and reactions again, for redo
     new_nodes = utils.clone(saved_nodes)
     new_reactions = utils.clone(saved_reactions)
     new_beziers = utils.clone(saved_beziers)
-    // draw
+    // Draw
     if (this.has_data_on_reactions) {
       var scale_changed = this.calc_data_stats('reaction')
-      if (scale_changed) this.draw_all_reactions(true, true)
-      else this.draw_these_reactions(Object.keys(new_reactions))
+      if (scale_changed) {
+        this.draw_all_reactions(true, true)
+      } else {
+        // Also clears segments and beziers
+        this.clear_deleted_reactions(true)
+      }
     } else {
-      this.clear_deleted_reactions(true) // also clears segments and beziers
+      // Also clears segments and beziers
+      this.clear_deleted_reactions(true)
     }
     if (this.has_data_on_nodes) {
       var scale_changed = this.calc_data_stats('metabolite')
-      if (scale_changed) this.draw_all_nodes(true)
-      else this.draw_these_nodes(Object.keys(new_nodes))
+      if (scale_changed) {
+        this.draw_all_nodes(true)
+      } else {
+        this.clear_deleted_nodes()
+      }
     } else {
       this.clear_deleted_nodes()
     }
@@ -1895,44 +1880,83 @@ function segments_and_reactions_for_nodes(nodes) {
   return { segment_objs_w_segments: segment_objs_w_segments, reactions: these_reactions }
 }
 
-function new_text_label(coords, text) {
-  // make an label
+function add_label_to_search_index (id, text) {
+  this.search_index.insert('l' + id, {
+    name: text,
+    data: { type: 'text_label', text_label_id: id }
+  })
+}
+
+function new_text_label (coords, text) {
+  // Make an label
   var out = build.new_text_label(this.largest_ids, text, coords)
   this.text_labels[out.id] = out.label
-  var sel = this.draw_these_text_labels([out.id])
-  // add to the search index
-  this.search_index.insert('l' + out.id, { 'name': text,
-                                           'data': { type: 'text_label',
-                                                     text_label_id: out.id }})
+  this.draw_these_text_labels([ out.id ])
+  // Add to the search index
+  if (text !== '') {
+    this.add_label_to_search_index(out.id, text)
+  }
   return out.id
 }
 
-function edit_text_label(text_label_id, new_value, should_draw) {
-  // save old value
-  var saved_value = this.text_labels[text_label_id].text,
-  edit_and_draw = function(new_val, should_draw) {
+/**
+ * Edit a text label. Undoable.
+ * @param {} text_label_id -
+ * @param {String} new_value -
+ * @param {Boolean} should_draw -
+ * @param {Boolean} [is_new=false] - If true, then the text label is all new, so
+ * delete it on undo and create it again on redo.
+ */
+function edit_text_label (text_label_id, new_value, should_draw, is_new) {
+  if (_.isUndefined(is_new)) is_new = false
+
+  if (new_value === '') {
+    throw new Error('Should not be called for empty string')
+  }
+
+  var edit_and_draw = function (new_val, should_draw) {
     // set the new value
-    this.text_labels[text_label_id].text = new_val
-    if (should_draw) this.draw_these_text_labels([text_label_id])
-    // update in the search index
-    var record_id = 'l' + text_label_id,
-           found = this.search_index.remove(record_id)
-    if (!found)
+    var label = this.text_labels[text_label_id]
+    label.text = new_val
+    if (should_draw) {
+      this.draw_these_text_labels([ text_label_id ])
+    }
+    // Update in the search index
+    var record_id = 'l' + text_label_id
+    var found = this.search_index.remove(record_id)
+    if (!is_new && !found) {
       console.warn('Could not find modified text label in search index')
-    this.search_index.insert(record_id, { 'name': new_val,
-                                          'data': { type: 'text_label',
-                                                    text_label_id: text_label_id }})
+    }
+    this.search_index.insert(record_id, {
+      name: new_val,
+      data: { type: 'text_label', text_label_id: text_label_id }
+    })
   }.bind(this)
 
-  // edit the label
+  // Save old value
+  var saved_label = utils.clone(this.text_labels[text_label_id])
+
+  // Edit the label
   edit_and_draw(new_value, should_draw)
 
-  // add to undo stack
-  this.undo_stack.push(function() {
-    edit_and_draw(saved_value, should_draw)
-  }, function () {
-    edit_and_draw(new_value, should_draw)
-  })
+  // Add to undo stack
+  this.undo_stack.push(function () {
+    if (is_new) {
+      this.delete_text_label_data([ text_label_id ])
+      this.clear_deleted_text_labels()
+    } else {
+      edit_and_draw(saved_label.text, true)
+    }
+  }.bind(this), function () {
+    if (is_new) {
+      this.text_labels[text_label_id] = utils.clone(saved_label)
+      this.text_labels[text_label_id].text = new_value
+      this.draw_these_text_labels([ text_label_id ])
+      this.add_label_to_search_index(text_label_id, new_value)
+    } else {
+      edit_and_draw(new_value, true)
+    }
+  }.bind(this))
 }
 
 // -------------------------------------------------------------------------

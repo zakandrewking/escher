@@ -32,6 +32,7 @@ var utils = require('./utils')
 var data_styles = require('./data_styles')
 var CallbackManager = require('./CallbackManager')
 var d3_format = require('d3-format').format
+var d3_select = require('d3-selection').select
 
 var Draw = utils.make_class()
 // instance methods
@@ -187,10 +188,12 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
 
   if (!hide_all_labels) {
     label
-      .text(function(d) {
+      .text(function (d) {
         var t = d[identifiers_on_map]
-        if (has_data_on_reactions && reaction_data_styles.indexOf('text') != -1)
+        if (has_data_on_reactions &&
+            reaction_data_styles.indexOf('text') !== -1) {
           t += ' ' + d.data_string
+        }
         return t
       })
       .on('mousedown', label_mousedown_fn)
@@ -822,8 +825,8 @@ function create_text_label (enter_selection) {
   var g = enter_selection.append('g')
       .attr('id', function (d) { return 'l' + d.text_label_id })
       .attr('class', 'text-label')
-      .append('text')
-      .attr('class', 'label')
+  g.append('text')
+    .attr('class', 'label')
 
   this.callback_manager.run('create_text_label', this, enter_selection)
 
