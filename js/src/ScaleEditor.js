@@ -138,7 +138,7 @@ function update () {
   }.bind(this)
 
   // ---------------------------------------------------------------------
-  // make the gradient
+  // Make the gradient
   // ---------------------------------------------------------------------
 
   var sorted_domain = scale.map(function (d) {
@@ -199,7 +199,7 @@ function update () {
       adjusted_x = Math.min(Math.max(adjusted_x, last_loc + buf), width - 2)
     }
     last_loc = adjusted_x
-    return Object.assign(d, { adjusted_x: adjusted_x })
+    return Object.assign({}, d, { adjusted_x: adjusted_x })
   }.bind(this))
 
   // ---------------------------------------------------------------------

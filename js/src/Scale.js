@@ -76,7 +76,7 @@ function connect_to_settings(settings, map, get_data_statistics) {
   })
 
   // definitions
-  function sort_scale(scale, stats) {
+  function sort_scale (scale, stats) {
     var sorted = scale.map(function (x) {
       var v
       if (x.type in stats)

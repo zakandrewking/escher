@@ -942,7 +942,8 @@ function calc_data_stats (type) {
   }.bind(this))
 
   // Deal with max === min
-  if (this.data_statistics[type]['min'] === this.data_statistics[type]['max']) {
+  if (this.data_statistics[type]['min'] === this.data_statistics[type]['max'] &&
+      this.data_statistics[type]['min'] !== null) {
     var min = this.data_statistics[type]['min']
     var max = this.data_statistics[type]['max']
     this.data_statistics[type]['min'] = min - 1 - (Math.abs(min) * 0.1)
@@ -1117,8 +1118,8 @@ function deselect_nodes () {
 function select_text_label (sel, d) {
   // deselect all nodes
   this.deselect_nodes()
-  // find the new selection
-  // Ignore shift key and only allow single selection for now
+  // Find the new selection. Ignore shift key and only allow single selection
+  // for now.
   var text_label_selection = this.sel.select('#text-labels').selectAll('.text-label')
   text_label_selection.classed('selected', function(p) { return d === p; })
   var selected_text_labels = this.sel.select('#text-labels').selectAll('.selected'),

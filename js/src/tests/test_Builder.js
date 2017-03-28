@@ -50,8 +50,12 @@ describe('Builder', () => {
 
   it('fix scales', () => {
     const sel = make_parent_sel(d3_body)
-    const b = Builder(null, null, '', sel, { reaction_scale: [{ type: 'median', color: '#9696ff', size: 8 }],
-                                             never_ask_before_quit: true })
+    const b = Builder(
+      null, null, '', sel,
+      { reaction_scale: [{ type: 'median', color: '#9696ff', size: 8 }],
+        never_ask_before_quit: true }
+    )
+    console.log(b.options.reaction_scale)
     assert.deepEqual(b.options.reaction_scale,
                      [
                        { type: 'median', color: '#9696ff', size: 8 },
