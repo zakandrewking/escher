@@ -1049,8 +1049,6 @@ function d3_transform_catch (transform_attr) {
   // // Consolidate the SVGTransformList containing all Try to a single
   // // SVGTransform of type SVG_TRANSFORM_MATRIX and get its SVGMatrix.
 
-  // console.log(transform_attr, g.transform)
-
   // var matrix = g.transform.baseVal.consolidate().matrix
 
   // // Below calculations are taken and adapted from the private func

@@ -120,7 +120,6 @@ function update () {
   // ---------------------------------------------------------------------
 
   var bring_to_front = function (d, i) {
-    console.log('bring to front')
     // Bring an input set to the front
     this.input_group.selectAll('.input-set').each(function (d2) {
       d3_select(this).classed('selected-set', d === d2)

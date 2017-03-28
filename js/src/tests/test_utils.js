@@ -46,7 +46,6 @@ describe('utils.set_options', () => {
 //       { my: 'this' },
 //       'http://localhost:8000/test_file.json',
 //       function (e, d) {
-//         console.log(e, d)
 //         assert.deepEqual(this, { my: 'this' })
 //         assert.isNull(e)
 //         assert.deepEqual(d, { test: 'data' })
