@@ -44,33 +44,38 @@ function _get_label_loc (angle) {
 function get_met_label_loc (angle, index, count, is_primary, bigg_id,
                             primary_index) {
   var width = bigg_id.length * 18
-  var left_right = (index - (index > primary_index) - (count / 2)) > -1
-  console.log(bigg_id, index, primary_index, count, left_right)
+  var left_right = (index - (index > primary_index) - (count / 2)) >= -1
   if (Math.abs(angle) < Math.PI/7) {
     // Close to 0
     if (is_primary || left_right) {
       // Primary or bottom
-      return { x: -width * 0.7, y: 40 }
+      return { x: -width * 0.3, y: 40 }
     } else {
       // Top
-      return { x: -width * 0.7, y: -30 }
+      return { x: -width * 0.3, y: -20 }
     }
   } else if (Math.abs(angle - Math.PI) < Math.PI/7) {
     // Close to PI
     if (is_primary || !left_right) {
       // Primary or bottom
-      return { x: -width * 0.7, y: 40 }
+      return { x: -width * 0.3, y: 40 }
     } else {
       // Top
-      return { x: -width * 0.7, y: -30 }
+      return { x: -width * 0.3, y: -20 }
     }
   } else {
-    if (is_primary || (angle < 0 && left_right) || (angle > 0 && !left_right)) {
-      // Primary or right
+    if (is_primary) {
+      // Primary
+      return {
+        x: 25 - 38 * Math.abs(Math.abs(angle) - Math.PI/2),
+        y: (Math.abs(angle) - Math.PI/2) * ((angle > 0) * 2 - 1) * 50
+      }
+    } else if ((angle < 0 && left_right) || (angle > 0 && !left_right)) {
+      // Right
       return { x: 15, y: 0 }
     } else {
       // Left
-      return { x: -width, y: 0 }
+      return { x: -width * 0.5, y: 30 }
     }
   }
 }
