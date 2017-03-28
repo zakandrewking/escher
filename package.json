@@ -55,6 +55,7 @@
   },
   "dependencies": {
     "baconjs": "^0.7.71",
+    "d3-brush": "zakandrewking/d3-brush",
     "d3-drag": "^1.0.2",
     "d3-dsv": "^1.0.3",
     "d3-request": "^1.0.3",

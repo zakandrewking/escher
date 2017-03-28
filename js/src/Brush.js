@@ -9,8 +9,8 @@
  */
 
 var utils = require('./utils')
-var d3_brush = require('./d3-brush').brush
-var d3_brushSelection = require('./d3-brush').brushSelection
+var d3_brush = require('d3-brush').brush
+var d3_brushSelection = require('d3-brush').brushSelection
 var d3_scaleIdentity = require('d3-scale').scaleIdentity
 var d3_selection = require('d3-selection')
 var d3_select = require('d3-selection').select
