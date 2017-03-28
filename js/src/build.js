@@ -218,13 +218,17 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
 
   // add the segments, outside to inside
   var new_anchor_groups = [
-    [ anchor_ids['anchor_reactants'], anchor_ids['center'] ],
-    [ anchor_ids['anchor_products'],  anchor_ids['center'] ]
+    [ anchor_ids['anchor_reactants'], anchor_ids['center'], 'reactants' ],
+    [ anchor_ids['anchor_products'],  anchor_ids['center'], 'products' ]
   ]
   new_anchor_groups.map(function (l) {
     var from_id = l[0]
     var to_id = l[1]
     var new_segment_id = String(++largest_ids.segments)
+    var unconnected_seg = (
+      (reactant_count === 0 && l[2] === 'reactants' && new_reaction.reversibility) ||
+      (product_count === 0 && l[2] === 'products')
+    )
     new_reaction.segments[new_segment_id] =  {
       b1: null,
       b2: null,
@@ -234,7 +238,8 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
       to_node_coefficient: null,
       reversibility: new_reaction.reversibility,
       data: new_reaction.data,
-      reverse_flux: new_reaction.reverse_flux
+      reverse_flux: new_reaction.reverse_flux,
+      unconnected_segment_with_arrow: unconnected_seg,
     }
     new_anchors[from_id].connected_segments.push({ segment_id: new_segment_id,
                                                    reaction_id: new_reaction_id })

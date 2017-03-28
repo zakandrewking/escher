@@ -305,70 +305,73 @@ function create_segment (enter_selection) {
  */
 function update_segment (update_selection, scale, cobra_model,
                          drawn_nodes, defs, has_data_on_reactions) {
-  var reaction_data_styles = this.settings.get_option('reaction_styles'),
-  should_size = (has_data_on_reactions && reaction_data_styles.indexOf('size') != -1),
-  should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') != -1),
-  no_data_size = this.settings.get_option('reaction_no_data_size'),
-  no_data_color = this.settings.get_option('reaction_no_data_color')
+  var reaction_data_styles = this.settings.get_option('reaction_styles')
+  var should_size = (has_data_on_reactions && reaction_data_styles.indexOf('size') !== -1)
+  var should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') !== -1)
+  var no_data_size = this.settings.get_option('reaction_no_data_size')
+  var no_data_color = this.settings.get_option('reaction_no_data_color')
 
   // update segment attributes
-  var highlight_missing  = this.settings.get_option('highlight_missing'),
-  hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites'),
-  primary_r = this.settings.get_option('primary_metabolite_radius'),
-  secondary_r = this.settings.get_option('secondary_metabolite_radius'),
-  get_arrow_size = function(data, should_size) {
-    var width = 20,
-    height = 13
+  var highlight_missing  = this.settings.get_option('highlight_missing')
+  var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
+  var primary_r = this.settings.get_option('primary_metabolite_radius')
+  var secondary_r = this.settings.get_option('secondary_metabolite_radius')
+  var get_arrow_size = function (data, should_size) {
+    var width = 20
+    var height = 13
     if (should_size) {
       height = (data === null ? no_data_size : scale.reaction_size(data))
       // check for nan
-      if (isNaN(height))
+      if (isNaN(height)) {
         height = no_data_size
+      }
       width = height * 2
     }
     return { width: width, height: height }
   },
-  get_disp = function(arrow_size, reversibility, coefficient, node_is_primary) {
+  get_disp = function (arrow_size, reversibility, coefficient, node_is_primary) {
     var arrow_height = ((reversibility || coefficient > 0) ?
-                        arrow_size.height :
-                        0),
-    r = node_is_primary ? primary_r : secondary_r
+                        arrow_size.height : 0)
+    var r = node_is_primary ? primary_r : secondary_r
     return r + arrow_height + 10
   }
+
   // update arrows
   update_selection
     .selectAll('.segment')
-    .datum(function() {
+    .datum(function () {
       return this.parentNode.__data__
     })
     .style('visibility', function(d) {
-      var start = drawn_nodes[d.from_node_id],
-          end = drawn_nodes[d.to_node_id]
+      var start = drawn_nodes[d.from_node_id]
+      var end = drawn_nodes[d.to_node_id]
       if (hide_secondary_metabolites &&
-          ((end['node_type']=='metabolite' && !end.node_is_primary) ||
-           (start['node_type']=='metabolite' && !start.node_is_primary)))
+          ((end['node_type'] === 'metabolite' && !end.node_is_primary) ||
+           (start['node_type'] === 'metabolite' && !start.node_is_primary))) {
         return 'hidden'
+      }
       return null
     })
     .attr('d', function(d) {
-      if (d.from_node_id === null || d.to_node_id === null)
+      if (d.from_node_id === null || d.to_node_id === null) {
         return null
-      var start = drawn_nodes[d.from_node_id],
-      end = drawn_nodes[d.to_node_id],
-      b1 = d.b1,
-      b2 = d.b2
+      }
+      var start = drawn_nodes[d.from_node_id]
+      var end = drawn_nodes[d.to_node_id]
+      var b1 = d.b1
+      var b2 = d.b2
       // if metabolite, then displace the arrow
-      if (start['node_type'] == 'metabolite') {
-        var arrow_size = get_arrow_size(d.data, should_size),
-            disp = get_disp(arrow_size, d.reversibility,
+      if (start['node_type'] === 'metabolite') {
+        var arrow_size = get_arrow_size(d.data, should_size)
+        var disp = get_disp(arrow_size, d.reversibility,
                             d.from_node_coefficient,
                             start.node_is_primary)
         var direction = (b1 === null) ? end : b1
         start = displaced_coords(disp, start, direction, 'start')
       }
       if (end['node_type'] == 'metabolite') {
-        var arrow_size = get_arrow_size(d.data, should_size),
-            disp = get_disp(arrow_size, d.reversibility,
+        var arrow_size = get_arrow_size(d.data, should_size)
+        var disp = get_disp(arrow_size, d.reversibility,
                             d.to_node_coefficient,
                             end.node_is_primary)
         var direction = (b2 === null) ? start : b2
@@ -383,8 +386,8 @@ function update_segment (update_selection, scale, cobra_model,
       return curve
     })
     .style('stroke', function(d) {
-      var reaction_id = this.parentNode.parentNode.__data__.bigg_id,
-          show_missing = (highlight_missing &&
+      var reaction_id = this.parentNode.parentNode.__data__.bigg_id
+      var show_missing = (highlight_missing &&
                           cobra_model !== null &&
                           !(reaction_id in cobra_model.reactions))
       if (show_missing) {
@@ -409,51 +412,70 @@ function update_segment (update_selection, scale, cobra_model,
   var arrowheads = update_selection.select('.arrowheads')
     .selectAll('.arrowhead')
     .data(function (d) {
-      var arrowheads = [],
-      start = drawn_nodes[d.from_node_id],
-      b1 = d.b1,
-      end = drawn_nodes[d.to_node_id],
-      b2 = d.b2
+      var arrowheads = []
+      var start = drawn_nodes[d.from_node_id]
+      var b1 = d.b1
+      var end = drawn_nodes[d.to_node_id]
+      var b2 = d.b2
       // hide_secondary_metabolites option
       if (hide_secondary_metabolites &&
-          ((end['node_type']=='metabolite' && !end.node_is_primary) ||
-           (start['node_type']=='metabolite' && !start.node_is_primary)))
+          ((end['node_type'] === 'metabolite' && !end.node_is_primary) ||
+           (start['node_type'] === 'metabolite' && !start.node_is_primary))) {
         return arrowheads
+      }
 
-      if (start.node_type == 'metabolite' && (d.reversibility || d.from_node_coefficient > 0)) {
-        var arrow_size = get_arrow_size(d.data, should_size),
-        disp = get_disp(arrow_size, d.reversibility,
+      if (start.node_type === 'metabolite' &&
+          (d.reversibility || d.from_node_coefficient > 0)) {
+        var arrow_size = get_arrow_size(d.data, should_size)
+        var disp = get_disp(arrow_size, d.reversibility,
                         d.from_node_coefficient,
-                        start.node_is_primary),
-        direction = (b1 === null) ? end : b1,
-        rotation = utils.to_degrees(utils.get_angle([start, direction])) + 90,
-        loc = displaced_coords(disp, start, direction, 'start')
-        arrowheads.push({ data: d.data,
-                          x: loc.x,
-                          y: loc.y,
-                          size: arrow_size,
-                          rotation: rotation,
-                          show_arrowhead_flux: (((d.from_node_coefficient < 0)==(d.reverse_flux))
-                                                || d.data==0)
-                        })
+                        start.node_is_primary)
+        var direction = (b1 === null) ? end : b1
+        var rotation = utils.to_degrees(utils.get_angle([ start, direction ])) + 90
+        var loc = displaced_coords(disp, start, direction, 'start')
+        arrowheads.push({
+          data: d.data,
+          x: loc.x,
+          y: loc.y,
+          size: arrow_size,
+          rotation: rotation,
+          show_arrowhead_flux: (((d.from_node_coefficient < 0) === d.reverse_flux) || d.data === 0)
+        })
       }
-      if (end.node_type == 'metabolite' && (d.reversibility || d.to_node_coefficient > 0)) {
-        var arrow_size = get_arrow_size(d.data, should_size),
-        disp = get_disp(arrow_size, d.reversibility,
+
+      if (end.node_type === 'metabolite' &&
+          (d.reversibility || d.to_node_coefficient > 0)) {
+        var arrow_size = get_arrow_size(d.data, should_size)
+        var disp = get_disp(arrow_size, d.reversibility,
                         d.to_node_coefficient,
-                        end.node_is_primary),
-        direction = (b2 === null) ? start : b2,
-        rotation = utils.to_degrees(utils.get_angle([end, direction])) + 90,
-        loc = displaced_coords(disp, direction, end, 'end')
-        arrowheads.push({ data: d.data,
-                          x: loc.x,
-                          y: loc.y,
-                          size: arrow_size,
-                          rotation: rotation,
-                          show_arrowhead_flux: (((d.to_node_coefficient < 0)==(d.reverse_flux))
-                                                || d.data==0)
-                        })
+                        end.node_is_primary)
+        var direction = (b2 === null) ? start : b2
+        var rotation = utils.to_degrees(utils.get_angle([ end, direction ])) + 90
+        var loc = displaced_coords(disp, direction, end, 'end')
+        arrowheads.push({
+          data: d.data,
+          x: loc.x,
+          y: loc.y,
+          size: arrow_size,
+          rotation: rotation,
+          show_arrowhead_flux: (((d.to_node_coefficient < 0) === d.reverse_flux) || d.data === 0)
+        })
       }
+
+      if (d.unconnected_segment_with_arrow) {
+        var arrow_size = get_arrow_size(d.data, should_size)
+        var direction = end
+        var rotation = utils.to_degrees(utils.get_angle([ start, direction ])) + 90
+        arrowheads.push({
+          data: d.data,
+          x: start.x,
+          y: start.y,
+          size: arrow_size,
+          rotation: rotation,
+          show_arrowhead_flux: (((d.to_node_coefficient < 0) === d.reverse_flux) || d.data === 0)
+        })
+      }
+
       return arrowheads
     })
   arrowheads.enter().append('path')
@@ -471,7 +493,7 @@ function update_segment (update_selection, scale, cobra_model,
         if (d.show_arrowhead_flux) {
           // show the flux
           var f = d.data
-          return f===null ? no_data_color : scale.reaction_color(f)
+          return f === null ? no_data_color : scale.reaction_color(f)
         } else {
           // if the arrowhead is not filled because it is reversed
           return '#FFFFFF'
@@ -735,7 +757,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
       return marker_r
     })
     .style('fill', function(d) {
-      if (d.node_type=='metabolite') {
+      if (d.node_type === 'metabolite') {
         var should_color_data = (has_data_on_nodes &&
                                  metabolite_data_styles.indexOf('color') !== -1)
         if (should_color_data) {
