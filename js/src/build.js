@@ -8,6 +8,7 @@ var utils = require('./utils')
 var _ = require('underscore')
 
 module.exports = {
+  get_met_label_loc: get_met_label_loc,
   new_reaction: new_reaction,
   rotate_nodes: rotate_nodes,
   move_node_and_dependents: move_node_and_dependents,
@@ -40,33 +41,36 @@ function _get_label_loc (angle) {
   }
 }
 
-function _get_met_label_loc (angle, index, count, is_primary, bigg_id) {
-  if (bigg_id === 'atp_c') {
-    console.log(angle, index, count)
-  }
-  var width = bigg_id.length * 7
+function get_met_label_loc (angle, index, count, is_primary, bigg_id,
+                            primary_index) {
+  var width = bigg_id.length * 18
+  var left_right = (index - (index > primary_index) - (count / 2)) > -1
+  console.log(bigg_id, index, primary_index, count, left_right)
   if (Math.abs(angle) < Math.PI/7) {
     // Close to 0
-    if (is_primary || (index - (count / 2)) > -1) {
+    if (is_primary || left_right) {
       // Primary or bottom
-      return { x: -width, y: 40 }
+      return { x: -width * 0.7, y: 40 }
     } else {
       // Top
-      return { x: -width, y: -20 }
+      return { x: -width * 0.7, y: -30 }
     }
   } else if (Math.abs(angle - Math.PI) < Math.PI/7) {
     // Close to PI
-    if (is_primary || (index - (count / 2)) < -1) {
+    if (is_primary || !left_right) {
       // Primary or bottom
-      return { x: -width, y: 40 }
+      return { x: -width * 0.7, y: 40 }
     } else {
       // Top
-      return { x: -width, y: -20 }
+      return { x: -width * 0.7, y: -30 }
     }
   } else {
-    return {
-      x: 10,
-      y: 0
+    if (is_primary || (angle < 0 && left_right) || (angle > 0 && !left_right)) {
+      // Primary or right
+      return { x: 15, y: 0 }
+    } else {
+      // Left
+      return { x: -width, y: 0 }
     }
   }
 }
@@ -129,31 +133,33 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
   var product_count = 0
   var reaction_is_reversed = false
   for (var met_bigg_id in new_reaction.metabolites) {
-    // make the metabolites into objects
+    // Make the metabolites into objects
     var metabolite = cobra_metabolites[met_bigg_id]
     var coefficient = new_reaction.metabolites[met_bigg_id]
     var formula = metabolite.formula
-    var new_metabolite = { coefficient: coefficient,
-                           bigg_id: met_bigg_id,
-                           name: metabolite.name }
+    var new_metabolite = {
+      coefficient: coefficient,
+      bigg_id: met_bigg_id,
+      name: metabolite.name
+    }
     if (coefficient < 0) {
       new_metabolite.index = reactant_count
       // score the metabolites. Infinity == selected, >= 1 == carbon containing
       var carbons = /C([0-9]+)/.exec(formula)
-      if (selected_node.bigg_id==new_metabolite.bigg_id) {
-        reactant_ranks.push([new_metabolite.index, Infinity])
-      } else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0])==-1) {
-        reactant_ranks.push([new_metabolite.index, parseInt(carbons[1])])
+      if (selected_node.bigg_id === new_metabolite.bigg_id) {
+        reactant_ranks.push([ new_metabolite.index, Infinity ])
+      } else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0]) === -1) {
+        reactant_ranks.push([ new_metabolite.index, parseInt(carbons[1]) ])
       }
       reactant_count++
     } else {
       new_metabolite.index = product_count
       var carbons = /C([0-9]+)/.exec(formula)
-      if (selected_node.bigg_id==new_metabolite.bigg_id) {
-        product_ranks.push([new_metabolite.index, Infinity])
+      if (selected_node.bigg_id === new_metabolite.bigg_id) {
+        product_ranks.push([ new_metabolite.index, Infinity ])
         reaction_is_reversed = true
-      } else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0])==-1) {
-        product_ranks.push([new_metabolite.index, parseInt(carbons[1])])
+      } else if (carbons && cofactors.indexOf(utils.decompartmentalize(new_metabolite.bigg_id)[0]) === -1) {
+        product_ranks.push([ new_metabolite.index, parseInt(carbons[1]) ])
       }
       product_count++
     }
@@ -161,27 +167,21 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
   }
 
   // get the rank with the highest score
-  var max_rank = function (old, current) { return current[1] > old[1] ? current : old; }
-  var primary_reactant_index = reactant_ranks.reduce(max_rank, [0,0])[0]
-  var primary_product_index = product_ranks.reduce(max_rank, [0,0])[0]
+  var max_rank = function (old, current) { return current[1] > old[1] ? current : old }
+  var primary_reactant_index = reactant_ranks.reduce(max_rank, [ 0, 0 ])[0]
+  var primary_product_index = product_ranks.reduce(max_rank, [ 0, 0 ])[0]
 
   // set primary metabolites, and keep track of the total counts
   for (var met_bigg_id in new_reaction.metabolites) {
     var metabolite = new_reaction.metabolites[met_bigg_id]
     if (metabolite.coefficient < 0) {
-      if (metabolite.index === primary_reactant_index) {
-        metabolite.is_primary = true
-      }
-      metabolite.count = reactant_count + 1
+      metabolite.is_primary = metabolite.index === primary_reactant_index
+      metabolite.count = reactant_count
     } else {
-      if (metabolite.index === primary_product_index) {
-        metabolite.is_primary = true
-      }
-      metabolite.count = product_count + 1
+      metabolite.is_primary = metabolite.index === primary_product_index
+      metabolite.count = product_count
     }
   }
-
-  console.log(metabolite.count)
 
   // generate anchor nodes
   var new_anchors = {}
@@ -192,7 +192,7 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
                   { node_type: 'anchor_products',
                     dis: { x: anchor_distance * (reaction_is_reversed ? -1 : 1), y: 0 } } ],
   anchor_ids = {}
-  anchors.map(function(n) {
+  anchors.map(function (n) {
     var new_id = String(++largest_ids.nodes)
     var general_node_type = (n.node_type === 'center' ? 'midmarker' :
                              'multimarker')
@@ -244,11 +244,9 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
     var primary_index
     var from_node_id
     if (metabolite.coefficient < 0) {
-      // metabolite.count = reactant_count + 1
       primary_index = primary_reactant_index
       from_node_id = anchor_ids['anchor_reactants']
     } else {
-      // metabolite.count = product_count + 1
       primary_index = primary_product_index
       from_node_id = anchor_ids['anchor_products']
     }
@@ -296,16 +294,17 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
         reversibility: new_reaction.reversibility,
       }
       // save new node
-      var met_label_d = _get_met_label_loc(angle, metabolite.index,
-                                           metabolite.count,
-                                           metabolite.is_primary,
-                                           metabolite.bigg_id)
+      var met_label_d = get_met_label_loc(angle, metabolite.index,
+                                          metabolite.count,
+                                          metabolite.is_primary,
+                                          metabolite.bigg_id,
+                                          primary_index)
       new_nodes[new_node_id] = {
         connected_segments: [ { segment_id: new_segment_id,
                                 reaction_id: new_reaction_id } ],
         x: met_loc.circle.x,
         y: met_loc.circle.y,
-        node_is_primary: Boolean(metabolite.is_primary),
+        node_is_primary: metabolite.is_primary,
         label_x: met_loc.circle.x + met_label_d.x,
         label_y: met_loc.circle.y + met_label_d.y,
         name: metabolite.name,
@@ -472,13 +471,13 @@ function move_node_and_labels (node, reactions, displacement) {
  * @param {Number} num_slots - Number of metabolites
  */
 function _met_index_disp (w, draw_at_index, num_slots) {
-  var half = Math.floor((num_slots - 1) / 2)
+  var half = Math.floor(num_slots / 2)
   return w * (draw_at_index - half + (draw_at_index >= half))
 }
 
 function _met_secondary_disp (secondary_w, secondary_dis, draw_at_index,
                               num_slots) {
-  var half = Math.floor((num_slots - 1) / 2)
+  var half = Math.floor(num_slots / 2)
   return secondary_dis + Math.abs(draw_at_index - half + (draw_at_index >= half)) * secondary_w
 }
 
@@ -497,7 +496,7 @@ function calculate_new_metabolite_coordinates (met, primary_index, main_axis,
   var w = 80 // distance between reactants and between products
   var b1_strength = 0.4
   var b2_strength = 0.25
-  var w2 = w * 0.5 // bezier target poin
+  var w2 = w * 0.3 // bezier target poin
   var secondary_dis = 50 // y distance of first secondary mets
   var secondary_w = 20 // y distance of each other secondary met
 
@@ -548,8 +547,8 @@ function calculate_new_metabolite_coordinates (met, primary_index, main_axis,
     }
   } else if ((met.coefficient < 0) !== is_reversed) {
     end = {
-      x: reaction_axis[0].x + _met_secondary_disp (secondary_w, secondary_dis,
-                                                   draw_at_index, num_slots),
+      x: reaction_axis[0].x + _met_secondary_disp(secondary_w, secondary_dis,
+                                                  draw_at_index, num_slots),
       y: reaction_axis[0].y + _met_index_disp(w2, draw_at_index, num_slots)
     }
     b1 = {

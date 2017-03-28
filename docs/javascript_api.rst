@@ -69,7 +69,7 @@ JavaScript API
           Builder is placed in a top-level container (e.g. a div in the body
           element).
 
-       .. js.attribute:: options.zoom_to_element
+       .. js:attribute:: options.zoom_to_element
 
           (Default: ``null``) A reference to an element on the map that will be
           centered after the map loads. The value should be an object with the
@@ -77,7 +77,7 @@ JavaScript API
           ``'metabolite'`` and the element ID refers to the ID of the drawn
           element in the Escher map (not the BiGG ID):
 
-          ``{ type: <TYPE>, id: <ELEMENT ID> }``
+            ``{ type: <TYPE>, id: <ELEMENT ID> }``
 
        .. js:attribute:: options.full_screen_button
 

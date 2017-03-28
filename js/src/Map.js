@@ -1442,7 +1442,8 @@ function new_reaction_from_scratch (starting_reaction, coords, direction) {
                        Object.keys(cobra_reaction.metabolites)[0])
   var metabolite = this.cobra_model.metabolites[metabolite_id]
   var selected_node_id = String(++this.largest_ids.nodes)
-  var label_d = { x: 30, y: 10 }
+  var label_d = build.get_met_label_loc(Math.PI / 180 * direction, 0, 1, true,
+                                        metabolite_id)
   var selected_node = { connected_segments: [],
                         x: coords.x,
                         y: coords.y,
