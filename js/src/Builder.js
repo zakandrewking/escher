@@ -107,9 +107,9 @@ function init (map_data, model_data, embedded_css, selection, options) {
     reaction_data: null,
     reaction_styles: ['color', 'size', 'text'],
     reaction_compare_style: 'log2_fold',
-    reaction_scale: [{ type: 'min', color: '#c8c8c8', size: 12 },
-                     { type: 'median', color: '#9696ff', size: 20 },
-                     { type: 'max', color: '#ff0000', size: 25 }],
+    reaction_scale: [ { type: 'min', color: '#c8c8c8', size: 12 },
+                      { type: 'median', color: '#9696ff', size: 20 },
+                      { type: 'max', color: '#ff0000', size: 25 } ],
     reaction_no_data_color: '#dcdcdc',
     reaction_no_data_size: 8,
     // gene
@@ -169,13 +169,14 @@ function init (map_data, model_data, embedded_css, selection, options) {
                       'allow_building_duplicate_reactions', 'enable_tooltips' ]
   this.settings = new Settings(set_option, get_option, conditional)
 
-  // check the scales have max and min
+  // Check the scales have max and min
   var scales = [ 'reaction_scale', 'metabolite_scale' ]
-  scales.forEach(function(name) {
-    this.settings.streams[name].onValue(function(val) {
-      ['min', 'max'].forEach(function(type) {
-        var has = val.reduce(function(has_found, scale_el) {
-          return has_found || (scale_el.type == type)
+  scales.forEach(function (name) {
+    this.settings.streams[name].onValue(function (val) {
+      var types = [ 'min', 'max' ]
+      types.forEach(function (type) {
+        var has = val.reduce(function (has_found, scale_el) {
+          return has_found || (scale_el.type === type)
         }, false)
         if (!has) {
           val.push({ type: type, color: '#ffffff', size: 10 })

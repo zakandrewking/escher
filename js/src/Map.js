@@ -161,7 +161,7 @@ Map.prototype = {
   map_for_export: map_for_export,
   save_svg: save_svg,
   save_png: save_png,
-  convert_map: convert_map,
+  convert_map: convert_map
 }
 module.exports = Map
 
@@ -178,7 +178,7 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
       x: -size.width,
       y: -size.height,
       width: size.width*3,
-      height: size.height*3,
+      height: size.height*3
     }
   }
 
@@ -223,7 +223,7 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
     reactions: -1,
     nodes: -1,
     segments: -1,
-    text_labels: -1,
+    text_labels: -1
   }
 
   // make the scales
@@ -321,12 +321,12 @@ function from_data (map_data, svg, css, selection, zoom_container, settings,
     //  populate the nodes search index.
     if (enable_search) {
       if (node.node_type !== 'metabolite') continue
-      map.search_index.insert('n'+n_id, { name: node.bigg_id,
-                                          data: { type: 'metabolite',
-                                                  node_id: n_id }})
-      map.search_index.insert('n_name'+n_id, { name: node.name,
-                                               data: { type: 'metabolite',
-                                                       node_id: n_id }})
+      map.search_index.insert('n' + n_id, { name: node.bigg_id,
+                                            data: { type: 'metabolite',
+                                                    node_id: n_id }})
+      map.search_index.insert('n_name' + n_id, { name: node.name,
+                                                 data: { type: 'metabolite',
+                                                         node_id: n_id }})
     }
   }
 
@@ -870,6 +870,10 @@ function get_data_statistics () {
   return this.data_statistics
 }
 
+function _on_array (fn) {
+  return function (array) { return fn.apply(null, array) }
+}
+
 /**
  * Returns True if the stats have changed.
  * @param {String} type - Either 'metabolite' or 'reaction'
@@ -915,8 +919,8 @@ function calc_data_stats (type) {
   // calculate these statistics
   var quartiles = utils.quartiles(vals)
   var funcs = [
-    [ 'min',    on_array(Math.min) ],
-    [ 'max',    on_array(Math.max) ],
+    [ 'min',    _on_array(Math.min) ],
+    [ 'max',    _on_array(Math.max) ],
     [ 'mean',   utils.mean ],
     [ 'Q1',     function () { return quartiles[0] } ],
     [ 'median', function () { return quartiles[1] } ],
@@ -937,17 +941,20 @@ function calc_data_stats (type) {
     this.data_statistics[type][name] = new_val
   }.bind(this))
 
+  // Deal with max === min
+  if (this.data_statistics[type]['min'] === this.data_statistics[type]['max']) {
+    var min = this.data_statistics[type]['min']
+    var max = this.data_statistics[type]['max']
+    this.data_statistics[type]['min'] = min - 1 - (Math.abs(min) * 0.1)
+    this.data_statistics[type]['max'] = max + 1 + (Math.abs(max) * 0.1)
+  }
+
   if (type === 'reaction') {
     this.callback_manager.run('calc_data_stats__reaction', null, !same)
   } else {
     this.callback_manager.run('calc_data_stats__metabolite', null, !same)
   }
   return !same
-
-  // definitions
-  function on_array (fn) {
-    return function (array) { return fn.apply(null, array) }
-  }
 }
 
 // ---------------------------------------------------------------------
@@ -1963,25 +1970,21 @@ function edit_text_label (text_label_id, new_value, should_draw, is_new) {
 // Zoom
 // -------------------------------------------------------------------------
 
-function zoom_extent_nodes(margin) {
-  /** Zoom to fit all the nodes.
-
-      margin: optional argument to set the margins as a fraction of height.
-
-      Returns error if one is raised.
-
-  */
+/**
+ * Zoom to fit all the nodes. Returns error if one is raised.
+ * @param {} margin - optional argument to set the margins as a fraction of
+ * height.
+ */
+function zoom_extent_nodes (margin) {
   this._zoom_extent(margin, 'nodes')
 }
 
-function zoom_extent_canvas(margin) {
-  /** Zoom to fit the canvas.
-
-      margin: optional argument to set the margins as a fraction of height.
-
-      Returns error if one is raised.
-
-  */
+/**
+ * Zoom to fit the canvas. Returns error if one is raised.
+ * @param {} margin - optional argument to set the margins as a fraction of
+ * height.
+ */
+function zoom_extent_canvas (margin) {
   this._zoom_extent(margin, 'canvas')
 }
 
@@ -1991,7 +1994,7 @@ function zoom_extent_canvas(margin) {
  * @param {} mode - Values are 'nodes', 'canvas'.
  */
 function _zoom_extent (margin, mode) {
-  // optional args
+  // Optional args
   if (_.isUndefined(margin)) margin = (mode === 'nodes' ? 0.2 : 0)
   if (_.isUndefined(mode)) mode = 'canvas'
 
@@ -2001,16 +2004,16 @@ function _zoom_extent (margin, mode) {
   // scale margin to window size
   margin = margin * size.height
 
-  if (mode=='nodes') {
+  if (mode === 'nodes') {
     // get the extent of the nodes
-    var min = { x: null, y: null }, // TODO make infinity?
-        max = { x: null, y: null }
+    var min = { x: null, y: null } // TODO make infinity?
+    var max = { x: null, y: null }
     for (var node_id in this.nodes) {
       var node = this.nodes[node_id]
-      if (min.x===null) min.x = node.x
-      if (min.y===null) min.y = node.y
-      if (max.x===null) max.x = node.x
-      if (max.y===null) max.y = node.y
+      if (min.x === null) min.x = node.x
+      if (min.y === null) min.y = node.y
+      if (max.x === null) max.x = node.x
+      if (max.y === null) max.y = node.y
 
       min.x = Math.min(min.x, node.x)
       min.y = Math.min(min.y, node.y)
@@ -2070,19 +2073,19 @@ function zoom_to_text_label (text_label_id) {
   this.zoom_container.go_to(new_zoom, new_pos)
 }
 
-function highlight_reaction(reaction_id) {
+function highlight_reaction (reaction_id) {
   this.highlight(this.sel.selectAll('#r'+reaction_id).selectAll('text'))
 }
 
-function highlight_node(node_id) {
+function highlight_node (node_id) {
   this.highlight(this.sel.selectAll('#n'+node_id).selectAll('text'))
 }
 
-function highlight_text_label(text_label_id) {
+function highlight_text_label (text_label_id) {
   this.highlight(this.sel.selectAll('#l'+text_label_id).selectAll('text'))
 }
 
-function highlight(sel) {
+function highlight (sel) {
   this.sel.selectAll('.highlight')
     .classed('highlight', false)
   if (sel !== null) {
@@ -2123,7 +2126,7 @@ function unlisten_for_full_screen () {
 /**
  * Enter full screen if supported by the browser.
  */
-function full_screen() {
+function full_screen () {
   var sel = this.zoom_container.selection
   var e = sel.node()
   var d = document
@@ -2157,11 +2160,11 @@ function save () {
 }
 
 function map_for_export () {
-  var out = [{ "map_name": this.map_name,
-               "map_id": this.map_id,
-               "map_description": this.map_description,
-               "homepage": "https://escher.github.io",
-               "schema": "https://escher.github.io/escher/jsonschema/1-0-0#"
+  var out = [{ map_name: this.map_name,
+               map_id: this.map_id,
+               map_description: this.map_description,
+               homepage: "https://escher.github.io",
+               schema: "https://escher.github.io/escher/jsonschema/1-0-0#"
              },
              { reactions: utils.clone(this.reactions),
                nodes: utils.clone(this.nodes),
@@ -2171,19 +2174,19 @@ function map_for_export () {
 
   // remove extra data
   for (var r_id in out[1].reactions) {
-    var reaction = out[1].reactions[r_id],
-    new_reaction = {}
-    ;['name', 'bigg_id','reversibility', 'label_x', 'label_y',
-     'gene_reaction_rule', 'genes', 'metabolites'
-    ].forEach(function(attr) {
+    var reaction = out[1].reactions[r_id]
+    var new_reaction = {}
+    var attrs = [ 'name', 'bigg_id','reversibility', 'label_x', 'label_y',
+                  'gene_reaction_rule', 'genes', 'metabolites' ]
+    attrs.forEach(function(attr) {
       new_reaction[attr] = reaction[attr]
     })
     new_reaction['segments'] = {}
     for (var s_id in reaction.segments) {
-      var segment = reaction.segments[s_id],
-      new_segment = {}
-      ;['from_node_id', 'to_node_id', 'b1', 'b2'
-      ].forEach(function(attr) {
+      var segment = reaction.segments[s_id]
+      var new_segment = {}
+      var attrs = [ 'from_node_id', 'to_node_id', 'b1', 'b2' ]
+      attrs.forEach(function(attr) {
         new_segment[attr] = segment[attr]
       })
       new_reaction['segments'][s_id] = new_segment
@@ -2191,10 +2194,10 @@ function map_for_export () {
     out[1].reactions[r_id] = new_reaction
   }
   for (var n_id in out[1].nodes) {
-    var node = out[1].nodes[n_id],
-           new_node = {},
-           attrs
-    if (node.node_type == 'metabolite') {
+    var node = out[1].nodes[n_id]
+    var new_node = {}
+    var attrs
+    if (node.node_type === 'metabolite') {
       attrs = ['node_type', 'x', 'y', 'bigg_id', 'name', 'label_x', 'label_y',
                'node_is_primary']
     } else {
@@ -2206,18 +2209,18 @@ function map_for_export () {
     out[1].nodes[n_id] = new_node
   }
   for (var t_id in out[1].text_labels) {
-    var text_label = out[1].text_labels[t_id],
-    new_text_label = {},
-    attrs = ["x", "y", "text"]
+    var text_label = out[1].text_labels[t_id]
+    var new_text_label = {}
+    var attrs = [ 'x', 'y', 'text' ]
     attrs.forEach(function(attr) {
       new_text_label[attr] = text_label[attr]
     })
     out[1].text_labels[t_id] = new_text_label
   }
   // canvas
-  var canvas_el = out[1].canvas,
-  new_canvas_el = {},
-  attrs = ["x", "y", "width", "height"]
+  var canvas_el = out[1].canvas
+  var new_canvas_el = {}
+  var attrs = [ 'x', 'y', 'width', 'height' ]
   attrs.forEach(function(attr) {
     new_canvas_el[attr] = canvas_el[attr]
   })
@@ -2230,14 +2233,14 @@ function map_for_export () {
  * Rescale the canvas and save as svg/png.
  */
 function save_map (obj, callback_before, callback_after, map_type) {
-  // run the before callback
+  // Run the before callback
   obj.callback_manager.run(callback_before)
 
-  // turn ofo zoom and translate so that illustrator likes the map
-  var window_scale = obj.zoom_container.window_scale,
-  window_translate = obj.zoom_container.window_translate,
-  canvas_size_and_loc = obj.canvas.size_and_location(),
-  mouse_node_size_and_trans = {
+  // Turn ofo zoom and translate so that illustrator likes the map
+  var window_scale = obj.zoom_container.window_scale
+  var window_translate = obj.zoom_container.window_translate
+  var canvas_size_and_loc = obj.canvas.size_and_location()
+  var mouse_node_size_and_trans = {
     w: obj.canvas.mouse_node.attr('width'),
     h: obj.canvas.mouse_node.attr('height'),
     transform: obj.canvas.mouse_node.attr('transform')
@@ -2285,28 +2288,27 @@ function save_png () {
   save_map(this, 'before_png_export', 'after_png_export', 'png')
 }
 
+/**
+ * Assign the descriptive names and gene_reaction_rules from the model to the
+ * map. If no map is loaded, then throw an Error. If some reactions are not in
+ * the model, then warn in the status.
+ */
 function convert_map () {
-  /** Assign the descriptive names and gene_reaction_rules from the model
-      to the map.
-
-      If no map is loaded, then throw an Error.
-
-      If some reactions are not in the model, then warn in the status.
-
-  */
-  // run the before callback
+  // Run the before callback
   this.callback_manager.run('before_convert_map')
 
-  // check the model
-  if (!this.has_cobra_model()) throw Error('No COBRA model loaded.')
+  // Check the model
+  if (!this.has_cobra_model()) {
+    throw Error('No COBRA model loaded.')
+  }
   var model = this.cobra_model
 
-  // ids for reactions and metabolites not found in the model
-  var reactions_not_found = {},
-  reaction_attrs = ['name', 'gene_reaction_rule', 'genes'],
-  met_nodes_not_found = {},
-  metabolite_attrs = ['name'],
-  found
+  // IDs for reactions and metabolites not found in the model
+  var reactions_not_found = {}
+  var reaction_attrs = [ 'name', 'gene_reaction_rule', 'genes' ]
+  var met_nodes_not_found = {}
+  var metabolite_attrs = [ 'name' ]
+  var found
   // convert reactions
   for (var reaction_id in this.reactions) {
     var reaction = this.reactions[reaction_id]
@@ -2345,17 +2347,16 @@ function convert_map () {
   }
 
   // status
-  var n_reactions_not_found = Object.keys(reactions_not_found).length,
-      n_met_nodes_not_found = Object.keys(met_nodes_not_found).length,
-      status_delay = 3000
-  if (n_reactions_not_found == 0 &&
-      n_met_nodes_not_found == 0) {
+  var n_reactions_not_found = Object.keys(reactions_not_found).length
+  var n_met_nodes_not_found = Object.keys(met_nodes_not_found).length
+  var status_delay = 3000
+  if (n_reactions_not_found === 0 && n_met_nodes_not_found === 0) {
     this.set_status('Successfully converted attributes.', status_delay)
-  } else if (n_met_nodes_not_found == 0) {
+  } else if (n_met_nodes_not_found === 0) {
     this.set_status('Converted attributes, but count not find ' + n_reactions_not_found +
                     ' reactions in the model.', status_delay)
     this.settings.set_conditional('highlight_missing', true)
-  } else if (n_reactions_not_found == 0) {
+  } else if (n_reactions_not_found === 0) {
     this.set_status('Converted attributes, but count not find ' + n_met_nodes_not_found +
                     ' metabolites in the model.', status_delay)
     this.settings.set_conditional('highlight_missing', true)
