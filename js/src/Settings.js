@@ -15,8 +15,6 @@
 
  */
 
-/* global d3 */
-
 var utils = require('./utils');
 
 var bacon = require('baconjs');

@@ -32,7 +32,6 @@ _escher_web = {
 }
 
 _dependencies = {
-    'd3': 'escher/static/lib/d3.min.js',
     'boot_js': 'escher/static/lib/bootstrap.min.js',
     'boot_css': 'escher/static/lib/bootstrap.min.css',
     'jquery': 'escher/static/lib/jquery.min.js',
@@ -48,7 +47,6 @@ _dependencies_cdn = {
     'builder_css_min': '//unpkg.com/escher-vis@%s/css/dist/builder.min.css' % __version__,
     'escher': '//unpkg.com/escher-vis@%s/js/dist/escher.js' % __version__,
     'escher_min': '//unpkg.com/escher-vis@%s/js/dist/escher.min.js' % __version__,
-    'd3': '//cdnjs.cloudflare.com/ajax/libs/d3/3.5.14/d3.min.js',
     'boot_js': '//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js',
     'boot_css': '//cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.6/simplex/bootstrap.min.css',
     'jquery': '//cdnjs.cloudflare.com/ajax/libs/jquery/2.2.0/jquery.min.js',

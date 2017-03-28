@@ -21,7 +21,7 @@ def generate_static_site():
     def static_rel(path):
         return 'py/' + path
 
-    data = template.render(d3=static_rel(get_url('d3', 'local')),
+    data = template.render(escher=static_rel(get_url('escher_min', 'local')),
                            boot_css=static_rel(get_url('boot_css', 'local')),
                            homepage_css=static_rel(get_url('homepage_css', 'local')),
                            favicon=static_rel(get_url('favicon', 'local')),

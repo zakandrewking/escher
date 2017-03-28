@@ -53,51 +53,56 @@ function assert_label_mouseover_attrs_off (behavior) {
 }
 
 
-describe('Behavior', function() {
-    var map = { sel: d3_body },
-        behavior;
-    beforeEach(function() {
-        behavior = Behavior(map, null);
-    });
+describe('Behavior', () => {
+  const map = { sel: d3_body }
+  let behavior
 
-    it('loads the map', function() {
-        assert.strictEqual(behavior.map, map);
-    });
-    it('turn_everything_on', function() {
-        behavior.turn_everything_off();
-        behavior.turn_everything_on();
-        assert_selectable_click_attrs_on(behavior);
-        assert_selectable_drag_attrs_on(behavior);
-        assert_label_drag_attrs_on(behavior);
-        assert_label_mouseover_attrs_on(behavior)
-    });
-    it('turn_everything_off', function() {
-        behavior.turn_everything_on();
-        behavior.turn_everything_off();
-        assert_selectable_click_attrs_off(behavior);
-        assert_selectable_drag_attrs_off(behavior);
-        assert_label_drag_attrs_off(behavior);
-        assert_label_mouseover_attrs_off(behavior)
-    });
-    it('toggle_selectable_click', function() {
-        behavior.toggle_selectable_click(true);
-        assert_selectable_click_attrs_on(behavior);
-        behavior.toggle_selectable_click(false);
-        assert_selectable_click_attrs_off(behavior);
-    });
-    it('toggle_selectable_drag', function() {
-        behavior.toggle_selectable_drag(true);
-        assert_selectable_drag_attrs_on(behavior);
-        behavior.toggle_selectable_drag(false);
-        assert_selectable_drag_attrs_off(behavior);
-    });
-    it('toggle_label_drag', function() {
-        behavior.toggle_label_drag(true);
-        assert_label_drag_attrs_on(behavior);
-        behavior.toggle_label_drag(false);
-        assert_label_drag_attrs_off(behavior);
-    });
-  it('toggle_label_mouseover', function () {
+  beforeEach(() => { behavior = Behavior(map, null) })
+
+  it('loads the map', () => {
+    assert.strictEqual(behavior.map, map)
+  })
+
+  it('turn_everything_on', () => {
+    behavior.turn_everything_off()
+    behavior.turn_everything_on()
+    assert_selectable_click_attrs_on(behavior)
+    assert_selectable_drag_attrs_on(behavior)
+    assert_label_drag_attrs_on(behavior)
+    assert_label_mouseover_attrs_on(behavior)
+  })
+
+  it('turn_everything_off', () => {
+    behavior.turn_everything_on()
+    behavior.turn_everything_off()
+    assert_selectable_click_attrs_off(behavior)
+    assert_selectable_drag_attrs_off(behavior)
+    assert_label_drag_attrs_off(behavior)
+    assert_label_mouseover_attrs_off(behavior)
+  })
+
+  it('toggle_selectable_click', () => {
+    behavior.toggle_selectable_click(true)
+    assert_selectable_click_attrs_on(behavior)
+    behavior.toggle_selectable_click(false)
+    assert_selectable_click_attrs_off(behavior)
+  })
+
+  it('toggle_selectable_drag', () => {
+    behavior.toggle_selectable_drag(true)
+    assert_selectable_drag_attrs_on(behavior)
+    behavior.toggle_selectable_drag(false)
+    assert_selectable_drag_attrs_off(behavior)
+  })
+
+  it('toggle_label_drag', () => {
+    behavior.toggle_label_drag(true)
+    assert_label_drag_attrs_on(behavior)
+    behavior.toggle_label_drag(false)
+    assert_label_drag_attrs_off(behavior)
+  })
+
+  it('toggle_label_mouseover', () => {
     behavior.toggle_label_mouseover(true)
     assert_label_mouseover_attrs_on(behavior)
     behavior.toggle_label_mouseover(false)

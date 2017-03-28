@@ -31,7 +31,7 @@ Once you have a COBRA model, you can follow these steps:
 4. When you have built a map for your a subsystem, save the map as JSON with a
    name that includes the model ID, followed by a period, followed by the name
    of the subsystem. For example::
-   
+
     iMM904.Amino acid biosynthesis.json
 
 5. (Optional) Once you have a set of subsystem maps, you can set up a local
@@ -41,7 +41,7 @@ Once you have a COBRA model, you can follow these steps:
    :ref:`local-server`. Next, find your local cache directory by running this
    command in a terminal::
 
-    python -c "import escher; print(escher.get_cache_dir(name='maps'))" 
+    python -c "import escher; print(escher.get_cache_dir(name='maps'))"
 
    This will print the location of the local maps cache. Add your new subsystem
    maps to cache folder. Now, when you run the server (described in
@@ -54,7 +54,7 @@ Once you have a COBRA model, you can follow these steps:
    NOTE 2: A similar approach can be used to access your models from the local
    launch page. Place maps in the folder indicated by::
 
-    python -c "import escher; print(escher.get_cache_dir(name='models'))" 
+    python -c "import escher; print(escher.get_cache_dir(name='models'))"
 
 
 Building from an existing map for a similar organism
@@ -79,7 +79,14 @@ other subsystems.
 Submitting maps to the Escher website
 -------------------------------------
 
-If you would like to contribute maps to Escher, you can make a Pull Request to
+We have a repository for sharing maps, with few restrictions. Anyone can submit
+a pull request to add new maps, and you might find some of the existing maps
+there useful:
+
+https://github.com/escher/community-maps
+
+If you would like to contribute maps to Escher the main Escher website, this
+takes a little more effort, but we appreciate it! You can make a Pull Request to
 the GitHub repository escher.github.io_. Make sure there is a folder with the
 name of the organism in ``1-0-0/maps``. For example, a new yeast map goes in the
 folder::
@@ -91,11 +98,11 @@ a period. For example, a yeast map built with the genome-scale model iMM904
 could be named::
 
     iMM904.Amino acid biosynthesis.json
-   
+
 Then, add the JSON file for the model to the Pull Request *if that model is not
 already available*. As before, make a folder for your organism within
 ``1-0-0/models/``. The model filename is just the model ID.
- 
+
 In this example, a correct Pull Request would include the following files::
 
     1-0-0/maps/Saccharomyces cerevisiae/iMM904.Amino acid biosynthesis.json

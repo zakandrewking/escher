@@ -2,12 +2,14 @@
  * ZoomContainer
  */
 
-/* global d3 */
-
 var utils = require('./utils')
 var CallbackManager = require('./CallbackManager')
-
 var _ = require('underscore')
+var d3_zoom = require('d3-zoom').zoom
+var d3_zoomTransform = require('d3-zoom').zoomTransform
+var d3_zoomIdentity = require('d3-zoom').zoomIdentity
+var d3_select = require('d3-selection').select
+var d3_selection = require('d3-selection')
 
 var ZoomContainer = utils.make_class()
 ZoomContainer.prototype = {
@@ -17,6 +19,7 @@ ZoomContainer.prototype = {
   _update_scroll: _update_scroll,
   toggle_pan_drag: toggle_pan_drag,
   go_to: go_to,
+  _go_to_callback: _go_to_callback,
   _go_to_3d: _go_to_3d,
   _clear_3d: _clear_3d,
   _go_to_svg: _go_to_svg,
@@ -48,23 +51,28 @@ function init (selection, scroll_behavior, use_3d_transform, fill_screen) {
   // set the selection class
   selection.classed('escher-container', true)
 
+  // Stop scrolling on mobile
+  selection.on('touchstart touchmove', function () {
+    d3_selection.event.stopPropagation()
+  })
+
   // fill screen classes
   if (fill_screen) {
-    d3.select('html').classed('fill-screen', true)
-    d3.select('body').classed('fill-screen', true)
+    d3_select('html').classed('fill-screen', true)
+    d3_select('body').classed('fill-screen', true)
     selection.classed('fill-screen-div', true)
   }
 
   // make the svg
   var zoom_container = selection.append('div')
-        .attr('class', 'escher-zoom-container')
+      .attr('class', 'escher-zoom-container')
 
   var css3_transform_container = zoom_container.append('div')
-        .attr('class', 'escher-3d-transform-container')
+      .attr('class', 'escher-3d-transform-container')
 
   var svg = css3_transform_container.append('svg')
-        .attr('class', 'escher-svg')
-        .attr('xmlns', 'http://www.w3.org/2000/svg')
+      .attr('class', 'escher-svg')
+      .attr('xmlns', 'http://www.w3.org/2000/svg')
 
   // set up the zoom container
   svg.select('.zoom-g').remove()
@@ -124,21 +132,13 @@ function toggle_pan_drag (on_off) {
   if (this._pan_drag_on) {
     // turn on the hand
     this.zoomed_sel
-      .classed('cursor-grab', true).classed('cursor-grabbing', false)
-    this.zoomed_sel
-      .on('mousedown.cursor', function (sel) {
-        sel.classed('cursor-grab', false).classed('cursor-grabbing', true)
-      }.bind(null, this.zoomed_sel))
-      .on('mouseup.cursor', function (sel) {
-        sel.classed('cursor-grab', true).classed('cursor-grabbing', false)
-      }.bind(null, this.zoomed_sel))
+      .classed('cursor-grab', true)
+      .classed('cursor-grabbing', false)
   } else {
     // turn off the hand
     this.zoomed_sel.style('cursor', null)
       .classed('cursor-grab', false)
       .classed('cursor-grabbing', false)
-    this.zoomed_sel.on('mousedown.cursor', null)
-    this.zoomed_sel.on('mouseup.cursor', null)
   }
 
   // update the behaviors
@@ -150,7 +150,7 @@ function toggle_pan_drag (on_off) {
  * css3_transform_container node.
  */
 function _update_scroll () {
-  if (!_.contains(['zoom', 'pan', 'none'], this._scroll_behavior)) {
+  if (!_.contains([ 'zoom', 'pan', 'none' ], this._scroll_behavior)) {
     throw Error('Bad value for scroll_behavior: ' + this._scroll_behavior)
   }
 
@@ -171,35 +171,42 @@ function _update_scroll () {
   // also handles scrolling to zoom (only 'zoom' mode). It also raises an
   // exception in node, so catch that during testing. This may be a bug with
   // d3 related to d3 using the global this.document. TODO look into this.
-  try {
-    this._zoom_behavior = d3.behavior.zoom()
-      .on('zoomstart', function () {
-        // prevent default zoom behavior, specifically for mobile pinch
-        // zoom
-        d3.event.sourceEvent.stopPropagation()
-        d3.event.sourceEvent.preventDefault()
-      }.bind(this))
-      .on('zoom', function () {
-        this.go_to(d3.event.scale, {x: d3.event.translate[0], y: d3.event.translate[1]})
-      }.bind(this))
-  } catch (err) {
-    console.log('Not in a browser, so d3.behavior.zoom does not work.')
-    this._zoom_behavior = null
-    return
-  }
+  this._zoom_behavior = d3_zoom()
+    .on('start', function () {
+      if (d3_selection.event.sourceEvent &&
+          d3_selection.event.sourceEvent.type === 'mousedown') {
+        this.zoomed_sel
+          .classed('cursor-grab', false)
+          .classed('cursor-grabbing', true)
+      }
+      // Prevent default zoom behavior, specifically for mobile pinch zoom
+      if (d3_selection.event.sourceEvent !== null) {
+        d3_selection.event.sourceEvent.stopPropagation()
+        d3_selection.event.sourceEvent.preventDefault()
+      }
+    }.bind(this))
+    .on('zoom', function () {
+      this._go_to_callback(d3_selection.event.transform.k, {
+        x: d3_selection.event.transform.x,
+        y: d3_selection.event.transform.y,
+      })
+    }.bind(this))
+    .on('end', function () {
+      if (d3_selection.event.sourceEvent &&
+          d3_selection.event.sourceEvent.type === 'mouseup') {
+        this.zoomed_sel
+          .classed('cursor-grab', true)
+          .classed('cursor-grabbing', false)
+      }
+    }.bind(this))
 
-  // set current location
-  this._zoom_behavior.scale(this.window_scale)
-  this._zoom_behavior.translate([ this.window_translate.x,
-                                  this.window_translate.y ])
-
-  // set it up
+  // Set it up
   this.zoom_container.call(this._zoom_behavior)
 
-  // always turn off double-clicking to zoom
+  // Always turn off double-clicking to zoom
   this.zoom_container.on('dblclick.zoom', null)
 
-  // if panning is off, then turn off these listeners
+  // If panning is off, then turn off these listeners
   if (!this._pan_drag_on) {
     this.zoom_container.on('mousedown.zoom', null)
       .on('touchstart.zoom', null)
@@ -207,7 +214,7 @@ function _update_scroll () {
       .on('touchend.zoom', null)
   }
 
-  // if scroll to zoom is off, then turn off these listeners
+  // If scroll to zoom is off, then turn off these listeners
   if (this._scroll_behavior !== 'zoom') {
     this.zoom_container
       .on('mousewheel.zoom', null) // zoom scroll behaviors
@@ -219,7 +226,7 @@ function _update_scroll () {
   if (this._scroll_behavior === 'pan') {
     // Add the wheel listener
     var wheel_fn = function () {
-      var ev = d3.event
+      var ev = d3_selection.event
       var sensitivity = 0.5
       // stop scroll in parent elements
       ev.stopPropagation()
@@ -242,43 +249,55 @@ function _update_scroll () {
     this.zoom_container.on('DOMMouseScroll.escher', wheel_fn)
     this.zoom_container.on('wheel.escher', wheel_fn)
   }
+
+  // Set current location
+  this.go_to(this.window_scale, this.window_translate)
 }
 
-// functions to scale and translate
+// ------------------------------------------------------------
+// Functions to scale and translate
+// ------------------------------------------------------------
 
 /**
  * Zoom the container to a specified location.
- *
  * @param {Number} scale - The scale, between 0 and 1.
- *
  * @param {Object} translate - The location, of the form {x: 2.0, y: 3.0}.
  */
 function go_to (scale, translate) {
-  utils.check_undefined(arguments, ['scale', 'translate'])
+  utils.check_undefined(arguments, [ 'scale', 'translate' ])
 
-  var use_3d_transform = this._use_3d_transform
-
-  // check inputs
-  if (!scale) throw new Error('Bad scale value')
+  // Check inputs
+  if (!scale) {
+    throw new Error('Bad scale value')
+  }
   if (!translate || !('x' in translate) || !('y' in translate) ||
-      isNaN(translate.x) || isNaN(translate.y))
-    return console.error('Bad translate value')
+      _.isNaN(translate.x) || _.isNaN(translate.y)) {
+    throw new Error('Bad translate value')
+  }
 
-  // save inputs
+  // Save to zoom behavior, which will call _go_to_callback
+  var new_zoom = d3_zoomIdentity
+      .translate(translate.x, translate.y)
+      .scale(scale)
+  this.zoom_container.call(this._zoom_behavior.transform, new_zoom)
+}
+
+/**
+ * Execute the zoom called by the d3 zoom behavior.
+ * @param {Number} scale - The scale, between 0 and 1
+ * @param {Object} translate - The location, of the form { x: 2.0, y: 3.0 }
+ */
+function _go_to_callback (scale, translate) {
   this.window_scale = scale
   this.window_translate = translate
 
-  // save to zoom behavior
-  if (!_.isNull(this._zoom_behavior)) {
-    this._zoom_behavior.scale(scale)
-    var translate_array = [translate.x, translate.y]
-    this._zoom_behavior.translate(translate_array)
-  }
+  var use_3d_transform = this._use_3d_transform
 
   if (use_3d_transform) { // 3d tranform
     // cancel all timeouts
-    if (!_.isNull(this._zoom_timeout))
+    if (!_.isNull(this._zoom_timeout)) {
       clearTimeout(this._zoom_timeout)
+    }
 
     // set the 3d transform
     this._go_to_3d(scale, translate, this._svg_scale, this._svg_translate)
@@ -297,15 +316,17 @@ function go_to (scale, translate) {
   this.callback_manager.run('go_to')
 }
 
-/** Zoom & pan the CSS 3D transform container */
+/**
+ * Zoom & pan the CSS 3D transform container
+ */
 function _go_to_3d (scale, translate, svg_scale, svg_translate) {
   var n_scale = scale / svg_scale
   var n_translate = utils.c_minus_c(translate,
                                     utils.c_times_scalar(svg_translate, n_scale))
-  var tranform = ('translate(' + n_translate.x + 'px,' + n_translate.y + 'px) ' +
-                  'scale(' + n_scale + ')')
-  this.css3_transform_container.style('transform', tranform)
-  this.css3_transform_container.style('-webkit-transform', tranform)
+  var transform = ('translate(' + n_translate.x + 'px,' + n_translate.y + 'px) '
+                   + 'scale(' + n_scale + ')')
+  this.css3_transform_container.style('transform', transform)
+  this.css3_transform_container.style('-webkit-transform', transform)
   this.css3_transform_container.style('transform-origin', '0 0')
   this.css3_transform_container.style('-webkit-transform-origin', '0 0')
 }
@@ -341,8 +362,8 @@ function _go_to_svg (scale, translate, callback) {
             'translate(' + translate.x + ',' + translate.y + ') ' +
             'scale(' + scale + ')')
     // save svg location
-    this._svg_scale = this.window_scale
-    this._svg_translate = this.window_translate
+    this._svg_scale = scale
+    this._svg_translate = translate
 
     _.defer(function () {
       // defer for callback after draw
@@ -362,7 +383,6 @@ function _go_to_svg (scale, translate, callback) {
 
 /**
  * Zoom by a specified multiplier.
- *
  * @param {Number} amount - A multiplier for the zoom. Greater than 1 zooms in
  * and less than 1 zooms out.
  */
@@ -378,28 +398,36 @@ function zoom_by (amount) {
              utils.c_plus_c(this.window_translate, shift))
 }
 
-/** Zoom in by the default amount with the default options. */
+/**
+ * Zoom in by the default amount with the default options.
+ */
 function zoom_in () {
   this.zoom_by(1.5)
 }
 
-/** Zoom out by the default amount with the default options. */
+/**
+ * Zoom out by the default amount with the default options.
+ */
 function zoom_out () {
   this.zoom_by(0.667)
 }
 
 /**
- * Return the size of the zoom container as coordinates, e.g. {x: 2, y: 3}
+ * Return the size of the zoom container as coordinates. Throws an error if
+ * width or height is not defined.
+ * @returns {Object} The size coordinates, e.g. { x: 2, y: 3 }.
  */
 function get_size () {
-  return {
-    width: parseInt(this.selection.style('width'), 10),
-    height: parseInt(this.selection.style('height'), 10),
+  var width = parseInt(this.selection.style('width'), 10)
+  var height = parseInt(this.selection.style('height'), 10)
+  if (_.isNaN(width) || _.isNaN(height)) {
+    throw new Error('Size not defined for ZoomContainer element.')
   }
+  return { width: width, height: height }
 }
 
 /**
- * Shift window if new reacion will draw off the screen
+ * Shift window if new reaction will draw off the screen.
  */
 function translate_off_screen (coords) {
   // TODO BUG not accounting for scale correctly

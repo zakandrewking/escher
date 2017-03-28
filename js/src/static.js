@@ -1,8 +1,7 @@
 /** static */
 
-/* global d3 */
-
 var utils = require('./utils')
+var d3_json = require('d3-request').json
 
 module.exports = {
     load_map_model_from_url: load_map_model_from_url
@@ -19,7 +18,7 @@ function load_map_model_from_url(map_download_url, model_download_url,
                                  local_index, map_download_url)
         if (map_path) {
             load_map = function (fn) {
-                d3.json(map_path, function(error, data) {
+                d3_json(map_path, function(error, data) {
                     if (error) console.warn(error)
                     fn(data)
                 })
@@ -31,7 +30,7 @@ function load_map_model_from_url(map_download_url, model_download_url,
                                    local_index, model_download_url)
         if (model_path) {
             load_model = function (fn) {
-                d3.json(model_path, function(error, data) {
+                d3_json(model_path, function(error, data) {
                     if (error) console.warn(error)
                     fn(data)
                 })

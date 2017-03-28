@@ -3,7 +3,7 @@
 {% block title %}Escher{% endblock %}
 
 {% block head %}
-  <script src="{{ d3 }}"></script>
+  <script src="{{ escher }}"></script>
 
   <link rel="stylesheet" href="{{ boot_css }}"/>
   <link rel="stylesheet" href="{{ homepage_css }}"/>
@@ -191,7 +191,7 @@
   <script>
    {% if web_version %}
    // get the models
-   d3.json('{{ server_index_url }}', function(d) {
+   escher.libs.d3_json('{{ server_index_url }}', function(d) {
      var server_index = d,
          local_index = null
      setup(server_index, local_index, '{{ map_download_url }}', false)

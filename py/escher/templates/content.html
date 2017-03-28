@@ -49,11 +49,11 @@
            }
        }
 
-       function draw_escher(d3, escher) {
+       function draw_escher(escher) {
            /** Get data and draw */
            var load = function(t_map_data, t_model_data, t_options) {
                escher.Builder(t_map_data, t_model_data, data.builder_embed_css,
-                              d3.select('#' + data.id), t_options);
+                              escher.libs.d3_select('#' + data.id), t_options);
            }
 
            // for the static site, use the url attributes for the map and model
@@ -68,10 +68,9 @@
 
        // Load dependencies and draw
        if (typeof define === 'function' && define.amd) {
-           // require.js is available: use it to load d3 and escher
+           // require.js is available: use it to load escher
            require.config({
              paths: {
-               d3: '{{ d3_url[:-3] }}',
                escher: '{{ escher_url[:-3] }}',
              },
              // Override urlArgs that adds ?v= to the end of the escher URL and
@@ -80,16 +79,14 @@
              // doing this cache-busting anyway.
              urlArgs: null,
            })
-           require(['d3', 'escher'], function(d3, escher) {
-               draw_escher(d3, escher);
+           require([ 'escher' ], function(escher) {
+               draw_escher(escher);
            })
        } else {
-           // require.js not available: dynamically load d3 & escher
-           check_global_and_load('d3', '{{ d3_url }}', function(d3) {
-               check_global_and_load('escher', '{{ escher_url }}', function(escher) {
-                   draw_escher(d3, escher);
-               })
-           });
+           // require.js not available: dynamically load escher
+           check_global_and_load('escher', '{{ escher_url }}', function(escher) {
+               draw_escher(escher);
+           })
        }
 
        // Put this at the end so Chrome doesn't cut off the code above.

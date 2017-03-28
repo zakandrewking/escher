@@ -169,13 +169,12 @@ function accept_changes() {
   this.toggle(false)
 }
 
-function style_gui(sel, type, abs_callback) {
-  /** A UI to edit style.
-
-   */
-
-  var t = sel.append('table').attr('class', 'settings-table'),
-  settings = this.settings
+/**
+ * A UI to edit style.
+ */
+function style_gui (sel, type, abs_callback) {
+  var t = sel.append('table').attr('class', 'settings-table')
+  var settings = this.settings
 
   // styles
   t.append('tr').call(function (r) {
@@ -197,22 +196,21 @@ function style_gui(sel, type, abs_callback) {
                     'according to the value of the ' + type + ' data')],
                   ['Text (Show data in label)', 'text',
                    ('If checked, then show data values in the ' + type + ' ' +
-                    'labels')]],
-    style_cells = cell.selectAll('.option-group')
-      .data(styles),
-    s = style_cells.enter()
-      .append('label')
-      .attr('class', 'option-group')
+                    'labels')]]
+    var style_cells = cell.selectAll('.option-group').data(styles)
+    var style_enter = style_cells.enter()
+        .append('label')
+        .attr('class', 'option-group')
 
     // make the checkbox
-    var streams = [],
-    get_styles = function () {
+    var streams = []
+    var get_styles = function () {
       var styles = []
       cell.selectAll('input')
-        .each(function (d) { if (this.checked) styles.push(d[1]); })
+        .each(function (d) { if (this.checked) styles.push(d[1]) })
       return styles
     }
-    s.append('input').attr('type', 'checkbox')
+    style_enter.append('input').attr('type', 'checkbox')
       .on('change', function (d) {
         settings.set_conditional(type + '_styles', get_styles())
         if (d[1] == 'abs')
@@ -224,9 +222,9 @@ function style_gui(sel, type, abs_callback) {
           this.checked = (ar.indexOf(d[1]) != -1)
         }.bind(this))
       })
-    s.append('span')
-      .text(function (d) { return d[0]; })
-      .attr('title', function (d) { return d[2]; })
+    style_enter.append('span')
+      .text(function (d) { return d[0] })
+      .attr('title', function (d) { return d[2] })
   })
 
   // compare_style
@@ -242,17 +240,17 @@ function style_gui(sel, type, abs_callback) {
 
     var styles = [['Fold Change', 'fold'],
                   ['Log2(Fold Change)', 'log2_fold'],
-                  ['Difference', 'diff']],
-    style_cells = cell.selectAll('.option-group')
-      .data(styles),
-    s = style_cells.enter()
-      .append('label')
-      .attr('class', 'option-group')
+                  ['Difference', 'diff']]
+    var style_cells = cell.selectAll('.option-group')
+      .data(styles)
+    var style_enter = style_cells.enter()
+        .append('label')
+        .attr('class', 'option-group')
 
     // make the radio
-    s.append('input').attr('type', 'radio')
+    style_enter.append('input').attr('type', 'radio')
       .attr('name', type + '_compare_style' + this.unique_string)
-      .attr('value', function (d) { return d[1]; })
+      .attr('value', function (d) { return d[1] })
       .on('change', function () {
         if (this.checked)
           settings.set_conditional(type + '_compare_style', this.value)
@@ -264,58 +262,55 @@ function style_gui(sel, type, abs_callback) {
           this.checked = (this.value == value)
         }.bind(this))
       })
-    s.append('span')
-      .text(function (d) { return d[0]; })
+    style_enter.append('span')
+      .text(function (d) { return d[0] })
 
   }.bind(this))
 
   // gene-specific settings
-  if (type=='reaction') {
-    var t = sel.append('table').attr('class', 'settings-table')
+  if (type === 'reaction') {
+    sel.append('table').attr('class', 'settings-table')
       .attr('title', ('The function that will be used to evaluate ' +
                       'AND connections in gene reaction rules (AND ' +
                       'connections generally connect components of ' +
                       'an enzyme complex)'))
-
     // and_method_in_gene_reaction_rule
-    t.append('tr').call(function (r) {
-      r.append('td')
-        .text('Method for evaluating AND:')
-        .attr('class', 'options-label-wide')
-      var cell = r.append('td')
+      .append('tr').call(function (r) {
+        r.append('td')
+          .text('Method for evaluating AND:')
+          .attr('class', 'options-label-wide')
+        var cell = r.append('td')
 
-      var styles = [['Mean', 'mean'], ['Min', 'min']],
-      style_cells = cell.selectAll('.option-group')
-        .data(styles),
-      s = style_cells.enter()
-        .append('label')
-        .attr('class', 'option-group')
+        var styles = [ [ 'Mean', 'mean' ], [ 'Min', 'min' ] ]
+        var style_cells = cell.selectAll('.option-group')
+            .data(styles)
+        var style_enter = style_cells.enter()
+            .append('label')
+            .attr('class', 'option-group')
 
-      // make the radio
-      var name = 'and_method_in_gene_reaction_rule'
-      s.append('input').attr('type', 'radio')
-        .attr('name', name + this.unique_string)
-        .attr('value', function (d) { return d[1]; })
-        .on('change', function () {
-          if (this.checked)
-            settings.set_conditional(name, this.value)
-        })
-        .each(function () {
-          // subscribe to changes in the model
-          settings.streams[name].onValue(function (value) {
-            // check the box for the new value
-            this.checked = (this.value == value)
-          }.bind(this))
-        })
-      s.append('span')
-        .text(function (d) { return d[0]; })
-    }.bind(this))
-
+        // make the radio
+        var name = 'and_method_in_gene_reaction_rule'
+        style_enter.append('input').attr('type', 'radio')
+          .attr('name', name + this.unique_string)
+          .attr('value', function (d) { return d[1] })
+          .on('change', function () {
+            if (this.checked)
+              settings.set_conditional(name, this.value)
+          })
+          .each(function () {
+            // subscribe to changes in the model
+            settings.streams[name].onValue(function (value) {
+              // check the box for the new value
+              this.checked = (this.value == value)
+            }.bind(this))
+          })
+        style_enter.append('span')
+          .text(function (d) { return d[0] })
+      }.bind(this))
   }
 }
 
-function view_gui(s, option_name, string, options) {
-
+function view_gui (s, option_name, string, options) {
   // columns
   var settings = this.settings
 
@@ -328,21 +323,22 @@ function view_gui(s, option_name, string, options) {
       .attr('class', 'options-label')
     var cell = r.append('td')
 
-    var options = [['ID\'s', 'bigg_id'], ['Descriptive names', 'name']],
-    style_cells = cell.selectAll('.option-group')
-      .data(options),
-    s = style_cells.enter()
-      .append('label')
-      .attr('class', 'option-group')
+    var options = [ [ 'ID\'s', 'bigg_id' ], [ 'Descriptive names', 'name' ] ]
+    var style_cells = cell.selectAll('.option-group')
+        .data(options)
+    var style_enter = style_cells.enter()
+        .append('label')
+        .attr('class', 'option-group')
 
     // make the checkbox
     var name = 'identifiers_on_map'
-    s.append('input').attr('type', 'radio')
+    style_enter.append('input').attr('type', 'radio')
       .attr('name', name + this.unique_string)
-      .attr('value', function (d) { return d[1]; })
+      .attr('value', function (d) { return d[1] })
       .on('change', function () {
-        if (this.checked)
+        if (this.checked) {
           settings.set_conditional(name, this.value)
+        }
       })
       .each(function () {
         // subscribe to changes in the model
@@ -351,7 +347,7 @@ function view_gui(s, option_name, string, options) {
           this.checked = (this.value == value)
         }.bind(this))
       })
-    s.append('span').text(function (d) { return d[0]; })
+    style_enter.append('span').text(function (d) { return d[0] })
 
   }.bind(this))
 
@@ -388,8 +384,9 @@ function view_gui(s, option_name, string, options) {
   e.append('input').attr('type', 'checkbox')
   e.append('span')
   // update
-  opts.attr('title', function (d) { return d[2]; })
-  opts.select('input')
+  var opts_update = e.merge(opts)
+  opts_update.attr('title', function (d) { return d[2]; })
+  opts_update.select('input')
     .on('change', function (d) {
       if (d.length >= 4) { // not a boolean setting
         for (var key in d[3]) {
@@ -411,7 +408,7 @@ function view_gui(s, option_name, string, options) {
         }
       }.bind(this))
     })
-  opts.select('span').text(function (d) { return d[1] })
+  opts_update.select('span').text(function (d) { return d[1] })
   // exit
   opts.exit().remove()
 
@@ -419,5 +416,6 @@ function view_gui(s, option_name, string, options) {
   s.append('div')
     .style('margin-top', '16px')
     .classed('settings-tip', true)
-    .text('Tip: To increase map performance, turn off text boxes (i.e. labels and gene reaction rules).')
+    .text('Tip: To increase map performance, turn off text boxes (i.e. ' +
+          'labels and gene reaction rules).')
 }

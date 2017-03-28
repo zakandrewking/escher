@@ -1,16 +1,26 @@
 /* global global */
 
-var jsdom = require('jsdom');
-var d3 = require('d3');
+const jsdom = require('jsdom')
+const d3_select = require('d3-selection').select
 
 // body selection
-var document = jsdom.jsdom(),
-    d3_body = d3.select(document).select('body');
+const document = jsdom.jsdom()
+const d3_body = d3_select(document).select('body')
 
 // globals
-global.d3 = d3;
-global.document = document;
-global.window = document.defaultView;
-global.navigator = { platform: 'node.js' };
+global.document = document
+global.window = document.defaultView
+global.navigator = { platform: 'node.js' }
 
-module.exports = d3_body;
+// Need to import jquery after jsdom initializes.
+const jquery = require('jquery')
+global.jQuery = jquery
+global.$ = jquery
+require('bootstrap')
+
+// Dummy SVGElement for d3-zoom.js:L87
+const Dummy = () => {}
+Dummy.prototype = {}
+global.SVGElement = Dummy
+
+module.exports = d3_body

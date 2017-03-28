@@ -33,29 +33,24 @@ describe('Map', () => {
   beforeEach(() => {
     // set up map
     svg = d3_body.append('svg')
+    const sel = svg.append('g')
+    // streams are required for these options
+    const required_options = { reaction_scale: [],
+                               metabolite_scale: [],
+                               reaction_styles: [],
+                               reaction_compare_style: 'diff',
+                               metabolite_styles: [],
+                               metabolite_compare_style: 'diff',
+                               cofactors: [], }
+    const required_conditional_options = [ 'reaction_scale',
+                                           'metabolite_scale', ]
+    const set_option = (key, val) => { required_options[key] = val }
+    const get_option = (key) => required_options[key]
 
-    const sel = svg.append('g'),
-        // streams are required for these options
-        required_options = { reaction_scale: [],
-                             metabolite_scale: [],
-                             reaction_styles: [],
-                             reaction_compare_style: 'diff',
-                             metabolite_styles: [],
-                             metabolite_compare_style: 'diff',
-                             cofactors: [] },
-        required_conditional_options = [ 'reaction_scale', 'metabolite_scale' ],
-        set_option = function(key, val) { required_options[key] = val; },
-        get_option = function(key) { return required_options[key]; }
-
-    map = Map.from_data(get_map(),
-                        svg,
-                        null,
-                        sel,
-                        null,
+    map = Map.from_data(get_map(), svg, null, sel, null,
                         new Settings(set_option, get_option,
                                      required_conditional_options),
-                        null,
-                        true)
+                        null, true)
   })
 
   it('initializes', () => {
@@ -93,7 +88,7 @@ describe('Map', () => {
       const node = map.nodes[id]
       // ids should be strings that eval to integers
       assert.strictEqual(isNaN(id), false)
-      if (node.node_type=='metabolite') {
+      if (node.node_type === 'metabolite') {
         // bigg ids and compartments should be present
         assert.isDefined(map.nodes[id].bigg_id)
       }
@@ -102,7 +97,7 @@ describe('Map', () => {
     assert.isTrue(map.has_data_on_reactions)
     for (let id in map.reactions) {
       const reaction = map.reactions[id]
-      if (reaction.bigg_id=='GLCtex') {
+      if (reaction.bigg_id === 'GLCtex') {
         assert.strictEqual(reaction.data, 100)
         assert.strictEqual(reaction.data_string, '100.0')
       } else {
@@ -113,10 +108,11 @@ describe('Map', () => {
     assert.strictEqual(map.has_data_on_nodes, true)
     for (let id in map.nodes) {
       const node = map.nodes[id]
-      if (node.bigg_id_compartmentalized=='glc__D_p')
+      if (node.bigg_id_compartmentalized === 'glc__D_p') {
         assert.strictEqual(map.nodes[id].data, 3)
-      else
+      } else {
         assert.strictEqual(map.nodes[id].data, null)
+      }
     }
 
     map.apply_reaction_data_to_map(null)
@@ -233,16 +229,16 @@ describe('Map', () => {
   })
 
   it('new_reaction_from_scratch exchanges', () => {
-    ['uptake', 'secretion'].map(direction => {
+    ;[ 'uptake', 'secretion' ].map(direction => {
       const model_data = {
-        reactions: [{
+        reactions: [ {
           id: 'EX_glc__D_e',
           metabolites: { glc__D_e: direction === 'uptake' ? 1 : -1 },
           gene_reaction_rule: ''
-        }],
+        } ],
         metabolites: [{
           id: 'glc__D_e',
-          formula: 'C6H12O6',
+          formula: 'C6H12O6'
         }],
         genes: []
       }
@@ -279,9 +275,45 @@ describe('Map', () => {
                                      Q1: 4, Q3: 10, max: 10 } })
   })
 
+  it('get_data_statistics uses defaults for no data -- reactions', () => {
+    assert.deepEqual(map.get_data_statistics(), {
+      reaction: { min: null, median: null, mean: null,
+                  Q1: null, Q3: null, max: null },
+      metabolite: { min: null, median: null, mean: null,
+                    Q1: null, Q3: null, max: null }
+    })
+    const data_reactions = {}
+    map.apply_reaction_data_to_map(data_reactions)
+    map.calc_data_stats('reaction')
+    assert.deepEqual(map.get_data_statistics(), {
+      reaction: { min: null, median: null, mean: null,
+                  Q1: null, Q3: null, max: null },
+      metabolite: { min: null, median: null, mean: null,
+                    Q1: null, Q3: null, max: null }
+    })
+  })
+
+  it('get_data_statistics uses defaults for no data', () => {
+    assert.deepEqual(map.get_data_statistics(), {
+      reaction: { min: null, median: null, mean: null,
+                  Q1: null, Q3: null, max: null },
+      metabolite: { min: null, median: null, mean: null,
+                    Q1: null, Q3: null, max: null }
+    })
+    const data_metabolites = {}
+    map.apply_metabolite_data_to_map(data_metabolites)
+    map.calc_data_stats('metabolite')
+    assert.deepEqual(map.get_data_statistics(), {
+      reaction: { min: null, median: null, mean: null,
+                  Q1: null, Q3: null, max: null },
+      metabolite: { min: null, median: null, mean: null,
+                    Q1: null, Q3: null, max: null }
+    })
+  })
+
   it('map_for_export removes unnecessary attributes', () => {
     // check that unnecessary attributes are removed
-    ['reactions', 'nodes', 'text_labels'].forEach(function(type) {
+    ;[ 'reactions', 'nodes', 'text_labels' ].forEach(function (type) {
       const first = Object.keys(map[type])[0]
       map[type][first].to_remove = true
       const data = map.map_for_export()

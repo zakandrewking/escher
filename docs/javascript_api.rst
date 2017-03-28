@@ -17,9 +17,10 @@ JavaScript API
                                 default style.
 
     :param object selection: The D3 selection of a HTML element that will hold
-                             the Builder. (The selection cannot be a SVG
-                             element.) Optional: Pass ``null`` to load the
-                             Builder in the HTML body.
+                             the Builder, or a reference to a DOM element
+                             (e.g. the result of ``document.getElementById``).
+                             The selection cannot be a SVG element. Optional:
+                             Pass ``null`` to load the Builder in the HTML body.
 
     :param object options: An object defining any of the following
                            options. Optional: Pass ``null`` to use all default
@@ -69,7 +70,7 @@ JavaScript API
           Builder is placed in a top-level container (e.g. a div in the body
           element).
 
-       .. js.attribute:: options.zoom_to_element
+       .. js:attribute:: options.zoom_to_element
 
           (Default: ``null``) A reference to an element on the map that will be
           centered after the map loads. The value should be an object with the
@@ -77,7 +78,7 @@ JavaScript API
           ``'metabolite'`` and the element ID refers to the ID of the drawn
           element in the Escher map (not the BiGG ID):
 
-          ``{ type: <TYPE>, id: <ELEMENT ID> }``
+            ``{ type: <TYPE>, id: <ELEMENT ID> }``
 
        .. js:attribute:: options.full_screen_button
 
@@ -138,6 +139,10 @@ JavaScript API
        .. js:attribute:: options.hide_all_labels
 
           (Default: ``false``) If checked, hide all reaction, gene, and metabolite labels
+
+       .. js:attribute:: options.canvas_size_and_loc
+
+          (Default: ``null``) An object with attributes x, y, width, and height.
 
        **Applied data**
 

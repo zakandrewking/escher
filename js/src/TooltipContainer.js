@@ -28,7 +28,6 @@ module.exports = TooltipContainer
 function init (selection, map, tooltip_component, zoom_container) {
   var div = selection.append('div').attr('id', 'tooltip-container')
   this.placed_div = PlacedDiv(div, map)
-  this.placed_div.hide()
 
   div.on('mouseover', this.cancel_hide_tooltip.bind(this))
   div.on('mouseleave', this.hide.bind(this))
