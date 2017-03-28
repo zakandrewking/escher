@@ -17,9 +17,10 @@ JavaScript API
                                 default style.
 
     :param object selection: The D3 selection of a HTML element that will hold
-                             the Builder. (The selection cannot be a SVG
-                             element.) Optional: Pass ``null`` to load the
-                             Builder in the HTML body.
+                             the Builder, or a reference to a DOM element
+                             (e.g. the result of ``document.getElementById``).
+                             The selection cannot be a SVG element. Optional:
+                             Pass ``null`` to load the Builder in the HTML body.
 
     :param object options: An object defining any of the following
                            options. Optional: Pass ``null`` to use all default

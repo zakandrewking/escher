@@ -23,6 +23,7 @@ var TooltipContainer = require('./TooltipContainer')
 var DefaultTooltip = require('./Tooltip').DefaultTooltip
 var _ = require('underscore')
 var d3_select = require('d3-selection').select
+var d3_selection = require('d3-selection').selection
 var d3_json = require('d3-request').json
 
 var Builder = utils.make_class()
@@ -48,18 +49,23 @@ Builder.prototype = {
   _setup_quick_jump: _setup_quick_jump,
   _setup_modes: _setup_modes,
   _get_keys: _get_keys,
-  _setup_confirm_before_exit: _setup_confirm_before_exit,
+  _setup_confirm_before_exit: _setup_confirm_before_exit
 }
 module.exports = Builder
 
 function init (map_data, model_data, embedded_css, selection, options) {
-
   // defaults
   if (!selection) {
     selection = d3_select('body').append('div')
-  } else {
-    // if user passes in a selection from an different d3 version, reselect
+  } else if (selection instanceof d3_selection) {
+    // D3 V4 selection
+  } else if ('node' in selection) {
+    // If user passes in a selection from an different d3 version/instance,
+    // then reselect.
     selection = d3_select(selection.node())
+  } else {
+    // HTML Element
+    selection = d3_select(selection)
   }
   if (!options) {
     options = {}
