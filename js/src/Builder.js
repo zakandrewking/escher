@@ -449,7 +449,7 @@ function load_map (map_data, should_update_data) {
   if (this.options.enable_editing) {
     this.zoom_mode()
   } else {
-    this.vew_mode()
+    this.view_mode()
   }
 
   // confirm before leaving the page
@@ -729,8 +729,8 @@ function _update_data (update_model, update_map, kind, should_draw) {
   }
 }
 
-function _set_up_menu(menu_selection, map, key_manager, keys, enable_editing,
-                      enable_keys, full_screen_button, ignore_bootstrap) {
+function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
+                       enable_keys, full_screen_button, ignore_bootstrap) {
   var menu = menu_selection.attr('id', 'menu')
     .append('ul')
     .attr('class', 'nav nav-pills')
