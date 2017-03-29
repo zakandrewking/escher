@@ -8,11 +8,11 @@ formats.
 
 .. image:: _static/escherconverter_io.png
 
-Download `EscherConverter 0.5`_ (13.7 MB).
+Download `EscherConverter 1.2`_ (20.3 MB).
 
 Using EscherConverter
 =====================
-				  
+
 Escher uses a JSON file format to represent its networks. This format has been
 developed because of its very small file size and its compatibility to online
 programs that are written in JavaScript. In particular, JSON is a JavaScript
@@ -136,11 +136,11 @@ Command-line interface API
 You can launch EscherConverter from the command-line. On a Unix system (such as
 Linux, MacOS, or Solaris, etc.), use a command like::
 
-  bash$ java -jar -Xms8G -Xmx8G -Duser.language=en ./EscherConverter-0.5.jar [options]
+  bash$ java -jar -Xms8G -Xmx8G -Duser.language=en ./EscherConverter-1.2.jar [options]
 
 Under Window, use a command like::
 
-  C:\> javaw -jar -Xms8G -Xmx8G -Duser.language=en EscherConverter-0.5.jar [options]
+  C:\> javaw -jar -Xms8G -Xmx8G -Duser.language=en EscherConverter-1.2.jar [options]
 
 Escher has a large collection of command-line options (see below), which can be
 useful if you want to launch the program with specific settings or if multiple
@@ -357,5 +357,5 @@ FINE, FINER, FINEST, INFO, OFF, SEVERE, and WARNING. (Default value: INFO)
 This option allows you to specify a log file to which all information of the
 program will be written. Accepts (*.bp2, *.bp3, *.log, *.owl, *.xml).
 
-.. _here: https://escher.github.io/EscherConverter-0.5.jar
-.. _`EscherConverter 0.5`: here_
+.. _here: https://github.com/SBRG/EscherConverter/releases/download/1.2/EscherConverter-1.2.0.jar
+.. _`EscherConverter 1.2`: here_

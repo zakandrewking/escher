@@ -34,6 +34,22 @@ button {
   font-size: 14px !important;
 }
 
+#whats-new {
+  position: absolute;
+  top: 5px;
+  right: 20px;
+  font-style: italic;
+  font-size: 18px;
+  /* background-color: rgba(0, 0, 0, 0.05); */
+  border-radius: 2px;
+  padding: 1px 5px;
+  border: 1px solid #CF6965;
+}
+@media (max-width: 768px) {
+  #whats-new {
+    font-size: 14px;
+  }
+}
 
 /* Wrapper for page content to push down footer */
 main {
