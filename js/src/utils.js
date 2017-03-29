@@ -46,6 +46,7 @@ module.exports = {
   rotate_coords: rotate_coords,
   get_angle: get_angle,
   to_degrees: to_degrees,
+  to_radians_norm: to_radians_norm,
   angle_for_event: angle_for_event,
   distance: distance,
   check_undefined: check_undefined,
@@ -822,6 +823,26 @@ function get_angle (coords) {
 
 function to_degrees (radians) {
   return radians * 180 / Math.PI
+}
+
+/**
+ * Force to domain - PI to PI
+ */
+function _angle_norm (radians) {
+  if (radians < -Math.PI) {
+    radians = radians + Math.ceil(radians / (-2*Math.PI)) * 2*Math.PI
+  } else if (radians > Math.PI) {
+    radians = radians - Math.ceil(radians / (2*Math.PI)) * 2*Math.PI
+  }
+  return radians
+}
+
+/**
+ * Convert to radians, and force to domain -PI to PI
+ */
+function to_radians_norm (degrees) {
+  var radians = Math.PI / 180 * degrees
+  return _angle_norm(radians)
 }
 
 function angle_for_event (displacement, point, center) {

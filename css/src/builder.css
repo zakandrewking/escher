@@ -28,20 +28,19 @@
 * THE SOFTWARE.
 */
 
-/* Basics */
-
-.escher-container, .escher-container .btn {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
-  font-size: 14px;
-}
-
 /* Containers */
 
 /* The top level container for an Escher Builder */
 .escher-container {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
   background-color: #F3F3F3;
   text-align: center;
   position: relative;
+}
+
+.escher-container *:not(.btn,.glyphicon,.caret,a) {
+  font-size: 14px;
+  color: #333333;
 }
 
 /* Applied to the body when Escher fills the screen. This stops browser from

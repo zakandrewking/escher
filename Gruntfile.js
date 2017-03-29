@@ -197,7 +197,7 @@ module.exports = function (grunt) {
         command: 'npm publish',
       },
       pypi: {
-        command: 'cd py && python setup.py sdist bdist_wheel --universal upload',
+        command: 'cd py && python setup.py sdist bdist_wheel --universal upload -r pypi',
       },
     },
   })

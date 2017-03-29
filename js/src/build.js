@@ -87,8 +87,8 @@ function get_met_label_loc (angle, index, count, is_primary, bigg_id,
 function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
                        selected_node_id, selected_node,
                        largest_ids, cofactors, angle) {
-  // Convert to radians
-  angle = Math.PI / 180 * angle
+  // Convert to radians, and force to domain - PI/2 to PI/2
+  angle = utils.to_radians_norm(angle)
 
   // Generate a new integer id
   var new_reaction_id = String(++largest_ids.reactions)

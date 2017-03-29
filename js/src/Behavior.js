@@ -100,10 +100,10 @@ function turn_everything_off () {
   this.toggle_label_mouseover(false)
 }
 
+/**
+ * Listen for rotation, and rotate selected nodes.
+ */
 function toggle_rotation_mode (on_off) {
-  /** Listen for rotation, and rotate selected nodes.
-
-   */
   if (on_off === undefined) {
     this.rotation_mode_enabled = !this.rotation_mode_enabled
   } else {
@@ -189,34 +189,35 @@ function toggle_rotation_mode (on_off) {
 
   // definitions
   function show_center () {
-    var s = this.map.sel.selectAll('#rotation-center').data([0])
-    var enter = s.enter().append('g').attr('id', 'rotation-center')
+    var sel = this.map.sel.selectAll('#rotation-center').data([ 0 ])
+    var enter_sel = sel.enter().append('g').attr('id', 'rotation-center')
 
-    enter.append('path').attr('d', 'M-32 0 L32 0')
+    enter_sel.append('path').attr('d', 'M-32 0 L32 0')
       .attr('class', 'rotation-center-line')
-    enter.append('path').attr('d', 'M0 -32 L0 32')
+    enter_sel.append('path').attr('d', 'M0 -32 L0 32')
       .attr('class', 'rotation-center-line')
 
-    enter.merge(s)
-      .attr('transform',
-            'translate(' + this.center.x + ',' + this.center.y + ')')
+    var update_sel = enter_sel.merge(sel)
+
+    update_sel.attr('transform',
+                    'translate(' + this.center.x + ',' + this.center.y + ')')
       .attr('visibility', 'visible')
-
-    s.call(d3_drag()
-           .on('drag', function (sel) {
-             var cur = utils.d3_transform_catch(sel.attr('transform')),
-             new_loc = [d3_selection.event.dx + cur.translate[0],
-                        d3_selection.event.dy + cur.translate[1]]
-             sel.attr('transform', 'translate('+new_loc+')')
-             this.center = { x: new_loc[0], y: new_loc[1] }
-           }.bind(this, s)))
-    s.on('mouseover', function () {
-      var current = parseFloat(this.selectAll('path').style('stroke-width'))
-      this.selectAll('path').style('stroke-width', current * 2 + 'px')
-    }.bind(s))
-    s.on('mouseout', function () {
-      this.selectAll('path').style('stroke-width', null)
-    }.bind(s))
+      .on('mouseover', function () {
+        var current = parseFloat(update_sel.selectAll('path').style('stroke-width'))
+        update_sel.selectAll('path').style('stroke-width', current * 2 + 'px')
+      })
+      .on('mouseout', function () {
+        update_sel.selectAll('path').style('stroke-width', null)
+      })
+      .call(d3_drag().on('drag', function () {
+        var cur = utils.d3_transform_catch(update_sel.attr('transform'))
+        var new_loc = [
+          d3_selection.event.dx + cur.translate[0],
+          d3_selection.event.dy + cur.translate[1]
+        ]
+        update_sel.attr('transform', 'translate(' + new_loc + ')')
+        this.center = { x: new_loc[0], y: new_loc[1] }
+      }.bind(this)))
   }
   function hide_center(sel) {
     this.map.sel.select('#rotation-center')

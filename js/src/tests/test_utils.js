@@ -231,6 +231,23 @@ describe('utils.load_json_or_csv', () => {
   })
 })
 
+describe('utils.to_degrees', () => {
+  it('returns degrees', () => {
+    assert.strictEqual(utils.to_degrees(Math.PI/2), 90)
+    assert.strictEqual(utils.to_degrees(Math.PI), 180)
+    assert.strictEqual(utils.to_degrees(-Math.PI), -180)
+  })
+})
+
+describe('utils.to_radians_norm', () => {
+  it('returns radians between -PI and PI', () => {
+    assert.strictEqual(utils.to_radians_norm(90), Math.PI/2)
+    assert.strictEqual(utils.to_radians_norm(-90), -Math.PI/2)
+    assert.strictEqual(utils.to_radians_norm(-270), Math.PI/2)
+    assert.strictEqual(utils.to_radians_norm(270), -Math.PI/2)
+  })
+})
+
 describe('utils.compartmentalize', () => {
   it('adds compartment', () => {
     assert.deepEqual(utils.compartmentalize('atp', 'c1'), 'atp_c1')
