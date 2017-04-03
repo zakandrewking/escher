@@ -660,40 +660,41 @@ function update_bezier(update_selection, show_beziers, drag_behavior,
 
   // hide secondary
   update_selection
-    .style('visibility', function(d) {
-      var seg_data = drawn_reactions[d.reaction_id].segments[d.segment_id],
-          start = drawn_nodes[seg_data.from_node_id],
-          end = drawn_nodes[seg_data.to_node_id]
+    .style('visibility', function (d) {
+      var seg_data = drawn_reactions[d.reaction_id].segments[d.segment_id]
+      var start = drawn_nodes[seg_data.from_node_id]
+      var end = drawn_nodes[seg_data.to_node_id]
       if (hide_secondary_metabolites &&
-          ((end['node_type']=='metabolite' && !end.node_is_primary) ||
-           (start['node_type']=='metabolite' && !start.node_is_primary)))
+          ((end['node_type'] === 'metabolite' && !end.node_is_primary) ||
+           (start['node_type'] === 'metabolite' && !start.node_is_primary))) {
         return 'hidden'
+      }
       return null
     })
 
-  // draw bezier points
+  // Draw bezier points
   update_selection.select('.bezier-circle')
     .call(this.behavior.turnOffDrag)
     .call(drag_behavior)
     .on('mouseover', mouseover)
     .on('mouseout', mouseout)
-    .attr('transform', function(d) {
-      if (d.x==null || d.y==null) return ''
-      return 'translate('+d.x+','+d.y+')'
+    .attr('transform', function (d) {
+      if (d.x === null || d.y === null) return ''
+      return 'translate(' + d.x + ',' + d.y + ')'
     })
 
-  // update bezier line
+  // Update bezier line
   update_selection
     .select('.connect-line')
-    .attr('d', function(d) {
-      var node,
-      segment_d = drawn_reactions[d.reaction_id].segments[d.segment_id]
-      node = (d.bezier=='b1' ?
-              drawn_nodes[segment_d.from_node_id] :
-              drawn_nodes[segment_d.to_node_id])
-      if (d.x==null || d.y==null || node.x==null || node.y==null)
+    .attr('d', function (d) {
+      var segment_d = drawn_reactions[d.reaction_id].segments[d.segment_id]
+      var node = d.bezier === 'b1'
+        ? drawn_nodes[segment_d.from_node_id]
+        : drawn_nodes[segment_d.to_node_id]
+      if (d.x === null || d.y === null || node.x === null || node.y === null) {
         return ''
-      return 'M'+d.x+', '+d.y+' '+(node.x)+','+(node.y)
+      }
+      return 'M' + d.x + ', ' + d.y + ' ' + node.x + ',' + node.y
     })
 
   this.callback_manager.run('update_bezier', this, update_selection)

@@ -1027,6 +1027,83 @@ export default class Map {
     text_label_selection.classed('selected', false)
   }
 
+  /**
+   * Align selected nodes and/or reactions vertically. Undoable.
+   *
+   * TODO make undoable
+   * TODO test edge cases:
+   * - connected secondary metabolites
+   * -
+   */
+  alignVertical () {
+    var selected = this.get_selected_nodes()
+    // Get markers
+    var markers = {}
+    for (var id in selected) {
+      var node = selected[id]
+      if (node.node_type !== 'metabolite' || node.node_is_primary) {
+        markers[id] = node
+      }
+    }
+    // Align all nodes if just metabolites are selected
+    var align_by_reaction = Object.keys(markers).length > 0
+    var to_align = align_by_reaction ? markers : selected
+    var keys_to_align = Object.keys(to_align)
+    // Get new x location
+    var mean_x = keys_to_align.reduce(function (accum, val) {
+      return accum + to_align[val].x
+    }, 0) / keys_to_align.length
+    // Align
+    for (var id in to_align) {
+      var marker = to_align[id]
+      var x_diff = marker.x - mean_x
+
+      // Align markers
+      marker.x = mean_x
+      marker.label_x -= x_diff
+
+      // Align unconnected secondary metabolites
+      if (align_by_reaction) {
+        marker.connected_segments.map(function (segment) {
+          var seg = this.reactions[segment.reaction_id].segments[segment.segment_id]
+          var is_to_node = seg.to_node_id === marker.node_id
+          var other_node_id = is_to_node ? seg.from_node_id : seg.to_node_id
+
+          if (other_node_id in selected) {
+            var other_node = this.nodes[other_node_id]
+            if (other_node.node_type === 'metabolite' &&
+                !other_node.node_is_primary) {
+              other_node.x -= x_diff
+              other_node.label_x -= x_diff
+            }
+          }
+
+          // Align connected bezier(s)
+          var bez = is_to_node ? 'b2' : 'b1'
+          // TODO LEFT OFF
+          if (seg[bez] !== null) {
+            seg[bez].x -= x_diff
+            var bezier_id = build.bezier_id_for_segment_id(segment.segment_id, bez)
+            this.beziers[bezier_id].x = seg[bez].x
+          }
+        }.bind(this))
+      }
+
+      this.set_status(align_by_reaction ? 'Aligned reactions' : 'Aligned nodes',
+                      2000)
+    }
+    this.draw_everything()
+  }
+
+  /**
+   * Align selected nodes and/or reactions horizontally.
+   */
+  alignHorizontal () {
+    var selected = this.get_selected_nodes()
+    throw new Error('Not Implemented')
+  }
+
+
   // ---------------------------------------------------------------------
   // Delete
   // ---------------------------------------------------------------------
