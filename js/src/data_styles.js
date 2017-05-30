@@ -106,6 +106,9 @@ function import_and_check (data, name, all_reactions) {
     if (data.length === 2) {
       return null
     }
+    if (data.length > 2) { // new check for data length of 2+. Do we need the other cases?
+      return null
+    }
     return console.warn('Bad data style: ' + name)
   }
   check()

@@ -13,6 +13,7 @@ var Brush = require('./Brush')
 var CallbackManager = require('./CallbackManager')
 var ui = require('./ui')
 var SearchBar = require('./SearchBar')
+var MetaboliteBar = require('./MetaboliteBar')
 var Settings = require('./Settings')
 var SettingsMenu = require('./SettingsMenu')
 var TextEditInput = require('./TextEditInput')
@@ -346,6 +347,7 @@ function load_map (map_data, should_update_data) {
     .append('div').attr('class', 'search-menu-container-inline')
   var menu_div = s.append('div')
   var search_bar_div = s.append('div')
+  var metabolite_bar_div = s.append('div')
   var button_div = this.selection.append('div')
 
   // Set up the search bar
@@ -355,6 +357,14 @@ function load_map (map_data, should_update_data) {
   this.search_bar.callback_manager.set('show', function() {
     this.settings_bar.toggle(false)
   }.bind(this))
+
+  // set up the metabolite data bar
+  this.metabolite_bar = new MetaboliteBar(metabolite_bar_div, this.map, this, this.options.metabolite_data)
+  // Set up the hide callbacks
+  this.metabolite_bar.callback_manager.set('show', function() {
+    this.metabolite_bar.toggle(false)
+  }.bind(this))
+
 
   // Set up the settings
   var settings_div = this.selection.append('div')
@@ -587,11 +597,17 @@ function set_gene_data (data, clear_gene_reaction_rules) {
   this.map.set_status('')
 }
 
-function set_metabolite_data(data) {
+function set_metabolite_data(data, i) {
   /** For documentation of this function, see docs/javascript_api.rst.
 
    */
-  this.options.metabolite_data = data
+  if(data !== undefined && i !== undefined){
+    this.options.metabolite_data = data[i]
+  } else {
+    this.options.metabolite_data = data
+  }
+
+  this.metabolite_bar.metabolite_data = data
   this._update_data(true, true, 'metabolite')
   this.map.set_status('')
 }
@@ -1039,13 +1055,17 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
 
     this.set_reaction_data(data)
   }
-  function load_metabolite_data_for_file(error, data) {
+  function load_metabolite_data_for_file(error, data, i) {
     if (error) {
       console.warn(error)
       this.map.set_status('Could not parse file as JSON or CSV', 2000)
       return
     }
-    this.set_metabolite_data(data)
+    if(i !== undefined){
+      this.set_metabolite_data(data, i)}
+    else {
+      this.set_metabolite_data(data, 0)
+    }
   }
   function load_gene_data_for_file(error, data) {
     if (error) {
