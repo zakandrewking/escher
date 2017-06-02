@@ -124,7 +124,7 @@ function import_and_check (data, name, all_reactions) {
   return data
 }
 
-function float_for_data(d, styles, compare_style) {
+function float_for_data(d, styles, compare_style, reference, target) {
   // all null
   if (d === null)
     return null
@@ -132,13 +132,13 @@ function float_for_data(d, styles, compare_style) {
   // absolute value
   var take_abs = (styles.indexOf('abs') != -1)
 
-  if (d.length==1) { // 1 set
+  if (d.length == 1) { // 1 set
     // 1 null
     var f = _parse_float_or_null(d[0])
     if (f === null)
       return null
     return abs(f, take_abs)
-  } else if (d.length==2) { // 2 sets
+  } else if (d.length == 2) { // 2 sets
     // 2 null
     var fs = d.map(_parse_float_or_null)
     if (fs[0] === null || fs[1] === null)
@@ -152,7 +152,44 @@ function float_for_data(d, styles, compare_style) {
     else if (compare_style == 'log2_fold') {
       return check_finite(log2_fold(fs[0], fs[1], take_abs))
     }
-  } else {
+  }
+  else if(d.length > 2){ //TODO for reaction data
+
+    var fs = d.map(_parse_float_or_null)
+    var last = fs.length - 1
+
+    if(reference !== undefined && target !== undefined){ // if specified by user
+
+      if (fs[reference] === null || fs[target] === null)
+        return null
+
+      if (compare_style == 'diff') {
+        return diff(fs[reference], fs[target], take_abs)
+      } else if (compare_style == 'fold') {
+        return check_finite(fold(fs[reference], fs[target], take_abs))
+      }
+      else if (compare_style == 'log2_fold') {
+        return check_finite(log2_fold(fs[reference], fs[target], take_abs))
+      }
+
+    } else { // default value first and last
+
+      if (fs[0] == null || fs[last] == null)
+        return null
+
+      if (compare_style == 'diff') {
+        return diff(fs[0], fs[last], take_abs)
+      } else if (compare_style == 'fold') {
+        return check_finite(fold(fs[0], fs[last], take_abs))
+      }
+      else if (compare_style == 'log2_fold') {
+        return check_finite(log2_fold(fs[0], fs[last], take_abs))
+      }
+
+    }
+
+  }
+  else {
     throw new Error('Data array must be of length 1 or 2')
   }
   throw new Error('Bad data compare_style: ' + compare_style)

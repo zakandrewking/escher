@@ -13,7 +13,7 @@ var Brush = require('./Brush')
 var CallbackManager = require('./CallbackManager')
 var ui = require('./ui')
 var SearchBar = require('./SearchBar')
-var MetaboliteBar = require('./MetaboliteBar')
+var TimeSeriesBar = require('./TimeSeriesBar')
 var Settings = require('./Settings')
 var SettingsMenu = require('./SettingsMenu')
 var TextEditInput = require('./TextEditInput')
@@ -347,7 +347,7 @@ function load_map (map_data, should_update_data) {
     .append('div').attr('class', 'search-menu-container-inline')
   var menu_div = s.append('div')
   var search_bar_div = s.append('div')
-  var metabolite_bar_div = s.append('div')
+  var time_series_bar_div = s.append('div')
   var button_div = this.selection.append('div')
 
   // Set up the search bar
@@ -359,10 +359,10 @@ function load_map (map_data, should_update_data) {
   }.bind(this))
 
   // set up the metabolite data bar
-  this.metabolite_bar = new MetaboliteBar(metabolite_bar_div, this.map, this, this.options.metabolite_data)
+  this.time_series_bar = new TimeSeriesBar(time_series_bar_div, this.map, this)
   // Set up the hide callbacks
-  this.metabolite_bar.callback_manager.set('show', function() {
-    this.metabolite_bar.toggle(false)
+  this.time_series_bar.callback_manager.set('show', function() {
+    this.time_series_bar.toggle(false)
   }.bind(this))
 
 
@@ -573,8 +573,17 @@ function _reaction_check_add_abs () {
 /**
  * For documentation of this function, see docs/javascript_api.rst.
  */
-function set_reaction_data (data) {
-  this.options.reaction_data = data
+function set_reaction_data (data, i) {
+
+  if(data !== undefined && i !== undefined){
+    this.options.reaction_data = data[i]
+  } else {
+    this.options.reaction_data = data
+  }
+
+  this.time_series_bar.reaction_data = data
+  //this.time_series_bar.update()
+
   var message_fn = this._reaction_check_add_abs()
   this._update_data(true, true, 'reaction')
   if (message_fn) {
@@ -607,7 +616,10 @@ function set_metabolite_data(data, i) {
     this.options.metabolite_data = data
   }
 
-  this.metabolite_bar.metabolite_data = data
+  this.time_series_bar.metabolite_data = data
+  this.time_series_bar.update()
+
+
   this._update_data(true, true, 'metabolite')
   this.map.set_status('')
 }
