@@ -530,7 +530,7 @@ function apply_reaction_data_to_reactions (reactions, data, styles,
     reaction = reactions[reaction_id]
     // check bigg_id and name
     var d = data[reaction.bigg_id] || data[reaction.name] || null
-    var f = float_for_data(d, styles, compare_style)
+    var f = float_for_data(d, styles, compare_style) // TODO: set reference and target
     var r = reverse_flux_for_data(d)
     var s = text_for_data(d, f)
     reaction.data = f
@@ -574,7 +574,7 @@ function apply_metabolite_data_to_nodes (nodes, data, styles, compare_style,
     var node = nodes[node_id]
     // check bigg_id and name
     var d = data[node.bigg_id] || data[node.name] || null,
-    f = float_for_data(d, styles, compare_style),
+    f = float_for_data(d, styles, compare_style), //TODO: set reference and target
     s = text_for_data(d, f)
     node.data = f
     node.data_string = s

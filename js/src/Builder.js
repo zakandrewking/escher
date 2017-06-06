@@ -39,6 +39,7 @@ Builder.prototype = {
   zoom_mode: zoom_mode,
   rotate_mode: rotate_mode,
   text_mode: text_mode,
+  difference_mode: difference_mode,
   _reaction_check_add_abs: _reaction_check_add_abs,
   set_reaction_data: set_reaction_data,
   set_metabolite_data: set_metabolite_data,
@@ -505,6 +506,11 @@ function _set_mode (mode) {
   if (mode == 'rotate')
     this.map.deselect_text_labels()
   this.map.draw_everything()
+
+  if(mode === 'difference'){
+    this.time_series_bar.toggleDifferenceMode()
+   // this.time_series_bar.toggle(true)
+  }
 }
 
 function view_mode() {
@@ -555,6 +561,11 @@ function text_mode() {
   this._set_mode('text')
 }
 
+function difference_mode(){
+  this.callback_manager.run('difference_mode')
+  this._set_mode('difference')
+}
+
 function _reaction_check_add_abs () {
   var curr_style = this.options.reaction_styles
   var did_abs = false
@@ -582,7 +593,7 @@ function set_reaction_data (data, i) {
   }
 
   this.time_series_bar.reaction_data = data
-  //this.time_series_bar.update()
+  this.time_series_bar.update(undefined, this.options.reaction_data)
 
   var message_fn = this._reaction_check_add_abs()
   this._update_data(true, true, 'reaction')
@@ -617,7 +628,7 @@ function set_metabolite_data(data, i) {
   }
 
   this.time_series_bar.metabolite_data = data
-  this.time_series_bar.update()
+  this.time_series_bar.update(this.options.reaction_data, undefined)
 
 
   this._update_data(true, true, 'metabolite')
@@ -901,6 +912,10 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
                 id: 'text-mode-menu-button',
                 text: 'Text mode',
                 key_text: (enable_keys ? ' (T)' : null) })
+      .button({ key: keys.difference_mode,
+        id: 'difference-mode-menu-button',
+        text: 'Difference mode',
+        key_text: (enable_keys ? ' (D)' : null) })
       .divider()
       .button({ key: keys.delete,
                 text: 'Delete',
@@ -1001,6 +1016,7 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
   this.callback_manager.set('rotate_mode', select_button.bind(this, 'rotate-mode-button'))
   this.callback_manager.set('view_mode', select_button.bind(this, 'view-mode-button'))
   this.callback_manager.set('text_mode', select_button.bind(this, 'text-mode-button'))
+  this.callback_manager.set('difference_mode', select_button.bind(this, 'difference-mode-button'))
 
   // definitions
   function load_map_for_file(error, map_data) {
@@ -1174,6 +1190,14 @@ function _set_up_button_panel(button_selection, keys, enable_editing,
                 tooltip: 'Text mode',
                 key_text: (enable_keys ? ' (T)' : null),
                 ignore_bootstrap: ignore_bootstrap  })
+      // TODO: new button for difference mode
+      .button({ key: keys.difference_mode,
+          text: 'D',
+          id: 'difference-mode-button',
+          icon: 'glyphicon glyphicon-object-align-bottom',
+          tooltip: 'Difference mode',
+          key_text: (enable_keys ? ' (D)' : null),
+          ignore_bootstrap: ignore_bootstrap  })
 
     // arrow buttons
     this.direction_buttons = button_panel.append('li')
@@ -1439,6 +1463,12 @@ function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editin
         key: 't',
         target: this,
         fn: this.text_mode,
+        ignore_with_input: true,
+      },
+      difference_mode: {
+        key: 'd',
+        target: this,
+        fn: this.difference_mode,
         ignore_with_input: true,
       },
       toggle_beziers: {
