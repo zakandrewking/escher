@@ -586,14 +586,17 @@ function _reaction_check_add_abs () {
  */
 function set_reaction_data (data, i) {
 
-  if(data !== undefined && i !== undefined){
+
+  // check data !== undefined ?
+  if(i !== undefined){
     this.options.reaction_data = data[i]
   } else {
     this.options.reaction_data = data
   }
 
   this.time_series_bar.reaction_data = data
-  this.time_series_bar.update(undefined, this.options.reaction_data)
+  this.time_series_bar.setTypeOfData('reaction')
+ // this.time_series_bar.update()
 
   var message_fn = this._reaction_check_add_abs()
   this._update_data(true, true, 'reaction')
@@ -628,8 +631,8 @@ function set_metabolite_data(data, i) {
   }
 
   this.time_series_bar.metabolite_data = data
-  this.time_series_bar.update(this.options.reaction_data, undefined)
-
+  this.time_series_bar.setTypeOfData('metabolite')
+ // this.time_series_bar.update()
 
   this._update_data(true, true, 'metabolite')
   this.map.set_status('')

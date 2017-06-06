@@ -155,10 +155,13 @@ function float_for_data(d, styles, compare_style, reference, target) {
   }
   else if(d.length > 2){ //TODO for reaction data
 
+    // defaults
     var fs = d.map(_parse_float_or_null)
     var last = fs.length - 1
 
     if(reference !== undefined && target !== undefined){ // if specified by user
+
+      // TODO: check reference < target && target < data.length ?
 
       if (fs[reference] === null || fs[target] === null)
         return null
