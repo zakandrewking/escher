@@ -17,7 +17,7 @@ var container
 var sliderReference, sliderTarget
 var differenceModeActive
 var reference, target
-var dropDownMenuTarget
+var dropDownMenuReference, dropDownMenuTarget
 var typeOfData
 
 // instance methods
@@ -30,7 +30,9 @@ TimeSeriesBar.prototype = {
   previous: previous,
   toggleDifferenceMode: toggleDifferenceMode,
   showDifferenceData: showDifferenceData,
-  setTypeOfData: setTypeOfData
+  setTypeOfData: setTypeOfData,
+  setReactionData: setReactionData,
+  setMetaboliteData: setMetaboliteData
 }
 module.exports = TimeSeriesBar
 
@@ -38,13 +40,12 @@ function init (sel, map, builder) {
 
   this.builder = builder
 
-  this.metabolite_data = builder.options.metabolite_data
-  this.reaction_data = builder.options.reaction_data
+  metabolite_data = builder.options.metabolite_data
+  reaction_data = builder.options.reaction_data
 
-  this.current = 0
+  current = 0
 
-
-  this.typeOfData = ''
+  typeOfData = ''
 
   differenceModeActive = false
 
@@ -88,7 +89,7 @@ function init (sel, map, builder) {
   container.append('text')
     .text('Display Dataset: ')
 
-  this.counter = container.append('div')
+  counter = container.append('div')
     .attr('id', 'counter')
     .attr('class', 'search-counter')
     .text('0 / 0')
@@ -110,9 +111,29 @@ function init (sel, map, builder) {
     .on('click', this.update.bind(this))
     .append('span').attr('class', 'glyphicon glyphicon-refresh')
 
-  initDifferenceMode(container)
+  var checkBoxDifferenceMode = container.append('div')
+    .append('label')
+    .attr('for', 'checkBoxDifferenceMode')
+    .text('Difference Mode')
+    .append('input')
+    .attr('type', 'checkbox')
+    .attr('id', 'checkBoxDifferenceMode')
+    .attr('value', 'Difference Mode')
+    .text('Difference Mode')
+    .on('change', function () {
+      if (checkBoxDifferenceMode.property('checked')) {
+        containerDifferenceMode.style('display', 'block')
+      } else {
+        containerDifferenceMode.style('display', 'none')
+      }
+    })
 
-  container.append('div').append('button')
+  var containerDifferenceMode = container.append('div')
+  //.style('display', 'none')
+
+  initDifferenceMode(containerDifferenceMode)
+
+  containerDifferenceMode.append('div').append('button')
     .attr('class', 'btn btn-default')
     .on('click', this.showDifferenceData.bind(this))
     .append('span')//.attr('class', 'glyphicon glyphicon-play')
@@ -127,8 +148,8 @@ function init (sel, map, builder) {
 
 function initDifferenceMode (container) {
 
-  this.reference = 0
-  this.target = 0
+  reference = 0
+  target = 0
 
   container.append('div')
     .append('text')
@@ -139,20 +160,16 @@ function initDifferenceMode (container) {
     .attr('type', 'range')
     .attr('value', this.reference)
     .attr('min', 0)
-    .attr('max', 10)
+    .attr('max', 9)
     .on('change', function () {
       reference = this.value
 
-      //sliderTarget.attr('min', reference)
-
       if (reference < target) {
         target = reference
-        this.sliderTarget.value = reference
+        sliderTarget.value = reference
       }
       d3.select('#referenceText').text('Reference Data Set: ' + reference)
 
-      //sliderTarget.attr('value', reference)
-      //d3.select('#targetText').text('Target Dataset ' + target )
     })
     .style('display', 'block')
 
@@ -165,18 +182,22 @@ function initDifferenceMode (container) {
     .attr('type', 'range')
     .attr('value', this.target)
     .attr('min', 0)
-    .attr('max', 10)
+    .attr('max', 9)
     .on('change', function () {
 
-      this.target = this.value
-      d3.select('#targetText').text('Target Data Set ' + this.target)
+      target = this.value
+      d3.select('#targetText').text('Target Data Set ' + target)
 
     })
     .style('display', 'block')
 
+  dropDownMenuReference = container.append('select')
+    .attr('name', 'target-list')
+    .on('change', function () {reference = this.value })
+
   dropDownMenuTarget = container.append('select')
     .attr('name', 'target-list')
-    .on('change', function (d) { console.log(d.value) })
+    .on('change', function () { target = this.value })
 
 }
 
@@ -194,42 +215,38 @@ function update () {
 
   var currentDataSet
 
-  if (typeOfData === 'metabolite') {
-    currentDataSet = this.metabolite_data
-  } else if (typeOfData === 'reaction') {
-    currentDataSet = this.reaction_data
+  if (metabolite_data !== null && typeOfData === 'metabolite') {
+    currentDataSet = metabolite_data
+  } else if (reaction_data !== null && typeOfData === 'reaction') {
+    currentDataSet = reaction_data
+  } else {
+    return
   }
 
+  // update display
+  current = 0
+  counter.text((current + 1) + ' / ' + currentDataSet.length)
+
+  // update slider
   sliderReference
-    .attr('max', currentDataSet.length)
+    .attr('max', (currentDataSet.length - 1))
     .attr('value', 0)
 
   sliderTarget
-    .attr('max', currentDataSet.length)
+    .attr('max', (currentDataSet.length - 1))
     .attr('value', 0)
 
-  current = 0
-  counter.text((this.current + 1) + ' / ' + (currentDataSet.length))
+  d3.select('#referenceText').text('Reference Data Set: ' + current)
+  d3.select('#targetText').text('Target Data Set: ' + current)
 
-  d3.select('#referenceText').text('Reference Data Set: ')
-  d3.select('#targetText').text('Target Data Set: ')
+  // update dropdown menu
+  // TODO: items just get added every time
 
-
-  var data = []
-
-  for (var i = 0; i < currentDataSet.length; i++) {
-    data.push({'DataSet': i})
+  var x
+  for (x in currentDataSet) {
+    dropDownMenuReference.append('option').attr('value', x).text('Reference Data Set: ' + x)
+    dropDownMenuTarget.append('option').attr('value', x).text('Target Data Set: ' + x)
   }
-
-  var options = dropDownMenuTarget.selectAll('option')
-    .data(data)
-    .enter()
-    .append('option')
-
-  options.text(function (d) {
-    return d.value
-  })
-    .attr('value', function (d) { return d.value })
 
 }
 
@@ -237,26 +254,26 @@ function next () {
 
   if (typeOfData === 'metabolite') {
 
-    if (this.metabolite_data !== undefined && this.metabolite_data !== null) {
+    if (metabolite_data !== undefined && metabolite_data !== null) {
       //choose next data and load it
-      if (this.current < this.metabolite_data.length - 1) {
-        this.current += 1
+      if (current < metabolite_data.length - 1) {
 
-        this.builder.set_metabolite_data(this.metabolite_data, this.current)
+        current += 1
+        this.builder.set_metabolite_data(metabolite_data, current)
 
-        this.counter.text((this.current + 1) + ' / ' + (this.metabolite_data.length))
+        counter.text((current + 1) + ' / ' + (metabolite_data.length))
       }
     }
 
   } else if (typeOfData === 'reaction') {
-    if (this.reaction_data !== undefined && this.reaction_data !== null) {
+    if (reaction_data !== undefined && reaction_data !== null) {
       //choose next data and load it
-      if (this.current < this.reaction_data.length - 1) {
-        this.current += 1
+      if (current < reaction_data.length - 1) {
+        current += 1
 
-        this.builder.set_reaction_data(this.reaction_data, this.current)
+        this.builder.set_reaction_data(reaction_data, current)
 
-        this.counter.text((this.current + 1) + ' / ' + (this.reaction_data.length))
+        counter.text((current + 1) + ' / ' + (reaction_data.length))
       }
     }
   }
@@ -266,50 +283,39 @@ function next () {
 function previous () {
 
   if (typeOfData === 'metabolite') {
-    if (this.metabolite_data !== undefined && this.metabolite_data !== null) {
+    if (metabolite_data !== undefined && metabolite_data !== null) {
       //choose previous data and load it
-      if (this.current > 0) {
-        this.current -= 1
+      if (current > 0) {
+        current -= 1
 
-        this.builder.set_metabolite_data(this.metabolite_data, this.current)
+        this.builder.set_metabolite_data(metabolite_data, current)
 
-        this.counter.text((this.current + 1) + ' / ' + (this.metabolite_data.length))
+        counter.text((current + 1) + ' / ' + (metabolite_data.length))
       }
     }
   } else if (typeOfData === 'reaction') {
-    if (this.reaction_data !== undefined && this.reaction_data !== null) {
+    if (reaction_data !== undefined && reaction_data !== null) {
       //choose previous data and load it
-      if (this.current > 0) {
-        this.current -= 1
+      if (current > 0) {
+        current -= 1
 
-        this.builder.set_reaction_data(this.reaction_data, this.current)
+        this.builder.set_reaction_data(reaction_data, current)
 
-        this.counter.text((this.current + 1) + ' / ' + (this.reaction_data.length))
+        counter.text((current + 1) + ' / ' + (reaction_data.length))
       }
     }
   }
 
 }
 
-function updateSliderReference () {
-  this.current = sliderReference.get('value')
-  this.counter.text((this.current + 1) + ' / ' + (this.metabolite_data.length))
-}
-
 function toggleDifferenceMode () {
 
   if (differenceModeActive) {
     container.style('display', 'block')
-    //sliderReference.style('display', 'block')
-    //sliderTarget.style('display', 'block')
-
     differenceModeActive = false
+
   } else {
     container.style('display', 'none')
-
-    //sliderReference.style('display', 'none')
-    //sliderTarget.style('display', 'none')
-
     differenceModeActive = true
   }
 
@@ -322,7 +328,7 @@ function showDifferenceData () {
 
   // this.map.apply_metabolite_data_to_map(null)
 
-  var differenceDataSet = [this.metabolite_data[this.reference], this.metabolite_data[this.target]]
+  var differenceDataSet = [metabolite_data[reference], metabolite_data[target]]
   this.builder.set_metabolite_data(differenceDataSet, 0)
 
   this.builder._update_data(true, true, 'metabolite')
@@ -383,6 +389,14 @@ function toggle (on_off) {
 }
 
 function setTypeOfData (data) {
-  this.typeOfData = data
+  typeOfData = data
 
+}
+
+function setMetaboliteData (data) {
+  metabolite_data = data
+}
+
+function setReactionData (data) {
+  reaction_data = data
 }
