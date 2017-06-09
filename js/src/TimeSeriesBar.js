@@ -6,6 +6,7 @@
 var utils = require('./utils')
 var CallbackManager = require('./CallbackManager')
 var _ = require('underscore')
+var data_styles = require('./data_styles.js')
 
 var TimeSeriesBar = utils.make_class()
 var builder
@@ -19,6 +20,8 @@ var differenceModeActive
 var reference, target
 var dropDownMenuReference, dropDownMenuTarget
 var typeOfData
+var dataObject
+
 
 // instance methods
 TimeSeriesBar.prototype = {
@@ -198,11 +201,17 @@ function initDifferenceMode (container) {
 
   dropDownMenuReference = container.append('select')
     .attr('name', 'target-list')
+    .attr('id', 'dropDownMenuReference')
     .on('change', function () {reference = this.value })
+   // .append('options')
+   // .attr('value', 0).text('Reference Data Set: ')
 
   dropDownMenuTarget = container.append('select')
     .attr('name', 'target-list')
+    .attr('id', 'dropDownMenuTarget')
     .on('change', function () { target = this.value })
+ //   .append('options')
+ //  .attr('value', 0).text('Reference Data Set: ')
 
 }
 
@@ -245,7 +254,10 @@ function update () {
   d3.select('#targetText').text('Target Data Set: ' + current)
 
   // update dropdown menu
-  // TODO: items just get added every time
+
+  // reset, plain old javascript, but this is the only way it works
+  document.getElementById("dropDownMenuReference").options.length = 0
+  document.getElementById("dropDownMenuTarget").options.length = 0
 
   var x
   for (x in currentDataSet) {
@@ -264,7 +276,10 @@ function next () {
       if (current < metabolite_data.length - 1) {
 
         current += 1
-        this.builder.set_metabolite_data(metabolite_data, current)
+
+        dataObject = data_styles.import_and_check(metabolite_data[current], 'metabolite_data')
+        this.map.apply_metabolite_data_to_map(dataObject)
+        this.map.draw_all_nodes(false)
 
         counter.text((current + 1) + ' / ' + (metabolite_data.length))
       }
@@ -276,7 +291,9 @@ function next () {
       if (current < reaction_data.length - 1) {
         current += 1
 
-        this.builder.set_reaction_data(reaction_data, current)
+        dataObject = data_styles.import_and_check(reaction_data[current], 'reaction_data')
+        this.map.apply_reaction_data_to_map(dataObject)
+        this.map.draw_all_reactions(false, false)
 
         counter.text((current + 1) + ' / ' + (reaction_data.length))
       }
@@ -287,13 +304,17 @@ function next () {
 
 function previous () {
 
+
   if (typeOfData === 'metabolite') {
     if (metabolite_data !== undefined && metabolite_data !== null) {
       //choose previous data and load it
       if (current > 0) {
         current -= 1
 
-        this.builder.set_metabolite_data(metabolite_data, current)
+        dataObject = data_styles.import_and_check(metabolite_data[current], 'metabolite_data')
+        this.map.apply_metabolite_data_to_map(dataObject)
+        this.map.draw_all_nodes(false)
+        //this.builder.set_metabolite_data(metabolite_data, current)
 
         counter.text((current + 1) + ' / ' + (metabolite_data.length))
       }
@@ -304,7 +325,11 @@ function previous () {
       if (current > 0) {
         current -= 1
 
-        this.builder.set_reaction_data(reaction_data, current)
+        //this.builder.set_reaction_data(reaction_data, current)
+
+        dataObject = data_styles.import_and_check(reaction_data[current], 'reaction_data')
+        this.map.apply_reaction_data_to_map(dataObject)
+        this.map.draw_all_reactions(false, false)
 
         counter.text((current + 1) + ' / ' + (reaction_data.length))
       }

@@ -638,7 +638,7 @@ function set_metabolite_data(data, i) {
   }
 
 
-  // TODO: builder holds all the data, not the bar. only get if mode activ, ref & target
+  // TODO: builder holds all the data, not the bar. only get if mode active, ref & target
   this.time_series_bar.metabolite_data = data
   this.time_series_bar.setMetaboliteData(data)
 
