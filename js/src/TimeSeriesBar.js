@@ -32,7 +32,10 @@ TimeSeriesBar.prototype = {
   showDifferenceData: showDifferenceData,
   setTypeOfData: setTypeOfData,
   setReactionData: setReactionData,
-  setMetaboliteData: setMetaboliteData
+  setMetaboliteData: setMetaboliteData,
+  getDifferenceModeActive: getDifferenceModeActive,
+  getReference: getReference,
+  getTarget: getTarget
 }
 module.exports = TimeSeriesBar
 
@@ -50,7 +53,7 @@ function init (sel, map, builder) {
   differenceModeActive = false
 
   container = sel.attr('class', 'search-container')
-  //  .style('display', 'none');
+    .style('display', 'none');
 
   container.append('button')
     .attr('class', 'btn btn-sm btn-default close-button')
@@ -122,14 +125,16 @@ function init (sel, map, builder) {
     .text('Difference Mode')
     .on('change', function () {
       if (checkBoxDifferenceMode.property('checked')) {
+        differenceModeActive = true
         containerDifferenceMode.style('display', 'block')
       } else {
+        differenceModeActive = false
         containerDifferenceMode.style('display', 'none')
       }
     })
 
   var containerDifferenceMode = container.append('div')
-  //.style('display', 'none')
+  .style('display', 'none')
 
   initDifferenceMode(containerDifferenceMode)
 
@@ -326,12 +331,16 @@ function toggleDifferenceMode () {
 
 function showDifferenceData () {
 
-  // this.map.apply_metabolite_data_to_map(null)
+  // directly display on map, save nothing
+  // this.map.apply_metabolite_data_to_map( something like this)
 
-  var differenceDataSet = [metabolite_data[reference], metabolite_data[target]]
-  this.builder.set_metabolite_data(differenceDataSet, 0)
 
-  this.builder._update_data(true, true, 'metabolite')
+  // create new dataset out of the reference and data
+  // is this the right way?
+ // var differenceDataSet = [metabolite_data[reference], metabolite_data[target]]
+ // this.builder.set_metabolite_data(differenceDataSet, 0)
+
+  this.builder._update_data(true, true, 'reaction')
 
 }
 
@@ -399,4 +408,19 @@ function setMetaboliteData (data) {
 
 function setReactionData (data) {
   reaction_data = data
+}
+
+function getDifferenceModeActive(){
+  console.log(differenceModeActive)
+  return differenceModeActive
+}
+
+function getReference(){
+  console.log(reference)
+  return reference
+}
+
+function getTarget(){
+  console.log(target)
+  return target
 }

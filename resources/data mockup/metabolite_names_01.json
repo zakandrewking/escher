@@ -1,0 +1,7 @@
+[ "name_of_data_set_1",
+{"pep_c":0, "h2o_c": 0, "atp_c": 0.2},
+"name_of_data_set_2",
+{"pep_c":0.5, "h2o_c":0.7, "atp_c": 1.2 },
+"name_of_data_set_3",
+{"pep_c":1, "h2o_c": 1.2, "atp_c": 0.2}
+]

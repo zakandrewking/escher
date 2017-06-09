@@ -27,6 +27,10 @@ var d3_select = require('d3-selection').select
 var d3_selection = require('d3-selection').selection
 var d3_json = require('d3-request').json
 
+// stuff for difference mode
+var difference_mode_active
+var reference, target
+
 var Builder = utils.make_class()
 Builder.prototype = {
   init: init,
@@ -52,7 +56,9 @@ Builder.prototype = {
   _setup_quick_jump: _setup_quick_jump,
   _setup_modes: _setup_modes,
   _get_keys: _get_keys,
-  _setup_confirm_before_exit: _setup_confirm_before_exit
+  _setup_confirm_before_exit: _setup_confirm_before_exit,
+  //
+  set_difference_mode: set_difference_mode
 }
 module.exports = Builder
 
@@ -626,16 +632,22 @@ function set_metabolite_data(data, i) {
 
    */
   if(data !== undefined && i !== undefined){
-    this.options.metabolite_data = data[i]
+    this.options.metabolite_data = data//[i]
   } else {
     this.options.metabolite_data = data
   }
 
+
+  // TODO: builder holds all the data, not the bar. only get if mode activ, ref & target
   this.time_series_bar.metabolite_data = data
   this.time_series_bar.setMetaboliteData(data)
 
   this.time_series_bar.setTypeOfData('metabolite')
   //this.time_series_bar.update()
+
+  // difference_mode_active = this.time_series_bar.getDifferenceModeActive()
+  // reference = this.time_series_bar.getReference()
+  // target = this.time_series_bar.getTarget()
 
   this._update_data(true, true, 'metabolite')
   this.map.set_status('')
@@ -665,6 +677,10 @@ function _update_data (update_model, update_map, kind, should_draw) {
   var reaction_data_object
   var gene_data_object
 
+  difference_mode_active = this.time_series_bar.getDifferenceModeActive()
+  reference = this.time_series_bar.getReference()
+  target = this.time_series_bar.getTarget()
+
   // -------------------
   // First map, and draw
   // -------------------
@@ -684,7 +700,7 @@ function _update_data (update_model, update_map, kind, should_draw) {
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
       reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
                                                           'reaction_data')
-      this.map.apply_reaction_data_to_map(reaction_data_object)
+      this.map.apply_reaction_data_to_map(reaction_data_object, undefined, difference_mode_active, reference, target)
       if (should_draw)
         this.map.draw_all_reactions(false, false)
     } else if (this.options.gene_data !== null && update_map && this.map !== null) {
@@ -1576,4 +1592,9 @@ function _setup_confirm_before_exit () {
     return  (this.options.never_ask_before_quit ? null :
              'You will lose any unsaved changes.')
   }.bind(this)
+}
+
+function set_difference_mode(bool){
+  this.difference_mode = bool
+
 }
