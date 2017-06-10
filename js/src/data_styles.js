@@ -138,68 +138,53 @@ function float_for_data (d, styles, compare_style, difference_mode, reference, t
     if (f === null)
       return null
     return abs(f, take_abs)
-   }
-  // else if (d.length == 2) { // 2 sets
-  //   // 2 null
-  //   var fs = d.map(_parse_float_or_null)
-  //   if (fs[0] === null || fs[1] === null)
-  //     return null
-  //
-  //   if (compare_style == 'diff') {
-  //     return diff(fs[0], fs[1], take_abs)
-  //   } else if (compare_style == 'fold') {
-  //     return check_finite(fold(fs[0], fs[1], take_abs))
-  //   }
-  //   else if (compare_style == 'log2_fold') {
-  //     return check_finite(log2_fold(fs[0], fs[1], take_abs))
-  //   }
-  // }
-  // else
-   if (d.length >= 2) {
+  }
+  if (d.length >= 2) {
 
     // defaults
     var fs = d.map(_parse_float_or_null)
     var last = fs.length - 1
-    if(difference_mode){
+    if (difference_mode) {
 
-    if (reference !== undefined && target !== undefined) { // if specified by user
+      if (reference !== undefined && target !== undefined) { // if specified by user
 
-      // TODO: check reference < target && target < data.length ?
+        // TODO: check reference < target && target < data.length ?
 
-      if (fs[reference] === null || fs[target] === null)
-        return null
+        if (fs[reference] === null || fs[target] === null)
+          return null
 
-      if (compare_style == 'diff') {
-        return diff(fs[reference], fs[target], take_abs)
-      } else if (compare_style == 'fold') {
-        return check_finite(fold(fs[reference], fs[target], take_abs))
+        if (compare_style == 'diff') {
+          return diff(fs[reference], fs[target], take_abs)
+        } else if (compare_style == 'fold') {
+          return check_finite(fold(fs[reference], fs[target], take_abs))
+        }
+        else if (compare_style == 'log2_fold') {
+          return check_finite(log2_fold(fs[reference], fs[target], take_abs))
+        }
+
+      } else { // default value first and last
+
+        if (fs[0] == null || fs[last] == null)
+          return null
+
+        if (compare_style == 'diff') {
+          return diff(fs[0], fs[last], take_abs)
+        } else if (compare_style == 'fold') {
+          return check_finite(fold(fs[0], fs[last], take_abs))
+        }
+        else if (compare_style == 'log2_fold') {
+          return check_finite(log2_fold(fs[0], fs[last], take_abs))
+        }
+
       }
-      else if (compare_style == 'log2_fold') {
-        return check_finite(log2_fold(fs[reference], fs[target], take_abs))
-      }
 
-    } else { // default value first and last
-
-      if (fs[0] == null || fs[last] == null)
-        return null
-
-      if (compare_style == 'diff') {
-        return diff(fs[0], fs[last], take_abs)
-      } else if (compare_style == 'fold') {
-        return check_finite(fold(fs[0], fs[last], take_abs))
-      }
-      else if (compare_style == 'log2_fold') {
-        return check_finite(log2_fold(fs[0], fs[last], take_abs))
-      }
-
-    }
-
-  } else {
-  // TODO: handle as one set?
+    } else {
+      // TODO: handle as one set?
       var f = _parse_float_or_null(d[0])
       if (f === null)
         return null
-      return abs(f, take_abs)   }
+      return abs(f, take_abs)
+    }
   }
   else {
     throw new Error('Data array must be of length 1 or 2')
@@ -569,7 +554,7 @@ function apply_reaction_data_to_reactions (reactions, data, styles,
  * @param {String} compare_style -
  * @param {Array} keys - (Optional) The keys in nodes to apply data to.
  */
-function apply_metabolite_data_to_nodes (nodes, data, styles, compare_style,
+function apply_metabolite_data_to_nodes (nodes, data, styles, compare_style, // TODO: set ref and target for metabolite data
                                          keys) {
   if (_.isUndefined(keys)) keys = Object.keys(nodes)
 

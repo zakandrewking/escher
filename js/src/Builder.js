@@ -58,7 +58,12 @@ Builder.prototype = {
   _get_keys: _get_keys,
   _setup_confirm_before_exit: _setup_confirm_before_exit,
   //
-  set_difference_mode: set_difference_mode
+  set_difference_mode: set_difference_mode,
+  get_difference_mode: get_difference_mode,
+  set_reference: set_reference,
+  set_target: set_target,
+  get_reference: get_reference,
+  get_target: get_target
 }
 module.exports = Builder
 
@@ -238,6 +243,12 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.callback_manager.run('first_load', this)
 
   if (message_fn !== null) setTimeout(message_fn, 500)
+
+  // my stuffs
+  // difference_mode_active = true
+  // reference = 0
+  // target = 2
+
 }
 
 /**
@@ -594,16 +605,18 @@ function set_reaction_data (data, i) {
 
 
   // check data !== undefined ?
-  if(i !== undefined){
-    this.options.reaction_data = data[i]
-  } else {
-    this.options.reaction_data = data
-  }
+  // if(i !== undefined){
+  //   this.options.reaction_data = data[i]
+  // } else {
+  //   this.options.reaction_data = data
+  // }
 
+  this.options.reaction_data = data
+
+  // TODO: builder holds all the data, not the bar. only get if mode active, ref & target
   this.time_series_bar.reaction_data = data
   this.time_series_bar.setReactionData(data)
   this.time_series_bar.setTypeOfData('reaction')
-  //this.time_series_bar.update()
 
   var message_fn = this._reaction_check_add_abs()
   this._update_data(true, true, 'reaction')
@@ -627,27 +640,24 @@ function set_gene_data (data, clear_gene_reaction_rules) {
   this.map.set_status('')
 }
 
-function set_metabolite_data(data, i) {
+function set_metabolite_data (data, i) {
   /** For documentation of this function, see docs/javascript_api.rst.
 
    */
-  if(data !== undefined && i !== undefined){
-    this.options.metabolite_data = data//[i]
-  } else {
-    this.options.metabolite_data = data
-  }
 
+
+  this.options.metabolite_data = data
+
+  // if(data !== undefined && i !== undefined){
+  //   this.options.metabolite_data = data//[i]
+  // } else {
+  //   this.options.metabolite_data = data
+  // }
 
   // TODO: builder holds all the data, not the bar. only get if mode active, ref & target
   this.time_series_bar.metabolite_data = data
   this.time_series_bar.setMetaboliteData(data)
-
   this.time_series_bar.setTypeOfData('metabolite')
-  //this.time_series_bar.update()
-
-  // difference_mode_active = this.time_series_bar.getDifferenceModeActive()
-  // reference = this.time_series_bar.getReference()
-  // target = this.time_series_bar.getTarget()
 
   this._update_data(true, true, 'metabolite')
   this.map.set_status('')
@@ -676,10 +686,6 @@ function _update_data (update_model, update_map, kind, should_draw) {
   var met_data_object
   var reaction_data_object
   var gene_data_object
-
-  difference_mode_active = this.time_series_bar.getDifferenceModeActive()
-  reference = this.time_series_bar.getReference()
-  target = this.time_series_bar.getTarget()
 
   // -------------------
   // First map, and draw
@@ -1594,7 +1600,26 @@ function _setup_confirm_before_exit () {
   }.bind(this)
 }
 
-function set_difference_mode(bool){
-  this.difference_mode = bool
+function set_difference_mode (bool) {
+  difference_mode_active = bool
+}
 
+function get_difference_mode () {
+  return difference_mode_active.valueOf()
+}
+
+function set_reference (ref) {
+  reference = ref
+}
+
+function set_target (tar) {
+  target = tar
+}
+
+function get_reference () {
+  return reference.valueOf()
+}
+
+function get_target () {
+  return target.valueOf()
 }

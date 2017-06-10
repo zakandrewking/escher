@@ -22,7 +22,6 @@ var dropDownMenuReference, dropDownMenuTarget
 var typeOfData
 var dataObject
 
-
 // instance methods
 TimeSeriesBar.prototype = {
   init: init,
@@ -42,12 +41,22 @@ TimeSeriesBar.prototype = {
 }
 module.exports = TimeSeriesBar
 
-function init (sel, map, builder) {
+function init (sel, map, b) {
 
-  this.builder = builder
+  builder = b
 
   metabolite_data = builder.options.metabolite_data
   reaction_data = builder.options.reaction_data
+
+  reference = 0
+  target = 0
+
+  builder.set_difference_mode(false)
+  builder.set_reference(0)
+  builder.set_target(0)
+
+  // builder.get_reference().bind(reference)
+  // builder.get_target().bind(target)
 
   current = 0
 
@@ -56,7 +65,7 @@ function init (sel, map, builder) {
   differenceModeActive = false
 
   container = sel.attr('class', 'search-container')
-    .style('display', 'none');
+  //.style('display', 'none');
 
   container.append('button')
     .attr('class', 'btn btn-sm btn-default close-button')
@@ -128,16 +137,18 @@ function init (sel, map, builder) {
     .text('Difference Mode')
     .on('change', function () {
       if (checkBoxDifferenceMode.property('checked')) {
-        differenceModeActive = true
+        builder.set_difference_mode(true)
+        //differenceModeActive = true
         containerDifferenceMode.style('display', 'block')
       } else {
-        differenceModeActive = false
+        builder.set_difference_mode(false)
+        //differenceModeActive = false
         containerDifferenceMode.style('display', 'none')
       }
     })
 
   var containerDifferenceMode = container.append('div')
-  .style('display', 'none')
+    .style('display', 'none')
 
   initDifferenceMode(containerDifferenceMode)
 
@@ -145,7 +156,7 @@ function init (sel, map, builder) {
     .attr('class', 'btn btn-default')
     .on('click', this.showDifferenceData.bind(this))
     .append('span')//.attr('class', 'glyphicon glyphicon-play')
-    .text('Display Difference')
+    .text('Run')
 
   this.callback_manager = new CallbackManager()
 
@@ -156,8 +167,8 @@ function init (sel, map, builder) {
 
 function initDifferenceMode (container) {
 
-  reference = 0
-  target = 0
+  builder.set_reference(0)
+  builder.set_target(0)
 
   container.append('div')
     .append('text')
@@ -171,12 +182,13 @@ function initDifferenceMode (container) {
     .attr('max', 9)
     .on('change', function () {
       reference = this.value
+      builder.set_reference(this.value)
 
       if (reference < target) {
         target = reference
         sliderTarget.value = reference
       }
-      d3.select('#referenceText').text('Reference Data Set: ' + reference)
+      d3.select('#referenceText').text('Reference Data Set: ' + this.value)
 
     })
     .style('display', 'block')
@@ -192,9 +204,8 @@ function initDifferenceMode (container) {
     .attr('min', 0)
     .attr('max', 9)
     .on('change', function () {
-
-      target = this.value
-      d3.select('#targetText').text('Target Data Set ' + target)
+      builder.set_target(this.value)
+      d3.select('#targetText').text('Target Data Set ' + this.value)
 
     })
     .style('display', 'block')
@@ -202,16 +213,23 @@ function initDifferenceMode (container) {
   dropDownMenuReference = container.append('select')
     .attr('name', 'target-list')
     .attr('id', 'dropDownMenuReference')
-    .on('change', function () {reference = this.value })
-   // .append('options')
-   // .attr('value', 0).text('Reference Data Set: ')
+    .on('change', function () {
+
+      builder.set_reference(this.value)
+      //reference = this.value
+    })
+  // .append('options')
+  // .attr('value', 0).text('Reference Data Set: ')
 
   dropDownMenuTarget = container.append('select')
     .attr('name', 'target-list')
     .attr('id', 'dropDownMenuTarget')
-    .on('change', function () { target = this.value })
- //   .append('options')
- //  .attr('value', 0).text('Reference Data Set: ')
+    .on('change', function () {
+      builder.set_target(this.value)
+      //  target = this.value
+    })
+  //   .append('options')
+  //  .attr('value', 0).text('Reference Data Set: ')
 
 }
 
@@ -256,8 +274,8 @@ function update () {
   // update dropdown menu
 
   // reset, plain old javascript, but this is the only way it works
-  document.getElementById("dropDownMenuReference").options.length = 0
-  document.getElementById("dropDownMenuTarget").options.length = 0
+  document.getElementById('dropDownMenuReference').options.length = 0
+  document.getElementById('dropDownMenuTarget').options.length = 0
 
   var x
   for (x in currentDataSet) {
@@ -304,7 +322,6 @@ function next () {
 
 function previous () {
 
-
   if (typeOfData === 'metabolite') {
     if (metabolite_data !== undefined && metabolite_data !== null) {
       //choose previous data and load it
@@ -340,32 +357,49 @@ function previous () {
 
 function toggleDifferenceMode () {
 
-  if (differenceModeActive) {
-    container.style('display', 'block')
-    differenceModeActive = false
-
+  if (builder.get_difference_mode()) {
+    builder.set_difference_mode(false)
+    builder.set_reference(0)
+    builder.set_target(0)
   } else {
-    container.style('display', 'none')
-    differenceModeActive = true
+    builder.set_difference_mode(true)
   }
 
 }
 
+function showBar (show) {
+
+  if (show) {
+    container.style('display', 'block')
+  } else {
+    container.style('display', 'none')
+  }
+}
+
 // TODO: how to show the data?
-// only display diff data on map and don't change dataset?
+// only display diff data on map and don't change data set?
 
 function showDifferenceData () {
 
   // directly display on map, save nothing
   // this.map.apply_metabolite_data_to_map( something like this)
 
-
   // create new dataset out of the reference and data
   // is this the right way?
- // var differenceDataSet = [metabolite_data[reference], metabolite_data[target]]
- // this.builder.set_metabolite_data(differenceDataSet, 0)
+  // var differenceDataSet = [metabolite_data[reference], metabolite_data[target]]
+  // this.builder.set_metabolite_data(differenceDataSet, 0)
 
-  this.builder._update_data(true, true, 'reaction')
+  // builder.set_reference(reference)
+  // builder.set_target(target)
+
+  //builder._update_data(true, true, 'reaction')
+
+  builder.set_difference_mode(true)
+
+  dataObject = data_styles.import_and_check(reaction_data, 'reaction_data')
+  this.map.apply_reaction_data_to_map(
+    dataObject, undefined, builder.get_difference_mode(), builder.get_reference(), builder.get_target())
+  this.map.draw_all_reactions(false, false)
 
 }
 
@@ -424,7 +458,6 @@ function toggle (on_off) {
 
 function setTypeOfData (data) {
   typeOfData = data
-
 }
 
 function setMetaboliteData (data) {
@@ -435,17 +468,14 @@ function setReactionData (data) {
   reaction_data = data
 }
 
-function getDifferenceModeActive(){
-  console.log(differenceModeActive)
+function getDifferenceModeActive () {
   return differenceModeActive
 }
 
-function getReference(){
-  console.log(reference)
+function getReference () {
   return reference
 }
 
-function getTarget(){
-  console.log(target)
+function getTarget () {
   return target
 }
