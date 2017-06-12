@@ -652,11 +652,59 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
   // Capture the file information.
   var onload_function = function(event) {
     var result = event.target.result
-    var data
     var errors
+
+    var input
+
+    var data = []
+    var names = []
+
+
     // try JSON
     try {
-      data = JSON.parse(result)
+
+      input = JSON.parse(result)
+
+      // TODO: check if name and data arrays are same length -> every data set has a name, if not make one up
+
+      if (input[0].constructor === String) { // example data type 1, data is in following dictionary
+
+        // sort names and data
+        for (var i = 0; i < input.length - 1; i++) {
+          names.push(input[i])
+          data.push(input[i + 1])
+          i++
+        }
+
+        console.log('new format type 1')
+
+      } else if (input[0].constructor === Array) { // example data type 2, data is array
+
+        names = input[0]
+        data = input[1]
+
+        console.log('new format type 2')
+      }
+
+      // else if(input[0].constructor === Dictionary){ // this recognises example data type 2b, data is dictionary
+      // but also type 1 :/
+      //
+      //   names = input[0].name
+      //   data = input[1].data
+      //
+      //   console.log("new format type 2b")
+      // }
+
+      else { // old data format
+        var index
+
+        for (index in input) { // make up names
+          names.push('data set ' + index)
+        }
+        data = input
+        console.log('old format')
+      }
+
     } catch (e) {
       errors = 'JSON error: ' + e
 
@@ -670,6 +718,7 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
       }
     }
     // if successful, return the data
+    // TODO: return names, how?
     callback(null, data)
   }
   if (debug_event !== undefined && debug_event !== null) {
