@@ -376,31 +376,10 @@ function showBar (show) {
   }
 }
 
-// TODO: how to show the data?
-// only display diff data on map and don't change data set?
-
 function showDifferenceData () {
 
-  // directly display on map, save nothing
-  // this.map.apply_metabolite_data_to_map( something like this)
-
-  // create new dataset out of the reference and data
-  // is this the right way?
-  // var differenceDataSet = [metabolite_data[reference], metabolite_data[target]]
-  // this.builder.set_metabolite_data(differenceDataSet, 0)
-
-  // builder.set_reference(reference)
-  // builder.set_target(target)
-
-  //builder._update_data(true, true, 'reaction')
-
   builder.set_difference_mode(true)
-
-  dataObject = data_styles.import_and_check(reaction_data, 'reaction_data')
-  this.map.apply_reaction_data_to_map(
-    dataObject, undefined, builder.get_difference_mode(), builder.get_reference(), builder.get_target())
-  this.map.draw_all_reactions(false, false)
-
+  builder._update_data(false, true, typeOfData, true)
 }
 
 function is_visible () {

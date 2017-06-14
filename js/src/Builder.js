@@ -704,9 +704,28 @@ function _update_data (update_model, update_map, kind, should_draw) {
   // reaction data
   if (update_reaction_data) {
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
-      reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+
+
+      if(difference_mode_active && reference !== null && target !== null){
+
+        // new data set only containing reference and target parts
+        var difference_reaction_data = []
+        difference_reaction_data.push(this.options.reaction_data[reference], this.options.reaction_data[target])
+
+
+        reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
                                                           'reaction_data')
-      this.map.apply_reaction_data_to_map(reaction_data_object, undefined, difference_mode_active, reference, target)
+
+      } else {
+        reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+          'reaction_data')
+      }
+
+      this.map.apply_reaction_data_to_map(reaction_data_object)
+
+      // use these parameters to call data_styles in difference mode (they get just passed through in the code)
+      //, undefined, difference_mode_active, reference, target)
+
       if (should_draw)
         this.map.draw_all_reactions(false, false)
     } else if (this.options.gene_data !== null && update_map && this.map !== null) {

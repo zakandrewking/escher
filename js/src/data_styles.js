@@ -348,6 +348,9 @@ function csv_converter (csv_rows) {
    File must include a header row.
 
    */
+
+    // TODO: take header as data set name?
+
     // count rows
   var c = csv_rows[0].length,
     converted = []

@@ -686,7 +686,7 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
         console.log('new format type 2')
       }
 
-      // else if(input[0].constructor === Dictionary){ // this recognises example data type 2b, data is dictionary
+      // else if(input[0].constructor === Dictionary){ // example data type 2b, data is dictionary
       // but also type 1 :/
       //
       //   names = input[0].name
