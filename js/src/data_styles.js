@@ -5,6 +5,8 @@
 var utils = require('./utils')
 var _ = require('underscore')
 var d3_format = require('d3-format').format
+var d3_csvParseRows = require('d3-dsv').csvParseRows
+
 
 module.exports = {
   import_and_check: import_and_check,
@@ -349,24 +351,35 @@ function csv_converter (csv_rows) {
 
    */
 
-    // TODO: take header as data set name?
 
+  var data = [[],[]]
     // count rows
   var c = csv_rows[0].length,
     converted = []
-  if (c < 2 || c > 3)
-    throw new Error('CSV file must have 2 or 3 columns')
-  // set up rows
+
+  if (c < 2){ // dataset must have at least identifier and values
+    throw new Error('CSV file must have 2 or more columns')
+  }
+  // set up rows, this works with 2+ data sets also
   for (var i = 1; i < c; i++) {
     converted[i - 1] = {}
   }
+
+  var names = csv_rows[0]
+  names.splice(0, 1)  // first position is empty or something like "data set names"
+
+
   // fill
+
   csv_rows.slice(1).forEach(function (row) {
     for (var i = 1, l = row.length; i < l; i++) {
       converted[i - 1][row[0]] = row[i]
     }
   })
-  return converted
+
+  data[0] = names
+  data[1] = converted
+  return data
 }
 
 function genes_for_gene_reaction_rule (rule) {

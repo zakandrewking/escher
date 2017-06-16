@@ -11,7 +11,10 @@ var data_styles = require('./data_styles.js')
 var TimeSeriesBar = utils.make_class()
 var builder
 var metabolite_data
+
 var reaction_data
+var reaction_data_names
+
 var current
 var counter
 var container
@@ -279,8 +282,8 @@ function update () {
 
   var x
   for (x in currentDataSet) {
-    dropDownMenuReference.append('option').attr('value', x).text('Reference Data Set: ' + x)
-    dropDownMenuTarget.append('option').attr('value', x).text('Target Data Set: ' + x)
+    dropDownMenuReference.append('option').attr('value', x).text('Reference Data Set: ' + builder.get_reaction_data_names()[x])
+    dropDownMenuTarget.append('option').attr('value', x).text('Target Data Set: ' + builder.get_reaction_data_names()[x])
   }
 
 }
@@ -331,7 +334,6 @@ function previous () {
         dataObject = data_styles.import_and_check(metabolite_data[current], 'metabolite_data')
         this.map.apply_metabolite_data_to_map(dataObject)
         this.map.draw_all_nodes(false)
-        //this.builder.set_metabolite_data(metabolite_data, current)
 
         counter.text((current + 1) + ' / ' + (metabolite_data.length))
       }
@@ -341,8 +343,6 @@ function previous () {
       //choose previous data and load it
       if (current > 0) {
         current -= 1
-
-        //this.builder.set_reaction_data(reaction_data, current)
 
         dataObject = data_styles.import_and_check(reaction_data[current], 'reaction_data')
         this.map.apply_reaction_data_to_map(dataObject)

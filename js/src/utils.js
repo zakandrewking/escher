@@ -656,7 +656,7 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
 
     var input
 
-    var data = []
+    var data = [[],[]] // [array of names][array of numbers]
     var names = []
 
 
@@ -665,24 +665,27 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
 
       input = JSON.parse(result)
 
-      // TODO: check if name and data arrays are same length -> every data set has a name, if not make one up
+      // TODO: check if name and data arrays are same length -> every data set has a name, if not make one up(?)
 
       if (input[0].constructor === String) { // example data type 1, data is in following dictionary
 
+        var numbers = []
         // sort names and data
         for (var i = 0; i < input.length - 1; i++) {
-          names.push(input[i])
-          data.push(input[i + 1])
-          i++
+           names.push(input[i])
+           numbers.push(input[i + 1])
+           i++
         }
+
+        data[0] = names
+        data[1] = numbers
 
         console.log('new format type 1')
 
-      } else if (input[0].constructor === Array) { // example data type 2, data is array
+      } else if (input[0].constructor === Array && input[1].constructor  === Array) { // example data type 2 (favourite), data is array
 
-        names = input[0]
-        data = input[1]
-
+        data[0] = input[0]
+        data[1] = input[1]
         console.log('new format type 2')
       }
 
@@ -701,7 +704,9 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
         for (index in input) { // make up names
           names.push('data set ' + index)
         }
-        data = input
+
+        data[0] = names
+        data[1] = input
         console.log('old format')
       }
 
@@ -717,8 +722,8 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
         return
       }
     }
-    // if successful, return the data
-    // TODO: return names, how?
+    // if successful, return the data as [array of names][array of numbers]
+    // TODO: return the names, process data in builder
     callback(null, data)
   }
   if (debug_event !== undefined && debug_event !== null) {

@@ -31,6 +31,8 @@ var d3_json = require('d3-request').json
 var difference_mode_active
 var reference, target
 
+var reaction_data_names
+
 var Builder = utils.make_class()
 Builder.prototype = {
   init: init,
@@ -63,7 +65,8 @@ Builder.prototype = {
   set_reference: set_reference,
   set_target: set_target,
   get_reference: get_reference,
-  get_target: get_target
+  get_target: get_target,
+  get_reaction_data_names: get_reaction_data_names
 }
 module.exports = Builder
 
@@ -243,12 +246,6 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.callback_manager.run('first_load', this)
 
   if (message_fn !== null) setTimeout(message_fn, 500)
-
-  // my stuffs
-  // difference_mode_active = true
-  // reference = 0
-  // target = 2
-
 }
 
 /**
@@ -601,22 +598,27 @@ function _reaction_check_add_abs () {
 /**
  * For documentation of this function, see docs/javascript_api.rst.
  */
-function set_reaction_data (data, i) {
+function set_reaction_data (data) {
 
+  // data is [array of names][array of numbers]
+  // new case for reset to null, because crashes on null[1]
+  if(data === null){
 
-  // check data !== undefined ?
-  // if(i !== undefined){
-  //   this.options.reaction_data = data[i]
-  // } else {
-  //   this.options.reaction_data = data
-  // }
+    reaction_data_names = null
+    this.options.reaction_data = null
 
-  this.options.reaction_data = data
+  } else {
+
+  reaction_data_names = data[0]
+  this.options.reaction_data = data[1]
 
   // TODO: builder holds all the data, not the bar. only get if mode active, ref & target
-  this.time_series_bar.reaction_data = data
-  this.time_series_bar.setReactionData(data)
+  this.time_series_bar.reaction_data = data[1]
+  this.time_series_bar.setReactionData(data[1])
   this.time_series_bar.setTypeOfData('reaction')
+
+  }
+
 
   var message_fn = this._reaction_check_add_abs()
   this._update_data(true, true, 'reaction')
@@ -1128,7 +1130,7 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
     if (data !== null)
       this.set_gene_data(null)
 
-    this.set_reaction_data(data)
+    this.set_reaction_data(data[1])
   }
   function load_metabolite_data_for_file(error, data, i) {
     if (error) {
@@ -1641,4 +1643,8 @@ function get_reference () {
 
 function get_target () {
   return target.valueOf()
+}
+
+function get_reaction_data_names(){
+  return reaction_data_names
 }
