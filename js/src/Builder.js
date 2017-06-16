@@ -1130,7 +1130,7 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
     if (data !== null)
       this.set_gene_data(null)
 
-    this.set_reaction_data(data[1])
+    this.set_reaction_data(data)
   }
   function load_metabolite_data_for_file(error, data, i) {
     if (error) {
