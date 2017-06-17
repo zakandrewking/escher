@@ -16,14 +16,17 @@ var reaction_data
 var reaction_data_names
 
 var current
-var counter
+var counter, data_set_text
 var container
 var sliderReference, sliderTarget
-var differenceModeActive
+var tab_container, reaction_tab_button, metabolite_tab_button, both_tab_button, checkBoxDifferenceMode
+//var differenceModeActive
 var reference, target
 var dropDownMenuReference, dropDownMenuTarget
 var typeOfData
 var dataObject
+
+//var reaction_tab, metabolite_tab, both_tab
 
 // instance methods
 TimeSeriesBar.prototype = {
@@ -34,11 +37,12 @@ TimeSeriesBar.prototype = {
   next: next,
   previous: previous,
   toggleDifferenceMode: toggleDifferenceMode,
+  showBar: showBar,
   showDifferenceData: showDifferenceData,
   setTypeOfData: setTypeOfData,
   setReactionData: setReactionData,
   setMetaboliteData: setMetaboliteData,
-  getDifferenceModeActive: getDifferenceModeActive,
+//  getDifferenceModeActive: getDifferenceModeActive,
   getReference: getReference,
   getTarget: getTarget
 }
@@ -65,7 +69,7 @@ function init (sel, map, b) {
 
   typeOfData = ''
 
-  differenceModeActive = false
+//  differenceModeActive = false
 
   container = sel.attr('class', 'search-container')
   //.style('display', 'none');
@@ -77,42 +81,94 @@ function init (sel, map, b) {
     }.bind(this))
     .append('span').attr('class', 'glyphicon glyphicon-remove')
 
-  container.append('div')
-    .append('text')
-    .text('Compare Reaction Data: ')
+  // tabbed layout
 
-    .append('input')
-    .attr('type', 'radio')
-    .attr('id', 'datasetR')
-    .attr('name', 'Dataset')
-    .attr('value', 'Dataset')
+  // three buttons
+  reaction_tab_button = container.append('button')
     .on('click', function () {
-      typeOfData = 'reaction'
+      openTab('reaction_tab')
       update()
     })
+    .style('background-color', 'lightgrey')
+    .text('Compare reaction data')
 
-  container.append('div').append('text')
-    .text('Compare Metabolite Data: ')
-
-    .append('input')
-    .attr('type', 'radio')
-    .attr('id', 'datasetM')
-    .attr('name', 'Dataset')
-    .attr('value', 'Dataset Metabolite')
+  metabolite_tab_button = container.append('button')
     .on('click', function () {
-      typeOfData = 'metabolite'
+      openTab('metabolite_tab')
       update()
     })
+    .style('background-color', 'lightgrey')
+    .text('metabolite')
 
-  container.append('text')
+  both_tab_button = container.append('button')
+    .on('click', function () {
+      openTab('both_tab')
+      update()
+    })
+    .style('background-color', 'lightgrey')
+    .text('both')
+
+  tab_container = container.append('div')
+    .style('padding', '0.5em')
+    .style('border', '1px solid lightgrey')
+    .style('display', 'none')
+
+  // three divs
+  var reaction_tab = tab_container.append('div')
+    .attr('id', 'reaction_tab')
+    .attr('class', 'tab')
+    .text('compare reaction data')
+    .style('display', 'none')
+
+  var metabolite_tab = tab_container.append('div')
+    .attr('id', 'metabolite_tab')
+    .attr('class', 'tab')
+    .text('compare metabolite data')
+    .style('display', 'none');
+
+  var both_tab = tab_container.append('div')
+    .attr('id', 'both_tab')
+    .attr('class', 'tab')
+    .text('compare both')
+    .style('display', 'none')
+
+
+  // container.append('div')
+  //   .append('text')
+  //   .text('Compare Reaction Data: ')
+  //
+  //   .append('input')
+  //   .attr('type', 'radio')
+  //   .attr('id', 'datasetR')
+  //   .attr('name', 'Dataset')
+  //   .attr('value', 'Dataset')
+  //   .on('click', function () {
+  //     typeOfData = 'reaction'
+  //     update()
+  //   })
+  //
+  // container.append('div').append('text')
+  //   .text('Compare Metabolite Data: ')
+  //
+  //   .append('input')
+  //   .attr('type', 'radio')
+  //   .attr('id', 'datasetM')
+  //   .attr('name', 'Dataset')
+  //   .attr('value', 'Dataset Metabolite')
+  //   .on('click', function () {
+  //     typeOfData = 'metabolite'
+  //     update()
+  //   })
+
+  data_set_text = tab_container.append('text')
     .text('Display Dataset: ')
 
-  counter = container.append('div')
+  counter = tab_container.append('div')
     .attr('id', 'counter')
-    .attr('class', 'search-counter')
+    .attr('class', 'select-counter')
     .text('0 / 0')
 
-  var groupButtons = container.append('div').attr('class', 'btn-group btn-group-sm')
+  var groupButtons = tab_container.append('div').attr('class', 'btn-group btn-group-sm')
 
   groupButtons.append('button')
     .attr('class', 'btn btn-default')
@@ -129,7 +185,9 @@ function init (sel, map, b) {
     .on('click', this.update.bind(this))
     .append('span').attr('class', 'glyphicon glyphicon-refresh')
 
-  var checkBoxDifferenceMode = container.append('div')
+  container.append('hr')
+
+  checkBoxDifferenceMode = container.append('div')
     .append('label')
     .attr('for', 'checkBoxDifferenceMode')
     .text('Difference Mode')
@@ -159,12 +217,48 @@ function init (sel, map, b) {
     .attr('class', 'btn btn-default')
     .on('click', this.showDifferenceData.bind(this))
     .append('span')//.attr('class', 'glyphicon glyphicon-play')
-    .text('Run')
+    .text('Compare')
 
   this.callback_manager = new CallbackManager()
 
   this.selection = container
   this.map = map
+
+}
+
+
+function openTab (tab_id) {
+
+  tab_container.style('display', 'block')
+  counter.style('display' ,'block')
+  data_set_text.style('display', 'block')
+
+  reaction_tab_button.style('background-color', 'lightgrey')
+  metabolite_tab_button.style('background-color', 'lightgrey')
+  both_tab_button.style('background-color', 'lightgrey')
+
+  var tabs = document.getElementsByClassName('tab')
+
+  for (var i = 0; i < tabs.length; i++) {
+    tabs[i].style.display = 'none'
+  }
+
+  if (tab_id === 'reaction_tab') {
+    setTypeOfData('reaction')
+    reaction_tab_button.style('background-color', 'white')
+    this.reaction_tab.style.display = 'block'
+  } else if (tab_id === 'metabolite_tab') {
+    setTypeOfData('metabolite')
+    metabolite_tab_button.style('background-color', 'white')
+    this.metabolite_tab.style.display = 'block'
+  }
+  else if (tab_id === 'both_tab') {
+    this.both_tab.style.display = 'block'
+    both_tab_button.style('background-color', 'white')
+
+  } else {
+
+  }
 
 }
 
@@ -182,7 +276,7 @@ function initDifferenceMode (container) {
     .attr('type', 'range')
     .attr('value', this.reference)
     .attr('min', 0)
-    .attr('max', 9)
+    .attr('max', 0)
     .on('change', function () {
       reference = this.value
       builder.set_reference(this.value)
@@ -205,7 +299,7 @@ function initDifferenceMode (container) {
     .attr('type', 'range')
     .attr('value', this.target)
     .attr('min', 0)
-    .attr('max', 9)
+    .attr('max', 0)
     .on('change', function () {
       builder.set_target(this.value)
       d3.select('#targetText').text('Target Data Set ' + this.value)
@@ -447,9 +541,9 @@ function setReactionData (data) {
   reaction_data = data
 }
 
-function getDifferenceModeActive () {
-  return differenceModeActive
-}
+// function getDifferenceModeActive () {
+//   return differenceModeActive
+// }
 
 function getReference () {
   return reference

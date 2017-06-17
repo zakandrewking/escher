@@ -521,9 +521,15 @@ function _set_mode (mode) {
     this.map.deselect_text_labels()
   this.map.draw_everything()
 
-  if(mode === 'difference'){
-    this.time_series_bar.toggleDifferenceMode()
-   // this.time_series_bar.toggle(true)
+  if(mode === 'difference'){ // TODO: is not a mode button any more...
+    if(!this.time_series_bar.is_visible()){
+      this.time_series_bar.showBar(true)
+      this.time_series_bar.update()
+    } else {
+      this.time_series_bar.showBar(false)
+    }
+    //this.time_series_bar.toggleDifferenceMode()
+    //this.time_series_bar.toggle(true)
   }
 }
 
@@ -961,7 +967,7 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
                 id: 'text-mode-menu-button',
                 text: 'Text mode',
                 key_text: (enable_keys ? ' (T)' : null) })
-      .button({ key: keys.difference_mode,
+      .button({ key: keys.difference_mode, // TODO: this button is not working
         id: 'difference-mode-menu-button',
         text: 'Difference mode',
         key_text: (enable_keys ? ' (D)' : null) })
@@ -1201,6 +1207,17 @@ function _set_up_button_panel(button_selection, keys, enable_editing,
                          })
   }
 
+  ui.individual_button(button_panel.append('li'),
+    {
+      key: keys.difference_mode,
+      text: 'D',
+      id: 'difference-mode-button',
+      icon: 'glyphicon glyphicon-object-align-bottom',
+      tooltip: 'Difference mode',
+      key_text: (enable_keys ? ' (D)' : null),
+      ignore_bootstrap: ignore_bootstrap
+    })
+
   // mode buttons
   if (enable_editing && menu_option === 'all') {
     ui.radio_button_group(button_panel.append('li'))
@@ -1239,14 +1256,6 @@ function _set_up_button_panel(button_selection, keys, enable_editing,
                 tooltip: 'Text mode',
                 key_text: (enable_keys ? ' (T)' : null),
                 ignore_bootstrap: ignore_bootstrap  })
-      // TODO: new button for difference mode
-      .button({ key: keys.difference_mode,
-          text: 'D',
-          id: 'difference-mode-button',
-          icon: 'glyphicon glyphicon-object-align-bottom',
-          tooltip: 'Difference mode',
-          key_text: (enable_keys ? ' (D)' : null),
-          ignore_bootstrap: ignore_bootstrap  })
 
     // arrow buttons
     this.direction_buttons = button_panel.append('li')
