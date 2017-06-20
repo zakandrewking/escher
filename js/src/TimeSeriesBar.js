@@ -10,18 +10,13 @@ var data_styles = require('./data_styles.js')
 
 var TimeSeriesBar = utils.make_class()
 var builder
-var metabolite_data
-
-var reaction_data
-//var reaction_data_names
+var metabolite_data, reaction_data
 
 var current
 var counter, data_set_text
 var container
 var sliderReference, sliderTarget
 var tab_container, reaction_tab_button, metabolite_tab_button, both_tab_button, checkBoxDifferenceMode
-//var differenceModeActive
-var reference, target
 var dropDownMenuReference, dropDownMenuTarget
 var typeOfData
 var dataObject
@@ -42,9 +37,6 @@ TimeSeriesBar.prototype = {
   setTypeOfData: setTypeOfData,
   setReactionData: setReactionData,
   setMetaboliteData: setMetaboliteData,
-//  getDifferenceModeActive: getDifferenceModeActive,
-  getReference: getReference,
-  getTarget: getTarget,
   openTab: openTab
 }
 module.exports = TimeSeriesBar
@@ -56,9 +48,6 @@ function init (sel, map, b) {
   metabolite_data = builder.options.metabolite_data
   reaction_data = builder.options.reaction_data
 
-  reference = 0
-  target = 0
-
   builder.set_difference_mode(false)
   builder.set_reference(0)
   builder.set_target(0)
@@ -66,8 +55,6 @@ function init (sel, map, b) {
   current = 0
 
   typeOfData = ''
-
-//  differenceModeActive = false
 
   container = sel.attr('class', 'search-container')
   // TODO: remove this comment in final version
@@ -128,33 +115,6 @@ function init (sel, map, b) {
     .text('compare both')
     .style('display', 'none')
 
-  // container.append('div')
-  //   .append('text')
-  //   .text('Compare Reaction Data: ')
-  //
-  //   .append('input')
-  //   .attr('type', 'radio')
-  //   .attr('id', 'datasetR')
-  //   .attr('name', 'Dataset')
-  //   .attr('value', 'Dataset')
-  //   .on('click', function () {
-  //     typeOfData = 'reaction'
-  //     update()
-  //   })
-  //
-  // container.append('div').append('text')
-  //   .text('Compare Metabolite Data: ')
-  //
-  //   .append('input')
-  //   .attr('type', 'radio')
-  //   .attr('id', 'datasetM')
-  //   .attr('name', 'Dataset')
-  //   .attr('value', 'Dataset Metabolite')
-  //   .on('click', function () {
-  //     typeOfData = 'metabolite'
-  //     update()
-  //   })
-
   data_set_text = tab_container.append('text')
     .text('Display Dataset: ')
 
@@ -194,11 +154,9 @@ function init (sel, map, b) {
     .on('change', function () {
       if (checkBoxDifferenceMode.property('checked')) {
         builder.set_difference_mode(true)
-        //differenceModeActive = true
         containerDifferenceMode.style('display', 'block')
       } else {
         builder.set_difference_mode(false)
-        //differenceModeActive = false
         containerDifferenceMode.style('display', 'none')
       }
     })
@@ -269,22 +227,16 @@ function initDifferenceMode (container) {
     .text('Reference Data Set: ')
 
   sliderReference = container.append('div').append('input')
+    .attr('id', 'sliderReference')
     .attr('type', 'range')
-    .attr('value', this.reference)
+    .attr('value', 0)
     .attr('min', 0)
     .attr('max', 0)
     .on('change', function () {
-      reference = this.value
       builder.set_reference(this.value)
-
-      if (reference < target) {
-        target = reference
-        sliderTarget.value = reference
-      }
+      d3.select('#dropDownMenuReference').property('selectedIndex', this.value)
       d3.select('#referenceText').text('Reference Data Set: ' + this.value)
-
     })
-    .style('display', 'block')
 
   container.append('div')
     .append('text')
@@ -293,36 +245,38 @@ function initDifferenceMode (container) {
 
   sliderTarget = container.append('div').append('input')
     .attr('type', 'range')
-    .attr('value', this.target)
+    .attr('id', 'sliderTarget')
+    .attr('value', 0)
     .attr('min', 0)
     .attr('max', 0)
     .on('change', function () {
+
       builder.set_target(this.value)
+      d3.select('#dropDownMenuTarget').property('selectedIndex', this.value)
       d3.select('#targetText').text('Target Data Set ' + this.value)
 
     })
-    .style('display', 'block')
-
   dropDownMenuReference = container.append('select')
     .attr('name', 'target-list')
     .attr('id', 'dropDownMenuReference')
     .on('change', function () {
 
       builder.set_reference(this.value)
-      //reference = this.value
+      d3.select('#sliderReference').property('value', this.value)
+      d3.select('#referenceText').text('Reference Data Set: ' + this.value)
+
     })
-  // .append('options')
-  // .attr('value', 0).text('Reference Data Set: ')
 
   dropDownMenuTarget = container.append('select')
     .attr('name', 'target-list')
     .attr('id', 'dropDownMenuTarget')
     .on('change', function () {
+
       builder.set_target(this.value)
-      //  target = this.value
+      d3.select('#sliderTarget').property('value', this.value)
+      d3.select('#targetText').text('Target Data Set ' + this.value)
+
     })
-  //   .append('options')
-  //  .attr('value', 0).text('Reference Data Set: ')
 
 }
 
@@ -575,16 +529,4 @@ function setMetaboliteData (data) {
 
 function setReactionData (data) {
   reaction_data = data
-}
-
-// function getDifferenceModeActive () {
-//   return differenceModeActive
-// }
-
-function getReference () {
-  return reference
-}
-
-function getTarget () {
-  return target
 }
