@@ -608,24 +608,21 @@ function set_reaction_data (data) {
 
   // data is [array of names][array of numbers]
   // new case for reset to null, because crashes on null[1]
-  if(data === null){
+  if (data === null) {
 
     reaction_data_names = null
     this.options.reaction_data = null
 
   } else {
 
-  reaction_data_names = data[0]
-  this.options.reaction_data = data[1]
+    reaction_data_names = data[0]
+    this.options.reaction_data = data[1]
 
-  // TODO: builder holds all the data, not the bar. only get if mode active, ref & target
-  //this.time_series_bar.reaction_data = data[1]
-  //this.time_series_bar.setReactionData(data[1])
     this.time_series_bar.setTypeOfData('reaction')
-    this.time_series_bar.setReactionData(this.options.reaction_data) // for next / previous buttons
+    // I still need this for next / previous buttons: TODO: extract index from bar?
+    this.time_series_bar.setReactionData(this.options.reaction_data)
     this.time_series_bar.openTab('reaction_tab')
   }
-
 
   var message_fn = this._reaction_check_add_abs()
   this._update_data(true, true, 'reaction')
@@ -714,6 +711,9 @@ function _update_data (update_model, update_map, kind, should_draw) {
   if (update_reaction_data) {
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
 
+      // TODO: change that original versions of Map and data_styles can be used
+      // -> gets one data set in single mode, for this extract index from bar
+      // -> gets two data sets in diff mode. original version should be able to handle this
 
       // working version: I only use the parameters in builder, only pass if diff mode on
       // -> I need to change less in original code

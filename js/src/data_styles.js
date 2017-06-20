@@ -164,7 +164,7 @@ function float_for_data (d, styles, compare_style, difference_mode, reference, t
           return check_finite(log2_fold(fs[reference], fs[target], take_abs))
         }
 
-      } else { // default value first and last
+      } else { // default value first and last & this is what happens when you only pass a data set length 2
 
         if (fs[0] == null || fs[last] == null)
           return null

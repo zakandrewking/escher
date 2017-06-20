@@ -687,18 +687,14 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
         data[0] = input[0]
         data[1] = input[1]
         console.log('new format type 2')
-      }
 
-      // else if(input[0].constructor === Dictionary){ // example data type 2b, data is dictionary
-      // but also type 1 :/
-      //
-      //   names = input[0].name
-      //   data = input[1].data
-      //
-      //   console.log("new format type 2b")
-      // }
+      } else if(input[0].constructor === Object && input[1].constructor  === Array){ // example data type 2b, data is dictionary
+        // TODO: type 2b fails to load
+        data[0] = input[0]
+        data[1] = input[1]
 
-      else { // old data format
+        console.log("new format type 2b")
+      } else { // old data format
         var index
 
         for (index in input) { // make up names
