@@ -13,7 +13,7 @@ var builder
 var metabolite_data
 
 var reaction_data
-var reaction_data_names
+//var reaction_data_names
 
 var current
 var counter, data_set_text
@@ -26,7 +26,7 @@ var dropDownMenuReference, dropDownMenuTarget
 var typeOfData
 var dataObject
 
-//var reaction_tab, metabolite_tab, both_tab
+var reaction_tab, metabolite_tab, both_tab
 
 // instance methods
 TimeSeriesBar.prototype = {
@@ -44,7 +44,8 @@ TimeSeriesBar.prototype = {
   setMetaboliteData: setMetaboliteData,
 //  getDifferenceModeActive: getDifferenceModeActive,
   getReference: getReference,
-  getTarget: getTarget
+  getTarget: getTarget,
+  openTab: openTab
 }
 module.exports = TimeSeriesBar
 
@@ -62,9 +63,6 @@ function init (sel, map, b) {
   builder.set_reference(0)
   builder.set_target(0)
 
-  // builder.get_reference().bind(reference)
-  // builder.get_target().bind(target)
-
   current = 0
 
   typeOfData = ''
@@ -72,6 +70,7 @@ function init (sel, map, b) {
 //  differenceModeActive = false
 
   container = sel.attr('class', 'search-container')
+  // TODO: remove this comment in final version
   //.style('display', 'none');
 
   container.append('button')
@@ -87,7 +86,6 @@ function init (sel, map, b) {
   reaction_tab_button = container.append('button')
     .on('click', function () {
       openTab('reaction_tab')
-      update()
     })
     .style('background-color', 'lightgrey')
     .text('Compare reaction data')
@@ -95,7 +93,6 @@ function init (sel, map, b) {
   metabolite_tab_button = container.append('button')
     .on('click', function () {
       openTab('metabolite_tab')
-      update()
     })
     .style('background-color', 'lightgrey')
     .text('metabolite')
@@ -103,7 +100,6 @@ function init (sel, map, b) {
   both_tab_button = container.append('button')
     .on('click', function () {
       openTab('both_tab')
-      update()
     })
     .style('background-color', 'lightgrey')
     .text('both')
@@ -114,24 +110,23 @@ function init (sel, map, b) {
     .style('display', 'none')
 
   // three divs
-  var reaction_tab = tab_container.append('div')
+  reaction_tab = tab_container.append('div')
     .attr('id', 'reaction_tab')
     .attr('class', 'tab')
     .text('compare reaction data')
     .style('display', 'none')
 
-  var metabolite_tab = tab_container.append('div')
+  metabolite_tab = tab_container.append('div')
     .attr('id', 'metabolite_tab')
     .attr('class', 'tab')
     .text('compare metabolite data')
-    .style('display', 'none');
+    .style('display', 'none')
 
-  var both_tab = tab_container.append('div')
+  both_tab = tab_container.append('div')
     .attr('id', 'both_tab')
     .attr('class', 'tab')
     .text('compare both')
     .style('display', 'none')
-
 
   // container.append('div')
   //   .append('text')
@@ -226,11 +221,10 @@ function init (sel, map, b) {
 
 }
 
-
 function openTab (tab_id) {
 
   tab_container.style('display', 'block')
-  counter.style('display' ,'block')
+  counter.style('display', 'block')
   data_set_text.style('display', 'block')
 
   reaction_tab_button.style('background-color', 'lightgrey')
@@ -246,18 +240,20 @@ function openTab (tab_id) {
   if (tab_id === 'reaction_tab') {
     setTypeOfData('reaction')
     reaction_tab_button.style('background-color', 'white')
-    this.reaction_tab.style.display = 'block'
+    reaction_tab.style('display', 'block')
+    update()
   } else if (tab_id === 'metabolite_tab') {
     setTypeOfData('metabolite')
     metabolite_tab_button.style('background-color', 'white')
-    this.metabolite_tab.style.display = 'block'
+    metabolite_tab.style('display', 'block')
+    update()
   }
   else if (tab_id === 'both_tab') {
-    this.both_tab.style.display = 'block'
+    both_tab.style('display', 'block')
     both_tab_button.style('background-color', 'white')
-
+    update()
   } else {
-
+// ?
   }
 
 }
@@ -342,44 +338,84 @@ function initDifferenceMode (container) {
 
 function update () {
 
-  var currentDataSet
+  var currentDataSet, data_set_loaded
 
-  if (metabolite_data !== null && typeOfData === 'metabolite') {
-    currentDataSet = metabolite_data
-  } else if (reaction_data !== null && typeOfData === 'reaction') {
-    currentDataSet = reaction_data
-  } else {
-    return
+  if (typeOfData === 'reaction' && builder.options.reaction_data !== null) {
+    currentDataSet = builder.options.reaction_data
+    data_set_loaded = true
+  } else if (typeOfData === 'metabolite' && builder.options.metabolite_data !== null) {
+    currentDataSet = builder.options.metabolite_data
+    data_set_loaded = true
+  } else { // TODO: 'both' or not loaded
+    data_set_loaded = false
+    // currentDataSet = []
   }
 
-  // update display
-  current = 0
-  counter.text((current + 1) + ' / ' + currentDataSet.length)
+  if (data_set_loaded) {
+    // update display
+    current = 0
+    counter.text((current + 1) + ' / ' + currentDataSet.length)
 
-  // update slider
-  sliderReference
-    .attr('max', (currentDataSet.length - 1))
-    .attr('value', 0)
+    // update slider
+    sliderReference
+      .attr('max', (currentDataSet.length - 1))
+      .attr('value', 0)
 
-  sliderTarget
-    .attr('max', (currentDataSet.length - 1))
-    .attr('value', 0)
+    sliderTarget
+      .attr('max', (currentDataSet.length - 1))
+      .attr('value', 0)
 
-  d3.select('#referenceText').text('Reference Data Set: ' + current)
-  d3.select('#targetText').text('Target Data Set: ' + current)
+    d3.select('#referenceText').text('Reference Data Set: ' + current)
+    d3.select('#targetText').text('Target Data Set: ' + current)
 
-  // update dropdown menu
+    // update dropdown menu
 
-  // reset, plain old javascript, but this is the only way it works
-  document.getElementById('dropDownMenuReference').options.length = 0
-  document.getElementById('dropDownMenuTarget').options.length = 0
+    // reset: plain old javascript, but this is the only way it works
+    document.getElementById('dropDownMenuReference').options.length = 0
+    document.getElementById('dropDownMenuTarget').options.length = 0
 
-  var x
-  for (x in currentDataSet) {
-    dropDownMenuReference.append('option').attr('value', x).text('Reference Data Set: ' + builder.get_reaction_data_names()[x])
-    dropDownMenuTarget.append('option').attr('value', x).text('Target Data Set: ' + builder.get_reaction_data_names()[x])
+    var x
+    for (x in currentDataSet) {
+      var name_of_current_data_set
+
+      if (typeOfData === 'reaction') {
+        name_of_current_data_set = builder.get_reaction_data_names()[x]
+
+      } else if (typeOfData === 'metabolite') {
+        name_of_current_data_set = builder.get_reaction_data_names()[x] // TODO: change to metabolite
+
+      } else { // typeOfData is 'both'
+        name_of_current_data_set = x
+      }
+
+      dropDownMenuReference.append('option').attr('value', x).text('Reference Data Set: ' + name_of_current_data_set)
+      dropDownMenuTarget.append('option').attr('value', x).text('Target Data Set: ' + name_of_current_data_set)
+
+    }
+
+  } else { // reset everything
+    // update display
+    current = 0
+    counter.text('0 / 0')
+
+    // update slider
+    sliderReference
+      .attr('max', 0)
+      .attr('value', 0)
+
+    sliderTarget
+      .attr('max', 0)
+      .attr('value', 0)
+
+    d3.select('#referenceText').text('Reference Data Set: ')
+    d3.select('#targetText').text('Target Data Set: ')
+
+    // reset dropdown menu
+    document.getElementById('dropDownMenuReference').options.length = 0
+    document.getElementById('dropDownMenuTarget').options.length = 0
   }
 
+  console.log('bar updated')
 }
 
 function next () {

@@ -619,10 +619,11 @@ function set_reaction_data (data) {
   this.options.reaction_data = data[1]
 
   // TODO: builder holds all the data, not the bar. only get if mode active, ref & target
-  this.time_series_bar.reaction_data = data[1]
-  this.time_series_bar.setReactionData(data[1])
-  this.time_series_bar.setTypeOfData('reaction')
-
+  //this.time_series_bar.reaction_data = data[1]
+  //this.time_series_bar.setReactionData(data[1])
+    this.time_series_bar.setTypeOfData('reaction')
+    this.time_series_bar.setReactionData(this.options.reaction_data) // for next / previous buttons
+    this.time_series_bar.openTab('reaction_tab')
   }
 
 
@@ -714,25 +715,33 @@ function _update_data (update_model, update_map, kind, should_draw) {
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
 
 
+      // working version: I only use the parameters in builder, only pass if diff mode on
+      // -> I need to change less in original code
+      // ***
       if(difference_mode_active && reference !== null && target !== null){
 
         // new data set only containing reference and target parts
-        var difference_reaction_data = []
-        difference_reaction_data.push(this.options.reaction_data[reference], this.options.reaction_data[target])
+        var difference_reaction_data = [this.options.reaction_data[reference], this.options.reaction_data[target]]
 
-
-        reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+        reaction_data_object = data_styles.import_and_check(difference_reaction_data,
                                                           'reaction_data')
-
       } else {
-        reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
-          'reaction_data')
+       reaction_data_object = data_styles.import_and_check(this.options.reaction_data, 'reaction_data')
       }
+       this.map.apply_reaction_data_to_map(reaction_data_object, undefined, difference_mode_active)
+      // ***
 
-      this.map.apply_reaction_data_to_map(reaction_data_object)
+      // other working version: I pass all the parameters through the code
+      // ***
+      //   reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+      //     'reaction_data')
+      // this.map.apply_reaction_data_to_map(reaction_data_object
+      //
+      // // I use these parameters to call data_styles in difference mode (they get just passed through in the code)
+      // , undefined, difference_mode_active, reference, target)
+      // ***
 
-      // use these parameters to call data_styles in difference mode (they get just passed through in the code)
-      //, undefined, difference_mode_active, reference, target)
+      // another idea: pass a index 'current' to switch between data sets?
 
       if (should_draw)
         this.map.draw_all_reactions(false, false)
