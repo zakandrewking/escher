@@ -808,13 +808,13 @@ function toggle_beziers (on_off) {
  * Returns True if the scale has changed.
  * @param {Array} keys - (Optional) The keys in reactions to apply data to.
  */
-function apply_reaction_data_to_map (data, keys, differnce_mode_active, reference, target) {
+function apply_reaction_data_to_map (data, keys) {
   var styles = this.settings.get_option('reaction_styles'),
   compare_style = this.settings.get_option('reaction_compare_style')
   var has_data = data_styles.apply_reaction_data_to_reactions(this.reactions,
                                                               data, styles,
                                                               compare_style,
-                                                              keys, differnce_mode_active, reference, target)
+                                                              keys)
   this.has_data_on_reactions = has_data
   this.imported_reaction_data = has_data ? data : null
 
@@ -825,7 +825,7 @@ function apply_reaction_data_to_map (data, keys, differnce_mode_active, referenc
  * Returns True if the scale has changed.
  * @param {Array} keys - (Optional) The keys in nodes to apply data to.
  */
-function apply_metabolite_data_to_map (data, keys) { // TODO: set reference and target
+function apply_metabolite_data_to_map (data, keys) {
   var styles = this.settings.get_option('metabolite_styles')
   var compare_style = this.settings.get_option('metabolite_compare_style')
 

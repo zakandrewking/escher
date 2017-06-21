@@ -711,37 +711,20 @@ function _update_data (update_model, update_map, kind, should_draw) {
   if (update_reaction_data) {
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
 
-      // TODO: change that original versions of Map and data_styles can be used
-      // -> gets one data set in single mode, for this extract index from bar
-      // -> gets two data sets in diff mode. original version should be able to handle this
+      if(difference_mode_active){// two data sets in diff mode. original version should be able to handle this
 
-      // working version: I only use the parameters in builder, only pass if diff mode on
-      // -> I need to change less in original code
-      // ***
-      if(difference_mode_active && reference !== null && target !== null){
-
-        // new data set only containing reference and target parts
         var difference_reaction_data = [this.options.reaction_data[reference], this.options.reaction_data[target]]
-
         reaction_data_object = data_styles.import_and_check(difference_reaction_data,
-                                                          'reaction_data')
-      } else {
-       reaction_data_object = data_styles.import_and_check(this.options.reaction_data, 'reaction_data')
+          'reaction_data')
+
+        console.log('reference: ' + reference +  ' target: ' + target)
+      } else { // gets one data set in single mode, for this extract index from bar
+        reaction_data_object = data_styles.import_and_check(this.options.reaction_data[reference], 'reaction_data')
+        console.log('reference: ' + reference +  ' target: ' + target)
+
       }
-       this.map.apply_reaction_data_to_map(reaction_data_object, undefined, difference_mode_active)
-      // ***
 
-      // other working version: I pass all the parameters through the code
-      // ***
-      //   reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
-      //     'reaction_data')
-      // this.map.apply_reaction_data_to_map(reaction_data_object
-      //
-      // // I use these parameters to call data_styles in difference mode (they get just passed through in the code)
-      // , undefined, difference_mode_active, reference, target)
-      // ***
-
-      // another idea: pass a index 'current' to switch between data sets?
+      this.map.apply_reaction_data_to_map(reaction_data_object)
 
       if (should_draw)
         this.map.draw_all_reactions(false, false)

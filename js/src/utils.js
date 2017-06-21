@@ -656,7 +656,7 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
 
     var input
 
-    var data = [[],[]] // [array of names][array of numbers]
+    var data = [[],[]] // [array of names][array of data]
     var names = []
 
 
