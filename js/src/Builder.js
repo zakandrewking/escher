@@ -702,14 +702,20 @@ function _update_data (update_model, update_map, kind, should_draw) {
   // -------------------
 
   // metabolite data
-  if (this.options.metabolite_data !== null && update_metabolite_data && update_map && this.map !== null) {
+  if (update_metabolite_data && update_map && this.map !== null) {
 
     if (difference_mode_active) {
 
       var difference_metabolite_data = [this.options.metabolite_data[reference], this.options.metabolite_data[target]]
       met_data_object = data_styles.import_and_check(difference_metabolite_data, 'metabolite_data')
     } else {
-      met_data_object = data_styles.import_and_check(this.options.metabolite_data[reference], 'metabolite_data')
+      if (this.options.metabolite_data !== null) {
+        met_data_object = data_styles.import_and_check(this.options.metabolite_data[reference], 'metabolite_data')
+
+      } else {
+
+        met_data_object = data_styles.import_and_check(this.options.metabolite_data, 'metabolite_data')
+      }
     }
 
     this.map.apply_metabolite_data_to_map(met_data_object)
