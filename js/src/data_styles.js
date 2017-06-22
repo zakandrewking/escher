@@ -5,8 +5,6 @@
 var utils = require('./utils')
 var _ = require('underscore')
 var d3_format = require('d3-format').format
-var d3_csvParseRows = require('d3-dsv').csvParseRows
-
 
 module.exports = {
   import_and_check: import_and_check,
@@ -23,8 +21,9 @@ module.exports = {
   apply_gene_data_to_reactions: apply_gene_data_to_reactions
 }
 
+
 // globals
-var RETURN_ARG = function (x) { return x }
+var RETURN_ARG = function(x) { return x; }
 var ESCAPE_REG = /([.*+?^=!:${}()|\[\]\/\\])/g
 var EMPTY_LINES = /\n\s*\n/g
 var TRAILING_NEWLINE = /\n\s*(\)*)\s*$/
@@ -41,7 +40,7 @@ var AND_EXPRESSION = /(^|\(|or\s)(\s*-?[0-9.]+\s+(?:and\s+-?[0-9.]+\s*)+)(\sor|\
 
 function _align_gene_data_to_reactions (data, reactions) {
   var aligned = {}
-  var null_val = [null]
+  var null_val = [ null ]
   // make an array of nulls as the default
   for (var first_gene_id in data) {
     null_val = data[first_gene_id].map(function () { return null })
@@ -54,8 +53,7 @@ function _align_gene_data_to_reactions (data, reactions) {
 
     reaction.genes.forEach(function (gene) {
       // check both gene id and gene name
-      ;
-      ['bigg_id', 'name'].forEach(function (kind) {
+      ;[ 'bigg_id', 'name' ].forEach(function (kind) {
         var d = data[gene[kind]] || utils.clone(null_val)
         // merger with existing data if present
         var existing_d = this_gene_data[gene.bigg_id]
@@ -308,37 +306,23 @@ function csv_converter(csv_rows) {
 
       File must include a header row.
 
-   */
-
-
-  var data = [[],[]]
-    // count rows
+  */
+  // count rows
   var c = csv_rows[0].length,
-    converted = []
-
-  if (c < 2){ // dataset must have at least identifier and values
-    throw new Error('CSV file must have 2 or more columns')
-  }
-  // set up rows, this works with 2+ data sets also
+  converted = []
+  if (c < 2 || c > 3)
+    throw new Error('CSV file must have 2 or 3 columns')
+  // set up rows
   for (var i = 1; i < c; i++) {
     converted[i - 1] = {}
   }
-
-  var names = csv_rows[0]
-  names.splice(0, 1)  // first position is empty or something like "data set names"
-
-
   // fill
-
-  csv_rows.slice(1).forEach(function (row) {
+  csv_rows.slice(1).forEach(function(row) {
     for (var i = 1, l = row.length; i < l; i++) {
       converted[i - 1][row[0]] = row[i]
     }
   })
-
-  data[0] = names
-  data[1] = converted
-  return data
+  return converted
 }
 
 function genes_for_gene_reaction_rule(rule) {

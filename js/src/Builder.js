@@ -32,6 +32,7 @@ var difference_mode_active
 var reference, target
 
 var reaction_data_names
+var metabolite_data_names
 
 var Builder = utils.make_class()
 Builder.prototype = {
@@ -66,7 +67,8 @@ Builder.prototype = {
   set_target: set_target,
   get_reference: get_reference,
   get_target: get_target,
-  get_reaction_data_names: get_reaction_data_names
+  get_reaction_data_names: get_reaction_data_names,
+  get_metabolite_data_names: get_metabolite_data_names
 }
 module.exports = Builder
 
@@ -646,24 +648,26 @@ function set_gene_data (data, clear_gene_reaction_rules) {
   this.map.set_status('')
 }
 
-function set_metabolite_data (data, i) {
-  /** For documentation of this function, see docs/javascript_api.rst.
+/** For documentation of this function, see docs/javascript_api.rst.
 
-   */
+ */
+function set_metabolite_data (data) {
 
+  if (data === null) {
 
-  this.options.metabolite_data = data
+    metabolite_data_names = null
+    this.options.metabolite_data = null
 
-  // if(data !== undefined && i !== undefined){
-  //   this.options.metabolite_data = data//[i]
-  // } else {
-  //   this.options.metabolite_data = data
-  // }
+  } else {
 
-  // TODO: builder holds all the data, not the bar. only get if mode active, ref & target
-  this.time_series_bar.metabolite_data = data
-  this.time_series_bar.setMetaboliteData(data)
-  this.time_series_bar.setTypeOfData('metabolite')
+    metabolite_data_names = data[0]
+    this.options.metabolite_data = data[1]
+
+    this.time_series_bar.setTypeOfData('metabolite')
+    // I still need this for next / previous buttons: TODO: extract index from bar?
+    this.time_series_bar.setMetaboliteData(this.options.metabolite_data)
+    this.time_series_bar.openTab('metabolite_tab')
+  }
 
   this._update_data(true, true, 'metabolite')
   this.map.set_status('')
@@ -698,9 +702,16 @@ function _update_data (update_model, update_map, kind, should_draw) {
   // -------------------
 
   // metabolite data
-  if (update_metabolite_data && update_map && this.map !== null) {
-    met_data_object = data_styles.import_and_check(this.options.metabolite_data,
-                                                   'metabolite_data')
+  if (this.options.metabolite_data !== null && update_metabolite_data && update_map && this.map !== null) {
+
+    if (difference_mode_active) {
+
+      var difference_metabolite_data = [this.options.metabolite_data[reference], this.options.metabolite_data[target]]
+      met_data_object = data_styles.import_and_check(difference_metabolite_data, 'metabolite_data')
+    } else {
+      met_data_object = data_styles.import_and_check(this.options.metabolite_data[reference], 'metabolite_data')
+    }
+
     this.map.apply_metabolite_data_to_map(met_data_object)
     if (should_draw) {
       this.map.draw_all_nodes(false)
@@ -711,17 +722,14 @@ function _update_data (update_model, update_map, kind, should_draw) {
   if (update_reaction_data) {
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
 
-      if(difference_mode_active){// two data sets in diff mode. original version should be able to handle this
+      if(difference_mode_active){
 
         var difference_reaction_data = [this.options.reaction_data[reference], this.options.reaction_data[target]]
         reaction_data_object = data_styles.import_and_check(difference_reaction_data,
           'reaction_data')
 
-        console.log('reference: ' + reference +  ' target: ' + target)
-      } else { // gets one data set in single mode, for this extract index from bar
+      } else {
         reaction_data_object = data_styles.import_and_check(this.options.reaction_data[reference], 'reaction_data')
-        console.log('reference: ' + reference +  ' target: ' + target)
-
       }
 
       this.map.apply_reaction_data_to_map(reaction_data_object)
@@ -756,15 +764,26 @@ function _update_data (update_model, update_map, kind, should_draw) {
   this.update_model_timer = setTimeout(function () {
 
     // metabolite_data
-    if (update_metabolite_data && update_model && this.cobra_model !== null) {
-      // if we haven't already made this
-      if (!met_data_object) {
-        met_data_object = data_styles.import_and_check(this.options.metabolite_data,
-                                                       'metabolite_data')
+    // this.options.metabolite_data !== null &&
+    if(update_metabolite_data){
+
+      if (this.options.metabolite_data !== null && update_model && this.cobra_model !== null) {
+        // if we haven't already made this
+
+        if (!met_data_object) {
+          met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+                                                         'metabolite_data')
+        }
+        this.cobra_model.apply_metabolite_data(met_data_object,
+                                               this.options.metabolite_styles,
+                                               this.options.metabolite_compare_style)
+      } else if (update_model && this.cobra_model !== null) {
+        // clear the data
+        this.cobra_model.apply_metabolite_data(null,
+          this.options.reaction_styles,
+          this.options.reaction_compare_style)
       }
-      this.cobra_model.apply_metabolite_data(met_data_object,
-                                             this.options.metabolite_styles,
-                                             this.options.metabolite_compare_style)
+
     }
 
     // reaction data
@@ -1130,17 +1149,13 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
 
     this.set_reaction_data(data)
   }
-  function load_metabolite_data_for_file(error, data, i) {
+  function load_metabolite_data_for_file(error, data) {
     if (error) {
       console.warn(error)
       this.map.set_status('Could not parse file as JSON or CSV', 2000)
       return
     }
-    if(i !== undefined){
-      this.set_metabolite_data(data, i)}
-    else {
-      this.set_metabolite_data(data, 0)
-    }
+    this.set_metabolite_data(data)
   }
   function load_gene_data_for_file(error, data) {
     if (error) {
@@ -1648,4 +1663,8 @@ function get_target () {
 
 function get_reaction_data_names(){
   return reaction_data_names
+}
+
+function get_metabolite_data_names(){
+  return metabolite_data_names
 }

@@ -711,7 +711,7 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
 
       // try csv
       try {
-        data = csv_converter(d3_csvParseRows(result))
+        data = my_csv_converter(d3_csvParseRows(result))
       } catch (e) {
         // if both failed, return the errors
         callback(errors + '\nCSV error: ' + e, null)
@@ -1179,4 +1179,42 @@ function check_browser (name) {
   } catch (e) {
     return false
   }
+}
+
+function my_csv_converter(csv_rows) {
+  /** Convert data from a csv file to json-style data.
+
+   File must include a header row.
+
+   */
+
+
+  var data = [[],[]]
+  // count rows
+  var c = csv_rows[0].length,
+    converted = []
+
+  if (c < 2){ // dataset must have at least identifier and values
+    throw new Error('CSV file must have 2 or more columns')
+  }
+  // set up rows, this works with 2+ data sets also
+  for (var i = 1; i < c; i++) {
+    converted[i - 1] = {}
+  }
+
+  var names = csv_rows[0]
+  names.splice(0, 1)  // first position is empty or something like "data set names"
+
+
+  // fill
+
+  csv_rows.slice(1).forEach(function (row) {
+    for (var i = 1, l = row.length; i < l; i++) {
+      converted[i - 1][row[0]] = row[i]
+    }
+  })
+
+  data[0] = names
+  data[1] = converted
+  return data
 }

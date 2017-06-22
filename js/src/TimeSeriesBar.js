@@ -336,7 +336,7 @@ function update () {
         name_of_current_data_set = builder.get_reaction_data_names()[x]
 
       } else if (typeOfData === 'metabolite') {
-        name_of_current_data_set = builder.get_reaction_data_names()[x] // TODO: change to metabolite
+        name_of_current_data_set = builder.get_metabolite_data_names()[x]
 
       } else { // typeOfData is 'both'
         name_of_current_data_set = x
