@@ -667,7 +667,7 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
 
       // TODO: check if name and data arrays are same length -> every data set has a name, if not make one up(?)
 
-      if (input[0].constructor === String) { // example data type 1, data is in following dictionary
+      if (isArray(input) && isString(input[0]) && isObject(input[1])) { // example data type 1, data is in following dictionary
 
         var numbers = []
         // sort names and data
@@ -682,16 +682,15 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
 
         console.log('new format type 1')
 
-      } else if (input[0].constructor === Array && input[1].constructor  === Array) { // example data type 2 (favourite), data is array
+      } else if (isArray(input) && isArray(input[0]) && isArray(input[1])) { // example data type 2 (favourite), data is array
 
         data[0] = input[0]
         data[1] = input[1]
         console.log('new format type 2')
 
-      } else if(input[0].constructor === Object && input[1].constructor  === Array){ // example data type 2b, data is dictionary
-        // TODO: type 2b fails to load
-        data[0] = input[0]
-        data[1] = input[1]
+      } else if(isObject(input) && isArray(input.names) && isArray(input.data)){ // example data type 2b, data is dictionary
+        data[0] = input.names
+        data[1] = input.data
 
         console.log("new format type 2b")
       } else { // old data format
@@ -711,7 +710,7 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
 
       // try csv
       try {
-        data = my_csv_converter(d3_csvParseRows(result))
+        data = csv_converter(d3_csvParseRows(result))
       } catch (e) {
         // if both failed, return the errors
         callback(errors + '\nCSV error: ' + e, null)
@@ -1181,7 +1180,7 @@ function check_browser (name) {
   }
 }
 
-function my_csv_converter(csv_rows) {
+function csv_converter(csv_rows) {
   /** Convert data from a csv file to json-style data.
 
    File must include a header row.
@@ -1217,4 +1216,32 @@ function my_csv_converter(csv_rows) {
   data[0] = names
   data[1] = converted
   return data
+}
+
+/**
+ * Check if the value is an object with enumerable properties. Also returns true
+ * for arrays.
+ * @param {*} object - The value to test.
+ * @return {Boolean}
+ */
+function isObject (object) {
+  return object !== null && (typeof object === 'object')
+}
+
+/**
+ * Check if the object is an array
+ * @param {*} object - The object to test.
+ * @return {Boolean}
+ */
+function isArray (object) {
+  return Array.isArray(object)
+}
+
+/**
+ * Check if the object is a string
+ * @param {*} object - The object to test.
+ * @return {Boolean}
+ */
+function isString (object) {
+  return typeof object === 'string'
 }

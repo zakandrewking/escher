@@ -10,7 +10,7 @@ var data_styles = require('./data_styles.js')
 
 var TimeSeriesBar = utils.make_class()
 var builder
-var metabolite_data, reaction_data
+//var metabolite_data, reaction_data
 
 var current
 var counter, data_set_text
@@ -19,6 +19,7 @@ var sliderReference, sliderTarget
 var tab_container, reaction_tab_button, metabolite_tab_button, both_tab_button, checkBoxDifferenceMode
 var dropDownMenuReference, dropDownMenuTarget
 var typeOfData
+var number_of_data_sets
 var dataObject
 
 var reaction_tab, metabolite_tab, both_tab
@@ -35,8 +36,8 @@ TimeSeriesBar.prototype = {
   showBar: showBar,
   showDifferenceData: showDifferenceData,
   setTypeOfData: setTypeOfData,
-  setReactionData: setReactionData,
-  setMetaboliteData: setMetaboliteData,
+ // setReactionData: setReactionData,
+ // setMetaboliteData: setMetaboliteData,
   openTab: openTab
 }
 module.exports = TimeSeriesBar
@@ -45,8 +46,8 @@ function init (sel, map, b) {
 
   builder = b
 
-  metabolite_data = builder.options.metabolite_data
-  reaction_data = builder.options.reaction_data
+  // metabolite_data = builder.options.metabolite_data
+  // reaction_data = builder.options.reaction_data
 
   builder.set_difference_mode(false)
   builder.set_reference(0)
@@ -96,6 +97,19 @@ function init (sel, map, b) {
     .style('border', '1px solid lightgrey')
     .style('display', 'none')
 
+  // TODO: shared ui
+  // contains:
+  // - checkbox diff_mode
+  // - reference data set slider and dropdown
+  // in single mode:
+  // - show: next / previous buttons
+  // - hide: target data set slider and dropdown
+  // in diff mode:
+  // - hide next / previous buttons
+  // - show: target data set slider and dropdown
+  //
+  // change data everytime user makes a change, get rid of compare button
+
   // three divs
   reaction_tab = tab_container.append('div')
     .attr('id', 'reaction_tab')
@@ -135,10 +149,10 @@ function init (sel, map, b) {
     .on('click', this.next.bind(this))
     .append('span').attr('class', 'glyphicon glyphicon-step-forward')
 
-  groupButtons.append('button')
-    .attr('class', 'btn btn-default')
-    .on('click', this.update.bind(this))
-    .append('span').attr('class', 'glyphicon glyphicon-refresh')
+  // groupButtons.append('button')
+  //   .attr('class', 'btn btn-default')
+  //   .on('click', this.update.bind(this))
+  //   .append('span').attr('class', 'glyphicon glyphicon-refresh')
 
   container.append('hr')
 
@@ -197,6 +211,11 @@ function openTab (tab_id) {
 
   if (tab_id === 'reaction_tab') {
     setTypeOfData('reaction')
+    reaction_tab_button.style('background-color', 'white')
+    reaction_tab.style('display', 'block')
+    update()
+  } else if (tab_id === 'gene_tab') {
+    setTypeOfData('gene')
     reaction_tab_button.style('background-color', 'white')
     reaction_tab.style('display', 'block')
     update()
@@ -292,23 +311,27 @@ function initDifferenceMode (container) {
 
 function update () {
 
-  var currentDataSet, data_set_loaded
+  var currentDataSet
+  var data_set_loaded = false
 
   if (typeOfData === 'reaction' && builder.options.reaction_data !== null) {
     currentDataSet = builder.options.reaction_data
     data_set_loaded = true
+  } else if (typeOfData === 'gene' && builder.options.gene_data !== null) {
+    currentDataSet = builder.options.gene_data
+    data_set_loaded = true
   } else if (typeOfData === 'metabolite' && builder.options.metabolite_data !== null) {
     currentDataSet = builder.options.metabolite_data
     data_set_loaded = true
-  } else { // TODO: 'both' or not loaded
-    data_set_loaded = false
-    // currentDataSet = []
   }
+  // TODO: 'both' or not loaded?
+
 
   if (data_set_loaded) {
     // update display
     current = 0
-    counter.text((current + 1) + ' / ' + currentDataSet.length)
+    number_of_data_sets = currentDataSet.length
+    counter.text((current + 1) + ' / ' + number_of_data_sets)
 
     // update slider
     sliderReference
@@ -376,67 +399,68 @@ function next () {
 
   if (typeOfData === 'metabolite') {
 
-    if (metabolite_data !== undefined && metabolite_data !== null) {
-      //choose next data and load it
-      if (current < metabolite_data.length - 1) {
-
+    if (builder.options.metabolite_data !== undefined && builder.options.metabolite_data !== null) {
+      if (current < builder.options.metabolite_data.length - 1) {
         current += 1
-
-        dataObject = data_styles.import_and_check(metabolite_data[current], 'metabolite_data')
-        this.map.apply_metabolite_data_to_map(dataObject)
-        this.map.draw_all_nodes(false)
-
-        counter.text((current + 1) + ' / ' + (metabolite_data.length))
+        builder.set_data_indices(typeOfData, current)
+        counter.text((current + 1) + ' / ' + (builder.options.metabolite_data.length))
       }
     }
 
   } else if (typeOfData === 'reaction') {
-    if (reaction_data !== undefined && reaction_data !== null) {
-      //choose next data and load it
-      if (current < reaction_data.length - 1) {
+    if (builder.options.reaction_data !== undefined && builder.options.reaction_data !== null) {
+      if (current < builder.options.reaction_data.length - 1) {
         current += 1
-
-        dataObject = data_styles.import_and_check(reaction_data[current], 'reaction_data')
-        this.map.apply_reaction_data_to_map(dataObject)
-        this.map.draw_all_reactions(false, false)
-
-        counter.text((current + 1) + ' / ' + (reaction_data.length))
+        builder.set_data_indices(typeOfData, current)
+        counter.text((current + 1) + ' / ' + (builder.options.reaction_data.length))
       }
     }
+  } else if (typeOfData === 'gene') {
+    if (builder.options.gene_data !== undefined && builder.options.gene_data !== null) {
+      if (current < builder.options.gene_data.length - 1) {
+        current += 1
+        builder.set_data_indices(typeOfData, current)
+        counter.text((current + 1) + ' / ' + (builder.options.gene_data.length))
+      }
+    }
+
   }
 
 }
 
 function previous () {
 
-  if (typeOfData === 'metabolite') {
-    if (metabolite_data !== undefined && metabolite_data !== null) {
-      //choose previous data and load it
-      if (current > 0) {
-        current -= 1
+  if (current > 0) {
 
-        dataObject = data_styles.import_and_check(metabolite_data[current], 'metabolite_data')
-        this.map.apply_metabolite_data_to_map(dataObject)
-        this.map.draw_all_nodes(false)
+    var current_data
 
-        counter.text((current + 1) + ' / ' + (metabolite_data.length))
-      }
+    // this is only for displaying one number... maybe find a work around
+    if (typeOfData === 'metabolite' &&
+      builder.options.metabolite_data !== undefined &&
+      builder.options.metabolite_data !== null) {
+      current -= 1
+
+      builder.set_data_indices('metabolite', current)
+      counter.text((current + 1) + ' / ' + (builder.options.metabolite_data.length))
+
+    } else if (typeOfData === 'reaction' &&
+      builder.options.reaction_data !== undefined &&
+      builder.options.reaction_data !== null) {
+      current -= 1
+
+      builder.set_data_indices('reaction', current)
+
+      counter.text((current + 1) + ' / ' + (builder.options.reaction_data.length))
+
+    } else if (typeOfData === 'gene' && builder.options.gene_data !== undefined && builder.options.gene_data !== null) {
+      current -= 1
+
+      builder.set_data_indices(typeOfData, current)
+      counter.text((current + 1) + ' / ' + (builder.options.gene_data.length))
+
     }
-  } else if (typeOfData === 'reaction') {
-    if (reaction_data !== undefined && reaction_data !== null) {
-      //choose previous data and load it
-      if (current > 0) {
-        current -= 1
 
-        dataObject = data_styles.import_and_check(reaction_data[current], 'reaction_data')
-        this.map.apply_reaction_data_to_map(dataObject)
-        this.map.draw_all_reactions(false, false)
-
-        counter.text((current + 1) + ' / ' + (reaction_data.length))
-      }
-    }
   }
-
 }
 
 function toggleDifferenceMode () {
@@ -461,9 +485,8 @@ function showBar (show) {
 }
 
 function showDifferenceData () {
-
   builder.set_difference_mode(true)
-  builder._update_data(false, true, typeOfData, true)
+  builder.set_data_indices(typeOfData, builder.get_reference(), builder.get_target())
 }
 
 function is_visible () {
@@ -523,10 +546,10 @@ function setTypeOfData (data) {
   typeOfData = data
 }
 
-function setMetaboliteData (data) {
-  metabolite_data = data
-}
-
-function setReactionData (data) {
-  reaction_data = data
-}
+// function setMetaboliteData (data) {
+//   metabolite_data = data
+// }
+//
+// function setReactionData (data) {
+//   reaction_data = data
+// }

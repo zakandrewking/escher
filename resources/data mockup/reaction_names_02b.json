@@ -1,4 +1,4 @@
-{"names": ["name_of_data_set_1", "name_of_data_set_2", "name_of_data_set_3"],
+{"names": ["reaction_data_set_1", "reaction_data_set_2", "reaction_data_set_3"],
 "data":
 [{"PPA2":0, "ENO": 0, "PPS": 0.2},
 {"PPA2":0.5, "ENO":0.7, "PPS": 1.2 },

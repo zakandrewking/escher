@@ -31,8 +31,7 @@ var d3_json = require('d3-request').json
 var difference_mode_active
 var reference, target
 
-var reaction_data_names
-var metabolite_data_names
+var reaction_data_names, gene_data_names, metabolite_data_names
 
 var Builder = utils.make_class()
 Builder.prototype = {
@@ -61,6 +60,7 @@ Builder.prototype = {
   _get_keys: _get_keys,
   _setup_confirm_before_exit: _setup_confirm_before_exit,
   //
+  set_data_indices: set_data_indices,
   set_difference_mode: set_difference_mode,
   get_difference_mode: get_difference_mode,
   set_reference: set_reference,
@@ -68,6 +68,7 @@ Builder.prototype = {
   get_reference: get_reference,
   get_target: get_target,
   get_reaction_data_names: get_reaction_data_names,
+  get_gene_data_names: get_gene_data_names,
   get_metabolite_data_names: get_metabolite_data_names
 }
 module.exports = Builder
@@ -621,8 +622,6 @@ function set_reaction_data (data) {
     this.options.reaction_data = data[1]
 
     this.time_series_bar.setTypeOfData('reaction')
-    // I still need this for next / previous buttons: TODO: extract index from bar?
-    this.time_series_bar.setReactionData(this.options.reaction_data)
     this.time_series_bar.openTab('reaction_tab')
   }
 
@@ -643,7 +642,21 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     // default undefined
     this.settings.set_conditional('show_gene_reaction_rules', false)
   }
-  this.options.gene_data = data
+
+  if(data === null){
+
+    this.options.gene_data = null
+
+  } else {
+    gene_data_names = data[0]
+    this.options.gene_data = data[1]
+
+    this.time_series_bar.setTypeOfData('gene')
+    this.time_series_bar.openTab('gene_tab')
+
+  }
+
+
   this._update_data(true, true, 'reaction')
   this.map.set_status('')
 }
@@ -664,8 +677,6 @@ function set_metabolite_data (data) {
     this.options.metabolite_data = data[1]
 
     this.time_series_bar.setTypeOfData('metabolite')
-    // I still need this for next / previous buttons: TODO: extract index from bar?
-    this.time_series_bar.setMetaboliteData(this.options.metabolite_data)
     this.time_series_bar.openTab('metabolite_tab')
   }
 
@@ -704,7 +715,7 @@ function _update_data (update_model, update_map, kind, should_draw) {
   // metabolite data
   if (update_metabolite_data && update_map && this.map !== null) {
 
-    if (difference_mode_active) {
+    if (difference_mode_active && this.options.metabolite_data !== null) {
 
       var difference_metabolite_data = [this.options.metabolite_data[reference], this.options.metabolite_data[target]]
       met_data_object = data_styles.import_and_check(difference_metabolite_data, 'metabolite_data')
@@ -742,9 +753,18 @@ function _update_data (update_model, update_map, kind, should_draw) {
 
       if (should_draw)
         this.map.draw_all_reactions(false, false)
+    // gene data
     } else if (this.options.gene_data !== null && update_map && this.map !== null) {
-      gene_data_object = make_gene_data_object(this.options.gene_data,
+
+      if(difference_mode_active){
+        var difference_gene_data = [this.options.gene_data[reference], this.options.gene_data[target]]
+        gene_data_object = make_gene_data_object(difference_gene_data,
+          this.cobra_model, this.map)
+      } else {
+      gene_data_object = make_gene_data_object(this.options.gene_data[reference],
                                                this.cobra_model, this.map)
+      }
+
       this.map.apply_gene_data_to_map(gene_data_object)
       if (should_draw)
         this.map.draw_all_reactions(false, false)
@@ -1671,6 +1691,26 @@ function get_reaction_data_names(){
   return reaction_data_names
 }
 
+function get_gene_data_names(){
+  return gene_data_names
+}
+
 function get_metabolite_data_names(){
   return metabolite_data_names
+}
+/*
+ * reference: required
+ * target: only required for difference mode
+ */
+
+function set_data_indices(type_of_data, ref, tar){
+  reference = ref
+  target = tar || null
+
+  if(type_of_data === 'gene'){
+    type_of_data = 'reaction'
+  }
+  this._update_data(true, true, type_of_data, true)
+
+  //this._update_data(false, true, type_of_data, true)
 }
