@@ -161,7 +161,9 @@ Map.prototype = {
   map_for_export: map_for_export,
   save_svg: save_svg,
   save_png: save_png,
-  convert_map: convert_map
+  convert_map: convert_map,
+  // TODO
+  setBuilder: setBuilder
 }
 module.exports = Map
 
@@ -171,7 +173,9 @@ module.exports = Map
 
 function init (svg, css, selection, zoom_container, settings, cobra_model,
                canvas_size_and_loc, enable_search, map_name, map_id,
-               map_description) {
+               map_description, b) {
+
+  this.builder = b
   if (canvas_size_and_loc === null) {
     var size = zoom_container.get_size()
     canvas_size_and_loc = {
@@ -299,7 +303,8 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
  * Load a json map and add necessary fields for rendering.
  */
 function from_data (map_data, svg, css, selection, zoom_container, settings,
-                    cobra_model, enable_search) {
+                    cobra_model, enable_search, b) {
+  this.builder = b
   var canvas = map_data[1].canvas
   var map_name = map_data[0].map_name
   var map_id = map_data[0].map_id
@@ -818,7 +823,15 @@ function apply_reaction_data_to_map (data, keys) {
   this.has_data_on_reactions = has_data
   this.imported_reaction_data = has_data ? data : null
 
-  return this.calc_data_stats('reaction')
+  //return this.calc_data_stats('reaction')
+
+  if(this.builder !== undefined){
+    //return this.calc_data_stats('reaction')
+
+    return this.builder.calc_data_stats('reaction')
+  } else {
+    return this.calc_data_stats('reaction')
+  }
 }
 
 /**
@@ -2373,4 +2386,8 @@ function convert_map () {
 
   // run the after callback
   this.callback_manager.run('after_convert_map')
+}
+
+function setBuilder(b){
+  this.builder = b
 }

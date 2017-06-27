@@ -10,7 +10,6 @@ var data_styles = require('./data_styles.js')
 
 var TimeSeriesBar = utils.make_class()
 var builder
-//var metabolite_data, reaction_data
 
 var current
 var counter, data_set_text
@@ -20,7 +19,6 @@ var tab_container, reaction_tab_button, metabolite_tab_button, both_tab_button, 
 var dropDownMenuReference, dropDownMenuTarget
 var typeOfData
 var number_of_data_sets
-var dataObject
 
 var reaction_tab, metabolite_tab, both_tab
 
@@ -45,9 +43,6 @@ module.exports = TimeSeriesBar
 function init (sel, map, b) {
 
   builder = b
-
-  // metabolite_data = builder.options.metabolite_data
-  // reaction_data = builder.options.reaction_data
 
   builder.set_difference_mode(false)
   builder.set_reference(0)
