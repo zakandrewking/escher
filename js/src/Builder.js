@@ -718,17 +718,6 @@ function _update_data (update_model, update_map, kind, should_draw) {
   // metabolite data
   if (update_metabolite_data && update_map && this.map !== null) {
 
-
-    var metabolite_for_data_scales = []
-
-    // TODO: find another way to get the values. This is O(n*m)?
-    for (var i in this.options.metabolite_data) {
-      for(var numbers in Object.values(this.options.metabolite_data[i])){
-        metabolite_for_data_scales.push(Object.values(this.options.metabolite_data[i])[numbers])
-      }
-    }
-    this.map.set_nodes_for_data_scales(metabolite_for_data_scales)
-
     if (difference_mode_active && this.options.metabolite_data !== null) {
 
       var difference_metabolite_data = [this.options.metabolite_data[reference], this.options.metabolite_data[target]]
@@ -738,6 +727,16 @@ function _update_data (update_model, update_map, kind, should_draw) {
         met_data_object = data_styles.import_and_check(this.options.metabolite_data[reference], 'metabolite_data')
 
       } else {
+        var metabolite_for_data_scales = []
+
+        // TODO: find another way to get the values. This is O(n*m)?
+        for (var i in this.options.metabolite_data) {
+          for(var numbers in Object.values(this.options.metabolite_data[i])){
+            metabolite_for_data_scales.push(Object.values(this.options.metabolite_data[i])[numbers])
+          }
+        }
+        this.map.set_nodes_for_data_scales(metabolite_for_data_scales)
+
 
         met_data_object = data_styles.import_and_check(this.options.metabolite_data, 'metabolite_data')
       }
@@ -754,15 +753,8 @@ function _update_data (update_model, update_map, kind, should_draw) {
 
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
 
-      var reaction_for_data_scales = []
 
-      for (var i in this.options.reaction_data) {
-        for(var numbers in Object.values(this.options.reaction_data[i])){
-          reaction_for_data_scales.push(Object.values(this.options.reaction_data[i])[numbers])
-        }
-      }
 
-      this.map.set_reactions_for_data_scales(reaction_for_data_scales)
 
       if(difference_mode_active){
 
@@ -771,6 +763,15 @@ function _update_data (update_model, update_map, kind, should_draw) {
           'reaction_data')
 
       } else {
+        var reaction_for_data_scales = []
+
+        for (var i in this.options.reaction_data) {
+          for(var numbers in Object.values(this.options.reaction_data[i])){
+            reaction_for_data_scales.push(Object.values(this.options.reaction_data[i])[numbers])
+          }
+        }
+        this.map.set_reactions_for_data_scales(reaction_for_data_scales)
+
         reaction_data_object = data_styles.import_and_check(this.options.reaction_data[reference], 'reaction_data')
       }
 
@@ -781,14 +782,6 @@ function _update_data (update_model, update_map, kind, should_draw) {
     // gene data
     } else if (this.options.gene_data !== null && update_map && this.map !== null) {
 
-      var genes_for_data_scales = []
-
-      for (var i in this.options.gene_data ) {
-        for(var numbers in Object.values(this.options.gene_data [i])){
-          genes_for_data_scales.push(Object.values(this.options.gene_data [i])[numbers])
-        }
-      }
-
       this.map.set_reactions_for_data_scales(genes_for_data_scales)
 
       if(difference_mode_active){
@@ -798,6 +791,13 @@ function _update_data (update_model, update_map, kind, should_draw) {
       } else {
       gene_data_object = make_gene_data_object(this.options.gene_data[reference],
                                                this.cobra_model, this.map)
+        var genes_for_data_scales = []
+
+        for (var i in this.options.gene_data ) {
+          for(var numbers in Object.values(this.options.gene_data [i])){
+            genes_for_data_scales.push(Object.values(this.options.gene_data [i])[numbers])
+          }
+        }
       }
 
       this.map.apply_gene_data_to_map(gene_data_object)

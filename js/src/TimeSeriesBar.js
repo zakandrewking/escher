@@ -11,7 +11,7 @@ var data_styles = require('./data_styles.js')
 var TimeSeriesBar = utils.make_class()
 var builder
 
-var current
+var current, from, to
 var counter, data_set_text
 var container
 var sliderReference, sliderTarget
@@ -21,6 +21,9 @@ var typeOfData
 var number_of_data_sets
 
 var reaction_tab, metabolite_tab, both_tab
+
+var playing = false
+
 
 // instance methods
 TimeSeriesBar.prototype = {
@@ -71,26 +74,50 @@ function init (sel, map, b) {
       openTab('reaction_tab')
     })
     .style('background-color', 'lightgrey')
-    .text('Compare reaction data')
+    .text('reaction data')
 
   metabolite_tab_button = container.append('button')
     .on('click', function () {
       openTab('metabolite_tab')
     })
     .style('background-color', 'lightgrey')
-    .text('metabolite')
+    .text('metabolite data')
 
   both_tab_button = container.append('button')
     .on('click', function () {
       openTab('both_tab')
     })
     .style('background-color', 'lightgrey')
-    .text('both')
+    .text('both data')
+
+  var secound_row_buttons = container.append('div')
+
+  var time_series_button = secound_row_buttons.append('button')
+    .on('click', function () {
+      time_series_button.style('background-color', 'white')
+      difference_mode_button.style('background-color', 'lightgrey')
+      toggleDifferenceMode ()
+      groupButtons.style('display', 'block')
+    })
+    .style('background-color', 'white')
+    .style('width', '45%')
+    .text('Sling Window')
+
+  var difference_mode_button = secound_row_buttons.append('button')
+    .on('click', function () {
+      time_series_button.style('background-color', 'lightgrey')
+      difference_mode_button.style('background-color', 'white')
+      toggleDifferenceMode ()
+      groupButtons.style('display', 'none')
+    })
+    .style('background-color', 'lightgrey')
+    .style('width', '45%')
+    .text('Difference Mode')
 
   tab_container = container.append('div')
-    .style('padding', '0.5em')
-    .style('border', '1px solid lightgrey')
-    .style('display', 'none')
+    //.style('padding', '0.5em')
+    //.style('border', '1px solid lightgrey')
+    //.style('display', 'none')
 
   // TODO: shared ui
   // contains:
@@ -132,7 +159,89 @@ function init (sel, map, b) {
     .attr('class', 'select-counter')
     .text('0 / 0')
 
-  var groupButtons = tab_container.append('div').attr('class', 'btn-group btn-group-sm')
+
+
+  tab_container.append('div')
+    .append('text')
+    .attr('id', 'referenceText')
+    .text('Reference Data Set: ')
+
+  sliderReference = tab_container.append('div').append('input')
+    .attr('id', 'sliderReference')
+    .attr('type', 'range')
+    .attr('value', 0)
+    .attr('min', 0)
+    .attr('max', 0)
+    .on('change', function () {
+      builder.set_reference(this.value)
+      d3.select('#dropDownMenuReference').property('selectedIndex', this.value)
+      d3.select('#referenceText').text('Reference Data Set: ' + this.value)
+      if(builder.get_difference_mode()){
+      showDifferenceData()
+      } else {
+        builder.set_data_indices(typeOfData, builder.get_reference())
+      }
+    })
+
+  dropDownMenuReference = tab_container.append('select')
+    .attr('name', 'target-list')
+    .attr('id', 'dropDownMenuReference')
+    .on('change', function () {
+
+      builder.set_reference(this.value)
+      d3.select('#sliderReference').property('value', this.value)
+      d3.select('#referenceText').text('Reference Data Set: ' + this.value)
+
+      if(builder.get_difference_mode()){
+        showDifferenceData()
+      } else {
+        builder.set_data_indices(typeOfData, builder.get_reference())
+      }
+
+    })
+
+  tab_container.append('div')
+    .append('text')
+    .attr('id', 'targetText')
+    .text('Target Data Set: ')
+
+  sliderTarget = tab_container.append('div').append('input')
+    .attr('type', 'range')
+    .attr('id', 'sliderTarget')
+    .attr('value', 0)
+    .attr('min', 0)
+    .attr('max', 0)
+    .on('change', function () {
+
+      builder.set_target(this.value)
+      d3.select('#dropDownMenuTarget').property('selectedIndex', this.value)
+      d3.select('#targetText').text('Target Data Set ' + this.value)
+
+      if(builder.get_difference_mode()){
+        showDifferenceData()
+      } else {
+        builder.set_data_indices(typeOfData, builder.get_target())
+      }
+    })
+
+  dropDownMenuTarget = tab_container.append('select')
+    .attr('name', 'target-list')
+    .attr('id', 'dropDownMenuTarget')
+    .on('change', function () {
+
+      builder.set_target(this.value)
+      d3.select('#sliderTarget').property('value', this.value)
+      d3.select('#targetText').text('Target Data Set ' + this.value)
+
+      if(builder.get_difference_mode()){
+        showDifferenceData()
+      } else {
+        builder.set_data_indices(typeOfData, builder.get_target())
+      }
+
+    })
+
+  var groupButtons = tab_container.append('div')//.attr('class', 'btn-group btn-group-sm')
 
   groupButtons.append('button')
     .attr('class', 'btn btn-default')
@@ -144,42 +253,55 @@ function init (sel, map, b) {
     .on('click', this.next.bind(this))
     .append('span').attr('class', 'glyphicon glyphicon-step-forward')
 
+  groupButtons.append('button')
+    .attr('class', 'btn btn-default')
+    .attr('id', 'play_button')
+    .on('click', function(){
+      play_time_series()
+    })
+    .append('span').attr('class', 'glyphicon glyphicon-play')
+
   // groupButtons.append('button')
   //   .attr('class', 'btn btn-default')
   //   .on('click', this.update.bind(this))
   //   .append('span').attr('class', 'glyphicon glyphicon-refresh')
 
-  container.append('hr')
+  //container.append('hr')
+  //
+  // checkBoxDifferenceMode = container.append('div')
+  //   .append('label')
+  //   .attr('for', 'checkBoxDifferenceMode')
+  //   .text('Difference Mode')
+  //   .append('input')
+  //   .attr('type', 'checkbox')
+  //   .attr('id', 'checkBoxDifferenceMode')
+  //   .attr('value', 'Difference Mode')
+  //   .text('Difference Mode')
+  //   .on('change', function () {
+  //     if (checkBoxDifferenceMode.property('checked')) {
+  //       builder.set_difference_mode(true)
+  //       containerDifferenceMode.style('display', 'block')
+  //     } else {
+  //       builder.set_difference_mode(false)
+  //       containerDifferenceMode.style('display', 'none')
+  //     }
+  //   })
 
-  checkBoxDifferenceMode = container.append('div')
-    .append('label')
-    .attr('for', 'checkBoxDifferenceMode')
-    .text('Difference Mode')
-    .append('input')
-    .attr('type', 'checkbox')
-    .attr('id', 'checkBoxDifferenceMode')
-    .attr('value', 'Difference Mode')
-    .text('Difference Mode')
-    .on('change', function () {
-      if (checkBoxDifferenceMode.property('checked')) {
-        builder.set_difference_mode(true)
-        containerDifferenceMode.style('display', 'block')
-      } else {
-        builder.set_difference_mode(false)
-        containerDifferenceMode.style('display', 'none')
-      }
-    })
+  builder.set_reference(0)
+  builder.set_target(0)
 
-  var containerDifferenceMode = container.append('div')
-    .style('display', 'none')
+  // var containerDifferenceMode = container.append('div')
+  //   .style('display', 'none')
+  //
+  //
+  //
+  // initDifferenceMode(containerDifferenceMode)
 
-  initDifferenceMode(containerDifferenceMode)
-
-  containerDifferenceMode.append('div').append('button')
-    .attr('class', 'btn btn-default')
-    .on('click', this.showDifferenceData.bind(this))
-    .append('span')//.attr('class', 'glyphicon glyphicon-play')
-    .text('Compare')
+  // containerDifferenceMode.append('div').append('button')
+  //   .attr('class', 'btn btn-default')
+  //   .on('click', this.showDifferenceData.bind(this))
+  //   .append('span')//.attr('class', 'glyphicon glyphicon-play')
+  //   .text('Compare')
 
   this.callback_manager = new CallbackManager()
 
@@ -230,69 +352,10 @@ function openTab (tab_id) {
 
 }
 
-function initDifferenceMode (container) {
-
-  builder.set_reference(0)
-  builder.set_target(0)
-
-  container.append('div')
-    .append('text')
-    .attr('id', 'referenceText')
-    .text('Reference Data Set: ')
-
-  sliderReference = container.append('div').append('input')
-    .attr('id', 'sliderReference')
-    .attr('type', 'range')
-    .attr('value', 0)
-    .attr('min', 0)
-    .attr('max', 0)
-    .on('change', function () {
-      builder.set_reference(this.value)
-      d3.select('#dropDownMenuReference').property('selectedIndex', this.value)
-      d3.select('#referenceText').text('Reference Data Set: ' + this.value)
-    })
-
-  container.append('div')
-    .append('text')
-    .attr('id', 'targetText')
-    .text('Target Data Set: ')
-
-  sliderTarget = container.append('div').append('input')
-    .attr('type', 'range')
-    .attr('id', 'sliderTarget')
-    .attr('value', 0)
-    .attr('min', 0)
-    .attr('max', 0)
-    .on('change', function () {
-
-      builder.set_target(this.value)
-      d3.select('#dropDownMenuTarget').property('selectedIndex', this.value)
-      d3.select('#targetText').text('Target Data Set ' + this.value)
-
-    })
-  dropDownMenuReference = container.append('select')
-    .attr('name', 'target-list')
-    .attr('id', 'dropDownMenuReference')
-    .on('change', function () {
-
-      builder.set_reference(this.value)
-      d3.select('#sliderReference').property('value', this.value)
-      d3.select('#referenceText').text('Reference Data Set: ' + this.value)
-
-    })
-
-  dropDownMenuTarget = container.append('select')
-    .attr('name', 'target-list')
-    .attr('id', 'dropDownMenuTarget')
-    .on('change', function () {
-
-      builder.set_target(this.value)
-      d3.select('#sliderTarget').property('value', this.value)
-      d3.select('#targetText').text('Target Data Set ' + this.value)
-
-    })
-
-}
+// function initDifferenceMode (container) {
+//
+//
+// }
 
 /**
  *  Updates the GUI
@@ -397,30 +460,38 @@ function next () {
     if (builder.options.metabolite_data !== undefined && builder.options.metabolite_data !== null) {
       if (current < builder.options.metabolite_data.length - 1) {
         current += 1
+      } else {
+        current = 0
+      }
         builder.set_data_indices(typeOfData, current)
         counter.text((current + 1) + ' / ' + (builder.options.metabolite_data.length))
-      }
+
     }
 
   } else if (typeOfData === 'reaction') {
     if (builder.options.reaction_data !== undefined && builder.options.reaction_data !== null) {
       if (current < builder.options.reaction_data.length - 1) {
         current += 1
+      } else {
+        current = 0
+      }
         builder.set_data_indices(typeOfData, current)
         counter.text((current + 1) + ' / ' + (builder.options.reaction_data.length))
-      }
+
     }
   } else if (typeOfData === 'gene') {
     if (builder.options.gene_data !== undefined && builder.options.gene_data !== null) {
       if (current < builder.options.gene_data.length - 1) {
         current += 1
+      } else {
+        current = 0
+      }
         builder.set_data_indices(typeOfData, current)
         counter.text((current + 1) + ' / ' + (builder.options.gene_data.length))
-      }
+
     }
 
   }
-
 }
 
 function previous () {
@@ -456,6 +527,23 @@ function previous () {
     }
 
   }
+}
+
+function play_time_series () {
+
+
+  if (!playing) {
+
+    playing = true
+    this.animation = setInterval(function () {
+      next()
+    }, 100)
+
+  } else {
+    clearInterval(this.animation)
+    playing = false
+  }
+
 }
 
 function toggleDifferenceMode () {
