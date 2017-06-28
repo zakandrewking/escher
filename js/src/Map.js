@@ -140,6 +140,8 @@ Map.prototype = {
   // data statistics
   get_data_statistics: get_data_statistics,
   calc_data_stats: calc_data_stats,
+  set_reactions_for_data_scales: set_reactions_for_data_scales,
+  set_nodes_for_data_scales:set_nodes_for_data_scales,
   // zoom
   zoom_extent_nodes: zoom_extent_nodes,
   zoom_extent_canvas: zoom_extent_canvas,
@@ -161,9 +163,7 @@ Map.prototype = {
   map_for_export: map_for_export,
   save_svg: save_svg,
   save_png: save_png,
-  convert_map: convert_map,
-  // TODO
-  setBuilder: setBuilder
+  convert_map: convert_map
 }
 module.exports = Map
 
@@ -173,9 +173,8 @@ module.exports = Map
 
 function init (svg, css, selection, zoom_container, settings, cobra_model,
                canvas_size_and_loc, enable_search, map_name, map_id,
-               map_description, b) {
+               map_description) {
 
-  this.builder = b
   if (canvas_size_and_loc === null) {
     var size = zoom_container.get_size()
     canvas_size_and_loc = {
@@ -233,6 +232,9 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
   // make the scales
   this.scale = new Scale()
   // initialize stats
+  this.nodes_for_data_scales = []
+  this.reactions_for_data_scales = []
+
   this.calc_data_stats('reaction')
   this.calc_data_stats('metabolite')
   this.scale.connect_to_settings(this.settings, this,
@@ -518,6 +520,8 @@ function clear_map() {
   this.reactions = {}
   this.beziers = {}
   this.nodes = {}
+  this.nodes_for_data_scales = []
+  this.reactions_for_data_scales =[]
   this.text_labels = {}
   this.map_name = 'new_map'
   this.map_id = utils.generate_map_id()
@@ -823,15 +827,7 @@ function apply_reaction_data_to_map (data, keys) {
   this.has_data_on_reactions = has_data
   this.imported_reaction_data = has_data ? data : null
 
-  //return this.calc_data_stats('reaction')
-
-  if(this.builder !== undefined){
-    //return this.calc_data_stats('reaction')
-
-    return this.builder.calc_data_stats('reaction')
-  } else {
-    return this.calc_data_stats('reaction')
-  }
+  return this.calc_data_stats('reaction')
 }
 
 /**
@@ -908,23 +904,23 @@ function calc_data_stats (type) {
   // default min and max
   var vals = []
   if (type === 'metabolite') {
-    for (var node_id in this.nodes) {
-      var node = this.nodes[node_id]
+    for (var node_id in this.nodes_for_data_scales) {
+      var node = this.nodes_for_data_scales[node_id]
       // check number
-      if (_.isUndefined(node.data)) {
+      if (_.isUndefined(node)) {
         console.error('metabolite missing ')
-      } else if (node.data !== null) {
-        vals.push(node.data)
+      } else if (node !== null) {
+        vals.push(node)
       }
     }
   } else if (type == 'reaction') {
-    for (var reaction_id in this.reactions) {
-      var reaction = this.reactions[reaction_id]
+    for (var reaction_id in this.reactions_for_data_scales) {
+      var reaction = this.reactions_for_data_scales[reaction_id]
       // check number
-      if (_.isUndefined(reaction.data)) {
+      if (_.isUndefined(reaction)) {
         console.error('reaction data missing ')
-      } else if (reaction.data !== null) {
-        vals.push(reaction.data)
+      } else if (reaction !== null) {
+        vals.push(reaction)
       }
     }
   }
@@ -2388,6 +2384,10 @@ function convert_map () {
   this.callback_manager.run('after_convert_map')
 }
 
-function setBuilder(b){
-  this.builder = b
+function set_reactions_for_data_scales(s){
+  this.reactions_for_data_scales = s
+}
+
+function set_nodes_for_data_scales(n){
+  this.nodes_for_data_scales = n
 }

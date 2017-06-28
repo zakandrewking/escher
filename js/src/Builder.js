@@ -71,7 +71,7 @@ Builder.prototype = {
   get_gene_data_names: get_gene_data_names,
   get_metabolite_data_names: get_metabolite_data_names,
   //
-  calc_data_stats: calc_data_stats
+  //calc_data_stats: calc_data_stats
 }
 module.exports = Builder
 
@@ -337,7 +337,6 @@ function load_map (map_data, should_update_data) {
   }.bind(this))
 
 
-  this.map.setBuilder(this)
   // Set the data for the map
   if (should_update_data)
     this._update_data(false, true)
@@ -719,6 +718,17 @@ function _update_data (update_model, update_map, kind, should_draw) {
   // metabolite data
   if (update_metabolite_data && update_map && this.map !== null) {
 
+
+    var metabolite_for_data_scales = []
+
+    // TODO: find another way to get the values. This is O(n*m)?
+    for (var i in this.options.metabolite_data) {
+      for(var numbers in Object.values(this.options.metabolite_data[i])){
+        metabolite_for_data_scales.push(Object.values(this.options.metabolite_data[i])[numbers])
+      }
+    }
+    this.map.set_nodes_for_data_scales(metabolite_for_data_scales)
+
     if (difference_mode_active && this.options.metabolite_data !== null) {
 
       var difference_metabolite_data = [this.options.metabolite_data[reference], this.options.metabolite_data[target]]
@@ -741,6 +751,18 @@ function _update_data (update_model, update_map, kind, should_draw) {
 
   // reaction data
   if (update_reaction_data) {
+
+    var reaction_for_data_scales = []
+
+    for (var i in this.options.reaction_data) {
+      for(var numbers in Object.values(this.options.reaction_data[i])){
+        reaction_for_data_scales.push(Object.values(this.options.reaction_data[i])[numbers])
+      }
+    }
+
+    this.map.set_reactions_for_data_scales(reaction_for_data_scales)
+
+
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
 
       if(difference_mode_active){
@@ -1715,105 +1737,4 @@ function set_data_indices(type_of_data, ref, tar){
     type_of_data = 'reaction'
   }
   this._update_data(true, true, type_of_data, true)
-
-  //this._update_data(false, true, type_of_data, true)
-}
-
-/**
- * Data Statistics
- */
-
-/**
- * Returns True if the stats have changed.
- * @param {String} type - Either 'metabolite' or 'reaction'
- */
-function calc_data_stats (type) {
-  if ([ 'reaction', 'metabolite' ].indexOf(type) === -1) {
-    throw new Error('Bad type ' + type)
-  }
-
-  // make the data structure
-  if (!('data_statistics' in this.map)) {
-    this.map.data_statistics = {}
-    this.map.data_statistics[type] = {}
-  } else if (!(type in this.map.data_statistics)) {
-    this.map.data_statistics[type] = {}
-  }
-
-  var same = true
-  // default min and max
-  var vals = []
-  if (type === 'metabolite') {
-    for (var node_id in this.options.metabolite_data) {
-      var node = this.options.metabolite_data[node_id]
-      // check number
-      if (_.isUndefined(node.data)) {
-        console.error('metabolite missing ')
-      } else if (node.data !== null) {
-        vals.push(node.data)
-      }
-    }
-  } else if (type == 'reaction') {
-    for (var i in this.options.reaction_data) {
-
-      var data_set = Object.values(this.options.reaction_data[i])
-
-      for (var reaction_value in data_set) {
-        // check number
-        var number = data_set[reaction_value]
-        if (_.isUndefined(number)) {
-          console.error('reaction data missing ')
-        } else if (number !== null) {
-          vals.push(number)
-        }
-
-      }
-
-    }
-  }
-
-  // calculate these statistics
-  var quartiles = utils.quartiles(vals)
-  var funcs = [
-    [ 'min',    _on_array(Math.min) ],
-    [ 'max',    _on_array(Math.max) ],
-    [ 'mean',   utils.mean ],
-    [ 'Q1',     function () { return quartiles[0] } ],
-    [ 'median', function () { return quartiles[1] } ],
-    [ 'Q3',     function () { return quartiles[2] } ]
-  ]
-  funcs.forEach(function (ar) {
-    var new_val
-    var name = ar[0]
-    if (vals.length === 0) {
-      new_val = null
-    } else {
-      var fn = ar[1]
-      new_val = fn(vals)
-    }
-    if (new_val != this.map.data_statistics[type][name]) {
-      same = false
-    }
-    this.map.data_statistics[type][name] = new_val
-  }.bind(this))
-
-  // Deal with max === min
-  if (this.map.data_statistics[type]['min'] === this.map.data_statistics[type]['max'] &&
-    this.map.data_statistics[type]['min'] !== null) {
-    var min = this.map.data_statistics[type]['min']
-    var max = this.map.data_statistics[type]['max']
-    this.map.data_statistics[type]['min'] = min - 1 - (Math.abs(min) * 0.1)
-    this.map.data_statistics[type]['max'] = max + 1 + (Math.abs(max) * 0.1)
-  }
-
-  if (type === 'reaction') {
-    this.map.callback_manager.run('calc_data_stats__reaction', null, !same)
-  } else {
-    this.map.callback_manager.run('calc_data_stats__metabolite', null, !same)
-  }
-  return !same
-}
-
-function _on_array (fn) {
-  return function (array) { return fn.apply(null, array) }
 }
