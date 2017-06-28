@@ -752,18 +752,17 @@ function _update_data (update_model, update_map, kind, should_draw) {
   // reaction data
   if (update_reaction_data) {
 
-    var reaction_for_data_scales = []
-
-    for (var i in this.options.reaction_data) {
-      for(var numbers in Object.values(this.options.reaction_data[i])){
-        reaction_for_data_scales.push(Object.values(this.options.reaction_data[i])[numbers])
-      }
-    }
-
-    this.map.set_reactions_for_data_scales(reaction_for_data_scales)
-
-
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
+
+      var reaction_for_data_scales = []
+
+      for (var i in this.options.reaction_data) {
+        for(var numbers in Object.values(this.options.reaction_data[i])){
+          reaction_for_data_scales.push(Object.values(this.options.reaction_data[i])[numbers])
+        }
+      }
+
+      this.map.set_reactions_for_data_scales(reaction_for_data_scales)
 
       if(difference_mode_active){
 
@@ -781,6 +780,16 @@ function _update_data (update_model, update_map, kind, should_draw) {
         this.map.draw_all_reactions(false, false)
     // gene data
     } else if (this.options.gene_data !== null && update_map && this.map !== null) {
+
+      var genes_for_data_scales = []
+
+      for (var i in this.options.gene_data ) {
+        for(var numbers in Object.values(this.options.gene_data [i])){
+          genes_for_data_scales.push(Object.values(this.options.gene_data [i])[numbers])
+        }
+      }
+
+      this.map.set_reactions_for_data_scales(genes_for_data_scales)
 
       if(difference_mode_active){
         var difference_gene_data = [this.options.gene_data[reference], this.options.gene_data[target]]
