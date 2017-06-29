@@ -639,7 +639,6 @@ function load_json (f, callback, pre_fn, failure_fn) {
 /**
  * Try to load the file as JSON or CSV (JSON first).
  * @param {String} f - The file path
- * @param {Function}  csv_converter - A function to convert the CSV output to equivalent JSON.
  * @param {Function} callback - A callback function that accepts arguments: error, data.
  * @param {} pre_fn (optional) - A function to call before loading the data.
  * @param {} failure_fn (optional) - A function to call if the load fails or is
@@ -647,7 +646,7 @@ function load_json (f, callback, pre_fn, failure_fn) {
  * @param {} debug_event (optional) - An event, with a string at
  * event.target.result, to load as though it was the contents of a loaded file.
  */
-function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
+function load_json_or_csv (f, callback, pre_fn, failure_fn,
                            debug_event) {
   // Capture the file information.
   var onload_function = function(event) {

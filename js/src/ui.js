@@ -149,7 +149,6 @@ function set_json_or_csv_input_button(b, s, pre_fn, post_fn, failure_fn) {
             .style("display", "none")
             .on("change", function() {
                 utils.load_json_or_csv(this.files[0],
-                                       data_styles.csv_converter,
                                        function(e, d) {
                                            post_fn(e, d);
                                            this.value = "";

@@ -64,33 +64,40 @@ function init (sel, map, b) {
     .on('click', function () {
       this.toggle(false)
     }.bind(this))
-    .append('span').attr('class', 'glyphicon glyphicon-remove')
+    .append('span')
+    .attr('class', 'glyphicon glyphicon-remove')
+
+  var box = container.append('div')
+    .attr('class', 'settings-box')
 
   // tabbed layout
-
   // three buttons
-  reaction_tab_button = container.append('button')
+  reaction_tab_button = box.append('button')
     .on('click', function () {
       openTab('reaction_tab')
     })
     .style('background-color', 'lightgrey')
+    .style('width', '33.3%')
     .text('reaction data')
 
-  metabolite_tab_button = container.append('button')
+  metabolite_tab_button = box.append('button')
     .on('click', function () {
       openTab('metabolite_tab')
     })
     .style('background-color', 'lightgrey')
+    .style('width', '33.3%')
+
     .text('metabolite data')
 
-  both_tab_button = container.append('button')
+  both_tab_button = box.append('button')
     .on('click', function () {
       openTab('both_tab')
     })
     .style('background-color', 'lightgrey')
+    .style('width', '33.3%')
     .text('both data')
 
-  var secound_row_buttons = container.append('div')
+  var secound_row_buttons = box.append('div')
 
   var time_series_button = secound_row_buttons.append('button')
     .on('click', function () {
@@ -100,7 +107,7 @@ function init (sel, map, b) {
       groupButtons.style('display', 'block')
     })
     .style('background-color', 'white')
-    .style('width', '45%')
+    .style('width', '50%')
     .text('Sling Window')
 
   var difference_mode_button = secound_row_buttons.append('button')
@@ -111,10 +118,10 @@ function init (sel, map, b) {
       groupButtons.style('display', 'none')
     })
     .style('background-color', 'lightgrey')
-    .style('width', '45%')
+    .style('width', '50%')
     .text('Difference Mode')
 
-  tab_container = container.append('div')
+  tab_container = box.append('div')
     //.style('padding', '0.5em')
     //.style('border', '1px solid lightgrey')
     //.style('display', 'none')
