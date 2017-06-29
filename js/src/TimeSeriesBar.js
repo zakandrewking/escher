@@ -9,8 +9,8 @@ var _ = require('underscore')
 var data_styles = require('./data_styles.js')
 
 var TimeSeriesBar = utils.make_class()
-var builder
 
+var builder
 var current, from, to
 var counter, data_set_text
 var container
@@ -71,6 +71,7 @@ function init (sel, map, b) {
     .attr('class', 'settings-box')
 
   // tabbed layout
+
   // three buttons
   reaction_tab_button = box.append('button')
     .on('click', function () {
@@ -105,6 +106,7 @@ function init (sel, map, b) {
       difference_mode_button.style('background-color', 'lightgrey')
       toggleDifferenceMode ()
       groupButtons.style('display', 'block')
+
     })
     .style('background-color', 'white')
     .style('width', '50%')
@@ -125,19 +127,6 @@ function init (sel, map, b) {
     //.style('padding', '0.5em')
     //.style('border', '1px solid lightgrey')
     //.style('display', 'none')
-
-  // TODO: shared ui
-  // contains:
-  // - checkbox diff_mode
-  // - reference data set slider and dropdown
-  // in single mode:
-  // - show: next / previous buttons
-  // - hide: target data set slider and dropdown
-  // in diff mode:
-  // - hide next / previous buttons
-  // - show: target data set slider and dropdown
-  //
-  // change data everytime user makes a change, get rid of compare button
 
   // three divs
   reaction_tab = tab_container.append('div')
@@ -294,8 +283,6 @@ function init (sel, map, b) {
   //     }
   //   })
 
-  builder.set_reference(0)
-  builder.set_target(0)
 
   // var containerDifferenceMode = container.append('div')
   //   .style('display', 'none')
@@ -456,8 +443,6 @@ function update () {
     document.getElementById('dropDownMenuReference').options.length = 0
     document.getElementById('dropDownMenuTarget').options.length = 0
   }
-
-  console.log('bar updated')
 }
 
 function next () {
