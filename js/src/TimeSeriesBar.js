@@ -11,11 +11,11 @@ var data_styles = require('./data_styles.js')
 var TimeSeriesBar = utils.make_class()
 
 var builder
-var current, from, to
-var counter, data_set_text
+var current
+var counter
 var container
 var sliderReference, sliderTarget
-var tab_container, reaction_tab_button, metabolite_tab_button, both_tab_button, checkBoxDifferenceMode
+var tab_container, reaction_tab_button, metabolite_tab_button, both_tab_button
 var dropDownMenuReference, dropDownMenuTarget
 var typeOfData
 var number_of_data_sets
@@ -23,7 +23,7 @@ var number_of_data_sets
 var reaction_tab, metabolite_tab, both_tab
 
 var playing = false
-
+var sliding_window_start, sliding_window_end
 
 // instance methods
 TimeSeriesBar.prototype = {
@@ -37,8 +37,6 @@ TimeSeriesBar.prototype = {
   showBar: showBar,
   showDifferenceData: showDifferenceData,
   setTypeOfData: setTypeOfData,
- // setReactionData: setReactionData,
- // setMetaboliteData: setMetaboliteData,
   openTab: openTab
 }
 module.exports = TimeSeriesBar
@@ -50,6 +48,9 @@ function init (sel, map, b) {
   builder.set_difference_mode(false)
   builder.set_reference(0)
   builder.set_target(0)
+
+  sliding_window_start = builder.get_reference()
+  sliding_window_end = builder.get_target()
 
   current = 0
 
@@ -98,9 +99,9 @@ function init (sel, map, b) {
     .style('width', '33.3%')
     .text('both data')
 
-  var secound_row_buttons = box.append('div')
+  var second_row_buttons = box.append('div')
 
-  var time_series_button = secound_row_buttons.append('button')
+  var time_series_button = second_row_buttons.append('button')
     .on('click', function () {
       time_series_button.style('background-color', 'white')
       difference_mode_button.style('background-color', 'lightgrey')
@@ -110,9 +111,9 @@ function init (sel, map, b) {
     })
     .style('background-color', 'white')
     .style('width', '50%')
-    .text('Sling Window')
+    .text('Sliding Window')
 
-  var difference_mode_button = secound_row_buttons.append('button')
+  var difference_mode_button = second_row_buttons.append('button')
     .on('click', function () {
       time_series_button.style('background-color', 'lightgrey')
       difference_mode_button.style('background-color', 'white')
@@ -146,15 +147,6 @@ function init (sel, map, b) {
     .attr('class', 'tab')
     .text('compare both')
     .style('display', 'none')
-
-  data_set_text = tab_container.append('text')
-    .text('Display Dataset: ')
-
-  counter = tab_container.append('div')
-    .attr('id', 'counter')
-    .attr('class', 'select-counter')
-    .text('0 / 0')
-
 
 
   tab_container.append('div')
@@ -216,7 +208,7 @@ function init (sel, map, b) {
       if(builder.get_difference_mode()){
         showDifferenceData()
       } else {
-        builder.set_data_indices(typeOfData, builder.get_target())
+     //   builder.set_data_indices(typeOfData, builder.get_target())
       }
     })
 
@@ -232,12 +224,17 @@ function init (sel, map, b) {
       if(builder.get_difference_mode()){
         showDifferenceData()
       } else {
-        builder.set_data_indices(typeOfData, builder.get_target())
+       // builder.set_data_indices(typeOfData, builder.get_target())
       }
 
     })
 
   var groupButtons = tab_container.append('div')//.attr('class', 'btn-group btn-group-sm')
+
+  counter = groupButtons.append('div')
+    .attr('id', 'counter')
+    .attr('class', 'select-counter')
+    .text('Display Dataset: 0 / 0')
 
   groupButtons.append('button')
     .attr('class', 'btn btn-default')
@@ -307,8 +304,6 @@ function init (sel, map, b) {
 function openTab (tab_id) {
 
   tab_container.style('display', 'block')
-  counter.style('display', 'block')
-  data_set_text.style('display', 'block')
 
   reaction_tab_button.style('background-color', 'lightgrey')
   metabolite_tab_button.style('background-color', 'lightgrey')
@@ -383,7 +378,7 @@ function update () {
     // update display
     current = 0
     number_of_data_sets = currentDataSet.length
-    counter.text((current + 1) + ' / ' + number_of_data_sets)
+    counter.text('Display Dataset: '+ (current + 1) + ' / ' + number_of_data_sets)
 
     // update slider
     sliderReference
@@ -425,7 +420,7 @@ function update () {
   } else { // reset everything
     // update display
     current = 0
-    counter.text('0 / 0')
+    counter.text('Display Dataset: 0 / 0')
 
     // update slider
     sliderReference
@@ -456,7 +451,7 @@ function next () {
         current = 0
       }
         builder.set_data_indices(typeOfData, current)
-        counter.text((current + 1) + ' / ' + (builder.options.metabolite_data.length))
+        counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
 
     }
 
@@ -468,7 +463,7 @@ function next () {
         current = 0
       }
         builder.set_data_indices(typeOfData, current)
-        counter.text((current + 1) + ' / ' + (builder.options.reaction_data.length))
+        counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
 
     }
   } else if (typeOfData === 'gene') {
@@ -479,7 +474,7 @@ function next () {
         current = 0
       }
         builder.set_data_indices(typeOfData, current)
-        counter.text((current + 1) + ' / ' + (builder.options.gene_data.length))
+        counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
 
     }
 
@@ -499,7 +494,7 @@ function previous () {
       current -= 1
 
       builder.set_data_indices('metabolite', current)
-      counter.text((current + 1) + ' / ' + (builder.options.metabolite_data.length))
+      counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
 
     } else if (typeOfData === 'reaction' &&
       builder.options.reaction_data !== undefined &&
@@ -508,13 +503,13 @@ function previous () {
 
       builder.set_data_indices('reaction', current)
 
-      counter.text((current + 1) + ' / ' + (builder.options.reaction_data.length))
+      counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
 
     } else if (typeOfData === 'gene' && builder.options.gene_data !== undefined && builder.options.gene_data !== null) {
       current -= 1
 
       builder.set_data_indices(typeOfData, current)
-      counter.text((current + 1) + ' / ' + (builder.options.gene_data.length))
+      counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
 
     }
 
@@ -523,17 +518,36 @@ function previous () {
 
 function play_time_series () {
 
+  // TODO: makes crazy stuff with setting reference / target every time
 
   if (!playing) {
-
     playing = true
-    this.animation = setInterval(function () {
-      next()
-    }, 100)
+      sliding_window_start = builder.get_reference()
+      sliding_window_end = builder.get_target()
+        // save values for later, because reference gets overwritten in set indices
+        this.animation = setInterval(function(){
+
+            counter.text('Time Series of Data Sets: '
+              + sliding_window_start +
+              ' to ' + builder.get_target() +
+              '. Current: ' + builder.get_reference())
+
+            if (builder.get_reference() < sliding_window_end) {
+              var next = builder.get_reference()
+              next++
+              builder.set_reference(next)
+            } else {
+              builder.set_reference(sliding_window_start)
+            }
+
+            builder.set_data_indices(typeOfData, builder.get_reference(), sliding_window_end) // otherwise will set to null
+        }, 200);
 
   } else {
     clearInterval(this.animation)
     playing = false
+    builder.set_reference(sliding_window_start)
+    builder.set_target(sliding_window_end)
   }
 
 }
@@ -620,11 +634,3 @@ function toggle (on_off) {
 function setTypeOfData (data) {
   typeOfData = data
 }
-
-// function setMetaboliteData (data) {
-//   metabolite_data = data
-// }
-//
-// function setReactionData (data) {
-//   reaction_data = data
-// }

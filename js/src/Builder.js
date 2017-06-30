@@ -1698,6 +1698,8 @@ function _setup_confirm_before_exit () {
   }.bind(this)
 }
 
+// TODO: make a object like 'options' for all the stuff instead of getter / setter methods?
+
 function set_difference_mode (bool) {
   difference_mode_active = bool
 }
@@ -1740,7 +1742,9 @@ function get_metabolite_data_names(){
 
 function set_data_indices(type_of_data, ref, tar){
   reference = ref
-  target = tar || null
+
+  // TODO: was null before, but this way I loose the target index when I only set ref?
+  target = tar || this.get_target()
 
   if(type_of_data === 'gene'){
     type_of_data = 'reaction'
