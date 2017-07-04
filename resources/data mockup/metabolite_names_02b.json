@@ -1,5 +1,0 @@
-{"names": ["metabolite_data_set_1","metabolite_data_set_2", "metabolite_data_set_3"],
-"data":
-[{"pep_c":0, "h2o_c": 0, "atp_c": 0.2},
-{"pep_c":0.5, "h2o_c":0.7, "atp_c": 1.2 },
-{"pep_c":1, "h2o_c": 1.2, "atp_c": 0.2}]}

@@ -10,7 +10,6 @@ var data_styles = require('./data_styles.js')
 
 var TimeSeriesBar = utils.make_class()
 
-var builder
 var current
 var counter
 var container
@@ -41,16 +40,16 @@ TimeSeriesBar.prototype = {
 }
 module.exports = TimeSeriesBar
 
-function init (sel, map, b) {
+function init (sel, map, builder) {
 
-  builder = b
+  this.builder = builder
 
-  builder.set_difference_mode(false)
-  builder.set_reference(0)
-  builder.set_target(0)
+  this.builder.set_difference_mode(false)
+  this.builder.set_reference(0)
+  this.builder.set_target(0)
 
-  sliding_window_start = builder.get_reference()
-  sliding_window_end = builder.get_target()
+  sliding_window_start = this.builder.get_reference()
+  sliding_window_end = this.builder.get_target()
 
   current = 0
 
@@ -58,7 +57,7 @@ function init (sel, map, b) {
 
   container = sel.attr('class', 'search-container')
   // TODO: remove this comment in final version
-  //.style('display', 'none');
+  .style('display', 'block');
 
   container.append('button')
     .attr('class', 'btn btn-sm btn-default close-button')
@@ -75,16 +74,16 @@ function init (sel, map, b) {
 
   // three buttons
   reaction_tab_button = box.append('button')
-    .on('click', function () {
-      openTab('reaction_tab')
+    .on('click', function (builder) {
+      openTab('reaction_tab', builder)
     })
     .style('background-color', 'lightgrey')
     .style('width', '33.3%')
     .text('reaction data')
 
   metabolite_tab_button = box.append('button')
-    .on('click', function () {
-      openTab('metabolite_tab')
+    .on('click', function (builder) {
+      openTab('metabolite_tab', builder)
     })
     .style('background-color', 'lightgrey')
     .style('width', '33.3%')
@@ -92,8 +91,8 @@ function init (sel, map, b) {
     .text('metabolite data')
 
   both_tab_button = box.append('button')
-    .on('click', function () {
-      openTab('both_tab')
+    .on('click', function (builder) {
+      openTab('both_tab', builder)
     })
     .style('background-color', 'lightgrey')
     .style('width', '33.3%')
@@ -105,7 +104,7 @@ function init (sel, map, b) {
     .on('click', function () {
       time_series_button.style('background-color', 'white')
       difference_mode_button.style('background-color', 'lightgrey')
-      toggleDifferenceMode ()
+      toggleDifferenceMode (builder)
       groupButtons.style('display', 'block')
 
     })
@@ -114,10 +113,10 @@ function init (sel, map, b) {
     .text('Sliding Window')
 
   var difference_mode_button = second_row_buttons.append('button')
-    .on('click', function () {
+    .on('click', function (builder) {
       time_series_button.style('background-color', 'lightgrey')
       difference_mode_button.style('background-color', 'white')
-      toggleDifferenceMode ()
+      toggleDifferenceMode (builder)
       groupButtons.style('display', 'none')
     })
     .style('background-color', 'lightgrey')
@@ -160,12 +159,12 @@ function init (sel, map, b) {
     .attr('value', 0)
     .attr('min', 0)
     .attr('max', 0)
-    .on('change', function () {
+    .on('change', function (builder) {
       builder.set_reference(this.value)
       d3.select('#dropDownMenuReference').property('selectedIndex', this.value)
       d3.select('#referenceText').text('Reference Data Set: ' + this.value)
       if(builder.get_difference_mode()){
-      showDifferenceData()
+      showDifferenceData(builder)
       } else {
         builder.set_data_indices(typeOfData, builder.get_reference())
       }
@@ -174,9 +173,9 @@ function init (sel, map, b) {
   dropDownMenuReference = tab_container.append('select')
     .attr('name', 'target-list')
     .attr('id', 'dropDownMenuReference')
-    .on('change', function () {
+    .on('change', function (builder) {
 
-      builder.set_reference(this.value)
+      b.set_reference(this.value)
       d3.select('#sliderReference').property('value', this.value)
       d3.select('#referenceText').text('Reference Data Set: ' + this.value)
 
@@ -199,7 +198,7 @@ function init (sel, map, b) {
     .attr('value', 0)
     .attr('min', 0)
     .attr('max', 0)
-    .on('change', function () {
+    .on('change', function (b) {
 
       builder.set_target(this.value)
       d3.select('#dropDownMenuTarget').property('selectedIndex', this.value)
@@ -250,7 +249,7 @@ function init (sel, map, b) {
     .attr('class', 'btn btn-default')
     .attr('id', 'play_button')
     .on('click', function(){
-      play_time_series()
+      play_time_series(builder)
     })
     .append('span').attr('class', 'glyphicon glyphicon-play')
 
@@ -298,10 +297,9 @@ function init (sel, map, b) {
 
   this.selection = container
   this.map = map
-
 }
 
-function openTab (tab_id) {
+function openTab (tab_id, builder) {
 
   tab_container.style('display', 'block')
 
@@ -319,22 +317,22 @@ function openTab (tab_id) {
     setTypeOfData('reaction')
     reaction_tab_button.style('background-color', 'white')
     reaction_tab.style('display', 'block')
-    update()
+    update(builder)
   } else if (tab_id === 'gene_tab') {
     setTypeOfData('gene')
     reaction_tab_button.style('background-color', 'white')
     reaction_tab.style('display', 'block')
-    update()
+    update(builder)
   } else if (tab_id === 'metabolite_tab') {
     setTypeOfData('metabolite')
     metabolite_tab_button.style('background-color', 'white')
     metabolite_tab.style('display', 'block')
-    update()
+    update(builder)
   }
   else if (tab_id === 'both_tab') {
     both_tab.style('display', 'block')
     both_tab_button.style('background-color', 'white')
-    update()
+    update(builder)
   } else {
 // ?
   }
@@ -356,7 +354,7 @@ function openTab (tab_id) {
  *
  */
 
-function update () {
+function update (builder) {
 
   var currentDataSet
   var data_set_loaded = false
@@ -440,7 +438,7 @@ function update () {
   }
 }
 
-function next () {
+function next (builder) {
 
   if (typeOfData === 'metabolite') {
 
@@ -481,7 +479,7 @@ function next () {
   }
 }
 
-function previous () {
+function previous (builder) {
 
   if (current > 0) {
 
@@ -516,43 +514,70 @@ function previous () {
   }
 }
 
-function play_time_series () {
+function play_time_series (builder) {
 
-  // TODO: makes crazy stuff with setting reference / target every time
+  if(interpolation){
 
-  if (!playing) {
-    playing = true
-      sliding_window_start = builder.get_reference()
-      sliding_window_end = builder.get_target()
-        // save values for later, because reference gets overwritten in set indices
-        this.animation = setInterval(function(){
+    var data_set_save = builder.options.reaction_data
 
-            counter.text('Time Series of Data Sets: '
-              + sliding_window_start +
-              ' to ' + builder.get_target() +
-              '. Current: ' + builder.get_reference())
+    if(!playing){
 
-            if (builder.get_reference() < sliding_window_end) {
-              var next = builder.get_reference()
-              next++
-              builder.set_reference(next)
-            } else {
-              builder.set_reference(sliding_window_start)
-            }
+      // create new data_set with every data points in between
+      // set it to data object in builder
+      // set it back after the animation stops
 
-            builder.set_data_indices(typeOfData, builder.get_reference(), sliding_window_end) // otherwise will set to null
-        }, 200);
+      // pro: builder can switch with set_data_indices, code in time series bar, no changes in builder
+      // con: a lot of new data
+
+
+
+    } else {
+      // after animation rest to 'normal' data
+      builder.options.reaction_data = data_set_save
+    }
+
+
 
   } else {
-    clearInterval(this.animation)
-    playing = false
-    builder.set_reference(sliding_window_start)
-    builder.set_target(sliding_window_end)
-  }
 
+    // TODO: makes crazy stuff with setting reference / target every time
+
+    if (!playing) {
+      playing = true
+      sliding_window_start = builder.get_reference()
+      sliding_window_end = builder.get_target()
+      // save values for later, because reference gets overwritten in set indices
+      this.animation = setInterval(function () {
+
+        counter.text('Time Series of Data Sets: '
+          + sliding_window_start +
+          ' to ' + builder.get_target() +
+          '. Current: ' + builder.get_reference())
+
+        if (builder.get_reference() < sliding_window_end) {
+          var next = builder.get_reference()
+          next++
+          builder.set_reference(next)
+        } else {
+          builder.set_reference(sliding_window_start)
+        }
+
+        builder.set_data_indices(typeOfData, builder.get_reference(), sliding_window_end) // otherwise will set to null
+      }, 200);
+
+    } else {
+      clearInterval(this.animation)
+      playing = false
+      builder.set_reference(sliding_window_start)
+      builder.set_target(sliding_window_end)
+    }
+  }
 }
 
-function toggleDifferenceMode () {
+
+
+
+function toggleDifferenceMode (builder) {
 
   if (builder.get_difference_mode()) {
     builder.set_difference_mode(false)
@@ -573,7 +598,7 @@ function showBar (show) {
   }
 }
 
-function showDifferenceData () {
+function showDifferenceData (builder) {
   builder.set_difference_mode(true)
   builder.set_data_indices(typeOfData, builder.get_reference(), builder.get_target())
 }
@@ -588,42 +613,24 @@ function toggle (on_off) {
 
   if (this.is_active) {
     this.selection.style('display', null)
-    container.style('display', 'block')
+    //container.style('display', 'block')
 
-    // escape key
     this.clear_escape = this.map.key_manager
-      .add_escape_listener(function () {
-        this.toggle(false)
-      }.bind(this), true)
-
-    // next keys
-    this.clear_next = this.map.key_manager
-      .add_key_listener(['enter', 'ctrl+g'], function () {
-        this.next()
-      }.bind(this), false)
-
-    // previous keys
-    this.clear_previous = this.map.key_manager
-      .add_key_listener(['shift+enter', 'shift+ctrl+g'], function () {
-        this.previous()
-      }.bind(this), false)
+      .add_escape_listener(function() {
+        this.toggle(false);
+      }.bind(this), true);
 
     // run the show callback
     this.callback_manager.run('show')
 
   } else {
 
+    // TODO: reset all data here?
     this.map.highlight(null)
-    this.selection.style('display', 'none')
+    // TODO: somehow this works the other way round, but with this on 'block' it's good for testing
+    this.selection.style('display', 'block')
 
-    container.style('display', 'none')
-
-    if (this.clear_escape) this.clear_escape()
-    this.clear_escape = null
-    if (this.clear_next) this.clear_next()
-    this.clear_next = null
-    if (this.clear_previous) this.clear_previous()
-    this.clear_previous = null
+   // container.style('display', 'none')
 
     // run the hide callback
     this.callback_manager.run('hide')

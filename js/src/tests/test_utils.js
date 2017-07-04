@@ -209,7 +209,6 @@ describe('utils.extend', () => {
 describe('utils.load_json_or_csv', () => {
   it('loads JSON', () => {
     utils.load_json_or_csv(null,
-                           data_styles.csv_converter,
                            function(error, value) {
                              if (error) console.warn(error)
                              assert.deepEqual(value, {'GAPD': 100})
@@ -220,7 +219,6 @@ describe('utils.load_json_or_csv', () => {
   })
   it('loads CSV', () => {
     utils.load_json_or_csv(null,
-                           data_styles.csv_converter,
                            function(error, value) {
                              if (error) console.warn(error)
                              assert.deepEqual(value, [{'GAPD': '100'}])

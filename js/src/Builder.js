@@ -26,6 +26,7 @@ var _ = require('underscore')
 var d3_select = require('d3-selection').select
 var d3_selection = require('d3-selection').selection
 var d3_json = require('d3-request').json
+var d3Interpolate = require("d3-interpolate")
 
 // stuff for difference mode
 var difference_mode_active
@@ -45,7 +46,7 @@ Builder.prototype = {
   zoom_mode: zoom_mode,
   rotate_mode: rotate_mode,
   text_mode: text_mode,
-  difference_mode: difference_mode,
+//  difference_mode: difference_mode,
   _reaction_check_add_abs: _reaction_check_add_abs,
   set_reaction_data: set_reaction_data,
   set_metabolite_data: set_metabolite_data,
@@ -69,9 +70,7 @@ Builder.prototype = {
   get_target: get_target,
   get_reaction_data_names: get_reaction_data_names,
   get_gene_data_names: get_gene_data_names,
-  get_metabolite_data_names: get_metabolite_data_names,
-  //
-  //calc_data_stats: calc_data_stats
+  get_metabolite_data_names: get_metabolite_data_names
 }
 module.exports = Builder
 
@@ -326,7 +325,7 @@ function load_map (map_data, should_update_data) {
                        this.settings,
                        this.cobra_model,
                        this.options.canvas_size_and_loc,
-                       this.options.enable_search, this)
+                       this.options.enable_search)
   }
   // zoom container status changes
   this.zoom_container.callback_manager.set('svg_start', function () {
@@ -379,7 +378,7 @@ function load_map (map_data, should_update_data) {
     this.settings_bar.toggle(false)
   }.bind(this))
 
-  // set up the metabolite data bar
+  // set up the time series bar
   this.time_series_bar = new TimeSeriesBar(time_series_bar_div, this.map, this)
   // Set up the hide callbacks
   this.time_series_bar.callback_manager.set('show', function() {
@@ -408,17 +407,19 @@ function load_map (map_data, should_update_data) {
 
   this.settings_bar.callback_manager.set('show', function () {
     this.search_bar.toggle(false)
+    this.time_series_bar.toggle(false)
   }.bind(this))
 
   // Set up key manager
   var keys = this._get_keys(this.map, this.zoom_container,
                             this.search_bar, this.settings_bar,
                             this.options.enable_editing,
-                            this.options.full_screen_button)
+                            this.options.full_screen_button,
+                            this.time_series_bar)
   this.map.key_manager.assigned_keys = keys
   // Tell the key manager about the reaction input and search bar
   this.map.key_manager.input_list = [this.build_input, this.search_bar,
-                                     this.settings_bar, this.text_edit_input]
+                                     this.settings_bar, this.text_edit_input, this.time_series_bar]
   // Make sure the key manager remembers all those changes
   this.map.key_manager.update()
   // Turn it on/off
@@ -494,6 +495,7 @@ function load_map (map_data, should_update_data) {
 
 function _set_mode (mode) {
   this.search_bar.toggle(false)
+  this.time_series_bar.toggle(false)
   // input
   this.build_input.toggle(mode == 'build')
   this.build_input.direction_arrow.toggle(mode == 'build')
@@ -527,16 +529,14 @@ function _set_mode (mode) {
     this.map.deselect_text_labels()
   this.map.draw_everything()
 
-  if(mode === 'difference'){ // TODO: is not a mode button any more...
-    if(!this.time_series_bar.is_visible()){
-      this.time_series_bar.showBar(true)
-      this.time_series_bar.update()
-    } else {
-      this.time_series_bar.showBar(false)
-    }
-    //this.time_series_bar.toggleDifferenceMode()
-    //this.time_series_bar.toggle(true)
-  }
+  // if(mode === 'difference'){ // TODO: is not a mode button any more...
+  //   if(!this.time_series_bar.is_visible()){
+  //     this.time_series_bar.showBar(true)
+  //     this.time_series_bar.update(this)
+  //   } else {
+  //     this.time_series_bar.showBar(false)
+  //   }
+  // }
 }
 
 function view_mode() {
@@ -587,10 +587,10 @@ function text_mode() {
   this._set_mode('text')
 }
 
-function difference_mode(){
-  this.callback_manager.run('difference_mode')
-  this._set_mode('difference')
-}
+// function difference_mode(){
+//   this.callback_manager.run('difference_mode')
+//   this._set_mode('difference')
+// }
 
 function _reaction_check_add_abs () {
   var curr_style = this.options.reaction_styles
@@ -625,11 +625,11 @@ function set_reaction_data (data) {
     this.options.reaction_data = data[1]
 
     this.time_series_bar.setTypeOfData('reaction')
-    this.time_series_bar.openTab('reaction_tab')
+    this.time_series_bar.openTab('reaction_tab', this)
   }
 
   var message_fn = this._reaction_check_add_abs()
-  this._update_data(true, true, 'reaction')
+  this._update_data(true, true, 'reaction', undefined, true)
   if (message_fn) {
     message_fn()
   } else {
@@ -655,12 +655,12 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     this.options.gene_data = data[1]
 
     this.time_series_bar.setTypeOfData('gene')
-    this.time_series_bar.openTab('gene_tab')
+    this.time_series_bar.openTab('gene_tab', this)
 
   }
 
 
-  this._update_data(true, true, 'reaction')
+  this._update_data(true, true, 'reaction', undefined, true)
   this.map.set_status('')
 }
 
@@ -680,10 +680,10 @@ function set_metabolite_data (data) {
     this.options.metabolite_data = data[1]
 
     this.time_series_bar.setTypeOfData('metabolite')
-    this.time_series_bar.openTab('metabolite_tab')
+    this.time_series_bar.openTab('metabolite_tab', this)
   }
 
-  this._update_data(true, true, 'metabolite')
+  this._update_data(true, true, 'metabolite', undefined, true)
   this.map.set_status('')
 }
 
@@ -696,7 +696,7 @@ function set_metabolite_data (data) {
  * should_draw: (Optional, Default: true) Whether to redraw the update sections
  * of the map.
  */
-function _update_data (update_model, update_map, kind, should_draw) {
+function _update_data (update_model, update_map, kind, should_draw, update_stats) {
   // defaults
   if (kind === undefined) {
     kind = [ 'reaction', 'metabolite' ]
@@ -727,19 +727,19 @@ function _update_data (update_model, update_map, kind, should_draw) {
         met_data_object = data_styles.import_and_check(this.options.metabolite_data[reference], 'metabolite_data')
 
       } else {
-        var metabolite_for_data_scales = []
-
-        // TODO: find another way to get the values. This is O(n*m)?
-        for (var i in this.options.metabolite_data) {
-          for(var numbers in Object.values(this.options.metabolite_data[i])){
-            metabolite_for_data_scales.push(Object.values(this.options.metabolite_data[i])[numbers])
-          }
-        }
-        this.map.set_nodes_for_data_scales(metabolite_for_data_scales)
-
-
         met_data_object = data_styles.import_and_check(this.options.metabolite_data, 'metabolite_data')
       }
+    }
+
+    if(update_stats){
+      var metabolite_for_data_scales = []
+
+      for (var i in this.options.metabolite_data) {
+        for(var numbers in Object.values(this.options.metabolite_data[i])){
+          metabolite_for_data_scales.push(Object.values(this.options.metabolite_data[i])[numbers])
+        }
+      }
+      this.map.set_nodes_for_data_scales(metabolite_for_data_scales)
     }
 
     this.map.apply_metabolite_data_to_map(met_data_object)
@@ -753,9 +753,6 @@ function _update_data (update_model, update_map, kind, should_draw) {
 
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
 
-
-
-
       if(difference_mode_active){
 
         var difference_reaction_data = [this.options.reaction_data[reference], this.options.reaction_data[target]]
@@ -763,6 +760,10 @@ function _update_data (update_model, update_map, kind, should_draw) {
           'reaction_data')
 
       } else {
+        reaction_data_object = data_styles.import_and_check(this.options.reaction_data[reference], 'reaction_data')
+      }
+
+      if(update_stats){
         var reaction_for_data_scales = []
 
         for (var i in this.options.reaction_data) {
@@ -771,18 +772,66 @@ function _update_data (update_model, update_map, kind, should_draw) {
           }
         }
         this.map.set_reactions_for_data_scales(reaction_for_data_scales)
-
-        reaction_data_object = data_styles.import_and_check(this.options.reaction_data[reference], 'reaction_data')
       }
 
+      if(interpolate === true){
+        var interpolation_data_set
+        var reaction_name, current_data, next_data
+
+        for(var index_of_data_set; index_of_data_set < this.options.reaction_data.length - 1; index_of_data_set++){
+
+          for(var index_of_reaction; index_of_reaction < this.options.reaction_data[index_of_data_set].length; index_of_reaction++){
+
+              reaction_name = Object.keys(this.options.reaction_data[index_of_data_set])[index_of_reaction]
+              current_data = Object.values(this.options.reaction_data[index_of_data_set])[index_of_reaction]
+              // choose the same reaction, but in next data set
+              next_data = Object.values(this.options.reaction_data[index_of_data_set + 1])[index_of_reaction]
+
+              var current_interpolator = d3Interpolate.interpolateNumber(current_data, next_data);
+              var current_object = {}
+              current_object[reaction_name] = current_interpolator
+
+              interpolation_data_set.push( current_object )
+          }
+        }
+
+        // create transition animation
+        // TODO: stop animation
+        // interpolation_data_set contains object of interpolators with name of reaction
+
+        // transition time should be the same as time series interval
+
+        var animation_step = 0
+        var transition_time = 500
+
+        this.animation = setInterval(function(map){
+          for(var data_set in interpolation_data_set){
+            if(animation_step <= 1){
+
+              // make new data set to show on map
+              var data_set_for_animation_step
+
+              for(var interpolator_object in data_set){
+                data_set_for_animation_step.push(data_set[interpolator_object](animation_step))
+              }
+
+              map.apply_reaction_data_to_map(data_set_for_animation_step)
+              animation_step = animation_step + 0.1
+            } else {
+              animation_step = 0
+            }
+
+          }
+        }, transition_time)
+
+      } else {
       this.map.apply_reaction_data_to_map(reaction_data_object)
+      }
 
       if (should_draw)
         this.map.draw_all_reactions(false, false)
     // gene data
     } else if (this.options.gene_data !== null && update_map && this.map !== null) {
-
-      this.map.set_reactions_for_data_scales(genes_for_data_scales)
 
       if(difference_mode_active){
         var difference_gene_data = [this.options.gene_data[reference], this.options.gene_data[target]]
@@ -791,6 +840,9 @@ function _update_data (update_model, update_map, kind, should_draw) {
       } else {
       gene_data_object = make_gene_data_object(this.options.gene_data[reference],
                                                this.cobra_model, this.map)
+      }
+
+      if(update_stats){
         var genes_for_data_scales = []
 
         for (var i in this.options.gene_data ) {
@@ -798,7 +850,9 @@ function _update_data (update_model, update_map, kind, should_draw) {
             genes_for_data_scales.push(Object.values(this.options.gene_data [i])[numbers])
           }
         }
+        this.map.set_reactions_for_data_scales(genes_for_data_scales)
       }
+
 
       this.map.apply_gene_data_to_map(gene_data_object)
       if (should_draw)
@@ -1039,10 +1093,6 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
                 id: 'text-mode-menu-button',
                 text: 'Text mode',
                 key_text: (enable_keys ? ' (T)' : null) })
-      .button({ key: keys.difference_mode, // TODO: this button is not working
-        id: 'difference-mode-menu-button',
-        text: 'Difference mode',
-        key_text: (enable_keys ? ' (D)' : null) })
       .divider()
       .button({ key: keys.delete,
                 text: 'Delete',
@@ -1090,6 +1140,9 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
     .button({ key: keys.search,
               text: 'Find',
               key_text: (enable_keys ? ' (F)' : null) })
+    .button({ key: keys.time_series,
+              text: 'Time Series / Difference Mode',
+              key_text: (enable_keys ? ' (D)' : null) })
   if (full_screen_button) {
     view_menu.button({ key: keys.full_screen,
                        text: 'Full screen',
@@ -1143,7 +1196,7 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
   this.callback_manager.set('rotate_mode', select_button.bind(this, 'rotate-mode-button'))
   this.callback_manager.set('view_mode', select_button.bind(this, 'view-mode-button'))
   this.callback_manager.set('text_mode', select_button.bind(this, 'text-mode-button'))
-  this.callback_manager.set('difference_mode', select_button.bind(this, 'difference-mode-button'))
+//  this.callback_manager.set('difference_mode', select_button.bind(this, 'difference-mode-button'))
 
   // definitions
   function load_map_for_file(error, map_data) {
@@ -1275,16 +1328,16 @@ function _set_up_button_panel(button_selection, keys, enable_editing,
                          })
   }
 
-  ui.individual_button(button_panel.append('li'),
-    {
-      key: keys.difference_mode,
-      text: 'D',
-      id: 'difference-mode-button',
-      icon: 'glyphicon glyphicon-object-align-bottom',
-      tooltip: 'Difference mode',
-      key_text: (enable_keys ? ' (D)' : null),
-      ignore_bootstrap: ignore_bootstrap
-    })
+  // ui.individual_button(button_panel.append('li'),
+  //   {
+  //     key: keys.difference_mode,
+  //     text: 'D',
+  //     id: 'difference-mode-button',
+  //     icon: 'glyphicon glyphicon-object-align-bottom',
+  //     tooltip: 'Difference mode',
+  //     key_text: (enable_keys ? ' (D)' : null),
+  //     ignore_bootstrap: ignore_bootstrap
+  //   })
 
   // mode buttons
   if (enable_editing && menu_option === 'all') {
@@ -1422,7 +1475,7 @@ function _setup_modes (map, brush, zoom_container) {
 /**
  * Define keyboard shortcuts
  */
-function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editing, full_screen_button) {
+function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editing, full_screen_button, time_series_bar) {
 
   var keys = {
     save: {
@@ -1543,6 +1596,12 @@ function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editin
       fn: settings_bar.toggle,
       ignore_with_input: true,
     },
+    time_series: {
+      key: 'd',
+      target: time_series_bar,
+      fn: time_series_bar.toggle.bind(time_series_bar, true),
+      ignore_with_input: true,
+    },
   }
   if (full_screen_button) {
     utils.extend(keys, {
@@ -1591,12 +1650,12 @@ function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editin
         fn: this.text_mode,
         ignore_with_input: true,
       },
-      difference_mode: {
-        key: 'd',
-        target: this,
-        fn: this.difference_mode,
-        ignore_with_input: true,
-      },
+      // difference_mode: {
+      //   key: 'd',
+      //   target: this,
+      //   fn: this.difference_mode,
+      //   ignore_with_input: true,
+      // },
       toggle_beziers: {
         key: 'b',
         target: map,
