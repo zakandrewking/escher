@@ -27,7 +27,6 @@ var interpolation = false
 
 var reaction_tab, metabolite_tab, both_tab
 
-var sliding_window_start, sliding_window_end
 
 // instance methods
 TimeSeriesBar.prototype = {
@@ -55,8 +54,6 @@ function init (sel, map, builder) {
   this.builder.set_reference(0)
   this.builder.set_target(0)
 
-  sliding_window_start = this.builder.get_reference()
-  sliding_window_end = this.builder.get_target()
 
   current = 0
 
@@ -547,14 +544,14 @@ function play_time_series (builder) {
 
       playing = true
 
-      var start = builder.get_reference()
-      var end = builder.get_target()
+      this.sliding_window_start = builder.get_reference()
+      this.sliding_window_end = builder.get_target()
       var data_set_to_interpolate = []
 
     if(typeOfData === 'reaction'){
 
       this.data_set_save = builder.options.reaction_data
-      for(var i = start; i <= end; i++){
+      for(var i = this.sliding_window_start; i <= this.sliding_window_end; i++){
       data_set_to_interpolate.push(builder.options.reaction_data[i])
       }
 
@@ -562,12 +559,12 @@ function play_time_series (builder) {
 
       this.data_set_save = builder.options.gene_data
 
-      for(var i = start; i <= end; i++){
+      for(var i = this.sliding_window_start; i <= this.sliding_window_end; i++){
         data_set_to_interpolate.push(builder.options.gene_data[i])
       }
     } else if(typeOfData === 'metabolite'){
       this.data_set_save = builder.options.metabolite_data
-      for(var i = start; i <= end; i++){
+      for(var i = this.sliding_window_start; i <= this.sliding_window_end; i++){
         data_set_to_interpolate.push(builder.options.metabolite_data[i])
       }
     } else {
@@ -586,7 +583,7 @@ function play_time_series (builder) {
 
       for(var index_of_data_set = 0; index_of_data_set < data_set_to_interpolate.length - 1; index_of_data_set++){
 
-        var interpolated_data_of_reaction = []
+        //var interpolated_data_of_reaction = []
 
         var current_object = {}
 
@@ -611,17 +608,17 @@ function play_time_series (builder) {
       // {key: value, key: value, key: value}, ...
       // {key: value, key: value, key: value}]
 
-      for (var steps = 0; steps < 10; steps++) { // TODO: make steps variable?
+      for (var steps = 0; steps <= 10; steps++) { // TODO: make steps variable?
 
-        var set_of_entries = {} // this contains data for all reactions at one time point = one 'step' of interpolator
-                                // {key: value, key: value, key: value}
 
         for (var set in set_of_interpolators) {
 
           for (var interpolator in set) {
 
-            var keys = Object.keys(set_of_interpolators[set]) // array of all keys
-            var interpolators = Object.values(set_of_interpolators[set]) // array of all interpolators
+            var set_of_entries = {} // this contains data for all reactions at one time point = one 'step' of interpolator
+                                    // {key: value, key: value, key: value}
+            var keys = Object.keys(set_of_interpolators[interpolator]) // array of all keys
+            var interpolators = Object.values(set_of_interpolators[interpolator]) // array of all interpolators
 
             for (var key in keys) {
               // this creates one single entry name: value
@@ -629,16 +626,17 @@ function play_time_series (builder) {
               var current_interpolator_function = interpolators[key]
 
               set_of_entries[identifier] = current_interpolator_function(steps / 10)
+
             }
+              interpolation_data_set.push(set_of_entries)
 
           }
 
         }
-        interpolation_data_set.push(set_of_entries)
+
 
       }
-      //console.log(interpolation_data_set)
-
+        console.log(interpolation_data_set)
 
       if(typeOfData === 'reaction'){
         builder.options.reaction_data = interpolation_data_set
@@ -650,25 +648,27 @@ function play_time_series (builder) {
 
 
       // animation
-      sliding_window_start = 0
-      sliding_window_end = interpolation_data_set.length - 1
+
+      // to play animation with all data sets
+      this.sliding_window_start = 0
+      this.sliding_window_end = interpolation_data_set.length - 1
 
       this.animation = setInterval(function () {
 
         counter.text('Interpolated Time Series of Data Sets: '
-          + sliding_window_start +
+          + this.sliding_window_start +
           ' to ' + builder.get_target() +
           '. Current: ' + builder.get_reference())
 
-        if (builder.get_reference() < sliding_window_end) {
+        if (builder.get_reference() < this.sliding_window_end) {
           var next = builder.get_reference()
           next++
           builder.set_reference(next)
         } else {
-          builder.set_reference(sliding_window_start)
+          builder.set_reference(this.sliding_window_start)
         }
-        builder.set_data_indices(typeOfData, builder.get_reference(), sliding_window_end) // otherwise will set to null
-      }, 200);
+        builder.set_data_indices(typeOfData, builder.get_reference(), this.sliding_window_end) // otherwise will set to null
+      }, 20);
 
     } else {
 
@@ -684,44 +684,46 @@ function play_time_series (builder) {
       } else if (typeOfData === 'metabolite') {
         builder.options.metabolite_data = this.data_set_save
       }
-      data_set_to_interpolate = null
+      data_set_to_interpolate.length = 0
+      builder.set_reference(this.sliding_window_start)
+      builder.set_target(this.sliding_window_end)
 
     }
 
 
   } else {
 
-    // TODO: makes crazy stuff with setting reference / target every time
+    // TODO: makes crazy stuff with setting reference / target every time. maybe just grey out while animation?
 
     if (!playing) {
       playing = true
-      sliding_window_start = builder.get_reference()
-      sliding_window_end = builder.get_target()
+      this.sliding_window_start = builder.get_reference()
+      this.sliding_window_end = builder.get_target()
       // save values for later, because reference gets overwritten in set indices
       this.animation = setInterval(function () {
 
         counter.text('Time Series of Data Sets: '
-          + sliding_window_start +
+          + this.sliding_window_start +
           ' to ' + builder.get_target() +
           '. Current: ' + builder.get_reference())
 
-        if (builder.get_reference() < sliding_window_end) {
+        if (builder.get_reference() < this.sliding_window_end) {
           var next = builder.get_reference()
           next++
           builder.set_reference(next)
         } else {
-          builder.set_reference(sliding_window_start)
+          builder.set_reference(this.sliding_window_start)
         }
 
-        builder.set_data_indices(typeOfData, builder.get_reference(), sliding_window_end) // otherwise will set to null
+        builder.set_data_indices(typeOfData, builder.get_reference(), this.sliding_window_end) // otherwise will set to null
       }, 200);
 
     } else {
       clearInterval(this.animation)
 
       playing = false
-      builder.set_reference(sliding_window_start)
-      builder.set_target(sliding_window_end)
+      builder.set_reference(this.sliding_window_start)
+      builder.set_target(this.sliding_window_end)
     }
   }
 }
@@ -771,20 +773,21 @@ function toggle (on_off) {
         this.toggle(false);
       }.bind(this), true);
 
-    // run the show callback
-    this.callback_manager.run('show')
+    // TODO: run the show callback. why?
+    //this.callback_manager.run('show')
 
   } else {
 
     // TODO: reset all data here?
     this.map.highlight(null)
-    // TODO: somehow this works the other way round, but with this on 'block' it's good for testing
+
+    // TODO: set this to 'none'
     this.selection.style('display', 'block')
 
    // container.style('display', 'none')
 
-    // run the hide callback
-    this.callback_manager.run('hide')
+    // TODO: run the show callback. why?
+    // this.callback_manager.run('hide')
   }
 
 }

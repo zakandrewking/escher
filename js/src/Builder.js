@@ -315,7 +315,7 @@ function load_map (map_data, should_update_data) {
                              this.zoom_container,
                              this.settings,
                              this.cobra_model,
-                             this.options.enable_search, this)
+                             this.options.enable_search)
   } else {
     // new map
     this.map = new Map(svg,
@@ -1140,7 +1140,7 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
     .button({ key: keys.search,
               text: 'Find',
               key_text: (enable_keys ? ' (F)' : null) })
-    .button({ key: keys.time_series,
+    .button({ key: keys.time_series_bar,
               text: 'Time Series / Difference Mode',
               key_text: (enable_keys ? ' (D)' : null) })
   if (full_screen_button) {
@@ -1580,6 +1580,12 @@ function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editin
       fn: search_bar.toggle.bind(search_bar, true),
       ignore_with_input: true,
     },
+    time_series_bar: {
+      key: 'd',
+      target: time_series_bar,
+      fn: time_series_bar.toggle.bind(time_series_bar, true),
+      ignore_with_input: true,
+    },
     view_mode: {
       target: this,
       fn: this.view_mode,
@@ -1594,12 +1600,6 @@ function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editin
       key: ',',
       target: settings_bar,
       fn: settings_bar.toggle,
-      ignore_with_input: true,
-    },
-    time_series: {
-      key: 'd',
-      target: time_series_bar,
-      fn: time_series_bar.toggle.bind(time_series_bar, true),
       ignore_with_input: true,
     },
   }
