@@ -540,13 +540,15 @@ function play_time_series (builder) {
 
   if(interpolation){
 
+      var data_set_to_interpolate = []
+      data_set_to_interpolate.length = 0
+
     if(!playing){
 
       playing = true
 
       this.sliding_window_start = builder.get_reference()
       this.sliding_window_end = builder.get_target()
-      var data_set_to_interpolate = []
 
     if(typeOfData === 'reaction'){
 
@@ -568,39 +570,36 @@ function play_time_series (builder) {
         data_set_to_interpolate.push(builder.options.metabolite_data[i])
       }
     } else {
-      this.data_set_save = null
-      data_set_to_interpolate = null
+     // this.data_set_save = null
+     // data_set_to_interpolate = null
     }
 
       // create new data_set with every data points in between
       // set it to data object in builder
       // set it back after the animation stops
 
-      // pro: builder can switch with set_data_indices, code in time series bar, no changes in builder
-      // con: a lot of new data
 
       var set_of_interpolators = []
 
       for(var index_of_data_set = 0; index_of_data_set < data_set_to_interpolate.length - 1; index_of_data_set++){
-
-        //var interpolated_data_of_reaction = []
 
         var current_object = {}
 
         for(var index_of_reaction = 0; index_of_reaction < Object.keys(data_set_to_interpolate[index_of_data_set]).length; index_of_reaction++){
 
           var reaction_name = Object.keys(data_set_to_interpolate[index_of_data_set])[index_of_reaction]
-          var current_data = Object.values(data_set_to_interpolate[index_of_data_set])[index_of_reaction]
+          var current_object_data = Object.values(data_set_to_interpolate[index_of_data_set])[index_of_reaction]
 
           // choose the same reaction, but in next data set
-          var next_data = Object.values(data_set_to_interpolate[index_of_data_set + 1])[index_of_reaction]
+          var next_object_data = Object.values(data_set_to_interpolate[index_of_data_set + 1])[index_of_reaction]
 
-          current_object[reaction_name] = d3_interpolate.interpolateNumber(current_data, next_data)
+          current_object[reaction_name] =  d3_interpolate.interpolate((current_object_data), (next_object_data)) // ?
 
-            set_of_interpolators.push(current_object)
           }
+        set_of_interpolators.push(current_object)
       }
 
+      console.log(set_of_interpolators)
       // fill new data set with all the data
 
       var interpolation_data_set = []
@@ -608,32 +607,33 @@ function play_time_series (builder) {
       // {key: value, key: value, key: value}, ...
       // {key: value, key: value, key: value}]
 
-      for (var steps = 0; steps <= 10; steps++) { // TODO: make steps variable?
-
-
         for (var set in set_of_interpolators) {
 
           for (var interpolator in set) {
 
+          var steps = 0
+          while (steps <= 10) {
+
+            var keys = Object.keys(set_of_interpolators[set]) // array of all keys, pick out one
+            var interpolators = Object.values(set_of_interpolators[set]) // array of all interpolators, pick out one
+
             var set_of_entries = {} // this contains data for all reactions at one time point = one 'step' of interpolator
                                     // {key: value, key: value, key: value}
-            var keys = Object.keys(set_of_interpolators[interpolator]) // array of all keys
-            var interpolators = Object.values(set_of_interpolators[interpolator]) // array of all interpolators
 
             for (var key in keys) {
               // this creates one single entry name: value
               var identifier = keys[key]
               var current_interpolator_function = interpolators[key]
 
-              set_of_entries[identifier] = current_interpolator_function(steps / 10)
+              set_of_entries[identifier] = current_interpolator_function((steps / 10))
+              //console.log((steps / 10))
 
-            }
               interpolation_data_set.push(set_of_entries)
+            }
 
+            steps++
           }
-
         }
-
 
       }
         console.log(interpolation_data_set)
@@ -684,7 +684,6 @@ function play_time_series (builder) {
       } else if (typeOfData === 'metabolite') {
         builder.options.metabolite_data = this.data_set_save
       }
-      data_set_to_interpolate.length = 0
       builder.set_reference(this.sliding_window_start)
       builder.set_target(this.sliding_window_end)
 
