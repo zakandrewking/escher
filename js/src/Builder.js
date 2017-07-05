@@ -774,59 +774,59 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
         this.map.set_reactions_for_data_scales(reaction_for_data_scales)
       }
 
-      if(interpolate === true){
-        var interpolation_data_set
-        var reaction_name, current_data, next_data
-
-        for(var index_of_data_set; index_of_data_set < this.options.reaction_data.length - 1; index_of_data_set++){
-
-          for(var index_of_reaction; index_of_reaction < this.options.reaction_data[index_of_data_set].length; index_of_reaction++){
-
-              reaction_name = Object.keys(this.options.reaction_data[index_of_data_set])[index_of_reaction]
-              current_data = Object.values(this.options.reaction_data[index_of_data_set])[index_of_reaction]
-              // choose the same reaction, but in next data set
-              next_data = Object.values(this.options.reaction_data[index_of_data_set + 1])[index_of_reaction]
-
-              var current_interpolator = d3Interpolate.interpolateNumber(current_data, next_data);
-              var current_object = {}
-              current_object[reaction_name] = current_interpolator
-
-              interpolation_data_set.push( current_object )
-          }
-        }
-
-        // create transition animation
-        // TODO: stop animation
-        // interpolation_data_set contains object of interpolators with name of reaction
-
-        // transition time should be the same as time series interval
-
-        var animation_step = 0
-        var transition_time = 500
-
-        this.animation = setInterval(function(map){
-          for(var data_set in interpolation_data_set){
-            if(animation_step <= 1){
-
-              // make new data set to show on map
-              var data_set_for_animation_step
-
-              for(var interpolator_object in data_set){
-                data_set_for_animation_step.push(data_set[interpolator_object](animation_step))
-              }
-
-              map.apply_reaction_data_to_map(data_set_for_animation_step)
-              animation_step = animation_step + 0.1
-            } else {
-              animation_step = 0
-            }
-
-          }
-        }, transition_time)
-
-      } else {
+      // if(this.interpolate === true){
+      //   var interpolation_data_set
+      //   var reaction_name, current_data, next_data
+      //
+      //   for(var index_of_data_set = 0; index_of_data_set < this.options.reaction_data.length - 1; index_of_data_set++){
+      //
+      //     for(var index_of_reaction = 0; index_of_reaction < this.options.reaction_data[index_of_data_set].length; index_of_reaction++){
+      //
+      //         reaction_name = Object.keys(this.options.reaction_data[index_of_data_set])[index_of_reaction]
+      //         current_data = Object.values(this.options.reaction_data[index_of_data_set])[index_of_reaction]
+      //         // choose the same reaction, but in next data set
+      //         next_data = Object.values(this.options.reaction_data[index_of_data_set + 1])[index_of_reaction]
+      //
+      //         var current_interpolator = d3Interpolate.interpolateNumber(current_data, next_data);
+      //         var current_object = {}
+      //         current_object[reaction_name] = current_interpolator
+      //
+      //         interpolation_data_set.push( current_object )
+      //     }
+      //   }
+      //
+      //   // create transition animation
+      //   // TODO: stop animation
+      //   // interpolation_data_set contains object of interpolators with name of reaction
+      //
+      //   // transition time should be the same as time series interval
+      //
+      //   var animation_step = 0
+      //   var transition_time = 500
+      //
+      //   this.animation = setInterval(function(map){
+      //     for(var data_set in interpolation_data_set){
+      //       if(animation_step <= 1){
+      //
+      //         // make new data set to show on map
+      //         var data_set_for_animation_step
+      //
+      //         for(var interpolator_object in data_set){
+      //           data_set_for_animation_step.push(data_set[interpolator_object](animation_step))
+      //         }
+      //
+      //         map.apply_reaction_data_to_map(data_set_for_animation_step)
+      //         animation_step = animation_step + 0.1
+      //       } else {
+      //         animation_step = 0
+      //       }
+      //
+      //     }
+      //   }, transition_time)
+      //
+      // } else {
       this.map.apply_reaction_data_to_map(reaction_data_object)
-      }
+ //     }
 
       if (should_draw)
         this.map.draw_all_reactions(false, false)

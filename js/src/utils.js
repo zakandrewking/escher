@@ -692,10 +692,10 @@ function load_json_or_csv (f, callback, pre_fn, failure_fn,
         data[1] = input.data
 
         console.log("new format type 2b")
-      } else { // old data format
-        var index
+      } else { // old data format+
+        // TODO: generate names in builder, pass as only one array -> does not break the API
 
-        for (index in input) { // make up names
+        for (var index in input) { // make up names
           names.push('data set ' + index)
         }
 
@@ -717,7 +717,6 @@ function load_json_or_csv (f, callback, pre_fn, failure_fn,
       }
     }
     // if successful, return the data as [array of names][array of numbers]
-    // TODO: return the names, process data in builder
     callback(null, data)
   }
   if (debug_event !== undefined && debug_event !== null) {

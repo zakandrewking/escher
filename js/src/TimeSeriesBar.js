@@ -7,9 +7,12 @@ var utils = require('./utils')
 var CallbackManager = require('./CallbackManager')
 var _ = require('underscore')
 var data_styles = require('./data_styles.js')
+var d3_interpolate = require("d3-interpolate")
 
 var TimeSeriesBar = utils.make_class()
 
+
+// TODO: get rid of global variables
 var current
 var counter
 var container
@@ -19,9 +22,11 @@ var dropDownMenuReference, dropDownMenuTarget
 var typeOfData
 var number_of_data_sets
 
+var playing = false
+var interpolation = false
+
 var reaction_tab, metabolite_tab, both_tab
 
-var playing = false
 var sliding_window_start, sliding_window_end
 
 // instance methods
@@ -43,6 +48,8 @@ module.exports = TimeSeriesBar
 function init (sel, map, builder) {
 
   this.builder = builder
+
+
 
   this.builder.set_difference_mode(false)
   this.builder.set_reference(0)
@@ -180,7 +187,7 @@ function init (sel, map, builder) {
       d3.select('#referenceText').text('Reference Data Set: ' + this.value)
 
       if(builder.get_difference_mode()){
-        showDifferenceData()
+        showDifferenceData(builder)
       } else {
         builder.set_data_indices(typeOfData, builder.get_reference())
       }
@@ -198,14 +205,14 @@ function init (sel, map, builder) {
     .attr('value', 0)
     .attr('min', 0)
     .attr('max', 0)
-    .on('change', function (b) {
+    .on('change', function (builder) {
 
       builder.set_target(this.value)
       d3.select('#dropDownMenuTarget').property('selectedIndex', this.value)
       d3.select('#targetText').text('Target Data Set ' + this.value)
 
       if(builder.get_difference_mode()){
-        showDifferenceData()
+        showDifferenceData(builder)
       } else {
      //   builder.set_data_indices(typeOfData, builder.get_target())
       }
@@ -221,7 +228,7 @@ function init (sel, map, builder) {
       d3.select('#targetText').text('Target Data Set ' + this.value)
 
       if(builder.get_difference_mode()){
-        showDifferenceData()
+        showDifferenceData(builder)
       } else {
        // builder.set_data_indices(typeOfData, builder.get_target())
       }
@@ -252,6 +259,24 @@ function init (sel, map, builder) {
       play_time_series(builder)
     })
     .append('span').attr('class', 'glyphicon glyphicon-play')
+
+
+  groupButtons
+    .append('input')
+    .attr('type', 'checkbox')
+    .attr('id', 'checkBoxInterpolation')
+    .attr('value', 'Interpolate Data')
+    .text('Difference Mode')
+    .on('change', function () {
+         if (d3.select('#checkBoxInterpolation').property('checked')) {
+           interpolation = true
+         } else {
+            interpolation = false
+         }})
+
+  groupButtons.append('label')
+    .attr('for', 'checkBoxInterpolation')
+    .text('Interpolate Data')
 
   // groupButtons.append('button')
   //   .attr('class', 'btn btn-default')
@@ -518,9 +543,37 @@ function play_time_series (builder) {
 
   if(interpolation){
 
-    var data_set_save = builder.options.reaction_data
-
     if(!playing){
+
+      playing = true
+
+      var start = builder.get_reference()
+      var end = builder.get_target()
+      var data_set_to_interpolate = []
+
+    if(typeOfData === 'reaction'){
+
+      this.data_set_save = builder.options.reaction_data
+      for(var i = start; i <= end; i++){
+      data_set_to_interpolate.push(builder.options.reaction_data[i])
+      }
+
+    } else if(typeOfData === 'gene'){
+
+      this.data_set_save = builder.options.gene_data
+
+      for(var i = start; i <= end; i++){
+        data_set_to_interpolate.push(builder.options.gene_data[i])
+      }
+    } else if(typeOfData === 'metabolite'){
+      this.data_set_save = builder.options.metabolite_data
+      for(var i = start; i <= end; i++){
+        data_set_to_interpolate.push(builder.options.metabolite_data[i])
+      }
+    } else {
+      this.data_set_save = null
+      data_set_to_interpolate = null
+    }
 
       // create new data_set with every data points in between
       // set it to data object in builder
@@ -529,13 +582,111 @@ function play_time_series (builder) {
       // pro: builder can switch with set_data_indices, code in time series bar, no changes in builder
       // con: a lot of new data
 
+      var set_of_interpolators = []
 
+      for(var index_of_data_set = 0; index_of_data_set < data_set_to_interpolate.length - 1; index_of_data_set++){
+
+        var interpolated_data_of_reaction = []
+
+        var current_object = {}
+
+        for(var index_of_reaction = 0; index_of_reaction < Object.keys(data_set_to_interpolate[index_of_data_set]).length; index_of_reaction++){
+
+          var reaction_name = Object.keys(data_set_to_interpolate[index_of_data_set])[index_of_reaction]
+          var current_data = Object.values(data_set_to_interpolate[index_of_data_set])[index_of_reaction]
+
+          // choose the same reaction, but in next data set
+          var next_data = Object.values(data_set_to_interpolate[index_of_data_set + 1])[index_of_reaction]
+
+          current_object[reaction_name] = d3_interpolate.interpolateNumber(current_data, next_data)
+
+            set_of_interpolators.push(current_object)
+          }
+      }
+
+      // fill new data set with all the data
+
+      var interpolation_data_set = []
+      // [{key: value, key: value, key: value},
+      // {key: value, key: value, key: value}, ...
+      // {key: value, key: value, key: value}]
+
+      for (var steps = 0; steps < 10; steps++) { // TODO: make steps variable?
+
+        var set_of_entries = {} // this contains data for all reactions at one time point = one 'step' of interpolator
+                                // {key: value, key: value, key: value}
+
+        for (var set in set_of_interpolators) {
+
+          for (var interpolator in set) {
+
+            var keys = Object.keys(set_of_interpolators[set]) // array of all keys
+            var interpolators = Object.values(set_of_interpolators[set]) // array of all interpolators
+
+            for (var key in keys) {
+              // this creates one single entry name: value
+              var identifier = keys[key]
+              var current_interpolator_function = interpolators[key]
+
+              set_of_entries[identifier] = current_interpolator_function(steps / 10)
+            }
+
+          }
+
+        }
+        interpolation_data_set.push(set_of_entries)
+
+      }
+      //console.log(interpolation_data_set)
+
+
+      if(typeOfData === 'reaction'){
+        builder.options.reaction_data = interpolation_data_set
+      } else if(typeOfData === 'gene'){
+        builder.options.gene_data = interpolation_data_set
+      } else if(typeOfData === 'metabolite'){
+        builder.options.metabolite_data = interpolation_data_set
+      }
+
+
+      // animation
+      sliding_window_start = 0
+      sliding_window_end = interpolation_data_set.length - 1
+
+      this.animation = setInterval(function () {
+
+        counter.text('Interpolated Time Series of Data Sets: '
+          + sliding_window_start +
+          ' to ' + builder.get_target() +
+          '. Current: ' + builder.get_reference())
+
+        if (builder.get_reference() < sliding_window_end) {
+          var next = builder.get_reference()
+          next++
+          builder.set_reference(next)
+        } else {
+          builder.set_reference(sliding_window_start)
+        }
+        builder.set_data_indices(typeOfData, builder.get_reference(), sliding_window_end) // otherwise will set to null
+      }, 200);
 
     } else {
-      // after animation rest to 'normal' data
-      builder.options.reaction_data = data_set_save
-    }
 
+      // after animation reset to 'normal' data
+      clearInterval(this.animation)
+
+      playing = false
+
+      if (typeOfData === 'reaction') {
+        builder.options.reaction_data = this.data_set_save
+      } else if (typeOfData === 'gene') {
+        builder.options.gene_data = this.data_set_save
+      } else if (typeOfData === 'metabolite') {
+        builder.options.metabolite_data = this.data_set_save
+      }
+      data_set_to_interpolate = null
+
+    }
 
 
   } else {
@@ -567,13 +718,13 @@ function play_time_series (builder) {
 
     } else {
       clearInterval(this.animation)
+
       playing = false
       builder.set_reference(sliding_window_start)
       builder.set_target(sliding_window_end)
     }
   }
 }
-
 
 
 
