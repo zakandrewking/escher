@@ -275,6 +275,9 @@ function init (sel, map, builder) {
     .attr('for', 'checkBoxInterpolation')
     .text('Interpolate Data')
 
+
+  //create_chart(container)
+
   // groupButtons.append('button')
   //   .attr('class', 'btn btn-default')
   //   .on('click', this.update.bind(this))
@@ -793,4 +796,31 @@ function toggle (on_off) {
 
 function setTypeOfData (data) {
   typeOfData = data
+}
+
+function create_chart(container){
+
+  container.append('div')
+    .append('svg')
+    .attr('id', 'visualisation')
+
+
+
+  // load current data set
+
+  // for all data sets create chart data
+    // take identifier and collect data over all sets:
+
+      // save identifier for label
+      // var data = [{y: value, x: value},{y: value, x: value},...{}]
+      // save min and max
+
+  // axis based on overall max / min
+
+  // create line with random (?) color
+
+  // create label with data set name and same color
+
+
+
 }

@@ -714,10 +714,10 @@ function load_json_or_csv (f, callback, pre_fn, failure_fn,
         var data = []
         var csv_data = csv_converter(d3_csvParseRows(result))
 
-        data = csv_data[1] // looses names but does not break api
-        csv_names = csv_data[0]
-        //data[0] = csv_data[0]
-        //data[1] = csv_data[1]
+        //data = csv_data[1] // looses names but does not break api
+        //csv_names = csv_data[0]
+        data[0] = csv_data[0]
+        data[1] = csv_data[1]
 
 
       } catch (e) {

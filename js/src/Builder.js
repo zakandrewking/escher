@@ -679,7 +679,6 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     this.options.gene_data = null
 
   } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
-    var gene_data_names = []
 
     gene_data_names = utils.get_csv_names()
 
@@ -724,11 +723,10 @@ function set_metabolite_data (data) {
     this.options.metabolite = null
 
   } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
-    var metabolite_data_names = []
 
     metabolite_data_names = utils.get_csv_names()
 
-    if(reaction_data_names === undefined){
+    if(metabolite_data_names === undefined){
       for (var index in data) {// make up names
         metabolite_data_names.push('data set ' + index)
       }
