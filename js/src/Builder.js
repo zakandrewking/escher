@@ -28,11 +28,13 @@ var d3_selection = require('d3-selection').selection
 var d3_json = require('d3-request').json
 var d3Interpolate = require("d3-interpolate")
 
-// stuff for difference mode
+// TODO: no global variables
 var difference_mode_active
 var reference, target
 
-var reaction_data_names, gene_data_names, metabolite_data_names
+var reaction_data_names
+var gene_data_names
+var metabolite_data_names
 
 var Builder = utils.make_class()
 Builder.prototype = {
@@ -612,12 +614,32 @@ function _reaction_check_add_abs () {
  */
 function set_reaction_data (data) {
 
-  // data is [array of names][array of numbers]
+  reaction_data_names = []
+
+  // new data is [array of names][array of numbers]
   // new case for reset to null, because crashes on null[1]
   if (data === null) {
 
     reaction_data_names = null
     this.options.reaction_data = null
+
+  } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
+
+    reaction_data_names = utils.get_csv_names()
+
+    if(reaction_data_names === undefined){
+      var names = []
+      for (var index in data) {// make up names
+      names.push('data set ' + index)
+    }
+
+      reaction_data_names = names
+    }
+
+
+    this.options.reaction_data = data
+    this.time_series_bar.setTypeOfData('reaction')
+    this.time_series_bar.openTab('reaction_tab', this)
 
   } else {
 
@@ -628,6 +650,7 @@ function set_reaction_data (data) {
     this.time_series_bar.openTab('reaction_tab', this)
   }
 
+    console.log(reaction_data_names)
   var message_fn = this._reaction_check_add_abs()
   this._update_data(true, true, 'reaction', undefined, true)
   if (message_fn) {
@@ -645,12 +668,34 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     // default undefined
     this.settings.set_conditional('show_gene_reaction_rules', false)
   }
+  gene_data_names = []
 
-  if(data === null){
 
+  // new data is [array of names][array of numbers]
+  // new case for reset to null, because crashes on null[1]
+  if (data === null) {
+
+    gene_data_names = null
     this.options.gene_data = null
 
-  } else {
+  } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
+    var gene_data_names = []
+
+    gene_data_names = utils.get_csv_names()
+
+    if(gene_data_names === undefined){
+      for (var index in data) {// make up names
+        gene_data_names.push('data set ' + index)
+      }
+    }
+
+    this.options.gene_data = data
+    this.time_series_bar.setTypeOfData('gene')
+    this.time_series_bar.openTab('gene_tab', this)
+
+  }
+
+  else {
     gene_data_names = data[0]
     this.options.gene_data = data[1]
 
@@ -658,7 +703,6 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     this.time_series_bar.openTab('gene_tab', this)
 
   }
-
 
   this._update_data(true, true, 'reaction', undefined, true)
   this.map.set_status('')
@@ -669,12 +713,34 @@ function set_gene_data (data, clear_gene_reaction_rules) {
  */
 function set_metabolite_data (data) {
 
+  metabolite_data_names = []
+
+
+  // new data is [array of names][array of numbers]
+  // new case for reset to null, because crashes on null[1]
   if (data === null) {
 
     metabolite_data_names = null
-    this.options.metabolite_data = null
+    this.options.metabolite = null
 
-  } else {
+  } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
+    var metabolite_data_names = []
+
+    metabolite_data_names = utils.get_csv_names()
+
+    if(reaction_data_names === undefined){
+      for (var index in data) {// make up names
+        metabolite_data_names.push('data set ' + index)
+      }
+    }
+
+    this.options.metabolite = data
+    this.time_series_bar.setTypeOfData('metabolite')
+    this.time_series_bar.openTab('metabolite_tab', this)
+
+  }
+
+  else {
 
     metabolite_data_names = data[0]
     this.options.metabolite_data = data[1]

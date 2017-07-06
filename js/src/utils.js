@@ -63,9 +63,11 @@ module.exports = {
   get_document: get_document,
   get_window: get_window,
   d3_transform_catch: d3_transform_catch,
-  check_browser: check_browser
+  check_browser: check_browser,
+  get_csv_names: get_csv_names
 }
 
+var csv_names = []
 
 /**
  * Check if Blob is available, and alert if it is not.
@@ -655,7 +657,7 @@ function load_json_or_csv (f, callback, pre_fn, failure_fn,
 
     var input
 
-    var data = [[],[]] // [array of names][array of data]
+    var data = [[],[]] //old, new: [array of names][array of data]
     var names = []
 
 
@@ -692,15 +694,12 @@ function load_json_or_csv (f, callback, pre_fn, failure_fn,
         data[1] = input.data
 
         console.log("new format type 2b")
-      } else { // old data format+
-        // TODO: generate names in builder, pass as only one array -> does not break the API
+      } else { // old data format
 
-        for (var index in input) { // make up names
-          names.push('data set ' + index)
-        }
-
-        data[0] = names
-        data[1] = input
+        data = []
+        data = input
+        //data[0] = names
+        //data[1] = input
         console.log('old format')
       }
 
@@ -709,7 +708,18 @@ function load_json_or_csv (f, callback, pre_fn, failure_fn,
 
       // try csv
       try {
-        data = csv_converter(d3_csvParseRows(result))
+        //
+        // TODO: comment in these lines to keep names with csv, breaks the api anyway
+
+        var data = []
+        var csv_data = csv_converter(d3_csvParseRows(result))
+
+        data = csv_data[1] // looses names but does not break api
+        csv_names = csv_data[0]
+        //data[0] = csv_data[0]
+        //data[1] = csv_data[1]
+
+
       } catch (e) {
         // if both failed, return the errors
         callback(errors + '\nCSV error: ' + e, null)
@@ -1214,4 +1224,12 @@ function csv_converter(csv_rows) {
   data[0] = names
   data[1] = converted
   return data
+}
+
+function check_if_array_only_contains_strings(array) {
+  return array.every(function(elem){ return typeof elem === "string" });
+}
+
+function get_csv_names(){
+  return csv_names
 }

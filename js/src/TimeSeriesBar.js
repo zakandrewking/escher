@@ -179,7 +179,7 @@ function init (sel, map, builder) {
     .attr('id', 'dropDownMenuReference')
     .on('change', function (builder) {
 
-      b.set_reference(this.value)
+      builder.set_reference(this.value)
       d3.select('#sliderReference').property('value', this.value)
       d3.select('#referenceText').text('Reference Data Set: ' + this.value)
 
