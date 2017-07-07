@@ -7,6 +7,7 @@ var utils = require('./utils')
 var CallbackManager = require('./CallbackManager')
 var _ = require('underscore')
 var data_styles = require('./data_styles.js')
+var d3 = require('d3')
 var d3_interpolate = require("d3-interpolate")
 
 var TimeSeriesBar = utils.make_class()
@@ -48,6 +49,7 @@ function init (sel, map, builder) {
 
   this.builder = builder
 
+  var duration = 2000
 
 
   this.builder.set_difference_mode(false)
@@ -253,10 +255,28 @@ function init (sel, map, builder) {
     .attr('class', 'btn btn-default')
     .attr('id', 'play_button')
     .on('click', function(){
-      play_time_series(builder)
+      play_time_series(builder, duration)
     })
     .append('span').attr('class', 'glyphicon glyphicon-play')
 
+
+  groupButtons.append('label')
+    .attr('for', 'inputDuration')
+    .text('Duration in ms')
+
+  groupButtons
+    .append('input')
+    .attr('id', 'inputDuration')
+    .attr('type', 'number')
+    .attr('min', 0)
+    .attr('value', 200)
+
+    .on('input', function () {
+        duration = this.value
+      })
+
+
+  groupButtons.append('div')
 
   groupButtons
     .append('input')
@@ -271,12 +291,43 @@ function init (sel, map, builder) {
             interpolation = false
          }})
 
+
   groupButtons.append('label')
     .attr('for', 'checkBoxInterpolation')
     .text('Interpolate Data')
 
+  groupButtons.append('div')
 
-  //create_chart(container)
+
+  groupButtons
+    .append('input')
+    .attr('type', 'checkbox')
+    .attr('id', 'checkBoxChart')
+    .attr('value', 'Show Chart')
+    .text('Show Chart')
+    .on('change', function () {
+      if (d3.select('#checkBoxChart').property('checked')) {
+        create_chart(builder)
+        toggle_chart(true)
+      } else {
+        toggle_chart(false)
+      }})
+
+  groupButtons.append('label')
+    .attr('for', 'checkBoxChart')
+    .text('Show Chart')
+
+  container.append('div')
+    .attr('id', 'div_data_chart')
+    .append('svg')
+    .attr('id', 'data_chart')
+    .attr('display','block')
+
+  container.append('label')
+    .attr('id', 'div_data_chart_labels')
+    .text('Lines:')
+
+
 
   // groupButtons.append('button')
   //   .attr('class', 'btn btn-default')
@@ -318,12 +369,17 @@ function init (sel, map, builder) {
   //   .append('span')//.attr('class', 'glyphicon glyphicon-play')
   //   .text('Compare')
 
+  create_chart(builder)
+
+
   this.callback_manager = new CallbackManager()
 
   this.selection = container
   this.map = map
 }
 
+
+// TODO: I need only one tab
 function openTab (tab_id, builder) {
 
   tab_container.style('display', 'block')
@@ -379,7 +435,7 @@ function openTab (tab_id, builder) {
  *
  */
 
-function update (builder) {
+function update (builder, should_create_chart) {
 
   var currentDataSet
   var data_set_loaded = false
@@ -438,6 +494,11 @@ function update (builder) {
       dropDownMenuReference.append('option').attr('value', x).text('Reference Data Set: ' + name_of_current_data_set)
       dropDownMenuTarget.append('option').attr('value', x).text('Target Data Set: ' + name_of_current_data_set)
 
+    }
+
+    if(should_create_chart){
+      create_chart(builder)
+      toggle_chart(true)
     }
 
   } else { // reset everything
@@ -539,7 +600,7 @@ function previous (builder) {
   }
 }
 
-function play_time_series (builder) {
+function play_time_series (builder, duration) {
 
   if(interpolation){
 
@@ -671,7 +732,7 @@ function play_time_series (builder) {
           builder.set_reference(this.sliding_window_start)
         }
         builder.set_data_indices(typeOfData, builder.get_reference(), this.sliding_window_end) // otherwise will set to null
-      }, 20);
+      }, duration);
 
     } else {
 
@@ -718,7 +779,7 @@ function play_time_series (builder) {
         }
 
         builder.set_data_indices(typeOfData, builder.get_reference(), this.sliding_window_end) // otherwise will set to null
-      }, 200);
+      }, duration);
 
     } else {
       clearInterval(this.animation)
@@ -798,29 +859,158 @@ function setTypeOfData (data) {
   typeOfData = data
 }
 
-function create_chart(container){
 
-  container.append('div')
-    .append('svg')
-    .attr('id', 'visualisation')
+function create_chart(builder){
+
+  var current_data_set
+  var current_data_set_names
+  var data_set_loaded = false
+
+  if (typeOfData === 'reaction' && builder.options.reaction_data !== null) {
+    current_data_set = builder.options.reaction_data
+    current_data_set_names = builder.get_reaction_data_names()
+    data_set_loaded = true
+  } else if (typeOfData === 'gene' && builder.options.gene_data !== null) {
+    current_data_set = builder.options.gene_data
+    current_data_set_names = builder.get_gene_data_names()
+
+    data_set_loaded = true
+  } else if (typeOfData === 'metabolite' && builder.options.metabolite_data !== null) {
+    current_data_set = builder.options.metabolite_data
+    current_data_set_names = builder.get_metabolite_data_names()
+
+    data_set_loaded = true
+  }
+
+  if(data_set_loaded){
+
+    var width = 300
+    var height = 150
+    var margins = {
+        top: 20,
+        right: 20,
+        bottom: 20,
+        left: 50
+      }
 
 
+    var data_chart = d3.select("#data_chart")
+    var color = d3.scale.category20();
 
-  // load current data set
+    var data_for_lines = []
+    var labels_for_lines = Object.keys(current_data_set[0])
 
-  // for all data sets create chart data
-    // take identifier and collect data over all sets:
+    // for all data keys create chart data
+
+    for(var k in Object.keys(current_data_set[0])){ // for each key
+
+      var data_for_line = []
 
       // save identifier for label
-      // var data = [{y: value, x: value},{y: value, x: value},...{}]
-      // save min and max
+      //labels_for_lines.push(key)
 
-  // axis based on overall max / min
+      for(var index in current_data_set){ // go though all data sets to collect values
+        var data_point = {}
+        var key = Object.keys(current_data_set[index])[k]
 
-  // create line with random (?) color
+        // y is values, x is index TODO: tx how ?
 
-  // create label with data set name and same color
+        var y_value = current_data_set[index][key]
+
+        data_point['x'] = index
+        data_point['y'] = y_value
+
+        data_for_line.push(data_point)
+
+      }
 
 
+      data_for_lines.push(data_for_line)
+
+
+      // create line with random (?) color
+
+      // create label with data set name and same color
+
+
+      // take identifier and collect data over all sets:
+
+    }
+
+    var domain_x_scale_min = 0
+    var domain_x_scale_max = current_data_set.length - 1
+
+    var domain_y_scale_min = d3.min(Object.values(data_for_lines[0][0]))
+    var domain_y_scale_max = d3.max(Object.values(data_for_lines[0][0]))
+
+    // TODO: google a better way
+    for(var o in data_for_lines){
+      for(var p in data_for_lines[o]){
+      var curr_min = d3.min(Object.values(data_for_lines[o][p]))
+      if(curr_min < domain_y_scale_min){
+        domain_y_scale_min = curr_min
+      }
+      var curr_max = d3.max(Object.values(data_for_lines[o][p]))
+
+      if(curr_max > domain_y_scale_max){
+        domain_y_scale_max = curr_max
+
+      }
+
+      }
+    }
+
+    var x_scale = d3.scale.linear().range([margins.left, width - margins.right]).domain([domain_x_scale_min,domain_x_scale_max])
+    var y_scale = d3.scale.linear().range([height - margins.top, margins.bottom]).domain([domain_y_scale_min,domain_y_scale_max])
+
+    var x_axis = d3.svg.axis().scale(x_scale)
+    var y_axis = d3.svg.axis().scale(y_scale).orient("left")
+
+
+    data_chart.append("svg:g")
+      .attr("transform", "translate(0," + (height - margins.bottom) + ")")
+      .call(x_axis);
+
+    data_chart.append("svg:g")
+      .attr("transform", "translate(" + (margins.left) + ",0)")
+      .call(y_axis);
+
+    for(var i in data_for_lines){
+
+      var data = data_for_lines[i]
+
+      var line = d3.svg.line()
+        .x(function(data) {
+          return x_scale(data.x);
+        })
+        .y(function(data) {
+          return y_scale(data.y);
+        });
+
+      data_chart.append('svg:path')
+        .attr('d', line(data))
+        .attr('stroke', color(i))
+        .attr('stroke-width', 2)
+        .attr('fill', 'none')
+
+      // Add a label with same color as line
+      d3.select('#div_data_chart_labels')
+        .append('div').append('label')
+        .style('color', color(i))
+        .text(labels_for_lines[i])
+
+
+    }
+  }
+
+}
+
+function toggle_chart(show){
+  if(show){
+  d3.select('#div_data_chart').attr('display', 'block')
+  } else {
+    d3.select('#div_data_chart').attr('display', 'none')
+
+  }
 
 }
