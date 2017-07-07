@@ -77,31 +77,6 @@ Builder.prototype = {
 module.exports = Builder
 
 function init (map_data, model_data, embedded_css, selection, options) {
-
-  var test_data = [["reaction_data_set_1",
-    "reaction_data_set_2",
-    "reaction_data_set_3",
-    "reaction_data_set_4",
-    "reaction_data_set_5",
-    "reaction_data_set_6",
-    "reaction_data_set_1",
-    "reaction_data_set_2",
-    "reaction_data_set_8",
-    "reaction_data_set_9",
-    "reaction_data_set_10"
-  ],[{"PPA2":0, "ENO": 10, "PPS": 1},
-    {"PPA2":0.1, "ENO":9, "PPS": 2 },
-    {"PPA2":0.2, "ENO": 8, "PPS": 3},
-    {"PPA2":0.3, "ENO": 7, "PPS": 4},
-    {"PPA2":0.4, "ENO":6, "PPS": 5 },
-    {"PPA2":0.5, "ENO": 5, "PPS": 5},
-    {"PPA2":0.6, "ENO":4, "PPS": 5},
-    {"PPA2":0.7, "ENO":3, "PPS": 4 },
-    {"PPA2":0.8, "ENO": 2, "PPS": 3},
-    {"PPA2":0.9, "ENO": 1, "PPS": 2},
-    {"PPA2":1.0, "ENO":0, "PPS": 1 }]]
-
-
   // Defaults
   if (!selection) {
     selection = d3_select('body').append('div')

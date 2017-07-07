@@ -7,7 +7,7 @@ var utils = require('./utils')
 var CallbackManager = require('./CallbackManager')
 var _ = require('underscore')
 var data_styles = require('./data_styles.js')
-var d3 = require('d3')
+var d3_scale = require('d3-scale')
 var d3_interpolate = require("d3-interpolate")
 
 var TimeSeriesBar = utils.make_class()
@@ -49,8 +49,7 @@ function init (sel, map, builder) {
 
   this.builder = builder
 
-  var duration = 2000
-
+  var duration = 200
 
   this.builder.set_difference_mode(false)
   this.builder.set_reference(0)
@@ -154,27 +153,10 @@ function init (sel, map, builder) {
     .style('display', 'none')
 
 
-  tab_container.append('div')
-    .append('text')
-    .attr('id', 'referenceText')
-    .text('Reference Data Set: ')
-
-  sliderReference = tab_container.append('div').append('input')
-    .attr('id', 'sliderReference')
-    .attr('type', 'range')
-    .attr('value', 0)
-    .attr('min', 0)
-    .attr('max', 0)
-    .on('change', function (builder) {
-      builder.set_reference(this.value)
-      d3.select('#dropDownMenuReference').property('selectedIndex', this.value)
-      d3.select('#referenceText').text('Reference Data Set: ' + this.value)
-      if(builder.get_difference_mode()){
-      showDifferenceData(builder)
-      } else {
-        builder.set_data_indices(typeOfData, builder.get_reference())
-      }
-    })
+  // tab_container.append('div')
+  //   .append('text')
+  //   .attr('id', 'referenceText')
+  //   .text('Reference Data Set: ')
 
   dropDownMenuReference = tab_container.append('select')
     .attr('name', 'target-list')
@@ -193,10 +175,46 @@ function init (sel, map, builder) {
 
     })
 
-  tab_container.append('div')
-    .append('text')
-    .attr('id', 'targetText')
-    .text('Target Data Set: ')
+  sliderReference = tab_container.append('div').append('input')
+    .attr('id', 'sliderReference')
+    .attr('type', 'range')
+    .attr('value', 0)
+    .attr('min', 0)
+    .attr('max', 0)
+    .on('change', function (builder) {
+      builder.set_reference(this.value)
+      d3.select('#dropDownMenuReference').property('selectedIndex', this.value)
+      d3.select('#referenceText').text('Reference Data Set: ' + this.value)
+      if(builder.get_difference_mode()){
+      showDifferenceData(builder)
+      } else {
+        builder.set_data_indices(typeOfData, builder.get_reference())
+      }
+    })
+
+
+
+  // tab_container.append('div')
+  //   .append('text')
+  //   .attr('id', 'targetText')
+  //   .text('Target Data Set: ')
+
+  dropDownMenuTarget = tab_container.append('select')
+    .attr('name', 'target-list')
+    .attr('id', 'dropDownMenuTarget')
+    .on('change', function () {
+
+      builder.set_target(this.value)
+      d3.select('#sliderTarget').property('value', this.value)
+      d3.select('#targetText').text('Target Data Set ' + this.value)
+
+      if(builder.get_difference_mode()){
+        showDifferenceData(builder)
+      } else {
+        // builder.set_data_indices(typeOfData, builder.get_target())
+      }
+
+    })
 
   sliderTarget = tab_container.append('div').append('input')
     .attr('type', 'range')
@@ -217,22 +235,7 @@ function init (sel, map, builder) {
       }
     })
 
-  dropDownMenuTarget = tab_container.append('select')
-    .attr('name', 'target-list')
-    .attr('id', 'dropDownMenuTarget')
-    .on('change', function () {
 
-      builder.set_target(this.value)
-      d3.select('#sliderTarget').property('value', this.value)
-      d3.select('#targetText').text('Target Data Set ' + this.value)
-
-      if(builder.get_difference_mode()){
-        showDifferenceData(builder)
-      } else {
-       // builder.set_data_indices(typeOfData, builder.get_target())
-      }
-
-    })
 
   var groupButtons = tab_container.append('div')//.attr('class', 'btn-group btn-group-sm')
 
@@ -317,15 +320,20 @@ function init (sel, map, builder) {
     .attr('for', 'checkBoxChart')
     .text('Show Chart')
 
+
   container.append('div')
     .attr('id', 'div_data_chart')
     .append('svg')
     .attr('id', 'data_chart')
     .attr('display','block')
 
+
+
   container.append('label')
     .attr('id', 'div_data_chart_labels')
+    .attr('display','block')
     .text('Lines:')
+
 
 
 
@@ -498,7 +506,7 @@ function update (builder, should_create_chart) {
 
     if(should_create_chart){
       create_chart(builder)
-      toggle_chart(true)
+      //toggle_chart(true)
     }
 
   } else { // reset everything
@@ -893,9 +901,8 @@ function create_chart(builder){
         left: 50
       }
 
-
     var data_chart = d3.select("#data_chart")
-    var color = d3.scale.category20();
+    var color = d3_scale.schemeCategory20
 
     var data_for_lines = []
     var labels_for_lines = Object.keys(current_data_set[0])
@@ -926,14 +933,6 @@ function create_chart(builder){
 
 
       data_for_lines.push(data_for_line)
-
-
-      // create line with random (?) color
-
-      // create label with data set name and same color
-
-
-      // take identifier and collect data over all sets:
 
     }
 
@@ -989,14 +988,14 @@ function create_chart(builder){
 
       data_chart.append('svg:path')
         .attr('d', line(data))
-        .attr('stroke', color(i))
+        .attr('stroke', color[i])
         .attr('stroke-width', 2)
         .attr('fill', 'none')
 
       // Add a label with same color as line
       d3.select('#div_data_chart_labels')
         .append('div').append('label')
-        .style('color', color(i))
+        .style('color', color[i])
         .text(labels_for_lines[i])
 
 
@@ -1008,8 +1007,12 @@ function create_chart(builder){
 function toggle_chart(show){
   if(show){
   d3.select('#div_data_chart').attr('display', 'block')
+    d3.select('#div_data_chart_labels').attr('display', 'block')
+
+
   } else {
     d3.select('#div_data_chart').attr('display', 'none')
+    d3.select('#div_data_chart_labels').attr('display', 'none')
 
   }
 

@@ -221,7 +221,7 @@ describe('utils.load_json_or_csv', () => {
     utils.load_json_or_csv(null,
                            function(error, value) {
                              if (error) console.warn(error)
-                             assert.deepEqual(value, [{'GAPD': '100'}])
+                             assert.deepEqual(value, [["value"],[{"GAPD": "100"}]])
                            },
                            null,
                            null,

@@ -55,7 +55,6 @@
   },
   "dependencies": {
     "baconjs": "^0.7.71",
-    "d3": "^4.9.1",
     "d3-brush": "zakandrewking/d3-brush",
     "d3-drag": "^1.0.2",
     "d3-dsv": "^1.0.3",
@@ -67,7 +66,8 @@
     "mousetrap": "^1.5.3",
     "tinier": "^0.5.1",
     "underscore": "^1.8.3",
-    "vkbeautify": "^0.99.1"
+    "vkbeautify": "^0.99.1",
+    "d3-interpolate": "latest"
   },
   "scripts": {
     "compile": "./node_modules/.bin/grunt default",
