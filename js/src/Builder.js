@@ -28,14 +28,6 @@ var d3_selection = require('d3-selection').selection
 var d3_json = require('d3-request').json
 var d3Interpolate = require("d3-interpolate")
 
-// TODO: no global variables
-var difference_mode_active
-var reference, target
-
-var reaction_data_names
-var gene_data_names
-var metabolite_data_names
-
 var Builder = utils.make_class()
 Builder.prototype = {
   init: init,
@@ -48,7 +40,6 @@ Builder.prototype = {
   zoom_mode: zoom_mode,
   rotate_mode: rotate_mode,
   text_mode: text_mode,
-//  difference_mode: difference_mode,
   _reaction_check_add_abs: _reaction_check_add_abs,
   set_reaction_data: set_reaction_data,
   set_metabolite_data: set_metabolite_data,
@@ -62,17 +53,7 @@ Builder.prototype = {
   _setup_modes: _setup_modes,
   _get_keys: _get_keys,
   _setup_confirm_before_exit: _setup_confirm_before_exit,
-  //
   set_data_indices: set_data_indices,
-  set_difference_mode: set_difference_mode,
-  get_difference_mode: get_difference_mode,
-  set_reference: set_reference,
-  set_target: set_target,
-  get_reference: get_reference,
-  get_target: get_target,
-  get_reaction_data_names: get_reaction_data_names,
-  get_gene_data_names: get_gene_data_names,
-  get_metabolite_data_names: get_metabolite_data_names
 }
 module.exports = Builder
 
@@ -387,6 +368,15 @@ function load_map (map_data, should_update_data) {
     this.time_series_bar.toggle(false)
   }.bind(this))
 
+  // set up attributes for time series
+  this.difference_mode_active = false
+  this.reference = 0
+  this.target = 0
+
+  this.reaction_data_names = []
+  this.gene_data_names = []
+  this.metabolite_data_names = []
+
 
   // Set up the settings
   var settings_div = this.selection.append('div')
@@ -530,15 +520,6 @@ function _set_mode (mode) {
   if (mode == 'rotate')
     this.map.deselect_text_labels()
   this.map.draw_everything()
-
-  // if(mode === 'difference'){ // TODO: is not a mode button any more...
-  //   if(!this.time_series_bar.is_visible()){
-  //     this.time_series_bar.showBar(true)
-  //     this.time_series_bar.update(this)
-  //   } else {
-  //     this.time_series_bar.showBar(false)
-  //   }
-  // }
 }
 
 function view_mode() {
@@ -614,26 +595,24 @@ function _reaction_check_add_abs () {
  */
 function set_reaction_data (data) {
 
-  reaction_data_names = []
+  this.reaction_data_names = []
 
   // new data is [array of names][array of numbers]
   // new case for reset to null, because crashes on null[1]
   if (data === null) {
 
-    reaction_data_names = null
+    this.reaction_data_names = null
     this.options.reaction_data = null
 
   } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
 
-    reaction_data_names = utils.get_csv_names()
+    this.reaction_data_names = utils.get_csv_names()
 
-    if(reaction_data_names === undefined){
-      var names = []
-      for (var index in data) {// make up names
-      names.push('data set ' + index)
-    }
-
-      reaction_data_names = names
+    // make up names
+    if (this.reaction_data_names.length === 0) {
+      for (var index in data) {
+        this.reaction_data_names.push('data set ' + index)
+      }
     }
 
 
@@ -643,14 +622,13 @@ function set_reaction_data (data) {
 
   } else {
 
-    reaction_data_names = data[0]
+    this.reaction_data_names = data[0]
     this.options.reaction_data = data[1]
 
     this.time_series_bar.setTypeOfData('reaction')
     this.time_series_bar.openTab('reaction_tab', this)
   }
 
-    console.log(reaction_data_names)
   var message_fn = this._reaction_check_add_abs()
   this._update_data(true, true, 'reaction', undefined, true)
   if (message_fn) {
@@ -668,23 +646,22 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     // default undefined
     this.settings.set_conditional('show_gene_reaction_rules', false)
   }
-  gene_data_names = []
-
+  this.gene_data_names = []
 
   // new data is [array of names][array of numbers]
   // new case for reset to null, because crashes on null[1]
   if (data === null) {
 
-    gene_data_names = null
+    this.gene_data_names = null
     this.options.gene_data = null
 
   } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
 
-    gene_data_names = utils.get_csv_names()
+    this.gene_data_names = utils.get_csv_names()
 
-    if(gene_data_names === undefined){
+    if(this.gene_data_names.length === 0){
       for (var index in data) {// make up names
-        gene_data_names.push('data set ' + index)
+        this.gene_data_names.push('data set ' + index)
       }
     }
 
@@ -692,10 +669,8 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     this.time_series_bar.setTypeOfData('gene')
     this.time_series_bar.openTab('gene_tab', this)
 
-  }
-
-  else {
-    gene_data_names = data[0]
+  } else {
+    this.gene_data_names = data[0]
     this.options.gene_data = data[1]
 
     this.time_series_bar.setTypeOfData('gene')
@@ -712,35 +687,32 @@ function set_gene_data (data, clear_gene_reaction_rules) {
  */
 function set_metabolite_data (data) {
 
-  metabolite_data_names = []
-
+  this.metabolite_data_names = []
 
   // new data is [array of names][array of numbers]
   // new case for reset to null, because crashes on null[1]
   if (data === null) {
 
-    metabolite_data_names = null
-    this.options.metabolite = null
+    this.metabolite_data_names = null
+    this.options.metabolite_data = null
 
   } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
 
-    metabolite_data_names = utils.get_csv_names()
+    this.metabolite_data_names = utils.get_csv_names() // get names from csv
 
-    if(metabolite_data_names === undefined){
-      for (var index in data) {// make up names
-        metabolite_data_names.push('data set ' + index)
+    if(this.metabolite_data_names.length === 0){ // or make up names
+      for (var index in data) {
+        this.metabolite_data_names.push('data set ' + index)
       }
     }
 
-    this.options.metabolite = data
+    this.options.metabolite_data = data
     this.time_series_bar.setTypeOfData('metabolite')
     this.time_series_bar.openTab('metabolite_tab', this)
 
-  }
+  } else {
 
-  else {
-
-    metabolite_data_names = data[0]
+    this.metabolite_data_names = data[0]
     this.options.metabolite_data = data[1]
 
     this.time_series_bar.setTypeOfData('metabolite')
@@ -782,13 +754,13 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
   // metabolite data
   if (update_metabolite_data && update_map && this.map !== null) {
 
-    if (difference_mode_active && this.options.metabolite_data !== null) {
+    if (this.difference_mode_active && this.options.metabolite_data !== null) {
 
-      var difference_metabolite_data = [this.options.metabolite_data[reference], this.options.metabolite_data[target]]
+      var difference_metabolite_data = [this.options.metabolite_data[this.reference], this.options.metabolite_data[this.target]]
       met_data_object = data_styles.import_and_check(difference_metabolite_data, 'metabolite_data')
     } else {
       if (this.options.metabolite_data !== null) {
-        met_data_object = data_styles.import_and_check(this.options.metabolite_data[reference], 'metabolite_data')
+        met_data_object = data_styles.import_and_check(this.options.metabolite_data[this.reference], 'metabolite_data')
 
       } else {
         met_data_object = data_styles.import_and_check(this.options.metabolite_data, 'metabolite_data')
@@ -817,14 +789,14 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
 
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
 
-      if(difference_mode_active){
+      if(this.difference_mode_active){
 
-        var difference_reaction_data = [this.options.reaction_data[reference], this.options.reaction_data[target]]
+        var difference_reaction_data = [this.options.reaction_data[this.reference], this.options.reaction_data[this.target]]
         reaction_data_object = data_styles.import_and_check(difference_reaction_data,
           'reaction_data')
 
       } else {
-        reaction_data_object = data_styles.import_and_check(this.options.reaction_data[reference], 'reaction_data')
+        reaction_data_object = data_styles.import_and_check(this.options.reaction_data[this.reference], 'reaction_data')
       }
 
       if(update_stats){
@@ -838,71 +810,19 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
         this.map.set_reactions_for_data_scales(reaction_for_data_scales)
       }
 
-      // if(this.interpolate === true){
-      //   var interpolation_data_set
-      //   var reaction_name, current_data, next_data
-      //
-      //   for(var index_of_data_set = 0; index_of_data_set < this.options.reaction_data.length - 1; index_of_data_set++){
-      //
-      //     for(var index_of_reaction = 0; index_of_reaction < this.options.reaction_data[index_of_data_set].length; index_of_reaction++){
-      //
-      //         reaction_name = Object.keys(this.options.reaction_data[index_of_data_set])[index_of_reaction]
-      //         current_data = Object.values(this.options.reaction_data[index_of_data_set])[index_of_reaction]
-      //         // choose the same reaction, but in next data set
-      //         next_data = Object.values(this.options.reaction_data[index_of_data_set + 1])[index_of_reaction]
-      //
-      //         var current_interpolator = d3Interpolate.interpolateNumber(current_data, next_data);
-      //         var current_object = {}
-      //         current_object[reaction_name] = current_interpolator
-      //
-      //         interpolation_data_set.push( current_object )
-      //     }
-      //   }
-      //
-      //   // create transition animation
-      //   // TODO: stop animation
-      //   // interpolation_data_set contains object of interpolators with name of reaction
-      //
-      //   // transition time should be the same as time series interval
-      //
-      //   var animation_step = 0
-      //   var transition_time = 500
-      //
-      //   this.animation = setInterval(function(map){
-      //     for(var data_set in interpolation_data_set){
-      //       if(animation_step <= 1){
-      //
-      //         // make new data set to show on map
-      //         var data_set_for_animation_step
-      //
-      //         for(var interpolator_object in data_set){
-      //           data_set_for_animation_step.push(data_set[interpolator_object](animation_step))
-      //         }
-      //
-      //         map.apply_reaction_data_to_map(data_set_for_animation_step)
-      //         animation_step = animation_step + 0.1
-      //       } else {
-      //         animation_step = 0
-      //       }
-      //
-      //     }
-      //   }, transition_time)
-      //
-      // } else {
       this.map.apply_reaction_data_to_map(reaction_data_object)
- //     }
 
       if (should_draw)
         this.map.draw_all_reactions(false, false)
     // gene data
     } else if (this.options.gene_data !== null && update_map && this.map !== null) {
 
-      if(difference_mode_active){
-        var difference_gene_data = [this.options.gene_data[reference], this.options.gene_data[target]]
+      if(this.difference_mode_active){
+        var difference_gene_data = [this.options.gene_data[this.reference], this.options.gene_data[this.target]]
         gene_data_object = make_gene_data_object(difference_gene_data,
           this.cobra_model, this.map)
       } else {
-      gene_data_object = make_gene_data_object(this.options.gene_data[reference],
+      gene_data_object = make_gene_data_object(this.options.gene_data[this.reference],
                                                this.cobra_model, this.map)
       }
 
@@ -1714,12 +1634,6 @@ function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editin
         fn: this.text_mode,
         ignore_with_input: true,
       },
-      // difference_mode: {
-      //   key: 'd',
-      //   target: this,
-      //   fn: this.difference_mode,
-      //   ignore_with_input: true,
-      // },
       toggle_beziers: {
         key: 'b',
         target: map,
@@ -1821,53 +1735,16 @@ function _setup_confirm_before_exit () {
   }.bind(this)
 }
 
-// TODO: make a object like 'options' for all the stuff instead of getter / setter methods?
-
-function set_difference_mode (bool) {
-  difference_mode_active = bool
-}
-
-function get_difference_mode () {
-  return difference_mode_active.valueOf()
-}
-
-function set_reference (ref) {
-  reference = ref
-}
-
-function set_target (tar) {
-  target = tar
-}
-
-function get_reference () {
-  return reference.valueOf()
-}
-
-function get_target () {
-  return target.valueOf()
-}
-
-function get_reaction_data_names(){
-  return reaction_data_names
-}
-
-function get_gene_data_names(){
-  return gene_data_names
-}
-
-function get_metabolite_data_names(){
-  return metabolite_data_names
-}
 /*
  * reference: required
  * target: only required for difference mode
  */
 
 function set_data_indices(type_of_data, ref, tar){
-  reference = ref
+  this.reference = ref
 
   // TODO: was null before, but this way I loose the target index when I only set ref?
-  target = tar || this.get_target()
+  this.target = tar || null
 
   if(type_of_data === 'gene'){
     type_of_data = 'reaction'
