@@ -14,19 +14,11 @@ var TimeSeriesBar = utils.make_class()
 
 
 // TODO: get rid of global variables
-var current
-var counter
-var container
-var sliderReference, sliderTarget
 var tab_container, reaction_tab_button, metabolite_tab_button, both_tab_button
-var dropDownMenuReference, dropDownMenuTarget
 var typeOfData
-var number_of_data_sets
+var current
 
-var playing = false
-var interpolation = false
-
-var reaction_tab, metabolite_tab, both_tab
+//var reaction_tab, metabolite_tab, both_tab
 
 
 // instance methods
@@ -38,7 +30,6 @@ TimeSeriesBar.prototype = {
   next: next,
   previous: previous,
   toggleDifferenceMode: toggleDifferenceMode,
-  showBar: showBar,
   showDifferenceData: showDifferenceData,
   setTypeOfData: setTypeOfData,
   openTab: openTab
@@ -49,7 +40,9 @@ function init (sel, map, builder) {
 
   this.builder = builder
 
-  var duration = 200
+  var duration = 2000
+  var interpolation = false
+  this.playing = false
 
   this.builder.difference_mode = false
   this.builder.reference = 0
@@ -59,7 +52,7 @@ function init (sel, map, builder) {
 
   typeOfData = ''
 
-  container = sel.attr('class', 'search-container')
+  var container = sel.attr('class', 'search-container')
   // TODO: remove this comment in final version
   .style('display', 'block');
 
@@ -133,23 +126,23 @@ function init (sel, map, builder) {
     //.style('display', 'none')
 
   // three divs
-  reaction_tab = tab_container.append('div')
-    .attr('id', 'reaction_tab')
-    .attr('class', 'tab')
-    .text('compare reaction data')
-    .style('display', 'none')
-
-  metabolite_tab = tab_container.append('div')
-    .attr('id', 'metabolite_tab')
-    .attr('class', 'tab')
-    .text('compare metabolite data')
-    .style('display', 'none')
-
-  both_tab = tab_container.append('div')
-    .attr('id', 'both_tab')
-    .attr('class', 'tab')
-    .text('compare both')
-    .style('display', 'none')
+  // reaction_tab = tab_container.append('div')
+  //   .attr('id', 'reaction_tab')
+  //   .attr('class', 'tab')
+  //   .text('compare reaction data')
+  //   .style('display', 'none')
+  //
+  // metabolite_tab = tab_container.append('div')
+  //   .attr('id', 'metabolite_tab')
+  //   .attr('class', 'tab')
+  //   .text('compare metabolite data')
+  //   .style('display', 'none')
+  //
+  // both_tab = tab_container.append('div')
+  //   .attr('id', 'both_tab')
+  //   .attr('class', 'tab')
+  //   .text('compare both')
+  //   .style('display', 'none')
 
 
   // tab_container.append('div')
@@ -157,7 +150,7 @@ function init (sel, map, builder) {
   //   .attr('id', 'referenceText')
   //   .text('Reference Data Set: ')
 
-  dropDownMenuReference = tab_container.append('select')
+  tab_container.append('select')
     .attr('name', 'target-list')
     .attr('id', 'dropDownMenuReference')
     .on('change', function (builder) {
@@ -174,7 +167,7 @@ function init (sel, map, builder) {
 
     })
 
-  sliderReference = tab_container.append('div').append('input')
+  tab_container.append('div').append('input')
     .attr('id', 'sliderReference')
     .attr('type', 'range')
     .attr('value', 0)
@@ -191,14 +184,7 @@ function init (sel, map, builder) {
       }
     })
 
-
-
-  // tab_container.append('div')
-  //   .append('text')
-  //   .attr('id', 'targetText')
-  //   .text('Target Data Set: ')
-
-  dropDownMenuTarget = tab_container.append('select')
+  tab_container.append('select')
     .attr('name', 'target-list')
     .attr('id', 'dropDownMenuTarget')
     .on('change', function () {
@@ -215,7 +201,7 @@ function init (sel, map, builder) {
 
     })
 
-  sliderTarget = tab_container.append('div').append('input')
+  tab_container.append('div').append('input')
     .attr('type', 'range')
     .attr('id', 'sliderTarget')
     .attr('value', 0)
@@ -238,7 +224,7 @@ function init (sel, map, builder) {
 
   var groupButtons = tab_container.append('div')//.attr('class', 'btn-group btn-group-sm')
 
-  counter = groupButtons.append('div')
+  groupButtons.append('div')
     .attr('id', 'counter')
     .attr('class', 'select-counter')
     .text('Display Dataset: 0 / 0')
@@ -257,7 +243,7 @@ function init (sel, map, builder) {
     .attr('class', 'btn btn-default')
     .attr('id', 'play_button')
     .on('click', function(){
-      play_time_series(builder, duration)
+      play_time_series(builder, duration, interpolation , 10) // TODO: make ui for setting steps
     })
     .append('span').attr('class', 'glyphicon glyphicon-play')
 
@@ -271,7 +257,7 @@ function init (sel, map, builder) {
     .attr('id', 'inputDuration')
     .attr('type', 'number')
     .attr('min', 10)
-    .attr('value', 200)
+    .attr('value', 2000)
 
     .on('input', function () {
         duration = this.value
@@ -404,21 +390,21 @@ function openTab (tab_id, builder) {
   if (tab_id === 'reaction_tab') {
     setTypeOfData('reaction')
     reaction_tab_button.style('background-color', 'white')
-    reaction_tab.style('display', 'block')
+    //reaction_tab.style('display', 'block')
     update(builder)
   } else if (tab_id === 'gene_tab') {
     setTypeOfData('gene')
     reaction_tab_button.style('background-color', 'white')
-    reaction_tab.style('display', 'block')
+    //reaction_tab.style('display', 'block')
     update(builder)
   } else if (tab_id === 'metabolite_tab') {
     setTypeOfData('metabolite')
     metabolite_tab_button.style('background-color', 'white')
-    metabolite_tab.style('display', 'block')
+    //metabolite_tab.style('display', 'block')
     update(builder)
   }
   else if (tab_id === 'both_tab') {
-    both_tab.style('display', 'block')
+    //both_tab.style('display', 'block')
     both_tab_button.style('background-color', 'white')
     update(builder)
   } else {
@@ -459,30 +445,28 @@ function update (builder, should_create_chart) {
   if (data_set_loaded) {
     // update display
     current = 0
-    number_of_data_sets = currentDataSet.length
-    counter.text('Display Dataset: '+ (current + 1) + ' / ' + number_of_data_sets)
+    d3.select('#counter').text('Display Dataset: '+ (current + 1) + ' / ' + currentDataSet.length)
 
     // update slider
-    sliderReference
+    d3.select('#sliderReference')
       .attr('max', (currentDataSet.length - 1))
       .attr('value', 0)
 
-    sliderTarget
+    d3.select('#sliderTarget')
       .attr('max', (currentDataSet.length - 1))
       .attr('value', 0)
 
     d3.select('#referenceText').text('Reference Data Set: ' + current)
     d3.select('#targetText').text('Target Data Set: ' + current)
 
-    // update dropdown menu
+    // reset dropdown menu
 
-    // reset: plain old javascript, but this is the only way it works
     document.getElementById('dropDownMenuReference').options.length = 0
     document.getElementById('dropDownMenuTarget').options.length = 0
 
-    var x
-    for (x in currentDataSet) {
-      var name_of_current_data_set
+    for (var x in currentDataSet) {
+
+      var name_of_current_data_set = x
 
       if (typeOfData === 'reaction') {
         name_of_current_data_set = builder.reaction_data_names[x]
@@ -492,13 +476,10 @@ function update (builder, should_create_chart) {
 
       } else if(typeOfData === 'gene'){
         name_of_current_data_set = builder.gene_data_names[x]
-
-      } else { // typeOfData is 'both'
-        name_of_current_data_set = x
       }
 
-      dropDownMenuReference.append('option').attr('value', x).text('Reference Data Set: ' + name_of_current_data_set)
-      dropDownMenuTarget.append('option').attr('value', x).text('Target Data Set: ' + name_of_current_data_set)
+      d3.select('#dropDownMenuReference').append('option').attr('value', x).text('Reference Data Set: ' + name_of_current_data_set)
+      d3.select('#dropDownMenuTarget').append('option').attr('value', x).text('Target Data Set: ' + name_of_current_data_set)
 
     }
 
@@ -510,14 +491,14 @@ function update (builder, should_create_chart) {
   } else { // reset everything
     // update display
     current = 0
-    counter.text('Display Dataset: 0 / 0')
+    d3.select('#counter').text('Display Dataset: 0 / 0')
 
     // update slider
-    sliderReference
+    d3.select('#sliderReference')
       .attr('max', 0)
       .attr('value', 0)
 
-    sliderTarget
+    d3.select('#sliderTarget')
       .attr('max', 0)
       .attr('value', 0)
 
@@ -541,7 +522,7 @@ function next (builder) {
         current = 0
       }
         builder.set_data_indices(typeOfData, current)
-        counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
+        d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
 
     }
 
@@ -553,7 +534,7 @@ function next (builder) {
         current = 0
       }
         builder.set_data_indices(typeOfData, current)
-        counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
+      d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
 
     }
   } else if (typeOfData === 'gene') {
@@ -564,7 +545,7 @@ function next (builder) {
         current = 0
       }
         builder.set_data_indices(typeOfData, current)
-        counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
+      d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
 
     }
 
@@ -584,7 +565,7 @@ function previous (builder) {
       current -= 1
 
       builder.set_data_indices('metabolite', current)
-      counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
+      d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
 
     } else if (typeOfData === 'reaction' &&
       builder.options.reaction_data !== undefined &&
@@ -593,29 +574,28 @@ function previous (builder) {
 
       builder.set_data_indices('reaction', current)
 
-      counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
+      d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
 
     } else if (typeOfData === 'gene' && builder.options.gene_data !== undefined && builder.options.gene_data !== null) {
       current -= 1
 
       builder.set_data_indices(typeOfData, current)
-      counter.text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
+      d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
 
     }
 
   }
 }
 
-function play_time_series (builder, duration) {
+function play_time_series (builder, duration, interpolation, max_steps) {
 
   if(interpolation){
 
-      var data_set_to_interpolate = []
-      data_set_to_interpolate.length = 0 // TODO: why?
+    if(!this.playing){
+    this.data_set_to_interpolate = []
+    this.data_set_to_interpolate.length = 0
 
-    if(!playing){
-
-      playing = true
+      this.playing = true
 
       this.sliding_window_start = builder.reference
       this.sliding_window_end = builder.target
@@ -624,7 +604,7 @@ function play_time_series (builder, duration) {
 
       this.data_set_save = builder.options.reaction_data
       for(var i = this.sliding_window_start; i <= this.sliding_window_end; i++){
-      data_set_to_interpolate.push(builder.options.reaction_data[i])
+      this.data_set_to_interpolate.push(builder.options.reaction_data[i])
       }
 
     } else if(typeOfData === 'gene'){
@@ -632,12 +612,12 @@ function play_time_series (builder, duration) {
       this.data_set_save = builder.options.gene_data
 
       for(var i = this.sliding_window_start; i <= this.sliding_window_end; i++){
-        data_set_to_interpolate.push(builder.options.gene_data[i])
+        this.data_set_to_interpolate.push(builder.options.gene_data[i])
       }
     } else if(typeOfData === 'metabolite'){
       this.data_set_save = builder.options.metabolite_data
       for(var i = this.sliding_window_start; i <= this.sliding_window_end; i++){
-        data_set_to_interpolate.push(builder.options.metabolite_data[i])
+        this.data_set_to_interpolate.push(builder.options.metabolite_data[i])
       }
     } else {
      // this.data_set_save = null
@@ -648,20 +628,21 @@ function play_time_series (builder, duration) {
       // set it to data object in builder
       // set it back after the animation stops
 
-
       var set_of_interpolators = []
+      set_of_interpolators.length = 0
 
-      for(var index_of_data_set = 0; index_of_data_set < data_set_to_interpolate.length - 1; index_of_data_set++){
+
+      for(var index_of_data_set = 0; index_of_data_set < this.data_set_to_interpolate.length - 1; index_of_data_set++){
 
         var current_object = {}
 
-        for(var index_of_reaction = 0; index_of_reaction < Object.keys(data_set_to_interpolate[index_of_data_set]).length; index_of_reaction++){
+        for(var index_of_reaction = 0; index_of_reaction < Object.keys(this.data_set_to_interpolate[index_of_data_set]).length; index_of_reaction++){
 
-          var reaction_name = Object.keys(data_set_to_interpolate[index_of_data_set])[index_of_reaction]
-          var current_object_data = Object.values(data_set_to_interpolate[index_of_data_set])[index_of_reaction]
+          var reaction_name = Object.keys(this.data_set_to_interpolate[index_of_data_set])[index_of_reaction]
+          var current_object_data = Object.values(this.data_set_to_interpolate[index_of_data_set])[index_of_reaction]
 
           // choose the same reaction, but in next data set
-          var next_object_data = Object.values(data_set_to_interpolate[index_of_data_set + 1])[index_of_reaction]
+          var next_object_data = Object.values(this.data_set_to_interpolate[index_of_data_set + 1])[index_of_reaction]
 
           current_object[reaction_name] =  d3_interpolate.interpolate((current_object_data), (next_object_data))
 
@@ -672,6 +653,8 @@ function play_time_series (builder, duration) {
 
       // fill new data set with all the data
       var interpolation_data_set = []
+      interpolation_data_set.length = 0
+
       // [{key: value, key: value, key: value},
       // {key: value, key: value, key: value}, ...
       // {key: value, key: value, key: value}]
@@ -681,7 +664,7 @@ function play_time_series (builder, duration) {
           for (var interpolator in set) {
 
           var steps = 0
-          while (steps <= 10) {
+          while (steps <= max_steps) {
 
             var keys = Object.keys(set_of_interpolators[set]) // array of all keys, pick out one
             var interpolators = Object.values(set_of_interpolators[set]) // array of all interpolators, pick out one
@@ -722,7 +705,7 @@ function play_time_series (builder, duration) {
 
       this.animation = setInterval(function () {
 
-        counter.text('Interpolated Time Series of Data Sets: '
+        d3.select('#counter').text('Interpolated Time Series of Data Sets: '
           + this.sliding_window_start +
           ' to ' + builder.target +
           '. Current: ' + builder.reference)
@@ -735,15 +718,18 @@ function play_time_series (builder, duration) {
           builder.reference = this.sliding_window_start
         }
         builder.set_data_indices(typeOfData, builder.reference, this.sliding_window_end) // otherwise will set to null
-      }, duration);
+      }, (duration / this.sliding_window_end / max_steps))
 
     } else {
 
-      // after animation reset to 'normal' data
       clearInterval(this.animation)
 
-      playing = false
+      this.playing = false
 
+      this.data_set_to_interpolate = []
+      this.data_set_to_interpolate.length = 0
+
+      // after animation reset to 'normal' data
       if (typeOfData === 'reaction') {
         builder.options.reaction_data = this.data_set_save
       } else if (typeOfData === 'gene') {
@@ -751,6 +737,7 @@ function play_time_series (builder, duration) {
       } else if (typeOfData === 'metabolite') {
         builder.options.metabolite_data = this.data_set_save
       }
+
       builder.reference = this.sliding_window_start
       builder.target = this.sliding_window_end
 
@@ -761,15 +748,15 @@ function play_time_series (builder, duration) {
 
     // TODO: makes crazy stuff with setting reference / target every time. maybe just grey out while animation?
 
-    if (!playing) {
-      playing = true
+    if (!this.playing) {
+      this.playing = true
       this.sliding_window_start = builder.reference
       this.sliding_window_end = builder.target
 
       // save values for later, because reference gets overwritten in set indices
       this.animation = setInterval(function () {
 
-        counter.text('Time Series of Data Sets: '
+        d3.select('#counter').text('Time Series of Data Sets: '
           + this.sliding_window_start +
           ' to ' + builder.target +
           '. Current: ' + builder.reference)
@@ -783,12 +770,12 @@ function play_time_series (builder, duration) {
         }
 
         builder.set_data_indices(typeOfData, builder.reference, this.sliding_window_end) // otherwise will set to null
-      }, duration);
+      }, duration / this.sliding_window_end);
 
     } else {
       clearInterval(this.animation)
 
-      playing = false
+      this.playing = false
       builder.reference = this.sliding_window_start
       builder.target = this.sliding_window_end
     }
@@ -807,15 +794,6 @@ function toggleDifferenceMode (builder) {
     builder.difference_mode = true
   }
 
-}
-
-function showBar (show) {
-
-  if (show) {
-    container.style('display', 'block')
-  } else {
-    container.style('display', 'none')
-  }
 }
 
 function showDifferenceData (builder) {
