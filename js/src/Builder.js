@@ -26,7 +26,6 @@ var _ = require('underscore')
 var d3_select = require('d3-selection').select
 var d3_selection = require('d3-selection').selection
 var d3_json = require('d3-request').json
-var d3Interpolate = require("d3-interpolate")
 
 var Builder = utils.make_class()
 Builder.prototype = {

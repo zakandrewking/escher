@@ -7,9 +7,10 @@ var utils = require('./utils')
 var CallbackManager = require('./CallbackManager')
 var _ = require('underscore')
 var data_styles = require('./data_styles.js')
+var d3_select = require('d3-selection').select
 var d3_scale = require('d3-scale')
 var d3_interpolate = require("d3-interpolate")
-
+var d3_transition = require('d3-transition')
 var TimeSeriesBar = utils.make_class()
 
 
@@ -157,8 +158,8 @@ function init (sel, map, builder, type_of_data) {
     .on('change', function (builder) {
 
       builder.reference = this.value
-      d3.select('#sliderReference').property('value', this.value)
-      d3.select('#referenceText').text('Reference Data Set: ' + this.value)
+      d3_select('#sliderReference').property('value', this.value)
+      d3_select('#referenceText').text('Reference Data Set: ' + this.value)
 
       if(builder.difference_mode){
         showDifferenceData(builder)
@@ -176,8 +177,8 @@ function init (sel, map, builder, type_of_data) {
     .attr('max', 0)
     .on('change', function (builder) {
       builder.reference = this.value
-      d3.select('#dropDownMenuReference').property('selectedIndex', this.value)
-      d3.select('#referenceText').text('Reference Data Set: ' + this.value)
+      d3_select('#dropDownMenuReference').property('selectedIndex', this.value)
+      d3_select('#referenceText').text('Reference Data Set: ' + this.value)
       if(builder.difference_mode){
       showDifferenceData(builder)
       } else {
@@ -191,8 +192,8 @@ function init (sel, map, builder, type_of_data) {
     .on('change', function (builder) {
 
       builder.target = this.value
-      d3.select('#sliderTarget').property('value', this.value)
-      d3.select('#targetText').text('Target Data Set ' + this.value)
+      d3_select('#sliderTarget').property('value', this.value)
+      d3_select('#targetText').text('Target Data Set ' + this.value)
 
       if(builder.difference_mode){
         showDifferenceData(builder)
@@ -208,8 +209,8 @@ function init (sel, map, builder, type_of_data) {
     .on('change', function (builder) {
 
       builder.target = this.value
-      d3.select('#dropDownMenuTarget').property('selectedIndex', this.value)
-      d3.select('#targetText').text('Target Data Set ' + this.value)
+      d3_select('#dropDownMenuTarget').property('selectedIndex', this.value)
+      d3_select('#targetText').text('Target Data Set ' + this.value)
 
       if(builder.difference_mode){
         showDifferenceData(builder)
@@ -262,7 +263,7 @@ function init (sel, map, builder, type_of_data) {
 
   groupButtons.append('div')
 
-  d3.select('#group_buttons').append('div').append('svg')
+  d3_select('#group_buttons').append('div').append('svg')
     .attr('id', 'progress_bar')
     .attr('width', max_width)
     .attr('height', 25)
@@ -273,7 +274,7 @@ function init (sel, map, builder, type_of_data) {
     .attr({
       x1: 0,
       y1: 15,
-      x2: 25,
+      x2: 0,
       y2: 15
     })
 
@@ -284,7 +285,7 @@ function init (sel, map, builder, type_of_data) {
     .attr('value', 'Interpolate Data')
     .text('Difference Mode')
     .on('change', function () {
-         if (d3.select('#checkBoxInterpolation').property('checked')) {
+         if (d3_select('#checkBoxInterpolation').property('checked')) {
            interpolation = true
          } else {
             interpolation = false
@@ -305,7 +306,7 @@ function init (sel, map, builder, type_of_data) {
     .attr('value', 'Show Chart')
     .text('Show Chart')
     .on('change', function () {
-      if (d3.select('#checkBoxChart').property('checked')) {
+      if (d3_select('#checkBoxChart').property('checked')) {
         create_chart(builder)
         toggle_chart(true)
       } else {
@@ -333,8 +334,8 @@ function init (sel, map, builder, type_of_data) {
     .style('display','none')
 
 
-  d3.select('#div_data_chart').style('display', 'none')
-  d3.select('#div_data_chart_labels').style('display', 'none')
+  d3_select('#div_data_chart').style('display', 'none')
+  d3_select('#div_data_chart_labels').style('display', 'none')
 
   this.callback_manager = new CallbackManager()
 
@@ -346,11 +347,11 @@ function init (sel, map, builder, type_of_data) {
 // TODO: I need only one tab
 function openTab (type_of_data, builder) {
 
-  d3.select('#tab_container').style('display', 'block')
+  d3_select('#tab_container').style('display', 'block')
 
-  d3.select('#reaction_tab_button').style('background-color', 'lightgrey')
-  d3.select('#metabolite_tab_button').style('background-color', 'lightgrey')
-  d3.select('#both_tab_button').style('background-color', 'lightgrey')
+  d3_select('#reaction_tab_button').style('background-color', 'lightgrey')
+  d3_select('#metabolite_tab_button').style('background-color', 'lightgrey')
+  d3_select('#both_tab_button').style('background-color', 'lightgrey')
 
   var tabs = document.getElementsByClassName('tab')
 
@@ -362,21 +363,21 @@ function openTab (type_of_data, builder) {
 
   if (builder.type_of_data === 'reaction') {
 
-    d3.select('#reaction_tab_button').style('background-color', 'white')
+    d3_select('#reaction_tab_button').style('background-color', 'white')
     //reaction_tab.style('display', 'block')
     update(builder)
   } else if (builder.type_of_data === 'gene') {
-    d3.select('#reaction_tab_button').style('background-color', 'white')
+    d3_select('#reaction_tab_button').style('background-color', 'white')
     //reaction_tab.style('display', 'block')
     update(builder)
   } else if (builder.type_of_data ===  'metabolite') {
-    d3.select('#metabolite_tab_button').style('background-color', 'white')
+    d3_select('#metabolite_tab_button').style('background-color', 'white')
     //metabolite_tab.style('display', 'block')
     update(builder, type_of_data)
   }
   else if (builder.type_of_data === 'both') {
     //both_tab.style('display', 'block')
-    d3.select('#both_tab_button').style('background-color', 'white')
+    d3_select('#both_tab_button').style('background-color', 'white')
     update(builder)
   } else {
 // ?
@@ -397,38 +398,25 @@ function openTab (type_of_data, builder) {
 
 function update (builder, should_create_chart) {
 
-  var currentDataSet
-  var data_set_loaded = false
-
-  if (builder.type_of_data === 'reaction' && builder.options.reaction_data !== null) {
-    currentDataSet = builder.options.reaction_data
-    data_set_loaded = true
-  } else if (builder.type_of_data === 'gene' && builder.options.gene_data !== null) {
-    currentDataSet = builder.options.gene_data
-    data_set_loaded = true
-  } else if (builder.type_of_data === 'metabolite' && builder.options.metabolite_data !== null) {
-    currentDataSet = builder.options.metabolite_data
-    data_set_loaded = true
-  }
+  var currentDataSet = builder.get_current_data_set()
   // TODO: 'both' or not loaded?
 
-
-  if (data_set_loaded) {
+  if (currentDataSet.length !== 0) {
     // update display
     current = 0
-    d3.select('#counter').text('Display Dataset: '+ (current + 1) + ' / ' + currentDataSet.length)
+    d3_select('#counter').text('Display Dataset: '+ (current + 1) + ' / ' + currentDataSet.length)
 
     // update slider
-    d3.select('#sliderReference')
+    d3_select('#sliderReference')
       .attr('max', (currentDataSet.length - 1))
       .attr('value', 0)
 
-    d3.select('#sliderTarget')
+    d3_select('#sliderTarget')
       .attr('max', (currentDataSet.length - 1))
       .attr('value', 0)
 
-    d3.select('#referenceText').text('Reference Data Set: ' + current)
-    d3.select('#targetText').text('Target Data Set: ' + current)
+    d3_select('#referenceText').text('Reference Data Set: ' + current)
+    d3_select('#targetText').text('Target Data Set: ' + current)
 
     // reset dropdown menu
 
@@ -449,34 +437,29 @@ function update (builder, should_create_chart) {
         name_of_current_data_set = builder.gene_data_names[x]
       }
 
-      d3.select('#dropDownMenuReference').append('option')
+      d3_select('#dropDownMenuReference').append('option')
         .attr('value', x).text('Reference Data Set: ' + name_of_current_data_set)
-      d3.select('#dropDownMenuTarget').append('option')
+      d3_select('#dropDownMenuTarget').append('option')
         .attr('value', x).text('Target Data Set: ' + name_of_current_data_set)
 
-    }
-
-    if(should_create_chart){
-      create_chart(builder)
-      //toggle_chart(true)
     }
 
   } else { // reset everything
     // update display
     current = 0
-    d3.select('#counter').text('Display Dataset: 0 / 0')
+    d3_select('#counter').text('Display Dataset: 0 / 0')
 
     // update slider
-    d3.select('#sliderReference')
+    d3_select('#sliderReference')
       .attr('max', 0)
       .attr('value', 0)
 
-    d3.select('#sliderTarget')
+    d3_select('#sliderTarget')
       .attr('max', 0)
       .attr('value', 0)
 
-    d3.select('#referenceText').text('Reference Data Set: ')
-    d3.select('#targetText').text('Target Data Set: ')
+    d3_select('#referenceText').text('Reference Data Set: ')
+    d3_select('#targetText').text('Target Data Set: ')
 
     // reset dropdown menu
     document.getElementById('dropDownMenuReference').options.length = 0
@@ -495,7 +478,7 @@ function next (builder) {
         current = 0
       }
         builder.set_data_indices('metabolite', current)
-        d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
+        d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
 
     }
 
@@ -507,7 +490,7 @@ function next (builder) {
         current = 0
       }
         builder.set_data_indices('reaction', current)
-      d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
+      d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
 
     }
   } else if (builder.type_of_data=== 'gene') {
@@ -518,7 +501,7 @@ function next (builder) {
         current = 0
       }
         builder.set_data_indices('gene', current)
-      d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
+      d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
 
     }
 
@@ -538,7 +521,7 @@ function previous (builder) {
       current -= 1
 
       builder.set_data_indices('metabolite', current)
-      d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
+      d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
 
     } else if (builder.type_of_data === 'reaction' &&
       builder.options.reaction_data !== undefined &&
@@ -547,13 +530,13 @@ function previous (builder) {
 
       builder.set_data_indices('reaction', current)
 
-      d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
+      d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
 
     } else if (builder.type_of_data === 'gene' && builder.options.gene_data !== undefined && builder.options.gene_data !== null) {
       current -= 1
 
       builder.set_data_indices('gene', current)
-      d3.select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
+      d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
 
     }
 
@@ -565,45 +548,24 @@ function play_time_series (builder, duration, interpolation, max_steps) {
   if(interpolation){
 
     if(!this.playing){
-    this.data_set_to_interpolate = []
-    this.data_set_to_interpolate.length = 0
-
+      this.data_set_to_interpolate = []
       this.playing = true
 
       this.sliding_window_start = builder.reference
       this.sliding_window_end = builder.target
 
-    if(builder.type_of_data === 'reaction'){
 
-      this.data_set_save = builder.options.reaction_data
-      for(var i = this.sliding_window_start; i <= this.sliding_window_end; i++){
-      this.data_set_to_interpolate.push(builder.options.reaction_data[i])
-      }
-
-    } else if(builder.type_of_data === 'gene'){
-
-      this.data_set_save = builder.options.gene_data
+      this.data_set_save = builder.get_current_data_set()
 
       for(var i = this.sliding_window_start; i <= this.sliding_window_end; i++){
-        this.data_set_to_interpolate.push(builder.options.gene_data[i])
+        this.data_set_to_interpolate.push(builder.get_current_data_set()[i])
       }
-    } else if(builder.type_of_data === 'metabolite'){
-      this.data_set_save = builder.options.metabolite_data
-      for(var i = this.sliding_window_start; i <= this.sliding_window_end; i++){
-        this.data_set_to_interpolate.push(builder.options.metabolite_data[i])
-      }
-    } else {
-     // this.data_set_save = null
-     // data_set_to_interpolate = null
-    }
 
       // create new data_set with every data points in between
       // set it to data object in builder
       // set it back after the animation stops
 
       var set_of_interpolators = []
-      set_of_interpolators.length = 0
-
 
       for(var index_of_data_set = 0; index_of_data_set < this.data_set_to_interpolate.length - 1; index_of_data_set++){
 
@@ -673,25 +635,26 @@ function play_time_series (builder, duration, interpolation, max_steps) {
       // animation
 
       // to play animation with all data sets
-      this.sliding_window_start = 0
-      this.sliding_window_end = interpolation_data_set.length - 1
+      var start = 0
+      var end = interpolation_data_set.length - 1
 
       this.animation = setInterval(function () {
 
-        d3.select('#counter').text('Interpolated Time Series of Data Sets: '
-          + this.sliding_window_start +
-          ' to ' + builder.target +
+        d3_select('#counter').text('Interpolated Time Series of Data Sets: '
+          + start +
+          ' to ' + end +
           '. Current: ' + builder.reference)
 
-        if (builder.reference < this.sliding_window_end) {
+        if (builder.reference < end) {
           var next = builder.reference
           next++
           builder.reference = next
         } else {
-          builder.reference = this.sliding_window_start
+          builder.reference = 0
         }
-        builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end) // otherwise will set to null
+        builder.set_data_indices(builder.type_of_data, builder.reference, end) // otherwise will set to null
       }, (duration / this.sliding_window_end / max_steps))
+
 
     } else {
 
@@ -700,14 +663,17 @@ function play_time_series (builder, duration, interpolation, max_steps) {
       this.playing = false
 
       this.data_set_to_interpolate = []
-      this.data_set_to_interpolate.length = 0
 
+      console.log(this.data_set_save)
       // after animation reset to 'normal' data
       if (builder.type_of_data === 'reaction') {
+        builder.options.reaction_data.length = 0
         builder.options.reaction_data = this.data_set_save
       } else if (builder.type_of_data === 'gene') {
+        builder.options.gene_data.length = 0
         builder.options.gene_data = this.data_set_save
       } else if (builder.type_of_data === 'metabolite') {
+        builder.options.metabolite_data.length = 0
         builder.options.metabolite_data = this.data_set_save
       }
 
@@ -733,10 +699,7 @@ function play_time_series (builder, duration, interpolation, max_steps) {
       var time_point = this.sliding_window_start
 
       // array of time points for non-linear time scale
-
-      // array of time points A[0,5,10,20]
       var array_of_time_points = []
-
 
       for(var i in builder.get_current_data_set_names()){
         var name = builder.get_current_data_set_names()[i]
@@ -751,7 +714,7 @@ function play_time_series (builder, duration, interpolation, max_steps) {
 
       this.animation = setInterval(function () {
 
-        d3.select('#counter').text('Time Series of Data Sets: '
+        d3_select('#counter').text('Time Series of Data Sets: '
           + this.sliding_window_start +
           ' to ' + builder.target +
           '. Current: ' + builder.reference)
@@ -810,11 +773,11 @@ function play_time_series (builder, duration, interpolation, max_steps) {
             x2: 400,
             y2: 15
           })
-          .transition()
-          .attr({
-            x2: 0,
-            y2: 15
-          })
+          // .transition()
+          // .attr({
+          //   x2: 0,
+          //   y2: 15
+          // })
 
 
 
@@ -918,7 +881,7 @@ function create_chart(builder){
 
   if(data_set_loaded){
 
-    var data_chart = d3.select("#data_chart")
+    var data_chart = d3_select("#data_chart")
 
     var margins = {
         top: 20,
@@ -1057,7 +1020,7 @@ function create_chart(builder){
         .attr("stroke-dashoffset", 0);
 
       // Add a label with same color as line
-      d3.select('#div_data_chart_labels')
+      d3_select('#div_data_chart_labels')
         .append('div').append('label')
         .style('color', color[i])
         .text(labels_for_lines[i])
@@ -1070,12 +1033,12 @@ function create_chart(builder){
 
 function toggle_chart(show){
   if(show){
-    d3.select('#div_data_chart').style('display', 'block')
-    d3.select('#div_data_chart_labels').style('display', 'block')
+    d3_select('#div_data_chart').style('display', 'block')
+    d3_select('#div_data_chart_labels').style('display', 'block')
 
   } else {
-    d3.select('#div_data_chart').style('display', 'none')
-    d3.select('#div_data_chart_labels').style('display', 'none')
+    d3_select('#div_data_chart').style('display', 'none')
+    d3_select('#div_data_chart_labels').style('display', 'none')
 
   }
 

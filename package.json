@@ -67,7 +67,8 @@
     "tinier": "^0.5.1",
     "underscore": "^1.8.3",
     "vkbeautify": "^0.99.1",
-    "d3-interpolate": "latest"
+    "d3-interpolate": "latest",
+    "d3-transition": "latest"
   },
   "scripts": {
     "compile": "./node_modules/.bin/grunt default",

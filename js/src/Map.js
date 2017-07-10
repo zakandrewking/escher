@@ -174,7 +174,6 @@ module.exports = Map
 function init (svg, css, selection, zoom_container, settings, cobra_model,
                canvas_size_and_loc, enable_search, map_name, map_id,
                map_description) {
-
   if (canvas_size_and_loc === null) {
     var size = zoom_container.get_size()
     canvas_size_and_loc = {
@@ -305,8 +304,7 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
  * Load a json map and add necessary fields for rendering.
  */
 function from_data (map_data, svg, css, selection, zoom_container, settings,
-                    cobra_model, enable_search, b) {
-  this.builder = b
+                    cobra_model, enable_search) {
   var canvas = map_data[1].canvas
   var map_name = map_data[0].map_name
   var map_id = map_data[0].map_id
@@ -903,27 +901,55 @@ function calc_data_stats (type) {
   var same = true
   // default min and max
   var vals = []
-  if (type === 'metabolite') {
-    for (var node_id in this.nodes_for_data_scales) {
-      var node = this.nodes_for_data_scales[node_id]
-      // check number
-      if (_.isUndefined(node)) {
-        console.error('metabolite missing ')
-      } else if (node !== null) {
-        vals.push(node)
+
+  if(this.nodes_for_data_scales.length !== 0 || this.reactions_for_data_scales.length !== 0){
+
+    if (type === 'metabolite') {
+      for (var node_id in this.nodes_for_data_scales) {
+        var node = this.nodes_for_data_scales[node_id]
+        // check number
+        if (_.isUndefined(node)) {
+          console.error('metabolite missing ')
+        } else if (node !== null) {
+          vals.push(node)
+        }
+      }
+    } else if (type == 'reaction') {
+      for (var reaction_id in this.reactions_for_data_scales) {
+        var reaction = this.reactions_for_data_scales[reaction_id]
+        // check number
+        if (_.isUndefined(reaction)) {
+          console.error('reaction data missing ')
+        } else if (reaction !== null) {
+          vals.push(reaction)
+        }
       }
     }
-  } else if (type == 'reaction') {
-    for (var reaction_id in this.reactions_for_data_scales) {
-      var reaction = this.reactions_for_data_scales[reaction_id]
-      // check number
-      if (_.isUndefined(reaction)) {
-        console.error('reaction data missing ')
-      } else if (reaction !== null) {
-        vals.push(reaction)
+
+  } else {
+    if (type === 'metabolite') {
+      for (var node_id in this.nodes) {
+        var node = this.nodes[node_id]
+        // check number
+        if (_.isUndefined(node.data)) {
+          console.error('metabolite missing ')
+        } else if (node.data !== null) {
+          vals.push(node.data)
+        }
+      }
+    } else if (type == 'reaction') {
+      for (var reaction_id in this.reactions) {
+        var reaction = this.reactions[reaction_id]
+        // check number
+        if (_.isUndefined(reaction.data)) {
+          console.error('reaction data missing ')
+        } else if (reaction.data !== null) {
+          vals.push(reaction.data)
+        }
       }
     }
   }
+
 
   // calculate these statistics
   var quartiles = utils.quartiles(vals)
