@@ -54,6 +54,8 @@ Builder.prototype = {
   _get_keys: _get_keys,
   _setup_confirm_before_exit: _setup_confirm_before_exit,
   set_data_indices: set_data_indices,
+  get_current_data_set: get_current_data_set,
+  get_current_data_set_names: get_current_data_set_names
 }
 module.exports = Builder
 
@@ -361,14 +363,8 @@ function load_map (map_data, should_update_data) {
     this.settings_bar.toggle(false)
   }.bind(this))
 
-  // set up the time series bar
-  this.time_series_bar = new TimeSeriesBar(time_series_bar_div, this.map, this)
-  // Set up the hide callbacks
-  this.time_series_bar.callback_manager.set('show', function() {
-    this.time_series_bar.toggle(false)
-  }.bind(this))
-
   // set up attributes for time series
+  this.type_of_data = ''
   this.difference_mode_active = false
   this.reference = 0
   this.target = 0
@@ -376,6 +372,14 @@ function load_map (map_data, should_update_data) {
   this.reaction_data_names = []
   this.gene_data_names = []
   this.metabolite_data_names = []
+
+  // set up the time series bar
+  this.time_series_bar = new TimeSeriesBar(time_series_bar_div, this.map, this, this.type_of_data)
+  // Set up the hide callbacks
+  this.time_series_bar.callback_manager.set('show', function() {
+    this.time_series_bar.toggle(false)
+  }.bind(this))
+
 
 
   // Set up the settings
@@ -617,16 +621,16 @@ function set_reaction_data (data) {
 
 
     this.options.reaction_data = data
-    this.time_series_bar.setTypeOfData('reaction')
-    this.time_series_bar.openTab('reaction_tab', this)
+    this.type_of_data = 'reaction'
+    this.time_series_bar.openTab('reaction', this)
 
   } else {
 
     this.reaction_data_names = data[0]
     this.options.reaction_data = data[1]
 
-    this.time_series_bar.setTypeOfData('reaction')
-    this.time_series_bar.openTab('reaction_tab', this)
+    this.type_of_data = 'reaction'
+    this.time_series_bar.openTab('reaction', this)
   }
 
   var message_fn = this._reaction_check_add_abs()
@@ -666,15 +670,15 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     }
 
     this.options.gene_data = data
-    this.time_series_bar.setTypeOfData('gene')
-    this.time_series_bar.openTab('gene_tab', this)
+    this.type_of_data = 'gene'
+    this.time_series_bar.openTab('gene', this)
 
   } else {
     this.gene_data_names = data[0]
     this.options.gene_data = data[1]
 
-    this.time_series_bar.setTypeOfData('gene')
-    this.time_series_bar.openTab('gene_tab', this)
+    this.type_of_data = 'gene'
+    this.time_series_bar.openTab('gene', this)
 
   }
 
@@ -707,16 +711,16 @@ function set_metabolite_data (data) {
     }
 
     this.options.metabolite_data = data
-    this.time_series_bar.setTypeOfData('metabolite')
-    this.time_series_bar.openTab('metabolite_tab', this)
+    this.type_of_data = 'metabolite'
+    this.time_series_bar.openTab('metabolite', this)
 
   } else {
 
     this.metabolite_data_names = data[0]
     this.options.metabolite_data = data[1]
 
-    this.time_series_bar.setTypeOfData('metabolite')
-    this.time_series_bar.openTab('metabolite_tab', this)
+    this.type_of_data = 'metabolite'
+    this.time_series_bar.openTab('metabolite', this)
   }
 
   this._update_data(true, true, 'metabolite', undefined, true)
@@ -1744,11 +1748,36 @@ function set_data_indices(type_of_data, ref, tar){
   this.reference = ref
 
   // TODO: was null before, but this way I loose the target index when I only set ref?
-  this.target = tar || null
+  this.target = tar || this.target
 
   if(type_of_data === 'gene'){
     type_of_data = 'reaction'
   }
   this._update_data(true, true, type_of_data, true)
+}
+
+function get_current_data_set(){
+  if(this.type_of_data === 'reaction'){
+    return this.options.reaction_data
+  } else if(this.type_of_data === 'gene'){
+    return this.options.gene_data
+  } else if(this.type_of_data === 'metabolite'){
+    return this.options.metabolite_data
+  } else {
+    return []
+  }
+}
+
+function get_current_data_set_names(){
+  if(this.type_of_data === 'reaction'){
+    return this.reaction_data_names
+  } else if(this.type_of_data === 'gene'){
+    return this.gene_data_names
+  } else if(this.type_of_data === 'metabolite'){
+    return this.metabolite_data_names
+  } else {
+    return []
+  }
+
 }
 
