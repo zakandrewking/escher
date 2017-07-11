@@ -364,7 +364,7 @@ function load_map (map_data, should_update_data) {
 
   // set up attributes for time series
   this.type_of_data = ''
-  this.difference_mode_active = false
+  this.difference_mode = false
   this.reference = 0
   this.target = 0
 
@@ -573,11 +573,6 @@ function text_mode() {
   this._set_mode('text')
 }
 
-// function difference_mode(){
-//   this.callback_manager.run('difference_mode')
-//   this._set_mode('difference')
-// }
-
 function _reaction_check_add_abs () {
   var curr_style = this.options.reaction_styles
   var did_abs = false
@@ -757,7 +752,7 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
   // metabolite data
   if (update_metabolite_data && update_map && this.map !== null) {
 
-    if (this.difference_mode_active && this.options.metabolite_data !== null) {
+    if (this.difference_mode && this.options.metabolite_data !== null) {
 
       var difference_metabolite_data = [this.options.metabolite_data[this.reference], this.options.metabolite_data[this.target]]
       met_data_object = data_styles.import_and_check(difference_metabolite_data, 'metabolite_data')
@@ -792,7 +787,7 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
 
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
 
-      if(this.difference_mode_active){
+      if(this.difference_mode){
 
         var difference_reaction_data = [this.options.reaction_data[this.reference], this.options.reaction_data[this.target]]
         reaction_data_object = data_styles.import_and_check(difference_reaction_data,
@@ -820,7 +815,7 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
     // gene data
     } else if (this.options.gene_data !== null && update_map && this.map !== null) {
 
-      if(this.difference_mode_active){
+      if(this.difference_mode){
         var difference_gene_data = [this.options.gene_data[this.reference], this.options.gene_data[this.target]]
         gene_data_object = make_gene_data_object(difference_gene_data,
           this.cobra_model, this.map)

@@ -10,7 +10,7 @@ var data_styles = require('./data_styles.js')
 var d3_select = require('d3-selection').select
 var d3_scale = require('d3-scale')
 var d3_interpolate = require("d3-interpolate")
-var d3_transition = require('d3-transition')
+var d3 = require('d3')
 var TimeSeriesBar = utils.make_class()
 
 
@@ -24,7 +24,7 @@ TimeSeriesBar.prototype = {
   toggle: toggle,
   next: next,
   previous: previous,
-  toggleDifferenceMode: toggleDifferenceMode,
+  //toggleDifferenceMode: toggleDifferenceMode,
   showDifferenceData: showDifferenceData,
   openTab: openTab
 }
@@ -49,7 +49,9 @@ function init (sel, map, builder, type_of_data) {
 
   var container = sel.attr('class', 'search-container')
   // TODO: remove this comment in final version
-  .style('display', 'block');
+  .style('display', 'block')
+
+  container.attr('id', 'container')
 
   container.append('button')
     .attr('class', 'btn btn-sm btn-default close-button')
@@ -115,6 +117,7 @@ function init (sel, map, builder, type_of_data) {
       time_series_button.style('background-color', 'lightgrey')
       difference_mode_button.style('background-color', 'white')
       builder.difference_mode = true
+      showDifferenceData(builder)
       //toggleDifferenceMode (builder)
       groupButtons.style('display', 'none')
     })
@@ -272,11 +275,16 @@ function init (sel, map, builder, type_of_data) {
     .style('stroke-width', '5')
     .style('stroke', 'steelblue')
     .attr({
-      x1: 0,
+      x1: 1,
       y1: 15,
-      x2: 0,
+      x2: 100,
       y2: 15
     })
+  // .transition()
+  // .attr({
+  //   x2: 0,
+  //   y2: 15
+  // })
 
   groupButtons
     .append('input')
@@ -307,8 +315,8 @@ function init (sel, map, builder, type_of_data) {
     .text('Show Chart')
     .on('change', function () {
       if (d3_select('#checkBoxChart').property('checked')) {
-        create_chart(builder)
         toggle_chart(true)
+        create_chart(builder)
       } else {
         toggle_chart(false)
       }})
@@ -319,12 +327,13 @@ function init (sel, map, builder, type_of_data) {
 
   var chart_container = container.append('div')
 
-  chart_container.append('div')
-    .attr('id', 'chart_div')
+  chart_container
+    .attr('id', 'div_data_chart')
+    .style('display','none')
     .append('svg')
+    .attr('id', 'svg_data_chart')
     .attr('width', max_width)
     .attr('height', 300)
-    .attr('id', 'data_chart')
     .style('display','none')
 
 
@@ -332,10 +341,6 @@ function init (sel, map, builder, type_of_data) {
     .attr('id', 'div_data_chart_labels')
     .text('Lines:')
     .style('display','none')
-
-
-  d3_select('#div_data_chart').style('display', 'none')
-  d3_select('#div_data_chart_labels').style('display', 'none')
 
   this.callback_manager = new CallbackManager()
 
@@ -401,7 +406,7 @@ function update (builder, should_create_chart) {
   var currentDataSet = builder.get_current_data_set()
   // TODO: 'both' or not loaded?
 
-  if (currentDataSet.length !== 0) {
+  if (currentDataSet !== null) {
     // update display
     current = 0
     d3_select('#counter').text('Display Dataset: '+ (current + 1) + ' / ' + currentDataSet.length)
@@ -469,79 +474,25 @@ function update (builder, should_create_chart) {
 
 function next (builder) {
 
-  if (builder.type_of_data === 'metabolite') {
+  d3_select('#counter').text('Display Dataset: ' + builder.get_current_data_set_names()[current])
 
-    if (builder.options.metabolite_data !== undefined && builder.options.metabolite_data !== null) {
-      if (current < builder.options.metabolite_data.length - 1) {
-        current += 1
-      } else {
-        current = 0
-      }
-        builder.set_data_indices('metabolite', current)
-        d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
-
-    }
-
-  } else if (builder.type_of_data === 'reaction') {
-    if (builder.options.reaction_data !== undefined && builder.options.reaction_data !== null) {
-      if (current < builder.options.reaction_data.length - 1) {
-        current += 1
-      } else {
-        current = 0
-      }
-        builder.set_data_indices('reaction', current)
-      d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
-
-    }
-  } else if (builder.type_of_data=== 'gene') {
-    if (builder.options.gene_data !== undefined && builder.options.gene_data !== null) {
-      if (current < builder.options.gene_data.length - 1) {
-        current += 1
-      } else {
-        current = 0
-      }
-        builder.set_data_indices('gene', current)
-      d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
-
-    }
-
+  if (current < builder.get_current_data_set().length - 1) {
+    current++
   }
+  builder.set_data_indices(builder.type_of_data, current)
 }
 
 function previous (builder) {
 
+  d3_select('#counter').text('Display Dataset: ' + builder.get_current_data_set_names()[current])
+
   if (current > 0) {
-
-    var current_data
-
-    // this is only for displaying one number... maybe find a work around
-    if (builder.type_of_data === 'metabolite' &&
-      builder.options.metabolite_data !== undefined &&
-      builder.options.metabolite_data !== null) {
-      current -= 1
-
-      builder.set_data_indices('metabolite', current)
-      d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.metabolite_data.length))
-
-    } else if (builder.type_of_data === 'reaction' &&
-      builder.options.reaction_data !== undefined &&
-      builder.options.reaction_data !== null) {
-      current -= 1
-
-      builder.set_data_indices('reaction', current)
-
-      d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.reaction_data.length))
-
-    } else if (builder.type_of_data === 'gene' && builder.options.gene_data !== undefined && builder.options.gene_data !== null) {
-      current -= 1
-
-      builder.set_data_indices('gene', current)
-      d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + (builder.options.gene_data.length))
-
-    }
-
+    current--
   }
+
+  builder.set_data_indices(builder.type_of_data, current)
 }
+
 
 function play_time_series (builder, duration, interpolation, max_steps) {
 
@@ -640,10 +591,10 @@ function play_time_series (builder, duration, interpolation, max_steps) {
 
       this.animation = setInterval(function () {
 
-        d3_select('#counter').text('Interpolated Time Series of Data Sets: '
-          + start +
-          ' to ' + end +
-          '. Current: ' + builder.reference)
+        d3_select('#counter').text('Interpolated Time Series of Data Sets')//: '
+         // + start +
+         // ' to ' + end +
+         // '. Current: ' + builder.reference)
 
         if (builder.reference < end) {
           var next = builder.reference
@@ -763,23 +714,6 @@ function play_time_series (builder, duration, interpolation, max_steps) {
 
       }, duration / (this.sliding_window_end - this.sliding_window_start));
 
-        d3.select('#progress_line')
-          .attr({
-            x2: 0,
-            y2: 15
-          }).transition()
-          .duration(duration)
-          .attr({
-            x2: 400,
-            y2: 15
-          })
-          // .transition()
-          // .attr({
-          //   x2: 0,
-          //   y2: 15
-          // })
-
-
 
     } else {
       clearInterval(this.animation)
@@ -881,17 +815,18 @@ function create_chart(builder){
 
   if(data_set_loaded){
 
-    var data_chart = d3_select("#data_chart")
-
     var margins = {
         top: 20,
         right: 20,
         bottom: 20,
-        left: 50
+        left: 20
       }
 
-    var width = data_chart.node().getBoundingClientRect().width - margins.left - margins.right
-    var height = data_chart.node().getBoundingClientRect().height - margins.bottom - margins.top
+    var data_chart = d3_select("#svg_data_chart")
+
+
+    var width = d3_select("#div_data_chart").node().getBoundingClientRect().width - margins.left - margins.right
+    var height = d3_select("#div_data_chart").node().getBoundingClientRect().height - margins.bottom - margins.top
 
     var color = d3_scale.schemeCategory20
 
@@ -930,8 +865,9 @@ function create_chart(builder){
     var domain_x_scale_min = 0
     var domain_x_scale_max = current_data_set.length - 1
 
-    var domain_y_scale_min = d3.min(Object.values(data_for_lines[0][0]))
-    var domain_y_scale_max = d3.max(Object.values(data_for_lines[0][0]))
+    // TODO: right domains
+    var domain_y_scale_min = 0 //d3.min(Object.values(data_for_lines[0][0]))
+    var domain_y_scale_max = 10//d3.max(Object.values(data_for_lines[0][0]))
 
     // TODO: google a better way
     for(var o in data_for_lines){
@@ -950,21 +886,26 @@ function create_chart(builder){
       }
     }
 
-    var x_scale = d3.scale.linear().range([margins.left, width - margins.right]).domain([domain_x_scale_min,domain_x_scale_max])
-    var y_scale = d3.scale.linear().range([height - margins.top, margins.bottom]).domain([domain_y_scale_min,domain_y_scale_max])
+    var x_scale = d3.scaleLinear()
+      .domain([domain_x_scale_min,domain_x_scale_max])
+      .range([margins.left, width - margins.right])
 
-    var x_axis = d3.svg.axis().scale(x_scale).orient('bottom')
-    var y_axis = d3.svg.axis().scale(y_scale).orient('left')
+    var y_scale = d3.scaleLinear()
+      .domain([domain_y_scale_min,domain_y_scale_max])
+      .range([height - margins.top, margins.bottom])
+
+    var x_axis = d3.axisBottom(x_scale)
+    var y_axis = d3.axisLeft(y_scale)
 
 
-    data_chart.append("svg:g")
+    data_chart.append('g')
       .attr("transform", "translate(0," + (height - margins.bottom) + ")")
       .style('shape-rendering', 'crispEdges')
       .style('stroke', 'black')
       .style('fill', 'none')
       .call(x_axis)
 
-    data_chart.append("svg:g")
+    data_chart.append('g')
       .attr("transform", "translate(" + (margins.left) + ",0)")
       .style('shape-rendering', 'crispEdges')
       .style('stroke', 'black')
@@ -975,14 +916,14 @@ function create_chart(builder){
 
       var data = data_for_lines[i]
 
-      var line = d3.svg.line()
+      var line = d3.line()
         .x(function(data) {
           return x_scale(data.x)
         })
         .y(function(data) {
           return y_scale(data.y)
         })
-        .interpolate('cardinal')
+        .curve(d3.curveCardinal)
 
       var path = data_chart.append('svg:path')
         .attr('d', line(data))
@@ -1000,7 +941,7 @@ function create_chart(builder){
         .attr("cy", (function(data) {
           return y_scale(data.y)
         }))
-        .on()
+        //.on()
 
 
       var animated_path = data_chart.append('svg:path')
@@ -1016,7 +957,7 @@ function create_chart(builder){
         .attr("stroke-dashoffset", totalLength)
         .transition()
         .duration(2000)
-        .ease("linear")
+        .ease(d3.easeLinear)
         .attr("stroke-dashoffset", 0);
 
       // Add a label with same color as line
@@ -1024,7 +965,6 @@ function create_chart(builder){
         .append('div').append('label')
         .style('color', color[i])
         .text(labels_for_lines[i])
-
 
     }
   }
@@ -1034,11 +974,27 @@ function create_chart(builder){
 function toggle_chart(show){
   if(show){
     d3_select('#div_data_chart').style('display', 'block')
+    d3_select('#svg_data_chart').style('display', 'block')
     d3_select('#div_data_chart_labels').style('display', 'block')
 
   } else {
-    d3_select('#div_data_chart').style('display', 'none')
-    d3_select('#div_data_chart_labels').style('display', 'none')
+
+
+    d3_select('#svg_data_chart').remove()
+    d3_select('#div_data_chart_labels').remove()
+
+    d3_select('#div_data_chart').append('svg')
+      .attr('id', 'svg_data_chart')
+      .attr('width', 400)
+      .attr('height', 300)
+      .style('display','none')
+
+
+    d3_select('#div_data_chart').append('label')
+      .attr('id', 'div_data_chart_labels')
+      .text('Lines:')
+      .style('display','none')
+
 
   }
 

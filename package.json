@@ -68,7 +68,7 @@
     "underscore": "^1.8.3",
     "vkbeautify": "^0.99.1",
     "d3-interpolate": "latest",
-    "d3-transition": "latest"
+    "d3": "latest"
   },
   "scripts": {
     "compile": "./node_modules/.bin/grunt default",
