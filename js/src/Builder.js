@@ -757,7 +757,13 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
       met_data_object = data_styles.import_and_check(difference_metabolite_data, 'metabolite_data')
     } else {
       if (this.options.metabolite_data !== null) {
-        met_data_object = data_styles.import_and_check(this.options.metabolite_data[this.reference], 'metabolite_data')
+        if(_.isArray(this.options.metabolite_data)){
+
+          met_data_object = data_styles.import_and_check(this.options.metabolite_data[this.reference], 'metabolite_data')
+        } else {
+          met_data_object = data_styles.import_and_check(this.options.metabolite_data, 'metabolite_data')
+
+        }
 
       } else {
         met_data_object = data_styles.import_and_check(this.options.metabolite_data, 'metabolite_data')
@@ -793,7 +799,13 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
           'reaction_data')
 
       } else {
+        if(_.isArray(this.options.reaction_data)){
+
         reaction_data_object = data_styles.import_and_check(this.options.reaction_data[this.reference], 'reaction_data')
+        } else {
+          reaction_data_object = data_styles.import_and_check(this.options.reaction_data, 'reaction_data')
+
+        }
       }
 
       if(update_stats){
@@ -819,8 +831,16 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
         gene_data_object = make_gene_data_object(difference_gene_data,
           this.cobra_model, this.map)
       } else {
-      gene_data_object = make_gene_data_object(this.options.gene_data[this.reference],
-                                               this.cobra_model, this.map)
+
+        if(_.isArray(this.options.gene_data)){
+        gene_data_object = make_gene_data_object(this.options.gene_data[this.reference],
+                                                 this.cobra_model, this.map)
+
+        } else {
+          gene_data_object = make_gene_data_object(this.options.gene_data,
+            this.cobra_model, this.map)
+
+        }
       }
 
       if(update_stats){
