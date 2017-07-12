@@ -46,6 +46,7 @@ function init (sel, map, builder, type_of_data) {
 
   this.type_of_data = type_of_data
 
+  var both_data_play_back = false
 
   var container = sel.attr('class', 'search-container')
   // TODO: remove this comment in final version
@@ -73,6 +74,7 @@ function init (sel, map, builder, type_of_data) {
   box.append('button')
     .attr('id', 'reaction_tab_button')
     .on('click', function (builder) {
+      both_data_play_back = false
       openTab('reaction', builder)
     })
     .style('background-color', 'lightgrey')
@@ -82,6 +84,7 @@ function init (sel, map, builder, type_of_data) {
   box.append('button')
     .attr('id', 'metabolite_tab_button')
     .on('click', function (builder) {
+      both_data_play_back = false
       openTab('metabolite', builder)
     })
     .style('background-color', 'lightgrey')
@@ -91,7 +94,17 @@ function init (sel, map, builder, type_of_data) {
   box.append('button')
     .attr('id', 'both_tab_button')
     .on('click', function (builder) {
-      openTab('both', builder)
+
+      if(builder.options.reaction_data !== null && builder.options.metabolite_data !== null){
+        if(builder.options.reaction_data.length === builder.options.metabolite_data.length){
+          both_data_play_back = true // TODO: make use
+          openTab('both', builder)
+        }
+      } else {
+        both_data_play_back = false
+      }
+
+
     })
     .style('background-color', 'lightgrey')
     .style('width', '33.3%')
@@ -243,7 +256,7 @@ function init (sel, map, builder, type_of_data) {
     .attr('class', 'btn btn-default')
     .attr('id', 'play_button')
     .on('click', function(){
-      play_time_series(builder, duration, interpolation , 10) // TODO: make ui for setting steps ?
+      play_time_series(builder, duration, interpolation , 10, both_data_play_back) // TODO: make ui for setting steps ?
     })
     .append('span').attr('class', 'glyphicon glyphicon-play')
 
@@ -367,7 +380,6 @@ function openTab (type_of_data, builder) {
   builder.type_of_data = type_of_data
 
   if (builder.type_of_data === 'reaction') {
-
     d3_select('#reaction_tab_button').style('background-color', 'white')
     //reaction_tab.style('display', 'block')
     update(builder)
@@ -403,7 +415,7 @@ function openTab (type_of_data, builder) {
 
 function update (builder, should_create_chart) {
 
-  var currentDataSet = builder.get_current_data_set()
+  var currentDataSet = get_current_data_set(builder)
   // TODO: 'both' or not loaded?
 
   if (currentDataSet !== null) {
@@ -474,9 +486,9 @@ function update (builder, should_create_chart) {
 
 function next (builder) {
 
-  d3_select('#counter').text('Display Dataset: ' + builder.get_current_data_set_names()[current])
+  d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[current])
 
-  if (current < builder.get_current_data_set().length - 1) {
+  if (current < get_current_data_set(builder).length - 1) {
     current++
   }
   builder.set_data_indices(builder.type_of_data, current)
@@ -484,7 +496,7 @@ function next (builder) {
 
 function previous (builder) {
 
-  d3_select('#counter').text('Display Dataset: ' + builder.get_current_data_set_names()[current])
+  d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[current])
 
   if (current > 0) {
     current--
@@ -493,129 +505,184 @@ function previous (builder) {
   builder.set_data_indices(builder.type_of_data, current)
 }
 
+function play_time_series (builder, duration, interpolation, max_steps, both_data_play_back) {
 
-function play_time_series (builder, duration, interpolation, max_steps) {
+  if (!this.playing) {
+    this.playing = true
 
-  if(interpolation){
+    this.sliding_window_start = builder.reference
+    this.sliding_window_end = builder.target
 
-    if(!this.playing){
-      this.data_set_to_interpolate = []
-      this.playing = true
+    this.data_set_for_animation = []
 
-      this.sliding_window_start = builder.reference
-      this.sliding_window_end = builder.target
+    // TODO: give user feedback if non linear time scale detected, maybe only check if wanted
+    var linear_time_scale = true
+    var tick = this.sliding_window_start
+    var time_point = this.sliding_window_start
 
+    // array of time points for non-linear time scale
+    var array_of_time_points = []
 
-      this.data_set_save = builder.get_current_data_set()
+    for (var i in get_current_data_set_names(builder)) {
+      var name = get_current_data_set_names(builder)[i]
 
-      for(var i = this.sliding_window_start; i <= this.sliding_window_end; i++){
-        this.data_set_to_interpolate.push(builder.get_current_data_set()[i])
+      if (name.startsWith('t') && typeof parseInt(name.slice(1)) === 'number') { // check if rest of string is a number
+        array_of_time_points.push(parseInt(name.slice(1)))
+        linear_time_scale = false
+      } else {
+        linear_time_scale = true
       }
+    }
 
-      // create new data_set with every data points in between
-      // set it to data object in builder
-      // set it back after the animation stops
+    for (var i = this.sliding_window_start; i <= this.sliding_window_end; i++) {
+      this.data_set_for_animation.push(get_current_data_set(builder)[i])
+    }
 
-      var set_of_interpolators = []
+    var start = builder.reference
+    var end = builder.target
 
-      for(var index_of_data_set = 0; index_of_data_set < this.data_set_to_interpolate.length - 1; index_of_data_set++){
+    var duration = duration / (end - start)
 
-        var current_object = {}
+    if (interpolation) {
 
-        for(var index_of_reaction = 0; index_of_reaction < Object.keys(this.data_set_to_interpolate[index_of_data_set]).length; index_of_reaction++){
+      this.data_set_save = get_current_data_set(builder)
+      var interpolation_data_set = create_interpolation_data_set(this.data_set_for_animation, max_steps)
 
-          var reaction_name = Object.keys(this.data_set_to_interpolate[index_of_data_set])[index_of_reaction]
-          var current_object_data = Object.values(this.data_set_to_interpolate[index_of_data_set])[index_of_reaction]
-
-          // choose the same reaction, but in next data set
-          var next_object_data = Object.values(this.data_set_to_interpolate[index_of_data_set + 1])[index_of_reaction]
-
-          current_object[reaction_name] =  d3_interpolate.interpolate((current_object_data), (next_object_data))
-
-          }
-        set_of_interpolators.push(current_object)
-      }
-
-
-      // fill new data set with all the data
-      var interpolation_data_set = []
-      interpolation_data_set.length = 0
-
-      // [{key: value, key: value, key: value},
-      // {key: value, key: value, key: value}, ...
-      // {key: value, key: value, key: value}]
-
-        for (var set in set_of_interpolators) {
-
-          for (var interpolator in set) {
-
-          var steps = 0
-          while (steps <= max_steps) {
-
-            var keys = Object.keys(set_of_interpolators[set]) // array of all keys, pick out one
-            var interpolators = Object.values(set_of_interpolators[set]) // array of all interpolators, pick out one
-
-            var set_of_entries = {} // this contains data for all reactions at one time point = one 'step' of interpolator
-                                    // {key: value, key: value, key: value}
-
-            for (var key in keys) {
-              // this creates one single entry name: value
-              var identifier = keys[key]
-              var current_interpolator_function = interpolators[key]
-
-              set_of_entries[identifier] = current_interpolator_function((steps / 10))
-
-              interpolation_data_set.push(set_of_entries)
-            }
-
-            steps++
-          }
-        }
-
-      }
-
-      if(builder.type_of_data === 'reaction'){
+      if (builder.type_of_data === 'reaction') {
         builder.options.reaction_data = interpolation_data_set
-      } else if(builder.type_of_data === 'gene'){
+      } else if (builder.type_of_data === 'gene') {
         builder.options.gene_data = interpolation_data_set
-      } else if(builder.type_of_data === 'metabolite'){
+      } else if (builder.type_of_data === 'metabolite') {
         builder.options.metabolite_data = interpolation_data_set
       }
 
-
-      // animation
-
       // to play animation with all data sets
-      var start = 0
-      var end = interpolation_data_set.length - 1
+      start = 0
+      end = interpolation_data_set.length - 1
 
-      this.animation = setInterval(function () {
+      duration /= max_steps
 
-        d3_select('#counter').text('Interpolated Time Series of Data Sets')//: '
-         // + start +
-         // ' to ' + end +
-         // '. Current: ' + builder.reference)
+    }
 
-        if (builder.reference < end) {
-          var next = builder.reference
-          next++
-          builder.reference = next
+    // animation
+
+    this.animation = setInterval(function () {
+
+      if (interpolation) {
+
+        d3_select('#counter').text('Interpolated Time Series of Data Sets')
+
+
+        if(linear_time_scale){
+          if (builder.reference < end) {
+            var next = builder.reference
+            next++
+            builder.reference = next
+          } else {
+            builder.reference = 0
+          }
+
+          if (both_data_play_back) {
+            builder.set_data_indices('reaction', builder.reference, end)
+            builder.set_data_indices('metabolite', builder.reference, end)
+          } else {
+            builder.set_data_indices(builder.type_of_data, builder.reference, end)
+          }
+
         } else {
-          builder.reference = 0
+          // TODO: handle interpolated data with non-linear time scale
+
+          if (tick === array_of_time_points[time_point]) {
+
+            // distribute all max_steps data sets in time frame
+
+            // play all max_steps data sets in row
+
+            // then tick++, time_point++
+
+          } else { // reset if last time point or step forward
+
+            if(tick === array_of_time_points[array_of_time_points.length-1]){
+              tick = array_of_time_points[0] - 1
+            }
+            tick++
+          }
+
+
         }
-        builder.set_data_indices(builder.type_of_data, builder.reference, end) // otherwise will set to null
-      }, (duration / this.sliding_window_end / max_steps))
 
+      } else {
+        d3_select('#counter').text('Time Series of Data Sets: '
+          + this.sliding_window_start +
+          ' to ' + builder.target +
+          '. Current: ' + builder.reference)
 
-    } else {
+        if (linear_time_scale) {
 
+          if (builder.reference < this.sliding_window_end) {
+            var next = builder.reference
+            next++
+            builder.reference = next
+          } else { // TODO: only if played as loop (?)
+            builder.reference = this.sliding_window_start
+          }
+
+          if (both_data_play_back) {
+            builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
+            builder.set_data_indices('metabolite', builder.reference, this.sliding_window_end)
+          } else {
+            builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
+          }
+
+        } else {
+
+          if (tick === array_of_time_points[time_point]) {
+
+            if (builder.reference < this.sliding_window_end) {
+              var next = builder.reference
+              next++
+              builder.reference = next
+            } else { // TODO: only if played as loop (?)
+              builder.reference = this.sliding_window_start
+
+              time_point = this.sliding_window_start - 1
+              tick = this.sliding_window_start - 1
+              console.log('sliding window: ' + this.sliding_window_start)
+            }
+
+            if (both_data_play_back) {
+              builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
+              builder.set_data_indices('metabolite', builder.reference, this.sliding_window_end)
+            } else {
+
+              builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
+            }
+
+            time_point++
+            tick++
+
+          } else {
+
+            if(tick === array_of_time_points[array_of_time_points.length-1]){
+              tick = array_of_time_points[0] - 1
+            }
+
+            tick++
+            console.log(tick)
+          }
+        }
+      }
+
+    }, duration)
+
+  } else { // clear animation and reset data
+    if (interpolation) {
       clearInterval(this.animation)
 
       this.playing = false
 
-      this.data_set_to_interpolate = []
+      this.data_set_for_animation = []
 
-      console.log(this.data_set_save)
       // after animation reset to 'normal' data
       if (builder.type_of_data === 'reaction') {
         builder.options.reaction_data.length = 0
@@ -631,100 +698,18 @@ function play_time_series (builder, duration, interpolation, max_steps) {
       builder.reference = this.sliding_window_start
       builder.target = this.sliding_window_end
 
-    }
-
-
-  } else {
-
-    // TODO: makes crazy stuff with setting reference / target every time. maybe just grey out while animation?
-
-    if (!this.playing) {
-      this.playing = true
-
-      // save values for later, because reference gets overwritten in set indices
-      this.sliding_window_start = builder.reference
-      this.sliding_window_end = builder.target
-
-      var linear_time_scale = true
-      var tick = this.sliding_window_start
-      var time_point = this.sliding_window_start
-
-      // array of time points for non-linear time scale
-      var array_of_time_points = []
-
-      for(var i in builder.get_current_data_set_names()){
-        var name = builder.get_current_data_set_names()[i]
-
-        if(name.startsWith('t')){
-          array_of_time_points.push(parseInt(name.slice(1)))
-          linear_time_scale = false
-        } else {
-          linear_time_scale = true
-        }
-      }
-
-      this.animation = setInterval(function () {
-
-        d3_select('#counter').text('Time Series of Data Sets: '
-          + this.sliding_window_start +
-          ' to ' + builder.target +
-          '. Current: ' + builder.reference)
-
-
-        // linear time scale
-        if(linear_time_scale){
-
-          if (builder.reference < this.sliding_window_end) {
-            var next = builder.reference
-            next++
-            builder.reference = next
-          } else { // TODO: only if played as loop (?)
-            builder.reference = this.sliding_window_start
-          }
-
-        builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
-
-        } else {
-
-          if(tick === array_of_time_points[time_point]){
-
-            console.log('next set')
-            if (builder.reference < this.sliding_window_end) {
-              var next = builder.reference
-              next++
-              builder.reference = next
-            } else { // TODO: only if played as loop (?)
-              builder.reference = this.sliding_window_start
-
-              console.log('reset')
-              time_point = this.sliding_window_start - 1
-              tick = this.sliding_window_start - 1
-            }
-
-            builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
-            time_point++
-            tick++
-
-          } else {
-            tick++
-            console.log(tick)
-          }
-        }
-
-
-      }, duration / (this.sliding_window_end - this.sliding_window_start));
-
-
     } else {
+
       clearInterval(this.animation)
 
       this.playing = false
       builder.reference = this.sliding_window_start
       builder.target = this.sliding_window_end
     }
-  }
-}
 
+  }
+
+}
 
 
 function toggleDifferenceMode (builder) {
@@ -997,5 +982,100 @@ function toggle_chart(show){
 
 
   }
+
+}
+
+
+function get_current_data_set(builder){
+  if(builder.type_of_data === 'reaction'){
+    return builder.options.reaction_data
+  } else if(builder.type_of_data === 'gene'){
+    return this.options.gene_data
+  } else if(builder.type_of_data === 'metabolite'){
+    return builder.options.metabolite_data
+  } else {
+    return []
+  }
+}
+
+function get_current_data_set_names(builder){
+  if(builder.type_of_data === 'reaction'){
+    return builder.reaction_data_names
+  } else if(builder.type_of_data === 'gene'){
+    return builder.gene_data_names
+  } else if(builder.type_of_data === 'metabolite'){
+    return builder.metabolite_data_names
+  } else {
+    return []
+  }
+
+}
+
+
+function create_interpolation_data_set (data_set_to_interpolate, max_steps) {
+
+  // create new data_set with every data points in between
+  // set it to data object in builder
+  // set it back after the animation stops
+
+  var set_of_interpolators = []
+
+  for(var index_of_data_set = 0; index_of_data_set < data_set_to_interpolate.length - 1; index_of_data_set++){
+
+    var current_object = {}
+
+    for(var index_of_reaction = 0; index_of_reaction < Object.keys(data_set_to_interpolate[index_of_data_set]).length; index_of_reaction++){
+
+      var reaction_name = Object.keys(data_set_to_interpolate[index_of_data_set])[index_of_reaction]
+      var current_object_data = Object.values(data_set_to_interpolate[index_of_data_set])[index_of_reaction]
+
+      // choose the same reaction, but in next data set
+      var next_object_data = Object.values(data_set_to_interpolate[index_of_data_set + 1])[index_of_reaction]
+
+      current_object[reaction_name] =  d3_interpolate.interpolate((current_object_data), (next_object_data))
+
+    }
+    set_of_interpolators.push(current_object)
+  }
+
+
+  // fill new data set with all the data
+  var interpolation_data_set = []
+  interpolation_data_set.length = 0
+
+  // [{key: value, key: value, key: value},
+  // {key: value, key: value, key: value}, ...
+  // {key: value, key: value, key: value}]
+
+  for (var set in set_of_interpolators) {
+
+    for (var interpolator in set) {
+
+      var steps = 0
+      while (steps <= max_steps) {
+
+        var keys = Object.keys(set_of_interpolators[set]) // array of all keys, pick out one
+        var interpolators = Object.values(set_of_interpolators[set]) // array of all interpolators, pick out one
+
+        var set_of_entries = {} // this contains data for all reactions at one time point = one 'step' of interpolator
+                                // {key: value, key: value, key: value}
+
+        for (var key in keys) {
+          // this creates one single entry name: value
+          var identifier = keys[key]
+          var current_interpolator_function = interpolators[key]
+
+          set_of_entries[identifier] = current_interpolator_function((steps / 10))
+
+          interpolation_data_set.push(set_of_entries)
+        }
+
+        steps++
+      }
+    }
+
+  }
+
+  return interpolation_data_set
 
 }

@@ -53,8 +53,7 @@ Builder.prototype = {
   _get_keys: _get_keys,
   _setup_confirm_before_exit: _setup_confirm_before_exit,
   set_data_indices: set_data_indices,
-  get_current_data_set: get_current_data_set,
-  get_current_data_set_names: get_current_data_set_names
+
 }
 module.exports = Builder
 
@@ -1750,28 +1749,4 @@ function set_data_indices(type_of_data, ref, tar){
   this._update_data(true, true, type_of_data, true)
 }
 
-function get_current_data_set(){
-  if(this.type_of_data === 'reaction'){
-    return this.options.reaction_data
-  } else if(this.type_of_data === 'gene'){
-    return this.options.gene_data
-  } else if(this.type_of_data === 'metabolite'){
-    return this.options.metabolite_data
-  } else {
-    return []
-  }
-}
-
-function get_current_data_set_names(){
-  if(this.type_of_data === 'reaction'){
-    return this.reaction_data_names
-  } else if(this.type_of_data === 'gene'){
-    return this.gene_data_names
-  } else if(this.type_of_data === 'metabolite'){
-    return this.metabolite_data_names
-  } else {
-    return []
-  }
-
-}
 
