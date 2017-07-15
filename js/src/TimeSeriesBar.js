@@ -42,6 +42,8 @@ function init (sel, map, builder, type_of_data) {
   this.builder.reference = 0
   this.builder.target = 0
 
+  this.map = map
+
   current = 0
 
   this.type_of_data = type_of_data
@@ -256,7 +258,7 @@ function init (sel, map, builder, type_of_data) {
     .attr('class', 'btn btn-default')
     .attr('id', 'play_button')
     .on('click', function(){
-      play_time_series(builder, duration, interpolation , 10, both_data_play_back) // TODO: make ui for setting steps ?
+      play_time_series(builder, map, duration, interpolation , 10, both_data_play_back) // TODO: make ui for setting steps ?
     })
     .append('span').attr('class', 'glyphicon glyphicon-play')
 
@@ -329,7 +331,7 @@ function init (sel, map, builder, type_of_data) {
     .on('change', function () {
       if (d3_select('#checkBoxChart').property('checked')) {
         toggle_chart(true)
-        create_chart(builder)
+        create_chart(builder, map)
       } else {
         toggle_chart(false)
       }})
@@ -358,7 +360,6 @@ function init (sel, map, builder, type_of_data) {
   this.callback_manager = new CallbackManager()
 
   this.selection = container
-  this.map = map
 }
 
 
@@ -390,7 +391,7 @@ function openTab (type_of_data, builder) {
   } else if (builder.type_of_data ===  'metabolite') {
     d3_select('#metabolite_tab_button').style('background-color', 'white')
     //metabolite_tab.style('display', 'block')
-    update(builder, type_of_data)
+    update(builder)
   }
   else if (builder.type_of_data === 'both') {
     //both_tab.style('display', 'block')
@@ -406,7 +407,7 @@ function openTab (type_of_data, builder) {
 /**
  *  Update the GUI
  *
- * set to specific dataset
+ * set to specific data set
  * set slider to max of data
  * set counter to 0 of data length
  * set dropdown menu length
@@ -481,6 +482,8 @@ function update (builder, should_create_chart) {
     // reset dropdown menu
     document.getElementById('dropDownMenuReference').options.length = 0
     document.getElementById('dropDownMenuTarget').options.length = 0
+
+    toggle_chart(false)
   }
 }
 
@@ -505,7 +508,7 @@ function previous (builder) {
   builder.set_data_indices(builder.type_of_data, current)
 }
 
-function play_time_series (builder, duration, interpolation, max_steps, both_data_play_back) {
+function play_time_series (builder, map, duration, interpolation, max_steps, both_data_play_back) {
 
   if (!this.playing) {
     this.playing = true
@@ -516,23 +519,14 @@ function play_time_series (builder, duration, interpolation, max_steps, both_dat
     this.data_set_for_animation = []
 
     // TODO: give user feedback if non linear time scale detected, maybe only check if wanted
-    var linear_time_scale = true
+
     var tick = this.sliding_window_start
     var time_point = this.sliding_window_start
 
     // array of time points for non-linear time scale
-    var array_of_time_points = []
+    var array_of_time_points = get_array_of_time_points(builder, map)
 
-    for (var i in get_current_data_set_names(builder)) {
-      var name = get_current_data_set_names(builder)[i]
-
-      if (name.startsWith('t') && typeof parseInt(name.slice(1)) === 'number') { // check if rest of string is a number
-        array_of_time_points.push(parseInt(name.slice(1)))
-        linear_time_scale = false
-      } else {
-        linear_time_scale = true
-      }
-    }
+    var linear_time_scale = get_linear_time_scale(builder,map)
 
     for (var i = this.sliding_window_start; i <= this.sliding_window_end; i++) {
       this.data_set_for_animation.push(get_current_data_set(builder)[i])
@@ -560,7 +554,10 @@ function play_time_series (builder, duration, interpolation, max_steps, both_dat
       start = 0
       end = interpolation_data_set.length - 1
 
-      duration /= max_steps
+
+      if(linear_time_scale){
+        duration /= max_steps
+      }
 
     }
 
@@ -589,10 +586,11 @@ function play_time_series (builder, duration, interpolation, max_steps, both_dat
             builder.set_data_indices(builder.type_of_data, builder.reference, end)
           }
 
+
         } else {
           // TODO: handle interpolated data with non-linear time scale
 
-          if (tick === array_of_time_points[time_point]) {
+   //       if (tick === array_of_time_points[time_point]){
 
             // distribute all max_steps data sets in time frame
 
@@ -600,14 +598,38 @@ function play_time_series (builder, duration, interpolation, max_steps, both_dat
 
             // then tick++, time_point++
 
-          } else { // reset if last time point or step forward
+            if (builder.reference < interpolation_data_set.length) {
 
-            if(tick === array_of_time_points[array_of_time_points.length-1]){
-              tick = array_of_time_points[0] - 1
+              var next = builder.reference
+
+              next += Math.ceil(interpolation_data_set.length / max_steps) + 1
+
+              builder.reference = next
+
+            } else { // TODO: only if played as loop (?)
+              builder.reference = this.sliding_window_start
+
+              time_point = this.sliding_window_start
+              tick = this.sliding_window_start
             }
-            tick++
-          }
 
+            if (both_data_play_back) {
+              builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
+              builder.set_data_indices('metabolite', builder.reference, this.sliding_window_end)
+            } else {
+              builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
+            }
+
+            time_point++
+            tick++
+
+          // } else {
+          //
+          //   if(tick === (array_of_time_points[array_of_time_points.length-1] + max_steps)){
+          //     tick = array_of_time_points[0] - 1
+          //   }
+          //   tick++
+          // }
 
         }
 
@@ -616,25 +638,6 @@ function play_time_series (builder, duration, interpolation, max_steps, both_dat
           + this.sliding_window_start +
           ' to ' + builder.target +
           '. Current: ' + builder.reference)
-
-        if (linear_time_scale) {
-
-          if (builder.reference < this.sliding_window_end) {
-            var next = builder.reference
-            next++
-            builder.reference = next
-          } else { // TODO: only if played as loop (?)
-            builder.reference = this.sliding_window_start
-          }
-
-          if (both_data_play_back) {
-            builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
-            builder.set_data_indices('metabolite', builder.reference, this.sliding_window_end)
-          } else {
-            builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
-          }
-
-        } else {
 
           if (tick === array_of_time_points[time_point]) {
 
@@ -647,7 +650,6 @@ function play_time_series (builder, duration, interpolation, max_steps, both_dat
 
               time_point = this.sliding_window_start - 1
               tick = this.sliding_window_start - 1
-              console.log('sliding window: ' + this.sliding_window_start)
             }
 
             if (both_data_play_back) {
@@ -666,11 +668,8 @@ function play_time_series (builder, duration, interpolation, max_steps, both_dat
             if(tick === array_of_time_points[array_of_time_points.length-1]){
               tick = array_of_time_points[0] - 1
             }
-
             tick++
-            console.log(tick)
           }
-        }
       }
 
     }, duration)
@@ -725,6 +724,7 @@ function toggleDifferenceMode (builder) {
 }
 
 function showDifferenceData (builder) {
+  toggle_chart(false)
   builder.difference_mode = true
   builder.set_data_indices(builder.type_of_data, builder.reference, builder.target)
 }
@@ -766,35 +766,13 @@ function toggle (on_off) {
 }
 
 
-function create_chart(builder){
+function create_chart(builder, map){
 
   var current_data_set = []
-  var current_data_set_names = []
   var data_set_loaded = false
 
-  if (builder.type_of_data === 'reaction' && builder.options.reaction_data !== null) {
-
-    for(i = builder.reference; i <= builder.target; i++){
-    current_data_set.push(builder.options.reaction_data[i])
-
-    }
-    current_data_set_names = builder.reaction_data_names
-    data_set_loaded = true
-  } else if (builder.type_of_data === 'gene' && builder.options.gene_data !== null) {
-    for(i = builder.reference; i <= builder.target; i++){
-      current_data_set.push(builder.options.gene_data[i])
-
-    }
-    current_data_set_names = builder.gene_data_names
-
-    data_set_loaded = true
-  } else if (builder.type_of_data === 'metabolite' && builder.options.metabolite_data !== null) {
-    for(i = builder.reference; i <= builder.target; i++){
-      current_data_set.push(builder.options.metabolite_data[i])
-
-    }
-    current_data_set_names = builder.metabolite_data_names
-
+  for(var i = builder.reference; i <= builder.target; i++){
+    current_data_set.push(get_current_data_set(builder)[i])
     data_set_loaded = true
   }
 
@@ -809,7 +787,6 @@ function create_chart(builder){
 
     var data_chart = d3_select("#svg_data_chart")
 
-
     var width = d3_select("#div_data_chart").node().getBoundingClientRect().width - margins.left - margins.right
     var height = d3_select("#div_data_chart").node().getBoundingClientRect().height - margins.bottom - margins.top
 
@@ -817,6 +794,14 @@ function create_chart(builder){
 
     var data_for_lines = []
     var labels_for_lines = Object.keys(current_data_set[0])
+    var array_of_time_points = get_array_of_time_points(builder, map)
+
+    var domain_y_scale_min = d3.min(d3.values(current_data_set[0]))
+    var domain_y_scale_max = d3.max(d3.values(current_data_set[0]))
+
+    var domain_x_scale_min = array_of_time_points[builder.reference]
+    var domain_x_scale_max = array_of_time_points[builder.target]
+
 
     // for all data keys create chart data
 
@@ -827,48 +812,30 @@ function create_chart(builder){
       // save identifier for label
       //labels_for_lines.push(key)
 
+      var time_point_index = builder.reference
+
       for(var index in current_data_set){ // go though all data sets to collect values
         var data_point = {}
         var key = Object.keys(current_data_set[index])[k]
 
-        // y is values, x is index TODO: tx how ?
-
         var y_value = current_data_set[index][key]
 
-        data_point['x'] = index
+        data_point['x'] = array_of_time_points[time_point_index]
         data_point['y'] = y_value
 
+        if(y_value < domain_y_scale_min){
+          domain_y_scale_min = y_value
+        }
+
+        if(y_value > domain_y_scale_max){
+          domain_y_scale_max = y_value
+        }
+
+        time_point_index++
         data_for_line.push(data_point)
 
       }
-
-
       data_for_lines.push(data_for_line)
-
-    }
-
-    var domain_x_scale_min = 0
-    var domain_x_scale_max = current_data_set.length - 1
-
-    // TODO: right domains
-    var domain_y_scale_min = 0 //d3.min(Object.values(data_for_lines[0][0]))
-    var domain_y_scale_max = 10//d3.max(Object.values(data_for_lines[0][0]))
-
-    // TODO: google a better way
-    for(var o in data_for_lines){
-      for(var p in data_for_lines[o]){
-      var curr_min = d3.min(Object.values(data_for_lines[o][p]))
-      if(curr_min < domain_y_scale_min){
-        domain_y_scale_min = curr_min
-      }
-      var curr_max = d3.max(Object.values(data_for_lines[o][p]))
-
-      if(curr_max > domain_y_scale_max){
-        domain_y_scale_max = curr_max
-
-      }
-
-      }
     }
 
     var x_scale = d3.scaleLinear()
@@ -926,8 +893,6 @@ function create_chart(builder){
         .attr("cy", (function(data) {
           return y_scale(data.y)
         }))
-        //.on()
-
 
       var animated_path = data_chart.append('svg:path')
         .attr('d', line(data))
@@ -1078,4 +1043,42 @@ function create_interpolation_data_set (data_set_to_interpolate, max_steps) {
 
   return interpolation_data_set
 
+}
+
+function get_array_of_time_points(builder, map){
+
+  var array_of_time_points = []
+  var time_scale_is_linear
+
+  for (var i in get_current_data_set_names(builder)) {
+    var name = get_current_data_set_names(builder)[i]
+
+    if (name.startsWith('t') && typeof parseInt(name.slice(1)) === 'number') { // check if rest of string is a number
+      array_of_time_points.push(parseInt(name.slice(1)))
+      time_scale_is_linear = false
+    } else {
+    array_of_time_points.push(parseInt(i))
+      time_scale_is_linear = true
+    }
+  }
+
+  if(time_scale_is_linear){
+    map.set_status('Displaying Linear Time Scale')
+  } else {
+    map.set_status('Displaying Non Linear Time Scale')
+  }
+
+  return array_of_time_points
+}
+
+function get_linear_time_scale(builder, map){
+
+  var time_scale_is_linear
+
+  for (var i in get_current_data_set_names(builder)) {
+    var name = get_current_data_set_names(builder)[i]
+    time_scale_is_linear = !(name.startsWith('t') && typeof parseInt(name.slice(1)) === 'number');
+  }
+
+  return time_scale_is_linear
 }

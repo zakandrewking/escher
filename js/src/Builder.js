@@ -600,6 +600,7 @@ function set_reaction_data (data) {
 
     this.reaction_data_names = null
     this.options.reaction_data = null
+    this.time_series_bar.update(this)
 
   } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
 
@@ -651,6 +652,8 @@ function set_gene_data (data, clear_gene_reaction_rules) {
 
     this.gene_data_names = null
     this.options.gene_data = null
+    this.time_series_bar.update(this)
+
 
   } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
 
@@ -692,6 +695,8 @@ function set_metabolite_data (data) {
 
     this.metabolite_data_names = null
     this.options.metabolite_data = null
+    this.time_series_bar.update(this)
+
 
   } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
 
@@ -770,16 +775,15 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
       }
     }
 
-    if(update_stats){
-      var metabolite_for_data_scales = []
+    if(update_stats && this.options.metabolite_data !== null){
+      var genes_fmetabolite_for_data_scalesor_data_scales = []
 
-      for (var i in this.options.metabolite_data) {
-        for(var numbers in Object.values(this.options.metabolite_data[i])){
-          metabolite_for_data_scales.push(Object.values(this.options.metabolite_data[i])[numbers])
-        }
+      for (var i in this.options.reaction_data) {
+        metabolite_for_data_scales = metabolite_for_data_scales.concat(d3.values(this.options.metabolite_data[i]))
       }
-      this.map.set_nodes_for_data_scales(metabolite_for_data_scales)
+      this.map.set_reactions_for_data_scales(genes_fmetabolite_for_data_scalesor_data_scales)
     }
+
 
     this.map.apply_metabolite_data_to_map(met_data_object)
     if (should_draw) {
@@ -808,13 +812,11 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
         }
       }
 
-      if(update_stats){
+      if(update_stats && this.options.reaction_data !== null){
         var reaction_for_data_scales = []
 
         for (var i in this.options.reaction_data) {
-          for(var numbers in Object.values(this.options.reaction_data[i])){
-            reaction_for_data_scales.push(Object.values(this.options.reaction_data[i])[numbers])
-          }
+          reaction_for_data_scales = reaction_for_data_scales.concat(d3.values(this.options.reaction_data[i]))
         }
         this.map.set_reactions_for_data_scales(reaction_for_data_scales)
       }
@@ -843,13 +845,11 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
         }
       }
 
-      if(update_stats){
+      if(update_stats && this.options.gene_data !== null){
         var genes_for_data_scales = []
 
-        for (var i in this.options.gene_data ) {
-          for(var numbers in Object.values(this.options.gene_data [i])){
-            genes_for_data_scales.push(Object.values(this.options.gene_data [i])[numbers])
-          }
+        for (var i in this.options.reaction_data) {
+          genes_for_data_scales = genes_for_data_scales.concat(d3.values(this.options.gene_data[i]))
         }
         this.map.set_reactions_for_data_scales(genes_for_data_scales)
       }
