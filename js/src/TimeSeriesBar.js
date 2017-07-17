@@ -104,6 +104,7 @@ function init (sel, map, builder, type_of_data) {
         }
       } else {
         both_data_play_back = false
+        map.set_status('Please load in data sets of same length')
       }
 
 
@@ -185,6 +186,11 @@ function init (sel, map, builder, type_of_data) {
         builder.set_data_indices(builder.type_of_data, builder.reference)
       }
 
+      if (d3_select('#checkBoxChart').property('checked')) {
+        toggle_chart(false)
+        create_chart(builder,map)
+      }
+
     })
 
   tab_container.append('div').append('input')
@@ -197,9 +203,14 @@ function init (sel, map, builder, type_of_data) {
       builder.reference = this.value
       d3_select('#dropDownMenuReference').property('selectedIndex', this.value)
       d3_select('#referenceText').text('Reference Data Set: ' + this.value)
+
       if(builder.difference_mode){
       showDifferenceData(builder)
       } else {
+        if (d3_select('#checkBoxChart').property('checked')) {
+          toggle_chart(false)
+          create_chart(builder,map)
+        }
         builder.set_data_indices(builder.type_of_data, builder.reference)
       }
     })
@@ -215,6 +226,11 @@ function init (sel, map, builder, type_of_data) {
 
       if(builder.difference_mode){
         showDifferenceData(builder)
+      }
+
+      if (d3_select('#checkBoxChart').property('checked')) {
+        toggle_chart(false)
+        create_chart(builder,map)
       }
     })
 
@@ -232,6 +248,11 @@ function init (sel, map, builder, type_of_data) {
 
       if(builder.difference_mode){
         showDifferenceData(builder)
+      }
+
+      if (d3_select('#checkBoxChart').property('checked')) {
+        toggle_chart(false)
+        create_chart(builder,map)
       }
     })
 
@@ -330,7 +351,7 @@ function init (sel, map, builder, type_of_data) {
     .text('Show Chart')
     .on('change', function () {
       if (d3_select('#checkBoxChart').property('checked')) {
-        toggle_chart(true)
+        //toggle_chart(true)
         create_chart(builder, map)
       } else {
         toggle_chart(false)
@@ -518,14 +539,11 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
     this.data_set_for_animation = []
 
-    // TODO: give user feedback if non linear time scale detected, maybe only check if wanted
-
-    var tick = this.sliding_window_start
-    var time_point = this.sliding_window_start
-
     // array of time points for non-linear time scale
     var array_of_time_points = get_array_of_time_points(builder, map)
 
+    var tick = array_of_time_points[this.sliding_window_start]
+    var time_point = this.sliding_window_start
     var linear_time_scale = get_linear_time_scale(builder,map)
 
     for (var i = this.sliding_window_start; i <= this.sliding_window_end; i++) {
@@ -561,7 +579,9 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
     }
 
+
     // animation
+    animate_time_line(0)
 
     this.animation = setInterval(function () {
 
@@ -586,9 +606,7 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
             builder.set_data_indices(builder.type_of_data, builder.reference, end)
           }
 
-
-        } else {
-          // TODO: handle interpolated data with non-linear time scale
+        } else { // TODO: handle interpolated data with non-linear time scale
 
    //       if (tick === array_of_time_points[time_point]){
 
@@ -606,7 +624,7 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
               builder.reference = next
 
-            } else { // TODO: only if played as loop (?)
+            } else { // play as loop
               builder.reference = this.sliding_window_start
 
               time_point = this.sliding_window_start
@@ -633,7 +651,21 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
         }
 
-      } else {
+
+        animate_time_line(Math.floor(tick))
+
+        if(tick >= array_of_time_points[this.sliding_window_end]){ //array_of_time_points.length-1
+          tick = array_of_time_points[this.sliding_window_start]//array_of_time_points[0] - 1
+          //time_point = array_of_time_points[this.sliding_window_start]
+        } else {
+          tick += (max_steps / interpolation_data_set.length)
+        }
+
+
+
+      } else { // not interpolated data
+
+
         d3_select('#counter').text('Time Series of Data Sets: '
           + this.sliding_window_start +
           ' to ' + builder.target +
@@ -641,38 +673,47 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
           if (tick === array_of_time_points[time_point]) {
 
-            if (builder.reference < this.sliding_window_end) {
+            if (parseInt(builder.reference) < parseInt(this.sliding_window_end)) {
               var next = builder.reference
               next++
               builder.reference = next
-            } else { // TODO: only if played as loop (?)
+
+              time_point++
+              tick++
+
+            } else { // play as loop
               builder.reference = this.sliding_window_start
 
-              time_point = this.sliding_window_start - 1
-              tick = this.sliding_window_start - 1
+              time_point = this.sliding_window_start
+              //tick = this.sliding_window_start - 1
+              tick = array_of_time_points[this.sliding_window_start]
             }
 
             if (both_data_play_back) {
               builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
               builder.set_data_indices('metabolite', builder.reference, this.sliding_window_end)
             } else {
-
               builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
             }
 
-            time_point++
-            tick++
-
           } else {
 
-            if(tick === array_of_time_points[array_of_time_points.length-1]){
-              tick = array_of_time_points[0] - 1
-            }
+            if(tick >= array_of_time_points[this.sliding_window_end]){ //array_of_time_points.length-1
+              tick = array_of_time_points[this.sliding_window_start]//array_of_time_points[0] - 1
+              //time_point = array_of_time_points[this.sliding_window_start]
+            } else {
+
             tick++
+            }
           }
+
+        animate_time_line(tick)
       }
 
+
     }, duration)
+
+
 
   } else { // clear animation and reset data
     if (interpolation) {
@@ -771,12 +812,16 @@ function create_chart(builder, map){
   var current_data_set = []
   var data_set_loaded = false
 
-  for(var i = builder.reference; i <= builder.target; i++){
+  for(var i = parseInt(builder.reference); i <= parseInt(builder.target); i++){
     current_data_set.push(get_current_data_set(builder)[i])
+  }
+
+  if(current_data_set[0] !== undefined){
     data_set_loaded = true
   }
 
   if(data_set_loaded){
+    toggle_chart(true)
 
     var margins = {
         top: 20,
@@ -864,6 +909,25 @@ function create_chart(builder, map){
       .style('fill', 'none')
       .call(y_axis)
 
+    //var time_steps = d3.values(data_for_lines[data_for_lines.length - 1])
+
+    for(var j = domain_x_scale_min; j <= domain_x_scale_max; j++){
+      data_chart.append("line")
+        .attr('class', 'time_lines')
+        .attr('id', 'time_line' + j)
+        .attr("x1", x_scale(j))
+        .attr("x2", x_scale(j))
+        .attr("y1", 0)
+        .attr("y2", height)
+        .attr("stroke-width", 2)
+        .attr("stroke", "red")
+        .attr("stroke-dasharray", "2,2")
+        .attr("transform", "translate(0," + (margins.bottom) + ")")
+        .attr('display', 'none')
+
+    }
+
+
     for(var i in data_for_lines){
 
       var data = data_for_lines[i]
@@ -879,36 +943,44 @@ function create_chart(builder, map){
 
       var path = data_chart.append('svg:path')
         .attr('d', line(data))
-        .attr('stroke', 'grey')
-        .attr('stroke-width', 1)
-        .attr('fill', 'none')
-
-      data_chart.selectAll('dot')
-        .data(data)
-        .enter()
-       .append('circle')
-        .attr("r", 2)
-        .attr("cx", (function(data) {
-        return x_scale(data.x)}))
-        .attr("cy", (function(data) {
-          return y_scale(data.y)
-        }))
-
-      var animated_path = data_chart.append('svg:path')
-        .attr('d', line(data))
         .attr('stroke', color[i])
         .attr('stroke-width', 2)
         .attr('fill', 'none')
+        .attr("id", "chart_paths")
 
-      var totalLength = path.node().getTotalLength();
 
-      animated_path
-        .attr("stroke-dasharray", totalLength + " " + totalLength)
-        .attr("stroke-dashoffset", totalLength)
-        .transition()
-        .duration(2000)
-        .ease(d3.easeLinear)
-        .attr("stroke-dashoffset", 0);
+
+
+      // data_chart.selectAll('dot')
+      //   .data(data)
+      //   .enter()
+      //  .append('circle')
+      //   .attr("r", 2)
+      //   .attr("cx", (function(data) {
+      //   return x_scale(data.x)}))
+      //   .attr("cy", (function(data) {
+      //     return y_scale(data.y)
+      //   }))
+
+      // var animated_path = data_chart.append('svg:path')
+      //   .attr('d', line(data))
+      //   .attr('stroke', color[i])
+      //   .attr('stroke-width', 2)
+      //   .attr('fill', 'none')
+      //
+      // var totalLength = path.node().getTotalLength();
+      //
+      // animated_path
+      //   //.datum(totalLength)
+      //   .datum(line(data))
+      //   //.attr("stroke-dasharray", totalLength + " " + totalLength)
+      //   //.attr("stroke-dashoffset", totalLength)
+      //   .attr('id', 'animated_paths')
+        // .transition()
+        // .duration(2000)
+        // .ease(d3.easeLinear)
+        // .attr("stroke-dashoffset", 0)
+
 
       // Add a label with same color as line
       d3_select('#div_data_chart_labels')
@@ -917,6 +989,11 @@ function create_chart(builder, map){
         .text(labels_for_lines[i])
 
     }
+
+  } else {
+    toggle_chart(false)
+
+    map.set_status('Please load in data set')
   }
 
 }
@@ -929,6 +1006,7 @@ function toggle_chart(show){
 
   } else {
 
+    //d3_select('#checkBoxChart').property('checked', false)
 
     d3_select('#svg_data_chart').remove()
     d3_select('#div_data_chart_labels').remove()
@@ -955,7 +1033,7 @@ function get_current_data_set(builder){
   if(builder.type_of_data === 'reaction'){
     return builder.options.reaction_data
   } else if(builder.type_of_data === 'gene'){
-    return this.options.gene_data
+    return builder.options.gene_data
   } else if(builder.type_of_data === 'metabolite'){
     return builder.options.metabolite_data
   } else {
@@ -1082,3 +1160,38 @@ function get_linear_time_scale(builder, map){
 
   return time_scale_is_linear
 }
+
+function animate_time_line(tick) {
+
+  d3.selectAll('line.time_lines').attr('display', 'none')
+  d3.select('#time_line' + tick).attr('display', 'block')
+}
+// d3.selectAll('#animated_paths')
+//     .each(function(){
+//
+//
+//       // array of data from
+//       // give only data from [0] to [tick] to the path
+//       var path = d3.select(this)
+//       var all_data = path.data()
+//       path.attr('d', all_data.slice(0, tick))
+//
+//       // var total_length = d3.select(this).datum()
+//       // var part = total_length / (total_time_steps - 1)
+//       // var offest = 0
+//       //
+//       // console.log('---' + tick)
+//       //
+//       // console.log(total_length)
+//       // console.log(total_length - (tick * part))
+//       //
+//       // path.transition()
+//       //   .duration(duration / total_time_steps)
+//       //   .ease(d3.easeLinear)
+//       //   //.attr('stroke-dashoffset', ((total_time_steps - tick) * part) + offest)
+//       //   .attr('stroke-dashoffset', ( total_length - (tick * part)))
+//         //.transition()
+//         //.duration(duration)
+//         //.attr("stroke-dashoffset", tick)
+//     })
+//}
