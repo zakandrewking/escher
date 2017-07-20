@@ -350,7 +350,7 @@ function load_map (map_data, should_update_data) {
     .append('div').attr('class', 'search-menu-container-inline')
   var menu_div = s.append('div')
   var search_bar_div = s.append('div')
-  var time_series_bar_div = s.append('div')
+  var time_series_bar_div = s.append('div')//.attr('class', 'search-menu-container')
   var button_div = this.selection.append('div')
 
   // Set up the search bar
@@ -776,12 +776,12 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
     }
 
     if(update_stats && this.options.metabolite_data !== null){
-      var genes_fmetabolite_for_data_scalesor_data_scales = []
+      var metabolite_for_data_scales = []
 
       for (var i in this.options.reaction_data) {
         metabolite_for_data_scales = metabolite_for_data_scales.concat(d3.values(this.options.metabolite_data[i]))
       }
-      this.map.set_reactions_for_data_scales(genes_fmetabolite_for_data_scalesor_data_scales)
+      this.map.set_reactions_for_data_scales(metabolite_for_data_scales)
     }
 
 

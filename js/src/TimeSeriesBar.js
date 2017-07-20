@@ -14,9 +14,6 @@ var d3 = require('d3')
 var TimeSeriesBar = utils.make_class()
 
 
-// TODO: get rid of global variables
-var current
-
 TimeSeriesBar.prototype = {
   init: init,
   update: update,
@@ -44,13 +41,15 @@ function init (sel, map, builder, type_of_data) {
 
   this.map = map
 
-  current = 0
+  this.current = 0
 
   this.type_of_data = type_of_data
 
   var both_data_play_back = false
 
-  var container = sel.attr('class', 'search-container')
+
+  var container = sel.append('div').attr('class', 'search-container').append('div')
+   // .style('float', 'right')
   // TODO: remove this comment in final version
   .style('display', 'block')
 
@@ -63,6 +62,13 @@ function init (sel, map, builder, type_of_data) {
     }.bind(this))
     .append('span')
     .attr('class', 'glyphicon glyphicon-remove')
+
+
+  container.append('span')
+    .attr('id', 'counter')
+    //.attr('class', 'select-counter')
+    .attr('class', 'settings-section-heading')
+    .text('Please load in data set')
 
   var max_width = container.node().getBoundingClientRect().width
 
@@ -172,8 +178,9 @@ function init (sel, map, builder, type_of_data) {
   //   .text('Reference Data Set: ')
 
   tab_container.append('select')
-    .attr('name', 'target-list')
+    //.attr('name', 'target-list')
     .attr('id', 'dropDownMenuReference')
+    .style('margin', '2px')
     .on('change', function (builder) {
 
       builder.reference = this.value
@@ -193,12 +200,14 @@ function init (sel, map, builder, type_of_data) {
 
     })
 
-  tab_container.append('div').append('input')
+  tab_container.append('input')
     .attr('id', 'sliderReference')
+    .style('margin', '2px')
     .attr('type', 'range')
     .attr('value', 0)
     .attr('min', 0)
     .attr('max', 0)
+    .attr('step', 1)
     .on('change', function (builder) {
       builder.reference = this.value
       d3_select('#dropDownMenuReference').property('selectedIndex', this.value)
@@ -216,8 +225,9 @@ function init (sel, map, builder, type_of_data) {
     })
 
   tab_container.append('select')
-    .attr('name', 'target-list')
+    //.attr('name', 'target-list')
     .attr('id', 'dropDownMenuTarget')
+    .style('margin', '2px')
     .on('change', function (builder) {
 
       builder.target = this.value
@@ -234,9 +244,10 @@ function init (sel, map, builder, type_of_data) {
       }
     })
 
-  tab_container.append('div').append('input')
+  tab_container.append('input')
     .attr('type', 'range')
     .attr('id', 'sliderTarget')
+    .style('margin', '2px')
     .attr('value', 0)
     .attr('min', 0)
     .attr('max', 0)
@@ -260,24 +271,20 @@ function init (sel, map, builder, type_of_data) {
 
   var groupButtons = tab_container.append('div').attr('id', 'group_buttons')//.attr('class', 'btn-group btn-group-sm')
 
-  groupButtons.append('div')
-    .attr('id', 'counter')
-    .attr('class', 'select-counter')
-    .text('Display Dataset: 0 / 0')
-
-  groupButtons.append('button')
-    .attr('class', 'btn btn-default')
-    .on('click', this.previous.bind(this))
-    .append('span').attr('class', 'glyphicon glyphicon-step-backward')
-
-  groupButtons.append('button')
-    .attr('class', 'btn btn-default')
-    .on('click', this.next.bind(this))
-    .append('span').attr('class', 'glyphicon glyphicon-step-forward')
+  // groupButtons.append('button')
+  //   .attr('class', 'btn btn-default')
+  //   .on('click', this.previous.bind(this))
+  //   .append('span').attr('class', 'glyphicon glyphicon-step-backward')
+  //
+  // groupButtons.append('button')
+  //   .attr('class', 'btn btn-default')
+  //   .on('click', this.next.bind(this))
+  //   .append('span').attr('class', 'glyphicon glyphicon-step-forward')
 
   groupButtons.append('button')
     .attr('class', 'btn btn-default')
     .attr('id', 'play_button')
+    .style('margin', '2px')
     .on('click', function(){
       play_time_series(builder, map, duration, interpolation , 10, both_data_play_back) // TODO: make ui for setting steps ?
     })
@@ -286,36 +293,38 @@ function init (sel, map, builder, type_of_data) {
 
   groupButtons.append('label')
     .attr('for', 'inputDuration')
-    .text('Duration in ms')
+    .style('margin', '2px')
+    .text('Duration (ms)')
 
   groupButtons
     .append('input')
     .attr('id', 'inputDuration')
+    .style('margin', '2px')
     .attr('type', 'number')
     .attr('min', 10)
     .attr('value', 2000)
-
+    .style('width', '60px')
     .on('input', function () {
         duration = this.value
       })
 
 
-  groupButtons.append('div')
+  //groupButtons.append('div')
 
-  d3_select('#group_buttons').append('div').append('svg')
-    .attr('id', 'progress_bar')
-    .attr('width', max_width)
-    .attr('height', 25)
-    .append('line')
-    .attr('id', 'progress_line')
-    .style('stroke-width', '5')
-    .style('stroke', 'steelblue')
-    .attr({
-      x1: 1,
-      y1: 15,
-      x2: 100,
-      y2: 15
-    })
+  // d3_select('#group_buttons').append('div').append('svg')
+  //   .attr('id', 'progress_bar')
+  //   .attr('width', max_width)
+  //   .attr('height', 25)
+  //   .append('line')
+  //   .attr('id', 'progress_line')
+  //   .style('stroke-width', '5')
+  //   .style('stroke', 'steelblue')
+  //   .attr({
+  //     x1: 1,
+  //     y1: 15,
+  //     x2: 100,
+  //     y2: 15
+  //   })
   // .transition()
   // .attr({
   //   x2: 0,
@@ -327,6 +336,7 @@ function init (sel, map, builder, type_of_data) {
     .attr('type', 'checkbox')
     .attr('id', 'checkBoxInterpolation')
     .attr('value', 'Interpolate Data')
+    .style('margin', '2px')
     .text('Difference Mode')
     .on('change', function () {
          if (d3_select('#checkBoxInterpolation').property('checked')) {
@@ -340,11 +350,12 @@ function init (sel, map, builder, type_of_data) {
     .attr('for', 'checkBoxInterpolation')
     .text('Interpolate Data')
 
-  groupButtons.append('div')
+  //groupButtons.append('div')
 
 
   groupButtons
     .append('input')
+    .style('margin', '2px')
     .attr('type', 'checkbox')
     .attr('id', 'checkBoxChart')
     .attr('value', 'Show Chart')
@@ -438,12 +449,11 @@ function openTab (type_of_data, builder) {
 function update (builder, should_create_chart) {
 
   var currentDataSet = get_current_data_set(builder)
-  // TODO: 'both' or not loaded?
 
   if (currentDataSet !== null) {
     // update display
-    current = 0
-    d3_select('#counter').text('Display Dataset: '+ (current + 1) + ' / ' + currentDataSet.length)
+    this.current = 0
+    d3_select('#counter').text('Display Dataset: '+ (this.current + 1) + ' / ' + currentDataSet.length)
 
     // update slider
     d3_select('#sliderReference')
@@ -454,8 +464,8 @@ function update (builder, should_create_chart) {
       .attr('max', (currentDataSet.length - 1))
       .attr('value', 0)
 
-    d3_select('#referenceText').text('Reference Data Set: ' + current)
-    d3_select('#targetText').text('Target Data Set: ' + current)
+    d3_select('#referenceText').text('Reference Data Set: ' + this.current)
+    d3_select('#targetText').text('Target Data Set: ' + this.current)
 
     // reset dropdown menu
 
@@ -485,7 +495,7 @@ function update (builder, should_create_chart) {
 
   } else { // reset everything
     // update display
-    current = 0
+    this.current = 0
     d3_select('#counter').text('Display Dataset: 0 / 0')
 
     // update slider
@@ -510,23 +520,23 @@ function update (builder, should_create_chart) {
 
 function next (builder) {
 
-  d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[current])
+  d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[this.current])
 
-  if (current < get_current_data_set(builder).length - 1) {
-    current++
+  if (this.current < get_current_data_set(builder).length - 1) {
+    this.current++
   }
-  builder.set_data_indices(builder.type_of_data, current)
+  builder.set_data_indices(builder.type_of_data, this.current)
 }
 
 function previous (builder) {
 
-  d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[current])
+  d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[this.current])
 
-  if (current > 0) {
-    current--
+  if (this.current > 0) {
+    this.current--
   }
 
-  builder.set_data_indices(builder.type_of_data, current)
+  builder.set_data_indices(builder.type_of_data, this.current)
 }
 
 function play_time_series (builder, map, duration, interpolation, max_steps, both_data_play_back) {
@@ -582,6 +592,7 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
     // animation
     animate_time_line(0)
+    console.log(this.x_scale)
 
     this.animation = setInterval(function () {
 
@@ -883,16 +894,16 @@ function create_chart(builder, map){
       data_for_lines.push(data_for_line)
     }
 
-    var x_scale = d3.scaleLinear()
+    this.x_scale = d3.scaleLinear()
       .domain([domain_x_scale_min,domain_x_scale_max])
       .range([margins.left, width - margins.right])
 
-    var y_scale = d3.scaleLinear()
+    this.y_scale = d3.scaleLinear()
       .domain([domain_y_scale_min,domain_y_scale_max])
       .range([height - margins.top, margins.bottom])
 
-    var x_axis = d3.axisBottom(x_scale)
-    var y_axis = d3.axisLeft(y_scale)
+    var x_axis = d3.axisBottom(this.x_scale)
+    var y_axis = d3.axisLeft(this.y_scale)
 
 
     data_chart.append('g')
@@ -915,8 +926,8 @@ function create_chart(builder, map){
       data_chart.append("line")
         .attr('class', 'time_lines')
         .attr('id', 'time_line' + j)
-        .attr("x1", x_scale(j))
-        .attr("x2", x_scale(j))
+        .attr("x1", this.x_scale(j))
+        .attr("x2", this.x_scale(j))
         .attr("y1", 0)
         .attr("y2", height)
         .attr("stroke-width", 2)
@@ -934,10 +945,10 @@ function create_chart(builder, map){
 
       var line = d3.line()
         .x(function(data) {
-          return x_scale(data.x)
+          return this.x_scale(data.x)
         })
         .y(function(data) {
-          return y_scale(data.y)
+          return this.y_scale(data.y)
         })
         .curve(d3.curveCardinal)
 
