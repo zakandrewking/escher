@@ -40,7 +40,6 @@ function init (sel, map, builder, type_of_data) {
   this.builder.target = 0
 
   this.map = map
-
   this.current = 0
 
   this.type_of_data = type_of_data
@@ -186,6 +185,7 @@ function init (sel, map, builder, type_of_data) {
       builder.reference = this.value
       d3_select('#sliderReference').property('value', this.value)
       d3_select('#referenceText').text('Reference Data Set: ' + this.value)
+      this.current = this.value
 
       if(builder.difference_mode){
         showDifferenceData(builder)
@@ -200,6 +200,15 @@ function init (sel, map, builder, type_of_data) {
 
     })
 
+  tab_container.append('button')
+    //.attr('class', 'btn btn-default')
+      .html('-')
+     .on('click', this.previous.bind(this))
+
+  tab_container.append('button')
+     .html('+')
+     .on('click', this.next.bind(this))
+
   tab_container.append('input')
     .attr('id', 'sliderReference')
     .style('margin', '2px')
@@ -212,6 +221,7 @@ function init (sel, map, builder, type_of_data) {
       builder.reference = this.value
       d3_select('#dropDownMenuReference').property('selectedIndex', this.value)
       d3_select('#referenceText').text('Reference Data Set: ' + this.value)
+      this.current = this.value
 
       if(builder.difference_mode){
       showDifferenceData(builder)
@@ -309,22 +319,35 @@ function init (sel, map, builder, type_of_data) {
       })
 
 
-  //groupButtons.append('div')
 
-  // d3_select('#group_buttons').append('div').append('svg')
+  //TODO: progress bar?
+  // var progress_bar_svg = groupButtons.append('div').append('svg')
   //   .attr('id', 'progress_bar')
-  //   .attr('width', max_width)
+  //   .attr('width', groupButtons.node().getBoundingClientRect().width)
   //   .attr('height', 25)
-  //   .append('line')
+  // progress_bar_svg.append('rect')
+  //   .attr("x", 2)
+  //   .attr("y", 5)
+  //   .attr("width", groupButtons.node().getBoundingClientRect().width - 4)
+  //   .attr("height", 10)
+  //   .style('fill', 'steelblue')
+  // progress_bar_svg.append('rect')
   //   .attr('id', 'progress_line')
-  //   .style('stroke-width', '5')
-  //   .style('stroke', 'steelblue')
-  //   .attr({
-  //     x1: 1,
-  //     y1: 15,
-  //     x2: 100,
-  //     y2: 15
-  //   })
+  //   .attr("x", 0)
+  //   .attr("y", 0)
+  //   .attr("width", groupButtons.node().getBoundingClientRect().width)
+  //   .attr("height", 20)
+  //   .style('fill', 'none')
+  //   .style('stroke', 'grey')
+
+    //.style('stroke-width', '5')
+    //.style('stroke', 'steelblue')
+    // .attr({
+    //   x1: 1,
+    //   y1: 15,
+    //   x2: 100,
+    //   y2: 15
+    // })
   // .transition()
   // .attr({
   //   x2: 0,
@@ -350,9 +373,6 @@ function init (sel, map, builder, type_of_data) {
     .attr('for', 'checkBoxInterpolation')
     .text('Interpolate Data')
 
-  //groupButtons.append('div')
-
-
   groupButtons
     .append('input')
     .style('margin', '2px')
@@ -370,19 +390,20 @@ function init (sel, map, builder, type_of_data) {
 
   groupButtons.append('label')
     .attr('for', 'checkBoxChart')
-    .text('Show Chart')
+    .text('Overview Chart')
 
-  var chart_container = container.append('div')
-
-  chart_container
-    .attr('id', 'div_data_chart')
+  var chart_container = container.append('div').attr('id', 'div_data_chart')
+    //.style('width', '79%')
     .style('display','none')
-    .append('svg')
+
+  this.chart_width = 400//chart_container.node().getBoundingClientRect().width
+  this.chart_height = 300 //chart_container.node().getBoundingClientRect().height
+
+  chart_container.append('svg')
     .attr('id', 'svg_data_chart')
-    .attr('width', max_width)
-    .attr('height', 300)
+    .attr('width', this.chart_width)
+    .attr('height', this.chart_height)
     .style('display','none')
-
 
   chart_container.append('label')
     .attr('id', 'div_data_chart_labels')
@@ -520,21 +541,26 @@ function update (builder, should_create_chart) {
 
 function next (builder) {
 
-  d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[this.current])
 
   if (this.current < get_current_data_set(builder).length - 1) {
     this.current++
   }
+  d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[this.current])
+  d3_select('#sliderReference').property('value', this.current)
+  d3_select('#referenceText').text('Reference Data Set: ' + this.current)
+  d3_select('#dropDownMenuReference').property('selectedIndex', this.current)
   builder.set_data_indices(builder.type_of_data, this.current)
 }
 
 function previous (builder) {
 
-  d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[this.current])
-
   if (this.current > 0) {
     this.current--
   }
+  d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[this.current])
+  d3_select('#sliderReference').property('value', this.current)
+  d3_select('#referenceText').text('Reference Data Set: ' + this.current)
+  d3_select('#dropDownMenuReference').property('selectedIndex', this.current)
 
   builder.set_data_indices(builder.type_of_data, this.current)
 }
@@ -556,7 +582,7 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
     var time_point = this.sliding_window_start
     var linear_time_scale = get_linear_time_scale(builder,map)
 
-    for (var i = this.sliding_window_start; i <= this.sliding_window_end; i++) {
+    for (var i = parseInt(this.sliding_window_start); i <= parseInt(this.sliding_window_end); i++) {
       this.data_set_for_animation.push(get_current_data_set(builder)[i])
     }
 
@@ -592,7 +618,6 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
     // animation
     animate_time_line(0)
-    console.log(this.x_scale)
 
     this.animation = setInterval(function () {
 
@@ -663,7 +688,8 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
         }
 
 
-        animate_time_line(Math.floor(tick))
+         animate_time_line(tick)
+
 
         if(tick >= array_of_time_points[this.sliding_window_end]){ //array_of_time_points.length-1
           tick = array_of_time_points[this.sliding_window_start]//array_of_time_points[0] - 1
@@ -834,7 +860,7 @@ function create_chart(builder, map){
   if(data_set_loaded){
     toggle_chart(true)
 
-    var margins = {
+    this.margins = {
         top: 20,
         right: 20,
         bottom: 20,
@@ -896,25 +922,25 @@ function create_chart(builder, map){
 
     this.x_scale = d3.scaleLinear()
       .domain([domain_x_scale_min,domain_x_scale_max])
-      .range([margins.left, width - margins.right])
+      .range([this.margins.left, width - this.margins.right])
 
     this.y_scale = d3.scaleLinear()
       .domain([domain_y_scale_min,domain_y_scale_max])
-      .range([height - margins.top, margins.bottom])
+      .range([height - this.margins.top, this.margins.bottom])
 
     var x_axis = d3.axisBottom(this.x_scale)
     var y_axis = d3.axisLeft(this.y_scale)
 
 
     data_chart.append('g')
-      .attr("transform", "translate(0," + (height - margins.bottom) + ")")
+      .attr("transform", "translate(0," + (height - this.margins.bottom) + ")")
       .style('shape-rendering', 'crispEdges')
       .style('stroke', 'black')
       .style('fill', 'none')
       .call(x_axis)
 
     data_chart.append('g')
-      .attr("transform", "translate(" + (margins.left) + ",0)")
+      .attr("transform", "translate(" + (this.margins.left) + ",0)")
       .style('shape-rendering', 'crispEdges')
       .style('stroke', 'black')
       .style('fill', 'none')
@@ -922,21 +948,21 @@ function create_chart(builder, map){
 
     //var time_steps = d3.values(data_for_lines[data_for_lines.length - 1])
 
-    for(var j = domain_x_scale_min; j <= domain_x_scale_max; j++){
-      data_chart.append("line")
-        .attr('class', 'time_lines')
-        .attr('id', 'time_line' + j)
-        .attr("x1", this.x_scale(j))
-        .attr("x2", this.x_scale(j))
-        .attr("y1", 0)
-        .attr("y2", height)
-        .attr("stroke-width", 2)
-        .attr("stroke", "red")
-        .attr("stroke-dasharray", "2,2")
-        .attr("transform", "translate(0," + (margins.bottom) + ")")
-        .attr('display', 'none')
-
-    }
+    // for(var j = domain_x_scale_min; j <= domain_x_scale_max; j++){
+    //   data_chart.append("line")
+    //     .attr('class', 'time_lines')
+    //     .attr('id', 'time_line' + j)
+    //     .attr("x1", this.x_scale(j))
+    //     .attr("x2", this.x_scale(j))
+    //     .attr("y1", 0)
+    //     .attr("y2", height)
+    //     .attr("stroke-width", 2)
+    //     .attr("stroke", "red")
+    //     .attr("stroke-dasharray", "2,2")
+    //     .attr("transform", "translate(0," + (margins.bottom) + ")")
+    //     .attr('display', 'none')
+    //
+    // }
 
 
     for(var i in data_for_lines){
@@ -958,6 +984,12 @@ function create_chart(builder, map){
         .attr('stroke-width', 2)
         .attr('fill', 'none')
         .attr("id", "chart_paths")
+
+      // Add a label with same color as line
+      d3_select('#div_data_chart_labels')
+        .append('div').append('label')
+        .style('color', color[i])
+        .text(labels_for_lines[i])
 
 
 
@@ -993,13 +1025,24 @@ function create_chart(builder, map){
         // .attr("stroke-dashoffset", 0)
 
 
-      // Add a label with same color as line
-      d3_select('#div_data_chart_labels')
-        .append('div').append('label')
-        .style('color', color[i])
-        .text(labels_for_lines[i])
+
 
     }
+
+
+
+    data_chart.append("rect")
+      .attr('id', 'time_line')
+      .attr("x", this.x_scale(0))
+      // .attr("x2", this.x_scale(0))
+      .attr("y", this.margins.bottom)
+      //.attr("y2", height)
+      .attr('width', 1)
+      .attr('height', (height- this.margins.bottom - this.margins.top))
+      //.attr("stroke-width", 2)
+      .attr("fill", "red")
+    //.attr("stroke-dasharray", "2,2")
+    //.attr("transform", "translate(0," + (this.margins.bottom) + ")")
 
   } else {
     toggle_chart(false)
@@ -1024,8 +1067,8 @@ function toggle_chart(show){
 
     d3_select('#div_data_chart').append('svg')
       .attr('id', 'svg_data_chart')
-      .attr('width', 400)
-      .attr('height', 300)
+      .attr('width', this.chart_width)
+      .attr('height', this.chart_height)
       .style('display','none')
 
 
@@ -1065,12 +1108,13 @@ function get_current_data_set_names(builder){
 
 }
 
-
+/**
+ * Creates new data set with interpolated data
+ * @param data_set_to_interpolate
+ * @param max_steps
+ * @returns {Array}
+ */
 function create_interpolation_data_set (data_set_to_interpolate, max_steps) {
-
-  // create new data_set with every data points in between
-  // set it to data object in builder
-  // set it back after the animation stops
 
   var set_of_interpolators = []
 
@@ -1174,8 +1218,27 @@ function get_linear_time_scale(builder, map){
 
 function animate_time_line(tick) {
 
-  d3.selectAll('line.time_lines').attr('display', 'none')
-  d3.select('#time_line' + tick).attr('display', 'block')
+  if(this.x_scale !== undefined){
+    d3.select('#time_line')
+      .transition()
+      .duration(40)
+      .attr("x", this.x_scale(tick))
+
+  }
+
+    //.transition()
+    //.duration(100)
+    //.attr("transform", "translate(" + (this.x_scale(1)) +')')// +  "," + this.y_scale(margins.) + ")")
+
+  console.log(tick)
+
+  //d3.selectAll('line.time_lines').attr('display', 'none')
+  //d3.select('#time_line' + tick).attr('display', 'block')
+
+
+
+
+
 }
 // d3.selectAll('#animated_paths')
 //     .each(function(){
