@@ -51,6 +51,7 @@
     "grunt-mocha-test": "^0.12.7",
     "grunt-release": "^0.13.0",
     "grunt-shell": "^1.1.2",
+    "grunt-standard": "^3.1.0",
     "jquery": "^2.2.0",
     "jsdom": "^7.2.2",
     "mocha": "^2.3.4"

@@ -2,7 +2,7 @@ var package = require('./package.json')
 
 module.exports = function (grunt) {
   // common tasks
-  var tasks = [ 'cssmin', 'concat', 'browserify', 'extract_sourcemap', 'uglify',
+  var tasks = [ 'cssmin', 'concat', 'standard', 'browserify', 'extract_sourcemap', 'uglify',
                 'copy', ]
 
   // Project configuration
@@ -37,6 +37,17 @@ module.exports = function (grunt) {
       },
     },
     // js
+    standard: {
+      options: {
+        fix: true,
+        ignore: ['js/src/complete.ly.js']
+      },
+      app: {
+        src: [
+          'js/src/**.*.js'
+        ]
+      }
+    },
     browserify: {
       options: {
         transform: [
@@ -221,6 +232,8 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-istanbul')
   grunt.loadNpmTasks('grunt-env')
   grunt.loadNpmTasks('grunt-coveralls')
+  //style
+  grunt.loadNpmTasks('grunt-standard')
   // release
   grunt.loadNpmTasks('grunt-git');
   grunt.loadNpmTasks('grunt-release')
