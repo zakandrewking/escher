@@ -112,7 +112,7 @@ function setup_selection_brush () {
               selectable_selection.selectAll('.node:not(.selected),.text-label:not(.selected)') :
               selectable_selection.selectAll('.node,.text-label')
           )
-          selection.classed('selected', function (d) {
+          selection.classed('selected', (d) => {
             var sx = d.x
             var sy = d.y
             return (rect[0][0] <= sx && sx < rect[1][0] &&
