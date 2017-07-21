@@ -39,6 +39,9 @@ module.exports = function (grunt) {
     // js
     browserify: {
       options: {
+        transform: [
+          ['babelify', { presets: ['es2015'] }]
+        ],
         browserifyOptions: {
           standalone: 'escher',
           debug: true,
