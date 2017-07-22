@@ -778,10 +778,10 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
     if(update_stats && this.options.metabolite_data !== null){
       var metabolite_for_data_scales = []
 
-      for (var i in this.options.reaction_data) {
+      for (var i in this.options.metabolite_data) {
         metabolite_for_data_scales = metabolite_for_data_scales.concat(d3.values(this.options.metabolite_data[i]))
       }
-      this.map.set_reactions_for_data_scales(metabolite_for_data_scales)
+      this.map.set_nodes_for_data_scales(metabolite_for_data_scales)
     }
 
 

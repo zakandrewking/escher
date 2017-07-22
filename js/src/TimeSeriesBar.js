@@ -194,7 +194,7 @@ function init (sel, map, builder, type_of_data) {
       }
 
       if (d3_select('#checkBoxChart').property('checked')) {
-        toggle_chart(false)
+        toggle_chart(true)
         create_chart(builder,map)
       }
 
@@ -227,7 +227,7 @@ function init (sel, map, builder, type_of_data) {
       showDifferenceData(builder)
       } else {
         if (d3_select('#checkBoxChart').property('checked')) {
-          toggle_chart(false)
+          toggle_chart(true)
           create_chart(builder,map)
         }
         builder.set_data_indices(builder.type_of_data, builder.reference)
@@ -246,10 +246,11 @@ function init (sel, map, builder, type_of_data) {
 
       if(builder.difference_mode){
         showDifferenceData(builder)
+        d3_select('#checkBoxChart').property('checked', false)
       }
 
       if (d3_select('#checkBoxChart').property('checked')) {
-        toggle_chart(false)
+        toggle_chart(true)
         create_chart(builder,map)
       }
     })
@@ -269,10 +270,11 @@ function init (sel, map, builder, type_of_data) {
 
       if(builder.difference_mode){
         showDifferenceData(builder)
+        d3_select('#checkBoxChart').property('checked', false)
       }
 
       if (d3_select('#checkBoxChart').property('checked')) {
-        toggle_chart(false)
+        toggle_chart(true)
         create_chart(builder,map)
       }
     })
@@ -382,7 +384,7 @@ function init (sel, map, builder, type_of_data) {
     .text('Show Chart')
     .on('change', function () {
       if (d3_select('#checkBoxChart').property('checked')) {
-        //toggle_chart(true)
+        toggle_chart(true)
         create_chart(builder, map)
       } else {
         toggle_chart(false)
@@ -392,27 +394,32 @@ function init (sel, map, builder, type_of_data) {
     .attr('for', 'checkBoxChart')
     .text('Overview Chart')
 
-  var chart_container = container.append('div').attr('id', 'div_data_chart')
-    //.style('width', '79%')
-    .style('display','none')
-
   this.chart_width = 400//chart_container.node().getBoundingClientRect().width
   this.chart_height = 300 //chart_container.node().getBoundingClientRect().height
+
+  var chart_container = d3_select('#container').append('div').attr('id', 'div_data_chart')
+    .attr('width', this.chart_width)
+    .attr('height', this.chart_height)
+    //.style('width', '79%')
+    //.style('display','none')
+
 
   chart_container.append('svg')
     .attr('id', 'svg_data_chart')
     .attr('width', this.chart_width)
     .attr('height', this.chart_height)
-    .style('display','none')
+    .style('display','block')
 
-  chart_container.append('label')
+  chart_container
     .attr('id', 'div_data_chart_labels')
-    .text('Lines:')
+    .html('Lines:')
     .style('display','none')
 
   this.callback_manager = new CallbackManager()
 
   this.selection = container
+
+  toggle_chart(false)
 }
 
 
@@ -488,8 +495,6 @@ function update (builder, should_create_chart) {
     d3_select('#referenceText').text('Reference Data Set: ' + this.current)
     d3_select('#targetText').text('Target Data Set: ' + this.current)
 
-    // reset dropdown menu
-
     document.getElementById('dropDownMenuReference').options.length = 0
     document.getElementById('dropDownMenuTarget').options.length = 0
 
@@ -531,9 +536,14 @@ function update (builder, should_create_chart) {
     d3_select('#referenceText').text('Reference Data Set: ')
     d3_select('#targetText').text('Target Data Set: ')
 
+    d3_select('#checkBoxChart').property('checked', false)
+    d3_select('#checkBoxInterpolation').property('checked', false)
+
+
     // reset dropdown menu
     document.getElementById('dropDownMenuReference').options.length = 0
     document.getElementById('dropDownMenuTarget').options.length = 0
+
 
     toggle_chart(false)
   }
@@ -589,7 +599,11 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
     var start = builder.reference
     var end = builder.target
 
+
+
     var duration = duration / (end - start)
+
+    map.transition_duration = duration
 
     if (interpolation) {
 
@@ -708,7 +722,10 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
           ' to ' + builder.target +
           '. Current: ' + builder.reference)
 
-          if (tick === array_of_time_points[time_point]) {
+        animate_time_line(tick)
+
+
+        if (tick === array_of_time_points[time_point]) {
 
             if (parseInt(builder.reference) < parseInt(this.sliding_window_end)) {
               var next = builder.reference
@@ -744,7 +761,6 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
             }
           }
 
-        animate_time_line(tick)
       }
 
 
@@ -858,6 +874,7 @@ function create_chart(builder, map){
   }
 
   if(data_set_loaded){
+
     toggle_chart(true)
 
     this.margins = {
@@ -1053,6 +1070,7 @@ function create_chart(builder, map){
 }
 
 function toggle_chart(show){
+
   if(show){
     d3_select('#div_data_chart').style('display', 'block')
     d3_select('#svg_data_chart').style('display', 'block')
@@ -1065,12 +1083,14 @@ function toggle_chart(show){
     d3_select('#svg_data_chart').remove()
     d3_select('#div_data_chart_labels').remove()
 
-    d3_select('#div_data_chart').append('svg')
-      .attr('id', 'svg_data_chart')
-      .attr('width', this.chart_width)
-      .attr('height', this.chart_height)
-      .style('display','none')
+    d3_select('#container').append('div').attr('id', 'div_data_chart')
 
+    d3_select('#div_data_chart')
+      .append('svg')
+      .attr('id', 'svg_data_chart')
+      .attr('width', 400)
+      .attr('height', 300)
+      .style('display','none')
 
     d3_select('#div_data_chart').append('label')
       .attr('id', 'div_data_chart_labels')

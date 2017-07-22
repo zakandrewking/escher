@@ -239,6 +239,10 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
   this.scale.connect_to_settings(this.settings, this,
                                  get_data_statistics.bind(this))
 
+  // time series animation
+
+  this.transition_duration = 0
+
   // make the undo/redo stack
   this.undo_stack = new UndoStack()
 
@@ -592,7 +596,7 @@ function draw_these_reactions (reaction_ids, draw_beziers) {
   var update_fn = function(sel) {
     return this.draw.update_reaction(sel, this.scale, this.cobra_model,
                                      this.nodes, this.defs,
-                                     this.has_data_on_reactions)
+                                     this.has_data_on_reactions, this.transition_duration)
   }.bind(this)
 
   // draw the reactions
@@ -688,7 +692,7 @@ function draw_these_nodes(node_ids) {
                                  this.behavior.node_mouseover,
                                  this.behavior.node_mouseout,
                                  this.behavior.selectable_drag,
-                                 this.behavior.node_label_drag)
+                                 this.behavior.node_label_drag, this.transition_duration)
   }.bind(this)
 
   // draw the nodes
