@@ -11,6 +11,7 @@ var d3_select = require('d3-selection').select
 var d3_scale = require('d3-scale')
 var d3_interpolate = require("d3-interpolate")
 var d3 = require('d3')
+var d3_ease = require('d3-ease')
 var TimeSeriesBar = utils.make_class()
 
 
@@ -32,7 +33,7 @@ function init (sel, map, builder, type_of_data) {
   this.builder = builder
 
   var duration = 2000
-  var interpolation = false
+  //var interpolation = map.interpolation
   this.playing = false
 
   this.builder.difference_mode = false
@@ -194,20 +195,21 @@ function init (sel, map, builder, type_of_data) {
       }
 
       if (d3_select('#checkBoxChart').property('checked')) {
+        toggle_chart(false)
         toggle_chart(true)
         create_chart(builder,map)
       }
 
     })
 
-  tab_container.append('button')
-    //.attr('class', 'btn btn-default')
-      .html('-')
-     .on('click', this.previous.bind(this))
-
-  tab_container.append('button')
-     .html('+')
-     .on('click', this.next.bind(this))
+  // tab_container.append('button')
+  //   //.attr('class', 'btn btn-default')
+  //     .html('-')
+  //    .on('click', this.previous.bind(this))
+  //
+  // tab_container.append('button')
+  //    .html('+')
+  //    .on('click', this.next.bind(this))
 
   tab_container.append('input')
     .attr('id', 'sliderReference')
@@ -227,6 +229,7 @@ function init (sel, map, builder, type_of_data) {
       showDifferenceData(builder)
       } else {
         if (d3_select('#checkBoxChart').property('checked')) {
+          toggle_chart(false)
           toggle_chart(true)
           create_chart(builder,map)
         }
@@ -250,6 +253,7 @@ function init (sel, map, builder, type_of_data) {
       }
 
       if (d3_select('#checkBoxChart').property('checked')) {
+        toggle_chart(false)
         toggle_chart(true)
         create_chart(builder,map)
       }
@@ -274,6 +278,7 @@ function init (sel, map, builder, type_of_data) {
       }
 
       if (d3_select('#checkBoxChart').property('checked')) {
+        toggle_chart(false)
         toggle_chart(true)
         create_chart(builder,map)
       }
@@ -298,7 +303,7 @@ function init (sel, map, builder, type_of_data) {
     .attr('id', 'play_button')
     .style('margin', '2px')
     .on('click', function(){
-      play_time_series(builder, map, duration, interpolation , 10, both_data_play_back) // TODO: make ui for setting steps ?
+      play_time_series(builder, map, duration, map.interpolation , 10, both_data_play_back) // TODO: make ui for setting steps ?
     })
     .append('span').attr('class', 'glyphicon glyphicon-play')
 
@@ -365,9 +370,9 @@ function init (sel, map, builder, type_of_data) {
     .text('Difference Mode')
     .on('change', function () {
          if (d3_select('#checkBoxInterpolation').property('checked')) {
-           interpolation = true
+           map.interpolation = true
          } else {
-            interpolation = false
+            map.interpolation = false
          }})
 
 
@@ -605,6 +610,9 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
     map.transition_duration = duration
 
+    // TODO: move all interpolation specific code to draw, only use 'normal' animation
+    interpolation = false
+
     if (interpolation) {
 
       this.data_set_save = get_current_data_set(builder)
@@ -630,10 +638,7 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
     }
 
 
-    // animation
-    animate_time_line(0)
-
-    this.animation = setInterval(function () {
+    function play () {
 
       if (interpolation) {
 
@@ -658,38 +663,38 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
         } else { // TODO: handle interpolated data with non-linear time scale
 
-   //       if (tick === array_of_time_points[time_point]){
+          //       if (tick === array_of_time_points[time_point]){
 
-            // distribute all max_steps data sets in time frame
+          // distribute all max_steps data sets in time frame
 
-            // play all max_steps data sets in row
+          // play all max_steps data sets in row
 
-            // then tick++, time_point++
+          // then tick++, time_point++
 
-            if (builder.reference < interpolation_data_set.length) {
+          if (builder.reference < interpolation_data_set.length) {
 
-              var next = builder.reference
+            var next = builder.reference
 
-              next += Math.ceil(interpolation_data_set.length / max_steps) + 1
+            next += Math.ceil(interpolation_data_set.length / max_steps) + 1
 
-              builder.reference = next
+            builder.reference = next
 
-            } else { // play as loop
-              builder.reference = this.sliding_window_start
+          } else { // play as loop
+            builder.reference = this.sliding_window_start
 
-              time_point = this.sliding_window_start
-              tick = this.sliding_window_start
-            }
+            time_point = this.sliding_window_start
+            tick = this.sliding_window_start
+          }
 
-            if (both_data_play_back) {
-              builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
-              builder.set_data_indices('metabolite', builder.reference, this.sliding_window_end)
-            } else {
-              builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
-            }
+          if (both_data_play_back) {
+            builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
+            builder.set_data_indices('metabolite', builder.reference, this.sliding_window_end)
+          } else {
+            builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
+          }
 
-            time_point++
-            tick++
+          time_point++
+          tick++
 
           // } else {
           //
@@ -702,7 +707,7 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
         }
 
 
-         animate_time_line(tick)
+        animate_time_line(tick, duration)
 
 
         if(tick >= array_of_time_points[this.sliding_window_end]){ //array_of_time_points.length-1
@@ -722,53 +727,58 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
           ' to ' + builder.target +
           '. Current: ' + builder.reference)
 
-        animate_time_line(tick)
+        // animate_time_line(tick, duration)
 
 
         if (tick === array_of_time_points[time_point]) {
 
-            if (parseInt(builder.reference) < parseInt(this.sliding_window_end)) {
-              var next = builder.reference
-              next++
-              builder.reference = next
+          if (parseInt(builder.reference) < parseInt(this.sliding_window_end)) {
+            var next = builder.reference
+            next++
+            builder.reference = next
 
-              time_point++
-              tick++
-
-            } else { // play as loop
-              builder.reference = this.sliding_window_start
-
-              time_point = this.sliding_window_start
-              //tick = this.sliding_window_start - 1
-              tick = array_of_time_points[this.sliding_window_start]
-            }
-
-            if (both_data_play_back) {
-              builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
-              builder.set_data_indices('metabolite', builder.reference, this.sliding_window_end)
-            } else {
-              builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
-            }
-
-          } else {
-
-            if(tick >= array_of_time_points[this.sliding_window_end]){ //array_of_time_points.length-1
-              tick = array_of_time_points[this.sliding_window_start]//array_of_time_points[0] - 1
-              //time_point = array_of_time_points[this.sliding_window_start]
-            } else {
-
+            time_point++
             tick++
-            }
+
+          } else { // play as loop
+            builder.reference = this.sliding_window_start
+
+            time_point = this.sliding_window_start
+            //tick = this.sliding_window_start - 1
+            tick = array_of_time_points[this.sliding_window_start]
+          }
+          animate_time_line(tick, duration)
+
+          if (both_data_play_back) {
+            builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
+            builder.set_data_indices('metabolite', builder.reference, this.sliding_window_end)
+          } else {
+            builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
           }
 
+        } else {
+
+          if(tick >= array_of_time_points[this.sliding_window_end]){ //array_of_time_points.length-1
+            tick = array_of_time_points[this.sliding_window_start]//array_of_time_points[0] - 1
+            //time_point = array_of_time_points[this.sliding_window_start]
+            animate_time_line(tick, 0)
+
+          } else {
+            tick++
+            animate_time_line(tick, duration)
+          }
+        }
       }
+    }
 
-
-    }, duration)
-
-
+    // animation
+    animate_time_line(this.sliding_window_start, 0)
+   // play()
+    this.animation = setInterval(function(){ play() }, duration)
 
   } else { // clear animation and reset data
+
+    interpolation = false
     if (interpolation) {
       clearInterval(this.animation)
 
@@ -845,7 +855,7 @@ function toggle (on_off) {
 
   } else {
 
-    // TODO: reset all data here?
+    // TODO: reset all data here or keep for animation in background?
     this.map.highlight(null)
 
     // TODO: set this to 'none'
@@ -1236,12 +1246,15 @@ function get_linear_time_scale(builder, map){
   return time_scale_is_linear
 }
 
-function animate_time_line(tick) {
+function animate_time_line(tick, transition_duration) {
 
   if(this.x_scale !== undefined){
-    d3.select('#time_line')
-      .transition()
-      .duration(40)
+    var  time_line = d3.select('#time_line')
+
+
+    time_line.transition()
+      .duration(transition_duration)
+      .ease(d3.easeLinear)
       .attr("x", this.x_scale(tick))
 
   }

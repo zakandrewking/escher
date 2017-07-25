@@ -593,6 +593,7 @@ function _reaction_check_add_abs () {
 function set_reaction_data (data) {
 
   this.reaction_data_names = []
+  this.reaction_data_names.length = 0
 
   // new data is [array of names][array of numbers]
   // new case for reset to null, because crashes on null[1]
@@ -645,6 +646,8 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     this.settings.set_conditional('show_gene_reaction_rules', false)
   }
   this.gene_data_names = []
+  this.gene_data_names.length = 0
+
 
   // new data is [array of names][array of numbers]
   // new case for reset to null, because crashes on null[1]
@@ -688,6 +691,7 @@ function set_gene_data (data, clear_gene_reaction_rules) {
 function set_metabolite_data (data) {
 
   this.metabolite_data_names = []
+  this.metabolite_data_names.length = 0
 
   // new data is [array of names][array of numbers]
   // new case for reset to null, because crashes on null[1]

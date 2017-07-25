@@ -596,7 +596,7 @@ function draw_these_reactions (reaction_ids, draw_beziers) {
   var update_fn = function(sel) {
     return this.draw.update_reaction(sel, this.scale, this.cobra_model,
                                      this.nodes, this.defs,
-                                     this.has_data_on_reactions, this.transition_duration)
+                                     this.has_data_on_reactions, this.interpolation, this.transition_duration)
   }.bind(this)
 
   // draw the reactions
@@ -692,7 +692,7 @@ function draw_these_nodes(node_ids) {
                                  this.behavior.node_mouseover,
                                  this.behavior.node_mouseout,
                                  this.behavior.selectable_drag,
-                                 this.behavior.node_label_drag, this.transition_duration)
+                                 this.behavior.node_label_drag, this.interpolation, this.transition_duration)
   }.bind(this)
 
   // draw the nodes
@@ -910,7 +910,7 @@ function calc_data_stats (type) {
 
     if (type === 'metabolite') {
       for (var node_id in this.nodes_for_data_scales) {
-        var node = this.nodes_for_data_scales[node_id]
+        var node = parseFloat(this.nodes_for_data_scales[node_id])
         // check number
         if (_.isUndefined(node)) {
           console.error('metabolite missing ')
@@ -920,7 +920,7 @@ function calc_data_stats (type) {
       }
     } else if (type == 'reaction') {
       for (var reaction_id in this.reactions_for_data_scales) {
-        var reaction = this.reactions_for_data_scales[reaction_id]
+        var reaction = parseFloat(this.reactions_for_data_scales[reaction_id])
         // check number
         if (_.isUndefined(reaction)) {
           console.error('reaction data missing ')
