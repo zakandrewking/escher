@@ -38,7 +38,7 @@ function init (sel, map, builder, type_of_data) {
 
   this.builder.difference_mode = false
   this.builder.reference = 0
-  this.builder.target = 0
+  builder.target = get_current_data_set(builder).length - 1
 
   this.map = map
   this.current = 0
@@ -48,35 +48,36 @@ function init (sel, map, builder, type_of_data) {
   var both_data_play_back = false
 
 
-  var container = sel.append('div').attr('class', 'search-container').append('div')
+  var container = sel.append('div').append('div')//.attr('class', 'search-container').append('div')
+    .attr('class', 'settings-box')
    // .style('float', 'right')
   // TODO: remove this comment in final version
   .style('display', 'block')
+    .attr('id', 'container')
 
-  container.attr('id', 'container')
 
-  container.append('button')
+
+  // container.append('span')
+  //   .attr('id', 'counter')
+  //   //.attr('class', 'select-counter')
+  //   .attr('class', 'settings-section-heading')
+  //   .text('Please load in data set')
+
+  var max_width = container.node().getBoundingClientRect().width
+
+
+  var box = container.append('div')
+
+
+  // tabbed layout
+
+  box.append('button')
     .attr('class', 'btn btn-sm btn-default close-button')
     .on('click', function () {
       this.toggle(false)
     }.bind(this))
     .append('span')
     .attr('class', 'glyphicon glyphicon-remove')
-
-
-  container.append('span')
-    .attr('id', 'counter')
-    //.attr('class', 'select-counter')
-    .attr('class', 'settings-section-heading')
-    .text('Please load in data set')
-
-  var max_width = container.node().getBoundingClientRect().width
-
-
-  var box = container.append('div')
-    .attr('class', 'settings-box')
-
-  // tabbed layout
 
   // three buttons
   box.append('button')
@@ -86,7 +87,7 @@ function init (sel, map, builder, type_of_data) {
       openTab('reaction', builder)
     })
     .style('background-color', 'lightgrey')
-    .style('width', '33.3%')
+    .style('width', '45%')
     .text('reaction data')
 
   box.append('button')
@@ -96,28 +97,28 @@ function init (sel, map, builder, type_of_data) {
       openTab('metabolite', builder)
     })
     .style('background-color', 'lightgrey')
-    .style('width', '33.3%')
+    .style('width', '45%')
     .text('metabolite data')
 
-  box.append('button')
-    .attr('id', 'both_tab_button')
-    .on('click', function (builder) {
-
-      if(builder.options.reaction_data !== null && builder.options.metabolite_data !== null){
-        if(builder.options.reaction_data.length === builder.options.metabolite_data.length){
-          both_data_play_back = true // TODO: make use
-          openTab('both', builder)
-        }
-      } else {
-        both_data_play_back = false
-        map.set_status('Please load in data sets of same length')
-      }
-
-
-    })
-    .style('background-color', 'lightgrey')
-    .style('width', '33.3%')
-    .text('both data')
+  // box.append('button')
+  //   .attr('id', 'both_tab_button')
+  //   .on('click', function (builder) {
+  //
+  //     if(builder.options.reaction_data !== null && builder.options.metabolite_data !== null){
+  //       if(builder.options.reaction_data.length === builder.options.metabolite_data.length){
+  //         both_data_play_back = true // TODO: make use
+  //         openTab('both', builder)
+  //       }
+  //     } else {
+  //       both_data_play_back = false
+  //       map.set_status('Please load in data sets of same length')
+  //     }
+  //
+  //
+  //   })
+  //   .style('background-color', 'lightgrey')
+  //   .style('width', '33.3%')
+  //   .text('both data')
 
   var second_row_buttons = box.append('div')
 
@@ -128,11 +129,15 @@ function init (sel, map, builder, type_of_data) {
       builder.difference_mode = false
       //toggleDifferenceMode (builder, false)
       groupButtons.style('display', 'block')
+      d3_select('#dropDownMenuTarget').style('display', 'none')
+      d3_select('#sliderTarget').style('display', 'none')
+
+      builder.target = get_current_data_set(builder).length - 1
 
     })
     .style('background-color', 'white')
-    .style('width', '50%')
-    .text('Sliding Window')
+    .style('width', '45%')
+    .text('Time Series')
 
   var difference_mode_button = second_row_buttons.append('button')
     .on('click', function (builder) {
@@ -141,10 +146,13 @@ function init (sel, map, builder, type_of_data) {
       builder.difference_mode = true
       showDifferenceData(builder)
       //toggleDifferenceMode (builder)
-      groupButtons.style('display', 'none')
+      groupButtons.style('display', 'block')
+      d3_select('#dropDownMenuTarget').style('display', 'block')
+      d3_select('#sliderTarget').style('display', 'block')
+
     })
     .style('background-color', 'lightgrey')
-    .style('width', '50%')
+    .style('width', '45%')
     .text('Difference Mode')
 
   tab_container = box.append('div').attr('id', 'tab_container')
@@ -258,6 +266,7 @@ function init (sel, map, builder, type_of_data) {
         create_chart(builder,map)
       }
     })
+    .style('display', 'none')
 
   tab_container.append('input')
     .attr('type', 'range')
@@ -283,6 +292,8 @@ function init (sel, map, builder, type_of_data) {
         create_chart(builder,map)
       }
     })
+    .style('display', 'none')
+
 
 
 
@@ -303,7 +314,7 @@ function init (sel, map, builder, type_of_data) {
     .attr('id', 'play_button')
     .style('margin', '2px')
     .on('click', function(){
-      play_time_series(builder, map, duration, map.interpolation , 10, both_data_play_back) // TODO: make ui for setting steps ?
+      play_time_series(builder, map, duration, map.interpolation , 10, both_data_play_back)
     })
     .append('span').attr('class', 'glyphicon glyphicon-play')
 
@@ -325,49 +336,12 @@ function init (sel, map, builder, type_of_data) {
         duration = this.value
       })
 
-
-
-  //TODO: progress bar?
-  // var progress_bar_svg = groupButtons.append('div').append('svg')
-  //   .attr('id', 'progress_bar')
-  //   .attr('width', groupButtons.node().getBoundingClientRect().width)
-  //   .attr('height', 25)
-  // progress_bar_svg.append('rect')
-  //   .attr("x", 2)
-  //   .attr("y", 5)
-  //   .attr("width", groupButtons.node().getBoundingClientRect().width - 4)
-  //   .attr("height", 10)
-  //   .style('fill', 'steelblue')
-  // progress_bar_svg.append('rect')
-  //   .attr('id', 'progress_line')
-  //   .attr("x", 0)
-  //   .attr("y", 0)
-  //   .attr("width", groupButtons.node().getBoundingClientRect().width)
-  //   .attr("height", 20)
-  //   .style('fill', 'none')
-  //   .style('stroke', 'grey')
-
-    //.style('stroke-width', '5')
-    //.style('stroke', 'steelblue')
-    // .attr({
-    //   x1: 1,
-    //   y1: 15,
-    //   x2: 100,
-    //   y2: 15
-    // })
-  // .transition()
-  // .attr({
-  //   x2: 0,
-  //   y2: 15
-  // })
-
   groupButtons
     .append('input')
     .attr('type', 'checkbox')
     .attr('id', 'checkBoxInterpolation')
     .attr('value', 'Interpolate Data')
     .style('margin', '2px')
-    .text('Difference Mode')
     .on('change', function () {
          if (d3_select('#checkBoxInterpolation').property('checked')) {
            map.interpolation = true
@@ -399,7 +373,7 @@ function init (sel, map, builder, type_of_data) {
     .attr('for', 'checkBoxChart')
     .text('Overview Chart')
 
-  this.chart_width = 400//chart_container.node().getBoundingClientRect().width
+  this.chart_width = d3_select('#container').node().getBoundingClientRect().width
   this.chart_height = 300 //chart_container.node().getBoundingClientRect().height
 
   var chart_container = d3_select('#container').append('div').attr('id', 'div_data_chart')
@@ -409,16 +383,17 @@ function init (sel, map, builder, type_of_data) {
     //.style('display','none')
 
 
-  chart_container.append('svg')
+  chart_container
+    .append('svg')
     .attr('id', 'svg_data_chart')
     .attr('width', this.chart_width)
     .attr('height', this.chart_height)
     .style('display','block')
 
-  chart_container
-    .attr('id', 'div_data_chart_labels')
-    .html('Lines:')
-    .style('display','none')
+  // chart_container.append('div')
+  //   .attr('id', 'div_data_chart_labels')
+  //   .html('Lines:')
+  //   .style('display','none')
 
   this.callback_manager = new CallbackManager()
 
@@ -604,87 +579,33 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
     var start = builder.reference
     var end = builder.target
 
-
-
     var duration = duration / (end - start)
 
     map.transition_duration = duration
 
-    // TODO: move all interpolation specific code to draw, only use 'normal' animation
-    interpolation = false
+    function play (builder, sliding_window) {
 
-    if (interpolation) {
 
-      this.data_set_save = get_current_data_set(builder)
-      var interpolation_data_set = create_interpolation_data_set(this.data_set_for_animation, max_steps)
+      // TODO: animate the target slider
+      if(builder.difference_mode){
 
-      if (builder.type_of_data === 'reaction') {
-        builder.options.reaction_data = interpolation_data_set
-      } else if (builder.type_of_data === 'gene') {
-        builder.options.gene_data = interpolation_data_set
-      } else if (builder.type_of_data === 'metabolite') {
-        builder.options.metabolite_data = interpolation_data_set
+        // reference is static, target goes from reference + 1 to end
+
+        if(sliding_window){
+
+          // reference goes from end - target
+          // target goes to end
+
+        }
       }
 
-      // to play animation with all data sets
-      start = 0
-      end = interpolation_data_set.length - 1
+        d3_select('#counter').text('Time Series of Data Sets: '
+          + this.sliding_window_start +
+          ' to ' + builder.target +
+          '. Current: ' + builder.reference)
 
-
-      if(linear_time_scale){
-        duration /= max_steps
-      }
-
-    }
-
-
-    function play () {
-
-      if (interpolation) {
-
-        d3_select('#counter').text('Interpolated Time Series of Data Sets')
-
-
-        if(linear_time_scale){
-          if (builder.reference < end) {
-            var next = builder.reference
-            next++
-            builder.reference = next
-          } else {
-            builder.reference = 0
-          }
-
-          if (both_data_play_back) {
-            builder.set_data_indices('reaction', builder.reference, end)
-            builder.set_data_indices('metabolite', builder.reference, end)
-          } else {
-            builder.set_data_indices(builder.type_of_data, builder.reference, end)
-          }
-
-        } else { // TODO: handle interpolated data with non-linear time scale
-
-          //       if (tick === array_of_time_points[time_point]){
-
-          // distribute all max_steps data sets in time frame
-
-          // play all max_steps data sets in row
-
-          // then tick++, time_point++
-
-          if (builder.reference < interpolation_data_set.length) {
-
-            var next = builder.reference
-
-            next += Math.ceil(interpolation_data_set.length / max_steps) + 1
-
-            builder.reference = next
-
-          } else { // play as loop
-            builder.reference = this.sliding_window_start
-
-            time_point = this.sliding_window_start
-            tick = this.sliding_window_start
-          }
+        // TODO: handle interpolated data with non-linear time scale: set duration to next tick
+        if (tick === array_of_time_points[time_point]) {
 
           if (both_data_play_back) {
             builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
@@ -692,45 +613,6 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
           } else {
             builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
           }
-
-          time_point++
-          tick++
-
-          // } else {
-          //
-          //   if(tick === (array_of_time_points[array_of_time_points.length-1] + max_steps)){
-          //     tick = array_of_time_points[0] - 1
-          //   }
-          //   tick++
-          // }
-
-        }
-
-
-        animate_time_line(tick, duration)
-
-
-        if(tick >= array_of_time_points[this.sliding_window_end]){ //array_of_time_points.length-1
-          tick = array_of_time_points[this.sliding_window_start]//array_of_time_points[0] - 1
-          //time_point = array_of_time_points[this.sliding_window_start]
-        } else {
-          tick += (max_steps / interpolation_data_set.length)
-        }
-
-
-
-      } else { // not interpolated data
-
-
-        d3_select('#counter').text('Time Series of Data Sets: '
-          + this.sliding_window_start +
-          ' to ' + builder.target +
-          '. Current: ' + builder.reference)
-
-        // animate_time_line(tick, duration)
-
-
-        if (tick === array_of_time_points[time_point]) {
 
           if (parseInt(builder.reference) < parseInt(this.sliding_window_end)) {
             var next = builder.reference
@@ -748,13 +630,8 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
             tick = array_of_time_points[this.sliding_window_start]
           }
           animate_time_line(tick, duration)
+          animate_slider()
 
-          if (both_data_play_back) {
-            builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
-            builder.set_data_indices('metabolite', builder.reference, this.sliding_window_end)
-          } else {
-            builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
-          }
 
         } else {
 
@@ -762,56 +639,29 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
             tick = array_of_time_points[this.sliding_window_start]//array_of_time_points[0] - 1
             //time_point = array_of_time_points[this.sliding_window_start]
             animate_time_line(tick, 0)
+            animate_slider(0)
 
           } else {
             tick++
             animate_time_line(tick, duration)
+
           }
         }
-      }
     }
 
     // animation
     animate_time_line(this.sliding_window_start, 0)
-   // play()
+    animate_slider(0)
     this.animation = setInterval(function(){ play() }, duration)
 
   } else { // clear animation and reset data
 
-    interpolation = false
-    if (interpolation) {
-      clearInterval(this.animation)
-
-      this.playing = false
-
-      this.data_set_for_animation = []
-
-      // after animation reset to 'normal' data
-      if (builder.type_of_data === 'reaction') {
-        builder.options.reaction_data.length = 0
-        builder.options.reaction_data = this.data_set_save
-      } else if (builder.type_of_data === 'gene') {
-        builder.options.gene_data.length = 0
-        builder.options.gene_data = this.data_set_save
-      } else if (builder.type_of_data === 'metabolite') {
-        builder.options.metabolite_data.length = 0
-        builder.options.metabolite_data = this.data_set_save
-      }
-
-      builder.reference = this.sliding_window_start
-      builder.target = this.sliding_window_end
-
-    } else {
-
       clearInterval(this.animation)
 
       this.playing = false
       builder.reference = this.sliding_window_start
       builder.target = this.sliding_window_end
-    }
-
   }
-
 }
 
 
@@ -888,16 +738,17 @@ function create_chart(builder, map){
     toggle_chart(true)
 
     this.margins = {
-        top: 20,
-        right: 20,
-        bottom: 20,
+        top: 10,
+        right: 10,
+        bottom: 10,
         left: 20
       }
 
     var data_chart = d3_select("#svg_data_chart")
 
-    var width = d3_select("#div_data_chart").node().getBoundingClientRect().width - margins.left - margins.right
-    var height = d3_select("#div_data_chart").node().getBoundingClientRect().height - margins.bottom - margins.top
+    var svg_width = d3_select("#svg_data_chart").node().getBoundingClientRect().width
+    var width = svg_width - margins.left - margins.right
+    var height = d3_select("#svg_data_chart").node().getBoundingClientRect().height - margins.bottom - margins.top
 
     var color = d3_scale.schemeCategory20
 
@@ -963,6 +814,7 @@ function create_chart(builder, map){
       .attr("transform", "translate(0," + (height - this.margins.bottom) + ")")
       .style('shape-rendering', 'crispEdges')
       .style('stroke', 'black')
+      .style('font-size', '8px')
       .style('fill', 'none')
       .call(x_axis)
 
@@ -970,6 +822,7 @@ function create_chart(builder, map){
       .attr("transform", "translate(" + (this.margins.left) + ",0)")
       .style('shape-rendering', 'crispEdges')
       .style('stroke', 'black')
+      .style('font-size', '8px')
       .style('fill', 'none')
       .call(y_axis)
 
@@ -1003,7 +856,7 @@ function create_chart(builder, map){
         .y(function(data) {
           return this.y_scale(data.y)
         })
-        .curve(d3.curveCardinal)
+        .curve(d3.curveMonotoneX)
 
       var path = data_chart.append('svg:path')
         .attr('d', line(data))
@@ -1013,11 +866,20 @@ function create_chart(builder, map){
         .attr("id", "chart_paths")
 
       // Add a label with same color as line
-      d3_select('#div_data_chart_labels')
-        .append('div').append('label')
-        .style('color', color[i])
-        .text(labels_for_lines[i])
+      // d3_select('#div_data_chart_labels')
+      //   .append('div')
+      //   .append('label')
+      //   .style('color', color[i])
+      //   .text(labels_for_lines[i])
 
+        d3_select('#svg_data_chart')
+          .append('text')
+          .attr("x", svg_width - this.margins.right - this.margins.left)
+          .attr("y", this.margins.top + 20 + (i * 20))
+          .style('fill', color[i])
+          .style('font-size', '8px;')
+          .style('text-anchor', 'left')
+          .text(labels_for_lines[i])
 
 
 
@@ -1091,21 +953,21 @@ function toggle_chart(show){
     //d3_select('#checkBoxChart').property('checked', false)
 
     d3_select('#svg_data_chart').remove()
-    d3_select('#div_data_chart_labels').remove()
+    //d3_select('#div_data_chart_labels').remove()
 
     d3_select('#container').append('div').attr('id', 'div_data_chart')
 
     d3_select('#div_data_chart')
       .append('svg')
       .attr('id', 'svg_data_chart')
-      .attr('width', 400)
-      .attr('height', 300)
+      .attr('width', 200)
+      .attr('height', 150)
       .style('display','none')
 
-    d3_select('#div_data_chart').append('label')
-      .attr('id', 'div_data_chart_labels')
-      .text('Lines:')
-      .style('display','none')
+    // d3_select('#div_data_chart').append('label')
+    //   .attr('id', 'div_data_chart_labels')
+    //   .text('Legend:')
+    //   .style('display','none')
 
 
   }
@@ -1251,6 +1113,9 @@ function animate_time_line(tick, transition_duration) {
   if(this.x_scale !== undefined){
     var  time_line = d3.select('#time_line')
 
+    if(tick == 0){
+      transition_duration = 0
+    }
 
     time_line.transition()
       .duration(transition_duration)
@@ -1258,47 +1123,23 @@ function animate_time_line(tick, transition_duration) {
       .attr("x", this.x_scale(tick))
 
   }
+}
 
-    //.transition()
-    //.duration(100)
-    //.attr("transform", "translate(" + (this.x_scale(1)) +')')// +  "," + this.y_scale(margins.) + ")")
+function animate_slider (set_to) {
 
-  console.log(tick)
+  var slider_value = parseInt(d3_select('#sliderReference').property('value'))
+  var slider_max = parseInt(d3_select('#sliderReference').property('max'))
+  var slider_min = parseInt(d3_select('#sliderReference').property('min'))
 
-  //d3.selectAll('line.time_lines').attr('display', 'none')
-  //d3.select('#time_line' + tick).attr('display', 'block')
+  if (set_to !== undefined) {
+    slider_value = set_to
+  } else if (slider_value < slider_max) {
+    slider_value++
+  } else {
+    slider_value = slider_min
+  }
 
-
-
-
+  d3_select('#sliderReference').property('value', slider_value)
+  d3_select('#dropDownMenuReference').property('selectedIndex', slider_value)
 
 }
-// d3.selectAll('#animated_paths')
-//     .each(function(){
-//
-//
-//       // array of data from
-//       // give only data from [0] to [tick] to the path
-//       var path = d3.select(this)
-//       var all_data = path.data()
-//       path.attr('d', all_data.slice(0, tick))
-//
-//       // var total_length = d3.select(this).datum()
-//       // var part = total_length / (total_time_steps - 1)
-//       // var offest = 0
-//       //
-//       // console.log('---' + tick)
-//       //
-//       // console.log(total_length)
-//       // console.log(total_length - (tick * part))
-//       //
-//       // path.transition()
-//       //   .duration(duration / total_time_steps)
-//       //   .ease(d3.easeLinear)
-//       //   //.attr('stroke-dashoffset', ((total_time_steps - tick) * part) + offest)
-//       //   .attr('stroke-dashoffset', ( total_length - (tick * part)))
-//         //.transition()
-//         //.duration(duration)
-//         //.attr("stroke-dashoffset", tick)
-//     })
-//}

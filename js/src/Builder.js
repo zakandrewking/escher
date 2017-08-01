@@ -350,7 +350,7 @@ function load_map (map_data, should_update_data) {
     .append('div').attr('class', 'search-menu-container-inline')
   var menu_div = s.append('div')
   var search_bar_div = s.append('div')
-  var time_series_bar_div = s.append('div')//.attr('class', 'search-menu-container')
+  var time_series_bar_div = s.append('div')
   var button_div = this.selection.append('div')
 
   // Set up the search bar
