@@ -131,11 +131,7 @@ function init (sel, map, builder, type_of_data) {
       d3_select('#dropDownMenuTarget').style('display', 'none')
       d3_select('#sliderTarget').style('display', 'none')
 
-
-      d3_select('#checkBoxSlidingWindow').style('display', 'none')
-      d3_select('#checkBoxSlidingWindowLabel').style('display', 'none')
-      d3_select('#checkBoxChart').style('display', 'block')
-      d3_select('#checkBoxChartLabel').style('display', 'block')
+      d3_select('#checkBoxChartLabel').text('Overview Chart')
 
     })
     .style('background-color', 'white')
@@ -153,11 +149,7 @@ function init (sel, map, builder, type_of_data) {
       d3_select('#dropDownMenuTarget').style('display', 'block')
       d3_select('#sliderTarget').style('display', 'block')
 
-      d3_select('#checkBoxChart').style('display', 'none')
-      d3_select('#checkBoxChartLabel').style('display', 'none')
-      d3_select('#checkBoxSlidingWindow').style('display', 'block')
-      d3_select('#checkBoxSlidingWindowLabel').style('display', 'block')
-
+      d3_select('#checkBoxChartLabel').text('Sliding Window')
     })
     .style('background-color', 'lightgrey')
     .style('width', '45%')
@@ -321,35 +313,27 @@ function init (sel, map, builder, type_of_data) {
     .text('Show Chart')
     .on('change', function () {
       if (d3_select('#checkBoxChart').property('checked')) {
+
+        if(builder.difference_mode){
+          sliding_window = true
+        } else {
         toggle_chart(true)
         create_chart(builder, map)
+        }
       } else {
+
+        if(builder.difference_mode){
+          sliding_window = false
+        } else {
         toggle_chart(false)
+
+        }
       }})
 
   groupButtons.append('label')
     .attr('for', 'checkBoxChart')
     .attr('id', 'checkBoxChartLabel')
     .text('Overview Chart')
-
-  groupButtons
-    .append('input')
-    .style('margin', '2px')
-    .attr('type', 'checkbox')
-    .attr('id', 'checkBoxSlidingWindow')
-    .on('change', function () {
-      if (d3_select('#checkBoxSlidingWindow').property('checked')) {
-        sliding_window = true
-      } else {
-        sliding_window = false
-      }})
-    .style('display', 'none')
-
-  groupButtons.append('label')
-    .attr('for', 'checkBoxSlidingWindow')
-    .attr('id', 'checkBoxSlidingWindowLabel')
-    .text('S Window')
-    .style('display', 'none')
 
 
   this.chart_width = d3_select('#container').node().getBoundingClientRect().width
@@ -663,8 +647,8 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
           } else {
             tick++
-            d3_select('#sliderTarget').property('value', start)
-            d3_select('#dropDownMenuTarget').property('selectedIndex', start)
+            d3_select('#sliderTarget').property('value', builder.target)
+            d3_select('#dropDownMenuTarget').property('selectedIndex', builder.target)
 
           }
 
@@ -710,7 +694,7 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
         } else {
 
-          if(tick >= array_of_time_points[this.sliding_window_end]){
+          if(tick >= array_of_time_points[end]){
             tick = array_of_time_points[this.sliding_window_start]
             animate_time_line(tick, 0)
             animate_slider(0)
