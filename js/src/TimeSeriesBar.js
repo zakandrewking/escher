@@ -22,7 +22,6 @@ TimeSeriesBar.prototype = {
   toggle: toggle,
   next: next,
   previous: previous,
-  //toggleDifferenceMode: toggleDifferenceMode,
   showDifferenceData: showDifferenceData,
   openTab: openTab
 }
@@ -36,9 +35,9 @@ function init (sel, map, builder, type_of_data) {
   //var interpolation = map.interpolation
   this.playing = false
 
-  this.builder.difference_mode = false
-  this.builder.reference = 0
-  builder.target = get_current_data_set(builder).length - 1
+  builder.difference_mode = false
+  builder.reference = 0
+  builder.target = 0
 
   this.map = map
   this.current = 0
@@ -46,6 +45,7 @@ function init (sel, map, builder, type_of_data) {
   this.type_of_data = type_of_data
 
   var both_data_play_back = false
+  var sliding_window = false
 
 
   var container = sel.append('div').append('div')//.attr('class', 'search-container').append('div')
@@ -54,7 +54,6 @@ function init (sel, map, builder, type_of_data) {
   // TODO: remove this comment in final version
   .style('display', 'block')
     .attr('id', 'container')
-
 
 
   // container.append('span')
@@ -127,12 +126,16 @@ function init (sel, map, builder, type_of_data) {
       time_series_button.style('background-color', 'white')
       difference_mode_button.style('background-color', 'lightgrey')
       builder.difference_mode = false
-      //toggleDifferenceMode (builder, false)
+
       groupButtons.style('display', 'block')
       d3_select('#dropDownMenuTarget').style('display', 'none')
       d3_select('#sliderTarget').style('display', 'none')
 
-      builder.target = get_current_data_set(builder).length - 1
+
+      d3_select('#checkBoxSlidingWindow').style('display', 'none')
+      d3_select('#checkBoxSlidingWindowLabel').style('display', 'none')
+      d3_select('#checkBoxChart').style('display', 'block')
+      d3_select('#checkBoxChartLabel').style('display', 'block')
 
     })
     .style('background-color', 'white')
@@ -145,10 +148,15 @@ function init (sel, map, builder, type_of_data) {
       difference_mode_button.style('background-color', 'white')
       builder.difference_mode = true
       showDifferenceData(builder)
-      //toggleDifferenceMode (builder)
+
       groupButtons.style('display', 'block')
       d3_select('#dropDownMenuTarget').style('display', 'block')
       d3_select('#sliderTarget').style('display', 'block')
+
+      d3_select('#checkBoxChart').style('display', 'none')
+      d3_select('#checkBoxChartLabel').style('display', 'none')
+      d3_select('#checkBoxSlidingWindow').style('display', 'block')
+      d3_select('#checkBoxSlidingWindowLabel').style('display', 'block')
 
     })
     .style('background-color', 'lightgrey')
@@ -156,34 +164,6 @@ function init (sel, map, builder, type_of_data) {
     .text('Difference Mode')
 
   var tab_container = box.append('div').attr('id', 'tab_container')
-    //.style('padding', '0.5em')
-    //.style('border', '1px solid lightgrey')
-    //.style('display', 'none')
-
-  // three divs
-  // reaction_tab = tab_container.append('div')
-  //   .attr('id', 'reaction_tab')
-  //   .attr('class', 'tab')
-  //   .text('compare reaction data')
-  //   .style('display', 'none')
-  //
-  // metabolite_tab = tab_container.append('div')
-  //   .attr('id', 'metabolite_tab')
-  //   .attr('class', 'tab')
-  //   .text('compare metabolite data')
-  //   .style('display', 'none')
-  //
-  // both_tab = tab_container.append('div')
-  //   .attr('id', 'both_tab')
-  //   .attr('class', 'tab')
-  //   .text('compare both')
-  //   .style('display', 'none')
-
-
-  // tab_container.append('div')
-  //   .append('text')
-  //   .attr('id', 'referenceText')
-  //   .text('Reference Data Set: ')
 
   tab_container.append('select')
     //.attr('name', 'target-list')
@@ -209,15 +189,6 @@ function init (sel, map, builder, type_of_data) {
       }
 
     })
-
-  // tab_container.append('button')
-  //   //.attr('class', 'btn btn-default')
-  //     .html('-')
-  //    .on('click', this.previous.bind(this))
-  //
-  // tab_container.append('button')
-  //    .html('+')
-  //    .on('click', this.next.bind(this))
 
   tab_container.append('input')
     .attr('id', 'sliderReference')
@@ -294,27 +265,14 @@ function init (sel, map, builder, type_of_data) {
     })
     .style('display', 'none')
 
-
-
-
   var groupButtons = tab_container.append('div').attr('id', 'group_buttons')//.attr('class', 'btn-group btn-group-sm')
-
-  // groupButtons.append('button')
-  //   .attr('class', 'btn btn-default')
-  //   .on('click', this.previous.bind(this))
-  //   .append('span').attr('class', 'glyphicon glyphicon-step-backward')
-  //
-  // groupButtons.append('button')
-  //   .attr('class', 'btn btn-default')
-  //   .on('click', this.next.bind(this))
-  //   .append('span').attr('class', 'glyphicon glyphicon-step-forward')
 
   groupButtons.append('button')
     .attr('class', 'btn btn-default')
     .attr('id', 'play_button')
     .style('margin', '2px')
     .on('click', function(){
-      play_time_series(builder, map, duration, map.interpolation , 10, both_data_play_back)
+      play_time_series(builder, map, duration, map.interpolation , 10, both_data_play_back, sliding_window)
     })
     .append('span').attr('class', 'glyphicon glyphicon-play')
 
@@ -352,7 +310,7 @@ function init (sel, map, builder, type_of_data) {
 
   groupButtons.append('label')
     .attr('for', 'checkBoxInterpolation')
-    .text('Interpolate Data')
+    .text('Interpolation')
 
   groupButtons
     .append('input')
@@ -371,7 +329,28 @@ function init (sel, map, builder, type_of_data) {
 
   groupButtons.append('label')
     .attr('for', 'checkBoxChart')
+    .attr('id', 'checkBoxChartLabel')
     .text('Overview Chart')
+
+  groupButtons
+    .append('input')
+    .style('margin', '2px')
+    .attr('type', 'checkbox')
+    .attr('id', 'checkBoxSlidingWindow')
+    .on('change', function () {
+      if (d3_select('#checkBoxSlidingWindow').property('checked')) {
+        sliding_window = true
+      } else {
+        sliding_window = false
+      }})
+    .style('display', 'none')
+
+  groupButtons.append('label')
+    .attr('for', 'checkBoxSlidingWindow')
+    .attr('id', 'checkBoxSlidingWindowLabel')
+    .text('S Window')
+    .style('display', 'none')
+
 
   this.chart_width = d3_select('#container').node().getBoundingClientRect().width
   this.chart_height = 300 //chart_container.node().getBoundingClientRect().height
@@ -454,7 +433,7 @@ function openTab (type_of_data, builder) {
  *
  */
 
-function update (builder, should_create_chart) {
+function update (builder) {
 
   var currentDataSet = get_current_data_set(builder)
 
@@ -555,15 +534,13 @@ function previous (builder) {
   builder.set_data_indices(builder.type_of_data, this.current)
 }
 
-function play_time_series (builder, map, duration, interpolation, max_steps, both_data_play_back) {
+function play_time_series (builder, map, duration, interpolation, max_steps, both_data_play_back, sliding_window) {
 
   if (!this.playing) {
     this.playing = true
 
-    this.sliding_window_start = builder.reference
-    this.sliding_window_end = builder.target
-
-    //this.data_set_for_animation = []
+    this.sliding_window_start = parseInt(builder.reference)
+    this.sliding_window_end = parseInt(builder.target)
 
     // array of time points for non-linear time scale
     var array_of_time_points = get_array_of_time_points(builder, map)
@@ -571,25 +548,18 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
     var tick = array_of_time_points[this.sliding_window_start]
     var time_point = this.sliding_window_start
 
-
-    //var linear_time_scale = get_linear_time_scale(builder,map)
-
-    // for (var i = parseInt(this.sliding_window_start); i <= parseInt(this.sliding_window_end); i++) {
-    //   this.data_set_for_animation.push(get_current_data_set(builder)[i])
-    // }
-
     // difference mode
     var start = parseInt(builder.reference)
     var end = parseInt(get_current_data_set(builder).length - 1)
 
-    if(builder.difference_mode){
-      builder.target = parseInt(builder.reference) + 1
+    if(builder.difference_mode && !sliding_window){
+      builder.target = parseInt(builder.reference)
     }
 
     // sliding window mode
     var sliding_window_reference = builder.reference
     var sliding_window_target = builder.target
-
+    var sliding_window_size = (parseInt(builder.target) - parseInt(builder.reference))
 
     var duration = duration / (end - start)
 
@@ -600,9 +570,64 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
      */
     function play (builder, sliding_window) {
 
+      if(sliding_window){
 
-      // TODO: animate the target slider
-      if(builder.difference_mode){
+        if (tick === array_of_time_points[time_point]) {
+
+
+          if (parseInt(builder.target) < parseInt(end) ){
+
+            builder.reference = parseInt(builder.reference) + 1
+            builder.target = parseInt(builder.reference) + sliding_window_size
+
+            d3_select('#sliderReference').property('value', builder.reference)
+            d3_select('#dropDownMenuReference').property('selectedIndex', builder.reference)
+            d3_select('#sliderTarget').property('value', builder.target)
+            d3_select('#dropDownMenuTarget').property('selectedIndex', builder.target)
+
+            time_point++
+            tick++
+
+          } else { // play as loop
+            builder.reference = this.sliding_window_start
+            builder.target = this.sliding_window_start + sliding_window_size
+
+            time_point = start
+            tick = array_of_time_points[start]
+
+            d3_select('#sliderReference').property('value', builder.reference)
+            d3_select('#dropDownMenuReference').property('selectedIndex', builder.reference)
+            d3_select('#sliderTarget').property('value', builder.target)
+            d3_select('#dropDownMenuTarget').property('selectedIndex', builder.target)
+          }
+
+          builder.set_data_indices(builder.type_of_data, builder.reference, builder.target)
+
+        } else {
+
+          if(tick >= array_of_time_points[end]){
+            tick = array_of_time_points[start]
+
+            d3_select('#sliderReference').property('value', start)
+            d3_select('#dropDownMenuReference').property('selectedIndex', start)
+            d3_select('#sliderTarget').property('value', start + sliding_window_size)
+            d3_select('#dropDownMenuTarget').property('selectedIndex', start + sliding_window_size)
+
+            builder.reference = this.sliding_window_start
+            builder.target = this.sliding_window_start + sliding_window_size
+
+          } else {
+            tick++
+
+            d3_select('#sliderReference').property('value', start)
+            d3_select('#dropDownMenuReference').property('selectedIndex', start)
+            d3_select('#sliderTarget').property('value', start + sliding_window_size)
+            d3_select('#dropDownMenuTarget').property('selectedIndex', start + sliding_window_size)
+
+          }
+        }
+
+      } else if(builder.difference_mode){
 
         if (tick === array_of_time_points[time_point]) {
 
@@ -623,27 +648,21 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
           } else { // play as loop
               //builder.reference = start
-              builder.target = start + 1
+              builder.target = start
 
               time_point = start
               tick = array_of_time_points[start]
           }
 
-          animate_time_line(tick, duration)
-
-
         } else {
 
           if(tick >= array_of_time_points[end]){
             tick = array_of_time_points[start]
-            animate_time_line(tick, 0)
-
             d3_select('#sliderTarget').property('value', start)
             d3_select('#dropDownMenuTarget').property('selectedIndex', start)
 
           } else {
             tick++
-            animate_time_line(tick, duration)
             d3_select('#sliderTarget').property('value', start)
             d3_select('#dropDownMenuTarget').property('selectedIndex', start)
 
@@ -651,12 +670,6 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
 
         }
 
-        if(sliding_window){ // TODO
-
-          // reference goes from end - target
-          // target goes to end
-
-        }
 
       } else {
 
@@ -675,7 +688,7 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
             builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
           }
 
-          if (parseInt(builder.reference) < parseInt(this.sliding_window_end)) {
+          if (parseInt(builder.reference) < end) {
             var next = builder.reference
             next++
             builder.reference = next
@@ -693,12 +706,12 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
           animate_time_line(tick, duration)
           animate_slider()
 
+          builder.set_data_indices(builder.type_of_data, builder.reference, builder.target)
 
         } else {
 
-          if(tick >= array_of_time_points[this.sliding_window_end]){ //array_of_time_points.length-1
-            tick = array_of_time_points[this.sliding_window_start]//array_of_time_points[0] - 1
-            //time_point = array_of_time_points[this.sliding_window_start]
+          if(tick >= array_of_time_points[this.sliding_window_end]){
+            tick = array_of_time_points[this.sliding_window_start]
             animate_time_line(tick, 0)
             animate_slider(0)
 
@@ -715,7 +728,7 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
     // animation
     animate_time_line(this.sliding_window_start, 0)
     //animate_slider(0)
-    this.animation = setInterval(function(){ play(builder) }, duration)
+    this.animation = setInterval(function(){ play(builder, sliding_window) }, duration)
 
   } else { // clear animation and reset data
 
@@ -793,6 +806,9 @@ function create_chart(builder, map){
 
   var current_data_set = []
   var data_set_loaded = false
+
+  builder.reference = 0
+  builder.target = get_current_data_set(builder).length - 1
 
   for(var i = parseInt(builder.reference); i <= parseInt(builder.target); i++){
     current_data_set.push(get_current_data_set(builder)[i])
