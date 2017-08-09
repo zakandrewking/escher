@@ -15,7 +15,7 @@
 
 var utils = require('./utils')
 var PlacedDiv = require('./PlacedDiv')
-var completely = require('./complete.ly')
+var completely = require('./completely')
 var DirectionArrow = require('./DirectionArrow')
 var CobraModel = require('./CobraModel')
 var _ = require('underscore')

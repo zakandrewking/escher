@@ -19,23 +19,26 @@
   "repository": "github:zakandrewking/escher",
   "bugs": "https://github.com/zakandrewking/escher/issues",
   "files": [
-    "js/src/*.js",
+    "js/lib/*.js",
     "js/dist/*",
     "css/dist/*"
   ],
-  "main": "js/src/main.js",
+  "main": "js/lib/main.js",
   "engines": {
     "node": ">=5.0"
   },
   "devDependencies": {
+    "babel-core": "^6.25.0",
+    "babel-plugin-transform-object-rest-spread": "^6.23.0",
+    "babel-plugin-transform-react-jsx": "^6.24.1",
     "babel-preset-es2015": "^6.24.1",
-    "babelify": "^7.3.0",
     "biojs-sniper": "^0.2.9",
     "bootstrap": "^3.3.6",
     "bootswatch": "^3.3.6",
     "chai": "^3.3.0",
+    "css-loader": "^0.28.4",
     "grunt": "^0.4.5",
-    "grunt-browserify": "^4.0.0",
+    "grunt-babel": "^7.0.0",
     "grunt-cli": "^0.1.13",
     "grunt-contrib-clean": "^0.6.0",
     "grunt-contrib-concat": "^0.5.1",
@@ -51,10 +54,14 @@
     "grunt-mocha-test": "^0.12.7",
     "grunt-release": "^0.13.0",
     "grunt-shell": "^1.1.2",
-    "grunt-standard": "^3.1.0",
+    "grunt-webpack": "^3.0.2",
     "jquery": "^2.2.0",
     "jsdom": "^7.2.2",
-    "mocha": "^2.3.4"
+    "mocha": "^2.3.4",
+    "standard": "^10.0.3",
+    "style-loader": "^0.18.2",
+    "webpack": "^3.5.2",
+    "webpack-dev-server": "^2.7.1"
   },
   "dependencies": {
     "baconjs": "^0.7.71",
@@ -72,10 +79,11 @@
     "vkbeautify": "^0.99.1"
   },
   "scripts": {
-    "compile": "./node_modules/.bin/grunt default",
-    "compilew": "./node_modules/.bin/grunt watch",
+    "build": "./node_modules/.bin/grunt build",
+    "buildw": "./node_modules/.bin/grunt buildw",
+    "bundle": "./node_modules/.bin/grunt bundle",
+    "start": "./node_modules/bin/grunt start",
     "test": "./node_modules/.bin/grunt test || true",
-    "test-debug": "node debug ./node_modules/.bin/grunt test",
     "coverage": "./node_modules/.bin/grunt coverage"
   },
   "sniper": {

@@ -15,8 +15,8 @@
 var utils = require('./utils');
 
 module.exports = function(container, config) {
-    document = utils.get_document(container);
-    window = utils.get_window(container);
+  const thisDocument = utils.get_document(container);
+  const thisWindow = utils.get_window(container);
 
     config = config || {};
     config.fontSize =                       config.fontSize   || '13px';
@@ -29,7 +29,7 @@ module.exports = function(container, config) {
     config.dropDownZIndex =                 config.dropDownZIndex || '100'; // to ensure we are in front of everybody
     config.dropDownOnHoverBackgroundColor = config.dropDownOnHoverBackgroundColor || '#ddd';
 
-    var txtInput = document.createElement('input');
+    var txtInput = thisDocument.createElement('input');
     txtInput.type ='text';
     txtInput.spellcheck = false;
     txtInput.style.fontSize =        config.fontSize;
@@ -55,14 +55,14 @@ module.exports = function(container, config) {
     txtInput.style.verticalAlign = 'top';
     txtInput.style.position = 'relative';
 
-    var wrapper = document.createElement('div');
+    var wrapper = thisDocument.createElement('div');
     wrapper.style.position = 'relative';
     wrapper.style.outline = '0';
     wrapper.style.border =  '0';
     wrapper.style.margin =  '0';
     wrapper.style.padding = '0';
 
-    var prompt = document.createElement('div');
+    var prompt = thisDocument.createElement('div');
     prompt.style.position = 'absolute';
     prompt.style.outline = '0';
     prompt.style.margin =  '0';
@@ -77,10 +77,10 @@ module.exports = function(container, config) {
     prompt.style.overflow = 'hidden';
     prompt.innerHTML = config.promptInnerHTML;
     prompt.style.background = 'transparent';
-    if (document.body === undefined) {
-        throw 'document.body is undefined. The library was wired up incorrectly.';
+    if (thisDocument.body === undefined) {
+        throw 'thisDocument.body is undefined. The library was wired up incorrectly.';
     }
-    document.body.appendChild(prompt);
+    thisDocument.body.appendChild(prompt);
     var w = prompt.getBoundingClientRect().right; // works out the width of the prompt.
     wrapper.appendChild(prompt);
     prompt.style.visibility = 'visible';
@@ -90,7 +90,7 @@ module.exports = function(container, config) {
     wrapper.appendChild(txtHint);
     wrapper.appendChild(txtInput);
 
-    var dropDown = document.createElement('div');
+    var dropDown = thisDocument.createElement('div');
     dropDown.style.position = 'absolute';
     dropDown.style.visibility = 'hidden';
     dropDown.style.outline = '0';
@@ -128,7 +128,7 @@ module.exports = function(container, config) {
                 elem.style.visibility = 'hidden';
                 ix = 0;
                 elem.innerHTML ='';
-                var vph = (window.innerHeight || document.documentElement.clientHeight);
+                var vph = (thisWindow.innerHeight || thisDocument.documentElement.clientHeight);
                 var rect = elem.parentNode.getBoundingClientRect();
                 var distanceToTop = rect.top - 6;                        // heuristic give 6px
                 var distanceToBottom = vph - rect.bottom -6;  // distance from the browser border.
@@ -141,7 +141,7 @@ module.exports = function(container, config) {
                     });
                     if (found.length == 0)
                         continue;
-                    var divRow = document.createElement('div');
+                    var divRow = thisDocument.createElement('div');
                     divRow.style.color = config.color;
                     divRow.onmouseover = onMouseOver;
                     divRow.onmouseout =  onMouseOut;
@@ -155,7 +155,7 @@ module.exports = function(container, config) {
                     elem.appendChild(divRow);
                     // limit results and add a note at the buttom
                     if (rows.length >= rs.display_limit) {
-                        var divRow2 = document.createElement('div');
+                        var divRow2 = thisDocument.createElement('div');
                         divRow2.innerHTML = ' ' + (options.length - rows.length) + ' more';
                         rows.push(divRow2);
                         elem.appendChild(divRow2);
@@ -228,7 +228,7 @@ module.exports = function(container, config) {
 
     function calculateWidthForText(text) {
         if (spacer === undefined) { // on first call only.
-            spacer = document.createElement('span');
+            spacer = thisDocument.createElement('span');
             spacer.style.visibility = 'hidden';
             spacer.style.position = 'fixed';
             spacer.style.outline = '0';
@@ -240,7 +240,7 @@ module.exports = function(container, config) {
             spacer.style.fontSize =   config.fontSize;
             spacer.style.fontFamily = config.fontFamily;
             spacer.style.fontWeight = 'normal';
-            document.body.appendChild(spacer);
+            thisDocument.body.appendChild(spacer);
         }
 
         // Used to encode an HTML string into a plain text.
@@ -345,7 +345,7 @@ module.exports = function(container, config) {
 
 
     var keyDownHandler = function(e) {
-        e = e || window.event;
+        e = e || thisWindow.event;
         var keyCode = e.keyCode;
 
         if (keyCode == 33) { return; } // page up (do nothing)
