@@ -82,7 +82,7 @@
     "build": "./node_modules/.bin/grunt build",
     "buildw": "./node_modules/.bin/grunt buildw",
     "bundle": "./node_modules/.bin/grunt bundle",
-    "start": "./node_modules/bin/grunt start",
+    "start": " node_modules/.bin/webpack-dev-server --config webpack-dev-server.config.js",
     "test": "./node_modules/.bin/grunt test || true",
     "coverage": "./node_modules/.bin/grunt coverage"
   },

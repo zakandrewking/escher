@@ -7,5 +7,5 @@ module.exports = {
     filename: 'escher.js',
     libraryTarget: 'umd'
   },
-  devtool: 'source-map',
+  devtool: 'source-map'
 }

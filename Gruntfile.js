@@ -1,5 +1,5 @@
 const webpackConfig = require('./webpack.config')
-const webpackDevServerConfig = require('./webpack-dev-server.config')
+// const webpackDevServerConfig = require('./webpack-dev-server.config')
 const escherPackage = require('./package.json')
 
 module.exports = function (grunt) {
@@ -62,9 +62,13 @@ module.exports = function (grunt) {
       prod: webpackConfig
     },
 
-    'webpack-dev-server': {
-      dev: webpackDevServerConfig
-    },
+    // 'webpack-dev-server': {
+    //      main: {
+    //             contentBase: 'dist',
+    //             port: 9999,
+    //             keepAlive: true
+    //         }
+    // },
 
     uglify: {
       options: {
@@ -224,7 +228,7 @@ module.exports = function (grunt) {
   grunt.registerTask('build', build)
   grunt.registerTask('buildw', [...build, 'watch'])
   grunt.registerTask('bundle', bundle)
-  grunt.registerTask('start', [...build, 'webpack-dev-server'])
+  // grunt.registerTask('start', [...build, 'webpack-dev-server'])
   grunt.registerTask('test', ['mochaTest'])
   grunt.registerTask('coverage', [
     'env:coverage', 'instrument', 'mochaTest',
