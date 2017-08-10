@@ -1,10 +1,9 @@
 const webpackConfig = require('./webpack.config')
-// const webpackDevServerConfig = require('./webpack-dev-server.config')
 const escherPackage = require('./package.json')
 
 module.exports = function (grunt) {
-  const build = ['clean', 'cssmin', 'concat', 'babel']
-  const bundle = [...build, 'webpack', 'uglify']
+  const build = ['clean', 'cssmin', 'babel', 'concat', 'copy:css']
+  const bundle = [...build, 'webpack', 'uglify', 'copy']
 
   // Project configuration
   grunt.initConfig({
@@ -25,6 +24,7 @@ module.exports = function (grunt) {
         }
       }
     },
+
     concat: {
       builder_embed: {
         options: {
@@ -33,7 +33,7 @@ module.exports = function (grunt) {
           footer: "'};"
         },
         files: {
-          'js/src/inline.js': 'css/build/builder-embed.nomap.min.css'
+          'js/lib/inline.js': 'css/build/builder-embed.nomap.min.css'
         }
       }
     },
@@ -51,6 +51,7 @@ module.exports = function (grunt) {
         ext: '.js'
       }
     },
+
     watch: {
       scripts: {
         files: ['js/src/*.js', 'js/src/*.jsx'],
@@ -61,14 +62,6 @@ module.exports = function (grunt) {
     webpack: {
       prod: webpackConfig
     },
-
-    // 'webpack-dev-server': {
-    //      main: {
-    //             contentBase: 'dist',
-    //             port: 9999,
-    //             keepAlive: true
-    //         }
-    // },
 
     uglify: {
       options: {
@@ -83,11 +76,10 @@ module.exports = function (grunt) {
     clean: {
       files: [
         'js/lib/tests/helpers', 'js/lib/tests', 'js/lib/', 'js/dist/',
-        'css/build/', 'css/dist/', 'js/src/inline.js',
-        'js/lib/coverage/instrument/', 'js/lib/coverage/reports/',
-        'py/escher/package.json', 'py/escher/static/escher/',
-        'py/escher/static/lib/', 'py/escher/static/fonts/',
-        'py/escher/static/fonts/'
+        'css/build/', 'css/dist/', 'js/lib/coverage/instrument/',
+        'js/lib/coverage/reports/', 'py/escher/package.json',
+        'py/escher/static/escher/', 'py/escher/static/lib/',
+        'py/escher/static/fonts/', 'py/escher/static/fonts/'
       ]
     },
 
@@ -114,7 +106,7 @@ module.exports = function (grunt) {
         src: [
           'node_modules/bootstrap/dist/js/bootstrap.min.js',
           'node_modules/bootswatch/simplex/bootstrap.min.css',
-          'node_modules/jquery/dist/jquery.min.js',
+          'node_modules/jquery/dist/jquery.min.js'
         ],
         dest: 'py/escher/static/lib/',
         expand: true,
@@ -228,7 +220,6 @@ module.exports = function (grunt) {
   grunt.registerTask('build', build)
   grunt.registerTask('buildw', [...build, 'watch'])
   grunt.registerTask('bundle', bundle)
-  // grunt.registerTask('start', [...build, 'webpack-dev-server'])
   grunt.registerTask('test', ['mochaTest'])
   grunt.registerTask('coverage', [
     'env:coverage', 'instrument', 'mochaTest',

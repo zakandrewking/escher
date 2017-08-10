@@ -1,5 +1,5 @@
 module.exports = {
-  entry: './js/src/devServer.js', // TODO try changing lib/ to src/ and adding babel here
+  entry: './dev-server/index.js',
   devtool: 'source-map',
   devServer: {
     contentBase: './dev-server',
