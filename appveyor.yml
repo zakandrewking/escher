@@ -25,10 +25,6 @@ install:
   - python -m pip install -e .
   - cd ..
 
-# For yarn
-cache:
-  - '%LOCALAPPDATA%\\Yarn'
-
 build: off
 
 test_script:
