@@ -115,7 +115,7 @@ var DefaultTooltip = createComponent({
         h('span', { style: idStyle }, args.state.biggId),
         h('br'),
         // descriptive name
-        'name: ' + args.state.name,
+        'Hi2: ' + args.state.name,
         h('br'),
         // data
         'data: ' + (args.state.data && args.state.data !== '(nd)' ?
@@ -130,7 +130,7 @@ var DefaultTooltip = createComponent({
           { style: typeLabelStyle },
           capitalizeFirstLetter(args.state.type)))
     )
-  },
+  }
 })
 
 module.exports = {

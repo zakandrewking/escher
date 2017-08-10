@@ -6,6 +6,7 @@
 TAGS
 Escher.egg-info/
 .ipynb_checkpoints/
+lib/
 build/
 _build/
 env/

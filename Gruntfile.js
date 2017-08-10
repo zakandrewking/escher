@@ -1,105 +1,114 @@
-var package = require('./package.json')
+const webpackConfig = require('./webpack.config')
+// const webpackDevServerConfig = require('./webpack-dev-server.config')
+const escherPackage = require('./package.json')
 
 module.exports = function (grunt) {
-  // common tasks
-  var tasks = [ 'cssmin', 'concat', 'standard', 'browserify', 'extract_sourcemap', 'uglify',
-                'copy', ]
+  const build = ['clean', 'cssmin', 'concat', 'babel']
+  const bundle = [...build, 'webpack', 'uglify']
 
   // Project configuration
   grunt.initConfig({
-    // css
+    // CSS
     cssmin: {
       build: {
         files: {
-          'css/build/builder-embed.nomap.min.css': 'css/src/builder-embed.css',
-        },
+          'css/build/builder-embed.nomap.min.css': 'css/src/builder-embed.css'
+        }
       },
       dist: {
         options: {
           sourceMap: true,
-          sourceMapInlineSources: true,
+          sourceMapInlineSources: true
         },
         files: {
-          'css/dist/builder.min.css': 'css/src/builder.css',
-        },
-      },
+          'css/dist/builder.min.css': 'css/src/builder.css'
+        }
+      }
     },
     concat: {
       builder_embed: {
         options: {
           separator: '',
-          banner: "module.exports = {'version': '" + package.version + "', builder_embed: '",
-          footer: "'};",
+          banner: "module.exports = {'version': '" + escherPackage.version + "', builder_embed: '",
+          footer: "'};"
         },
         files: {
-          'js/src/inline.js': 'css/build/builder-embed.nomap.min.css',
-        },
-      },
-    },
-    // js
-    standard: {
-      options: {
-        fix: true,
-        ignore: ['js/src/complete.ly.js']
-      },
-      app: {
-        src: [
-          'js/src/**.*.js'
-        ]
+          'js/src/inline.js': 'css/build/builder-embed.nomap.min.css'
+        }
       }
     },
-    browserify: {
+
+    // Babel
+    babel: {
       options: {
-        transform: [
-          ['babelify', { presets: ['es2015'] }]
-        ],
-        browserifyOptions: {
-          standalone: 'escher',
-          debug: true,
-        },
+        sourceMap: true
       },
-      dist: {
-        files: {
-          'js/build/escher.js': [ 'js/src/main.js' ],
-        },
-      },
+      files: {
+        expand: true,
+        cwd: 'js/src',
+        src: ['**/*.js', '**/*.jsx'],
+        dest: 'js/lib',
+        ext: '.js'
+      }
     },
-    extract_sourcemap: {
-      dist: {
-        files: {
-          'js/dist': 'js/build/escher.js',
-        },
-      },
+    watch: {
+      scripts: {
+        files: ['js/src/*.js', 'js/src/*.jsx'],
+        tasks: ['babel']
+      }
     },
+
+    webpack: {
+      prod: webpackConfig
+    },
+
+    // 'webpack-dev-server': {
+    //      main: {
+    //             contentBase: 'dist',
+    //             port: 9999,
+    //             keepAlive: true
+    //         }
+    // },
+
     uglify: {
       options: {
         sourceMap: true,
-        sourceMapIn: 'js/dist/escher.js.map',
+        sourceMapIn: 'js/dist/escher.js.map'
       },
       dist: {
-        files: {
-          'js/dist/escher.min.js': 'js/dist/escher.js',
-        },
-      },
+        files: {'js/dist/escher.min.js': 'js/dist/escher.js'}
+      }
     },
+
+    clean: {
+      files: [
+        'js/lib/tests/helpers', 'js/lib/tests', 'js/lib/', 'js/dist/',
+        'css/build/', 'css/dist/', 'js/src/inline.js',
+        'js/lib/coverage/instrument/', 'js/lib/coverage/reports/',
+        'py/escher/package.json', 'py/escher/static/escher/',
+        'py/escher/static/lib/', 'py/escher/static/fonts/',
+        'py/escher/static/fonts/'
+      ]
+    },
+
     copy: {
       css: {
         src: 'css/src/builder.css',
         dest: 'css/dist/',
         expand: true,
-        flatten: true,
+        flatten: true
       },
       package: {
         src: 'package.json',
         dest: 'py/escher/',
         expand: true,
-        flatten: true,
+        flatten: true
       },
       escher: {
         src: [ 'js/dist/*', 'css/dist/*' ],
         dest: 'py/escher/static/escher/',
         expand: true,
-        flatten: true,
+        flatten: true
       },
       lib: {
         src: [
@@ -109,141 +118,123 @@ module.exports = function (grunt) {
         ],
         dest: 'py/escher/static/lib/',
         expand: true,
-        flatten: true,
+        flatten: true
       },
       fonts: {
         src: 'node_modules/bootstrap/dist/fonts/*',
         dest: 'py/escher/static/fonts/',
         expand: true,
-        flatten: true,
+        flatten: true
       },
       jsonschema: {
         src: 'jsonschema/*',
         dest: 'py/escher/static/jsonschema/',
         expand: true,
-        flatten: true,
-      },
+        flatten: true
+      }
     },
-    watch: {
-      grunt: {
-        files: 'Gruntfile.js',
-        tasks: tasks,
-      },
-      scripts: {
-        files: 'js/src/*.js',
-        tasks: tasks,
-      },
-      package: {
-        files: 'package.json',
-        tasks: 'copy',
-      },
-      options: {
-        livereload: true,
-      },
-    },
-    // testing and coverage
+
     env: {
       coverage: {
-        APP_DIR_FOR_CODE_COVERAGE: '../../coverage/instrument/js/src/',
-      },
+        APP_DIR_FOR_CODE_COVERAGE: '../../coverage/instrument/js/lib/'
+      }
     },
+
     instrument: {
-      files: 'js/src/*.js',
+      files: 'js/lib/*.js',
       options: {
         lazy: true,
-        basePath: 'js/src/coverage/instrument/',
-      },
+        basePath: 'js/lib/coverage/instrument/'
+      }
     },
+
     mochaTest: {
-      files: 'js/src/tests/*.js',
+      files: 'js/lib/tests/*.js'
     },
+
     storeCoverage: {
       options: {
-        dir: 'js/src/coverage/reports',
-      },
+        dir: 'js/lib/coverage/reports'
+      }
     },
+
     makeReport: {
-      src: 'js/src/coverage/reports/**/*.json',
+      src: 'js/lib/coverage/reports/**/*.json',
       options: {
         type: 'lcov',
-        dir: 'js/src/coverage/reports',
-        print: 'detail',
-      },
+        dir: 'js/lib/coverage/reports',
+        print: 'detail'
+      }
     },
+
     coveralls: {
-      src: 'js/src/coverage/reports/lcov.info',
+      src: 'js/lib/coverage/reports/lcov.info'
     },
-    clean: {
-      main: [
-        'js/build/', 'js/dist/', 'css/build/', 'css/dist/', 'js/src/inline.js',
-        'js/src/coverage/instrument/', 'js/src/coverage/reports/',
-        'py/escher/package.json', 'py/escher/static/escher/',
-        'py/escher/static/lib/', 'py/escher/static/fonts/',
-        'py/escher/static/fonts/',
-      ],
-    },
+
     gitadd: '*',
+
     gitpush: {
       tracking_tags: {
         options: {
-          tags: true,
-        },
+          tags: true
+        }
       },
       tracking: {
         options: {
-          tags: false,
-        },
-      },
+          tags: false
+        }
+      }
     },
+
     release: {
       // bump the version and commit, but do not push anything
       options: {
-        beforeRelease: [...tasks, 'gitadd'],
+        beforeRelease: [...bundle, 'gitadd'],
         tagName: 'v<%= version %>',
         push: false,
         pushTags: false,
-        npm: false,
-      },
+        npm: false
+      }
     },
     shell: {
       // publish to npm and pypi
       npm: {
-        command: 'npm publish',
+        command: 'npm publish'
       },
       pypi: {
-        command: 'cd py && python setup.py sdist bdist_wheel --universal upload -r pypi',
-      },
-    },
+        command: 'cd py && python setup.py sdist bdist_wheel --universal upload -r pypi'
+      }
+    }
   })
 
-  // basics
-  grunt.loadNpmTasks('grunt-contrib-watch')
-  grunt.loadNpmTasks('grunt-contrib-clean')
-  grunt.loadNpmTasks('grunt-contrib-copy')
-  // css
+  // Extensions
   grunt.loadNpmTasks('grunt-contrib-cssmin')
   grunt.loadNpmTasks('grunt-contrib-concat')
-  // js
-  grunt.loadNpmTasks('grunt-browserify')
-  grunt.loadNpmTasks('grunt-extract-sourcemap')
+  grunt.loadNpmTasks('grunt-babel')
+  grunt.loadNpmTasks('grunt-contrib-watch')
+  grunt.loadNpmTasks('grunt-webpack')
   grunt.loadNpmTasks('grunt-contrib-uglify')
-  // testing and coverage
+  grunt.loadNpmTasks('grunt-contrib-clean')
+  grunt.loadNpmTasks('grunt-contrib-copy')
   grunt.loadNpmTasks('grunt-mocha-test')
   grunt.loadNpmTasks('grunt-istanbul')
   grunt.loadNpmTasks('grunt-env')
   grunt.loadNpmTasks('grunt-coveralls')
-  //style
-  grunt.loadNpmTasks('grunt-standard')
-  // release
-  grunt.loadNpmTasks('grunt-git');
+  grunt.loadNpmTasks('grunt-git')
   grunt.loadNpmTasks('grunt-release')
   grunt.loadNpmTasks('grunt-shell')
 
-  // register tasks
-  grunt.registerTask('default', tasks)
-  grunt.registerTask('test', [ 'mochaTest' ])
-  grunt.registerTask('coverage', [ 'env:coverage', 'instrument', 'mochaTest',
-                                   'storeCoverage', 'makeReport', 'coveralls', ])
-  grunt.registerTask('publish', [ 'gitpush', ...tasks, 'shell:npm',
-                                  'shell:pypi', ])
+  // Register tasks
+  grunt.registerTask('build', build)
+  grunt.registerTask('buildw', [...build, 'watch'])
+  grunt.registerTask('bundle', bundle)
+  // grunt.registerTask('start', [...build, 'webpack-dev-server'])
+  grunt.registerTask('test', ['mochaTest'])
+  grunt.registerTask('coverage', [
+    'env:coverage', 'instrument', 'mochaTest',
+    'storeCoverage', 'makeReport', 'coveralls'
+  ])
+  grunt.registerTask('publish', [
+    'gitpush', ...bundle, 'shell:npm', 'shell:pypi'
+  ])
 }
