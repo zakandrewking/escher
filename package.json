@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "babel-core": "^6.25.0",
+    "babel-loader": "^7.1.1",
     "babel-plugin-transform-object-rest-spread": "^6.23.0",
     "babel-plugin-transform-react-jsx": "^6.24.1",
     "babel-preset-es2015": "^6.24.1",
@@ -82,7 +83,7 @@
     "build": "./node_modules/.bin/grunt build",
     "buildw": "./node_modules/.bin/grunt buildw",
     "bundle": "./node_modules/.bin/grunt bundle",
-    "start": " node_modules/.bin/webpack-dev-server --config webpack-dev-server.config.js",
+    "start": "./node_modules/.bin/webpack-dev-server --config webpack-dev-server.config.js",
     "test": "./node_modules/.bin/grunt test || true",
     "coverage": "./node_modules/.bin/grunt coverage"
   },
