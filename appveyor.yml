@@ -1,20 +1,20 @@
 environment:
   matrix:
-    - PYTHON: "C:\\Python27-x64"
-      NODEJS_VERSION: "8.3.0"
+    - python: 'C:\\Python27-x64'
+      nodejs_version: '7'
 
-    - PYTHON: "C:\\Python35-x64"
-      NODEJS_VERSION: "8.3.0"
+    - python: 'C:\\Python35-x64'
+      nodejs_version: '7'
 
-    - PYTHON: "C:\\Python36-x64"
-      NODEJS_VERSION: "8.3.0"
+    - python: 'C:\\Python36-x64'
+      nodejs_version: '7'
 
 install:
   # Add python to PATH
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - 'SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%'
   - python --version
   # Set node version
-  - ps: "Install-Product node $env:NODEJS_VERSION"
+  - ps: 'Install-Product node $env:NODEJS_VERSION'
   - node --version
   # Install js packages
   - yarn install
@@ -27,7 +27,7 @@ install:
 
 # For yarn
 cache:
-  - "%LOCALAPPDATA%\\Yarn"
+  - '%LOCALAPPDATA%\\Yarn'
 
 build: off
 
