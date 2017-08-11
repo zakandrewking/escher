@@ -13,6 +13,8 @@ install:
   - yarn install
   - yarn bundle
   - cd py
+  - pip install -U pip
+  - pip install swiglpk --only-binary swiglpk
   - pip install -e .
   - cd ..
 # Run tests
