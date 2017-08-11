@@ -55,9 +55,10 @@ Draw.prototype = {
 }
 module.exports = Draw
 
-function init (behavior, settings) {
+function init (behavior, settings, map) {
   this.behavior = behavior
   this.settings = settings
+  this.map = map
   this.callback_manager = new CallbackManager()
 }
 
@@ -201,6 +202,9 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
         label_mouseover_fn('reaction_label', d)
       })
       .on('mouseout', label_mouseout_fn)
+      .call(sel => {
+        this.map.callback_manager.run('update_tooltip', null, 'reaction_label', sel)
+      })
   }
 
   var add_gene_height = function (y, i) {

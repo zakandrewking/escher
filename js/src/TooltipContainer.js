@@ -8,38 +8,38 @@ const _ = require('underscore')
  * Manage the tooltip that lives in a PlacedDiv.
  * @param selection
  * @param map
- * @param tooltip_component
- * @param zoom_container
+ * @param tooltipComponent
+ * @param zoomContainer
  */
 var TooltipContainer = utils.make_class()
 // instance methods
 TooltipContainer.prototype = {
   init: init,
-  setup_map_callbacks: setup_map_callbacks,
-  setup_zoom_callbacks: setup_zoom_callbacks,
+  setupMapCallbacks: setupMapCallbacks,
+  setupZoomCallbacks: setupZoomCallbacks,
   is_visible: is_visible,
   show: show,
   hide: hide,
   delay_hide: delay_hide,
-  cancel_hide_tooltip: cancel_hide_tooltip
+  cancelHideTooltip: cancelHideTooltip
 }
 module.exports = TooltipContainer
 
 // definitions
-function init (selection, map, TooltipComponent, zoom_container) {
+function init (selection, map, TooltipComponent, zoomContainer) {
   var div = selection.append('div').attr('id', 'tooltip-container')
   this.placed_div = PlacedDiv(div, map)
 
   // Create callback manager
   this.callback_manager = CallbackManager()
 
-  div.on('mouseover', this.cancel_hide_tooltip.bind(this))
+  div.on('mouseover', this.cancelHideTooltip.bind(this))
   div.on('mouseleave', this.hide.bind(this))
 
   this.map = map
-  this.setup_map_callbacks(map)
-  this.zoom_container = zoom_container
-  this.setup_zoom_callbacks(zoom_container)
+  this.setupMapCallbacks(map)
+  this.zoomContainer = zoomContainer
+  this.setupZoomCallbacks(zoomContainer)
 
   // keep a reference to preact tooltip
   preact.render(
@@ -48,9 +48,10 @@ function init (selection, map, TooltipComponent, zoom_container) {
   )
 
   this.delay_hide_timeout = null
+  this.currentTooltip = null
 }
 
-function setup_map_callbacks (map) {
+function setupMapCallbacks (map) {
   map.callback_manager.set('show_tooltip.tooltip_container', function (type, d) {
     if (map.settings.get_option('enable_tooltips')) {
       this.show(type, d)
@@ -60,15 +61,29 @@ function setup_map_callbacks (map) {
                            this.hide.bind(this))
   map.callback_manager.set('delay_hide_tooltip.tooltip_container',
                            this.delay_hide.bind(this))
+  map.callback_manager.set('update_tooltip.tooltip_container', function (type, sel) {
+    if (this.currentTooltip !== null) {
+      let d = null
+      sel.each(data => {
+        if (data[type.replace('_label', '_id')] === this.currentTooltip.id) {
+          d = data
+        }
+      })
+      if (d === null) {
+        throw Error(`Could not find tooltip data for ${this.currentTooltip}`)
+      }
+      this.show(type, d)
+    }
+  }.bind(this))
 }
 
-function setup_zoom_callbacks (zoom_container) {
-  zoom_container.callback_manager.set('zoom.tooltip_container', function () {
+function setupZoomCallbacks (zoomContainer) {
+  zoomContainer.callback_manager.set('zoom.tooltip_container', function () {
     if (this.is_visible()) {
       this.hide()
     }
   }.bind(this))
-  zoom_container.callback_manager.set('go_to.tooltip_container', function () {
+  zoomContainer.callback_manager.set('go_to.tooltip_container', function () {
     if (this.is_visible()) {
       this.hide()
     }
@@ -85,16 +100,17 @@ function is_visible () {
 
 /**
  * Show and place the input.
- * @param {String} type - 'reaction_label', 'node_label', or 'gene_label'
+ * @param {string} type - 'reaction_label', 'node_label', or 'gene_label'
  * @param {Object} d - D3 data for DOM element
  * @param {Object} coords - Object with x and y coords. Cannot use coords from
  *                          'd' because gene labels do not have them.
  */
 function show (type, d) {
   // get rid of a lingering delayed hide
-  this.cancel_hide_tooltip()
+  this.cancelHideTooltip()
 
   if (_.contains([ 'reaction_label', 'node_label', 'gene_label' ], type)) {
+    this.currentTooltip = { type, id: d[type.replace('_label', '_id')] }
     var coords = { x: d.label_x, y: d.label_y + 10 }
     this.placed_div.place(coords)
     const data = {
@@ -102,7 +118,7 @@ function show (type, d) {
       name: d.name,
       loc: coords,
       data: d.data_string,
-      type: type.replace('_label', '').replace('node', 'metabolite'),
+      type: type.replace('_label', '').replace('node', 'metabolite')
     }
     this.callback_manager.run('setState', null, data)
   } else {
@@ -115,6 +131,7 @@ function show (type, d) {
  */
 function hide () {
   this.placed_div.hide()
+  this.currentTooltip = null
 }
 
 /**
@@ -127,7 +144,7 @@ function delay_hide () {
   }.bind(this), 100)
 }
 
-function cancel_hide_tooltip () {
+function cancelHideTooltip () {
   if (this.delay_hide_timeout !== null) {
     clearTimeout(this.delay_hide_timeout)
   }

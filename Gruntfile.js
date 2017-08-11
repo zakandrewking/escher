@@ -3,7 +3,7 @@ const webpackConfig = require('./webpack.config')
 const escherPackage = require('./package.json')
 
 module.exports = function (grunt) {
-  const build = ['clean', 'cssmin', 'concat', 'babel']
+  const build = ['clean', 'cssmin', 'concat', 'babel', 'copy:css']
   const bundle = [...build, 'webpack', 'uglify']
 
   // Project configuration

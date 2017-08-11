@@ -241,7 +241,7 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
   this.behavior = new Behavior(this, this.undo_stack)
 
   // draw manager
-  this.draw = new Draw(this.behavior, this.settings)
+  this.draw = new Draw(this.behavior, this.settings, this)
 
   // make a key manager
   this.key_manager = new KeyManager()

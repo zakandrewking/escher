@@ -59,7 +59,7 @@ class DefaultTooltip extends Component {
     }
   }
 
-  componentDidMount (props) {
+  componentDidMount () {
     this.props.callbackManager.set('setState', this.setState.bind(this))
   }
 
