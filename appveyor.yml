@@ -1,25 +1,25 @@
 environment:
   matrix:
-    - PYTHON: "C:\\Python27-x64"
-      NODEJS_VERSION: "6.2.2"
+    - python: 'C:\\Python27-x64'
+      nodejs_version: '7'
 
-    - PYTHON: "C:\\Python34-x64"
-      NODEJS_VERSION: "6.2.2"
+    - python: 'C:\\Python35-x64'
+      nodejs_version: '7'
 
-    - PYTHON: "C:\\Python35-x64"
-      NODEJS_VERSION: "6.2.2"
+    - python: 'C:\\Python36-x64'
+      nodejs_version: '7'
 
 install:
-  # add python to PATH
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  # Add python to PATH
+  - 'SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%'
   - python --version
-  # set node version
-  - ps: "Install-Product node $env:NODEJS_VERSION"
+  # Set node version
+  - ps: 'Install-Product node $env:NODEJS_VERSION'
   - node --version
-  # install js packages
-  - npm install
-  - npm run-script compile
-  # install python packages
+  # Install js packages
+  - yarn install
+  - yarn bundle
+  # Install python packages
   - python -m pip install --upgrade pip
   - cd py
   - python -m pip install -e .
@@ -28,7 +28,7 @@ install:
 build: off
 
 test_script:
-  - npm run-script test
+  - yarn test
   - cd py
   - python -m pytest
   - cd ..

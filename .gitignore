@@ -6,6 +6,7 @@
 TAGS
 Escher.egg-info/
 .ipynb_checkpoints/
+lib/
 build/
 _build/
 env/
@@ -29,3 +30,4 @@ py/escher/static/jsonschema/
 # site files
 1-0-0
 link-site
+.yarnclean
