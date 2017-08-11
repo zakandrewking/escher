@@ -1,7 +1,8 @@
-var utils = require('./utils')
-var PlacedDiv = require('./PlacedDiv')
-var tinier = require('tinier')
-var _ = require('underscore')
+import preact, { h } from 'preact'
+import CallbackManager from './CallbackManager'
+const utils = require('./utils')
+const PlacedDiv = require('./PlacedDiv')
+const _ = require('underscore')
 
 /**
  * Manage the tooltip that lives in a PlacedDiv.
@@ -20,14 +21,17 @@ TooltipContainer.prototype = {
   show: show,
   hide: hide,
   delay_hide: delay_hide,
-  cancel_hide_tooltip: cancel_hide_tooltip,
+  cancel_hide_tooltip: cancel_hide_tooltip
 }
 module.exports = TooltipContainer
 
 // definitions
-function init (selection, map, tooltip_component, zoom_container) {
+function init (selection, map, TooltipComponent, zoom_container) {
   var div = selection.append('div').attr('id', 'tooltip-container')
   this.placed_div = PlacedDiv(div, map)
+
+  // Create callback manager
+  this.callback_manager = CallbackManager()
 
   div.on('mouseover', this.cancel_hide_tooltip.bind(this))
   div.on('mouseleave', this.hide.bind(this))
@@ -37,16 +41,11 @@ function init (selection, map, tooltip_component, zoom_container) {
   this.zoom_container = zoom_container
   this.setup_zoom_callbacks(zoom_container)
 
-  // keep a reference to tinier tooltip
-  this.tooltip_component = tooltip_component
-  // if they pass in a function, then use that
-  this.tooltip_function = (_.isFunction(tooltip_component) ?
-                           function (state) { tooltip_component({ state: state, el: div.node() })} :
-                           null)
-  // if they pass in a tinier component, use that
-  this.tinier_tooltip = (tinier.checkType(tinier.COMPONENT, tooltip_component) ?
-                         tinier.run(tooltip_component, div.node()) :
-                         null)
+  // keep a reference to preact tooltip
+  preact.render(
+    <TooltipComponent callbackManager={this.callback_manager} />,
+     div.node()
+  )
 
   this.delay_hide_timeout = null
 }
@@ -105,11 +104,7 @@ function show (type, d) {
       data: d.data_string,
       type: type.replace('_label', '').replace('node', 'metabolite'),
     }
-    if (this.tooltip_function !== null) {
-      this.tooltip_function(data)
-    } else if (this.tinier_tooltip) {
-      this.tinier_tooltip.reducers.setContainerData(data)
-    }
+    this.callback_manager.run('setState', null, data)
   } else {
     throw new Error('Tooltip not supported for object type ' + type)
   }

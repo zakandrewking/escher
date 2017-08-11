@@ -3,15 +3,10 @@
 /**
  * Define a Tooltip component and interface with Tinier.
  */
+import { h, Component } from 'preact'
 
-var utils = require('./utils')
-var tinier = require('tinier')
-var createComponent = tinier.createComponent
-var createInterface = tinier.createInterface
-var typ = tinier.interfaceTypes
-var h = tinier.createElement
-var render = tinier.render
-var _ = require('underscore')
+const utils = require('./utils')
+const _ = require('underscore')
 
 // Define styles
 var containerStyle = {
@@ -25,19 +20,19 @@ var containerStyle = {
   'font-size': '16px',
   'font-family': 'sans-serif',
   'color': '#111',
-  'box-shadow': '4px 6px 20px 0px rgba(0, 0, 0, 0.4)',
+  'box-shadow': '4px 6px 20px 0px rgba(0, 0, 0, 0.4)'
 }
 
 var idStyle = {
   'font-size': '18px',
-  'font-weight': 'bold',
+  'font-weight': 'bold'
 }
 
 var buttonStyle = {
   'border-radius': '3px',
   'background-color': '#eee',
   'border': '1px solid #ddd',
-  'margin-top': '4px',
+  'margin-top': '4px'
 }
 
 var typeLabelStyle = {
@@ -49,74 +44,57 @@ var typeLabelStyle = {
   'border-radius': '2px',
   'font-size': '14px',
   'text-align': 'right',
-  'padding': '0px 5px',
+  'padding': '0px 5px'
 }
 
-function decompartmentalizeCheck (id, type) {
-  // ID without compartment, if metabolite.
-  return type === 'metabolite' ? utils.decompartmentalize(id)[0] : id
-
-}
-
-function capitalizeFirstLetter (s) {
-  return s === null ? s : s.charAt(0).toUpperCase() + s.slice(1)
-}
-
-// Create the component
-var DefaultTooltip = createComponent({
-  displayName: 'DefaultTooltip',
-
-  init: function () {
-    return {
-      biggId: '',
-      name: '',
-      loc: { x: 0, y: 0 },
+class DefaultTooltip extends Component {
+  constructor (props) {
+    super(props)
+    this.state = {
+      biggId: null,
+      name: null,
+      loc: null,
       data: null,
-      type: null,
+      type: null
     }
-  },
+  }
 
-  reducers: {
-    setContainerData: function (args) {
-      return Object.assign({}, args.state, {
-        biggId: args.biggId,
-        name: args.name,
-        loc: args.loc,
-        data: args.data,
-        type: args.type,
-      })
-    },
-  },
+  componentDidMount (props) {
+    this.props.callbackManager.set('setState', this.setState.bind(this))
+  }
 
-  methods: {
-    openBigg: function (args) {
-      var type = args.state.type
-      var biggId = args.state.biggId
-      var pref = 'http://bigg.ucsd.edu/'
-      var url = (type === 'gene' ?
-                 pref + 'search?query=' + biggId :
-                 pref + 'universal/' + type + 's/' + decompartmentalizeCheck(biggId, type))
-      window.open(url)
-    },
-  },
+  decompartmentalizeCheck (id, type) {
+  // ID without compartment, if metabolite.
+    return type === 'metabolite'
+    ? utils.decompartmentalize(id)[0]
+    : id
+  }
 
-  render: function (args) {
-    var decomp = decompartmentalizeCheck(args.state.biggId, args.state.type)
-    var biggButtonText = 'Open ' + decomp + ' in BiGG Models.'
+  openBigg (props) {
+    let type = this.props.state.type
+    let biggId = this.props.state.biggId
+    let pref = 'http://bigg.ucsd.edu/'
+    let url = (type === 'gene'
+              ? pref + 'search?query=' + biggId
+              : pref + 'universal/' + type + 's/' + this.decompartmentalizeCheck(biggId, type))
+    window.open(url)
+  }
 
-    return render(
-      // parent node
-      args.el,
-      // the new tooltip element
-      h('div',
-        // tooltip style
-        { style: containerStyle },
-        // id
-        h('span', { style: idStyle }, args.state.biggId),
-        h('br'),
-        // descriptive name
-        'Hi2: ' + args.state.name,
-        h('br'),
+  capitalizeFirstLetter (s) {
+    return s === null
+    ? s
+    : s.charAt(0).toUpperCase() + s.slice(1)
+  }
+
+  render (props) {
+    const decomp = this.decompartmentalizeCheck(this.props.biggId, this.props.type)
+    const biggButtonText = `Open ${decomp} in BiGG Models.`
+    return (
+      <div className='Tooltip' style={containerStyle}>
+        <div id='ID' style={idStyle}>
+        'Hi2: ' + {props.name}
+        </div>
+        {/* h('br'),
         // data
         'data: ' + (args.state.data && args.state.data !== '(nd)' ?
                     args.state.data : 'no data'),
@@ -128,11 +106,10 @@ var DefaultTooltip = createComponent({
         // type label
         h('div',
           { style: typeLabelStyle },
-          capitalizeFirstLetter(args.state.type)))
+          capitalizeFirstLetter(args.state.type))) */}
+      </div>
     )
   }
-})
-
-module.exports = {
-  DefaultTooltip: DefaultTooltip,
 }
+
+export default DefaultTooltip
