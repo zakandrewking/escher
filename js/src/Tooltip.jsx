@@ -70,9 +70,9 @@ class DefaultTooltip extends Component {
     : id
   }
 
-  openBigg (props) {
-    let type = this.props.state.type
-    let biggId = this.props.state.biggId
+  openBigg () {
+    let type = this.state.type
+    let biggId = this.state.biggId
     let pref = 'http://bigg.ucsd.edu/'
     let url = (type === 'gene'
               ? pref + 'search?query=' + biggId
@@ -86,27 +86,32 @@ class DefaultTooltip extends Component {
     : s.charAt(0).toUpperCase() + s.slice(1)
   }
 
-  render (props) {
-    const decomp = this.decompartmentalizeCheck(this.props.biggId, this.props.type)
+  render () {
+    const decomp = this.decompartmentalizeCheck(this.state.biggId, this.state.type)
     const biggButtonText = `Open ${decomp} in BiGG Models.`
     return (
       <div className='Tooltip' style={containerStyle}>
         <div id='ID' style={idStyle}>
-        'Hi2: ' + {props.name}
+          {this.state.biggId}
         </div>
-        {/* h('br'),
-        // data
-        'data: ' + (args.state.data && args.state.data !== '(nd)' ?
-                    args.state.data : 'no data'),
-        h('br'),
-        // BiGG Models button
-        h('button',
-          { style: buttonStyle, onClick: args.methods.openBigg, },
-          biggButtonText),
-        // type label
-        h('div',
-          { style: typeLabelStyle },
-          capitalizeFirstLetter(args.state.type))) */}
+        <div id='data'>
+          data: {(this.state.data && this.state.data !== '(nd)'
+          ? this.state.data
+          : 'no data')}
+        </div>
+        <button
+          id='biggIdButton'
+          style={buttonStyle}
+          onClick={() => this.openBigg()}
+          >
+          {biggButtonText}
+        </button>
+        <div
+          id='typeLabel'
+          style={typeLabelStyle}
+        >
+          {this.capitalizeFirstLetter(this.state.type)}
+        </div>
       </div>
     )
   }
