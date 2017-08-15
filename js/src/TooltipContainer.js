@@ -122,7 +122,6 @@ function show (type, d) {
       offset.y = -135 / windowScale
     }
     var coords = { x: d.label_x + offset.x, y: d.label_y + 10 + offset.y }
-    console.log(offset, coords, mapSize.width)
     this.placed_div.place(coords)
     const data = {
       biggId: d.bigg_id,
