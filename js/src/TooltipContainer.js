@@ -118,8 +118,8 @@ function show (type, d) {
     if (windowScale * d.label_x + windowTranslate.x + 500 > mapSize.width) {
       offset.x = -500 / windowScale
     }
-    if (windowScale * d.label_y + windowTranslate.y + 135 > mapSize.height) {
-      offset.y = -135 / windowScale
+    if (windowScale * d.label_y + windowTranslate.y + 185 > mapSize.height) {
+      offset.y = -185 / windowScale
     }
     var coords = { x: d.label_x + offset.x, y: d.label_y + 10 + offset.y }
     this.placed_div.place(coords)
