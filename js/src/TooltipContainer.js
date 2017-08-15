@@ -28,7 +28,7 @@ module.exports = TooltipContainer
 // definitions
 function init (selection, map, TooltipComponent, zoomContainer) {
   var div = selection.append('div').attr('id', 'tooltip-container')
-  this.placed_div = PlacedDiv(div, map)
+  this.placed_div = PlacedDiv(div, map, undefined, false)
 
   // Create callback manager
   this.callback_manager = CallbackManager()
@@ -111,7 +111,18 @@ function show (type, d) {
 
   if (_.contains([ 'reaction_label', 'node_label', 'gene_label' ], type)) {
     this.currentTooltip = { type, id: d[type.replace('_label', '_id')] }
-    var coords = { x: d.label_x, y: d.label_y + 10 }
+    var windowTranslate = this.zoomContainer.window_translate
+    var windowScale = this.zoomContainer.window_scale
+    var mapSize = this.map.get_size()
+    var offset = {x: 0, y: 0}
+    if (windowScale * d.label_x + windowTranslate.x + 500 > mapSize.width) {
+      offset.x = -500 / windowScale
+    }
+    if (windowScale * d.label_y + windowTranslate.y + 135 > mapSize.height) {
+      offset.y = -135 / windowScale
+    }
+    var coords = { x: d.label_x + offset.x, y: d.label_y + 10 + offset.y }
+    console.log(offset, coords, mapSize.width)
     this.placed_div.place(coords)
     const data = {
       biggId: d.bigg_id,

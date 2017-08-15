@@ -15,10 +15,11 @@ PlacedDiv.prototype = {
 }
 module.exports = PlacedDiv
 
-function init (div, map, displacement) {
+function init (div, map, displacement, shouldReposition) {
   this.div = div
   this.map = map
   this.displacement = displacement === undefined ? { x: 0, y: 0 } : displacement
+  this.shouldReposition = shouldReposition === undefined ? true : shouldReposition
 
   // begin hidden
   this.visible = true
@@ -40,19 +41,26 @@ function place (coords) {
   var window_translate = this.map.zoom_container.window_translate
   var window_scale = this.map.zoom_container.window_scale
   var map_size = this.map.get_size()
-  var left = Math.max(20,
+
+  if (this.shouldReposition) {
+    var left = Math.max(20,
                       Math.min(map_size.width - 270,
                                (window_scale * coords.x + window_translate.x -
                                 this.displacement.x)))
-  var top = Math.max(20,
-                     Math.min(map_size.height - 40,
-                              (window_scale * coords.y + window_translate.y -
-                               this.displacement.y)))
-  this.div.style('position', 'absolute')
+    var top = Math.max(20,
+                      Math.min(map_size.height - 40,
+                                (window_scale * coords.y + window_translate.y -
+                                this.displacement.y)))
+    this.div.style('position', 'absolute')
+      .style('display', 'block')
+      .style('left', left + 'px')
+      .style('top', top + 'px')
+  } else {
+    this.div.style('position', 'absolute')
     .style('display', 'block')
-    .style('left', left + 'px')
-    .style('top', top + 'px')
-
+    .style('left', (window_scale * coords.x + window_translate.x - this.displacement.x) + 'px')
+    .style('top', (window_scale * coords.y + window_translate.y - this.displacement.y) + 'px')
+  }
   this.visible = true
 }
 
