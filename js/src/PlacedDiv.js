@@ -15,12 +15,11 @@ PlacedDiv.prototype = {
 }
 module.exports = PlacedDiv
 
-function init (div, map, displacement, shouldReposition) {
+function init (div, map, displacement = { x: 0, y: 0 }, shouldReposition = true) {
   this.div = div
   this.map = map
-  this.displacement = displacement === undefined ? { x: 0, y: 0 } : displacement
-  this.shouldReposition = shouldReposition === undefined ? true : shouldReposition
-
+  this.displacement = displacement
+  this.shouldReposition = shouldReposition
   // begin hidden
   this.visible = true
   this.hide()

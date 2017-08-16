@@ -28,6 +28,7 @@ module.exports = TooltipContainer
 // definitions
 function init (selection, map, TooltipComponent, zoomContainer) {
   var div = selection.append('div').attr('id', 'tooltip-container')
+  this.TooltipComponent = TooltipComponent
   this.placed_div = PlacedDiv(div, map, undefined, false)
 
   // Create callback manager
@@ -40,6 +41,12 @@ function init (selection, map, TooltipComponent, zoomContainer) {
   this.setupMapCallbacks(map)
   this.zoomContainer = zoomContainer
   this.setupZoomCallbacks(zoomContainer)
+
+  // Attach a function to get size of tooltip
+  this.getTooltipSize = null
+  this.callback_manager.set('attachGetSize', getSizeFn => {
+    this.getTooltipSize = getSizeFn
+  })
 
   // keep a reference to preact tooltip
   preact.render(
@@ -114,6 +121,9 @@ function show (type, d) {
     var windowTranslate = this.zoomContainer.window_translate
     var windowScale = this.zoomContainer.window_scale
     var mapSize = this.map.get_size()
+    if (this.getTooltipSize !== null) {
+      console.log(this.getTooltipSize())
+    }
     var offset = {x: 0, y: 0}
     if (windowScale * d.label_x + windowTranslate.x + 500 > mapSize.width) {
       offset.x = -500 / windowScale
