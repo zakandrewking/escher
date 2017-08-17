@@ -122,7 +122,7 @@ function show (type, d) {
     var windowScale = this.zoomContainer.window_scale
     var mapSize = this.map.get_size()
     if (this.getTooltipSize !== null) {
-      console.log(this.getTooltipSize())
+      //  console.log(this.getTooltipSize())
     }
     var offset = {x: 0, y: 0}
     if (windowScale * d.label_x + windowTranslate.x + 500 > mapSize.width) {
