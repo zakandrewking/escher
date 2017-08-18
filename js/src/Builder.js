@@ -308,12 +308,12 @@ function load_map (map_data, should_update_data) {
                        this.options.enable_search)
   }
   // zoom container status changes
-  this.zoom_container.callback_manager.set('svg_start', function () {
-    this.map.set_status('Drawing ...')
-  }.bind(this))
-  this.zoom_container.callback_manager.set('svg_finish', function () {
-    this.map.set_status('')
-  }.bind(this))
+  // this.zoom_container.callback_manager.set('svg_start', function () {
+  //   this.map.set_status('Drawing ...')
+  // }.bind(this))
+  // this.zoom_container.callback_manager.set('svg_finish', function () {
+  //   this.map.set_status('')
+  // }.bind(this))
 
   // Set the data for the map
   if (should_update_data)
