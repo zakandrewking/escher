@@ -48,21 +48,6 @@ var typeLabelStyle = {
 }
 
 class DefaultTooltip extends Component {
-  constructor (props) {
-    super(props)
-    this.state = {
-      biggId: null,
-      name: null,
-      loc: null,
-      data: null,
-      type: null
-    }
-  }
-
-  componentDidMount () {
-    this.props.callbackManager.set('setState', this.setState.bind(this))
-  }
-
   decompartmentalizeCheck (id, type) {
   // ID without compartment, if metabolite.
     return type === 'metabolite'
@@ -71,8 +56,8 @@ class DefaultTooltip extends Component {
   }
 
   openBigg () {
-    let type = this.state.type
-    let biggId = this.state.biggId
+    let type = this.props.type
+    let biggId = this.props.biggId
     let pref = 'http://bigg.ucsd.edu/'
     let url = (type === 'gene'
               ? pref + 'search?query=' + biggId
@@ -87,16 +72,16 @@ class DefaultTooltip extends Component {
   }
 
   render () {
-    const decomp = this.decompartmentalizeCheck(this.state.biggId, this.state.type)
+    const decomp = this.decompartmentalizeCheck(this.props.biggId, this.props.type)
     const biggButtonText = `Open ${decomp} in BiGG Models.`
     return (
       <div className='Tooltip' style={containerStyle}>
         <div id='ID' style={idStyle}>
-          {this.state.biggId}
+          {this.props.biggId}
         </div>
         <div id='data'>
-          data: {(this.state.data && this.state.data !== '(nd)'
-          ? this.state.data
+          data: {(this.props.data && this.props.data !== '(nd)'
+          ? this.props.data
           : 'no data')}
         </div>
         <button
@@ -110,7 +95,7 @@ class DefaultTooltip extends Component {
           id='typeLabel'
           style={typeLabelStyle}
         >
-          {this.capitalizeFirstLetter(this.state.type)}
+          {this.capitalizeFirstLetter(this.props.type)}
         </div>
       </div>
     )

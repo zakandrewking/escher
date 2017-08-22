@@ -4,20 +4,15 @@ import { h, Component } from 'preact'
 class TooltipComponentContainer extends Component {
   constructor (props) {
     super(props)
-    this.state = null
+    this.state = {}
   }
   componentDidMount () {
-    this.props.callbackManager.set('setState', this.setState.bind(this))
-    console.log(this.state)
+    this.props.callbackManager.set('setState', s => {
+      return this.setState.bind(this)(s)
+    })
   }
   render () {
-    const TooltipComponent = this.props.TooltipComponent
-    return (
-      <TooltipComponent
-        callbackManager={this.props.callbackManager}
-        stateData={this.state}
-      />
-    )
+    return <this.props.TooltipComponent {...this.state} />
   }
 }
 

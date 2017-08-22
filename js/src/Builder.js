@@ -566,7 +566,7 @@ function _reaction_check_add_abs () {
  * @param {Object[]} props - Array of props that the tooltip will use
  */
 function pass_tooltip_component_props (props) {
-  this.callback_manager.run('setState', null, props)
+  this.tooltip_container.callback_manager.run('setState', null, props)
 }
 
 /**
@@ -579,7 +579,7 @@ function set_reaction_data (data) {
   if (message_fn) {
     message_fn()
   } else {
-    this.map.set_status('')
+    // this.map.set_status('')
   }
 }
 
@@ -851,6 +851,10 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
         if (d.text == 'Clear gene data' && this.options.gene_data === null)
           return true
         if (d.text == 'Clear metabolite data' && this.options.metabolite_data === null)
+          return true
+        if (d.text == 'Load reaction data')
+          return true
+        if (d.text == 'Load gene data')
           return true
         return null
       }.bind(this))
