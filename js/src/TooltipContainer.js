@@ -1,5 +1,6 @@
 import preact, { h } from 'preact'
 import CallbackManager from './CallbackManager'
+import TooltipComponentContainer from './TooltipComponentContainer'
 const utils = require('./utils')
 const PlacedDiv = require('./PlacedDiv')
 const _ = require('underscore')
@@ -50,7 +51,10 @@ function init (selection, map, TooltipComponent, zoomContainer) {
 
   // keep a reference to preact tooltip
   preact.render(
-    <TooltipComponent callbackManager={this.callback_manager} />,
+    <TooltipComponentContainer
+      callbackManager={this.callback_manager}
+      TooltipComponent={this.TooltipComponent}
+      />,
      div.node()
   )
 

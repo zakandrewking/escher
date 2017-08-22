@@ -39,6 +39,7 @@ Builder.prototype = {
   rotate_mode: rotate_mode,
   text_mode: text_mode,
   _reaction_check_add_abs: _reaction_check_add_abs,
+  pass_tooltip_component_props: pass_tooltip_component_props,
   set_reaction_data: set_reaction_data,
   set_metabolite_data: set_metabolite_data,
   set_gene_data: set_gene_data,
@@ -558,6 +559,14 @@ function _reaction_check_add_abs () {
     }.bind(this)
   }
   return null
+}
+
+/**
+ * Function to get props for the tooltip component
+ * @param {Object[]} props - Array of props that the tooltip will use
+ */
+function pass_tooltip_component_props (props) {
+  this.callback_manager.run('setState', null, props)
 }
 
 /**
