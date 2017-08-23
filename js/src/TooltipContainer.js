@@ -31,6 +31,7 @@ function init (selection, map, TooltipComponent, zoomContainer) {
   var div = selection.append('div').attr('id', 'tooltip-container')
   this.TooltipComponent = TooltipComponent
   this.placed_div = PlacedDiv(div, map, undefined, false)
+  this.tooltipRef = null
 
   // Create callback manager
   this.callback_manager = CallbackManager()
@@ -54,6 +55,7 @@ function init (selection, map, TooltipComponent, zoomContainer) {
     <TooltipComponentContainer
       callbackManager={this.callback_manager}
       TooltipComponent={this.TooltipComponent}
+      tooltipRef={instance => { this.tooltipRef = instance }}
       />,
      div.node()
   )
@@ -121,6 +123,10 @@ function show (type, d) {
   this.cancelHideTooltip()
 
   if (_.contains([ 'reaction_label', 'node_label', 'gene_label' ], type)) {
+    // Use a default height if the ref hasn't been connected yet
+    const tooltipSize = this.tooltipRef !== null && this.tooltipRef.getSize
+      ? this.tooltipRef.getSize()
+      : { width: 270, height: 100 }
     this.currentTooltip = { type, id: d[type.replace('_label', '_id')] }
     var windowTranslate = this.zoomContainer.window_translate
     var windowScale = this.zoomContainer.window_scale
@@ -129,11 +135,11 @@ function show (type, d) {
       //  console.log(this.getTooltipSize())
     }
     var offset = {x: 0, y: 0}
-    if (windowScale * d.label_x + windowTranslate.x + 500 > mapSize.width) {
-      offset.x = -500 / windowScale
+    if (windowScale * d.label_x + windowTranslate.x + tooltipSize.width > mapSize.width) {
+      offset.x = -tooltipSize.width / windowScale
     }
-    if (windowScale * d.label_y + windowTranslate.y + 185 > mapSize.height) {
-      offset.y = -185 / windowScale
+    if (windowScale * d.label_y + windowTranslate.y + tooltipSize.height > mapSize.height) {
+      offset.y = -tooltipSize.height / windowScale
     }
     var coords = { x: d.label_x + offset.x, y: d.label_y + 10 + offset.y }
     this.placed_div.place(coords)

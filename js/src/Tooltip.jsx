@@ -1,4 +1,5 @@
-/* global window, XMLHttpRequest */
+/* global window */
+/** @jsx h */
 
 /**
  * Define a Tooltip component and interface with Tinier.
