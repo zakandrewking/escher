@@ -309,12 +309,12 @@ function load_map (map_data, should_update_data) {
                        this.options.enable_search)
   }
   // zoom container status changes
-  // this.zoom_container.callback_manager.set('svg_start', function () {
-  //   this.map.set_status('Drawing ...')
-  // }.bind(this))
-  // this.zoom_container.callback_manager.set('svg_finish', function () {
-  //   this.map.set_status('')
-  // }.bind(this))
+  this.zoom_container.callback_manager.set('svg_start', function () {
+    this.map.set_status('Drawing ...')
+  }.bind(this))
+  this.zoom_container.callback_manager.set('svg_finish', function () {
+    this.map.set_status('')
+  }.bind(this))
 
   // Set the data for the map
   if (should_update_data)
@@ -579,7 +579,7 @@ function set_reaction_data (data) {
   if (message_fn) {
     message_fn()
   } else {
-    // this.map.set_status('')
+    this.map.set_status('')
   }
 }
 
@@ -851,10 +851,6 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
         if (d.text == 'Clear gene data' && this.options.gene_data === null)
           return true
         if (d.text == 'Clear metabolite data' && this.options.metabolite_data === null)
-          return true
-        if (d.text == 'Load reaction data')
-          return true
-        if (d.text == 'Load gene data')
           return true
         return null
       }.bind(this))
