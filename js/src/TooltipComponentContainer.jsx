@@ -2,11 +2,10 @@
 import { h, Component } from 'preact'
 
 class TooltipComponentContainer extends Component {
-  constructor (props) {
-    super(props)
-    console.log('instantiating new container')
-    this.state = {}
-  }
+  // constructor (props) {
+  //   super(props)
+  //   this.state = {}
+  // }
   componentDidMount () {
     this.props.callbackManager.set('setState', this.setState.bind(this))
   }

@@ -5441,10 +5441,6 @@ timers-browserify@^2.0.2:
     global "^4.3.2"
     setimmediate "^1.0.4"
 
-tinier@^0.5.1:
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/tinier/-/tinier-0.5.1.tgz#16912cdb6bc023010b1d175d5a06fd1d23012590"
-
 tiny-lr-fork@0.0.5:
   version "0.0.5"
   resolved "https://registry.yarnpkg.com/tiny-lr-fork/-/tiny-lr-fork-0.0.5.tgz#1e99e1e2a8469b736ab97d97eefa98c71f76ed0a"
