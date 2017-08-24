@@ -2,7 +2,7 @@
 /** @jsx h */
 
 /**
- * Define a Tooltip component and interface with Tinier.
+ * Define a Tooltip component and interface with Preact.
  */
 import { h, Component } from 'preact'
 

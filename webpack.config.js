@@ -5,6 +5,7 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'js/dist'),
     filename: 'escher.js',
+    library: 'escher',
     libraryTarget: 'umd'
   },
   devtool: 'source-map'

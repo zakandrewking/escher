@@ -16,8 +16,8 @@ var TooltipContainer = utils.make_class()
 // instance methods
 TooltipContainer.prototype = {
   init: init,
-  setupMapCallbacks: setupMapCallbacks,
-  setupZoomCallbacks: setupZoomCallbacks,
+  setup_map_callbacks: setup_map_callbacks,
+  setup_zoom_callbacks: setup_zoom_callbacks,
   is_visible: is_visible,
   show: show,
   hide: hide,
@@ -27,28 +27,29 @@ TooltipContainer.prototype = {
 module.exports = TooltipContainer
 
 // definitions
-function init (selection, map, TooltipComponent, zoomContainer) {
-  var div = selection.append('div').attr('id', 'tooltip-container')
+function init (selection, TooltipComponent, zoomContainer) {
+  this.div = selection.append('div').attr('id', 'tooltip-container')
   this.TooltipComponent = TooltipComponent
-  this.placed_div = PlacedDiv(div, map, undefined, false)
   this.tooltipRef = null
+
+  this.zoomContainer = zoomContainer
+  this.setup_zoom_callbacks(zoomContainer)
 
   // Create callback manager
   this.callback_manager = CallbackManager()
 
-  div.on('mouseover', this.cancelHideTooltip.bind(this))
-  div.on('mouseleave', this.hide.bind(this))
-
-  this.map = map
-  this.setupMapCallbacks(map)
-  this.zoomContainer = zoomContainer
-  this.setupZoomCallbacks(zoomContainer)
+  this.div.on('mouseover', this.cancelHideTooltip.bind(this))
+  this.div.on('mouseleave', this.hide.bind(this))
 
   // Attach a function to get size of tooltip
   this.getTooltipSize = null
   this.callback_manager.set('attachGetSize', getSizeFn => {
     this.getTooltipSize = getSizeFn
   })
+
+  this.map = null
+  this.delay_hide_timeout = null
+  this.currentTooltip = null
 
   // keep a reference to preact tooltip
   preact.render(
@@ -57,14 +58,14 @@ function init (selection, map, TooltipComponent, zoomContainer) {
       TooltipComponent={this.TooltipComponent}
       tooltipRef={instance => { this.tooltipRef = instance }}
       />,
-     div.node()
+     this.div.node()
   )
-
-  this.delay_hide_timeout = null
-  this.currentTooltip = null
 }
 
-function setupMapCallbacks (map) {
+function setup_map_callbacks (map) {
+  this.map = map
+  this.placed_div = PlacedDiv(this.div, map, undefined, false)
+
   map.callback_manager.set('show_tooltip.tooltip_container', function (type, d) {
     if (map.settings.get_option('enable_tooltips')) {
       this.show(type, d)
@@ -90,7 +91,7 @@ function setupMapCallbacks (map) {
   }.bind(this))
 }
 
-function setupZoomCallbacks (zoomContainer) {
+function setup_zoom_callbacks (zoomContainer) {
   zoomContainer.callback_manager.set('zoom.tooltip_container', function () {
     if (this.is_visible()) {
       this.hide()
@@ -130,7 +131,7 @@ function show (type, d) {
     this.currentTooltip = { type, id: d[type.replace('_label', '_id')] }
     var windowTranslate = this.zoomContainer.window_translate
     var windowScale = this.zoomContainer.window_scale
-    var mapSize = this.map.get_size()
+    var mapSize = this.map !== null ? this.map.get_size() : { width: 1000, height: 1000 }
     if (this.getTooltipSize !== null) {
       //  console.log(this.getTooltipSize())
     }

@@ -47,6 +47,7 @@ Builder.prototype = {
   _toggle_direction_buttons: _toggle_direction_buttons,
   _set_up_menu: _set_up_menu,
   _set_up_button_panel: _set_up_button_panel,
+  _create_status: _create_status,
   _setup_status: _setup_status,
   _setup_quick_jump: _setup_quick_jump,
   _setup_modes: _setup_modes,
@@ -204,6 +205,27 @@ function init (map_data, model_data, embedded_css, selection, options) {
     this.callback_manager.set('first_load', this.options.first_load_callback)
   }
 
+  // Set up the zoom container
+  this.zoom_container = new ZoomContainer(this.selection,
+                                          this.options.scroll_behavior,
+                                          this.options.use_3d_transform,
+                                          this.options.fill_screen)
+  // Zoom container status changes
+  this.zoom_container.callback_manager.set('svg_start', function () {
+    if (this.map) this.map.set_status('Drawing ...')
+  }.bind(this))
+  this.zoom_container.callback_manager.set('svg_finish', function () {
+    if (this.map) this.map.set_status('')
+  }.bind(this))
+
+  // Set up the tooltip container
+  this.tooltip_container = new TooltipContainer(this.selection,
+                                                this.options.tooltip_component,
+                                                this.zoom_container)
+
+  // Status in both modes
+  this._create_status(this.selection)
+
   // Load the model, map, and update data in both
   this.load_model(this.model_data, false)
   this.load_map(this.map_data, false)
@@ -227,6 +249,9 @@ function init (map_data, model_data, embedded_css, selection, options) {
         }
       }
     }.bind(this))
+
+  // Set up quick jump
+  this._setup_quick_jump(this.selection)
 
   this.callback_manager.run('first_load', this)
 
@@ -273,13 +298,8 @@ function load_map (map_data, should_update_data) {
   var shift_key_on = false
 
   // remove the old builder
-  utils.remove_child_nodes(this.selection)
+  utils.remove_child_nodes(this.zoom_container.zoomed_sel)
 
-  // set up the zoom container
-  this.zoom_container = new ZoomContainer(this.selection,
-                                          this.options.scroll_behavior,
-                                          this.options.use_3d_transform,
-                                          this.options.fill_screen)
   var zoomed_sel = this.zoom_container.zoomed_sel
   var svg = this.zoom_container.svg
 
@@ -308,13 +328,9 @@ function load_map (map_data, should_update_data) {
                        this.options.canvas_size_and_loc,
                        this.options.enable_search)
   }
-  // zoom container status changes
-  this.zoom_container.callback_manager.set('svg_start', function () {
-    this.map.set_status('Drawing ...')
-  }.bind(this))
-  this.zoom_container.callback_manager.set('svg_finish', function () {
-    this.map.set_status('')
-  }.bind(this))
+
+  // Connect status bar
+  this._setup_status(this.map)
 
   // Set the data for the map
   if (should_update_data)
@@ -328,10 +344,8 @@ function load_map (map_data, should_update_data) {
   this.text_edit_input = new TextEditInput(this.selection, this.map,
                                            this.zoom_container)
 
-  // Set up the tooltip container
-  this.tooltip_container = new TooltipContainer(this.selection, this.map,
-                                                this.options.tooltip_component,
-                                                this.zoom_container)
+  // Connect the tooltip
+  this.tooltip_container.setup_map_callbacks(this.map)
 
   // Set up the Brush
   this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group')
@@ -439,12 +453,6 @@ function load_map (map_data, should_update_data) {
       this.map.zoom_extent_canvas()
     }
   }
-
-  // Status in both modes
-  var status = this._setup_status(this.selection, this.map)
-
-  // Set up quick jump
-  this._setup_quick_jump(this.selection)
 
   // Start in zoom mode for builder, view mode for viewer
   if (this.options.enable_editing) {
@@ -1184,12 +1192,12 @@ function _toggle_direction_buttons(on_off) {
   this.direction_buttons.style('display', on_off ? 'block' : 'none')
 }
 
-function _setup_status (selection, map) {
-  var status_bar = selection.append('div').attr('id', 'status')
-  map.callback_manager.set('set_status', function (status) {
-    status_bar.html(status)
-  })
-  return status_bar
+function _create_status (selection) {
+  this.status_bar = selection.append('div').attr('id', 'status')
+}
+
+function _setup_status (map) {
+  map.callback_manager.set('set_status', status => this.status_bar.html(status))
 }
 
 function _setup_quick_jump (selection) {

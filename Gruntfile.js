@@ -220,7 +220,7 @@ module.exports = function (grunt) {
   grunt.registerTask('build', build)
   grunt.registerTask('buildw', [...build, 'watch'])
   grunt.registerTask('bundle', bundle)
-  grunt.registerTask('test', ['mochaTest'])
+  grunt.registerTask('test', [...build, 'mochaTest'])
   grunt.registerTask('coverage', [
     'env:coverage', 'instrument', 'mochaTest',
     'storeCoverage', 'makeReport', 'coveralls'
