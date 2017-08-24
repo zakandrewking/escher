@@ -25,33 +25,30 @@ TooltipContainer.prototype = {
 module.exports = TooltipContainer
 
 // definitions
-function init (selection, map, tooltip_component, zoom_container) {
-  var div = selection.append('div').attr('id', 'tooltip-container')
-  this.placed_div = PlacedDiv(div, map)
+function init (selection, tooltip_component, zoom_container) {
+  this.div = selection.append('div').attr('id', 'tooltip-container')
+  this.div.on('mouseover', this.cancel_hide_tooltip.bind(this))
+  this.div.on('mouseleave', this.hide.bind(this))
 
-  div.on('mouseover', this.cancel_hide_tooltip.bind(this))
-  div.on('mouseleave', this.hide.bind(this))
-
-  this.map = map
-  this.setup_map_callbacks(map)
-  this.zoom_container = zoom_container
   this.setup_zoom_callbacks(zoom_container)
 
   // keep a reference to tinier tooltip
   this.tooltip_component = tooltip_component
   // if they pass in a function, then use that
   this.tooltip_function = (_.isFunction(tooltip_component) ?
-                           function (state) { tooltip_component({ state: state, el: div.node() })} :
+                           function (state) { tooltip_component({ state: state, el: this.div.node() })} :
                            null)
   // if they pass in a tinier component, use that
   this.tinier_tooltip = (tinier.checkType(tinier.COMPONENT, tooltip_component) ?
-                         tinier.run(tooltip_component, div.node()) :
+                         tinier.run(tooltip_component, this.div.node()) :
                          null)
 
   this.delay_hide_timeout = null
 }
 
 function setup_map_callbacks (map) {
+  this.placed_div = PlacedDiv(this.div, map)
+
   map.callback_manager.set('show_tooltip.tooltip_container', function (type, d) {
     if (map.settings.get_option('enable_tooltips')) {
       this.show(type, d)
