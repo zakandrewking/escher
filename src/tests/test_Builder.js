@@ -1,4 +1,4 @@
-const Builder = require('../Builder')
+const Builder = require('../Builder').default
 
 const d3_body = require('./helpers/d3_body')
 

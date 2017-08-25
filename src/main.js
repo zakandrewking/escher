@@ -33,7 +33,7 @@
 
 module.exports = {
   version: ESCHER_VERSION,
-  Builder: require('./Builder'),
+  Builder: require('./Builder').default,
   Map: require('./Map'),
   Behavior: require('./Behavior'),
   KeyManager: require('./KeyManager'),
