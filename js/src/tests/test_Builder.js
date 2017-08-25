@@ -1,5 +1,5 @@
 const require_helper = require('./helpers/require_helper')
-const Builder = require_helper('Builder')
+const Builder = require_helper('Builder').default
 
 const d3_body = require('./helpers/d3_body')
 

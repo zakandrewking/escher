@@ -30,7 +30,7 @@
 
 module.exports = {
   version: require('./inline').version,
-  Builder: require('./Builder'),
+  Builder: require('./Builder').default,
   Map: require('./Map'),
   Behavior: require('./Behavior'),
   KeyManager: require('./KeyManager'),

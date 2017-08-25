@@ -133,6 +133,4 @@ var DefaultTooltip = createComponent({
   },
 })
 
-module.exports = {
-  DefaultTooltip: DefaultTooltip,
-}
+module.exports = DefaultTooltip

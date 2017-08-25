@@ -141,7 +141,12 @@ module.exports = function (grunt) {
     },
 
     mochaTest: {
-      files: 'js/lib/tests/*.js'
+      test: {
+        options: {
+          require: 'babel-register'
+        },
+        src: 'js/src/tests/*.js'
+      }
     },
 
     storeCoverage: {
