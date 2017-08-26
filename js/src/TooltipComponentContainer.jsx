@@ -10,7 +10,6 @@ class TooltipComponentContainer extends Component {
     this.props.callbackManager.set('setState', this.setState.bind(this))
   }
   render () {
-    console.log(this.state)
     return <this.props.TooltipComponent
       {...this.state}
       ref={this.props.tooltipRef} />
