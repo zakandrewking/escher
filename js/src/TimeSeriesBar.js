@@ -46,7 +46,7 @@ function init (sel, map, builder, type_of_data) {
   var container = sel.append('div').append('div')
     .attr('class', 'settings-box')
     .attr('id', 'container')
-    .style('display', 'block') // TODO: remove this comment in final version
+    //.style('display', 'block') // TODO: remove this comment in final version
 
   var max_width = container.node().getBoundingClientRect().width
 
@@ -682,17 +682,17 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
   }
 }
 
-function toggleDifferenceMode (builder) {
-
-  if (builder.difference_mode) {
-    builder.difference_mode = false
-    builder.reference = 0
-    builder.target = 0
-  } else {
-    builder.difference_mode = true
-  }
-
-}
+// function toggleDifferenceMode (builder) {
+//
+//   if (builder.difference_mode) {
+//     builder.difference_mode = false
+//     builder.reference = 0
+//     builder.target = 0
+//   } else {
+//     builder.difference_mode = true
+//   }
+//
+// }
 
 function showDifferenceData (builder) {
   toggle_chart(false)
@@ -725,10 +725,8 @@ function toggle (on_off) {
     // TODO: reset all data here or keep for animation in background?
     this.map.highlight(null)
 
-    // TODO: set this to 'none'
-    this.selection.style('display', 'block')
-
-    // container.style('display', 'none')
+    // TODO: set this to 'none' in final version
+    this.selection.style('display', 'none')
 
     // TODO: run the show callback. why?
     // this.callback_manager.run('hide')
