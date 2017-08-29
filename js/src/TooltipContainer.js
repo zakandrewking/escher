@@ -136,11 +136,24 @@ function show (type, d) {
       //  console.log(this.getTooltipSize())
     }
     var offset = {x: 0, y: 0}
-    if (windowScale * d.label_x + windowTranslate.x + tooltipSize.width > mapSize.width) {
-      offset.x = -tooltipSize.width / windowScale
-    }
-    if (windowScale * d.label_y + windowTranslate.y + tooltipSize.height > mapSize.height) {
-      offset.y = -tooltipSize.height / windowScale
+    if (mapSize.width < 500) {
+      if (windowScale * d.label_x + windowTranslate.x + tooltipSize.width > mapSize.width) {
+        offset.x = -(windowScale * d.label_x + windowTranslate.x + tooltipSize.width - mapSize.width) / windowScale
+      }
+      if (windowScale * d.label_y + windowTranslate.y + tooltipSize.height > mapSize.height) {
+        offset.y = -(windowScale * d.label_y + windowTranslate.y + tooltipSize.height - mapSize.height) / windowScale
+      }
+    } else {
+      if (windowScale * d.label_x + windowTranslate.x + 0.5 * tooltipSize.width > mapSize.width) {
+        offset.x = -tooltipSize.width / windowScale
+      } else if (windowScale * d.label_x + windowTranslate.x + tooltipSize.width > mapSize.width) {
+        offset.x = -(windowScale * d.label_x + windowTranslate.x + tooltipSize.width - mapSize.width) / windowScale
+      }
+      if (windowScale * d.label_y + windowTranslate.y + 0.5 * tooltipSize.height > mapSize.height) {
+        offset.y = -tooltipSize.height / windowScale
+      } else if (windowScale * d.label_y + windowTranslate.y + tooltipSize.height > mapSize.height) {
+        offset.y = -(windowScale * d.label_y + windowTranslate.y + tooltipSize.height - mapSize.height) / windowScale
+      }
     }
     var coords = { x: d.label_x + offset.x, y: d.label_y + 10 + offset.y }
     this.placed_div.place(coords)
