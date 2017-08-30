@@ -140,8 +140,8 @@ function show (type, d) {
       if (windowScale * d.label_x + windowTranslate.x + tooltipSize.width > mapSize.width) {
         offset.x = -(windowScale * d.label_x + windowTranslate.x + tooltipSize.width - mapSize.width) / windowScale
       }
-      if (windowScale * d.label_y + windowTranslate.y + tooltipSize.height > mapSize.height) {
-        offset.y = -(windowScale * d.label_y + windowTranslate.y + tooltipSize.height - mapSize.height) / windowScale
+      if (windowScale * d.label_y + windowTranslate.y + tooltipSize.height > mapSize.height - 74) {
+        offset.y = -(windowScale * d.label_y + windowTranslate.y + tooltipSize.height - mapSize.height + 77) / windowScale
       }
     } else {
       if (windowScale * d.label_x + windowTranslate.x + 0.5 * tooltipSize.width > mapSize.width) {
@@ -149,10 +149,10 @@ function show (type, d) {
       } else if (windowScale * d.label_x + windowTranslate.x + tooltipSize.width > mapSize.width) {
         offset.x = -(windowScale * d.label_x + windowTranslate.x + tooltipSize.width - mapSize.width) / windowScale
       }
-      if (windowScale * d.label_y + windowTranslate.y + 0.5 * tooltipSize.height > mapSize.height) {
-        offset.y = -tooltipSize.height / windowScale
-      } else if (windowScale * d.label_y + windowTranslate.y + tooltipSize.height > mapSize.height) {
-        offset.y = -(windowScale * d.label_y + windowTranslate.y + tooltipSize.height - mapSize.height) / windowScale
+      if (windowScale * d.label_y + windowTranslate.y + 0.5 * tooltipSize.height > mapSize.height - 45) {
+        offset.y = -(tooltipSize.height) / windowScale
+      } else if (windowScale * d.label_y + windowTranslate.y + tooltipSize.height > mapSize.height - 45) {
+        offset.y = -(windowScale * d.label_y + windowTranslate.y + tooltipSize.height - mapSize.height + 47) / windowScale
       }
     }
     var coords = { x: d.label_x + offset.x, y: d.label_y + 10 + offset.y }

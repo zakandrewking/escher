@@ -52,9 +52,9 @@ function init (selection, scroll_behavior, use_3d_transform, fill_screen) {
   selection.classed('escher-container', true)
 
   // Stop scrolling on mobile
-  selection.on('touchstart touchmove', function () {
-    d3_selection.event.stopPropagation()
-  })
+  // selection.on('touchstart touchmove', function () {
+  //   d3_selection.event.stopPropagation()
+  // })
 
   // fill screen classes
   if (fill_screen) {

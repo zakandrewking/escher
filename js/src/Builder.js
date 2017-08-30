@@ -402,7 +402,7 @@ function load_map (map_data, should_update_data) {
   this.map.key_manager.assigned_keys = keys
   // Tell the key manager about the reaction input and search bar
   this.map.key_manager.input_list = [this.build_input, this.search_bar,
-                                     this.settings_bar, this.text_edit_input]
+                                     this.settings_bar, this.text_edit_input, this.tooltip_container]
   // Make sure the key manager remembers all those changes
   this.map.key_manager.update()
   // Turn it on/off
@@ -496,6 +496,7 @@ function _set_mode (mode) {
   this.map.behavior.toggle_selectable_click(mode == 'build' || mode == 'brush')
   this.map.behavior.toggle_label_drag(mode == 'brush')
   this.map.behavior.toggle_label_mouseover(true)
+  this.map.behavior.toggle_label_touch(true)
   this.map.behavior.toggle_text_label_edit(mode == 'text')
   this.map.behavior.toggle_bezier_drag(mode == 'brush')
   // edit selections
@@ -1243,13 +1244,16 @@ function _setup_modes (map, brush, zoom_container) {
     was_enabled.selectable_mousedown = map.behavior.selectable_mousedown !== null
     map.behavior.toggle_selectable_click(false)
     was_enabled.label_mouseover = map.behavior.label_mouseover !== null
+    was_enabled.label_touch = map.behavior.label_touch !== null
     map.behavior.toggle_label_mouseover(false)
+    map.behavior.toggle_label_touch(false)
   })
   map.callback_manager.set('end_rotation', function () {
     brush.toggle(was_enabled.brush)
     zoom_container.toggle_pan_drag(was_enabled.zoom)
     map.behavior.toggle_selectable_click(was_enabled.selectable_mousedown)
     map.behavior.toggle_label_mouseover(was_enabled.label_mouseover)
+    map.behavior.toggle_label_touch(was_enabled.label_touch)
     was_enabled = {}
   })
 }
