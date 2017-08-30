@@ -39,6 +39,7 @@ function init (selection, TooltipComponent, zoomContainer) {
   this.callback_manager = CallbackManager()
 
   this.div.on('mouseover', this.cancelHideTooltip.bind(this))
+  this.div.on('touchend', this.cancelHideTooltip.bind(this))
   this.div.on('mouseleave', this.hide.bind(this))
 
   // Attach a function to get size of tooltip

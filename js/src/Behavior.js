@@ -419,10 +419,6 @@ function toggle_label_touch (on_off) {
         this.map.callback_manager.run('show_tooltip', null, type, d)
       }
     }.bind(this)
-
-    this.label_touch = function () {
-      this.map.callback_manager.run('delay_hide_tooltip')
-    }.bind(this)
   } else {
     this.label_touch = null
   }
