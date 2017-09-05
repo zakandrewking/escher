@@ -1,3 +1,4 @@
+/** @jsx h */
 import preact, { h } from 'preact'
 import CallbackManager from './CallbackManager'
 import TooltipComponentContainer from './TooltipComponentContainer'
@@ -71,10 +72,9 @@ function setup_map_callbacks (map) {
       this.show(type, d)
     }
   }.bind(this))
-  map.callback_manager.set('hide_tooltip.tooltip_container',
-                           this.hide.bind(this))
-  map.callback_manager.set('delay_hide_tooltip.tooltip_container',
-                           this.delay_hide.bind(this))
+  map.callback_manager.set('hide_tooltip.tooltip_container', this.hide.bind(this))
+  map.sel.selectAll('#canvas').on('touchend', this.hide.bind(this))
+  map.callback_manager.set('delay_hide_tooltip.tooltip_container', this.delay_hide.bind(this))
   map.callback_manager.set('update_tooltip.tooltip_container', function (type, sel) {
     if (this.currentTooltip !== null) {
       let d = null
