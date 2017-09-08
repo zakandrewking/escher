@@ -863,7 +863,7 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
         if (d.text == 'Clear metabolite data' && this.options.metabolite_data === null)
           return true
         if (this.options.hidden_buttons)
-          return this.options.hidden_buttons.includes(d.text)
+          return _.contains(this.options.hidden_buttons, d.text)
         return null
       }.bind(this))
   }.bind(this)
