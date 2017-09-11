@@ -102,7 +102,7 @@ function init (map_data, model_data, embedded_css, selection, options) {
     zoom_to_element: null,
     full_screen_button: false,
     ignore_bootstrap: false,
-    hidden_buttons: null,
+    disabled_buttons: null,
     // map, model, and styles
     starting_reaction: null,
     never_ask_before_quit: false,
@@ -862,8 +862,8 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
           return true
         if (d.text == 'Clear metabolite data' && this.options.metabolite_data === null)
           return true
-        if (this.options.hidden_buttons)
-          return _.contains(this.options.hidden_buttons, d.text)
+        if (this.options.disabled_buttons)
+          return _.contains(this.options.disabled_buttons, d.text)
         return null
       }.bind(this))
   }.bind(this)
