@@ -3,6 +3,11 @@
  */
 
 /* global $ */
+/** @jsx h */
+
+import preact, { h } from 'preact'
+import Dropdown from './Dropdown.js'
+import MenuButton from './MenuButton.js'
 
 var utils = require('./utils')
 var BuildInput = require('./BuildInput')
@@ -414,9 +419,67 @@ function load_map (map_data, should_update_data) {
     if (this.options.ignore_bootstrap) {
       console.error('Cannot create the dropdown menus if ignore_bootstrap = true')
     } else {
-      this._set_up_menu(menu_div, this.map, this.map.key_manager, keys,
-                        this.options.enable_editing, this.options.enable_keys,
-                        this.options.full_screen_button)
+      preact.render(
+        <div className='menuBar' style={{
+          display: 'inline-block',
+          margin: '5px auto 0',
+          border: '1px solid #ddd',
+          backgroundColor: 'hsla(0,0%,100%,.95)',
+          borderRadius: '0',
+          height: '100%',
+          width: '100%'
+        }}>
+          <ul>
+            <Dropdown name={'Map'} menu={[
+              <MenuButton name={'Save map JSON (Ctrl+S)'} />,
+              <MenuButton name={'Load map JSON (Ctrl+O)'} />,
+              <MenuButton name={'Export as SVG (Ctrl+Shift+S)'} />,
+              <MenuButton name={'Export as PNG (Ctrl+Shift+P)'} />,
+              <MenuButton name={'Clear map'} />
+            ]} />
+            <Dropdown name={'Model'} menu={[
+              <MenuButton name={'Load COBRA model JSON (Ctrl+M)'} />,
+              <MenuButton name={'Update names and gene reaction rules using model'} />,
+              <MenuButton name={'Clear model'} />
+            ]} />
+            <Dropdown name={'Data'} menu={[
+              <MenuButton name={'Load reaction data'} />,
+              <MenuButton name={'Clear reaction data'} />,
+              <MenuButton name={'Load gene data'} />,
+              <MenuButton name={'Clear gene data'} />,
+              <MenuButton name={'Load metabolite data'} />,
+              <MenuButton name={'Clear metabolite data'} />
+            ]} />
+            <Dropdown name={'Edit'} menu={[
+              <MenuButton name={'Pan mode (Z)'} />,
+              <MenuButton name={'Select mode (V)'} />,
+              <MenuButton name={'Add reaction mode (N)'} />,
+              <MenuButton name={'Rotate mode (R)'} />,
+              <MenuButton name={'Text mode'} />,
+              <MenuButton name={'Delete (Del)'} />,
+              <MenuButton name={'Undo (Ctrl+Z)'} />,
+              <MenuButton name={'Redo (Ctrl+Shift+Z)'} />,
+              <MenuButton name={'Toggle primary/secondary (P)'} />,
+              <MenuButton name={'Rotate reactant locations (C)'} />,
+              <MenuButton name={'Select all (Ctrl+A)'} />,
+              <MenuButton name={'Invert selection'} />
+            ]} />
+            <Dropdown name={'View'} menu={[
+              <MenuButton name={'Zoom in (+)'} />,
+              <MenuButton name={'Zoom out (-)'} />,
+              <MenuButton name={'Zoom to nodes (0)'} />,
+              <MenuButton name={'Zoom to canvas (1)'} />,
+              <MenuButton name={'Find (F)'} />,
+              <MenuButton name={'Show control points (B)'} />,
+              <MenuButton name={'Settings'} />
+            ]} />
+            <a className='dropdown' target='#' href='https://escher.readthedocs.org'>?</a>
+          </ul>
+        </div>,
+        menu_div.node())
+      // this._set_up_menu(menu_div, this.map, this.map.key_manager, keys,
+      //                   this.options.enable_editing, this.options.enable_keys,
+      //                   this.options.full_screen_button)
     }
   }
 
