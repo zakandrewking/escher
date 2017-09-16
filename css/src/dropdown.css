@@ -26,7 +26,7 @@
 
 .dropdownButton {
   border: 1px solid transparent;
-  padding: 5px 10px;
+  padding: 5px 9px;
 }
 
 a.dropdown {
@@ -52,10 +52,15 @@ a.dropdown {
     font-size: 18px;
   }
 
+  .dropdownButton {
+    padding: 5px 10px;
+  }
+
   a.dropdown {
     font-size: 16px;
   }
 }
+
 .menu {
   word-spacing: 0;
   position: absolute;
