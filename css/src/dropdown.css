@@ -1,8 +1,8 @@
 .dropdown {
+  word-spacing: -2px;
   float: left;
   box-sizing: border-box;
   color: #d9230f;
-  padding: 5px 10px;
   font-size: 12px;
   line-height: 1.5;
   border-radius: 3px;
@@ -10,13 +10,23 @@
   font-weight: normal;
   text-align: center;
   vertical-align: middle;
-  -ms-touch-action: manipulation;
-  touch-action: manipulation;
+  -ms-touch-action: none;
+  touch-action: none;
   cursor: pointer;
   background-image: none;
-  border: 1px solid transparent;
   white-space: nowrap;
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.dropdownButton {
+  border: 1px solid transparent;
+  padding: 5px 10px;
 }
 
 a.dropdown {
@@ -27,7 +37,12 @@ a.dropdown {
   border: 0!important;
 }
 
-.dropdown:hover {
+.dropdownButton:focus {
+  color: #91170a;
+  text-decoration: underline;
+}
+
+.dropdownButton:hover {
   color: #91170a;
   text-decoration: underline;
 }
@@ -38,10 +53,11 @@ a.dropdown {
   }
 
   a.dropdown {
-    font-size: 16px
+    font-size: 16px;
   }
 }
 .menu {
+  word-spacing: 0;
   position: absolute;
   top: 103%;
   left: -1%;
@@ -55,17 +71,26 @@ a.dropdown {
   box-shadow: 0 6px 12px rgba(0,0,0,0.175);
   background-clip: padding-box;
   border: 1px solid #ddd;
-  background-color: hsla(0,0%,100%,.95);
+  background-color: rgba(255, 255, 255, 0.95);
   border-radius: 0;
   margin: 0;
   text-align: left;
   line-height: 1.42857143;
 }
 
-.menu li {
+#rightMenu {
+  left: auto;
+  right: -2%;
+}
+
+.menu li:hover {
+  background-color: #d9230f;
+  color: #FFFFFF;
+}
+
+.menu li, .menu label {
   font-size: 15px;
   display: block;
-  padding: 3px 20px;
   clear: both;
   font-weight: 200;
   line-height: 1.42857143;
@@ -78,6 +103,46 @@ ul {
   padding: 0;
 }
 
+ul>li+li {
+  margin-left: 2px
+}
+
 .menu.ul.li {
-  background-color: hsla(0,0%,100%,.95);
+  background-color: rgba(255, 255, 255, 0.95);
+}
+
+.menuButton {
+  width: 100%;
+  padding: 3px 20px;
+  margin: 0;
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+label:focus, .menuButton:focus {
+  background-color: #d9230f;
+  color: #FFFFFF;
+}
+
+.menuButton:hover {
+  background-color: #d9230f;
+  color: #FFFFFF;
+}
+
+input[type="file"] {
+  display: none;
+}
+
+#disabled {
+  color: #e0e0e0;
+}
+
+#disabled:hover, #disabled:focus {
+  background-color: rgba(255, 255, 255, 0.95);
+  cursor: default;
 }

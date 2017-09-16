@@ -8,6 +8,7 @@ class Dropdown extends Component {
     this.setWrapperRef = this.setWrapperRef.bind(this)
     this.handleClickOutside = this.handleClickOutside.bind(this)
   }
+
   componentWillMount () {
     this.setState({
       visible: false
@@ -15,7 +16,7 @@ class Dropdown extends Component {
   }
 
   componentDidMount () {
-    document.addEventListener('mousedown', this.handleClickOutside);
+    document.addEventListener('mouseup', this.handleClickOutside)
   }
 
   setWrapperRef (node) {
@@ -28,6 +29,14 @@ class Dropdown extends Component {
     }
   }
 
+  handleKeyDown (event) {
+    if (event.keyCode === 13 || event.keyCode === 40) {
+      this.onClick()
+    } else if (event.keyCode === 27) {
+      this.setState({visible: false})
+    }
+  }
+
   onClick () {
     this.setState({
       visible: !this.state.visible
@@ -36,17 +45,21 @@ class Dropdown extends Component {
 
   render () {
     return (
-      <div className='dropdown' ref={this.setWrapperRef} onClick={() => this.onClick()}>
-        {this.props.name + ' '}
-        <b class='caret' />
-        <div className='menu' style={this.state.visible ? {visibility: 'visible'} : {visibility: 'hidden'}}>
-          <ul>
-            {this.props.menu.map((listItem) => {
-              return <li>{listItem}</li>
-            })}
-          </ul>
+      <li className='dropdown'>
+        <div className='dropdownButton' tabindex='0' ref={this.setWrapperRef} onClick={() => this.onClick()} onKeyDown={event => this.handleKeyDown(event)}>
+          {this.props.name + ' '}
+          <b class='caret' />
         </div>
-      </div>
+        <ul className='menu' style={this.state.visible ? {display: 'block'} : {display: 'none'}} id={this.props.rightMenu === 'true' ? 'rightMenu' : ''}>
+          {this.props.children.map((listItem) => {
+            if (listItem.attributes.name === 'divider') {
+              return <li style={{height: '1px', backgroundColor: '#e5e5e5', padding: '0', margin: '8px 0'}} />
+            } else {
+              return listItem
+            }
+          })}
+        </ul>
+      </li>
     )
   }
 }
