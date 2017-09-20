@@ -743,7 +743,7 @@ function renderButtonPanel (mode) {
           <i className='fa fa-expand fa-2x' />
         </button>
       </li>
-      <li style={{display: 'inline-block'}}>
+      <li>
         <label className='button' style={{
           width: '40px',
           height: '40px',
