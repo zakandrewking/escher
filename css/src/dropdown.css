@@ -1,4 +1,4 @@
-.dropdown {
+.escher-container .dropdown {
   word-spacing: -2px;
   float: left;
   box-sizing: border-box;
@@ -23,13 +23,13 @@
   user-select: none;
 }
 
-.dropdownButton {
+.escher-container .dropdownButton {
   color: #d9230f!important;
   border: 1px solid transparent;
   padding: 5px 9px;
 }
 
-a.dropdown {
+.escher-container a.dropdown {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif!important;
   padding: 0 5px;
   float: right;
@@ -38,31 +38,32 @@ a.dropdown {
   line-height: 1.42857143;
 }
 
-.dropdownButton:focus {
+.escher-container .dropdownButton:focus {
   color: #91170a!important;
   text-decoration: underline;
 }
 
-.dropdownButton:hover {
+.escher-container .dropdownButton:hover {
   color: #91170a!important;
   text-decoration: underline;
 }
 
 @media (min-width: 550px) {
-  .dropdown {
+  .escher-container .dropdown {
     font-size: 18px;
   }
 
-  .dropdownButton {
+  .escher-container .dropdownButton {
     padding: 5px 10px;
   }
 
-  a.dropdown {
+  .escher-container a.dropdown {
     font-size: 16px;
   }
 }
 
-.menu {
+.escher-container .menu {
+  font-weight: normal!important;
   word-spacing: 0;
   position: absolute;
   top: 103%;
@@ -84,17 +85,17 @@ a.dropdown {
   line-height: 1.42857143;
 }
 
-#rightMenu {
+.escher-container #rightMenu {
   left: auto;
   right: -2%;
 }
 
-.menu li:hover {
+.escher-container .menu li:hover {
   background-color: #d9230f;
   color: #FFFFFF;
 }
 
-.menu li, .menu label {
+.escher-container .menu li, .menu label {
   font-size: 15px;
   display: block;
   clear: both;
@@ -104,20 +105,20 @@ a.dropdown {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
 }
 
-ul {
+.escher-container ul {
   list-style-type: none;
   padding: 0;
 }
 
-ul>li+li {
+.escher-container ul>li+li {
   margin-left: 2px
 }
 
-.menu.ul.li {
+.escher-container .menu.ul.li {
   background-color: rgba(255, 255, 255, 0.95);
 }
 
-.menuButton {
+.escher-container .menuButton {
   width: 100%;
   padding: 3px 20px;
   margin: 0;
@@ -130,25 +131,25 @@ ul>li+li {
   user-select: none;
 }
 
-label:focus, .menuButton:focus {
+.escher-container label:focus, .menuButton:focus {
   background-color: #d9230f;
   color: #FFFFFF;
 }
 
-.menuButton:hover {
+.escher-container .menuButton:hover {
   background-color: #d9230f;
   color: #FFFFFF;
 }
 
-input[type="file"] {
+.escher-container input[type="file"] {
   display: none;
 }
 
-#disabled {
+.escher-container #disabled {
   color: #e0e0e0;
 }
 
-#disabled:hover, #disabled:focus {
+.escher-container #disabled:hover, #disabled:focus {
   background-color: rgba(255, 255, 255, 0.95);
   cursor: default;
 }

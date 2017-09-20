@@ -50,7 +50,6 @@ Builder.prototype = {
   set_gene_data: set_gene_data,
   _update_data: _update_data,
   _toggle_direction_buttons: _toggle_direction_buttons,
-  _set_up_menu: _set_up_menu,
   _set_up_button_panel: _set_up_button_panel,
   _create_status: _create_status,
   _setup_status: _setup_status,
@@ -473,9 +472,9 @@ function load_map (map_data, should_update_data) {
 
   // Start in zoom mode for builder, view mode for viewer
   if (this.options.enable_editing) {
-    this.zoom_mode()
+    this._set_mode('zoom')
   } else {
-    this.view_mode()
+    this._set_mode('view')
   }
 
   // confirm before leaving the page
@@ -587,35 +586,35 @@ function renderMenu (mode) {
           name={'Pan mode' + (this.options.enable_keys ? ' (Z)' : '')}
           modeName='zoom'
           mode={mode}
-          onClick={() => this.zoom_mode()}
+          onClick={() => this._set_mode('zoom')}
           disabledButtons={this.options.disabled_buttons}
         />
         <MenuButton
           name={'Select mode' + (this.options.enable_keys ? ' (V)' : '')}
           modeName='brush'
           mode={mode}
-          onClick={() => this.brush_mode()}
+          onClick={() => this._set_mode('brush')}
           disabledButtons={this.options.disabled_buttons}
         />
         <MenuButton
           name={'Add reaction mode' + (this.options.enable_keys ? ' (N)' : '')}
           modeName='build'
           mode={mode}
-          onClick={() => this.build_mode()}
+          onClick={() => this._set_mode('build')}
           disabledButtons={this.options.disabled_buttons}
         />
         <MenuButton
           name={'Rotate mode' + (this.options.enable_keys ? ' (R)' : '')}
           modeName='rotate'
           mode={mode}
-          onClick={() => this.rotate_mode()}
+          onClick={() => this._set_mode('rotate')}
           disabledButtons={this.options.disabled_buttons}
         />
         <MenuButton
           name={'Text mode' + (this.options.enable_keys ? ' (T)' : '')}
           modeName='text'
           mode={mode}
-          onClick={() => this.text_mode()}
+          onClick={() => this._set_mode('text')}
           disabledButtons={this.options.disabled_buttons}
         />
         <li name='divider' />
@@ -746,7 +745,6 @@ function view_mode() {
   /** For documentation of this function, see docs/javascript_api.rst.
 
    */
-  this.callback_manager.run('view_mode')
   this._set_mode('view')
 }
 
@@ -754,7 +752,6 @@ function build_mode() {
   /** For documentation of this function, see docs/javascript_api.rst.
 
    */
-  this.callback_manager.run('build_mode')
   this._set_mode('build')
 }
 
@@ -762,7 +759,6 @@ function brush_mode() {
   /** For documentation of this function, see docs/javascript_api.rst.
 
    */
-  this.callback_manager.run('brush_mode')
   this._set_mode('brush')
 }
 
@@ -770,7 +766,6 @@ function zoom_mode() {
   /** For documentation of this function, see docs/javascript_api.rst.
 
    */
-  this.callback_manager.run('zoom_mode')
   this._set_mode('zoom')
 }
 
@@ -778,7 +773,6 @@ function rotate_mode() {
   /** For documentation of this function, see docs/javascript_api.rst.
 
    */
-  this.callback_manager.run('rotate_mode')
   this._set_mode('rotate')
 }
 
@@ -786,7 +780,6 @@ function text_mode() {
   /** For documentation of this function, see docs/javascript_api.rst.
 
    */
-  this.callback_manager.run('text_mode')
   this._set_mode('text')
 }
 
@@ -1000,343 +993,6 @@ function _update_data (update_model, update_map, kind, should_draw) {
 
     // this object has reaction keys and values containing associated genes
     return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
-  }
-}
-
-function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
-                       enable_keys, full_screen_button, ignore_bootstrap) {
-  var menu = menu_selection.attr('id', 'menu')
-    .append('ul')
-    .attr('class', 'nav nav-pills')
-  // map dropdown
-  ui.dropdown_menu(menu, 'Map')
-    .button({ key: keys.save,
-              text: 'Save map JSON',
-              key_text: (enable_keys ? ' (Ctrl+S)' : null) })
-    .button({ text: 'Load map JSON',
-              key_text: (enable_keys ? ' (Ctrl+O)' : null),
-              input: { assign: key_manager.assigned_keys.load,
-                       key: 'fn',
-                       fn: load_map_for_file.bind(this),
-                       pre_fn: function() {
-                         map.set_status('Loading map ...')
-                       },
-                       failure_fn: function() {
-                         map.set_status('')
-                       }}
-            })
-    .button({ key: keys.save_svg,
-              text: 'Export as SVG',
-              key_text: (enable_keys ? ' (Ctrl+Shift+S)' : null) })
-    .button({ key: keys.save_png,
-              text: 'Export as PNG',
-              key_text: (enable_keys ? ' (Ctrl+Shift+P)' : null) })
-    .button({ key: keys.clear_map,
-              text: 'Clear map' })
-  // model dropdown
-  var model_menu = ui.dropdown_menu(menu, 'Model')
-    .button({ text: 'Load COBRA model JSON',
-              key_text: (enable_keys ? ' (Ctrl+M)' : null),
-              input: { assign: key_manager.assigned_keys.load_model,
-                       key: 'fn',
-                       fn: load_model_for_file.bind(this),
-                       pre_fn: function() {
-                         map.set_status('Loading model ...')
-                       },
-                       failure_fn: function() {
-                         map.set_status('')
-                       } }
-            })
-    .button({ id: 'convert_map',
-              key: keys.convert_map,
-              text: 'Update names and gene reaction rules using model' })
-    .button({ id: 'clear_model',
-              key: keys.clear_model,
-              text: 'Clear model' })
-  // disable the clear and convert buttons
-  var disable_model_clear_convert = function() {
-    model_menu.dropdown.selectAll('li')
-      .classed('escher-disabled', function(d) {
-        if ((d.id == 'clear_model' || d.id == 'convert_map') &&
-            this.cobra_model === null)
-          return true
-        return null
-      }.bind(this))
-  }.bind(this)
-  disable_model_clear_convert()
-  this.callback_manager.set('load_model', disable_model_clear_convert)
-
-  // data dropdown
-  var data_menu = ui.dropdown_menu(menu, 'Data')
-    .button({ input: { assign: key_manager.assigned_keys.load_reaction_data,
-                       key: 'fn',
-                       fn: load_reaction_data_for_file.bind(this),
-                       accept_csv: true,
-                       pre_fn: function() {
-                         map.set_status('Loading reaction data ...')
-                       },
-                       failure_fn: function() {
-                         map.set_status('')
-                       }},
-              text: 'Load reaction data' })
-    .button({ key: keys.clear_reaction_data,
-              text: 'Clear reaction data' })
-    .divider()
-    .button({ input: { fn: load_gene_data_for_file.bind(this),
-                       accept_csv: true,
-                       pre_fn: function() {
-                         map.set_status('Loading gene data ...')
-                       },
-                       failure_fn: function() {
-                         map.set_status('')
-                       }},
-              text: 'Load gene data' })
-    .button({ key: keys.clear_gene_data,
-              text: 'Clear gene data' })
-    .divider()
-    .button({ input: { fn: load_metabolite_data_for_file.bind(this),
-                       accept_csv: true,
-                       pre_fn: function() {
-                         map.set_status('Loading metabolite data ...')
-                       },
-                       failure_fn: function() {
-                         map.set_status('')
-                       }},
-              text: 'Load metabolite data' })
-    .button({ key: keys.clear_metabolite_data,
-              text: 'Clear metabolite data' })
-
-  // update the buttons
-  var disable_clears = function() {
-    data_menu.dropdown.selectAll('li')
-      .classed('escher-disabled', function(d) {
-        if (!d) return null
-        if (d.text == 'Clear reaction data' && this.options.reaction_data === null)
-          return true
-        if (d.text == 'Clear gene data' && this.options.gene_data === null)
-          return true
-        if (d.text == 'Clear metabolite data' && this.options.metabolite_data === null)
-          return true
-        if (this.options.disabled_buttons)
-          return _.contains(this.options.disabled_buttons, d.text)
-        return null
-      }.bind(this))
-  }.bind(this)
-  disable_clears()
-  this.callback_manager.set('update_data', disable_clears)
-
-  // edit dropdown
-  var edit_menu = ui.dropdown_menu(menu, 'Edit', true)
-  if (enable_editing) {
-    edit_menu
-      .button({ key: keys.zoom_mode,
-                id: 'zoom-mode-menu-button',
-                text: 'Pan mode',
-                key_text: (enable_keys ? ' (Z)' : null) })
-      .button({ key: keys.brush_mode,
-                id: 'brush-mode-menu-button',
-                text: 'Select mode',
-                key_text: (enable_keys ? ' (V)' : null) })
-      .button({ key: keys.build_mode,
-                id: 'build-mode-menu-button',
-                text: 'Add reaction mode',
-                key_text: (enable_keys ? ' (N)' : null) })
-      .button({ key: keys.rotate_mode,
-                id: 'rotate-mode-menu-button',
-                text: 'Rotate mode',
-                key_text: (enable_keys ? ' (R)' : null) })
-      .button({ key: keys.text_mode,
-                id: 'text-mode-menu-button',
-                text: 'Text mode',
-                key_text: (enable_keys ? ' (T)' : null) })
-      .divider()
-      .button({ key: keys.delete,
-                text: 'Delete',
-                key_text: (enable_keys ? ' (Del)' : null) })
-      .button({ key: keys.undo,
-                text: 'Undo',
-                key_text: (enable_keys ? ' (Ctrl+Z)' : null) })
-      .button({ key: keys.redo,
-                text: 'Redo',
-                key_text: (enable_keys ? ' (Ctrl+Shift+Z)' : null) })
-      .button({ key: keys.toggle_primary,
-                text: 'Toggle primary/secondary',
-                key_text: (enable_keys ? ' (P)' : null) })
-      .button({ key: keys.cycle_primary,
-                text: 'Rotate reactant locations',
-                key_text: (enable_keys ? ' (C)' : null) })
-      .button({ key: keys.select_all,
-                text: 'Select all',
-                key_text: (enable_keys ? ' (Ctrl+A)' : null) })
-      .button({ key: keys.select_none,
-                text: 'Select none',
-                key_text: (enable_keys ? ' (Ctrl+Shift+A)' : null) })
-      .button({ key: keys.invert_selection,
-                text: 'Invert selection' })
-  } else {
-    edit_menu.button({ key: keys.view_mode,
-                       id: 'view-mode-menu-button',
-                       text: 'View mode' })
-  }
-
-  // view dropdown
-  var view_menu = ui.dropdown_menu(menu, 'View', true)
-    .button({ key: keys.zoom_in,
-              text: 'Zoom in',
-              key_text: (enable_keys ? ' (+)' : null) })
-    .button({ key: keys.zoom_out,
-              text: 'Zoom out',
-              key_text: (enable_keys ? ' (-)' : null) })
-    .button({ key: keys.extent_nodes,
-              text: 'Zoom to nodes',
-              key_text: (enable_keys ? ' (0)' : null) })
-    .button({ key: keys.extent_canvas,
-              text: 'Zoom to canvas',
-              key_text: (enable_keys ? ' (1)' : null) })
-    .button({ key: keys.search,
-              text: 'Find',
-              key_text: (enable_keys ? ' (F)' : null) })
-  if (full_screen_button) {
-    view_menu.button({ key: keys.full_screen,
-                       text: 'Full screen',
-                       key_text: (enable_keys ? ' (2)' : null) })
-  }
-  if (enable_editing) {
-    view_menu.button({ key: keys.toggle_beziers,
-                       id: 'bezier-button',
-                       text: 'Show control points',
-                       key_text: (enable_keys ? ' (B)' : null) })
-    map.callback_manager
-      .set('toggle_beziers.button', function(on_off) {
-        menu.select('#bezier-button').select('.dropdown-button-text')
-          .text((on_off ? 'Hide' : 'Show') +
-                ' control points' +
-                (enable_keys ? ' (B)' : ''))
-      })
-  }
-  view_menu.divider()
-    .button({ key: keys.show_settings,
-              text: 'Settings',
-              key_text: (enable_keys ? ' (,)' : null) })
-
-  // help
-  menu.append('a')
-    .attr('class', 'help-button')
-    .attr('target', '#')
-    .attr('href', 'https://escher.readthedocs.org')
-    .text('?')
-
-  // set up mode callbacks
-  var select_button = function (id) {
-    // toggle the button
-    $(this.selection.node()).find('#' + id).button('toggle')
-
-    // menu buttons
-    var ids = [ 'zoom-mode-menu-button', 'brush-mode-menu-button',
-                'build-mode-menu-button', 'rotate-mode-menu-button',
-                'view-mode-menu-button', 'text-mode-menu-button', ]
-    ids.forEach(function(this_id) {
-      var b_id = this_id.replace('-menu', '')
-      this.selection.select('#' + this_id)
-          .select('span')
-        .classed('glyphicon', b_id == id)
-        .classed('glyphicon-ok', b_id == id)
-    }.bind(this))
-  }
-  this.callback_manager.set('zoom_mode', select_button.bind(this, 'zoom-mode-button'))
-  this.callback_manager.set('brush_mode', select_button.bind(this, 'brush-mode-button'))
-  this.callback_manager.set('build_mode', select_button.bind(this, 'build-mode-button'))
-  this.callback_manager.set('rotate_mode', select_button.bind(this, 'rotate-mode-button'))
-  this.callback_manager.set('view_mode', select_button.bind(this, 'view-mode-button'))
-  this.callback_manager.set('text_mode', select_button.bind(this, 'text-mode-button'))
-
-  // definitions
-  function load_map_for_file(error, map_data) {
-    /** Load a map. This reloads the whole builder. */
-    if (error) {
-      console.warn(error)
-      this.map.set_status('Error loading map: ' + error, 2000)
-      return
-    }
-
-    try {
-      check_map(map_data)
-      this.load_map(map_data)
-      this.map.set_status('Loaded map ' + map_data[0].map_name, 3000)
-    } catch (e) {
-      console.warn(e)
-      this.map.set_status('Error loading map: ' + e, 2000)
-    }
-
-    // definitions
-    function check_map(data) {
-      /** Perform a quick check to make sure the map is mostly valid.
-
-       */
-
-      if (!('map_id' in data[0] && 'reactions' in data[1] &&
-            'nodes' in data[1] && 'canvas' in data[1]))
-        throw new Error('Bad map data.')
-    }
-  }
-  function load_model_for_file(error, data) {
-    /** Load a cobra model. Redraws the whole map if the
-        highlight_missing option is true.
-
-    */
-    if (error) {
-      console.warn(error)
-      this.map.set_status('Error loading model: ' + error, 2000)
-      return
-    }
-
-    try {
-      this.load_model(data, true)
-      this.build_input.toggle(false)
-      if ('id' in data)
-        this.map.set_status('Loaded model ' + data.id, 3000)
-      else
-        this.map.set_status('Loaded model (no model id)', 3000)
-    } catch (e) {
-      console.warn(e)
-      this.map.set_status('Error loading model: ' + e, 2000)
-    }
-
-  }
-  function load_reaction_data_for_file(error, data) {
-    if (error) {
-      console.warn(error)
-      this.map.set_status('Could not parse file as JSON or CSV', 2000)
-      return
-    }
-    // turn off gene data
-    if (data !== null)
-      this.set_gene_data(null)
-
-    this.set_reaction_data(data)
-  }
-  function load_metabolite_data_for_file(error, data) {
-    if (error) {
-      console.warn(error)
-      this.map.set_status('Could not parse file as JSON or CSV', 2000)
-      return
-    }
-    this.set_metabolite_data(data)
-  }
-  function load_gene_data_for_file(error, data) {
-    if (error) {
-      console.warn(error)
-      this.map.set_status('Could not parse file as JSON or CSV', 2000)
-      return
-    }
-    // turn off reaction data
-    if (data !== null)
-      this.set_reaction_data(null)
-
-    // turn on gene_reaction_rules
-    this.settings.set_conditional('show_gene_reaction_rules', true)
-
-    this.set_gene_data(data)
   }
 }
 

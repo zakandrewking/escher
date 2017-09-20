@@ -40,7 +40,7 @@ class MenuButton extends Component {
       )
     } else {
       return (
-        <li className='menuButton' tabindex={this.state.disabled ? '-1' : '0'} onClick={null} id={this.state.disabled ? 'disabled' : ''}>
+        <li className='menuButton' tabindex={this.state.disabled ? '-1' : '0'} onClick={this.state.disabled ? null : this.props.onClick} id={this.state.disabled ? 'disabled' : ''}>
           {this.props.name}
         </li>
       )
