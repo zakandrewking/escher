@@ -38,6 +38,7 @@
     "bootswatch": "^3.3.6",
     "chai": "^3.3.0",
     "css-loader": "^0.28.4",
+    "font-awesome": "^4.7.0",
     "grunt": "^0.4.5",
     "grunt-babel": "^7.0.0",
     "grunt-cli": "^0.1.13",

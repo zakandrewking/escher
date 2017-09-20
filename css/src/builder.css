@@ -465,3 +465,7 @@ resizes. */
 	  display: none;
   }
 }
+
+.escher-container #tooltip-container {
+  touch-action: none;
+}

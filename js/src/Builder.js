@@ -57,7 +57,8 @@ Builder.prototype = {
   _setup_quick_jump: _setup_quick_jump,
   _setup_modes: _setup_modes,
   _get_keys: _get_keys,
-  _setup_confirm_before_exit: _setup_confirm_before_exit
+  _setup_confirm_before_exit: _setup_confirm_before_exit,
+  renderMenu: renderMenu
 }
 module.exports = Builder
 
@@ -86,6 +87,7 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.model_data = model_data
   this.embedded_css = embedded_css
   this.selection = selection
+  this.menu_div = null
 
   // apply this object as data for the selection
   this.selection.datum(this)
@@ -365,7 +367,7 @@ function load_map (map_data, should_update_data) {
   var s = this.selection
     .append('div').attr('class', 'search-menu-container')
     .append('div').attr('class', 'search-menu-container-inline')
-  var menu_div = s.append('div')
+  this.menu_div = s.append('div')
   var search_bar_div = s.append('div')
   var button_div = this.selection.append('div')
 
@@ -419,208 +421,15 @@ function load_map (map_data, should_update_data) {
     if (this.options.ignore_bootstrap) {
       console.error('Cannot create the dropdown menus if ignore_bootstrap = true')
     } else {
-      preact.render(
-        <ul className='menuBar' style={{
-          display: 'inline-block',
-          margin: '5px auto 0',
-          border: '1px solid #ddd',
-          backgroundColor: 'hsla(0,0%,100%,.95)',
-          borderRadius: '0',
-          height: '100%',
-          width: '100%'
-        }}>
-          <Dropdown name='Map'>
-            <MenuButton
-              name={'Save map JSON' + (this.options.enable_keys ? ' (Ctrl+S)' : '')}
-              onClick={this.map.save.bind(this.map)}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Load map JSON' + (this.options.enable_keys ? ' (Ctrl+O)' : '')}
-              onClick={file => this.load_map(file)}
-              type='load'
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Export as SVG' + (this.options.enable_keys ? ' (Ctrl+Shift+S)' : '')}
-              onClick={() => this.map.save_svg()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Export as PNG' + (this.options.enable_keys ? ' (Ctrl+Shift+P)' : '')}
-              onClick={() => this.map.save_png()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name='Clear map'
-              onClick={() => this.map.clear_map()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-          </Dropdown>
-          <Dropdown name='Model'>
-            <MenuButton
-              name={'Load COBRA model JSON' + (this.options.enable_keys ? ' (Ctrl+M)' : '')}
-              onClick={file => this.callback_manager.run('load_model', null, file, should_update_data)}
-              type='load'
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name='Update names and gene reaction rules using model'
-              onClick={this.map.convert_map.bind(this.map)}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name='Clear model'
-              onClick={this.load_model.bind(this, null, true)}
-              disabledButtons={this.options.disabled_buttons}
-            />
-          </Dropdown>
-          <Dropdown name='Data'>
-            <MenuButton
-              name='Load reaction data'
-              onClick={file => this.set_reaction_data(file)}
-              type='load'
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name='Clear reaction data'
-              onClick={this.set_reaction_data(null)}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <li name='divider' />
-            <MenuButton
-              name='Load gene data'
-              onClick={file => this.set_gene_data(file)}
-              type='load'
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name='Clear gene data'
-              onClick={this.set_gene_data(null)}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <li name='divider' />
-            <MenuButton
-              name='Load metabolite data'
-              onClick={file => this.set_metabolite_data(file)}
-              type='load'
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name='Clear metabolite data'
-              onClick={this.set_metabolite_data(null)}
-              disabledButtons={this.options.disabled_buttons}
-            />
-          </Dropdown>
-          <Dropdown name='Edit' rightMenu='true'>
-            <MenuButton
-              name={'Pan mode' + (this.options.enable_keys ? ' (Z)' : '')}
-              onClick={() => this.zoom_mode()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Select mode' + (this.options.enable_keys ? ' (V)' : '')}
-              onClick={() => this.brush_mode()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Add reaction mode' + (this.options.enable_keys ? ' (N)' : '')}
-              onClick={() => this.build_mode()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Rotate mode' + (this.options.enable_keys ? ' (R)' : '')}
-              onClick={() => this.rotate_mode()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Text mode' + (this.options.enable_keys ? ' (T)' : '')}
-              onClick={() => this.text_mode()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <li name='divider' />
-            <MenuButton
-              name={'Delete' + (this.options.enable_keys ? ' (Del)' : '')}
-              onClick={() => this.map.delete_selected()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Undo' + (this.options.enable_keys ? ' (Ctrl+Z)' : '')}
-              onClick={() => this.map.undo_stack.undo()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Redo' + (this.options.enable_keys ? ' (Ctrl+Shift+Z)' : '')}
-              onClick={() => this.map.undo_stack.redo()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Toggle primary/secondary' + (this.options.enable_keys ? ' (P)' : '')}
-              onClick={() => this.map.toggle_selected_node_primary()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Rotate reactant locations' + (this.options.enable_keys ? ' (C)' : '')}
-              onClick={() => this.map.cycle_primary_node()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Select all' + (this.options.enable_keys ? ' (Ctrl+A)' : '')}
-              onClick={() => this.map.select_all()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Select none' + (this.options.enable_keys ? ' (Ctrl+Shift+A)' : '')}
-              onClick={() => this.map.select_none()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name='Invert selection'
-              onClick={() => this.map.invert_selection()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-          </Dropdown>
-          <Dropdown name='View' rightMenu='true'>
-            <MenuButton
-              name={'Zoom in' + (this.options.enable_keys ? ' (+)' : '')}
-              onClick={() => this.zoom_container.zoom_in()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Zoom out' + (this.options.enable_keys ? ' (-)' : '')}
-              onClick={() => this.zoom_container.zoom_out()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Zoom to nodes' + (this.options.enable_keys ? ' (0)' : '')}
-              onClick={() => this.map.zoom_extent_nodes()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Zoom to canvas' + (this.options.enable_keys ? ' (1)' : '')}
-              onClick={() => this.map.zoom_extent_canvas()}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Find' + (this.options.enable_keys ? ' (F)' : '')}
-              onClick={this.search_bar.toggle.bind(this.search_bar, true)}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <MenuButton
-              name={'Show control points' + (this.options.enable_keys ? ' (B)' : '')}
-              onClick={this.map.toggle_beziers.bind(this.map)}
-              disabledButtons={this.options.disabled_buttons}
-            />
-            <li name='divider' />
-            <MenuButton
-              name={'Settings' + (this.options.enable_keys ? ' (,)' : '')}
-              onClick={this.settings_bar.toggle.bind(this.settings_bar)}
-              disabledButtons={this.options.disabled_buttons}
-            />
-          </Dropdown>
-          <a className='dropdown' target='#' href='https://escher.readthedocs.org'>?</a>
-        </ul>,
-        menu_div.node())
+      if (this.options.reaction_data === null) {
+        this.options.disabled_buttons.push('Clear reaction data')
+      }
+      if (this.options.gene_data === null) {
+        this.options.disabled_buttons.push('Clear gene data')
+      }
+      if (this.options.metabolite_data === null) {
+        this.options.disabled_buttons.push('Clear metabolite data')
+      }
       // this._set_up_menu(menu_div, this.map, this.map.key_manager, keys,
       //                   this.options.enable_editing, this.options.enable_keys,
       //                   this.options.full_screen_button)
@@ -678,7 +487,225 @@ function load_map (map_data, should_update_data) {
   this.map.draw_everything()
 }
 
+function renderMenu (mode) {
+  const menuDivNode = this.menu_div.node()
+  preact.render(
+    <ul className='menuBar' style={{
+      display: 'inline-block',
+      margin: '5px auto 0',
+      border: '1px solid #ddd',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderRadius: '0',
+      height: '100%',
+      width: '100%'
+    }}>
+      <Dropdown name='Map'>
+        <MenuButton
+          name={'Save map JSON' + (this.options.enable_keys ? ' (Ctrl+S)' : '')}
+          onClick={this.map.save.bind(this.map)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Load map JSON' + (this.options.enable_keys ? ' (Ctrl+O)' : '')}
+          onClick={file => this.load_map(file)}
+          type='load'
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Export as SVG' + (this.options.enable_keys ? ' (Ctrl+Shift+S)' : '')}
+          onClick={() => this.map.save_svg()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Export as PNG' + (this.options.enable_keys ? ' (Ctrl+Shift+P)' : '')}
+          onClick={() => this.map.save_png()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Clear map'
+          onClick={() => this.map.clear_map()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+      </Dropdown>
+      <Dropdown name='Model'>
+        <MenuButton
+          name={'Load COBRA model JSON' + (this.options.enable_keys ? ' (Ctrl+M)' : '')}
+          onClick={file => this.callback_manager.run('load_model', null, file, true)}
+          type='load'
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Update names and gene reaction rules using model'
+          onClick={this.map.convert_map.bind(this.map)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Clear model'
+          onClick={this.load_model.bind(this, null, true)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+      </Dropdown>
+      <Dropdown name='Data'>
+        <MenuButton
+          name='Load reaction data'
+          onClick={file => this.set_reaction_data(file)}
+          type='load'
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Clear reaction data'
+          onClick={() => this.set_reaction_data(null)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <li name='divider' />
+        <MenuButton
+          name='Load gene data'
+          onClick={file => this.set_gene_data(file)}
+          type='load'
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Clear gene data'
+          onClick={() => this.set_gene_data(null)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <li name='divider' />
+        <MenuButton
+          name='Load metabolite data'
+          onClick={file => this.set_metabolite_data(file)}
+          type='load'
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Clear metabolite data'
+          onClick={() => this.set_metabolite_data(null)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+      </Dropdown>
+      <Dropdown name='Edit' rightMenu='true'>
+        <MenuButton
+          name={'Pan mode' + (this.options.enable_keys ? ' (Z)' : '')}
+          modeName='zoom'
+          mode={mode}
+          onClick={() => this.zoom_mode()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Select mode' + (this.options.enable_keys ? ' (V)' : '')}
+          modeName='brush'
+          mode={mode}
+          onClick={() => this.brush_mode()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Add reaction mode' + (this.options.enable_keys ? ' (N)' : '')}
+          modeName='build'
+          mode={mode}
+          onClick={() => this.build_mode()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Rotate mode' + (this.options.enable_keys ? ' (R)' : '')}
+          modeName='rotate'
+          mode={mode}
+          onClick={() => this.rotate_mode()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Text mode' + (this.options.enable_keys ? ' (T)' : '')}
+          modeName='text'
+          mode={mode}
+          onClick={() => this.text_mode()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <li name='divider' />
+        <MenuButton
+          name={'Delete' + (this.options.enable_keys ? ' (Del)' : '')}
+          onClick={() => this.map.delete_selected()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Undo' + (this.options.enable_keys ? ' (Ctrl+Z)' : '')}
+          onClick={() => this.map.undo_stack.undo()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Redo' + (this.options.enable_keys ? ' (Ctrl+Shift+Z)' : '')}
+          onClick={() => this.map.undo_stack.redo()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Toggle primary/secondary' + (this.options.enable_keys ? ' (P)' : '')}
+          onClick={() => this.map.toggle_selected_node_primary()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Rotate reactant locations' + (this.options.enable_keys ? ' (C)' : '')}
+          onClick={() => this.map.cycle_primary_node()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Select all' + (this.options.enable_keys ? ' (Ctrl+A)' : '')}
+          onClick={() => this.map.select_all()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Select none' + (this.options.enable_keys ? ' (Ctrl+Shift+A)' : '')}
+          onClick={() => this.map.select_none()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Invert selection'
+          onClick={() => this.map.invert_selection()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+      </Dropdown>
+      <Dropdown name='View' rightMenu='true'>
+        <MenuButton
+          name={'Zoom in' + (this.options.enable_keys ? ' (+)' : '')}
+          onClick={() => this.zoom_container.zoom_in()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Zoom out' + (this.options.enable_keys ? ' (-)' : '')}
+          onClick={() => this.zoom_container.zoom_out()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Zoom to nodes' + (this.options.enable_keys ? ' (0)' : '')}
+          onClick={() => this.map.zoom_extent_nodes()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Zoom to canvas' + (this.options.enable_keys ? ' (1)' : '')}
+          onClick={() => this.map.zoom_extent_canvas()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Find' + (this.options.enable_keys ? ' (F)' : '')}
+          onClick={this.search_bar.toggle.bind(this.search_bar, true)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Show control points' + (this.options.enable_keys ? ' (B)' : '')}
+          onClick={this.map.toggle_beziers.bind(this.map)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <li name='divider' />
+        <MenuButton
+          name={'Settings' + (this.options.enable_keys ? ' (,)' : '')}
+          onClick={this.settings_bar.toggle.bind(this.settings_bar)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+      </Dropdown>
+      <a className='dropdown' target='#' href='https://escher.readthedocs.org'>?</a>
+    </ul>,
+    menuDivNode,
+    menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
+}
+
 function _set_mode (mode) {
+  this.renderMenu(mode)
   this.search_bar.toggle(false)
   // input
   this.build_input.toggle(mode == 'build')
@@ -798,6 +825,13 @@ function set_reaction_data (data) {
   } else {
     this.map.set_status('')
   }
+
+  let index = this.options.disabled_buttons.indexOf('Clear reaction data')
+  if (index > -1) {
+    this.options.disabled_buttons.splice(index, 1)
+  } else if (index === -1 && data === null) {
+    this.options.disabled_buttons.push('Clear reaction data')
+  }
 }
 
 /**
@@ -811,15 +845,29 @@ function set_gene_data (data, clear_gene_reaction_rules) {
   this.options.gene_data = data
   this._update_data(true, true, 'reaction')
   this.map.set_status('')
+
+  let index = this.options.disabled_buttons.indexOf('Clear gene data')
+  if (index > -1) {
+    this.options.disabled_buttons.splice(index, 1)
+  } else if (index === -1 && data === null) {
+    this.options.disabled_buttons.push('Clear gene data')
+  }
 }
 
-function set_metabolite_data(data) {
+function set_metabolite_data (data) {
   /** For documentation of this function, see docs/javascript_api.rst.
 
    */
   this.options.metabolite_data = data
   this._update_data(true, true, 'metabolite')
   this.map.set_status('')
+
+  let index = this.options.disabled_buttons.indexOf('Clear metabolite data')
+  if (index > -1) {
+    this.options.disabled_buttons.splice(index, 1)
+  } else if (index === -1 && data === null) {
+    this.options.disabled_buttons.push('Clear metabolite data')
+  }
 }
 
 /**

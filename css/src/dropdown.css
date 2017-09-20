@@ -2,12 +2,11 @@
   word-spacing: -2px;
   float: left;
   box-sizing: border-box;
-  color: #d9230f;
   font-size: 12px;
   line-height: 1.5;
   border-radius: 3px;
   margin-bottom: 0;
-  font-weight: normal;
+  font-weight: normal!important;
   text-align: center;
   vertical-align: middle;
   -ms-touch-action: none;
@@ -25,25 +24,27 @@
 }
 
 .dropdownButton {
+  color: #d9230f!important;
   border: 1px solid transparent;
   padding: 5px 9px;
 }
 
 a.dropdown {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif!important;
   padding: 0 5px;
   float: right;
   background-color: #f5f5f5!important;
   border: 0!important;
+  line-height: 1.42857143;
 }
 
 .dropdownButton:focus {
-  color: #91170a;
+  color: #91170a!important;
   text-decoration: underline;
 }
 
 .dropdownButton:hover {
-  color: #91170a;
+  color: #91170a!important;
   text-decoration: underline;
 }
 

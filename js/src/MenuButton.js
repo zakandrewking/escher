@@ -1,6 +1,7 @@
 /** @jsx h */
 import { h, Component } from 'preact'
 import '../../css/src/dropdown.css'
+import '../../node_modules/font-awesome/css/font-awesome.min.css'
 
 const _ = require('underscore')
 
@@ -11,6 +12,7 @@ class MenuButton extends Component {
       disabled: _.contains(props.disabledButtons, props.name)
     }
   }
+
   handleFileInput (file) {
     const reader = new window.FileReader()
     reader.onload = (event) => {
@@ -29,9 +31,16 @@ class MenuButton extends Component {
           {this.props.name}
         </label>
       )
-    } else {
+    } else if (this.props.modeName !== undefined && this.props.mode === this.props.modeName) {
       return (
         <li className='menuButton' tabindex={this.state.disabled ? '-1' : '0'} onClick={this.props.onClick} id={this.state.disabled ? 'disabled' : ''}>
+          <i className='fa fa-check' aria-hidden='true'>&nbsp;</i>
+          {this.props.name}
+        </li>
+      )
+    } else {
+      return (
+        <li className='menuButton' tabindex={this.state.disabled ? '-1' : '0'} onClick={null} id={this.state.disabled ? 'disabled' : ''}>
           {this.props.name}
         </li>
       )
