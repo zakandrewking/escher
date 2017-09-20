@@ -110,7 +110,7 @@
   padding: 0;
 }
 
-.escher-container ul>li+li {
+.escher-container .menuBar>.dropdown+.dropdown {
   margin-left: 2px
 }
 
@@ -152,4 +152,10 @@
 .escher-container #disabled:hover, #disabled:focus {
   background-color: rgba(255, 255, 255, 0.95);
   cursor: default;
+}
+
+.fa-rotate-45 {
+  -ms-transform:rotate(45deg);     /* Internet Explorer 9 */
+  -webkit-transform:rotate(45deg); /* Chrome, Safari, Opera */
+  transform:rotate(45deg);         /* Standard syntax */
 }

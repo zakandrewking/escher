@@ -57,7 +57,8 @@ Builder.prototype = {
   _setup_modes: _setup_modes,
   _get_keys: _get_keys,
   _setup_confirm_before_exit: _setup_confirm_before_exit,
-  renderMenu: renderMenu
+  renderMenu: renderMenu,
+  renderButtonPanel: renderButtonPanel
 }
 module.exports = Builder
 
@@ -87,6 +88,7 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.embedded_css = embedded_css
   this.selection = selection
   this.menu_div = null
+  this.button_div = null
 
   // apply this object as data for the selection
   this.selection.datum(this)
@@ -368,7 +370,7 @@ function load_map (map_data, should_update_data) {
     .append('div').attr('class', 'search-menu-container-inline')
   this.menu_div = s.append('div')
   var search_bar_div = s.append('div')
-  var button_div = this.selection.append('div')
+  this.button_div = this.selection.append('div')
 
   // Set up the search bar
   this.search_bar = new SearchBar(search_bar_div, this.map.search_index,
@@ -435,10 +437,10 @@ function load_map (map_data, should_update_data) {
     }
   }
 
-  this._set_up_button_panel(button_div, keys, this.options.enable_editing,
-                            this.options.enable_keys,
-                            this.options.full_screen_button,
-                            this.options.menu, this.options.ignore_bootstrap)
+  // this._set_up_button_panel(button_div, keys, this.options.enable_editing,
+  //                           this.options.enable_keys,
+  //                           this.options.full_screen_button,
+  //                           this.options.menu, this.options.ignore_bootstrap)
 
   // Setup selection box
   if (this.options.zoom_to_element) {
@@ -703,15 +705,96 @@ function renderMenu (mode) {
     menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
 }
 
+function renderButtonPanel (mode) {
+  const buttonPanelDivNode = this.button_div.node()
+  preact.render(
+    <ul className='buttonPanel' style={{
+      position: 'absolute',
+      left: '4px',
+      top: '20%',
+      marginTop: '-30px',
+      paddingLeft: '0',
+      touchAction: 'none'
+    }}>
+      <li>
+        <button className='button' style={{
+          width: '40px',
+          height: '40px',
+          marginTop: '3px'
+        }}>
+          <i className='fa fa-plus-circle fa-2x' />
+        </button>
+      </li>
+      <li style={{marginTop: '2px'}}>
+        <button className='button' style={{
+          width: '40px',
+          height: '40px',
+          marginTop: '3px'
+        }}>
+          <i className='fa fa-minus-circle fa-2x' />
+        </button>
+      </li>
+      <li style={{marginTop: '2px'}}>
+        <button className='button' style={{
+          width: '40px',
+          height: '40px',
+          marginTop: '3px'
+        }}>
+          <i className='fa fa-expand fa-2x' />
+        </button>
+      </li>
+      <li style={{display: 'inline-block'}}>
+        <label className='button' style={{
+          width: '40px',
+          height: '40px',
+          marginTop: '3px'
+        }}>
+          <i className='fa fa-arrows fa-2x' style={{padding: '6px'}} />
+        </label>
+        <label className='button' style={{
+          width: '40px',
+          height: '40px',
+          marginTop: '3px'
+        }}>
+          <i className='fa fa-mouse-pointer fa-2x' style={{padding: '6px'}} />
+        </label>
+        <label className='button' style={{
+          width: '40px',
+          height: '40px',
+          marginTop: '3px'
+        }}>
+          <i className='fa fa-plus fa-2x' style={{padding: '6px'}} />
+        </label>
+        <label className='button' style={{
+          width: '40px',
+          height: '40px',
+          marginTop: '3px'
+        }}>
+          <i className='fa fa-rotate-right fa-2x' style={{padding: '6px'}} />
+        </label>
+        <label className='button' style={{
+          width: '40px',
+          height: '40px',
+          marginTop: '3px'
+        }}>
+          <i className='fa fa-font fa-2x' style={{padding: '6px'}} />
+        </label>
+      </li>
+    </ul>,
+  buttonPanelDivNode,
+  buttonPanelDivNode.children.length > 0 ? buttonPanelDivNode.firstChild : undefined)
+}
+
 function _set_mode (mode) {
   this.renderMenu(mode)
+  this.renderButtonPanel(mode)
   this.search_bar.toggle(false)
   // input
   this.build_input.toggle(mode == 'build')
   this.build_input.direction_arrow.toggle(mode == 'build')
-  if (this.options.menu == 'all' && this.options.enable_editing) {
-    this._toggle_direction_buttons(mode == 'build')
-  }
+  // if (this.options.menu == 'all' && this.options.enable_editing) {
+  //   this._toggle_direction_buttons(mode == 'build')
+  // }
   // brush
   this.brush.toggle(mode == 'brush')
   // zoom
