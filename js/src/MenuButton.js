@@ -1,7 +1,6 @@
 /** @jsx h */
 import { h, Component } from 'preact'
 import '../../css/src/dropdown.css'
-import '../../node_modules/font-awesome/css/font-awesome.min.css'
 
 const _ = require('underscore')
 

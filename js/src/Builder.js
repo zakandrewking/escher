@@ -8,6 +8,8 @@
 import preact, { h } from 'preact'
 import Dropdown from './Dropdown.js'
 import MenuButton from './MenuButton.js'
+import '../../node_modules/font-awesome/css/font-awesome.min.css'
+import '../../css/src/ButtonPanel.css'
 
 var utils = require('./utils')
 var BuildInput = require('./BuildInput')
@@ -708,77 +710,57 @@ function renderMenu (mode) {
 function renderButtonPanel (mode) {
   const buttonPanelDivNode = this.button_div.node()
   preact.render(
-    <ul className='buttonPanel' style={{
-      position: 'absolute',
-      left: '4px',
-      top: '20%',
-      marginTop: '-30px',
-      paddingLeft: '0',
-      touchAction: 'none'
-    }}>
+    <ul className='buttonPanel'>
       <li>
-        <button className='button' style={{
-          width: '40px',
-          height: '40px',
-          marginTop: '3px'
-        }}>
+        <button className='button' onClick={() => this.zoom_container.zoom_in()}>
           <i className='fa fa-plus-circle fa-2x' />
         </button>
       </li>
-      <li style={{marginTop: '2px'}}>
-        <button className='button' style={{
-          width: '40px',
-          height: '40px',
-          marginTop: '3px'
-        }}>
+      <li>
+        <button className='button' onClick={() => this.zoom_container.zoom_out()}>
           <i className='fa fa-minus-circle fa-2x' />
         </button>
       </li>
-      <li style={{marginTop: '2px'}}>
-        <button className='button' style={{
-          width: '40px',
-          height: '40px',
-          marginTop: '3px'
-        }}>
+      <li>
+        <button className='button' onClick={() => this.map.zoom_extent_canvas()}>
           <i className='fa fa-expand fa-2x' />
         </button>
       </li>
-      <li>
-        <label className='button' style={{
-          width: '40px',
-          height: '40px',
-          marginTop: '3px'
-        }}>
+      <li className='grouping'>
+        <label className='buttonGroup' for='zoom' id={mode === 'zoom' ? 'currentMode' : null}>
           <i className='fa fa-arrows fa-2x' style={{padding: '6px'}} />
         </label>
-        <label className='button' style={{
-          width: '40px',
-          height: '40px',
-          marginTop: '3px'
-        }}>
+        <input type='radio' id='zoom' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('zoom')} />
+        <label className='buttonGroup' for='brush' id={mode === 'brush' ? 'currentMode' : null}>
           <i className='fa fa-mouse-pointer fa-2x' style={{padding: '6px'}} />
         </label>
-        <label className='button' style={{
-          width: '40px',
-          height: '40px',
-          marginTop: '3px'
-        }}>
-          <i className='fa fa-plus fa-2x' style={{padding: '6px'}} />
+        <input type='radio' id='brush' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('brush')} />
+        <label className='buttonGroup' for='build' id={mode === 'build' ? 'currentMode' : null}>
+          <i className='fa fa-wrench fa-2x' style={{padding: '6px'}} />
         </label>
-        <label className='button' style={{
-          width: '40px',
-          height: '40px',
-          marginTop: '3px'
-        }}>
+        <input type='radio' id='build' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('build')} />
+        <label className='buttonGroup' for='rotate' id={mode === 'rotate' ? 'currentMode' : null}>
           <i className='fa fa-rotate-right fa-2x' style={{padding: '6px'}} />
         </label>
-        <label className='button' style={{
-          width: '40px',
-          height: '40px',
-          marginTop: '3px'
-        }}>
+        <input type='radio' id='rotate' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('rotate')} />
+        <input type='radio' id='text' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('text')} />
+        <label className='buttonGroup' for='text' id={mode === 'text' ? 'currentMode' : null}>
           <i className='fa fa-font fa-2x' style={{padding: '6px'}} />
         </label>
+      </li>
+      <li className='grouping' style={mode === 'build' ? {display: 'list-item'} : {display: 'none'}}>
+        <button className='buttonGroup' onClick={() => this.build_input.direction_arrow.left()}>
+          <i className='fa fa-arrow-left fa-2x' />
+        </button>
+        <button className='buttonGroup' onClick={() => this.build_input.direction_arrow.right()}>
+          <i className='fa fa-arrow-right fa-2x' />
+        </button>
+        <button className='buttonGroup' onClick={() => this.build_input.direction_arrow.up()}>
+          <i className='fa fa-arrow-up fa-2x' />
+        </button>
+        <button className='buttonGroup' onClick={() => this.build_input.direction_arrow.down()}>
+          <i className='fa fa-arrow-down fa-2x' />
+        </button>
       </li>
     </ul>,
   buttonPanelDivNode,

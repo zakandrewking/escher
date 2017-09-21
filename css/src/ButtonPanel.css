@@ -1,0 +1,54 @@
+.escher-container .buttonPanel {
+  position: absolute;
+  left: 4px;
+  top: 20%;
+  margin-top: -32px;
+  padding-left: 0;
+  touch-action: none;
+}
+
+.escher-container .buttonPanel>li {
+  margin-top: 5px;
+}
+
+.escher-container .buttonGroup {
+  display: block;
+  margin-bottom: -1px;
+  border-radius: 0;
+}
+
+.escher-container .grouping>.buttonGroup:first-child {
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+}
+
+.escher-container .grouping>.buttonGroup:last-child {
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.escher-container #currentMode {
+  background-image: linear-gradient(#8F4F3F,#834c3c 6%,#8d3a2d);
+}
+
+.escher-container .button, .buttonGroup {
+  color: white!important;
+  border: 1px solid #2E2F2F;
+  background-image: linear-gradient(#4F5151, #474949 6%, #3F4141);
+  background-color: white;
+  border-color: #474949;
+  line-height: 1;
+  border-radius: 4px;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  font-size: 90%!important;
+  font-weight: 400;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+}
+
+.escher-container .button:active, .escher-container label:active, .escher-container .buttonGroup:active {
+  background-image: linear-gradient(#3F4141, #474949 6%, #4F5151);
+}
