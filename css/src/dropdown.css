@@ -99,7 +99,7 @@
   font-size: 15px;
   display: block;
   clear: both;
-  font-weight: 200;
+  font-weight: normal!important;
   line-height: 1.42857143;
   color: #444444;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
