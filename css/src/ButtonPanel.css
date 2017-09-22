@@ -27,6 +27,10 @@
   border-bottom-right-radius: 4px;
 }
 
+.escher-container .buttonPanel>.grouping:last-child {
+  margin-top: 4px;
+}
+
 .escher-container #currentMode {
   background-image: linear-gradient(#8F4F3F,#834c3c 6%,#8d3a2d);
 }
