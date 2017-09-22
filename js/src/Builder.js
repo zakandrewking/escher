@@ -39,7 +39,6 @@ Builder.prototype = {
   load_map: load_map,
   load_model: load_model,
   _set_mode: _set_mode,
-  view_mode: view_mode,
   _reaction_check_add_abs: _reaction_check_add_abs,
   pass_tooltip_component_props: pass_tooltip_component_props,
   set_reaction_data: set_reaction_data,
@@ -786,13 +785,6 @@ function _set_mode (mode) {
   if (mode == 'rotate')
     this.map.deselect_text_labels()
   this.map.draw_everything()
-}
-
-function view_mode() {
-  /** For documentation of this function, see docs/javascript_api.rst.
-
-   */
-  this._set_mode('view')
 }
 
 function _reaction_check_add_abs () {
