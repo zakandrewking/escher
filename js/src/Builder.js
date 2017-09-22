@@ -40,19 +40,12 @@ Builder.prototype = {
   load_model: load_model,
   _set_mode: _set_mode,
   view_mode: view_mode,
-  build_mode: build_mode,
-  brush_mode: brush_mode,
-  zoom_mode: zoom_mode,
-  rotate_mode: rotate_mode,
-  text_mode: text_mode,
   _reaction_check_add_abs: _reaction_check_add_abs,
   pass_tooltip_component_props: pass_tooltip_component_props,
   set_reaction_data: set_reaction_data,
   set_metabolite_data: set_metabolite_data,
   set_gene_data: set_gene_data,
   _update_data: _update_data,
-  _toggle_direction_buttons: _toggle_direction_buttons,
-  _set_up_button_panel: _set_up_button_panel,
   _create_status: _create_status,
   _setup_status: _setup_status,
   _setup_quick_jump: _setup_quick_jump,
@@ -433,16 +426,8 @@ function load_map (map_data, should_update_data) {
       if (this.options.metabolite_data === null) {
         this.options.disabled_buttons.push('Clear metabolite data')
       }
-      // this._set_up_menu(menu_div, this.map, this.map.key_manager, keys,
-      //                   this.options.enable_editing, this.options.enable_keys,
-      //                   this.options.full_screen_button)
     }
   }
-
-  // this._set_up_button_panel(button_div, keys, this.options.enable_editing,
-  //                           this.options.enable_keys,
-  //                           this.options.full_screen_button,
-  //                           this.options.menu, this.options.ignore_bootstrap)
 
   // Setup selection box
   if (this.options.zoom_to_element) {
@@ -712,53 +697,53 @@ function renderButtonPanel (mode) {
   preact.render(
     <ul className='buttonPanel'>
       <li>
-        <button className='button' onClick={() => this.zoom_container.zoom_in()}>
+        <button className='button' onClick={() => this.zoom_container.zoom_in()} title='Zoom in (+)'>
           <i className='fa fa-plus-circle fa-2x' />
         </button>
       </li>
       <li>
-        <button className='button' onClick={() => this.zoom_container.zoom_out()}>
+        <button className='button' onClick={() => this.zoom_container.zoom_out()} title='Zoom out (-)'>
           <i className='fa fa-minus-circle fa-2x' />
         </button>
       </li>
       <li>
-        <button className='button' onClick={() => this.map.zoom_extent_canvas()}>
+        <button className='button' onClick={() => this.map.zoom_extent_canvas()} title='Zoom to canvas (1)'>
           <i className='fa fa-expand fa-2x' />
         </button>
       </li>
       <li className='grouping'>
-        <label className='buttonGroup' for='zoom' id={mode === 'zoom' ? 'currentMode' : null}>
+        <label className='buttonGroup' title='Pan mode (Z)' for='zoom' id={mode === 'zoom' ? 'currentMode' : null}>
           <i className='fa fa-arrows fa-2x' style={{padding: '6px'}} />
         </label>
         <input type='radio' id='zoom' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('zoom')} />
-        <label className='buttonGroup' for='brush' id={mode === 'brush' ? 'currentMode' : null}>
+        <label className='buttonGroup' title='Select mode (V)' for='brush' id={mode === 'brush' ? 'currentMode' : null}>
           <i className='fa fa-mouse-pointer fa-2x' style={{padding: '6px'}} />
         </label>
         <input type='radio' id='brush' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('brush')} />
-        <label className='buttonGroup' for='build' id={mode === 'build' ? 'currentMode' : null}>
+        <label className='buttonGroup' title='Add reaction mode (N)' for='build' id={mode === 'build' ? 'currentMode' : null}>
           <i className='fa fa-wrench fa-2x' style={{padding: '6px'}} />
         </label>
         <input type='radio' id='build' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('build')} />
-        <label className='buttonGroup' for='rotate' id={mode === 'rotate' ? 'currentMode' : null}>
+        <label className='buttonGroup' title='Rotate mode (R)' for='rotate' id={mode === 'rotate' ? 'currentMode' : null}>
           <i className='fa fa-rotate-right fa-2x' style={{padding: '6px'}} />
         </label>
         <input type='radio' id='rotate' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('rotate')} />
         <input type='radio' id='text' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('text')} />
-        <label className='buttonGroup' for='text' id={mode === 'text' ? 'currentMode' : null}>
+        <label className='buttonGroup' title='Text mode (T)' for='text' id={mode === 'text' ? 'currentMode' : null}>
           <i className='fa fa-font fa-2x' style={{padding: '6px'}} />
         </label>
       </li>
       <li className='grouping' style={mode === 'build' ? {display: 'list-item'} : {display: 'none'}}>
-        <button className='buttonGroup' onClick={() => this.build_input.direction_arrow.left()}>
+        <button className='buttonGroup' title='Direction arrow (←)' onClick={() => this.build_input.direction_arrow.left()}>
           <i className='fa fa-arrow-left fa-2x' />
         </button>
-        <button className='buttonGroup' onClick={() => this.build_input.direction_arrow.right()}>
+        <button className='buttonGroup' title='Direction arrow (→)' onClick={() => this.build_input.direction_arrow.right()}>
           <i className='fa fa-arrow-right fa-2x' />
         </button>
-        <button className='buttonGroup' onClick={() => this.build_input.direction_arrow.up()}>
+        <button className='buttonGroup' title='Direction arrow (↑)' onClick={() => this.build_input.direction_arrow.up()}>
           <i className='fa fa-arrow-up fa-2x' />
         </button>
-        <button className='buttonGroup' onClick={() => this.build_input.direction_arrow.down()}>
+        <button className='buttonGroup' title='Direction arrow (↓)' onClick={() => this.build_input.direction_arrow.down()}>
           <i className='fa fa-arrow-down fa-2x' />
         </button>
       </li>
@@ -774,9 +759,6 @@ function _set_mode (mode) {
   // input
   this.build_input.toggle(mode == 'build')
   this.build_input.direction_arrow.toggle(mode == 'build')
-  // if (this.options.menu == 'all' && this.options.enable_editing) {
-  //   this._toggle_direction_buttons(mode == 'build')
-  // }
   // brush
   this.brush.toggle(mode == 'brush')
   // zoom
@@ -811,41 +793,6 @@ function view_mode() {
 
    */
   this._set_mode('view')
-}
-
-function build_mode() {
-  /** For documentation of this function, see docs/javascript_api.rst.
-
-   */
-  this._set_mode('build')
-}
-
-function brush_mode() {
-  /** For documentation of this function, see docs/javascript_api.rst.
-
-   */
-  this._set_mode('brush')
-}
-
-function zoom_mode() {
-  /** For documentation of this function, see docs/javascript_api.rst.
-
-   */
-  this._set_mode('zoom')
-}
-
-function rotate_mode() {
-  /** For documentation of this function, see docs/javascript_api.rst.
-
-   */
-  this._set_mode('rotate')
-}
-
-function text_mode() {
-  /** For documentation of this function, see docs/javascript_api.rst.
-
-   */
-  this._set_mode('text')
 }
 
 function _reaction_check_add_abs () {
@@ -1059,117 +1006,6 @@ function _update_data (update_model, update_map, kind, should_draw) {
     // this object has reaction keys and values containing associated genes
     return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
   }
-}
-
-function _set_up_button_panel(button_selection, keys, enable_editing,
-                              enable_keys, full_screen_button, menu_option,
-                              ignore_bootstrap) {
-  var button_panel = button_selection.append('ul')
-    .attr('class', 'nav nav-pills nav-stacked')
-    .attr('id', 'button-panel')
-
-  // buttons
-  ui.individual_button(button_panel.append('li'),
-                       { key: keys.zoom_in,
-                         text: '+',
-                         icon: 'glyphicon glyphicon-plus-sign',
-                         tooltip: 'Zoom in',
-                         key_text: (enable_keys ? ' (+)' : null),
-                         ignore_bootstrap: ignore_bootstrap })
-  ui.individual_button(button_panel.append('li'),
-                       { key: keys.zoom_out,
-                         text: '–',
-                         icon: 'glyphicon glyphicon-minus-sign',
-                         tooltip: 'Zoom out',
-                         key_text: (enable_keys ? ' (-)' : null),
-                         ignore_bootstrap: ignore_bootstrap  })
-  ui.individual_button(button_panel.append('li'),
-                       { key: keys.extent_canvas,
-                         text: '↔',
-                         icon: 'glyphicon glyphicon-resize-full',
-                         tooltip: 'Zoom to canvas',
-                         key_text: (enable_keys ? ' (1)' : null),
-                         ignore_bootstrap: ignore_bootstrap  })
-  if (full_screen_button) {
-    ui.individual_button(button_panel.append('li'),
-                         {   key: keys.full_screen,
-                             text: '▣',
-                             icon: 'glyphicon glyphicon-fullscreen',
-                             tooltip: 'Full screen',
-                             key_text: (enable_keys ? ' (2)' : null),
-                             ignore_bootstrap: ignore_bootstrap
-                         })
-  }
-
-  // mode buttons
-  if (enable_editing && menu_option === 'all') {
-    ui.radio_button_group(button_panel.append('li'))
-      .button({ key: keys.zoom_mode,
-                id: 'zoom-mode-button',
-                text: 'Z',
-                icon: 'glyphicon glyphicon-move',
-                tooltip: 'Pan mode',
-                key_text: (enable_keys ? ' (Z)' : null),
-                ignore_bootstrap: ignore_bootstrap  })
-      .button({ key: keys.brush_mode,
-                text: 'V',
-                id: 'brush-mode-button',
-                icon: 'glyphicon glyphicon-hand-up',
-                tooltip: 'Select mode',
-                key_text: (enable_keys ? ' (V)' : null),
-                ignore_bootstrap: ignore_bootstrap  })
-      .button({ key: keys.build_mode,
-                text: 'N',
-                id: 'build-mode-button',
-                icon: 'glyphicon glyphicon-plus',
-                tooltip: 'Add reaction mode',
-                key_text: (enable_keys ? ' (N)' : null),
-                ignore_bootstrap: ignore_bootstrap  })
-      .button({ key: keys.rotate_mode,
-                text: 'R',
-                id: 'rotate-mode-button',
-                icon: 'glyphicon glyphicon-repeat',
-                tooltip: 'Rotate mode',
-                key_text: (enable_keys ? ' (R)' : null),
-                ignore_bootstrap: ignore_bootstrap  })
-      .button({ key: keys.text_mode,
-                text: 'T',
-                id: 'text-mode-button',
-                icon: 'glyphicon glyphicon-font',
-                tooltip: 'Text mode',
-                key_text: (enable_keys ? ' (T)' : null),
-                ignore_bootstrap: ignore_bootstrap  })
-
-    // arrow buttons
-    this.direction_buttons = button_panel.append('li')
-    var o = ui.button_group(this.direction_buttons)
-      .button({ key: keys.direction_arrow_left,
-                text: '←',
-                icon: 'glyphicon glyphicon-arrow-left',
-                tooltip: 'Direction arrow (←)',
-                ignore_bootstrap: ignore_bootstrap  })
-      .button({ key: keys.direction_arrow_right,
-                text: '→',
-                icon: 'glyphicon glyphicon-arrow-right',
-                tooltip: 'Direction arrow (→)',
-                ignore_bootstrap: ignore_bootstrap  })
-      .button({ key: keys.direction_arrow_up,
-                text: '↑',
-                icon: 'glyphicon glyphicon-arrow-up',
-                tooltip: 'Direction arrow (↑)',
-                ignore_bootstrap: ignore_bootstrap  })
-      .button({ key: keys.direction_arrow_down,
-                text: '↓',
-                icon: 'glyphicon glyphicon-arrow-down',
-                tooltip: 'Direction arrow (↓)',
-                ignore_bootstrap: ignore_bootstrap  })
-  }
-}
-
-function _toggle_direction_buttons(on_off) {
-  if (_.isUndefined(on_off))
-    on_off = !this.direction_buttons.style('display') === 'block'
-  this.direction_buttons.style('display', on_off ? 'block' : 'none')
 }
 
 function _create_status (selection) {
