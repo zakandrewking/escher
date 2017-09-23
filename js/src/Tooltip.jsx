@@ -67,9 +67,11 @@ class DefaultTooltip extends Component {
   }
 
   capitalizeFirstLetter (s) {
-    return s === null
-    ? s
-    : s.charAt(0).toUpperCase() + s.slice(1)
+    if (s !== undefined) {
+      return s === null
+      ? s
+      : s.charAt(0).toUpperCase() + s.slice(1)
+    }
   }
 
   render () {

@@ -141,7 +141,10 @@ module.exports = function (grunt) {
     },
 
     mochaTest: {
-      files: 'js/lib/tests/*.js'
+      files: 'js/lib/tests/*.js',
+      options: {
+        require: 'ignore-styles'
+      }
     },
 
     storeCoverage: {

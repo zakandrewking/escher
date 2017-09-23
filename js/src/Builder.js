@@ -18,7 +18,6 @@ var Map = require('./Map')
 var CobraModel = require('./CobraModel')
 var Brush = require('./Brush')
 var CallbackManager = require('./CallbackManager')
-var ui = require('./ui')
 var SearchBar = require('./SearchBar')
 var Settings = require('./Settings')
 var SettingsMenu = require('./SettingsMenu')
@@ -43,6 +42,12 @@ Builder.prototype = {
   pass_tooltip_component_props: pass_tooltip_component_props,
   set_reaction_data: set_reaction_data,
   set_metabolite_data: set_metabolite_data,
+  view_mode: view_mode,
+  build_mode: build_mode,
+  brush_mode: brush_mode,
+  zoom_mode: zoom_mode,
+  rotate_mode: rotate_mode,
+  text_mode: text_mode,
   set_gene_data: set_gene_data,
   _update_data: _update_data,
   _create_status: _create_status,
@@ -379,10 +384,10 @@ function load_map (map_data, should_update_data) {
   var settings_cb = function (type, on_off) {
     // Temporarily set the abs type, for previewing it in the Settings menu
     var o = this.options[type + '_styles']
-    if (on_off && o.indexOf('abs') === -1) {
+    debugger
+    if (o !== null && o !== undefined && on_off && o.indexOf('abs') === -1) {
       o.push('abs')
-    }
-    else if (!on_off) {
+    } else if (o !== null && o !== undefined && !on_off) {
       var i = o.indexOf('abs')
       if (i !== -1) {
         this.options[type + '_styles'] = o.slice(0, i).concat(o.slice(i + 1))
@@ -670,18 +675,18 @@ function renderMenu (mode) {
         />
         <MenuButton
           name={'Find' + (this.options.enable_keys ? ' (F)' : '')}
-          onClick={this.search_bar.toggle.bind(this.search_bar, true)}
+          onClick={() => this.search_bar.toggle.bind(this.search_bar, true)}
           disabledButtons={this.options.disabled_buttons}
         />
         <MenuButton
           name={'Show control points' + (this.options.enable_keys ? ' (B)' : '')}
-          onClick={this.map.toggle_beziers.bind(this.map)}
+          onClick={() => this.map.toggle_beziers.bind(this.map)}
           disabledButtons={this.options.disabled_buttons}
         />
         <li name='divider' />
         <MenuButton
           name={'Settings' + (this.options.enable_keys ? ' (,)' : '')}
-          onClick={this.settings_bar.toggle.bind(this.settings_bar)}
+          onClick={() => this.settings_bar.toggle.bind(this.settings_bar)}
           disabledButtons={this.options.disabled_buttons}
         />
       </Dropdown>
@@ -785,6 +790,36 @@ function _set_mode (mode) {
   if (mode == 'rotate')
     this.map.deselect_text_labels()
   this.map.draw_everything()
+}
+
+function view_mode () {
+  /** For documentation of this function, see docs/javascript_api.rst.  */
+  this._set_mode('view')
+}
+
+function build_mode () {
+  /** For documentation of this function, see docs/javascript_api.rst.  */
+  this._set_mode('build')
+}
+
+function brush_mode () {
+  /** For documentation of this function, see docs/javascript_api.rst.  */
+  this._set_mode('brush')
+}
+
+function zoom_mode () {
+  /** For documentation of this function, see docs/javascript_api.rst.  */
+  this._set_mode('zoom')
+}
+
+function rotate_mode () {
+  /** For documentation of this function, see docs/javascript_api.rst.  */
+  this._set_mode('rotate')
+}
+
+function text_mode () {
+  /** For documentation of this function, see docs/javascript_api.rst.  */
+  this._set_mode('text')
 }
 
 function _reaction_check_add_abs () {
