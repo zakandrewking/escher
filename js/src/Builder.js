@@ -675,18 +675,23 @@ function renderMenu (mode) {
         />
         <MenuButton
           name={'Find' + (this.options.enable_keys ? ' (F)' : '')}
-          onClick={() => this.search_bar.toggle.bind(this.search_bar, true)}
+          onClick={() => this.search_bar.toggle()}
           disabledButtons={this.options.disabled_buttons}
         />
         <MenuButton
-          name={'Show control points' + (this.options.enable_keys ? ' (B)' : '')}
-          onClick={() => this.map.toggle_beziers.bind(this.map)}
+          name={!this.map.beziers_enabled ? ('Show control points' + (this.options.enable_keys ? ' (B)' : '')) : ('Hide control points' + (this.options.enable_keys ? ' (B)' : ''))}
+          onClick={
+            () => {
+              this.map.toggle_beziers()
+              this._set_mode(mode)
+            }
+          }
           disabledButtons={this.options.disabled_buttons}
         />
         <li name='divider' />
         <MenuButton
           name={'Settings' + (this.options.enable_keys ? ' (,)' : '')}
-          onClick={() => this.settings_bar.toggle.bind(this.settings_bar)}
+          onClick={() => this.settings_bar.toggle()}
           disabledButtons={this.options.disabled_buttons}
         />
       </Dropdown>
