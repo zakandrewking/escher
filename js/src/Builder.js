@@ -2,7 +2,6 @@
  * For documentation of this class, see docs/javascript_api.rst
  */
 
-/* global $ */
 /** @jsx h */
 
 import preact, { h } from 'preact'
@@ -540,37 +539,67 @@ function renderMenu (mode) {
       <Dropdown name='Data'>
         <MenuButton
           name='Load reaction data'
-          onClick={file => this.set_reaction_data(file)}
+          onClick={
+            file => {
+              this.set_reaction_data(file)
+              this._set_mode(mode)
+            }
+          }
           type='load'
           disabledButtons={this.options.disabled_buttons}
         />
         <MenuButton
           name='Clear reaction data'
-          onClick={() => this.set_reaction_data(null)}
+          onClick={
+            () => {
+              this.set_reaction_data(null)
+              this._set_mode(mode)
+            }
+          }
           disabledButtons={this.options.disabled_buttons}
         />
         <li name='divider' />
         <MenuButton
           name='Load gene data'
-          onClick={file => this.set_gene_data(file)}
+          onClick={
+            file => {
+              this.set_gene_data(file)
+              this._set_mode(mode)
+            }
+          }
           type='load'
           disabledButtons={this.options.disabled_buttons}
         />
         <MenuButton
           name='Clear gene data'
-          onClick={() => this.set_gene_data(null)}
+          onClick={
+            () => {
+              this.set_gene_data(null)
+              this._set_mode(mode)
+            }
+          }
           disabledButtons={this.options.disabled_buttons}
         />
         <li name='divider' />
         <MenuButton
           name='Load metabolite data'
-          onClick={file => this.set_metabolite_data(file)}
+          onClick={
+            file => {
+              this.set_metabolite_data(file)
+              this._set_mode(mode)
+            }
+          }
           type='load'
           disabledButtons={this.options.disabled_buttons}
         />
         <MenuButton
           name='Clear metabolite data'
-          onClick={() => this.set_metabolite_data(null)}
+          onClick={
+            () => {
+              this.set_metabolite_data(null)
+              this._set_mode(mode)
+            }
+          }
           disabledButtons={this.options.disabled_buttons}
         />
       </Dropdown>
