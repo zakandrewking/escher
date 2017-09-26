@@ -603,7 +603,7 @@ function set_reaction_data (data) {
     this.options.reaction_data = null
     this.time_series_bar.update(this)
 
-  } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
+  } else if (_.isObject(data) && !(_.isArray(data))) { // old data format or csv is [array of numbers]
 
     this.reaction_data_names = utils.get_csv_names()
 

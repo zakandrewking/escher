@@ -20,5 +20,5 @@
 "reaction_data_set_10",
 {"PPA2":0.9, "ENO": 1, "PPS": 2},
 "reaction_data_set_11",
-{"PPA2":1.0, "ENO":0, "PPS": 1 }
+{"PPA2":1, "ENO":0, "PPS": 1 }
 ]
