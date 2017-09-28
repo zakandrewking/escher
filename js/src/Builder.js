@@ -420,13 +420,13 @@ function load_map (map_data, should_update_data) {
     if (this.options.ignore_bootstrap) {
       console.error('Cannot create the dropdown menus if ignore_bootstrap = true')
     } else {
-      if (this.options.reaction_data === null) {
+      if (this.options.reaction_data) {
         this.options.disabled_buttons.push('Clear reaction data')
       }
-      if (this.options.gene_data === null) {
+      if (this.options.gene_data) {
         this.options.disabled_buttons.push('Clear gene data')
       }
-      if (this.options.metabolite_data === null) {
+      if (this.options.metabolite_data) {
         this.options.disabled_buttons.push('Clear metabolite data')
       }
     }
