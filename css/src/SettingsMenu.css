@@ -1,4 +1,5 @@
 .escher-container .settingsBackground {
+  box-sizing: border-box;
   position: absolute;
   top: 0;
   left: 0;
@@ -8,6 +9,10 @@
   background: rgba(0,0,0,.4);
   padding: 5% 0;
   text-align: center;
+}
+
+.escher-container .scale-editor .domain-input {
+  color: #333;
 }
 
 .escher-container .settingsBoxContainer button {

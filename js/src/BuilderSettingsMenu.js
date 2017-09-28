@@ -6,6 +6,7 @@
 
 /** @jsx h */
 import { h, Component } from 'preact'
+import ScaleEditorContainer from './ScaleEditorContainer.js'
 import '../../css/src/SettingsMenu.css'
 
 const ScaleEditor = require('./ScaleEditor')
@@ -188,6 +189,11 @@ class BuilderSettingsMenu extends Component {
             <div className='title'>
               Reactions
             </div>
+            <ScaleEditorContainer
+              settings={this.props.settings}
+              type={'reaction'}
+              map={this.props.map}
+            />
             <div className='subheading'>
               Reaction or Gene data
             </div>
@@ -316,6 +322,11 @@ class BuilderSettingsMenu extends Component {
             <div className='title'>
               Metabolites
             </div>
+            <ScaleEditorContainer
+              settings={this.props.settings}
+              type={'metabolite'}
+              map={this.props.map}
+            />
             <div className='subheading'>
               Metabolite data
             </div>

@@ -388,13 +388,13 @@ function load_map (map_data, should_update_data) {
   this.map.key_manager.toggle(this.options.enable_keys)
 
   // Disable clears
-  if (this.options.reaction_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
+  if (!this.options.reaction_data && this.options.disabled_buttons) {
     this.options.disabled_buttons.push('Clear reaction data')
   }
-  if (this.options.gene_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
+  if (!this.options.gene_data && this.options.disabled_buttons) {
     this.options.disabled_buttons.push('Clear gene data')
   }
-  if (this.options.metabolite_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
+  if (!this.options.metabolite_data && this.options.disabled_buttons) {
     this.options.disabled_buttons.push('Clear metabolite data')
   }
 
@@ -515,6 +515,7 @@ function renderSettingsMenu (currentOptions) {
       {...currentOptions}
       settings={this.settings}
       display={'block'}
+      map={this.map}
     />,
     settingsDivNode,
     settingsDivNode.children.length > 0

@@ -9,6 +9,9 @@ module.exports = {
     libraryTarget: 'umd'
   },
   devtool: 'source-map',
+  resolve: {
+    extensions: ['.js', '.jsx', '.json']
+  },
   module: {
     rules: [
       {

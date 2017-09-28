@@ -236,20 +236,24 @@ function update () {
       }.bind(this))
 
   // enter
-  pickers.enter()
-    .append('g')
+  // TODO make an issue for esher bug where scale colors swap when moving two
+  // pickers with value type next to each other
+  // TODO not rendering all bars the first time
+  const pickers_enter = pickers.enter()
+  pickers_enter.append('g')
     .attr('class', 'picker')
     .style('cursor', 'pointer')
+    .call(drag)
     .append('rect')
   // update
-    .merge(pickers)
+  pickers_enter.merge(pickers)
     .select('rect')
     .attr('x', function (d, i) {
       return d.adjusted_x
     })
     .attr('width', bar_w + 'px')
     .attr('height', bar_h + 'px')
-    .call(drag)
+
   // exit
   pickers.exit().remove()
 
@@ -257,6 +261,7 @@ function update () {
   // make the delete buttons
   // ---------------------------------------------------------------------
 
+  //  TODO make icons render above the pickers
   var trashes = this.trash_group.selectAll('span')
     .data(scale_for_pickers)
   // enter
@@ -268,7 +273,7 @@ function update () {
       if (d.type === 'min' || d.type === 'max') {
         return null
       }
-      return 'trash glyphicon glyphicon-trash'
+      return 'fa fa-trash-o fa-lg'
     })
     .style('left', function (d) {
       // return sc.invert(get_this_val(d)) - (bar_w / 2) + x_disp + 'px'
@@ -290,12 +295,13 @@ function update () {
   // make the add button
   // ---------------------------------------------------------------------
 
+  //  TODO fix icons repetitively adding when dragging pickers
   var add = this.add_group.selectAll('.add')
     .data([ 'add' ])
   // enter
   add.enter()
     .append('span')
-    .attr('class', 'add glyphicon glyphicon-plus')
+    .attr('class', 'fa fa-plus fa-lg')
   // update
     .merge(add)
     .on('click', function (d) {
