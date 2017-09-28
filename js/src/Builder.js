@@ -6,6 +6,7 @@
 
 import preact, { h } from 'preact'
 import BuilderMenuBar from './BuilderMenuBar.js'
+import BuilderSettingsMenu from './BuilderSettingsMenu'
 import '../../node_modules/font-awesome/css/font-awesome.min.css'
 import '../../css/src/ButtonPanel.css'
 
@@ -491,6 +492,7 @@ function renderMenu (mode) {
       zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
       search={() => this.search_bar.toggle()}
       toggleBeziers={() => this.map.toggle_beziers()}
+      renderSettingsMenu={() => renderSettingsMenu(this.options, this.settings, this.settings_div)}
     />,
     menuDivNode,
     menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
@@ -576,6 +578,20 @@ function renderButtonPanel (mode) {
     </ul>,
   buttonPanelDivNode,
   buttonPanelDivNode.children.length > 0 ? buttonPanelDivNode.firstChild : undefined)
+}
+
+function renderSettingsMenu (currentOptions, settings, settingsDiv) {
+  const settingsDivNode = settingsDiv.node()
+  preact.render(
+    <BuilderSettingsMenu
+      {...currentOptions}
+      settings={settings}
+      display={'block'}
+    />,
+    settingsDivNode,
+    settingsDivNode.children.length > 0
+    ? settingsDivNode.firstChild
+    : undefined)
 }
 
 function _set_mode (mode) {

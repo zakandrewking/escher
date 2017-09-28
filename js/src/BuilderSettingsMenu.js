@@ -14,10 +14,17 @@ class BuilderSettingsMenu extends Component {
     this.state = {
       display: props.display
     }
+    props.settings.hold_changes()
   }
 
   componentWillReceiveProps (nextProps) {
-    this.setState({...nextProps})
+    this.setState({display: nextProps.display})
+    nextProps.settings.hold_changes()
+  }
+
+  abandonChanges () {
+    this.props.settings.abandon_changes()
+    this.setState({display: 'none'})
   }
 
   saveChanges () {
@@ -26,11 +33,11 @@ class BuilderSettingsMenu extends Component {
   }
 
   handleStyle (value, type) {
-    let style = null
+    let style = []
     if (type === 'reaction_styles') {
-      style = this.props.reaction_styles
+      style.concat(this.props.reaction_styles)
     } else if (type === 'metabolite_styles') {
-      style = this.props.metabolite_styles
+      style.concat(this.props.metabolite_styles)
     }
     if (style) {
       if (style.indexOf(value) > -1) {
@@ -47,7 +54,7 @@ class BuilderSettingsMenu extends Component {
     return (
       <div className='settingsBackground' style={{display: this.state.display}}>
         <div className='settingsBoxContainer'>
-          <button className='discardChanges' onClick={() => this.setState({display: 'none'})}>
+          <button className='discardChanges' onClick={() => this.abandonChanges()}>
             <i className='fa fa-close' aria-hidden='true' />
           </button>
           <button className='saveChanges' onClick={() => this.saveChanges()}>

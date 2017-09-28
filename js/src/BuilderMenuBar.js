@@ -2,7 +2,6 @@
 import { h, Component } from 'preact'
 import Dropdown from './Dropdown.js'
 import MenuButton from './MenuButton.js'
-import BuilderSettingsMenu from './BuilderSettingsMenu'
 
 class BuilderMenuBar extends Component {
   render () {
@@ -210,15 +209,10 @@ class BuilderMenuBar extends Component {
           <li name='divider' />
           <MenuButton
             name={'Settings' + (this.props.enable_keys ? ' (,)' : '')}
+            onClick={() => this.props.renderSettingsMenu()}
             disabledButtons={this.props.disabled_buttons}
             type='settings'
-          >
-            <BuilderSettingsMenu
-              {...this.props}
-              settings={this.props.settings}
-              display={'block'}
-            />
-          </MenuButton>
+          />
         </Dropdown>
         <a className='dropdown' target='#' href='https://escher.readthedocs.org'>?</a>
       </ul>
