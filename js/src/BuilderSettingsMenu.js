@@ -1,5 +1,7 @@
 /**
- * SettingsMenu
+ * SettingsMenu. Handles the functions associated with the UI for changing
+ * settings. Implements Settings.js and ScaleEditor but otherwise only uses
+ * Preact.
  */
 
 /** @jsx h */
@@ -32,6 +34,11 @@ class BuilderSettingsMenu extends Component {
     this.setState({display: 'none'})
   }
 
+  /**
+   * Function to handle changes to the reaction or metabolite styling.
+   * @param {String} value - the style option to be added or removed
+   * @param {String} type - reaction_style or metabolite_style
+   */
   handleStyle (value, type) {
     let style = []
     if (type === 'reaction_styles') {

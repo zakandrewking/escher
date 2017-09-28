@@ -1,5 +1,10 @@
-/** @jsx h */
+/**
+ * ButtonPanel. Sets up the button panel for Builder. Currently calls a
+ * re-render on itself every time the mode is changed. This can be removed upon
+ * porting Builder to Preact
+ */
 
+/** @jsx h */
 import {h, Component} from 'preact'
 import '../../css/src/ButtonPanel.css'
 

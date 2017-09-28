@@ -3,7 +3,6 @@
  */
 
 /** @jsx h */
-
 import preact, { h } from 'preact'
 import ButtonPanel from './ButtonPanel.js'
 import BuilderMenuBar from './BuilderMenuBar.js'
@@ -387,21 +386,15 @@ function load_map (map_data, should_update_data) {
   // Turn it on/off
   this.map.key_manager.toggle(this.options.enable_keys)
 
-  // Set up menu and status bars
-  if (this.options.menu === 'all') {
-    if (this.options.ignore_bootstrap) {
-      console.error('Cannot create the dropdown menus if ignore_bootstrap = true')
-    } else {
-      if (this.options.reaction_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
-        this.options.disabled_buttons.push('Clear reaction data')
-      }
-      if (this.options.gene_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
-        this.options.disabled_buttons.push('Clear gene data')
-      }
-      if (this.options.metabolite_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
-        this.options.disabled_buttons.push('Clear metabolite data')
-      }
-    }
+  // Disable clears
+  if (this.options.reaction_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
+    this.options.disabled_buttons.push('Clear reaction data')
+  }
+  if (this.options.gene_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
+    this.options.disabled_buttons.push('Clear gene data')
+  }
+  if (this.options.metabolite_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
+    this.options.disabled_buttons.push('Clear metabolite data')
   }
 
   // Setup selection box
@@ -452,50 +445,52 @@ function load_map (map_data, should_update_data) {
 
 function renderMenu (mode) {
   const menuDivNode = this.menu_div.node()
-  preact.render(
-    <BuilderMenuBar
-      {...this.options}
-      {...this.map}
-      mode={mode}
-      settings={this.settings}
-      saveMap={() => this.map.save()}
-      loadMap={(file) => this.load_map(file)}
-      saveSvg={() => this.map.save_svg()}
-      savePng={() => this.map.save_png()}
-      clearMap={() => this.map.clear_map()}
-      loadModel={file => this.load_model(file, true)}
-      updateRules={() => this.map.convert_map()}
-      loadReactionData={file => {
-        this.set_reaction_data(file)
-        this._set_mode(mode)
-      }}
-      loadGeneData={file => {
-        this.set_gene_data(file)
-        this._set_mode(mode)
-      }}
-      loadMetaboliteData={file => {
-        this.set_metabolite_data(file)
-        this._set_mode(mode)
-      }}
-      setMode={(newMode) => this._set_mode(newMode)}
-      deleteSelected={() => this.map.delete_selected()}
-      undo={() => this.map.undo_stack.undo()}
-      redo={() => this.map.undo_stack.redo()}
-      togglePrimary={() => this.map.toggle_selected_node_primary()}
-      cyclePrimary={() => this.map.cycle_primary_node()}
-      selectAll={() => this.map.select_all()}
-      selectNone={() => this.map.select_none()}
-      invertSelection={() => this.map.invert_selection()}
-      zoomIn={() => this.zoom_container.zoom_in()}
-      zoomOut={() => this.zoom_container.zoom_out()}
-      zoomExtentNodes={() => this.map.zoom_extent_nodes()}
-      zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
-      search={() => this.search_bar.toggle()}
-      toggleBeziers={() => this.map.toggle_beziers()}
-      renderSettingsMenu={() => renderSettingsMenu(this.options, this.settings, this.settings_div)}
-    />,
-    menuDivNode,
-    menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
+  if (this.options.menu === 'all') {
+    preact.render(
+      <BuilderMenuBar
+        {...this.options}
+        {...this.map}
+        mode={mode}
+        settings={this.settings}
+        saveMap={() => this.map.save()}
+        loadMap={(file) => this.load_map(file)}
+        saveSvg={() => this.map.save_svg()}
+        savePng={() => this.map.save_png()}
+        clearMap={() => this.map.clear_map()}
+        loadModel={file => this.load_model(file, true)}
+        updateRules={() => this.map.convert_map()}
+        loadReactionData={file => {
+          this.set_reaction_data(file)
+          this._set_mode(mode)
+        }}
+        loadGeneData={file => {
+          this.set_gene_data(file)
+          this._set_mode(mode)
+        }}
+        loadMetaboliteData={file => {
+          this.set_metabolite_data(file)
+          this._set_mode(mode)
+        }}
+        setMode={(newMode) => this._set_mode(newMode)}
+        deleteSelected={() => this.map.delete_selected()}
+        undo={() => this.map.undo_stack.undo()}
+        redo={() => this.map.undo_stack.redo()}
+        togglePrimary={() => this.map.toggle_selected_node_primary()}
+        cyclePrimary={() => this.map.cycle_primary_node()}
+        selectAll={() => this.map.select_all()}
+        selectNone={() => this.map.select_none()}
+        invertSelection={() => this.map.invert_selection()}
+        zoomIn={() => this.zoom_container.zoom_in()}
+        zoomOut={() => this.zoom_container.zoom_out()}
+        zoomExtentNodes={() => this.map.zoom_extent_nodes()}
+        zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
+        search={() => this.search_bar.toggle()}
+        toggleBeziers={() => this.map.toggle_beziers()}
+        renderSettingsMenu={() => renderSettingsMenu(this.options, this.settings, this.settings_div)}
+      />,
+      menuDivNode,
+      menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
+  }
 }
 
 function renderButtonPanel (mode) {
