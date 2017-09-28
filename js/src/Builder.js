@@ -5,10 +5,10 @@
 /** @jsx h */
 
 import preact, { h } from 'preact'
-import ButtonPanel from './ButtonPanel.js'
-import BuilderMenuBar from './BuilderMenuBar.js'
-import BuilderSettingsMenu from './BuilderSettingsMenu'
+import Dropdown from './Dropdown.js'
+import MenuButton from './MenuButton.js'
 import '../../node_modules/font-awesome/css/font-awesome.min.css'
+import '../../css/src/ButtonPanel.css'
 
 var utils = require('./utils')
 var BuildInput = require('./BuildInput')
@@ -19,6 +19,7 @@ var Brush = require('./Brush')
 var CallbackManager = require('./CallbackManager')
 var SearchBar = require('./SearchBar')
 var Settings = require('./Settings')
+var SettingsMenu = require('./SettingsMenu')
 var TextEditInput = require('./TextEditInput')
 var QuickJump = require('./QuickJump')
 var data_styles = require('./data_styles')
@@ -86,7 +87,6 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.selection = selection
   this.menu_div = null
   this.button_div = null
-  this.settings_div = null
 
   // apply this object as data for the selection
   this.selection.datum(this)
@@ -369,19 +369,47 @@ function load_map (map_data, should_update_data) {
   this.menu_div = s.append('div')
   var search_bar_div = s.append('div')
   this.button_div = this.selection.append('div')
-  this.settings_div = this.selection.append('div')
 
   // Set up the search bar
   this.search_bar = new SearchBar(search_bar_div, this.map.search_index,
                                   this.map)
+  // Set up the hide callbacks
+  this.search_bar.callback_manager.set('show', function() {
+    this.settings_bar.toggle(false)
+  }.bind(this))
+
+  // Set up the settings
+  var settings_div = this.selection.append('div')
+  var settings_cb = function (type, on_off) {
+    // Temporarily set the abs type, for previewing it in the Settings menu
+    var o = this.options[type + '_styles']
+    debugger
+    if (o !== null && o !== undefined && on_off && o.indexOf('abs') === -1) {
+      o.push('abs')
+    } else if (o !== null && o !== undefined && !on_off) {
+      var i = o.indexOf('abs')
+      if (i !== -1) {
+        this.options[type + '_styles'] = o.slice(0, i).concat(o.slice(i + 1))
+      }
+    }
+    this._update_data(false, true, type)
+  }.bind(this)
+  this.settings_bar = new SettingsMenu(settings_div, this.settings, this.map,
+                                       settings_cb)
+
+  this.settings_bar.callback_manager.set('show', function () {
+    this.search_bar.toggle(false)
+  }.bind(this))
+
   // Set up key manager
   var keys = this._get_keys(this.map, this.zoom_container,
-                            this.search_bar,
+                            this.search_bar, this.settings_bar,
                             this.options.enable_editing,
                             this.options.full_screen_button)
   this.map.key_manager.assigned_keys = keys
   // Tell the key manager about the reaction input and search bar
-  this.map.key_manager.input_list = [this.build_input, this.search_bar, this.text_edit_input, this.tooltip_container]
+  this.map.key_manager.input_list = [this.build_input, this.search_bar,
+                                     this.settings_bar, this.text_edit_input, this.tooltip_container]
   // Make sure the key manager remembers all those changes
   this.map.key_manager.update()
   // Turn it on/off
@@ -392,13 +420,13 @@ function load_map (map_data, should_update_data) {
     if (this.options.ignore_bootstrap) {
       console.error('Cannot create the dropdown menus if ignore_bootstrap = true')
     } else {
-      if (this.options.reaction_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
+      if (this.options.reaction_data === null) {
         this.options.disabled_buttons.push('Clear reaction data')
       }
-      if (this.options.gene_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
+      if (this.options.gene_data === null) {
         this.options.disabled_buttons.push('Clear gene data')
       }
-      if (this.options.metabolite_data === null && this.options.disabled_buttons !== null && this.options.disabled_buttons !== undefined) {
+      if (this.options.metabolite_data === null) {
         this.options.disabled_buttons.push('Clear metabolite data')
       }
     }
@@ -453,47 +481,251 @@ function load_map (map_data, should_update_data) {
 function renderMenu (mode) {
   const menuDivNode = this.menu_div.node()
   preact.render(
-    <BuilderMenuBar
-      {...this.options}
-      {...this.map}
-      mode={mode}
-      settings={this.settings}
-      saveMap={() => this.map.save()}
-      loadMap={(file) => this.load_map(file)}
-      saveSvg={() => this.map.save_svg()}
-      savePng={() => this.map.save_png()}
-      clearMap={() => this.map.clear_map()}
-      loadModel={file => this.load_model(file, true)}
-      updateRules={() => this.map.convert_map()}
-      loadReactionData={file => {
-        this.set_reaction_data(file)
-        this._set_mode(mode)
-      }}
-      loadGeneData={file => {
-        this.set_gene_data(file)
-        this._set_mode(mode)
-      }}
-      loadMetaboliteData={file => {
-        this.set_metabolite_data(file)
-        this._set_mode(mode)
-      }}
-      setMode={(newMode) => this._set_mode(newMode)}
-      deleteSelected={() => this.map.delete_selected()}
-      undo={() => this.map.undo_stack.undo()}
-      redo={() => this.map.undo_stack.redo()}
-      togglePrimary={() => this.map.toggle_selected_node_primary()}
-      cyclePrimary={() => this.map.cycle_primary_node()}
-      selectAll={() => this.map.select_all()}
-      selectNone={() => this.map.select_none()}
-      invertSelection={() => this.map.invert_selection()}
-      zoomIn={() => this.zoom_container.zoom_in()}
-      zoomOut={() => this.zoom_container.zoom_out()}
-      zoomExtentNodes={() => this.map.zoom_extent_nodes()}
-      zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
-      search={() => this.search_bar.toggle()}
-      toggleBeziers={() => this.map.toggle_beziers()}
-      renderSettingsMenu={() => renderSettingsMenu(this.options, this.settings, this.settings_div)}
-    />,
+    <ul className='menuBar' style={{
+      display: 'inline-block',
+      margin: '5px auto 0',
+      border: '1px solid #ddd',
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderRadius: '0',
+      height: '100%',
+      width: '100%'
+    }}>
+      <Dropdown name='Map'>
+        <MenuButton
+          name={'Save map JSON' + (this.options.enable_keys ? ' (Ctrl+S)' : '')}
+          onClick={this.map.save.bind(this.map)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Load map JSON' + (this.options.enable_keys ? ' (Ctrl+O)' : '')}
+          onClick={file => this.load_map(file)}
+          type='load'
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Export as SVG' + (this.options.enable_keys ? ' (Ctrl+Shift+S)' : '')}
+          onClick={() => this.map.save_svg()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Export as PNG' + (this.options.enable_keys ? ' (Ctrl+Shift+P)' : '')}
+          onClick={() => this.map.save_png()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Clear map'
+          onClick={() => this.map.clear_map()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+      </Dropdown>
+      <Dropdown name='Model'>
+        <MenuButton
+          name={'Load COBRA model JSON' + (this.options.enable_keys ? ' (Ctrl+M)' : '')}
+          onClick={file => this.callback_manager.run('load_model', null, file, true)}
+          type='load'
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Update names and gene reaction rules using model'
+          onClick={this.map.convert_map.bind(this.map)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Clear model'
+          onClick={this.load_model.bind(this, null, true)}
+          disabledButtons={this.options.disabled_buttons}
+        />
+      </Dropdown>
+      <Dropdown name='Data'>
+        <MenuButton
+          name='Load reaction data'
+          onClick={
+            file => {
+              this.set_reaction_data(file)
+              this._set_mode(mode)
+            }
+          }
+          type='load'
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Clear reaction data'
+          onClick={
+            () => {
+              this.set_reaction_data(null)
+              this._set_mode(mode)
+            }
+          }
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <li name='divider' />
+        <MenuButton
+          name='Load gene data'
+          onClick={
+            file => {
+              this.set_gene_data(file)
+              this._set_mode(mode)
+            }
+          }
+          type='load'
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Clear gene data'
+          onClick={
+            () => {
+              this.set_gene_data(null)
+              this._set_mode(mode)
+            }
+          }
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <li name='divider' />
+        <MenuButton
+          name='Load metabolite data'
+          onClick={
+            file => {
+              this.set_metabolite_data(file)
+              this._set_mode(mode)
+            }
+          }
+          type='load'
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Clear metabolite data'
+          onClick={
+            () => {
+              this.set_metabolite_data(null)
+              this._set_mode(mode)
+            }
+          }
+          disabledButtons={this.options.disabled_buttons}
+        />
+      </Dropdown>
+      <Dropdown name='Edit' rightMenu='true'>
+        <MenuButton
+          name={'Pan mode' + (this.options.enable_keys ? ' (Z)' : '')}
+          modeName='zoom'
+          mode={mode}
+          onClick={() => this._set_mode('zoom')}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Select mode' + (this.options.enable_keys ? ' (V)' : '')}
+          modeName='brush'
+          mode={mode}
+          onClick={() => this._set_mode('brush')}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Add reaction mode' + (this.options.enable_keys ? ' (N)' : '')}
+          modeName='build'
+          mode={mode}
+          onClick={() => this._set_mode('build')}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Rotate mode' + (this.options.enable_keys ? ' (R)' : '')}
+          modeName='rotate'
+          mode={mode}
+          onClick={() => this._set_mode('rotate')}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Text mode' + (this.options.enable_keys ? ' (T)' : '')}
+          modeName='text'
+          mode={mode}
+          onClick={() => this._set_mode('text')}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <li name='divider' />
+        <MenuButton
+          name={'Delete' + (this.options.enable_keys ? ' (Del)' : '')}
+          onClick={() => this.map.delete_selected()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Undo' + (this.options.enable_keys ? ' (Ctrl+Z)' : '')}
+          onClick={() => this.map.undo_stack.undo()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Redo' + (this.options.enable_keys ? ' (Ctrl+Shift+Z)' : '')}
+          onClick={() => this.map.undo_stack.redo()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Toggle primary/secondary' + (this.options.enable_keys ? ' (P)' : '')}
+          onClick={() => this.map.toggle_selected_node_primary()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Rotate reactant locations' + (this.options.enable_keys ? ' (C)' : '')}
+          onClick={() => this.map.cycle_primary_node()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Select all' + (this.options.enable_keys ? ' (Ctrl+A)' : '')}
+          onClick={() => this.map.select_all()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Select none' + (this.options.enable_keys ? ' (Ctrl+Shift+A)' : '')}
+          onClick={() => this.map.select_none()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name='Invert selection'
+          onClick={() => this.map.invert_selection()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+      </Dropdown>
+      <Dropdown name='View' rightMenu='true'>
+        <MenuButton
+          name={'Zoom in' + (this.options.enable_keys ? ' (+)' : '')}
+          onClick={() => this.zoom_container.zoom_in()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Zoom out' + (this.options.enable_keys ? ' (-)' : '')}
+          onClick={() => this.zoom_container.zoom_out()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Zoom to nodes' + (this.options.enable_keys ? ' (0)' : '')}
+          onClick={() => this.map.zoom_extent_nodes()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Zoom to canvas' + (this.options.enable_keys ? ' (1)' : '')}
+          onClick={() => this.map.zoom_extent_canvas()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={'Find' + (this.options.enable_keys ? ' (F)' : '')}
+          onClick={() => this.search_bar.toggle()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <MenuButton
+          name={!this.map.beziers_enabled ? ('Show control points' + (this.options.enable_keys ? ' (B)' : '')) : ('Hide control points' + (this.options.enable_keys ? ' (B)' : ''))}
+          onClick={
+            () => {
+              this.map.toggle_beziers()
+              this._set_mode(mode)
+            }
+          }
+          disabledButtons={this.options.disabled_buttons}
+        />
+        <li name='divider' />
+        <MenuButton
+          name={'Settings' + (this.options.enable_keys ? ' (,)' : '')}
+          onClick={() => this.settings_bar.toggle()}
+          disabledButtons={this.options.disabled_buttons}
+        />
+      </Dropdown>
+      <a className='dropdown' target='#' href='https://escher.readthedocs.org'>?</a>
+    </ul>,
     menuDivNode,
     menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
 }
@@ -501,29 +733,61 @@ function renderMenu (mode) {
 function renderButtonPanel (mode) {
   const buttonPanelDivNode = this.button_div.node()
   preact.render(
-    <ButtonPanel
-      setMode={(newMode) => this._set_mode(newMode)}
-      zoomContainer={this.zoom_container}
-      map={this.map}
-      mode={mode}
-      buildInput={this.build_input}
-    />,
+    <ul className='buttonPanel'>
+      <li>
+        <button className='button' onClick={() => this.zoom_container.zoom_in()} title='Zoom in (+)'>
+          <i className='fa fa-plus-circle fa-2x' />
+        </button>
+      </li>
+      <li>
+        <button className='button' onClick={() => this.zoom_container.zoom_out()} title='Zoom out (-)'>
+          <i className='fa fa-minus-circle fa-2x' />
+        </button>
+      </li>
+      <li>
+        <button className='button' onClick={() => this.map.zoom_extent_canvas()} title='Zoom to canvas (1)'>
+          <i className='fa fa-expand fa-2x' />
+        </button>
+      </li>
+      <li className='grouping'>
+        <label className='buttonGroup' title='Pan mode (Z)' for='zoom' id={mode === 'zoom' ? 'currentMode' : null}>
+          <i className='fa fa-arrows fa-2x' style={{padding: '6px'}} />
+        </label>
+        <input type='radio' id='zoom' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('zoom')} />
+        <label className='buttonGroup' title='Select mode (V)' for='brush' id={mode === 'brush' ? 'currentMode' : null}>
+          <i className='fa fa-mouse-pointer fa-2x' style={{padding: '6px'}} />
+        </label>
+        <input type='radio' id='brush' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('brush')} />
+        <label className='buttonGroup' title='Add reaction mode (N)' for='build' id={mode === 'build' ? 'currentMode' : null}>
+          <i className='fa fa-wrench fa-2x' style={{padding: '6px'}} />
+        </label>
+        <input type='radio' id='build' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('build')} />
+        <label className='buttonGroup' title='Rotate mode (R)' for='rotate' id={mode === 'rotate' ? 'currentMode' : null}>
+          <i className='fa fa-rotate-right fa-2x' style={{padding: '6px'}} />
+        </label>
+        <input type='radio' id='rotate' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('rotate')} />
+        <input type='radio' id='text' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('text')} />
+        <label className='buttonGroup' title='Text mode (T)' for='text' id={mode === 'text' ? 'currentMode' : null}>
+          <i className='fa fa-font fa-2x' style={{padding: '6px'}} />
+        </label>
+      </li>
+      <li className='grouping' style={mode === 'build' ? {display: 'list-item'} : {display: 'none'}}>
+        <button className='buttonGroup' title='Direction arrow (←)' onClick={() => this.build_input.direction_arrow.left()}>
+          <i className='fa fa-arrow-left fa-2x' />
+        </button>
+        <button className='buttonGroup' title='Direction arrow (→)' onClick={() => this.build_input.direction_arrow.right()}>
+          <i className='fa fa-arrow-right fa-2x' />
+        </button>
+        <button className='buttonGroup' title='Direction arrow (↑)' onClick={() => this.build_input.direction_arrow.up()}>
+          <i className='fa fa-arrow-up fa-2x' />
+        </button>
+        <button className='buttonGroup' title='Direction arrow (↓)' onClick={() => this.build_input.direction_arrow.down()}>
+          <i className='fa fa-arrow-down fa-2x' />
+        </button>
+      </li>
+    </ul>,
   buttonPanelDivNode,
   buttonPanelDivNode.children.length > 0 ? buttonPanelDivNode.firstChild : undefined)
-}
-
-function renderSettingsMenu (currentOptions, settings, settingsDiv) {
-  const settingsDivNode = settingsDiv.node()
-  preact.render(
-    <BuilderSettingsMenu
-      {...currentOptions}
-      settings={settings}
-      display={'block'}
-    />,
-    settingsDivNode,
-    settingsDivNode.children.length > 0
-    ? settingsDivNode.firstChild
-    : undefined)
 }
 
 function _set_mode (mode) {
