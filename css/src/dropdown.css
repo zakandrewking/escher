@@ -1,4 +1,16 @@
+.escher-container .menuBar {
+  box-sizing: border-box;
+  display: inline-block;
+  margin: 5px auto 0;
+  border: 1px solid #ddd;
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 0;
+  height: 100%;
+  width: 100%;
+}
+
 .escher-container .dropdown {
+  position: relative;
   word-spacing: -2px;
   float: left;
   box-sizing: border-box;
@@ -23,10 +35,14 @@
   user-select: none;
 }
 
-.escher-container .dropdownButton {
+.escher-container .dropdownButton, .escher-container a {
   color: #d9230f!important;
   border: 1px solid transparent;
   padding: 5px 9px;
+}
+
+.escher-container a {
+  text-decoration: none;
 }
 
 .escher-container a.dropdown {
@@ -38,12 +54,12 @@
   line-height: 1.42857143;
 }
 
-.escher-container .dropdownButton:focus {
+.escher-container .dropdownButton:focus, .escher-container a:focus {
   color: #91170a!important;
   text-decoration: underline;
 }
 
-.escher-container .dropdownButton:hover {
+.escher-container .dropdownButton:hover, .escher-container a:hover {
   color: #91170a!important;
   text-decoration: underline;
 }
@@ -62,7 +78,7 @@
   }
 }
 
-.escher-container .menu {
+.escher-container .dropdown .menu {
   font-weight: normal!important;
   word-spacing: 0;
   position: absolute;
@@ -119,6 +135,7 @@
 }
 
 .escher-container .menuButton {
+  box-sizing: border-box;
   width: 100%;
   padding: 3px 20px;
   margin: 0;
@@ -158,4 +175,8 @@
   -ms-transform:rotate(45deg);     /* Internet Explorer 9 */
   -webkit-transform:rotate(45deg); /* Chrome, Safari, Opera */
   transform:rotate(45deg);         /* Standard syntax */
+}
+
+.fa.fa-caret-down {
+  font-size: 13px;
 }

@@ -47,8 +47,8 @@ class Dropdown extends Component {
     return (
       <li className='dropdown'>
         <div className='dropdownButton' tabindex='0' ref={this.setWrapperRef} onClick={() => this.onClick()} onKeyDown={event => this.handleKeyDown(event)}>
-          {this.props.name + ' '}
-          <b class='caret' />
+          {this.props.name}&nbsp;&nbsp;
+          <i className='fa fa-caret-down' />
         </div>
         <ul className='menu' style={this.state.visible ? {display: 'block'} : {display: 'none'}} id={this.props.rightMenu === 'true' ? 'rightMenu' : ''}>
           {this.props.children.map((listItem) => {

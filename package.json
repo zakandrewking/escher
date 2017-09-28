@@ -34,7 +34,6 @@
     "babel-plugin-transform-react-jsx": "^6.24.1",
     "babel-preset-es2015": "^6.24.1",
     "biojs-sniper": "^0.2.9",
-    "bootstrap": "^3.3.6",
     "bootswatch": "^3.3.6",
     "chai": "^3.3.0",
     "css-loader": "^0.28.7",

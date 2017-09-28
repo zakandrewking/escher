@@ -38,10 +38,10 @@
   position: relative;
 }
 
-.escher-container *:not(.btn,.glyphicon,.caret,a) {
+/* .escher-container *:not(.btn,.glyphicon,.caret,a) {
   font-size: 14px;
   color: #333333;
-}
+} */
 
 /* Applied to the body when Escher fills the screen. This stops browser from
 showing scroll-end animations. */
@@ -444,7 +444,7 @@ resizes. */
   font-weight: bold;
 }
 .escher-container .light {
-  color: #8b8b8be;
+  color: #8b8b8b;
   font-weight: normal;
 }
 /* text edit input */
