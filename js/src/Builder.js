@@ -54,7 +54,8 @@ Builder.prototype = {
   _get_keys: _get_keys,
   _setup_confirm_before_exit: _setup_confirm_before_exit,
   renderMenu: renderMenu,
-  renderButtonPanel: renderButtonPanel
+  renderButtonPanel: renderButtonPanel,
+  renderSettingsMenu: renderSettingsMenu
 }
 module.exports = Builder
 
@@ -486,7 +487,7 @@ function renderMenu (mode) {
         zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
         search={() => this.search_bar.toggle()}
         toggleBeziers={() => this.map.toggle_beziers()}
-        renderSettingsMenu={() => renderSettingsMenu(this.options, this.settings, this.settings_div)}
+        renderSettingsMenu={() => this.renderSettingsMenu(this.options)}
       />,
       menuDivNode,
       menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
@@ -507,12 +508,12 @@ function renderButtonPanel (mode) {
   buttonPanelDivNode.children.length > 0 ? buttonPanelDivNode.firstChild : undefined)
 }
 
-function renderSettingsMenu (currentOptions, settings, settingsDiv) {
-  const settingsDivNode = settingsDiv.node()
+function renderSettingsMenu (currentOptions) {
+  const settingsDivNode = this.settings_div.node()
   preact.render(
     <BuilderSettingsMenu
       {...currentOptions}
-      settings={settings}
+      settings={this.settings}
       display={'block'}
     />,
     settingsDivNode,
@@ -985,8 +986,8 @@ function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editin
     },
     show_settings: {
       key: ',',
-      target: settings_bar,
-      fn: settings_bar.toggle,
+      target: this,
+      fn: () => this.renderSettingsMenu(this.options),
       ignore_with_input: true,
     },
   }
