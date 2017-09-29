@@ -204,14 +204,17 @@ class BuilderSettingsMenu extends Component {
               <ScaleSelector>
                 <ScaleSelection
                   name='Default'
+                  scale={this.state.defaultScale}
                   onClick={() => this.props.settings.set_conditional('reaction_scale', this.state.defaultScale)}
                 />
                 <ScaleSelection
                   name='Preset Scale 1'
+                  scale={this.state.presetScale1}
                   onClick={() => this.props.settings.set_conditional('reaction_scale', this.state.presetScale1)}
                 />
                 <ScaleSelection
                   name='Preset Scale 2'
+                  scale={this.state.presetScale2}
                   onClick={() => this.props.settings.set_conditional('reaction_scale', this.state.presetScale2)}
                 />
               </ScaleSelector>
@@ -353,14 +356,17 @@ class BuilderSettingsMenu extends Component {
               <ScaleSelector>
                 <ScaleSelection
                   name='Default'
+                  scale={this.state.defaultScale}
                   onClick={() => this.props.settings.set_conditional('metabolite_scale', this.state.defaultScale)}
                 />
                 <ScaleSelection
                   name='Preset Scale 1'
+                  scale={this.state.presetScale1}
                   onClick={() => this.props.settings.set_conditional('metabolite_scale', this.state.presetScale1)}
                 />
                 <ScaleSelection
                   name='Preset Scale 2'
+                  scale={this.state.presetScale2}
                   onClick={() => this.props.settings.set_conditional('metabolite_scale', this.state.presetScale2)}
                 />
               </ScaleSelector>

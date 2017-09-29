@@ -169,7 +169,6 @@
 }
 
 .escher-container .selectorMenu {
-  width: inherit;
   position: absolute;
   z-index: 1;
   background-color: white;
