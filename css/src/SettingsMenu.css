@@ -80,7 +80,6 @@
 .escher-container .settingsBox .title {
   font-size: 17px;
   font-weight: 700;
-  margin-top: 15px;
   line-height: 1.42857143;
   color: #777777;
 }
@@ -146,4 +145,50 @@
   margin: 18px 0;
   border: 0;
   border-top: 1px solid #dddddd;
+}
+
+.escher-container .scaleTitle {
+  margin-top: 15px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.escher-container .selector {
+  padding-top: 2px;
+}
+
+.escher-container .selectorTitle {
+  background: white;
+  border: 1px solid #a9a9a9;
+  padding: 0 2px;
+  cursor: default;
+}
+
+.escher-container .selectorTitle:hover {
+  border-color: black;
+}
+
+.escher-container .selectorMenu {
+  width: inherit;
+  position: absolute;
+  z-index: 1;
+  background-color: white;
+  border: 1px solid #a9a9a9;
+  min-width: 155px;
+}
+
+.escher-container .scaleSelection {
+  cursor: default;
+  padding: 0 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.escher-container .scaleSelection:hover {
+  background-color: dodgerblue;
+  color: white;
+}
+
+.escher-container .scaleName {
+  margin-right: 15px;
 }

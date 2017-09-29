@@ -6,16 +6,27 @@
 
 /** @jsx h */
 import { h, Component } from 'preact'
+import ScaleSelector from './ScaleSelector.js'
 import ScaleEditorContainer from './ScaleEditorContainer.js'
+import ScaleSelection from './ScaleSelection.js'
 import '../../css/src/SettingsMenu.css'
-
-const ScaleEditor = require('./ScaleEditor')
 
 class BuilderSettingsMenu extends Component {
   constructor (props) {
     super(props)
+    const presetScale1 = [
+      { type: 'min', color: '#c8c8c8', size: 12 },
+      { type: 'median', color: '#9696ff', size: 20 },
+      { type: 'max', color: '#ff0000', size: 25 }]
+    const presetScale2 = [
+      { type: 'min', color: '#d142f4', size: 12 },
+      { type: 'median', color: '#4df441', size: 20 },
+      { type: 'max', color: '#adb742', size: 25 }]
     this.state = {
-      display: props.display
+      display: props.display,
+      defaultScale: props.reaction_scale,
+      presetScale1,
+      presetScale2
     }
     props.settings.hold_changes()
   }
@@ -186,8 +197,24 @@ class BuilderSettingsMenu extends Component {
               <i>Tip: To increase map performance, turn off text boxes (i.e. labels and gene reaction rules).</i>
             </div>
             <hr />
-            <div className='title'>
-              Reactions
+            <div className='scaleTitle'>
+              <div className='title'>
+                Reactions
+              </div>
+              <ScaleSelector>
+                <ScaleSelection
+                  name='Default'
+                  onClick={() => this.props.settings.set_conditional('reaction_scale', this.state.defaultScale)}
+                />
+                <ScaleSelection
+                  name='Preset Scale 1'
+                  onClick={() => this.props.settings.set_conditional('reaction_scale', this.state.presetScale1)}
+                />
+                <ScaleSelection
+                  name='Preset Scale 2'
+                  onClick={() => this.props.settings.set_conditional('reaction_scale', this.state.presetScale2)}
+                />
+              </ScaleSelector>
             </div>
             <ScaleEditorContainer
               settings={this.props.settings}
@@ -319,8 +346,24 @@ class BuilderSettingsMenu extends Component {
               </tr>
             </table>
             <hr />
-            <div className='title'>
-              Metabolites
+            <div className='scaleTitle'>
+              <div className='title'>
+                Metabolites
+              </div>
+              <ScaleSelector>
+                <ScaleSelection
+                  name='Default'
+                  onClick={() => this.props.settings.set_conditional('metabolite_scale', this.state.defaultScale)}
+                />
+                <ScaleSelection
+                  name='Preset Scale 1'
+                  onClick={() => this.props.settings.set_conditional('metabolite_scale', this.state.presetScale1)}
+                />
+                <ScaleSelection
+                  name='Preset Scale 2'
+                  onClick={() => this.props.settings.set_conditional('metabolite_scale', this.state.presetScale2)}
+                />
+              </ScaleSelector>
             </div>
             <ScaleEditorContainer
               settings={this.props.settings}
