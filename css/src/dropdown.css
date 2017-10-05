@@ -110,6 +110,10 @@
   padding: 0;
 }
 
+.escher-container .menuBar {
+  box-sizing: border-box;
+}
+
 .escher-container .menuBar>.dropdown+.dropdown {
   margin-left: 2px
 }

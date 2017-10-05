@@ -146,6 +146,7 @@ resizes. */
   pointer-events: none;
 }
 .escher-container .search-menu-container-inline {
+  box-sizing: border-box;
   width: 320px;
   display: inline-block;
   text-align: left;
