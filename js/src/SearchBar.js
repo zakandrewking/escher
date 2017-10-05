@@ -17,6 +17,11 @@ class SearchBar extends Component {
     }
   }
 
+  componentDidMount () {
+    this.props.map.key_manager.add_key_listener(
+      ['enter', 'ctrl+g'], () => this.next(), false)
+  }
+
   componentWillReceiveProps (nextProps) {
     this.setState({
       ...nextProps,
@@ -28,36 +33,38 @@ class SearchBar extends Component {
   }
 
   handleInput (value) {
-    const results = this.dropDuplicates(this.props.map.search_index.find(value))
-    let counter = ''
-    if (results === null) {
-      counter = ''
-      this.props.map.highlight(null)
-    } else if (results.length === 0) {
-      counter = '0 / 0'
-      this.props.map.highlight(null)
-    } else {
-      counter = (this.state.current + ' / ' + results.length)
-      var r = results[this.state.current - 1]
-      if (r.type === 'reaction') {
-        this.props.map.zoom_to_reaction(r.reaction_id)
-        this.props.map.highlight_reaction(r.reaction_id)
-      } else if (r.type === 'metabolite') {
-        this.props.map.zoom_to_node(r.node_id)
-        this.props.map.highlight_node(r.node_id)
-      } else if (r.type === 'text_label') {
-        this.props.map.zoom_to_text_label(r.text_label_id)
-        this.props.map.highlight_text_label(r.text_label_id)
+    if (this.state.visible) {
+      const results = this.dropDuplicates(this.props.map.search_index.find(value))
+      let counter = ''
+      if (results === null || value === '' || !value) {
+        counter = ''
+        this.props.map.highlight(null)
+      } else if (results.length === 0) {
+        counter = '0 / 0'
+        this.props.map.highlight(null)
       } else {
-        throw new Error('Bad search index data type: ' + r.type)
+        counter = (this.state.current + ' / ' + results.length)
+        var r = results[this.state.current - 1]
+        if (r.type === 'reaction') {
+          this.props.map.zoom_to_reaction(r.reaction_id)
+          this.props.map.highlight_reaction(r.reaction_id)
+        } else if (r.type === 'metabolite') {
+          this.props.map.zoom_to_node(r.node_id)
+          this.props.map.highlight_node(r.node_id)
+        } else if (r.type === 'text_label') {
+          this.props.map.zoom_to_text_label(r.text_label_id)
+          this.props.map.highlight_text_label(r.text_label_id)
+        } else {
+          throw new Error('Bad search index data type: ' + r.type)
+        }
       }
+      this.setState({
+        searchItem: value,
+        current: 1,
+        counter,
+        results
+      })
     }
-    this.setState({
-      searchItem: value,
-      current: 1,
-      counter,
-      results
-    })
   }
 
   dropDuplicates (results) {
@@ -113,13 +120,22 @@ class SearchBar extends Component {
     }
   }
 
+  is_visible () {
+    return this.state.visible
+  }
+
   render () {
     return (
       <div
         className='searchContainer'
         style={this.state.visible ? {display: 'flex'} : {display: 'none'}}>
         <div className='searchPanel'>
-          <input className='searchField' value={this.state.searchItem} onKeyUp={event => this.handleInput(event.target.value)} />
+          <input
+            className='searchField'
+            value={this.state.searchItem}
+            onKeyUp={event => this.handleInput(event.target.value)}
+            autofocus
+          />
           <button className='searchBarButton left' onClick={() => this.previous()}>
             <i className='fa fa-chevron-left ' />
           </button>

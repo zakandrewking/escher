@@ -89,6 +89,7 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.menu_div = null
   this.button_div = null
   this.search_bar_div = null
+  this.searchBarRef = null
 
   // apply this object as data for the selection
   this.selection.datum(this)
@@ -377,7 +378,6 @@ function load_map (map_data, should_update_data) {
   var settings_cb = function (type, on_off) {
     // Temporarily set the abs type, for previewing it in the Settings menu
     var o = this.options[type + '_styles']
-    debugger
     if (o !== null && o !== undefined && on_off && o.indexOf('abs') === -1) {
       o.push('abs')
     } else if (o !== null && o !== undefined && !on_off) {
@@ -390,7 +390,7 @@ function load_map (map_data, should_update_data) {
   }.bind(this)
   this.settings_bar = new SettingsMenu(settings_div, this.settings, this.map,
                                        settings_cb)
-
+  this.renderSearchBar(true)
   // Set up key manager
   var keys = this._get_keys(this.map, this.zoom_container,
                             this.search_bar, this.settings_bar,
@@ -398,7 +398,7 @@ function load_map (map_data, should_update_data) {
                             this.options.full_screen_button)
   this.map.key_manager.assigned_keys = keys
   // Tell the key manager about the reaction input and search bar
-  this.map.key_manager.input_list = [this.build_input, this.search_bar,
+  this.map.key_manager.input_list = [this.build_input, this.searchBarRef,
                                      this.settings_bar, this.text_edit_input, this.tooltip_container]
   // Make sure the key manager remembers all those changes
   this.map.key_manager.update()
@@ -720,13 +720,14 @@ function renderMenu (mode) {
     menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
 }
 
-function renderSearchBar () {
+function renderSearchBar (hide) {
   const searchBarNode = this.search_bar_div.node()
   preact.render(
     <SearchBar
-      visible
+      visible={!hide}
       searchIndex={this.map.search_index}
       map={this.map}
+      ref={instance => { this.searchBarRef = instance }}
     />,
     searchBarNode,
     searchBarNode.children.length > 0 ? searchBarNode.firstChild : undefined
@@ -1053,7 +1054,8 @@ function _update_data (update_model, update_map, kind, should_draw) {
     }
 
     // callback
-    this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw)
+    this.callback_manager.run('update_data', null, update_model, update_map,
+                              kind, should_draw)
 
   }.bind(this), delay)
 
@@ -1139,7 +1141,8 @@ function _setup_modes (map, brush, zoom_container) {
 /**
  * Define keyboard shortcuts
  */
-function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editing, full_screen_button) {
+function _get_keys (map, zoom_container, search_bar, settings_bar,
+                    enable_editing, full_screen_button) {
 
   var keys = {
     save: {

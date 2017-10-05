@@ -45,6 +45,7 @@
 }
 
 .escher-container .searchContainer .searchField {
+  color: #777;
   display: inline-block;
   border: 1px solid #DDD;
   margin-right: 4px;
