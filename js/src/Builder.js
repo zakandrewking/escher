@@ -570,6 +570,7 @@ function build_mode () {
 }
 
 function brush_mode () {
+  console.log('pressed')
   /** For documentation of this function, see docs/javascript_api.rst.  */
   this._set_mode('brush')
 }

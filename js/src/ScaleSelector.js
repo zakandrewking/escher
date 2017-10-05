@@ -1,6 +1,9 @@
 /** @jsx h */
 import {h, Component} from 'preact'
 
+/**
+ * TODO what is this component used for?
+ */
 class ScaleSelector extends Component {
   constructor (props) {
     super(props)
