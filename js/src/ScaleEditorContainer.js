@@ -13,7 +13,12 @@ class ScaleEditorContainer extends Component {
   }
 
   componentDidMount () {
-    const editor = new ScaleEditor(d3_select(this.base), this.props.type, this.props.settings, () => this.props.map.get_data_statistics())
+    const editor = new ScaleEditor(
+      d3_select(this.base),
+      this.props.type,
+      this.props.settings,
+      () => this.props.map.get_data_statistics()
+    )
     this.setState({editor})
   }
 
@@ -22,6 +27,7 @@ class ScaleEditorContainer extends Component {
   }
 
   render () {
+    console.log(this.props.map.get_data_statistics())
     return (
       <div className='scaleEditorContainer' />
     )

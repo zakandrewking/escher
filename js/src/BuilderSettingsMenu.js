@@ -137,17 +137,25 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional('hide_secondary_metabolites', !this.props.hide_secondary_metabolites)
+                    this.props.settings.set_conditional(
+                      'hide_secondary_metabolites',
+                      !this.props.hide_secondary_metabolites
+                    )
                   }
                   checked={this.props.hide_secondary_metabolites}
                 />
                 Hide secondary metabolites
               </label>
-              <label title='If checked, then gene reaction rules will be displayed below each reaction label. (Gene reaction rules are always shown when gene data is loaded.)'>
+              <label
+                title='If checked, then gene reaction rules will be displayed below each reaction label. (Gene reaction rules are always shown when gene data is loaded.)'
+              >
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional('show_gene_reaction_rules', !this.props.show_gene_reaction_rules)
+                    this.props.settings.set_conditional(
+                      'show_gene_reaction_rules',
+                      !this.props.show_gene_reaction_rules
+                    )
                   }
                   checked={this.props.show_gene_reaction_rules}
                   />
@@ -157,7 +165,9 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional('hide_all_labels', !this.props.hide_all_labels)
+                    this.props.settings.set_conditional(
+                      'hide_all_labels', !this.props.hide_all_labels
+                    )
                   }
                   checked={this.props.hide_all_labels}
                 />
@@ -167,7 +177,10 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional('allow_building_duplicate_reactions', !this.props.allow_building_duplicate_reactions)
+                    this.props.settings.set_conditional(
+                      'allow_building_duplicate_reactions',
+                      !this.props.allow_building_duplicate_reactions
+                    )
                   }
                   checked={this.props.allow_building_duplicate_reactions}
                 />
@@ -177,7 +190,9 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional('highlight_missing', !this.props.highlight_missing)
+                    this.props.settings.set_conditional(
+                      'highlight_missing', !this.props.highlight_missing
+                    )
                   }
                   checked={this.props.highlight_missing}
                 />Highlight reactions not in model
@@ -186,7 +201,9 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional('enable_tooltips', !this.props.enable_tooltips)
+                    this.props.settings.set_conditional(
+                      'enable_tooltips', !this.props.enable_tooltips
+                    )
                   }
                   checked={this.props.enable_tooltips}
                   />
@@ -205,17 +222,25 @@ class BuilderSettingsMenu extends Component {
                 <ScaleSelection
                   name='Default'
                   scale={this.state.defaultScale}
-                  onClick={() => this.props.settings.set_conditional('reaction_scale', this.state.defaultScale)}
+                  onClick={() => this.props.settings.set_conditional(
+                    'reaction_scale', this.state.defaultScale
+                  )}
                 />
                 <ScaleSelection
                   name='Preset Scale 1'
                   scale={this.state.presetScale1}
-                  onClick={() => this.props.settings.set_conditional('reaction_scale', this.state.presetScale1)}
+                  onClick={() => this.props.settings.set_conditional(
+                    'reaction_scale', this.state.presetScale1
+                  )}
                 />
                 <ScaleSelection
                   name='Preset Scale 2'
                   scale={this.state.presetScale2}
-                  onClick={() => this.props.settings.set_conditional('reaction_scale', this.state.presetScale2)}
+                  onClick={
+                    () => this.props.settings.set_conditional(
+                      'reaction_scale', this.state.presetScale2
+                      )
+                    }
                 />
               </ScaleSelector>
             </div>
@@ -229,9 +254,17 @@ class BuilderSettingsMenu extends Component {
             </div>
             <table className='radioSelection'>
               <tr>
-                <td className='optionLabel' title='Options for reactions data'>Options:</td>
+                <td
+                  className='optionLabel'
+                  title='Options for reactions data'
+                >
+                Options:
+                </td>
                 <td>
-                  <label className='optionGroup' title='If checked, use the absolute value when calculating colors and sizes of reactions on the map'>
+                  <label
+                    className='optionGroup'
+                    title='If checked, use the absolute value when calculating colors and sizes of reactions on the map'
+                  >
                     <input
                       type='checkbox'
                       name='reactionStyle'
@@ -240,7 +273,10 @@ class BuilderSettingsMenu extends Component {
                     />
                     Absolute value
                   </label>
-                  <label className='optionGroup' title='If checked, then size the thickness of reaction lines according to the value of the reaction data'>
+                  <label
+                    className='optionGroup'
+                    title='If checked, then size the thickness of reaction lines according to the value of the reaction data'
+                  >
                     <input
                       type='checkbox'
                       name='reactionStyle'
@@ -316,7 +352,9 @@ class BuilderSettingsMenu extends Component {
               </tr>
             </table>
             <table className='radioSelection'>
-              <tr title='The function that will be used to evaluate AND connections in gene reaction rules (AND connections generally connect components of an enzyme complex)'>
+              <tr
+                title='The function that will be used to evaluate AND connections in gene reaction rules (AND connections generally connect components of an enzyme complex)'
+              >
                 <td className='optionLabelWide'>Method for evaluating AND:</td>
                 <td>
                   <label className='optionGroup'>
@@ -357,17 +395,23 @@ class BuilderSettingsMenu extends Component {
                 <ScaleSelection
                   name='Default'
                   scale={this.state.defaultScale}
-                  onClick={() => this.props.settings.set_conditional('metabolite_scale', this.state.defaultScale)}
+                  onClick={() => this.props.settings.set_conditional(
+                    'metabolite_scale', this.state.defaultScale
+                  )}
                 />
                 <ScaleSelection
                   name='Preset Scale 1'
                   scale={this.state.presetScale1}
-                  onClick={() => this.props.settings.set_conditional('metabolite_scale', this.state.presetScale1)}
+                  onClick={() => this.props.settings.set_conditional(
+                    'metabolite_scale', this.state.presetScale1
+                  )}
                 />
                 <ScaleSelection
                   name='Preset Scale 2'
                   scale={this.state.presetScale2}
-                  onClick={() => this.props.settings.set_conditional('metabolite_scale', this.state.presetScale2)}
+                  onClick={() => this.props.settings.set_conditional(
+                    'metabolite_scale', this.state.presetScale2
+                  )}
                 />
               </ScaleSelector>
             </div>
@@ -381,9 +425,17 @@ class BuilderSettingsMenu extends Component {
             </div>
             <table className='radioSelection'>
               <tr>
-                <td className='optionLabel' title='Options for metabolite data'>Options:</td>
+                <td
+                  className='optionLabel'
+                  title='Options for metabolite data'
+                >
+                Options:
+                </td>
                 <td>
-                  <label className='optionGroup' title='If checked, use the absolute value when calculating colors and sizes of metabolites on the map'>
+                  <label
+                    className='optionGroup'
+                    title='If checked, use the absolute value when calculating colors and sizes of metabolites on the map'
+                  >
                     <input
                       type='checkbox'
                       name='metaboliteStyle'
@@ -392,7 +444,10 @@ class BuilderSettingsMenu extends Component {
                     />
                     Absolute value
                   </label>
-                  <label className='optionGroup' title='If checked, then size the thickness of reaction lines according to the value of the metabolite data'>
+                  <label
+                    className='optionGroup'
+                    title='If checked, then size the thickness of reaction lines according to the value of the metabolite data'
+                  >
                     <input
                       type='checkbox'
                       name='metaboliteStyle'
