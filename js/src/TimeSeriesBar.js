@@ -6,7 +6,7 @@
 var utils = require('./utils')
 var CallbackManager = require('./CallbackManager')
 var _ = require('underscore')
-var data_styles = require('./data_styles.js')
+//var data_styles = require('./data_styles.js')
 var d3_select = require('d3-selection').select
 var d3_scale = require('d3-scale')
 var d3_interpolate = require('d3-interpolate')
@@ -143,7 +143,7 @@ function init (sel, map, builder, type_of_data) {
       if (d3_select('#checkBoxChart').property('checked')) {
         toggle_chart(false)
         toggle_chart(true)
-        create_chart(builder, map)
+        //create_chart(builder, map)
       }
 
     })
@@ -168,7 +168,7 @@ function init (sel, map, builder, type_of_data) {
         if (d3_select('#checkBoxChart').property('checked')) {
           toggle_chart(false)
           toggle_chart(true)
-          create_chart(builder, map)
+          //create_chart(builder, map)
         }
         builder.set_data_indices(builder.type_of_data, builder.reference)
       }
@@ -192,7 +192,7 @@ function init (sel, map, builder, type_of_data) {
       if (d3_select('#checkBoxChart').property('checked')) {
         toggle_chart(false)
         toggle_chart(true)
-        create_chart(builder, map)
+        //create_chart(builder, map)
       }
     })
     .style('display', 'none')
@@ -218,7 +218,7 @@ function init (sel, map, builder, type_of_data) {
       if (d3_select('#checkBoxChart').property('checked')) {
         toggle_chart(false)
         toggle_chart(true)
-        create_chart(builder, map)
+        //create_chart(builder, map)
       }
     })
     .style('display', 'none')
@@ -286,7 +286,7 @@ function init (sel, map, builder, type_of_data) {
         } else {
           sliding_window = false
           toggle_chart(true)
-          create_chart(builder, map)
+          //create_chart(builder, map)
         }
       } else {
         if (builder.difference_mode) {
@@ -342,7 +342,7 @@ function openTab (type_of_data, builder) {
     tabs[i].style.display = 'none'
   }
 
-  builder.type_of_data = type_of_data
+  //builder.type_of_data = type_of_data
 
   if (builder.type_of_data === 'reaction') {
     d3_select('#reaction_tab_button').style('background-color', 'white')
@@ -356,13 +356,6 @@ function openTab (type_of_data, builder) {
     d3_select('#metabolite_tab_button').style('background-color', 'white')
     //metabolite_tab.style('display', 'block')
     update(builder)
-  }
-  else if (builder.type_of_data === 'both') {
-    //both_tab.style('display', 'block')
-    d3_select('#both_tab_button').style('background-color', 'white')
-    update(builder)
-  } else {
-// ?
   }
 
 }
@@ -449,31 +442,6 @@ function update (builder) {
     toggle_chart(false)
   }
 }
-
-// function next (builder) {
-//
-//   if (this.current < get_current_data_set(builder).length - 1) {
-//     this.current++
-//   }
-//   d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[this.current])
-//   d3_select('#sliderReference').property('value', this.current)
-//   d3_select('#referenceText').text('Reference Data Set: ' + this.current)
-//   d3_select('#dropDownMenuReference').property('selectedIndex', this.current)
-//   builder.set_data_indices(builder.type_of_data, this.current)
-// }
-//
-// function previous (builder) {
-//
-//   if (this.current > 0) {
-//     this.current--
-//   }
-//   d3_select('#counter').text('Display Dataset: ' + get_current_data_set_names(builder)[this.current])
-//   d3_select('#sliderReference').property('value', this.current)
-//   d3_select('#referenceText').text('Reference Data Set: ' + this.current)
-//   d3_select('#dropDownMenuReference').property('selectedIndex', this.current)
-//
-//   builder.set_data_indices(builder.type_of_data, this.current)
-// }
 
 /*
  *
@@ -682,18 +650,6 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
   }
 }
 
-// function toggleDifferenceMode (builder) {
-//
-//   if (builder.difference_mode) {
-//     builder.difference_mode = false
-//     builder.reference = 0
-//     builder.target = 0
-//   } else {
-//     builder.difference_mode = true
-//   }
-//
-// }
-
 function showDifferenceData (builder) {
   toggle_chart(false)
   builder.difference_mode = true
@@ -734,6 +690,9 @@ function toggle (on_off) {
 
 }
 
+/*
+
+ */
 function create_chart (builder, map) {
 
   var current_data_set = []
@@ -969,17 +928,17 @@ function get_array_of_time_points (builder, map) {
   return array_of_time_points
 }
 
-function get_linear_time_scale (builder, map) {
-
-  var time_scale_is_linear
-
-  for (var i in get_current_data_set_names(builder)) {
-    var name = get_current_data_set_names(builder)[i]
-    time_scale_is_linear = !(name.startsWith('t') && typeof parseInt(name.slice(1)) === 'number')
-  }
-
-  return time_scale_is_linear
-}
+// function get_linear_time_scale (builder, map) {
+//
+//   var time_scale_is_linear
+//
+//   for (var i in get_current_data_set_names(builder)) {
+//     var name = get_current_data_set_names(builder)[i]
+//     time_scale_is_linear = !(name.startsWith('t') && typeof parseInt(name.slice(1)) === 'number')
+//   }
+//
+//   return time_scale_is_linear
+// }
 
 function animate_time_line (tick, transition_duration) {
 

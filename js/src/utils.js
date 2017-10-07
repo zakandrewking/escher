@@ -64,10 +64,7 @@ module.exports = {
   get_window: get_window,
   d3_transform_catch: d3_transform_catch,
   check_browser: check_browser,
-  get_csv_names: get_csv_names
 }
-
-var csv_names = []
 
 /**
  * Check if Blob is available, and alert if it is not.
@@ -694,13 +691,24 @@ function load_json_or_csv (f, callback, pre_fn, failure_fn,
         data[1] = input.data
 
         console.log("new format type 2b")
+
+      } else if(
+        _.isArray(input) &&
+            (_.isObject(input[0]) && !_.isArray(input[0])) &&
+            (_.isObject(input[1]) && !_.isArray(input[1]))) { // is old format but two data sets
+
+        data[0] = ["set_1", "set_2"]
+        data[1] = input
+
+        console.log('old format, two data sets')
+
       } else { // old data format
 
-        data = []
+        //data = []
         data = input
         //data[0] = names
         //data[1] = input
-        console.log('old format')
+        console.log('old format, one data set')
       }
 
     } catch (e) {
@@ -1224,12 +1232,4 @@ function csv_converter(csv_rows) {
   data[0] = names
   data[1] = converted
   return data
-}
-
-function check_if_array_only_contains_strings(array) {
-  return array.every(function(elem){ return typeof elem === "string" });
-}
-
-function get_csv_names(){
-  return csv_names
 }

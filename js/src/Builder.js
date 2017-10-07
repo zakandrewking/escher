@@ -596,26 +596,20 @@ function set_reaction_data (data) {
   this.reaction_data_names.length = 0
 
   // new data is [array of names][array of numbers]
-  // new case for reset to null, because crashes on null[1]
   if (data === null) {
 
     this.reaction_data_names = null
     this.options.reaction_data = null
     this.time_series_bar.update(this)
 
-  } else if (_.isObject(data) && !(_.isArray(data))) { // old data format or csv is [array of numbers]
 
-    this.reaction_data_names = utils.get_csv_names()
+  } else if (_.isObject(data) && !(_.isArray(data))) {
+    // old data format from JSON is object
+    // old data format from csv is prepared to go to else case
 
-    // make up names
-    if (this.reaction_data_names.length === 0) {
-      for (var index in data) {
-        this.reaction_data_names.push('data set ' + index)
-      }
-    }
+    this.reaction_data_names = ["reaction data set"]
 
-
-    this.options.reaction_data = data
+    this.options.reaction_data = [data]
     this.type_of_data = 'reaction'
     this.time_series_bar.openTab('reaction', this)
 
@@ -646,7 +640,7 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     this.settings.set_conditional('show_gene_reaction_rules', false)
   }
   this.gene_data_names = []
-  this.gene_data_names.length = 0
+  //this.gene_data_names.length = 0
 
 
   // new data is [array of names][array of numbers]
@@ -658,25 +652,19 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     this.time_series_bar.update(this)
 
 
-  } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
+  } else if (_.isObject(data) && !(_.isArray(data))) { // old data format or csv is [array of numbers]
 
-    this.gene_data_names = utils.get_csv_names()
-
-    if(this.gene_data_names.length === 0){
-      for (var index in data) {// make up names
-        this.gene_data_names.push('data set ' + index)
-      }
-    }
-
-    this.options.gene_data = data
     this.type_of_data = 'gene'
+    this.gene_data_names = ["gene data set"]
+
+    this.options.gene_data = [data]
     this.time_series_bar.openTab('gene', this)
 
   } else {
+    this.type_of_data = 'gene'
     this.gene_data_names = data[0]
     this.options.gene_data = data[1]
 
-    this.type_of_data = 'gene'
     this.time_series_bar.openTab('gene', this)
 
   }
@@ -702,17 +690,10 @@ function set_metabolite_data (data) {
     this.time_series_bar.update(this)
 
 
-  } else if (data[0][0] === undefined) { // old data format or csv is [array of numbers]
+  } else if (_.isObject(data) && !(_.isArray(data))) { // old data format or csv is [array of numbers]
 
-    this.metabolite_data_names = utils.get_csv_names() // get names from csv
-
-    if(this.metabolite_data_names.length === 0){ // or make up names
-      for (var index in data) {
-        this.metabolite_data_names.push('data set ' + index)
-      }
-    }
-
-    this.options.metabolite_data = data
+    this.metabolite_data_names = ["metabolite data set"]
+    this.options.metabolite_data = [data]
     this.type_of_data = 'metabolite'
     this.time_series_bar.openTab('metabolite', this)
 
@@ -852,7 +833,7 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
       if(update_stats && this.options.gene_data !== null){
         var genes_for_data_scales = []
 
-        for (var i in this.options.reaction_data) {
+        for (var i in this.options.gene_data) {
           genes_for_data_scales = genes_for_data_scales.concat(d3.values(this.options.gene_data[i]))
         }
         this.map.set_reactions_for_data_scales(genes_for_data_scales)
@@ -950,7 +931,13 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
       utils.extend(all_reactions, map.reactions, true)
 
     // this object has reaction keys and values containing associated genes
-    return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+
+    // TODO: handle here +2 data sets?
+    if(gene_data.length > 2){
+      return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+    } else {
+      return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+    }
   }
 }
 
