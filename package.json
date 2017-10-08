@@ -77,7 +77,9 @@
     "mousetrap": "^1.5.3",
     "tinier": "^0.5.1",
     "underscore": "^1.8.3",
-    "vkbeautify": "^0.99.1"
+    "vkbeautify": "^0.99.1",
+    "d3-interpolate": "latest",
+    "d3": "latest"
   },
   "scripts": {
     "build": "./node_modules/.bin/grunt build",

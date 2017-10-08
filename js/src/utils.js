@@ -63,9 +63,8 @@ module.exports = {
   get_document: get_document,
   get_window: get_window,
   d3_transform_catch: d3_transform_catch,
-  check_browser: check_browser
+  check_browser: check_browser,
 }
-
 
 /**
  * Check if Blob is available, and alert if it is not.
@@ -639,7 +638,6 @@ function load_json (f, callback, pre_fn, failure_fn) {
 /**
  * Try to load the file as JSON or CSV (JSON first).
  * @param {String} f - The file path
- * @param {Function}  csv_converter - A function to convert the CSV output to equivalent JSON.
  * @param {Function} callback - A callback function that accepts arguments: error, data.
  * @param {} pre_fn (optional) - A function to call before loading the data.
  * @param {} failure_fn (optional) - A function to call if the load fails or is
@@ -647,29 +645,96 @@ function load_json (f, callback, pre_fn, failure_fn) {
  * @param {} debug_event (optional) - An event, with a string at
  * event.target.result, to load as though it was the contents of a loaded file.
  */
-function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
+function load_json_or_csv (f, callback, pre_fn, failure_fn,
                            debug_event) {
   // Capture the file information.
   var onload_function = function(event) {
     var result = event.target.result
-    var data
     var errors
+
+    var input
+
+    var data = [[],[]] //old, new: [array of names][array of data]
+    var names = []
+
+
     // try JSON
     try {
-      data = JSON.parse(result)
+
+      input = JSON.parse(result)
+
+      // TODO: check if name and data arrays are same length -> every data set has a name, if not make one up(?)
+
+      if (_.isArray(input)  && _.isString(input[0]) && _.isObject(input[1])) { // example data type 1, data is in following dictionary
+
+        var numbers = []
+        // sort names and data
+        for (var i = 0; i < input.length - 1; i++) {
+           names.push(input[i])
+           numbers.push(input[i + 1])
+           i++
+        }
+
+        data[0] = names
+        data[1] = numbers
+
+        console.log('new format type 1')
+
+      } else if (_.isArray(input) && _.isArray(input[0]) && _.isArray(input[1])) { // example data type 2 (favourite), data is array
+
+        data[0] = input[0]
+        data[1] = input[1]
+        console.log('new format type 2')
+
+      } else if(_.isObject(input) && _.isArray(input.names) && _.isArray(input.data)){ // example data type 2b, data is dictionary
+        data[0] = input.names
+        data[1] = input.data
+
+        console.log("new format type 2b")
+
+      } else if(
+        _.isArray(input) &&
+            (_.isObject(input[0]) && !_.isArray(input[0])) &&
+            (_.isObject(input[1]) && !_.isArray(input[1]))) { // is old format but two data sets
+
+        data[0] = ["set_1", "set_2"]
+        data[1] = input
+
+        console.log('old format, two data sets')
+
+      } else { // old data format
+
+        //data = []
+        data = input
+        //data[0] = names
+        //data[1] = input
+        console.log('old format, one data set')
+      }
+
     } catch (e) {
       errors = 'JSON error: ' + e
 
       // try csv
       try {
-        data = csv_converter(d3_csvParseRows(result))
+        //
+        // TODO: comment in these lines to keep names with csv, breaks the api anyway
+
+        var data = []
+        var csv_data = csv_converter(d3_csvParseRows(result))
+
+        //data = csv_data[1] // looses names but does not break api
+        //csv_names = csv_data[0]
+        data[0] = csv_data[0]
+        data[1] = csv_data[1]
+
+
       } catch (e) {
         // if both failed, return the errors
         callback(errors + '\nCSV error: ' + e, null)
         return
       }
     }
-    // if successful, return the data
+    // if successful, return the data as [array of names][array of numbers]
     callback(null, data)
   }
   if (debug_event !== undefined && debug_event !== null) {
@@ -1129,4 +1194,42 @@ function check_browser (name) {
   } catch (e) {
     return false
   }
+}
+
+function csv_converter(csv_rows) {
+  /** Convert data from a csv file to json-style data.
+
+   File must include a header row.
+
+   */
+
+
+  var data = [[],[]]
+  // count rows
+  var c = csv_rows[0].length,
+    converted = []
+
+  if (c < 2){ // dataset must have at least identifier and values
+    throw new Error('CSV file must have 2 or more columns')
+  }
+  // set up rows, this works with 2+ data sets also
+  for (var i = 1; i < c; i++) {
+    converted[i - 1] = {}
+  }
+
+  var names = csv_rows[0]
+  names.splice(0, 1)  // first position is empty or something like "data set names"
+
+
+  // fill
+
+  csv_rows.slice(1).forEach(function (row) {
+    for (var i = 1, l = row.length; i < l; i++) {
+      converted[i - 1][row[0]] = row[i]
+    }
+  })
+
+  data[0] = names
+  data[1] = converted
+  return data
 }

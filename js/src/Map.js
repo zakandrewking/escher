@@ -140,6 +140,8 @@ Map.prototype = {
   // data statistics
   get_data_statistics: get_data_statistics,
   calc_data_stats: calc_data_stats,
+  set_reactions_for_data_scales: set_reactions_for_data_scales,
+  set_nodes_for_data_scales:set_nodes_for_data_scales,
   // zoom
   zoom_extent_nodes: zoom_extent_nodes,
   zoom_extent_canvas: zoom_extent_canvas,
@@ -229,10 +231,17 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
   // make the scales
   this.scale = new Scale()
   // initialize stats
+  this.nodes_for_data_scales = []
+  this.reactions_for_data_scales = []
+
   this.calc_data_stats('reaction')
   this.calc_data_stats('metabolite')
   this.scale.connect_to_settings(this.settings, this,
                                  get_data_statistics.bind(this))
+
+  // time series animation
+
+  this.transition_duration = 0
 
   // make the undo/redo stack
   this.undo_stack = new UndoStack()
@@ -513,6 +522,8 @@ function clear_map() {
   this.reactions = {}
   this.beziers = {}
   this.nodes = {}
+  this.nodes_for_data_scales = []
+  this.reactions_for_data_scales =[]
   this.text_labels = {}
   this.map_name = 'new_map'
   this.map_id = utils.generate_map_id()
@@ -585,7 +596,7 @@ function draw_these_reactions (reaction_ids, draw_beziers) {
   var update_fn = function(sel) {
     return this.draw.update_reaction(sel, this.scale, this.cobra_model,
                                      this.nodes, this.defs,
-                                     this.has_data_on_reactions)
+                                     this.has_data_on_reactions, this.interpolation, this.transition_duration)
   }.bind(this)
 
   // draw the reactions
@@ -681,7 +692,7 @@ function draw_these_nodes(node_ids) {
                                  this.behavior.node_mouseover,
                                  this.behavior.node_mouseout,
                                  this.behavior.selectable_drag,
-                                 this.behavior.node_label_drag)
+                                 this.behavior.node_label_drag, this.interpolation, this.transition_duration)
   }.bind(this)
 
   // draw the nodes
@@ -894,27 +905,55 @@ function calc_data_stats (type) {
   var same = true
   // default min and max
   var vals = []
-  if (type === 'metabolite') {
-    for (var node_id in this.nodes) {
-      var node = this.nodes[node_id]
-      // check number
-      if (_.isUndefined(node.data)) {
-        console.error('metabolite missing ')
-      } else if (node.data !== null) {
-        vals.push(node.data)
+
+  if(this.nodes_for_data_scales.length !== 0 || this.reactions_for_data_scales.length !== 0){
+
+    if (type === 'metabolite') {
+      for (var node_id in this.nodes_for_data_scales) {
+        var node = parseFloat(this.nodes_for_data_scales[node_id])
+        // check number
+        if (_.isUndefined(node)) {
+          console.error('metabolite missing ')
+        } else if (node !== null) {
+          vals.push(node)
+        }
+      }
+    } else if (type == 'reaction') {
+      for (var reaction_id in this.reactions_for_data_scales) {
+        var reaction = parseFloat(this.reactions_for_data_scales[reaction_id])
+        // check number
+        if (_.isUndefined(reaction)) {
+          console.error('reaction data missing ')
+        } else if (reaction !== null) {
+          vals.push(reaction)
+        }
       }
     }
-  } else if (type == 'reaction') {
-    for (var reaction_id in this.reactions) {
-      var reaction = this.reactions[reaction_id]
-      // check number
-      if (_.isUndefined(reaction.data)) {
-        console.error('reaction data missing ')
-      } else if (reaction.data !== null) {
-        vals.push(reaction.data)
+
+  } else {
+    if (type === 'metabolite') {
+      for (var node_id in this.nodes) {
+        var node = this.nodes[node_id]
+        // check number
+        if (_.isUndefined(node.data)) {
+          console.error('metabolite missing ')
+        } else if (node.data !== null) {
+          vals.push(node.data)
+        }
+      }
+    } else if (type == 'reaction') {
+      for (var reaction_id in this.reactions) {
+        var reaction = this.reactions[reaction_id]
+        // check number
+        if (_.isUndefined(reaction.data)) {
+          console.error('reaction data missing ')
+        } else if (reaction.data !== null) {
+          vals.push(reaction.data)
+        }
       }
     }
   }
+
 
   // calculate these statistics
   var quartiles = utils.quartiles(vals)
@@ -2373,4 +2412,12 @@ function convert_map () {
 
   // run the after callback
   this.callback_manager.run('after_convert_map')
+}
+
+function set_reactions_for_data_scales(s){
+  this.reactions_for_data_scales = s
+}
+
+function set_nodes_for_data_scales(n){
+  this.nodes_for_data_scales = n
 }

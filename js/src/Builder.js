@@ -13,6 +13,7 @@ var Brush = require('./Brush')
 var CallbackManager = require('./CallbackManager')
 var ui = require('./ui')
 var SearchBar = require('./SearchBar')
+var TimeSeriesBar = require('./TimeSeriesBar')
 var Settings = require('./Settings')
 var SettingsMenu = require('./SettingsMenu')
 var TextEditInput = require('./TextEditInput')
@@ -51,7 +52,9 @@ Builder.prototype = {
   _setup_quick_jump: _setup_quick_jump,
   _setup_modes: _setup_modes,
   _get_keys: _get_keys,
-  _setup_confirm_before_exit: _setup_confirm_before_exit
+  _setup_confirm_before_exit: _setup_confirm_before_exit,
+  set_data_indices: set_data_indices,
+
 }
 module.exports = Builder
 
@@ -331,6 +334,7 @@ function load_map (map_data, should_update_data) {
   // Connect status bar
   this._setup_status(this.map)
 
+
   // Set the data for the map
   if (should_update_data)
     this._update_data(false, true)
@@ -360,6 +364,7 @@ function load_map (map_data, should_update_data) {
     .append('div').attr('class', 'search-menu-container-inline')
   var menu_div = s.append('div')
   var search_bar_div = s.append('div')
+  var time_series_bar_div = s.append('div')
   var button_div = this.selection.append('div')
 
   // Set up the search bar
@@ -369,6 +374,25 @@ function load_map (map_data, should_update_data) {
   this.search_bar.callback_manager.set('show', function() {
     this.settings_bar.toggle(false)
   }.bind(this))
+
+  // set up attributes for time series
+  this.type_of_data = ''
+  this.difference_mode = false
+  this.reference = 0
+  this.target = 0
+
+  this.reaction_data_names = []
+  this.gene_data_names = []
+  this.metabolite_data_names = []
+
+  // set up the time series bar
+  this.time_series_bar = new TimeSeriesBar(time_series_bar_div, this.map, this, this.type_of_data)
+  // Set up the hide callbacks
+  this.time_series_bar.callback_manager.set('show', function() {
+    this.time_series_bar.toggle(false)
+  }.bind(this))
+
+
 
   // Set up the settings
   var settings_div = this.selection.append('div')
@@ -391,17 +415,19 @@ function load_map (map_data, should_update_data) {
 
   this.settings_bar.callback_manager.set('show', function () {
     this.search_bar.toggle(false)
+    this.time_series_bar.toggle(false)
   }.bind(this))
 
   // Set up key manager
   var keys = this._get_keys(this.map, this.zoom_container,
                             this.search_bar, this.settings_bar,
                             this.options.enable_editing,
-                            this.options.full_screen_button)
+                            this.options.full_screen_button,
+                            this.time_series_bar)
   this.map.key_manager.assigned_keys = keys
   // Tell the key manager about the reaction input and search bar
   this.map.key_manager.input_list = [this.build_input, this.search_bar,
-                                     this.settings_bar, this.text_edit_input]
+                                     this.settings_bar, this.text_edit_input, this.time_series_bar]
   // Make sure the key manager remembers all those changes
   this.map.key_manager.update()
   // Turn it on/off
@@ -471,6 +497,7 @@ function load_map (map_data, should_update_data) {
 
 function _set_mode (mode) {
   this.search_bar.toggle(false)
+  this.time_series_bar.toggle(false)
   // input
   this.build_input.toggle(mode == 'build')
   this.build_input.direction_arrow.toggle(mode == 'build')
@@ -572,9 +599,39 @@ function _reaction_check_add_abs () {
  * For documentation of this function, see docs/javascript_api.rst.
  */
 function set_reaction_data (data) {
-  this.options.reaction_data = data
+
+  this.reaction_data_names = []
+  this.reaction_data_names.length = 0
+
+  // new data is [array of names][array of numbers]
+  if (data === null) {
+
+    this.reaction_data_names = null
+    this.options.reaction_data = null
+    this.time_series_bar.update(this)
+
+
+  } else if (_.isObject(data) && !(_.isArray(data))) {
+    // old data format from JSON is object
+    // old data format from csv is prepared to go to else case
+
+    this.reaction_data_names = ["reaction data set"]
+
+    this.options.reaction_data = [data]
+    this.type_of_data = 'reaction'
+    this.time_series_bar.openTab('reaction', this)
+
+  } else {
+
+    this.reaction_data_names = data[0]
+    this.options.reaction_data = data[1]
+
+    this.type_of_data = 'reaction'
+    this.time_series_bar.openTab('reaction', this)
+  }
+
   var message_fn = this._reaction_check_add_abs()
-  this._update_data(true, true, 'reaction')
+  this._update_data(true, true, 'reaction', undefined, true)
   if (message_fn) {
     message_fn()
   } else {
@@ -590,17 +647,74 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     // default undefined
     this.settings.set_conditional('show_gene_reaction_rules', false)
   }
-  this.options.gene_data = data
-  this._update_data(true, true, 'reaction')
+  this.gene_data_names = []
+  //this.gene_data_names.length = 0
+
+
+  // new data is [array of names][array of numbers]
+  // new case for reset to null, because crashes on null[1]
+  if (data === null) {
+
+    this.gene_data_names = null
+    this.options.gene_data = null
+    this.time_series_bar.update(this)
+
+
+  } else if (_.isObject(data) && !(_.isArray(data))) { // old data format or csv is [array of numbers]
+
+    this.type_of_data = 'gene'
+    this.gene_data_names = ["gene data set"]
+
+    this.options.gene_data = [data]
+    this.time_series_bar.openTab('gene', this)
+
+  } else {
+    this.type_of_data = 'gene'
+    this.gene_data_names = data[0]
+    this.options.gene_data = data[1]
+
+    this.time_series_bar.openTab('gene', this)
+
+  }
+
+  this._update_data(true, true, 'reaction', undefined, true)
   this.map.set_status('')
 }
 
-function set_metabolite_data(data) {
-  /** For documentation of this function, see docs/javascript_api.rst.
+/** For documentation of this function, see docs/javascript_api.rst.
 
-   */
-  this.options.metabolite_data = data
-  this._update_data(true, true, 'metabolite')
+ */
+function set_metabolite_data (data) {
+
+  this.metabolite_data_names = []
+  this.metabolite_data_names.length = 0
+
+  // new data is [array of names][array of numbers]
+  // new case for reset to null, because crashes on null[1]
+  if (data === null) {
+
+    this.metabolite_data_names = null
+    this.options.metabolite_data = null
+    this.time_series_bar.update(this)
+
+
+  } else if (_.isObject(data) && !(_.isArray(data))) { // old data format or csv is [array of numbers]
+
+    this.metabolite_data_names = ["metabolite data set"]
+    this.options.metabolite_data = [data]
+    this.type_of_data = 'metabolite'
+    this.time_series_bar.openTab('metabolite', this)
+
+  } else {
+
+    this.metabolite_data_names = data[0]
+    this.options.metabolite_data = data[1]
+
+    this.type_of_data = 'metabolite'
+    this.time_series_bar.openTab('metabolite', this)
+  }
+
+  this._update_data(true, true, 'metabolite', undefined, true)
   this.map.set_status('')
 }
 
@@ -613,7 +727,7 @@ function set_metabolite_data(data) {
  * should_draw: (Optional, Default: true) Whether to redraw the update sections
  * of the map.
  */
-function _update_data (update_model, update_map, kind, should_draw) {
+function _update_data (update_model, update_map, kind, should_draw, update_stats) {
   // defaults
   if (kind === undefined) {
     kind = [ 'reaction', 'metabolite' ]
@@ -634,8 +748,37 @@ function _update_data (update_model, update_map, kind, should_draw) {
 
   // metabolite data
   if (update_metabolite_data && update_map && this.map !== null) {
-    met_data_object = data_styles.import_and_check(this.options.metabolite_data,
-                                                   'metabolite_data')
+
+    if (this.difference_mode && this.options.metabolite_data !== null) {
+
+      var difference_metabolite_data = [this.options.metabolite_data[this.reference], this.options.metabolite_data[this.target]]
+      met_data_object = data_styles.import_and_check(difference_metabolite_data, 'metabolite_data')
+    } else {
+      if (this.options.metabolite_data !== null) {
+        if(_.isArray(this.options.metabolite_data)){
+
+          met_data_object = data_styles.import_and_check(this.options.metabolite_data[this.reference], 'metabolite_data')
+        } else {
+          met_data_object = data_styles.import_and_check(this.options.metabolite_data, 'metabolite_data')
+
+        }
+
+      } else {
+        met_data_object = data_styles.import_and_check(this.options.metabolite_data, 'metabolite_data')
+      }
+    }
+
+    // calculates the scales with all the values in the data sets
+    if(update_stats && this.options.metabolite_data !== null){
+      var metabolite_for_data_scales = []
+
+      for (var i in this.options.metabolite_data) {
+        metabolite_for_data_scales = metabolite_for_data_scales.concat(d3.values(this.options.metabolite_data[i]))
+      }
+      this.map.set_nodes_for_data_scales(metabolite_for_data_scales)
+    }
+
+
     this.map.apply_metabolite_data_to_map(met_data_object)
     if (should_draw) {
       this.map.draw_all_nodes(false)
@@ -644,15 +787,68 @@ function _update_data (update_model, update_map, kind, should_draw) {
 
   // reaction data
   if (update_reaction_data) {
+
     if (this.options.reaction_data !== null && update_map && this.map !== null) {
-      reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
-                                                          'reaction_data')
+
+      if(this.difference_mode){
+
+        var difference_reaction_data = [this.options.reaction_data[this.reference], this.options.reaction_data[this.target]]
+        reaction_data_object = data_styles.import_and_check(difference_reaction_data,
+          'reaction_data')
+
+      } else {
+        if(_.isArray(this.options.reaction_data)){
+
+        reaction_data_object = data_styles.import_and_check(this.options.reaction_data[this.reference], 'reaction_data')
+        } else {
+          reaction_data_object = data_styles.import_and_check(this.options.reaction_data, 'reaction_data')
+
+        }
+      }
+
+      if(update_stats && this.options.reaction_data !== null){
+        var reaction_for_data_scales = []
+
+        for (var i in this.options.reaction_data) {
+          reaction_for_data_scales = reaction_for_data_scales.concat(d3.values(this.options.reaction_data[i]))
+        }
+        this.map.set_reactions_for_data_scales(reaction_for_data_scales)
+      }
+
       this.map.apply_reaction_data_to_map(reaction_data_object)
+
       if (should_draw)
         this.map.draw_all_reactions(false, false)
+    // gene data
     } else if (this.options.gene_data !== null && update_map && this.map !== null) {
-      gene_data_object = make_gene_data_object(this.options.gene_data,
-                                               this.cobra_model, this.map)
+
+      if(this.difference_mode){
+        var difference_gene_data = [this.options.gene_data[this.reference], this.options.gene_data[this.target]]
+        gene_data_object = make_gene_data_object(difference_gene_data,
+          this.cobra_model, this.map)
+      } else {
+
+        if(_.isArray(this.options.gene_data)){
+        gene_data_object = make_gene_data_object(this.options.gene_data[this.reference],
+                                                 this.cobra_model, this.map)
+
+        } else {
+          gene_data_object = make_gene_data_object(this.options.gene_data,
+            this.cobra_model, this.map)
+
+        }
+      }
+
+      if(update_stats && this.options.gene_data !== null){
+        var genes_for_data_scales = []
+
+        for (var i in this.options.gene_data) {
+          genes_for_data_scales = genes_for_data_scales.concat(d3.values(this.options.gene_data[i]))
+        }
+        this.map.set_reactions_for_data_scales(genes_for_data_scales)
+      }
+
+
       this.map.apply_gene_data_to_map(gene_data_object)
       if (should_draw)
         this.map.draw_all_reactions(false, false)
@@ -678,15 +874,26 @@ function _update_data (update_model, update_map, kind, should_draw) {
   this.update_model_timer = setTimeout(function () {
 
     // metabolite_data
-    if (update_metabolite_data && update_model && this.cobra_model !== null) {
-      // if we haven't already made this
-      if (!met_data_object) {
-        met_data_object = data_styles.import_and_check(this.options.metabolite_data,
-                                                       'metabolite_data')
+    // this.options.metabolite_data !== null &&
+    if(update_metabolite_data){
+
+      if (this.options.metabolite_data !== null && update_model && this.cobra_model !== null) {
+        // if we haven't already made this
+
+        if (!met_data_object) {
+          met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+                                                         'metabolite_data')
+        }
+        this.cobra_model.apply_metabolite_data(met_data_object,
+                                               this.options.metabolite_styles,
+                                               this.options.metabolite_compare_style)
+      } else if (update_model && this.cobra_model !== null) {
+        // clear the data
+        this.cobra_model.apply_metabolite_data(null,
+          this.options.reaction_styles,
+          this.options.reaction_compare_style)
       }
-      this.cobra_model.apply_metabolite_data(met_data_object,
-                                             this.options.metabolite_styles,
-                                             this.options.metabolite_compare_style)
+
     }
 
     // reaction data
@@ -733,7 +940,13 @@ function _update_data (update_model, update_map, kind, should_draw) {
       utils.extend(all_reactions, map.reactions, true)
 
     // this object has reaction keys and values containing associated genes
-    return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+
+    // TODO: handle here +2 data sets?
+    if(gene_data.length > 2){
+      return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+    } else {
+      return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+    }
   }
 }
 
@@ -928,6 +1141,9 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
     .button({ key: keys.search,
               text: 'Find',
               key_text: (enable_keys ? ' (F)' : null) })
+    .button({ key: keys.time_series_bar,
+              text: 'Time Series / Difference Mode',
+              key_text: (enable_keys ? ' (D)' : null) })
   if (full_screen_button) {
     view_menu.button({ key: keys.full_screen,
                        text: 'Full screen',
@@ -981,6 +1197,7 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
   this.callback_manager.set('rotate_mode', select_button.bind(this, 'rotate-mode-button'))
   this.callback_manager.set('view_mode', select_button.bind(this, 'view-mode-button'))
   this.callback_manager.set('text_mode', select_button.bind(this, 'text-mode-button'))
+//  this.callback_manager.set('difference_mode', select_button.bind(this, 'difference-mode-button'))
 
   // definitions
   function load_map_for_file(error, map_data) {
@@ -1111,6 +1328,17 @@ function _set_up_button_panel(button_selection, keys, enable_editing,
                              ignore_bootstrap: ignore_bootstrap
                          })
   }
+
+  // ui.individual_button(button_panel.append('li'),
+  //   {
+  //     key: keys.difference_mode,
+  //     text: 'D',
+  //     id: 'difference-mode-button',
+  //     icon: 'glyphicon glyphicon-object-align-bottom',
+  //     tooltip: 'Difference mode',
+  //     key_text: (enable_keys ? ' (D)' : null),
+  //     ignore_bootstrap: ignore_bootstrap
+  //   })
 
   // mode buttons
   if (enable_editing && menu_option === 'all') {
@@ -1248,7 +1476,7 @@ function _setup_modes (map, brush, zoom_container) {
 /**
  * Define keyboard shortcuts
  */
-function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editing, full_screen_button) {
+function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editing, full_screen_button, time_series_bar) {
 
   var keys = {
     save: {
@@ -1351,6 +1579,12 @@ function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editin
     search: {
       key: 'f',
       fn: search_bar.toggle.bind(search_bar, true),
+      ignore_with_input: true,
+    },
+    time_series_bar: {
+      key: 'd',
+      target: time_series_bar,
+      fn: time_series_bar.toggle.bind(time_series_bar, true),
       ignore_with_input: true,
     },
     view_mode: {
@@ -1517,3 +1751,22 @@ function _setup_confirm_before_exit () {
              'You will lose any unsaved changes.')
   }.bind(this)
 }
+
+/*
+ * reference: required
+ * target: only required for difference mode
+ */
+
+function set_data_indices(type_of_data, ref, tar){
+  this.reference = ref
+
+  // TODO: was null before, but this way I loose the target index when I only set ref?
+  this.target = tar || this.target
+
+  if(type_of_data === 'gene'){
+    type_of_data = 'reaction'
+  }
+  this._update_data(true, true, type_of_data, true)
+}
+
+

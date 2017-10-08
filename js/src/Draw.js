@@ -33,6 +33,8 @@ var data_styles = require('./data_styles')
 var CallbackManager = require('./CallbackManager')
 var d3_format = require('d3-format').format
 var d3_select = require('d3-selection').select
+var d3 = require('d3')
+var _ = require('underscore')
 
 var Draw = utils.make_class()
 // instance methods
@@ -118,7 +120,7 @@ function create_reaction (enter_selection) {
  * has_data_on_reactions: Boolean to determine whether data needs to be drawn.
  */
 function update_reaction (update_selection, scale, cobra_model, drawn_nodes,
-                          defs, has_data_on_reactions) {
+                          defs, has_data_on_reactions, interpolation, transition_duration) {
   // Update reaction label
   update_selection.select('.reaction-label-group')
     .call(function(sel) {
@@ -131,7 +133,7 @@ function update_reaction (update_selection, scale, cobra_model, drawn_nodes,
                              function(sel) {
                                return this.update_segment(sel, scale, cobra_model,
                                                           drawn_nodes, defs,
-                                                          has_data_on_reactions)
+                                                          has_data_on_reactions, interpolation, transition_duration)
                              }.bind(this),
                              function(sel) {
                                sel.remove()
@@ -188,14 +190,17 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
 
   if (!hide_all_labels) {
     label
+      //.transition()
       .text(function (d) {
         var t = d[identifiers_on_map]
         if (has_data_on_reactions &&
             reaction_data_styles.indexOf('text') !== -1) {
-          t += ' ' + d.data_string
+          t += ' ' + d.data_string // TODO: interpolate data_string?
         }
         return t
       })
+
+    label
       .on('mousedown', label_mousedown_fn)
       .on('mouseover', function (d) {
         label_mouseover_fn('reaction_label', d)
@@ -307,7 +312,7 @@ function create_segment (enter_selection) {
  * @return {}
  */
 function update_segment (update_selection, scale, cobra_model,
-                         drawn_nodes, defs, has_data_on_reactions) {
+                         drawn_nodes, defs, has_data_on_reactions, interpolation, transition_duration) {
   var reaction_data_styles = this.settings.get_option('reaction_styles')
   var should_size = (has_data_on_reactions && reaction_data_styles.indexOf('size') !== -1)
   var should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') !== -1)
@@ -402,14 +407,39 @@ function update_segment (update_selection, scale, cobra_model,
       }
       return null
     })
-    .style('stroke-width', function(d) {
-      if (should_size) {
-        var f = d.data
-        return f === null ? no_data_size : scale.reaction_size(f)
-      } else {
-        return null
-      }
-    })
+
+
+  if(interpolation){
+
+    update_selection
+      .selectAll('.segment')
+      .transition()
+      .duration(transition_duration)
+      .ease(d3.easeLinear)
+      .style('stroke-width', function(d) {
+        if (should_size) {
+          var f = d.data
+          return f === null ? no_data_size : scale.reaction_size(f)
+        } else {
+          return null
+        }
+      })
+
+  } else {
+
+    update_selection
+      .selectAll('.segment')
+      .style('stroke-width', function(d) {
+        if (should_size) {
+          var f = d.data
+          return f === null ? no_data_size : scale.reaction_size(f)
+        } else {
+          return null
+        }
+      })
+
+  }
+
 
   // new arrowheads
   var arrowheads = update_selection.select('.arrowheads')
@@ -489,9 +519,11 @@ function update_segment (update_selection, scale, cobra_model,
       return ('M' + [-d.size.width / 2, 0] +
               ' L' + [0, d.size.height] +
               ' L' + [d.size.width / 2, 0] + ' Z')
-    }).attr('transform', function(d) {
+    })
+    .attr('transform', function(d) {
       return 'translate(' + d.x + ',' + d.y + ')rotate(' + d.rotation + ')'
-    }).style('fill', function(d) {
+    })
+    .style('fill', function(d) {
       if (should_color) {
         if (d.show_arrowhead_flux) {
           // show the flux
@@ -504,7 +536,8 @@ function update_segment (update_selection, scale, cobra_model,
       }
       // default fill color
       return null
-    }).style('stroke', function(d) {
+    })
+    .style('stroke', function(d) {
       if (should_color) {
         // show the flux color in the stroke whether or not the fill is present
         var f = d.data
@@ -580,6 +613,8 @@ function update_segment (update_selection, scale, cobra_model,
     .text(function(d) {
       return d.coefficient
     })
+    //.transition()
+    //.ease(d3.easeLinear)
     .style('fill', function (d) {
       if (should_color) {
         // show the flux color
@@ -722,7 +757,7 @@ function create_node (enter_selection, drawn_nodes, drawn_reactions) {
  */
 function update_node (update_selection, scale, has_data_on_nodes,
                       mousedown_fn, click_fn, mouseover_fn, mouseout_fn,
-                      drag_behavior, label_drag_behavior) {
+                      drag_behavior, label_drag_behavior, interpolation, transition_duration) {
   // update circle and label location
   var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
   var primary_r = this.settings.get_option('primary_metabolite_radius')
@@ -745,10 +780,52 @@ function update_node (update_selection, scale, has_data_on_nodes,
     .style('visibility', function(d) {
       return hideNode(d, hide_secondary_metabolites) ? 'hidden' : null
     })
+
+  if(interpolation){
+
+    update_selection
+      .select('.node-circle')
+      .transition()
+      .duration(transition_duration)
+      .ease(d3.easeLinear)
+      .attr('r', function(d) {
+        if (d.node_type === 'metabolite') {
+          var should_scale = (has_data_on_nodes &&
+            metabolite_data_styles.indexOf('size') !== -1)
+          if (should_scale) {
+            var f = d.data
+            return f === null ? no_data_style['size'] : scale.metabolite_size(f)
+          } else {
+            return d.node_is_primary ? primary_r : secondary_r
+          }
+        }
+        // midmarkers and multimarkers
+        return marker_r
+      })
+      .style('fill', function(d) {
+        if (d.node_type === 'metabolite') {
+          var should_color_data = (has_data_on_nodes &&
+            metabolite_data_styles.indexOf('color') !== -1)
+          if (should_color_data) {
+            var f = d.data
+            return f === null ? no_data_style['color'] : scale.metabolite_color(f)
+          } else {
+            return null
+          }
+        }
+        // midmarkers and multimarkers
+        return null
+      })
+
+
+  } else {
+
+  update_selection
+    .select('.node-circle')
     .attr('r', function(d) {
       if (d.node_type === 'metabolite') {
         var should_scale = (has_data_on_nodes &&
-                            metabolite_data_styles.indexOf('size') !== -1)
+          metabolite_data_styles.indexOf('size') !== -1)
         if (should_scale) {
           var f = d.data
           return f === null ? no_data_style['size'] : scale.metabolite_size(f)
@@ -773,6 +850,10 @@ function update_node (update_selection, scale, has_data_on_nodes,
       // midmarkers and multimarkers
       return null
     })
+  }
+
+  update_selection
+    .select('.node-circle')
     .call(this.behavior.turn_off_drag)
     .call(drag_behavior)
     .on('mousedown', mousedown_fn)
