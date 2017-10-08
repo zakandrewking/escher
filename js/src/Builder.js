@@ -760,6 +760,7 @@ function _update_data (update_model, update_map, kind, should_draw, update_stats
       }
     }
 
+    // calculates the scales with all the values in the data sets
     if(update_stats && this.options.metabolite_data !== null){
       var metabolite_for_data_scales = []
 

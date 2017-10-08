@@ -393,7 +393,6 @@ function update_segment (update_selection, scale, cobra_model,
       curve += (end.x + ',' + end.y)
       return curve
     })
-    //.transition()
     .style('stroke', function(d) {
       var reaction_id = this.parentNode.parentNode.__data__.bigg_id
       var show_missing = (highlight_missing &&
@@ -412,23 +411,19 @@ function update_segment (update_selection, scale, cobra_model,
 
   if(interpolation){
 
-    function calc_stroke_width(d){
-      if (should_size) {
-        var f = d.data
-        return f === null ? no_data_size : scale.reaction_size(f)
-      } else {
-        return null
-      }
-    }
-
-    var stroke_width = calc_stroke_width(update_selection.selectAll('.segment').datum())
-
     update_selection
       .selectAll('.segment')
       .transition()
       .duration(transition_duration)
       .ease(d3.easeLinear)
-      .style('stroke-width', stroke_width)
+      .style('stroke-width', function(d) {
+        if (should_size) {
+          var f = d.data
+          return f === null ? no_data_size : scale.reaction_size(f)
+        } else {
+          return null
+        }
+      })
 
   } else {
 

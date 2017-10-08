@@ -46,7 +46,6 @@ function init (sel, map, builder, type_of_data) {
   var container = sel.append('div').append('div')
     .attr('class', 'settings-box')
     .attr('id', 'container')
-    //.style('display', 'block') // TODO: remove this comment in final version
 
   var max_width = container.node().getBoundingClientRect().width
 
@@ -230,7 +229,7 @@ function init (sel, map, builder, type_of_data) {
     .attr('id', 'play_button')
     .style('margin', '2px')
     .on('click', function () {
-      play_time_series(builder, map, duration, map.interpolation, 10, both_data_play_back, sliding_window)
+      play_time_series(builder, map, duration, both_data_play_back, sliding_window)
     })
     .append('span').attr('class', 'glyphicon glyphicon-play')
 
@@ -446,7 +445,7 @@ function update (builder) {
 /*
  *
  */
-function play_time_series (builder, map, duration, interpolation, max_steps, both_data_play_back, sliding_window) {
+function play_time_series (builder, map, duration, both_data_play_back, sliding_window) {
 
   if (!this.playing) {
     this.playing = true
@@ -469,8 +468,8 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
     }
 
     // sliding window mode
-    var sliding_window_reference = builder.reference
-    var sliding_window_target = builder.target
+    //var sliding_window_reference = builder.reference
+    //var sliding_window_target = builder.target
     var sliding_window_size = (parseInt(builder.target) - parseInt(builder.reference))
 
     var duration = duration / (end - start)
@@ -578,9 +577,7 @@ function play_time_series (builder, map, duration, interpolation, max_steps, bot
             d3_select('#dropDownMenuTarget').property('selectedIndex', builder.target)
 
           }
-
         }
-
       } else {
         // TODO: handle interpolated data with non-linear time scale: set duration to next tick
         if (tick === array_of_time_points[time_point]) {
