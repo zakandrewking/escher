@@ -163,7 +163,7 @@ Loading reaction, gene, and metabolite data
 
 Datasets can be loaded as CSV files or JSON files, using the Data Menu.
 
-.. image:: _static/data_menu.png
+.. image:: _static/data_menu_02.png
 
 In Escher, reaction and gene datasets are visualized by changing the color,
 thickness, and labels of reaction arrows. Metabolite datasets are visualized by
@@ -173,6 +173,67 @@ present for a specific reaction, gene, or metabolite, then the text label will
 say 'nd' which means 'no data.'
 
 .. image:: _static/reaction_data_with_nd.png
+
+Time Series Mode and Difference Mode
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you have loaded a file set containing more than one data set
+you can choose which one to visualize by choosing **Time Series Mode / Difference Mode**
+in the Data Menu.
+This allows access to an interface below the menu bar.
+The two buttons on top are to choose if reaction, respectively gene data, or metabolite data is handled.
+The next buttons are for choosing between **Time Series Mode** and **Difference Mode** .
+
+**Time Series Mode**
+
+To select a data set to visualize **Time Series Mode** shows a slider and drop-down menu,
+which also shows the selected data set name.
+
+.. image:: _static/time_series_mode.png
+
+By pressing the play button you can visualize your data in a video-like animation.
+The slider moves as a indicator which data set is currently displayed.
+The duration of the whole animation can be set in the input field.
+If the “Interpolation” check box is activated, a smoother animation with interpolation is created.
+
+.. image:: _static/time_series_animation.gif
+
+
+**Difference Mode**
+
+In Difference Mode a second slider and drop-down menu are added to the interface for setting a target data set.
+This target data set is used for comparison to the reference according to the function set in the settings.
+
+.. image:: _static/difference_mode.png
+
+**Difference Mode Animation**
+
+By pressing the play button the reference data set remains static, the target moves one step at a time in the animation.
+The difference value between the data points according to the setting is visualized.
+::
+
+    reference: [0] 1  2  3
+    target:     0 [1] 2  3
+    ----
+    reference: [0] 1  2  3
+    target:     0  1 [2] 3
+    ----
+    reference: [0] 1  2  3
+    target:     0  1  2 [3]
+
+**Sliding Window Animation**
+
+Reference and target data set move one step at a time.
+::
+
+    reference: [0] 1  2  3
+    target:     0 [1] 2  3
+    ----
+    reference:  0 [1] 2  3
+    target:     0  1 [2] 3
+    ----
+    reference:  0  1 [2] 3
+    target:     0  1  2 [3]
 
 Example data files
 ^^^^^^^^^^^^^^^^^^
@@ -204,8 +265,10 @@ work with Escher maps for the *Escherichia coli* model iJO1366:
 Creating data files as CSV and JSON
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-CSV files should have 1 header row, 1 ID column, and either 1 or 2 columns for
-data values. The ID column can contain BiGG IDs or descriptive names for the
+CSV files should have 1 header row, 1 ID column followed by columns for
+data values.
+The header row can contain names for the data sets like experimental conditions or time points.
+The ID column can contain BiGG IDs or descriptive names for the
 reactions, metabolites, or genes in the dataset. Here is an example with a
 single data value columns::
 
@@ -222,17 +285,30 @@ glc__D_c  5.4
 g6p_c     2.3
 ========= =========
 
-If two datasets are provided, then the Escher map will display the difference
-between the datasets. In the Settings menu, the **Comparison** setting allows
+Escher is able to process as many data sets as needed. For more data sets just add more columns for data values.
+If two or more datasets are provided, then the Escher map can display the difference
+between the datasets in **Difference Mode**. On default the first one is displayed.
+With the slider or drop-down menus you can choose which ones to compare by setting first a reference, then a target set.
+In the Settings menu, the **Comparison** setting allows
 you to choose between comparison functions (Fold Change, Log2(Fold Change), and
-Difference). With two datasets, the CSV file looks like this:
+Difference). With three datasets, the CSV file looks like this:
 
-========= ========= =========
-ID        time 0sec time 5s
-========= ========= =========
-glc__D_c  5.4       10.2
-g6p_c     2.3        8.1
-========= ========= =========
+========= ========== ========= =========
+ID        set 1      set 2     set 3
+========= ========== ========= =========
+glc__D_c  5.4        10.2      20.3
+g6p_c     2.3        8.1       9.2
+========= ========== ========= =========
+
+Or in JSON like this:
+::
+
+    [ [ "data_set_1", "data_set_2", "data_set_3" ],
+      [ {"PPA2":0.1, "ENO": 0.0, "PPS": 0.2},
+        {"PPA2":0.5, "ENO": 0.7, "PPS": 1.2 },
+        {"PPA2":1.1, "ENO": 1.2, "PPS": 0.2}   ] ]
+Important is that the file contains two arrays.
+First one containing name of datasets, the other is an array of dictionaries with identifier and data values.
 
 ..
    For gene data, an example file could contain the BiGG IDs (generally the locus
@@ -262,6 +338,18 @@ reaction data comparisons::
     flux_comp = [{'glc__D_c': 5.4, 'g6p_c': 2.3}, {'glc__D_c': 10.2, 'g6p_c': 8.1}]
     with open('out_comp.json', 'w') as f:
 	json.dump(flux_comp, f)
+
+**Specifying non-linear time scale**
+
+Escher is able to read dataset names as specific time points. If the names start with a 't' and are followed only by a
+number Escher is able to process data in a non-linear time scale. This can look like this:
+
+========= ========== ========= =========
+ID        t1         t5        t7
+========= ========== ========= =========
+glc__D_c  5.4        10.2      20.3
+g6p_c     2.3        8.1       10.2
+========= ========== ========= =========
 
 .. _gene-reaction-rules:
 

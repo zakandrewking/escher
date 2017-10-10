@@ -29,3 +29,5 @@ py/escher/static/jsonschema/
 # site files
 1-0-0
 link-site
+/docs/_build/doctrees/
+/docs/_build/html/

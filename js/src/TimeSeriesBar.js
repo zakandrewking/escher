@@ -8,10 +8,10 @@ var CallbackManager = require('./CallbackManager')
 var _ = require('underscore')
 //var data_styles = require('./data_styles.js')
 var d3_select = require('d3-selection').select
-var d3_scale = require('d3-scale')
-var d3_interpolate = require('d3-interpolate')
-var d3 = require('d3')
-var d3_ease = require('d3-ease')
+//var d3_scale = require('d3-scale')
+//var d3_interpolate = require('d3-interpolate')
+//var d3 = require('d3')
+//var d3_ease = require('d3-ease')
 var TimeSeriesBar = utils.make_class()
 
 TimeSeriesBar.prototype = {
@@ -139,11 +139,11 @@ function init (sel, map, builder, type_of_data) {
         builder.set_data_indices(builder.type_of_data, builder.reference)
       }
 
-      if (d3_select('#checkBoxChart').property('checked')) {
-        toggle_chart(false)
-        toggle_chart(true)
-        //create_chart(builder, map)
-      }
+      // if (d3_select('#checkBoxChart').property('checked')) {
+      //   toggle_chart(false)
+      //   toggle_chart(true)
+      //   //create_chart(builder, map)
+      // }
 
     })
 
@@ -164,11 +164,11 @@ function init (sel, map, builder, type_of_data) {
       if (builder.difference_mode) {
         showDifferenceData(builder)
       } else {
-        if (d3_select('#checkBoxChart').property('checked')) {
-          toggle_chart(false)
-          toggle_chart(true)
-          //create_chart(builder, map)
-        }
+        // if (d3_select('#checkBoxChart').property('checked')) {
+        //   toggle_chart(false)
+        //   toggle_chart(true)
+        //   //create_chart(builder, map)
+        // }
         builder.set_data_indices(builder.type_of_data, builder.reference)
       }
     })
@@ -188,11 +188,11 @@ function init (sel, map, builder, type_of_data) {
         d3_select('#checkBoxChart').property('checked', false)
       }
 
-      if (d3_select('#checkBoxChart').property('checked')) {
-        toggle_chart(false)
-        toggle_chart(true)
-        //create_chart(builder, map)
-      }
+      // if (d3_select('#checkBoxChart').property('checked')) {
+      //   toggle_chart(false)
+      //   toggle_chart(true)
+      //   //create_chart(builder, map)
+      // }
     })
     .style('display', 'none')
 
@@ -214,11 +214,11 @@ function init (sel, map, builder, type_of_data) {
         d3_select('#checkBoxChart').property('checked', false)
       }
 
-      if (d3_select('#checkBoxChart').property('checked')) {
-        toggle_chart(false)
-        toggle_chart(true)
-        //create_chart(builder, map)
-      }
+      // if (d3_select('#checkBoxChart').property('checked')) {
+      //   toggle_chart(false)
+      //   toggle_chart(true)
+      //   //create_chart(builder, map)
+      // }
     })
     .style('display', 'none')
 
@@ -244,7 +244,7 @@ function init (sel, map, builder, type_of_data) {
     .style('margin', '2px')
     .attr('type', 'number')
     .attr('min', 10)
-    .attr('value', 2000)
+    .attr('value', duration)
     .style('width', '60px')
     .on('input', function () {
       duration = this.value
@@ -280,19 +280,19 @@ function init (sel, map, builder, type_of_data) {
 
         if (builder.difference_mode) {
           sliding_window = true
-          toggle_chart(false)
+          //toggle_chart(false)
 
         } else {
           sliding_window = false
-          toggle_chart(true)
+          //toggle_chart(true)
           //create_chart(builder, map)
         }
       } else {
         if (builder.difference_mode) {
           sliding_window = false
-          toggle_chart(false)
+          //toggle_chart(false)
         } else {
-          toggle_chart(false)
+          //toggle_chart(false)
 
         }
       }
@@ -306,28 +306,28 @@ function init (sel, map, builder, type_of_data) {
   this.chart_width = d3_select('#container').node().getBoundingClientRect().width
   this.chart_height = 300 //chart_container.node().getBoundingClientRect().height
 
-  var chart_container = d3_select('#container').append('div').attr('id', 'div_data_chart')
-    .attr('width', this.chart_width)
-    .attr('height', this.chart_height)
-  //.style('width', '79%')
-  //.style('display','none')
-
-  chart_container
-    .append('svg')
-    .attr('id', 'svg_data_chart')
-    .attr('width', this.chart_width)
-    .attr('height', this.chart_height)
-    .style('display', 'block')
+  // var chart_container = d3_select('#container').append('div').attr('id', 'div_data_chart')
+  //   .attr('width', this.chart_width)
+  //   .attr('height', this.chart_height)
+  // //.style('width', '79%')
+  // //.style('display','none')
+  //
+  // chart_container
+  //   .append('svg')
+  //   .attr('id', 'svg_data_chart')
+  //   .attr('width', this.chart_width)
+  //   .attr('height', this.chart_height)
+  //   .style('display', 'block')
 
   this.callback_manager = new CallbackManager()
 
   this.selection = container
 
-  toggle_chart(false)
+  //toggle_chart(false)
 }
 
 // TODO: I need only one tab
-function openTab (type_of_data, builder) {
+function openTab (builder, map) {
 
   d3_select('#tab_container').style('display', 'block')
 
@@ -346,27 +346,28 @@ function openTab (type_of_data, builder) {
   if (builder.type_of_data === 'reaction') {
     d3_select('#reaction_tab_button').style('background-color', 'white')
     //reaction_tab.style('display', 'block')
-    update(builder)
+    update(builder, builder.map)
   } else if (builder.type_of_data === 'gene') {
     d3_select('#reaction_tab_button').style('background-color', 'white')
     //reaction_tab.style('display', 'block')
-    update(builder)
+    update(builder, builder.map)
   } else if (builder.type_of_data === 'metabolite') {
     d3_select('#metabolite_tab_button').style('background-color', 'white')
     //metabolite_tab.style('display', 'block')
-    update(builder)
+    update(builder, builder.map)
   }
 
 }
 
 /**
- *  Update the GUI
- *
- * set to specific data set
- * set slider to max of data
- * set counter to 0 of data length
- * set dropdown menu length
- *
+ *  Updates the GUI
+ *  if a data set is loaded
+ *   set to specific data set
+ *   set slider to max of data set length
+ *   set counter to 0 of data
+ *   set dropdown menu length
+ *  else
+ *   reset everything
  */
 
 function update (builder) {
@@ -415,6 +416,11 @@ function update (builder) {
     }
 
   } else { // reset everything
+
+    // reset stats
+    builder.map.interpolation = false
+    duration = 2000
+
     // update display
     this.current = 0
     d3_select('#counter').text('Display Dataset: 0 / 0')
@@ -438,7 +444,7 @@ function update (builder) {
     document.getElementById('dropDownMenuReference').options.length = 0
     document.getElementById('dropDownMenuTarget').options.length = 0
 
-    toggle_chart(false)
+    //toggle_chart(false)
   }
 }
 
@@ -470,7 +476,7 @@ function play_time_series (builder, map, duration, both_data_play_back, sliding_
     // sliding window mode
     //var sliding_window_reference = builder.reference
     //var sliding_window_target = builder.target
-    var sliding_window_size = (parseInt(builder.target) - parseInt(builder.reference))
+    var sliding_window_size = 1//(parseInt(builder.target) - parseInt(builder.reference))
 
     var duration = duration / (end - start)
 
@@ -604,7 +610,7 @@ function play_time_series (builder, map, duration, both_data_play_back, sliding_
             //tick = this.sliding_window_start - 1
             tick = array_of_time_points[this.sliding_window_start]
           }
-          animate_time_line(tick, duration)
+          //animate_time_line(tick, duration)
           animate_slider()
 
           builder.set_data_indices(builder.type_of_data, builder.reference, builder.target)
@@ -613,12 +619,12 @@ function play_time_series (builder, map, duration, both_data_play_back, sliding_
 
           if (tick >= array_of_time_points[end]) {
             tick = array_of_time_points[this.sliding_window_start]
-            animate_time_line(tick, 0)
+            //animate_time_line(tick, 0)
             animate_slider(0)
 
           } else {
             tick++
-            animate_time_line(tick, duration)
+            //animate_time_line(tick, duration)
 
           }
         }
@@ -627,7 +633,7 @@ function play_time_series (builder, map, duration, both_data_play_back, sliding_
     }
 
     // animation
-    animate_time_line(this.sliding_window_start, 0)
+    //animate_time_line(this.sliding_window_start, 0)
     //animate_slider(0)
     this.animation = setInterval(function () { play(builder, sliding_window) }, duration)
 
@@ -648,7 +654,7 @@ function play_time_series (builder, map, duration, both_data_play_back, sliding_
 }
 
 function showDifferenceData (builder) {
-  toggle_chart(false)
+ // toggle_chart(false)
   builder.difference_mode = true
   builder.set_data_indices(builder.type_of_data, builder.reference, builder.target)
 }
@@ -687,192 +693,7 @@ function toggle (on_off) {
 
 }
 
-/*
 
- */
-function create_chart (builder, map) {
-
-  var current_data_set = []
-  var data_set_loaded = false
-
-  builder.reference = 0
-  builder.target = get_current_data_set(builder).length - 1
-
-  for (var i = parseInt(builder.reference); i <= parseInt(builder.target); i++) {
-    current_data_set.push(get_current_data_set(builder)[i])
-  }
-
-  if (current_data_set[0] !== undefined) {
-    data_set_loaded = true
-  }
-
-  if (data_set_loaded) {
-
-    toggle_chart(true)
-
-    this.margins = {
-      top: 6,
-      right: 10,
-      bottom: 6,
-      left: 20
-    }
-
-    var data_chart = d3_select('#svg_data_chart')
-
-    var svg_width = d3_select('#svg_data_chart').node().getBoundingClientRect().width
-    var width = svg_width - margins.left - margins.right
-    var height = d3_select('#svg_data_chart').node().getBoundingClientRect().height - margins.bottom - margins.top
-
-    var color = d3_scale.schemeCategory20
-
-    var data_for_lines = []
-    var labels_for_lines = Object.keys(current_data_set[0])
-    var array_of_time_points = get_array_of_time_points(builder, map)
-
-    var domain_y_scale_min = d3.min(d3.values(current_data_set[0]))
-    var domain_y_scale_max = d3.max(d3.values(current_data_set[0]))
-
-    var domain_x_scale_min = array_of_time_points[builder.reference]
-    var domain_x_scale_max = array_of_time_points[builder.target]
-
-    // for all data keys create chart data
-
-    for (var k in Object.keys(current_data_set[0])) { // for each key
-
-      var data_for_line = []
-
-      // save identifier for label
-      //labels_for_lines.push(key)
-
-      var time_point_index = builder.reference
-
-      for (var index in current_data_set) { // go though all data sets to collect values
-        var data_point = {}
-        var key = Object.keys(current_data_set[index])[k]
-
-        var y_value = current_data_set[index][key]
-
-        data_point['x'] = array_of_time_points[time_point_index]
-        data_point['y'] = y_value
-
-        if (y_value < domain_y_scale_min) {
-          domain_y_scale_min = y_value
-        }
-
-        if (y_value > domain_y_scale_max) {
-          domain_y_scale_max = y_value
-        }
-
-        time_point_index++
-        data_for_line.push(data_point)
-
-      }
-      data_for_lines.push(data_for_line)
-    }
-
-    this.x_scale = d3.scaleLinear()
-      .domain([domain_x_scale_min, domain_x_scale_max])
-      .range([this.margins.left, width - this.margins.right - 80])
-
-    this.y_scale = d3.scaleLinear()
-      .domain([domain_y_scale_min, domain_y_scale_max])
-      .range([height - this.margins.top, this.margins.bottom])
-
-    var x_axis = d3.axisBottom(this.x_scale)
-    var y_axis = d3.axisLeft(this.y_scale)
-
-    data_chart.append('g')
-      .attr('transform', 'translate(0,' + (height - this.margins.bottom) + ')')
-      .style('shape-rendering', 'crispEdges')
-      .style('stroke', 'black')
-      .style('font-size', '8px')
-      .style('fill', 'none')
-      .call(x_axis)
-
-    data_chart.append('g')
-      .attr('transform', 'translate(' + (this.margins.left) + ',0)')
-      .style('shape-rendering', 'crispEdges')
-      .style('stroke', 'black')
-      .style('font-size', '8px')
-      .style('fill', 'none')
-      .call(y_axis)
-
-    for (var i in data_for_lines) {
-
-      var data = data_for_lines[i]
-
-      var line = d3.line()
-        .x(function (data) {
-          return this.x_scale(data.x)
-        })
-        .y(function (data) {
-          return this.y_scale(data.y)
-        })
-        .curve(d3.curveMonotoneX)
-
-      var path = data_chart.append('svg:path')
-        .attr('d', line(data))
-        .attr('stroke', color[i])
-        .attr('stroke-width', 2)
-        .attr('fill', 'none')
-        .attr('id', 'chart_paths')
-
-      d3_select('#svg_data_chart')
-        .append('text')
-        .attr('x', svg_width - this.margins.right - this.margins.left - 80)
-        .attr('y', this.margins.top + 20 + (i * 20))
-        .style('fill', color[i])
-        .style('font-size', '8px;')
-        .style('text-anchor', 'left')
-        .text(labels_for_lines[i])
-    }
-
-    data_chart.append('rect')
-      .attr('id', 'time_line')
-      .attr('x', this.x_scale(0))
-      // .attr("x2", this.x_scale(0))
-      .attr('y', this.margins.bottom)
-      //.attr("y2", height)
-      .attr('width', 1)
-      .attr('height', (height - this.margins.bottom - this.margins.top))
-      //.attr("stroke-width", 2)
-      .attr('fill', 'red')
-    //.attr("stroke-dasharray", "2,2")
-    //.attr("transform", "translate(0," + (this.margins.bottom) + ")")
-
-  } else {
-    toggle_chart(false)
-
-    map.set_status('Please load in data set')
-  }
-
-}
-
-function toggle_chart (show) {
-
-  if (show) {
-    d3_select('#div_data_chart').style('display', 'block')
-    d3_select('#svg_data_chart').style('display', 'block')
-    d3_select('#div_data_chart_labels').style('display', 'block')
-
-  } else {
-
-    //d3_select('#checkBoxChart').property('checked', false)
-
-    d3_select('#svg_data_chart').remove()
-    //d3_select('#div_data_chart_labels').remove()
-
-    d3_select('#container').append('div').attr('id', 'div_data_chart')
-
-    d3_select('#div_data_chart')
-      .append('svg')
-      .attr('id', 'svg_data_chart')
-      .attr('width', d3_select('#container').node().getBoundingClientRect().width)
-      .attr('height', 200)
-      .style('display', 'none')
-  }
-
-}
 
 function get_current_data_set (builder) {
   if (builder.type_of_data === 'reaction') {
@@ -937,22 +758,22 @@ function get_array_of_time_points (builder, map) {
 //   return time_scale_is_linear
 // }
 
-function animate_time_line (tick, transition_duration) {
-
-  if (this.x_scale !== undefined) {
-    var time_line = d3.select('#time_line')
-
-    if (tick == 0) {
-      transition_duration = 0
-    }
-
-    time_line.transition()
-      .duration(transition_duration)
-      .ease(d3.easeLinear)
-      .attr('x', this.x_scale(tick))
-
-  }
-}
+// function animate_time_line (tick, transition_duration) {
+//
+//   if (this.x_scale !== undefined) {
+//     var time_line = d3_select('#time_line')
+//
+//     if (tick == 0) {
+//       transition_duration = 0
+//     }
+//
+//     time_line.transition()
+//       .duration(transition_duration)
+//       .ease(d3.easeLinear)
+//       .attr('x', this.x_scale(tick))
+//
+//   }
+// }
 
 function animate_slider (set_to) {
 
@@ -972,3 +793,191 @@ function animate_slider (set_to) {
   d3_select('#dropDownMenuReference').property('selectedIndex', slider_value)
 
 }
+
+
+/*
+
+ */
+// function create_chart (builder, map) {
+//
+//   var current_data_set = []
+//   var data_set_loaded = false
+//
+//   builder.reference = 0
+//   builder.target = get_current_data_set(builder).length - 1
+//
+//   for (var i = parseInt(builder.reference); i <= parseInt(builder.target); i++) {
+//     current_data_set.push(get_current_data_set(builder)[i])
+//   }
+//
+//   if (current_data_set[0] !== undefined) {
+//     data_set_loaded = true
+//   }
+//
+//   if (data_set_loaded) {
+//
+//     toggle_chart(true)
+//
+//     this.margins = {
+//       top: 6,
+//       right: 10,
+//       bottom: 6,
+//       left: 20
+//     }
+//
+//     var data_chart = d3_select('#svg_data_chart')
+//
+//     var svg_width = d3_select('#svg_data_chart').node().getBoundingClientRect().width
+//     var width = svg_width - margins.left - margins.right
+//     var height = d3_select('#svg_data_chart').node().getBoundingClientRect().height - margins.bottom - margins.top
+//
+//     var color = d3_scale.schemeCategory20
+//
+//     var data_for_lines = []
+//     var labels_for_lines = Object.keys(current_data_set[0])
+//     var array_of_time_points = get_array_of_time_points(builder, map)
+//
+//     var domain_y_scale_min = d3.min(d3.values(current_data_set[0]))
+//     var domain_y_scale_max = d3.max(d3.values(current_data_set[0]))
+//
+//     var domain_x_scale_min = array_of_time_points[builder.reference]
+//     var domain_x_scale_max = array_of_time_points[builder.target]
+//
+//     // for all data keys create chart data
+//
+//     for (var k in Object.keys(current_data_set[0])) { // for each key
+//
+//       var data_for_line = []
+//
+//       // save identifier for label
+//       //labels_for_lines.push(key)
+//
+//       var time_point_index = builder.reference
+//
+//       for (var index in current_data_set) { // go though all data sets to collect values
+//         var data_point = {}
+//         var key = Object.keys(current_data_set[index])[k]
+//
+//         var y_value = current_data_set[index][key]
+//
+//         data_point['x'] = array_of_time_points[time_point_index]
+//         data_point['y'] = y_value
+//
+//         if (y_value < domain_y_scale_min) {
+//           domain_y_scale_min = y_value
+//         }
+//
+//         if (y_value > domain_y_scale_max) {
+//           domain_y_scale_max = y_value
+//         }
+//
+//         time_point_index++
+//         data_for_line.push(data_point)
+//
+//       }
+//       data_for_lines.push(data_for_line)
+//     }
+//
+//     this.x_scale = d3.scaleLinear()
+//       .domain([domain_x_scale_min, domain_x_scale_max])
+//       .range([this.margins.left, width - this.margins.right - 80])
+//
+//     this.y_scale = d3.scaleLinear()
+//       .domain([domain_y_scale_min, domain_y_scale_max])
+//       .range([height - this.margins.top, this.margins.bottom])
+//
+//     var x_axis = d3.axisBottom(this.x_scale)
+//     var y_axis = d3.axisLeft(this.y_scale)
+//
+//     data_chart.append('g')
+//       .attr('transform', 'translate(0,' + (height - this.margins.bottom) + ')')
+//       .style('shape-rendering', 'crispEdges')
+//       .style('stroke', 'black')
+//       .style('font-size', '8px')
+//       .style('fill', 'none')
+//       .call(x_axis)
+//
+//     data_chart.append('g')
+//       .attr('transform', 'translate(' + (this.margins.left) + ',0)')
+//       .style('shape-rendering', 'crispEdges')
+//       .style('stroke', 'black')
+//       .style('font-size', '8px')
+//       .style('fill', 'none')
+//       .call(y_axis)
+//
+//     for (var i in data_for_lines) {
+//
+//       var data = data_for_lines[i]
+//
+//       var line = d3.line()
+//         .x(function (data) {
+//           return this.x_scale(data.x)
+//         })
+//         .y(function (data) {
+//           return this.y_scale(data.y)
+//         })
+//         .curve(d3.curveMonotoneX)
+//
+//       var path = data_chart.append('svg:path')
+//         .attr('d', line(data))
+//         .attr('stroke', color[i])
+//         .attr('stroke-width', 2)
+//         .attr('fill', 'none')
+//         .attr('id', 'chart_paths')
+//
+//       d3_select('#svg_data_chart')
+//         .append('text')
+//         .attr('x', svg_width - this.margins.right - this.margins.left - 80)
+//         .attr('y', this.margins.top + 20 + (i * 20))
+//         .style('fill', color[i])
+//         .style('font-size', '8px;')
+//         .style('text-anchor', 'left')
+//         .text(labels_for_lines[i])
+//     }
+//
+//     data_chart.append('rect')
+//       .attr('id', 'time_line')
+//       .attr('x', this.x_scale(0))
+//       // .attr("x2", this.x_scale(0))
+//       .attr('y', this.margins.bottom)
+//       //.attr("y2", height)
+//       .attr('width', 1)
+//       .attr('height', (height - this.margins.bottom - this.margins.top))
+//       //.attr("stroke-width", 2)
+//       .attr('fill', 'red')
+//     //.attr("stroke-dasharray", "2,2")
+//     //.attr("transform", "translate(0," + (this.margins.bottom) + ")")
+//
+//   } else {
+//     toggle_chart(false)
+//
+//     map.set_status('Please load in data set')
+//   }
+//
+// }
+//
+// function toggle_chart (show) {
+//
+//   if (show) {
+//     d3_select('#div_data_chart').style('display', 'block')
+//     d3_select('#svg_data_chart').style('display', 'block')
+//     d3_select('#div_data_chart_labels').style('display', 'block')
+//
+//   } else {
+//
+//     //d3_select('#checkBoxChart').property('checked', false)
+//
+//     d3_select('#svg_data_chart').remove()
+//     //d3_select('#div_data_chart_labels').remove()
+//
+//     d3_select('#container').append('div').attr('id', 'div_data_chart')
+//
+//     d3_select('#div_data_chart')
+//       .append('svg')
+//       .attr('id', 'svg_data_chart')
+//       .attr('width', d3_select('#container').node().getBoundingClientRect().width)
+//       .attr('height', 200)
+//       .style('display', 'none')
+//   }
+//
+// }

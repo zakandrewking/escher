@@ -393,24 +393,35 @@ function update_segment (update_selection, scale, cobra_model,
       curve += (end.x + ',' + end.y)
       return curve
     })
-    .style('stroke', function(d) {
-      var reaction_id = this.parentNode.parentNode.__data__.bigg_id
-      var show_missing = (highlight_missing &&
-                          cobra_model !== null &&
-                          !(reaction_id in cobra_model.reactions))
-      if (show_missing) {
-        return 'red'
-      }
-      if (should_color) {
-        var f = d.data
-        return f === null ? no_data_color : scale.reaction_color(f)
-      }
-      return null
-    })
 
 
   if(interpolation){
 
+    // TODO: reaction color does not work with interpolation
+    update_selection
+      .selectAll('.segment')
+      .datum(function () {
+        return this.parentNode.__data__
+      })
+      .transition()
+      .duration(transition_duration)
+      .ease(d3.easeLinear)
+      .style('stroke', function(d) {
+        var reaction_id = this.parentNode.parentNode.__data__.bigg_id
+        var show_missing = (highlight_missing &&
+          cobra_model !== null &&
+          !(reaction_id in cobra_model.reactions))
+        if (show_missing) {
+          return 'red'
+        }
+        if (should_color) {
+          var f = d.data
+          return f === null ? no_data_color : scale.reaction_color(f)
+        }
+        return null
+      })
+
+    // reaction stroke-width
     update_selection
       .selectAll('.segment')
       .transition()
@@ -427,6 +438,28 @@ function update_segment (update_selection, scale, cobra_model,
 
   } else {
 
+    // reaction color
+    update_selection
+      .selectAll('.segment')
+      .datum(function () {
+        return this.parentNode.__data__
+      })
+      .style('stroke', function(d) {
+        var reaction_id = this.parentNode.parentNode.__data__.bigg_id
+        var show_missing = (highlight_missing &&
+          cobra_model !== null &&
+          !(reaction_id in cobra_model.reactions))
+        if (show_missing) {
+          return 'red'
+        }
+        if (should_color) {
+          var f = d.data
+          return f === null ? no_data_color : scale.reaction_color(f)
+        }
+        return null
+      })
+
+    // reaction stroke-width
     update_selection
       .selectAll('.segment')
       .style('stroke-width', function(d) {

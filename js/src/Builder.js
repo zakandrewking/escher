@@ -611,7 +611,7 @@ function set_reaction_data (data) {
 
     this.options.reaction_data = [data]
     this.type_of_data = 'reaction'
-    this.time_series_bar.openTab('reaction', this)
+    this.time_series_bar.openTab(this)
 
   } else {
 
@@ -619,7 +619,7 @@ function set_reaction_data (data) {
     this.options.reaction_data = data[1]
 
     this.type_of_data = 'reaction'
-    this.time_series_bar.openTab('reaction', this)
+    this.time_series_bar.openTab(this)
   }
 
   var message_fn = this._reaction_check_add_abs()
@@ -658,14 +658,14 @@ function set_gene_data (data, clear_gene_reaction_rules) {
     this.gene_data_names = ["gene data set"]
 
     this.options.gene_data = [data]
-    this.time_series_bar.openTab('gene', this)
+    this.time_series_bar.openTab(this)
 
   } else {
     this.type_of_data = 'gene'
     this.gene_data_names = data[0]
     this.options.gene_data = data[1]
 
-    this.time_series_bar.openTab('gene', this)
+    this.time_series_bar.openTab(this)
 
   }
 
@@ -695,7 +695,7 @@ function set_metabolite_data (data) {
     this.metabolite_data_names = ["metabolite data set"]
     this.options.metabolite_data = [data]
     this.type_of_data = 'metabolite'
-    this.time_series_bar.openTab('metabolite', this)
+    this.time_series_bar.openTab(this)
 
   } else {
 
@@ -703,7 +703,7 @@ function set_metabolite_data (data) {
     this.options.metabolite_data = data[1]
 
     this.type_of_data = 'metabolite'
-    this.time_series_bar.openTab('metabolite', this)
+    this.time_series_bar.openTab(this)
   }
 
   this._update_data(true, true, 'metabolite', undefined, true)
@@ -1044,6 +1044,10 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
               text: 'Load metabolite data' })
     .button({ key: keys.clear_metabolite_data,
               text: 'Clear metabolite data' })
+    .divider()
+    .button({ key: keys.time_series_bar,
+      text: 'Time Series / Difference Mode',
+      key_text: (enable_keys ? ' (D)' : null) })
 
   // update the buttons
   var disable_clears = function() {
@@ -1133,9 +1137,6 @@ function _set_up_menu (menu_selection, map, key_manager, keys, enable_editing,
     .button({ key: keys.search,
               text: 'Find',
               key_text: (enable_keys ? ' (F)' : null) })
-    .button({ key: keys.time_series_bar,
-              text: 'Time Series / Difference Mode',
-              key_text: (enable_keys ? ' (D)' : null) })
   if (full_screen_button) {
     view_menu.button({ key: keys.full_screen,
                        text: 'Full screen',
@@ -1320,17 +1321,6 @@ function _set_up_button_panel(button_selection, keys, enable_editing,
                              ignore_bootstrap: ignore_bootstrap
                          })
   }
-
-  // ui.individual_button(button_panel.append('li'),
-  //   {
-  //     key: keys.difference_mode,
-  //     text: 'D',
-  //     id: 'difference-mode-button',
-  //     icon: 'glyphicon glyphicon-object-align-bottom',
-  //     tooltip: 'Difference mode',
-  //     key_text: (enable_keys ? ' (D)' : null),
-  //     ignore_bootstrap: ignore_bootstrap
-  //   })
 
   // mode buttons
   if (enable_editing && menu_option === 'all') {
