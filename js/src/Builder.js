@@ -5,8 +5,8 @@
 /** @jsx h */
 
 import preact, { h } from 'preact'
-import Dropdown from './Dropdown.js'
-import MenuButton from './MenuButton.js'
+import BuilderMenuBar from './BuilderMenuBar.js'
+import ButtonPanel from './ButtonPanel.js'
 import SearchBar from './SearchBar.js'
 import '../../node_modules/font-awesome/css/font-awesome.min.css'
 import '../../css/src/ButtonPanel.css'
@@ -407,18 +407,14 @@ function load_map (map_data, should_update_data) {
 
   // Set up menu and status bars
   if (this.options.menu === 'all') {
-    if (this.options.ignore_bootstrap) {
-      console.error('Cannot create the dropdown menus if ignore_bootstrap = true')
-    } else {
-      if (this.options.reaction_data) {
-        this.options.disabled_buttons.push('Clear reaction data')
-      }
-      if (this.options.gene_data) {
-        this.options.disabled_buttons.push('Clear gene data')
-      }
-      if (this.options.metabolite_data) {
-        this.options.disabled_buttons.push('Clear metabolite data')
-      }
+    if (this.options.reaction_data) {
+      this.options.disabled_buttons.push('Clear reaction data')
+    }
+    if (this.options.gene_data) {
+      this.options.disabled_buttons.push('Clear gene data')
+    }
+    if (this.options.metabolite_data) {
+      this.options.disabled_buttons.push('Clear metabolite data')
     }
   }
 
@@ -470,254 +466,53 @@ function load_map (map_data, should_update_data) {
 
 function renderMenu (mode) {
   const menuDivNode = this.menu_div.node()
-  preact.render(
-    <ul className='menuBar' style={{
-      display: 'inline-block',
-      margin: '5px auto 0',
-      border: '1px solid #ddd',
-      backgroundColor: 'rgba(255, 255, 255, 0.95)',
-      borderRadius: '0',
-      height: '100%',
-      width: '100%'
-    }}>
-      <Dropdown name='Map'>
-        <MenuButton
-          name={'Save map JSON' + (this.options.enable_keys ? ' (Ctrl+S)' : '')}
-          onClick={this.map.save.bind(this.map)}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Load map JSON' + (this.options.enable_keys ? ' (Ctrl+O)' : '')}
-          onClick={file => this.load_map(file)}
-          type='load'
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Export as SVG' + (this.options.enable_keys ? ' (Ctrl+Shift+S)' : '')}
-          onClick={() => this.map.save_svg()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Export as PNG' + (this.options.enable_keys ? ' (Ctrl+Shift+P)' : '')}
-          onClick={() => this.map.save_png()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name='Clear map'
-          onClick={() => this.map.clear_map()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-      </Dropdown>
-      <Dropdown name='Model'>
-        <MenuButton
-          name={'Load COBRA model JSON' + (this.options.enable_keys ? ' (Ctrl+M)' : '')}
-          onClick={file => this.callback_manager.run('load_model', null, file, true)}
-          type='load'
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name='Update names and gene reaction rules using model'
-          onClick={this.map.convert_map.bind(this.map)}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name='Clear model'
-          onClick={this.load_model.bind(this, null, true)}
-          disabledButtons={this.options.disabled_buttons}
-        />
-      </Dropdown>
-      <Dropdown name='Data'>
-        <MenuButton
-          name='Load reaction data'
-          onClick={
-            file => {
-              this.set_reaction_data(file)
-              this._set_mode(mode)
-            }
-          }
-          type='load'
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name='Clear reaction data'
-          onClick={
-            () => {
-              this.set_reaction_data(null)
-              this._set_mode(mode)
-            }
-          }
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <li name='divider' />
-        <MenuButton
-          name='Load gene data'
-          onClick={
-            file => {
-              this.set_gene_data(file)
-              this._set_mode(mode)
-            }
-          }
-          type='load'
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name='Clear gene data'
-          onClick={
-            () => {
-              this.set_gene_data(null)
-              this._set_mode(mode)
-            }
-          }
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <li name='divider' />
-        <MenuButton
-          name='Load metabolite data'
-          onClick={
-            file => {
-              this.set_metabolite_data(file)
-              this._set_mode(mode)
-            }
-          }
-          type='load'
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name='Clear metabolite data'
-          onClick={
-            () => {
-              this.set_metabolite_data(null)
-              this._set_mode(mode)
-            }
-          }
-          disabledButtons={this.options.disabled_buttons}
-        />
-      </Dropdown>
-      <Dropdown name='Edit' rightMenu='true'>
-        <MenuButton
-          name={'Pan mode' + (this.options.enable_keys ? ' (Z)' : '')}
-          modeName='zoom'
-          mode={mode}
-          onClick={() => this._set_mode('zoom')}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Select mode' + (this.options.enable_keys ? ' (V)' : '')}
-          modeName='brush'
-          mode={mode}
-          onClick={() => this._set_mode('brush')}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Add reaction mode' + (this.options.enable_keys ? ' (N)' : '')}
-          modeName='build'
-          mode={mode}
-          onClick={() => this._set_mode('build')}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Rotate mode' + (this.options.enable_keys ? ' (R)' : '')}
-          modeName='rotate'
-          mode={mode}
-          onClick={() => this._set_mode('rotate')}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Text mode' + (this.options.enable_keys ? ' (T)' : '')}
-          modeName='text'
-          mode={mode}
-          onClick={() => this._set_mode('text')}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <li name='divider' />
-        <MenuButton
-          name={'Delete' + (this.options.enable_keys ? ' (Del)' : '')}
-          onClick={() => this.map.delete_selected()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Undo' + (this.options.enable_keys ? ' (Ctrl+Z)' : '')}
-          onClick={() => this.map.undo_stack.undo()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Redo' + (this.options.enable_keys ? ' (Ctrl+Shift+Z)' : '')}
-          onClick={() => this.map.undo_stack.redo()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Toggle primary/secondary' + (this.options.enable_keys ? ' (P)' : '')}
-          onClick={() => this.map.toggle_selected_node_primary()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Rotate reactant locations' + (this.options.enable_keys ? ' (C)' : '')}
-          onClick={() => this.map.cycle_primary_node()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Select all' + (this.options.enable_keys ? ' (Ctrl+A)' : '')}
-          onClick={() => this.map.select_all()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Select none' + (this.options.enable_keys ? ' (Ctrl+Shift+A)' : '')}
-          onClick={() => this.map.select_none()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name='Invert selection'
-          onClick={() => this.map.invert_selection()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-      </Dropdown>
-      <Dropdown name='View' rightMenu='true'>
-        <MenuButton
-          name={'Zoom in' + (this.options.enable_keys ? ' (+)' : '')}
-          onClick={() => this.zoom_container.zoom_in()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Zoom out' + (this.options.enable_keys ? ' (-)' : '')}
-          onClick={() => this.zoom_container.zoom_out()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Zoom to nodes' + (this.options.enable_keys ? ' (0)' : '')}
-          onClick={() => this.map.zoom_extent_nodes()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Zoom to canvas' + (this.options.enable_keys ? ' (1)' : '')}
-          onClick={() => this.map.zoom_extent_canvas()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={'Find' + (this.options.enable_keys ? ' (F)' : '')}
-          onClick={() => this.renderSearchBar()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <MenuButton
-          name={!this.map.beziers_enabled ? ('Show control points' + (this.options.enable_keys ? ' (B)' : '')) : ('Hide control points' + (this.options.enable_keys ? ' (B)' : ''))}
-          onClick={
-            () => {
-              this.map.toggle_beziers()
-              this._set_mode(mode)
-            }
-          }
-          disabledButtons={this.options.disabled_buttons}
-        />
-        <li name='divider' />
-        <MenuButton
-          name={'Settings' + (this.options.enable_keys ? ' (,)' : '')}
-          onClick={() => this.settings_bar.toggle()}
-          disabledButtons={this.options.disabled_buttons}
-        />
-      </Dropdown>
-      <a className='dropdown' target='#' href='https://escher.readthedocs.org'>?</a>
-    </ul>,
-    menuDivNode,
-    menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
+  if (this.options.menu === 'all') {
+    preact.render(
+      <BuilderMenuBar
+        {...this.options}
+        {...this.map}
+        mode={mode}
+        settings={this.settings}
+        saveMap={() => this.map.save()}
+        loadMap={(file) => this.load_map(file)}
+        saveSvg={() => this.map.save_svg()}
+        savePng={() => this.map.save_png()}
+        clearMap={() => this.map.clear_map()}
+        loadModel={file => this.load_model(file, true)}
+        updateRules={() => this.map.convert_map()}
+        loadReactionData={file => {
+          this.set_reaction_data(file)
+          this._set_mode(mode)
+        }}
+        loadGeneData={file => {
+          this.set_gene_data(file)
+          this._set_mode(mode)
+        }}
+        loadMetaboliteData={file => {
+          this.set_metabolite_data(file)
+          this._set_mode(mode)
+        }}
+        setMode={(newMode) => this._set_mode(newMode)}
+        deleteSelected={() => this.map.delete_selected()}
+        undo={() => this.map.undo_stack.undo()}
+        redo={() => this.map.undo_stack.redo()}
+        togglePrimary={() => this.map.toggle_selected_node_primary()}
+        cyclePrimary={() => this.map.cycle_primary_node()}
+        selectAll={() => this.map.select_all()}
+        selectNone={() => this.map.select_none()}
+        invertSelection={() => this.map.invert_selection()}
+        zoomIn={() => this.zoom_container.zoom_in()}
+        zoomOut={() => this.zoom_container.zoom_out()}
+        zoomExtentNodes={() => this.map.zoom_extent_nodes()}
+        zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
+        search={() => this.search_bar.toggle()}
+        toggleBeziers={() => this.map.toggle_beziers()}
+        renderSettingsMenu={() => this.settings_bar.toggle()}
+      />,
+      menuDivNode,
+      menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined
+    )
+  }
 }
 
 function renderSearchBar (hide) {
@@ -737,59 +532,13 @@ function renderSearchBar (hide) {
 function renderButtonPanel (mode) {
   const buttonPanelDivNode = this.button_div.node()
   preact.render(
-    <ul className='buttonPanel'>
-      <li>
-        <button className='button' onClick={() => this.zoom_container.zoom_in()} title='Zoom in (+)'>
-          <i className='fa fa-plus-circle fa-2x' />
-        </button>
-      </li>
-      <li>
-        <button className='button' onClick={() => this.zoom_container.zoom_out()} title='Zoom out (-)'>
-          <i className='fa fa-minus-circle fa-2x' />
-        </button>
-      </li>
-      <li>
-        <button className='button' onClick={() => this.map.zoom_extent_canvas()} title='Zoom to canvas (1)'>
-          <i className='fa fa-expand fa-2x' />
-        </button>
-      </li>
-      <li className='grouping'>
-        <label className='buttonGroup' title='Pan mode (Z)' for='zoom' id={mode === 'zoom' ? 'currentMode' : null}>
-          <i className='fa fa-arrows fa-2x' style={{padding: '6px'}} />
-        </label>
-        <input type='radio' id='zoom' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('zoom')} />
-        <label className='buttonGroup' title='Select mode (V)' for='brush' id={mode === 'brush' ? 'currentMode' : null}>
-          <i className='fa fa-mouse-pointer fa-2x' style={{padding: '6px'}} />
-        </label>
-        <input type='radio' id='brush' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('brush')} />
-        <label className='buttonGroup' title='Add reaction mode (N)' for='build' id={mode === 'build' ? 'currentMode' : null}>
-          <i className='fa fa-wrench fa-2x' style={{padding: '6px'}} />
-        </label>
-        <input type='radio' id='build' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('build')} />
-        <label className='buttonGroup' title='Rotate mode (R)' for='rotate' id={mode === 'rotate' ? 'currentMode' : null}>
-          <i className='fa fa-rotate-right fa-2x' style={{padding: '6px'}} />
-        </label>
-        <input type='radio' id='rotate' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('rotate')} />
-        <input type='radio' id='text' name='mode' style={{display: 'none'}} onChange={() => this._set_mode('text')} />
-        <label className='buttonGroup' title='Text mode (T)' for='text' id={mode === 'text' ? 'currentMode' : null}>
-          <i className='fa fa-font fa-2x' style={{padding: '6px'}} />
-        </label>
-      </li>
-      <li className='grouping' style={mode === 'build' ? {display: 'list-item'} : {display: 'none'}}>
-        <button className='buttonGroup' title='Direction arrow (←)' onClick={() => this.build_input.direction_arrow.left()}>
-          <i className='fa fa-arrow-left fa-2x' />
-        </button>
-        <button className='buttonGroup' title='Direction arrow (→)' onClick={() => this.build_input.direction_arrow.right()}>
-          <i className='fa fa-arrow-right fa-2x' />
-        </button>
-        <button className='buttonGroup' title='Direction arrow (↑)' onClick={() => this.build_input.direction_arrow.up()}>
-          <i className='fa fa-arrow-up fa-2x' />
-        </button>
-        <button className='buttonGroup' title='Direction arrow (↓)' onClick={() => this.build_input.direction_arrow.down()}>
-          <i className='fa fa-arrow-down fa-2x' />
-        </button>
-      </li>
-    </ul>,
+    <ButtonPanel
+      setMode={(newMode) => this._set_mode(newMode)}
+      zoomContainer={this.zoom_container}
+      map={this.map}
+      mode={mode}
+      buildInput={this.build_input}
+    />,
   buttonPanelDivNode,
   buttonPanelDivNode.children.length > 0 ? buttonPanelDivNode.firstChild : undefined)
 }
