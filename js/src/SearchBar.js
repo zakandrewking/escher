@@ -17,19 +17,23 @@ class SearchBar extends Component {
     }
   }
 
-  componentDidMount () {
-    this.props.map.key_manager.add_key_listener(
-      ['enter', 'ctrl+g'], () => this.next(), false)
-  }
-
   componentWillReceiveProps (nextProps) {
+    this.props.map.key_manager.add_escape_listener(() => this.close(), true)
     this.setState({
       ...nextProps,
       current: 1,
       results: null,
       searchItem: null,
-      counter: ''
+      counter: '',
+      clearNext: this.props.map.key_manager.add_key_listener(
+        ['enter', 'ctrl+g'], () => this.next(), false),
+      clearPrevious: this.props.map.key_manager.add_key_listener(
+        ['shift+enter', 'shift+ctrl+g'], () => this.previous(), false)
     })
+  }
+
+  componentDidUpdate () {
+    this.inputRef.focus()
   }
 
   handleInput (value) {
@@ -81,7 +85,7 @@ class SearchBar extends Component {
   }
 
   next () {
-    if (this.state.results !== null) {
+    if (this.state.results) {
       if (this.state.current === this.state.results.length) {
         this.update(1)
       } else {
@@ -91,7 +95,7 @@ class SearchBar extends Component {
   }
 
   previous () {
-    if (this.state.results !== null) {
+    if (this.state.results) {
       if (this.state.current === 1) {
         this.update(this.state.results.length)
       } else {
@@ -120,6 +124,13 @@ class SearchBar extends Component {
     }
   }
 
+  close () {
+    this.props.map.highlight(null)
+    this.setState({visible: false})
+    this.state.clearNext()
+    this.state.clearPrevious()
+  }
+
   is_visible () {
     return this.state.visible
   }
@@ -133,8 +144,8 @@ class SearchBar extends Component {
           <input
             className='searchField'
             value={this.state.searchItem}
-            onKeyUp={event => this.handleInput(event.target.value)}
-            autofocus
+            onInput={event => this.handleInput(event.target.value)}
+            ref={input => { this.inputRef = input }}
           />
           <button className='searchBarButton left' onClick={() => this.previous()}>
             <i className='fa fa-chevron-left ' />
@@ -148,10 +159,7 @@ class SearchBar extends Component {
         </div>
         <button
           className='searchBarButton'
-          onClick={() => {
-            this.props.map.highlight(null)
-            this.setState({visible: false})
-          }}
+          onClick={() => this.close()}
         >
           <i className='fa fa-close fa-lg' />
         </button>
