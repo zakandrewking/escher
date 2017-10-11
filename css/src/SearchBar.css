@@ -3,13 +3,13 @@
 }
 
 .escher-container .searchContainer {
-  display: flex;
+  display: inline-flex;
   justify-content: space-between;
   background-color: rgba(255, 255, 255, 0.95);
   padding: 3px;
   border: 1px solid #DDD;
   margin: -2px 0 0;
-  width: inherit;
+  width: 410px;
 }
 
 .escher-container .searchContainer .searchBarButton {

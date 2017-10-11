@@ -139,7 +139,7 @@ class SearchBar extends Component {
     return (
       <div
         className='searchContainer'
-        style={this.state.visible ? {display: 'flex'} : {display: 'none'}}>
+        style={this.state.visible ? {display: 'inline-flex'} : {display: 'none'}}>
         <div className='searchPanel'>
           <input
             className='searchField'
