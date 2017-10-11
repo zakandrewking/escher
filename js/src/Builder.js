@@ -505,7 +505,7 @@ function renderMenu (mode) {
         zoomOut={() => this.zoom_container.zoom_out()}
         zoomExtentNodes={() => this.map.zoom_extent_nodes()}
         zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
-        search={() => this.search_bar.toggle()}
+        search={() => this.renderSearchBar()}
         toggleBeziers={() => this.map.toggle_beziers()}
         renderSettingsMenu={() => this.settings_bar.toggle()}
       />,
