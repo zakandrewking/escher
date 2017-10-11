@@ -7,7 +7,7 @@
 /** @jsx h */
 import { h, Component } from 'preact'
 import ScaleSelector from './ScaleSelector.js'
-import ScaleEditorContainer from './ScaleEditorContainer.js'
+import ScaleSlider from './ScaleSlider.js'
 import ScaleSelection from './ScaleSelection.js'
 import '../../css/src/SettingsMenu.css'
 
@@ -244,8 +244,8 @@ class BuilderSettingsMenu extends Component {
                 />
               </ScaleSelector>
             </div>
-            <ScaleEditorContainer
-              settings={this.props.settings}
+            <ScaleSlider
+              scale={this.state.presetScale1}
               type={'reaction'}
               map={this.props.map}
             />
@@ -415,11 +415,11 @@ class BuilderSettingsMenu extends Component {
                 />
               </ScaleSelector>
             </div>
-            <ScaleEditorContainer
+            {/* <ScaleSlider
               settings={this.props.settings}
               type={'metabolite'}
               map={this.props.map}
-            />
+            /> */}
             <div className='subheading'>
               Metabolite data
             </div>

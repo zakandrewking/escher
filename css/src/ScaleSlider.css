@@ -1,0 +1,13 @@
+.escher-container .scaleEditor * {
+  box-sizing: border-box;
+}
+
+.escher-container .scaleEditor {
+  display: flex;
+  justify-content: center;
+}
+
+.escher-container .scaleTrack {
+  width: 400px;
+  height: 30px;
+}
