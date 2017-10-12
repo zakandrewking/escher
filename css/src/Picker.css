@@ -21,6 +21,11 @@
   right: -7px;
 }
 
+.escher-container #max .pickerBox {
+  margin-left: auto;
+  right: -7px;
+}
+
 .escher-container .pickerOptions {
   margin-top: 1px;
   display: inline-flex;
