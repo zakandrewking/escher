@@ -245,7 +245,7 @@ class BuilderSettingsMenu extends Component {
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.state.presetScale1}
+              scale={this.props.reaction_scale}
               type={'reaction'}
               map={this.props.map}
             />

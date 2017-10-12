@@ -8,6 +8,9 @@
 }
 
 .escher-container .scaleTrack {
+  position: relative;
+  display: flex;
   width: 400px;
   height: 30px;
+  margin-bottom: 70px;
 }

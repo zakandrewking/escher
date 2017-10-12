@@ -1,0 +1,41 @@
+.escher-container .picker {
+  margin-left: -7px;
+  position: absolute;
+}
+
+.escher-container .pickerBox {
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.375);
+  width: 14px;
+  height: 35px;
+
+}
+
+.escher-container #min {
+  margin-left: 0;
+  left: -7px;
+}
+
+.escher-container #max {
+  margin-left: 0;
+  right: -7px;
+}
+
+.escher-container .pickerOptions {
+  margin-top: 1px;
+  display: inline-flex;
+  flex-direction: column;
+  width: 90px;
+}
+
+.escher-container .pickerOptions .colorOptions {
+  display: inline-flex;
+}
+
+.escher-container .colorOptions .colorText {
+  width: 66px
+}
+
+.escher-container .colorOptions .colorWheel {
+  width: 24px
+}

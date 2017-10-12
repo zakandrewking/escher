@@ -1,6 +1,7 @@
 /** @jsx h */
 
 import {h, Component} from 'preact'
+import Picker from './Picker'
 import '../../css/src/ScaleSlider.css'
 
 class ScaleSlider extends Component {
@@ -22,7 +23,7 @@ class ScaleSlider extends Component {
     let gradientArray = []
     for (let i = 0; i < this.props.scale.length; i++) {
       if (this.props.scale[i].type === 'value') {
-        gradientArray.push(`, ${this.props.scale[i].color} ${this.props.scale[i].value / stats.reaction.max * 100}`)
+        gradientArray.push(` ${this.props.scale[i].color} ${this.props.scale[i].value / stats.reaction.max * 100}%`)
       } else {
         let type = this.props.scale[i].type
         let value = type === 'min'
@@ -39,7 +40,7 @@ class ScaleSlider extends Component {
         gradientArray.push(` ${this.props.scale[i].color} ${value / stats.reaction.max * 100}%`)
       }
     }
-    console.log(gradientArray.toString())
+    console.log(stats)
     return gradientArray.toString()
   }
 
@@ -51,8 +52,16 @@ class ScaleSlider extends Component {
           style={{
             background: `linear-gradient(to right,${this.makeGradient()})`
           }}
-        />
-        <div className='pickers' />
+        >
+          {this.props.scale.map((listItem) => {
+            if (listItem.type === 'min' || listItem.type === 'max') {
+              console.log(this.props.scale)
+              return <Picker id={listItem.type} />
+            } else {
+              return <Picker value={(listItem.value / this.props.map.get_data_statistics().reaction.max * 100)} />
+            }
+          })}
+        </div>
       </div>
     )
   }
