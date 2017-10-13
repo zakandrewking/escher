@@ -75,7 +75,7 @@ JavaScript API
           (Default: ``null``) A reference to an element on the map that will be
           centered after the map loads. The value should be an object with the
           following form, where the type is either ``'reaction'`` or
-          ``'metabolite'`` and the element ID refers to the ID of the drawn
+          ``'node'`` and the element ID refers to the ID of the drawn
           element in the Escher map (not the BiGG ID):
 
             ``{ type: <TYPE>, id: <ELEMENT ID> }``
