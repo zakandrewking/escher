@@ -1,4 +1,5 @@
 .escher-container .picker {
+  top:0;
   margin-left: -7px;
   position: absolute;
 }
@@ -27,10 +28,16 @@
 }
 
 .escher-container .pickerOptions {
+  box-shadow: 0 2px 14px #c5c5c5;
   margin-top: 1px;
   display: inline-flex;
   flex-direction: column;
   width: 90px;
+}
+
+.escher-container .pickerOptions * {
+  line-height: 1.42;
+  font-size: 12px;
 }
 
 .escher-container .pickerOptions .colorOptions {
@@ -38,9 +45,38 @@
 }
 
 .escher-container .colorOptions .colorText {
-  width: 66px
+  width: stretch;
 }
 
 .escher-container .colorOptions .colorWheel {
+  position: absolute;
+  right: 0;
   width: 24px
+}
+
+.escher-container .picker .trashDiv {
+  position: absolute;
+  top: -22px;
+  font-size: 17px;
+}
+
+.escher-container .picker .trashDiv * {
+  font-size: 17px;
+  cursor: pointer;
+}
+
+.escher-container .scaleEditor .fa-plus {
+  cursor: pointer;
+  position: relative;
+  font-size: 14px;
+  margin-left: auto;
+  margin-right: 20px;
+}
+
+.escher-container .scaleEditor :disabled {
+  background: #f1ecfa;
+}
+
+.escher-container .scaleEditor input[type=color]:disabled {
+  margin-top: 1px;
 }

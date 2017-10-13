@@ -246,8 +246,8 @@ class BuilderSettingsMenu extends Component {
             </div>
             <ScaleSlider
               scale={this.props.reaction_scale}
-              type={'reaction'}
-              map={this.props.map}
+              type='Reaction'
+              stats={this.props.map.get_data_statistics().reaction}
             />
             <div className='subheading'>
               Reaction or Gene data
@@ -415,11 +415,11 @@ class BuilderSettingsMenu extends Component {
                 />
               </ScaleSelector>
             </div>
-            {/* <ScaleSlider
+            <ScaleSlider
               settings={this.props.settings}
-              type={'metabolite'}
-              map={this.props.map}
-            /> */}
+              type='Metabolite'
+              scale={this.props.map.get_data_statistics().metabolite}
+            />
             <div className='subheading'>
               Metabolite data
             </div>

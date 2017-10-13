@@ -187,6 +187,9 @@ function init (map_data, model_data, embedded_css, selection, options) {
                       'identifiers_on_map', 'highlight_missing',
                       'allow_building_duplicate_reactions', 'enable_tooltips' ]
   this.settings = new Settings(set_option, get_option, conditional)
+  // _.mapObject(this.settings.streams, stream => {
+  //   stream.onValue(_ => this.pass_props_to_settings_menu(this.options))
+  // })
 
   // Check the scales have max and min
   var scales = [ 'reaction_scale', 'metabolite_scale' ]
