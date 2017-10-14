@@ -248,6 +248,8 @@ class BuilderSettingsMenu extends Component {
               scale={this.props.reaction_scale}
               type='Reaction'
               stats={this.props.map.get_data_statistics().reaction}
+              noDataColor={this.props.reaction_no_data_color}
+              noDataSize={this.props.reaction_no_data_size}
             />
             <div className='subheading'>
               Reaction or Gene data
@@ -416,9 +418,11 @@ class BuilderSettingsMenu extends Component {
               </ScaleSelector>
             </div>
             <ScaleSlider
-              settings={this.props.settings}
+              scale={this.props.metabolite_scale}
               type='Metabolite'
-              scale={this.props.map.get_data_statistics().metabolite}
+              stats={this.props.map.get_data_statistics().metabolite}
+              noDataColor={this.props.metabolite_no_data_color}
+              noDataSize={this.props.metabolite_no_data_size}
             />
             <div className='subheading'>
               Metabolite data

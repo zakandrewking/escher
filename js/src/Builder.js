@@ -37,6 +37,7 @@ Builder.prototype = {
   _set_mode: _set_mode,
   _reaction_check_add_abs: _reaction_check_add_abs,
   pass_tooltip_component_props: pass_tooltip_component_props,
+  pass_props_to_settings_menu: pass_props_to_settings_menu,
   set_reaction_data: set_reaction_data,
   set_metabolite_data: set_metabolite_data,
   view_mode: view_mode,
@@ -187,9 +188,14 @@ function init (map_data, model_data, embedded_css, selection, options) {
                       'identifiers_on_map', 'highlight_missing',
                       'allow_building_duplicate_reactions', 'enable_tooltips' ]
   this.settings = new Settings(set_option, get_option, conditional)
-  // _.mapObject(this.settings.streams, stream => {
-  //   stream.onValue(_ => this.pass_props_to_settings_menu(this.options))
-  // })
+  _.mapObject(this.settings.busses, (stream, key) => {
+    stream.onValue(_ => {
+      // TODO optional if it makes sense:
+      // if (key in keysICareAbout) {
+      this.pass_props_to_settings_menu(this.options)
+      // }
+    })
+  })
 
   // Check the scales have max and min
   var scales = [ 'reaction_scale', 'metabolite_scale' ]
@@ -614,6 +620,12 @@ function _reaction_check_add_abs () {
  */
 function pass_tooltip_component_props (props) {
   this.tooltip_container.callback_manager.run('setState', null, props)
+}
+
+function pass_props_to_settings_menu (props) {
+  // if (this.settings_menu.visible) { // <- pseudocode
+    // pass the props
+  // }
 }
 
 /**

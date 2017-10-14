@@ -46,18 +46,28 @@ class Picker extends Component {
           >
           <i className='fa fa-trash-o' aria-hidden='true' />
         </div>
-        <div className='pickerBox' />
+        <div
+          className='pickerBox'
+          onMouseDown={() => this.setState({focused: true})}
+          onMouseUp={() => this.setState({focused: false})}
+        />
         <div className='pickerOptions'>
           <input
             type='text'
             className='option'
-            value={this.state.value}
+            value={this.props.value}
             disabled={this.props.id}
             style={this.state.focused
               ? {zIndex: '1'}
               : {zIndex: '0'}
             }
-            onFocus={() => this.setState({focused: true})}
+            onInput={(event) => {
+              this.props.onChange('value', parseInt(event.target.value))
+            }}
+            onFocus={(event) => {
+              event.target.select()
+              this.setState({focused: true})
+            }}
             onBlur={() => this.setState({focused: false})}
           />
           <div className='colorOptions'>
@@ -68,7 +78,13 @@ class Picker extends Component {
                 ? {zIndex: '1'}
                 : {zIndex: '0'}
               }
-              onFocus={() => this.setState({focused: true})}
+              onInput={(event) => {
+                this.props.onChange('color', event.target.value)
+              }}
+              onFocus={(event) => {
+                event.target.select()
+                this.setState({focused: true})
+              }}
               onBlur={() => this.setState({focused: false})}
               value={this.state.color}
               disabled={this.props.disabled}
@@ -80,7 +96,13 @@ class Picker extends Component {
                 ? {zIndex: '1'}
                 : {zIndex: '0'}
               }
-              onFocus={() => this.setState({focused: true})}
+              onInput={(event) => {
+                this.props.onChange('color', event.target.value)
+              }}
+              onFocus={(event) => {
+                event.target.select()
+                this.setState({focused: true})
+              }}
               onBlur={() => this.setState({focused: false})}
               value={this.state.color}
               disabled={this.props.disabled}
@@ -93,7 +115,13 @@ class Picker extends Component {
               ? {zIndex: '1'}
               : {zIndex: '0'}
             }
-            onFocus={() => this.setState({focused: true})}
+            onInput={(event) => {
+              this.props.onChange('size', parseInt(event.target.value))
+            }}
+            onFocus={(event) => {
+              event.target.select()
+              this.setState({focused: true})
+            }}
             onBlur={() => this.setState({focused: false})}
             value={this.state.size}
             disabled={this.props.disabled}

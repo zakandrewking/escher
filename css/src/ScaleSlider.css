@@ -16,7 +16,7 @@
   width: 400px;
   height: 30px;
   margin-bottom: 9px;
-  margin-top: 5px;
+  margin-top: 17px;
   margin-left: 55px;
   font-size: 15px;
 }
@@ -58,4 +58,11 @@
   margin-left: -34px;
   height: 23px;
   width: 24px;
+}
+
+.escher-container .scaleEditor .fa-plus {
+  cursor: pointer;
+  position: absolute;
+  font-size: 14px;
+  right: 47px;
 }
