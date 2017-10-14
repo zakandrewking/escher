@@ -250,6 +250,9 @@ class BuilderSettingsMenu extends Component {
               stats={this.props.map.get_data_statistics().reaction}
               noDataColor={this.props.reaction_no_data_color}
               noDataSize={this.props.reaction_no_data_size}
+              onChange={(scale) => this.props.settings.set_conditional(
+                'reaction_scale', scale
+              )}
             />
             <div className='subheading'>
               Reaction or Gene data

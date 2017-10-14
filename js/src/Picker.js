@@ -7,22 +7,7 @@ class Picker extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      value: this.props.id
-        ? `${this.props.id} (${this.props.value})`
-        : this.props.value.toFixed(2),
-      color: this.props.color,
-      size: this.props.size
     }
-  }
-
-  componentWillReceiveProps (nextProps) {
-    this.setState({
-      value: nextProps.id
-        ? `${nextProps.id} (${nextProps.value})`
-        : nextProps.value.toFixed(2),
-      color: nextProps.color,
-      size: nextProps.size
-    })
   }
 
   render () {
@@ -31,9 +16,9 @@ class Picker extends Component {
         className='picker'
         id={this.props.id}
         style={!(this.props.id === 'min' || this.props.id === 'max')
-          ? {left: `${this.state.value < 4
+          ? {left: `${this.props.value < 4
             ? 4
-            : this.state.value / this.props.max * 100
+            : this.props.value / this.props.max * 100
             }%`}
           : null}
       >
@@ -86,7 +71,7 @@ class Picker extends Component {
                 this.setState({focused: true})
               }}
               onBlur={() => this.setState({focused: false})}
-              value={this.state.color}
+              value={this.props.color}
               disabled={this.props.disabled}
             />
             <input
@@ -104,7 +89,7 @@ class Picker extends Component {
                 this.setState({focused: true})
               }}
               onBlur={() => this.setState({focused: false})}
-              value={this.state.color}
+              value={this.props.color}
               disabled={this.props.disabled}
             />
           </div>
@@ -123,7 +108,7 @@ class Picker extends Component {
               this.setState({focused: true})
             }}
             onBlur={() => this.setState({focused: false})}
-            value={this.state.size}
+            value={this.props.size}
             disabled={this.props.disabled}
           />
         </div>
