@@ -1,7 +1,7 @@
 /** @jsx h */
 import { h, Component } from 'preact'
 
-class TooltipComponentContainer extends Component {
+class ReactWrapper extends Component {
   constructor (props) {
     super(props)
     this.state = {}
@@ -10,10 +10,10 @@ class TooltipComponentContainer extends Component {
     this.props.callbackManager.set('setState', this.setState.bind(this))
   }
   render () {
-    return <this.props.TooltipComponent
+    return <this.props.component
       {...this.state}
-      ref={this.props.tooltipRef} />
+      ref={this.props.ref} />
   }
 }
 
-export default TooltipComponentContainer
+export default ReactWrapper

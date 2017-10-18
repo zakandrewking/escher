@@ -2,17 +2,14 @@
 
 import {h, Component} from 'preact'
 import Picker from './Picker'
+import update from 'immutability-helper'
 import '../../css/src/ScaleSlider.css'
 
 class ScaleSlider extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      scale: props.scale,
-      noDataColor: props.noDataColor,
-      noDataSize: props.noDataSize
     }
-    console.log(props.scale)
   }
 
   // sortScale (inputScale) {
@@ -20,24 +17,35 @@ class ScaleSlider extends Component {
   // }
 
   scaleChange (index, parameter, value) {
-    let scale = this.state.scale
-    scale[index][parameter] = value
-    this.setState({scale})
+    const newScale = update(this.props.scale, {
+      [index]: {
+        // type: {$set: 'value'}, // TODO where does this go on drag?
+        [parameter]: {$set: value}
+      }
+    })
+    this.props.onChange(newScale)
+    console.log(newScale)
+    // this.props.settings.set_conditional('reaction_scale', newScale)
   }
 
-  componentWillReceiveProps (nextProps) {
-    this.setState({
-      scale: nextProps.scale
-    })
-  }
+  // componentWillReceiveProps (nextProps) {
+  //   this.setState({
+  //     scale: [].concat(nextProps.scale)
+  //   })
+  // }
+
+  // ex () {
+  //   const a = [ { c: [ 2 ] } ]
+  //   const copy = a.map(x => (_.objectMap(y => [ ...y ])))
+  // }
 
   makeGradient () {
     let gradientArray = []
-    for (let i = 0; i < this.state.scale.length; i++) {
-      if (this.state.scale[i].type === 'value') {
-        gradientArray.push(` ${this.state.scale[i].color} ${this.state.scale[i].value / this.props.stats.max * 100}%`)
+    for (let i = 0; i < this.props.scale.length; i++) {
+      if (this.props.scale[i].type === 'value') {
+        gradientArray.push(` ${this.props.scale[i].color} ${this.props.scale[i].value / this.props.stats.max * 100}%`)
       } else {
-        let type = this.state.scale[i].type
+        let type = this.props.scale[i].type
         let value = type === 'min'
           ? this.props.stats.min
           : type === 'median'
@@ -49,7 +57,7 @@ class ScaleSlider extends Component {
           : type === 'Q3'
           ? this.props.stats.Q3
           : 0
-        gradientArray.push(` ${this.state.scale[i].color} ${value / this.props.stats.max * 100}%`)
+        gradientArray.push(` ${this.props.scale[i].color} ${value / this.props.stats.max * 100}%`)
       }
     }
     return gradientArray.toString()
@@ -70,7 +78,7 @@ class ScaleSlider extends Component {
                   background: `linear-gradient(to right,${this.makeGradient()})`
                 }}
               >
-                {this.state.scale.map((listItem, i) => {
+                {this.props.scale.map((listItem, i) => {
                   if (!listItem.value) {
                     return (
                       <Picker
@@ -145,12 +153,12 @@ class ScaleSlider extends Component {
           <label>
             Color:
           </label>
-          <input type='text' className='colorInput' value={this.state.noDataColor} />
-          <input type='color' className='colorWheel' value={this.state.noDataColor} />
+          <input type='text' className='colorInput' value={this.props.noDataColor} />
+          <input type='color' className='colorWheel' value={this.props.noDataColor} />
           <label>
             Size:
           </label>
-          <input type='text' className='sizeInput' value={this.state.noDataSize} />
+          <input type='text' className='sizeInput' value={this.props.noDataSize} />
         </div>
       </div>
     )

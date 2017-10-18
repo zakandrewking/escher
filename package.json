@@ -76,6 +76,7 @@
     "d3-zoom": "^1.1.1",
     "file-saver": "^1.3.3",
     "font-awesome": "^4.7.0",
+    "immutability-helper": "^2.4.0",
     "mousetrap": "^1.5.3",
     "preact": "^8.2.1",
     "underscore": "^1.8.3",

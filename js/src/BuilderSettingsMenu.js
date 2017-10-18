@@ -23,27 +23,31 @@ class BuilderSettingsMenu extends Component {
       { type: 'median', color: '#4df441', size: 20 },
       { type: 'max', color: '#adb742', size: 25 }]
     this.state = {
-      display: props.display,
-      defaultScale: props.reaction_scale,
+      display: false,
       presetScale1,
       presetScale2
     }
-    props.settings.hold_changes()
   }
 
   componentWillReceiveProps (nextProps) {
-    this.setState({display: nextProps.display})
+    console.log(nextProps)
+    this.setState({
+      ...nextProps,
+      reaction_scale: nextProps.reaction_scale,
+      metabolite_scale: nextProps.metabolite_scale,
+      defaultScale: nextProps.reaction_scale
+    })
     nextProps.settings.hold_changes()
   }
 
   abandonChanges () {
     this.props.settings.abandon_changes()
-    this.setState({display: 'none'})
+    this.setState({display: false})
   }
 
   saveChanges () {
     this.props.settings.accept_changes()
-    this.setState({display: 'none'})
+    this.setState({display: false})
   }
 
   /**
@@ -69,9 +73,19 @@ class BuilderSettingsMenu extends Component {
     }
   }
 
+  is_visible () {
+    return this.state.display
+  }
+
   render () {
     return (
-      <div className='settingsBackground' style={{display: this.state.display}}>
+      <div
+        className='settingsBackground'
+        style={this.state.display
+          ? {display: 'block'}
+          : {display: 'none'}
+        }
+      >
         <div className='settingsBoxContainer'>
           <button className='discardChanges' onClick={() => this.abandonChanges()}>
             <i className='fa fa-close' aria-hidden='true' />
@@ -245,14 +259,17 @@ class BuilderSettingsMenu extends Component {
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.props.reaction_scale}
+              scale={this.state.reaction_scale}
+              settings={this.props.settings}
               type='Reaction'
               stats={this.props.map.get_data_statistics().reaction}
               noDataColor={this.props.reaction_no_data_color}
               noDataSize={this.props.reaction_no_data_size}
-              onChange={(scale) => this.props.settings.set_conditional(
-                'reaction_scale', scale
-              )}
+              onChange={(scale) => {
+                console.log('will set conditional', scale)
+                this.props.settings.set_conditional('reaction_scale', scale)
+                console.log('did set conditional')
+              }}
             />
             <div className='subheading'>
               Reaction or Gene data
@@ -421,7 +438,8 @@ class BuilderSettingsMenu extends Component {
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.props.metabolite_scale}
+              scale={this.state.metabolite_scale}
+              settings={this.props.settings}
               type='Metabolite'
               stats={this.props.map.get_data_statistics().metabolite}
               noDataColor={this.props.metabolite_no_data_color}

@@ -4,6 +4,7 @@
 
 /** @jsx h */
 import preact, { h } from 'preact'
+import ReactWrapper from './ReactWrapper.js'
 import ButtonPanel from './ButtonPanel.js'
 import BuilderMenuBar from './BuilderMenuBar.js'
 import BuilderSettingsMenu from './BuilderSettingsMenu'
@@ -37,7 +38,7 @@ Builder.prototype = {
   _set_mode: _set_mode,
   _reaction_check_add_abs: _reaction_check_add_abs,
   pass_tooltip_component_props: pass_tooltip_component_props,
-  pass_props_to_settings_menu: pass_props_to_settings_menu,
+  pass_settings_menu_props: pass_settings_menu_props,
   set_reaction_data: set_reaction_data,
   set_metabolite_data: set_metabolite_data,
   view_mode: view_mode,
@@ -55,8 +56,7 @@ Builder.prototype = {
   _get_keys: _get_keys,
   _setup_confirm_before_exit: _setup_confirm_before_exit,
   renderMenu: renderMenu,
-  renderButtonPanel: renderButtonPanel,
-  renderSettingsMenu: renderSettingsMenu
+  renderButtonPanel: renderButtonPanel
 }
 module.exports = Builder
 
@@ -88,6 +88,7 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.menu_div = null
   this.button_div = null
   this.settings_div = null
+  this.settingsMenuRef = null
 
   // apply this object as data for the selection
   this.selection.datum(this)
@@ -188,11 +189,15 @@ function init (map_data, model_data, embedded_css, selection, options) {
                       'identifiers_on_map', 'highlight_missing',
                       'allow_building_duplicate_reactions', 'enable_tooltips' ]
   this.settings = new Settings(set_option, get_option, conditional)
-  _.mapObject(this.settings.busses, (stream, key) => {
-    stream.onValue(_ => {
+  console.log(this.options, this.settings, this.map)
+  _.mapObject(this.settings.busses, (bus, key) => {
+    bus.onValue(value => {
       // TODO optional if it makes sense:
       // if (key in keysICareAbout) {
-      this.pass_props_to_settings_menu(this.options)
+      this.pass_settings_menu_props({
+        ...this.options,
+        ...this.settings,
+        map: this.map})
       // }
     })
   })
@@ -381,8 +386,23 @@ function load_map (map_data, should_update_data) {
   this.settings_div = this.selection.append('div')
 
   // Set up the search bar
-  this.search_bar = new SearchBar(search_bar_div, this.map.search_index,
-                                  this.map)
+  this.search_bar = new SearchBar(
+    search_bar_div, this.map.search_index, this.map
+  )
+
+  // Set up settings menu
+  preact.render(
+    <ReactWrapper
+      callbackManager={this.callback_manager}
+      component={BuilderSettingsMenu}
+      ref={instance => { this.settingsMenuRef = instance }}
+    />,
+    this.settings_div.node(),
+    this.settings_div.node().children.length > 0
+    ? this.settings_div.node().firstChild
+    : undefined
+  )
+
   // Set up key manager
   var keys = this._get_keys(this.map, this.zoom_container,
                             this.search_bar,
@@ -496,7 +516,7 @@ function renderMenu (mode) {
         zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
         search={() => this.search_bar.toggle()}
         toggleBeziers={() => this.map.toggle_beziers()}
-        renderSettingsMenu={() => this.renderSettingsMenu(this.options)}
+        renderSettingsMenu={() => this.pass_settings_menu_props({display: true})}
       />,
       menuDivNode,
       menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
@@ -515,21 +535,6 @@ function renderButtonPanel (mode) {
     />,
   buttonPanelDivNode,
   buttonPanelDivNode.children.length > 0 ? buttonPanelDivNode.firstChild : undefined)
-}
-
-function renderSettingsMenu (currentOptions) {
-  const settingsDivNode = this.settings_div.node()
-  preact.render(
-    <BuilderSettingsMenu
-      {...currentOptions}
-      settings={this.settings}
-      display={'block'}
-      map={this.map}
-    />,
-    settingsDivNode,
-    settingsDivNode.children.length > 0
-    ? settingsDivNode.firstChild
-    : undefined)
 }
 
 function _set_mode (mode) {
@@ -622,10 +627,12 @@ function pass_tooltip_component_props (props) {
   this.tooltip_container.callback_manager.run('setState', null, props)
 }
 
-function pass_props_to_settings_menu (props) {
+function pass_settings_menu_props (props) {
   // if (this.settings_menu.visible) { // <- pseudocode
     // pass the props
   // }
+  console.log(props)
+  this.callback_manager.run('setState', null, props)
 }
 
 /**
