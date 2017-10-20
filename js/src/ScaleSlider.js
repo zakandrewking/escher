@@ -24,15 +24,7 @@ class ScaleSlider extends Component {
       }
     })
     this.props.onChange(newScale)
-    console.log(newScale)
-    // this.props.settings.set_conditional('reaction_scale', newScale)
   }
-
-  // componentWillReceiveProps (nextProps) {
-  //   this.setState({
-  //     scale: [].concat(nextProps.scale)
-  //   })
-  // }
 
   // ex () {
   //   const a = [ { c: [ 2 ] } ]
@@ -129,8 +121,8 @@ class ScaleSlider extends Component {
                 }}
               >
                 {this.props.type} data not loaded
-                <Picker id='min' value={0} color='' disabled />
-                <Picker id='max' value={1} color='' disabled />
+                <Picker id='min' value={`min (0.000)`} color='' disabled />
+                <Picker id='max' value={`max (1.000)`} color='' disabled />
               </div>
             </div>
           )}

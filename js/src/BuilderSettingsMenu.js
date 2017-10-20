@@ -9,6 +9,7 @@ import { h, Component } from 'preact'
 import ScaleSelector from './ScaleSelector.js'
 import ScaleSlider from './ScaleSlider.js'
 import ScaleSelection from './ScaleSelection.js'
+import update from 'immutability-helper'
 import '../../css/src/SettingsMenu.css'
 
 class BuilderSettingsMenu extends Component {
@@ -23,31 +24,41 @@ class BuilderSettingsMenu extends Component {
       { type: 'median', color: '#4df441', size: 20 },
       { type: 'max', color: '#adb742', size: 25 }]
     this.state = {
-      display: false,
+      display: props.display,
       presetScale1,
-      presetScale2
+      presetScale2,
+      defaultScale: props.reaction_scale
+    }
+    if (props.display) {
+      this.componentWillAppear()
     }
   }
 
   componentWillReceiveProps (nextProps) {
-    console.log(nextProps)
     this.setState({
-      ...nextProps,
-      reaction_scale: nextProps.reaction_scale,
-      metabolite_scale: nextProps.metabolite_scale,
-      defaultScale: nextProps.reaction_scale
+      display: nextProps.display
     })
-    nextProps.settings.hold_changes()
+    if (nextProps.display && !this.props.display) {
+      this.componentWillAppear()
+    }
+    if (!nextProps.display && this.props.display) {
+      this.componentWillDisappear()
+    }
+  }
+
+  componentWillAppear () {
+    this.props.settings.hold_changes()
+  }
+
+  componentWillDisappear () {
   }
 
   abandonChanges () {
     this.props.settings.abandon_changes()
-    this.setState({display: false})
   }
 
   saveChanges () {
     this.props.settings.accept_changes()
-    this.setState({display: false})
   }
 
   /**
@@ -56,20 +67,14 @@ class BuilderSettingsMenu extends Component {
    * @param {String} type - reaction_style or metabolite_style
    */
   handleStyle (value, type) {
-    let style = []
-    if (type === 'reaction_styles') {
-      style.concat(this.props.reaction_styles)
-    } else if (type === 'metabolite_styles') {
-      style.concat(this.props.metabolite_styles)
-    }
-    if (style) {
-      if (style.indexOf(value) > -1) {
-        style.splice(style.indexOf(value), 1)
-        this.props.settings.set_conditional(type, style)
-      } else {
-        style.push(value)
-        this.props.settings.set_conditional(type, style)
-      }
+    if (this.props[type].indexOf(value) === -1) {
+      this.props.settings.set_conditional(type,
+        update(this.props[type], {$push: [value]})
+      )
+    } else if (this.props[type].indexOf(value) > -1) {
+      this.props.settings.set_conditional(type,
+        update(this.props[type], {$splice: [[this.props[type].indexOf(value), 1]]})
+      )
     }
   }
 
@@ -203,11 +208,11 @@ class BuilderSettingsMenu extends Component {
               <label title='If checked, then highlight in red all the reactions on the map that are not present in the loaded model.'>
                 <input
                   type='checkbox'
-                  onClick={() =>
+                  onClick={() => {
                     this.props.settings.set_conditional(
                       'highlight_missing', !this.props.highlight_missing
                     )
-                  }
+                  }}
                   checked={this.props.highlight_missing}
                 />Highlight reactions not in model
               </label>
@@ -259,16 +264,14 @@ class BuilderSettingsMenu extends Component {
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.state.reaction_scale}
+              scale={this.props.reaction_scale}
               settings={this.props.settings}
               type='Reaction'
               stats={this.props.map.get_data_statistics().reaction}
               noDataColor={this.props.reaction_no_data_color}
               noDataSize={this.props.reaction_no_data_size}
               onChange={(scale) => {
-                console.log('will set conditional', scale)
                 this.props.settings.set_conditional('reaction_scale', scale)
-                console.log('did set conditional')
               }}
             />
             <div className='subheading'>
@@ -438,7 +441,7 @@ class BuilderSettingsMenu extends Component {
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.state.metabolite_scale}
+              scale={this.props.metabolite_scale}
               settings={this.props.settings}
               type='Metabolite'
               stats={this.props.map.get_data_statistics().metabolite}

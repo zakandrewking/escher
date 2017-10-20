@@ -5,6 +5,7 @@
 }
 
 .escher-container .scaleEditor {
+  position: relative;
   display: flex;
   justify-content: center;
   flex-direction: column;
@@ -64,5 +65,5 @@
   cursor: pointer;
   position: absolute;
   font-size: 14px;
-  right: 47px;
+  right: 23px;
 }

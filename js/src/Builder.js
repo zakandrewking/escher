@@ -189,18 +189,6 @@ function init (map_data, model_data, embedded_css, selection, options) {
                       'identifiers_on_map', 'highlight_missing',
                       'allow_building_duplicate_reactions', 'enable_tooltips' ]
   this.settings = new Settings(set_option, get_option, conditional)
-  console.log(this.options, this.settings, this.map)
-  _.mapObject(this.settings.busses, (bus, key) => {
-    bus.onValue(value => {
-      // TODO optional if it makes sense:
-      // if (key in keysICareAbout) {
-      this.pass_settings_menu_props({
-        ...this.options,
-        ...this.settings,
-        map: this.map})
-      // }
-    })
-  })
 
   // Check the scales have max and min
   var scales = [ 'reaction_scale', 'metabolite_scale' ]
@@ -252,6 +240,35 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.load_map(this.map_data, false)
   var message_fn = this._reaction_check_add_abs()
   this._update_data(true, true)
+  _.mapObject(this.settings.busses, (bus, key) => {
+    bus.onValue(value => {
+      // TODO optional if it makes sense:
+      // if (key in keysICareAbout) {
+      this.pass_settings_menu_props({
+        ...this.options
+      })
+      if (key === 'reaction_styles' || key === 'metabolite_styles') {
+        this._update_data(false, true)
+      }
+      // }
+    })
+  })
+  _.mapObject(this.settings.streams, (stream, key) => {
+    stream.onValue(value => {
+      // TODO optional if it makes sense:
+      // if (key in keysICareAbout) {
+      this.pass_settings_menu_props({
+        ...this.options,
+        map: this.map,
+        settings: this.settings,
+        display: false
+      })
+      if (key === 'reaction_styles' || key === 'metabolite_styles') {
+        this._update_data(false, true)
+      }
+      // }
+    })
+  })
 
   // Setting callbacks. TODO enable atomic updates. Right now, every time the
   // menu closes, everything is drawn.
@@ -516,7 +533,12 @@ function renderMenu (mode) {
         zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
         search={() => this.search_bar.toggle()}
         toggleBeziers={() => this.map.toggle_beziers()}
-        renderSettingsMenu={() => this.pass_settings_menu_props({display: true})}
+        renderSettingsMenu={() => this.pass_settings_menu_props({
+          ...this.options,
+          map: this.map,
+          settings: this.settings,
+          display: true
+        })}
       />,
       menuDivNode,
       menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
@@ -631,7 +653,6 @@ function pass_settings_menu_props (props) {
   // if (this.settings_menu.visible) { // <- pseudocode
     // pass the props
   // }
-  console.log(props)
   this.callback_manager.run('setState', null, props)
 }
 

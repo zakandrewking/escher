@@ -166,16 +166,19 @@ function set_conditional(name, value) {
 }
 
 function hold_changes() {
+    // console.log('hold')
     this.status_bus.push('hold');
 }
 
 function abandon_changes() {
+    // console.log('abandon')
     this.status_bus.push('reject');
     this.status_bus.push('rejected');
     this.force_update_bus.push(true);
 }
 
 function accept_changes() {
+    // console.log('accept')
     this.status_bus.push('accept');
     this.status_bus.push('accepted');
 }
