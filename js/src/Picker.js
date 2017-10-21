@@ -2,12 +2,26 @@
 
 import {h, Component} from 'preact'
 import '../../css/src/Picker.css'
+import {selection as d3Selection, select as d3Select, event} from 'd3-selection'
+import {drag as d3Drag} from 'd3-drag'
 
 class Picker extends Component {
   constructor (props) {
     super(props)
     this.state = {
     }
+  }
+
+  componentDidMount () {
+    // const cb = this.props.cb
+    const drag = d3Drag()
+      .on('drag', () => {
+        console.log(event.dx)
+        this.setState({
+          xPos: this.state.xPos + event.dx
+        })
+      })
+    d3Select(this.base).select('.pickerBox').call(drag)
   }
 
   render () {

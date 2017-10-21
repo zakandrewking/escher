@@ -15,18 +15,8 @@ import '../../css/src/SettingsMenu.css'
 class BuilderSettingsMenu extends Component {
   constructor (props) {
     super(props)
-    const presetScale1 = [
-      { type: 'min', color: '#c8c8c8', size: 12 },
-      { type: 'median', color: '#9696ff', size: 20 },
-      { type: 'max', color: '#ff0000', size: 25 }]
-    const presetScale2 = [
-      { type: 'min', color: '#d142f4', size: 12 },
-      { type: 'median', color: '#4df441', size: 20 },
-      { type: 'max', color: '#adb742', size: 25 }]
     this.state = {
       display: props.display,
-      presetScale1,
-      presetScale2,
       defaultScale: props.reaction_scale
     }
     if (props.display) {
@@ -238,33 +228,25 @@ class BuilderSettingsMenu extends Component {
                 Reactions
               </div>
               <ScaleSelector>
-                <ScaleSelection
-                  name='Default'
-                  scale={this.state.defaultScale}
-                  onClick={() => this.props.settings.set_conditional(
-                    'reaction_scale', this.state.defaultScale
-                  )}
-                />
-                <ScaleSelection
-                  name='Preset Scale 1'
-                  scale={this.state.presetScale1}
-                  onClick={() => this.props.settings.set_conditional(
-                    'reaction_scale', this.state.presetScale1
-                  )}
-                />
-                <ScaleSelection
-                  name='Preset Scale 2'
-                  scale={this.state.presetScale2}
-                  onClick={
-                    () => this.props.settings.set_conditional(
-                      'reaction_scale', this.state.presetScale2
-                      )
-                    }
-                />
+                {this.props.scale_presets.map((listItem, i) => {
+                  return (
+                    <ScaleSelection
+                      name={i === 0 ? 'Default' : `Preset Scale ${i}`}
+                      scale={listItem}
+                      onClick={() => this.props.settings.set_conditional(
+                        'reaction_scale', listItem
+                      )}
+                    />
+                  )
+                })}
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.props.reaction_scale}
+              scale={
+                this.props.reaction_scale
+                  ? this.props.reaction_scale
+                  : this.state.defaultScale
+              }
               settings={this.props.settings}
               type='Reaction'
               stats={this.props.map.get_data_statistics().reaction}
@@ -417,31 +399,25 @@ class BuilderSettingsMenu extends Component {
                 Metabolites
               </div>
               <ScaleSelector>
-                <ScaleSelection
-                  name='Default'
-                  scale={this.state.defaultScale}
-                  onClick={() => this.props.settings.set_conditional(
-                    'metabolite_scale', this.state.defaultScale
-                  )}
-                />
-                <ScaleSelection
-                  name='Preset Scale 1'
-                  scale={this.state.presetScale1}
-                  onClick={() => this.props.settings.set_conditional(
-                    'metabolite_scale', this.state.presetScale1
-                  )}
-                />
-                <ScaleSelection
-                  name='Preset Scale 2'
-                  scale={this.state.presetScale2}
-                  onClick={() => this.props.settings.set_conditional(
-                    'metabolite_scale', this.state.presetScale2
-                  )}
-                />
+                {this.props.scale_presets.map((listItem, i) => {
+                  return (
+                    <ScaleSelection
+                      name={i === 0 ? 'Default' : `Preset Scale ${i}`}
+                      scale={listItem}
+                      onClick={() => this.props.settings.set_conditional(
+                        'metabolite_scale', listItem
+                      )}
+                    />
+                  )
+                })}
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.props.metabolite_scale}
+              scale={
+                this.props.metabolite_scale
+                  ? this.props.metabolite_scale
+                  : this.state.defaultScale
+              }
               settings={this.props.settings}
               type='Metabolite'
               stats={this.props.map.get_data_statistics().metabolite}
