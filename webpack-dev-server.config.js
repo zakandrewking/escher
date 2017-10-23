@@ -1,3 +1,5 @@
+const path = require('path')
+
 module.exports = {
   entry: './dev-server/index.js',
   devtool: 'source-map',
@@ -7,6 +9,11 @@ module.exports = {
     port: 7621
   },
   resolve: {
+    modules: [
+      "node_modules",
+      path.resolve(__dirname, "js/src"),
+      path.resolve(__dirname, "js/lib")
+    ],
     extensions: ['.js', '.jsx', '.json']
   },
   module: {
