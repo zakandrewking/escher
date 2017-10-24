@@ -12,19 +12,19 @@
 
 }
 
-.escher-container #min {
+.escher-container .scaleTrack #min {
   margin-left: 0;
   left: -7px;
 }
 
-.escher-container #max {
+.escher-container .scaleTrack #max {
   margin-left: 0;
   right: -7px;
 }
 
-.escher-container #max .pickerBox {
+.escher-container .scaleTrack #rightOptions {
   margin-left: auto;
-  right: -7px;
+  right: 1px;
 }
 
 .escher-container .pickerOptions {

@@ -2,7 +2,7 @@
 
 import {h, Component} from 'preact'
 import '../../css/src/Picker.css'
-import {selection as d3Selection, select as d3Select, event} from 'd3-selection'
+import {select as d3Select, event} from 'd3-selection'
 import {drag as d3Drag} from 'd3-drag'
 
 class Picker extends Component {
@@ -16,12 +16,16 @@ class Picker extends Component {
     // const cb = this.props.cb
     const drag = d3Drag()
       .on('drag', () => {
-        console.log(event.dx)
-        this.setState({
-          xPos: this.state.xPos + event.dx
-        })
+        const xPos = this.props.value + event.dx * (this.props.max / 400)
+        this.props.onChange('value', xPos)
       })
+      .container(() => this.base.parentNode.parentNode)
     d3Select(this.base).select('.pickerBox').call(drag)
+  }
+
+  componentWillUnmount () {
+    console.log('component unmounted')
+    d3Select(this.base).select('.pickerBox').on('mousedown.drag', null)
   }
 
   render () {
@@ -32,12 +36,18 @@ class Picker extends Component {
         style={!(this.props.id === 'min' || this.props.id === 'max')
           ? {left: `${this.props.value < 4
             ? 4
+            : this.props.value / this.props.max > 0.8
+            ? this.props.value / this.props.max * 100 - 18
             : this.props.value / this.props.max * 100
             }%`}
           : null}
       >
         <div
           className='trashDiv'
+          id={this.props.id === 'max' || this.props.value / this.props.max > 0.8
+            ? 'rightOptions'
+            : null
+          }
           style={(this.props.id === 'min' || this.props.id === 'max')
             ? {display: 'none'}
             : {display: 'block'}
@@ -47,6 +57,10 @@ class Picker extends Component {
         </div>
         <div
           className='pickerBox'
+          id={this.props.id === 'max' || this.props.value / this.props.max > 0.8
+            ? 'rightOptions'
+            : null
+          }
           onMouseDown={() => this.setState({focused: true})}
           onMouseUp={() => this.setState({focused: false})}
         />
@@ -61,7 +75,7 @@ class Picker extends Component {
               : {zIndex: '0'}
             }
             onInput={(event) => {
-              this.props.onChange('value', parseInt(event.target.value))
+              this.props.onChange('value', parseFloat(event.target.value))
             }}
             onFocus={(event) => {
               event.target.select()

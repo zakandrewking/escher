@@ -12,9 +12,9 @@ class ScaleSlider extends Component {
     }
   }
 
-  // sortScale (inputScale) {
-  //   TODO
-  // }
+  sortScale () {
+    // _.sortBy
+  }
 
   scaleChange (index, parameter, value) {
     const newScale = update(this.props.scale, {
@@ -26,29 +26,13 @@ class ScaleSlider extends Component {
     this.props.onChange(newScale)
   }
 
-  // ex () {
-  //   const a = [ { c: [ 2 ] } ]
-  //   const copy = a.map(x => (_.objectMap(y => [ ...y ])))
-  // }
-
   makeGradient () {
     let gradientArray = []
     for (let i = 0; i < this.props.scale.length; i++) {
       if (this.props.scale[i].type === 'value') {
         gradientArray.push(` ${this.props.scale[i].color} ${this.props.scale[i].value / this.props.stats.max * 100}%`)
       } else {
-        let type = this.props.scale[i].type
-        let value = type === 'min'
-          ? this.props.stats.min
-          : type === 'median'
-          ? this.props.stats.median
-          : type === 'max'
-          ? this.props.stats.max
-          : type === 'Q1'
-          ? this.props.stats.Q1
-          : type === 'Q3'
-          ? this.props.stats.Q3
-          : 0
+        let value = this.props.stats[this.props.scale[i].type]
         gradientArray.push(` ${this.props.scale[i].color} ${value / this.props.stats.max * 100}%`)
       }
     }
@@ -79,15 +63,8 @@ class ScaleSlider extends Component {
                         onChange={
                           (parameter, value) => this.scaleChange(i, parameter, value)
                         }
-                        value={listItem.type === 'min'
-                          ? `min (${this.props.stats.min.toFixed(2)})`
-                          : listItem.type === 'median'
-                          ? `median (${this.props.stats.median.toFixed(2)})`
-                          : listItem.type === 'max'
-                          ? `max (${this.props.stats.max.toFixed(2)})`
-                          : listItem.type === 'Q1'
-                          ? `Q1 (${this.props.stats.Q1.toFixed(2)})`
-                          : `Q3 (${this.props.stats.Q3.toFixed(2)})`
+                        value={
+                          `${listItem.type} (${this.props.stats[listItem.type].toFixed(2)})`
                         }
                         size={listItem.size}
                       />
