@@ -1,6 +1,4 @@
-var require_helper = require('./helpers/require_helper');
-
-var Behavior = require_helper('Behavior');
+var Behavior = require('../Behavior');
 
 var describe = require('mocha').describe;
 var it = require('mocha').it;

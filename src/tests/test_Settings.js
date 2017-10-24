@@ -1,5 +1,4 @@
-const require_helper = require('./helpers/require_helper')
-const Settings = require_helper('Settings')
+const Settings = require('../Settings')
 
 const describe = require('mocha').describe
 const it = require('mocha').it

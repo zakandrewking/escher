@@ -1,6 +1,4 @@
-var require_helper = require('./helpers/require_helper');
-
-var UndoStack = require_helper('UndoStack');
+var UndoStack = require('../UndoStack');
 
 var describe = require('mocha').describe;
 var it = require('mocha').it;

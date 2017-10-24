@@ -1,12 +1,7 @@
-/* global global */
-
-'use strict'
-
-const require_helper = require('./helpers/require_helper')
 const d3_body = require('./helpers/d3_body')
 const trigger_key_event = require('./helpers/trigger_key_event')
 
-const KeyManager = require_helper('KeyManager')
+const KeyManager = require('../KeyManager')
 
 const describe = require('mocha').describe
 const it = require('mocha').it

@@ -1,6 +1,4 @@
-var require_helper = require('./helpers/require_helper')
-
-var CobraModel = require_helper('CobraModel')
+var CobraModel = require('../CobraModel')
 
 var describe = require('mocha').describe
 var it = require('mocha').it

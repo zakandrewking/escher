@@ -1,8 +1,4 @@
-'use strict'
-
-const require_helper = require('./helpers/require_helper')
-
-const SearchIndex = require_helper('SearchIndex')
+const SearchIndex = require('../SearchIndex')
 
 const describe = require('mocha').describe
 const it = require('mocha').it

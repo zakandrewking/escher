@@ -1,6 +1,5 @@
-const require_helper = require('./helpers/require_helper')
-const ZoomContainer = require_helper('ZoomContainer')
-const d3_transform_catch = require_helper('utils').d3_transform_catch
+const ZoomContainer = require('../ZoomContainer')
+const d3_transform_catch = require('../utils').d3_transform_catch
 
 const describe = require('mocha').describe
 const beforeEach = require('mocha').beforeEach

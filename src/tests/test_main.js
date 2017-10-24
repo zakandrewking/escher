@@ -1,6 +1,4 @@
-var require_helper = require('./helpers/require_helper');
-
-var escher = require_helper('main');
+var escher = require('../main');
 
 var describe = require('mocha').describe;
 var it = require('mocha').it;

@@ -1,7 +1,4 @@
-'use strict'
-
-const require_helper = require('./helpers/require_helper')
-const data_styles = require_helper('data_styles')
+const data_styles = require('../data_styles')
 
 const describe = require('mocha').describe
 const it = require('mocha').it

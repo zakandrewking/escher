@@ -1,9 +1,6 @@
-'use strict'
-
-const require_helper = require('./helpers/require_helper')
-const Map = require_helper('Map')
-const Settings = require_helper('Settings')
-const CobraModel = require_helper('CobraModel')
+const Map = require('../Map')
+const Settings = require('../Settings')
+const CobraModel = require('../CobraModel')
 
 const describe = require('mocha').describe
 const it = require('mocha').it

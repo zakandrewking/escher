@@ -1,5 +1,4 @@
-var require_helper = require('./helpers/require_helper')
-var DataMenu = require_helper('DataMenu')
+var DataMenu = require('../DataMenu')
 var d3_body = require('./helpers/d3_body')
 
 var describe = require('mocha').describe

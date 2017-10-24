@@ -1,9 +1,8 @@
-const require_helper = require('./helpers/require_helper')
 const d3_body = require('./helpers/d3_body')
 const get_map = require('./helpers/get_map')
-const Brush = require_helper('Brush')
-const Map = require_helper('Map')
-const Settings = require_helper('Settings')
+const Brush = require('../Brush')
+const Map = require('../Map')
+const Settings = require('../Settings')
 
 const describe = require('mocha').describe
 const it = require('mocha').it
