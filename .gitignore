@@ -15,6 +15,7 @@ node_modules/
 .cache/
 *.tar.gz
 *.whl
+.tmp/
 
 # built files
 dist/
