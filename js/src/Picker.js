@@ -13,11 +13,24 @@ class Picker extends Component {
   }
 
   componentDidMount () {
-    // const cb = this.props.cb
+    let xPos = null
     const drag = d3Drag()
       .on('drag', () => {
-        const xPos = this.props.value + event.dx * (this.props.max / 400)
-        this.props.onChange('value', xPos)
+        if (this.props.id === 'max' || this.props.id === 'min') {
+          console.warn('Min/Max not draggable')
+        } else {
+          if (this.props.id !== undefined && this.props.id !== 'value') {
+            this.props.onChange('type', 'value')
+          }
+          if (this.props.value / this.props.max < 0.04) {
+            xPos = 0.04 * this.props.max + event.dx * (this.props.max / 400)
+          } else if (this.props.value / this.props.max > 0.95) {
+            xPos = 0.95 * this.props.max + event.dx * (this.props.max / 400)
+          } else {
+            xPos = this.props.value + event.dx * (this.props.max / 400)
+          }
+          this.props.onChange('value', xPos)
+        }
       })
       .container(() => this.base.parentNode.parentNode)
     d3Select(this.base).select('.pickerBox').call(drag)
@@ -34,13 +47,18 @@ class Picker extends Component {
         className='picker'
         id={this.props.id}
         style={!(this.props.id === 'min' || this.props.id === 'max')
-          ? {left: `${this.props.value < 4
+          ? {left: `${this.props.value / this.props.max < 0.04
             ? 4
-            : this.props.value / this.props.max > 0.8
+            : this.props.value / this.props.max > 0.8 && this.props.value /
+              this.props.max < 0.95
             ? this.props.value / this.props.max * 100 - 18
+            : this.props.value / this.props.max >= 0.95
+            ? 77
             : this.props.value / this.props.max * 100
-            }%`}
-          : null}
+            }%`,
+            zIndex: this.props.zIndex}
+          : {zIndex: this.props.zIndex}
+        }
       >
         <div
           className='trashDiv'
@@ -53,7 +71,11 @@ class Picker extends Component {
             : {display: 'block'}
           }
           >
-          <i className='fa fa-trash-o' aria-hidden='true' />
+          <i
+            className='fa fa-trash-o'
+            aria-hidden='true'
+            onClick={() => this.props.remove()}
+          />
         </div>
         <div
           className='pickerBox'
@@ -61,62 +83,61 @@ class Picker extends Component {
             ? 'rightOptions'
             : null
           }
-          onMouseDown={() => this.setState({focused: true})}
-          onMouseUp={() => this.setState({focused: false})}
+          onMouseDown={() => this.props.focus()}
         />
         <div className='pickerOptions'>
           <input
             type='text'
             className='option'
-            value={this.props.value}
-            disabled={this.props.id}
-            style={this.state.focused
-              ? {zIndex: '1'}
-              : {zIndex: '0'}
+            value={this.props.id
+              ? `${this.props.id} (${this.props.value})`
+              : this.props.value
             }
+            disabled={this.props.id}
+            //  style={this.state.focused
+            //    ? {zIndex: '1'}
+            //    : {zIndex: '0'}
+            //  }
             onInput={(event) => {
-              this.props.onChange('value', parseFloat(event.target.value))
+              this.props.onChange('value', event.target.value)
             }}
             onFocus={(event) => {
               event.target.select()
-              this.setState({focused: true})
+              this.props.focus()
             }}
-            onBlur={() => this.setState({focused: false})}
           />
           <div className='colorOptions'>
             <input
               type='text'
               className='colorText'
-              style={this.state.focused
-                ? {zIndex: '1'}
-                : {zIndex: '0'}
-              }
+              //  style={this.state.focused
+              //    ? {zIndex: '1'}
+              //    : {zIndex: '0'}
+              //  }
               onInput={(event) => {
                 this.props.onChange('color', event.target.value)
               }}
               onFocus={(event) => {
                 event.target.select()
-                this.setState({focused: true})
+                this.props.focus()
               }}
-              onBlur={() => this.setState({focused: false})}
               value={this.props.color}
               disabled={this.props.disabled}
             />
             <input
               type='color'
               className='colorWheel'
-              style={this.state.focused
-                ? {zIndex: '1'}
-                : {zIndex: '0'}
-              }
+              //  style={this.state.focused
+              //    ? {zIndex: '1'}
+              //    : {zIndex: '0'}
+              //  }
               onInput={(event) => {
                 this.props.onChange('color', event.target.value)
               }}
               onFocus={(event) => {
                 event.target.select()
-                this.setState({focused: true})
+                this.props.focus()
               }}
-              onBlur={() => this.setState({focused: false})}
               value={this.props.color}
               disabled={this.props.disabled}
             />
@@ -124,18 +145,17 @@ class Picker extends Component {
           <input
             type='text'
             className='option'
-            style={this.state.focused
-              ? {zIndex: '1'}
-              : {zIndex: '0'}
-            }
+            //  style={this.state.focused
+            //    ? {zIndex: '1'}
+            //    : {zIndex: '0'}
+            //  }
             onInput={(event) => {
               this.props.onChange('size', parseInt(event.target.value))
             }}
             onFocus={(event) => {
               event.target.select()
-              this.setState({focused: true})
+              this.props.focus()
             }}
-            onBlur={() => this.setState({focused: false})}
             value={this.props.size}
             disabled={this.props.disabled}
           />

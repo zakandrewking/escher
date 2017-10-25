@@ -3,6 +3,7 @@
 import {h, Component} from 'preact'
 import Picker from './Picker'
 import update from 'immutability-helper'
+import * as _ from 'underscore'
 import '../../css/src/ScaleSlider.css'
 
 class ScaleSlider extends Component {
@@ -13,20 +14,34 @@ class ScaleSlider extends Component {
   }
 
   sortScale () {
-    // _.sortBy
+    let newScale = update(this.props.scale, {
+      $apply: x => {
+        return {x: {value: this.props.stats[this.props.scale.type]}}
+      }
+    })
+    newScale = _.sortBy(this.props.scale, 'value')
+    console.log(newScale, this.props.scale)
   }
 
   scaleChange (index, parameter, value) {
-    const newScale = update(this.props.scale, {
-      [index]: {
-        // type: {$set: 'value'}, // TODO where does this go on drag?
-        [parameter]: {$set: value}
-      }
-    })
-    this.props.onChange(newScale)
+    // const sortedScale = this.sortScale()
+    if (parameter === 'value' && (parseFloat(value) > this.props.stats.max || value < this.props.stats.min)) {
+      console.warn('Invalid color scale')
+    } else if (parameter !== 'value' ||
+      (value < this.props.scale[index + 1].value &&
+      value > this.props.stats[index - 1].value)) {
+      const newScale = update(this.props.scale, {
+        [index]: {
+          // type: {$set: 'value'}, // TODO where does this go on drag?
+          [parameter]: {$set: value}
+        }
+      })
+      this.props.onChange(newScale)
+    }
   }
 
   makeGradient () {
+    this.sortScale()
     let gradientArray = []
     for (let i = 0; i < this.props.scale.length; i++) {
       if (this.props.scale[i].type === 'value') {
@@ -37,6 +52,12 @@ class ScaleSlider extends Component {
       }
     }
     return gradientArray.toString()
+  }
+
+  removeColorStop (index) {
+    const newScale = update(this.props.scale, {$splice: [[[index], 1]]})
+    console.log(newScale)
+    this.props.onChange(newScale)
   }
 
   render () {
@@ -63,22 +84,36 @@ class ScaleSlider extends Component {
                         onChange={
                           (parameter, value) => this.scaleChange(i, parameter, value)
                         }
+                        focus={() => this.setState({focusedPicker: i})}
                         value={
-                          `${listItem.type} (${this.props.stats[listItem.type].toFixed(2)})`
+                          parseFloat(this.props.stats[listItem.type].toFixed(2))
                         }
+                        max={this.props.stats.max}
                         size={listItem.size}
+                        zIndex={
+                          this.state.focusedPicker === i
+                          ? '2'
+                          : '0'
+                        }
                       />
                     )
                   } else {
                     return (
                       <Picker
-                        value={listItem.value}
+                        value={parseFloat(listItem.value.toFixed(2))}
                         onChange={
                           (parameter, value) => this.scaleChange(i, parameter, value)
                         }
+                        focus={() => this.setState({focusedPicker: i})}
+                        remove={() => this.removeColorStop(i)}
                         max={this.props.stats.max}
                         color={listItem.color}
                         size={listItem.size}
+                        zIndex={
+                          this.state.focusedPicker === i
+                          ? '2'
+                          : '0'
+                        }
                       />
                     )
                   }
@@ -98,8 +133,8 @@ class ScaleSlider extends Component {
                 }}
               >
                 {this.props.type} data not loaded
-                <Picker id='min' value={`min (0.000)`} color='' disabled />
-                <Picker id='max' value={`max (1.000)`} color='' disabled />
+                <Picker id='min' focus={() => null} value={0.00} color='' disabled />
+                <Picker id='max' focus={() => null} value={1.00} color='' disabled />
               </div>
             </div>
           )}

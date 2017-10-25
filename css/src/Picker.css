@@ -1,15 +1,16 @@
 .escher-container .picker {
-  top:0;
+  top: 35px;
   margin-left: -7px;
   position: absolute;
 }
 
 .escher-container .pickerBox {
+  position: absolute;
   cursor: pointer;
   background: rgba(0, 0, 0, 0.375);
   width: 14px;
   height: 35px;
-
+  top: -35px
 }
 
 .escher-container .scaleTrack #min {
@@ -56,7 +57,7 @@
 
 .escher-container .picker .trashDiv {
   position: absolute;
-  top: -22px;
+  top: -56px;
   font-size: 17px;
 }
 
