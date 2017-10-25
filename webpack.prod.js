@@ -1,30 +1,24 @@
 const path = require('path')
+const webpack = require('webpack')
 const merge = require('webpack-merge')
 const common = require('./webpack.common.js')
 
 module.exports = merge.smart(common, {
-  entry: './src/main.js',
+  entry: {
+    'escher': './src/main.js',
+    'escher.min': './src/main.js'
+  },
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: 'escher.js',
+    filename: '[name].js',
     library: 'escher',
     libraryTarget: 'umd'
   },
-  module: {
-    rules: [
-      {
-        test: /\.css$/,
-        use: [
-          { loader: 'style-loader' },
-          {
-            loader: 'css-loader',
-            options: {
-              minimize: true,
-              sourceMap: false
-            }
-          }
-        ]
-      },
-    ],
-  }
+  plugins: [
+    new webpack.optimize.UglifyJsPlugin({
+      include: /\.min\.js$/,
+      minimize: true,
+      sourceMap: true
+    })
+  ]
 })
