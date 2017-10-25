@@ -794,7 +794,6 @@ class Builder(object):
                 os.makedirs(directory)
             # add dependencies to the directory
             escher = get_url('escher_min' if minified_js else 'escher', 'local')
-            builder_css = get_url('builder_css_min' if minified_js else 'builder_css', 'local')
             favicon = get_url('favicon', 'local')
 
             for path in [escher, favicon]:
