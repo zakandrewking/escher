@@ -20,7 +20,8 @@ node_modules/
 # built files
 dist/
 js/src/inline.js
-js/src/coverage/
+coverage/
+.nyc_output/
 py/escher/package.json
 
 # site files

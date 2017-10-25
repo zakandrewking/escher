@@ -20,7 +20,8 @@ install:
   - cd ..
 # Run tests
 script:
-  - yarn test
+  - if [[ $TRAVIS_PYTHON_VERSION = '3.6' ]]; then SCRIPT="coverage"; else SCRIPT="test"; fi
+  - yarn $SCRIPT
   - cd py
   - python setup.py test
   - cd ..

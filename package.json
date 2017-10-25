@@ -35,15 +35,19 @@
     "bootstrap": "^3.3.6",
     "bootswatch": "^3.3.6",
     "chai": "^3.3.0",
+    "coveralls": "^3.0.0",
+    "cross-env": "^5.1.0",
     "css-loader": "^0.28.4",
+    "istanbul-instrumenter-loader": "^3.0.0",
     "jquery": "^2.2.0",
     "jsdom": "^7.2.2",
     "mocha": "^2.3.4",
     "mocha-webpack": "^0.7.0",
+    "nyc": "^11.2.1",
     "raw-loader": "^0.5.1",
     "standard": "^10.0.3",
     "style-loader": "^0.18.2",
-    "webpack": "^3.5.2",
+    "webpack": "^3.8.1",
     "webpack-dev-server": "^2.7.1",
     "webpack-merge": "^4.1.0",
     "webpack-node-externals": "^1.6.0"
@@ -70,11 +74,19 @@
     "start": "./node_modules/.bin/webpack-dev-server --config webpack.dev.js",
     "clean": "rm -r dist/*",
     "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.test.js \"src/tests/*.js\"",
-    "copy": "cp package.json py/escher/ && cp dist/* py/escher/static/escher/ && cp jsonschema/* py/escher/static/jsonschema/"
+    "copy": "cp package.json py/escher/ && cp dist/* py/escher/static/escher/ && cp jsonschema/* py/escher/static/jsonschema/",
+    "coverage": "./node_modules/.bin/cross-env NODE_ENV=coverage ./node_modules/.bin/nyc --reporter=text-lcov npm run test | ./node_modules/.bin/coveralls"
+  },
+  "nyc": {
+    "include": [
+      "src/*.js"
+    ],
+    "instrument": false,
+    "sourceMap": false
   },
   "sniper": {
     "js": [
-      "/js/dist/escher.min.js"
+      "/dist/escher.min.js"
     ],
     "snippets": [
       "snippets"
