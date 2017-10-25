@@ -18,7 +18,8 @@ install:
   - node --version
   # Install js packages
   - yarn install
-  - yarn bundle
+  - yarn build
+  - yarn copy
   # Install python packages
   - python -m pip install --upgrade pip
   - cd py

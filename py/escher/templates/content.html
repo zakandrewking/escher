@@ -1,21 +1,5 @@
 {% if wrapper %}{% extends 'standalone.html' %}{% endif %}
 
-{% block head %}
-  {% if jquery_url %}
-    <script src="{{ jquery_url }}"></script>
-  {% endif %}
-  {% if boot_js_url %}
-    <script src="{{ boot_js_url }}"></script>
-  {% endif %}
-
-  {% if boot_css_url %}
-    <link rel="stylesheet" href="{{ boot_css_url }}"/>
-  {% endif %}
-  {% if escher_css_url %}
-    <link rel="stylesheet" href="{{ escher_css_url }}"/>
-  {% endif %}
-{% endblock %}
-
 {% block content %}
   <div style="height: {{ height }}; width: 100%;" id="{{ id }}"></div>
 

@@ -6,25 +6,21 @@ from os.path import join, exists
 from pytest import raises
 
 def test_online():
-    url = get_url('builder_css', source='web', protocol='https')
-    assert url == 'https://unpkg.com/escher-vis@%s/css/dist/builder.css' % __version__
+    url = get_url('escher', source='web', protocol='https')
+    assert url == 'https://unpkg.com/escher-vis@%s/dist/escher.js' % __version__
 
 def test_no_protocol():
     url = get_url('escher', 'web')
-    assert url == '//unpkg.com/escher-vis@%s/js/dist/escher.js' % __version__
+    assert url == '//unpkg.com/escher-vis@%s/dist/escher.js' % __version__
 
 def test_local():
-    url = get_url('boot_js', 'local')
-    assert url == 'escher/static/lib/bootstrap.min.js'
+    url = get_url('escher_min', 'local')
+    assert url == 'escher/static/escher/escher.min.js'
     assert exists(join(root_directory, url))
 
 def test_localhost():
-    url = get_url('boot_js', source='local', local_host='http://localhost:7778/')
-    assert url == 'http://localhost:7778/escher/static/lib/bootstrap.min.js'
-
-def test_cdn():
-    url = get_url('boot_js', 'web')
-    assert url == '//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js'
+    url = get_url('escher', source='local', local_host='http://localhost:7778/')
+    assert url == 'http://localhost:7778/escher/static/escher/escher.js'
 
 def test_download():
     url = get_url('server_index', source='local')
