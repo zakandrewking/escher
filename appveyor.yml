@@ -19,6 +19,7 @@ install:
   # Install js packages
   - yarn install
   - yarn build
+  - yarn copy
   # Install python packages
   - python -m pip install --upgrade pip
   - cd py

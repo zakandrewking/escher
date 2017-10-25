@@ -69,7 +69,8 @@
     "watch": "./node_modules/.bin/webpack --config webpack.prod.js --watch",
     "start": "./node_modules/.bin/webpack-dev-server --config webpack.dev.js",
     "clean": "rm -r dist/*",
-    "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.test.js \"src/tests/*.js\""
+    "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.test.js \"src/tests/*.js\"",
+    "copy": "cp package.json py/escher/ && cp dist/* py/escher/static/escher/ && cp jsonschema/* py/escher/static/jsonschema/"
   },
   "sniper": {
     "js": [

@@ -12,6 +12,7 @@ before_install:
 install:
   - yarn install
   - yarn build
+  - yarn copy
   - cd py
   - pip install -U pip
   - pip install swiglpk --only-binary swiglpk
