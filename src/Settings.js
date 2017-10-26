@@ -104,10 +104,10 @@ function convertToConditionalStream (valueStream, statusStream) {
             }
           }
         })
+        // Skip the initial null value
+        .skip(1)
         // Get the current value
         .map(({ currentValue }) => currentValue)
-        // Don't pass null
-        .filter(value => value !== null)
         // Skip duplicate values
         .skipDuplicates()
 
