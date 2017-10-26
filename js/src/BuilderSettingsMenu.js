@@ -10,7 +10,27 @@ import ScaleSelector from './ScaleSelector.js'
 import ScaleSlider from './ScaleSlider.js'
 import ScaleSelection from './ScaleSelection.js'
 import update from 'immutability-helper'
+import * as _ from 'underscore'
 import '../../css/src/SettingsMenu.css'
+
+const scalePresets = {
+  GaBuGeRd: [
+    {type: 'min', color: '#c8c8c8', size: 12},
+    {type: 'value', value: 0.01, color: '#9696ff', size: 16},
+    {type: 'value', value: 20, color: '#209123', size: 20},
+    {type: 'max', color: '#ff0000', size: 25}
+  ],
+  GaBuRd: [
+    { type: 'min', color: '#c8c8c8', size: 12 },
+    { type: 'median', color: '#9696ff', size: 20 },
+    { type: 'max', color: '#ff0000', size: 25 }
+  ],
+  RdYlBu: [
+    { type: 'min', color: '#d7191c', size: 12 },
+    { type: 'median', color: '#ffffbf', size: 20 },
+    { type: 'max', color: '#2c7bb6', size: 25 }
+  ]
+}
 
 class BuilderSettingsMenu extends Component {
   constructor (props) {
@@ -228,17 +248,17 @@ class BuilderSettingsMenu extends Component {
                 Reactions
               </div>
               <ScaleSelector>
-                {this.props.scale_presets.map((listItem, i) => {
+                {Object.values(_.mapObject(scalePresets, (value, key) => {
                   return (
                     <ScaleSelection
-                      name={i === 0 ? 'Default' : `Preset Scale ${i}`}
-                      scale={listItem}
+                      name={key}
+                      scale={value}
                       onClick={() => this.props.settings.set_conditional(
-                        'reaction_scale', listItem
+                        'reaction_scale', value
                       )}
                     />
                   )
-                })}
+                }))}
               </ScaleSelector>
             </div>
             <ScaleSlider
@@ -399,17 +419,17 @@ class BuilderSettingsMenu extends Component {
                 Metabolites
               </div>
               <ScaleSelector>
-                {this.props.scale_presets.map((listItem, i) => {
+                {Object.values(_.mapObject(scalePresets, (value, key) => {
                   return (
                     <ScaleSelection
-                      name={i === 0 ? 'Default' : `Preset Scale ${i}`}
-                      scale={listItem}
+                      name={key}
+                      scale={value}
                       onClick={() => this.props.settings.set_conditional(
-                        'metabolite_scale', listItem
+                        'reaction_scale', value
                       )}
                     />
                   )
-                })}
+                }))}
               </ScaleSelector>
             </div>
             <ScaleSlider

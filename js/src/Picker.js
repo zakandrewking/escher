@@ -94,26 +94,32 @@ class Picker extends Component {
               : this.props.value
             }
             disabled={this.props.id}
-            //  style={this.state.focused
-            //    ? {zIndex: '1'}
-            //    : {zIndex: '0'}
-            //  }
             onInput={(event) => {
-              this.props.onChange('value', event.target.value)
+              this.props.onChange('value', parseFloat(event.target.value))
             }}
             onFocus={(event) => {
               event.target.select()
               this.props.focus()
             }}
           />
+          <select
+            className='typePicker'
+            style={this.props.id === 'min' || this.props.id === 'max'
+              ? {display: 'none'}
+              : null
+            }
+            onChange={(event) => this.props.onChange('type', event.target.value)}
+          >
+            <option value='value'>Value</option>
+            <option value='mean'>Mean</option>
+            <option value='Q1'>Q1</option>
+            <option value='median'>Median</option>
+            <option value='Q3'>Q3</option>
+          </select>
           <div className='colorOptions'>
             <input
               type='text'
               className='colorText'
-              //  style={this.state.focused
-              //    ? {zIndex: '1'}
-              //    : {zIndex: '0'}
-              //  }
               onInput={(event) => {
                 this.props.onChange('color', event.target.value)
               }}
@@ -127,10 +133,6 @@ class Picker extends Component {
             <input
               type='color'
               className='colorWheel'
-              //  style={this.state.focused
-              //    ? {zIndex: '1'}
-              //    : {zIndex: '0'}
-              //  }
               onInput={(event) => {
                 this.props.onChange('color', event.target.value)
               }}
@@ -145,10 +147,6 @@ class Picker extends Component {
           <input
             type='text'
             className='option'
-            //  style={this.state.focused
-            //    ? {zIndex: '1'}
-            //    : {zIndex: '0'}
-            //  }
             onInput={(event) => {
               this.props.onChange('size', parseInt(event.target.value))
             }}

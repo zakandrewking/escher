@@ -154,7 +154,8 @@ function init (map_data, model_data, embedded_css, selection, options) {
     // Extensions
     tooltip_component: DefaultTooltip,
     enable_tooltips: true,
-    scale_presets: [],
+    reaction_scale_preset: null,
+    metabolite_scale_preset: null,
     // Callbacks
     first_load_callback: null,
   }, {

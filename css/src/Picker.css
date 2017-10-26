@@ -41,6 +41,16 @@
   font-size: 12px;
 }
 
+.escher-container .pickerOptions .typePicker {
+  width: 20px;
+  position: absolute;
+  left: 70px;
+  top: 1px;
+  right: 0px;
+  height: 14px;
+  background-color: rgb(232, 232, 232);
+}
+
 .escher-container .pickerOptions .colorOptions {
   display: inline-flex;
 }
