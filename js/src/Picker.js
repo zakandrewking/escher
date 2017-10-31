@@ -42,21 +42,13 @@ class Picker extends Component {
   }
 
   render () {
+    // console.log(this.props.left)
     return (
       <div
         className='picker'
         id={this.props.id}
         style={!(this.props.id === 'min' || this.props.id === 'max')
-          ? {left: `${this.props.value / this.props.max < 0.04
-            ? 4
-            : this.props.value / this.props.max > 0.8 && this.props.value /
-              this.props.max < 0.95
-            ? this.props.value / this.props.max * 100 - 18
-            : this.props.value / this.props.max >= 0.95
-            ? 77
-            : this.props.value / this.props.max * 100
-            }%`,
-            zIndex: this.props.zIndex}
+          ? {left: `${this.props.left}%`, zIndex: this.props.zIndex}
           : {zIndex: this.props.zIndex}
         }
       >

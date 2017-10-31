@@ -29,6 +29,11 @@ const scalePresets = {
     { type: 'min', color: '#d7191c', size: 12 },
     { type: 'median', color: '#ffffbf', size: 20 },
     { type: 'max', color: '#2c7bb6', size: 25 }
+  ],
+  GeGaRd: [
+    { type: 'min', color: '#209123', size: 25 },
+    { type: 'median', color: '#c8c8c8', size: 12 },
+    { type: 'max', color: '#ff0000', size: 25 }
   ]
 }
 
@@ -36,11 +41,20 @@ class BuilderSettingsMenu extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      display: props.display,
-      defaultScale: props.reaction_scale
+      display: props.display
     }
     if (props.display) {
       this.componentWillAppear()
+    }
+    if (props.reaction_scale_preset) {
+      props.settings.set_conditional(
+        'reaction_scale', scalePresets[props.reaction_scale_preset]
+      )
+    }
+    if (props.metabolite_scale_preset) {
+      props.settings.set_conditional(
+        'metabolite_scale', scalePresets[props.metabolite_scale_preset]
+      )
     }
   }
 
@@ -262,11 +276,7 @@ class BuilderSettingsMenu extends Component {
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={
-                this.props.reaction_scale
-                  ? this.props.reaction_scale
-                  : this.state.defaultScale
-              }
+              scale={this.props.reaction_scale}
               settings={this.props.settings}
               type='Reaction'
               stats={this.props.map.get_data_statistics().reaction}
@@ -275,6 +285,7 @@ class BuilderSettingsMenu extends Component {
               onChange={(scale) => {
                 this.props.settings.set_conditional('reaction_scale', scale)
               }}
+              abs={this.props.reaction_styles.indexOf('abs') > -1}
             />
             <div className='subheading'>
               Reaction or Gene data
@@ -433,11 +444,7 @@ class BuilderSettingsMenu extends Component {
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={
-                this.props.metabolite_scale
-                  ? this.props.metabolite_scale
-                  : this.state.defaultScale
-              }
+              scale={this.props.metabolite_scale}
               settings={this.props.settings}
               type='Metabolite'
               stats={this.props.map.get_data_statistics().metabolite}

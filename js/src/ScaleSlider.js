@@ -24,6 +24,28 @@ class ScaleSlider extends Component {
     return newScale
   }
 
+  placePickers () {
+    const scale = this.sortScale()
+    const max = this.props.abs
+      ? this.props.stats.max
+      : this.props.stats.max + Math.abs(this.props.stats.min)
+    let positions = {}
+    for (let i = 0; i < scale.length; i++) {
+      const scaleValue = scale[i].value ? scale[i].value : this.props.stats[scale[i].type]
+      const value = this.props.abs
+        ? scaleValue
+        : scaleValue + Math.abs(this.props.stats.min)
+      positions[i] = value / max < 0.04
+        ? 4
+        : value / max > 0.8 && value / max < 0.95
+        ? value / max * 100 - 18
+        : value / max >= 0.95
+        ? 77
+        : value / max * 100
+    }
+    return positions
+  }
+
   scaleChange (index, parameter, value) {
     const scale = this.sortScale()
     const lowerValue = scale[index - 1].type === 'value'
@@ -35,18 +57,25 @@ class ScaleSlider extends Component {
     if (parameter === 'value' && (parseFloat(value) > this.props.stats.max || value < this.props.stats.min)) {
       console.warn('Invalid color scale')
     } else if (parameter !== 'value' ||
-      ((upperValue - value) / this.props.stats.max > 0.039 &&
-      (value - lowerValue) / this.props.stats.max > 0.039)) {
+      ((upperValue - value) / (this.props.stats.max) > 0.039 &&
+      (value - lowerValue) / (this.props.stats.max) > 0.039)) {
       let newScale = null
       if (parameter === 'type' && value !== 'value') {
-        newScale = update(this.props.scale, {
+        newScale = update(scale, {
           [index]: {
-            [parameter]: {$set: value}
-          },
-          $unset: ['value']
+            [parameter]: {$set: value},
+            $unset: ['value']
+          }
+        })
+      } else if (value === 'value') {
+        newScale = update(scale, {
+          [index]: {
+            [parameter]: {$set: value},
+            $merge: {'value': this.props.stats[scale[index].type]}
+          }
         })
       } else {
-        newScale = update(this.props.scale, {
+        newScale = update(scale, {
           [index]: {
             [parameter]: {$set: value}
           }
@@ -69,14 +98,15 @@ class ScaleSlider extends Component {
   }
 
   makeGradient () {
+    const min = this.props.abs ? 0 : Math.abs(this.props.stats.min)
     const scale = this.sortScale()
     let gradientArray = []
     for (let i = 0; i < scale.length; i++) {
       if (scale[i].type === 'value') {
-        gradientArray.push(` ${scale[i].color} ${scale[i].value / this.props.stats.max * 100}%`)
+        gradientArray.push(` ${scale[i].color} ${(scale[i].value + min) / (this.props.stats.max + min) * 100}%`)
       } else {
         let value = this.props.stats[scale[i].type]
-        gradientArray.push(` ${scale[i].color} ${value / this.props.stats.max * 100}%`)
+        gradientArray.push(` ${scale[i].color} ${(value + min) / (this.props.stats.max + min) * 100}%`)
       }
     }
     return gradientArray.toString()
@@ -89,6 +119,7 @@ class ScaleSlider extends Component {
   }
 
   render () {
+    const pickerLocations = this.placePickers()
     return (
       <div className='scaleEditor'>
         {(this.props.stats !== null && this.props.stats !== undefined) &&
@@ -109,6 +140,7 @@ class ScaleSlider extends Component {
                       <Picker
                         id={listItem.type}
                         color={listItem.color}
+                        left={pickerLocations[i]}
                         onChange={
                           (parameter, value) => this.scaleChange(i, parameter, value)
                         }
@@ -134,9 +166,15 @@ class ScaleSlider extends Component {
                         }
                         focus={() => this.setState({focusedPicker: i})}
                         remove={() => this.removeColorStop(i)}
-                        max={this.props.stats.max}
+                        max={
+                          this.props.stats.max + (this.props.abs
+                            ? 0
+                            : Math.abs(this.props.stats.min))
+                          }
+                        min={this.props.abs ? 0 : Math.abs(this.props.stats.min)}
                         color={listItem.color}
                         size={listItem.size}
+                        left={pickerLocations[i]}
                         zIndex={
                           this.state.focusedPicker === i
                           ? '2'

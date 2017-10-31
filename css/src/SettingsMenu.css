@@ -172,7 +172,7 @@
 
 .escher-container .selectorMenu {
   position: absolute;
-  z-index: 1;
+  z-index: 4;
   background-color: white;
   border: 1px solid #a9a9a9;
   min-width: 155px;
