@@ -1,7 +1,7 @@
 /** @jsx h */
 import preact, { h } from 'preact'
 import CallbackManager from './CallbackManager'
-import TooltipComponentContainer from './TooltipComponentContainer'
+import ReactWrapper from './ReactWrapper'
 const utils = require('./utils')
 const PlacedDiv = require('./PlacedDiv')
 const _ = require('underscore')
@@ -54,24 +54,31 @@ function init (selection, TooltipComponent, zoomContainer) {
 
   // keep a reference to preact tooltip
   preact.render(
-    <TooltipComponentContainer
+    <ReactWrapper
       callbackManager={this.callback_manager}
-      TooltipComponent={this.TooltipComponent}
-      tooltipRef={instance => { this.tooltipRef = instance }}
+      component={this.TooltipComponent}
+      ref={instance => { this.tooltipRef = instance }}
       />,
      this.div.node()
   )
 }
 
+/**
+ *
+ * @param {*} map
+ */
 function setup_map_callbacks (map) {
   this.map = map
   this.placed_div = PlacedDiv(this.div, map, undefined, false)
 
+  //
   map.callback_manager.set('show_tooltip.tooltip_container', function (type, d) {
     if (map.settings.get_option('enable_tooltips')) {
       this.show(type, d)
     }
   }.bind(this))
+
+  //
   map.callback_manager.set('hide_tooltip.tooltip_container', this.hide.bind(this))
   map.sel.selectAll('#canvas').on('touchend', this.hide.bind(this))
   map.callback_manager.set('delay_hide_tooltip.tooltip_container', this.delay_hide.bind(this))
@@ -84,9 +91,10 @@ function setup_map_callbacks (map) {
         }
       })
       if (d === null) {
-        throw Error(`Could not find tooltip data for ${this.currentTooltip}`)
+        console.warn(`Could not find tooltip data for ${this.currentTooltip}`)
+      } else {
+        this.show(type, d)
       }
-      this.show(type, d)
     }
   }.bind(this))
 }

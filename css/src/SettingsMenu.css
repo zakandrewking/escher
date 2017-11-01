@@ -1,4 +1,5 @@
 .escher-container .settingsBackground {
+  box-sizing: border-box;
   position: absolute;
   top: 0;
   left: 0;
@@ -8,6 +9,10 @@
   background: rgba(0,0,0,.4);
   padding: 5% 0;
   text-align: center;
+}
+
+.escher-container .scale-editor .domain-input {
+  color: #333;
 }
 
 .escher-container .settingsBoxContainer button {
@@ -75,7 +80,6 @@
 .escher-container .settingsBox .title {
   font-size: 17px;
   font-weight: 700;
-  margin-top: 15px;
   line-height: 1.42857143;
   color: #777777;
 }
@@ -141,4 +145,51 @@
   margin: 18px 0;
   border: 0;
   border-top: 1px solid #dddddd;
+}
+
+.escher-container .scaleTitle {
+  margin-top: 15px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.escher-container .selector {
+  user-select: none;
+  padding-top: 2px;
+}
+
+.escher-container .selectorTitle {
+  background: white;
+  border: 1px solid #a9a9a9;
+  padding: 0 2px;
+  cursor: default;
+  width: 155px;
+}
+
+.escher-container .selectorTitle:hover {
+  border-color: black;
+}
+
+.escher-container .selectorMenu {
+  position: absolute;
+  z-index: 4;
+  background-color: white;
+  border: 1px solid #a9a9a9;
+  min-width: 155px;
+}
+
+.escher-container .scaleSelection {
+  cursor: default;
+  padding: 0 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.escher-container .scaleSelection:hover {
+  background-color: dodgerblue;
+  color: white;
+}
+
+.escher-container .scaleName {
+  margin-right: 15px;
 }

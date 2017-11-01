@@ -129,7 +129,14 @@ function _create_conditional_setting(name, initial_value, set_option,
     // force updates
             .force_update_with_bus(force_update_bus);
 
-    // get the latest
+    // Always set this.options based on the latest value.
+    // Current issues: when changes are not on "hold", set_option gets called
+    // twice
+    bus.onValue(function(v) {
+        set_option(name, v);
+    });
+
+    // Then set this.options with the final value after accept or abandon
     stream.onValue(function(v) {
         set_option(name, v);
     });
@@ -159,16 +166,19 @@ function set_conditional(name, value) {
 }
 
 function hold_changes() {
+    // console.log('hold')
     this.status_bus.push('hold');
 }
 
 function abandon_changes() {
+    // console.log('abandon')
     this.status_bus.push('reject');
     this.status_bus.push('rejected');
     this.force_update_bus.push(true);
 }
 
 function accept_changes() {
+    // console.log('accept')
     this.status_bus.push('accept');
     this.status_bus.push('accepted');
 }

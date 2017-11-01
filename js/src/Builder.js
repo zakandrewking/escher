@@ -3,10 +3,11 @@
  */
 
 /** @jsx h */
-
 import preact, { h } from 'preact'
-import BuilderMenuBar from './BuilderMenuBar.js'
+import ReactWrapper from './ReactWrapper.js'
+import BuilderSettingsMenu from './BuilderSettingsMenu.js'
 import ButtonPanel from './ButtonPanel.js'
+import BuilderMenuBar from './BuilderMenuBar.js'
 import SearchBar from './SearchBar.js'
 import '../../node_modules/font-awesome/css/font-awesome.min.css'
 import '../../css/src/ButtonPanel.css'
@@ -39,6 +40,7 @@ Builder.prototype = {
   _set_mode: _set_mode,
   _reaction_check_add_abs: _reaction_check_add_abs,
   pass_tooltip_component_props: pass_tooltip_component_props,
+  pass_settings_menu_props: pass_settings_menu_props,
   set_reaction_data: set_reaction_data,
   set_metabolite_data: set_metabolite_data,
   view_mode: view_mode,
@@ -88,6 +90,8 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.selection = selection
   this.menu_div = null
   this.button_div = null
+  this.settings_div = null
+  this.settingsMenuRef = null
   this.search_bar_div = null
   this.searchBarRef = null
 
@@ -155,6 +159,8 @@ function init (map_data, model_data, embedded_css, selection, options) {
     // Extensions
     tooltip_component: DefaultTooltip,
     enable_tooltips: true,
+    reaction_scale_preset: null,
+    metabolite_scale_preset: null,
     // Callbacks
     first_load_callback: null,
   }, {
@@ -241,6 +247,35 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.load_map(this.map_data, false)
   var message_fn = this._reaction_check_add_abs()
   this._update_data(true, true)
+  _.mapObject(this.settings.busses, (bus, key) => {
+    bus.onValue(value => {
+      // TODO optional if it makes sense:
+      // if (key in keysICareAbout) {
+      this.pass_settings_menu_props({
+        ...this.options
+      })
+      if (key === 'reaction_styles' || key === 'metabolite_styles') {
+        this._update_data(false, true)
+      }
+      // }
+    })
+  })
+  _.mapObject(this.settings.streams, (stream, key) => {
+    stream.onValue(value => {
+      // TODO optional if it makes sense:
+      // if (key in keysICareAbout) {
+      this.pass_settings_menu_props({
+        ...this.options,
+        map: this.map,
+        settings: this.settings,
+        display: false
+      })
+      if (key === 'reaction_styles' || key === 'metabolite_styles') {
+        this._update_data(false, true)
+      }
+      // }
+    })
+  })
 
   // Setting callbacks. TODO enable atomic updates. Right now, every time the
   // menu closes, everything is drawn.
@@ -372,25 +407,21 @@ function load_map (map_data, should_update_data) {
   this.menu_div = s.append('div')
   this.search_bar_div = s.append('div')
   this.button_div = this.selection.append('div')
+  this.settings_div = this.selection.append('div')
 
-  // Set up the settings
-  var settings_div = this.selection.append('div')
-  var settings_cb = function (type, on_off) {
-    // Temporarily set the abs type, for previewing it in the Settings menu
-    var o = this.options[type + '_styles']
-    if (o !== null && o !== undefined && on_off && o.indexOf('abs') === -1) {
-      o.push('abs')
-    } else if (o !== null && o !== undefined && !on_off) {
-      var i = o.indexOf('abs')
-      if (i !== -1) {
-        this.options[type + '_styles'] = o.slice(0, i).concat(o.slice(i + 1))
-      }
-    }
-    this._update_data(false, true, type)
-  }.bind(this)
-  this.settings_bar = new SettingsMenu(settings_div, this.settings, this.map,
-                                       settings_cb)
-  this.renderSearchBar(true)
+  // Set up settings menu
+  preact.render(
+    <ReactWrapper
+      callbackManager={this.callback_manager}
+      component={BuilderSettingsMenu}
+      ref={instance => { this.settingsMenuRef = instance }}
+    />,
+    this.settings_div.node(),
+    this.settings_div.node().children.length > 0
+    ? this.settings_div.node().firstChild
+    : undefined
+  )
+
   // Set up key manager
   var keys = this._get_keys(this.map, this.zoom_container,
                             this.search_bar, this.settings_bar,
@@ -405,17 +436,15 @@ function load_map (map_data, should_update_data) {
   // Turn it on/off
   this.map.key_manager.toggle(this.options.enable_keys)
 
-  // Set up menu and status bars
-  if (this.options.menu === 'all') {
-    if (this.options.reaction_data) {
-      this.options.disabled_buttons.push('Clear reaction data')
-    }
-    if (this.options.gene_data) {
-      this.options.disabled_buttons.push('Clear gene data')
-    }
-    if (this.options.metabolite_data) {
-      this.options.disabled_buttons.push('Clear metabolite data')
-    }
+  // Disable clears
+  if (!this.options.reaction_data && this.options.disabled_buttons) {
+    this.options.disabled_buttons.push('Clear reaction data')
+  }
+  if (!this.options.gene_data && this.options.disabled_buttons) {
+    this.options.disabled_buttons.push('Clear gene data')
+  }
+  if (!this.options.metabolite_data && this.options.disabled_buttons) {
+    this.options.disabled_buttons.push('Clear metabolite data')
   }
 
   // Setup selection box
@@ -507,7 +536,12 @@ function renderMenu (mode) {
         zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
         search={() => this.renderSearchBar()}
         toggleBeziers={() => this.map.toggle_beziers()}
-        renderSettingsMenu={() => this.settings_bar.toggle()}
+        renderSettingsMenu={() => this.pass_settings_menu_props({
+          ...this.options,
+          map: this.map,
+          settings: this.settings,
+          display: true
+        })}
       />,
       menuDivNode,
       menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined
@@ -589,6 +623,7 @@ function build_mode () {
 }
 
 function brush_mode () {
+  console.log('pressed')
   /** For documentation of this function, see docs/javascript_api.rst.  */
   this._set_mode('brush')
 }
@@ -629,6 +664,13 @@ function _reaction_check_add_abs () {
  */
 function pass_tooltip_component_props (props) {
   this.tooltip_container.callback_manager.run('setState', null, props)
+}
+
+function pass_settings_menu_props (props) {
+  // if (this.settings_menu.visible) { // <- pseudocode
+    // pass the props
+  // }
+  this.callback_manager.run('setState', null, props)
 }
 
 /**
@@ -1004,12 +1046,17 @@ function _get_keys (map, zoom_container, search_bar, settings_bar,
     show_settings_ctrl: {
       key: 'ctrl+,',
       target: settings_bar,
-      fn: settings_bar.toggle,
+      fn: () => this.pass_settings_menu_props({
+        ...this.options,
+        map: this.map,
+        settings: this.settings,
+        display: true
+      })
     },
     show_settings: {
       key: ',',
-      target: settings_bar,
-      fn: settings_bar.toggle,
+      target: this,
+      fn: () => this.renderSettingsMenu(this.options),
       ignore_with_input: true,
     },
   }

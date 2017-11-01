@@ -1,12 +1,41 @@
 /**
- * SettingsMenu
+ * SettingsMenu. Handles the functions associated with the UI for changing
+ * settings. Implements Settings.js and ScaleEditor but otherwise only uses
+ * Preact.
  */
 
 /** @jsx h */
 import { h, Component } from 'preact'
+import ScaleSelector from './ScaleSelector.js'
+import ScaleSlider from './ScaleSlider.js'
+import ScaleSelection from './ScaleSelection.js'
+import update from 'immutability-helper'
+import * as _ from 'underscore'
 import '../../css/src/SettingsMenu.css'
 
-const ScaleEditor = require('./ScaleEditor')
+const scalePresets = {
+  GaBuGeRd: [
+    {type: 'min', color: '#c8c8c8', size: 12},
+    {type: 'value', value: 0.01, color: '#9696ff', size: 16},
+    {type: 'value', value: 20, color: '#209123', size: 20},
+    {type: 'max', color: '#ff0000', size: 25}
+  ],
+  GaBuRd: [
+    { type: 'min', color: '#c8c8c8', size: 12 },
+    { type: 'median', color: '#9696ff', size: 20 },
+    { type: 'max', color: '#ff0000', size: 25 }
+  ],
+  RdYlBu: [
+    { type: 'min', color: '#d7191c', size: 12 },
+    { type: 'median', color: '#ffffbf', size: 20 },
+    { type: 'max', color: '#2c7bb6', size: 25 }
+  ],
+  GeGaRd: [
+    { type: 'min', color: '#209123', size: 25 },
+    { type: 'median', color: '#c8c8c8', size: 12 },
+    { type: 'max', color: '#ff0000', size: 25 }
+  ]
+}
 
 class BuilderSettingsMenu extends Component {
   constructor (props) {
@@ -14,45 +43,78 @@ class BuilderSettingsMenu extends Component {
     this.state = {
       display: props.display
     }
-    props.settings.hold_changes()
+    if (props.display) {
+      this.componentWillAppear()
+    }
+    if (props.reaction_scale_preset) {
+      props.settings.set_conditional(
+        'reaction_scale', scalePresets[props.reaction_scale_preset]
+      )
+    }
+    if (props.metabolite_scale_preset) {
+      props.settings.set_conditional(
+        'metabolite_scale', scalePresets[props.metabolite_scale_preset]
+      )
+    }
   }
 
   componentWillReceiveProps (nextProps) {
-    this.setState({display: nextProps.display})
-    nextProps.settings.hold_changes()
+    this.setState({
+      display: nextProps.display
+    })
+    if (nextProps.display && !this.props.display) {
+      this.componentWillAppear()
+    }
+    if (!nextProps.display && this.props.display) {
+      this.componentWillDisappear()
+    }
+  }
+
+  componentWillAppear () {
+    this.props.settings.hold_changes()
+  }
+
+  componentWillDisappear () {
   }
 
   abandonChanges () {
     this.props.settings.abandon_changes()
-    this.setState({display: 'none'})
   }
 
   saveChanges () {
     this.props.settings.accept_changes()
-    this.setState({display: 'none'})
   }
 
+  /**
+   * Function to handle changes to the reaction or metabolite styling.
+   * @param {String} value - the style option to be added or removed
+   * @param {String} type - reaction_style or metabolite_style
+   */
   handleStyle (value, type) {
-    let style = []
-    if (type === 'reaction_styles') {
-      style.concat(this.props.reaction_styles)
-    } else if (type === 'metabolite_styles') {
-      style.concat(this.props.metabolite_styles)
+    if (this.props[type].indexOf(value) === -1) {
+      this.props.settings.set_conditional(type,
+        update(this.props[type], {$push: [value]})
+      )
+    } else if (this.props[type].indexOf(value) > -1) {
+      this.props.settings.set_conditional(type,
+        update(this.props[type], {$splice: [[this.props[type].indexOf(value), 1]]})
+      )
     }
-    if (style) {
-      if (style.indexOf(value) > -1) {
-        style.splice(style.indexOf(value), 1)
-        this.props.settings.set_conditional(type, style)
-      } else {
-        style.push(value)
-        this.props.settings.set_conditional(type, style)
-      }
-    }
+  }
+
+  is_visible () {
+    return this.state.display
   }
 
   render () {
     return (
-      <div className='settingsBackground' style={{display: this.state.display}}>
+      <div
+        className='settingsBackground'
+        style={this.state.display
+          ? {display: 'block'}
+          : {display: 'none'}
+        }
+      >
         <div className='settingsBoxContainer'>
           <button className='discardChanges' onClick={() => this.abandonChanges()}>
             <i className='fa fa-close' aria-hidden='true' />
@@ -118,17 +180,25 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional('hide_secondary_metabolites', !this.props.hide_secondary_metabolites)
+                    this.props.settings.set_conditional(
+                      'hide_secondary_metabolites',
+                      !this.props.hide_secondary_metabolites
+                    )
                   }
                   checked={this.props.hide_secondary_metabolites}
                 />
                 Hide secondary metabolites
               </label>
-              <label title='If checked, then gene reaction rules will be displayed below each reaction label. (Gene reaction rules are always shown when gene data is loaded.)'>
+              <label
+                title='If checked, then gene reaction rules will be displayed below each reaction label. (Gene reaction rules are always shown when gene data is loaded.)'
+              >
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional('show_gene_reaction_rules', !this.props.show_gene_reaction_rules)
+                    this.props.settings.set_conditional(
+                      'show_gene_reaction_rules',
+                      !this.props.show_gene_reaction_rules
+                    )
                   }
                   checked={this.props.show_gene_reaction_rules}
                   />
@@ -138,7 +208,9 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional('hide_all_labels', !this.props.hide_all_labels)
+                    this.props.settings.set_conditional(
+                      'hide_all_labels', !this.props.hide_all_labels
+                    )
                   }
                   checked={this.props.hide_all_labels}
                 />
@@ -148,7 +220,10 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional('allow_building_duplicate_reactions', !this.props.allow_building_duplicate_reactions)
+                    this.props.settings.set_conditional(
+                      'allow_building_duplicate_reactions',
+                      !this.props.allow_building_duplicate_reactions
+                    )
                   }
                   checked={this.props.allow_building_duplicate_reactions}
                 />
@@ -157,9 +232,11 @@ class BuilderSettingsMenu extends Component {
               <label title='If checked, then highlight in red all the reactions on the map that are not present in the loaded model.'>
                 <input
                   type='checkbox'
-                  onClick={() =>
-                    this.props.settings.set_conditional('highlight_missing', !this.props.highlight_missing)
-                  }
+                  onClick={() => {
+                    this.props.settings.set_conditional(
+                      'highlight_missing', !this.props.highlight_missing
+                    )
+                  }}
                   checked={this.props.highlight_missing}
                 />Highlight reactions not in model
               </label>
@@ -167,7 +244,9 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional('enable_tooltips', !this.props.enable_tooltips)
+                    this.props.settings.set_conditional(
+                      'enable_tooltips', !this.props.enable_tooltips
+                    )
                   }
                   checked={this.props.enable_tooltips}
                   />
@@ -178,17 +257,52 @@ class BuilderSettingsMenu extends Component {
               <i>Tip: To increase map performance, turn off text boxes (i.e. labels and gene reaction rules).</i>
             </div>
             <hr />
-            <div className='title'>
-              Reactions
+            <div className='scaleTitle'>
+              <div className='title'>
+                Reactions
+              </div>
+              <ScaleSelector>
+                {Object.values(_.mapObject(scalePresets, (value, key) => {
+                  return (
+                    <ScaleSelection
+                      name={key}
+                      scale={value}
+                      onClick={() => this.props.settings.set_conditional(
+                        'reaction_scale', value
+                      )}
+                    />
+                  )
+                }))}
+              </ScaleSelector>
             </div>
+            <ScaleSlider
+              scale={this.props.reaction_scale}
+              settings={this.props.settings}
+              type='Reaction'
+              stats={this.props.map.get_data_statistics().reaction}
+              noDataColor={this.props.reaction_no_data_color}
+              noDataSize={this.props.reaction_no_data_size}
+              onChange={(scale) => {
+                this.props.settings.set_conditional('reaction_scale', scale)
+              }}
+              abs={this.props.reaction_styles.indexOf('abs') > -1}
+            />
             <div className='subheading'>
               Reaction or Gene data
             </div>
             <table className='radioSelection'>
               <tr>
-                <td className='optionLabel' title='Options for reactions data'>Options:</td>
+                <td
+                  className='optionLabel'
+                  title='Options for reactions data'
+                >
+                Options:
+                </td>
                 <td>
-                  <label className='optionGroup' title='If checked, use the absolute value when calculating colors and sizes of reactions on the map'>
+                  <label
+                    className='optionGroup'
+                    title='If checked, use the absolute value when calculating colors and sizes of reactions on the map'
+                  >
                     <input
                       type='checkbox'
                       name='reactionStyle'
@@ -197,7 +311,10 @@ class BuilderSettingsMenu extends Component {
                     />
                     Absolute value
                   </label>
-                  <label className='optionGroup' title='If checked, then size the thickness of reaction lines according to the value of the reaction data'>
+                  <label
+                    className='optionGroup'
+                    title='If checked, then size the thickness of reaction lines according to the value of the reaction data'
+                  >
                     <input
                       type='checkbox'
                       name='reactionStyle'
@@ -273,7 +390,9 @@ class BuilderSettingsMenu extends Component {
               </tr>
             </table>
             <table className='radioSelection'>
-              <tr title='The function that will be used to evaluate AND connections in gene reaction rules (AND connections generally connect components of an enzyme complex)'>
+              <tr
+                title='The function that will be used to evaluate AND connections in gene reaction rules (AND connections generally connect components of an enzyme complex)'
+              >
                 <td className='optionLabelWide'>Method for evaluating AND:</td>
                 <td>
                   <label className='optionGroup'>
@@ -306,17 +425,48 @@ class BuilderSettingsMenu extends Component {
               </tr>
             </table>
             <hr />
-            <div className='title'>
-              Metabolites
+            <div className='scaleTitle'>
+              <div className='title'>
+                Metabolites
+              </div>
+              <ScaleSelector>
+                {Object.values(_.mapObject(scalePresets, (value, key) => {
+                  return (
+                    <ScaleSelection
+                      name={key}
+                      scale={value}
+                      onClick={() => this.props.settings.set_conditional(
+                        'reaction_scale', value
+                      )}
+                    />
+                  )
+                }))}
+              </ScaleSelector>
             </div>
+            <ScaleSlider
+              scale={this.props.metabolite_scale}
+              settings={this.props.settings}
+              type='Metabolite'
+              stats={this.props.map.get_data_statistics().metabolite}
+              noDataColor={this.props.metabolite_no_data_color}
+              noDataSize={this.props.metabolite_no_data_size}
+            />
             <div className='subheading'>
               Metabolite data
             </div>
             <table className='radioSelection'>
               <tr>
-                <td className='optionLabel' title='Options for metabolite data'>Options:</td>
+                <td
+                  className='optionLabel'
+                  title='Options for metabolite data'
+                >
+                Options:
+                </td>
                 <td>
-                  <label className='optionGroup' title='If checked, use the absolute value when calculating colors and sizes of metabolites on the map'>
+                  <label
+                    className='optionGroup'
+                    title='If checked, use the absolute value when calculating colors and sizes of metabolites on the map'
+                  >
                     <input
                       type='checkbox'
                       name='metaboliteStyle'
@@ -325,7 +475,10 @@ class BuilderSettingsMenu extends Component {
                     />
                     Absolute value
                   </label>
-                  <label className='optionGroup' title='If checked, then size the thickness of reaction lines according to the value of the metabolite data'>
+                  <label
+                    className='optionGroup'
+                    title='If checked, then size the thickness of reaction lines according to the value of the metabolite data'
+                  >
                     <input
                       type='checkbox'
                       name='metaboliteStyle'
