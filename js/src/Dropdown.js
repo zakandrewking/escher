@@ -55,7 +55,7 @@ class Dropdown extends Component {
           onKeyDown={event => this.handleKeyDown(event)}
         >
           {this.props.name}&nbsp;&nbsp;
-          <i className='fa fa-caret-down' />
+          <i className='fa fa-caret-down' style={{fontSize: '13px'}} />
         </div>
         <ul
           className='menu'

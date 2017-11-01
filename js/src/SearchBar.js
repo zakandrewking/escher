@@ -13,7 +13,11 @@ class SearchBar extends Component {
       visible: props.visible,
       current: 1,
       searchItem: null,
-      counter: ''
+      counter: '',
+      clearNext: this.props.map.key_manager.add_key_listener(
+        ['enter', 'ctrl+g'], () => this.next(), false),
+      clearPrevious: this.props.map.key_manager.add_key_listener(
+        ['shift+enter', 'shift+ctrl+g'], () => this.previous(), false)
     }
   }
 

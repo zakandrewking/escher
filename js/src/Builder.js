@@ -5,9 +5,9 @@
 /** @jsx h */
 import preact, { h } from 'preact'
 import ReactWrapper from './ReactWrapper.js'
+import BuilderSettingsMenu from './BuilderSettingsMenu.js'
 import ButtonPanel from './ButtonPanel.js'
 import BuilderMenuBar from './BuilderMenuBar.js'
-import ButtonPanel from './ButtonPanel.js'
 import SearchBar from './SearchBar.js'
 import '../../node_modules/font-awesome/css/font-awesome.min.css'
 import '../../css/src/ButtonPanel.css'
@@ -407,11 +407,7 @@ function load_map (map_data, should_update_data) {
   this.menu_div = s.append('div')
   this.search_bar_div = s.append('div')
   this.button_div = this.selection.append('div')
-
-  // Set up the search bar
-  this.search_bar = new SearchBar(
-    search_bar_div, this.map.search_index, this.map
-  )
+  this.settings_div = this.selection.append('div')
 
   // Set up settings menu
   preact.render(
@@ -540,7 +536,12 @@ function renderMenu (mode) {
         zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
         search={() => this.renderSearchBar()}
         toggleBeziers={() => this.map.toggle_beziers()}
-        renderSettingsMenu={() => this.settings_bar.toggle()}
+        renderSettingsMenu={() => this.pass_settings_menu_props({
+          ...this.options,
+          map: this.map,
+          settings: this.settings,
+          display: true
+        })}
       />,
       menuDivNode,
       menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined
@@ -1045,7 +1046,12 @@ function _get_keys (map, zoom_container, search_bar, settings_bar,
     show_settings_ctrl: {
       key: 'ctrl+,',
       target: settings_bar,
-      fn: settings_bar.toggle,
+      fn: () => this.pass_settings_menu_props({
+        ...this.options,
+        map: this.map,
+        settings: this.settings,
+        display: true
+      })
     },
     show_settings: {
       key: ',',

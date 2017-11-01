@@ -3,6 +3,7 @@
 }
 
 .escher-container .searchContainer {
+  box-sizing: border-box;
   display: inline-flex;
   justify-content: space-between;
   background-color: rgba(255, 255, 255, 0.95);
