@@ -48,17 +48,9 @@ class ScaleSlider extends Component {
 
   scaleChange (index, parameter, value) {
     const scale = this.sortScale()
-    const lowerValue = scale[index - 1].type === 'value'
-      ? scale[index - 1].value
-      : this.props.stats[scale[index - 1].type]
-    const upperValue = scale[index + 1].type === 'value'
-      ? scale[index + 1].value
-      : this.props.stats[scale[index + 1].type]
     if (parameter === 'value' && (parseFloat(value) > this.props.stats.max || value < this.props.stats.min)) {
       console.warn('Invalid color scale')
-    } else if (parameter !== 'value' ||
-      ((upperValue - value) / (this.props.stats.max) > 0.039 &&
-      (value - lowerValue) / (this.props.stats.max) > 0.039)) {
+    } else {
       let newScale = null
       if (parameter === 'type' && value !== 'value') {
         newScale = update(scale, {
@@ -67,6 +59,7 @@ class ScaleSlider extends Component {
             $unset: ['value']
           }
         })
+        this.props.onChange(newScale)
       } else if (value === 'value') {
         newScale = update(scale, {
           [index]: {
@@ -74,14 +67,15 @@ class ScaleSlider extends Component {
             $merge: {'value': this.props.stats[scale[index].type]}
           }
         })
-      } else {
+        this.props.onChange(newScale)
+      } else if (!isNaN(parseFloat(value))) {
         newScale = update(scale, {
           [index]: {
             [parameter]: {$set: value}
           }
         })
+        this.props.onChange(newScale)
       }
-      this.props.onChange(newScale)
     }
   }
 

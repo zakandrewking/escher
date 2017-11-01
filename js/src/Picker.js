@@ -42,7 +42,6 @@ class Picker extends Component {
   }
 
   render () {
-    // console.log(this.props.left)
     return (
       <div
         className='picker'
