@@ -102,6 +102,22 @@ module.exports = function (grunt) {
         expand: true,
         flatten: true
       },
+      lib: {
+        src: [
+          'node_modules/bootstrap/dist/js/bootstrap.min.js',
+          'node_modules/bootswatch/simplex/bootstrap.min.css',
+          'node_modules/jquery/dist/jquery.min.js'
+        ],
+        dest: 'py/escher/static/lib/',
+        expand: true,
+        flatten: true
+      },
+      fonts: {
+        src: 'node_modules/bootstrap/dist/fonts/*',
+        dest: 'py/escher/static/fonts/',
+        expand: true,
+        flatten: true
+      },
       jsonschema: {
         src: 'jsonschema/*',
         dest: 'py/escher/static/jsonschema/',

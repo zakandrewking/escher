@@ -54,7 +54,7 @@ function init (selection, scroll_behavior, use_3d_transform, fill_screen) {
   // Stop scrolling on mobile
   // Only necessary for Safari because touch-action CSS is supported by all other browsers
   // TODO Zak needs to figure out why this doesn't work on Safari
-  if (navigator && navigator.userAgent && navigator.userAgent.indexOf('Safari') !== -1) {
+  if (navigator && navigator.userAgent && navigator.userAgent.indexOf('Safari') !== -1 && navigator.userAgent.indexOf('Mozilla') === -1) {
     selection.on('touchstart touchmove', function () {
       d3_selection.event.stopPropagation()
     })

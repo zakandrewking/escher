@@ -7,8 +7,10 @@ import preact, { h } from 'preact'
 import ReactWrapper from './ReactWrapper.js'
 import ButtonPanel from './ButtonPanel.js'
 import BuilderMenuBar from './BuilderMenuBar.js'
-import BuilderSettingsMenu from './BuilderSettingsMenu'
+import ButtonPanel from './ButtonPanel.js'
+import SearchBar from './SearchBar.js'
 import '../../node_modules/font-awesome/css/font-awesome.min.css'
+import '../../css/src/ButtonPanel.css'
 
 var utils = require('./utils')
 var BuildInput = require('./BuildInput')
@@ -17,8 +19,8 @@ var Map = require('./Map')
 var CobraModel = require('./CobraModel')
 var Brush = require('./Brush')
 var CallbackManager = require('./CallbackManager')
-var SearchBar = require('./SearchBar')
 var Settings = require('./Settings')
+var SettingsMenu = require('./SettingsMenu')
 var TextEditInput = require('./TextEditInput')
 var QuickJump = require('./QuickJump')
 var data_styles = require('./data_styles')
@@ -56,6 +58,7 @@ Builder.prototype = {
   _get_keys: _get_keys,
   _setup_confirm_before_exit: _setup_confirm_before_exit,
   renderMenu: renderMenu,
+  renderSearchBar: renderSearchBar,
   renderButtonPanel: renderButtonPanel
 }
 module.exports = Builder
@@ -89,6 +92,8 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.button_div = null
   this.settings_div = null
   this.settingsMenuRef = null
+  this.search_bar_div = null
+  this.searchBarRef = null
 
   // apply this object as data for the selection
   this.selection.datum(this)
@@ -400,9 +405,8 @@ function load_map (map_data, should_update_data) {
     .append('div').attr('class', 'search-menu-container')
     .append('div').attr('class', 'search-menu-container-inline')
   this.menu_div = s.append('div')
-  var search_bar_div = s.append('div')
+  this.search_bar_div = s.append('div')
   this.button_div = this.selection.append('div')
-  this.settings_div = this.selection.append('div')
 
   // Set up the search bar
   this.search_bar = new SearchBar(
@@ -424,12 +428,13 @@ function load_map (map_data, should_update_data) {
 
   // Set up key manager
   var keys = this._get_keys(this.map, this.zoom_container,
-                            this.search_bar,
+                            this.search_bar, this.settings_bar,
                             this.options.enable_editing,
                             this.options.full_screen_button)
   this.map.key_manager.assigned_keys = keys
   // Tell the key manager about the reaction input and search bar
-  this.map.key_manager.input_list = [this.build_input, this.search_bar, this.text_edit_input, this.tooltip_container]
+  this.map.key_manager.input_list = [this.build_input, this.searchBarRef,
+                                     this.settings_bar, this.text_edit_input, this.tooltip_container]
   // Make sure the key manager remembers all those changes
   this.map.key_manager.update()
   // Turn it on/off
@@ -533,18 +538,28 @@ function renderMenu (mode) {
         zoomOut={() => this.zoom_container.zoom_out()}
         zoomExtentNodes={() => this.map.zoom_extent_nodes()}
         zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
-        search={() => this.search_bar.toggle()}
+        search={() => this.renderSearchBar()}
         toggleBeziers={() => this.map.toggle_beziers()}
-        renderSettingsMenu={() => this.pass_settings_menu_props({
-          ...this.options,
-          map: this.map,
-          settings: this.settings,
-          display: true
-        })}
+        renderSettingsMenu={() => this.settings_bar.toggle()}
       />,
       menuDivNode,
-      menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined)
+      menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined
+    )
   }
+}
+
+function renderSearchBar (hide) {
+  const searchBarNode = this.search_bar_div.node()
+  preact.render(
+    <SearchBar
+      visible={!hide}
+      searchIndex={this.map.search_index}
+      map={this.map}
+      ref={instance => { this.searchBarRef = instance }}
+    />,
+    searchBarNode,
+    searchBarNode.children.length > 0 ? searchBarNode.firstChild : undefined
+  )
 }
 
 function renderButtonPanel (mode) {
@@ -564,7 +579,6 @@ function renderButtonPanel (mode) {
 function _set_mode (mode) {
   this.renderMenu(mode)
   this.renderButtonPanel(mode)
-  this.search_bar.toggle(false)
   // input
   this.build_input.toggle(mode == 'build')
   this.build_input.direction_arrow.toggle(mode == 'build')
@@ -830,7 +844,8 @@ function _update_data (update_model, update_map, kind, should_draw) {
     }
 
     // callback
-    this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw)
+    this.callback_manager.run('update_data', null, update_model, update_map,
+                              kind, should_draw)
 
   }.bind(this), delay)
 
@@ -916,7 +931,8 @@ function _setup_modes (map, brush, zoom_container) {
 /**
  * Define keyboard shortcuts
  */
-function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editing, full_screen_button) {
+function _get_keys (map, zoom_container, search_bar, settings_bar,
+                    enable_editing, full_screen_button) {
 
   var keys = {
     save: {
@@ -1014,11 +1030,11 @@ function _get_keys (map, zoom_container, search_bar, settings_bar, enable_editin
     },
     search_ctrl: {
       key: 'ctrl+f',
-      fn: search_bar.toggle.bind(search_bar, true),
+      fn: () => this.renderSearchBar(),
     },
     search: {
       key: 'f',
-      fn: search_bar.toggle.bind(search_bar, true),
+      fn: () => this.renderSearchBar(),
       ignore_with_input: true,
     },
     view_mode: {
