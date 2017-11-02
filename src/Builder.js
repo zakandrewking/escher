@@ -418,13 +418,15 @@ function load_map (map_data, should_update_data) {
     <ReactWrapper
       callbackManager={this.callback_manager}
       component={BuilderSettingsMenu}
-      ref={instance => { this.settingsMenuRef = instance }}
+      refProp={this.settingsMenuRef}
     />,
     this.settings_div.node(),
     this.settings_div.node().children.length > 0
     ? this.settings_div.node().firstChild
     : undefined
   )
+
+  this.renderSearchBar(true)
 
   // Set up key manager
   var keys = this._get_keys(this.map, this.zoom_container,
@@ -434,7 +436,7 @@ function load_map (map_data, should_update_data) {
   this.map.key_manager.assigned_keys = keys
   // Tell the key manager about the reaction input and search bar
   this.map.key_manager.input_list = [this.build_input, this.searchBarRef,
-                                     this.settings_bar, this.text_edit_input, this.tooltip_container]
+                                     this.settingsMenuRef, this.text_edit_input, this.tooltip_container]
   // Make sure the key manager remembers all those changes
   this.map.key_manager.update()
   // Turn it on/off

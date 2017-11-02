@@ -16,7 +16,7 @@ class ReactWrapper extends Component {
     if (!_.isEmpty(this.state)) {
       return <this.props.component
         {...this.state}
-        ref={this.props.ref} />
+        ref={instance => { this.props.refProp = instance }} />
     } else {
       return null
     }
