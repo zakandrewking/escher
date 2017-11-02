@@ -9,7 +9,7 @@ import BuilderSettingsMenu from './BuilderSettingsMenu.js'
 import ButtonPanel from './ButtonPanel.js'
 import BuilderMenuBar from './BuilderMenuBar.js'
 import SearchBar from './SearchBar.js'
-import 'font-awesome/css/font-awesome.min.css'
+import 'font-awesome/css/font-awesome.css'
 
 var utils = require('./utils')
 var BuildInput = require('./BuildInput')

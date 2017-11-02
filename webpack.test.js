@@ -1,11 +1,35 @@
-const merge = require('webpack-merge')
-const common = require('./webpack.common.js')
 const nodeExternals = require('webpack-node-externals')
 const path = require('path')
 const process = require('process')
+const webpack = require('webpack')
+const package = require('./package.json')
 const isCoverage = process.env.NODE_ENV === 'coverage'
 
-module.exports = merge.smart(common, {
+const loaders = [
+  {
+    test: /\.jsx?$/,
+    exclude: /node_modules/,
+    loader: ['babel-loader']
+  },
+  {
+    include: path.resolve(__dirname, 'node_modules/font-awesome/css/font-awesome.css'),
+    loader: 'null-loader'
+  },
+  {
+    test: /\.css?$/,
+    loader: 'null-loader'
+  }
+]
+
+module.exports = {
+  resolve: {
+    extensions: ['.js', '.jsx', '.json']
+  },
+  plugins: [
+    new webpack.DefinePlugin({
+      ESCHER_VERSION: JSON.stringify(package.version)
+    })
+  ],
  // Webpack should emit node.js compatible code
   target: 'node',
  // Ignore all modules in node_modules folder from bundling
@@ -18,14 +42,17 @@ module.exports = merge.smart(common, {
   },
   entry: './src/main.js',
   module: {
-    rules: isCoverage
-      ? [ {
-        test: /\.jsx?$/,
-        include: path.resolve(__dirname, 'src'),
-        enforce: 'post',
-        use: ['istanbul-instrumenter-loader']
-      } ]
-      : []
+    isCoverage
+      ? [
+        {
+          test: /\.jsx?$/,
+          include: path.resolve(__dirname, 'src'),
+          enforce: 'post',
+          use: ['istanbul-instrumenter-loader']
+        },
+        ...loaders
+      ]
+      : loaders
   },
   devtool: 'inline-cheap-module-source-map'
-})
+}
