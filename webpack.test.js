@@ -1,39 +1,32 @@
+const merge = require('webpack-merge')
+const common = require('./webpack.common.js')
 const nodeExternals = require('webpack-node-externals')
 const path = require('path')
 const process = require('process')
-const webpack = require('webpack')
-const package = require('./package.json')
 const isCoverage = process.env.NODE_ENV === 'coverage'
 
-const loaders = [
-  {
-    test: /\.jsx?$/,
-    exclude: /node_modules/,
-    loader: ['babel-loader']
-  },
-  {
-    include: path.resolve(__dirname, 'node_modules/font-awesome/css/font-awesome.css'),
-    loader: 'null-loader'
-  },
-  {
-    test: /\.css?$/,
-    loader: 'null-loader'
-  }
-]
+// Overrides css loader from common
+const cssNullLoader = {
+  test: /\.css$/,
+  loader: 'null-loader'
+}
 
-module.exports = {
-  resolve: {
-    extensions: ['.js', '.jsx', '.json']
-  },
-  plugins: [
-    new webpack.DefinePlugin({
-      ESCHER_VERSION: JSON.stringify(package.version)
-    })
-  ],
+// For coverage
+const istanbulLoader = {
+  test: /\.jsx?$/,
+  include: path.resolve(__dirname, 'src'),
+  enforce: 'post',
+  use: ['istanbul-instrumenter-loader']
+}
+const rules = isCoverage ? [istanbulLoader, cssNullLoader] : [cssNullLoader]
+
+module.exports = merge.smart(common, {
  // Webpack should emit node.js compatible code
   target: 'node',
- // Ignore all modules in node_modules folder from bundling
-  externals: [nodeExternals()],
+  // Ignore all modules in node_modules folder from bundling
+  externals: [nodeExternals({
+    whitelist: ['font-awesome/css/font-awesome.min.css']
+  })],
   output: {
     // filename: 'bundle.js', // for testing
     // use absolute paths in sourcemaps (important for debugging via IDE)
@@ -41,18 +34,6 @@ module.exports = {
     devtoolFallbackModuleFilenameTemplate: '[absolute-resource-path]?[hash]'
   },
   entry: './src/main.js',
-  module: {
-    isCoverage
-      ? [
-        {
-          test: /\.jsx?$/,
-          include: path.resolve(__dirname, 'src'),
-          enforce: 'post',
-          use: ['istanbul-instrumenter-loader']
-        },
-        ...loaders
-      ]
-      : loaders
-  },
+  module: { rules: rules },
   devtool: 'inline-cheap-module-source-map'
-}
+})
