@@ -1,0 +1,1 @@
+var BuildInput = require('../BuildInput')

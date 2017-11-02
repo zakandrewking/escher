@@ -1,4 +1,3 @@
-*.csv
 *.log
 .DS_Store
 *.pyc
@@ -16,16 +15,14 @@ node_modules/
 .cache/
 *.tar.gz
 *.whl
+.tmp/
 
 # built files
 dist/
 js/src/inline.js
-js/src/coverage/
+coverage/
+.nyc_output/
 py/escher/package.json
-py/escher/static/escher/
-py/escher/static/lib/
-py/escher/static/fonts/
-py/escher/static/jsonschema/
 
 # site files
 1-0-0
