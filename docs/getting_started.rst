@@ -175,7 +175,7 @@ say 'nd' which means 'no data.'
 .. image:: _static/reaction_data_with_nd.png
 
 Time Series Mode and Difference Mode
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you have loaded a file set containing more than one data set
 you can choose which one to visualize by choosing **Time Series Mode / Difference Mode**
@@ -246,6 +246,11 @@ work with Escher maps for the *Escherichia coli* model iJO1366:
 - `S3_iJO1366_anaerobic_FBA_flux.json`_: FBA flux simulation data for iJO1366 as JSON.
 - `reaction_data_iJO1366.json`_: A JSON file with one dataset of fluxes.
 - `reaction_data_diff_iJO1366.json`_: A JSON file with two dataset of fluxes.
+- `reaction_data_example`_: A JSON file with more than two datasets.
+- `reaction_data_example_names`_: A JSON file with example data names.
+- `reaction_data_time_series_example_names`_: A JSON file with a time series mock-up.
+- `reaction_data_time_series_example_time_values`_: A JSON file with a non-linear time series.
+- `example_in_csv`_: A example file of reaction data in CSV format.
 
 **Metabolite data**
 
@@ -254,6 +259,8 @@ work with Escher maps for the *Escherichia coli* model iJO1366:
   concentrations.
 - `metabolite_data_diff_iJO1366.json`_: A JSON file with two datasets of
   metabolite concentrations.
+- `metabolite_data_example`_: A JSON file example with more than two datasets.
+- `metabolite_data_example_names`_: A JSON file example with more than two datasets with dataset names.
 
 **Gene data**
 
@@ -261,6 +268,9 @@ work with Escher maps for the *Escherichia coli* model iJO1366:
   (RNA-seq) as CSV.
 - `gene_data_names_iJO1366.json`_: A single gene dataset using descriptive
   (gene) names for identifiers as JSON.
+- `gene_data_example`_: A JSON file example with more than two datasets.
+- `gene_data_example_names`_: A JSON file example with more than two datasets with dataset names.
+
 
 Creating data files as CSV and JSON
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -307,6 +317,7 @@ Or in JSON like this:
       [ {"PPA2":0.1, "ENO": 0.0, "PPS": 0.2},
         {"PPA2":0.5, "ENO": 0.7, "PPS": 1.2 },
         {"PPA2":1.1, "ENO": 1.2, "PPS": 0.2}   ] ]
+
 Important is that the file contains two arrays.
 First one containing name of datasets, the other is an array of dictionaries with identifier and data values.
 
@@ -569,3 +580,12 @@ metabolite circles.
 .. _`metabolite_data_diff_iJO1366.json`: _static/example_data/metabolite_data_diff_iJO1366.json
 .. _`S6_RNA-seq_aerobic_to_anaerobic.csv`: _static/example_data/S6_RNA-seq_aerobic_to_anaerobic.csv
 .. _`gene_data_names_iJO1366.json`: _static/example_data/gene_data_names_iJO1366.json
+.. _`example_in_csv`: _static/example_data/time_series_data_mock_up/csv_reaction_data_names_example.csv
+.. _`gene_data_example`: _static/example_data/time_series_data_mock_up/gene_data_example.json
+.. _`gene_data_example_names`: _static/example_data/time_series_data_mock_up/gene_dataset_names_example.json
+.. _`metabolite_data_example`: _static/example_data/time_series_data_mock_up/metabolite_data_example.json
+.. _`metabolite_data_example_names`: _static/example_data/time_series_data_mock_up/metabolite_dataset_names_example.json
+.. _`reaction_data_example`: _static/example_data/time_series_data_mock_up/reaction_data_example.json
+.. _`reaction_data_example_names`: _static/example_data/time_series_data_mock_up/reaction_data_names_example.json
+.. _`reaction_data_time_series_example_names`: _static/example_data/time_series_data_mock_up/reaction_time_series_dataset_names_example.json
+.. _`reaction_data_time_series_example_time_values`: _static/example_data/time_series_data_mock_up/reaction_time_series_time_values_example.json
