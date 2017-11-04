@@ -56,7 +56,7 @@
 }
 
 .escher-container .colorOptions .colorText {
-  width: stretch;
+  width: -webkit-fill-available;
 }
 
 .escher-container .colorOptions .colorWheel {

@@ -147,16 +147,20 @@ function set_conditional (name, value) {
   } else {
     this.busses[name].push(value)
   }
+  console.log(name, value)
 }
 
 function hold_changes () {
   this.status_bus.push('hold')
+  console.log('changes held')
 }
 
 function abandon_changes () {
   this.status_bus.push('abandon')
+  console.log('changes abandoned')
 }
 
 function accept_changes() {
   this.status_bus.push('accept')
+  console.log('changes accepted')
 }

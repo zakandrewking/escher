@@ -89,12 +89,16 @@ function update() {
         assigned_key.input_list = this.input_list;
         this.mousetrap.bind(key_to_bind, function(e) {
             // check inputs
-            var input_blocking = false;
+            let input_blocking = false
             if (this.ignore_with_input) {
                 for (var i = 0, l = this.input_list.length; i < l; i++) {
-                    if (this.input_list[i].is_visible()) {
-                        input_blocking = true;
-                        break;
+                    const thisInputVal = this.input_list[i]
+                    const thisInput = _.isFunction(thisInputVal)
+                      ? thisInputVal()
+                      : thisInputVal
+                    if (thisInput !== null && thisInput.is_visible()) {
+                        input_blocking = true
+                        break
                     }
                 }
             }

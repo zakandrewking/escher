@@ -13,10 +13,11 @@ class ReactWrapper extends Component {
     this.props.callbackManager.set('setState', this.setState.bind(this))
   }
   render () {
+    console.log(this.state)
     if (!_.isEmpty(this.state)) {
       return <this.props.component
         {...this.state}
-        ref={instance => { this.props.refProp = instance }} />
+        ref={this.props.refProp} />
     } else {
       return null
     }

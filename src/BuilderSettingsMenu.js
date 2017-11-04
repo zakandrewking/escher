@@ -41,7 +41,7 @@ class BuilderSettingsMenu extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      display: props.display
+      display: false
     }
     if (props.display) {
       this.componentWillAppear()
@@ -59,30 +59,34 @@ class BuilderSettingsMenu extends Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    this.setState({
-      display: nextProps.display
-    })
-    if (nextProps.display && !this.props.display) {
+    console.log('nextProps', nextProps.display)
+    if (nextProps.display && !this.state.display) {
       this.componentWillAppear()
     }
-    if (!nextProps.display && this.props.display) {
+    if (!nextProps.display && this.state.display) {
       this.componentWillDisappear()
     }
   }
 
   componentWillAppear () {
+    console.log('appearing', this.props.display)
+    this.setState({display: true})
     this.props.settings.hold_changes()
   }
 
   componentWillDisappear () {
+    console.log('disappearing', this.props.display)
+    this.setState({display: false})
   }
 
   abandonChanges () {
     this.props.settings.abandon_changes()
+    this.componentWillDisappear()
   }
 
   saveChanges () {
     this.props.settings.accept_changes()
+    this.componentWillDisappear()
   }
 
   /**

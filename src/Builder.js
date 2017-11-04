@@ -251,19 +251,19 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.load_map(this.map_data, false)
   var message_fn = this._reaction_check_add_abs()
   this._update_data(true, true)
-  _.mapObject(this.settings.busses, (bus, key) => {
-    bus.onValue(value => {
-      // TODO optional if it makes sense:
-      // if (key in keysICareAbout) {
-      this.pass_settings_menu_props({
-        ...this.options
-      })
-      if (key === 'reaction_styles' || key === 'metabolite_styles') {
-        this._update_data(false, true)
-      }
-      // }
-    })
-  })
+  // _.mapObject(this.settings.busses, (bus, key) => {
+  //   bus.onValue(value => {
+  //     // TODO optional if it makes sense:
+  //     // if (key in keysICareAbout) {
+  //     this.pass_settings_menu_props({
+  //       ...this.options
+  //     })
+  //     if (key === 'reaction_styles' || key === 'metabolite_styles') {
+  //       this._update_data(false, true)
+  //     }
+  //     // }
+  //   })
+  // })
   _.mapObject(this.settings.streams, (stream, key) => {
     stream.onValue(value => {
       // TODO optional if it makes sense:
@@ -271,8 +271,7 @@ function init (map_data, model_data, embedded_css, selection, options) {
       this.pass_settings_menu_props({
         ...this.options,
         map: this.map,
-        settings: this.settings,
-        display: false
+        settings: this.settings
       })
       if (key === 'reaction_styles' || key === 'metabolite_styles') {
         this._update_data(false, true)
@@ -285,7 +284,8 @@ function init (map_data, model_data, embedded_css, selection, options) {
   // menu closes, everything is drawn.
   this.settings.status_bus
     .onValue(function(x) {
-      if (x === 'accepted') {
+      if (x === 'accept') {
+        console.log('settings accepted', this.zoom_container)
         this._update_data(true, true, [ 'reaction', 'metabolite' ], false)
         if (this.zoom_container !== null) {
           var new_behavior = this.settings.get_option('scroll_behavior')
@@ -418,7 +418,7 @@ function load_map (map_data, should_update_data) {
     <ReactWrapper
       callbackManager={this.callback_manager}
       component={BuilderSettingsMenu}
-      refProp={this.settingsMenuRef}
+      refProp={instance => { this.settingsMenuRef = instance }}
     />,
     this.settings_div.node(),
     this.settings_div.node().children.length > 0
@@ -436,7 +436,7 @@ function load_map (map_data, should_update_data) {
   this.map.key_manager.assigned_keys = keys
   // Tell the key manager about the reaction input and search bar
   this.map.key_manager.input_list = [this.build_input, this.searchBarRef,
-                                     this.settingsMenuRef, this.text_edit_input, this.tooltip_container]
+                                     () => this.settingsMenuRef, this.text_edit_input, this.tooltip_container]
   // Make sure the key manager remembers all those changes
   this.map.key_manager.update()
   // Turn it on/off
@@ -746,6 +746,7 @@ function set_metabolite_data (data) {
  * of the map.
  */
 function _update_data (update_model, update_map, kind, should_draw) {
+  console.log('updating data', this.options.scroll_behavior)
   // defaults
   if (kind === undefined) {
     kind = [ 'reaction', 'metabolite' ]
@@ -1062,7 +1063,12 @@ function _get_keys (map, zoom_container, search_bar, settings_bar,
     show_settings: {
       key: ',',
       target: this,
-      fn: () => this.renderSettingsMenu(this.options),
+      fn: () => this.pass_settings_menu_props({
+        ...this.options,
+        map: this.map,
+        settings: this.settings,
+        display: true
+      }),
       ignore_with_input: true,
     },
   }
