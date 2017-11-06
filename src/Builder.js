@@ -233,14 +233,17 @@ function init (map_data, model_data, embedded_css, selection, options) {
 
   // Load the model, map, and update data in both
   this.load_model(this.model_data, false)
-  this.load_map(this.map_data, false)
-  var message_fn = this._reaction_check_add_abs()
-  this._update_data(true, true)
 
-  // Setting callbacks. TODO enable atomic updates. Right now, every time the
-  // menu closes, everything is drawn.
-  this.settings.status_bus
-    .onValue(function(x) {
+  // Need to defer map loading to let webpack CSS load properly
+  _.defer(() => {
+
+    this.load_map(this.map_data, false)
+    var message_fn = this._reaction_check_add_abs()
+    this._update_data(true, true)
+
+    // Setting callbacks. TODO enable atomic updates. Right now, every time the
+    // menu closes, everything is drawn.
+    this.settings.status_bus.onValue(x => {
       if (x === 'accepted') {
         this._update_data(true, true, [ 'reaction', 'metabolite' ], false)
         if (this.zoom_container !== null) {
@@ -253,14 +256,16 @@ function init (map_data, model_data, embedded_css, selection, options) {
           this.map.select_none()
         }
       }
-    }.bind(this))
+    })
 
-  // Set up quick jump
-  this._setup_quick_jump(this.selection)
+    // Set up quick jump
+    this._setup_quick_jump(this.selection)
 
-  this.callback_manager.run('first_load', this)
+    this.callback_manager.run('first_load', this)
 
-  if (message_fn !== null) setTimeout(message_fn, 500)
+    if (message_fn !== null) setTimeout(message_fn, 500)
+
+  })
 }
 
 /**
