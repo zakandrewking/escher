@@ -419,6 +419,7 @@ function load_map (map_data, should_update_data) {
       callbackManager={this.callback_manager}
       component={BuilderSettingsMenu}
       refProp={instance => { this.settingsMenuRef = instance }}
+      genericFunction1={() => this.pass_settings_menu_props({display: false})}
     />,
     this.settings_div.node(),
     this.settings_div.node().children.length > 0

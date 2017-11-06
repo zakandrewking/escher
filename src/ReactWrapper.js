@@ -6,7 +6,6 @@ class ReactWrapper extends Component {
   constructor (props) {
     super(props)
     this.state = {
-
     }
   }
   componentDidMount () {
@@ -17,7 +16,8 @@ class ReactWrapper extends Component {
     if (!_.isEmpty(this.state)) {
       return <this.props.component
         {...this.state}
-        ref={this.props.refProp} />
+        ref={this.props.refProp}
+        genericFunction1={this.props.genericFunction1} />
     } else {
       return null
     }

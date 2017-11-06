@@ -58,25 +58,32 @@ class BuilderSettingsMenu extends Component {
     }
   }
 
+  shouldComponentUpdate (nextProps, nextState) {
+    if (nextProps.display === null) {
+      return false
+    } else {
+      return true
+    }
+  }
+
   componentWillReceiveProps (nextProps) {
     console.log('nextProps', nextProps.display)
-    if (nextProps.display && !this.state.display) {
+    if (nextProps.display && !this.props.display) {
       this.componentWillAppear()
     }
-    if (!nextProps.display && this.state.display) {
+    if (!nextProps.display && this.props.display) {
       this.componentWillDisappear()
     }
   }
 
   componentWillAppear () {
     console.log('appearing', this.props.display)
-    this.setState({display: true})
     this.props.settings.hold_changes()
   }
 
   componentWillDisappear () {
     console.log('disappearing', this.props.display)
-    this.setState({display: false})
+    this.props.genericFunction1()
   }
 
   abandonChanges () {
@@ -114,7 +121,7 @@ class BuilderSettingsMenu extends Component {
     return (
       <div
         className='settingsBackground'
-        style={this.state.display
+        style={this.props.display
           ? {display: 'block'}
           : {display: 'none'}
         }
