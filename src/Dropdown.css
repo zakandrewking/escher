@@ -14,11 +14,9 @@
 
 .escher-container .dropdown {
   position: relative;
-  word-spacing: -2px;
   float: left;
   box-sizing: border-box;
   font-size: 12px;
-  line-height: 1.5;
   border-radius: 3px;
   margin-bottom: 0;
   font-weight: normal!important;
@@ -27,8 +25,6 @@
   -ms-touch-action: none;
   touch-action: none;
   cursor: pointer;
-  background-image: none;
-  white-space: nowrap;
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -41,16 +37,15 @@
 .escher-container .dropdownButton {
   color: #d9230f!important;
   border: 1px solid transparent;
-  padding: 5px 9px;
+  padding: 6px 9px;
 }
 
 .escher-container .helpButton {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif!important;
   color: #d9230f!important;
-  padding: 0 5px;
+  padding: 2px 5px;
   background-color: #f5f5f5!important;
   border: 0!important;
-  line-height: 1.42857143;
   text-decoration: unset;
   height: fit-content;
   position: absolute;
@@ -73,7 +68,7 @@
   }
 
   .escher-container .dropdownButton {
-    padding: 5px 10px;
+    padding: 6px 10px;
   }
 
   .escher-container .helpButton {
@@ -89,6 +84,7 @@
   font-weight: normal!important;
   word-spacing: 0;
   position: absolute;
+  white-space: nowrap;
   top: 103%;
   left: -1%;
   z-index: 1000;
@@ -105,7 +101,6 @@
   border-radius: 0;
   margin: 0;
   text-align: left;
-  line-height: 1.42857143;
 }
 
 .escher-container #rightMenu {
@@ -121,9 +116,7 @@
 .escher-container .menu li, .menu label {
   font-size: 15px;
   display: block;
-  clear: both;
   font-weight: normal!important;
-  line-height: 1.42857143;
   color: #444444;
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
 }
@@ -144,15 +137,15 @@
 
 .escher-container .menuButton {
   width: 100%;
-  padding: 3px 20px;
+  padding: 5px 20px;
   margin: 0;
   cursor: pointer;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
+  -webkit-touch-callout: none; /* Prevents text selection on touch devices */
+  -webkit-user-select: none; /* Prevents text selection. Other */
+  -khtml-user-select: none; /* Prevents text selection in Chrome, Safari, Opera */
+  -moz-user-select: none; /* Prevents text selection in Firefox */
+  -ms-user-select: none; /* Prevents text selection in IE */
+  user-select: none; /* Prevents text selection. Default */
 }
 
 .escher-container label:focus, .menuButton:focus {

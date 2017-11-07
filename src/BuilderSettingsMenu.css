@@ -36,6 +36,7 @@
   font-size: 14px!important;
   line-height: 1;
   border-radius: 3px;
+  -ms-touch-action: none;
   touch-action: none;
 }
 

@@ -438,5 +438,6 @@ resizes. */
 }
 
 .escher-container #tooltip-container {
+  -ms-touch-action: none;
   touch-action: none;
 }

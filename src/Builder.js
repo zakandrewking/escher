@@ -10,6 +10,12 @@ import ButtonPanel from './ButtonPanel.js'
 import BuilderMenuBar from './BuilderMenuBar.js'
 import SearchBar from './SearchBar.js'
 import 'font-awesome/css/font-awesome.min.css'
+// Include GUI CSS normally with webpack
+import './builder.css'
+
+// Import CSS as a string to embed. This also works from lib because css/src get
+// uploaded to NPM.
+import builder_embed from '!!raw-loader!./builder-embed.css'
 
 var utils = require('./utils')
 var BuildInput = require('./BuildInput')
@@ -28,13 +34,6 @@ var _ = require('underscore')
 var d3_select = require('d3-selection').select
 var d3_selection = require('d3-selection').selection
 var d3_json = require('d3-request').json
-
-// Include GUI CSS normally with webpack
-import './builder.css'
-
-// Import CSS as a string to embed. This also works from lib because css/src get
-// uploaded to NPM.
-import builder_embed from '!!raw-loader!./builder-embed.css'
 
 var Builder = utils.make_class()
 Builder.prototype = {
@@ -486,9 +485,9 @@ function load_map (map_data, should_update_data) {
 
   // Start in zoom mode for builder, view mode for viewer
   if (this.options.enable_editing) {
-    this._set_mode('zoom')
+    this.zoom_mode()
   } else {
-    this._set_mode('view')
+    this.view_mode()
   }
 
   // confirm before leaving the page
@@ -551,7 +550,9 @@ function renderMenu (mode) {
         })}
       />,
       menuDivNode,
-      menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined
+      menuDivNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
+        ? menuDivNode.firstChild
+        : undefined
     )
   }
 }
@@ -566,7 +567,9 @@ function renderSearchBar (hide) {
       ref={instance => { this.searchBarRef = instance }}
     />,
     searchBarNode,
-    searchBarNode.children.length > 0 ? searchBarNode.firstChild : undefined
+    searchBarNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
+      ? searchBarNode.firstChild
+      : undefined
   )
 }
 
@@ -581,7 +584,10 @@ function renderButtonPanel (mode) {
       buildInput={this.build_input}
     />,
   buttonPanelDivNode,
-  buttonPanelDivNode.children.length > 0 ? buttonPanelDivNode.firstChild : undefined)
+  buttonPanelDivNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
+    ? buttonPanelDivNode.firstChild
+    : undefined
+  )
 }
 
 function _set_mode (mode) {
@@ -621,32 +627,38 @@ function _set_mode (mode) {
 
 function view_mode () {
   /** For documentation of this function, see docs/javascript_api.rst.  */
+  this.callback_manager.run('view_mode')
   this._set_mode('view')
 }
 
 function build_mode () {
   /** For documentation of this function, see docs/javascript_api.rst.  */
+  this.callback_manager.run('build_mode')
   this._set_mode('build')
 }
 
 function brush_mode () {
   console.log('pressed')
   /** For documentation of this function, see docs/javascript_api.rst.  */
+  this.callback_manager.run('brush_mode')
   this._set_mode('brush')
 }
 
 function zoom_mode () {
   /** For documentation of this function, see docs/javascript_api.rst.  */
+  this.callback_manager.run('zoom_mode')
   this._set_mode('zoom')
 }
 
 function rotate_mode () {
   /** For documentation of this function, see docs/javascript_api.rst.  */
+  this.callback_manager.run('rotate_mode')
   this._set_mode('rotate')
 }
 
 function text_mode () {
   /** For documentation of this function, see docs/javascript_api.rst.  */
+  this.callback_manager.run('text_mode')
   this._set_mode('text')
 }
 

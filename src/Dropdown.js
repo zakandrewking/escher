@@ -54,8 +54,8 @@ class Dropdown extends Component {
           onClick={() => this.setState({visible: !this.state.visible})}
           onKeyDown={event => this.handleKeyDown(event)}
         >
-          {this.props.name}&nbsp;&nbsp;
-          <i className='fa fa-caret-down' style={{fontSize: '13px'}} />
+          {this.props.name}&nbsp;
+          <i className='fa fa-caret-down' style={{fontSize: '14px'}} />
         </div>
         <ul
           className='menu'

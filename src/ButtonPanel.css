@@ -8,6 +8,7 @@
   top: 20%;
   margin-top: -32px;
   padding-left: 0;
+  -ms-touch-action: none;
   touch-action: none;
 }
 
@@ -60,4 +61,8 @@
 
 .escher-container .buttonPanel .button:active, .escher-container .buttonGroup label:active, .escher-container .buttonPanel .buttonGroup:active {
   background-image: linear-gradient(#3F4141, #474949 6%, #4F5151);
+}
+
+.escher-container .buttonPanel .fa {
+  font-size: 24px;
 }

@@ -405,7 +405,7 @@ function toggle_label_mouseover (on_off) {
 
 /**
  * With no argument, toggle the tooltips upon touching of labels.
- * @param {Boolean} on_off - The new on/off state.
+ * @param {Boolean} on_off - The new on/off state. If this argument is not provided, then toggle the state.
  */
 function toggle_label_touch (on_off) {
   if (on_off === undefined) {
