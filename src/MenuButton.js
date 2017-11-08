@@ -9,8 +9,7 @@
 
 /** @jsx h */
 import { h, Component } from 'preact'
-
-const _ = require('underscore')
+import * as _ from 'underscore'
 
 class MenuButton extends Component {
   constructor (props) {
@@ -33,21 +32,39 @@ class MenuButton extends Component {
   render () {
     if (this.props.type === 'load') {
       return (
-        <label className='menuButton' tabindex={this.state.disabled ? '-1' : '0'} id={this.state.disabled ? 'disabled' : ''}>
-          <input type='file' onChange={event => this.handleFileInput(event.target.files[0])} disabled={this.state.disabled} />
+        <label
+          className='menuButton'
+          tabindex={this.state.disabled ? '-1' : '0'}
+          id={this.state.disabled ? 'disabled' : ''}
+        >
+          <input
+            type='file'
+            onChange={event => this.handleFileInput(event.target.files[0])}
+            disabled={this.state.disabled}
+          />
           {this.props.name}
         </label>
       )
     } else if (this.props.modeName !== undefined && this.props.mode === this.props.modeName) {
       return (
-        <li className='menuButton' tabindex={this.state.disabled ? '-1' : '0'} onClick={this.props.onClick} id={this.state.disabled ? 'disabled' : ''}>
+        <li
+          className='menuButton'
+          tabindex={this.state.disabled ? '-1' : '0'}
+          onClick={this.props.onClick}
+          id={this.state.disabled ? 'disabled' : ''}
+        >
           <i className='fa fa-check' aria-hidden='true'>&nbsp;</i>
           {this.props.name}
         </li>
       )
     } else {
       return (
-        <li className='menuButton' tabindex={this.state.disabled ? '-1' : '0'} onClick={this.state.disabled ? null : this.props.onClick} id={this.state.disabled ? 'disabled' : ''}>
+        <li
+          className='menuButton'
+          tabindex={this.state.disabled ? '-1' : '0'}
+          onClick={this.state.disabled ? null : this.props.onClick}
+          id={this.state.disabled ? 'disabled' : ''}
+        >
           {this.props.name}
         </li>
       )

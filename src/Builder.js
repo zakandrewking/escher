@@ -41,17 +41,17 @@ Builder.prototype = {
   load_map: load_map,
   load_model: load_model,
   _set_mode: _set_mode,
-  _reaction_check_add_abs: _reaction_check_add_abs,
   pass_tooltip_component_props: pass_tooltip_component_props,
   pass_settings_menu_props: pass_settings_menu_props,
-  set_reaction_data: set_reaction_data,
-  set_metabolite_data: set_metabolite_data,
   view_mode: view_mode,
   build_mode: build_mode,
   brush_mode: brush_mode,
   zoom_mode: zoom_mode,
   rotate_mode: rotate_mode,
   text_mode: text_mode,
+  _reaction_check_add_abs: _reaction_check_add_abs,
+  set_reaction_data: set_reaction_data,
+  set_metabolite_data: set_metabolite_data,
   set_gene_data: set_gene_data,
   _update_data: _update_data,
   _create_status: _create_status,
@@ -679,12 +679,16 @@ function _reaction_check_add_abs () {
 
 /**
  * Function to get props for the tooltip component
- * @param {Object[]} props - Array of props that the tooltip will use
+ * @param {Object} props - Props that the tooltip will use
  */
 function pass_tooltip_component_props (props) {
   this.tooltip_container.callback_manager.run('setState', null, props)
 }
 
+/**
+ * Function to get props for the settings menu
+ * @param {Object} props - Props that the settings menu will use
+ */
 function pass_settings_menu_props (props) {
   // if (this.settings_menu.visible) { // <- pseudocode
     // pass the props

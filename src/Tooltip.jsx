@@ -5,9 +5,9 @@
  * Define a Tooltip component and interface with Preact.
  */
 import { h, Component } from 'preact'
+import * as _ from 'underscore'
 
 const utils = require('./utils')
-const _ = require('underscore')
 
 // Define styles
 var containerStyle = {
@@ -52,8 +52,8 @@ class DefaultTooltip extends Component {
   decompartmentalizeCheck (id, type) {
   // ID without compartment, if metabolite.
     return type === 'metabolite'
-    ? utils.decompartmentalize(id)[0]
-    : id
+      ? utils.decompartmentalize(id)[0]
+      : id
   }
 
   openBigg () {

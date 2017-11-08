@@ -20,7 +20,6 @@
   background-color: white;
   border-color: #2e2f2f;
   border-radius: 4px;
-  line-height: 1;
   text-align: center;
   vertical-align: middle;
   cursor: pointer;
@@ -28,6 +27,7 @@
   font-weight: 400;
   height: 29px;
   width: 34px;
+  padding-top: 0px;
 }
 
 .escher-container .searchContainer .searchBarButton.left {

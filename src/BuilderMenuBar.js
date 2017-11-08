@@ -1,14 +1,13 @@
-/**
- * BuilderMenuBar. Wrapper class that implements generic Dropdown and MenuButton
- * objects to create the Builder menu bar. Currently re-renders every time an
- * edit mode is chosen. This can be changed once Builder is ported to Preact.
- */
-
 /** @jsx h */
 import { h, Component } from 'preact'
 import Dropdown from './Dropdown.js'
 import MenuButton from './MenuButton.js'
 
+/**
+ * BuilderMenuBar. Wrapper class that implements generic Dropdown and MenuButton
+ * objects to create the Builder menu bar. Currently re-renders every time an
+ * edit mode is chosen. This can be changed once Builder is ported to Preact.
+ */
 class BuilderMenuBar extends Component {
   render () {
     return (

@@ -41,6 +41,13 @@ function place (coords) {
   var window_scale = this.map.zoom_container.window_scale
   var map_size = this.map.get_size()
 
+  /**
+   * If shouldReposition is true, the div is placed so that it does not render
+   * outside of the viewable area of the window. Math.max is used so that it
+   * does not overflow to the left and top, Math.min is used so that it does not
+   * overflow to the right or bottom. If the screen is tool small to show the
+   * entire div, the div will overflow to the right and bottom.
+   */
   if (this.shouldReposition) {
     var left = Math.max(20,
                       Math.min(map_size.width - 270,

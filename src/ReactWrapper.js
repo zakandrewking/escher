@@ -1,6 +1,6 @@
 /** @jsx h */
 import { h, Component } from 'preact'
-import _ from 'underscore'
+import * as _ from 'underscore'
 
 class ReactWrapper extends Component {
   constructor (props) {
@@ -17,7 +17,8 @@ class ReactWrapper extends Component {
       return <this.props.component
         {...this.state}
         ref={this.props.refProp}
-        genericFunction1={this.props.genericFunction1} />
+        genericFunction1={this.props.genericFunction1}
+      />
     } else {
       return null
     }

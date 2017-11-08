@@ -4,7 +4,7 @@
 import {h, Component} from 'preact'
 import './SearchBar.css'
 
-const _ = require('underscore')
+import * as _ from 'underscore'
 
 class SearchBar extends Component {
   constructor (props) {
@@ -51,6 +51,10 @@ class SearchBar extends Component {
   //   this.inputRef.focus()
   // }
 
+  /**
+   * Updates map focus and search bar counter when new search term is entered.
+   * @param {string} value - Search term
+   */
   handleInput (value) {
     if (this.state.visible) {
       const results = this.dropDuplicates(this.props.map.search_index.find(value))
@@ -119,6 +123,10 @@ class SearchBar extends Component {
     }
   }
 
+  /**
+   * Updates the map focus and search bar counter for when buttons are clicked.
+   * @param {number} current - index of current search result
+   */
   update (current) {
     this.setState({
       current,
@@ -176,7 +184,7 @@ class SearchBar extends Component {
           className='searchBarButton'
           onClick={() => this.close()}
         >
-          <i className='fa fa-close fa-lg' />
+          <i className='fa fa-close fa-lg' style={{marginTop: '-2px', verticalAlign: 'middle'}} />
         </button>
       </div>
     )

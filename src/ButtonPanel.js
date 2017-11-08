@@ -1,13 +1,12 @@
+/** @jsx h */
+import {h, Component} from 'preact'
+import './ButtonPanel.css'
+
 /**
  * ButtonPanel. Sets up the button panel for Builder. Currently calls a
  * re-render on itself every time the mode is changed. This can be removed upon
  * porting Builder to Preact
  */
-
-/** @jsx h */
-import {h, Component} from 'preact'
-import './ButtonPanel.css'
-
 class ButtonPanel extends Component {
   render () {
     return (
@@ -22,8 +21,11 @@ class ButtonPanel extends Component {
           </button>
         </li>
         <li>
-          <button className='button' onClick={() =>
-          this.props.zoomContainer.zoom_out()} title='Zoom out (-)'>
+          <button
+            className='button'
+            onClick={() => this.props.zoomContainer.zoom_out()}
+            title='Zoom out (-)'
+          >
             <i className='fa fa-minus-circle' />
           </button>
         </li>

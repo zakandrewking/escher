@@ -11,6 +11,9 @@ import './Dropdown.css'
 class Dropdown extends Component {
   constructor (props) {
     super(props)
+    this.state = {
+      visible: null
+    }
     this.setWrapperRef = this.setWrapperRef.bind(this)
     this.handleClickOutside = this.handleClickOutside.bind(this)
   }
@@ -66,7 +69,16 @@ class Dropdown extends Component {
         >
           {this.props.children.map((listItem) => {
             if (listItem.attributes.name === 'divider') {
-              return <li style={{height: '1px', backgroundColor: '#e5e5e5', padding: '0', margin: '8px 0'}} />
+              return (
+                <li
+                  style={{
+                    height: '1px',
+                    backgroundColor: '#e5e5e5',
+                    padding: '0',
+                    margin: '8px 0'
+                  }}
+                />
+              )
             } else {
               return listItem
             }

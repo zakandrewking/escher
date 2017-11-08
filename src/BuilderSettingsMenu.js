@@ -1,9 +1,3 @@
-/**
- * SettingsMenu. Handles the functions associated with the UI for changing
- * settings. Implements Settings.js and ScaleEditor but otherwise only uses
- * Preact.
- */
-
 /** @jsx h */
 import { h, Component } from 'preact'
 import ScaleSelector from './ScaleSelector.js'
@@ -13,6 +7,11 @@ import update from 'immutability-helper'
 import * as _ from 'underscore'
 import './BuilderSettingsMenu.css'
 
+/**
+ * SettingsMenu. Handles the functions associated with the UI for changing
+ * settings. Implements Settings.js and ScaleEditor but otherwise only uses
+ * Preact.
+ */
 const scalePresets = {
   GaBuGeRd: [
     {type: 'min', color: '#c8c8c8', size: 12},

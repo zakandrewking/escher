@@ -2,16 +2,16 @@
 import preact, { h } from 'preact'
 import CallbackManager from './CallbackManager'
 import ReactWrapper from './ReactWrapper'
-const utils = require('./utils')
+import * as _ from 'underscore'
+import * as utils from './utils'
 const PlacedDiv = require('./PlacedDiv')
-const _ = require('underscore')
 
 /**
  * Manage the tooltip that lives in a PlacedDiv.
  * @param selection
  * @param map
  * @param tooltipComponent
- * @param zoomContainer
+ * @param zoom_container
  */
 var TooltipContainer = utils.make_class()
 // instance methods
@@ -28,13 +28,13 @@ TooltipContainer.prototype = {
 module.exports = TooltipContainer
 
 // definitions
-function init (selection, TooltipComponent, zoomContainer) {
+function init (selection, TooltipComponent, zoom_container) {
   this.div = selection.append('div').attr('id', 'tooltip-container')
   this.TooltipComponent = TooltipComponent
   this.tooltipRef = null
 
-  this.zoomContainer = zoomContainer
-  this.setup_zoom_callbacks(zoomContainer)
+  this.zoom_container = zoom_container
+  this.setup_zoom_callbacks(zoom_container)
 
   // Create callback manager
   this.callback_manager = CallbackManager()
@@ -42,7 +42,11 @@ function init (selection, TooltipComponent, zoomContainer) {
   this.div.on('mouseover', this.cancelHideTooltip.bind(this))
   this.div.on('mouseleave', this.hide.bind(this))
 
-  // Attach a function to get size of tooltip
+  /**
+   * Attach a function to get size of tooltip. This is done so that the show
+   * function knows how much to displace rendering by. Works by using the
+   * tooltip's get_size function.
+  */
   this.getTooltipSize = null
   this.callback_manager.set('attachGetSize', getSizeFn => {
     this.getTooltipSize = getSizeFn
@@ -58,8 +62,8 @@ function init (selection, TooltipComponent, zoomContainer) {
       callbackManager={this.callback_manager}
       component={this.TooltipComponent}
       ref={instance => { this.tooltipRef = instance }}
-      />,
-     this.div.node()
+    />,
+    this.div.node()
   )
 }
 
@@ -99,13 +103,13 @@ function setup_map_callbacks (map) {
   }.bind(this))
 }
 
-function setup_zoom_callbacks (zoomContainer) {
-  zoomContainer.callback_manager.set('zoom.tooltip_container', function () {
+function setup_zoom_callbacks (zoom_container) {
+  zoom_container.callback_manager.set('zoom.tooltip_container', function () {
     if (this.is_visible()) {
       this.hide()
     }
   }.bind(this))
-  zoomContainer.callback_manager.set('go_to.tooltip_container', function () {
+  zoom_container.callback_manager.set('go_to.tooltip_container', function () {
     if (this.is_visible()) {
       this.hide()
     }
@@ -137,12 +141,9 @@ function show (type, d) {
       ? this.tooltipRef.getSize()
       : { width: 270, height: 100 }
     this.currentTooltip = { type, id: d[type.replace('_label', '_id')] }
-    var windowTranslate = this.zoomContainer.window_translate
-    var windowScale = this.zoomContainer.window_scale
+    var windowTranslate = this.zoom_container.window_translate
+    var windowScale = this.zoom_container.window_scale
     var mapSize = this.map !== null ? this.map.get_size() : { width: 1000, height: 1000 }
-    if (this.getTooltipSize !== null) {
-      //  console.log(this.getTooltipSize())
-    }
     var offset = {x: 0, y: 0}
     if (mapSize.width < 500) {
       if (windowScale * d.label_x + windowTranslate.x + tooltipSize.width > mapSize.width) {
