@@ -320,6 +320,7 @@ Or in JSON like this:
 
 Important is that the file contains two arrays.
 First one containing name of datasets, the other is an array of dictionaries with identifier and data values.
+A JSON schema can be  :download:`downloaded here <../jsonschema/dataschema>`.
 
 ..
    For gene data, an example file could contain the BiGG IDs (generally the locus
@@ -555,7 +556,7 @@ dataset:
 Metabolite data settings
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-The data settings for metabolite data are analagous to those for reaction
+The data settings for metabolite data are analogous to those for reaction
 data. The only difference is that *size* now refers to the size of the
 metabolite circles.
 
@@ -589,3 +590,4 @@ metabolite circles.
 .. _`reaction_data_example_names`: _static/example_data/time_series_data_mock_up/reaction_data_names_example.json
 .. _`reaction_data_time_series_example_names`: _static/example_data/time_series_data_mock_up/reaction_time_series_dataset_names_example.json
 .. _`reaction_data_time_series_example_time_values`: _static/example_data/time_series_data_mock_up/reaction_time_series_time_values_example.json
+.. _`JSON schema`: _../jsonschema/dataschema
