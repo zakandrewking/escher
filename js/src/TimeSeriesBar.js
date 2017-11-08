@@ -89,8 +89,11 @@ function init (sel, map, builder, type_of_data) {
       d3_select('#dropDownMenuTarget').style('display', 'none')
       d3_select('#sliderTarget').style('display', 'none')
 
-      d3_select('#checkBoxChartLabel').text('Overview Chart')
-      d3_select('#checkBoxChart').property('checked', false)
+      //d3_select('#checkBoxChartLabel').text('Overview Chart')
+      //d3_select('#checkBoxChart').property('checked', false)
+
+      d3_select('#checkBoxChart').style('opacity', 0)
+      d3_select('#checkBoxChartLabel').style('opacity', 0)
 
     })
     .style('background-color', 'white')
@@ -108,8 +111,14 @@ function init (sel, map, builder, type_of_data) {
       d3_select('#dropDownMenuTarget').style('display', 'block')
       d3_select('#sliderTarget').style('display', 'block')
 
-      d3_select('#checkBoxChartLabel').text('Sliding Window')
+
+      d3_select('#checkBoxChart').style('opacity', 1)
       d3_select('#checkBoxChart').property('checked', false)
+
+      d3_select('#checkBoxChartLabel').style('opacity', 1)
+      d3_select('#checkBoxChartLabel').text('Sliding Window')
+
+
     })
     .style('background-color', 'lightgrey')
     .style('width', '45%')
@@ -265,11 +274,13 @@ function init (sel, map, builder, type_of_data) {
         }
       }
     })
+    .style('opacity', 0)
 
   groupButtons.append('label')
     .attr('for', 'checkBoxChart')
     .attr('id', 'checkBoxChartLabel')
     .text('Overview Chart')
+    .style('opacity', 0)
 
   this.callback_manager = new CallbackManager()
 
