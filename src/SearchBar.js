@@ -14,6 +14,9 @@ class SearchBar extends Component {
       current: 1,
       searchItem: null,
       counter: '',
+      clearEscape: this.props.map.key_manager.add_escape_listener(
+        () => this.close(), true
+      ),
       clearNext: this.props.map.key_manager.add_key_listener(
         ['enter', 'ctrl+g'], () => this.next(), false),
       clearPrevious: this.props.map.key_manager.add_key_listener(
@@ -22,13 +25,15 @@ class SearchBar extends Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    this.props.map.key_manager.add_escape_listener(() => this.close(), true)
     this.setState({
       ...nextProps,
       current: 1,
       results: null,
       searchItem: null,
       counter: '',
+      clearEscape: this.props.map.key_manager.add_escape_listener(
+        () => this.close(), true
+      ),
       clearNext: this.props.map.key_manager.add_key_listener(
         ['enter', 'ctrl+g'], () => this.next(), false),
       clearPrevious: this.props.map.key_manager.add_key_listener(
@@ -152,6 +157,7 @@ class SearchBar extends Component {
     this.setState({visible: false})
     this.state.clearNext()
     this.state.clearPrevious()
+    this.state.clearEscape()
   }
 
   is_visible () {
@@ -170,10 +176,10 @@ class SearchBar extends Component {
             onInput={event => this.handleInput(event.target.value)}
             ref={input => { this.inputRef = input }}
           />
-          <button className='searchBarButton left' onClick={() => this.previous()}>
+          <button className='searchBarButton left btn' onClick={() => this.previous()}>
             <i className='fa fa-chevron-left ' />
           </button>
-          <button className='searchBarButton right' onClick={() => this.next()}>
+          <button className='searchBarButton right btn' onClick={() => this.next()}>
             <i className='fa fa-chevron-right' />
           </button>
           <div className='searchCounter'>
@@ -181,7 +187,7 @@ class SearchBar extends Component {
           </div>
         </div>
         <button
-          className='searchBarButton'
+          className='searchBarButton btn'
           onClick={() => this.close()}
         >
           <i className='fa fa-close fa-lg' style={{marginTop: '-2px', verticalAlign: 'middle'}} />
