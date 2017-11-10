@@ -59,13 +59,13 @@ function place (coords) {
                                 this.displacement.y)))
     this.div.style('position', 'absolute')
       .style('display', 'block')
-      .style('left', left + 'px')
-      .style('top', top + 'px')
+      .style('left', `${left}px`)
+      .style('top', `${top}px`)
   } else {
     this.div.style('position', 'absolute')
     .style('display', 'block')
-    .style('left', (window_scale * coords.x + window_translate.x - this.displacement.x) + 'px')
-    .style('top', (window_scale * coords.y + window_translate.y - this.displacement.y) + 'px')
+    .style('left', `${window_scale * coords.x + window_translate.x - this.displacement.x}px`)
+    .style('top', `${window_scale * coords.y + window_translate.y - this.displacement.y}px`)
   }
   this.visible = true
 }

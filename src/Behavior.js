@@ -413,12 +413,11 @@ function toggle_label_touch (on_off) {
   }
 
   if (on_off) {
-
-    this.label_touch = function (type, d) {
+    this.label_touch = (type, d) => {
       if (!this.dragging) {
         this.map.callback_manager.run('show_tooltip', null, type, d)
       }
-    }.bind(this)
+    }
   } else {
     this.label_touch = null
   }
