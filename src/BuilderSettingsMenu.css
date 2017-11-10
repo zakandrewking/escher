@@ -28,7 +28,6 @@
   margin: 0;
   padding: 5px 10px;
   font-size: 14px!important;
-  line-height: 1;
   border-radius: 3px;
   -ms-touch-action: none;
   touch-action: none;
@@ -54,7 +53,6 @@
 
 .escher-container .settingsBox {
   font-size: 13px;
-  line-height: 1.42857143;
   box-sizing: border-box;
   display: inline-block;
   max-height: 100%;
@@ -75,7 +73,6 @@
 .escher-container .settingsBox .title {
   font-size: 17px;
   font-weight: 700;
-  line-height: 1.42857143;
   color: #777777;
 }
 
@@ -83,7 +80,6 @@
   font-size: 13px;
   font-weight: 700;
   margin-top: 15px;
-  line-height: 1.42857143;
   color: #777777;
 }
 

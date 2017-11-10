@@ -39,22 +39,11 @@ class SearchBar extends Component {
       clearPrevious: this.props.map.key_manager.add_key_listener(
         ['shift+enter', 'shift+ctrl+g'], () => this.previous(), false)
     })
-
-    // can remove code:
-    // if (!this.props.visible && nextProps.visible) {
-    //   set flag here
-    // }
   }
 
   componentDidUpdate () {
-    // check flag here
-    // componentDidAppear()
     this.inputRef.focus()
   }
-
-  // componentDidAppear () {
-  //   this.inputRef.focus()
-  // }
 
   /**
    * Updates map focus and search bar counter when new search term is entered.

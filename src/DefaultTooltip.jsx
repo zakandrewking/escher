@@ -5,48 +5,9 @@
  * Define a Tooltip component and interface with Preact.
  */
 import { h, Component } from 'preact'
-import * as _ from 'underscore'
+import './DefaultTooltip.css'
 
 const utils = require('./utils')
-
-// Define styles
-var containerStyle = {
-  'min-width': '270px',
-  'min-height': '100px',
-  'border-radius': '2px',
-  'border': '1px solid #b58787',
-  'padding': '7px',
-  'background-color': '#fff',
-  'text-align': 'left',
-  'font-size': '16px',
-  'font-family': 'sans-serif',
-  'color': '#111',
-  'box-shadow': '4px 6px 20px 0px rgba(0, 0, 0, 0.4)'
-}
-
-var idStyle = {
-  'font-size': '18px',
-  'font-weight': 'bold'
-}
-
-var buttonStyle = {
-  'border-radius': '3px',
-  'background-color': '#eee',
-  'border': '1px solid #ddd',
-  'margin-top': '4px'
-}
-
-var typeLabelStyle = {
-  'position': 'absolute',
-  'top': '4px',
-  'right': '4px',
-  'color': '#d27066',
-  'background-color': '#ffeded',
-  'border-radius': '2px',
-  'font-size': '14px',
-  'text-align': 'right',
-  'padding': '0px 5px'
-}
 
 class DefaultTooltip extends Component {
   decompartmentalizeCheck (id, type) {
@@ -78,25 +39,26 @@ class DefaultTooltip extends Component {
     const decomp = this.decompartmentalizeCheck(this.props.biggId, this.props.type)
     const biggButtonText = `Open ${decomp} in BiGG Models.`
     return (
-      <div className='Tooltip' style={containerStyle}>
-        <div id='ID' style={idStyle}>
+      <div className='tooltip'>
+        <div className='id'>
           {this.props.biggId}
         </div>
-        <div id='data'>
+        <div className='name'>
+          name: {this.props.name}
+        </div>
+        <div className='data'>
           data: {(this.props.data && this.props.data !== '(nd)'
           ? this.props.data
           : 'no data')}
         </div>
         <button
-          id='biggIdButton'
-          style={buttonStyle}
+          className='biggIdButton'
           onClick={() => this.openBigg()}
           >
           {biggButtonText}
         </button>
         <div
-          id='typeLabel'
-          style={typeLabelStyle}
+          className='typeLabel'
         >
           {this.capitalizeFirstLetter(this.props.type)}
         </div>

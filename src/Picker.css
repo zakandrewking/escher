@@ -37,8 +37,11 @@
 }
 
 .escher-container .pickerOptions * {
-  line-height: 1.42;
   font-size: 12px;
+}
+
+.escher-container .pickerOptions .option {
+  padding: 3px 0px;
 }
 
 .escher-container .pickerOptions .typePicker {
@@ -56,10 +59,12 @@
 }
 
 .escher-container .colorOptions .colorText {
+  padding: 3px 0px;
   width: -webkit-fill-available;
 }
 
 .escher-container .colorOptions .colorWheel {
+  padding: 0px 2px;
   position: absolute;
   right: 0;
   width: 24px

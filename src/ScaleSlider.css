@@ -48,13 +48,13 @@
 
 .escher-container .noDataStyle input[type=text] {
   margin-right: 10px;
-  line-height: 1.42;
+  padding: 3px 0px;
   width: 86px;
 }
 
 .escher-container .noDataStyle input[type=color] {
   position: absolute;
-  padding: 1px 2px;
+  padding: 0px 2px;
   border: 1px solid darkgrey;
   margin-left: -34px;
   height: 23px;

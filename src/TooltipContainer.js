@@ -42,16 +42,6 @@ function init (selection, TooltipComponent, zoom_container) {
   this.div.on('mouseover', this.cancelHideTooltip.bind(this))
   this.div.on('mouseleave', this.hide.bind(this))
 
-  /**
-   * Attach a function to get size of tooltip. This is done so that the show
-   * function knows how much to displace rendering by. Works by using the
-   * tooltip's get_size function.
-  */
-  this.getTooltipSize = null
-  this.callback_manager.set('attachGetSize', getSizeFn => {
-    this.getTooltipSize = getSizeFn
-  })
-
   this.map = null
   this.delay_hide_timeout = null
   this.currentTooltip = null

@@ -39,14 +39,6 @@ class Dropdown extends Component {
     }
   }
 
-  handleKeyDown (event) {
-    if (event.keyCode === 13 || event.keyCode === 40) {
-      this.onClick()
-    } else if (event.keyCode === 27) {
-      this.setState({visible: false})
-    }
-  }
-
   render () {
     return (
       <li className='dropdown'>
@@ -55,7 +47,6 @@ class Dropdown extends Component {
           tabindex='0'
           ref={this.setWrapperRef}
           onClick={() => this.setState({visible: !this.state.visible})}
-          onKeyDown={event => this.handleKeyDown(event)}
         >
           {this.props.name}&nbsp;
           <i className='fa fa-caret-down' style={{fontSize: '14px'}} />

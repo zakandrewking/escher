@@ -12,7 +12,6 @@ class ReactWrapper extends Component {
     this.props.callbackManager.set('setState', this.setState.bind(this))
   }
   render () {
-    console.log(this.state)
     if (!_.isEmpty(this.state)) {
       return <this.props.component
         {...this.state}

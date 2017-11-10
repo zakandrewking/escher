@@ -66,7 +66,6 @@ class BuilderSettingsMenu extends Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    console.log('nextProps', nextProps.display)
     if (nextProps.display && !this.props.display) {
       this.componentWillAppear()
     }
@@ -76,12 +75,10 @@ class BuilderSettingsMenu extends Component {
   }
 
   componentWillAppear () {
-    console.log('appearing', this.props.display)
     this.props.settings.hold_changes()
   }
 
   componentWillDisappear () {
-    console.log('disappearing', this.props.display)
     this.props.genericFunction1()
   }
 

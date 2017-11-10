@@ -2,13 +2,10 @@
 
 /* The top level container for an Escher Builder */
 .escher-container {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+  font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
   background-color: #F3F3F3;
   text-align: center;
   position: relative;
-}
-
-.escher-container *:not(.btn,.glyphicon,.caret,a) {
   font-size: 14px;
   color: #333333;
 }
@@ -347,63 +344,6 @@ resizes. */
 .escher-container .scale-editor .no-data .input-group input {
   position: absolute;
   top: 17px;
-}
-/* For Search */
-.escher-container .close-button {
-  margin-left: 4px;
-  float: right;
-}
-/* Button panel */
-.escher-container ul#button-panel {
-  position: absolute;
-  left: 4px;
-  top: 20%;
-  margin-top: -30px;
-  /* top: 81px; //max */
-  /* top: 20px; //min */
-  pointer-events: none;
-  padding-left: 0;
-}
-.escher-container ul#button-panel li {
-  pointer-events: auto;
-  list-style: none;
-}
-.escher-container .input-close-button {
-  position: absolute;
-  right: 0px;
-  width: 18px;
-  bottom: 0px;
-  padding: 0px;
-  border-width: 0px;
-  margin: 0px;
-  background: none;
-  font-size: 16px;
-  font-weight: normal;
-}
-
-.escher-container .simple-button {
-  width: 40px;
-  height: 40px;
-  border: 1px solid #2E2F2F;
-  background-image: linear-gradient(#4F5151, #474949 6%, #3F4141);
-  background-color: #474949;
-  border-color: #474949;
-  padding: 6px 0 9px 0;
-  line-height: 1.42857143;
-  border-radius: 4px;
-  text-align: center;
-  vertical-align: middle;
-  cursor: pointer;
-  margin: 3px 0 0 0;
-}
-
-.escher-container .simple-button, .escher-container .simple-button * {
-  color: #FFF;
-  font-size: 17px;
-}
-
-.escher-container .simple-button.active {
-  background-image: linear-gradient(#8F4F3F, #834c3c 6%, #8d3a2d);
 }
 
 /* Reaction input */

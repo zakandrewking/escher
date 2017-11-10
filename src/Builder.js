@@ -29,7 +29,7 @@ var TextEditInput = require('./TextEditInput')
 var QuickJump = require('./QuickJump')
 var data_styles = require('./data_styles')
 var TooltipContainer = require('./TooltipContainer')
-var DefaultTooltip = require('./Tooltip').default
+var DefaultTooltip = require('./DefaultTooltip').default
 var _ = require('underscore')
 var d3_select = require('d3-selection').select
 var d3_selection = require('d3-selection').selection
@@ -284,7 +284,6 @@ function init (map_data, model_data, embedded_css, selection, options) {
   this.settings.status_bus
     .onValue(function(x) {
       if (x === 'accept') {
-        console.log('settings accepted', this.zoom_container)
         this._update_data(true, true, [ 'reaction', 'metabolite' ], false)
         if (this.zoom_container !== null) {
           var new_behavior = this.settings.get_option('scroll_behavior')
@@ -763,7 +762,6 @@ function set_metabolite_data (data) {
  * of the map.
  */
 function _update_data (update_model, update_map, kind, should_draw) {
-  console.log('updating data', this.options.scroll_behavior)
   // defaults
   if (kind === undefined) {
     kind = [ 'reaction', 'metabolite' ]
