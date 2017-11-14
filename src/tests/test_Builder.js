@@ -17,27 +17,37 @@ function make_parent_sel (s) {
 }
 
 describe('Builder', () => {
+  it('Small map, no model. Async tests.', (done) => {
+    const sel = make_parent_sel(d3_body)
+    const b = Builder(get_map(), null, '', sel, {
+      never_ask_before_quit: true,
+      first_load_callback: () => {
+        assert.strictEqual(sel.select('svg').node(), b.map.svg.node())
+        assert.strictEqual(sel.selectAll('#nodes').size(), 1)
+        assert.strictEqual(sel.selectAll('.node').size(), 79)
+        assert.strictEqual(sel.selectAll('#reactions').size(), 1)
+        assert.strictEqual(sel.selectAll('.reaction').size(), 18)
+        assert.strictEqual(sel.selectAll('#text-labels').size(), 1)
+        sel.remove()
+        done()
+      }
+    })
+  })
+
   it('Small map, no model. Multiple instances.', () => {
     const sels = []
     for (let i = 0, l = 3; i < l; i++) {
       const sel = make_parent_sel(d3_body)
-      const b = Builder(get_map(), null, '', sel,
-                        { never_ask_before_quit: true })
-
-      assert.strictEqual(sel.select('svg').node(), b.map.svg.node())
-      assert.strictEqual(sel.selectAll('#nodes').size(), 1)
-      assert.strictEqual(sel.selectAll('.node').size(), 79)
-      assert.strictEqual(sel.selectAll('#reactions').size(), 1)
-      assert.strictEqual(sel.selectAll('.reaction').size(), 18)
-      assert.strictEqual(sel.selectAll('#text-labels').size(), 1)
+      // TODO actually test that these maps were added to the DOM
+      Builder(get_map(), null, '', sel, { never_ask_before_quit: true })
       sels.push(sel)
     }
     sels.map(sel => sel.remove())
   }).timeout(10000)
 
   it('check for model+highlight_missing bug', () => {
-    const b = Builder(get_map(), get_model(), '', make_parent_sel(d3_body),
-                      { never_ask_before_quit: true, highlight_missing: true })
+    Builder(get_map(), get_model(), '', make_parent_sel(d3_body),
+            { never_ask_before_quit: true, highlight_missing: true })
   })
 
   it('SVG selection error', () => {
