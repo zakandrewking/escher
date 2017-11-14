@@ -18,21 +18,19 @@ class DefaultTooltip extends Component {
   }
 
   openBigg () {
-    let type = this.props.type
-    let biggId = this.props.biggId
-    let pref = 'http://bigg.ucsd.edu/'
-    let url = (type === 'gene'
-              ? pref + 'search?query=' + biggId
-              : pref + 'universal/' + type + 's/' + this.decompartmentalizeCheck(biggId, type))
+    const type = this.props.type
+    const biggId = this.props.biggId
+    const pref = 'http://bigg.ucsd.edu/'
+    const url = type === 'gene'
+      ? `${pref}search?query=${biggId}`
+      : `${pref}universal/${type}s/${this.decompartmentalizeCheck(biggId, type)}`
     window.open(url)
   }
 
   capitalizeFirstLetter (s) {
-    if (s !== undefined) {
-      return s === null
-      ? s
-      : s.charAt(0).toUpperCase() + s.slice(1)
-    }
+    return typeof s === 'string'
+    ? s.charAt(0).toUpperCase() + s.slice(1)
+    : console.warn('capitalizeFirstLetter was passed something other than a string')
   }
 
   render () {

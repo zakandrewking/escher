@@ -11,7 +11,7 @@ class SearchBar extends Component {
     super(props)
     this.state = {
       visible: props.visible,
-      current: 1,
+      current: 0,
       searchItem: null,
       counter: '',
       clearEscape: this.props.map.key_manager.add_escape_listener(
@@ -27,7 +27,7 @@ class SearchBar extends Component {
   componentWillReceiveProps (nextProps) {
     this.setState({
       ...nextProps,
-      current: 1,
+      current: 0,
       results: null,
       searchItem: null,
       counter: '',
@@ -59,13 +59,14 @@ class SearchBar extends Component {
       counter = '0 / 0'
       this.props.map.highlight(null)
     } else {
-      if (this.state.current > results.length) {  // Catches case where new search term shortens results to less than current index
+      // Catches case where new search term shortens results to less than current index
+      if (this.state.current >= results.length) {
         this.setState({
-          current: 1
+          current: 0
         })
       }
-      counter = (this.state.current + ' / ' + results.length)
-      const r = results[this.state.current - 1]
+      counter = `${this.state.current + 1}/${results.length}`
+      const r = results[this.state.current]
       if (r.type === 'reaction') {
         this.props.map.zoom_to_reaction(r.reaction_id)
         this.props.map.highlight_reaction(r.reaction_id)
@@ -81,7 +82,7 @@ class SearchBar extends Component {
     }
     this.setState({
       searchItem: value,
-      current: 1,
+      current: 0,
       counter,
       results
     })
@@ -111,19 +112,14 @@ class SearchBar extends Component {
 
   next () {
     if (!(this.state.results && this.state.results.length > 0)) { return }
-    this.update(this.state.current === this.state.results.length
-      ? 1
-      : this.state.current + 1
-    )
+    this.update((this.state.current + 1) % this.state.results.length)
   }
 
   previous () {
     if (!(this.state.results && this.state.results.length > 0)) { return }
-    if (this.state.current === 1) {
-      this.update(this.state.results.length)
-    } else {
-      this.update(this.state.current - 1)
-    }
+    this.update((this.state.current + this.state.results.length - 1) %
+      this.state.results.length
+    )
   }
 
   /**
@@ -133,9 +129,9 @@ class SearchBar extends Component {
   update (current) {
     this.setState({
       current,
-      counter: current + ' / ' + this.state.results.length
+      counter: `${current + 1}/${this.state.results.length}`
     })
-    var r = this.state.results[current - 1]
+    var r = this.state.results[current]
     if (r.type === 'reaction') {
       this.props.map.zoom_to_reaction(r.reaction_id)
       this.props.map.highlight_reaction(r.reaction_id)
