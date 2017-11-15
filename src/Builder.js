@@ -9,7 +9,10 @@ import BuilderSettingsMenu from './BuilderSettingsMenu.js'
 import ButtonPanel from './ButtonPanel.js'
 import BuilderMenuBar from './BuilderMenuBar.js'
 import SearchBar from './SearchBar.js'
-import 'font-awesome/css/font-awesome.min.css'
+
+// Include custom font set for icons
+import '../icons/css/fontello.css'
+
 // Include GUI CSS normally with webpack
 import './builder.css'
 

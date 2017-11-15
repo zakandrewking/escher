@@ -102,10 +102,10 @@ class BuilderSettingsMenu extends Component {
       >
         <div className='settingsBoxContainer'>
           <button className='discardChanges btn' onClick={() => this.abandonChanges()}>
-            <i className='fa fa-close' aria-hidden='true' />
+            <i className='icon-cancel' aria-hidden='true' />
           </button>
           <button className='saveChanges btn' onClick={() => this.saveChanges()}>
-            <i className='fa fa-check' aria-hidden='true' />
+            <i className='icon-ok' aria-hidden='true' />
           </button>
           <div className='settingsBox'>
             <div className='settingsTip'>

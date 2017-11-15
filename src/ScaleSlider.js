@@ -121,7 +121,7 @@ class ScaleSlider extends Component {
          (this.props.stats.max !== null && this.props.stats.max !== undefined)
           ? (
             <div>
-              <i className='fa fa-plus' onClick={() => this.addColorStop()} />
+              <i className='icon-plus' onClick={() => this.addColorStop()} />
               <div
                 className='scaleTrack'
                 style={{
@@ -182,7 +182,7 @@ class ScaleSlider extends Component {
             </div>
           ) : (
             <div>
-              <i className='fa fa-plus' />
+              <i className='icon-plus' />
               <div
                 className='scaleTrack'
                 style={{
