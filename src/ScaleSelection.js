@@ -22,7 +22,7 @@ class ScaleSelection extends Component {
         </div>
         <div className='scaleColors'>
           {this.state.colors.map(color => {
-            return <i className='fa fa-square' style={{color: color}} />
+            return <i className='icon-blank' style={{color: color}} />
           })}
         </div>
       </div>

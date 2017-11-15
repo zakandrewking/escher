@@ -38,7 +38,7 @@ class ScaleSelector extends Component {
           onClick={() => this.setState({visible: !this.state.visible})}
         >
           Preset Scale Selections&nbsp;
-          <i className='fa fa-caret-down' />
+          <i className='icon-down-dir' />
         </div>
         <div
           className='selectorMenu'

@@ -63,7 +63,7 @@ class Picker extends Component {
           }
           >
           <i
-            className='fa fa-trash-o'
+            className='icon-trash-o'
             aria-hidden='true'
             onClick={() => this.props.remove()}
           />

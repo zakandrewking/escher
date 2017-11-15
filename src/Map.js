@@ -2262,7 +2262,7 @@ function save_map (obj, callback_before, callback_after, map_type) {
     if(map_type == 'svg') {
       utils.download_svg('saved_map', obj.svg, true)
     } else if(map_type == 'png') {
-      utils.download_png('saved_map', obj.svg, true)
+      utils.download_png('saved_map', obj.svg)
     }
 
     // revert everything

@@ -53,7 +53,7 @@ class MenuButton extends Component {
           onClick={this.props.onClick}
           id={this.state.disabled ? 'disabled' : ''}
         >
-          <i className='fa fa-check' aria-hidden='true'>&nbsp;</i>
+          <i className='icon-ok' aria-hidden='true'>&nbsp;</i>
           {this.props.name}
         </li>
       )

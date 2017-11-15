@@ -1,5 +1,7 @@
-.escher-container .menuBar * {
+.escher-container .menuBar {
   box-sizing: border-box;
+  list-style-type: none;
+  padding: 0 7px;
 }
 
 .escher-container .menuBar {
@@ -36,7 +38,7 @@
 .escher-container .dropdownButton {
   color: #d9230f!important;
   border: 1px solid transparent;
-  padding: 6px 9px;
+  padding: 6px 4px;
 }
 
 .escher-container .helpButton {
@@ -64,13 +66,15 @@
 @media (min-width: 550px) {
   .escher-container .menuBar {
     width: 410px;
+    padding: 0 9px;
   }
+
   .escher-container .dropdown {
     font-size: 18px;
   }
 
   .escher-container .dropdownButton {
-    padding: 6px 10px;
+    padding: 6px 7px;
   }
 
   .escher-container .helpButton {
@@ -118,12 +122,6 @@
   color: #444444;
 }
 
-.escher-container .menuBar {
-  list-style-type: none;
-  padding: 0;
-}
-
-
 .escher-container .menuBar>.dropdown+.dropdown {
   margin-left: 2px
 }
@@ -168,8 +166,6 @@
   cursor: default;
 }
 
-.fa-rotate-45 {
-  -ms-transform:rotate(45deg);     /* Internet Explorer 9 */
-  -webkit-transform:rotate(45deg); /* Chrome, Safari, Opera */
-  transform:rotate(45deg);         /* Standard syntax */
+.escher-container .menuBar .icon-down-dir {
+  margin-left: -5px;
 }

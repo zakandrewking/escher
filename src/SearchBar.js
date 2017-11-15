@@ -171,10 +171,10 @@ class SearchBar extends Component {
             ref={input => { this.inputRef = input }}
           />
           <button className='searchBarButton left btn' onClick={() => this.previous()}>
-            <i className='fa fa-chevron-left ' />
+            <i className='icon-left-open' />
           </button>
           <button className='searchBarButton right btn' onClick={() => this.next()}>
-            <i className='fa fa-chevron-right' />
+            <i className='icon-right-open' />
           </button>
           <div className='searchCounter'>
             {this.state.counter}
@@ -184,7 +184,7 @@ class SearchBar extends Component {
           className='searchBarButton btn'
           onClick={() => this.close()}
         >
-          <i className='fa fa-close fa-lg' style={{marginTop: '-2px', verticalAlign: 'middle'}} />
+          <i className='icon-cancel' style={{marginTop: '-2px', verticalAlign: 'middle'}} />
         </button>
       </div>
     )

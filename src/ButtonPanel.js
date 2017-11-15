@@ -17,7 +17,7 @@ class ButtonPanel extends Component {
             onClick={() => this.props.zoomContainer.zoom_in()}
             title='Zoom in (+)'
           >
-            <i className='fa fa-plus-circle' />
+            <i className='icon-plus-circled' />
           </button>
         </li>
         <li>
@@ -26,7 +26,7 @@ class ButtonPanel extends Component {
             onClick={() => this.props.zoomContainer.zoom_out()}
             title='Zoom out (-)'
           >
-            <i className='fa fa-minus-circle' />
+            <i className='icon-minus-circled' />
           </button>
         </li>
         <li>
@@ -35,7 +35,7 @@ class ButtonPanel extends Component {
             onClick={() => this.props.map.zoom_extent_canvas()}
             title='Zoom to canvas (1)'
           >
-            <i className='fa fa-expand' />
+            <i className='icon-resize-full' />
           </button>
         </li>
         <li className='grouping'>
@@ -46,7 +46,7 @@ class ButtonPanel extends Component {
             id={this.props.mode === 'zoom' ? 'currentMode' : null}
             onClick={() => this.props.setMode('zoom')}
           >
-            <i className='fa fa-arrows' />
+            <i className='icon-move' />
           </button>
           <button
             className='buttonGroup btn'
@@ -55,7 +55,7 @@ class ButtonPanel extends Component {
             id={this.props.mode === 'brush' ? 'currentMode' : null}
             onClick={() => this.props.setMode('brush')}
           >
-            <i className='fa fa-mouse-pointer' />
+            <i className='icon-mouse-pointer' />
           </button>
           <button
             className='buttonGroup btn'
@@ -63,7 +63,7 @@ class ButtonPanel extends Component {
             for='build'
             onClick={() => this.props.setMode('build')}
             id={this.props.mode === 'build' ? 'currentMode' : null}>
-            <i className='fa fa-wrench' />
+            <i className='icon-wrench' />
           </button>
           <button
             className='buttonGroup btn'
@@ -72,7 +72,7 @@ class ButtonPanel extends Component {
             id={this.props.mode === 'rotate' ? 'currentMode' : null}
             onClick={() => this.props.setMode('rotate')}
           >
-            <i className='fa fa-rotate-right' />
+            <i className='icon-cw' />
           </button>
           <button
             className='buttonGroup btn'
@@ -81,7 +81,7 @@ class ButtonPanel extends Component {
             id={this.props.mode === 'text' ? 'currentMode' : null}
             onClick={() => this.props.setMode('text')}
           >
-            <i className='fa fa-font' />
+            <i className='icon-font' />
           </button>
         </li>
         <li
@@ -95,28 +95,28 @@ class ButtonPanel extends Component {
             title='Direction arrow (←)'
             onClick={() => this.props.buildInput.direction_arrow.left()}
           >
-            <i className='fa fa-arrow-left' />
+            <i className='icon-left-big' />
           </button>
           <button
             className='buttonGroup btn'
             title='Direction arrow (→)'
             onClick={() => this.props.buildInput.direction_arrow.right()}
           >
-            <i className='fa fa-arrow-right' />
+            <i className='icon-big-right' />
           </button>
           <button
             className='buttonGroup btn'
             title='Direction arrow (↑)'
             onClick={() => this.props.buildInput.direction_arrow.up()}
           >
-            <i className='fa fa-arrow-up' />
+            <i className='icon-big-up' />
           </button>
           <button
             className='buttonGroup btn'
             title='Direction arrow (↓)'
             onClick={() => this.props.buildInput.direction_arrow.down()}
           >
-            <i className='fa fa-arrow-down' />
+            <i className='icon-big-down' />
           </button>
         </li>
       </ul>
