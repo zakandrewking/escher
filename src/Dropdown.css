@@ -1,10 +1,7 @@
 .escher-container .menuBar {
   box-sizing: border-box;
   list-style-type: none;
-  padding: 0 7px;
-}
-
-.escher-container .menuBar {
+  padding: 0 3px;
   position: relative;
   margin: 5px 0px;
   background-color: white;
@@ -66,7 +63,7 @@
 @media (min-width: 550px) {
   .escher-container .menuBar {
     width: 410px;
-    padding: 0 9px;
+    padding: 0 3px;
   }
 
   .escher-container .dropdown {
@@ -83,6 +80,7 @@
 }
 
 .escher-container .menu {
+  box-sizing: border-box;
   font-weight: normal!important;
   word-spacing: 0;
   position: absolute;
@@ -131,6 +129,7 @@
 }
 
 .escher-container .menuButton {
+  box-sizing: border-box;
   width: 100%;
   padding: 5px 20px;
   margin: 0;

@@ -37,7 +37,7 @@ class ScaleSelector extends Component {
           ref={this.setWrapperRef}
           onClick={() => this.setState({visible: !this.state.visible})}
         >
-          Preset Scale Selections&nbsp;
+          Preset Scale Selections
           <i className='icon-down-dir' />
         </div>
         <div

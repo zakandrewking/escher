@@ -26,7 +26,7 @@
   width: 34px;
   height: 30px;
   margin: 0;
-  padding: 5px 10px;
+  padding: unset;
   font-size: 14px!important;
   border-radius: 3px;
   -ms-touch-action: none;
@@ -145,6 +145,7 @@
 }
 
 .escher-container .selector {
+  position: relative;
   user-select: none;
   padding-top: 2px;
 }
@@ -152,9 +153,9 @@
 .escher-container .selectorTitle {
   background: white;
   border: 1px solid #a9a9a9;
-  padding: 0 2px;
+  padding-left: 4px;
   cursor: default;
-  width: 155px;
+  width: 162px;
 }
 
 .escher-container .selectorTitle:hover {
@@ -166,7 +167,7 @@
   z-index: 4;
   background-color: white;
   border: 1px solid #a9a9a9;
-  min-width: 155px;
+  min-width: 162px;
 }
 
 .escher-container .scaleSelection {
@@ -179,6 +180,10 @@
 .escher-container .scaleSelection:hover {
   background-color: dodgerblue;
   color: white;
+}
+
+.escher-container .icon-blank {
+  margin: -3px -3px;
 }
 
 .escher-container .scaleName {

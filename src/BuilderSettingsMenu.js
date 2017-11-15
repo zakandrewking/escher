@@ -54,10 +54,19 @@ class BuilderSettingsMenu extends Component {
 
   componentWillAppear () {
     this.props.settings.hold_changes()
+    this.setState({
+      clearEscape: this.props.map.key_manager.add_escape_listener(
+        () => this.abandonChanges(), true
+      ),
+      clearEnter: this.props.map.key_manager.add_key_listener(
+        ['enter'], () => this.saveChanges(), true)
+    })
   }
 
   componentWillDisappear () {
-    this.props.genericFunction1()
+    this.props.genericFunction1() // Function to pass display = false to the settings menu
+    this.state.clearEscape()
+    this.state.clearEnter()
   }
 
   abandonChanges () {
