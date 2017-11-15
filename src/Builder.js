@@ -14,11 +14,11 @@ import SearchBar from './SearchBar.js'
 import '../icons/css/fontello.css'
 
 // Include GUI CSS normally with webpack
-import './builder.css'
+import './Builder.css'
 
 // Import CSS as a string to embed. This also works from lib because css/src get
 // uploaded to NPM.
-import builder_embed from '!!raw-loader!./builder-embed.css'
+import builder_embed from '!!raw-loader!./Builder-embed.css'
 
 var utils = require('./utils')
 var BuildInput = require('./BuildInput')

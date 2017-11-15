@@ -74,3 +74,8 @@
 .escher-container .buttonPanel .fa {
   font-size: 24px;
 }
+
+/* Icons */
+.escher-container .buttonPanel [class^='icon-'] {
+  font-size: 18px;
+}

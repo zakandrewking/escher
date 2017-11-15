@@ -81,7 +81,7 @@ class ButtonPanel extends Component {
             id={this.props.mode === 'text' ? 'currentMode' : null}
             onClick={() => this.props.setMode('text')}
           >
-            <i className='fa fa-font' />
+            <i className='icon-font' />
           </button>
         </li>
         <li
@@ -95,28 +95,28 @@ class ButtonPanel extends Component {
             title='Direction arrow (←)'
             onClick={() => this.props.buildInput.direction_arrow.left()}
           >
-            <i className='fa fa-arrow-left' />
+            <i className='icon-left-big' />
           </button>
           <button
             className='buttonGroup btn'
             title='Direction arrow (→)'
             onClick={() => this.props.buildInput.direction_arrow.right()}
           >
-            <i className='fa fa-arrow-right' />
+            <i className='icon-big-right' />
           </button>
           <button
             className='buttonGroup btn'
             title='Direction arrow (↑)'
             onClick={() => this.props.buildInput.direction_arrow.up()}
           >
-            <i className='fa fa-arrow-up' />
+            <i className='icon-big-up' />
           </button>
           <button
             className='buttonGroup btn'
             title='Direction arrow (↓)'
             onClick={() => this.props.buildInput.direction_arrow.down()}
           >
-            <i className='fa fa-arrow-down' />
+            <i className='icon-big-down' />
           </button>
         </li>
       </ul>
