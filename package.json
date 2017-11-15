@@ -31,6 +31,7 @@
     "babel-plugin-transform-object-rest-spread": "^6.23.0",
     "babel-plugin-transform-react-jsx": "^6.24.1",
     "babel-preset-es2015": "^6.24.1",
+    "babel-register": "^6.26.0",
     "biojs-sniper": "^0.2.9",
     "bootswatch": "^3.3.6",
     "chai": "^3.3.0",
@@ -54,7 +55,6 @@
     "webpack-node-externals": "^1.6.0"
   },
   "dependencies": {
-    "babel-register": "^6.26.0",
     "baconjs": "^0.7.71",
     "d3-brush": "zakandrewking/d3-brush",
     "d3-drag": "^1.0.2",
