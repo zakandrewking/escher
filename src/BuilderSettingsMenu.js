@@ -10,7 +10,7 @@ import scalePresets from './ColorPresets.js'
 
 /**
  * SettingsMenu. Handles the functions associated with the UI for changing
- * settings. Implements Settings.js and ScaleEditor but otherwise only uses
+ * settings. Implements Settings.js but otherwise only uses
  * Preact.
  */
 
@@ -18,7 +18,7 @@ class BuilderSettingsMenu extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      display: false
+      display: props.display
     }
     if (props.display) {
       this.componentWillAppear()
@@ -35,15 +35,16 @@ class BuilderSettingsMenu extends Component {
     }
   }
 
-  shouldComponentUpdate (nextProps, nextState) {
-    if (nextProps.display === null) {
-      return false
-    } else {
-      return true
-    }
-  }
+  // shouldComponentUpdate (nextProps, nextState) {
+  //   if (nextProps.display === null) {
+  //     return false
+  //   } else {
+  //     return true
+  //   }
+  // }
 
   componentWillReceiveProps (nextProps) {
+    this.setState({display: nextProps.display})
     if (nextProps.display && !this.props.display) {
       this.componentWillAppear()
     }
@@ -64,7 +65,7 @@ class BuilderSettingsMenu extends Component {
   }
 
   componentWillDisappear () {
-    this.props.genericFunction1() // Function to pass display = false to the settings menu
+    this.props.closeMenu() // Function to pass display = false to the settings menu
     this.state.clearEscape()
     this.state.clearEnter()
   }

@@ -23,6 +23,8 @@
   background-color: #eee;
   border: 1px solid #ddd;
   margin-top: 4px;
+  font-size: 16px;
+  padding: 3px 6px;
 }
 
 .escher-container .tooltip .typeLabel {

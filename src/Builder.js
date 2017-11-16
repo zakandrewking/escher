@@ -390,7 +390,7 @@ function load_map (map_data, should_update_data) {
 
   // Set up the Brush
   this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group')
-  this.map.canvas.callback_manager.set('resize', function() {
+  this.map.canvas.callback_manager.set('resize', function () {
     this.brush.toggle(true)
   }.bind(this))
 
@@ -408,10 +408,11 @@ function load_map (map_data, should_update_data) {
   // Set up settings menu
   preact.render(
     <ReactWrapper
+      display={false}
       callbackManager={this.callback_manager}
       component={BuilderSettingsMenu}
       refProp={instance => { this.settingsMenuRef = instance }}
-      genericFunction1={() => this.pass_settings_menu_props({display: false})}
+      closeMenu={() => this.pass_settings_menu_props({display: false})}
     />,
     this.settings_div.node(),
     this.settings_div.node().children.length > 0
@@ -422,14 +423,23 @@ function load_map (map_data, should_update_data) {
   this.renderSearchBar(true)
 
   // Set up key manager
-  var keys = this._get_keys(this.map, this.zoom_container,
-                            this.search_bar, this.settings_bar,
-                            this.options.enable_editing,
-                            this.options.full_screen_button)
+  var keys = this._get_keys(
+    this.map,
+    this.zoom_container,
+    this.search_bar,
+    this.settings_bar,
+    this.options.enable_editing,
+    this.options.full_screen_button
+  )
   this.map.key_manager.assigned_keys = keys
   // Tell the key manager about the reaction input and search bar
-  this.map.key_manager.input_list = [this.build_input, this.searchBarRef,
-                                     () => this.settingsMenuRef, this.text_edit_input, this.tooltip_container]
+  this.map.key_manager.input_list = [
+    this.build_input,
+    this.searchBarRef,
+    () => this.settingsMenuRef,
+    this.text_edit_input,
+    this.tooltip_container
+  ]
   // Make sure the key manager remembers all those changes
   this.map.key_manager.update()
   // Turn it on/off

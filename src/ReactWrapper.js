@@ -16,7 +16,7 @@ class ReactWrapper extends Component {
       return <this.props.component
         {...this.state}
         ref={this.props.refProp}
-        genericFunction1={this.props.genericFunction1}
+        closeMenu={this.props.closeMenu}
       />
     } else {
       return null
