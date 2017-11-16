@@ -35,14 +35,6 @@ class BuilderSettingsMenu extends Component {
     }
   }
 
-  // shouldComponentUpdate (nextProps, nextState) {
-  //   if (nextProps.display === null) {
-  //     return false
-  //   } else {
-  //     return true
-  //   }
-  // }
-
   componentWillReceiveProps (nextProps) {
     this.setState({display: nextProps.display})
     if (nextProps.display && !this.props.display) {
