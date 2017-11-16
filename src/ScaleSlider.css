@@ -61,9 +61,9 @@
   width: 24px;
 }
 
-.escher-container .scaleEditor .fa-plus {
+.escher-container .scaleEditor .icon-plus {
   cursor: pointer;
   position: absolute;
   font-size: 14px;
-  right: 23px;
+  right: 19px;
 }

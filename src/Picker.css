@@ -28,6 +28,10 @@
   right: 1px;
 }
 
+.escher-container .trashDiv#rightOptions {
+  margin-right: -4px;
+}
+
 .escher-container .pickerOptions {
   box-shadow: 0 2px 14px #c5c5c5;
   margin-top: 1px;
@@ -79,6 +83,10 @@
 .escher-container .picker .trashDiv * {
   font-size: 17px;
   cursor: pointer;
+}
+
+.escher-container .picker .icon-trash {
+  margin: -5px;
 }
 
 .escher-container .scaleEditor :disabled {
