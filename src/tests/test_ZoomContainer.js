@@ -58,7 +58,7 @@ describe('ZoomContainer', () => {
     assert.throws(() => {
       zc.get_size()
     }, /Size not defined for ZoomContainer element/)
-  }).timeout(10000)
+  }).timeout(20000)
 
   it('go_to -- no d3 transform', (done) => {
     // no d3 transform
