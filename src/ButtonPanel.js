@@ -17,7 +17,7 @@ class ButtonPanel extends Component {
             onClick={() => this.props.zoomContainer.zoom_in()}
             title='Zoom in (+)'
           >
-            <i className='icon-plus-circled' />
+            <i className='icon-zoom-in' />
           </button>
         </li>
         <li>
@@ -26,7 +26,7 @@ class ButtonPanel extends Component {
             onClick={() => this.props.zoomContainer.zoom_out()}
             title='Zoom out (-)'
           >
-            <i className='icon-minus-circled' />
+            <i className='icon-zoom-out' />
           </button>
         </li>
         <li>
@@ -102,21 +102,21 @@ class ButtonPanel extends Component {
             title='Direction arrow (→)'
             onClick={() => this.props.buildInput.direction_arrow.right()}
           >
-            <i className='icon-big-right' />
+            <i className='icon-right-big' />
           </button>
           <button
             className='buttonGroup btn'
             title='Direction arrow (↑)'
             onClick={() => this.props.buildInput.direction_arrow.up()}
           >
-            <i className='icon-big-up' />
+            <i className='icon-up-big' />
           </button>
           <button
             className='buttonGroup btn'
             title='Direction arrow (↓)'
             onClick={() => this.props.buildInput.direction_arrow.down()}
           >
-            <i className='icon-big-down' />
+            <i className='icon-down-big' />
           </button>
         </li>
       </ul>

@@ -10,6 +10,21 @@ class ScaleSlider extends Component {
   constructor (props) {
     super(props)
     this.state = {
+      keys: null
+    }
+  }
+
+  componentWillReceiveProps (nextProps) {
+    if (!this.state.keys) {
+      const sorted = this.sortScale()
+      let keys = {}
+      for (let i = 2; i < sorted.length; i++) {
+        keys[i] = sorted[i].value
+      }
+      this.setState({
+        keys
+      })
+      console.log(this.state.keys, sorted)
     }
   }
 
