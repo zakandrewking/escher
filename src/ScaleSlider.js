@@ -15,17 +15,29 @@ class ScaleSlider extends Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    if (!this.state.keys) {
-      const sorted = this.sortScale()
-      let keys = {}
-      for (let i = 2; i < sorted.length; i++) {
-        keys[i] = sorted[i].value
+    const newScale = _.sortBy(nextProps.scale, element => {
+      if (element.type === 'value') {
+        return element.value
+      } else {
+        return nextProps.stats[element.type]
       }
-      this.setState({
-        keys
-      })
-      console.log(this.state.keys, sorted)
+    })
+    let missingScales = 0
+    for (let i = 0; i < newScale.length; i++) {
+      if (!_.contains(this.state.keys, newScale[i].value)) {
+        missingScales = missingScales + 1
+      }
     }
+    if (missingScales > 1) {
+      let newKeys = null
+      for (let i = 0; i < newScale.length; i++) {
+        newKeys[i].scale = newScale[i]
+      }
+      this.setState({keys: newKeys})
+    } else if (missingScales === 1) {
+
+    }
+    console.log(this.state.keys, newScale, nextProps.stats)
   }
 
   sortScale () {
