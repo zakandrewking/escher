@@ -15,29 +15,7 @@ class ScaleSlider extends Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    const newScale = _.sortBy(nextProps.scale, element => {
-      if (element.type === 'value') {
-        return element.value
-      } else {
-        return nextProps.stats[element.type]
-      }
-    })
-    let missingScales = 0
-    for (let i = 0; i < newScale.length; i++) {
-      if (!_.contains(this.state.keys, newScale[i].value)) {
-        missingScales = missingScales + 1
-      }
-    }
-    if (missingScales > 1) {
-      let newKeys = null
-      for (let i = 0; i < newScale.length; i++) {
-        newKeys[i].scale = newScale[i]
-      }
-      this.setState({keys: newKeys})
-    } else if (missingScales === 1) {
-
-    }
-    console.log(this.state.keys, newScale, nextProps.stats)
+    
   }
 
   sortScale () {
@@ -52,13 +30,14 @@ class ScaleSlider extends Component {
   }
 
   placePickers () {
-    const scale = this.sortScale()
     const max = this.props.abs
       ? this.props.stats.max
       : this.props.stats.max + Math.abs(this.props.stats.min)
     let positions = {}
-    for (let i = 0; i < scale.length; i++) {
-      const scaleValue = scale[i].value ? scale[i].value : this.props.stats[scale[i].type]
+    for (let i = 0; i < this.props.scale.length; i++) {
+      const scaleValue = this.props.scale[i].value 
+        ? this.props.scale[i].value 
+        : this.props.stats[this.props.scale[i].type]
       const value = this.props.abs
         ? scaleValue
         : scaleValue + Math.abs(this.props.stats.min)
