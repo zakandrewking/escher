@@ -15,7 +15,7 @@ class ScaleSlider extends Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    
+
   }
 
   sortScale () {
@@ -35,8 +35,8 @@ class ScaleSlider extends Component {
       : this.props.stats.max + Math.abs(this.props.stats.min)
     let positions = {}
     for (let i = 0; i < this.props.scale.length; i++) {
-      const scaleValue = this.props.scale[i].value 
-        ? this.props.scale[i].value 
+      const scaleValue = this.props.scale[i].value
+        ? this.props.scale[i].value
         : this.props.stats[this.props.scale[i].type]
       const value = this.props.abs
         ? scaleValue
@@ -53,13 +53,14 @@ class ScaleSlider extends Component {
   }
 
   scaleChange (index, parameter, value) {
-    const scale = this.sortScale()
-    if (parameter === 'value' && (parseFloat(value) > this.props.stats.max || value < this.props.stats.min)) {
+    if (parameter === 'value' &&
+      (parseFloat(value) > this.props.stats.max ||
+      value < this.props.stats.min)) {
       console.warn('Invalid color scale')
     } else {
       let newScale = null
       if (parameter === 'type' && value !== 'value') {
-        newScale = update(scale, {
+        newScale = update(this.props.scale, {
           [index]: {
             [parameter]: {$set: value},
             $unset: ['value']
@@ -67,15 +68,15 @@ class ScaleSlider extends Component {
         })
         this.props.onChange(newScale)
       } else if (value === 'value') {
-        newScale = update(scale, {
+        newScale = update(this.props.scale, {
           [index]: {
             [parameter]: {$set: value},
-            $merge: {'value': this.props.stats[scale[index].type]}
+            $merge: {'value': this.props.stats[this.props.scale[index].type]}
           }
         })
         this.props.onChange(newScale)
       } else if (!isNaN(parseFloat(value))) {
-        newScale = update(scale, {
+        newScale = update(this.props.scale, {
           [index]: {
             [parameter]: {$set: value}
           }
@@ -113,8 +114,7 @@ class ScaleSlider extends Component {
   }
 
   removeColorStop (index) {
-    const scale = this.sortScale()
-    const newScale = update(scale, {$splice: [[[index], 1]]})
+    const newScale = update(this.props.scale, {$splice: [[[index], 1]]})
     this.props.onChange(newScale)
   }
 
@@ -134,8 +134,8 @@ class ScaleSlider extends Component {
                   background: `linear-gradient(to right,${this.makeGradient()})`
                 }}
               >
-                {this.sortScale().map((listItem, i) => {
-                  if (!listItem.value) {
+                {this.props.scale.map((listItem, i) => {
+                  if (listItem.value === null || listItem.value === undefined) {
                     return (
                       <Picker
                         id={listItem.type}
