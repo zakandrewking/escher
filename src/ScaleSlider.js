@@ -14,10 +14,6 @@ class ScaleSlider extends Component {
     }
   }
 
-  componentWillReceiveProps (nextProps) {
-
-  }
-
   sortScale () {
     const newScale = _.sortBy(this.props.scale, element => {
       if (element.type === 'value') {
