@@ -17,6 +17,8 @@ html.fill-screen {
   width: 100%;
 }
 body.fill-screen {
+  margin: 0;
+  position: relative;
   overflow: hidden;
   height: 100%;
   width: 100%;
