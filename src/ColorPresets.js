@@ -17,7 +17,7 @@ const scalePresets = {
   ],
   GeGaRd: [
     { type: 'min', color: '#209123', size: 25 },
-    { type: 'median', color: '#c8c8c8', size: 12 },
+    { type: 'value', value: 0, color: '#c8c8c8', size: 12 },
     { type: 'max', color: '#ff0000', size: 25 }
   ]
 }

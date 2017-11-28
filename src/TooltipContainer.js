@@ -51,15 +51,15 @@ function init (selection, TooltipComponent, zoom_container) {
     <ReactWrapper
       callbackManager={this.callback_manager}
       component={this.TooltipComponent}
-      ref={instance => { this.tooltipRef = instance }}
+      refProp={instance => { this.tooltipRef = instance }}
     />,
     this.div.node()
   )
 }
 
 /**
- *
- * @param {*} map
+ * Sets up the appropriate callbacks to show the input
+ * @param {object} map - map object
  */
 function setup_map_callbacks (map) {
   this.map = map
@@ -118,8 +118,6 @@ function is_visible () {
  * Show and place the input.
  * @param {string} type - 'reaction_label', 'node_label', or 'gene_label'
  * @param {Object} d - D3 data for DOM element
- * @param {Object} coords - Object with x and y coords. Cannot use coords from
- *                          'd' because gene labels do not have them.
  */
 function show (type, d) {
   // get rid of a lingering delayed hide
@@ -127,34 +125,36 @@ function show (type, d) {
 
   if (_.contains([ 'reaction_label', 'node_label', 'gene_label' ], type)) {
     // Use a default height if the ref hasn't been connected yet
-    const tooltipSize = this.tooltipRef !== null && this.tooltipRef.getSize
-      ? this.tooltipRef.getSize()
-      : { width: 270, height: 100 }
+    const tooltipSize = (this.tooltipRef !== null && this.tooltipRef.getSize)
+    ? this.tooltipRef.getSize()
+    : { width: 270, height: 100 }
     this.currentTooltip = { type, id: d[type.replace('_label', '_id')] }
-    var windowTranslate = this.zoom_container.window_translate
-    var windowScale = this.zoom_container.window_scale
-    var mapSize = this.map !== null ? this.map.get_size() : { width: 1000, height: 1000 }
-    var offset = {x: 0, y: 0}
+    const windowTranslate = this.zoom_container.window_translate
+    const windowScale = this.zoom_container.window_scale
+    const mapSize = this.map !== null ? this.map.get_size() : { width: 1000, height: 1000 }
+    const offset = {x: 0, y: 0}
+    const rightEdge = windowScale * d.label_x + windowTranslate.x + tooltipSize.width
+    const bottomEdge = windowScale * d.label_y + windowTranslate.y + tooltipSize.height
     if (mapSize.width < 500) {
-      if (windowScale * d.label_x + windowTranslate.x + tooltipSize.width > mapSize.width) {
-        offset.x = -(windowScale * d.label_x + windowTranslate.x + tooltipSize.width - mapSize.width) / windowScale
+      if (rightEdge > mapSize.width) {
+        offset.x = -(rightEdge - mapSize.width) / windowScale
       }
-      if (windowScale * d.label_y + windowTranslate.y + tooltipSize.height > mapSize.height - 74) {
-        offset.y = -(windowScale * d.label_y + windowTranslate.y + tooltipSize.height - mapSize.height + 77) / windowScale
+      if (bottomEdge > mapSize.height - 74) {
+        offset.y = -(bottomEdge - mapSize.height + 77) / windowScale
       }
     } else {
       if (windowScale * d.label_x + windowTranslate.x + 0.5 * tooltipSize.width > mapSize.width) {
         offset.x = -tooltipSize.width / windowScale
-      } else if (windowScale * d.label_x + windowTranslate.x + tooltipSize.width > mapSize.width) {
-        offset.x = -(windowScale * d.label_x + windowTranslate.x + tooltipSize.width - mapSize.width) / windowScale
+      } else if (rightEdge > mapSize.width) {
+        offset.x = -(rightEdge - mapSize.width) / windowScale
       }
       if (windowScale * d.label_y + windowTranslate.y + 0.5 * tooltipSize.height > mapSize.height - 45) {
         offset.y = -(tooltipSize.height) / windowScale
-      } else if (windowScale * d.label_y + windowTranslate.y + tooltipSize.height > mapSize.height - 45) {
-        offset.y = -(windowScale * d.label_y + windowTranslate.y + tooltipSize.height - mapSize.height + 47) / windowScale
+      } else if (bottomEdge > mapSize.height - 45) {
+        offset.y = -(bottomEdge - mapSize.height + 47) / windowScale
       }
     }
-    var coords = { x: d.label_x + offset.x, y: d.label_y + 10 + offset.y }
+    const coords = { x: d.label_x + offset.x, y: d.label_y + 10 + offset.y }
     this.placed_div.place(coords)
     const data = {
       biggId: d.bigg_id,

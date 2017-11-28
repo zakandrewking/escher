@@ -95,7 +95,6 @@ class ScaleSlider extends Component {
   }
 
   addColorStop (event) {
-    console.log(event.layerX / event.target.clientWidth)
     const newScale = update(this.props.scale, {
       $push: [{
         type: 'value',
@@ -143,6 +142,7 @@ class ScaleSlider extends Component {
          (this.props.stats.max !== null && this.props.stats.max !== undefined)
           ? (
             <div>
+              <i className='settingsTip'>To add a color stop to the scale, click the gradient</i>
               <div
                 className='scaleTrack'
               >
