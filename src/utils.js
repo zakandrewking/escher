@@ -726,15 +726,13 @@ function download_svg (name, svg_sel, do_beautify) {
  * Download a png file using FileSaver.js.
  * @param {String} name - The filename (without extension).
  * @param {D3 Selection} svg_sel - The d3 selection for the SVG element.
- * @param {Boolean} do_beautify - If true, then beautify the SVG output.
  */
-function download_png (name, svg_sel, do_beautify) {
+function download_png (name, svg_sel) {
   // Alert if blob isn't going to work
   _check_filesaver()
 
   // Make the xml string
   var xml = new XMLSerializer().serializeToString(svg_sel.node())
-  if (do_beautify) xml = vkbeautify.xml(xml)
   xml = ('<?xml version="1.0" encoding="utf-8"?>\n' +
          '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"\n' +
          ' "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +

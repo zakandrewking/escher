@@ -1,158 +1,194 @@
 /** SearchBar */
 
-var utils = require('./utils');
-var CallbackManager = require('./CallbackManager');
-var _ = require('underscore');
+/** @jsx h */
+import {h, Component} from 'preact'
+import './SearchBar.css'
 
-var SearchBar = utils.make_class();
-// instance methods
-SearchBar.prototype = {
-    init: init,
-    is_visible: is_visible,
-    toggle: toggle,
-    update: update,
-    next: next,
-    previous: previous
-};
-module.exports = SearchBar;
+import * as _ from 'underscore'
 
-function init(sel, search_index, map) {
-    var container = sel.attr('class', 'search-container')
-            .style('display', 'none');
-    this.input = container.append('input')
-        .attr('class', 'search-bar');
-    var group = container.append('div').attr('class', 'btn-group btn-group-sm');
-    group.append('button')
-        .attr('class', 'btn btn-default')
-        .on('click', this.previous.bind(this))
-        .append('span').attr('class', 'glyphicon glyphicon-chevron-left');
-    group.append('button')
-        .attr('class', 'btn btn-default')
-        .on('click', this.next.bind(this))
-        .append('span').attr('class', 'glyphicon glyphicon-chevron-right');
-    this.counter = container.append('div')
-        .attr('class', 'search-counter');
-    container.append('button')
-        .attr('class', 'btn btn-sm btn-default close-button')
-        .on('click', function() {
-            this.toggle(false);
-        }.bind(this))
-        .append('span').attr('class',  'glyphicon glyphicon-remove');
-
-    this.callback_manager = new CallbackManager();
-
-    this.selection = container;
-    this.map = map;
-    this.search_index = search_index;
-
-    this.current = 1;
-    this.results = null;
-
-    var on_input_fn = function(input) {
-        this.current = 1;
-        this.results = _drop_duplicates(this.search_index.find(input.value));
-        this.update();
-    }.bind(this, this.input.node());
-    this.input.on('input', utils.debounce(on_input_fn, 200));
-}
-
-var comp_keys = {
-    metabolite: ['m', 'node_id'],
-    reaction: ['r', 'reaction_id'],
-    text_label: ['t', 'text_label_id']
-};
-function _drop_duplicates(results) {
-    return _.uniq(results, function(item) {
-        // make a string for fast comparison
-        var t = comp_keys[item.type];
-        return t[0] + item[t[1]];
-    });
-}
-
-function is_visible() {
-    return this.selection.style('display') !== 'none';
-}
-
-function toggle(on_off) {
-    if (on_off===undefined) this.is_active = !this.is_active;
-    else this.is_active = on_off;
-
-    if (this.is_active) {
-        this.selection.style('display', null);
-        this.counter.text('');
-        this.input.node().value = '';
-        this.input.node().focus();
-        // escape key
-        this.clear_escape = this.map.key_manager
-            .add_escape_listener(function() {
-                this.toggle(false);
-            }.bind(this), true);
-        // next keys
-        this.clear_next = this.map.key_manager
-            .add_key_listener(['enter', 'ctrl+g'], function() {
-                this.next();
-            }.bind(this), false);
-        // previous keys
-        this.clear_previous = this.map.key_manager
-            .add_key_listener(['shift+enter', 'shift+ctrl+g'], function() {
-                this.previous();
-            }.bind(this), false);
-        // run the show callback
-        this.callback_manager.run('show');
-    } else {
-        this.map.highlight(null);
-        this.selection.style('display', 'none');
-        this.results = null;
-        if (this.clear_escape) this.clear_escape();
-        this.clear_escape = null;
-        if (this.clear_next) this.clear_next();
-        this.clear_next = null;
-        if (this.clear_previous) this.clear_previous();
-        this.clear_previous = null;
-        // run the hide callback
-        this.callback_manager.run('hide');
+class SearchBar extends Component {
+  constructor (props) {
+    super(props)
+    this.state = {
+      visible: props.visible,
+      current: 0,
+      searchItem: null,
+      counter: '',
+      clearEscape: this.props.map.key_manager.add_escape_listener(
+        () => this.close(), true
+      ),
+      clearNext: this.props.map.key_manager.add_key_listener(
+        ['enter', 'ctrl+g'], () => this.next(), false),
+      clearPrevious: this.props.map.key_manager.add_key_listener(
+        ['shift+enter', 'shift+ctrl+g'], () => this.previous(), false)
     }
-}
+  }
 
-function update() {
-    if (this.results === null) {
-        this.counter.text('');
-        this.map.highlight(null);
-    } else if (this.results.length === 0) {
-        this.counter.text('0 / 0');
-        this.map.highlight(null);
+  componentWillReceiveProps (nextProps) {
+    this.setState({
+      ...nextProps,
+      current: 0,
+      results: null,
+      searchItem: null,
+      counter: '',
+      clearEscape: this.props.map.key_manager.add_escape_listener(
+        () => this.close(), true
+      ),
+      clearNext: this.props.map.key_manager.add_key_listener(
+        ['enter', 'ctrl+g'], () => this.next(), false),
+      clearPrevious: this.props.map.key_manager.add_key_listener(
+        ['shift+enter', 'shift+ctrl+g'], () => this.previous(), false)
+    })
+  }
+
+  componentDidUpdate () {
+    this.inputRef.focus()
+  }
+
+  /**
+   * Updates map focus and search bar counter when new search term is entered.
+   * @param {string} value - Search term
+   */
+  handleInput (value) {
+    if (!this.state.visible) { return }
+    const results = this.dropDuplicates(this.props.map.search_index.find(value))
+    let counter = ''
+    if (results === null || !value) {
+      this.props.map.highlight(null)
+    } else if (results.length === 0) {
+      counter = '0 / 0'
+      this.props.map.highlight(null)
     } else {
-        this.counter.text(this.current + ' / ' + this.results.length);
-        var r = this.results[this.current - 1];
-        if (r.type=='reaction') {
-            this.map.zoom_to_reaction(r.reaction_id);
-            this.map.highlight_reaction(r.reaction_id);
-        } else if (r.type=='metabolite') {
-            this.map.zoom_to_node(r.node_id);
-            this.map.highlight_node(r.node_id);
-        } else if (r.type=='text_label') {
-            this.map.zoom_to_text_label(r.text_label_id);
-            this.map.highlight_text_label(r.text_label_id);
-        } else {
-            throw new Error('Bad search index data type: ' + r.type);
-        }
+      // Catches case where new search term shortens results to less than current index
+      if (this.state.current >= results.length) {
+        this.setState({
+          current: 0
+        })
+      }
+      counter = `${this.state.current + 1}/${results.length}`
+      const r = results[this.state.current]
+      if (r.type === 'reaction') {
+        this.props.map.zoom_to_reaction(r.reaction_id)
+        this.props.map.highlight_reaction(r.reaction_id)
+      } else if (r.type === 'metabolite') {
+        this.props.map.zoom_to_node(r.node_id)
+        this.props.map.highlight_node(r.node_id)
+      } else if (r.type === 'text_label') {
+        this.props.map.zoom_to_text_label(r.text_label_id)
+        this.props.map.highlight_text_label(r.text_label_id)
+      } else {
+        throw new Error('Bad search index data type: ' + r.type)
+      }
     }
+    this.setState({
+      searchItem: value,
+      current: 0,
+      counter,
+      results
+    })
+  }
+
+  dropDuplicates (results) {
+    const compKeys = {
+      metabolite: {
+        type: 'm',
+        key: 'node_id'
+      },
+      reaction: {
+        type: 'r',
+        key: 'reaction_id'
+      },
+      text_label: {
+        type: 't',
+        key: 'text_label_id'
+      }
+    }
+    return _.uniq(results, item => {
+      // make a string for fast comparison
+      const {type, key} = compKeys[item.type]
+      return `${type}${item[key]}`
+    })
+  }
+
+  next () {
+    if (!(this.state.results && this.state.results.length > 0)) { return }
+    this.update((this.state.current + 1) % this.state.results.length)
+  }
+
+  previous () {
+    if (!(this.state.results && this.state.results.length > 0)) { return }
+    this.update((this.state.current + this.state.results.length - 1) %
+      this.state.results.length
+    )
+  }
+
+  /**
+   * Updates the map focus and search bar counter for when buttons are clicked.
+   * @param {number} current - index of current search result
+   */
+  update (current) {
+    this.setState({
+      current,
+      counter: `${current + 1}/${this.state.results.length}`
+    })
+    var r = this.state.results[current]
+    if (r.type === 'reaction') {
+      this.props.map.zoom_to_reaction(r.reaction_id)
+      this.props.map.highlight_reaction(r.reaction_id)
+    } else if (r.type === 'metabolite') {
+      this.props.map.zoom_to_node(r.node_id)
+      this.props.map.highlight_node(r.node_id)
+    } else if (r.type === 'text_label') {
+      this.props.map.zoom_to_text_label(r.text_label_id)
+      this.props.map.highlight_text_label(r.text_label_id)
+    } else {
+      throw new Error('Bad search index data type: ' + r.type)
+    }
+  }
+
+  close () {
+    this.props.map.highlight(null)
+    this.setState({visible: false})
+    this.state.clearNext()
+    this.state.clearPrevious()
+    this.state.clearEscape()
+  }
+
+  is_visible () {
+    return this.state.visible
+  }
+
+  render () {
+    return (
+      <div
+        className='searchContainer'
+        style={this.state.visible ? {display: 'inline-flex'} : {display: 'none'}}>
+        <div className='searchPanel'>
+          <input
+            className='searchField'
+            value={this.state.searchItem}
+            onInput={event => this.handleInput(event.target.value)}
+            ref={input => { this.inputRef = input }}
+          />
+          <button className='searchBarButton left btn' onClick={() => this.previous()}>
+            <i className='icon-left-open' />
+          </button>
+          <button className='searchBarButton right btn' onClick={() => this.next()}>
+            <i className='icon-right-open' />
+          </button>
+          <div className='searchCounter'>
+            {this.state.counter}
+          </div>
+        </div>
+        <button
+          className='searchBarButton btn'
+          onClick={() => this.close()}
+        >
+          <i className='icon-cancel' style={{marginTop: '-2px', verticalAlign: 'middle'}} />
+        </button>
+      </div>
+    )
+  }
 }
 
-function next() {
-    if (this.results === null) return;
-    if (this.current === this.results.length)
-        this.current = 1;
-    else
-        this.current += 1;
-    this.update();
-}
-
-function previous() {
-    if (this.results === null) return;
-    if (this.current === 1)
-        this.current = this.results.length;
-    else
-        this.current -= 1;
-    this.update();
-}
+export default SearchBar

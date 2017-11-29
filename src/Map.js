@@ -241,7 +241,7 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
   this.behavior = new Behavior(this, this.undo_stack)
 
   // draw manager
-  this.draw = new Draw(this.behavior, this.settings)
+  this.draw = new Draw(this.behavior, this.settings, this)
 
   // make a key manager
   this.key_manager = new KeyManager()
@@ -1685,6 +1685,7 @@ function new_reaction_for_metabolite (reaction_bigg_id, selected_node_id,
 
 function cycle_primary_node () {
   var selected_nodes = this.get_selected_nodes()
+  if (_.isEmpty(selected_nodes)) { return }
   // Get the first node
   var node_id = Object.keys(selected_nodes)[0]
   var node = selected_nodes[node_id]
@@ -2262,7 +2263,7 @@ function save_map (obj, callback_before, callback_after, map_type) {
     if(map_type == 'svg') {
       utils.download_svg('saved_map', obj.svg, true)
     } else if(map_type == 'png') {
-      utils.download_png('saved_map', obj.svg, true)
+      utils.download_png('saved_map', obj.svg)
     }
 
     // revert everything

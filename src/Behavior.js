@@ -9,7 +9,8 @@
  * my_behavior.selectable_click, my_behavior.selectable_drag,
  * my_behavior.node_mouseover, my_behavior.node_mouseout,
  * my_behavior.label_mousedown, my_behavior.label_mouseover,
- * my_behavior.label_mouseout, my_behavior.bezier_drag,
+ * my_behavior.label_mouseout, my_behavior.label_touch,
+ * my_behavior.bezier_drag,
  * my_behavior.bezier_mouseover, my_behavior.bezier_mouseout,
  * my_behavior.reaction_label_drag, my_behavior.node_label_drag,
  *
@@ -35,6 +36,7 @@ Behavior.prototype = {
   toggle_selectable_drag: toggle_selectable_drag,
   toggle_label_drag: toggle_label_drag,
   toggle_label_mouseover: toggle_label_mouseover,
+  toggle_label_touch: toggle_label_touch,
   toggle_bezier_drag: toggle_bezier_drag,
   // util
   turn_off_drag: turn_off_drag,
@@ -71,6 +73,7 @@ function init (map, undo_stack) {
   this.label_mousedown = null
   this.label_mouseover = null
   this.label_mouseout = null
+  this.label_touch = null
   this.bezier_drag = this.empty_behavior
   this.bezier_mouseover = null
   this.bezier_mouseout = null
@@ -88,6 +91,7 @@ function turn_everything_on () {
   this.toggle_selectable_drag(true)
   this.toggle_label_drag(true)
   this.toggle_label_mouseover(true)
+  this.toggle_label_touch(true)
 }
 
 /**
@@ -98,6 +102,7 @@ function turn_everything_off () {
   this.toggle_selectable_drag(false)
   this.toggle_label_drag(false)
   this.toggle_label_mouseover(false)
+  this.toggle_label_touch(false)
 }
 
 /**
@@ -395,6 +400,26 @@ function toggle_label_mouseover (on_off) {
 
   } else {
     this.label_mouseover = null
+  }
+}
+
+/**
+ * With no argument, toggle the tooltips upon touching of labels.
+ * @param {Boolean} on_off - The new on/off state. If this argument is not provided, then toggle the state.
+ */
+function toggle_label_touch (on_off) {
+  if (on_off === undefined) {
+    on_off = this.label_touch === null
+  }
+
+  if (on_off) {
+    this.label_touch = (type, d) => {
+      if (!this.dragging) {
+        this.map.callback_manager.run('show_tooltip', null, type, d)
+      }
+    }
+  } else {
+    this.label_touch = null
   }
 }
 

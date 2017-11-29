@@ -26,7 +26,7 @@ class TestBuilder(AsyncHTTPTestCase):
         response = self.fetch('/builder/index.html?js_source=local')
         assert response.code==200
 
-def test_server():
-    tornado.ioloop.IOLoop.instance().add_timeout(100, escher.server.stop)
-    escher.server.run(port = 8123)
-    print('stopped')
+# def test_server():
+#     tornado.ioloop.IOLoop.instance().add_timeout(100, escher.server.stop)
+#     escher.server.run(port = 8123)
+#     print('stopped')

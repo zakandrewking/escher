@@ -55,9 +55,10 @@ Draw.prototype = {
 }
 module.exports = Draw
 
-function init (behavior, settings) {
+function init (behavior, settings, map) {
   this.behavior = behavior
   this.settings = settings
+  this.map = map
   this.callback_manager = new CallbackManager()
 }
 
@@ -173,6 +174,7 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
   var label_mousedown_fn = this.behavior.label_mousedown
   var label_mouseover_fn = this.behavior.label_mouseover
   var label_mouseout_fn = this.behavior.label_mouseout
+  var label_touch_fn = this.behavior.label_touch
 
   // label location
   update_selection
@@ -201,6 +203,12 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
         label_mouseover_fn('reaction_label', d)
       })
       .on('mouseout', label_mouseout_fn)
+      .on('touchend', function (d) {
+        label_touch_fn('reaction_label', d)
+      })
+      .call(sel => {
+        this.map.callback_manager.run('update_tooltip', null, 'reaction_label', sel)
+      })
   }
 
   var add_gene_height = function (y, i) {
@@ -736,6 +744,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
   var label_mousedown_fn = this.behavior.label_mousedown
   var label_mouseover_fn = this.behavior.label_mouseover
   var label_mouseout_fn = this.behavior.label_mouseout
+  var label_touch_fn = this.behavior.label_touch
 
   var mg = update_selection
       .select('.node-circle')

@@ -50,7 +50,7 @@ module.exports = {
   libs: {
     '_': require('underscore'),
     'underscore': require('underscore'),
-    'tinier': require('tinier'),
+    'preact': require('preact'),
     'baconjs': require('baconjs'),
     'mousetrap': require('mousetrap'),
     'vkbeautify': require('vkbeautify'),

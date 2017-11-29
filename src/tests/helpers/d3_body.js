@@ -12,12 +12,6 @@ global.document = document
 global.window = document.defaultView
 global.navigator = { platform: 'node.js' }
 
-// Need to import jquery after jsdom initializes.
-// const jquery = require('jquery')
-// global.jQuery = jquery
-// global.$ = jquery
-// require('bootstrap')
-
 // Dummy SVGElement for d3-zoom.js:L87
 const Dummy = () => {}
 Dummy.prototype = {}
