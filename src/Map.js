@@ -1685,6 +1685,7 @@ function new_reaction_for_metabolite (reaction_bigg_id, selected_node_id,
 
 function cycle_primary_node () {
   var selected_nodes = this.get_selected_nodes()
+  if (_.isEmpty(selected_nodes)) { return }
   // Get the first node
   var node_id = Object.keys(selected_nodes)[0]
   var node = selected_nodes[node_id]
