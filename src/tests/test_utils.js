@@ -152,6 +152,25 @@ describe('utils.make_class', () => {
   })
 })
 
+describe('utils.class_with_optional_new', () => {
+  it('takes existing class and makes "new" optional', () => {
+    class C {
+      constructor (a) {
+        this.a = a
+      }
+    }
+    const MyClass = utils.class_with_optional_new(C)
+    const obj1 = new MyClass('b')
+    const obj2 = MyClass('b')
+    const obj3 = new MyClass // eslint-disable-line new-parens
+    assert.isTrue(obj1 instanceof MyClass)
+    assert.isTrue(obj2 instanceof MyClass)
+    assert.isTrue(obj3 instanceof MyClass)
+    assert.strictEqual(obj1.a, 'b')
+    assert.strictEqual(obj2.a, 'b')
+  })
+})
+
 it('utils.compare_arrays', () => {
   assert.strictEqual(utils.compare_arrays([1,2], [1,2]), true)
   assert.strictEqual(utils.compare_arrays([1,2], [3,2]), false)
