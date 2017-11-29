@@ -1,7 +1,7 @@
 /** @jsx h */
 import { h, Component } from 'preact'
-import Dropdown from './Dropdown.js'
-import MenuButton from './MenuButton.js'
+import Dropdown from './Dropdown'
+import MenuButton from './MenuButton'
 
 /**
  * BuilderMenuBar. Wrapper class that implements generic Dropdown and MenuButton

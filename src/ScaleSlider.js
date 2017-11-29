@@ -3,7 +3,7 @@
 import {h, Component} from 'preact'
 import Picker from './Picker'
 import update from 'immutability-helper'
-import * as _ from 'underscore'
+import _ from 'underscore'
 import './ScaleSlider.css'
 
 class ScaleSlider extends Component {

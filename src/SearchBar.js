@@ -4,7 +4,7 @@
 import {h, Component} from 'preact'
 import './SearchBar.css'
 
-import * as _ from 'underscore'
+import _ from 'underscore'
 
 class SearchBar extends Component {
   constructor (props) {
