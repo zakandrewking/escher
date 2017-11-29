@@ -27,7 +27,7 @@ ZoomContainer.prototype = {
   zoom_in: zoom_in,
   zoom_out: zoom_out,
   get_size: get_size,
-  translate_off_screen: translate_off_screen,
+  translate_off_screen: translate_off_screen
 }
 module.exports = ZoomContainer
 
@@ -192,7 +192,7 @@ function _update_scroll () {
     .on('zoom', function () {
       this._go_to_callback(d3_selection.event.transform.k, {
         x: d3_selection.event.transform.x,
-        y: d3_selection.event.transform.y,
+        y: d3_selection.event.transform.y
       })
     }.bind(this))
     .on('end', function () {
@@ -223,7 +223,7 @@ function _update_scroll () {
     this.zoom_container
       .on('mousewheel.zoom', null) // zoom scroll behaviors
       .on('DOMMouseScroll.zoom', null) // disables older versions of Firefox
-      .on('wheel.zoom', null); // disables newer versions of Firefox
+      .on('wheel.zoom', null) // disables newer versions of Firefox
   }
 
   // add listeners for scrolling to pan
@@ -243,7 +243,7 @@ function _update_scroll () {
       }
       var new_translate = {
         x: this.window_translate.x - get_directional_disp(ev.wheelDeltaX, ev.deltaX),
-        y: this.window_translate.y - get_directional_disp(ev.wheelDeltaY, ev.deltaY),
+        y: this.window_translate.y - get_directional_disp(ev.wheelDeltaY, ev.deltaY)
       }
       this.go_to(this.window_scale, new_translate)
     }.bind(this)
@@ -311,8 +311,7 @@ function _go_to_callback (scale, translate) {
     this._zoom_timeout = _.delay(function () {
       // redraw the svg
       this._go_to_svg(scale, translate)
-    }.bind(this), 100); // between 100 and 600 seems to be usable
-
+    }.bind(this), 100) // between 100 and 600 seems to be usable
   } else { // no 3d transform
     this._go_to_svg(scale, translate)
   }
@@ -327,8 +326,8 @@ function _go_to_3d (scale, translate, svg_scale, svg_translate) {
   var n_scale = scale / svg_scale
   var n_translate = utils.c_minus_c(translate,
                                     utils.c_times_scalar(svg_translate, n_scale))
-  var transform = ('translate(' + n_translate.x + 'px,' + n_translate.y + 'px) '
-                   + 'scale(' + n_scale + ')')
+  var transform = ('translate(' + n_translate.x + 'px,' + n_translate.y + 'px) ' +
+                   'scale(' + n_scale + ')')
   this.css3_transform_container.style('transform', transform)
   this.css3_transform_container.style('-webkit-transform', transform)
   this.css3_transform_container.style('transform-origin', '0 0')
@@ -353,7 +352,6 @@ function _go_to_svg (scale, translate, callback) {
 
   // defer to update callbacks
   _.defer(function () {
-
     // start time
     // var start = new Date().getTime()
 
@@ -393,10 +391,10 @@ function _go_to_svg (scale, translate, callback) {
 function zoom_by (amount) {
   var size = this.get_size()
   var shift = {
-    x: size.width/2 - ((size.width/2 - this.window_translate.x) * amount +
+    x: size.width / 2 - ((size.width / 2 - this.window_translate.x) * amount +
                        this.window_translate.x),
-    y: size.height/2 - ((size.height/2 - this.window_translate.y) * amount +
-                        this.window_translate.y),
+    y: size.height / 2 - ((size.height / 2 - this.window_translate.y) * amount +
+                        this.window_translate.y)
   }
   this.go_to(this.window_scale * amount,
              utils.c_plus_c(this.window_translate, shift))
@@ -440,17 +438,17 @@ function translate_off_screen (coords) {
   var size = this.get_size()
   var current = {
     x: {
-      min: - this.window_translate.x / this.window_scale +
+      min: -this.window_translate.x / this.window_scale +
         margin / this.window_scale,
-      max: - this.window_translate.x / this.window_scale +
-        (size.width-margin) / this.window_scale,
+      max: -this.window_translate.x / this.window_scale +
+        (size.width - margin) / this.window_scale
     },
     y: {
-      min: - this.window_translate.y / this.window_scale +
+      min: -this.window_translate.y / this.window_scale +
         margin / this.window_scale,
-      max: - this.window_translate.y / this.window_scale +
-        (size.height-margin) / this.window_scale,
-    },
+      max: -this.window_translate.y / this.window_scale +
+        (size.height - margin) / this.window_scale
+    }
   }
 
   if (coords.x < current.x.min) {

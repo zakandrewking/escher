@@ -23,20 +23,20 @@ function _get_label_loc (angle) {
   if (Math.abs(angle) > Math.PI) {
     throw new Error('Angle must be between -PI and PI')
   }
-  if (Math.abs(angle) < Math.PI/7 || Math.abs(angle - Math.PI) < Math.PI/7) {
+  if (Math.abs(angle) < Math.PI / 7 || Math.abs(angle - Math.PI) < Math.PI / 7) {
     // Close to 0 or PI
     return { x: -50, y: -40 }
   } else if (angle > 0) {
     // Bottom quadrants
     return {
-      x: 15 * (1 - (Math.abs(angle - Math.PI/2)) / (Math.PI/2)),
-      y: 10 + (angle - Math.PI/2) * 50
+      x: 15 * (1 - (Math.abs(angle - Math.PI / 2)) / (Math.PI / 2)),
+      y: 10 + (angle - Math.PI / 2) * 50
     }
   } else {
     // Top quadrants
     return {
-      x: 15 * (1 - (Math.abs(angle + Math.PI/2)) / (Math.PI/2)),
-      y: 10 - (Math.abs(angle) - Math.PI/2) * 50
+      x: 15 * (1 - (Math.abs(angle + Math.PI / 2)) / (Math.PI / 2)),
+      y: 10 - (Math.abs(angle) - Math.PI / 2) * 50
     }
   }
 }
@@ -45,7 +45,7 @@ function get_met_label_loc (angle, index, count, is_primary, bigg_id,
                             primary_index) {
   var width = bigg_id.length * 18
   var left_right = (index - (index > primary_index) - (count / 2)) >= -1
-  if (Math.abs(angle) < Math.PI/7) {
+  if (Math.abs(angle) < Math.PI / 7) {
     // Close to 0
     if (is_primary || left_right) {
       // Primary or bottom
@@ -54,7 +54,7 @@ function get_met_label_loc (angle, index, count, is_primary, bigg_id,
       // Top
       return { x: -width * 0.3, y: -20 }
     }
-  } else if (Math.abs(angle - Math.PI) < Math.PI/7) {
+  } else if (Math.abs(angle - Math.PI) < Math.PI / 7) {
     // Close to PI
     if (is_primary || !left_right) {
       // Primary or bottom
@@ -67,8 +67,8 @@ function get_met_label_loc (angle, index, count, is_primary, bigg_id,
     if (is_primary) {
       // Primary
       return {
-        x: 25 - 38 * Math.abs(Math.abs(angle) - Math.PI/2),
-        y: (Math.abs(angle) - Math.PI/2) * ((angle > 0) * 2 - 1) * 50
+        x: 25 - 38 * Math.abs(Math.abs(angle) - Math.PI / 2),
+        y: (Math.abs(angle) - Math.PI / 2) * ((angle > 0) * 2 - 1) * 50
       }
     } else if ((angle < 0 && left_right) || (angle > 0 && !left_right)) {
       // Right
@@ -95,7 +95,7 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
 
   // Calculate coordinates of reaction
   var selected_node_coords = { x: selected_node.x,
-                               y: selected_node.y }
+    y: selected_node.y }
 
   // Rotate main axis around angle with distance
   var reaction_length = 350
@@ -191,16 +191,16 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
   // generate anchor nodes
   var new_anchors = {}
   var anchors = [ { node_type: 'anchor_reactants',
-                    dis: { x: anchor_distance * (reaction_is_reversed ? 1 : -1), y: 0 } },
-                  { node_type: 'center',
-                    dis: { x: 0, y: 0 } },
-                  { node_type: 'anchor_products',
-                    dis: { x: anchor_distance * (reaction_is_reversed ? -1 : 1), y: 0 } } ],
-  anchor_ids = {}
+      dis: { x: anchor_distance * (reaction_is_reversed ? 1 : -1), y: 0 } },
+  { node_type: 'center',
+    dis: { x: 0, y: 0 } },
+  { node_type: 'anchor_products',
+    dis: { x: anchor_distance * (reaction_is_reversed ? -1 : 1), y: 0 } } ],
+    anchor_ids = {}
   anchors.map(function (n) {
     var new_id = String(++largest_ids.nodes)
-    var general_node_type = (n.node_type === 'center' ? 'midmarker' :
-                             'multimarker')
+    var general_node_type = (n.node_type === 'center' ? 'midmarker'
+                             : 'multimarker')
     new_anchors[new_id] = {
       node_type: general_node_type,
       x: center.x + n.dis.x,
@@ -219,7 +219,7 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
   // add the segments, outside to inside
   var new_anchor_groups = [
     [ anchor_ids['anchor_reactants'], anchor_ids['center'], 'reactants' ],
-    [ anchor_ids['anchor_products'],  anchor_ids['center'], 'products' ]
+    [ anchor_ids['anchor_products'], anchor_ids['center'], 'products' ]
   ]
   new_anchor_groups.map(function (l) {
     var from_id = l[0]
@@ -229,7 +229,7 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
       (reactant_count === 0 && l[2] === 'reactants' && new_reaction.reversibility) ||
       (product_count === 0 && l[2] === 'products')
     )
-    new_reaction.segments[new_segment_id] =  {
+    new_reaction.segments[new_segment_id] = {
       b1: null,
       b2: null,
       from_node_id: from_id,
@@ -239,12 +239,12 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
       reversibility: new_reaction.reversibility,
       data: new_reaction.data,
       reverse_flux: new_reaction.reverse_flux,
-      unconnected_segment_with_arrow: unconnected_seg,
+      unconnected_segment_with_arrow: unconnected_seg
     }
     new_anchors[from_id].connected_segments.push({ segment_id: new_segment_id,
-                                                   reaction_id: new_reaction_id })
+      reaction_id: new_reaction_id })
     new_anchors[to_id].connected_segments.push({ segment_id: new_segment_id,
-                                                 reaction_id: new_reaction_id })
+      reaction_id: new_reaction_id })
   })
 
   // Add the metabolites, keeping track of total reactants and products.
@@ -279,7 +279,7 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
         to_node_id: selected_node_id,
         from_node_coefficient: null,
         to_node_coefficient: metabolite.coefficient,
-        reversibility: new_reaction.reversibility,
+        reversibility: new_reaction.reversibility
       }
       // Update the existing node
       selected_node.connected_segments.push({
@@ -301,7 +301,7 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
         to_node_id: new_node_id,
         from_node_coefficient: null,
         to_node_coefficient: metabolite.coefficient,
-        reversibility: new_reaction.reversibility,
+        reversibility: new_reaction.reversibility
       }
       // save new node
       var met_label_d = get_met_label_loc(angle, metabolite.index,
@@ -311,7 +311,7 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
                                           primary_index)
       new_nodes[new_node_id] = {
         connected_segments: [ { segment_id: new_segment_id,
-                                reaction_id: new_reaction_id } ],
+          reaction_id: new_reaction_id } ],
         x: met_loc.circle.x,
         y: met_loc.circle.y,
         node_is_primary: metabolite.is_primary,
@@ -351,8 +351,8 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
                angle, selected_node_coords)
 
   return { new_reactions: new_reactions,
-           new_beziers: new_beziers,
-           new_nodes: new_nodes }
+    new_beziers: new_beziers,
+    new_nodes: new_nodes }
 }
 
 /**
@@ -376,9 +376,9 @@ function rotate_nodes (selected_nodes, reactions, beziers, angle, center) {
   for (var node_id in selected_nodes) {
     var node = selected_nodes[node_id],
     // rotation distance
-    displacement = rotate_around({ x: node.x, y: node.y }),
+      displacement = rotate_around({ x: node.x, y: node.y }),
     // move the node
-    updated = move_node_and_labels(node, reactions,
+      updated = move_node_and_labels(node, reactions,
                                    displacement)
     // move the bezier points
     node.connected_segments.map(function (segment_obj) {
@@ -389,13 +389,13 @@ function rotate_nodes (selected_nodes, reactions, beziers, angle, center) {
       // rotate the beziers
       var segment_id = segment_obj.segment_id
       var segment = reaction.segments[segment_id]
-      if (segment.to_node_id==node_id && segment.b2) {
+      if (segment.to_node_id == node_id && segment.b2) {
         var displacement = rotate_around(segment.b2)
         var bez_id = bezier_id_for_segment_id(segment_id, 'b2')
         segment.b2 = utils.c_plus_c(segment.b2, displacement)
         beziers[bez_id].x = segment.b2.x
         beziers[bez_id].y = segment.b2.y
-      } else if (segment.from_node_id==node_id && segment.b1) {
+      } else if (segment.from_node_id == node_id && segment.b1) {
         var displacement = rotate_around(segment.b1)
         var bez_id = bezier_id_for_segment_id(segment_id, 'b1')
         segment.b1 = utils.c_plus_c(segment.b1, displacement)
@@ -405,12 +405,12 @@ function rotate_nodes (selected_nodes, reactions, beziers, angle, center) {
     })
 
     updated_reaction_ids = utils.unique_concat([updated_reaction_ids,
-                                                updated.reaction_ids])
+      updated.reaction_ids])
     updated_node_ids.push(node_id)
   }
 
   return { node_ids: updated_node_ids,
-           reaction_ids: updated_reaction_ids }
+    reaction_ids: updated_reaction_ids }
 }
 
 /**
@@ -420,7 +420,7 @@ function move_node_and_dependents (node, node_id, reactions, beziers, displaceme
   var updated = move_node_and_labels(node, reactions, displacement)
 
   // move beziers
-  node.connected_segments.map(function(segment_obj) {
+  node.connected_segments.map(function (segment_obj) {
     var reaction = reactions[segment_obj.reaction_id]
     // If the reaction was not passed in the reactions argument, then ignore
     if (_.isUndefined(reaction)) return
@@ -458,7 +458,7 @@ function move_node_and_labels (node, reactions, displacement) {
 
   // recalculate: reaction label
   var updated_reaction_ids = []
-  node.connected_segments.map(function(segment_obj) {
+  node.connected_segments.map(function (segment_obj) {
     var reaction = reactions[segment_obj.reaction_id]
     // add to list of updated reaction ids if it isn't already there
     if (updated_reaction_ids.indexOf(segment_obj.reaction_id) < 0) {
@@ -499,7 +499,7 @@ function calculate_new_metabolite_coordinates (met, primary_index, main_axis,
   // new local coordinate system
   var displacement = main_axis[0]
   main_axis = [ utils.c_minus_c(main_axis[0], displacement),
-                utils.c_minus_c(main_axis[1], displacement) ]
+    utils.c_minus_c(main_axis[1], displacement) ]
   center = utils.c_minus_c(center, displacement)
 
   // Curve parameters
@@ -570,7 +570,7 @@ function calculate_new_metabolite_coordinates (met, primary_index, main_axis,
       y: center.y * b2_strength + end.y * (1 - b2_strength)
     }
     circle = {
-      x: main_axis[0].x + _met_secondary_disp (secondary_w, secondary_dis,
+      x: main_axis[0].x + _met_secondary_disp(secondary_w, secondary_dis,
                                                draw_at_index, num_slots),
       y: main_axis[0].y + _met_index_disp(w, draw_at_index, num_slots)
     }
@@ -584,8 +584,8 @@ function calculate_new_metabolite_coordinates (met, primary_index, main_axis,
       y: center.y * (1 - b1_strength) + reaction_axis[1].y * b1_strength
     }
     b2 = {
-      x: center.x*b2_strength + end.x*(1-b2_strength),
-      y: center.y*b2_strength + end.y*(1-b2_strength)
+      x: center.x * b2_strength + end.x * (1 - b2_strength),
+      y: center.y * b2_strength + end.y * (1 - b2_strength)
     }
     circle = {
       x: main_axis[1].x,
@@ -593,7 +593,7 @@ function calculate_new_metabolite_coordinates (met, primary_index, main_axis,
     }
   } else if ((met.coefficient > 0) !== is_reversed) {
     end = {
-      x: reaction_axis[1].x - _met_secondary_disp (secondary_w, secondary_dis,
+      x: reaction_axis[1].x - _met_secondary_disp(secondary_w, secondary_dis,
                                                    draw_at_index, num_slots),
       y: reaction_axis[1].y + _met_index_disp(w2, draw_at_index, num_slots)
     }
@@ -602,11 +602,11 @@ function calculate_new_metabolite_coordinates (met, primary_index, main_axis,
       y: center.y * (1 - b1_strength) + reaction_axis[1].y * b1_strength
     }
     b2 = {
-      x: center.x*b2_strength + end.x*(1-b2_strength),
-      y: center.y*b2_strength + end.y*(1-b2_strength)
+      x: center.x * b2_strength + end.x * (1 - b2_strength),
+      y: center.y * b2_strength + end.y * (1 - b2_strength)
     }
     circle = {
-      x: main_axis[1].x - _met_secondary_disp (secondary_w, secondary_dis,
+      x: main_axis[1].x - _met_secondary_disp(secondary_w, secondary_dis,
                                                draw_at_index, num_slots),
       y: main_axis[1].y + _met_index_disp(w, draw_at_index, num_slots)
     }

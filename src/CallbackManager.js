@@ -1,25 +1,22 @@
 /** CallbackManager */
 
-var utils = require('./utils');
-var _ = require('underscore');
+var utils = require('./utils')
+var _ = require('underscore')
 
-
-var CallbackManager = utils.make_class();
+var CallbackManager = utils.make_class()
 CallbackManager.prototype = {
-    init: init,
-    set: set,
-    remove: remove,
-    run: run
-};
-module.exports = CallbackManager;
+  init: init,
+  set: set,
+  remove: remove,
+  run: run
+}
+module.exports = CallbackManager
 
-
-function init() {
+function init () {
 
 }
 
-
-function set(name, fn) {
+function set (name, fn) {
     /** As in d3 callbacks, you can namespace your callbacks after a period:
 
      select_metabolite.direction_arrow
@@ -27,31 +24,28 @@ function set(name, fn) {
 
      Both are called by select_metabolite
 
-
      TODO add *arguments to set, as in _.defer()
 
      */
-    if (this.callbacks===undefined) this.callbacks = {};
-    if (this.callbacks[name]===undefined) this.callbacks[name] = [];
-    this.callbacks[name].push(fn);
+  if (this.callbacks === undefined) this.callbacks = {}
+  if (this.callbacks[name] === undefined) this.callbacks[name] = []
+  this.callbacks[name].push(fn)
 
-    return this;
+  return this
 }
 
-
-function remove(name) {
+function remove (name) {
     /** Remove a callback by name
 
      */
-    if (this.callbacks===undefined || Object.keys(this.callbacks).length==0) {
-        console.warn('No callbacks to remove');
-    }
-    delete this.callbacks[name];
-    return this;
+  if (this.callbacks === undefined || Object.keys(this.callbacks).length == 0) {
+    console.warn('No callbacks to remove')
+  }
+  delete this.callbacks[name]
+  return this
 }
 
-
-function run(name, this_arg) {
+function run (name, this_arg) {
     /** Run all callbacks that match the portion of name before the period ('.').
 
      Arguments
@@ -64,18 +58,18 @@ function run(name, this_arg) {
      the callback.
 
      */
-    if (_.isUndefined(this.callbacks)) return this;
-    if (_.isUndefined(this_arg)) this_arg = null;
+  if (_.isUndefined(this.callbacks)) return this
+  if (_.isUndefined(this_arg)) this_arg = null
     // pass all but the first (name) argument to the callback
-    var pass_args = Array.prototype.slice.call(arguments, 2);
+  var pass_args = Array.prototype.slice.call(arguments, 2)
     // look for matching callback names
-    for (var a_name in this.callbacks) {
-        var split_name = a_name.split('.')[0];
-        if (split_name==name) {
-            this.callbacks[a_name].forEach(function(fn) {
-                fn.apply(this_arg, pass_args);
-            });
-        }
+  for (var a_name in this.callbacks) {
+    var split_name = a_name.split('.')[0]
+    if (split_name == name) {
+      this.callbacks[a_name].forEach(function (fn) {
+        fn.apply(this_arg, pass_args)
+      })
     }
-    return this;
+  }
+  return this
 }

@@ -1,1 +1,1 @@
-var DirectionArrow = require('../DirectionArrow');
+var DirectionArrow = require('../DirectionArrow')

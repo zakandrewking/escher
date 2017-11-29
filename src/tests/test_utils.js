@@ -13,7 +13,7 @@ const assert = require('chai').assert
 describe('utils.set_options', () => {
   it('defaults to null', () => {
     const options = utils.set_options({ a: undefined,
-                                      b: null }, {})
+      b: null }, {})
     for (let x in options) {
       assert.strictEqual(options[x], null)
     }
@@ -172,8 +172,8 @@ describe('utils.class_with_optional_new', () => {
 })
 
 it('utils.compare_arrays', () => {
-  assert.strictEqual(utils.compare_arrays([1,2], [1,2]), true)
-  assert.strictEqual(utils.compare_arrays([1,2], [3,2]), false)
+  assert.strictEqual(utils.compare_arrays([1, 2], [1, 2]), true)
+  assert.strictEqual(utils.compare_arrays([1, 2], [3, 2]), false)
 })
 
 describe('utils.array_to_object', () => {
@@ -185,11 +185,11 @@ describe('utils.array_to_object', () => {
   })
   it('adds null for missing values', () => {
     // multiple
-    const a = [{a:1, b:2}, {b:3, c:4}]
+    const a = [{a: 1, b: 2}, {b: 3, c: 4}]
     const out = utils.array_to_object(a)
     assert.deepEqual(out, { a: [1, null],
-                            b: [2, 3],
-                            c: [null, 4] })
+      b: [2, 3],
+      c: [null, 4] })
   })
 })
 
@@ -228,7 +228,7 @@ describe('utils.load_json_or_csv', () => {
   it('loads JSON', () => {
     utils.load_json_or_csv(null,
                            data_styles.csv_converter,
-                           function(error, value) {
+                           function (error, value) {
                              if (error) console.warn(error)
                              assert.deepEqual(value, {'GAPD': 100})
                            },
@@ -239,7 +239,7 @@ describe('utils.load_json_or_csv', () => {
   it('loads CSV', () => {
     utils.load_json_or_csv(null,
                            data_styles.csv_converter,
-                           function(error, value) {
+                           function (error, value) {
                              if (error) console.warn(error)
                              assert.deepEqual(value, [{'GAPD': '100'}])
                            },
@@ -251,7 +251,7 @@ describe('utils.load_json_or_csv', () => {
 
 describe('utils.to_degrees', () => {
   it('returns degrees', () => {
-    assert.strictEqual(utils.to_degrees(Math.PI/2), 90)
+    assert.strictEqual(utils.to_degrees(Math.PI / 2), 90)
     assert.strictEqual(utils.to_degrees(Math.PI), 180)
     assert.strictEqual(utils.to_degrees(-Math.PI), -180)
   })
@@ -259,10 +259,10 @@ describe('utils.to_degrees', () => {
 
 describe('utils.to_radians_norm', () => {
   it('returns radians between -PI and PI', () => {
-    assert.strictEqual(utils.to_radians_norm(90), Math.PI/2)
-    assert.strictEqual(utils.to_radians_norm(-90), -Math.PI/2)
-    assert.strictEqual(utils.to_radians_norm(-270), Math.PI/2)
-    assert.strictEqual(utils.to_radians_norm(270), -Math.PI/2)
+    assert.strictEqual(utils.to_radians_norm(90), Math.PI / 2)
+    assert.strictEqual(utils.to_radians_norm(-90), -Math.PI / 2)
+    assert.strictEqual(utils.to_radians_norm(-270), Math.PI / 2)
+    assert.strictEqual(utils.to_radians_norm(270), -Math.PI / 2)
   })
 })
 
@@ -333,7 +333,7 @@ describe('utils.parse_url_components', () => {
     // standard name
     const options = utils.parse_url_components(the_window, {})
     assert.deepEqual(options, { map_name: 'iJO1366.Central metabolism',
-                                model_name: 'iJO1366@#%' })
+      model_name: 'iJO1366@#%' })
   })
 
   it('adds to existing options', () => {
@@ -341,16 +341,16 @@ describe('utils.parse_url_components', () => {
     const options = utils.parse_url_components(the_window,
                                          { a: 'b', model_name: 'old_model_name' })
     assert.deepEqual(options, { map_name: 'iJO1366.Central metabolism',
-                                model_name: 'iJO1366@#%',
-                                a: 'b' })
+      model_name: 'iJO1366@#%',
+      a: 'b' })
   })
 
   it('recognizes array attributes', () => {
     the_window.location.search = '?quick_jump[]=iJO1366.Central%20metabolism&quick_jump[]=iJO1366.Fatty%20acid%20metabolism'
     const options = utils.parse_url_components(the_window, { a: 'b' })
     assert.deepEqual(options, { a: 'b',
-                                quick_jump: ['iJO1366.Central metabolism',
-                                             'iJO1366.Fatty acid metabolism'] })
+      quick_jump: ['iJO1366.Central metabolism',
+        'iJO1366.Fatty acid metabolism'] })
   })
 })
 
@@ -372,8 +372,8 @@ describe('utils.check_browser', () => {
   it('looks for browser name', () => {
     global.navigator = { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) ' +
                          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
-                         appName: 'Netscape',
-                         appVersion: '5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 ' +
+      appName: 'Netscape',
+      appVersion: '5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 ' +
                          '(KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36' }
     assert.isTrue(utils.check_browser('chrome'))
     assert.isFalse(utils.check_browser('safari'))

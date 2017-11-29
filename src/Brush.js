@@ -19,7 +19,7 @@ var Brush = utils.make_class()
 Brush.prototype = {
   init: init,
   toggle: toggle,
-  setup_selection_brush: setup_selection_brush,
+  setup_selection_brush: setup_selection_brush
 }
 module.exports = Brush
 
@@ -108,9 +108,9 @@ function setup_selection_brush () {
           // When shift is pressed, ignore the currently selected nodes.
           // Otherwise, brush all nodes.
           var selection = (
-            shift_key_on ?
-              selectable_selection.selectAll('.node:not(.selected),.text-label:not(.selected)') :
-              selectable_selection.selectAll('.node,.text-label')
+            shift_key_on
+              ? selectable_selection.selectAll('.node:not(.selected),.text-label:not(.selected)')
+              : selectable_selection.selectAll('.node,.text-label')
           )
           selection.classed('selected', (d) => {
             var sx = d.x

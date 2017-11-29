@@ -16,8 +16,7 @@ describe('KeyManager', () => {
 
   afterEach(() => {
     // clear the key manager
-    if (key_manager)
-      key_manager.toggle(false)
+    if (key_manager) { key_manager.toggle(false) }
     key_manager = null
   })
 
@@ -48,10 +47,10 @@ describe('KeyManager', () => {
     let target = null
     key_manager = KeyManager({
       q: { key: 'ctrl+q',
-           fn: function() { pressed_q = true; target = this },
-           target: { my: 'target' } },
+        fn: function () { pressed_q = true; target = this },
+        target: { my: 'target' } },
       p: { key: 'p',
-           fn: () => pressed_p = true }
+        fn: () => pressed_p = true }
     })
     // toggle off
     key_manager.toggle(false)

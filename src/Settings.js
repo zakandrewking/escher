@@ -160,7 +160,7 @@ function abandon_changes () {
   // console.log('changes abandoned')
 }
 
-function accept_changes() {
+function accept_changes () {
   this.status_bus.push('accept')
   // console.log('changes accepted')
 }

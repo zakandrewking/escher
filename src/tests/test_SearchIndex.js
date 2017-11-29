@@ -8,7 +8,6 @@ const assert = require('chai').assert
 const d3_body = require('./helpers/d3_body')
 const get_map = require('./helpers/get_map')
 
-
 describe('SearchIndex', () => {
   let index
 
@@ -22,13 +21,13 @@ describe('SearchIndex', () => {
   })
 
   it('insert throws error for malformed records', () => {
-    assert.throws(() => { index.insert('123', {}, false, true); },
+    assert.throws(() => { index.insert('123', {}, false, true) },
                   'malformed record')
   })
 
   it('insert throws error for repeated index', () => {
     index.insert('123', {'name': 'a', 'data': 1})
-    assert.throws(() => { index.insert('123', {}, false, false); },
+    assert.throws(() => { index.insert('123', {}, false, false) },
                   'id is already in the index')
   })
 
@@ -46,7 +45,7 @@ describe('SearchIndex', () => {
   it('remove', () => {
     index.insert('123', {'name': 'a', 'data': 3}, true)
     const out = index.remove('123'),
-          out2 = index.remove('123')
+      out2 = index.remove('123')
     assert.isTrue(out)
     assert.isFalse(out2)
     assert.strictEqual(index.find('a').length, 0)

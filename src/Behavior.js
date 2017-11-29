@@ -50,7 +50,6 @@ Behavior.prototype = {
 }
 module.exports = Behavior
 
-
 // definitions
 function init (map, undo_stack) {
   this.map = map
@@ -171,7 +170,8 @@ function toggle_rotation_mode (on_off) {
                                        beziers, total_angle,
                                        center)
       map.draw_these_nodes(updated.node_ids)
-      map.draw_these_reactions(updated.reaction_ids) }
+      map.draw_these_reactions(updated.reaction_ids)
+    }
     var center_fn = function () {
       return this.center
     }.bind(this)
@@ -224,22 +224,20 @@ function toggle_rotation_mode (on_off) {
         this.center = { x: new_loc[0], y: new_loc[1] }
       }.bind(this)))
   }
-  function hide_center(sel) {
+  function hide_center (sel) {
     this.map.sel.select('#rotation-center')
       .attr('visibility', 'hidden')
   }
-  function average_location(nodes) {
+  function average_location (nodes) {
     var xs = []
     var ys = []
     for (var node_id in nodes) {
       var node = nodes[node_id]
-      if (node.x !== undefined)
-        xs.push(node.x)
-      if (node.y !== undefined)
-        ys.push(node.y)
+      if (node.x !== undefined) { xs.push(node.x) }
+      if (node.y !== undefined) { ys.push(node.y) }
     }
     return { x: utils.mean(xs),
-             y: utils.mean(ys) }
+      y: utils.mean(ys) }
   }
 }
 
@@ -274,8 +272,7 @@ function toggle_selectable_click (on_off) {
     this.node_mouseover = function (d) {
       d3_select(this).style('stroke-width', null)
       var current = parseFloat(d3_select(this).style('stroke-width'))
-      if (!d3_select(this.parentNode).classed('selected'))
-        d3_select(this).style('stroke-width', current * 3 + 'px')
+      if (!d3_select(this.parentNode).classed('selected')) { d3_select(this).style('stroke-width', current * 3 + 'px') }
     }
     this.node_mouseout = function (d) {
       d3_select(this).style('stroke-width', null)
@@ -323,7 +320,7 @@ function toggle_text_label_edit (on_off) {
       d3_selection.event.preventDefault()
       var coords = {
         x: d3_mouse(node)[0],
-        y: d3_mouse(node)[1],
+        y: d3_mouse(node)[1]
       }
       this.map.callback_manager.run('new_text_label', null, coords)
     }.bind(this, this.map.sel.node()))
@@ -384,7 +381,6 @@ function toggle_label_mouseover (on_off) {
   }
 
   if (on_off) {
-
     // Show/hide tooltip.
     // @param {String} type - 'reaction_label' or 'node_label'
     // @param {Object} d - D3 data for DOM element
@@ -397,7 +393,6 @@ function toggle_label_mouseover (on_off) {
     this.label_mouseout = function () {
       this.map.callback_manager.run('delay_hide_tooltip')
     }.bind(this)
-
   } else {
     this.label_mouseover = null
   }
@@ -434,10 +429,10 @@ function toggle_bezier_drag (on_off) {
   if (on_off) {
     this.bezier_drag = this._get_bezier_drag(this.map)
     this.bezier_mouseover = function (d) {
-      d3_select(this).style('stroke-width', String(3)+'px')
+      d3_select(this).style('stroke-width', String(3) + 'px')
     }
     this.bezier_mouseout = function (d) {
-      d3_select(this).style('stroke-width', String(1)+'px')
+      d3_select(this).style('stroke-width', String(1) + 'px')
     }
   } else {
     this.bezier_drag = this.empty_behavior
@@ -487,8 +482,8 @@ function _get_selectable_drag (map, undo_stack) {
     if (d3_select(this).attr('class').indexOf('label') === -1) {
       // Note that drag start is called even for a click event
       var data = this.parentNode.__data__,
-      bigg_id = data.bigg_id,
-      node_group = this.parentNode
+        bigg_id = data.bigg_id,
+        node_group = this.parentNode
       // Move element to back (for the next step to work). Wait 200ms
       // before making the move, becuase otherwise the element will be
       // deleted before the click event gets called, and selection
@@ -538,7 +533,7 @@ function _get_selectable_drag (map, undo_stack) {
     var selected_text_label_ids = map.get_selected_text_label_ids()
     node_ids_to_drag = []; text_label_ids_to_drag = []
     // choose the nodes and text labels to drag
-    if (grabbed['type']=='node' &&
+    if (grabbed['type'] == 'node' &&
         selected_node_ids.indexOf(grabbed['id']) === -1) {
       node_ids_to_drag.push(grabbed['id'])
     } else if (grabbed['type'] === 'label' &&
@@ -551,13 +546,13 @@ function _get_selectable_drag (map, undo_stack) {
     reaction_ids = []
     var displacement = {
       x: d3_selection.event.dx,
-      y: d3_selection.event.dy,
+      y: d3_selection.event.dy
     }
     total_displacement = utils.c_plus_c(total_displacement, displacement)
     node_ids_to_drag.forEach(function (node_id) {
       // update data
       var node = map.nodes[node_id],
-      updated = build.move_node_and_dependents(node, node_id,
+        updated = build.move_node_and_dependents(node, node_id,
                                                map.reactions,
                                                map.beziers,
                                                displacement)
@@ -599,31 +594,30 @@ function _get_selectable_drag (map, undo_stack) {
     if (node_to_combine_array.length === 1) {
       // If a node is ready for it, combine nodes
       var fixed_node_id = node_to_combine_array[0],
-      dragged_node_id = this.parentNode.__data__.node_id,
-      saved_dragged_node = utils.clone(map.nodes[dragged_node_id]),
-      segment_objs_moved_to_combine = combine_nodes_and_draw(fixed_node_id,
+        dragged_node_id = this.parentNode.__data__.node_id,
+        saved_dragged_node = utils.clone(map.nodes[dragged_node_id]),
+        segment_objs_moved_to_combine = combine_nodes_and_draw(fixed_node_id,
                                                              dragged_node_id)
       undo_stack.push(function () {
         // undo
         // put the old node back
         map.nodes[dragged_node_id] = saved_dragged_node
         var fixed_node = map.nodes[fixed_node_id],
-            updated_reactions = []
+          updated_reactions = []
         segment_objs_moved_to_combine.forEach(function (segment_obj) {
           var segment = map.reactions[segment_obj.reaction_id].segments[segment_obj.segment_id]
-          if (segment.from_node_id==fixed_node_id) {
+          if (segment.from_node_id == fixed_node_id) {
             segment.from_node_id = dragged_node_id
-          } else if (segment.to_node_id==fixed_node_id) {
+          } else if (segment.to_node_id == fixed_node_id) {
             segment.to_node_id = dragged_node_id
           } else {
             console.error('Segment does not connect to fixed node')
           }
           // removed this segment_obj from the fixed node
           fixed_node.connected_segments = fixed_node.connected_segments.filter(function (x) {
-            return !(x.reaction_id==segment_obj.reaction_id && x.segment_id==segment_obj.segment_id)
+            return !(x.reaction_id == segment_obj.reaction_id && x.segment_id == segment_obj.segment_id)
           })
-          if (updated_reactions.indexOf(segment_obj.reaction_id)==-1)
-            updated_reactions.push(segment_obj.reaction_id)
+          if (updated_reactions.indexOf(segment_obj.reaction_id) == -1) { updated_reactions.push(segment_obj.reaction_id) }
         })
         map.draw_these_nodes([dragged_node_id])
         map.draw_these_reactions(updated_reactions)
@@ -631,7 +625,6 @@ function _get_selectable_drag (map, undo_stack) {
         // redo
         combine_nodes_and_draw(fixed_node_id, dragged_node_id)
       })
-
     } else {
       // otherwise, drag node
 
@@ -640,9 +633,9 @@ function _get_selectable_drag (map, undo_stack) {
       var saved_displacement = utils.clone(total_displacement),
       // BUG TODO this variable disappears!
       // Happens sometimes when you drag a node, then delete it, then undo twice
-      saved_node_ids = utils.clone(node_ids_to_drag),
-      saved_text_label_ids = utils.clone(text_label_ids_to_drag),
-      saved_reaction_ids = utils.clone(reaction_ids)
+        saved_node_ids = utils.clone(node_ids_to_drag),
+        saved_text_label_ids = utils.clone(text_label_ids_to_drag),
+        saved_reaction_ids = utils.clone(reaction_ids)
       undo_stack.push(function () {
         // undo
         saved_node_ids.forEach(function (node_id) {
@@ -708,8 +701,8 @@ function _get_selectable_drag (map, undo_stack) {
         console.warn('Could not find connected segment ' + segment_obj.segment_id)
         return
       }
-      if (segment.from_node_id==dragged_node_id) segment.from_node_id = fixed_node_id
-      else if (segment.to_node_id==dragged_node_id) segment.to_node_id = fixed_node_id
+      if (segment.from_node_id == dragged_node_id) segment.from_node_id = fixed_node_id
+      else if (segment.to_node_id == dragged_node_id) segment.to_node_id = fixed_node_id
       else {
         console.error('Segment does not connect to dragged node')
         return
@@ -717,7 +710,6 @@ function _get_selectable_drag (map, undo_stack) {
       // moved segment_obj to fixed_node
       fixed_node.connected_segments.push(segment_obj)
       updated_segment_objs.push(utils.clone(segment_obj))
-      return
     })
     // delete the old node
     map.delete_node_data([dragged_node_id])
@@ -815,7 +807,7 @@ function _get_node_label_drag (map) {
   }
   var undo_fn = function (d, displacement) {
     move_label(d.node_id, utils.c_times_scalar(displacement, -1))
-    map.draw_these_nodes ([ d.node_id ])
+    map.draw_these_nodes([ d.node_id ])
   }
   var redo_fn = function (d, displacement) {
     move_label(d.node_id, displacement)
@@ -863,17 +855,17 @@ function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
     // update data
     var displacement = {
       x: d3_selection.event.dx,
-      y: d3_selection.event.dy,
+      y: d3_selection.event.dy
     }
     var location = {
       x: d3_mouse(rel)[0],
-      y: d3_mouse(rel)[1],
+      y: d3_mouse(rel)[1]
     }
 
     // remember the displacement
     total_displacement = utils.c_plus_c(total_displacement, displacement)
     drag_fn(d, displacement, total_displacement, location)
-  }.bind(this))
+  })
 
   behavior.on('end', function (d) {
     this.dragging = false
@@ -884,7 +876,7 @@ function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
     var saved_displacement = utils.clone(total_displacement) // BUG TODO this variable disappears!
     var saved_location = {
       x: d3_mouse(rel)[0],
-      y: d3_mouse(rel)[1],
+      y: d3_mouse(rel)[1]
     }
 
     undo_stack.push(function () {
@@ -921,7 +913,6 @@ function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
  */
 function _get_generic_angular_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
                                    get_center, relative_to_selection) {
-
   // define some variables
   var behavior = d3_drag()
   var total_angle
@@ -941,18 +932,18 @@ function _get_generic_angular_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
     // update data
     var displacement = {
       x: d3_selection.event.dx,
-      y: d3_selection.event.dy,
+      y: d3_selection.event.dy
     }
     var location = {
       x: d3_mouse(rel)[0],
-      y: d3_mouse(rel)[1],
+      y: d3_mouse(rel)[1]
     }
     var center = get_center()
     var angle = utils.angle_for_event(displacement, location, center)
     // remember the displacement
     total_angle = total_angle + angle
     drag_fn(d, angle, total_angle, center)
-  }.bind(this))
+  })
 
   behavior.on('end', function (d) {
     this.dragging = false

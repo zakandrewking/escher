@@ -64,8 +64,8 @@ function setup () {
       .attr('width', this.width * mouse_node_mult)
       .attr('height', this.height * mouse_node_mult)
       .attr('transform', 'translate(' +
-            [ self.x - this.width*mouse_node_mult/2,
-              self.y - this.height*mouse_node_mult/2 ] +
+      [ self.x - this.width * mouse_node_mult / 2,
+        self.y - this.height * mouse_node_mult / 2 ] +
             ')')
     .attr('pointer-events', 'all')
   this.mouse_node = mouse_node
@@ -81,24 +81,24 @@ function setup () {
   // .origin(Object)
       .on('start', stop_propagation)
       .on('drag', rdragresize),
-      drag_left = d3_drag()
+    drag_left = d3_drag()
   // .origin(Object)
       .on('start', stop_propagation)
       .on('drag', ldragresize),
-      drag_top = d3_drag()
+    drag_top = d3_drag()
   // .origin(Object)
       .on('start', stop_propagation)
       .on('drag', tdragresize),
-      drag_bottom = d3_drag()
+    drag_bottom = d3_drag()
   // .origin(Object)
       .on('start', stop_propagation)
       .on('drag', bdragresize)
 
   var left = new_sel.append('rect')
       .classed('drag-rect', true)
-    .attr('transform', function(d) {
-      return 'translate('+[ d.x - (dragbar_width/2),
-                            d.y + (dragbar_width/2) ]+')'
+    .attr('transform', function (d) {
+      return 'translate(' + [ d.x - (dragbar_width / 2),
+        d.y + (dragbar_width / 2) ] + ')'
     })
     .attr('height', this.height - dragbar_width)
       .attr('id', 'dragleft')
@@ -109,9 +109,9 @@ function setup () {
 
   var right = new_sel.append('rect')
     .classed('drag-rect', true)
-    .attr('transform', function(d) {
-      return 'translate('+[ d.x + self.width - (dragbar_width/2),
-                            d.y + (dragbar_width/2) ]+')'
+    .attr('transform', function (d) {
+      return 'translate(' + [ d.x + self.width - (dragbar_width / 2),
+        d.y + (dragbar_width / 2) ] + ')'
     })
     .attr('id', 'dragright')
     .attr('height', this.height - dragbar_width)
@@ -122,9 +122,9 @@ function setup () {
 
   var top = new_sel.append('rect')
     .classed('drag-rect', true)
-    .attr('transform', function(d) {
-      return 'translate('+[ d.x + (dragbar_width/2),
-                            d.y - (dragbar_width/2) ]+')'
+    .attr('transform', function (d) {
+      return 'translate(' + [ d.x + (dragbar_width / 2),
+        d.y - (dragbar_width / 2) ] + ')'
     })
     .attr('height', dragbar_width)
     .attr('id', 'dragtop')
@@ -135,9 +135,9 @@ function setup () {
 
   var bottom = new_sel.append('rect')
     .classed('drag-rect', true)
-    .attr('transform', function(d) {
-      return 'translate('+[ d.x + (dragbar_width/2),
-                            d.y + self.height - (dragbar_width/2) ]+')'
+    .attr('transform', function (d) {
+      return 'translate(' + [ d.x + (dragbar_width / 2),
+        d.y + self.height - (dragbar_width / 2) ] + ')'
     })
     .attr('id', 'dragbottom')
     .attr('height', dragbar_width)
@@ -153,7 +153,7 @@ function setup () {
 
   function transform_string (x, y, current_transform) {
     var tr = utils.d3_transform_catch(current_transform),
-    translate = tr.translate
+      translate = tr.translate
     if (x !== null) translate[0] = x
     if (y !== null) translate[1] = y
     return 'translate(' + translate + ')'
@@ -164,20 +164,20 @@ function setup () {
     d.x = Math.min(d.x + self.width - (dragbar_width / 2), d3_selection.event.x)
     self.x = d.x
     self.width = self.width + (oldx - d.x)
-    left.attr('transform', function(d) {
+    left.attr('transform', function (d) {
       return transform_string(d.x - (dragbar_width / 2), null, left.attr('transform'))
     })
-    mouse_node.attr('transform', function(d) {
+    mouse_node.attr('transform', function (d) {
       return transform_string(d.x, null, mouse_node.attr('transform'))
-    }).attr('width', self.width*mouse_node_mult)
-    rect.attr('transform', function(d) {
+    }).attr('width', self.width * mouse_node_mult)
+    rect.attr('transform', function (d) {
       return transform_string(d.x, null, rect.attr('transform'))
     }).attr('width', self.width)
-    top.attr('transform', function(d) {
-      return transform_string(d.x + (dragbar_width/2), null, top.attr('transform'))
+    top.attr('transform', function (d) {
+      return transform_string(d.x + (dragbar_width / 2), null, top.attr('transform'))
     }).attr('width', self.width - dragbar_width)
-    bottom.attr('transform', function(d) {
-      return transform_string(d.x + (dragbar_width/2), null, bottom.attr('transform'))
+    bottom.attr('transform', function (d) {
+      return transform_string(d.x + (dragbar_width / 2), null, bottom.attr('transform'))
     }).attr('width', self.width - dragbar_width)
 
     self.callback_manager.run('resize')
@@ -185,16 +185,16 @@ function setup () {
 
   function rdragresize (d) {
     d3_selection.event.sourceEvent.stopPropagation()
-    var dragx = Math.max(d.x + (dragbar_width/2), d.x + self.width + d3_selection.event.dx)
-    //recalculate width
+    var dragx = Math.max(d.x + (dragbar_width / 2), d.x + self.width + d3_selection.event.dx)
+    // recalculate width
     self.width = dragx - d.x
-    //move the right drag handle
-    right.attr('transform', function(d) {
-      return transform_string(dragx - (dragbar_width/2), null, right.attr('transform'))
+    // move the right drag handle
+    right.attr('transform', function (d) {
+      return transform_string(dragx - (dragbar_width / 2), null, right.attr('transform'))
     })
-    //resize the drag rectangle
-    //as we are only resizing from the right, the x coordinate does not need to change
-    mouse_node.attr('width', self.width*mouse_node_mult)
+    // resize the drag rectangle
+    // as we are only resizing from the right, the x coordinate does not need to change
+    mouse_node.attr('width', self.width * mouse_node_mult)
     rect.attr('width', self.width)
     top.attr('width', self.width - dragbar_width)
     bottom.attr('width', self.width - dragbar_width)
@@ -208,37 +208,37 @@ function setup () {
     d.y = Math.min(d.y + self.height - (dragbar_width / 2), d3_selection.event.y)
     self.y = d.y
     self.height = self.height + (oldy - d.y)
-    top.attr('transform', function(d) {
+    top.attr('transform', function (d) {
       return transform_string(null, d.y - (dragbar_width / 2), top.attr('transform'))
     })
-    mouse_node.attr('transform', function(d) {
+    mouse_node.attr('transform', function (d) {
       return transform_string(null, d.y, mouse_node.attr('transform'))
-    }).attr('width', self.height*mouse_node_mult)
-    rect.attr('transform', function(d) {
+    }).attr('width', self.height * mouse_node_mult)
+    rect.attr('transform', function (d) {
       return transform_string(null, d.y, rect.attr('transform'))
     }).attr('height', self.height)
-    left.attr('transform', function(d) {
-      return transform_string(null, d.y + (dragbar_width/2), left.attr('transform'))
+    left.attr('transform', function (d) {
+      return transform_string(null, d.y + (dragbar_width / 2), left.attr('transform'))
     }).attr('height', self.height - dragbar_width)
-    right.attr('transform', function(d) {
-      return transform_string(null, d.y + (dragbar_width/2), right.attr('transform'))
+    right.attr('transform', function (d) {
+      return transform_string(null, d.y + (dragbar_width / 2), right.attr('transform'))
     }).attr('height', self.height - dragbar_width)
 
     self.callback_manager.run('resize')
   }
 
-  function bdragresize(d) {
+  function bdragresize (d) {
     d3_selection.event.sourceEvent.stopPropagation()
-    var dragy = Math.max(d.y + (dragbar_width/2), d.y + self.height + d3_selection.event.dy)
-    //recalculate width
+    var dragy = Math.max(d.y + (dragbar_width / 2), d.y + self.height + d3_selection.event.dy)
+    // recalculate width
     self.height = dragy - d.y
-    //move the right drag handle
-    bottom.attr('transform', function(d) {
-      return transform_string(null, dragy - (dragbar_width/2), bottom.attr('transform'))
+    // move the right drag handle
+    bottom.attr('transform', function (d) {
+      return transform_string(null, dragy - (dragbar_width / 2), bottom.attr('transform'))
     })
-    //resize the drag rectangle
-    //as we are only resizing from the right, the x coordinate does not need to change
-    mouse_node.attr('height', self.height*mouse_node_mult)
+    // resize the drag rectangle
+    // as we are only resizing from the right, the x coordinate does not need to change
+    mouse_node.attr('height', self.height * mouse_node_mult)
     rect.attr('height', self.height)
     left.attr('height', self.height - dragbar_width)
     right.attr('height', self.height - dragbar_width)

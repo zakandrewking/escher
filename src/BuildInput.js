@@ -54,7 +54,7 @@ function init (selection, map, zoom_container, settings) {
   this.completely = c
   // close button
   new_sel.append('button').attr('class', 'button input-close-button')
-    .text("×")
+    .text('×')
     .on('mousedown', function () { this.hide_dropdown() }.bind(this))
 
   // map
@@ -95,39 +95,36 @@ function setup_map_callbacks (map) {
       this.toggle(false)
     }
   }.bind(this))
-  map.callback_manager.set('deselect_nodes', function() {
+  map.callback_manager.set('deselect_nodes', function () {
     this.direction_arrow.hide()
     this.hide_dropdown()
   }.bind(this))
 
   // svg export
-  map.callback_manager.set('before_svg_export', function() {
+  map.callback_manager.set('before_svg_export', function () {
     this.direction_arrow.hide()
     this.hide_target()
   }.bind(this))
 }
 
-function setup_zoom_callbacks(zoom_container) {
-  zoom_container.callback_manager.set('zoom.input', function() {
+function setup_zoom_callbacks (zoom_container) {
+  zoom_container.callback_manager.set('zoom.input', function () {
     if (this.is_active) {
       this.place_at_selected()
     }
   }.bind(this))
 }
 
-function is_visible() {
+function is_visible () {
   return this.placed_div.is_visible()
 }
 
-function toggle(on_off) {
-  if (on_off===undefined) this.is_active = !this.is_active
+function toggle (on_off) {
+  if (on_off === undefined) this.is_active = !this.is_active
   else this.is_active = on_off
   if (this.is_active) {
     this.toggle_start_reaction_listener(true)
-    if (_.isNull(this.target_coords))
-      this.reload_at_selected()
-    else
-      this.placed_div.place(this.target_coords)
+    if (_.isNull(this.target_coords)) { this.reload_at_selected() } else { this.placed_div.place(this.target_coords) }
     this.show_dropdown()
     this.map.set_status('Click on the canvas or an existing metabolite')
     this.direction_arrow.show()
@@ -142,7 +139,7 @@ function toggle(on_off) {
 function show_dropdown (coords) {
   // escape key
   this.clear_escape = this.map.key_manager
-    .add_escape_listener(function() {
+    .add_escape_listener(function () {
       this.hide_dropdown()
     }.bind(this), true)
   // dropdown
@@ -162,29 +159,29 @@ function hide_dropdown () {
   this.completely.hideDropDown()
 }
 
-function place_at_selected() {
+function place_at_selected () {
   /** Place autocomplete box at the first selected node. */
   // get the selected node
   this.map.deselect_text_labels()
   var selected_node = this.map.select_single_node()
-  if (selected_node==null) return
+  if (selected_node == null) return
   var coords = { x: selected_node.x, y: selected_node.y }
   this.place(coords)
 }
 
-function place(coords) {
+function place (coords) {
   this.placed_div.place(coords)
   this.direction_arrow.set_location(coords)
   this.direction_arrow.show()
 }
 
-function reload_at_selected() {
+function reload_at_selected () {
   /** Reload data for autocomplete box and redraw box at the first selected
       node. */
   // get the selected node
   this.map.deselect_text_labels()
   var selected_node = this.map.select_single_node()
-  if (selected_node==null) return false
+  if (selected_node == null) return false
   var coords = { x: selected_node.x, y: selected_node.y }
   // reload the reaction input
   this.reload(selected_node, coords, false)
@@ -203,7 +200,7 @@ function reload (selected_node, coords, starting_from_scratch) {
 
   this.place(coords)
 
-  if (this.map.cobra_model===null) {
+  if (this.map.cobra_model === null) {
     this.completely.setText('Cannot add: No model.')
     return
   }
@@ -214,17 +211,17 @@ function reload (selected_node, coords, starting_from_scratch) {
 
   // Find selected
   var options = [],
-  cobra_reactions = this.map.cobra_model.reactions,
-  cobra_metabolites = this.map.cobra_model.metabolites,
-  reactions = this.map.reactions,
-  has_data_on_reactions = this.map.has_data_on_reactions,
-  reaction_data = this.map.reaction_data,
-  reaction_data_styles = this.map.reaction_data_styles,
-  selected_m_name = (selected_node ? (show_names ? selected_node.name : selected_node.bigg_id) : ''),
-  bold_mets_in_str = function(str, mets) {
-    return str.replace(new RegExp('(^| )(' + mets.join('|') + ')($| )', 'g'),
+    cobra_reactions = this.map.cobra_model.reactions,
+    cobra_metabolites = this.map.cobra_model.metabolites,
+    reactions = this.map.reactions,
+    has_data_on_reactions = this.map.has_data_on_reactions,
+    reaction_data = this.map.reaction_data,
+    reaction_data_styles = this.map.reaction_data_styles,
+    selected_m_name = (selected_node ? (show_names ? selected_node.name : selected_node.bigg_id) : ''),
+    bold_mets_in_str = function (str, mets) {
+      return str.replace(new RegExp('(^| )(' + mets.join('|') + ')($| )', 'g'),
                        '$1<b>$2</b>$3')
-  }
+    }
 
   // for reactions
   var reaction_suggestions = {}
@@ -240,10 +237,8 @@ function reload (selected_node, coords, starting_from_scratch) {
 
     // check segments for match to selected metabolite
     for (var met_bigg_id in reaction.metabolites) {
-
       // if starting with a selected metabolite, check for that id
       if (starting_from_scratch || met_bigg_id == selected_node.bigg_id) {
-
         // don't add suggestions twice
         if (bigg_id in reaction_suggestions) continue
 
@@ -251,11 +246,11 @@ function reload (selected_node, coords, starting_from_scratch) {
 
         if (has_data_on_reactions) {
           options.push({ reaction_data: reaction.data,
-                         html: ('<b>' + show_r_name + '</b>' +
+            html: ('<b>' + show_r_name + '</b>' +
                                 ': ' +
                                 reaction.data_string),
-                         matches: [show_r_name],
-                         id: bigg_id })
+            matches: [show_r_name],
+            id: bigg_id })
           reaction_suggestions[bigg_id] = true
         } else {
           // get the metabolite names or IDs
@@ -274,7 +269,7 @@ function reload (selected_node, coords, starting_from_scratch) {
               show_met_names.push(met_id)
             }
           }
-          var show_gene_names = _.flatten(reaction.genes.map(function(g_obj) {
+          var show_gene_names = _.flatten(reaction.genes.map(function (g_obj) {
             return [ g_obj.name, g_obj.bigg_id ]
           }))
           // get the reaction string
@@ -297,11 +292,11 @@ function reload (selected_node, coords, starting_from_scratch) {
   // Generate the array of reactions to suggest and sort it
   var sort_fn
   if (has_data_on_reactions) {
-    sort_fn = function(x, y) {
+    sort_fn = function (x, y) {
       return Math.abs(y.reaction_data) - Math.abs(x.reaction_data)
     }
   } else {
-    sort_fn = function(x, y) {
+    sort_fn = function (x, y) {
       return (x.html.toLowerCase() < y.html.toLowerCase() ? -1 : 1)
     }
   }
@@ -316,36 +311,35 @@ function reload (selected_node, coords, starting_from_scratch) {
   complete.setText('')
 
   var direction_arrow = this.direction_arrow,
-  check_and_build = function(id) {
-    if (id !== null) {
+    check_and_build = function (id) {
+      if (id !== null) {
       // make sure the selected node exists, in case changes were made in the meantime
-      if (starting_from_scratch) {
-        this.map.new_reaction_from_scratch(id,
+        if (starting_from_scratch) {
+          this.map.new_reaction_from_scratch(id,
                                            coords,
                                            direction_arrow.get_rotation())
-      } else {
-        if (!(selected_node.node_id in this.map.nodes)) {
-          console.error('Selected node no longer exists')
-          this.hide_dropdown()
-          return
-        }
-        this.map.new_reaction_for_metabolite(id,
+        } else {
+          if (!(selected_node.node_id in this.map.nodes)) {
+            console.error('Selected node no longer exists')
+            this.hide_dropdown()
+            return
+          }
+          this.map.new_reaction_for_metabolite(id,
                                              selected_node.node_id,
                                              direction_arrow.get_rotation())
+        }
       }
-    }
-  }.bind(this)
-  complete.onEnter = function(id) {
+    }.bind(this)
+  complete.onEnter = function (id) {
     this.setText('')
     this.onChange('')
     check_and_build(id)
   }
 
-  //definitions
+  // definitions
   function already_drawn (bigg_id, reactions) {
     for (var drawn_id in reactions) {
-      if (reactions[drawn_id].bigg_id === bigg_id)
-        return true
+      if (reactions[drawn_id].bigg_id === bigg_id) { return true }
     }
     return false
   }
@@ -364,12 +358,12 @@ function toggle_start_reaction_listener (on_off) {
   }
 
   if (this.start_reaction_listener) {
-    this.map.sel.on('click.start_reaction', function(node) {
+    this.map.sel.on('click.start_reaction', function (node) {
       // TODO fix this hack
       if (this.direction_arrow.dragging) return
       // reload the reaction input
       var coords = { x: d3_mouse(node)[0],
-                     y: d3_mouse(node)[1] }
+        y: d3_mouse(node)[1] }
       // unselect metabolites
       this.map.deselect_nodes()
       this.map.deselect_text_labels()

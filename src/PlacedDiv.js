@@ -11,7 +11,7 @@ PlacedDiv.prototype = {
   init: init,
   is_visible: is_visible,
   place: place,
-  hide: hide,
+  hide: hide
 }
 module.exports = PlacedDiv
 

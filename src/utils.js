@@ -70,7 +70,7 @@ module.exports = {
 /**
  * Check if Blob is available, and alert if it is not.
  */
-function _check_filesaver() {
+function _check_filesaver () {
   try {
     var isFileSaverSupported = !!new Blob()
   } catch (e) {
@@ -78,7 +78,7 @@ function _check_filesaver() {
   }
 }
 
-function set_options(options, defaults, must_be_float) {
+function set_options (options, defaults, must_be_float) {
   if (options === undefined || options === null) {
     return defaults
   }
@@ -110,8 +110,7 @@ function set_options(options, defaults, must_be_float) {
   return out
 }
 
-
-function remove_child_nodes(selection) {
+function remove_child_nodes (selection) {
   /** Removes all child nodes from a d3 selection
 
    */
@@ -121,11 +120,10 @@ function remove_child_nodes(selection) {
   }
 }
 
-
-function load_css(css_path, callback) {
-  var css = ""
+function load_css (css_path, callback) {
+  var css = ''
   if (css_path) {
-    d3_text(css_path, function(error, text) {
+    d3_text(css_path, function (error, text) {
       if (error) {
         console.warn(error)
       }
@@ -135,7 +133,6 @@ function load_css(css_path, callback) {
   }
   return false
 }
-
 
 function _ends_with (str, suffix) {
   return str.indexOf(suffix, str.length - suffix.length) !== -1
@@ -161,15 +158,13 @@ function load_the_file (t, file, callback, value) {
     return
   }
   if (_ends_with(file, 'json')) {
-    d3_json(file, function(e, d) { callback.call(t, e, d) })
+    d3_json(file, function (e, d) { callback.call(t, e, d) })
   } else if (_ends_with(file, 'css')) {
-    d3_text(file, function(e, d) { callback.call(t, e, d) })
+    d3_text(file, function (e, d) { callback.call(t, e, d) })
   } else {
     callback.call(t, 'Unrecognized file type', null)
   }
-  return
 }
-
 
 function load_files (t, files_to_load, final_callback) {
   /** Load multiple files asynchronously by calling utils.load_the_file.
@@ -187,12 +182,12 @@ function load_files (t, files_to_load, final_callback) {
   */
   if (files_to_load.length === 0) final_callback.call(t)
   var i = -1,
-  remaining = files_to_load.length
+    remaining = files_to_load.length
   while (++i < files_to_load.length) {
     load_the_file(
       t,
       files_to_load[i].file,
-      function(e, d) {
+      function (e, d) {
         this.call(t, e, d)
         if (!--remaining) final_callback.call(t)
       }.bind(files_to_load[i].callback),
@@ -200,7 +195,6 @@ function load_files (t, files_to_load, final_callback) {
     )
   }
 }
-
 
 /**
  * Create a constructor that returns a new object with our without the 'new'
@@ -238,15 +232,15 @@ function class_with_optional_new (AClass) {
   })
 }
 
-function setup_defs(svg, style) {
+function setup_defs (svg, style) {
   // add stylesheet
-  svg.select("defs").remove()
-  var defs = svg.append("defs")
+  svg.select('defs').remove()
+  var defs = svg.append('defs')
   // make sure the defs is the first node
   var node = defs.node()
   node.parentNode.insertBefore(node, node.parentNode.firstChild)
-  defs.append("style")
-    .attr("type", "text/css")
+  defs.append('style')
+    .attr('type', 'text/css')
       .text(style)
   return defs
 }
@@ -339,13 +333,13 @@ function draw_a_nested_object (container_sel, children_selector, object_data_key
                                id_key, create_function, update_function,
                                exit_function) {
   var sel = container_sel.selectAll(children_selector)
-      .data(function(d) { return make_array_ref(d[object_data_key], id_key) },
-            function(d) { return d[id_key] })
+      .data(function (d) { return make_array_ref(d[object_data_key], id_key) },
+            function (d) { return d[id_key] })
 
   // enter: generate and place reaction
-  var update_sel = (create_function ?
-                    create_function(sel.enter()).merge(sel) :
-                    sel)
+  var update_sel = (create_function
+                    ? create_function(sel.enter()).merge(sel)
+                    : sel)
 
   // update: update when necessary
   if (update_function) {
@@ -358,7 +352,7 @@ function draw_a_nested_object (container_sel, children_selector, object_data_key
   }
 }
 
-function make_array(obj, id_key) { // is this super slow?
+function make_array (obj, id_key) { // is this super slow?
   var array = []
   for (var key in obj) {
     // copy object
@@ -371,7 +365,7 @@ function make_array(obj, id_key) { // is this super slow?
   return array
 }
 
-function make_array_ref(obj, id_key) {
+function make_array_ref (obj, id_key) {
   /** Turn the object into an array, but only by reference. Faster than
       make_array.
 
@@ -388,13 +382,13 @@ function make_array_ref(obj, id_key) {
   return array
 }
 
-function compare_arrays(a1, a2) {
+function compare_arrays (a1, a2) {
   /** Compares two simple (not-nested) arrays.
 
    */
   if (!a1 || !a2) return false
   if (a1.length != a2.length) return false
-  for (var i = 0, l=a1.length; i < l; i++) {
+  for (var i = 0, l = a1.length; i < l; i++) {
     if (a1[i] != a2[i]) {
       // Warning - two different object instances will never be equal: {x:20} != {x:20}
       return false
@@ -403,7 +397,7 @@ function compare_arrays(a1, a2) {
   return true
 }
 
-function array_to_object(arr) {
+function array_to_object (arr) {
   /** Convert an array of objects to an object with all keys and values
       that are arrays of the same length as arr. Fills in spaces with null.
 
@@ -415,7 +409,7 @@ function array_to_object(arr) {
   // for each element of the array
   for (var i = 0, l = arr.length; i < l; i++) {
     var column = arr[i],
-           keys = Object.keys(column)
+      keys = Object.keys(column)
     for (var k = 0, nk = keys.length; k < nk; k++) {
       var id = keys[k]
       if (!(id in obj)) {
@@ -441,15 +435,10 @@ function array_to_object(arr) {
  * @return {T} The copied object.
  */
 function clone (obj) {
-  if (_.isArray(obj))
-    return _.map(obj, function(t) { return clone(t) })
-  else if (_.isObject(obj))
-    return _.mapObject(obj, function (t, k) { return clone(t) })
-  else
-    return obj
+  if (_.isArray(obj)) { return _.map(obj, function (t) { return clone(t) }) } else if (_.isObject(obj)) { return _.mapObject(obj, function (t, k) { return clone(t) }) } else { return obj }
 }
 
-function extend(obj1, obj2, overwrite) {
+function extend (obj1, obj2, overwrite) {
   /** Extends obj1 with keys/values from obj2. Performs the extension
       cautiously, and does not override attributes, unless the overwrite
       argument is true.
@@ -465,14 +454,11 @@ function extend(obj1, obj2, overwrite) {
 
   */
 
-  if (overwrite === undefined)
-    overwrite = false
+  if (overwrite === undefined) { overwrite = false }
 
   for (var attrname in obj2) {
     if (!(attrname in obj1) || overwrite) // UNIT TEST This
-      obj1[attrname] = obj2[attrname]
-    else
-      throw new Error('Attribute ' + attrname + ' already in object.')
+      { obj1[attrname] = obj2[attrname] } else { throw new Error('Attribute ' + attrname + ' already in object.') }
   }
 }
 
@@ -567,7 +553,7 @@ function c_plus_c (coords1, coords2) {
   }
   return {
     x: coords1.x + coords2.x,
-    y: coords1.y + coords2.y,
+    y: coords1.y + coords2.y
   }
 }
 
@@ -578,14 +564,14 @@ function c_minus_c (coords1, coords2) {
   }
   return {
     x: coords1.x - coords2.x,
-    y: coords1.y - coords2.y,
+    y: coords1.y - coords2.y
   }
 }
 
 function c_times_scalar (coords, scalar) {
   return {
     x: coords.x * scalar,
-    y: coords.y * scalar,
+    y: coords.y * scalar
   }
 }
 
@@ -632,16 +618,13 @@ function load_json (f, callback, pre_fn, failure_fn) {
     callback(null, data)
   }
   if (pre_fn !== undefined && pre_fn !== null) {
-    try { pre_fn() }
-    catch (e) { console.warn(e) }
+    try { pre_fn() } catch (e) { console.warn(e) }
   }
-  reader.onabort = function(event) {
-    try { failure_fn() }
-    catch (e) { console.warn(e) }
+  reader.onabort = function (event) {
+    try { failure_fn() } catch (e) { console.warn(e) }
   }
-  reader.onerror = function(event) {
-    try { failure_fn() }
-    catch (e) { console.warn(e) }
+  reader.onerror = function (event) {
+    try { failure_fn() } catch (e) { console.warn(e) }
   }
   // Read in the image file as a data URL
   reader.readAsText(f)
@@ -661,7 +644,7 @@ function load_json (f, callback, pre_fn, failure_fn) {
 function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
                            debug_event) {
   // Capture the file information.
-  var onload_function = function(event) {
+  var onload_function = function (event) {
     var result = event.target.result
     var data
     var errors
@@ -689,21 +672,17 @@ function load_json_or_csv (f, csv_converter, callback, pre_fn, failure_fn,
   }
 
   // Check for the various File API support.
-  if (!(window.File && window.FileReader && window.FileList && window.Blob))
-    callback("The File APIs are not fully supported in this browser.", null)
+  if (!(window.File && window.FileReader && window.FileList && window.Blob)) { callback('The File APIs are not fully supported in this browser.', null) }
   var reader = new window.FileReader()
 
   if (pre_fn !== undefined && pre_fn !== null) {
-    try { pre_fn(); }
-    catch (e) { console.warn(e); }
+    try { pre_fn() } catch (e) { console.warn(e) }
   }
-  reader.onabort = function(event) {
-    try { failure_fn(); }
-    catch (e) { console.warn(e); }
+  reader.onabort = function (event) {
+    try { failure_fn() } catch (e) { console.warn(e) }
   }
-  reader.onerror = function(event) {
-    try { failure_fn(); }
-    catch (e) { console.warn(e); }
+  reader.onerror = function (event) {
+    try { failure_fn() } catch (e) { console.warn(e) }
   }
   // Read in the image file as a data URL.
   reader.onload = onload_function
@@ -801,11 +780,11 @@ function rotate_coords_recursive (coords_array, angle, center) {
  */
 function rotate_coords (c, angle, center) {
   var dx = Math.cos(-angle) * (c.x - center.x) +
-      Math.sin(-angle) * (c.y - center.y)
-    + center.x - c.x
-  var dy = - Math.sin(-angle) * (c.x - center.x) +
-    Math.cos(-angle) * (c.y - center.y)
-    + center.y - c.y
+      Math.sin(-angle) * (c.y - center.y) +
+    center.x - c.x
+  var dy = -Math.sin(-angle) * (c.x - center.x) +
+    Math.cos(-angle) * (c.y - center.y) +
+    center.y - c.y
   return { x: dx, y: dy }
 }
 
@@ -818,15 +797,15 @@ function get_angle (coords) {
   var denominator = coords[1].x - coords[0].x
   var numerator = coords[1].y - coords[0].y
   if (denominator === 0 && numerator >= 0) {
-    return Math.PI/2
+    return Math.PI / 2
   } else if (denominator === 0 && numerator < 0) {
-    return 3*Math.PI/2
+    return 3 * Math.PI / 2
   } else if (denominator >= 0 && numerator >= 0) {
-    return Math.atan(numerator/denominator)
+    return Math.atan(numerator / denominator)
   } else if (denominator >= 0) {
-    return (Math.atan(numerator/denominator) + 2*Math.PI)
+    return (Math.atan(numerator / denominator) + 2 * Math.PI)
   } else {
-    return (Math.atan(numerator/denominator) + Math.PI)
+    return (Math.atan(numerator / denominator) + Math.PI)
   }
 }
 
@@ -839,9 +818,9 @@ function to_degrees (radians) {
  */
 function _angle_norm (radians) {
   if (radians < -Math.PI) {
-    radians = radians + Math.ceil(radians / (-2*Math.PI)) * 2*Math.PI
+    radians = radians + Math.ceil(radians / (-2 * Math.PI)) * 2 * Math.PI
   } else if (radians > Math.PI) {
-    radians = radians - Math.ceil(radians / (2*Math.PI)) * 2*Math.PI
+    radians = radians - Math.ceil(radians / (2 * Math.PI)) * 2 * Math.PI
   }
   return radians
 }
@@ -855,7 +834,7 @@ function to_radians_norm (degrees) {
 }
 
 function angle_for_event (displacement, point, center) {
-  var gamma =  Math.atan2((point.x - center.x), (center.y - point.y))
+  var gamma = Math.atan2((point.x - center.x), (center.y - point.y))
   var beta = Math.atan2((point.x - center.x + displacement.x),
                         (center.y - point.y - displacement.y))
   var angle = beta - gamma
@@ -887,9 +866,9 @@ function compartmentalize (bigg_id, compartment_id) {
  * length 1 or 2. Return [ id, null ] if no match is found.
  */
 function decompartmentalize (id) {
-  var reg = /(.*)_([a-z0-9]{1,2})$/;
+  var reg = /(.*)_([a-z0-9]{1,2})$/
   var result = reg.exec(id)
-  return result !== null ? result.slice(1,3) : [ id, null ]
+  return result !== null ? result.slice(1, 3) : [ id, null ]
 }
 
 function mean (array) {
@@ -899,12 +878,12 @@ function mean (array) {
 }
 
 function median (array) {
-  array.sort(function(a, b) { return a - b })
+  array.sort(function (a, b) { return a - b })
   var half = Math.floor(array.length / 2)
-  if(array.length % 2 == 1) {
+  if (array.length % 2 == 1) {
     return array[half]
   } else {
-    return (array[half-1] + array[half]) / 2.0
+    return (array[half - 1] + array[half]) / 2.0
   }
 }
 
@@ -915,19 +894,19 @@ function quartiles (array) {
     return [
       array[0],
       array[0],
-      array[0],
+      array[0]
     ]
   } else if (array.length % 2 === 1) {
     return [
       median(array.slice(0, half)),
       array[half],
-      median(array.slice(half + 1)),
+      median(array.slice(half + 1))
     ]
   } else {
     return [
       median(array.slice(0, half)),
-      (array[half-1] + array[half]) / 2.0,
-      median(array.slice(half)),
+      (array[half - 1] + array[half]) / 2.0,
+      median(array.slice(half))
     ]
   }
 }
@@ -1067,7 +1046,7 @@ function d3_transform_catch (transform_attr) {
   var sn = _.isNull(scale_res)
   var s = sn ? 0.0 : Number(scale_res[1])
 
-  return { translate: [ tx, ty ], rotate: r, scale: s, }
+  return { translate: [ tx, ty ], rotate: r, scale: s }
 
   // // Create a dummy g for calculation purposes only. This will new be appended
   // // to the DOM and will be discarded once this function returns.
@@ -1111,7 +1090,7 @@ function d3_transform_catch (transform_attr) {
  * Look for name in the user agent string.
  */
 function check_browser (name) {
-  var browser = function() {
+  var browser = function () {
     // Thanks to
     // http://stackoverflow.com/questions/2400935/browser-detection-in-javascript
     var ua = navigator.userAgent
@@ -1119,13 +1098,13 @@ function check_browser (name) {
     var tem
     if (/trident/i.test(M[1])) {
       tem = /\brv[ :]+(\d+)/g.exec(ua) || []
-      return 'IE '+ (tem[1] || '')
+      return 'IE ' + (tem[1] || '')
     }
     if (M[1] === 'Chrome') {
       tem = ua.match(/\b(OPR|Edge)\/(\d+)/)
       if (tem != null) return tem.slice(1).join(' ').replace('OPR', 'Opera')
     }
-    M = M[2] ? [ M[1], M[2] ]: [ navigator.appName, navigator.appVersion, '-?' ]
+    M = M[2] ? [ M[1], M[2] ] : [ navigator.appName, navigator.appVersion, '-?' ]
     if ((tem = ua.match(/version\/(\d+)/i)) !== null) {
       M.splice(1, 1, tem[1])
     }

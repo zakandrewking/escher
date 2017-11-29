@@ -14,7 +14,7 @@ var QuickJump = utils.make_class()
 QuickJump.prototype = {
   init: init,
   reset_selection: reset_selection,
-  replace_state_for_map_name: replace_state_for_map_name,
+  replace_state_for_map_name: replace_state_for_map_name
 }
 module.exports = QuickJump
 

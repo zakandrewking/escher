@@ -33,14 +33,14 @@ describe('Map', () => {
     const sel = svg.append('g')
     // streams are required for these options
     const required_options = { reaction_scale: [],
-                               metabolite_scale: [],
-                               reaction_styles: [],
-                               reaction_compare_style: 'diff',
-                               metabolite_styles: [],
-                               metabolite_compare_style: 'diff',
-                               cofactors: [], }
+      metabolite_scale: [],
+      reaction_styles: [],
+      reaction_compare_style: 'diff',
+      metabolite_styles: [],
+      metabolite_compare_style: 'diff',
+      cofactors: [] }
     const required_conditional_options = [ 'reaction_scale',
-                                           'metabolite_scale', ]
+      'metabolite_scale' ]
     const set_option = (key, val) => { required_options[key] = val }
     const get_option = (key) => required_options[key]
 
@@ -165,10 +165,10 @@ describe('Map', () => {
 
   it('search index extend reactions', () => {
     map.extend_reactions({ '123456789': { bigg_id: 'EX_glc__D_p',
-                                          name: 'periplasmic glucose exchange',
-                                          gene_reaction_rule: 's0001',
-                                          genes: [ { 'bigg_id': 's0001',
-                                                     'name': 'spontaneous'} ] } })
+      name: 'periplasmic glucose exchange',
+      gene_reaction_rule: 's0001',
+      genes: [ { 'bigg_id': 's0001',
+        'name': 'spontaneous'} ] } })
     assert.deepEqual(map.search_index.find('EX_glc__D_p')[0],
                      { type: 'reaction', reaction_id: '123456789' })
     assert.deepEqual(map.search_index.find('periplasmic glucose exchange')[0],
@@ -181,8 +181,8 @@ describe('Map', () => {
 
   it('search index extend nodes', () => {
     map.extend_nodes({ '123456789': { bigg_id: 'glc__D_p',
-                                      name: 'periplasmic glucose',
-                                      node_type: 'metabolite' }})
+      name: 'periplasmic glucose',
+      node_type: 'metabolite' }})
     assert.deepEqual(map.search_index.find('^glc__D_p')[0],
                      { type: 'metabolite', node_id: '123456789' })
     assert.deepEqual(map.search_index.find('periplasmic glucose$')[0],
@@ -201,17 +201,17 @@ describe('Map', () => {
 
   it('new_reaction_from_scratch', () => {
     const model_data = { reactions: [ { id: 'acc_tpp',
-                                        metabolites: { acc_c: 1, acc_p: -1 },
-                                        gene_reaction_rule: 'Y1234'
-                                      }
-                                    ],
-                         metabolites: [ { id: 'acc_c',
-                                          formula: 'C3H2' },
-                                        { id: 'acc_p',
-                                          formula: 'C3H2' }
-                                      ],
-                         genes: []
-                       }
+      metabolites: { acc_c: 1, acc_p: -1 },
+      gene_reaction_rule: 'Y1234'
+    }
+    ],
+      metabolites: [ { id: 'acc_c',
+        formula: 'C3H2' },
+      { id: 'acc_p',
+        formula: 'C3H2' }
+      ],
+      genes: []
+    }
     const model = CobraModel.from_cobra_json(model_data)
     map.cobra_model = model
 
@@ -257,54 +257,102 @@ describe('Map', () => {
     map.apply_reaction_data_to_map(data_reactions)
     map.calc_data_stats('reaction')
     assert.deepEqual(map.get_data_statistics(),
-                     { reaction: { min: 5, median: 7.5, mean: 7.5,
-                                   Q1: 5, Q3: 10, max: 10 },
-                       metabolite: { min: null, median: null, mean: null,
-                                     Q1: null, Q3: null, max: null } })
+      { reaction: { min: 5,
+        median: 7.5,
+        mean: 7.5,
+        Q1: 5,
+        Q3: 10,
+        max: 10 },
+        metabolite: { min: null,
+          median: null,
+          mean: null,
+          Q1: null,
+          Q3: null,
+          max: null } })
     // metabolites
     const data_metabolites = { g3p_c: [10], fdp_c: ['4'] }
     map.apply_metabolite_data_to_map(data_metabolites)
     map.calc_data_stats('metabolite')
     assert.deepEqual(map.get_data_statistics(),
-                     { reaction: { min: 5, median: 7.5, mean: 7.5,
-                                   Q1: 5, Q3: 10, max: 10 },
-                       metabolite: { min: 4, median: 10, mean: 8,
-                                     Q1: 4, Q3: 10, max: 10 } })
+      { reaction: { min: 5,
+        median: 7.5,
+        mean: 7.5,
+        Q1: 5,
+        Q3: 10,
+        max: 10 },
+        metabolite: { min: 4,
+          median: 10,
+          mean: 8,
+          Q1: 4,
+          Q3: 10,
+          max: 10 } })
   })
 
   it('get_data_statistics uses defaults for no data -- reactions', () => {
     assert.deepEqual(map.get_data_statistics(), {
-      reaction: { min: null, median: null, mean: null,
-                  Q1: null, Q3: null, max: null },
-      metabolite: { min: null, median: null, mean: null,
-                    Q1: null, Q3: null, max: null }
+      reaction: { min: null,
+        median: null,
+        mean: null,
+        Q1: null,
+        Q3: null,
+        max: null },
+      metabolite: { min: null,
+        median: null,
+        mean: null,
+        Q1: null,
+        Q3: null,
+        max: null }
     })
     const data_reactions = {}
     map.apply_reaction_data_to_map(data_reactions)
     map.calc_data_stats('reaction')
     assert.deepEqual(map.get_data_statistics(), {
-      reaction: { min: null, median: null, mean: null,
-                  Q1: null, Q3: null, max: null },
-      metabolite: { min: null, median: null, mean: null,
-                    Q1: null, Q3: null, max: null }
+      reaction: { min: null,
+        median: null,
+        mean: null,
+        Q1: null,
+        Q3: null,
+        max: null },
+      metabolite: { min: null,
+        median: null,
+        mean: null,
+        Q1: null,
+        Q3: null,
+        max: null }
     })
   })
 
   it('get_data_statistics uses defaults for no data', () => {
     assert.deepEqual(map.get_data_statistics(), {
-      reaction: { min: null, median: null, mean: null,
-                  Q1: null, Q3: null, max: null },
-      metabolite: { min: null, median: null, mean: null,
-                    Q1: null, Q3: null, max: null }
+      reaction: { min: null,
+        median: null,
+        mean: null,
+        Q1: null,
+        Q3: null,
+        max: null },
+      metabolite: { min: null,
+        median: null,
+        mean: null,
+        Q1: null,
+        Q3: null,
+        max: null }
     })
     const data_metabolites = {}
     map.apply_metabolite_data_to_map(data_metabolites)
     map.calc_data_stats('metabolite')
     assert.deepEqual(map.get_data_statistics(), {
-      reaction: { min: null, median: null, mean: null,
-                  Q1: null, Q3: null, max: null },
-      metabolite: { min: null, median: null, mean: null,
-                    Q1: null, Q3: null, max: null }
+      reaction: { min: null,
+        median: null,
+        mean: null,
+        Q1: null,
+        Q3: null,
+        max: null },
+      metabolite: { min: null,
+        median: null,
+        mean: null,
+        Q1: null,
+        Q3: null,
+        max: null }
     })
   })
 

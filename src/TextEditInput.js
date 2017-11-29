@@ -54,7 +54,7 @@ function setup_map_callbacks (map) {
   }.bind(this))
 }
 
-function setup_zoom_callbacks(zoom_container) {
+function setup_zoom_callbacks (zoom_container) {
   zoom_container.callback_manager.set('zoom.text_edit_input', function () {
     if (this.active_target) {
       this._accept_changes(this.active_target.target)

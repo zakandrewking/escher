@@ -15,13 +15,13 @@ describe('data_styles.import_and_check', () => {
   it('checks gene data and funny names', () => {
     const gene_data = { G1ORF: 0, G2ANDHI: 4, 'G3-A': -12.3 }
     const reactions = { '2': { bigg_id: 'reaction_1',
-                               gene_reaction_rule: '(G1ORF AND G2ANDHI) OR G3-A',
-                               genes: [{ bigg_id: 'G1ORF', name: '' },
+      gene_reaction_rule: '(G1ORF AND G2ANDHI) OR G3-A',
+      genes: [{ bigg_id: 'G1ORF', name: '' },
                                        { bigg_id: 'G2ANDHI', name: '' },
                                        { bigg_id: 'G3-A', name: '' }]}}
     const expected = { reaction_1: { G1ORF: [0],
-                                     G2ANDHI: [4],
-                                     'G3-A': [-12.3] }}
+      G2ANDHI: [4],
+      'G3-A': [-12.3] }}
     const out = data_styles.import_and_check(gene_data, 'gene_data', reactions)
     assert.deepEqual(out, expected)
   })
@@ -29,17 +29,17 @@ describe('data_styles.import_and_check', () => {
   it('checks gene data with multiple sets', () => {
     const gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2: 6 }]
     const reactions = { '4': { bigg_id: 'reaction_2',
-                               gene_reaction_rule: 'G4',
-                               genes: [{ bigg_id: 'G4', name: '' }]},
-                        '3': { bigg_id: 'reaction_1',
-                               gene_reaction_rule: '(G1 AND G2) OR G3',
-                               genes: [{ bigg_id: 'G1', name: '' },
+      gene_reaction_rule: 'G4',
+      genes: [{ bigg_id: 'G4', name: '' }]},
+      '3': { bigg_id: 'reaction_1',
+        gene_reaction_rule: '(G1 AND G2) OR G3',
+        genes: [{ bigg_id: 'G1', name: '' },
                                        { bigg_id: 'G2', name: 'G2_name' },
                                        { bigg_id: 'G3', name: '' }]}}
     const expected = { reaction_2: { G4: [null, null]},
-                       reaction_1: { G1: [0, 2],
-                                     G2: [4, 6],
-                                     G3: [-12.3, null] }}
+      reaction_1: { G1: [0, 2],
+        G2: [4, 6],
+        G3: [-12.3, null] }}
     const out = data_styles.import_and_check(gene_data, 'gene_data', reactions)
     assert.deepEqual(out, expected)
   })
@@ -47,8 +47,8 @@ describe('data_styles.import_and_check', () => {
   it('checks gene data with nulls', () => {
     const gene_data = [{ G1: 0, G2: 4, G3: -12.3 }, { G1: 2, G2: 6 }]
     const reactions = { '1': { bigg_id: 'reaction_1',
-                               gene_reaction_rule: '',
-                               genes: [] }}
+      gene_reaction_rule: '',
+      genes: [] }}
     const expected = { reaction_1: {} }
     const out = data_styles.import_and_check(gene_data, 'gene_data', reactions)
     assert.deepEqual(out, expected)
@@ -57,13 +57,13 @@ describe('data_styles.import_and_check', () => {
   it('checks gene data with empty data set', () => {
     const gene_data = {}
     const reactions = { r1: { bigg_id: 'reaction_1',
-                              gene_reaction_rule: '(G1 AND G2) OR G3',
-                              genes: [{ bigg_id: 'G1', name: '' },
+      gene_reaction_rule: '(G1 AND G2) OR G3',
+      genes: [{ bigg_id: 'G1', name: '' },
                                       { bigg_id: 'G2', name: 'G2_name' },
                                       { bigg_id: 'G3', name: '' }]}}
     const expected = { reaction_1: { G1: [null],
-                                     G2: [null],
-                                     G3: [null] } }
+      G2: [null],
+      G3: [null] } }
     const out = data_styles.import_and_check(gene_data, 'gene_data', reactions)
     assert.deepEqual(out, expected)
   })
@@ -160,21 +160,21 @@ describe('data_styles.gene_string_for_data', () => {
   it('multiple genes, name identifiers, no data', () => {
     assert.deepEqual(data_styles.gene_string_for_data('226_AT2 or 226_AT1 or 226_AT3 or 230_AT1 or 229_AT1',
                                                       null,
-                                                      [
+      [
                                                         { name: 'ALDOA', bigg_id: '226_AT2' },
                                                         { name: 'ALDOA', bigg_id: '226_AT1' },
                                                         { name: 'ALDOA', bigg_id: '226_AT3' },
                                                         { name: 'ALDOC', bigg_id: '230_AT1' },
-                                                        { name: 'ALDOB', bigg_id: '229_AT1' },
-                                                      ],
+                                                        { name: 'ALDOB', bigg_id: '229_AT1' }
+      ],
                                                       [], 'name', 'log2_fold'),
-                     [
+      [
                        { name: 'ALDOA', bigg_id: '226_AT2', text: 'ALDOA' },
                        { name: 'ALDOA', bigg_id: '226_AT1', text: ' or ALDOA' },
                        { name: 'ALDOA', bigg_id: '226_AT3', text: ' or ALDOA' },
                        { name: 'ALDOC', bigg_id: '230_AT1', text: ' or ALDOC' },
-                       { name: 'ALDOB', bigg_id: '229_AT1', text: ' or ALDOB' },
-                     ])
+                       { name: 'ALDOB', bigg_id: '229_AT1', text: ' or ALDOB' }
+      ])
   })
 
   it('repeated genes', () => {
@@ -182,27 +182,27 @@ describe('data_styles.gene_string_for_data', () => {
     // removed.
     assert.deepEqual(data_styles
                      .gene_string_for_data('((b0902 and b0903) or (b0902 and b3114) or (b3951 and b3952) or ((b0902 and b0903) and b2579))',
-                                           {
-                                             b0902: [ 188.37366666666665, 282.133 ],
-                                             b0903: [ 1866.04, 11448.37 ],
-                                             b3114: [ 5.289776666666666, 5.4111400000000005 ],
-                                             b3951: [ 8.291500000000001, 5.966176666666666 ],
-                                             b3952: [ 3.6747133333333335, 4.2879700000000005 ],
-                                             b2579: [ 5274.716666666667, 1089.1643333333334 ],
-                                           },
-                                           [
-                                             { bigg_id: "b0902", name: "b0902" },
-                                             { bigg_id: "b0903", name: "b0903" },
-                                             { bigg_id: "b2579", name: "b2579" },
-                                             { bigg_id: "b0902", name: "b0902" },
-                                             { bigg_id: "b0903", name: "b0903" },
-                                             { bigg_id: "b0902", name: "b0902" },
-                                             { bigg_id: "b3114", name: "b3114" },
-                                             { bigg_id: "b3951", name: "b3951" },
-                                             { bigg_id: "b3952", name: "b3952" },
-                                           ],
+      {
+        b0902: [ 188.37366666666665, 282.133 ],
+        b0903: [ 1866.04, 11448.37 ],
+        b3114: [ 5.289776666666666, 5.4111400000000005 ],
+        b3951: [ 8.291500000000001, 5.966176666666666 ],
+        b3952: [ 3.6747133333333335, 4.2879700000000005 ],
+        b2579: [ 5274.716666666667, 1089.1643333333334 ]
+      },
+      [
+                                             { bigg_id: 'b0902', name: 'b0902' },
+                                             { bigg_id: 'b0903', name: 'b0903' },
+                                             { bigg_id: 'b2579', name: 'b2579' },
+                                             { bigg_id: 'b0902', name: 'b0902' },
+                                             { bigg_id: 'b0903', name: 'b0903' },
+                                             { bigg_id: 'b0902', name: 'b0902' },
+                                             { bigg_id: 'b3114', name: 'b3114' },
+                                             { bigg_id: 'b3951', name: 'b3951' },
+                                             { bigg_id: 'b3952', name: 'b3952' }
+      ],
                                            [ 'abs' ], 'bigg_id', 'log2_fold'),
-                     [
+      [
                        { bigg_id: 'b0902', name: 'b0902', text: '((b0902 (188, 282: 0.583)' },
                        { bigg_id: 'b0903', name: 'b0903', text: ' and b0903 (1.87e+3, 1.14e+4: 2.62)' },
                        { bigg_id: 'b0902', name: 'b0902', text: ') or (b0902 (188, 282: 0.583)' },
@@ -211,19 +211,19 @@ describe('data_styles.gene_string_for_data', () => {
                        { bigg_id: 'b3952', name: 'b3952', text: ' and b3952 (3.67, 4.29: 0.223)' },
                        { bigg_id: 'b0902', name: 'b0902', text: ') or ((b0902 (188, 282: 0.583)' },
                        { bigg_id: 'b0903', name: 'b0903', text: ' and b0903 (1.87e+3, 1.14e+4: 2.62)' },
-                       { bigg_id: 'b2579', name: 'b2579', text: ') and b2579 (5.27e+3, 1.09e+3: 2.28)))' },
-                     ])
+                       { bigg_id: 'b2579', name: 'b2579', text: ') and b2579 (5.27e+3, 1.09e+3: 2.28)))' }
+      ])
   })
 
   it('no data', () => {
     assert.deepEqual(data_styles.gene_string_for_data('( G1 OR G2 )', null,
-                                                      [{bigg_id: 'G1', name: 'Gene1'},
+      [{bigg_id: 'G1', name: 'Gene1'},
                                                        {bigg_id: 'G2', name: 'Gene2'}],
                                                       ['abs'], 'name', 'log2_fold'),
-                     [
+      [
                        {bigg_id: 'G1', name: 'Gene1', text: '( Gene1' },
                        {bigg_id: 'G2', name: 'Gene2', text: ' OR Gene2)'}
-                     ])
+      ])
   })
 })
 
@@ -284,15 +284,17 @@ describe('data_styles.evaluate_gene_reaction_rule', () => {
 
   it('specific bug: repeat', () => {
     const rule = '( YER056C  or  YER060W  or  YER060W-A  or  YGL186C )'
-    const gene_values = {"YER056C": ['151'], "YER060W": ['10'],
-                         "YER060W-A": ['2'], "YGL186C": ['17']}
+    const gene_values = {'YER056C': ['151'],
+      'YER060W': ['10'],
+      'YER060W-A': ['2'],
+      'YGL186C': ['17']}
     const out = data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min')
     assert.deepEqual(out, [180])
   })
 
   it('single negative', () => {
     const rule = 'YER056C'
-    const gene_values = {"YER056C": [-151]}
+    const gene_values = {'YER056C': [-151]}
     const out = data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min')
     assert.deepEqual(out, [-151])
   })
@@ -302,7 +304,6 @@ describe('data_styles.evaluate_gene_reaction_rule', () => {
     const gene_values = {G1: [5, 0], G2: [2, 0], G3ANDHI: [10, 0], G4ORF: [11.5, 6]}
     const out = data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min')
     assert.deepEqual(out, [12, 0])
-
   })
 
   it('order of operations', () => {
@@ -340,36 +341,35 @@ describe('data_styles.evaluate_gene_reaction_rule', () => {
 
   it('members of OR connections can be null', () => {
     const rule = '( (( YCR034W or YGR032W) and YLR343W ) or ( ( YCR034W and YGR032W ) and YMR215W ) or ( ( YCR034W and YMR306W ) and YMR215W ) or ( ( YCR034W and YLR342W ) and YOL132W ) or ( ( YCR034W and YMR306W ) and YOL132W ) or ( ( YCR034W and YGR032W ) and YOL030W ) or ( ( YCR034W and YLR342W ) and YOL030W ) or ( ( YCR034W and YMR306W ) and YOL030W ) or ( ( YCR034W and YLR342W ) and YLR343W ) or ( ( YCR034W and YMR306W ) and YLR343W ) or ( ( YCR034W and YGR032W ) and YOL132W ) or ( ( YCR034W and YLR342W ) and YMR215W ) or ( ( YCR034W and YGR032W ) and YMR307W ) or ( ( YCR034W and YLR342W ) and YMR307W ) or ( ( YCR034W and YMR306W ) and YMR307W ) )'
-    const gene_values = {"YCR034W":[8],
-                         "YGR032W":[12],
-                         "YLR343W":[2],
-                         "YMR215W":[null],
-                         "YMR306W":[null],
-                         "YLR342W":[null],
-                         "YOL132W":[null],
-                         "YOL030W":[null],
-                         "YMR307W":[null]}
+    const gene_values = {'YCR034W': [8],
+      'YGR032W': [12],
+      'YLR343W': [2],
+      'YMR215W': [null],
+      'YMR306W': [null],
+      'YLR342W': [null],
+      'YOL132W': [null],
+      'YOL030W': [null],
+      'YMR307W': [null]}
     assert.deepEqual(data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min'), [2])
   })
 
   it(' treat nulls as 0', () => {
     const rule = '( YOL096C and YDR204W and YML110C and YGR255C and YOR125C and YGL119W and YLR201C )'
-    const gene_values = {"YOL096C": [-9.966],
-                         "YDR204W": [null],
-                         "YML110C": [5.727832840424934],
-                         "YGR255C": [null],
-                         "YOR125C": [null],
-                         "YGL119W": [null],
-                         "YLR201C": [-7.88335943096544]}
+    const gene_values = {'YOL096C': [-9.966],
+      'YDR204W': [null],
+      'YML110C': [5.727832840424934],
+      'YGR255C': [null],
+      'YOR125C': [null],
+      'YGL119W': [null],
+      'YLR201C': [-7.88335943096544]}
     assert.deepEqual(data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min'), [-9.966])
-
   })
 
   it('extra parentheses', () => {
     const rule = '(( (YJL130C) ) or (YJR109C and YOR303W))'
     const gene_values = { YJL130C: ['-80.0'],
-                          YJR109C: ['70.5'],
-                          YOR303W: ['200.5233'] }
+      YJR109C: ['70.5'],
+      YOR303W: ['200.5233'] }
     assert.deepEqual(data_styles.evaluate_gene_reaction_rule(rule, gene_values, 'min'), [-9.5])
   })
 })
@@ -395,17 +395,17 @@ describe('data_styles.replace_gene_in_rule', () => {
 describe('data_styles.apply_reaction_data_to_reactions', () => {
   it('for Map.reactions', () => {
     const reactions = { 238: { bigg_id: 'GAPD',
-                               segments: { 2: {}}}},
-          data = { GAPD: [0, 10] }
+        segments: { 2: {}}}},
+      data = { GAPD: [0, 10] }
     const out = data_styles.apply_reaction_data_to_reactions(reactions, data, [], 'diff')
     assert.strictEqual(out, true)
     assert.deepEqual(reactions, { 238: { bigg_id: 'GAPD',
-                                         data: 10.0,
-                                         data_string: '0.00, 10.0: 10.0',
-                                         reverse_flux: false,
-                                         gene_string: null,
-                                         segments: { 2: { data: 10.0,
-                                                          reverse_flux: false }}}})
+      data: 10.0,
+      data_string: '0.00, 10.0: 10.0',
+      reverse_flux: false,
+      gene_string: null,
+      segments: { 2: { data: 10.0,
+        reverse_flux: false }}}})
   })
 })
 
@@ -416,31 +416,31 @@ describe('data_styles.apply_metabolite_data_to_nodes', () => {
     const out = data_styles.apply_metabolite_data_to_nodes(nodes, data, [], 'diff')
     assert.strictEqual(out, true)
     assert.deepEqual(nodes, { 238: { bigg_id: 'g3p_c',
-                                     data: 10.0,
-                                     data_string: '0.00, 10.0: 10.0' } })
+      data: 10.0,
+      data_string: '0.00, 10.0: 10.0' } })
   })
 })
 
 describe('data_styles.apply_gene_data_to_reactions', () => {
   it('for Map.reactions', () => {
     const reactions = { 238: { bigg_id: 'GAPD',
-                               gene_reaction_rule: 'b1779',
-                               genes: [ { bigg_id: 'b1779',
-                                          name: 'gapA' } ],
-                               segments: { 2: {}}}}
+      gene_reaction_rule: 'b1779',
+      genes: [ { bigg_id: 'b1779',
+        name: 'gapA' } ],
+      segments: { 2: {}}}}
     const data = { GAPD: { b1779: [0, 10] }}
     const out = data_styles.apply_gene_data_to_reactions(reactions, data, [],
                                                          'name', 'diff', 'min')
     assert.strictEqual(out, true)
     assert.deepEqual(reactions, { 238: { bigg_id: 'GAPD',
-                                         gene_reaction_rule: 'b1779',
-                                         genes: [ { bigg_id: 'b1779',
-                                                    name: 'gapA' } ],
-                                         data: 10.0,
-                                         data_string: '0.00, 10.0: 10.0',
-                                         gene_string: [{bigg_id: 'b1779', name: 'gapA', text: 'gapA (0.00, 10.0: 10.0)'}],
-                                         reverse_flux: false,
-                                         segments: { 2: { data: 10.0,
-                                                          reverse_flux: false }}}})
+      gene_reaction_rule: 'b1779',
+      genes: [ { bigg_id: 'b1779',
+        name: 'gapA' } ],
+      data: 10.0,
+      data_string: '0.00, 10.0: 10.0',
+      gene_string: [{bigg_id: 'b1779', name: 'gapA', text: 'gapA (0.00, 10.0: 10.0)'}],
+      reverse_flux: false,
+      segments: { 2: { data: 10.0,
+        reverse_flux: false }}}})
   })
 })

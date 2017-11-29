@@ -12,12 +12,12 @@ describe('Settings', () => {
       menu: 'all',
       scroll_behavior: 'pan',
       enable_editing: true,
-      reaction_styles: [ 'color', 'size', 'text', ],
+      reaction_styles: [ 'color', 'size', 'text' ],
       reaction_scale: [
-        { type: 'min', color: '#c8c8c8', size: 4, },
-        { type: 'value', value: 0, color: '#9696ff', size: 8, },
-        { type: 'max', color: '#4b009f', size: 12, },
-      ],
+        { type: 'min', color: '#c8c8c8', size: 4 },
+        { type: 'value', value: 0, color: '#9696ff', size: 8 },
+        { type: 'max', color: '#4b009f', size: 12 }
+      ]
     }
     const set_option = (key, val) => { options[key] = val }
     const get_option = (key) => { return options[key] }

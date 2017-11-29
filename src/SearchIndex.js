@@ -5,23 +5,22 @@
 
  */
 
-var utils = require('./utils');
+var utils = require('./utils')
 
-var SearchIndex = utils.make_class();
+var SearchIndex = utils.make_class()
 SearchIndex.prototype = {
-    init: init,
-    insert: insert,
-    remove: remove,
-    find: find
-};
-module.exports = SearchIndex;
+  init: init,
+  insert: insert,
+  remove: remove,
+  find: find
+}
+module.exports = SearchIndex
 
-
-function init() {
-    this.index = {};
+function init () {
+  this.index = {}
 }
 
-function insert(id, record, overwrite, check_record) {
+function insert (id, record, overwrite, check_record) {
     /** Insert a record into the index.
 
      id: A unique string id.
@@ -43,40 +42,37 @@ function insert(id, record, overwrite, check_record) {
      Returns undefined.
 
      */
-    if (!overwrite && (id in this.index))
-        throw new Error("id is already in the index");
-    if (check_record && !(('name' in record) && ('data' in record)))
-        throw new Error("malformed record");
-    this.index[id] = record;
+  if (!overwrite && (id in this.index)) { throw new Error('id is already in the index') }
+  if (check_record && !(('name' in record) && ('data' in record))) { throw new Error('malformed record') }
+  this.index[id] = record
 }
 
-function remove(record_id) {
+function remove (record_id) {
     /** Remove the matching record.
 
      Returns true is a record is found, or false if no match is found.
 
      */
-    if (record_id in this.index) {
-        delete this.index[record_id];
-        return true;
-    } else {
-        return false;
-    }
+  if (record_id in this.index) {
+    delete this.index[record_id]
+    return true
+  } else {
+    return false
+  }
 }
 
-function find(substring) {
+function find (substring) {
     /** Find a record that matches the substring.
 
      Returns an array of data from matching records.
 
      */
 
-    var re = RegExp(substring, "i"), // ignore case
-        matches = [];
-    for (var id in this.index) {
-        var record = this.index[id];
-        if (re.exec(record.name))
-            matches.push(record.data);
-    }
-    return matches;
+  var re = RegExp(substring, 'i'), // ignore case
+    matches = []
+  for (var id in this.index) {
+    var record = this.index[id]
+    if (re.exec(record.name)) { matches.push(record.data) }
+  }
+  return matches
 }

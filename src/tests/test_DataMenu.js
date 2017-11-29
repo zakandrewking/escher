@@ -6,7 +6,7 @@ var it = require('mocha').it
 var assert = require('chai').assert
 
 describe('DataMenu', () => {
-  it('initializes',() => {
+  it('initializes', () => {
     const sel = d3_body.append('div')
     const data_menu = new DataMenu({ selection: sel })
     assert.ok(data_menu)

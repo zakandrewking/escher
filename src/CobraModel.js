@@ -28,7 +28,7 @@ module.exports = CobraModel
  * @param {Boolean} is_reversible - Whether the reaction is reversible.
  */
 function build_reaction_string (stoichiometries, is_reversible) {
-  var format = function(number) {
+  var format = function (number) {
     if (number == 1) {
       return ''
     }
@@ -40,10 +40,7 @@ function build_reaction_string (stoichiometries, is_reversible) {
   var product_bits = []
   for (var the_metabolite in stoichiometries) {
     var coefficient = stoichiometries[the_metabolite]
-    if (coefficient > 0)
-      product_bits.push(format(coefficient) + the_metabolite)
-    else
-      reactant_bits.push(format(Math.abs(coefficient)) + the_metabolite)
+    if (coefficient > 0) { product_bits.push(format(coefficient) + the_metabolite) } else { reactant_bits.push(format(Math.abs(coefficient)) + the_metabolite) }
   }
   var reaction_string = reactant_bits.join(' + ')
   if (is_reversible) {
@@ -74,14 +71,14 @@ function from_cobra_json (model_data) {
   var genes = {}
   for (var i = 0, l = model_data.genes.length; i < l; i++) {
     var r = model_data.genes[i],
-    the_id = r.id
+      the_id = r.id
     genes[the_id] = r
   }
 
   var model = new CobraModel()
 
   model.reactions = {}
-  for (var i = 0, l = model_data.reactions.length; i<l; i++) {
+  for (var i = 0, l = model_data.reactions.length; i < l; i++) {
     var r = model_data.reactions[i]
     var the_id = r.id
     var reaction = utils.clone(r)
@@ -104,7 +101,7 @@ function from_cobra_json (model_data) {
 
     if ('gene_reaction_rule' in reaction) {
       var gene_ids = data_styles.genes_for_gene_reaction_rule(reaction.gene_reaction_rule)
-      gene_ids.forEach(function(gene_id) {
+      gene_ids.forEach(function (gene_id) {
         if (gene_id in genes) {
           var gene = utils.clone(genes[gene_id])
           // rename id to bigg_id
@@ -119,7 +116,7 @@ function from_cobra_json (model_data) {
     model.reactions[the_id] = reaction
   }
   model.metabolites = {}
-  for (var i = 0, l = model_data.metabolites.length; i<l; i++) {
+  for (var i = 0, l = model_data.metabolites.length; i < l; i++) {
     var r = model_data.metabolites[i]
     var the_id = r.id
     var met = utils.clone(r)

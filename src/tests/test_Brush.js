@@ -13,14 +13,14 @@ function getMap () {
   const sel = svg.append('g')
   // streams are required for these options
   const required_options = { reaction_scale: [],
-                             metabolite_scale: [],
-                             reaction_styles: [],
-                             reaction_compare_style: 'diff',
-                             metabolite_styles: [],
-                             metabolite_compare_style: 'diff',
-                             cofactors: [], }
+    metabolite_scale: [],
+    reaction_styles: [],
+    reaction_compare_style: 'diff',
+    metabolite_styles: [],
+    metabolite_compare_style: 'diff',
+    cofactors: [] }
   const required_conditional_options = [ 'reaction_scale',
-                                         'metabolite_scale', ]
+    'metabolite_scale' ]
   const set_option = (key, val) => { required_options[key] = val }
   const get_option = (key) => required_options[key]
 

@@ -82,12 +82,12 @@ function create_membrane (enter_selection) {
  */
 function update_membrane (update_selection) {
   update_selection
-    .attr('width', function(d){ return d.width; })
-    .attr('height', function(d){ return d.height; })
-    .attr('transform', function(d){return 'translate('+d.x+','+d.y+')';})
-    .style('stroke-width', function(d) { return 10; })
-    .attr('rx', function(d){ return 20; })
-    .attr('ry', function(d){ return 20; })
+    .attr('width', function (d) { return d.width })
+    .attr('height', function (d) { return d.height })
+    .attr('transform', function (d) { return 'translate(' + d.x + ',' + d.y + ')' })
+    .style('stroke-width', function (d) { return 10 })
+    .attr('rx', function (d) { return 20 })
+    .attr('ry', function (d) { return 20 })
 
   this.callback_manager.run('update_membrane', this, update_selection)
 }
@@ -122,19 +122,19 @@ function update_reaction (update_selection, scale, cobra_model, drawn_nodes,
                           defs, has_data_on_reactions) {
   // Update reaction label
   update_selection.select('.reaction-label-group')
-    .call(function(sel) {
+    .call(function (sel) {
       return this.update_reaction_label(sel, has_data_on_reactions)
     }.bind(this))
 
   // draw segments
   utils.draw_a_nested_object(update_selection, '.segment-group', 'segments', 'segment_id',
                              this.create_segment.bind(this),
-                             function(sel) {
+                             function (sel) {
                                return this.update_segment(sel, scale, cobra_model,
                                                           drawn_nodes, defs,
                                                           has_data_on_reactions)
                              }.bind(this),
-                             function(sel) {
+                             function (sel) {
                                sel.remove()
                              })
 
@@ -178,7 +178,7 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
 
   // label location
   update_selection
-    .attr('transform', function(d) {
+    .attr('transform', function (d) {
       return 'translate(' + d.label_x + ',' + d.label_y + ')'
     })
     .call(this.behavior.turn_off_drag)
@@ -323,29 +323,29 @@ function update_segment (update_selection, scale, cobra_model,
   var no_data_color = this.settings.get_option('reaction_no_data_color')
 
   // update segment attributes
-  var highlight_missing  = this.settings.get_option('highlight_missing')
+  var highlight_missing = this.settings.get_option('highlight_missing')
   var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
   var primary_r = this.settings.get_option('primary_metabolite_radius')
   var secondary_r = this.settings.get_option('secondary_metabolite_radius')
   var get_arrow_size = function (data, should_size) {
-    var width = 20
-    var height = 13
-    if (should_size) {
-      height = (data === null ? no_data_size : scale.reaction_size(data))
+      var width = 20
+      var height = 13
+      if (should_size) {
+        height = (data === null ? no_data_size : scale.reaction_size(data))
       // check for nan
-      if (isNaN(height)) {
-        height = no_data_size
+        if (isNaN(height)) {
+          height = no_data_size
+        }
+        width = height * 2
       }
-      width = height * 2
+      return { width: width, height: height }
+    },
+    get_disp = function (arrow_size, reversibility, coefficient, node_is_primary) {
+      var arrow_height = ((reversibility || coefficient > 0)
+                        ? arrow_size.height : 0)
+      var r = node_is_primary ? primary_r : secondary_r
+      return r + arrow_height + 10
     }
-    return { width: width, height: height }
-  },
-  get_disp = function (arrow_size, reversibility, coefficient, node_is_primary) {
-    var arrow_height = ((reversibility || coefficient > 0) ?
-                        arrow_size.height : 0)
-    var r = node_is_primary ? primary_r : secondary_r
-    return r + arrow_height + 10
-  }
 
   // update arrows
   update_selection
@@ -353,7 +353,7 @@ function update_segment (update_selection, scale, cobra_model,
     .datum(function () {
       return this.parentNode.__data__
     })
-    .style('visibility', function(d) {
+    .style('visibility', function (d) {
       var start = drawn_nodes[d.from_node_id]
       var end = drawn_nodes[d.to_node_id]
       if (hide_secondary_metabolites &&
@@ -363,7 +363,7 @@ function update_segment (update_selection, scale, cobra_model,
       }
       return null
     })
-    .attr('d', function(d) {
+    .attr('d', function (d) {
       if (d.from_node_id === null || d.to_node_id === null) {
         return null
       }
@@ -396,7 +396,7 @@ function update_segment (update_selection, scale, cobra_model,
       curve += (end.x + ',' + end.y)
       return curve
     })
-    .style('stroke', function(d) {
+    .style('stroke', function (d) {
       var reaction_id = this.parentNode.parentNode.__data__.bigg_id
       var show_missing = (highlight_missing &&
                           cobra_model !== null &&
@@ -410,7 +410,7 @@ function update_segment (update_selection, scale, cobra_model,
       }
       return null
     })
-    .style('stroke-width', function(d) {
+    .style('stroke-width', function (d) {
       if (should_size) {
         var f = d.data
         return f === null ? no_data_size : scale.reaction_size(f)
@@ -493,13 +493,13 @@ function update_segment (update_selection, scale, cobra_model,
     .classed('arrowhead', true)
   // update arrowheads
     .merge(arrowheads)
-    .attr('d', function(d) {
+    .attr('d', function (d) {
       return ('M' + [-d.size.width / 2, 0] +
               ' L' + [0, d.size.height] +
               ' L' + [d.size.width / 2, 0] + ' Z')
-    }).attr('transform', function(d) {
+    }).attr('transform', function (d) {
       return 'translate(' + d.x + ',' + d.y + ')rotate(' + d.rotation + ')'
-    }).style('fill', function(d) {
+    }).style('fill', function (d) {
       if (should_color) {
         if (d.show_arrowhead_flux) {
           // show the flux
@@ -512,11 +512,11 @@ function update_segment (update_selection, scale, cobra_model,
       }
       // default fill color
       return null
-    }).style('stroke', function(d) {
+    }).style('stroke', function (d) {
       if (should_color) {
         // show the flux color in the stroke whether or not the fill is present
         var f = d.data
-        return f===null ? no_data_color : scale.reaction_color(f)
+        return f === null ? no_data_color : scale.reaction_color(f)
       }
       // default stroke color
       return null
@@ -537,8 +537,8 @@ function update_segment (update_selection, scale, cobra_model,
 
       // hide_secondary_metabolites option
       if (hide_secondary_metabolites &&
-          ((end['node_type']=='metabolite' && !end.node_is_primary) ||
-           (start['node_type']=='metabolite' && !start.node_is_primary))) {
+          ((end['node_type'] == 'metabolite' && !end.node_is_primary) ||
+           (start['node_type'] == 'metabolite' && !start.node_is_primary))) {
         return labels
       }
 
@@ -553,7 +553,7 @@ function update_segment (update_selection, scale, cobra_model,
           coefficient: Math.abs(d.from_node_coefficient),
           x: loc.x,
           y: loc.y,
-          data: d.data,
+          data: d.data
         })
       }
 
@@ -569,7 +569,7 @@ function update_segment (update_selection, scale, cobra_model,
           coefficient: Math.abs(d.to_node_coefficient),
           x: loc.x,
           y: loc.y,
-          data: d.data,
+          data: d.data
         })
       }
       return labels
@@ -582,10 +582,10 @@ function update_segment (update_selection, scale, cobra_model,
     .attr('text-anchor', 'middle')
   // update stoichiometry_labels
     .merge(stoichiometry_labels)
-    .attr('transform', function(d) {
+    .attr('transform', function (d) {
       return 'translate(' + d.x + ',' + d.y + ')'
     })
-    .text(function(d) {
+    .text(function (d) {
       return d.coefficient
     })
     .style('fill', function (d) {
@@ -628,7 +628,7 @@ function create_bezier (enter_selection) {
 /**
  * Update beziers in update_selection.
  */
-function update_bezier(update_selection, show_beziers, drag_behavior,
+function update_bezier (update_selection, show_beziers, drag_behavior,
                        mouseover, mouseout, drawn_nodes, drawn_reactions) {
   var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
 
@@ -641,14 +641,13 @@ function update_bezier(update_selection, show_beziers, drag_behavior,
 
   // hide secondary
   update_selection
-    .style('visibility', function(d) {
+    .style('visibility', function (d) {
       var seg_data = drawn_reactions[d.reaction_id].segments[d.segment_id],
-          start = drawn_nodes[seg_data.from_node_id],
-          end = drawn_nodes[seg_data.to_node_id]
+        start = drawn_nodes[seg_data.from_node_id],
+        end = drawn_nodes[seg_data.to_node_id]
       if (hide_secondary_metabolites &&
-          ((end['node_type']=='metabolite' && !end.node_is_primary) ||
-           (start['node_type']=='metabolite' && !start.node_is_primary)))
-        return 'hidden'
+          ((end['node_type'] == 'metabolite' && !end.node_is_primary) ||
+           (start['node_type'] == 'metabolite' && !start.node_is_primary))) { return 'hidden' }
       return null
     })
 
@@ -658,23 +657,22 @@ function update_bezier(update_selection, show_beziers, drag_behavior,
     .call(drag_behavior)
     .on('mouseover', mouseover)
     .on('mouseout', mouseout)
-    .attr('transform', function(d) {
-      if (d.x==null || d.y==null) return ''
-      return 'translate('+d.x+','+d.y+')'
+    .attr('transform', function (d) {
+      if (d.x == null || d.y == null) return ''
+      return 'translate(' + d.x + ',' + d.y + ')'
     })
 
   // update bezier line
   update_selection
     .select('.connect-line')
-    .attr('d', function(d) {
+    .attr('d', function (d) {
       var node,
-      segment_d = drawn_reactions[d.reaction_id].segments[d.segment_id]
-      node = (d.bezier=='b1' ?
-              drawn_nodes[segment_d.from_node_id] :
-              drawn_nodes[segment_d.to_node_id])
-      if (d.x==null || d.y==null || node.x==null || node.y==null)
-        return ''
-      return 'M'+d.x+', '+d.y+' '+(node.x)+','+(node.y)
+        segment_d = drawn_reactions[d.reaction_id].segments[d.segment_id]
+      node = (d.bezier == 'b1'
+              ? drawn_nodes[segment_d.from_node_id]
+              : drawn_nodes[segment_d.to_node_id])
+      if (d.x == null || d.y == null || node.x == null || node.y == null) { return '' }
+      return 'M' + d.x + ', ' + d.y + ' ' + (node.x) + ',' + (node.y)
     })
 
   this.callback_manager.run('update_bezier', this, update_selection)
@@ -698,8 +696,7 @@ function create_node (enter_selection, drawn_nodes, drawn_reactions) {
   g.append('circle')
     .attr('class', function (d) {
       var c = 'node-circle'
-      if (d.node_type !== null)
-        c += (' ' + d.node_type + '-circle')
+      if (d.node_type !== null) { c += (' ' + d.node_type + '-circle') }
       return c
     })
 
@@ -740,7 +737,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
   var identifiers_on_map = this.settings.get_option('identifiers_on_map')
   var metabolite_data_styles = this.settings.get_option('metabolite_styles')
   var no_data_style = { color: this.settings.get_option('metabolite_no_data_color'),
-                        size: this.settings.get_option('metabolite_no_data_size') }
+    size: this.settings.get_option('metabolite_no_data_size') }
   var label_mousedown_fn = this.behavior.label_mousedown
   var label_mouseover_fn = this.behavior.label_mouseover
   var label_mouseout_fn = this.behavior.label_mouseout
@@ -748,13 +745,13 @@ function update_node (update_selection, scale, has_data_on_nodes,
 
   var mg = update_selection
       .select('.node-circle')
-    .attr('transform', function(d) {
+    .attr('transform', function (d) {
       return 'translate(' + d.x + ',' + d.y + ')'
     })
-    .style('visibility', function(d) {
+    .style('visibility', function (d) {
       return hideNode(d, hide_secondary_metabolites) ? 'hidden' : null
     })
-    .attr('r', function(d) {
+    .attr('r', function (d) {
       if (d.node_type === 'metabolite') {
         var should_scale = (has_data_on_nodes &&
                             metabolite_data_styles.indexOf('size') !== -1)
@@ -768,7 +765,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
       // midmarkers and multimarkers
       return marker_r
     })
-    .style('fill', function(d) {
+    .style('fill', function (d) {
       if (d.node_type === 'metabolite') {
         var should_color_data = (has_data_on_nodes &&
                                  metabolite_data_styles.indexOf('color') !== -1)
@@ -795,16 +792,15 @@ function update_node (update_selection, scale, has_data_on_nodes,
       .attr('visibility', hide_all_labels ? 'hidden' : 'visible')
   if (!hide_all_labels) {
     node_label
-      .style('visibility', function(d) {
+      .style('visibility', function (d) {
         return hideNode(d, hide_secondary_metabolites) ? 'hidden' : null
       })
-      .attr('transform', function(d) {
+      .attr('transform', function (d) {
         return 'translate(' + d.label_x + ',' + d.label_y + ')'
       })
-      .text(function(d) {
+      .text(function (d) {
         var t = d[identifiers_on_map]
-        if (has_data_on_nodes && metabolite_data_styles.indexOf('text') !== -1)
-          t += ' ' + d.data_string
+        if (has_data_on_nodes && metabolite_data_styles.indexOf('text') !== -1) { t += ' ' + d.data_string }
         return t
       })
       .call(this.behavior.turn_off_drag)
@@ -864,7 +860,7 @@ function update_text_label (update_selection) {
 
 function displaced_coords (reaction_arrow_displacement, start, end, displace) {
   utils.check_undefined(arguments, [ 'reaction_arrow_displacement', 'start',
-                                     'end', 'displace' ])
+    'end', 'displace' ])
 
   var length = reaction_arrow_displacement
   var hyp = utils.distance(start, end)
