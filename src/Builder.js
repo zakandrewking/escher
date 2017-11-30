@@ -16,11 +16,10 @@ import Map from './Map'
 import CobraModel from './CobraModel'
 import Brush from './Brush'
 import CallbackManager from './CallbackManager'
-import ui from './ui'
 import Settings from './Settings'
 import TextEditInput from './TextEditInput'
 import QuickJump from './QuickJump'
-import data_styles from './data_styles'
+import { importAndCheck } from './dataStyles'
 import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
 import _ from 'underscore'
@@ -751,7 +750,7 @@ class Builder {
 
     // metabolite data
     if (update_metabolite_data && update_map && this.map !== null) {
-      met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+      met_data_object = dataStyles.import_and_check(this.options.metabolite_data,
                                                      'metabolite_data')
       this.map.apply_metabolite_data_to_map(met_data_object)
       if (should_draw) {
@@ -762,7 +761,7 @@ class Builder {
     // reaction data
     if (update_reaction_data) {
       if (this.options.reaction_data !== null && update_map && this.map !== null) {
-        reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+        reaction_data_object = dataStyles.import_and_check(this.options.reaction_data,
                                                             'reaction_data')
         this.map.apply_reaction_data_to_map(reaction_data_object)
         if (should_draw) { this.map.draw_all_reactions(false, false) }
@@ -794,7 +793,7 @@ class Builder {
       if (update_metabolite_data && update_model && this.cobra_model !== null) {
         // if we haven't already made this
         if (!met_data_object) {
-          met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+          met_data_object = dataStyles.import_and_check(this.options.metabolite_data,
                                                          'metabolite_data')
         }
         this.cobra_model.apply_metabolite_data(met_data_object,
@@ -807,7 +806,7 @@ class Builder {
         if (this.options.reaction_data !== null && update_model && this.cobra_model !== null) {
           // if we haven't already made this
           if (!reaction_data_object) {
-            reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+            reaction_data_object = dataStyles.import_and_check(this.options.reaction_data,
                                                                 'reaction_data')
           }
           this.cobra_model.apply_reaction_data(reaction_data_object,
@@ -844,7 +843,7 @@ class Builder {
       if (map !== null) { utils.extend(all_reactions, map.reactions, true) }
 
       // this object has reaction keys and values containing associated genes
-      return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+      return dataStyles.import_and_check(gene_data, 'gene_data', all_reactions)
     }
   }
 
