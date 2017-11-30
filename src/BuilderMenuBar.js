@@ -9,10 +9,19 @@ import MenuButton from './MenuButton.js'
  * edit mode is chosen. This can be changed once Builder is ported to Preact.
  */
 class BuilderMenuBar extends Component {
+  componentDidMount () {
+    this.props.sel.selectAll('#canvas').on(
+      'touchend', () => this.setState({visible: false})
+    )
+    this.props.sel.selectAll('#canvas').on(
+      'click', () => this.setState({visible: false})
+    )
+  }
+
   render () {
     return (
       <ul className='menuBar'>
-        <Dropdown name='Map'>
+        <Dropdown name='Map' visible={this.state.visible}>
           <MenuButton
             name={'Save map JSON' + (this.props.enable_keys ? ' (Ctrl+S)' : '')}
             onClick={() => this.props.saveMap()}
@@ -40,7 +49,7 @@ class BuilderMenuBar extends Component {
             disabledButtons={this.props.disabled_buttons}
           />
         </Dropdown>
-        <Dropdown name='Model'>
+        <Dropdown name='Model' visible={this.state.visible}>
           <MenuButton
             name={'Load COBRA model JSON' + (this.props.enable_keys ? ' (Ctrl+M)' : '')}
             onClick={file => this.props.loadModel(file)}
@@ -58,7 +67,7 @@ class BuilderMenuBar extends Component {
             disabledButtons={this.props.disabled_buttons}
           />
         </Dropdown>
-        <Dropdown name='Data'>
+        <Dropdown name='Data' visible={this.state.visible}>
           <MenuButton
             name='Load reaction data'
             onClick={file => this.props.loadReactionData(file)}
@@ -95,7 +104,7 @@ class BuilderMenuBar extends Component {
             disabledButtons={this.props.disabled_buttons}
           />
         </Dropdown>
-        <Dropdown name='Edit' rightMenu='true'>
+        <Dropdown name='Edit' rightMenu='true' visible={this.state.visible}>
           <MenuButton
             name={'Pan mode' + (this.props.enable_keys ? ' (Z)' : '')}
             modeName='zoom'
@@ -173,7 +182,7 @@ class BuilderMenuBar extends Component {
             disabledButtons={this.props.disabled_buttons}
           />
         </Dropdown>
-        <Dropdown name='View' rightMenu='true'>
+        <Dropdown name='View' rightMenu='true' visible={this.state.visible}>
           <MenuButton
             name={'Zoom in' + (this.props.enable_keys ? ' (+)' : '')}
             onClick={() => this.props.zoomIn()}

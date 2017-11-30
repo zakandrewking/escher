@@ -14,8 +14,6 @@ class Dropdown extends Component {
     this.state = {
       visible: null
     }
-    this.setWrapperRef = this.setWrapperRef.bind(this)
-    this.handleClickOutside = this.handleClickOutside.bind(this)
   }
 
   componentWillMount () {
@@ -24,19 +22,8 @@ class Dropdown extends Component {
     })
   }
 
-  componentDidMount () {
-    document.addEventListener('mouseup', this.handleClickOutside)
-  }
-
-  // Reference for hiding the menu when a mouse event happens outside
-  setWrapperRef (node) {
-    this.wrapperRef = node
-  }
-
-  handleClickOutside (event) {
-    if (this.wrapperRef && !this.wrapperRef.contains(event.target)) {
-      this.setState({visible: false})
-    }
+  componentWillReceiveProps (nextProps) {
+    this.setState({visible: nextProps.visible})
   }
 
   render () {
