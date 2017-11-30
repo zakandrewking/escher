@@ -10,8 +10,7 @@ biological pathways. These 'pathway maps' are a great way to contextualize
 biological datasets. The easiest way to use Escher is to browse and build maps
 on the `Escher website`_. New users may be interested in the
 :doc:`getting_started` guide. Escher also has a :doc:`Python package
-<escher-python>` and, for developers, a :doc:`NPM package <development>` (NOTE:
-On NPM, we use the name `escher-vis`).
+<escher-python>` and, for developers, a :doc:`NPM package <development>`.
 
 Escher in 3 minutes
 -------------------
