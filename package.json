@@ -19,7 +19,7 @@
   "repository": "github:zakandrewking/escher",
   "bugs": "https://github.com/zakandrewking/escher/issues",
   "files": [
-    "js/dist/*"
+    "dist/*"
   ],
   "main": "/dist/escher.js",
   "engines": {
