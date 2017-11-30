@@ -86,4 +86,14 @@ describe('Builder', () => {
                        { type: 'max', color: '#ffffff', size: 10 },
                      ])
   })
+
+  it('open search bar', done => {
+    const sel = make_parent_sel(d3_body)
+    const b = Builder(null, null, '', sel, {
+      first_load_callback: () => {
+        b.renderSearchBar()
+        done()
+      }
+    })
+  })
 })
