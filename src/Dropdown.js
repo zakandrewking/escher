@@ -44,7 +44,13 @@ class Dropdown extends Component {
 
   render () {
     return (
-      <li className='dropdown'>
+      <li
+        className='dropdown'
+        style={this.props.disabledEditing
+          ? {display: 'none'}
+          : {display: 'block'}
+        }
+      >
         <div
           className='dropdownButton'
           tabindex='0'

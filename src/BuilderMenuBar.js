@@ -10,6 +10,7 @@ import MenuButton from './MenuButton.js'
  */
 class BuilderMenuBar extends Component {
   componentDidMount () {
+    console.log(this.props.enable_editing)
     this.props.sel.selectAll('#canvas').on(
       'touchend', () => this.setState({visible: false})
     )
@@ -104,7 +105,12 @@ class BuilderMenuBar extends Component {
             disabledButtons={this.props.disabled_buttons}
           />
         </Dropdown>
-        <Dropdown name='Edit' rightMenu='true' visible={this.state.visible}>
+        <Dropdown
+          name='Edit'
+          rightMenu='true'
+          visible={this.state.visible}
+          disabledEditing={!this.props.enable_editing}
+        >
           <MenuButton
             name={'Pan mode' + (this.props.enable_keys ? ' (Z)' : '')}
             modeName='zoom'

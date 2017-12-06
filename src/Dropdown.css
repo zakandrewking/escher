@@ -8,7 +8,7 @@
   border: 1px solid #ddd;
   display: inline-flex;
   box-sizing: border-box;
-  width: 310px;
+  width: fit-content;
 }
 
 .escher-container .dropdown {
@@ -62,8 +62,8 @@
 
 @media (min-width: 550px) {
   .escher-container .menuBar {
-    width: 410px;
-    padding: 0 3px;
+    padding-right: 18px;
+    padding-left: 3px;
   }
 
   .escher-container .dropdown {
