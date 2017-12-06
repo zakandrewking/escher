@@ -582,6 +582,7 @@ function renderButtonPanel (mode) {
   const buttonPanelDivNode = this.button_div.node()
   preact.render(
     <ButtonPanel
+      all={this.options.menu === 'all'}
       setMode={(newMode) => this._set_mode(newMode)}
       zoomContainer={this.zoom_container}
       map={this.map}
