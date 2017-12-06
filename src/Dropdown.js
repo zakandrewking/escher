@@ -14,6 +14,8 @@ class Dropdown extends Component {
     this.state = {
       visible: null
     }
+    this.setWrapperRef = this.setWrapperRef.bind(this)
+    this.handleClickOutside = this.handleClickOutside.bind(this)
   }
 
   componentWillMount () {
@@ -22,8 +24,22 @@ class Dropdown extends Component {
     })
   }
 
+  componentDidMount () {
+    document.addEventListener('mouseup', this.handleClickOutside)
+  }
+
   componentWillReceiveProps (nextProps) {
     this.setState({visible: nextProps.visible})
+  }
+
+  setWrapperRef (node) {
+    this.wrapperRef = node
+  }
+
+  handleClickOutside (event) {
+    if (this.wrapperRef && !this.wrapperRef.contains(event.target)) {
+      this.setState({visible: false})
+    }
   }
 
   render () {

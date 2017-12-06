@@ -406,21 +406,22 @@ function load_map (map_data, should_update_data) {
   this.settings_div = this.selection.append('div')
 
   // Set up settings menu
-  preact.render(
-    <ReactWrapper
-      display={false}
-      callbackManager={this.callback_manager}
-      component={BuilderSettingsMenu}
-      refProp={instance => { this.settingsMenuRef = instance }}
-      closeMenu={() => this.pass_settings_menu_props({display: false})}
-    />,
-    this.settings_div.node(),
-    this.settings_div.node().children.length > 0
-    ? this.settings_div.node().firstChild
-    : undefined
-  )
-
-  this.renderSearchBar(true)
+  if (this.options.enable_search) {
+    preact.render(
+      <ReactWrapper
+        display={false}
+        callbackManager={this.callback_manager}
+        component={BuilderSettingsMenu}
+        refProp={instance => { this.settingsMenuRef = instance }}
+        closeMenu={() => this.pass_settings_menu_props({display: false})}
+      />,
+      this.settings_div.node(),
+      this.settings_div.node().children.length > 0
+      ? this.settings_div.node().firstChild
+      : undefined
+    )
+    this.renderSearchBar(true)
+  }
 
   // Set up key manager
   var keys = this._get_keys(
@@ -561,6 +562,7 @@ function renderMenu (mode) {
 }
 
 function renderSearchBar (hide) {
+  if (!this.options.enable_search) { return }
   const searchBarNode = this.search_bar_div.node()
   preact.render(
     <SearchBar

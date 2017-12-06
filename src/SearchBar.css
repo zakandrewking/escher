@@ -25,11 +25,13 @@
 }
 
 .escher-container .searchContainer .searchBarButton.left {
+  margin-top: -1px;
   border-top-right-radius: 0px;
   border-bottom-right-radius: 0px;
 }
 
 .escher-container .searchContainer .searchBarButton.right {
+  margin-top: -1px;
   border-top-left-radius: 0px;
   border-bottom-left-radius: 0px;
   margin-left: -1px;
