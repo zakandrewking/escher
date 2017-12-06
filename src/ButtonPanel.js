@@ -44,7 +44,7 @@ class ButtonPanel extends Component {
         </li>
         <li
           className='grouping'
-          style={this.props.all
+          style={this.props.all && this.props.enableEditing
           ? {display: 'block'}
           : {display: 'none'}}
         >
@@ -95,9 +95,10 @@ class ButtonPanel extends Component {
         </li>
         <li
           className='grouping'
-          style={this.props.mode === 'build' && this.props.all
-            ? {display: 'block'}
-            : {display: 'none'}}
+          style={
+            this.props.mode === 'build' && this.props.all && this.props.enableEditing
+              ? {display: 'block'}
+              : {display: 'none'}}
         >
           <button
             className='buttonGroup btn'

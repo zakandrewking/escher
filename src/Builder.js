@@ -583,6 +583,7 @@ function renderButtonPanel (mode) {
   preact.render(
     <ButtonPanel
       all={this.options.menu === 'all'}
+      enableEditing={this.options.enable_editing}
       setMode={(newMode) => this._set_mode(newMode)}
       zoomContainer={this.zoom_container}
       map={this.map}
