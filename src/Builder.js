@@ -119,7 +119,7 @@ function init (map_data, model_data, embedded_css, selection, options) {
     enable_search: true,
     fill_screen: false,
     zoom_to_element: null,
-    full_screen_button: false,
+    full_screen_button: true,
     ignore_bootstrap: false,
     disabled_buttons: null,
     // map, model, and styles
@@ -583,6 +583,7 @@ function renderButtonPanel (mode) {
   preact.render(
     <ButtonPanel
       all={this.options.menu === 'all'}
+      fullscreen={this.options.full_screen_button}
       enableEditing={this.options.enable_editing}
       setMode={(newMode) => this._set_mode(newMode)}
       zoomContainer={this.zoom_container}

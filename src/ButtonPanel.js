@@ -43,6 +43,19 @@ class ButtonPanel extends Component {
           </button>
         </li>
         <li
+          style={this.props.fullscreen
+          ? {display: 'block'}
+          : {display: 'none'}}
+        >
+          <button
+            className='button btn'
+            onClick={() => this.props.map.full_screen()}
+            title='Toggle full screen view (2)'
+          >
+            <i className='icon-resize-full-alt' />
+          </button>
+        </li>
+        <li
           className='grouping'
           style={this.props.all && this.props.enableEditing
           ? {display: 'block'}
