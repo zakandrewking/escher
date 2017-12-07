@@ -58,7 +58,7 @@ class Dropdown extends Component {
           onClick={() => this.setState({visible: !this.state.visible})}
         >
           {this.props.name}&nbsp;
-          <i className='icon-down-dir' style={{fontSize: '14px'}} />
+          <i className='icon-sort-down' />
         </div>
         <ul
           className='menu'

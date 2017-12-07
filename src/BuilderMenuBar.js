@@ -10,7 +10,6 @@ import MenuButton from './MenuButton.js'
  */
 class BuilderMenuBar extends Component {
   componentDidMount () {
-    console.log(this.props.enable_editing)
     this.props.sel.selectAll('#canvas').on(
       'touchend', () => this.setState({visible: false})
     )
