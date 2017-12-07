@@ -119,7 +119,7 @@ function init (map_data, model_data, embedded_css, selection, options) {
     enable_search: true,
     fill_screen: false,
     zoom_to_element: null,
-    full_screen_button: true,
+    full_screen_button: false,
     ignore_bootstrap: false,
     disabled_buttons: null,
     // map, model, and styles
