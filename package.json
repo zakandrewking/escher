@@ -16,7 +16,7 @@
   ],
   "license": "MIT",
   "homepage": "https://escher.github.io",
-  "repository": "github:zakandrewking/escher",
+  "repository": "https://github.com/zakandrewking/escher",
   "bugs": "https://github.com/zakandrewking/escher/issues",
   "files": [
     "dist/*"
@@ -56,7 +56,7 @@
   },
   "dependencies": {
     "baconjs": "^0.7.71",
-    "d3-brush": "zakandrewking/d3-brush",
+    "d3-brush": "https://github.com/zakandrewking/d3-brush.git",
     "d3-drag": "^1.0.2",
     "d3-dsv": "^1.0.3",
     "d3-request": "^1.0.3",
