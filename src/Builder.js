@@ -297,6 +297,14 @@ function init (map_data, model_data, embedded_css, selection, options) {
 
     if (message_fn !== null) setTimeout(message_fn, 500)
   })
+
+  var s = this.selection
+    .append('div').attr('class', 'search-menu-container')
+    .append('div').attr('class', 'search-menu-container-inline')
+  this.menu_div = s.append('div')
+  this.search_bar_div = s.append('div')
+  this.button_div = this.selection.append('div')
+  this.settings_div = this.selection.append('div')
 }
 
 /**
@@ -396,14 +404,6 @@ function load_map (map_data, should_update_data) {
 
   // Set up the modes
   this._setup_modes(this.map, this.brush, this.zoom_container)
-
-  var s = this.selection
-    .append('div').attr('class', 'search-menu-container')
-    .append('div').attr('class', 'search-menu-container-inline')
-  this.menu_div = s.append('div')
-  this.search_bar_div = s.append('div')
-  this.button_div = this.selection.append('div')
-  this.settings_div = this.selection.append('div')
 
   // Set up settings menu
   if (this.options.enable_search) {

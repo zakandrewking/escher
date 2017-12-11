@@ -44,7 +44,6 @@ module.exports = {
   SearchIndex: require('./SearchIndex'),
   Settings: require('./Settings'),
   data_styles: require('./data_styles'),
-  ui: require('./ui'),
   static: require('./static'),
   ZoomContainer: require('./ZoomContainer'),
   libs: {
