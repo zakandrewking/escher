@@ -22,7 +22,6 @@ def generate_static_site():
         return 'py/' + path
 
     data = template.render(escher=static_rel(get_url('escher_min', 'local')),
-                           boot_css=static_rel(get_url('boot_css', 'local')),
                            homepage_css=static_rel(get_url('homepage_css', 'local')),
                            favicon=static_rel(get_url('favicon', 'local')),
                            logo=static_rel(get_url('logo', 'local')),
@@ -52,11 +51,9 @@ def generate_static_site():
                              minified_js=True,
                              static_site_index_json=index_json)
 
-    # copy over the source maps
+    # copy over the source map
     escher_map = get_url('escher_min', 'local') + '.map'
-    builder_css_map = get_url('builder_css_min', 'local') + '.map'
     shutil.copy(join(root_directory, escher_map), join(top_directory, 'builder', escher_map))
-    shutil.copy(join(root_directory, builder_css_map), join(top_directory, 'builder', builder_css_map))
 
 
 if __name__ == '__main__':

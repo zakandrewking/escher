@@ -482,9 +482,10 @@ class Builder(object):
         --------
 
         js_source: Can be one of the following:
-            'web' - (Default) use js files from escher.github.io.
-            'local' - use compiled js files in the local escher installation. Works offline.
-            'dev' - use the local, uncompiled development files. Works offline.
+            'web' - (Default) use js files from unpkg.
+            'local' - Use compiled js files in the local escher installation. Works offline.
+            'dev' - No longer necessary with source maps. This now gives the
+                    same behavior as 'local'.
 
         menu: Menu bar options include:
             'none' - (Default) No menu or buttons.
@@ -496,8 +497,7 @@ class Builder(object):
             'zoom' - Zoom the map.
             'none' - No scroll events.
 
-        minified_js: If True, use the minified version of JavaScript and CSS
-        files.
+        minified_js: If True, use the minified version of JavaScript files.
 
         html_wrapper: If True, return a standalone html file.
 
@@ -519,9 +519,7 @@ class Builder(object):
         'protocol relative URL', as in //escher.github.io. Ignored if source is
         local.
 
-        ignore_bootstrap: Do not use Bootstrap for buttons, even if it
-        available. This is used to embed Escher in a Jupyter notebook where it
-        conflicts with the Jupyter Boostrap installation.
+        ignore_bootstrap: Deprecated
 
         """
 
@@ -551,14 +549,6 @@ class Builder(object):
         # get the urls
         escher_url = get_url(('escher_min' if minified_js else 'escher'),
                              url_source, local_host, protocol)
-        if menu == 'all' and not ignore_bootstrap:
-            jquery_url = get_url('jquery', url_source, local_host, protocol)
-            boot_css_url = get_url('boot_css', url_source, local_host, protocol)
-            boot_js_url = get_url('boot_js', url_source, local_host, protocol)
-        else:
-            jquery_url = boot_css_url = boot_js_url = None
-        escher_css_url = get_url(('builder_css_min' if minified_js else 'builder_css'),
-                                 url_source, local_host, protocol)
         favicon_url = get_url('favicon', url_source, local_host, protocol)
         # for static site
         map_download_url = get_url('map_download', url_source, local_host, protocol)
@@ -575,7 +565,6 @@ class Builder(object):
             'enable_editing': enable_editing,
             'scroll_behavior': scroll_behavior,
             'fill_screen': fill_screen,
-            'ignore_bootstrap': ignore_bootstrap,
             'never_ask_before_quit': never_ask_before_quit,
             'reaction_data': self.reaction_data,
             'metabolite_data': self.metabolite_data,
@@ -591,10 +580,6 @@ class Builder(object):
         html = content.render(
             # standalone
             title='Escher ' + ('Builder' if enable_editing else 'Viewer'),
-            jquery_url=jquery_url,
-            boot_js_url=boot_js_url,
-            boot_css_url=boot_css_url,
-            escher_css_url=escher_css_url,
             favicon_url=favicon_url,
             # content
             wrapper=html_wrapper,
@@ -697,7 +682,7 @@ class Builder(object):
 
             - *none* - No menu or buttons.
             - *zoom* - Just zoom buttons.
-            - *all* (Default) - Menu and button bar (requires Bootstrap).
+            - *all* (Default) - Menu and button bar.
 
         :param string scroll_behavior: Scroll behavior options:
 
@@ -763,7 +748,7 @@ class Builder(object):
 
             - *none* - No menu or buttons.
             - *zoom* - Just zoom buttons.
-            - *all* (Default) - Menu and button bar (requires Bootstrap).
+            - *all* (Default) - Menu and button bar.
 
         :param string scroll_behavior: Scroll behavior options:
 
@@ -809,25 +794,9 @@ class Builder(object):
                 os.makedirs(directory)
             # add dependencies to the directory
             escher = get_url('escher_min' if minified_js else 'escher', 'local')
-            builder_css = get_url('builder_css_min' if minified_js else 'builder_css', 'local')
             favicon = get_url('favicon', 'local')
-            if menu == 'all':
-                boot_css = get_url('boot_css', 'local')
-                boot_js = get_url('boot_js', 'local')
-                jquery = get_url('jquery', 'local')
-                boot_font_eot = get_url('boot_font_eot', 'local')
-                boot_font_svg = get_url('boot_font_svg', 'local')
-                boot_font_woff = get_url('boot_font_woff', 'local')
-                boot_font_woff2 = get_url('boot_font_woff2', 'local')
-                boot_font_ttf = get_url('boot_font_ttf', 'local')
-            else:
-                boot_css = boot_js = jquery = None
-                boot_font_eot = boot_font_svg = None
-                boot_font_woff = boot_font_woff2 = boot_font_ttf = None
 
-            for path in [escher, builder_css, boot_css, boot_js, jquery,
-                         favicon, boot_font_eot, boot_font_svg, boot_font_woff,
-                         boot_font_woff2, boot_font_ttf]:
+            for path in [escher, favicon]:
                 if path is None:
                     continue
                 src = join(root_directory, path)

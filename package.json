@@ -1,7 +1,7 @@
 {
-  "name": "escher-vis",
+  "name": "escher",
   "author": "Zachary King",
-  "version": "1.6.0",
+  "version": "1.7.0-alpha",
   "schema_version": "1-0-0",
   "map_model_version": "5",
   "description": "Escher: A Web Application for Building, Sharing, and Embedding Data-Rich Visualizations of Biological Pathways",
@@ -16,46 +16,47 @@
   ],
   "license": "MIT",
   "homepage": "https://escher.github.io",
-  "repository": "github:zakandrewking/escher",
+  "repository": "https://github.com/zakandrewking/escher",
   "bugs": "https://github.com/zakandrewking/escher/issues",
   "files": [
-    "js/src/*.js",
-    "js/dist/*",
-    "css/dist/*"
+    "dist/*"
   ],
-  "main": "js/src/main.js",
+  "main": "/dist/escher.js",
   "engines": {
     "node": ">=5.0"
   },
   "devDependencies": {
+    "babel-core": "^6.25.0",
+    "babel-loader": "^7.1.1",
+    "babel-plugin-transform-object-rest-spread": "^6.23.0",
+    "babel-plugin-transform-react-jsx": "^6.24.1",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-register": "^6.26.0",
     "biojs-sniper": "^0.2.9",
-    "bootstrap": "^3.3.6",
     "bootswatch": "^3.3.6",
     "chai": "^3.3.0",
-    "grunt": "^0.4.5",
-    "grunt-browserify": "^4.0.0",
-    "grunt-cli": "^0.1.13",
-    "grunt-contrib-clean": "^0.6.0",
-    "grunt-contrib-concat": "^0.5.1",
-    "grunt-contrib-copy": "^0.8.2",
-    "grunt-contrib-cssmin": "^0.14.0",
-    "grunt-contrib-uglify": "^0.9.2",
-    "grunt-contrib-watch": "^0.6.1",
-    "grunt-coveralls": "^1.0.0",
-    "grunt-env": "^0.4.4",
-    "grunt-extract-sourcemap": "^0.1.16",
-    "grunt-git": "^0.3.7",
-    "grunt-istanbul": "^0.6.1",
-    "grunt-mocha-test": "^0.12.7",
-    "grunt-release": "^0.13.0",
-    "grunt-shell": "^1.1.2",
-    "jquery": "^2.2.0",
-    "jsdom": "^7.2.2",
-    "mocha": "^2.3.4"
+    "coveralls": "^3.0.0",
+    "cross-env": "^5.1.0",
+    "css-loader": "^0.28.4",
+    "file-loader": "^1.1.5",
+    "istanbul-instrumenter-loader": "^3.0.0",
+    "jsdom": "^11.5.1",
+    "mocha": "^2.3.4",
+    "mocha-webpack": "^1.0.1",
+    "null-loader": "^0.1.1",
+    "nyc": "^11.2.1",
+    "raw-loader": "^0.5.1",
+    "standard": "^10.0.3",
+    "style-loader": "^0.18.2",
+    "url-loader": "^0.6.2",
+    "webpack": "^3.8.1",
+    "webpack-dev-server": "^2.7.1",
+    "webpack-merge": "^4.1.0",
+    "webpack-node-externals": "^1.6.0"
   },
   "dependencies": {
     "baconjs": "^0.7.71",
-    "d3-brush": "zakandrewking/d3-brush",
+    "d3-brush": "https://github.com/zakandrewking/d3-brush.git",
     "d3-drag": "^1.0.2",
     "d3-dsv": "^1.0.3",
     "d3-request": "^1.0.3",
@@ -63,27 +64,33 @@
     "d3-selection": "^1.0.3",
     "d3-zoom": "^1.1.1",
     "file-saver": "^1.3.3",
+    "immutability-helper": "^2.4.0",
     "mousetrap": "^1.5.3",
-    "tinier": "^0.5.1",
+    "preact": "^8.2.1",
     "underscore": "^1.8.3",
     "vkbeautify": "^0.99.1",
     "d3-interpolate": "latest",
     "d3": "latest"
   },
   "scripts": {
-    "compile": "./node_modules/.bin/grunt default",
-    "compilew": "./node_modules/.bin/grunt watch",
-    "test": "./node_modules/.bin/grunt test || true",
-    "test-debug": "node debug ./node_modules/.bin/grunt test",
-    "coverage": "./node_modules/.bin/grunt coverage"
+    "build": "./node_modules/.bin/webpack --config webpack.prod.js",
+    "watch": "./node_modules/.bin/webpack --config webpack.prod.js --watch",
+    "start": "./node_modules/.bin/webpack-dev-server --config webpack.dev.js",
+    "clean": "rm -r dist/*",
+    "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.test.js \"src/tests/*.js\"",
+    "copy": "cp package.json py/escher/ && cp dist/* py/escher/static/escher/ && cp jsonschema/* py/escher/static/jsonschema/",
+    "coverage": "./node_modules/.bin/cross-env NODE_ENV=coverage ./node_modules/.bin/nyc --reporter=text-lcov npm run test | ./node_modules/.bin/coveralls"
+  },
+  "nyc": {
+    "include": [
+      "src/*.js"
+    ],
+    "instrument": false,
+    "sourceMap": false
   },
   "sniper": {
     "js": [
-      "/js/dist/escher.min.js",
-      "https://d3js.org/d3.v3.min.js"
-    ],
-    "css": [
-      "/css/src/builder.css"
+      "/dist/escher.min.js"
     ],
     "snippets": [
       "snippets"

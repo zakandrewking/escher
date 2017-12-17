@@ -1,0 +1,1 @@
+var DirectionArrow = require('../DirectionArrow');

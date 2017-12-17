@@ -1,0 +1,191 @@
+.escher-container .settingsBackground {
+  box-sizing: border-box;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9;
+  background: rgba(0,0,0,.4);
+  padding: 5% 0 80px;
+  text-align: center;
+}
+
+.escher-container .scale-editor .domain-input {
+  color: #333;
+}
+
+.escher-container .settingsBoxContainer button {
+  position: absolute;
+  top: 5px;
+  right: 20px;
+  z-index: 10;
+  text-align: center;
+  vertical-align: middle;
+  font-weight: normal!important;
+  width: 34px;
+  height: 30px;
+  margin: 0;
+  padding: unset;
+  font-size: 14px!important;
+  border-radius: 3px;
+  -ms-touch-action: none;
+  touch-action: none;
+}
+
+.escher-container .settingsBoxContainer button:active {
+  background-image: linear-gradient(#3F4141, #474949 6%, #4F5151);
+}
+
+.escher-container .settingsBoxContainer .discardChanges {
+  right: 60px;
+}
+
+.escher-container .settingsBoxContainer {
+  color: rgb(119, 119, 119);
+  display: inline-block;
+  position: relative;
+  width: 90%;
+  max-width: 520px;
+  height: 100%;
+  z-index: 10;
+}
+
+.escher-container .settingsBox {
+  font-size: 13px;
+  box-sizing: border-box;
+  display: inline-block;
+  max-height: 100%;
+  width: 100%;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  background: rgba(255, 255, 255, 0.953);
+  padding: 8px;
+  margin: 0;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.escher-container .settingsBox * {
+  box-sizing: border-box;
+}
+
+.escher-container .settingsBox .title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #777777;
+}
+
+.escher-container .settingsBox .subheading {
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 15px;
+  color: #777777;
+}
+
+.escher-container .settingsBox table {
+  border-collapse: collapse;
+}
+
+.escher-container .settingsBox .radioSelection {
+  cursor: default;
+}
+
+.escher-container .radioSelection td {
+  padding: 3px 5px;
+}
+
+.escher-container .radioSelection input[type=radio] {
+  margin: 0;
+  margin-top: 4px;
+  margin-right: 4px;
+}
+
+.escher-container .radioSelection .optionLabel {
+  width: 88px;
+}
+
+.escher-container .radioSelection .optionLabelWide {
+  width: 192px;
+}
+
+.escher-container .radioSelection .optionGroup {
+  margin-right: 10px
+}
+
+.escher-container .radioSelection .singleLine {
+  display: flex;
+}
+
+.escher-container .settingsContainer label {
+  display: block;
+  margin-bottom: 0;
+}
+
+.escher-container .settingsBoxContainer input[type=checkbox] {
+  margin: 0;
+  margin-top: 4px;
+  margin-right: 4px;
+}
+
+.escher-container .settingsTip {
+  font-size: 13px;
+}
+
+.escher-container .settingsBoxContainer hr {
+  margin: 18px 0;
+  border: 0;
+  border-top: 1px solid #dddddd;
+}
+
+.escher-container .scaleTitle {
+  margin-top: 15px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.escher-container .selector {
+  position: relative;
+  user-select: none;
+  padding-top: 2px;
+}
+
+.escher-container .selectorTitle {
+  background: white;
+  border: 1px solid #a9a9a9;
+  padding-left: 4px;
+  cursor: default;
+  width: 162px;
+}
+
+.escher-container .selectorTitle:hover {
+  border-color: black;
+}
+
+.escher-container .selectorMenu {
+  position: absolute;
+  z-index: 4;
+  background-color: white;
+  border: 1px solid #a9a9a9;
+  min-width: 162px;
+}
+
+.escher-container .scaleSelection {
+  cursor: default;
+  padding: 0 6px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.escher-container .scaleSelection:hover {
+  background-color: dodgerblue;
+  color: white;
+}
+
+.escher-container .icon-blank {
+  margin: -3px -3px;
+}
+
+.escher-container .scaleName {
+  margin-right: 15px;
+}
