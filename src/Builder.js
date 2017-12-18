@@ -26,6 +26,7 @@ import _ from 'underscore'
 import { select as d3_select } from 'd3-selection'
 import { selection as d3_selection } from 'd3-selection'
 import { json as d3_json } from 'd3-request'
+import TimeSeriesBar from './TimeSeriesBar'
 
 // Include custom font set for icons
 import '../icons/css/fontello.css'
@@ -68,6 +69,7 @@ class Builder {
     this.settings_div = null
     this.settingsMenuRef = null
     this.search_bar_div = null
+    this.time_series_bar_div = null
     this.searchBarRef = null
 
     // apply this object as data for the selection
@@ -371,8 +373,27 @@ class Builder {
       .append('div').attr('class', 'search-menu-container-inline')
     this.menu_div = s.append('div')
     this.search_bar_div = s.append('div')
+    this.time_series_bar_div = s.append('div')
     this.button_div = this.selection.append('div')
     this.settings_div = this.selection.append('div')
+
+    // set up attributes for time series
+    this.type_of_data = ''
+    this.difference_mode = false
+    this.reference = 0
+    this.target = 0
+
+    this.reaction_data_names = []
+    this.gene_data_names = []
+    this.metabolite_data_names = []
+
+    // set up the time series bar
+    this.time_series_bar = new TimeSeriesBar(this.time_series_bar_div, this.map, this, this.type_of_data)
+    // Set up the hide callbacks
+    this.time_series_bar.callback_manager.set('show', function() {
+      this.time_series_bar.toggle(false)
+    }.bind(this))
+
 
     // Set up settings menu
     preact.render(
@@ -671,58 +692,121 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-    set_reaction_data (data) {
-    this.options.reaction_data = data
+   set_reaction_data (data) {
+
+    this.reaction_data_names = []
+    this.reaction_data_names.length = 0
+
+    // new data is [array of names][array of numbers]
+    if (data === null) {
+
+      this.reaction_data_names = null
+      this.options.reaction_data = null
+      this.time_series_bar.update(this)
+
+
+    } else if (_.isObject(data) && !(_.isArray(data))) {
+      // old data format from JSON is object
+      // old data format from csv is prepared to go to else case
+
+      this.reaction_data_names = ["reaction data set"]
+
+      this.options.reaction_data = [data]
+      this.type_of_data = 'reaction'
+      this.time_series_bar.openTab(this)
+
+    } else {
+
+      this.reaction_data_names = data[0]
+      this.options.reaction_data = data[1]
+
+      this.type_of_data = 'reaction'
+      this.time_series_bar.openTab(this)
+    }
+
     var message_fn = this._reaction_check_add_abs()
-    this._update_data(true, true, 'reaction')
+    this._update_data(true, true, 'reaction', undefined, true)
     if (message_fn) {
       message_fn()
     } else {
       this.map.set_status('')
-    }
-
-    let index = this.options.disabled_buttons.indexOf('Clear reaction data')
-    if (index > -1) {
-      this.options.disabled_buttons.splice(index, 1)
-    } else if (index === -1 && data === null) {
-      this.options.disabled_buttons.push('Clear reaction data')
     }
   }
 
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-    set_gene_data (data, clear_gene_reaction_rules) {
+  set_gene_data (data, clear_gene_reaction_rules) {
     if (clear_gene_reaction_rules) {
       // default undefined
       this.settings.set_conditional('show_gene_reaction_rules', false)
     }
-    this.options.gene_data = data
-    this._update_data(true, true, 'reaction')
-    this.map.set_status('')
+    this.gene_data_names = []
+    //this.gene_data_names.length = 0
 
-    let index = this.options.disabled_buttons.indexOf('Clear gene data')
-    if (index > -1) {
-      this.options.disabled_buttons.splice(index, 1)
-    } else if (index === -1 && data === null) {
-      this.options.disabled_buttons.push('Clear gene data')
+
+    // new data is [array of names][array of numbers]
+    // new case for reset to null, because crashes on null[1]
+    if (data === null) {
+
+      this.gene_data_names = null
+      this.options.gene_data = null
+      this.time_series_bar.update(this)
+
+
+    } else if (_.isObject(data) && !(_.isArray(data))) { // old data format or csv is [array of numbers]
+
+      this.type_of_data = 'gene'
+      this.gene_data_names = ["gene data set"]
+
+      this.options.gene_data = [data]
+      this.time_series_bar.openTab(this)
+
+    } else {
+      this.type_of_data = 'gene'
+      this.gene_data_names = data[0]
+      this.options.gene_data = data[1]
+
+      this.time_series_bar.openTab(this)
+
     }
+
+    this._update_data(true, true, 'reaction', undefined, true)
+    this.map.set_status('')
   }
 
-    set_metabolite_data (data) {
-    /** For documentation of this function, see docs/javascript_api.rst.
+  set_metabolite_data (data) {
 
-     */
-    this.options.metabolite_data = data
-    this._update_data(true, true, 'metabolite')
-    this.map.set_status('')
+    this.metabolite_data_names = []
+    this.metabolite_data_names.length = 0
 
-    let index = this.options.disabled_buttons.indexOf('Clear metabolite data')
-    if (index > -1) {
-      this.options.disabled_buttons.splice(index, 1)
-    } else if (index === -1 && data === null) {
-      this.options.disabled_buttons.push('Clear metabolite data')
+    // new data is [array of names][array of numbers]
+    // new case for reset to null, because crashes on null[1]
+    if (data === null) {
+
+      this.metabolite_data_names = null
+      this.options.metabolite_data = null
+      this.time_series_bar.update(this)
+
+
+    } else if (_.isObject(data) && !(_.isArray(data))) { // old data format or csv is [array of numbers]
+
+      this.metabolite_data_names = ["metabolite data set"]
+      this.options.metabolite_data = [data]
+      this.type_of_data = 'metabolite'
+      this.time_series_bar.openTab(this)
+
+    } else {
+
+      this.metabolite_data_names = data[0]
+      this.options.metabolite_data = data[1]
+
+      this.type_of_data = 'metabolite'
+      this.time_series_bar.openTab(this)
     }
+
+    this._update_data(true, true, 'metabolite', undefined, true)
+    this.map.set_status('')
   }
 
   /**
@@ -734,7 +818,7 @@ class Builder {
    * should_draw: (Optional, Default: true) Whether to redraw the update sections
    * of the map.
    */
-    _update_data (update_model, update_map, kind, should_draw) {
+  _update_data (update_model, update_map, kind, should_draw, update_stats) {
     // defaults
     if (kind === undefined) {
       kind = [ 'reaction', 'metabolite' ]
@@ -755,8 +839,37 @@ class Builder {
 
     // metabolite data
     if (update_metabolite_data && update_map && this.map !== null) {
-      met_data_object = data_styles.import_and_check(this.options.metabolite_data,
-                                                     'metabolite_data')
+
+      if (this.difference_mode && this.options.metabolite_data !== null) {
+
+        var difference_metabolite_data = [this.options.metabolite_data[this.reference], this.options.metabolite_data[this.target]]
+        met_data_object = data_styles.import_and_check(difference_metabolite_data, 'metabolite_data')
+      } else {
+        if (this.options.metabolite_data !== null) {
+          if(_.isArray(this.options.metabolite_data)){
+
+            met_data_object = data_styles.import_and_check(this.options.metabolite_data[this.reference], 'metabolite_data')
+          } else {
+            met_data_object = data_styles.import_and_check(this.options.metabolite_data, 'metabolite_data')
+
+          }
+
+        } else {
+          met_data_object = data_styles.import_and_check(this.options.metabolite_data, 'metabolite_data')
+        }
+      }
+
+      // calculates the scales with all the values in the data sets
+      if(update_stats && this.options.metabolite_data !== null){
+        var metabolite_for_data_scales = []
+
+        for (var i in this.options.metabolite_data) {
+          metabolite_for_data_scales = metabolite_for_data_scales.concat(d3.values(this.options.metabolite_data[i]))
+        }
+        this.map.set_nodes_for_data_scales(metabolite_for_data_scales)
+      }
+
+
       this.map.apply_metabolite_data_to_map(met_data_object)
       if (should_draw) {
         this.map.draw_all_nodes(false)
@@ -765,15 +878,68 @@ class Builder {
 
     // reaction data
     if (update_reaction_data) {
+
       if (this.options.reaction_data !== null && update_map && this.map !== null) {
-        reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
-                                                            'reaction_data')
+
+        if(this.difference_mode){
+
+          var difference_reaction_data = [this.options.reaction_data[this.reference], this.options.reaction_data[this.target]]
+          reaction_data_object = data_styles.import_and_check(difference_reaction_data,
+            'reaction_data')
+
+        } else {
+          if(_.isArray(this.options.reaction_data)){
+
+            reaction_data_object = data_styles.import_and_check(this.options.reaction_data[this.reference], 'reaction_data')
+          } else {
+            reaction_data_object = data_styles.import_and_check(this.options.reaction_data, 'reaction_data')
+
+          }
+        }
+
+        if(update_stats && this.options.reaction_data !== null){
+          var reaction_for_data_scales = []
+
+          for (var i in this.options.reaction_data) {
+            reaction_for_data_scales = reaction_for_data_scales.concat(d3.values(this.options.reaction_data[i]))
+          }
+          this.map.set_reactions_for_data_scales(reaction_for_data_scales)
+        }
+
         this.map.apply_reaction_data_to_map(reaction_data_object)
+
         if (should_draw)
           this.map.draw_all_reactions(false, false)
+        // gene data
       } else if (this.options.gene_data !== null && update_map && this.map !== null) {
-        gene_data_object = make_gene_data_object(this.options.gene_data,
-                                                 this.cobra_model, this.map)
+
+        if(this.difference_mode){
+          var difference_gene_data = [this.options.gene_data[this.reference], this.options.gene_data[this.target]]
+          gene_data_object = make_gene_data_object(difference_gene_data,
+            this.cobra_model, this.map)
+        } else {
+
+          if(_.isArray(this.options.gene_data)){
+            gene_data_object = make_gene_data_object(this.options.gene_data[this.reference],
+              this.cobra_model, this.map)
+
+          } else {
+            gene_data_object = make_gene_data_object(this.options.gene_data,
+              this.cobra_model, this.map)
+
+          }
+        }
+
+        if(update_stats && this.options.gene_data !== null){
+          var genes_for_data_scales = []
+
+          for (var i in this.options.gene_data) {
+            genes_for_data_scales = genes_for_data_scales.concat(d3.values(this.options.gene_data[i]))
+          }
+          this.map.set_reactions_for_data_scales(genes_for_data_scales)
+        }
+
+
         this.map.apply_gene_data_to_map(gene_data_object)
         if (should_draw)
           this.map.draw_all_reactions(false, false)
@@ -799,15 +965,26 @@ class Builder {
     this.update_model_timer = setTimeout(function () {
 
       // metabolite_data
-      if (update_metabolite_data && update_model && this.cobra_model !== null) {
-        // if we haven't already made this
-        if (!met_data_object) {
-          met_data_object = data_styles.import_and_check(this.options.metabolite_data,
-                                                         'metabolite_data')
+      // this.options.metabolite_data !== null &&
+      if(update_metabolite_data){
+
+        if (this.options.metabolite_data !== null && update_model && this.cobra_model !== null) {
+          // if we haven't already made this
+
+          if (!met_data_object) {
+            met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+              'metabolite_data')
+          }
+          this.cobra_model.apply_metabolite_data(met_data_object,
+            this.options.metabolite_styles,
+            this.options.metabolite_compare_style)
+        } else if (update_model && this.cobra_model !== null) {
+          // clear the data
+          this.cobra_model.apply_metabolite_data(null,
+            this.options.reaction_styles,
+            this.options.reaction_compare_style)
         }
-        this.cobra_model.apply_metabolite_data(met_data_object,
-                                               this.options.metabolite_styles,
-                                               this.options.metabolite_compare_style)
+
       }
 
       // reaction data
@@ -816,32 +993,31 @@ class Builder {
           // if we haven't already made this
           if (!reaction_data_object) {
             reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
-                                                                'reaction_data')
+              'reaction_data')
           }
           this.cobra_model.apply_reaction_data(reaction_data_object,
-                                               this.options.reaction_styles,
-                                               this.options.reaction_compare_style)
+            this.options.reaction_styles,
+            this.options.reaction_compare_style)
         } else if (this.options.gene_data !== null && update_model && this.cobra_model !== null) {
           if (!gene_data_object) {
             gene_data_object = make_gene_data_object(this.options.gene_data,
-                                                     this.cobra_model, this.map)
+              this.cobra_model, this.map)
           }
           this.cobra_model.apply_gene_data(gene_data_object,
-                                           this.options.reaction_styles,
-                                           this.options.identifiers_on_map,
-                                           this.options.reaction_compare_style,
-                                           this.options.and_method_in_gene_reaction_rule)
+            this.options.reaction_styles,
+            this.options.identifiers_on_map,
+            this.options.reaction_compare_style,
+            this.options.and_method_in_gene_reaction_rule)
         } else if (update_model && this.cobra_model !== null) {
           // clear the data
           this.cobra_model.apply_reaction_data(null,
-                                               this.options.reaction_styles,
-                                               this.options.reaction_compare_style)
+            this.options.reaction_styles,
+            this.options.reaction_compare_style)
         }
       }
 
       // callback
-      this.callback_manager.run('update_data', null, update_model, update_map,
-                                kind, should_draw)
+      this.callback_manager.run('update_data', null, update_model, update_map, kind, should_draw)
 
     }.bind(this), delay)
 
@@ -855,7 +1031,13 @@ class Builder {
         utils.extend(all_reactions, map.reactions, true)
 
       // this object has reaction keys and values containing associated genes
-      return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+
+      // TODO: handle here +2 data sets?
+      if(gene_data.length > 2){
+        return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+      } else {
+        return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+      }
     }
   }
 
