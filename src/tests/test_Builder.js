@@ -1,4 +1,4 @@
-const Builder = require('../Builder')
+const Builder = require('../Builder').default
 
 const d3_body = require('./helpers/d3_body')
 
@@ -85,5 +85,15 @@ describe('Builder', () => {
                        { type: 'min', color: '#ffffff', size: 10 },
                        { type: 'max', color: '#ffffff', size: 10 },
                      ])
+  })
+
+  it('open search bar', done => {
+    const sel = make_parent_sel(d3_body)
+    const b = Builder(null, null, '', sel, {
+      first_load_callback: () => {
+        b.renderSearchBar()
+        done()
+      }
+    })
   })
 })

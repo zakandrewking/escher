@@ -33,8 +33,8 @@ _dependencies = {
 }
 
 _dependencies_cdn = {
-    'escher': '//unpkg.com/escher-vis@%s/dist/escher.js' % __version__,
-    'escher_min': '//unpkg.com/escher-vis@%s/dist/escher.min.js' % __version__,
+    'escher': '//unpkg.com/escher@%s/dist/escher.js' % __version__,
+    'escher_min': '//unpkg.com/escher@%s/dist/escher.min.js' % __version__,
 }
 
 _links = {

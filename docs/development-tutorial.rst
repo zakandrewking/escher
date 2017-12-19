@@ -37,7 +37,7 @@ visualizations and add your own content. First we need to start up a basic
 static file server.
 
 NOTE: If you already have experience with JavaScript development, you might want
-to download Escher from NPM (as ``escher-vis``). If you like Webpack, check out
+to download Escher from NPM (as ``escher``). If you like Webpack, check out
 the `escher-test`_ repository.
 
 To get started, download this `ZIP file`_. If you prefer to use **git** for version

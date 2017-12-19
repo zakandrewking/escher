@@ -1,7 +1,7 @@
 {
-  "name": "escher-vis",
+  "name": "escher",
   "author": "Zachary King",
-  "version": "1.6.0",
+  "version": "1.7.0-alpha",
   "schema_version": "1-0-0",
   "map_model_version": "5",
   "description": "Escher: A Web Application for Building, Sharing, and Embedding Data-Rich Visualizations of Biological Pathways",
@@ -16,10 +16,10 @@
   ],
   "license": "MIT",
   "homepage": "https://escher.github.io",
-  "repository": "github:zakandrewking/escher",
+  "repository": "https://github.com/zakandrewking/escher",
   "bugs": "https://github.com/zakandrewking/escher/issues",
   "files": [
-    "js/dist/*"
+    "dist/*"
   ],
   "main": "/dist/escher.js",
   "engines": {
@@ -40,7 +40,7 @@
     "css-loader": "^0.28.4",
     "file-loader": "^1.1.5",
     "istanbul-instrumenter-loader": "^3.0.0",
-    "jsdom": "^7.2.2",
+    "jsdom": "^11.5.1",
     "mocha": "^2.3.4",
     "mocha-webpack": "^1.0.1",
     "null-loader": "^0.1.1",
@@ -56,7 +56,7 @@
   },
   "dependencies": {
     "baconjs": "^0.7.71",
-    "d3-brush": "zakandrewking/d3-brush",
+    "d3-brush": "https://github.com/zakandrewking/d3-brush.git",
     "d3-drag": "^1.0.2",
     "d3-dsv": "^1.0.3",
     "d3-request": "^1.0.3",
