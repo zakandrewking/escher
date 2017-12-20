@@ -1447,9 +1447,9 @@ d3-array@^1.2.0:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/d3-array/-/d3-array-1.2.1.tgz#d1ca33de2f6ac31efadb8e050a021d7e2396d5dc"
 
-d3-brush@zakandrewking/d3-brush:
+"d3-brush@https://github.com/zakandrewking/d3-brush.git":
   version "1.0.4"
-  resolved "https://codeload.github.com/zakandrewking/d3-brush/tar.gz/0def381d33b6de58383c6f8df68f042b690df416"
+  resolved "https://github.com/zakandrewking/d3-brush.git#0def381d33b6de58383c6f8df68f042b690df416"
   dependencies:
     d3-dispatch "1"
     d3-drag "1"
