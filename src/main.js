@@ -52,7 +52,6 @@ export { default as utils } from './utils'
 export { default as SearchIndex } from './SearchIndex'
 export { default as Settings } from './Settings'
 export { default as data_styles } from './data_styles'
-export { default as ui } from './ui'
 export { default as escherStatic } from './static'
 export { default as ZoomContainer } from './ZoomContainer'
 
