@@ -414,8 +414,8 @@ function array_to_object(arr) {
   var obj = {}
   // for each element of the array
   for (var i = 0, l = arr.length; i < l; i++) {
-    var column = arr[i],
-           keys = Object.keys(column)
+    var column = arr[i]
+    var keys = Object.keys(column) // TODO: this causes an undifined error ?
     for (var k = 0, nk = keys.length; k < nk; k++) {
       var id = keys[k]
       if (!(id in obj)) {

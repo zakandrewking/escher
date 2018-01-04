@@ -9,6 +9,9 @@ var _ = require('underscore')
 var d3_select = require('d3-selection').select
 var TimeSeriesBar = utils.make_class()
 
+var playing
+
+
 TimeSeriesBar.prototype = {
   init: init,
   update: update,
@@ -24,7 +27,7 @@ function init (sel, map, builder, type_of_data) {
   this.builder = builder
 
   var duration = 2000
-  this.playing = false
+  var playing = false
 
   builder.difference_mode = false
   builder.reference = 0
@@ -49,7 +52,7 @@ function init (sel, map, builder, type_of_data) {
   // tabbed layout
 
   box.append('button')
-    .attr('class', 'btn btn-sm btn-default close-button')
+    .attr('text', 'x')
     .on('click', function () {
       this.toggle(false)
     }.bind(this))
@@ -331,10 +334,11 @@ function update (builder) {
 
   var currentDataSet = get_current_data_set(builder)
 
+  let duration
   if (currentDataSet !== null) {
     // update display
-    this.current = 0
-    d3_select('#counter').text('Display Dataset: ' + (this.current + 1) + ' / ' + currentDataSet.length)
+    var current = 0
+    d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + currentDataSet.length)
 
     // update slider
     d3_select('#sliderReference')
@@ -345,8 +349,8 @@ function update (builder) {
       .attr('max', (currentDataSet.length - 1))
       .attr('value', 0)
 
-    d3_select('#referenceText').text('Reference Data Set: ' + this.current)
-    d3_select('#targetText').text('Target Data Set: ' + this.current)
+    d3_select('#referenceText').text('Reference Data Set: ' + current)
+    d3_select('#targetText').text('Target Data Set: ' + current)
 
     document.getElementById('dropDownMenuReference').options.length = 0
     document.getElementById('dropDownMenuTarget').options.length = 0
@@ -408,17 +412,17 @@ function update (builder) {
  */
 function play_time_series (builder, map, duration, both_data_play_back, sliding_window) {
 
-  if (!this.playing) {
-    this.playing = true
+  if (!playing) {
+    playing = true
 
-    this.sliding_window_start = parseInt(builder.reference)
-    this.sliding_window_end = parseInt(builder.target)
+    var sliding_window_start = parseInt(builder.reference)
+    var sliding_window_end = parseInt(builder.target)
 
     // array of time points for non-linear time scale
     var array_of_time_points = get_array_of_time_points(builder, map)
 
-    var tick = array_of_time_points[this.sliding_window_start]
-    var time_point = this.sliding_window_start
+    var tick = array_of_time_points[sliding_window_start]
+    var time_point = sliding_window_start
 
     // difference mode
     var start = parseInt(builder.reference)
@@ -459,8 +463,8 @@ function play_time_series (builder, map, duration, both_data_play_back, sliding_
             tick++
 
           } else { // play as loop
-            builder.reference = this.sliding_window_start
-            builder.target = this.sliding_window_start + sliding_window_size
+            builder.reference = sliding_window_start
+            builder.target = sliding_window_start + sliding_window_size
 
             time_point = start
             tick = array_of_time_points[start]
@@ -483,8 +487,8 @@ function play_time_series (builder, map, duration, both_data_play_back, sliding_
             d3_select('#sliderTarget').property('value', start + sliding_window_size)
             d3_select('#dropDownMenuTarget').property('selectedIndex', start + sliding_window_size)
 
-            builder.reference = this.sliding_window_start
-            builder.target = this.sliding_window_start + sliding_window_size
+            builder.reference = sliding_window_start
+            builder.target = sliding_window_start + sliding_window_size
 
           } else {
             tick++
@@ -542,10 +546,10 @@ function play_time_series (builder, map, duration, both_data_play_back, sliding_
         if (tick === array_of_time_points[time_point]) {
 
           if (both_data_play_back) {
-            builder.set_data_indices('reaction', builder.reference, this.sliding_window_end)
-            builder.set_data_indices('metabolite', builder.reference, this.sliding_window_end)
+            builder.set_data_indices('reaction', builder.reference, sliding_window_end)
+            builder.set_data_indices('metabolite', builder.reference, sliding_window_end)
           } else {
-            builder.set_data_indices(builder.type_of_data, builder.reference, this.sliding_window_end)
+            builder.set_data_indices(builder.type_of_data, builder.reference, sliding_window_end)
           }
 
           if (parseInt(builder.reference) < end) {
@@ -557,10 +561,10 @@ function play_time_series (builder, map, duration, both_data_play_back, sliding_
             tick++
 
           } else { // play as loop
-            builder.reference = this.sliding_window_start
+            builder.reference = sliding_window_start
 
-            time_point = this.sliding_window_start
-            tick = array_of_time_points[this.sliding_window_start]
+            time_point = sliding_window_start
+            tick = array_of_time_points[sliding_window_start]
           }
           animate_slider()
 
@@ -569,7 +573,7 @@ function play_time_series (builder, map, duration, both_data_play_back, sliding_
         } else {
 
           if (tick >= array_of_time_points[end]) {
-            tick = array_of_time_points[this.sliding_window_start]
+            tick = array_of_time_points[sliding_window_start]
             animate_slider(0)
 
           } else {
@@ -582,19 +586,19 @@ function play_time_series (builder, map, duration, both_data_play_back, sliding_
     }
 
     // animation
-    this.animation = setInterval(function () { play(builder, sliding_window) }, duration)
+    var animation = setInterval(function () { play(builder, sliding_window) }, duration)
 
   } else { // clear animation and reset data
 
-    clearInterval(this.animation)
+    clearInterval(animation)
 
-    this.playing = false
+    playing = false
 
-    builder.reference = this.sliding_window_start
+    builder.reference = sliding_window_start
     if (builder.difference_mode) {
       builder.target = parseInt(builder.reference) + 1
     } else {
-      builder.target = this.sliding_window_end
+      builder.target = sliding_window_end
 
     }
   }

@@ -28,6 +28,8 @@ import { selection as d3_selection } from 'd3-selection'
 import { json as d3_json } from 'd3-request'
 import TimeSeriesBar from './TimeSeriesBar'
 
+const d3 = require('d3')
+
 // Include custom font set for icons
 import '../icons/css/fontello.css'
 
@@ -1388,6 +1390,23 @@ class Builder {
       return  (this.options.never_ask_before_quit ? null :
                'You will lose any unsaved changes.')
     }.bind(this)
+  }
+
+  /*
+ * reference: required
+ * target: only required for difference mode
+ */
+
+  set_data_indices(type_of_data, ref, tar){
+    this.reference = ref
+
+    // TODO: was null before, but this way I loose the target index when I only set ref?
+    this.target = tar || this.target
+
+    if(type_of_data === 'gene'){
+      type_of_data = 'reaction'
+    }
+    this._update_data(true, true, type_of_data, true)
   }
 }
 
