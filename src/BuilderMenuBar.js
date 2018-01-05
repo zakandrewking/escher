@@ -95,9 +95,9 @@ class BuilderMenuBar extends Component {
             disabledButtons={this.props.disabled_buttons}
           />
           <li name='divider' />
-          <MenuButton // TODO: function?
+          <MenuButton
             name='Time Series / Difference Mode'
-            onClick={() => this.props.loadMetaboliteData(null)}
+            onClick={() => this.props.timeSeriesBar()}
             disabledButtons={this.props.disabled_buttons}
           />
         </Dropdown>

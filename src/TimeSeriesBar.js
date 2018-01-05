@@ -51,14 +51,6 @@ function init (sel, map, builder, type_of_data) {
 
   // tabbed layout
 
-  box.append('button')
-    .attr('text', 'x')
-    .on('click', function () {
-      this.toggle(false)
-    }.bind(this))
-    .append('span')
-    .attr('class', 'glyphicon glyphicon-remove')
-
   // three buttons
   box.append('button')
     .attr('id', 'reaction_tab_button')
@@ -79,6 +71,14 @@ function init (sel, map, builder, type_of_data) {
     .style('background-color', 'lightgrey')
     .style('width', '45%')
     .text('Metabolite Data')
+
+  box.append('button')
+    .attr('text', 'x')
+    .on('click', function () {
+      this.toggle(false)
+    }.bind(this))
+    .append('span')
+    .attr('class', 'glyphicon glyphicon-remove')
 
   var second_row_buttons = box.append('div')
 

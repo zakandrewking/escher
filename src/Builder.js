@@ -27,6 +27,7 @@ import { select as d3_select } from 'd3-selection'
 import { selection as d3_selection } from 'd3-selection'
 import { json as d3_json } from 'd3-request'
 import TimeSeriesBar from './TimeSeriesBar'
+import TimeSeriesBarPreact from './TimeSeriesBarPreact'
 
 const d3 = require('d3')
 
@@ -390,11 +391,11 @@ class Builder {
     this.metabolite_data_names = []
 
     // set up the time series bar
-    this.time_series_bar = new TimeSeriesBar(this.time_series_bar_div, this.map, this, this.type_of_data)
-    // Set up the hide callbacks
-    this.time_series_bar.callback_manager.set('show', function() {
-      this.time_series_bar.toggle(false)
-    }.bind(this))
+    // this.time_series_bar = new TimeSeriesBar(this.time_series_bar_div, this.map, this, this.type_of_data)
+    // // Set up the hide callbacks
+    // this.time_series_bar.callback_manager.set('show', function() {
+    //   this.time_series_bar.toggle(false)
+    // }.bind(this))
 
 
     // Set up settings menu
@@ -413,6 +414,7 @@ class Builder {
     )
 
     this.renderSearchBar(true)
+    this.renderTimeSeriesBar(false) // TODO: set true and make button work
 
     // Set up key manager
     var keys = this._get_keys(
@@ -536,6 +538,7 @@ class Builder {
           zoomExtentNodes={() => this.map.zoom_extent_nodes()}
           zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
           search={() => this.renderSearchBar()}
+          timeSeriesBar={()=> this.renderTimeSeriesBar()}
           toggleBeziers={() => this.map.toggle_beziers()}
           renderSettingsMenu={() => this.pass_settings_menu_props({
             ...this.options,
@@ -566,6 +569,25 @@ class Builder {
         ? searchBarNode.firstChild
         : undefined
     )
+  }
+
+  renderTimeSeriesBar(hide){
+    const timeSeriesBarNode = this.time_series_bar_div.node()
+
+    preact.render(
+      <TimeSeriesBarPreact
+        visible={!hide}
+        builder={this}
+        map={this.map}
+      />,
+      timeSeriesBarNode,
+      timeSeriesBarNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
+        ? timeSeriesBarNode.firstChild
+        : undefined
+
+    )
+
+
   }
 
     renderButtonPanel (mode) {
