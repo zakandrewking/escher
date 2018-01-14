@@ -241,7 +241,7 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
 
   // time series animation
 
-  this.transition_duration = 0
+  this.transition_duration = 2000
 
   // make the undo/redo stack
   this.undo_stack = new UndoStack()

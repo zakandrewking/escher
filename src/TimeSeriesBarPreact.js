@@ -10,6 +10,8 @@ class TimeSeriesBar extends Component {
   constructor (props) {
     super(props)
 
+    this.playing = false
+
     this.state = {
       visible: props.visible,
       builder: props.builder,
@@ -37,12 +39,12 @@ class TimeSeriesBar extends Component {
 
   update (builder) {
 
-    var currentDataSet = this.get_current_data_set(builder)
+    let currentDataSet = this.get_current_data_set(builder)
 
-    let duration
+    let duration = 2000
     if (currentDataSet !== null) {
       // update display
-      var current = 0
+      let current = 0
       d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + currentDataSet.length)
 
       // update slider
@@ -53,9 +55,6 @@ class TimeSeriesBar extends Component {
       d3_select('#sliderTarget')
         .attr('max', (currentDataSet.length - 1))
         .attr('value', 0)
-
-      d3_select('#referenceText').text('Reference Data Set: ' + current)
-      d3_select('#targetText').text('Target Data Set: ' + current)
 
       document.getElementById('dropDownMenuReference').options.length = 0
       document.getElementById('dropDownMenuTarget').options.length = 0
@@ -100,9 +99,6 @@ class TimeSeriesBar extends Component {
         .attr('max', 0)
         .attr('value', 0)
 
-      d3_select('#referenceText').text('Reference Data Set: ')
-      d3_select('#targetText').text('Target Data Set: ')
-
       d3_select('#checkBoxChart').property('checked', false)
       d3_select('#checkBoxInterpolation').property('checked', false)
 
@@ -113,11 +109,7 @@ class TimeSeriesBar extends Component {
   }
 
   openTab (builder) {
-    d3_select('#tab_container').style('display', 'block')
-
-    d3_select('#reaction_tab_button').style('background-color', 'lightgrey')
-    d3_select('#metabolite_tab_button').style('background-color', 'lightgrey')
-    d3_select('#both_tab_button').style('background-color', 'lightgrey')
+    //d3_select('#tab_container').style('display', 'block')
 
     var tabs = document.getElementsByClassName('tab')
 
@@ -125,20 +117,17 @@ class TimeSeriesBar extends Component {
       tabs[i].style.display = 'none'
     }
 
-    if (builder.type_of_data === 'reaction') {
-      d3_select('#reaction_tab_button').style('background-color', 'white')
-      this.update(builder)
-    } else if (builder.type_of_data === 'gene') {
-      d3_select('#reaction_tab_button').style('background-color', 'white')
+    if (builder.type_of_data === 'reaction' || builder.type_of_data === 'gene') {
+      d3_select('#reaction_tab_button').property('className', 'timeSeriesButton activated')
+      d3_select('#metabolite_tab_button').property('className', 'timeSeriesButton deactivated')
       this.update(builder)
     } else if (builder.type_of_data === 'metabolite') {
-      d3_select('#metabolite_tab_button').style('background-color', 'white')
+      d3_select('#reaction_tab_button').property('className', 'timeSeriesButton deactivated')
+      d3_select('#metabolite_tab_button').property('className', 'timeSeriesButton activated')
       this.update(builder)
     }
 
   }
-
-
 
   play_time_series (builder, map, duration, both_data_play_back, sliding_window) {
 
@@ -147,28 +136,27 @@ class TimeSeriesBar extends Component {
     if (!this.playing) {
       this.playing = true
 
-      var sliding_window_start = parseInt(builder.builder.reference)
-      var sliding_window_end = parseInt(builder.builder.target)
+      let sliding_window_start = parseInt(builder.builder.reference)
+      let sliding_window_end = parseInt(builder.builder.target)
 
       // array of time points for non-linear time scale
-      var array_of_time_points = this.get_array_of_time_points(builder, map)
+      let array_of_time_points = this.get_array_of_time_points(builder, map)
 
-      var tick = array_of_time_points[sliding_window_start]
-      var time_point = sliding_window_start
+      let tick = array_of_time_points[sliding_window_start]
+      let time_point = sliding_window_start
 
       // difference mode
-      var start = parseInt(builder.builder.reference)
-      var end = parseInt(this.get_current_data_set(builder).length - 1)
+      let start = parseInt(builder.builder.reference)
+      let end = parseInt(this.get_current_data_set(builder.builder).length - 1)
 
       if (builder.difference_mode && !sliding_window) {
         builder.builder.target = parseInt(builder.builder.reference)
       }
 
       // sliding window mode
+      let sliding_window_size = 1
 
-      var sliding_window_size = 1
-
-      var duration = duration / (end - start)
+      let duration = duration / (end - start)
 
       map.transition_duration = duration
 
@@ -233,14 +221,14 @@ class TimeSeriesBar extends Component {
             }
           }
 
-        } else if (builder.difference_mode) {
+        } else if (builder.builder.difference_mode) {
 
           if (tick === array_of_time_points[time_point]) {
 
             // reference is static, next goes from reference + 1 to end
             builder.builder.set_data_indices(builder.builder.type_of_data, builder.builder.reference, builder.builder.target)
 
-            var next = builder.builder.target
+            let next = builder.builder.target
 
             d3_select('#sliderTarget').property('value', next)
             d3_select('#dropDownMenuTarget').property('selectedIndex', next)
@@ -277,15 +265,10 @@ class TimeSeriesBar extends Component {
           // TODO: handle interpolated data with non-linear time scale: set duration to next tick
           if (tick === array_of_time_points[time_point]) {
 
-            if (both_data_play_back) {
-              builder.builder.set_data_indices('reaction', builder.builder.reference, sliding_window_end)
-              builder.builder.set_data_indices('metabolite', builder.builder.reference, sliding_window_end)
-            } else {
-              builder.builder.set_data_indices(builder.builder.type_of_data, builder.builder.reference, sliding_window_end)
-            }
+            builder.builder.set_data_indices(builder.builder.type_of_data, builder.builder.reference, sliding_window_end)
 
             if (parseInt(builder.builder.reference) < end) {
-              var next = builder.builder.reference
+              let next = builder.builder.reference
               next++
               builder.builder.reference = next
 
@@ -318,28 +301,28 @@ class TimeSeriesBar extends Component {
       }
 
       // animation
-      var animation = setInterval(function () { play(builder, sliding_window) }, duration)
+      this.animation = setInterval(function () { play(builder, sliding_window) }, duration)
 
     } else { // clear animation and reset data
 
-      clearInterval(animation)
+      clearInterval(this.animation)
 
       this.playing = false
 
-      builder.builder.reference = sliding_window_start
+      builder.builder.reference = parseInt(d3_select('#sliderReference').property('value'))
       if (builder.builder.difference_mode) {
         builder.builder.target = parseInt(builder.builder.reference) + 1
       } else {
-        builder.builder.target = sliding_window_end
+        builder.builder.target = parseInt(d3_select('#sliderTarget').property('value'))
 
       }
     }
 
     function animate_slider (set_to) {
 
-      var slider_value = parseInt(d3_select('#sliderReference').property('value'))
-      var slider_max = parseInt(d3_select('#sliderReference').property('max'))
-      var slider_min = parseInt(d3_select('#sliderReference').property('min'))
+      let slider_value = parseInt(d3_select('#sliderReference').property('value'))
+      let slider_max = parseInt(d3_select('#sliderReference').property('max'))
+      let slider_min = parseInt(d3_select('#sliderReference').property('min'))
 
       if (set_to !== undefined) {
         slider_value = set_to
@@ -382,11 +365,11 @@ class TimeSeriesBar extends Component {
 
   get_array_of_time_points (builder, map) {
 
-    var array_of_time_points = []
-    var time_scale_is_linear
+    let array_of_time_points = []
+    let time_scale_is_linear
 
-    for (var i in this.get_current_data_set_names(builder)) {
-      var name = this.get_current_data_set_names(builder)[i]
+    for (let i in this.get_current_data_set_names(builder.builder)) {
+      let name = this.get_current_data_set_names(builder.builder)[i]
 
       if (name.startsWith('t') && typeof parseInt(name.slice(1)) === 'number') { // check if rest of string is a number
         array_of_time_points.push(parseInt(name.slice(1)))
@@ -406,7 +389,6 @@ class TimeSeriesBar extends Component {
     return array_of_time_points
   }
 
-
   buttonDifferenceMode (builder) {
     d3_select('#timeSeriesButton').style('background-color', 'lightgrey')
     d3_select('#differenceModeButton').style('background-color', 'white')
@@ -417,11 +399,11 @@ class TimeSeriesBar extends Component {
     d3_select('#dropDownMenuTarget').style('display', 'block')
     d3_select('#sliderTarget').style('display', 'block')
 
-    d3_select('#checkBoxChart').style('opacity', 1)
-    d3_select('#checkBoxChart').property('checked', false)
+    d3_select('#checkBoxSlidingWindow').style('opacity', 1)
+    d3_select('#checkBoxSlidingWindow').property('checked', false)
 
-    d3_select('#checkBoxChartLabel').style('opacity', 1)
-    d3_select('#checkBoxChartLabel').text('Sliding Window')
+    d3_select('#checkBoxSlidingWindowLabel').style('opacity', 1)
+    d3_select('#checkBoxSlidingWindowLabel').text('Sliding Window')
 
   }
 
@@ -434,8 +416,8 @@ class TimeSeriesBar extends Component {
     d3_select('#dropDownMenuTarget').style('display', 'none')
     d3_select('#sliderTarget').style('display', 'none')
 
-    d3_select('#checkBoxChart').style('opacity', 0)
-    d3_select('#checkBoxChartLabel').style('opacity', 0)
+    d3_select('#checkBoxSlidingWindow').style('opacity', 0)
+    d3_select('#checkBoxSlidingWindowLabel').style('opacity', 0)
 
   }
 
@@ -506,8 +488,6 @@ class TimeSeriesBar extends Component {
     }
   }
 
-
-
   render (builder) {
 
     let duration = 2000
@@ -574,11 +554,11 @@ class TimeSeriesBar extends Component {
           <div>
             <div>
               <div>
-              <select
-                className='dropDownMenu'
-                id='dropDownMenuReference'
-                onChange={() => this.dropDownMenuReference(builder)}
-              >Reference</select>
+                <select
+                  className='dropDownMenu'
+                  id='dropDownMenuReference'
+                  onChange={() => this.dropDownMenuReference(builder)}
+                >Reference</select>
               </div>
               <input
                 className='slider'
@@ -594,11 +574,11 @@ class TimeSeriesBar extends Component {
 
             <div>
               <div>
-              <select
-                className='dropDownMenu'
-                id='dropDownMenuTarget'
-                onChange={() => this.dropDownMenuTarget(builder)}
-              >Target</select>
+                <select
+                  className='dropDownMenu'
+                  id='dropDownMenuTarget'
+                  onChange={() => this.dropDownMenuTarget(builder)}
+                >Target</select>
               </div>
               <input
                 className='slider'
@@ -654,17 +634,13 @@ class TimeSeriesBar extends Component {
 
             </input>
             <label
+              id='checkBoxSlidingWindowLabel'
               for='checkBoxSlidingWindow'>
               Sliding Window
             </label>
-
-
-
           </div>
         </div>
       </div>
-
-
     )
   }
 }

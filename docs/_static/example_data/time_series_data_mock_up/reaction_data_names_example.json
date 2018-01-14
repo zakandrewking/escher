@@ -1,0 +1,6 @@
+[
+["reaction_data_set_1", "reaction_data_set_2", "reaction_data_set_3"],
+[{"PPA2":0, "ENO": 0, "PPS": 0.2},
+{"PPA2":0.5, "ENO":0.7, "PPS": 1.2 },
+{"PPA2":1, "ENO": 1.2, "PPS": 0.2}]
+]

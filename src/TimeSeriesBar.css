@@ -10,7 +10,6 @@
     background-color: rgba(255, 255, 255, 0.95);
     padding: 3px;
     border: 1px solid #DDD;
-    margin: 2px;
     width: 410px;
 }
 
@@ -24,6 +23,14 @@
     width: 175px;
     padding-top: 0px;
     margin: 1px;
+}
+
+.escher-container .timeSeriesContainer .timeSeriesButton.activated {
+    background-color: white;
+}
+
+.escher-container .timeSeriesContainer .timeSeriesButton.deactivated {
+    background-color: lightgrey;
 }
 
 .escher-container .timeSeriesContainer .timeSeriesButton.escape {
