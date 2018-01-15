@@ -393,7 +393,7 @@ class Builder {
     this.metabolite_data_names = []
 
     // set up the time series bar
-    this.time_series_bar = new TimeSeriesBarPreact(false, this)//this.time_series_bar_div, this.map, this, this.type_of_data)
+    //this.time_series_bar = new TimeSeriesBarPreact(false, this)//this.time_series_bar_div, this.map, this, this.type_of_data)
     // // Set up the hide callbacks
     // this.time_series_bar.callback_manager.set('show', function() {
     //   this.time_series_bar.toggle(false)
@@ -416,7 +416,7 @@ class Builder {
     )
 
     this.renderSearchBar(true)
-    this.renderTimeSeriesBar(false) // TODO: set true and make button work
+    this.renderTimeSeriesBar(true) // TODO: set true and make button work
 
     // Set up key manager
     var keys = this._get_keys(
@@ -557,6 +557,22 @@ class Builder {
     }
   }
 
+  renderTimeSeriesBar(hide){
+    const timeSeriesBarNode = this.time_series_bar_div.node()
+    preact.render(
+      <TimeSeriesBarPreact
+        visible={!hide}
+        builder={this}
+        map={this.map}
+      />,
+      timeSeriesBarNode,
+      timeSeriesBarNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
+        ? timeSeriesBarNode.firstChild
+        : undefined
+
+    )
+  }
+
     renderSearchBar (hide) {
     const searchBarNode = this.search_bar_div.node()
     preact.render(
@@ -573,24 +589,7 @@ class Builder {
     )
   }
 
-  renderTimeSeriesBar(hide){
-    const timeSeriesBarNode = this.time_series_bar_div.node()
 
-    preact.render(
-      <TimeSeriesBarPreact
-        visible={!hide}
-        builder={this}
-        map={this.map}
-      />,
-      timeSeriesBarNode,
-      timeSeriesBarNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
-        ? timeSeriesBarNode.firstChild
-        : undefined
-
-    )
-
-
-  }
 
     renderButtonPanel (mode) {
     const buttonPanelDivNode = this.button_div.node()

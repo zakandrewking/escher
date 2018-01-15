@@ -16,14 +16,19 @@ class TimeSeriesBar extends Component {
       visible: props.visible,
       builder: props.builder,
       map: props.map,
-      playing: props.playing,
-      value: props.value
+      playing: props.playing
     }
 
   }
 
-  close () {
+  close () { // TODO: get this right with props / state
     this.setState({visible: false})
+    this.state.visible = false;
+    this.props.visible = false;
+  }
+
+  is_visible () {
+    return this.state.visible
   }
 
   /**
@@ -508,7 +513,7 @@ class TimeSeriesBar extends Component {
     return (
       <div
         className='timeSeriesContainer'
-        style={this.state.visible ? {display: 'inline-flex'} : {display: 'none'}}>
+        style={this.props.visible ? {display: 'inline-flex'} : {display: 'none'}}>
 
         <div>
 
