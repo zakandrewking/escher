@@ -393,7 +393,7 @@ class Builder {
     this.metabolite_data_names = []
 
     // set up the time series bar
-    //this.time_series_bar = new TimeSeriesBarPreact(false, this)//this.time_series_bar_div, this.map, this, this.type_of_data)
+    this.time_series_bar = new TimeSeriesBarPreact(false, this)//this.time_series_bar_div, this.map, this, this.type_of_data)
     // // Set up the hide callbacks
     // this.time_series_bar.callback_manager.set('show', function() {
     //   this.time_series_bar.toggle(false)

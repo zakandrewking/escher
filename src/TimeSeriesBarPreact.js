@@ -10,13 +10,13 @@ class TimeSeriesBar extends Component {
   constructor (props) {
     super(props)
 
-    this.playing = false
-
     this.state = {
       visible: props.visible,
       builder: props.builder,
       map: props.map,
-      playing: props.playing
+      playing: false,
+      sliding_window: false,
+      duration: 2000
     }
 
   }
@@ -46,7 +46,7 @@ class TimeSeriesBar extends Component {
 
     let currentDataSet = this.get_current_data_set(builder)
 
-    let duration = 2000
+    //let duration = 2000
     if (currentDataSet !== null) {
       // update display
       let current = 0
@@ -89,7 +89,7 @@ class TimeSeriesBar extends Component {
 
       // reset stats
       builder.map.interpolation = false
-      duration = 2000
+      this.state.duration = 2000
 
       // update display
       this.current = 0
@@ -134,12 +134,12 @@ class TimeSeriesBar extends Component {
 
   }
 
-  play_time_series (builder, map, duration, both_data_play_back, sliding_window) {
+  play_time_series (builder, map, duration, sliding_window) {
 
     map = builder.map
 
-    if (!this.playing) {
-      this.playing = true
+    if (!this.state.playing) {
+      this.state.playing = true
 
       let sliding_window_start = parseInt(builder.builder.reference)
       let sliding_window_end = parseInt(builder.builder.target)
@@ -163,7 +163,7 @@ class TimeSeriesBar extends Component {
 
       let duration = duration / (end - start)
 
-      map.transition_duration = duration
+      map.transition_duration = this.state.duration
 
       /*
 
@@ -306,13 +306,13 @@ class TimeSeriesBar extends Component {
       }
 
       // animation
-      this.animation = setInterval(function () { play(builder, sliding_window) }, duration)
+      this.animation = setInterval(function () { play(builder, sliding_window) }, this.state.duration)
 
     } else { // clear animation and reset data
 
       clearInterval(this.animation)
 
-      this.playing = false
+      this.state.playing = false
 
       builder.builder.reference = parseInt(d3_select('#sliderReference').property('value'))
       if (builder.builder.difference_mode) {
@@ -493,10 +493,14 @@ class TimeSeriesBar extends Component {
     }
   }
 
+  setDuration (value) {
+    this.state.duration = value
+  }
+
   render (builder) {
 
-    let duration = 2000
-    let playing = false
+    //let duration = 2000
+    this.state.playing = false
 
     builder.difference_mode = false
     builder.reference = 0
@@ -506,8 +510,6 @@ class TimeSeriesBar extends Component {
     let current = 0
 
     let type_of_data = builder.type_of_data
-
-    let both_data_play_back = false
     let sliding_window = false
 
     return (
@@ -601,7 +603,7 @@ class TimeSeriesBar extends Component {
           <div>
             <button
               className='timeSeriesButton play'
-              onClick={() => this.play_time_series(builder, map, duration, both_data_play_back, sliding_window)}
+              onClick={() => this.play_time_series(builder, map, this.state.duration, sliding_window)}
             >Play
             </button>
 
@@ -610,7 +612,7 @@ class TimeSeriesBar extends Component {
               id='inputDuration'
               style='width: 60px'
               value={this.duration}
-              onInput={this.duration = this.value}
+              onChange={() => this.setDuration(d3_select('#inputDuration').property('value'))}
             >
             </input>
 
@@ -648,6 +650,8 @@ class TimeSeriesBar extends Component {
       </div>
     )
   }
+
+
 }
 
 export default TimeSeriesBar

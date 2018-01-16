@@ -240,7 +240,6 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
                                  get_data_statistics.bind(this))
 
   // time series animation
-
   this.transition_duration = 2000
 
   // make the undo/redo stack
