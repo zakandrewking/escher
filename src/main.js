@@ -31,30 +31,38 @@
 // ESCHER_VERSION provided by webpack plugin or main-node
 /* global ESCHER_VERSION */
 
-module.exports = {
-  version: ESCHER_VERSION,
-  Builder: require('./Builder').default,
-  Map: require('./Map'),
-  Behavior: require('./Behavior'),
-  KeyManager: require('./KeyManager'),
-  DataMenu: require('./DataMenu'),
-  UndoStack: require('./UndoStack'),
-  CobraModel: require('./CobraModel'),
-  utils: require('./utils'),
-  SearchIndex: require('./SearchIndex'),
-  Settings: require('./Settings'),
-  data_styles: require('./data_styles'),
-  static: require('./static'),
-  ZoomContainer: require('./ZoomContainer'),
-  libs: {
-    '_': require('underscore'),
-    'underscore': require('underscore'),
-    'preact': require('preact'),
-    'baconjs': require('baconjs'),
-    'mousetrap': require('mousetrap'),
-    'vkbeautify': require('vkbeautify'),
-    'd3_selection': require('d3-selection'),
-    'd3_select': require('d3-selection').select,
-    'd3_json': require('d3-request').json
-  }
+import underscore from 'underscore'
+import preact from 'preact'
+import baconjs from 'baconjs'
+import mousetrap from 'mousetrap'
+import vkbeautify from 'vkbeautify'
+import { select as d3_select, selection as d3_selection } from 'd3-selection'
+import { json as d3_json } from 'd3-request'
+
+export const version = ESCHER_VERSION
+
+export { default as Builder, default } from './Builder'
+export { default as Map } from './Map'
+export { default as Behavior } from './Behavior'
+export { default as KeyManager } from './KeyManager'
+export { default as DataMenu } from './DataMenu'
+export { default as UndoStack } from './UndoStack'
+export { default as CobraModel } from './CobraModel'
+export { default as utils } from './utils'
+export { default as SearchIndex } from './SearchIndex'
+export { default as Settings } from './Settings'
+export { default as data_styles } from './data_styles'
+export { default as escherStatic } from './static'
+export { default as ZoomContainer } from './ZoomContainer'
+
+export const libs = {
+  _: underscore,
+  underscore,
+  preact,
+  baconjs,
+  mousetrap,
+  vkbeautify,
+  d3_selection,
+  d3_select,
+  d3_json
 }
