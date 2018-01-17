@@ -6,7 +6,7 @@ import ScaleSelection from './ScaleSelection.js'
 import update from 'immutability-helper'
 import * as _ from 'underscore'
 import './BuilderSettingsMenu.css'
-import scalePresets from './ColorPresets.js'
+import scalePresets from './colorPresets.js'
 
 /**
  * SettingsMenu. Handles the functions associated with the UI for changing
