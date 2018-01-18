@@ -11,7 +11,6 @@ _build/
 env/
 commonjs/
 envset/
-node_modules/
 .cache/
 *.tar.gz
 *.whl
@@ -27,4 +26,8 @@ py/escher/package.json
 # site files
 1-0-0
 link-site
+
+# npm and yarn
+package-lock.json
+node_modules/
 .yarnclean
