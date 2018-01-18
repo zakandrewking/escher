@@ -32,7 +32,6 @@
     "babel-plugin-transform-react-jsx": "^6.24.1",
     "babel-preset-es2015": "^6.24.1",
     "babel-register": "^6.26.0",
-    "biojs-sniper": "^0.2.9",
     "bootswatch": "^3.3.6",
     "chai": "^3.3.0",
     "coveralls": "^3.0.0",
@@ -85,14 +84,5 @@
     ],
     "instrument": false,
     "sourceMap": false
-  },
-  "sniper": {
-    "js": [
-      "/dist/escher.min.js"
-    ],
-    "snippets": [
-      "snippets"
-    ],
-    "first": "map"
   }
 }
