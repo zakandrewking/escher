@@ -133,7 +133,7 @@ class BuilderSettingsMenu extends Component {
                         }}
                         checked={this.props.identifiers_on_map === 'bigg_id'}
                       />
-                      ID's
+                      ID&apos;s
                     </label>
                     <label className='optionGroup'>
                       <input
