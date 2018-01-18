@@ -219,6 +219,15 @@ class Builder {
     // Load the model, map, and update data in both
     this.load_model(this.model_data, false)
 
+    // Append the bars and menu divs to the document
+    var s = this.selection
+    .append('div').attr('class', 'search-menu-container')
+    .append('div').attr('class', 'search-menu-container-inline')
+    this.menu_div = s.append('div')
+    this.search_bar_div = s.append('div')
+    this.button_div = this.selection.append('div')
+    this.settings_div = this.selection.append('div')
+
     // Need to defer map loading to let webpack CSS load properly
     _.defer(() => {
       this.load_map(this.map_data, false)
@@ -261,15 +270,9 @@ class Builder {
       // Set up quick jump
       this._setup_quick_jump(this.selection)
 
+      this.callback_manager.run('first_load', this)
       if (message_fn !== null) setTimeout(message_fn, 500)
     })
-    var s = this.selection
-      .append('div').attr('class', 'search-menu-container')
-      .append('div').attr('class', 'search-menu-container-inline')
-    this.menu_div = s.append('div')
-    this.search_bar_div = s.append('div')
-    this.button_div = this.selection.append('div')
-    this.settings_div = this.selection.append('div')
   }
 
   /**
