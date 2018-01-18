@@ -29,7 +29,11 @@ class ButtonPanel extends Component {
             <i className='icon-zoom-out' />
           </button>
         </li>
-        <li>
+        <li
+          style={this.props.all
+          ? {display: 'block'}
+          : {display: 'none'}}
+        >
           <button
             className='button btn'
             onClick={() => this.props.map.zoom_extent_canvas()}
@@ -38,7 +42,25 @@ class ButtonPanel extends Component {
             <i className='icon-resize-full' />
           </button>
         </li>
-        <li className='grouping'>
+        <li
+          style={this.props.fullscreen
+          ? {display: 'block'}
+          : {display: 'none'}}
+        >
+          <button
+            className='button btn'
+            onClick={() => this.props.map.full_screen()}
+            title='Toggle full screen view (2)'
+          >
+            <i className='icon-resize-full-alt' />
+          </button>
+        </li>
+        <li
+          className='grouping'
+          style={this.props.all && this.props.enableEditing
+          ? {display: 'block'}
+          : {display: 'none'}}
+        >
           <button
             className='buttonGroup btn'
             title='Pan mode (Z)'
@@ -86,9 +108,10 @@ class ButtonPanel extends Component {
         </li>
         <li
           className='grouping'
-          style={this.props.mode === 'build'
-            ? {display: 'block'}
-            : {display: 'none'}}
+          style={
+            this.props.mode === 'build' && this.props.all && this.props.enableEditing
+              ? {display: 'block'}
+              : {display: 'none'}}
         >
           <button
             className='buttonGroup btn'

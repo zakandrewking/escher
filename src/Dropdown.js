@@ -28,7 +28,10 @@ class Dropdown extends Component {
     document.addEventListener('mouseup', this.handleClickOutside)
   }
 
-  // Reference for hiding the menu when a mouse event happens outside
+  componentWillReceiveProps (nextProps) {
+    this.setState({visible: nextProps.visible})
+  }
+
   setWrapperRef (node) {
     this.wrapperRef = node
   }
@@ -41,7 +44,13 @@ class Dropdown extends Component {
 
   render () {
     return (
-      <li className='dropdown'>
+      <li
+        className='dropdown'
+        style={this.props.disabledEditing
+          ? {display: 'none'}
+          : {display: 'block'}
+        }
+      >
         <div
           className='dropdownButton'
           tabindex='0'
@@ -49,7 +58,7 @@ class Dropdown extends Component {
           onClick={() => this.setState({visible: !this.state.visible})}
         >
           {this.props.name}&nbsp;
-          <i className='icon-down-dir' style={{fontSize: '14px'}} />
+          <i className='icon-sort-down' />
         </div>
         <ul
           className='menu'
