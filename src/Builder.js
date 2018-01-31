@@ -130,7 +130,7 @@ class Builder {
       allow_building_duplicate_reactions: false,
       cofactors: [
         'atp', 'adp', 'nad', 'nadh', 'nadp', 'nadph', 'gtp', 'gdp', 'h', 'coa',
-        'ump', 'h20', 'ppi'
+        'ump', 'h2o', 'ppi'
       ],
       // Extensions
       tooltip_component: DefaultTooltip,
