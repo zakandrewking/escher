@@ -46,20 +46,6 @@ describe('ZoomContainer', () => {
                        zc.zoomed_sel.node())
   })
 
-  it('get_size, defined', () => {
-    const sel2 = sel.style('width', '100px').style('height', '100px')
-    const zc = ZoomContainer(sel2, 'none', true, true)
-    const res = zc.get_size()
-    assert.deepEqual(res, { width: 100, height: 100 })
-  })
-
-  it('get_size, undefined', () => {
-    const zc = ZoomContainer(sel, 'none', true, true)
-    assert.throws(() => {
-      zc.get_size()
-    }, /Size not defined for ZoomContainer element/)
-  }).timeout(20000)
-
   it('go_to -- no d3 transform', (done) => {
     // no d3 transform
     const zc = ZoomContainer(sel, 'none', false, true)
