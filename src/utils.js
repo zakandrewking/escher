@@ -871,15 +871,15 @@ function distance (start, end) {
  * "arguments" from any function and an array of argument names.
  */
 function check_undefined (args, names) {
-  names.map(function (name, i) {
+  names.forEach(function (name, i) {
     if (args[i] === undefined) {
-      console.error('Argument is undefined: ' + String(names[i]))
+      console.error(`Argument is undefined: ${names[i]}`)
     }
   })
 }
 
 function compartmentalize (bigg_id, compartment_id) {
-  return bigg_id + '_' + compartment_id
+  return `${bigg_id}_${compartment_id}`;
 }
 
 /**
