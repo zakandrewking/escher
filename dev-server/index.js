@@ -1,7 +1,7 @@
 import map from '../docs/_static/example_data/S5_iJO1366.Glycolysis_PPP_AA_Nucleotides.json'
 import { Builder, libs } from '../src/main'
 
-new Builder( // eslint-disable-line no-new
+window.builder = new Builder( // eslint-disable-line no-new
   map,
   null,
   null,
