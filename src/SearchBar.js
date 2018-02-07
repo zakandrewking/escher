@@ -12,7 +12,7 @@ class SearchBar extends Component {
     this.state = {
       visible: props.visible,
       current: 0,
-      searchItem: null,
+      searchItem: props.searchItem,
       counter: '',
       clearEscape: this.props.map.key_manager.add_escape_listener(
         () => this.close(), true
@@ -29,7 +29,7 @@ class SearchBar extends Component {
       ...nextProps,
       current: 0,
       results: null,
-      searchItem: null,
+      searchItem: nextProps.searchItem,
       counter: '',
       clearEscape: this.props.map.key_manager.add_escape_listener(
         () => this.close(), true
@@ -39,6 +39,9 @@ class SearchBar extends Component {
       clearPrevious: this.props.map.key_manager.add_key_listener(
         ['shift+enter', 'shift+ctrl+g'], () => this.previous(), false)
     })
+    if (nextProps.searchItem !== null) {
+      this.handleInput(nextProps.searchItem)
+    }
   }
 
   componentDidUpdate () {

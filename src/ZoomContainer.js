@@ -422,12 +422,8 @@ function zoom_out () {
  * @returns {Object} The size coordinates, e.g. { x: 2, y: 3 }.
  */
 function get_size () {
-  var width = parseInt(this.selection.style('width'), 10)
-  var height = parseInt(this.selection.style('height'), 10)
-  if (_.isNaN(width) || _.isNaN(height)) {
-    throw new Error('Size not defined for ZoomContainer element.')
-  }
-  return { width: width, height: height }
+  const {width, height} = this.selection.node().getBoundingClientRect()
+  return { width, height }
 }
 
 /**

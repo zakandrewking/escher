@@ -13,7 +13,21 @@ const mocha = require('mocha')
 const assert = require('assert')
 
 function make_parent_sel (s) {
-  return s.append('div').style('width', '100px').style('height', '100px')
+  var element = s.append('div');
+  const width = 100;
+  const height = 100;
+  // Workaround to be able to use getBoundingClientRect
+  // which always returns {height: 0, width: 0, ...} in jsdom.
+  // https://github.com/jsdom/jsdom/issues/653#issuecomment-266749765
+  element.node().getBoundingClientRect = () => ({
+    width,
+    height,
+    top: 0,
+    left: 0,
+    right: width,
+    bottom: height,
+  });
+  return element;
 }
 
 describe('Builder', () => {
