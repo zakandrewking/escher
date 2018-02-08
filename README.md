@@ -1,5 +1,5 @@
 [![PyPi](https://img.shields.io/pypi/v/Escher.svg)](https://pypi.python.org/pypi/Escher)
-[![NPM](https://img.shields.io/npm/v/escher-vis.svg)](https://www.npmjs.com/package/escher-vis)
+[![NPM](https://img.shields.io/npm/v/escher.svg)](https://www.npmjs.com/package/escher)
 [![Gitter.im](https://img.shields.io/gitter/room/zakandrewking/escher.svg)](https://gitter.im/zakandrewking/escher)
 [![MIT](https://img.shields.io/pypi/l/Escher.svg)](https://github.com/zakandrewking/escher/blob/master/LICENSE)
 [![Travis](https://img.shields.io/travis/zakandrewking/escher/master.svg)](https://travis-ci.org/zakandrewking/escher)
