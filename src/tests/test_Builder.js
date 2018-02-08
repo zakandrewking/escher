@@ -110,4 +110,40 @@ describe('Builder', () => {
       }
     })
   })
+
+  it('set_reaction_data', done => {
+    const sel = make_parent_sel(d3_body)
+    Builder(get_map(), null, '', sel, {
+      first_load_callback: function () {
+        // These just need to run right now
+        this.set_reaction_data({ GAPD: 2.0 })
+        this.set_reaction_data(null)
+        done()
+      }
+    })
+  })
+
+  it('set_metabolite_data', done => {
+    const sel = make_parent_sel(d3_body)
+    Builder(get_map(), null, '', sel, {
+      first_load_callback: function () {
+        // These just need to run right now
+        this.set_metabolite_data({ g3p: 2.0 })
+        this.set_metabolite_data(null)
+        done()
+      }
+    })
+  })
+
+  it('set_gene_data', done => {
+    const sel = make_parent_sel(d3_body)
+    Builder(get_map(), null, '', sel, {
+      first_load_callback: function () {
+        // These just need to run right now
+        this.set_gene_data({ b1779: 2.0 })
+        this.set_gene_data(null)
+        done()
+      }
+    })
+  })
 })

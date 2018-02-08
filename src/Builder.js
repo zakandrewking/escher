@@ -270,8 +270,10 @@ class Builder {
       // Set up quick jump
       this._setup_quick_jump(this.selection)
 
-      this.callback_manager.run('first_load', this)
       if (message_fn !== null) setTimeout(message_fn, 500)
+
+      // Finally run callback
+      _.defer(() => this.callback_manager.run('first_load', this))
     })
   }
 
@@ -421,6 +423,9 @@ class Builder {
     this.map.key_manager.toggle(this.options.enable_keys)
 
     // Disable clears
+    if (this.options.disabled_buttons === null) {
+      this.options.disabled_buttons = [];
+    }
     if (!this.options.reaction_data && this.options.disabled_buttons) {
       this.options.disabled_buttons.push('Clear reaction data')
     }
