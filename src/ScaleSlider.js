@@ -83,7 +83,7 @@ class ScaleSlider extends Component {
           }
         })
         this.props.onChange(newScale)
-      } else if (!isNaN(parseFloat(value))) {
+      } else if (!isNaN(parseFloat(value)) || value[0] === '#') {
         newScale = update(this.props.scale, {
           [index]: {
             [parameter]: {$set: value}
