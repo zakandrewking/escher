@@ -48,6 +48,17 @@ class BuilderMenuBar extends Component {
             onClick={() => this.props.clearMap()}
             disabledButtons={this.props.disabled_buttons}
           />
+          <li name='divider' />
+          <MenuButton
+            name='Save workspace'
+            onClick={this.props.saveWorkspace}
+            disabledButtons={this.props.disabled_buttons}
+          />
+          <MenuButton
+            name='Load workspace'
+            onClick={this.props.loadWorkspace}
+            disabledButtons={this.props.disabled_buttons}
+          />
         </Dropdown>
         <Dropdown name='Model' visible={this.state.visible}>
           <MenuButton
