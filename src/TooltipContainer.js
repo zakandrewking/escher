@@ -68,6 +68,7 @@ function setup_map_callbacks (map) {
   //
   map.callback_manager.set('show_tooltip.tooltip_container', function (type, d) {
     if (map.settings.get_option('enable_tooltips')) {
+      console.log(type)
       this.show(type, d)
     }
   }.bind(this))
