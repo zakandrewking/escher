@@ -7,8 +7,7 @@ from escher.urls import get_url, root_directory
 from escher.appdirs import user_cache_dir
 from escher.generate_index import generate_index
 from escher.version import __schema_version__, __map_model_version__
-from escher.util import query_yes_no
-from escher.escape import json_dump_and_escape, escape_json_or_null
+from escher.util import query_yes_no, b64dump
 
 import os
 from os.path import (dirname, basename, abspath, join, isfile, isdir, exists,
@@ -587,15 +586,15 @@ class Builder(object):
             id=self.the_id,
             escher_url=escher_url,
             # dump json
-            id_json=json_dump_and_escape(self.the_id),
-            options_json=json_dump_and_escape(options),
-            map_download_url_json=json_dump_and_escape(map_download_url),
-            model_download_url_json=json_dump_and_escape(model_download_url),
-            builder_embed_css_json=json_dump_and_escape(self.embedded_css),
+            id_json=b64dump(self.the_id),
+            options_json=b64dump(options),
+            map_download_url_json=b64dump(map_download_url),
+            model_download_url_json=b64dump(model_download_url),
+            builder_embed_css_json=b64dump(self.embedded_css),
             # alreay json
-            map_data_json=escape_json_or_null(self.loaded_map_json),
-            model_data_json=escape_json_or_null(self.loaded_model_json),
-            static_site_index_json=escape_json_or_null(static_site_index_json),
+            map_data_json=b64dump(self.loaded_map_json),
+            model_data_json=b64dump(self.loaded_model_json),
+            static_site_index_json=b64dump(static_site_index_json),
         )
 
         return html

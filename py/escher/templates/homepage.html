@@ -202,8 +202,8 @@
      setup(server_index, local_index, '{{ map_download_url }}', false)
    });
    {% else %}
-   setup(JSON.parse('{{ server_index_json }}'),
-         JSON.parse('{{ local_index_json }}'),
+   setup(JSON.parse(atob('{{ server_index_json }}')),
+         JSON.parse(atob('{{ local_index_json }}')),
          '{{ map_download_url }}')
    {% endif %}
   </script>

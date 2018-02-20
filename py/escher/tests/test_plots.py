@@ -8,6 +8,7 @@ from escher.plots import (_load_resource, local_index, server_index,
 
 from escher.urls import get_url
 
+import base64
 import os
 import sys
 from os.path import join, basename
@@ -174,9 +175,7 @@ def test_Builder_download():
 def test_Builder_options():
     b = Builder(embedded_css='')
     b.set_metabolite_no_data_color('white')
-    assert b.metabolite_no_data_color=='white'
-    html = b._get_html(js_source='local')
-    assert '"metabolite_no_data_color": "white"' in html
+    assert b.metabolite_no_data_color == 'white'
 
 
 def test__get_html():
@@ -194,16 +193,21 @@ def test__get_html():
 
     # no static parse, local
     html = b._get_html(js_source='local')
-    look_for_string(html, 'map_data: JSON.parse(\'"useless_map"\'),')
-    look_for_string(html, 'model_data: JSON.parse(\'"useless_model"\'),')
+    look_for_string(html, 'map_data: JSON.parse(b64DecodeUnicode(\'InVzZWxlc3NfbWFwIg==\')),')
+    look_for_string(html, 'model_data: JSON.parse(b64DecodeUnicode(\'InVzZWxlc3NfbW9kZWwi\')),')
     look_for_string(html, 'escher.Builder(t_map_data, t_model_data, data.builder_embed_css,')
 
     # static parse, not dev
     static_index = '{"my": ["useless", "index"]}'
+
     html = b._get_html(static_site_index_json=static_index, protocol='https')
-    look_for_string(html, 'map_data: JSON.parse(\'"useless_map"\'),')
-    look_for_string(html, 'model_data: JSON.parse(\'"useless_model"\'),')
-    look_for_string(html, 'map_download_url: JSON.parse(\'"https://escher.github.io/%s/%s/maps/"\'),' % (__schema_version__, __map_model_version__))
-    look_for_string(html, 'model_download_url: JSON.parse(\'"https://escher.github.io/%s/%s/models/"\'),' % (__schema_version__, __map_model_version__))
-    look_for_string(html, static_index)
+    look_for_string(html, 'map_data: JSON.parse(b64DecodeUnicode(\'InVzZWxlc3NfbWFwIg==\')),')
+    look_for_string(html, 'model_data: JSON.parse(b64DecodeUnicode(\'InVzZWxlc3NfbW9kZWwi\')),')
+
+    map_download_url = base64.b64encode(("https://escher.github.io/%s/%s/maps/" % (__schema_version__, __map_model_version__)).encode('utf-8')).decode('utf-8')
+    look_for_string(html, 'map_download_url: b64DecodeUnicode(\'%s\'),' % map_download_url)
+
+    model_download_url = base64.b64encode(("https://escher.github.io/%s/%s/models/" % (__schema_version__, __map_model_version__)).encode('utf-8')).decode('utf-8')
+    look_for_string(html, 'model_download_url: b64DecodeUnicode(\'%s\'),' % model_download_url)
+    look_for_string(html, 'eyJteSI6IFsidXNlbGVzcyIsICJpbmRleCJdfQ==') # static_index
     look_for_string(html, 'escher.Builder(t_map_data, t_model_data, data.builder_embed_css,')
