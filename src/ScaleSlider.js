@@ -75,6 +75,14 @@ class ScaleSlider extends Component {
           }
         })
         this.props.onChange(newScale)
+      } else if (parameter === 'value' && this.props.scale[index].type !== 'value') {
+        newScale = update(this.props.scale, {
+          [index]: {
+            [parameter]: {$set: value},
+            'type': {$set: 'value'}
+          }
+        })
+        this.props.onChange(newScale)
       } else if (value === 'value') {
         newScale = update(this.props.scale, {
           [index]: {
@@ -83,14 +91,14 @@ class ScaleSlider extends Component {
           }
         })
         this.props.onChange(newScale)
-      } else if (!isNaN(parseFloat(value))) {
+      } else if (!isNaN(parseFloat(value)) || value[0] === '#' && parameter === 'color') {
         newScale = update(this.props.scale, {
           [index]: {
             [parameter]: {$set: value}
           }
         })
         this.props.onChange(newScale)
-      }
+      } 
     }
   }
 
