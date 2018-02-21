@@ -163,7 +163,7 @@ Loading reaction, gene, and metabolite data
 
 Datasets can be loaded as CSV files or JSON files, using the Data Menu.
 
-.. image:: _static/data_menu_02.png
+.. image:: _static/data_menu.png
 
 In Escher, reaction and gene datasets are visualized by changing the color,
 thickness, and labels of reaction arrows. Metabolite datasets are visualized by

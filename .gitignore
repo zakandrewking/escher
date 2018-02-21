@@ -23,15 +23,8 @@ js/src/inline.js
 coverage/
 .nyc_output/
 py/escher/package.json
-py/escher/static/escher/
-py/escher/static/lib/
-py/escher/static/fonts/
-py/escher/static/jsonschema/
 
 # site files
 1-0-0
 link-site
 .yarnclean
-
-/docs/_build/doctrees/
-/docs/_build/html/

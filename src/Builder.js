@@ -1,3 +1,4 @@
+/* eslint-disable indent,camelcase,no-trailing-spaces */
 /**
  * For documentation of this class, see docs/javascript_api.rst
  */
@@ -26,10 +27,8 @@ import _ from 'underscore'
 import { select as d3_select } from 'd3-selection'
 import { selection as d3_selection } from 'd3-selection'
 import { json as d3_json } from 'd3-request'
-import TimeSeriesBar from './TimeSeriesBar'
 import TimeSeriesBarPreact from './TimeSeriesBarPreact'
-
-const d3 = require('d3')
+import {d3 as d3 } from 'd3'
 
 // Include custom font set for icons
 import '../icons/css/fontello.css'
@@ -74,8 +73,8 @@ class Builder {
     this.search_bar_div = null
     this.time_series_bar_div = null
     this.searchBarRef = null
-    this.reference = 0;
-    this.target = 0;
+    this.reference = 0
+    this.target = 0
 
     // apply this object as data for the selection
     this.selection.datum(this)
@@ -589,8 +588,6 @@ class Builder {
     )
   }
 
-
-
     renderButtonPanel (mode) {
     const buttonPanelDivNode = this.button_div.node()
     preact.render(
@@ -816,7 +813,7 @@ class Builder {
 
     } else if (_.isObject(data) && !(_.isArray(data))) { // old data format or csv is [array of numbers]
 
-      this.metabolite_data_names = ["metabolite data set"]
+      this.metabolite_data_names = ['metabolite data set']
       this.options.metabolite_data = [data]
       this.type_of_data = 'metabolite'
       this.time_series_bar.openTab(this)
@@ -871,7 +868,7 @@ class Builder {
         met_data_object = data_styles.import_and_check(difference_metabolite_data, 'metabolite_data')
       } else {
         if (this.options.metabolite_data !== null) {
-          if(_.isArray(this.options.metabolite_data)){
+          if (_.isArray(this.options.metabolite_data)) {
 
             met_data_object = data_styles.import_and_check(this.options.metabolite_data[this.reference], 'metabolite_data')
           } else {
@@ -885,7 +882,7 @@ class Builder {
       }
 
       // calculates the scales with all the values in the data sets
-      if(update_stats && this.options.metabolite_data !== null){
+      if (update_stats && this.options.metabolite_data !== null) {
         var metabolite_for_data_scales = []
 
         for (var i in this.options.metabolite_data) {
@@ -906,14 +903,14 @@ class Builder {
 
       if (this.options.reaction_data !== null && update_map && this.map !== null) {
 
-        if(this.difference_mode){
+        if (this.difference_mode) {
 
           var difference_reaction_data = [this.options.reaction_data[this.reference], this.options.reaction_data[this.target]]
           reaction_data_object = data_styles.import_and_check(difference_reaction_data,
             'reaction_data')
 
         } else {
-          if(_.isArray(this.options.reaction_data)){
+          if (_.isArray(this.options.reaction_data)) {
 
             reaction_data_object = data_styles.import_and_check(this.options.reaction_data[this.reference], 'reaction_data')
           } else {
@@ -922,7 +919,7 @@ class Builder {
           }
         }
 
-        if(update_stats && this.options.reaction_data !== null){
+        if (update_stats && this.options.reaction_data !== null) {
           var reaction_for_data_scales = []
 
           for (var i in this.options.reaction_data) {
@@ -938,13 +935,13 @@ class Builder {
         // gene data
       } else if (this.options.gene_data !== null && update_map && this.map !== null) {
 
-        if(this.difference_mode){
+        if (this.difference_mode) {
           var difference_gene_data = [this.options.gene_data[this.reference], this.options.gene_data[this.target]]
           gene_data_object = make_gene_data_object(difference_gene_data,
             this.cobra_model, this.map)
         } else {
 
-          if(_.isArray(this.options.gene_data)){
+          if (_.isArray(this.options.gene_data)) {
             gene_data_object = make_gene_data_object(this.options.gene_data[this.reference],
               this.cobra_model, this.map)
 
@@ -955,7 +952,7 @@ class Builder {
           }
         }
 
-        if(update_stats && this.options.gene_data !== null){
+        if (update_stats && this.options.gene_data !== null) {
           var genes_for_data_scales = []
 
           for (var i in this.options.gene_data) {

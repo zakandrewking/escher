@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 /** TimeSeriesBar */
 
 /** @jsx h */
@@ -46,7 +47,6 @@ class TimeSeriesBar extends Component {
 
     let currentDataSet = this.get_current_data_set(builder)
 
-    //let duration = 2000
     if (currentDataSet !== null) {
       // update display
       let current = 0

@@ -33,7 +33,7 @@ var data_styles = require('./data_styles')
 var CallbackManager = require('./CallbackManager')
 var d3_format = require('d3-format').format
 var d3_select = require('d3-selection').select
-var d3 = require('d3')
+var d3_ease = require('d3-ease')
 var _ = require('underscore')
 
 var Draw = utils.make_class()
@@ -413,7 +413,7 @@ function update_segment (update_selection, scale, cobra_model,
       })
       .transition()
       .duration(transition_duration)
-      .ease(d3.easeLinear)
+      .ease(d3_ease.easeLinear)
       .style('stroke', function(d) {
         var reaction_id = this.parentNode.parentNode.__data__.bigg_id
         var show_missing = (highlight_missing &&
@@ -434,7 +434,7 @@ function update_segment (update_selection, scale, cobra_model,
       .selectAll('.segment')
       .transition()
       .duration(transition_duration)
-      .ease(d3.easeLinear)
+      .ease(d3_ease.easeLinear)
       .style('stroke-width', function(d) {
         if (should_size) {
           var f = d.data
@@ -829,7 +829,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
       .select('.node-circle')
       .transition()
       .duration(transition_duration)
-      .ease(d3.easeLinear)
+      .ease(d3_ease.easeLinear)
       .attr('r', function(d) {
         if (d.node_type === 'metabolite') {
           var should_scale = (has_data_on_nodes &&
