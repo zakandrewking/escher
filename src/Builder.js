@@ -23,12 +23,11 @@ import QuickJump from './QuickJump'
 import data_styles from './data_styles'
 import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
+import TimeSeriesBarPreact from './TimeSeriesBarPreact'
 import _ from 'underscore'
 import { select as d3_select } from 'd3-selection'
 import { selection as d3_selection } from 'd3-selection'
 import { json as d3_json } from 'd3-request'
-import TimeSeriesBarPreact from './TimeSeriesBarPreact'
-import {d3 as d3 } from 'd3'
 
 // Include custom font set for icons
 import '../icons/css/fontello.css'
@@ -726,11 +725,26 @@ class Builder {
       this.options.reaction_data = null
       this.time_series_bar.update(this)
 
+    } else if(_.isArray(data) && data.length === 2 && _.isArray(data[0]) && _.isArray(data[1])){
+      // new data style with names
+      this.reaction_data_names = data[0]
+      this.options.reaction_data = data[1]
 
-    } else if (_.isObject(data) && !(_.isArray(data))) {
-      // old data format from JSON is object
-      // old data format from csv is prepared to go to else case
+      this.type_of_data = 'reaction'
+      this.time_series_bar.openTab(this)
 
+    } else if(_.isArray(data)){
+      // new data style without names or diff data
+      for (var i = 0; i < data.length; i++){
+        this.reaction_data_names.push("reaction data set " + (i+1))
+      }
+
+      this.options.reaction_data = data
+      this.type_of_data = 'reaction'
+      this.time_series_bar.openTab(this)
+
+    } else if(!_.isArray(data) && _.isObject(data)){
+      // old style
       this.reaction_data_names = ["reaction data set"]
 
       this.options.reaction_data = [data]
@@ -738,12 +752,8 @@ class Builder {
       this.time_series_bar.openTab(this)
 
     } else {
-
-      this.reaction_data_names = data[0]
-      this.options.reaction_data = data[1]
-
-      this.type_of_data = 'reaction'
-      this.time_series_bar.openTab(this)
+      // something went wrong
+      this.map.set_status('Error reading data')
     }
 
     var message_fn = this._reaction_check_add_abs()
@@ -776,21 +786,35 @@ class Builder {
       this.time_series_bar.update(this)
 
 
-    } else if (_.isObject(data) && !(_.isArray(data))) { // old data format or csv is [array of numbers]
-
-      this.type_of_data = 'gene'
-      this.gene_data_names = ["gene data set"]
-
-      this.options.gene_data = [data]
-      this.time_series_bar.openTab(this)
-
-    } else {
-      this.type_of_data = 'gene'
+    } else if(_.isArray(data) && data.length === 2 && _.isArray(data[0]) && _.isArray(data[1])){
+      // new data style with names
       this.gene_data_names = data[0]
       this.options.gene_data = data[1]
 
+      this.type_of_data = 'gene'
       this.time_series_bar.openTab(this)
 
+    } else if(_.isArray(data)){
+      // new data style without names or diff data
+      for (var i = 0; i < data.length; i++){
+        this.gene_data_names.push("gene data set " + (i+1))
+      }
+
+      this.options.gene_data = data
+      this.type_of_data = 'gene'
+      this.time_series_bar.openTab(this)
+
+    } else if(!_.isArray(data) && _.isObject(data)){
+      // old style
+      this.gene_data_names = ["gene data set"]
+
+      this.options.gene_data = [data]
+      this.type_of_data = 'gene'
+      this.time_series_bar.openTab(this)
+
+    } else {
+      // something went wrong
+      this.map.set_status('Error reading data')
     }
 
     this._update_data(true, true, 'reaction', undefined, true)
@@ -811,20 +835,35 @@ class Builder {
       this.time_series_bar.update(this)
 
 
-    } else if (_.isObject(data) && !(_.isArray(data))) { // old data format or csv is [array of numbers]
-
-      this.metabolite_data_names = ['metabolite data set']
-      this.options.metabolite_data = [data]
-      this.type_of_data = 'metabolite'
-      this.time_series_bar.openTab(this)
-
-    } else {
-
+    } else if(_.isArray(data) && data.length === 2 && _.isArray(data[0]) && _.isArray(data[1])){
+      // new data style with names
       this.metabolite_data_names = data[0]
       this.options.metabolite_data = data[1]
 
       this.type_of_data = 'metabolite'
       this.time_series_bar.openTab(this)
+
+    } else if(_.isArray(data)){
+      // new data style without names or diff data
+      for (var i = 0; i < data.length; i++){
+        this.metabolite_data_names.push("reaction data set " + (i+1))
+      }
+
+      this.options.metabolite_data = data
+      this.type_of_data = 'metabolite'
+      this.time_series_bar.openTab(this)
+
+    } else if(!_.isArray(data) && _.isObject(data)){
+      // old style
+      this.metabolite_data_names = ["metabolite data set"]
+
+      this.options.metabolite_data = [data]
+      this.type_of_data = 'metabolite'
+      this.time_series_bar.openTab(this)
+
+    } else {
+      // something went wrong
+      this.map.set_status('Error reading data')
     }
 
     this._update_data(true, true, 'metabolite', undefined, true)
@@ -886,7 +925,7 @@ class Builder {
         var metabolite_for_data_scales = []
 
         for (var i in this.options.metabolite_data) {
-          metabolite_for_data_scales = metabolite_for_data_scales.concat(d3.values(this.options.metabolite_data[i]))
+          metabolite_for_data_scales = metabolite_for_data_scales.concat(Object.values(this.options.metabolite_data[i]))
         }
         this.map.set_nodes_for_data_scales(metabolite_for_data_scales)
       }
@@ -923,7 +962,7 @@ class Builder {
           var reaction_for_data_scales = []
 
           for (var i in this.options.reaction_data) {
-            reaction_for_data_scales = reaction_for_data_scales.concat(d3.values(this.options.reaction_data[i]))
+            reaction_for_data_scales = reaction_for_data_scales.concat(Object.values(this.options.reaction_data[i]))
           }
           this.map.set_reactions_for_data_scales(reaction_for_data_scales)
         }
@@ -956,7 +995,7 @@ class Builder {
           var genes_for_data_scales = []
 
           for (var i in this.options.gene_data) {
-            genes_for_data_scales = genes_for_data_scales.concat(d3.values(this.options.gene_data[i]))
+            genes_for_data_scales = genes_for_data_scales.concat(Object.values(this.options.gene_data[i]))
           }
           this.map.set_reactions_for_data_scales(genes_for_data_scales)
         }
