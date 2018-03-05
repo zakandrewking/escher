@@ -428,6 +428,10 @@ function update_segment (update_selection, scale, cobra_model,
     .on('touchend', function (d) {
       object_touch_fn('reaction_object', d)
     })
+    .on('mouseout', object_mouseout_fn)
+    .call(sel => {
+      this.map.callback_manager.run('update_tooltip', null, 'reaction_label', sel)
+    })
 
   // new arrowheads
   var arrowheads = update_selection.select('.arrowheads')
@@ -802,9 +806,12 @@ function update_node (update_selection, scale, has_data_on_nodes,
     .on('mouseover', function (d) {
       object_mouseover_fn('node_object', d)
     })
-    .on('mouseout', mouseout_fn)
+    .on('mouseout', object_mouseout_fn)
     .on('touchend', function (d) {
       object_touch_fn('node_object', d)
+    })
+    .call(sel => {
+      this.map.callback_manager.run('update_tooltip', null, 'node_label', sel)
     })
 
   // update node label visibility

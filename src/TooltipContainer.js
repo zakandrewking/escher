@@ -120,11 +120,11 @@ function is_visible () {
  * @param {Object} d - D3 data for DOM element
  */
 function show (type, d) {
-  console.log(type)
+  console.log(type, d)
   // get rid of a lingering delayed hide
   this.cancelHideTooltip()
 
-  if (_.contains([ 'reaction_label', 'node_label', 'gene_label' ], type)) {
+  if (_.contains([ 'reaction_label', 'node_label', 'gene_label', 'reaction_object', 'node_object' ], type)) {
     // Use a default height if the ref hasn't been connected yet
     const tooltipSize = (this.tooltipRef !== null && this.tooltipRef.getSize)
     ? this.tooltipRef.getSize()
@@ -162,7 +162,7 @@ function show (type, d) {
       name: d.name,
       loc: coords,
       data: d.data_string,
-      type: type.replace('_label', '').replace('node', 'metabolite')
+      type: type.replace('_label', '').replace('node', 'metabolite').replace('_object', '')
     }
     this.callback_manager.run('setState', null, data)
   } else {
