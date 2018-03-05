@@ -120,6 +120,7 @@ function is_visible () {
  * @param {Object} d - D3 data for DOM element
  */
 function show (type, d) {
+  console.log(type)
   // get rid of a lingering delayed hide
   this.cancelHideTooltip()
 

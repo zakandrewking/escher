@@ -327,6 +327,9 @@ function update_segment (update_selection, scale, cobra_model,
   var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
   var primary_r = this.settings.get_option('primary_metabolite_radius')
   var secondary_r = this.settings.get_option('secondary_metabolite_radius')
+  var object_mouseover_fn = this.behavior.object_mouseover
+  var object_mouseout_fn = this.behavior.object_mouseout
+  var object_touch_fn = this.behavior.object_touch
   var get_arrow_size = function (data, should_size) {
     var width = 20
     var height = 13
@@ -417,6 +420,13 @@ function update_segment (update_selection, scale, cobra_model,
       } else {
         return null
       }
+    })
+    .attr('pointer-events', 'visibleStroke')
+    .on('mouseover', function (d) {
+      object_mouseover_fn('reaction_object', d)
+    })
+    .on('touchend', function (d) {
+      object_touch_fn('reaction_object', d)
     })
 
   // new arrowheads
@@ -745,6 +755,9 @@ function update_node (update_selection, scale, has_data_on_nodes,
   var label_mouseover_fn = this.behavior.label_mouseover
   var label_mouseout_fn = this.behavior.label_mouseout
   var label_touch_fn = this.behavior.label_touch
+  var object_mouseover_fn = this.behavior.object_mouseover
+  var object_mouseout_fn = this.behavior.object_mouseout
+  var object_touch_fn = this.behavior.object_touch
 
   var mg = update_selection
       .select('.node-circle')
@@ -786,8 +799,13 @@ function update_node (update_selection, scale, has_data_on_nodes,
     .call(drag_behavior)
     .on('mousedown', mousedown_fn)
     .on('click', click_fn)
-    .on('mouseover', mouseover_fn)
+    .on('mouseover', function (d) {
+      object_mouseover_fn('node_object', d)
+    })
     .on('mouseout', mouseout_fn)
+    .on('touchend', function (d) {
+      object_touch_fn('node_object', d)
+    })
 
   // update node label visibility
   var node_label = update_selection

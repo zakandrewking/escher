@@ -13,6 +13,8 @@
  * my_behavior.bezier_drag,
  * my_behavior.bezier_mouseover, my_behavior.bezier_mouseout,
  * my_behavior.reaction_label_drag, my_behavior.node_label_drag,
+ * my_behavior.object_mouseover, my_behavior.object_touch, 
+ * my_behavior.object_mouseout
  *
  */
 
@@ -37,6 +39,8 @@ Behavior.prototype = {
   toggle_label_drag: toggle_label_drag,
   toggle_label_mouseover: toggle_label_mouseover,
   toggle_label_touch: toggle_label_touch,
+  toggle_object_mouseover: toggle_object_mouseover,
+  toggle_object_touch: toggle_object_touch,
   toggle_bezier_drag: toggle_bezier_drag,
   // util
   turn_off_drag: turn_off_drag,
@@ -74,6 +78,9 @@ function init (map, undo_stack) {
   this.label_mouseover = null
   this.label_mouseout = null
   this.label_touch = null
+  this.object_mouseover = null
+  this.object_touch = null
+  this.object_mouseout = null
   this.bezier_drag = this.empty_behavior
   this.bezier_mouseover = null
   this.bezier_mouseout = null
@@ -92,6 +99,8 @@ function turn_everything_on () {
   this.toggle_label_drag(true)
   this.toggle_label_mouseover(true)
   this.toggle_label_touch(true)
+  this.toggle_object_mouseover(true)
+  this.toggle_object_touch(true)
 }
 
 /**
@@ -103,6 +112,8 @@ function turn_everything_off () {
   this.toggle_label_drag(false)
   this.toggle_label_mouseover(false)
   this.toggle_label_touch(false)
+  this.toggle_object_mouseover(false)
+  this.toggle_object_touch(false)
 }
 
 /**
@@ -413,6 +424,9 @@ function toggle_label_touch (on_off) {
   }
 
   if (on_off) {
+    // Show/hide tooltip.
+    // @param {String} type - 'reaction_label' or 'node_label'
+    // @param {Object} d - D3 data for DOM element
     this.label_touch = (type, d) => {
       if (!this.dragging) {
         this.map.callback_manager.run('show_tooltip', null, type, d)
@@ -420,6 +434,55 @@ function toggle_label_touch (on_off) {
     }
   } else {
     this.label_touch = null
+  }
+}
+
+/**
+ * With no argument, toggle the tooltips on mouseover of nodes or arrows.
+ * @param {Boolean} on_off - The new on/off state.
+ */
+function toggle_object_mouseover (on_off) {
+  if (on_off === undefined) {
+    on_off = this.label_mouseover === null
+  }
+
+  if (on_off) {
+
+    // Show/hide tooltip.
+    // @param {String} type - 'reaction_object' or 'node_object'
+    // @param {Object} d - D3 data for DOM element
+    this.object_mouseover = function (type, d) {
+      if (!this.dragging) {
+        this.map.callback_manager.run('show_tooltip', null, type, d)
+      }
+    }.bind(this)
+
+    this.object_mouseout = function () {
+      this.map.callback_manager.run('delay_hide_tooltip')
+    }.bind(this)
+
+  } else {
+    this.object_mouseover = null
+  }
+}
+
+/**
+ * With no argument, toggle the tooltips upon touching of nodes or arrows.
+ * @param {Boolean} on_off - The new on/off state. If this argument is not provided, then toggle the state.
+ */
+function toggle_object_touch (on_off) {
+  if (on_off === undefined) {
+    on_off = this.label_touch === null
+  }
+
+  if (on_off) {
+    this.object_touch = (type, d) => {
+      if (!this.dragging) {
+        this.map.callback_manager.run('show_tooltip', null, type, d)
+      }
+    }
+  } else {
+    this.object_touch = null
   }
 }
 
