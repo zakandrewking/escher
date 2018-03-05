@@ -814,6 +814,9 @@ function update_node (update_selection, scale, has_data_on_nodes,
         label_mouseover_fn('node_label', d)
       })
       .on('mouseout', label_mouseout_fn)
+      .call(sel => {
+        this.map.callback_manager.run('update_tooltip', null, 'node_label', sel)
+      })
   }
 
   this.callback_manager.run('update_node', this, update_selection)
