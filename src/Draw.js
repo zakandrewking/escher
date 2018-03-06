@@ -175,7 +175,7 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
   var label_mouseover_fn = this.behavior.label_mouseover
   var label_mouseout_fn = this.behavior.label_mouseout
   var label_touch_fn = this.behavior.label_touch
-
+  
   // label location
   update_selection
     .attr('transform', function(d) {
@@ -354,7 +354,8 @@ function update_segment (update_selection, scale, cobra_model,
   update_selection
     .selectAll('.segment')
     .datum(function () {
-      return this.parentNode.__data__
+      // Concatenate the segment data with the reaction data from its parent node
+      return Object.assign({}, this.parentNode.__data__, this.parentNode.parentNode.__data__)
     })
     .style('visibility', function(d) {
       var start = drawn_nodes[d.from_node_id]
