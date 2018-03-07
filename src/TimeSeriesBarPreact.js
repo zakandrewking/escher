@@ -1,5 +1,7 @@
 /* eslint-disable camelcase */
-/** TimeSeriesBar */
+
+/** TimeSeriesBar
+ * @author Christoph Blessing */
 
 /** @jsx h */
 import { h, Component } from 'preact'
@@ -37,7 +39,6 @@ class TimeSeriesBar extends Component {
    *  if a data set is loaded
    *   set to specific data set
    *   set slider to max of data set length
-   *   set counter to 0 of data
    *   set dropdown menu length
    *  else
    *   reset everything
@@ -50,7 +51,6 @@ class TimeSeriesBar extends Component {
     if (currentDataSet !== null) {
       // update display
       let current = 0
-      d3_select('#counter').text('Display Dataset: ' + (current + 1) + ' / ' + currentDataSet.length)
 
       // update slider
       d3_select('#sliderReference')
@@ -93,7 +93,6 @@ class TimeSeriesBar extends Component {
 
       // update display
       this.current = 0
-      d3_select('#counter').text('Display Dataset: 0 / 0')
 
       // update slider
       d3_select('#sliderReference')
@@ -114,7 +113,6 @@ class TimeSeriesBar extends Component {
   }
 
   openTab (builder) {
-    //d3_select('#tab_container').style('display', 'block')
 
     var tabs = document.getElementsByClassName('tab')
 
@@ -134,11 +132,41 @@ class TimeSeriesBar extends Component {
 
   }
 
+  deactivateUserInterface(disabled){
+
+    if (disabled === true) {
+
+      d3_select('#reaction_tab_button').attr('disabled', 'true')
+      d3_select('#metabolite_tab_button').attr('disabled', 'true')
+      d3_select('#timeSeriesButton').attr('disabled', 'true')
+      d3_select('#differenceModeButton').attr('disabled', 'true')
+      d3_select('#sliderReference').attr('disabled', 'true')
+      d3_select('#dropDownMenuReference').attr('disabled', 'true')
+      d3_select('#sliderTarget').attr('disabled', 'true')
+      d3_select('#dropDownMenuTarget').attr('disabled', 'true')
+
+    } else {
+
+      d3_select('#reaction_tab_button').attr('disabled', null)
+      d3_select('#metabolite_tab_button').attr('disabled', null)
+      d3_select('#timeSeriesButton').attr('disabled', null)
+      d3_select('#differenceModeButton').attr('disabled', null)
+      d3_select('#sliderReference').attr('disabled', null)
+      d3_select('#dropDownMenuReference').attr('disabled', null)
+      d3_select('#sliderTarget').attr('disabled', null)
+      d3_select('#dropDownMenuTarget').attr('disabled', null)
+
+    }
+
+  }
+
   play_time_series (builder, map, duration, sliding_window) {
 
     map = builder.map
 
+
     if (!this.state.playing) {
+      this.deactivateUserInterface(true)
       this.state.playing = true
 
       let sliding_window_start = parseInt(builder.builder.reference)
@@ -313,6 +341,7 @@ class TimeSeriesBar extends Component {
       clearInterval(this.animation)
 
       this.state.playing = false
+      this.deactivateUserInterface(false)
 
       builder.builder.reference = parseInt(d3_select('#sliderReference').property('value'))
       if (builder.builder.difference_mode) {
@@ -397,10 +426,9 @@ class TimeSeriesBar extends Component {
   buttonDifferenceMode (builder) {
     d3_select('#timeSeriesButton').style('background-color', 'lightgrey')
     d3_select('#differenceModeButton').style('background-color', 'white')
-    builder.difference_mode = true
+    builder.builder.difference_mode = true
     this.showDifferenceData(builder)
 
-    //groupButtons.style('display', 'block')
     d3_select('#dropDownMenuTarget').style('display', 'block')
     d3_select('#sliderTarget').style('display', 'block')
 
@@ -415,9 +443,10 @@ class TimeSeriesBar extends Component {
   buttonTimeSeries (builder) {
     d3_select('#timeSeriesButton').style('background-color', 'white')
     d3_select('#differenceModeButton').style('background-color', 'lightgrey')
-    builder.difference_mode = false
+    builder.builder.difference_mode = false
+    builder.builder.set_data_indices(builder.builder.type_of_data, builder.builder.reference, null)
 
-    //groupButtons.style('display', 'block')
+
     d3_select('#dropDownMenuTarget').style('display', 'none')
     d3_select('#sliderTarget').style('display', 'none')
 
@@ -434,7 +463,7 @@ class TimeSeriesBar extends Component {
   dropDownMenuReference (builder) {
 
     let value = parseInt(d3_select('#dropDownMenuReference').property('value'))
-    builder.reference = value
+    builder.builder.reference = value
     d3_select('#sliderReference').property('value', value)
     this.current = value
 
@@ -506,11 +535,16 @@ class TimeSeriesBar extends Component {
     builder.reference = 0
     builder.target = 0
 
+    // set to time series mode on default
+    this.buttonTimeSeries(builder)
+
     let map = builder.map
     let current = 0
 
     let type_of_data = builder.type_of_data
     let sliding_window = false
+
+
 
     return (
       <div
