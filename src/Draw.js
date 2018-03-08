@@ -424,10 +424,21 @@ function update_segment (update_selection, scale, cobra_model,
     })
     .attr('pointer-events', 'visibleStroke')
     .on('mouseover', function (d) {
-      object_mouseover_fn('reaction_object', d)
+      // Add the current mouse position to the segment's datum
+      object_mouseover_fn('reaction_object', Object.assign(
+        {}, d, {xPos: event.clientX, yPos: event.clientY}
+      ))
     })
     .on('touchend', function (d) {
-      object_touch_fn('reaction_object', d)
+      // Add last touch position to the segment's datum
+      object_touch_fn('reaction_object', Object.assign(
+        {}, 
+        d, 
+        {
+          xPos: event.changedTouches[0].clientX, 
+          yPos: event.changedTouches[0].clientY
+        }
+      ))
     })
     .on('mouseout', object_mouseout_fn)
     .call(sel => {
@@ -805,11 +816,22 @@ function update_node (update_selection, scale, has_data_on_nodes,
     .on('mousedown', mousedown_fn)
     .on('click', click_fn)
     .on('mouseover', function (d) {
-      object_mouseover_fn('node_object', d)
+      // Add current mouse position to the node's datum
+      object_mouseover_fn('node_object', Object.assign(
+        {}, d, {xPos: event.clientX, yPos: event.clientY}
+      ))
     })
     .on('mouseout', object_mouseout_fn)
     .on('touchend', function (d) {
-      object_touch_fn('node_object', d)
+      // Add the touch position to the node's datum
+      object_touch_fn('node_object', Object.assign(
+        {}, 
+        d, 
+        {
+          xPos: event.changedTouches[0].clientX, 
+          yPos: event.changedTouches[0].clientY
+        }
+      ))
     })
     .call(sel => {
       this.map.callback_manager.run('update_tooltip', null, 'node_label', sel)

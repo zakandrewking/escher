@@ -120,7 +120,6 @@ function is_visible () {
  * @param {Object} d - D3 data for DOM element
  */
 function show (type, d) {
-  console.log(type, d)
   // get rid of a lingering delayed hide
   this.cancelHideTooltip()
 
@@ -136,6 +135,7 @@ function show (type, d) {
     const offset = {x: 0, y: 0}
     const rightEdge = windowScale * d.label_x + windowTranslate.x + tooltipSize.width
     const bottomEdge = windowScale * d.label_y + windowTranslate.y + tooltipSize.height
+    console.log({labelX: d.label_x, labelY: d.label_y, mouseX: d.xPos, mouseY: d.yPos})
     if (mapSize.width < 500) {
       if (rightEdge > mapSize.width) {
         offset.x = -(rightEdge - mapSize.width) / windowScale
