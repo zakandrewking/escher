@@ -67,7 +67,10 @@ function setup_map_callbacks (map) {
 
   //
   map.callback_manager.set('show_tooltip.tooltip_container', function (type, d) {
-    if (map.settings.get_option('enable_tooltips')) {
+    if (map.settings.get_option('enable_tooltips').toString().includes(type
+      .replace('reaction_', '')
+      .replace('node_', '')
+      .replace('gene_', ''))) {
       this.show(type, d)
     }
   }.bind(this))
@@ -135,7 +138,7 @@ function show (type, d) {
     const offset = {x: 0, y: 0}
     const rightEdge = windowScale * d.label_x + windowTranslate.x + tooltipSize.width
     const bottomEdge = windowScale * d.label_y + windowTranslate.y + tooltipSize.height
-    console.log({labelX: d.label_x, labelY: d.label_y, mouseX: d.xPos, mouseY: d.yPos})
+    // console.log({labelX: d.label_x, labelY: d.label_y, mouseX: d.xPos, mouseY: d.yPos})
     if (mapSize.width < 500) {
       if (rightEdge > mapSize.width) {
         offset.x = -(rightEdge - mapSize.width) / windowScale
