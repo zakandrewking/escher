@@ -113,7 +113,7 @@
   margin-right: 10px
 }
 
-.escher-container .radioSelection .singleLine {
+.escher-container .settingsBox .singleLine {
   display: flex;
 }
 
@@ -193,4 +193,8 @@
 .escher-container .settingsBox .icon-sort-down {
   position: absolute;
   top: 0;
+}
+
+.escher-container .settingsBox .tooltipOption {
+  margin-left: 10px;
 }

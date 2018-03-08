@@ -227,18 +227,45 @@ class BuilderSettingsMenu extends Component {
                   checked={this.props.highlight_missing}
                 />Highlight reactions not in model
               </label>
-              <label title='Show tooltips when hovering over reactions, metabolites, and genes'>
-                <input
-                  type='checkbox'
-                  onClick={() =>
-                    this.props.settings.set_conditional(
-                      'enable_tooltips', !this.props.enable_tooltips
-                    )
-                  }
-                  checked={this.props.enable_tooltips}
-                  />
-                  Show tooltips
-              </label>
+              <table>
+                <tr title='Determines over which elements tooltips will display for reactions, metabolites, and genes'>
+                  <td>
+                      Show tooltips over:
+                  </td>
+                  <td className='singleLine' >
+                    <label className='tooltipOption' title='If checked, tooltips will display over the gene, reaction, and metabolite labels'>
+                      <input
+                        type='checkbox'
+                        onClick={() =>
+                          this.props.settings.set_conditional(
+                            'enable_tooltips',
+                            this.props.enable_tooltips.indexOf('label') > -1
+                              ? update(this.props.enable_tooltips, {$splice: [[this.props.enable_tooltips.indexOf('label'), 1]]})
+                              : update(this.props.enable_tooltips, {$push: ['label']})
+                          )
+                        }
+                        checked={this.props.enable_tooltips.indexOf('label') > -1}
+                        />
+                      Labels
+                    </label>
+                    <label className='tooltipOption' title='If checked, tooltips will display over the reaction line segments and metabolite circles'>
+                      <input
+                        type='checkbox'
+                        onClick={() =>
+                          this.props.settings.set_conditional(
+                            'enable_tooltips',
+                            this.props.enable_tooltips.indexOf('object') > -1
+                              ? update(this.props.enable_tooltips, {$splice: [[this.props.enable_tooltips.indexOf('object'), 1]]})
+                              : update(this.props.enable_tooltips, {$push: ['object']})
+                          )
+                        }
+                        checked={this.props.enable_tooltips.indexOf('object') > -1}
+                        />
+                      Objects
+                    </label>
+                  </td>
+                </tr>
+              </table>
             </div>
             <div className='settingsTip' style={{marginTop: '16px'}}>
               <i>Tip: To increase map performance, turn off text boxes (i.e. labels and gene reaction rules).</i>
