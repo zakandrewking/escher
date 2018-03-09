@@ -33,6 +33,8 @@ var data_styles = require('./data_styles')
 var CallbackManager = require('./CallbackManager')
 var d3_format = require('d3-format').format
 var d3_select = require('d3-selection').select
+var d3_mouse = require('d3-selection').mouse
+var d3_touch = require('d3-selection').touch
 
 var Draw = utils.make_class()
 // instance methods
@@ -426,19 +428,14 @@ function update_segment (update_selection, scale, cobra_model,
     .on('mouseover', function (d) {
       // Add the current mouse position to the segment's datum
       object_mouseover_fn('reaction_object', Object.assign(
-        {}, d, {xPos: event.clientX, yPos: event.clientY}
+        {}, d, {xPos: d3_mouse(this)[0], yPos: d3_mouse(this)[1]}
       ))
     })
     .on('touchend', function (d) {
       // Add last touch position to the segment's datum
-      object_touch_fn('reaction_object', Object.assign(
-        {}, 
-        d, 
-        {
-          xPos: event.changedTouches[0].clientX, 
-          yPos: event.changedTouches[0].clientY
-        }
-      ))
+      object_touch_fn('reaction_object', function () {
+        Object.assign({}, d, {xPos: d3_touch(this)[0], yPos: d3_touch(this)[1]}
+      )})
     })
     .on('mouseout', object_mouseout_fn)
     .call(sel => {
@@ -816,22 +813,19 @@ function update_node (update_selection, scale, has_data_on_nodes,
     .on('mousedown', mousedown_fn)
     .on('click', click_fn)
     .on('mouseover', function (d) {
+      console.log(d3_mouse(this))
       // Add current mouse position to the node's datum
-      object_mouseover_fn('node_object', Object.assign(
-        {}, d, {xPos: event.clientX, yPos: event.clientY}
+      object_mouseover_fn('reaction_object', Object.assign(
+        {}, d, {xPos: d3_mouse(this)[0], yPos: d3_mouse(this)[1]}
       ))
     })
     .on('mouseout', object_mouseout_fn)
     .on('touchend', function (d) {
+      console.log(d3_touch(this))
       // Add the touch position to the node's datum
-      object_touch_fn('node_object', Object.assign(
-        {}, 
-        d, 
-        {
-          xPos: event.changedTouches[0].clientX, 
-          yPos: event.changedTouches[0].clientY
-        }
-      ))
+      object_touch_fn('node_object', function () {
+        Object.assign({}, d, {xPos: d3_touch(this)[0], yPos: d3_touch(this)[1]}
+      )})
     })
     .call(sel => {
       this.map.callback_manager.run('update_tooltip', null, 'node_label', sel)
