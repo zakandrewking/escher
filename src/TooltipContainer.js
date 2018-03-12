@@ -78,7 +78,7 @@ function setup_map_callbacks (map) {
 
   //
   map.callback_manager.set('hide_tooltip.tooltip_container', this.hide.bind(this))
-  map.sel.selectAll('#canvas').on('touchend', this.hide.bind(this))
+  map.sel.selectAll('.canvas-group').on('touchend', this.hide.bind(this))
   map.callback_manager.set('delay_hide_tooltip.tooltip_container', this.delay_hide.bind(this))
   map.callback_manager.set('update_tooltip.tooltip_container', (type, sel) => {
     if (this.currentTooltip !== null) {
