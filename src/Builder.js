@@ -134,7 +134,7 @@ class Builder {
       ],
       // Extensions
       tooltip_component: DefaultTooltip,
-      enable_tooltips: ['label', 'object'],
+      enable_tooltips: ['label'],
       reaction_scale_preset: null,
       metabolite_scale_preset: null,
       // Callbacks
