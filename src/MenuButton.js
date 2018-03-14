@@ -19,10 +19,30 @@ class MenuButton extends Component {
     }
   }
 
+  //  TODO: Differentiate parsing between allowable file types instead of just JSON Issue #257
   handleFileInput (file) {
     const reader = new window.FileReader()
-    reader.onload = (event) => {
-      this.props.onClick(JSON.parse(event.target.result))
+    if (file.name.split('.').pop().toLowerCase() === 'json') {
+      reader.onload = (event) => {
+        this.props.onClick(JSON.parse(event.target.result))
+      }
+    } else if (file.name.split('.').pop().toLowerCase() === 'csv') {
+      reader.onload = (event) => {
+        const arr = event.target.result.split('/n')
+        const headers = arr[0].split(',')
+        const jsonObj = []
+        for(let i = 1; i < arr.length; i++) {
+          const data = arr[i].split(',')
+          let obj = {}
+          for(let j = 0; j < data.length; j++) {
+            obj[headers[j].trim()] = data[j].trim()
+          }
+          jsonObj.push(obj)
+        }
+        this.props.onClick(JSON.stringify(jsonObj))
+      }
+    } else {
+      console.warn('Unrecognized file format')
     }
     if (file !== undefined) {
       reader.readAsText(file)
