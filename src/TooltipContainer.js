@@ -67,14 +67,19 @@ function setup_map_callbacks (map) {
 
   //
   map.callback_manager.set('show_tooltip.tooltip_container', function (type, d) {
-    if (map.settings.get_option('enable_tooltips')) {
+    // Check if the current element is in the list of tooltips to display
+    if (map.settings.get_option('enable_tooltips').indexOf(type
+      .replace('reaction_', '')
+      .replace('node_', '')
+      .replace('gene_', '')) > -1) {
       this.show(type, d)
     }
   }.bind(this))
 
   //
   map.callback_manager.set('hide_tooltip.tooltip_container', this.hide.bind(this))
-  map.sel.selectAll('#canvas').on('touchend', this.hide.bind(this))
+  // Hides the tooltip when the canvas is touched
+  map.sel.selectAll('.canvas-group').on('touchend', this.hide.bind(this))
   map.callback_manager.set('delay_hide_tooltip.tooltip_container', this.delay_hide.bind(this))
   map.callback_manager.set('update_tooltip.tooltip_container', (type, sel) => {
     if (this.currentTooltip !== null) {
@@ -123,18 +128,24 @@ function show (type, d) {
   // get rid of a lingering delayed hide
   this.cancelHideTooltip()
 
-  if (_.contains([ 'reaction_label', 'node_label', 'gene_label' ], type)) {
+  if (_.contains([ 'reaction_label', 'node_label', 'gene_label', 'reaction_object', 'node_object' ], type)) {
     // Use a default height if the ref hasn't been connected yet
     const tooltipSize = (this.tooltipRef !== null && this.tooltipRef.getSize)
     ? this.tooltipRef.getSize()
     : { width: 270, height: 100 }
-    this.currentTooltip = { type, id: d[type.replace('_label', '_id')] }
+    this.currentTooltip = { type, id: d[type.replace('_label', '_id').replace('_object', '_id')] }
     const windowTranslate = this.zoom_container.window_translate
     const windowScale = this.zoom_container.window_scale
     const mapSize = this.map !== null ? this.map.get_size() : { width: 1000, height: 1000 }
     const offset = {x: 0, y: 0}
-    const rightEdge = windowScale * d.label_x + windowTranslate.x + tooltipSize.width
-    const bottomEdge = windowScale * d.label_y + windowTranslate.y + tooltipSize.height
+    const startPosX = (type.replace('reaction_', '').replace('node_', '').replace('gene_', '') === 'object')
+      ? d.xPos
+      : d.label_x
+    const startPosY = (type.replace('reaction_', '').replace('node_', '').replace('gene_', '') === 'object')
+      ? d.yPos
+      : d.label_y
+    const rightEdge = windowScale * startPosX + windowTranslate.x + tooltipSize.width
+    const bottomEdge = windowScale * startPosY + windowTranslate.y + tooltipSize.height
     if (mapSize.width < 500) {
       if (rightEdge > mapSize.width) {
         offset.x = -(rightEdge - mapSize.width) / windowScale
@@ -143,25 +154,25 @@ function show (type, d) {
         offset.y = -(bottomEdge - mapSize.height + 77) / windowScale
       }
     } else {
-      if (windowScale * d.label_x + windowTranslate.x + 0.5 * tooltipSize.width > mapSize.width) {
+      if (windowScale * startPosX + windowTranslate.x + 0.5 * tooltipSize.width > mapSize.width) {
         offset.x = -tooltipSize.width / windowScale
       } else if (rightEdge > mapSize.width) {
         offset.x = -(rightEdge - mapSize.width) / windowScale
       }
-      if (windowScale * d.label_y + windowTranslate.y + 0.5 * tooltipSize.height > mapSize.height - 45) {
+      if (windowScale * startPosY + windowTranslate.y + 0.5 * tooltipSize.height > mapSize.height - 45) {
         offset.y = -(tooltipSize.height) / windowScale
       } else if (bottomEdge > mapSize.height - 45) {
         offset.y = -(bottomEdge - mapSize.height + 47) / windowScale
       }
     }
-    const coords = { x: d.label_x + offset.x, y: d.label_y + 10 + offset.y }
+    const coords = { x: startPosX + offset.x, y: startPosY + 10 + offset.y }
     this.placed_div.place(coords)
     const data = {
       biggId: d.bigg_id,
       name: d.name,
       loc: coords,
       data: d.data_string,
-      type: type.replace('_label', '').replace('node', 'metabolite')
+      type: type.replace('_label', '').replace('node', 'metabolite').replace('_object', '')
     }
     this.callback_manager.run('setState', null, data)
   } else {

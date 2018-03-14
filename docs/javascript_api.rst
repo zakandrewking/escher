@@ -308,8 +308,12 @@ JavaScript API
 
        .. js:attribute:: options.enable_tooltips
 
-          (Default: ``true``) If true, then show tooltips when hoving over
-          reactions, metabolites, and genes.
+          (Default: `[`label`]`) Determines the mouseover or touch event required 
+          to show the related tooltip.['label'] will show tooltips upon mouseover 
+          or touch of the reaction or metabolite labels whereas ['object'] will 
+          show the the tooltips over the reaction line segments and metabolite 
+          circles. Can be set as an empty array to disable tooltips or can have 
+          both options passed in to enable tooltips over both labels and objects.
 
        **Callbacks**
 

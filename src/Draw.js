@@ -33,6 +33,8 @@ var data_styles = require('./data_styles')
 var CallbackManager = require('./CallbackManager')
 var d3_format = require('d3-format').format
 var d3_select = require('d3-selection').select
+var d3_mouse = require('d3-selection').mouse
+var d3_touch = require('d3-selection').touch
 
 var Draw = utils.make_class()
 // instance methods
@@ -175,7 +177,7 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
   var label_mouseover_fn = this.behavior.label_mouseover
   var label_mouseout_fn = this.behavior.label_mouseout
   var label_touch_fn = this.behavior.label_touch
-
+  
   // label location
   update_selection
     .attr('transform', function(d) {
@@ -327,6 +329,9 @@ function update_segment (update_selection, scale, cobra_model,
   var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
   var primary_r = this.settings.get_option('primary_metabolite_radius')
   var secondary_r = this.settings.get_option('secondary_metabolite_radius')
+  var object_mouseover_fn = this.behavior.object_mouseover
+  var object_mouseout_fn = this.behavior.object_mouseout
+  var object_touch_fn = this.behavior.object_touch
   var get_arrow_size = function (data, should_size) {
     var width = 20
     var height = 13
@@ -351,7 +356,8 @@ function update_segment (update_selection, scale, cobra_model,
   update_selection
     .selectAll('.segment')
     .datum(function () {
-      return this.parentNode.__data__
+      // Concatenate the segment data with the reaction data from its parent node
+      return Object.assign({}, this.parentNode.__data__, this.parentNode.parentNode.__data__)
     })
     .style('visibility', function(d) {
       var start = drawn_nodes[d.from_node_id]
@@ -417,6 +423,25 @@ function update_segment (update_selection, scale, cobra_model,
       } else {
         return null
       }
+    })
+    .attr('pointer-events', 'visibleStroke')
+    .on('mouseover', function (d) {
+      const mouseEvent = d3_mouse(this)
+      // Add the current mouse position to the segment's datum
+      object_mouseover_fn('reaction_object', Object.assign(
+        {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
+      ))
+    })
+    .on('touchend', function (d) {
+      const touchEvent = d3_touch(this.parentNode, 0)
+      // Add last touch position to the segment's datum
+      object_touch_fn('reaction_object', Object.assign(
+        {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
+      ))
+    })
+    .on('mouseout', object_mouseout_fn)
+    .call(sel => {
+      this.map.callback_manager.run('update_tooltip', null, 'reaction_label', sel)
     })
 
   // new arrowheads
@@ -745,6 +770,9 @@ function update_node (update_selection, scale, has_data_on_nodes,
   var label_mouseover_fn = this.behavior.label_mouseover
   var label_mouseout_fn = this.behavior.label_mouseout
   var label_touch_fn = this.behavior.label_touch
+  var object_mouseover_fn = this.behavior.object_mouseover
+  var object_mouseout_fn = this.behavior.object_mouseout
+  var object_touch_fn = this.behavior.object_touch
 
   var mg = update_selection
       .select('.node-circle')
@@ -786,8 +814,24 @@ function update_node (update_selection, scale, has_data_on_nodes,
     .call(drag_behavior)
     .on('mousedown', mousedown_fn)
     .on('click', click_fn)
-    .on('mouseover', mouseover_fn)
-    .on('mouseout', mouseout_fn)
+    .on('mouseover', function (d) {
+      const mouseEvent = d3_mouse(this.parentNode)
+      // Add current mouse position to the node's datum
+      object_mouseover_fn('node_object', Object.assign(
+        {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
+      ))
+    })
+    .on('mouseout', object_mouseout_fn)
+    .on('touchend', function (d) {
+      touchEvent = d3_touch(this.parentNode, 0)
+      // Add the touch position to the node's datum
+      object_touch_fn('node_object', Object.assign(
+        {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
+      ))
+    })
+    .call(sel => {
+      this.map.callback_manager.run('update_tooltip', null, 'node_label', sel)
+    })
 
   // update node label visibility
   var node_label = update_selection
@@ -814,6 +858,9 @@ function update_node (update_selection, scale, has_data_on_nodes,
         label_mouseover_fn('node_label', d)
       })
       .on('mouseout', label_mouseout_fn)
+      .call(sel => {
+        this.map.callback_manager.run('update_tooltip', null, 'node_label', sel)
+      })
   }
 
   this.callback_manager.run('update_node', this, update_selection)
