@@ -426,15 +426,17 @@ function update_segment (update_selection, scale, cobra_model,
     })
     .attr('pointer-events', 'visibleStroke')
     .on('mouseover', function (d) {
+      const mouseEvent = d3_mouse(this)
       // Add the current mouse position to the segment's datum
       object_mouseover_fn('reaction_object', Object.assign(
-        {}, d, {xPos: d3_mouse(this)[0], yPos: d3_mouse(this)[1]}
+        {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
       ))
     })
     .on('touchend', function (d) {
+      const touchEvent = d3_touch(this.parentNode, 0)
       // Add last touch position to the segment's datum
       object_touch_fn('reaction_object', Object.assign(
-        {}, d, {xPos: d3_touch(this.parentNode, 0)[0], yPos: d3_touch(this.parentNode, 0)[1]}
+        {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
       ))
     })
     .on('mouseout', object_mouseout_fn)
@@ -813,16 +815,18 @@ function update_node (update_selection, scale, has_data_on_nodes,
     .on('mousedown', mousedown_fn)
     .on('click', click_fn)
     .on('mouseover', function (d) {
+      const mouseEvent = d3_mouse(this.parentNode)
       // Add current mouse position to the node's datum
       object_mouseover_fn('node_object', Object.assign(
-        {}, d, {xPos: d3_mouse(this.parentNode)[0], yPos: d3_mouse(this.parentNode)[1]}
+        {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
       ))
     })
     .on('mouseout', object_mouseout_fn)
     .on('touchend', function (d) {
+      touchEvent = d3_touch(this.parentNode, 0)
       // Add the touch position to the node's datum
       object_touch_fn('node_object', Object.assign(
-        {}, d, {xPos: d3_touch(this.parentNode, 0)[0], yPos: d3_touch(this.parentNode, 0)[1]}
+        {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
       ))
     })
     .call(sel => {
