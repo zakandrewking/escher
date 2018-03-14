@@ -464,6 +464,10 @@ class BuilderSettingsMenu extends Component {
               stats={this.props.map.get_data_statistics().metabolite}
               noDataColor={this.props.metabolite_no_data_color}
               noDataSize={this.props.metabolite_no_data_size}
+              onChange={(scale) => {
+                this.props.settings.set_conditional('metabolite_scale', scale)
+              }}
+              abs={this.props.metabolite_styles.indexOf('abs') > -1}
             />
             <div className='subheading'>
               Metabolite data
