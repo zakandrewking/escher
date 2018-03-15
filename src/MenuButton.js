@@ -10,6 +10,8 @@
 /** @jsx h */
 import { h, Component } from 'preact'
 import * as _ from 'underscore'
+import utils from './utils.js'
+import dataStyles from './data_styles.js'
 
 class MenuButton extends Component {
   constructor (props) {
@@ -22,25 +24,10 @@ class MenuButton extends Component {
   //  TODO: Differentiate parsing between allowable file types instead of just JSON Issue #257
   handleFileInput (file) {
     const reader = new window.FileReader()
-    if (file.name.split('.').pop().toLowerCase() === 'json') {
+    if (file.name.split('.').pop().toLowerCase() === 'json' || 'csv') {
       reader.onload = (event) => {
-        this.props.onClick(JSON.parse(event.target.result))
-      }
-    } else if (file.name.split('.').pop().toLowerCase() === 'csv') {
-      reader.onload = (event) => {
-        const arr = event.target.result.split('/n')
-        const headers = arr[0].split(',')
-        const jsonObj = []
-        for(let i = 1; i < arr.length; i++) {
-          const data = arr[i].split(',')
-          let obj = {}
-          for(let j = 0; j < data.length; j++) {
-            obj[headers[j].trim()] = data[j].trim()
-          }
-          jsonObj.push(obj)
-        }
-        this.props.onClick(JSON.stringify(jsonObj))
-      }
+        utils.load_json_or_csv(file, dataStyles.csv_converter, (e, d) => this.props.onClick(d))
+      } 
     } else {
       console.warn('Unrecognized file format')
     }
