@@ -21,7 +21,6 @@ class MenuButton extends Component {
     }
   }
 
-  //  TODO: Differentiate parsing between allowable file types instead of just JSON Issue #257
   handleFileInput (file) {
     const reader = new window.FileReader()
     if (file.name.split('.').pop().toLowerCase() === 'json' || 'csv') {
