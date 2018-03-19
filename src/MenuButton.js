@@ -23,12 +23,8 @@ class MenuButton extends Component {
 
   handleFileInput (file) {
     const reader = new window.FileReader()
-    if (file.name.split('.').pop().toLowerCase() === 'json' || 'csv') {
-      reader.onload = () => {
-        utils.load_json_or_csv(file, dataStyles.csv_converter, (e, d) => this.props.onClick(d))
-      } 
-    } else {
-      console.warn('Unrecognized file format')
+    reader.onload = () => {
+      utils.load_json_or_csv(file, dataStyles.csv_converter, (e, d) => this.props.onClick(d))
     }
     if (file !== undefined) {
       reader.readAsText(file)
