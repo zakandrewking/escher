@@ -90,6 +90,7 @@ class Builder {
       full_screen_button: false,
       ignore_bootstrap: false,
       disabled_buttons: null,
+      semanticZoom: true,
       // map, model, and styles
       starting_reaction: null,
       never_ask_before_quit: false,
@@ -206,6 +207,25 @@ class Builder {
     }.bind(this))
     this.zoom_container.callback_manager.set('svg_finish', function () {
       if (this.map) this.map.set_status('')
+    }.bind(this))
+    this.zoom_container.callback_manager.set('zoomChange', function () {
+      if (this.options.semanticZoom) {
+        const scale = this.zoom_container.window_scale
+        console.log(this.zoom_container.window_scale)
+        if (scale < 0.3 && !(this.options.hide_all_labels && this.options.hide_secondary_metabolites)) {
+          console.log('scale < 0.3')
+          this.settings.set_conditional('hide_all_labels', true)
+          this.settings.set_conditional('hide_secondary_metabolites', true)
+          this._update_data(false, true)
+        } else if (scale > 0.3 && scale < 1 && (this.options.hide_all_labels || this.options.hide_secondary_metabolites)) {
+          console.log('0.3 < scale < 1')
+          this.settings.set_conditional('hide_all_labels', false)
+          this.settings.set_conditional('hide_secondary_metabolites', false)
+          this._update_data(false, true)
+        } else if (scale > 1) {
+          console.log('scale > 1')
+        }
+      }
     }.bind(this))
 
     // Set up the tooltip container

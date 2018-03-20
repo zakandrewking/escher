@@ -284,6 +284,7 @@ function go_to (scale, translate) {
       .translate(translate.x, translate.y)
       .scale(scale)
   this.zoom_container.call(this._zoom_behavior.transform, new_zoom)
+  this.callback_manager.run('zoomChange')
 }
 
 /**
@@ -318,6 +319,7 @@ function _go_to_callback (scale, translate) {
   }
 
   this.callback_manager.run('go_to')
+  this.callback_manager.run('zoomChange')
 }
 
 /**
