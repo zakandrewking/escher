@@ -815,19 +815,23 @@ function update_node (update_selection, scale, has_data_on_nodes,
     .on('mousedown', mousedown_fn)
     .on('click', click_fn)
     .on('mouseover', function (d) {
-      const mouseEvent = d3_mouse(this.parentNode)
-      // Add current mouse position to the node's datum
-      object_mouseover_fn('node_object', Object.assign(
-        {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
-      ))
+      if (d.node_type === 'metabolite') {
+        const mouseEvent = d3_mouse(this.parentNode)
+        // Add current mouse position to the node's datum
+        object_mouseover_fn('node_object', Object.assign(
+          {}, d, {xPos: mouseEvent[0], yPos: mouseEvent[1]}
+        ))
+      }
     })
     .on('mouseout', object_mouseout_fn)
     .on('touchend', function (d) {
-      touchEvent = d3_touch(this.parentNode, 0)
-      // Add the touch position to the node's datum
-      object_touch_fn('node_object', Object.assign(
-        {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
-      ))
+      if (d.node_type === 'metabolite') {
+        touchEvent = d3_touch(this.parentNode, 0)
+        // Add the touch position to the node's datum
+        object_touch_fn('node_object', Object.assign(
+          {}, d, {xPos: touchEvent[0], yPos: touchEvent[1]}
+        ))
+      }
     })
     .call(sel => {
       this.map.callback_manager.run('update_tooltip', null, 'node_label', sel)
