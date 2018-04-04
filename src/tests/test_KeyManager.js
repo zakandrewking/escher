@@ -1,4 +1,4 @@
-const d3_body = require('./helpers/d3_body')
+const d3Body = require('./helpers/d3Body')
 const trigger_key_event = require('./helpers/trigger_key_event')
 
 const KeyManager = require('../KeyManager')
@@ -27,8 +27,8 @@ describe('KeyManager', () => {
   })
 
   it('initializes with selection', () => {
-    key_manager = KeyManager({}, null, d3_body.node())
-    assert.strictEqual(key_manager.mousetrap.target, d3_body.node())
+    key_manager = KeyManager({}, null, d3Body.node())
+    assert.strictEqual(key_manager.mousetrap.target, d3Body.node())
   })
 
   it('mousetrap', () => {

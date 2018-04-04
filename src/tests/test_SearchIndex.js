@@ -5,7 +5,7 @@ const it = require('mocha').it
 const beforeEach = require('mocha').beforeEach
 const assert = require('chai').assert
 
-const d3_body = require('./helpers/d3_body')
+const d3Body = require('./helpers/d3Body')
 const get_map = require('./helpers/get_map')
 
 
