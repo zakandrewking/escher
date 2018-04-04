@@ -19,12 +19,12 @@ import CallbackManager from './CallbackManager'
 import Settings from './Settings'
 import TextEditInput from './TextEditInput'
 import QuickJump from './QuickJump'
-import data_styles from './data_styles'
+import dataStyles from './data_styles'
 import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
 import _ from 'underscore'
-import { select as d3_select, selection as d3_selection } from 'd3-selection'
-import { json as d3_json } from 'd3-request'
+import { select as d3Select, selection as d3Selection } from 'd3-selection'
+import { json as d3Json } from 'd3-request'
 
 // Include custom font set for icons
 import '../icons/css/fontello.css'
@@ -40,16 +40,16 @@ class Builder {
   constructor (map_data, model_data, embedded_css, selection, options) {
     // Defaults
     if (!selection) {
-      selection = d3_select('body').append('div')
-    } else if (selection instanceof d3_selection) {
+      selection = d3Select('body').append('div')
+    } else if (selection instanceof d3Selection) {
       // D3 V4 selection
     } else if ('node' in selection) {
       // If user passes in a selection from an different d3 version/instance,
       // then reselect.
-      selection = d3_select(selection.node())
+      selection = d3Select(selection.node())
     } else {
       // HTML Element
-      selection = d3_select(selection)
+      selection = d3Select(selection)
     }
     if (!options) {
       options = {}
@@ -773,7 +773,7 @@ class Builder {
 
     // metabolite data
     if (update_metabolite_data && update_map && this.map !== null) {
-      met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+      met_data_object = dataStyles.import_and_check(this.options.metabolite_data,
                                                      'metabolite_data')
       this.map.apply_metabolite_data_to_map(met_data_object)
       if (should_draw) {
@@ -784,7 +784,7 @@ class Builder {
     // reaction data
     if (update_reaction_data) {
       if (this.options.reaction_data !== null && update_map && this.map !== null) {
-        reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+        reaction_data_object = dataStyles.import_and_check(this.options.reaction_data,
                                                             'reaction_data')
         this.map.apply_reaction_data_to_map(reaction_data_object)
         if (should_draw) {
@@ -823,7 +823,7 @@ class Builder {
       if (update_metabolite_data && update_model && this.cobra_model !== null) {
         // if we haven't already made this
         if (!met_data_object) {
-          met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+          met_data_object = dataStyles.import_and_check(this.options.metabolite_data,
                                                          'metabolite_data')
         }
         this.cobra_model.apply_metabolite_data(met_data_object,
@@ -836,7 +836,7 @@ class Builder {
         if (this.options.reaction_data !== null && update_model && this.cobra_model !== null) {
           // if we haven't already made this
           if (!reaction_data_object) {
-            reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+            reaction_data_object = dataStyles.import_and_check(this.options.reaction_data,
                                                                 'reaction_data')
           }
           this.cobra_model.apply_reaction_data(reaction_data_object,
@@ -877,7 +877,7 @@ class Builder {
       }
 
       // this object has reaction keys and values containing associated genes
-      return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+      return dataStyles.import_and_check(gene_data, 'gene_data', all_reactions)
     }
   }
 
@@ -901,7 +901,7 @@ class Builder {
       }
       this.map.set_status('Loading map ' + new_map_name + ' ...')
       var url = utils.name_to_url(new_map_name, quick_jump_path)
-      d3_json(url, function (error, data) {
+      d3Json(url, function (error, data) {
         if (error) {
           console.warn('Could not load data: ' + error)
           this.map.set_status('Could not load map', 2000)
