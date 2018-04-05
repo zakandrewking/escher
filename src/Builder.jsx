@@ -161,33 +161,32 @@ class Builder {
     var get_option = function (option) {
       return this.options[option]
     }.bind(this)
-    // the options that are erased when the settings menu is canceled
+
+    // The options that are erased when the settings menu is canceled
     var conditional = [
-      'hide_secondary_metabolites', 'show_gene_reaction_rules', 'hide_all_labels', 'scroll_behavior', 'reaction_styles', 'reaction_compare_style',
-      'reaction_scale', 'reaction_no_data_color', 'reaction_no_data_size',
-      'and_method_in_gene_reaction_rule', 'metabolite_styles',
-      'metabolite_compare_style', 'metabolite_scale', 'metabolite_no_data_color',
-      'metabolite_no_data_size', 'identifiers_on_map', 'highlight_missing', 'allow_building_duplicate_reactions', 'enable_tooltips'
+      'identifiers_on_map',
+      'scroll_behavior',
+      'hide_secondary_metabolites',
+      'show_gene_reaction_rules',
+      'hide_all_labels',
+      'allow_building_duplicate_reactions',
+      'highlight_missing',
+      'enable_tooltips',
+      'reaction_scale_preset',
+      'reaction_no_data_color',
+      'reaction_no_data_size',
+      'reaction_scale',
+      'reaction_styles',
+      'reaction_compare_style',
+      'and_method_in_gene_reaction_rule',
+      'metabolite_scale_preset',
+      'metabolite_scale',
+      'metabolite_styles',
+      'metabolite_compare_style',
+      'metabolite_no_data_color',
+      'metabolite_no_data_size'
     ]
     this.settings = new Settings(set_option, get_option, conditional)
-
-    // Check the scales have max and min
-    var scales = [ 'reaction_scale', 'metabolite_scale' ]
-    scales.forEach(function (name) {
-      this.settings.streams[name].onValue(function (val) {
-        var types = [ 'min', 'max' ]
-        types.forEach(function (type) {
-          var has = val.reduce(function (has_found, scale_el) {
-            return has_found || (scale_el.type === type)
-          }, false)
-          if (!has) {
-            val.push({ type: type, color: '#ffffff', size: 10 })
-            this.settings.set_conditional(name, val)
-          }
-        }.bind(this))
-      }.bind(this))
-    }.bind(this))
-    // TODO warn about repeated types in the scale
 
     // Set up this callback manager
     this.callback_manager = CallbackManager()

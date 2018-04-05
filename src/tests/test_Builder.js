@@ -71,9 +71,10 @@ describe('Builder', () => {
     }, /Builder cannot be placed within an svg node/)
   })
 
-  /** In previous Escher versions, Builder would modify scales passed by the
-   * user to add max and min scale points. Check that this is no longer the case
-   * when passing scales to Builder.
+  /**
+   * In previous Escher versions, Builder would modify scales passed by the user
+   * to add max and min scale points. Check that this is no longer the case when
+   * passing scales to Builder.
    */
   it('does not modify user scales', () => {
     const reactionScale = [{ type: 'median', color: '#9696ff', size: 8 }]
@@ -83,21 +84,26 @@ describe('Builder', () => {
       null,
       '',
       make_parent_sel(d3Body),
-      { reaction_scale: reactionScale, metabolite_scale: metaboliteScale }
+      // copy to make sure Builder does not just mutate original
+      { reaction_scale: {...reactionScale}, metabolite_scale: {...metaboliteScale} }
     )
     assert.deepEqual(b.options.reaction_scale, reactionScale)
   })
 
-  /** In previous Escher versions, Builder would modify scales passed by the
-   * user to add max and min scale points. Check that this is no longer the case
-   * when modifying settings.
+  /**
+   * In previous Escher versions, Builder would modify scales passed by the user
+   * to add max and min scale points. Check that this is no longer the case when
+   * modifying settings.
    */
   it('does not modify scales after callback', () => {
     const reactionScale = [{ type: 'median', color: '#9696ff', size: 8 }]
     const metaboliteScale = [{ type: 'median', color: '#9696ff', size: 8 }]
     const b = Builder(null, null, '', make_parent_sel(d3Body), {})
-    b.settings.set_conditional('metabolite_scale', metaboliteScale)
-    b.settings.set_conditional('reaction_scale', reactionScale)
+
+    // copy to make sure Builder does not just mutate original
+    b.settings.set_conditional('metabolite_scale', {...metaboliteScale})
+    b.settings.set_conditional('reaction_scale', {...reactionScale})
+
     assert.deepEqual(b.options.metabolite_scale, metaboliteScale)
     assert.deepEqual(b.options.reaction_scale, reactionScale)
   })

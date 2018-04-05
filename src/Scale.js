@@ -15,25 +15,30 @@ export default class Scale {
 
   connectToSettings (settings, map, getDataStatistics) {
     // scale changes
-    settings.streams['reaction_scale'].onValue(this.update_reaction)
-    settings.streams['metabolite_scale'].onValue(this.update_metabolite)
+    settings.streams['reaction_scale'].onValue(scale => {
+      this.setReactionScale(scale, getDataStatistics)
+    })
+    settings.streams['metabolite_scale'].onValue(scale => {
+      this.setMetaboliteScale(scale, getDataStatistics)
+    })
 
     // stats changes
     map.callback_manager.set('calc_data_stats__reaction', changed => {
       if (changed) {
-        this.updateReactionScale(settings.get_option('reaction_scale'),
-                                 getDataStatistics)
+        this.setReactionScale(settings.get_option('reaction_scale'),
+                              getDataStatistics)
       }
     })
     map.callback_manager.set('calc_data_stats__metabolite', changed => {
       if (changed) {
-        this.updateMetaboliteScale(settings.get_option('metabolite_scale'),
-                                   getDataStatistics)
+        this.setMetaboliteScale(settings.get_option('metabolite_scale'),
+                                getDataStatistics)
       }
     })
   }
 
   sortScale (scale, stats) {
+    console.log(scale, stats)
     var sorted = scale.map(x => {
       let v
       if (x.type in stats) {
@@ -54,7 +59,7 @@ export default class Scale {
     }
   }
 
-  updateReactionScale (scale, getDataStatistics) {
+  setReactionScale (scale, getDataStatistics) {
     const out = this.sortScale(scale, getDataStatistics().reaction)
     this.reaction_color.domain(out.domain)
     this.reaction_size.domain(out.domain)
@@ -62,7 +67,7 @@ export default class Scale {
     this.reaction_size.range(out.size_range)
   }
 
-  updateMetaboliteScale (scale, getDataStatistics) {
+  setMetaboliteScale (scale, getDataStatistics) {
     const out = this.sortScale(scale, getDataStatistics().metabolite)
     this.metabolite_color.domain(out.domain)
     this.metabolite_size.domain(out.domain)

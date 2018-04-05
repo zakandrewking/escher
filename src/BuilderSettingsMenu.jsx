@@ -13,7 +13,6 @@ import scalePresets from './colorPresets'
  * settings. Implements Settings.js but otherwise only uses
  * Preact.
  */
-
 class BuilderSettingsMenu extends Component {
   constructor (props) {
     super(props)
@@ -23,16 +22,18 @@ class BuilderSettingsMenu extends Component {
     if (props.display) {
       this.componentWillAppear()
     }
-    if (props.reaction_scale_preset) {
-      props.settings.set_conditional(
-        'reaction_scale', scalePresets[props.reaction_scale_preset]
-      )
-    }
-    if (props.metabolite_scale_preset) {
-      props.settings.set_conditional(
-        'metabolite_scale', scalePresets[props.metabolite_scale_preset]
-      )
-    }
+
+    /* TODO where should this happen? */
+    /* if (props.reaction_scale_preset) {
+     *   props.settings.set_conditional(
+     *     'reaction_scale', scalePresets[props.reaction_scale_preset]
+     *   )
+     * }
+     * if (props.metabolite_scale_preset) {
+     *   props.settings.set_conditional(
+     *     'metabolite_scale', scalePresets[props.metabolite_scale_preset]
+     *   )
+     * } */
   }
 
   componentWillReceiveProps (nextProps) {
@@ -49,10 +50,14 @@ class BuilderSettingsMenu extends Component {
     this.props.settings.hold_changes()
     this.setState({
       clearEscape: this.props.map.key_manager.add_escape_listener(
-        () => this.abandonChanges(), true
+        () => this.abandonChanges(),
+        true
       ),
       clearEnter: this.props.map.key_manager.add_key_listener(
-        ['enter'], () => this.saveChanges(), true)
+        ['enter'],
+        () => this.saveChanges(),
+        true
+      )
     })
   }
 
@@ -97,10 +102,7 @@ class BuilderSettingsMenu extends Component {
     return (
       <div
         className='settingsBackground'
-        style={this.props.display
-          ? {display: 'block'}
-          : {display: 'none'}
-        }
+        style={this.props.display ? {display: 'block'} : {display: 'none'}}
       >
         <div className='settingsBoxContainer'>
           <button className='discardChanges btn' onClick={() => this.abandonChanges()}>
@@ -128,7 +130,8 @@ class BuilderSettingsMenu extends Component {
                         name='identifiers'
                         onClick={() => {
                           this.props.settings.set_conditional(
-                          'identifiers_on_map', 'bigg_id'
+                            'identifiers_on_map',
+                            'bigg_id'
                           )
                         }}
                         checked={this.props.identifiers_on_map === 'bigg_id'}
@@ -141,7 +144,8 @@ class BuilderSettingsMenu extends Component {
                         name='identifiers'
                         onClick={() => {
                           this.props.settings.set_conditional(
-                          'identifiers_on_map', 'name'
+                            'identifiers_on_map',
+                            'name'
                           )
                         }}
                         checked={this.props.identifiers_on_map === 'name'}
@@ -196,7 +200,8 @@ class BuilderSettingsMenu extends Component {
                   type='checkbox'
                   onClick={() =>
                     this.props.settings.set_conditional(
-                      'hide_all_labels', !this.props.hide_all_labels
+                      'hide_all_labels',
+                      !this.props.hide_all_labels
                     )
                   }
                   checked={this.props.hide_all_labels}
@@ -221,7 +226,8 @@ class BuilderSettingsMenu extends Component {
                   type='checkbox'
                   onClick={() => {
                     this.props.settings.set_conditional(
-                      'highlight_missing', !this.props.highlight_missing
+                      'highlight_missing',
+                      !this.props.highlight_missing
                     )
                   }}
                   checked={this.props.highlight_missing}
@@ -297,6 +303,7 @@ class BuilderSettingsMenu extends Component {
               noDataColor={this.props.reaction_no_data_color}
               noDataSize={this.props.reaction_no_data_size}
               onChange={(scale) => {
+                console.log('slider change', scale)
                 this.props.settings.set_conditional('reaction_scale', scale)
               }}
               abs={this.props.reaction_styles.indexOf('abs') > -1}
