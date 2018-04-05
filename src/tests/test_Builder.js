@@ -71,54 +71,35 @@ describe('Builder', () => {
     }, /Builder cannot be placed within an svg node/)
   })
 
-  /** If the scale is provided without max and min points, then automatically
-   * add them.
+  /** In previous Escher versions, Builder would modify scales passed by the
+   * user to add max and min scale points. Check that this is no longer the case
+   * when passing scales to Builder.
    */
-  it('fix scales', () => {
-    const sel = make_parent_sel(d3Body)
+  it('does not modify user scales', () => {
+    const reactionScale = [{ type: 'median', color: '#9696ff', size: 8 }]
+    const metaboliteScale = [{ type: 'median', color: '#9696ff', size: 8 }]
     const b = Builder(
-      null, null, '', sel,
-      { reaction_scale: [{ type: 'median', color: '#9696ff', size: 8 }],
-        never_ask_before_quit: true }
-    )
-    assert.deepEqual(
-      b.options.reaction_scale,
-      [
-        { type: 'median', color: '#9696ff', size: 8 },
-        { type: 'min', color: '#ffffff', size: 10 },
-        { type: 'max', color: '#ffffff', size: 10 }
-      ]
-    )
-  })
-
-  /** Also fix the scale if the setting is manipulated after creation of the
-   * Builder.
-   */
-  it('fix scales after callback', () => {
-    const sel = make_parent_sel(d3Body)
-    const b2 = Builder(
       null,
       null,
       '',
-      sel,
-      {
-        metabolite_scale: [
-          { type: 'median', color: 'red', size: 0 },
-          { type: 'min', color: 'red', size: 0 },
-          { type: 'max', color: 'red', size: 0 }
-        ],
-        never_ask_before_quit: true
-      }
+      make_parent_sel(d3Body),
+      { reaction_scale: reactionScale, metabolite_scale: metaboliteScale }
     )
-    b2.settings.set_conditional('metabolite_scale', [{ type: 'median', color: '#9696ff', size: 8 }])
-    assert.deepEqual(
-      b2.options.metabolite_scale,
-      [
-        { type: 'median', color: '#9696ff', size: 8 },
-        { type: 'min', color: '#ffffff', size: 10 },
-        { type: 'max', color: '#ffffff', size: 10 }
-      ]
-    )
+    assert.deepEqual(b.options.reaction_scale, reactionScale)
+  })
+
+  /** In previous Escher versions, Builder would modify scales passed by the
+   * user to add max and min scale points. Check that this is no longer the case
+   * when modifying settings.
+   */
+  it('does not modify scales after callback', () => {
+    const reactionScale = [{ type: 'median', color: '#9696ff', size: 8 }]
+    const metaboliteScale = [{ type: 'median', color: '#9696ff', size: 8 }]
+    const b = Builder(null, null, '', make_parent_sel(d3Body), {})
+    b.settings.set_conditional('metabolite_scale', metaboliteScale)
+    b.settings.set_conditional('reaction_scale', reactionScale)
+    assert.deepEqual(b.options.metabolite_scale, metaboliteScale)
+    assert.deepEqual(b.options.reaction_scale, reactionScale)
   })
 
   it('open search bar', done => {
