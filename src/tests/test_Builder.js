@@ -91,19 +91,34 @@ describe('Builder', () => {
     )
   })
 
+  /** Also fix the scale if the setting is manipulated after creation of the
+   * Builder.
+   */
   it('fix scales after callback', () => {
     const sel = make_parent_sel(d3Body)
-    const b2 = Builder(null, null, '', sel, { metabolite_scale: [{ type: 'median', color: 'red', size: 0 },
-                                                                 { type: 'min', color: 'red', size: 0 },
-                                                                 { type: 'max', color: 'red', size: 0 } ],
-                                              never_ask_before_quit: true })
+    const b2 = Builder(
+      null,
+      null,
+      '',
+      sel,
+      {
+        metabolite_scale: [
+          { type: 'median', color: 'red', size: 0 },
+          { type: 'min', color: 'red', size: 0 },
+          { type: 'max', color: 'red', size: 0 }
+        ],
+        never_ask_before_quit: true
+      }
+    )
     b2.settings.set_conditional('metabolite_scale', [{ type: 'median', color: '#9696ff', size: 8 }])
-    assert.deepEqual(b2.options.metabolite_scale,
-                     [
-                       { type: 'median', color: '#9696ff', size: 8 },
-                       { type: 'min', color: '#ffffff', size: 10 },
-                       { type: 'max', color: '#ffffff', size: 10 },
-                     ])
+    assert.deepEqual(
+      b2.options.metabolite_scale,
+      [
+        { type: 'median', color: '#9696ff', size: 8 },
+        { type: 'min', color: '#ffffff', size: 10 },
+        { type: 'max', color: '#ffffff', size: 10 }
+      ]
+    )
   })
 
   it('open search bar', done => {

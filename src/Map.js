@@ -52,7 +52,7 @@
 var utils = require('./utils')
 var Draw = require('./Draw')
 var Behavior = require('./Behavior')
-var Scale = require('./Scale')
+var Scale = require('./Scale').default
 var build = require('./build')
 var UndoStack = require('./UndoStack')
 var CallbackManager = require('./CallbackManager')
@@ -231,8 +231,8 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
   // initialize stats
   this.calc_data_stats('reaction')
   this.calc_data_stats('metabolite')
-  this.scale.connect_to_settings(this.settings, this,
-                                 get_data_statistics.bind(this))
+  this.scale.connectToSettings(this.settings, this,
+                               get_data_statistics.bind(this))
 
   // make the undo/redo stack
   this.undo_stack = new UndoStack()
