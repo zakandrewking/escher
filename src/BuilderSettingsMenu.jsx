@@ -4,7 +4,7 @@ import ScaleSelector from './ScaleSelector'
 import ScaleSlider from './ScaleSlider'
 import ScaleSelection from './ScaleSelection'
 import update from 'immutability-helper'
-import * as _ from 'underscore'
+import _ from 'underscore'
 import './BuilderSettingsMenu.css'
 import scalePresets from './colorPresets'
 

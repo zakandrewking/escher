@@ -9,7 +9,7 @@
 
 /** @jsx h */
 import { h, Component } from 'preact'
-import * as _ from 'underscore'
+import _ from 'underscore'
 import utils from './utils'
 import dataStyles from './data_styles'
 

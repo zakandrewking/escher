@@ -1,6 +1,6 @@
 /** @jsx h */
 import { h, Component } from 'preact'
-import * as _ from 'underscore'
+import _ from 'underscore'
 
 /**
  * Wrapper class for better integration of Preact components with Escher.
