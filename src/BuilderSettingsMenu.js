@@ -450,7 +450,7 @@ class BuilderSettingsMenu extends Component {
                       name={key}
                       scale={value}
                       onClick={() => this.props.settings.set_conditional(
-                        'reaction_scale', value
+                        'metabolite_scale', value
                       )}
                     />
                   )
