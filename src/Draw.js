@@ -177,7 +177,7 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
   var label_mouseover_fn = this.behavior.label_mouseover
   var label_mouseout_fn = this.behavior.label_mouseout
   var label_touch_fn = this.behavior.label_touch
-  
+
   // label location
   update_selection
     .attr('transform', function(d) {

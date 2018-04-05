@@ -22,6 +22,13 @@
   font-size: 15px;
 }
 
+.escher-container .scaleTrack.disabled {
+  background: #f1ecfa;
+  color: #b19ec0;
+  padding: 4px 0;
+  justify-content: center;
+}
+
 .escher-container .gradient {
   position: absolute;
   width: 100%;

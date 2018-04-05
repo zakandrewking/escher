@@ -302,8 +302,14 @@ class BuilderSettingsMenu extends Component {
               stats={this.props.map.get_data_statistics().reaction}
               noDataColor={this.props.reaction_no_data_color}
               noDataSize={this.props.reaction_no_data_size}
-              onChange={(scale) => {
+              onChange={scale => {
                 this.props.settings.set_conditional('reaction_scale', scale)
+              }}
+              onNoDataColorChange={val => {
+                this.props.settings.set_conditional('reaction_no_data_color', val)
+              }}
+              onNoDataSizeChange={val => {
+                this.props.settings.set_conditional('reaction_no_data_size', val)
               }}
               abs={this.props.reaction_styles.indexOf('abs') > -1}
             />
@@ -470,8 +476,14 @@ class BuilderSettingsMenu extends Component {
               stats={this.props.map.get_data_statistics().metabolite}
               noDataColor={this.props.metabolite_no_data_color}
               noDataSize={this.props.metabolite_no_data_size}
-              onChange={(scale) => {
+              onChange={scale => {
                 this.props.settings.set_conditional('metabolite_scale', scale)
+              }}
+              onNoDataColorChange={val => {
+                this.props.settings.set_conditional('metabolite_no_data_color', val)
+              }}
+              onNoDataSizeChange={val => {
+                this.props.settings.set_conditional('metabolite_no_data_size', val)
               }}
               abs={this.props.metabolite_styles.indexOf('abs') > -1}
             />
