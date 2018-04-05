@@ -38,7 +38,6 @@ export default class Scale {
   }
 
   sortScale (scale, stats) {
-    console.log(scale, stats)
     var sorted = scale.map(x => {
       let v
       if (x.type in stats) {

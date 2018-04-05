@@ -627,7 +627,6 @@ class Builder {
   }
 
   brush_mode () {
-    console.log('pressed')
     /** For documentation of this function, see docs/javascript_api.rst.  */
     this.callback_manager.run('brush_mode')
     this._set_mode('brush')

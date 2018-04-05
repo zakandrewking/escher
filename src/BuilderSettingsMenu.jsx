@@ -303,7 +303,6 @@ class BuilderSettingsMenu extends Component {
               noDataColor={this.props.reaction_no_data_color}
               noDataSize={this.props.reaction_no_data_size}
               onChange={(scale) => {
-                console.log('slider change', scale)
                 this.props.settings.set_conditional('reaction_scale', scale)
               }}
               abs={this.props.reaction_styles.indexOf('abs') > -1}

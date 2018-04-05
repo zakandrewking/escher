@@ -37,7 +37,6 @@ class Picker extends Component {
   }
 
   componentWillUnmount () {
-    console.log('component unmounted')
     d3Select(this.base).select('.pickerBox').on('mousedown.drag', null)
   }
 
