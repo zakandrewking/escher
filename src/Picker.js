@@ -22,10 +22,10 @@ class Picker extends Component {
           if (this.props.id !== undefined && this.props.id !== 'value') {
             this.props.onChange('type', 'value')
           }
-          if (this.props.value / this.props.max < 0.04) {
+          if ((this.props.value - this.props.min) / (this.props.max - this.props.min) < 0.04) {
             xPos = 0.04 * this.props.max + event.dx * ((this.props.max - this.props.min) / 400)
           } else if ((this.props.value - this.props.min) / (this.props.max - this.props.min) > 0.95) {
-            xPos = 0.95 * this.props.max + event.dx * (this.props.max / 400)
+            xPos = 0.95 * this.props.max + event.dx * ((this.props.max - this.props.min) / 400)
           } else {
             xPos = this.props.value + event.dx * ((this.props.max - this.props.min) / 400)
           }
