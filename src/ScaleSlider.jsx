@@ -151,8 +151,8 @@ class ScaleSlider extends Component {
           <div>
             <div className='scaleTrack disabled'>
               {this.props.type} data not loaded
-              <Picker id='min' focus={() => null} value={0.00} color='' disabled />
-              <Picker id='max' focus={() => null} value={1.00} color='' disabled />
+              <Picker value={0.00} disabled />
+              <Picker value={1.00} disabled />
             </div>
           </div>
           <div className='scaleLabels'>
@@ -182,7 +182,7 @@ class ScaleSlider extends Component {
       if (listItem.type !== 'value') {
         return (
           <Picker
-            id={listItem.type}
+            type={listItem.type}
             left={pickerLocations[i]}
             onChange={
               (parameter, value) => this.scaleChange(i, parameter, value)
@@ -203,6 +203,7 @@ class ScaleSlider extends Component {
       } else if (listItem.value != null) {  // Check for valid value type
         return (
           <Picker
+            type={listItem.type}
             left={pickerLocations[i]}
             onChange={
               (parameter, value) => this.scaleChange(i, parameter, value)

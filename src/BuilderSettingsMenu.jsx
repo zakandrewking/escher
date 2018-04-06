@@ -22,18 +22,6 @@ class BuilderSettingsMenu extends Component {
     if (props.display) {
       this.componentWillAppear()
     }
-
-    /* TODO where should this happen? */
-    /* if (props.reaction_scale_preset) {
-     *   props.settings.set_conditional(
-     *     'reaction_scale', scalePresets[props.reaction_scale_preset]
-     *   )
-     * }
-     * if (props.metabolite_scale_preset) {
-     *   props.settings.set_conditional(
-     *     'metabolite_scale', scalePresets[props.metabolite_scale_preset]
-     *   )
-     * } */
   }
 
   componentWillReceiveProps (nextProps) {
@@ -281,7 +269,7 @@ class BuilderSettingsMenu extends Component {
               <div className='title'>
                 Reactions
               </div>
-              <ScaleSelector>
+              <ScaleSelector disabled={this.props.map.get_data_statistics().reaction === null}>
                 {Object.values(_.mapObject(scalePresets, (value, key) => {
                   return (
                     <ScaleSelection
@@ -455,7 +443,7 @@ class BuilderSettingsMenu extends Component {
               <div className='title'>
                 Metabolites
               </div>
-              <ScaleSelector>
+              <ScaleSelector disabled={this.props.map.get_data_statistics().metabolite === null}>
                 {Object.values(_.mapObject(scalePresets, (value, key) => {
                   return (
                     <ScaleSelection

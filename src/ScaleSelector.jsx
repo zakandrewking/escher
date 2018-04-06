@@ -1,9 +1,7 @@
 /** @jsx h */
-import {h, Component} from 'preact'
 
-/**
- * TODO what is this component used for?
- */
+import { h, Component } from 'preact'
+
 class ScaleSelector extends Component {
   constructor (props) {
     super(props)
@@ -33,9 +31,18 @@ class ScaleSelector extends Component {
     return (
       <div className='selector'>
         <div
-          className='selectorTitle'
+          className={
+            [
+              'selectorTitle',
+              (this.props.disabled ? 'disabled' : '')
+            ].join(' ')
+          }
           ref={this.setWrapperRef}
-          onClick={() => this.setState({visible: !this.state.visible})}
+          onClick={() => {
+            if (!this.props.disabled) {
+              this.setState({visible: !this.state.visible})
+            }
+          }}
         >
           Preset Scale Selections
           <i className='icon-sort-down' />

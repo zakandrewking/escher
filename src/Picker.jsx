@@ -8,24 +8,26 @@ import './Picker.css'
 
 class Picker extends Component {
   componentDidMount () {
-    let xPos = null
-    const drag = d3Drag()
-      .on('drag', () => {
-        // If it was not a value slider before, make it one
-        if (this.props.id !== 'value') {
-          this.props.onChange('type', 'value')
-        }
-        if ((this.props.value - this.props.min) / this.props.interval < 0.04) {
-          xPos = 0.04 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
-        } else if ((this.props.value - this.props.min) / this.props.interval > 0.95) {
-          xPos = 0.95 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
-        } else {
-          xPos = this.props.value + event.dx * (this.props.interval / 400)
-        }
-        this.props.onChange('value', xPos)
-      })
-      .container(() => this.base.parentNode.parentNode)
-    d3Select(this.base).select('.pickerBox').call(drag)
+    if (!this.props.disabled) {
+      let xPos = null
+      const drag = d3Drag()
+        .on('drag', () => {
+          // If it was not a value slider before, make it one
+          if (this.props.id !== 'value') {
+            if (this.props.onChange) this.props.onChange('type', 'value')
+          }
+          if ((this.props.value - this.props.min) / this.props.interval < 0.04) {
+            xPos = 0.04 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
+          } else if ((this.props.value - this.props.min) / this.props.interval > 0.95) {
+            xPos = 0.95 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
+          } else {
+            xPos = this.props.value + event.dx * (this.props.interval / 400)
+          }
+          if (this.props.onChange) this.props.onChange('value', xPos)
+        })
+        .container(() => this.base.parentNode.parentNode)
+      d3Select(this.base).select('.pickerBox').call(drag)
+    }
   }
 
   componentWillUnmount () {
@@ -50,7 +52,9 @@ class Picker extends Component {
           <i
             className='icon-trash-empty'
             aria-hidden='true'
-            onClick={() => this.props.remove()}
+            onClick={() => {
+              if (this.props.remove) this.props.remove()
+            }}
           />
         </div>
         <div
@@ -60,7 +64,9 @@ class Picker extends Component {
               (this.props.value - this.props.min) / this.props.interval > 0.8 ? 'rightOptions' : ''
             ].join(' ')
           }
-          onMouseDown={() => this.props.focus()}
+          onMouseDown={() => {
+            if (this.props.focus) this.props.focus()
+          }}
         />
         <div className='pickerOptions'>
           <input
@@ -70,18 +76,22 @@ class Picker extends Component {
               ? `${this.props.id} (${parseFloat(this.props.value.toFixed(2))})`
               : parseFloat(this.props.value.toFixed(2))
             }
-            disabled={this.props.id}
+            disabled={this.props.disabled}
             onInput={(event) => {
               this.props.onChange('value', parseFloat(event.target.value))
             }}
             onFocus={(event) => {
               event.target.select()
-              this.props.focus()
+              if (this.props.focus) this.props.focus()
             }}
           />
           <select
             className='typePicker'
-            onChange={(event) => this.props.onChange('type', event.target.value)}
+            value={this.props.type}
+            onChange={(event) => {
+              if (this.props.onChange) this.props.onChange('type', event.target.value)
+            }}
+            disabled={this.props.disabled}
           >
             <option value='value'>Value</option>
             <option value='min'>Min</option>
@@ -96,26 +106,26 @@ class Picker extends Component {
               type='text'
               className='colorText'
               onInput={(event) => {
-                this.props.onChange('color', event.target.value)
+                if (this.props.onChange) this.props.onChange('color', event.target.value)
               }}
               onFocus={(event) => {
                 event.target.select()
-                this.props.focus()
+                if (this.props.focus) this.props.focus()
               }}
-              value={this.props.color}
+              value={this.props.color || ''}
               disabled={this.props.disabled}
             />
             <input
               type='color'
               className='colorWheel'
               onInput={(event) => {
-                this.props.onChange('color', event.target.value)
+                if (this.props.onChange) this.props.onChange('color', event.target.value)
               }}
               onFocus={(event) => {
                 event.target.select()
-                this.props.focus()
+                if (this.props.focus) this.props.focus()
               }}
-              value={this.props.color}
+              value={this.props.color || ''}
               disabled={this.props.disabled}
             />
           </div>
@@ -123,11 +133,11 @@ class Picker extends Component {
             type='text'
             className='option'
             onInput={(event) => {
-              this.props.onChange('size', parseInt(event.target.value))
+              if (this.props.onChange) this.props.onChange('size', parseInt(event.target.value))
             }}
             onFocus={(event) => {
               event.target.select()
-              this.props.focus()
+              if (this.props.focus) this.props.focus()
             }}
             value={this.props.size}
             disabled={this.props.disabled}
