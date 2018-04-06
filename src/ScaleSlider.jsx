@@ -14,11 +14,11 @@ class ScaleSlider extends Component {
    * Sorts the color scale for makeGradient
    */
   sortScale () {
-    const newScale = _.sortBy(this.props.scale, element => {
-      if (element.type === 'value') {
-        return element.value
+    const newScale = _.sortBy(this.props.scale, stop => {
+      if (stop.type === 'value') {
+        return stop.value
       } else {
-        return this.props.stats[element.type]
+        return this.props.stats[stop.type]
       }
     })
     return newScale
@@ -59,44 +59,38 @@ class ScaleSlider extends Component {
    * @param {(number|string)} value - the new value of the parameter
    */
   scaleChange (index, parameter, value) {
-    if (parameter === 'value' &&
-      (parseFloat(value) > this.props.stats.max ||
-      value < this.props.stats.min)) {
-      console.warn('Invalid color scale')
-    } else {
-      let newScale = null
-      if (parameter === 'type' && value !== 'value') {
-        newScale = update(this.props.scale, {
-          [index]: {
-            [parameter]: {$set: value},
-            $unset: ['value']
-          }
-        })
-        this.props.onChange(newScale)
-      } else if (parameter === 'value' && this.props.scale[index].type !== 'value') {
-        newScale = update(this.props.scale, {
-          [index]: {
-            [parameter]: {$set: value},
-            'type': {$set: 'value'}
-          }
-        })
-        this.props.onChange(newScale)
-      } else if (value === 'value') {
-        newScale = update(this.props.scale, {
-          [index]: {
-            [parameter]: {$set: value},
-            $merge: {'value': this.props.stats[this.props.scale[index].type]}
-          }
-        })
-        this.props.onChange(newScale)
-      } else if (!isNaN(parseFloat(value)) || (value[0] === '#' && parameter === 'color')) {
-        newScale = update(this.props.scale, {
-          [index]: {
-            [parameter]: {$set: value}
-          }
-        })
-        this.props.onChange(newScale)
-      }
+    let newScale = null
+    if (parameter === 'type' && value !== 'value') {
+      newScale = update(this.props.scale, {
+        [index]: {
+          [parameter]: {$set: value},
+          $unset: ['value']
+        }
+      })
+      this.props.onChange(newScale)
+    } else if (parameter === 'value' && this.props.scale[index].type !== 'value') {
+      newScale = update(this.props.scale, {
+        [index]: {
+          [parameter]: {$set: value},
+          'type': {$set: 'value'}
+        }
+      })
+      this.props.onChange(newScale)
+    } else if (value === 'value') {
+      newScale = update(this.props.scale, {
+        [index]: {
+          [parameter]: {$set: value},
+          $merge: {'value': this.props.stats[this.props.scale[index].type]}
+        }
+      })
+      this.props.onChange(newScale)
+    } else if (!isNaN(parseFloat(value)) || (value[0] === '#' && parameter === 'color')) {
+      newScale = update(this.props.scale, {
+        [index]: {
+          [parameter]: {$set: value}
+        }
+      })
+      this.props.onChange(newScale)
     }
   }
 
@@ -105,7 +99,7 @@ class ScaleSlider extends Component {
       $push: [{
         type: 'value',
         value: event.layerX / event.target.clientWidth * this.props.stats.max +
-          (1 - event.layerX / event.target.clientWidth) * this.props.stats.min,
+            (1 - event.layerX / event.target.clientWidth) * this.props.stats.min,
         color: '#9696ff',
         size: 20
       }]
@@ -116,23 +110,22 @@ class ScaleSlider extends Component {
   /**
    * Sorts and then returns a string that can be fed into the HTML linear-gradient style
    */
-  makeGradient () {
-    const min = this.props.stats.min
-    const scale = this.sortScale()
-    let gradientArray = []
-    for (let i = 0; i < scale.length; i++) {
-      if (scale[i].type === 'value') {
-        gradientArray.push(
-          ` ${scale[i].color} ${(scale[i].value - min) / (this.props.stats.max - min) * 100}%`
-        )
-      } else {
-        let value = this.props.stats[scale[i].type]
-        gradientArray.push(
-          ` ${scale[i].color} ${(value - min) / (this.props.stats.max - min) * 100}%`
-        )
-      }
-    }
-    return gradientArray.toString()
+  makeGradient (min, max) {
+    const sortedScale = this.sortScale()
+    // Fix for when there is one or zero stops
+    const sortedScaleFix = (
+      sortedScale.length === 1
+      ? [sortedScale[0], sortedScale[0]]
+      : (
+        sortedScale.length === 0
+        ? [{ type: 'min', color: '#f1ecfa' }, { type: 'max', color: '#f1ecfa' }]
+        : sortedScale
+      )
+    )
+    return sortedScaleFix.map(stop => {
+      const value = stop.type === 'value' ? stop.value : this.props.stats[stop.type]
+      return ` ${stop.color} ${(value - min) / (max - min) * 100}%`
+    }).toString()
   }
 
   removeColorStop (index) {
@@ -243,7 +236,7 @@ class ScaleSlider extends Component {
               className='gradient'
               onClick={(event) => this.addColorStop(event)}
               style={{
-                background: `linear-gradient(to right,${this.makeGradient()})`
+                background: `linear-gradient(to right,${this.makeGradient(absoluteMin, absoluteMax)})`
               }}
             />
             {pickers}

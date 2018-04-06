@@ -8,22 +8,32 @@ import './Picker.css'
 
 class Picker extends Component {
   componentDidMount () {
-    if (!this.props.disabled) {
-      let xPos = null
+    if (this.props.onChange && !this.props.disabled) {
       const drag = d3Drag()
         .on('drag', () => {
           // If it was not a value slider before, make it one
           if (this.props.type !== 'value') {
             if (this.props.onChange) this.props.onChange('type', 'value')
           }
-          if ((this.props.value - this.props.min) / this.props.interval < 0.04) {
-            xPos = 0.04 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
-          } else if ((this.props.value - this.props.min) / this.props.interval > 0.95) {
-            xPos = 0.95 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
-          } else {
-            xPos = this.props.value + event.dx * (this.props.interval / 400)
-          }
-          if (this.props.onChange) this.props.onChange('value', xPos)
+
+          // New location
+          const newValue = (
+            this.props.value + (
+              (event.dx / this.props.trackWidth) *
+              (this.props.max - this.props.min)
+            )
+          )
+
+          // Don't go outside bar
+          const newLimValue = Math.max(
+            this.props.min,
+            Math.min(
+              this.props.max,
+              newValue
+            )
+          )
+
+          this.props.onChange('value', newLimValue)
         })
         .container(() => this.base.parentNode.parentNode)
       d3Select(this.base).select('.pickerBox').call(drag)
@@ -76,9 +86,10 @@ class Picker extends Component {
                 : `${this.props.type} (${parseFloat(this.props.value.toFixed(2))})`
               )
             }
-            disabled={this.props.disabled || this.props.type !== 'value'}
+            disabled={this.props.disabled}
             onInput={(event) => {
-              this.props.onChange('value', parseFloat(event.target.value))
+              const newVal = parseFloat(event.target.value)
+              if (!isNaN(newVal)) this.props.onChange('value', newVal)
             }}
             onFocus={(event) => {
               event.target.select()
@@ -92,6 +103,9 @@ class Picker extends Component {
               if (this.props.onChange) this.props.onChange('type', event.target.value)
             }}
             disabled={this.props.disabled}
+            onFocus={(event) => {
+              if (this.props.focus) this.props.focus()
+            }}
           >
             <option value='value'>Value</option>
             <option value='min'>Min</option>
