@@ -6,11 +6,6 @@ import {select as d3Select, event} from 'd3-selection'
 import {drag as d3Drag} from 'd3-drag'
 
 class Picker extends Component {
-  constructor (props) {
-    super(props)
-    this.state = {
-    }
-  }
 
   componentDidMount () {
     let xPos = null
@@ -53,7 +48,7 @@ class Picker extends Component {
       >
         <div
           className='trashDiv'
-          id={this.props.id === 'max' || (this.props.value - this.props.min) / (this.props.max - this.props.min) > 0.8
+          id={this.props.id === 'max' || (this.props.value - this.props.min) / this.props.interval > 0.8
             ? 'rightOptions'
             : null
           }
@@ -70,7 +65,7 @@ class Picker extends Component {
         </div>
         <div
           className='pickerBox'
-          id={this.props.id === 'max' || (this.props.value - this.props.min) / (this.props.max - this.props.min) > 0.8
+          id={this.props.id === 'max' || (this.props.value - this.props.min) / this.props.interval > 0.8
             ? 'rightOptions'
             : null
           }
