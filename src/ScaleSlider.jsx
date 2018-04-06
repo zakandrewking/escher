@@ -7,14 +7,9 @@ import _ from 'underscore'
 
 import './ScaleSlider.css'
 
-class ScaleSlider extends Component {
-  constructor (props) {
-    super(props)
-    this.state = {
-      keys: null
-    }
-  }
+const TRACK_WIDTH = 400
 
+class ScaleSlider extends Component {
   /**
    * Sorts the color scale for makeGradient
    */
@@ -33,22 +28,28 @@ class ScaleSlider extends Component {
    * Places the pickers as a percentage of the max
    */
   placePickers () {
-    const max = this.props.stats.max
-    let positions = []
-    for (let i = 0; i < this.props.scale.length; i++) {
-      const value = this.props.scale[i].value
-        ? this.props.scale[i].value
-        : this.props.stats[this.props.scale[i].type]
-      const position = (value - this.props.stats.min) / (max - this.props.stats.min)
-      positions[i] = position < 0.04
-        ? 4
-        : position > 0.8 && position < 0.95
-        ? position * 100 - 18
-        : position >= 0.95
-        ? 77
-        : position * 100
-    }
-    return positions
+    const stats = this.props.stats
+
+    // Get min and max from scale stops too
+    const [ absoluteMin, absoluteMax ] = this.props.scale.reduce(
+      ([ curMin, curMax ], stop) => {
+        if (stop.type === 'value') {
+          return [ Math.min(stop.value, curMin), Math.max(stop.value, curMax) ]
+        } else {
+          return [ curMin, curMax ]
+        }
+      },
+      [ stats.min, stats.max ]
+    )
+
+    // Calculate positions
+    const pickerLocations = this.props.scale.map(stop => {
+      const value = stop.type === 'value' ? stop.value : stats[stop.type]
+      // normalize within min/max
+      return (value - absoluteMin) / (absoluteMax - absoluteMin)
+    })
+
+    return { pickerLocations, absoluteMax, absoluteMin }
   }
 
   /**
@@ -88,7 +89,7 @@ class ScaleSlider extends Component {
           }
         })
         this.props.onChange(newScale)
-      } else if (!isNaN(parseFloat(value)) || value[0] === '#' && parameter === 'color') {
+      } else if (!isNaN(parseFloat(value)) || (value[0] === '#' && parameter === 'color')) {
         newScale = update(this.props.scale, {
           [index]: {
             [parameter]: {$set: value}
@@ -149,10 +150,13 @@ class ScaleSlider extends Component {
       return (
         <div className='scaleEditor'>
           <div>
-            <div className='scaleTrack disabled'>
+            <div
+              className='scaleTrack disabled'
+              style={{ width: TRACK_WIDTH }}
+            >
               {this.props.type} data not loaded
-              <Picker value={0} disabled />
-              <Picker value={1} disabled />
+              <Picker location={0} trackWidth={TRACK_WIDTH} disabled />
+              <Picker location={1} trackWidth={TRACK_WIDTH} disabled />
             </div>
           </div>
           <div className='scaleLabels'>
@@ -175,47 +179,51 @@ class ScaleSlider extends Component {
     // Has data
     // --------
 
-    const pickerLocations = this.placePickers()
+    const {
+      pickerLocations,
+      absoluteMax,
+      absoluteMin
+    } = this.placePickers()
 
     // Create the pickers
-    const pickers = this.props.scale.map((listItem, i) => {
-      if (listItem.type !== 'value') {
+    const pickers = this.props.scale.map((stop, i) => {
+      if (stop.type !== 'value') {
         return (
           <Picker
-            type={listItem.type}
-            left={pickerLocations[i]}
+            trackWidth={TRACK_WIDTH}
+            type={stop.type}
+            location={pickerLocations[i]}
             onChange={
               (parameter, value) => this.scaleChange(i, parameter, value)
             }
             focus={() => this.setState({ focusedPicker: i })}
             remove={() => this.removeColorStop(i)}
-            min={this.props.stats.min}
-            max={this.props.stats.max}
-            interval={this.props.stats.max - this.props.stats.min}
+            min={absoluteMin}
+            max={absoluteMax}
             value={
-              this.props.stats[listItem.type]
+              this.props.stats[stop.type]
             }
-            color={listItem.color}
-            size={listItem.size}
+            color={stop.color}
+            size={stop.size}
             zIndex={this.state.focusedPicker === i ? '2' : '0'}
           />
         )
-      } else if (listItem.value != null) {  // Check for valid value type
+      } else if (stop.value != null) {  // Check for valid value type
         return (
           <Picker
-            type={listItem.type}
-            left={pickerLocations[i]}
+            trackWidth={TRACK_WIDTH}
+            type={stop.type}
+            location={pickerLocations[i]}
             onChange={
               (parameter, value) => this.scaleChange(i, parameter, value)
             }
             focus={() => this.setState({focusedPicker: i})}
             remove={() => this.removeColorStop(i)}
-            min={this.props.stats.min}
-            max={this.props.stats.max}
-            interval={this.props.stats.max - this.props.stats.min}
-            value={listItem.value}
-            color={listItem.color}
-            size={listItem.size}
+            min={absoluteMin}
+            max={absoluteMax}
+            value={stop.value}
+            color={stop.color}
+            size={stop.size}
             zIndex={this.state.focusedPicker === i ? '2' : '0'}
           />
         )
@@ -227,7 +235,10 @@ class ScaleSlider extends Component {
       <div className='scaleEditor'>
         <div>
           <i className='settingsTip'>To add a color stop to the scale, click the gradient</i>
-          <div className='scaleTrack'>
+          <div
+            className='scaleTrack'
+            style={{width: TRACK_WIDTH}}
+          >
             <div
               className='gradient'
               onClick={(event) => this.addColorStop(event)}

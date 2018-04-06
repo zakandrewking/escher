@@ -38,16 +38,12 @@ class Picker extends Component {
     return (
       <div
         className='picker'
-        style={{left: `${this.props.left}%`, zIndex: this.props.zIndex}}
+        style={{
+          left: `${this.props.location * this.props.trackWidth}px`,
+          zIndex: this.props.zIndex
+        }}
       >
-        <div
-          className={
-            [
-              'trashDiv',
-              (this.props.value - this.props.min) / this.props.interval > 0.8 ? 'rightOptions' : ''
-            ].join(' ')
-          }
-        >
+        <div className='trashDiv'>
           <i
             className='icon-trash-empty'
             aria-hidden='true'
@@ -57,24 +53,28 @@ class Picker extends Component {
           />
         </div>
         <div
-          className={
-            [
-              'pickerBox',
-              (this.props.value - this.props.min) / this.props.interval > 0.8 ? 'rightOptions' : ''
-            ].join(' ')
-          }
+          className='pickerBox'
           onMouseDown={() => {
             if (this.props.focus) this.props.focus()
           }}
         />
-        <div className='pickerOptions'>
+        <div
+          className={
+            [
+              'pickerOptions',
+              this.props.location > 0.8 ? 'rightOptions' : ''
+            ].join(' ')
+          }
+        >
           <input
             type='text'
             className='option'
             value={
-              this.props.type === 'value'
-              ? parseFloat(this.props.value.toFixed(2))
-              : `${this.props.type} (${parseFloat(this.props.value.toFixed(2))})`
+              this.props.disabled ? '' : (
+                this.props.type === 'value'
+                ? parseFloat(this.props.value.toFixed(2))
+                : `${this.props.type} (${parseFloat(this.props.value.toFixed(2))})`
+              )
             }
             disabled={this.props.disabled || this.props.type !== 'value'}
             onInput={(event) => {
