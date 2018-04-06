@@ -23,12 +23,12 @@
   right: -7px;
 }
 
-.escher-container .scaleTrack #rightOptions {
+.escher-container .scaleTrack .rightOptions {
   margin-left: auto;
   right: 1px;
 }
 
-.escher-container .trashDiv#rightOptions {
+.escher-container .trashDiv.rightOptions {
   margin-right: -4px;
 }
 

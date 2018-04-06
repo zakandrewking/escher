@@ -1,31 +1,28 @@
 /** @jsx h */
 
-import {h, Component} from 'preact'
+import { h, Component } from 'preact'
+import { select as d3Select, event } from 'd3-selection'
+import { drag as d3Drag } from 'd3-drag'
+
 import './Picker.css'
-import {select as d3Select, event} from 'd3-selection'
-import {drag as d3Drag} from 'd3-drag'
 
 class Picker extends Component {
-
   componentDidMount () {
     let xPos = null
     const drag = d3Drag()
       .on('drag', () => {
-        if (this.props.id === 'max' || this.props.id === 'min') {
-          console.warn('Min/Max not draggable')
-        } else {
-          if (this.props.id !== undefined && this.props.id !== 'value') {
-            this.props.onChange('type', 'value')
-          }
-          if ((this.props.value - this.props.min) / this.props.interval < 0.04) {
-            xPos = 0.04 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
-          } else if ((this.props.value - this.props.min) / this.props.interval > 0.95) {
-            xPos = 0.95 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
-          } else {
-            xPos = this.props.value + event.dx * (this.props.interval / 400)
-          }
-          this.props.onChange('value', xPos)
+        // If it was not a value slider before, make it one
+        if (this.props.id !== 'value') {
+          this.props.onChange('type', 'value')
         }
+        if ((this.props.value - this.props.min) / this.props.interval < 0.04) {
+          xPos = 0.04 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
+        } else if ((this.props.value - this.props.min) / this.props.interval > 0.95) {
+          xPos = 0.95 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
+        } else {
+          xPos = this.props.value + event.dx * (this.props.interval / 400)
+        }
+        this.props.onChange('value', xPos)
       })
       .container(() => this.base.parentNode.parentNode)
     d3Select(this.base).select('.pickerBox').call(drag)
@@ -40,22 +37,16 @@ class Picker extends Component {
       <div
         className='picker'
         id={this.props.id}
-        style={!(this.props.id === 'min' || this.props.id === 'max')
-          ? {left: `${this.props.left}%`, zIndex: this.props.zIndex}
-          : {zIndex: this.props.zIndex}
-        }
+        style={{left: `${this.props.left}%`, zIndex: this.props.zIndex}}
       >
         <div
-          className='trashDiv'
-          id={this.props.id === 'max' || (this.props.value - this.props.min) / this.props.interval > 0.8
-            ? 'rightOptions'
-            : null
+          className={
+            [
+              'trashDiv',
+              (this.props.value - this.props.min) / this.props.interval > 0.8 ? 'rightOptions' : ''
+            ].join(' ')
           }
-          style={(this.props.id === 'min' || this.props.id === 'max')
-            ? {display: 'none'}
-            : {display: 'block'}
-          }
-          >
+        >
           <i
             className='icon-trash-empty'
             aria-hidden='true'
@@ -63,10 +54,11 @@ class Picker extends Component {
           />
         </div>
         <div
-          className='pickerBox'
-          id={this.props.id === 'max' || (this.props.value - this.props.min) / this.props.interval > 0.8
-            ? 'rightOptions'
-            : null
+          className={
+            [
+              'pickerBox',
+              (this.props.value - this.props.min) / this.props.interval > 0.8 ? 'rightOptions' : ''
+            ].join(' ')
           }
           onMouseDown={() => this.props.focus()}
         />
@@ -89,17 +81,15 @@ class Picker extends Component {
           />
           <select
             className='typePicker'
-            style={this.props.id === 'min' || this.props.id === 'max'
-              ? {display: 'none'}
-              : null
-            }
             onChange={(event) => this.props.onChange('type', event.target.value)}
           >
             <option value='value'>Value</option>
+            <option value='min'>Min</option>
             <option value='mean'>Mean</option>
-            <option value='Q1'>Q1</option>
+            <option value='q1'>Q1</option>
             <option value='median'>Median</option>
-            <option value='Q3'>Q3</option>
+            <option value='q3'>Q3</option>
+            <option value='max'>Max</option>
           </select>
           <div className='colorOptions'>
             <input
