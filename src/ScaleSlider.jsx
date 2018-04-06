@@ -151,8 +151,8 @@ class ScaleSlider extends Component {
           <div>
             <div className='scaleTrack disabled'>
               {this.props.type} data not loaded
-              <Picker value={0.00} disabled />
-              <Picker value={1.00} disabled />
+              <Picker value={0} disabled />
+              <Picker value={1} disabled />
             </div>
           </div>
           <div className='scaleLabels'>
@@ -187,7 +187,7 @@ class ScaleSlider extends Component {
             onChange={
               (parameter, value) => this.scaleChange(i, parameter, value)
             }
-            focus={() => this.setState({focusedPicker: i})}
+            focus={() => this.setState({ focusedPicker: i })}
             remove={() => this.removeColorStop(i)}
             min={this.props.stats.min}
             max={this.props.stats.max}

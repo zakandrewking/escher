@@ -13,7 +13,7 @@ class Picker extends Component {
       const drag = d3Drag()
         .on('drag', () => {
           // If it was not a value slider before, make it one
-          if (this.props.id !== 'value') {
+          if (this.props.type !== 'value') {
             if (this.props.onChange) this.props.onChange('type', 'value')
           }
           if ((this.props.value - this.props.min) / this.props.interval < 0.04) {
@@ -38,7 +38,6 @@ class Picker extends Component {
     return (
       <div
         className='picker'
-        id={this.props.id}
         style={{left: `${this.props.left}%`, zIndex: this.props.zIndex}}
       >
         <div
@@ -72,11 +71,12 @@ class Picker extends Component {
           <input
             type='text'
             className='option'
-            value={this.props.id
-              ? `${this.props.id} (${parseFloat(this.props.value.toFixed(2))})`
-              : parseFloat(this.props.value.toFixed(2))
+            value={
+              this.props.type === 'value'
+              ? parseFloat(this.props.value.toFixed(2))
+              : `${this.props.type} (${parseFloat(this.props.value.toFixed(2))})`
             }
-            disabled={this.props.disabled}
+            disabled={this.props.disabled || this.props.type !== 'value'}
             onInput={(event) => {
               this.props.onChange('value', parseFloat(event.target.value))
             }}
