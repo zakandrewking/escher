@@ -32,21 +32,13 @@ class ScaleSlider extends Component {
    * Places the pickers as a percentage of the max
    */
   placePickers () {
-    const max = this.props.abs
-      ? this.props.stats.max
-      : this.props.stats.max + Math.abs(this.props.stats.min)
+    const max = this.props.stats.max
     let positions = []
     for (let i = 0; i < this.props.scale.length; i++) {
-      const scaleValue = this.props.scale[i].value
+      const value = this.props.scale[i].value
         ? this.props.scale[i].value
         : this.props.stats[this.props.scale[i].type]
-      const value = this.props.abs
-        ? scaleValue
-        : scaleValue + Math.abs(this.props.stats.min)
       const position = (value - this.props.stats.min) / (max - this.props.stats.min)
-      if (i === 1) {
-        console.log(value, position)
-      }
       positions[i] = position < 0.04
         ? 4
         : position > 0.8 && position < 0.95
@@ -123,7 +115,7 @@ class ScaleSlider extends Component {
    * Sorts and then returns a string that can be fed into the HTML linear-gradient style
    */
   makeGradient () {
-    const min = this.props.abs ? this.props.stats.min : Math.abs(this.props.stats.min)
+    const min = this.props.stats.min
     const scale = this.sortScale()
     let gradientArray = []
     for (let i = 0; i < scale.length; i++) {
@@ -181,8 +173,9 @@ class ScaleSlider extends Component {
                         value={
                           this.props.stats[listItem.type]
                         }
-                        min={this.props.abs ? this.props.stats.min : Math.abs(this.props.stats.min)}
+                        min={this.props.stats.min}
                         max={this.props.stats.max}
+                        interval={this.props.stats.max - this.props.stats.min}
                         size={listItem.size}
                         zIndex={
                           this.state.focusedPicker === i
@@ -200,12 +193,9 @@ class ScaleSlider extends Component {
                         }
                         focus={() => this.setState({focusedPicker: i})}
                         remove={() => this.removeColorStop(i)}
-                        max={
-                          this.props.stats.max + (this.props.abs
-                            ? 0
-                            : Math.abs(this.props.stats.min))
-                          }
-                        min={this.props.abs ? this.props.stats.min : Math.abs(this.props.stats.min)}
+                        min={this.props.stats.min}
+                        max={this.props.stats.max}
+                        interval={this.props.stats.max - this.props.stats.min}
                         color={listItem.color}
                         size={listItem.size}
                         left={pickerLocations[i]}
