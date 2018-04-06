@@ -33,24 +33,20 @@ class ScaleSlider extends Component {
    * Places the pickers as a percentage of the max
    */
   placePickers () {
-    const max = this.props.abs
-      ? this.props.stats.max
-      : this.props.stats.max + Math.abs(this.props.stats.min)
-    let positions = {}
+    const max = this.props.stats.max
+    let positions = []
     for (let i = 0; i < this.props.scale.length; i++) {
-      const scaleValue = this.props.scale[i].value
+      const value = this.props.scale[i].value
         ? this.props.scale[i].value
         : this.props.stats[this.props.scale[i].type]
-      const value = this.props.abs
-        ? scaleValue
-        : scaleValue + Math.abs(this.props.stats.min)
-      positions[i] = value / max < 0.04
+      const position = (value - this.props.stats.min) / (max - this.props.stats.min)
+      positions[i] = position < 0.04
         ? 4
-        : value / max > 0.8 && value / max < 0.95
-        ? value / max * 100 - 18
-        : value / max >= 0.95
+        : position > 0.8 && position < 0.95
+        ? position * 100 - 18
+        : position >= 0.95
         ? 77
-        : value / max * 100
+        : position * 100
     }
     return positions
   }
@@ -107,7 +103,8 @@ class ScaleSlider extends Component {
     const newScale = update(this.props.scale, {
       $push: [{
         type: 'value',
-        value: event.layerX / event.target.clientWidth * this.props.stats.max,
+        value: event.layerX / event.target.clientWidth * this.props.stats.max +
+          (1 - event.layerX / event.target.clientWidth) * this.props.stats.min,
         color: '#9696ff',
         size: 20
       }]
@@ -119,18 +116,18 @@ class ScaleSlider extends Component {
    * Sorts and then returns a string that can be fed into the HTML linear-gradient style
    */
   makeGradient () {
-    const min = this.props.abs ? 0 : Math.abs(this.props.stats.min)
+    const min = this.props.stats.min
     const scale = this.sortScale()
     let gradientArray = []
     for (let i = 0; i < scale.length; i++) {
       if (scale[i].type === 'value') {
         gradientArray.push(
-          ` ${scale[i].color} ${(scale[i].value + min) / (this.props.stats.max + min) * 100}%`
+          ` ${scale[i].color} ${(scale[i].value - min) / (this.props.stats.max - min) * 100}%`
         )
       } else {
         let value = this.props.stats[scale[i].type]
         gradientArray.push(
-          ` ${scale[i].color} ${(value + min) / (this.props.stats.max + min) * 100}%`
+          ` ${scale[i].color} ${(value - min) / (this.props.stats.max - min) * 100}%`
         )
       }
     }
@@ -182,21 +179,23 @@ class ScaleSlider extends Component {
 
     // Create the pickers
     const pickers = this.props.scale.map((listItem, i) => {
-      if (listItem.type != 'value') {
+      if (listItem.type !== 'value') {
         return (
           <Picker
             id={listItem.type}
-            color={listItem.color}
             left={pickerLocations[i]}
             onChange={
               (parameter, value) => this.scaleChange(i, parameter, value)
             }
             focus={() => this.setState({focusedPicker: i})}
+            remove={() => this.removeColorStop(i)}
+            min={this.props.stats.min}
+            max={this.props.stats.max}
+            interval={this.props.stats.max - this.props.stats.min}
             value={
               this.props.stats[listItem.type]
-              ? parseFloat(this.props.stats[listItem.type].toFixed(2))
-              : 0
             }
+            color={listItem.color}
             size={listItem.size}
             zIndex={this.state.focusedPicker === i ? '2' : '0'}
           />
@@ -204,20 +203,18 @@ class ScaleSlider extends Component {
       } else if (listItem.value != null) {  // Check for valid value type
         return (
           <Picker
-            value={parseFloat(listItem.value.toFixed(2))}
+            left={pickerLocations[i]}
             onChange={
               (parameter, value) => this.scaleChange(i, parameter, value)
             }
             focus={() => this.setState({focusedPicker: i})}
             remove={() => this.removeColorStop(i)}
-            max={
-              this.props.stats.max +
-                (this.props.abs ? 0 : Math.abs(this.props.stats.min))
-            }
-            min={this.props.abs ? 0 : Math.abs(this.props.stats.min)}
+            min={this.props.stats.min}
+            max={this.props.stats.max}
+            interval={this.props.stats.max - this.props.stats.min}
+            value={listItem.value}
             color={listItem.color}
             size={listItem.size}
-            left={pickerLocations[i]}
             zIndex={this.state.focusedPicker === i ? '2' : '0'}
           />
         )
