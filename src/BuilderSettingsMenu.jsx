@@ -1,12 +1,12 @@
 /** @jsx h */
 import { h, Component } from 'preact'
-import ScaleSelector from './ScaleSelector.js'
-import ScaleSlider from './ScaleSlider.js'
-import ScaleSelection from './ScaleSelection.js'
+import ScaleSelector from './ScaleSelector'
+import ScaleSlider from './ScaleSlider'
+import ScaleSelection from './ScaleSelection'
 import update from 'immutability-helper'
 import * as _ from 'underscore'
 import './BuilderSettingsMenu.css'
-import scalePresets from './colorPresets.js'
+import scalePresets from './colorPresets'
 
 /**
  * SettingsMenu. Handles the functions associated with the UI for changing

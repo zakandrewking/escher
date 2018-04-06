@@ -7,7 +7,7 @@ const it = require('mocha').it
 const beforeEach = require('mocha').beforeEach
 const assert = require('chai').assert
 
-const d3_body = require('./helpers/d3_body')
+const d3Body = require('./helpers/d3Body')
 const get_map = require('./helpers/get_map')
 
 const _ = require('underscore')
@@ -29,7 +29,7 @@ describe('Map', () => {
 
   beforeEach(() => {
     // set up map
-    svg = d3_body.append('svg')
+    svg = d3Body.append('svg')
     const sel = svg.append('g')
     // streams are required for these options
     const required_options = { reaction_scale: [],
@@ -57,7 +57,7 @@ describe('Map', () => {
   it('def is the first element in the svg', () => {
     // this fixes a bug with export SVG files to certain programs,
     // e.g. Inkscape for Windows
-    const defs_node = d3_body.select('defs').node()
+    const defs_node = d3Body.select('defs').node()
     assert.strictEqual(defs_node.parentNode.firstChild, defs_node)
   })
 

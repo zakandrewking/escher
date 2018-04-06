@@ -73,18 +73,24 @@
            })
        }
 
+       function b64DecodeUnicode(str) {
+            return decodeURIComponent(Array.prototype.map.call(atob(str), function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+            }).join(''))
+        }
+
        // Put this at the end so Chrome doesn't cut off the code above.
        function get_data() {
            /** Return the data passed in by the Python module. */
            return {
-               id: JSON.parse('{{ id_json }}'),
-               map_download_url: JSON.parse('{{ map_download_url_json }}'),
-               model_download_url: JSON.parse('{{ model_download_url_json }}'),
-               options: JSON.parse('{{ options_json }}'),
-               builder_embed_css: JSON.parse('{{ builder_embed_css_json }}'),
-               map_data: JSON.parse('{{ map_data_json }}'),
-               model_data: JSON.parse('{{ model_data_json }}'),
-               static_site_index: JSON.parse('{{ static_site_index_json }}'),
+               id: b64DecodeUnicode('{{ id_json }}'),
+               map_download_url: b64DecodeUnicode('{{ map_download_url_json }}'),
+               model_download_url: b64DecodeUnicode('{{ model_download_url_json }}'),
+               options: JSON.parse(b64DecodeUnicode('{{ options_json }}')),
+               builder_embed_css: JSON.parse(b64DecodeUnicode('{{ builder_embed_css_json }}')),
+               map_data: JSON.parse(b64DecodeUnicode('{{ map_data_json }}')),
+               model_data: JSON.parse(b64DecodeUnicode('{{ model_data_json }}')),
+               static_site_index: JSON.parse(b64DecodeUnicode('{{ static_site_index_json }}')),
            };
        }
    })();

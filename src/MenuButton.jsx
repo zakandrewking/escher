@@ -10,8 +10,8 @@
 /** @jsx h */
 import { h, Component } from 'preact'
 import * as _ from 'underscore'
-import utils from './utils.js'
-import dataStyles from './data_styles.js'
+import utils from './utils'
+import dataStyles from './data_styles'
 
 class MenuButton extends Component {
   constructor (props) {

@@ -6,7 +6,7 @@ const beforeEach = require('mocha').beforeEach
 const afterEach = require('mocha').afterEach
 const it = require('mocha').it
 const assert = require('chai').assert
-const d3_body = require('./helpers/d3_body')
+const d3Body = require('./helpers/d3Body')
 const d3_zoomTransform = require('d3-zoom').zoomTransform
 const _ = require('underscore')
 
@@ -28,7 +28,7 @@ function check_webkit_transform (sel, with_fn, without_fn) {
 
 describe('ZoomContainer', () => {
   let sel
-  beforeEach(() => sel = d3_body.append('div'))
+  beforeEach(() => sel = d3Body.append('div'))
   afterEach(() => sel.remove())
 
   it('initializes', () => {

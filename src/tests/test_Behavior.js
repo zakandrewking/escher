@@ -5,7 +5,7 @@ var it = require('mocha').it;
 var beforeEach = require('mocha').beforeEach;
 var assert = require('chai').assert;
 
-var d3_body = require('./helpers/d3_body');
+var d3Body = require('./helpers/d3Body');
 
 function assert_selectable_click_attrs_on(behavior) {
     assert.isFunction(behavior.selectable_mousedown);
@@ -52,7 +52,7 @@ function assert_label_mouseover_attrs_off (behavior) {
 
 
 describe('Behavior', () => {
-  const map = { sel: d3_body }
+  const map = { sel: d3Body }
   let behavior
 
   beforeEach(() => { behavior = Behavior(map, null) })

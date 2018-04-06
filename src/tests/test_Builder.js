@@ -1,6 +1,6 @@
 const Builder = require('../Builder').default
 
-const d3_body = require('./helpers/d3_body')
+const d3Body = require('./helpers/d3Body')
 
 // Should test for the broken function that use utils.draw_array/object
 
@@ -32,7 +32,7 @@ function make_parent_sel (s) {
 
 describe('Builder', () => {
   it('Small map, no model. Async tests.', (done) => {
-    const sel = make_parent_sel(d3_body)
+    const sel = make_parent_sel(d3Body)
     const b = Builder(get_map(), null, '', sel, {
       never_ask_before_quit: true,
       first_load_callback: () => {
@@ -51,7 +51,7 @@ describe('Builder', () => {
   it('Small map, no model. Multiple instances.', () => {
     const sels = []
     for (let i = 0, l = 3; i < l; i++) {
-      const sel = make_parent_sel(d3_body)
+      const sel = make_parent_sel(d3Body)
       // TODO actually test that these maps were added to the DOM
       Builder(get_map(), null, '', sel, { never_ask_before_quit: true })
       sels.push(sel)
@@ -60,34 +60,39 @@ describe('Builder', () => {
   })
 
   it('check for model+highlight_missing bug', () => {
-    Builder(get_map(), get_model(), '', make_parent_sel(d3_body),
+    Builder(get_map(), get_model(), '', make_parent_sel(d3Body),
             { never_ask_before_quit: true, highlight_missing: true })
   })
 
   it('SVG selection error', () => {
-    const sel = make_parent_sel(d3_body).append('svg').append('g')
+    const sel = make_parent_sel(d3Body).append('svg').append('g')
     assert.throws(() => {
-      Builder(null, null, '', sel, { never_ask_before_quit: true  })
+      Builder(null, null, '', sel, { never_ask_before_quit: true })
     }, /Builder cannot be placed within an svg node/)
   })
 
+  /** If the scale is provided without max and min points, then automatically
+   * add them.
+   */
   it('fix scales', () => {
-    const sel = make_parent_sel(d3_body)
+    const sel = make_parent_sel(d3Body)
     const b = Builder(
       null, null, '', sel,
       { reaction_scale: [{ type: 'median', color: '#9696ff', size: 8 }],
         never_ask_before_quit: true }
     )
-    assert.deepEqual(b.options.reaction_scale,
-                     [
-                       { type: 'median', color: '#9696ff', size: 8 },
-                       { type: 'min', color: '#ffffff', size: 10 },
-                       { type: 'max', color: '#ffffff', size: 10 },
-                     ])
+    assert.deepEqual(
+      b.options.reaction_scale,
+      [
+        { type: 'median', color: '#9696ff', size: 8 },
+        { type: 'min', color: '#ffffff', size: 10 },
+        { type: 'max', color: '#ffffff', size: 10 }
+      ]
+    )
   })
 
   it('fix scales after callback', () => {
-    const sel = make_parent_sel(d3_body)
+    const sel = make_parent_sel(d3Body)
     const b2 = Builder(null, null, '', sel, { metabolite_scale: [{ type: 'median', color: 'red', size: 0 },
                                                                  { type: 'min', color: 'red', size: 0 },
                                                                  { type: 'max', color: 'red', size: 0 } ],
@@ -102,7 +107,7 @@ describe('Builder', () => {
   })
 
   it('open search bar', done => {
-    const sel = make_parent_sel(d3_body)
+    const sel = make_parent_sel(d3Body)
     const b = Builder(null, null, '', sel, {
       first_load_callback: () => {
         b.renderSearchBar()
@@ -112,7 +117,7 @@ describe('Builder', () => {
   })
 
   it('set_reaction_data', done => {
-    const sel = make_parent_sel(d3_body)
+    const sel = make_parent_sel(d3Body)
     Builder(get_map(), null, '', sel, {
       first_load_callback: function () {
         // These just need to run right now
@@ -124,7 +129,7 @@ describe('Builder', () => {
   })
 
   it('set_metabolite_data', done => {
-    const sel = make_parent_sel(d3_body)
+    const sel = make_parent_sel(d3Body)
     Builder(get_map(), null, '', sel, {
       first_load_callback: function () {
         // These just need to run right now
@@ -136,7 +141,7 @@ describe('Builder', () => {
   })
 
   it('set_gene_data', done => {
-    const sel = make_parent_sel(d3_body)
+    const sel = make_parent_sel(d3Body)
     Builder(get_map(), null, '', sel, {
       first_load_callback: function () {
         // These just need to run right now
