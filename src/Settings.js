@@ -110,6 +110,8 @@ function convertToConditionalStream (valueStream, statusStream) {
         .map(({ currentValue }) => currentValue)
         // Skip duplicate values
         .skipDuplicates()
+        // property -> event stream
+        .toEventStream()
 
   return held
 }

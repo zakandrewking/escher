@@ -59,18 +59,26 @@ export default class Scale {
   }
 
   setReactionScale (scale, getDataStatistics) {
-    const out = this.sortScale(scale, getDataStatistics().reaction)
-    this.reaction_color.domain(out.domain)
-    this.reaction_size.domain(out.domain)
-    this.reaction_color.range(out.color_range)
-    this.reaction_size.range(out.size_range)
+    const stats = getDataStatistics().reaction
+    // If stats are null, then no data, so don't worry about it.
+    if (stats !== null) {
+      const out = this.sortScale(scale, stats)
+      this.reaction_color.domain(out.domain)
+      this.reaction_size.domain(out.domain)
+      this.reaction_color.range(out.color_range)
+      this.reaction_size.range(out.size_range)
+    }
   }
 
   setMetaboliteScale (scale, getDataStatistics) {
-    const out = this.sortScale(scale, getDataStatistics().metabolite)
-    this.metabolite_color.domain(out.domain)
-    this.metabolite_size.domain(out.domain)
-    this.metabolite_color.range(out.color_range)
-    this.metabolite_size.range(out.size_range)
+    const stats = getDataStatistics().metabolite
+    // If stats are null, then no data, so don't worry about it.
+    if (stats !== null) {
+      const out = this.sortScale(scale, stats)
+      this.metabolite_color.domain(out.domain)
+      this.metabolite_size.domain(out.domain)
+      this.metabolite_color.range(out.color_range)
+      this.metabolite_size.range(out.size_range)
+    }
   }
 }

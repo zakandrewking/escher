@@ -140,8 +140,6 @@ class ScaleSlider extends Component {
   }
 
   render () {
-    const pickerLocations = this.placePickers()
-
     // -------
     // No data
     // -------
@@ -176,6 +174,8 @@ class ScaleSlider extends Component {
     // --------
     // Has data
     // --------
+
+    const pickerLocations = this.placePickers()
 
     // Create the pickers
     const pickers = this.props.scale.map((listItem, i) => {
@@ -250,7 +250,7 @@ class ScaleSlider extends Component {
             type='text'
             className='colorInput'
             value={this.props.noDataColor}
-            onChange={event => this.props.onNoDataColorChange(event.target.value)}
+            onInput={event => this.props.onNoDataColorChange(event.target.value)}
           />
           <input
             type='color'

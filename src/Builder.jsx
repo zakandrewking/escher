@@ -231,12 +231,12 @@ class Builder {
     _.defer(() => {
       this.load_map(this.map_data, false)
       const message_fn = this._reaction_check_add_abs()
-      this._update_data(true, true)
+      if (message_fn !== null) {
+        this._update_data(true, true)
+      }
 
       _.mapObject(this.settings.streams, (stream, key) => {
         stream.onValue(value => {
-          // TODO optional if it makes sense:
-          // if (key in keysICareAbout) {
           this.pass_settings_menu_props({
             ...this.options,
             map: this.map,
@@ -245,7 +245,6 @@ class Builder {
           if (key === 'reaction_styles' || key === 'metabolite_styles') {
             this._update_data(false, true)
           }
-          // }
         })
       })
 
@@ -381,20 +380,21 @@ class Builder {
     this._setup_modes(this.map, this.brush, this.zoom_container)
 
     // Set up settings menu
+    preact.render(
+      <ReactWrapper
+        display={false}
+        callbackManager={this.callback_manager}
+        component={BuilderSettingsMenu}
+        refProp={instance => { this.settingsMenuRef = instance }}
+        closeMenu={() => this.pass_settings_menu_props({display: false})}
+      />,
+      this.settings_div.node(),
+      this.settings_div.node().children.length > 0
+      ? this.settings_div.node().firstChild
+      : undefined
+    )
+
     if (this.options.enable_search) {
-      preact.render(
-        <ReactWrapper
-          display={false}
-          callbackManager={this.callback_manager}
-          component={BuilderSettingsMenu}
-          refProp={instance => { this.settingsMenuRef = instance }}
-          closeMenu={() => this.pass_settings_menu_props({display: false})}
-        />,
-        this.settings_div.node(),
-        this.settings_div.node().children.length > 0
-        ? this.settings_div.node().firstChild
-        : undefined
-      )
       this.renderSearchBar(true)
     }
 
@@ -651,8 +651,8 @@ class Builder {
   }
 
   _reaction_check_add_abs () {
-    var curr_style = this.options.reaction_styles
-    var did_abs = false
+    const curr_style = this.options.reaction_styles
+    const did_abs = false
     if (this.options.reaction_data !== null &&
         !this.has_custom_reaction_styles &&
         !_.contains(curr_style, 'abs')) {
@@ -690,8 +690,8 @@ class Builder {
   set_reaction_data (data) {
     this.options.reaction_data = data
     var message_fn = this._reaction_check_add_abs()
-    this._update_data(true, true, 'reaction')
-    if (message_fn) {
+    if (message_fn !== null) {
+      this._update_data(true, true, 'reaction')
       message_fn()
     } else {
       this.map.set_status('')
