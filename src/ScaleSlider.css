@@ -19,6 +19,7 @@
   margin-top: 30px;
   margin-left: 55px;
   font-size: 15px;
+  user-select: none;
 }
 
 .escher-container .scaleTrack.disabled {

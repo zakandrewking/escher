@@ -2,6 +2,7 @@
   top: 35px;
   margin-left: -7px;
   position: absolute;
+  user-select: none;
 }
 
 .escher-container .pickerBox {

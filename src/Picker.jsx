@@ -7,9 +7,16 @@ import { drag as d3Drag } from 'd3-drag'
 import './Picker.css'
 
 class Picker extends Component {
-  componentDidMount () {
-    if (this.props.onChange && !this.props.disabled) {
+  setUpDrag () {
+    // Double check that the drag is not left over from a previous use of this
+    // node.
+    d3Select(this.base).select('.pickerBox').on('mousedown.drag', null)
+
+    if (!this.props.disabled) {
       const drag = d3Drag()
+        .on('start', () => {
+          if (this.props.focus) this.props.focus()
+        })
         .on('drag', () => {
           // If it was not a value slider before, make it one
           if (this.props.type !== 'value') {
@@ -40,8 +47,12 @@ class Picker extends Component {
     }
   }
 
-  componentWillUnmount () {
-    d3Select(this.base).select('.pickerBox').on('mousedown.drag', null)
+  componentDidUpdate () {
+    this.setUpDrag()
+  }
+
+  componentDidMount () {
+    this.setUpDrag()
   }
 
   render () {
@@ -66,7 +77,7 @@ class Picker extends Component {
         }
         <div
           className='pickerBox'
-          onMouseDown={() => {
+          onClick={() => {
             if (this.props.focus) this.props.focus()
           }}
         />
