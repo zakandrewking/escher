@@ -154,6 +154,13 @@ class Builder {
                       'because UI elements are html-based.')
     }
 
+    // Warn if scales are too short
+    ;['reaction_scale', 'metabolite_scale'].map(scaleType => {
+      if (this.options[scaleType] && this.options[scaleType].length < 2) {
+        console.warn(`Bad value for option "${scaleType}". Scales must have at least 2 points.`)
+      }
+    })
+
     // Initialize the settings
     var set_option = function (option, new_value) {
       this.options[option] = new_value

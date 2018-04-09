@@ -53,15 +53,17 @@ class Picker extends Component {
           zIndex: this.props.zIndex
         }}
       >
-        <div className='trashDiv'>
-          <i
-            className='icon-trash-empty'
-            aria-hidden='true'
-            onClick={() => {
-              if (this.props.remove) this.props.remove()
-            }}
-          />
-        </div>
+        {this.props.showTrash &&
+          <div className='trashDiv'>
+            <i
+              className='icon-trash-empty'
+              aria-hidden='true'
+              onClick={() => {
+                if (this.props.remove) this.props.remove()
+              }}
+            />
+          </div>
+        }
         <div
           className='pickerBox'
           onMouseDown={() => {
@@ -110,9 +112,9 @@ class Picker extends Component {
             <option value='value'>Value</option>
             <option value='min'>Min</option>
             <option value='mean'>Mean</option>
-            <option value='q1'>Q1</option>
+            <option value='Q1'>Q1</option>
             <option value='median'>Median</option>
-            <option value='q3'>Q3</option>
+            <option value='Q3'>Q3</option>
             <option value='max'>Max</option>
           </select>
           <div className='colorOptions'>

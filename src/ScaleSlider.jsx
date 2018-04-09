@@ -114,13 +114,9 @@ class ScaleSlider extends Component {
     const sortedScale = this.sortScale()
     // Fix for when there is one or zero stops
     const sortedScaleFix = (
-      sortedScale.length === 1
-      ? [sortedScale[0], sortedScale[0]]
-      : (
-        sortedScale.length === 0
-        ? [{ type: 'min', color: '#f1ecfa' }, { type: 'max', color: '#f1ecfa' }]
-        : sortedScale
-      )
+      sortedScale.length < 2
+      ? [{ type: 'min', color: '#f1ecfa' }, { type: 'max', color: '#f1ecfa' }]
+      : sortedScale
     )
     return sortedScaleFix.map(stop => {
       const value = stop.type === 'value' ? stop.value : this.props.stats[stop.type]
@@ -199,6 +195,7 @@ class ScaleSlider extends Component {
             color={stop.color}
             size={stop.size}
             zIndex={this.state.focusedPicker === i ? '2' : '0'}
+            showTrash={this.props.scale.length >= 3}
           />
         )
       } else if (stop.value != null) {  // Check for valid value type
@@ -218,6 +215,7 @@ class ScaleSlider extends Component {
             color={stop.color}
             size={stop.size}
             zIndex={this.state.focusedPicker === i ? '2' : '0'}
+            showTrash={this.props.scale.length >= 3}
           />
         )
       }

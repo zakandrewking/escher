@@ -59,7 +59,6 @@ JavaScript API
 
        .. js:attribute:: options.enable_search
 
-
           (Default: ``true``) If true, then enable indexing of the map for
           search. Use false to disable searching and potentially improve the map
           performance.
@@ -174,23 +173,20 @@ JavaScript API
           Default::
 
             [ { type: 'min', color: '#c8c8c8', size: 12 },
-                { type: 'median', color: '#9696ff', size: 20 },
-                { type: 'max', color: '#ff0000', size: 25 } ]
+              { type: 'median', color: '#9696ff', size: 20 },
+              { type: 'max', color: '#ff0000', size: 25 } ]
 
-          An array of objects that define points on the data scale.
+          An array of objects that define stops on the data scale.
 
-          Each point is an object with a type attribute. Types can be 'min', 'max',
+          Each stop is an object with a type attribute. Types can be 'min', 'max',
           'mean', 'Q1' (first quartile), 'median', 'Q3' (third quartile), or
           'value'. Each point can have a color attribute that specifies a color with
           a string (any CSS color specification is allowed, including hex, rgb, and
-          rgba). Each point can have a size attirbute that specifies a reaction
+          rgba). Each stop can have a size attribute that specifies a reaction
           thickness as a number. Finally, points with type 'value' can have a value
-          attribute that specifies an exact number for pont in the scale.
+          attribute that specifies an exact number for the stop in the scale.
 
-          NOTE: If 'min' or 'max' is not provided, Escher automatically adds
-          them. To be completely clear about what you expect to see on the
-          map, it is best to provide 'min' and 'max' in addition to other
-          scale points.
+          NOTE: The scale must have at least 2 stops.
 
           Here are examples of each type:
 
@@ -257,7 +253,7 @@ JavaScript API
               { type: 'median', color: '#f1c470', size: 30 },
               { type: 'max', color: '#800000', size: 40 } ]
 
-          An array of objects that define points on the data scale. See the
+          An array of objects that define stops on the data scale. See the
           description of **options.reaction_scale** for an explanation of the
           format.
 
@@ -308,11 +304,11 @@ JavaScript API
 
        .. js:attribute:: options.enable_tooltips
 
-          (Default: `[`label`]`) Determines the mouseover or touch event required 
-          to show the related tooltip.['label'] will show tooltips upon mouseover 
-          or touch of the reaction or metabolite labels whereas ['object'] will 
-          show the the tooltips over the reaction line segments and metabolite 
-          circles. Can be set as an empty array to disable tooltips or can have 
+          (Default: `[`label`]`) Determines the mouseover or touch event required
+          to show the related tooltip.['label'] will show tooltips upon mouseover
+          or touch of the reaction or metabolite labels whereas ['object'] will
+          show the the tooltips over the reaction line segments and metabolite
+          circles. Can be set as an empty array to disable tooltips or can have
           both options passed in to enable tooltips over both labels and objects.
 
        **Callbacks**

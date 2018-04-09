@@ -938,9 +938,9 @@ function calc_data_stats (type) {
     [ 'min',    _on_array(Math.min) ],
     [ 'max',    _on_array(Math.max) ],
     [ 'mean',   utils.mean ],
-    [ 'q1',     function () { return quartiles[0] } ],
+    [ 'Q1',     function () { return quartiles[0] } ],
     [ 'median', function () { return quartiles[1] } ],
-    [ 'q3',     function () { return quartiles[2] } ],
+    [ 'Q3',     function () { return quartiles[2] } ],
   ]
   funcs.forEach(function (ar) {
     var new_val

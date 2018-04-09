@@ -259,7 +259,7 @@ describe('Map', () => {
     assert.deepEqual(
       map.get_data_statistics(),
       {
-        reaction: { min: 5, median: 7.5, mean: 7.5, q1: 5, q3: 10, max: 10 },
+        reaction: { min: 5, median: 7.5, mean: 7.5, Q1: 5, Q3: 10, max: 10 },
         metabolite: null
       }
     )
@@ -269,8 +269,8 @@ describe('Map', () => {
     map.calc_data_stats('metabolite')
     assert.deepEqual(
       map.get_data_statistics(),
-      { reaction: { min: 5, median: 7.5, mean: 7.5, q1: 5, q3: 10, max: 10 },
-        metabolite: { min: 4, median: 10, mean: 8, q1: 4, q3: 10, max: 10 }
+      { reaction: { min: 5, median: 7.5, mean: 7.5, Q1: 5, Q3: 10, max: 10 },
+        metabolite: { min: 4, median: 10, mean: 8, Q1: 4, Q3: 10, max: 10 }
       }
     )
   })
