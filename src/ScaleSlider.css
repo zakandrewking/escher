@@ -14,12 +14,19 @@
 .escher-container .scaleTrack {
   position: relative;
   display: flex;
-  width: 400px;
   height: 30px;
   margin-bottom: 9px;
-  margin-top: 17px;
+  margin-top: 30px;
   margin-left: 55px;
   font-size: 15px;
+  user-select: none;
+}
+
+.escher-container .scaleTrack.disabled {
+  background: #f1ecfa;
+  color: #b19ec0;
+  padding: 4px 0;
+  justify-content: center;
 }
 
 .escher-container .gradient {

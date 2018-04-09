@@ -1,132 +1,158 @@
 /** @jsx h */
 
-import {h, Component} from 'preact'
+import { h, Component } from 'preact'
+import { select as d3Select, event } from 'd3-selection'
+import { drag as d3Drag } from 'd3-drag'
+
 import './Picker.css'
-import {select as d3Select, event} from 'd3-selection'
-import {drag as d3Drag} from 'd3-drag'
 
 class Picker extends Component {
+  setUpDrag () {
+    // Double check that the drag is not left over from a previous use of this
+    // node.
+    d3Select(this.base).select('.pickerBox').on('mousedown.drag', null)
 
-  componentDidMount () {
-    let xPos = null
-    const drag = d3Drag()
-      .on('drag', () => {
-        if (this.props.id === 'max' || this.props.id === 'min') {
-          console.warn('Min/Max not draggable')
-        } else {
-          if (this.props.id !== undefined && this.props.id !== 'value') {
-            this.props.onChange('type', 'value')
+    if (!this.props.disabled) {
+      const drag = d3Drag()
+        .on('start', () => {
+          if (this.props.focus) this.props.focus()
+        })
+        .on('drag', () => {
+          // If it was not a value slider before, make it one
+          if (this.props.type !== 'value') {
+            if (this.props.onChange) this.props.onChange('type', 'value')
           }
-          if ((this.props.value - this.props.min) / this.props.interval < 0.04) {
-            xPos = 0.04 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
-          } else if ((this.props.value - this.props.min) / this.props.interval > 0.95) {
-            xPos = 0.95 * this.props.interval + this.props.min + event.dx * (this.props.interval / 400)
-          } else {
-            xPos = this.props.value + event.dx * (this.props.interval / 400)
-          }
-          this.props.onChange('value', xPos)
-        }
-      })
-      .container(() => this.base.parentNode.parentNode)
-    d3Select(this.base).select('.pickerBox').call(drag)
+
+          // New location
+          const newValue = (
+            this.props.value + (
+              (event.dx / this.props.trackWidth) *
+              (this.props.max - this.props.min)
+            )
+          )
+
+          // Don't go outside bar
+          const newLimValue = Math.max(
+            this.props.min,
+            Math.min(
+              this.props.max,
+              newValue
+            )
+          )
+
+          this.props.onChange('value', newLimValue)
+        })
+        .container(() => this.base.parentNode.parentNode)
+      d3Select(this.base).select('.pickerBox').call(drag)
+    }
   }
 
-  componentWillUnmount () {
-    console.log('component unmounted')
-    d3Select(this.base).select('.pickerBox').on('mousedown.drag', null)
+  componentDidUpdate () {
+    this.setUpDrag()
+  }
+
+  componentDidMount () {
+    this.setUpDrag()
   }
 
   render () {
     return (
       <div
         className='picker'
-        id={this.props.id}
-        style={!(this.props.id === 'min' || this.props.id === 'max')
-          ? {left: `${this.props.left}%`, zIndex: this.props.zIndex}
-          : {zIndex: this.props.zIndex}
-        }
+        style={{
+          left: `${this.props.location * this.props.trackWidth}px`,
+          zIndex: this.props.zIndex
+        }}
       >
-        <div
-          className='trashDiv'
-          id={this.props.id === 'max' || (this.props.value - this.props.min) / this.props.interval > 0.8
-            ? 'rightOptions'
-            : null
-          }
-          style={(this.props.id === 'min' || this.props.id === 'max')
-            ? {display: 'none'}
-            : {display: 'block'}
-          }
-          >
-          <i
-            className='icon-trash-empty'
-            aria-hidden='true'
-            onClick={() => this.props.remove()}
-          />
-        </div>
+        {this.props.showTrash &&
+          <div className='trashDiv'>
+            <i
+              className='icon-trash-empty'
+              aria-hidden='true'
+              onClick={() => {
+                if (this.props.remove) this.props.remove()
+              }}
+            />
+          </div>
+        }
         <div
           className='pickerBox'
-          id={this.props.id === 'max' || (this.props.value - this.props.min) / this.props.interval > 0.8
-            ? 'rightOptions'
-            : null
-          }
-          onMouseDown={() => this.props.focus()}
+          onClick={() => {
+            if (this.props.focus) this.props.focus()
+          }}
         />
-        <div className='pickerOptions'>
+        <div
+          className={
+            [
+              'pickerOptions',
+              this.props.location > 0.8 ? 'rightOptions' : ''
+            ].join(' ')
+          }
+        >
           <input
             type='text'
             className='option'
-            value={this.props.id
-              ? `${this.props.id} (${parseFloat(this.props.value.toFixed(2))})`
-              : parseFloat(this.props.value.toFixed(2))
+            value={
+              this.props.disabled ? '' : (
+                this.props.type === 'value'
+                ? parseFloat(this.props.value.toFixed(2))
+                : `${this.props.type} (${parseFloat(this.props.value.toFixed(2))})`
+              )
             }
-            disabled={this.props.id}
+            disabled={this.props.disabled}
             onInput={(event) => {
-              this.props.onChange('value', parseFloat(event.target.value))
+              const newVal = parseFloat(event.target.value)
+              if (!isNaN(newVal)) this.props.onChange('value', newVal)
             }}
             onFocus={(event) => {
               event.target.select()
-              this.props.focus()
+              if (this.props.focus) this.props.focus()
             }}
           />
           <select
             className='typePicker'
-            style={this.props.id === 'min' || this.props.id === 'max'
-              ? {display: 'none'}
-              : null
-            }
-            onChange={(event) => this.props.onChange('type', event.target.value)}
+            value={this.props.type}
+            onChange={(event) => {
+              if (this.props.onChange) this.props.onChange('type', event.target.value)
+            }}
+            disabled={this.props.disabled}
+            onFocus={(event) => {
+              if (this.props.focus) this.props.focus()
+            }}
           >
             <option value='value'>Value</option>
+            <option value='min'>Min</option>
             <option value='mean'>Mean</option>
             <option value='Q1'>Q1</option>
             <option value='median'>Median</option>
             <option value='Q3'>Q3</option>
+            <option value='max'>Max</option>
           </select>
           <div className='colorOptions'>
             <input
               type='text'
               className='colorText'
               onInput={(event) => {
-                this.props.onChange('color', event.target.value)
+                if (this.props.onChange) this.props.onChange('color', event.target.value)
               }}
               onFocus={(event) => {
                 event.target.select()
-                this.props.focus()
+                if (this.props.focus) this.props.focus()
               }}
-              value={this.props.color}
+              value={this.props.color || ''}
               disabled={this.props.disabled}
             />
             <input
               type='color'
               className='colorWheel'
               onInput={(event) => {
-                this.props.onChange('color', event.target.value)
+                if (this.props.onChange) this.props.onChange('color', event.target.value)
               }}
               onFocus={(event) => {
                 event.target.select()
-                this.props.focus()
+                if (this.props.focus) this.props.focus()
               }}
-              value={this.props.color}
+              value={this.props.color || ''}
               disabled={this.props.disabled}
             />
           </div>
@@ -134,11 +160,11 @@ class Picker extends Component {
             type='text'
             className='option'
             onInput={(event) => {
-              this.props.onChange('size', parseInt(event.target.value))
+              if (this.props.onChange) this.props.onChange('size', parseInt(event.target.value))
             }}
             onFocus={(event) => {
               event.target.select()
-              this.props.focus()
+              if (this.props.focus) this.props.focus()
             }}
             value={this.props.size}
             disabled={this.props.disabled}

@@ -31,3 +31,4 @@ link-site
 package-lock.json
 node_modules/
 .yarnclean
+.mypy_cache/
