@@ -90,10 +90,21 @@ class Builder {
       full_screen_button: false,
       ignore_bootstrap: false,
       disabled_buttons: null,
-      semanticZoom: [0.3, 1],
-      semanticZoomOptions: [
-        ['hide_all_labels', true, false, null],
-        ['hide_secondary_metabolites', true, false, null]
+      semanticZoom: [
+        {
+          zoomLevel: 0.3,
+          options: {
+            hide_all_labels: true,
+            hide_secondary_metabolites: true
+          }
+        }, 
+        {
+          zoomLevel: 1,
+          options: {
+            hide_all_labels: false,
+            hide_secondary_metabolites: false
+          }
+        }
       ],
       // map, model, and styles
       starting_reaction: null,
@@ -215,23 +226,32 @@ class Builder {
     this.zoom_container.callback_manager.set('zoomChange', function () {
       if (this.options.semanticZoom) {
         const scale = this.zoom_container.window_scale
-        const options = this.options.semanticZoomOptions
-        console.log(this.zoom_container.window_scale)
-        if (scale < 0.3 && !(this.options.hide_all_labels && this.options.hide_secondary_metabolites)) {
-          console.log('scale < 0.3')
-          for (let i = 0; i < options.length; i++) {
-            this.settings.set_conditional(options[i][0], options[i][1])
+        const options = this.options.semanticZoom
+        .sort((a, b) => a.zoomLevel - b.zoomLevel)
+        .find(a => a.zoomLevel > scale)
+        .options
+        Object.entries(options).map(([option, value]) => {
+          if (this.options[option] !== value) {
+            this.settings.set_conditional(option, value)
+            this._update_data(false, true)
           }
-          this._update_data(false, true)
-        } else if (scale > 0.3 && scale < 1 && (this.options.hide_all_labels || this.options.hide_secondary_metabolites)) {
-          console.log('0.3 < scale < 1')
-          for (let i = 0; i < options.length; i++) {
-            this.settings.set_conditional(options[i][0], options[i][2])
-          }
-          this._update_data(false, true)
-        } else if (scale > 1) {
-          console.log('scale > 1')
-        }
+        })
+
+        // if (scale < 0.3 && !(this.options.hide_all_labels && this.options.hide_secondary_metabolites)) {
+        //   console.log('scale < 0.3')
+        //   for (let i = 0; i < options.length; i++) {
+        //     this.settings.set_conditional(options[i][0], options[i][1])
+        //   }
+        //   this._update_data(false, true)
+        // } else if (scale > 0.3 && scale < 1 && (this.options.hide_all_labels || this.options.hide_secondary_metabolites)) {
+        //   console.log('0.3 < scale < 1')
+        //   for (let i = 0; i < options.length; i++) {
+        //     this.settings.set_conditional(options[i][0], options[i][2])
+        //   }
+        //   this._update_data(false, true)
+        // } else if (scale > 1) {
+        //   console.log('scale > 1')
+        // }
       }
     }.bind(this))
 
