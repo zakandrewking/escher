@@ -151,15 +151,19 @@
 }
 
 .escher-container .selectorTitle {
-  background: white;
+  background-color: white;
   border: 1px solid #a9a9a9;
   padding-left: 4px;
   cursor: default;
   width: 162px;
 }
 
-.escher-container .selectorTitle:hover {
+.escher-container .selectorTitle:hover:not(.disabled) {
   border-color: black;
+}
+
+.escher-container .selectorTitle.disabled {
+  background-color: #f1ecfa;
 }
 
 .escher-container .selectorMenu {

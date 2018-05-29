@@ -2,6 +2,7 @@
   top: 35px;
   margin-left: -7px;
   position: absolute;
+  user-select: none;
 }
 
 .escher-container .pickerBox {
@@ -13,23 +14,9 @@
   top: -35px
 }
 
-.escher-container .scaleTrack #min {
-  margin-left: 0;
-  left: -7px;
-}
-
-.escher-container .scaleTrack #max {
-  margin-left: 0;
-  right: -7px;
-}
-
-.escher-container .scaleTrack #rightOptions {
-  margin-left: auto;
-  right: 1px;
-}
-
-.escher-container .trashDiv#rightOptions {
-  margin-right: -4px;
+.escher-container .scaleTrack .rightOptions {
+  position: absolute;
+  left: -76px;
 }
 
 .escher-container .pickerOptions {

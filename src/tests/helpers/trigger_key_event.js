@@ -1,7 +1,7 @@
 /* global global */
 
 // initalize jsdom
-require('./d3_body');
+require('./d3Body');
 var _ = require('underscore');
 
 module.exports = function(key, held, selection) {

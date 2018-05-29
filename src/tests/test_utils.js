@@ -2,7 +2,7 @@
 
 const utils = require('../utils')
 const data_styles = require('../data_styles')
-const d3_body = require('./helpers/d3_body')
+const d3Body = require('./helpers/d3Body')
 
 const describe = require('mocha').describe
 const it = require('mocha').it
@@ -307,7 +307,7 @@ it('utils.random_characters', () => {
 })
 
 it('utils.check_for_parent_tag', () => {
-  const sel = d3_body.append('div')
+  const sel = d3Body.append('div')
   assert.strictEqual(utils.check_for_parent_tag(sel, 'body'), true)
   assert.strictEqual(utils.check_for_parent_tag(sel.node(), 'body'), true)
   assert.strictEqual(utils.check_for_parent_tag(sel, 'BODY'), true)

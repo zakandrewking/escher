@@ -52,7 +52,7 @@
 var utils = require('./utils')
 var Draw = require('./Draw')
 var Behavior = require('./Behavior')
-var Scale = require('./Scale')
+var Scale = require('./Scale').default
 var build = require('./build')
 var UndoStack = require('./UndoStack')
 var CallbackManager = require('./CallbackManager')
@@ -226,14 +226,6 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
     text_labels: -1
   }
 
-  // make the scales
-  this.scale = new Scale()
-  // initialize stats
-  this.calc_data_stats('reaction')
-  this.calc_data_stats('metabolite')
-  this.scale.connect_to_settings(this.settings, this,
-                                 get_data_statistics.bind(this))
-
   // make the undo/redo stack
   this.undo_stack = new UndoStack()
 
@@ -275,10 +267,16 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
   this.beziers = {}
   this.text_labels = {}
 
-  // update data with null to populate data-specific attributes
+  // Update data with null to populate data-specific attributes. Also calculates
+  // data stats for the first time.
   this.apply_reaction_data_to_map(null)
   this.apply_metabolite_data_to_map(null)
   this.apply_gene_data_to_map(null)
+
+  // make the scales
+  this.scale = new Scale()
+  // initialize stats
+  this.scale.connectToSettings(this.settings, this, get_data_statistics.bind(this))
 
   // rotation mode off
   this.rotation_on = false
@@ -809,12 +807,12 @@ function toggle_beziers (on_off) {
  * @param {Array} keys - (Optional) The keys in reactions to apply data to.
  */
 function apply_reaction_data_to_map (data, keys) {
-  var styles = this.settings.get_option('reaction_styles'),
+  const styles = this.settings.get_option('reaction_styles'),
   compare_style = this.settings.get_option('reaction_compare_style')
-  var has_data = data_styles.apply_reaction_data_to_reactions(this.reactions,
-                                                              data, styles,
-                                                              compare_style,
-                                                              keys)
+  const has_data = data_styles.apply_reaction_data_to_reactions(this.reactions,
+                                                                data, styles,
+                                                                compare_style,
+                                                                keys)
   this.has_data_on_reactions = has_data
   this.imported_reaction_data = has_data ? data : null
 
@@ -886,16 +884,15 @@ function calc_data_stats (type) {
   // make the data structure
   if (!('data_statistics' in this)) {
     this.data_statistics = {}
-    this.data_statistics[type] = {}
+    this.data_statistics[type] = null
   } else if (!(type in this.data_statistics)) {
-    this.data_statistics[type] = {}
+    this.data_statistics[type] = null
   }
 
-  var same = true
   // default min and max
-  var vals = []
+  const vals = []
   if (type === 'metabolite') {
-    for (var node_id in this.nodes) {
+    for (let node_id in this.nodes) {
       var node = this.nodes[node_id]
       // check number
       if (_.isUndefined(node.data)) {
@@ -905,7 +902,7 @@ function calc_data_stats (type) {
       }
     }
   } else if (type == 'reaction') {
-    for (var reaction_id in this.reactions) {
+    for (let reaction_id in this.reactions) {
       var reaction = this.reactions[reaction_id]
       // check number
       if (_.isUndefined(reaction.data)) {
@@ -915,6 +912,25 @@ function calc_data_stats (type) {
       }
     }
   }
+
+  // If no vals, then set to null
+  if (vals.length === 0) {
+    const wasNull = this.data_statistics[type] === null
+    this.data_statistics[type] = null
+    if (type === 'reaction') {
+      this.callback_manager.run('calc_data_stats__reaction', null, !wasNull)
+    } else {
+      this.callback_manager.run('calc_data_stats__metabolite', null, !wasNull)
+    }
+    return !wasNull // true means did change which means was not null
+  }
+
+  // If there are vals and it was previously null, then create an object
+  if (this.data_statistics[type] === null) {
+    this.data_statistics[type] = {}
+  }
+
+  let same = true
 
   // calculate these statistics
   var quartiles = utils.quartiles(vals)

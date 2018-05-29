@@ -8,7 +8,7 @@ import ReactWrapper from './ReactWrapper'
 import BuilderSettingsMenu from './BuilderSettingsMenu'
 import ButtonPanel from './ButtonPanel'
 import BuilderMenuBar from './BuilderMenuBar'
-import SearchBar from './SearchBar.js'
+import SearchBar from './SearchBar'
 import * as utils from './utils'
 import BuildInput from './BuildInput'
 import ZoomContainer from './ZoomContainer'
@@ -19,12 +19,12 @@ import CallbackManager from './CallbackManager'
 import Settings from './Settings'
 import TextEditInput from './TextEditInput'
 import QuickJump from './QuickJump'
-import data_styles from './data_styles'
+import dataStyles from './data_styles'
 import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
 import _ from 'underscore'
-import { select as d3_select, selection as d3_selection } from 'd3-selection'
-import { json as d3_json } from 'd3-request'
+import { select as d3Select, selection as d3Selection } from 'd3-selection'
+import { json as d3Json } from 'd3-request'
 
 // Include custom font set for icons
 import '../icons/css/fontello.css'
@@ -40,16 +40,16 @@ class Builder {
   constructor (map_data, model_data, embedded_css, selection, options) {
     // Defaults
     if (!selection) {
-      selection = d3_select('body').append('div')
-    } else if (selection instanceof d3_selection) {
+      selection = d3Select('body').append('div')
+    } else if (selection instanceof d3Selection) {
       // D3 V4 selection
     } else if ('node' in selection) {
       // If user passes in a selection from an different d3 version/instance,
       // then reselect.
-      selection = d3_select(selection.node())
+      selection = d3Select(selection.node())
     } else {
       // HTML Element
-      selection = d3_select(selection)
+      selection = d3Select(selection)
     }
     if (!options) {
       options = {}
@@ -170,6 +170,13 @@ class Builder {
                       'because UI elements are html-based.')
     }
 
+    // Warn if scales are too short
+    ;['reaction_scale', 'metabolite_scale'].map(scaleType => {
+      if (this.options[scaleType] && this.options[scaleType].length < 2) {
+        console.warn(`Bad value for option "${scaleType}". Scales must have at least 2 points.`)
+      }
+    })
+
     // Initialize the settings
     var set_option = function (option, new_value) {
       this.options[option] = new_value
@@ -177,33 +184,32 @@ class Builder {
     var get_option = function (option) {
       return this.options[option]
     }.bind(this)
-    // the options that are erased when the settings menu is canceled
+
+    // The options that are erased when the settings menu is canceled
     var conditional = [
-      'hide_secondary_metabolites', 'show_gene_reaction_rules', 'hide_all_labels', 'scroll_behavior', 'reaction_styles', 'reaction_compare_style',
-      'reaction_scale', 'reaction_no_data_color', 'reaction_no_data_size',
-      'and_method_in_gene_reaction_rule', 'metabolite_styles',
-      'metabolite_compare_style', 'metabolite_scale', 'metabolite_no_data_color',
-      'metabolite_no_data_size', 'identifiers_on_map', 'highlight_missing', 'allow_building_duplicate_reactions', 'enable_tooltips'
+      'identifiers_on_map',
+      'scroll_behavior',
+      'hide_secondary_metabolites',
+      'show_gene_reaction_rules',
+      'hide_all_labels',
+      'allow_building_duplicate_reactions',
+      'highlight_missing',
+      'enable_tooltips',
+      'reaction_scale_preset',
+      'reaction_no_data_color',
+      'reaction_no_data_size',
+      'reaction_scale',
+      'reaction_styles',
+      'reaction_compare_style',
+      'and_method_in_gene_reaction_rule',
+      'metabolite_scale_preset',
+      'metabolite_scale',
+      'metabolite_styles',
+      'metabolite_compare_style',
+      'metabolite_no_data_color',
+      'metabolite_no_data_size'
     ]
     this.settings = new Settings(set_option, get_option, conditional)
-
-    // Check the scales have max and min
-    var scales = [ 'reaction_scale', 'metabolite_scale' ]
-    scales.forEach(function (name) {
-      this.settings.streams[name].onValue(function (val) {
-        var types = [ 'min', 'max' ]
-        types.forEach(function (type) {
-          var has = val.reduce(function (has_found, scale_el) {
-            return has_found || (scale_el.type === type)
-          }, false)
-          if (!has) {
-            val.push({ type: type, color: '#ffffff', size: 10 })
-            this.settings.set_conditional(name, val)
-          }
-        }.bind(this))
-      }.bind(this))
-    }.bind(this))
-    // TODO warn about repeated types in the scale
 
     // Set up this callback manager
     this.callback_manager = CallbackManager()
@@ -264,12 +270,12 @@ class Builder {
     _.defer(() => {
       this.load_map(this.map_data, false)
       const message_fn = this._reaction_check_add_abs()
-      this._update_data(true, true)
+      if (message_fn !== null) {
+        this._update_data(true, true)
+      }
 
       _.mapObject(this.settings.streams, (stream, key) => {
         stream.onValue(value => {
-          // TODO optional if it makes sense:
-          // if (key in keysICareAbout) {
           this.pass_settings_menu_props({
             ...this.options,
             map: this.map,
@@ -278,7 +284,6 @@ class Builder {
           if (key === 'reaction_styles' || key === 'metabolite_styles') {
             this._update_data(false, true)
           }
-          // }
         })
       })
 
@@ -414,20 +419,21 @@ class Builder {
     this._setup_modes(this.map, this.brush, this.zoom_container)
 
     // Set up settings menu
+    preact.render(
+      <ReactWrapper
+        display={false}
+        callbackManager={this.callback_manager}
+        component={BuilderSettingsMenu}
+        refProp={instance => { this.settingsMenuRef = instance }}
+        closeMenu={() => this.pass_settings_menu_props({display: false})}
+      />,
+      this.settings_div.node(),
+      this.settings_div.node().children.length > 0
+      ? this.settings_div.node().firstChild
+      : undefined
+    )
+
     if (this.options.enable_search) {
-      preact.render(
-        <ReactWrapper
-          display={false}
-          callbackManager={this.callback_manager}
-          component={BuilderSettingsMenu}
-          refProp={instance => { this.settingsMenuRef = instance }}
-          closeMenu={() => this.pass_settings_menu_props({display: false})}
-        />,
-        this.settings_div.node(),
-        this.settings_div.node().children.length > 0
-        ? this.settings_div.node().firstChild
-        : undefined
-      )
       this.renderSearchBar(true)
     }
 
@@ -660,7 +666,6 @@ class Builder {
   }
 
   brush_mode () {
-    console.log('pressed')
     /** For documentation of this function, see docs/javascript_api.rst.  */
     this.callback_manager.run('brush_mode')
     this._set_mode('brush')
@@ -685,8 +690,8 @@ class Builder {
   }
 
   _reaction_check_add_abs () {
-    var curr_style = this.options.reaction_styles
-    var did_abs = false
+    const curr_style = this.options.reaction_styles
+    const did_abs = false
     if (this.options.reaction_data !== null &&
         !this.has_custom_reaction_styles &&
         !_.contains(curr_style, 'abs')) {
@@ -724,8 +729,8 @@ class Builder {
   set_reaction_data (data) {
     this.options.reaction_data = data
     var message_fn = this._reaction_check_add_abs()
-    this._update_data(true, true, 'reaction')
-    if (message_fn) {
+    if (message_fn !== null) {
+      this._update_data(true, true, 'reaction')
       message_fn()
     } else {
       this.map.set_status('')
@@ -805,7 +810,7 @@ class Builder {
 
     // metabolite data
     if (update_metabolite_data && update_map && this.map !== null) {
-      met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+      met_data_object = dataStyles.import_and_check(this.options.metabolite_data,
                                                      'metabolite_data')
       this.map.apply_metabolite_data_to_map(met_data_object)
       if (should_draw) {
@@ -816,7 +821,7 @@ class Builder {
     // reaction data
     if (update_reaction_data) {
       if (this.options.reaction_data !== null && update_map && this.map !== null) {
-        reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+        reaction_data_object = dataStyles.import_and_check(this.options.reaction_data,
                                                             'reaction_data')
         this.map.apply_reaction_data_to_map(reaction_data_object)
         if (should_draw) {
@@ -855,7 +860,7 @@ class Builder {
       if (update_metabolite_data && update_model && this.cobra_model !== null) {
         // if we haven't already made this
         if (!met_data_object) {
-          met_data_object = data_styles.import_and_check(this.options.metabolite_data,
+          met_data_object = dataStyles.import_and_check(this.options.metabolite_data,
                                                          'metabolite_data')
         }
         this.cobra_model.apply_metabolite_data(met_data_object,
@@ -868,7 +873,7 @@ class Builder {
         if (this.options.reaction_data !== null && update_model && this.cobra_model !== null) {
           // if we haven't already made this
           if (!reaction_data_object) {
-            reaction_data_object = data_styles.import_and_check(this.options.reaction_data,
+            reaction_data_object = dataStyles.import_and_check(this.options.reaction_data,
                                                                 'reaction_data')
           }
           this.cobra_model.apply_reaction_data(reaction_data_object,
@@ -909,7 +914,7 @@ class Builder {
       }
 
       // this object has reaction keys and values containing associated genes
-      return data_styles.import_and_check(gene_data, 'gene_data', all_reactions)
+      return dataStyles.import_and_check(gene_data, 'gene_data', all_reactions)
     }
   }
 
@@ -933,7 +938,7 @@ class Builder {
       }
       this.map.set_status('Loading map ' + new_map_name + ' ...')
       var url = utils.name_to_url(new_map_name, quick_jump_path)
-      d3_json(url, function (error, data) {
+      d3Json(url, function (error, data) {
         if (error) {
           console.warn('Could not load data: ' + error)
           this.map.set_status('Could not load map', 2000)

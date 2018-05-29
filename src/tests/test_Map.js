@@ -7,7 +7,7 @@ const it = require('mocha').it
 const beforeEach = require('mocha').beforeEach
 const assert = require('chai').assert
 
-const d3_body = require('./helpers/d3_body')
+const d3Body = require('./helpers/d3Body')
 const get_map = require('./helpers/get_map')
 
 const _ = require('underscore')
@@ -29,7 +29,7 @@ describe('Map', () => {
 
   beforeEach(() => {
     // set up map
-    svg = d3_body.append('svg')
+    svg = d3Body.append('svg')
     const sel = svg.append('g')
     // streams are required for these options
     const required_options = { reaction_scale: [],
@@ -57,7 +57,7 @@ describe('Map', () => {
   it('def is the first element in the svg', () => {
     // this fixes a bug with export SVG files to certain programs,
     // e.g. Inkscape for Windows
-    const defs_node = d3_body.select('defs').node()
+    const defs_node = d3Body.select('defs').node()
     assert.strictEqual(defs_node.parentNode.firstChild, defs_node)
   })
 
@@ -253,59 +253,42 @@ describe('Map', () => {
   })
 
   it('get_data_statistics accepts numbers or strings as floats; ignores empty strings and nulls', () => {
-    const data_reactions = { PGI: [10], GAPD: ['5'], TPI: [''], PGK: [null] }
-    map.apply_reaction_data_to_map(data_reactions)
+    const dataReactions = { PGI: [10], GAPD: ['5'], TPI: [''], PGK: [null] }
+    map.apply_reaction_data_to_map(dataReactions)
     map.calc_data_stats('reaction')
-    assert.deepEqual(map.get_data_statistics(),
-                     { reaction: { min: 5, median: 7.5, mean: 7.5,
-                                   Q1: 5, Q3: 10, max: 10 },
-                       metabolite: { min: null, median: null, mean: null,
-                                     Q1: null, Q3: null, max: null } })
+    assert.deepEqual(
+      map.get_data_statistics(),
+      {
+        reaction: { min: 5, median: 7.5, mean: 7.5, Q1: 5, Q3: 10, max: 10 },
+        metabolite: null
+      }
+    )
     // metabolites
-    const data_metabolites = { g3p_c: [10], fdp_c: ['4'] }
-    map.apply_metabolite_data_to_map(data_metabolites)
+    const dataMetabolites = { g3p_c: [10], fdp_c: ['4'] }
+    map.apply_metabolite_data_to_map(dataMetabolites)
     map.calc_data_stats('metabolite')
-    assert.deepEqual(map.get_data_statistics(),
-                     { reaction: { min: 5, median: 7.5, mean: 7.5,
-                                   Q1: 5, Q3: 10, max: 10 },
-                       metabolite: { min: 4, median: 10, mean: 8,
-                                     Q1: 4, Q3: 10, max: 10 } })
+    assert.deepEqual(
+      map.get_data_statistics(),
+      { reaction: { min: 5, median: 7.5, mean: 7.5, Q1: 5, Q3: 10, max: 10 },
+        metabolite: { min: 4, median: 10, mean: 8, Q1: 4, Q3: 10, max: 10 }
+      }
+    )
   })
 
   it('get_data_statistics uses defaults for no data -- reactions', () => {
-    assert.deepEqual(map.get_data_statistics(), {
-      reaction: { min: null, median: null, mean: null,
-                  Q1: null, Q3: null, max: null },
-      metabolite: { min: null, median: null, mean: null,
-                    Q1: null, Q3: null, max: null }
-    })
-    const data_reactions = {}
-    map.apply_reaction_data_to_map(data_reactions)
+    assert.deepEqual(map.get_data_statistics(), { reaction: null, metabolite: null })
+    const dataReactions = {}
+    map.apply_reaction_data_to_map(dataReactions)
     map.calc_data_stats('reaction')
-    assert.deepEqual(map.get_data_statistics(), {
-      reaction: { min: null, median: null, mean: null,
-                  Q1: null, Q3: null, max: null },
-      metabolite: { min: null, median: null, mean: null,
-                    Q1: null, Q3: null, max: null }
-    })
+    assert.deepEqual(map.get_data_statistics(), { reaction: null, metabolite: null })
   })
 
   it('get_data_statistics uses defaults for no data', () => {
-    assert.deepEqual(map.get_data_statistics(), {
-      reaction: { min: null, median: null, mean: null,
-                  Q1: null, Q3: null, max: null },
-      metabolite: { min: null, median: null, mean: null,
-                    Q1: null, Q3: null, max: null }
-    })
-    const data_metabolites = {}
-    map.apply_metabolite_data_to_map(data_metabolites)
+    assert.deepEqual(map.get_data_statistics(), { reaction: null, metabolite: null })
+    const dataMetabolites = {}
+    map.apply_metabolite_data_to_map(dataMetabolites)
     map.calc_data_stats('metabolite')
-    assert.deepEqual(map.get_data_statistics(), {
-      reaction: { min: null, median: null, mean: null,
-                  Q1: null, Q3: null, max: null },
-      metabolite: { min: null, median: null, mean: null,
-                    Q1: null, Q3: null, max: null }
-    })
+    assert.deepEqual(map.get_data_statistics(), { reaction: null, metabolite: null })
   })
 
   it('map_for_export removes unnecessary attributes', () => {

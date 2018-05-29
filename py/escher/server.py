@@ -4,9 +4,8 @@ from __future__ import print_function, unicode_literals
 
 from escher.plots import (Builder, local_index, model_json_for_name,
                           map_json_for_name)
-from escher.urls import get_url
-from escher.urls import root_directory
-from escher.escape import json_dump_and_escape, escape_json_or_null
+from escher.urls import get_url, root_directory
+from escher.util import b64dump
 
 import os, subprocess
 from os.path import join
@@ -93,8 +92,8 @@ class IndexHandler(BaseHandler):
                                github_releases=get_url('github_releases'),
                                homepage_js=get_url('homepage_js', 'local'),
                                map_download_url=get_url('map_download', 'local'),
-                               server_index_json=escape_json_or_null(server_index_json),
-                               local_index_json=json_dump_and_escape(index),
+                               server_index_json=b64dump(server_index_json),
+                               local_index_json=b64dump(index),
                                version=__version__,
                                web_version=False)
 

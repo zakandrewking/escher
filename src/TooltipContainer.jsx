@@ -2,7 +2,7 @@
 import preact, { h } from 'preact'
 import CallbackManager from './CallbackManager'
 import ReactWrapper from './ReactWrapper'
-import * as _ from 'underscore'
+import _ from 'underscore'
 import * as utils from './utils'
 const PlacedDiv = require('./PlacedDiv')
 
