@@ -226,32 +226,17 @@ class Builder {
     this.zoom_container.callback_manager.set('zoomChange', function () {
       if (this.options.semanticZoom) {
         const scale = this.zoom_container.window_scale
-        const options = this.options.semanticZoom
+        const optionObject = this.options.semanticZoom
         .sort((a, b) => a.zoomLevel - b.zoomLevel)
         .find(a => a.zoomLevel > scale)
-        .options
-        Object.entries(options).map(([option, value]) => {
-          if (this.options[option] !== value) {
-            this.settings.set_conditional(option, value)
-            this._update_data(false, true)
-          }
-        })
-
-        // if (scale < 0.3 && !(this.options.hide_all_labels && this.options.hide_secondary_metabolites)) {
-        //   console.log('scale < 0.3')
-        //   for (let i = 0; i < options.length; i++) {
-        //     this.settings.set_conditional(options[i][0], options[i][1])
-        //   }
-        //   this._update_data(false, true)
-        // } else if (scale > 0.3 && scale < 1 && (this.options.hide_all_labels || this.options.hide_secondary_metabolites)) {
-        //   console.log('0.3 < scale < 1')
-        //   for (let i = 0; i < options.length; i++) {
-        //     this.settings.set_conditional(options[i][0], options[i][2])
-        //   }
-        //   this._update_data(false, true)
-        // } else if (scale > 1) {
-        //   console.log('scale > 1')
-        // }
+        if (optionObject) {
+          Object.entries(optionObject.options).map(([option, value]) => {
+            if (this.options[option] !== value) {
+              this.settings.set_conditional(option, value)
+              this._update_data(false, true)
+            }
+          })
+        }
       }
     }.bind(this))
 
