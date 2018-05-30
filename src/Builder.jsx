@@ -68,6 +68,7 @@ class Builder {
     this.settingsMenuRef = null
     this.search_bar_div = null
     this.searchBarRef = null
+    this.semanticOptions = null
 
     // apply this object as data for the selection
     this.selection.datum(this)
@@ -350,6 +351,19 @@ class Builder {
       should_update_data = true
     }
 
+    // Store map options that might be changed by semanticZoom function
+    const tempSemanticOptions = {}
+    if (this.options.semanticZoom) {
+      for (let level of this.options.semanticZoom) {
+        Object.keys(level.options).map(option => {
+          if (tempSemanticOptions[option] === undefined) {
+            tempSemanticOptions[option] = this.options[option]
+          }
+        })
+      }
+      this.semanticOptions = Object.assign({}, tempSemanticOptions)
+    }
+
     // Begin with some definitions
     var selectable_mousedown_enabled = true
     var shift_key_on = false
@@ -529,7 +543,16 @@ class Builder {
           {...this.map}
           mode={mode}
           settings={this.settings}
-          saveMap={() => this.map.save()}
+          saveMap={() => {
+            if (this.semanticOptions) {
+              Object.entries(this.semanticOptions).map(([key, value]) => {
+                this.settings.set_conditional(key, value)
+              })
+              this._update_data()
+            }
+            console.log(this.options.hide_all_labels)
+            this.map.save()
+          }}
           loadMap={(file) => this.load_map(file)}
           saveSvg={() => this.map.save_svg()}
           savePng={() => this.map.save_png()}
