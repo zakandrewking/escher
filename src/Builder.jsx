@@ -91,22 +91,7 @@ class Builder {
       full_screen_button: false,
       ignore_bootstrap: false,
       disabled_buttons: null,
-      semanticZoom: [
-        {
-          zoomLevel: 0.3,
-          options: {
-            hide_all_labels: true,
-            hide_secondary_metabolites: true
-          }
-        }, 
-        {
-          zoomLevel: 1,
-          options: {
-            hide_all_labels: false,
-            hide_secondary_metabolites: false
-          }
-        }
-      ],
+      semantic_zoom: null,
       // map, model, and styles
       starting_reaction: null,
       never_ask_before_quit: false,
@@ -231,9 +216,9 @@ class Builder {
       if (this.map) this.map.set_status('')
     }.bind(this))
     this.zoom_container.callback_manager.set('zoomChange', function () {
-      if (this.options.semanticZoom) {
+      if (this.options.semantic_zoom) {
         const scale = this.zoom_container.window_scale
-        const optionObject = this.options.semanticZoom
+        const optionObject = this.options.semantic_zoom
         .sort((a, b) => a.zoomLevel - b.zoomLevel)
         .find(a => a.zoomLevel > scale)
         if (optionObject) {
@@ -351,10 +336,10 @@ class Builder {
       should_update_data = true
     }
 
-    // Store map options that might be changed by semanticZoom function
+    // Store map options that might be changed by semantic_zoom function
     const tempSemanticOptions = {}
-    if (this.options.semanticZoom) {
-      for (let level of this.options.semanticZoom) {
+    if (this.options.semantic_zoom) {
+      for (let level of this.options.semantic_zoom) {
         Object.keys(level.options).map(option => {
           if (tempSemanticOptions[option] === undefined) {
             tempSemanticOptions[option] = this.options[option]
@@ -544,13 +529,13 @@ class Builder {
           mode={mode}
           settings={this.settings}
           saveMap={() => {
+            // Revert options changed by semanticZoom to their original values if option is active
             if (this.semanticOptions) {
               Object.entries(this.semanticOptions).map(([key, value]) => {
                 this.settings.set_conditional(key, value)
               })
               this._update_data()
             }
-            console.log(this.options.hide_all_labels)
             this.map.save()
           }}
           loadMap={(file) => this.load_map(file)}
