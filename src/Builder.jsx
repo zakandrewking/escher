@@ -68,6 +68,7 @@ class Builder {
     this.settingsMenuRef = null
     this.search_bar_div = null
     this.searchBarRef = null
+    this.semanticOptions = null
 
     // apply this object as data for the selection
     this.selection.datum(this)
@@ -90,6 +91,7 @@ class Builder {
       full_screen_button: false,
       ignore_bootstrap: false,
       disabled_buttons: null,
+      semantic_zoom: null,
       // map, model, and styles
       starting_reaction: null,
       never_ask_before_quit: false,
@@ -213,6 +215,22 @@ class Builder {
     this.zoom_container.callback_manager.set('svg_finish', function () {
       if (this.map) this.map.set_status('')
     }.bind(this))
+    this.zoom_container.callback_manager.set('zoomChange', function () {
+      if (this.options.semantic_zoom) {
+        const scale = this.zoom_container.window_scale
+        const optionObject = this.options.semantic_zoom
+        .sort((a, b) => a.zoomLevel - b.zoomLevel)
+        .find(a => a.zoomLevel > scale)
+        if (optionObject) {
+          Object.entries(optionObject.options).map(([option, value]) => {
+            if (this.options[option] !== value) {
+              this.settings.set_conditional(option, value)
+              this._update_data(false, true)
+            }
+          })
+        }
+      }
+    }.bind(this))
 
     // Set up the tooltip container
     this.tooltip_container = new TooltipContainer(this.selection,
@@ -316,6 +334,19 @@ class Builder {
   load_map (map_data, should_update_data) {
     if (_.isUndefined(should_update_data)) {
       should_update_data = true
+    }
+
+    // Store map options that might be changed by semantic_zoom function
+    const tempSemanticOptions = {}
+    if (this.options.semantic_zoom) {
+      for (let level of this.options.semantic_zoom) {
+        Object.keys(level.options).map(option => {
+          if (tempSemanticOptions[option] === undefined) {
+            tempSemanticOptions[option] = this.options[option]
+          }
+        })
+      }
+      this.semanticOptions = Object.assign({}, tempSemanticOptions)
     }
 
     // Begin with some definitions
@@ -497,7 +528,16 @@ class Builder {
           {...this.map}
           mode={mode}
           settings={this.settings}
-          saveMap={() => this.map.save()}
+          saveMap={() => {
+            // Revert options changed by semanticZoom to their original values if option is active
+            if (this.semanticOptions) {
+              Object.entries(this.semanticOptions).map(([key, value]) => {
+                this.settings.set_conditional(key, value)
+              })
+              this._update_data()
+            }
+            this.map.save()
+          }}
           loadMap={(file) => this.load_map(file)}
           saveSvg={() => this.map.save_svg()}
           savePng={() => this.map.save_png()}
