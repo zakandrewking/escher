@@ -1,6 +1,7 @@
 /**
  * TimeSeriesBar
- *
+ * NOTE: this is the version used in my bachelor thesis and no longer used.
+ * It has been replaced with the TmimeSeriesBarPreact class
  */
 
 var utils = require('./utils')

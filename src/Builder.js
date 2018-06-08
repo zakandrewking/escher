@@ -1457,10 +1457,10 @@ class Builder {
  */
 
   set_data_indices(type_of_data, ref, tar){
-    this.reference = ref
+    this.reference = parseInt(ref)
 
     // TODO: was null before, but this way I loose the target index when I only set ref?
-    this.target = tar || this.target
+    this.target = parseInt(tar) || this.target
 
     if(type_of_data === 'gene'){
       type_of_data = 'reaction'
