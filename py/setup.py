@@ -94,9 +94,21 @@ setup(
         'Operating System :: OS Independent'
     ],
     packages=find_packages(),
-    package_data={'escher': ['package.json', 'static/escher/*', 'static/fonts/*',
-                             'static/jsonschema/*', 'static/homepage/*',
-                             'static/img/*', 'static/lib/*', 'templates/*']},
+    include_package_data=True,
+    data_files=[
+        (
+            'share/jupyter/nbextensions/jupyter-escher',
+            [
+                'escher/static/extension.js',
+                'escher/static/escher.js',
+                'escher/static/escher.js.map',
+            ]
+        ),
+        (
+            'etc/jupyter/nbconfig/notebook.d',
+            ['jupyter-escher.json'],
+        )
+    ],
     install_requires=[
         'Jinja2>=2.7.3',
         'tornado>=4.0.2',

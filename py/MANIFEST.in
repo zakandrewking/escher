@@ -1,0 +1,2 @@
+recursive-include escher/static *.*
+include jupyter-escher.json
