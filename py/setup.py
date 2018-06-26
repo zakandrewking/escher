@@ -11,13 +11,7 @@ from os.path import join, dirname, realpath, exists
 from glob import glob
 import re
 
-try:
-    from setuptools import setup, Command
-    from setuptools.command.sdist import sdist as SDistCommand
-    from setuptools.command.bdist import bdist as BDistCommand
-    from setuptools.command.upload import upload as UploadCommand
-except ImportError:
-    from distutils.core import setup, Command
+from setuptools import setup, find_packages, Command
 
 directory = dirname(realpath(__file__))
 sys.path.insert(0, join(directory, 'escher'))
@@ -99,7 +93,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Operating System :: OS Independent'
     ],
-    packages=['escher'],
+    packages=find_packages(),
     package_data={'escher': ['package.json', 'static/escher/*', 'static/fonts/*',
                              'static/jsonschema/*', 'static/homepage/*',
                              'static/img/*', 'static/lib/*', 'templates/*']},
