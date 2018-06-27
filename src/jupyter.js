@@ -3,15 +3,15 @@
 import { default as Builder } from './Builder'
 import { select as d3Select } from 'd3-selection'
 
-import { DOMWidgetView, DOMWidgetModel } from '@jupyter-widgets/base'
-
 const version = ESCHER_VERSION
 
 /**
  * @jupyter-widgets/base is optional, so only initialize if it's called
  */
 export default function initializeJupyterWidget () {
-  class EscherMapModel extends DOMWidgetModel {
+  const base = require('@jupyter-widgets/base')
+
+  class EscherMapModel extends base.DOMWidgetModel {
     constructor () {
       super()
       this._model_name = 'EscherMapModel'
@@ -24,7 +24,7 @@ export default function initializeJupyterWidget () {
     }
   }
 
-  class EscherMapView extends DOMWidgetView {
+  class EscherMapView extends base.DOMWidgetView {
     render () {
       Builder(null, null, null, d3Select(this.el), {})
     }
