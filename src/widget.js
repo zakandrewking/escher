@@ -2,6 +2,7 @@
 
 import { default as Builder } from './Builder'
 import { select as d3Select } from 'd3-selection'
+import _ from 'underscore'
 
 const version = ESCHER_VERSION
 
@@ -11,25 +12,25 @@ const version = ESCHER_VERSION
 export default function initializeJupyterWidget () {
   const base = require('@jupyter-widgets/base')
 
-  class EscherMapModel extends base.DOMWidgetModel {
-    constructor () {
-      super()
-      this._model_name = 'EscherMapModel'
-      this._view_name = 'EscherMapView'
-      this._model_module = 'escher'
-      this._view_module = 'escher'
-      this._model_module_version = version
-      this._view_module_version = version
-      this.value = 'Hello World'
-      this.height = 600
+  class EscherMapView extends base.DOMWidgetView {
+    render () {
+      const sel = d3Select(this.el).append('div')
+      sel.style('height', `${this.model.get('height')}px`)
+      Builder(null, null, null, sel, {})
     }
   }
 
-  class EscherMapView extends base.DOMWidgetView {
-    render () {
-      console.log(this.model)
-      this.el.style.height = `${this.model.get('height')}px`
-      Builder(null, null, null, d3Select(this.el), {})
+  class EscherMapModel extends base.DOMWidgetModel {
+    defaults () {
+      return _.extend(super.defaults(), {
+        _model_name: 'EscherMapModel',
+        _view_name: 'EscherMapView',
+        _model_module: 'escher',
+        _view_module: 'escher',
+        _model_module_version: version,
+        _view_module_version: version,
+        height: 500
+      })
     }
   }
 
