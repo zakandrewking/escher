@@ -21,11 +21,14 @@ export default function initializeJupyterWidget () {
       this._model_module_version = version
       this._view_module_version = version
       this.value = 'Hello World'
+      this.height = 600
     }
   }
 
   class EscherMapView extends base.DOMWidgetView {
     render () {
+      console.log(this.model)
+      this.el.style.height = `${this.model.get('height')}px`
       Builder(null, null, null, d3Select(this.el), {})
     }
   }

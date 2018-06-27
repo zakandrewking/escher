@@ -10,5 +10,5 @@ from traitlets import Unicode, validate
 
 class EscherWidget(widgets.DOMWidget):
     _view_name = Unicode('EscherMapView').tag(sync=True)
-    _view_module = Unicode('escher').tag(sync=True)
+    _view_module = Unicode('jupyter-escher').tag(sync=True)
     _view_module_version = Unicode(__version__).tag(sync=True)
