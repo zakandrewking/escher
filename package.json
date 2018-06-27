@@ -76,7 +76,7 @@
     "start": "./node_modules/.bin/webpack-dev-server --config webpack.dev.js",
     "clean": "rm -r dist/*",
     "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.test.js \"src/tests/*.js\"",
-    "copy": "cp package.json py/escher/ && cp dist/* py/escher/static/escher/ && cp jsonschema/* py/escher/static/jsonschema/",
+    "copy": "cp package.json py/escher/static/ && cp jupyter/notebook-extension.js py/escher/static/ && cp dist/escher.min.* py/escher/static/ && cp jsonschema/* py/escher/static/",
     "coverage": "./node_modules/.bin/cross-env NODE_ENV=coverage ./node_modules/.bin/nyc --reporter=text-lcov npm run test | ./node_modules/.bin/coveralls"
   },
   "nyc": {
