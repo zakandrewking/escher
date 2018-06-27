@@ -56,7 +56,7 @@ export { default as escherStatic } from './static'
 export { default as ZoomContainer } from './ZoomContainer'
 
 // Jupyter extension
-export { default as initializeJupyterWidget } from './jupyter'
+export { default as initializeJupyterWidget } from './widget'
 
 export const libs = {
   _: underscore,

@@ -99,7 +99,7 @@ setup(
         (
             'share/jupyter/nbextensions/jupyter-escher',
             [
-                'escher/static/notebook-extension.js',
+                'escher/static/extension.js',
                 'escher/static/escher.min.js',
                 'escher/static/escher.min.js.map',
             ]
