@@ -19,5 +19,6 @@ module.exports = merge.smart(common, {
       include: /\.min\.js$/,
       sourceMap: true
     })
-  ]
+  ],
+  externals: ['@jupyter-widgets/base']
 })

@@ -53,6 +53,7 @@
     "webpack-node-externals": "^1.6.0"
   },
   "dependencies": {
+    "@jupyter-widgets/base": "^1.1.10",
     "baconjs": "^0.7.71",
     "d3-brush": "https://github.com/zakandrewking/d3-brush.git",
     "d3-drag": "^1.0.2",
@@ -83,5 +84,8 @@
     ],
     "instrument": false,
     "sourceMap": false
+  },
+  "jupyterlab": {
+    "extension": "jupyter/lab-extension.js"
   }
 }
