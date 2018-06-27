@@ -19,7 +19,8 @@
   "repository": "https://github.com/zakandrewking/escher",
   "bugs": "https://github.com/zakandrewking/escher/issues",
   "files": [
-    "dist/*"
+    "dist/*",
+    "jupyter/*"
   ],
   "main": "/dist/escher.js",
   "engines": {
@@ -86,6 +87,6 @@
     "sourceMap": false
   },
   "jupyterlab": {
-    "extension": "jupyter/lab-extension.js"
+    "extension": "jupyter/lab-extension"
   }
 }
