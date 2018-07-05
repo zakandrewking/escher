@@ -48,7 +48,7 @@ class TimeSeriesBar extends Component {
 
     let currentDataSet = this.get_current_data_set(builder)
 
-    if (currentDataSet !== null) {
+    if (currentDataSet) {
       // update display
       let current = 0
 
@@ -64,9 +64,9 @@ class TimeSeriesBar extends Component {
       document.getElementById('dropDownMenuReference').options.length = 0
       document.getElementById('dropDownMenuTarget').options.length = 0
 
-      for (var x in currentDataSet) {
+      for (let x in currentDataSet) {
 
-        var name_of_current_data_set = x
+        let name_of_current_data_set = x
 
         if (builder.type_of_data === 'reaction') {
           name_of_current_data_set = builder.reaction_data_names[x]
@@ -114,9 +114,9 @@ class TimeSeriesBar extends Component {
 
   openTab (builder) {
 
-    var tabs = document.getElementsByClassName('tab')
+    let tabs = document.getElementsByClassName('tab')
 
-    for (var i = 0; i < tabs.length; i++) {
+    for (let i = 0; i < tabs.length; i++) {
       tabs[i].style.display = 'none'
     }
 
@@ -132,9 +132,9 @@ class TimeSeriesBar extends Component {
 
   }
 
-  deactivateUserInterface(disabled){
+  static deactivateTimeSeriesControls(disabled){
 
-    if (disabled === true) {
+    if (disabled) {
 
       d3_select('#reaction_tab_button').attr('disabled', 'true')
       d3_select('#metabolite_tab_button').attr('disabled', 'true')
@@ -160,13 +160,14 @@ class TimeSeriesBar extends Component {
 
   }
 
-  play_time_series (builder, map, duration, sliding_window) {
+  play_time_series (builder, duration, sliding_window) {
 
-    map = builder.map
+    let b = builder.builder
+    let map = builder.map
 
 
     if (!this.state.playing) {
-      this.deactivateUserInterface(true)
+      TimeSeriesBar.deactivateTimeSeriesControls(true)
       this.state.playing = true
 
       let sliding_window_start = parseInt(builder.builder.reference)
@@ -196,39 +197,39 @@ class TimeSeriesBar extends Component {
       /*
 
        */
-      function play (builder, sliding_window) {
+      function playAnimation (builder, sliding_window) {
 
         if (sliding_window) {
 
           if (tick === array_of_time_points[time_point]) {
 
-            if (parseInt(builder.builder.target) < parseInt(end)) {
+            if (parseInt(b.target) < parseInt(end)) {
 
-              builder.builder.reference = parseInt(builder.builder.reference) + 1
-              builder.builder.target = parseInt(builder.builder.reference) + sliding_window_size
+              b.reference = b.reference + 1
+              b.target = b.reference + sliding_window_size
 
-              d3_select('#sliderReference').property('value', builder.builder.reference)
-              d3_select('#dropDownMenuReference').property('selectedIndex', builder.builder.reference)
-              d3_select('#sliderTarget').property('value', builder.builder.target)
-              d3_select('#dropDownMenuTarget').property('selectedIndex', builder.builder.target)
+              d3_select('#sliderReference').property('value', b.reference)
+              d3_select('#dropDownMenuReference').property('selectedIndex', b.reference)
+              d3_select('#sliderTarget').property('value', b.target)
+              d3_select('#dropDownMenuTarget').property('selectedIndex', b.target)
 
               time_point++
               tick++
 
             } else { // play as loop
-              builder.builder.reference = sliding_window_start
-              builder.builder.target = sliding_window_start + sliding_window_size
+              b.reference = sliding_window_start
+              b.target = sliding_window_start + sliding_window_size
 
               time_point = start
               tick = array_of_time_points[start]
 
-              d3_select('#sliderReference').property('value', builder.builder.reference)
-              d3_select('#dropDownMenuReference').property('selectedIndex', builder.builder.reference)
-              d3_select('#sliderTarget').property('value', builder.builder.target)
-              d3_select('#dropDownMenuTarget').property('selectedIndex', builder.builder.target)
+              d3_select('#sliderReference').property('value', b.reference)
+              d3_select('#dropDownMenuReference').property('selectedIndex', b.reference)
+              d3_select('#sliderTarget').property('value', b.target)
+              d3_select('#dropDownMenuTarget').property('selectedIndex', b.target)
             }
 
-            builder.builder.set_data_indices(builder.type_of_data, builder.reference, builder.target)
+            b.set_data_indices(builder.type_of_data, builder.reference, builder.target)
 
           } else {
 
@@ -240,8 +241,8 @@ class TimeSeriesBar extends Component {
               d3_select('#sliderTarget').property('value', start + sliding_window_size)
               d3_select('#dropDownMenuTarget').property('selectedIndex', start + sliding_window_size)
 
-              builder.builder.reference = sliding_window_start
-              builder.builder.target = sliding_window_start + sliding_window_size
+              b.reference = sliding_window_start
+              b = sliding_window_start + sliding_window_size
 
             } else {
               tick++
@@ -254,27 +255,29 @@ class TimeSeriesBar extends Component {
             }
           }
 
-        } else if (builder.builder.difference_mode) {
+        }
+
+        if (b.difference_mode) {
 
           if (tick === array_of_time_points[time_point]) {
 
             // reference is static, next goes from reference + 1 to end
-            builder.builder.set_data_indices(builder.builder.type_of_data, builder.builder.reference, builder.builder.target)
+            b.set_data_indices(b.type_of_data, b.reference, b.target)
 
-            let next = builder.builder.target
+            let next = b.target
 
             d3_select('#sliderTarget').property('value', next)
             d3_select('#dropDownMenuTarget').property('selectedIndex', next)
 
-            if (parseInt(builder.builder.target) < end) {
+            if (parseInt(b.target) < end) {
               next++
-              builder.builder.target = next
+              b.target = next
 
               time_point++
               tick++
 
             } else { // play as loop
-              builder.builder.target = start
+              b.target = start
 
               time_point = start
               tick = array_of_time_points[start]
@@ -289,8 +292,8 @@ class TimeSeriesBar extends Component {
 
             } else {
               tick++
-              d3_select('#sliderTarget').property('value', builder.builder.target)
-              d3_select('#dropDownMenuTarget').property('selectedIndex', builder.builder.target)
+              d3_select('#sliderTarget').property('value', b.target)
+              d3_select('#dropDownMenuTarget').property('selectedIndex', b.target)
 
             }
           }
@@ -298,25 +301,25 @@ class TimeSeriesBar extends Component {
           // TODO: handle interpolated data with non-linear time scale: set duration to next tick
           if (tick === array_of_time_points[time_point]) {
 
-            builder.builder.set_data_indices(builder.builder.type_of_data, builder.builder.reference, sliding_window_end)
+            b.set_data_indices(b.type_of_data, b.reference, sliding_window_end)
 
-            if (parseInt(builder.builder.reference) < end) {
-              let next = builder.builder.reference
+            if (parseInt(b.reference) < end) {
+              let next = b.reference
               next++
-              builder.builder.reference = next
+              b.reference = next
 
               time_point++
               tick++
 
             } else { // play as loop
-              builder.builder.reference = sliding_window_start
+              b.reference = sliding_window_start
 
               time_point = sliding_window_start
               tick = array_of_time_points[sliding_window_start]
             }
-            animate_slider()
 
-            builder.builder.set_data_indices(builder.builder.type_of_data, builder.builder.reference, builder.builder.target)
+            animate_slider()
+            b.set_data_indices(b.type_of_data, b.reference, b.target)
 
           } else {
 
@@ -334,22 +337,24 @@ class TimeSeriesBar extends Component {
       }
 
       // animation
-      this.animation = setInterval(function () { play(builder, sliding_window) }, this.state.duration)
+      this.animation = setInterval(function () { playAnimation(builder, sliding_window) }, this.state.duration)
 
     } else { // clear animation and reset data
 
       clearInterval(this.animation)
+      this.animation = null
 
       this.state.playing = false
-      this.deactivateUserInterface(false)
+      TimeSeriesBar.deactivateTimeSeriesControls(false)
 
-      builder.builder.reference = parseInt(d3_select('#sliderReference').property('value'))
-      if (builder.builder.difference_mode) {
-        builder.builder.target = parseInt(builder.builder.reference) + 1
+      b.reference = parseInt(d3_select('#sliderReference').property('value'))
+
+      if (b.difference_mode) {
+        b.target = parseInt(b.reference) + 1
       } else {
-        builder.builder.target = parseInt(d3_select('#sliderTarget').property('value'))
-
+        b.target = parseInt(d3_select('#sliderTarget').property('value'))
       }
+
     }
 
     function animate_slider (set_to) {
@@ -367,6 +372,7 @@ class TimeSeriesBar extends Component {
       }
 
       d3_select('#sliderReference').property('value', slider_value)
+
       d3_select('#dropDownMenuReference').property('selectedIndex', slider_value)
 
     }
@@ -399,11 +405,12 @@ class TimeSeriesBar extends Component {
 
   get_array_of_time_points (builder, map) {
 
+    let b = builder.builder
     let array_of_time_points = []
     let time_scale_is_linear
 
-    for (let i in this.get_current_data_set_names(builder.builder)) {
-      let name = this.get_current_data_set_names(builder.builder)[i]
+    for (let i in this.get_current_data_set_names(b)) {
+      let name = this.get_current_data_set_names(b)[i]
 
       if (name.startsWith('t') && typeof parseInt(name.slice(1)) === 'number') { // check if rest of string is a number
         array_of_time_points.push(parseInt(name.slice(1)))
@@ -464,7 +471,7 @@ class TimeSeriesBar extends Component {
 
     let value = parseInt(d3_select('#dropDownMenuReference').property('value'))
     builder.builder.reference = value
-    d3_select('#sliderReference').property('value', value)
+    this.setValueOfReferenceSlider(value)
     this.current = value
 
     if (builder.difference_mode) {
@@ -477,7 +484,7 @@ class TimeSeriesBar extends Component {
   sliderReference (builder) {
     let value = parseInt(d3_select('#sliderReference').property('value'))
     builder.reference = value
-    d3_select('#dropDownMenuReference').property('selectedIndex', value)
+    this.setSelectedIndexOfReferenceDropDownMenu(value)
     this.current = value
 
     if (builder.difference_mode) {
@@ -490,7 +497,7 @@ class TimeSeriesBar extends Component {
   dropDownMenuTarget (builder) {
     let value = parseInt(d3_select('#dropDownMenuTarget').property('value'))
     builder.target = value
-    d3_select('#sliderTarget').property('selectedIndex', value)
+    this.setValueOfTargetSlider(value)
     this.current = value
 
     if (builder.difference_mode) {
@@ -503,7 +510,7 @@ class TimeSeriesBar extends Component {
   sliderTarget (builder) {
     let value = parseInt(d3_select('#sliderTarget').property('value'))
     builder.target = value
-    d3_select('#dropDownMenuTarget').property('selectedIndex', value)
+    this.setSelecedIndexOfTragetDropDownMenu(value)
     this.current = value
 
     if (builder.difference_mode) {
@@ -526,6 +533,22 @@ class TimeSeriesBar extends Component {
     this.state.duration = value
   }
 
+  setValueOfReferenceSlider(value){
+    d3_select('#sliderReference').property('value', value)
+  }
+
+  setValueOfTargetSlider(value) {
+    d3_select('#sliderTarget').property('value', value)
+  }
+
+  setSelectedIndexOfReferenceDropDownMenu(index){
+    d3_select('#dropDownMenuReference').property('selectedIndex', index)
+  }
+
+  setSelecedIndexOfTragetDropDownMenu(index){
+    d3_select('#dropDownMenuTarget').property('selectedIndex', index)
+  }
+
   render (builder) {
 
     //let duration = 2000
@@ -544,15 +567,12 @@ class TimeSeriesBar extends Component {
     let type_of_data = builder.type_of_data
     let sliding_window = false
 
-
-
     return (
       <div
         className='timeSeriesContainer'
         style={this.props.visible ? {display: 'inline-flex'} : {display: 'none'}}>
 
         <div>
-
           <div>
             <button
               className='timeSeriesButton'
@@ -560,6 +580,7 @@ class TimeSeriesBar extends Component {
               onClick={() => this.openTab('reaction', builder)}
             >Reaction / Gene Data
             </button>
+
             <button
               className='timeSeriesButton'
               id='metabolite_tab_button'
@@ -572,9 +593,7 @@ class TimeSeriesBar extends Component {
               onClick={() => this.close()}
             >x
             </button>
-
           </div>
-
 
           <div>
             <button
@@ -637,7 +656,7 @@ class TimeSeriesBar extends Component {
           <div>
             <button
               className='timeSeriesButton play'
-              onClick={() => this.play_time_series(builder, map, this.state.duration, sliding_window)}
+              onClick={() => this.play_time_series(builder, this.state.duration, sliding_window)}
             >Play
             </button>
 

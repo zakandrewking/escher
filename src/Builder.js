@@ -1460,12 +1460,20 @@ class Builder {
     this.reference = parseInt(ref)
 
     // TODO: was null before, but this way I loose the target index when I only set ref?
-    this.target = parseInt(tar) || this.target
+    this.target = parseInt(tar) || parseInt(this.target)
 
     if(type_of_data === 'gene'){
       type_of_data = 'reaction'
     }
     this._update_data(true, true, type_of_data, true)
+  }
+
+  getTarget(){
+    return parseInt(this.target)
+  }
+
+  getReference(){
+    return parseInt(this.reference)
   }
 }
 
