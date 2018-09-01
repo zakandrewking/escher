@@ -152,10 +152,6 @@ Map.prototype = {
   highlight_node: highlight_node,
   highlight_text_label: highlight_text_label,
   highlight: highlight,
-  // full screen
-  listen_for_full_screen: listen_for_full_screen,
-  unlisten_for_full_screen: unlisten_for_full_screen,
-  full_screen: full_screen,
   // io
   save: save,
   map_for_export: map_for_export,
@@ -280,13 +276,6 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
 
   // rotation mode off
   this.rotation_on = false
-
-  // set up full screen listener
-  this.listen_for_full_screen(function () {
-    setTimeout(function() {
-      this.zoom_extent_canvas()
-    }.bind(this), 50)
-  }.bind(this))
 }
 
 // -------------------------------------------------------------------------
@@ -2111,67 +2100,9 @@ function highlight (sel) {
   }
 }
 
-// -------------------------------------------------------------------------
-// Full screen
-// -------------------------------------------------------------------------
-
-function full_screen_event () {
-  if      (document.fullscreenEnabled)       return 'fullscreenchange'
-  else if (document.mozFullScreenEnabled)    return 'mozfullscreenchange'
-  else if (document.webkitFullscreenEnabled) return 'webkitfullscreenchange'
-  else if (document.msFullscreenEnabled)     return 'MSFullscreenChange'
-  else                                       return null
-}
-
-/**
- * Call the function when full screen is enabled.
- *
- * To unregister the event listener for the full screen event,
- * unlisten_for_full_screen.
- */
-function listen_for_full_screen (fn) {
-  document.addEventListener(full_screen_event(), fn)
-  this.full_screen_listener = fn
-}
-
-/**
- * Remove the listener created by listen_for_full_screen.
- */
-function unlisten_for_full_screen () {
-  document.removeEventListener(full_screen_event(), this.full_screen_listener)
-}
-
-/**
- * Enter full screen if supported by the browser.
- */
-function full_screen () {
-  var sel = this.zoom_container.selection
-  var e = sel.node()
-  var d = document
-  var full_screen_on = (d.fullscreenElement || d.mozFullScreenElement ||
-                        d.webkitFullscreenElement || d.msFullscreenElement)
-  if (full_screen_on) {
-    // apply full heigh/width 100%
-    sel.classed('full-screen-on', false)
-    // exit
-    if      (d.exitFullscreen)       d.exitFullscreen()
-    else if (d.mozCancelFullScreen)  d.mozCancelFullScreen()
-    else if (d.webkitExitFullscreen) d.webkitExitFullscreen()
-    else if (d.msExitFullscreen)     d.msExitFullscreen()
-    else throw Error('Cannot exit full screen')
-  } else {
-    sel.classed('full-screen-on', true)
-    // enter
-    if      (e.requestFullscreen)       e.requestFullscreen()
-    else if (e.mozRequestFullScreen)    e.mozRequestFullScreen()
-    else if (e.webkitRequestFullscreen) e.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT)
-    else if (e.msRequestFullscreen)     e.msRequestFullscreen()
-    else throw Error('Full screen does not seem to be supported on this system.')
-  }
-}
-
-// -------------------------------------------------------------------------
+// --
 // IO
+// --
 
 function save () {
   utils.download_json(this.map_for_export(), this.map_name)

@@ -210,6 +210,11 @@ class BuilderMenuBar extends Component {
             disabledButtons={this.props.disabled_buttons}
           />
           <MenuButton
+            name={'Toggle full screen' + (this.props.enable_keys ? ' (Ctrl+2)' : '')}
+            onClick={() => this.props.toggleFullScreen()}
+            disabledButtons={this.props.disabled_buttons}
+          />
+          <MenuButton
             name={'Find' + (this.props.enable_keys ? ' (F)' : '')}
             onClick={() => this.props.search()}
             disabledButtons={this.props.disabled_buttons}

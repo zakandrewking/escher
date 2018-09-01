@@ -8,49 +8,47 @@ import './ButtonPanel.css'
  * porting Builder to Preact
  */
 class ButtonPanel extends Component {
+  constructor (props) {
+    super(props)
+    this.state = {
+      isFullScreen: false
+    }
+  }
+
   render () {
     return (
       <ul className='buttonPanel'>
-        <li>
+        <li className='grouping'>
           <button
-            className='button btn'
+            className='buttonGroup btn'
             onClick={() => this.props.zoomContainer.zoom_in()}
             title='Zoom in (+)'
           >
             <i className='icon-zoom-in' />
           </button>
-        </li>
-        <li>
           <button
-            className='button btn'
+            className='buttonGroup btn'
             onClick={() => this.props.zoomContainer.zoom_out()}
             title='Zoom out (-)'
           >
             <i className='icon-zoom-out' />
           </button>
-        </li>
-        <li
-          style={this.props.all
-          ? {display: 'block'}
-          : {display: 'none'}}
-        >
           <button
-            className='button btn'
-            onClick={() => this.props.map.zoom_extent_canvas()}
+            className='buttonGroup btn'
+            onClick={() => this.props.zoomExtentCanvas()}
             title='Zoom to canvas (1)'
           >
             <i className='icon-resize-full' />
           </button>
         </li>
-        <li
-          style={this.props.fullscreen
-          ? {display: 'block'}
-          : {display: 'none'}}
-        >
+        <li>
           <button
-            className='button btn'
-            onClick={() => this.props.map.full_screen()}
-            title='Toggle full screen view (2)'
+            className={this.state.isFullScreen ? 'btn active-button' : 'btn'}
+            onClick={() => {
+              this.props.toggleFullScreen()
+              this.setState({isFullScreen: !this.state.isFullScreen})
+            }}
+            title='Toggle full screen (Ctrl+2)'
           >
             <i className='icon-resize-full-alt' />
           </button>
@@ -65,7 +63,7 @@ class ButtonPanel extends Component {
             className='buttonGroup btn'
             title='Pan mode (Z)'
             for='zoom'
-            id={this.props.mode === 'zoom' ? 'currentMode' : null}
+            id={this.props.mode === 'zoom' ? 'current-mode' : null}
             onClick={() => this.props.setMode('zoom')}
           >
             <i className='icon-move' />
@@ -74,7 +72,7 @@ class ButtonPanel extends Component {
             className='buttonGroup btn'
             title='Select mode (V)'
             for='brush'
-            id={this.props.mode === 'brush' ? 'currentMode' : null}
+            id={this.props.mode === 'brush' ? 'current-mode' : null}
             onClick={() => this.props.setMode('brush')}
           >
             <i className='icon-mouse-pointer' />
@@ -84,14 +82,14 @@ class ButtonPanel extends Component {
             title='Add reaction mode (N)'
             for='build'
             onClick={() => this.props.setMode('build')}
-            id={this.props.mode === 'build' ? 'currentMode' : null}>
+            id={this.props.mode === 'build' ? 'current-mode' : null}>
             <i className='icon-wrench' />
           </button>
           <button
             className='buttonGroup btn'
             title='Rotate mode (R)'
             for='rotate'
-            id={this.props.mode === 'rotate' ? 'currentMode' : null}
+            id={this.props.mode === 'rotate' ? 'current-mode' : null}
             onClick={() => this.props.setMode('rotate')}
           >
             <i className='icon-cw' />
@@ -100,7 +98,7 @@ class ButtonPanel extends Component {
             className='buttonGroup btn'
             title='Text mode (T)'
             for='text'
-            id={this.props.mode === 'text' ? 'currentMode' : null}
+            id={this.props.mode === 'text' ? 'current-mode' : null}
             onClick={() => this.props.setMode('text')}
           >
             <i className='icon-font' />

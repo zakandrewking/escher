@@ -88,7 +88,7 @@ class Builder {
       enable_search: true,
       fill_screen: false,
       zoom_to_element: null,
-      full_screen_button: false,
+      full_screen_button: null, // DEPRECATED
       ignore_bootstrap: false,
       disabled_buttons: null,
       semantic_zoom: null,
@@ -251,6 +251,9 @@ class Builder {
     this.search_bar_div = s.append('div')
     this.button_div = this.selection.append('div')
     this.settings_div = this.selection.append('div')
+
+    // Full screen state
+    this.isFullScreen = false
 
     // Need to defer map loading to let webpack CSS load properly
     _.defer(() => {
@@ -443,7 +446,6 @@ class Builder {
       this.search_bar,
       this.settings_bar,
       this.options.enable_editing,
-      this.options.full_screen_button
     )
     this.map.key_manager.assigned_keys = keys
     // Tell the key manager about the reaction input and search bar
@@ -569,6 +571,7 @@ class Builder {
           zoomOut={() => this.zoom_container.zoom_out()}
           zoomExtentNodes={() => this.map.zoom_extent_nodes()}
           zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
+          toggleFullScreen={this.toggleFullScreen.bind(this)}
           search={() => this.renderSearchBar()}
           toggleBeziers={() => this.map.toggle_beziers()}
           renderSettingsMenu={() => this.pass_settings_menu_props({
@@ -609,11 +612,12 @@ class Builder {
     preact.render(
       <ButtonPanel
         all={this.options.menu === 'all'}
-        fullscreen={this.options.full_screen_button}
         enableEditing={this.options.enable_editing}
         setMode={(newMode) => this._set_mode(newMode)}
         zoomContainer={this.zoom_container}
         map={this.map}
+        zoomExtentCanvas={this.map.zoom_extent_canvas.bind(this.map)}
+        toggleFullScreen={this.toggleFullScreen.bind(this)}
         mode={mode}
         buildInput={this.build_input}
       />,
@@ -994,9 +998,8 @@ class Builder {
   /**
    * Define keyboard shortcuts
    */
-  _get_keys (map, zoom_container, search_bar, settings_bar,
-                      enable_editing, full_screen_button) {
-    var keys = {
+  _get_keys (map, zoom_container, search_bar, settings_bar, enable_editing) {
+    const keys = {
       save: {
         key: 'ctrl+s',
         target: map,
@@ -1124,23 +1127,14 @@ class Builder {
           display: true
         }),
         ignore_with_input: true
+      },
+      full_screen_ctrl: {
+        key: 'ctrl+2',
+        target: map,
+        fn: this.toggleFullScreen.bind(this)
       }
     }
-    if (full_screen_button) {
-      utils.extend(keys, {
-        full_screen_ctrl: {
-          key: 'ctrl+2',
-          target: map,
-          fn: map.full_screen
-        },
-        full_screen: {
-          key: '2',
-          target: map,
-          fn: map.full_screen,
-          ignore_with_input: true
-        }
-      })
-    }
+
     if (enable_editing) {
       utils.extend(keys, {
         build_mode: {
@@ -1275,6 +1269,42 @@ class Builder {
       )
     }.bind(this)
   }
+
+  /**
+   * Enter full screen if supported by the browser.
+   */
+  toggleFullScreen () {
+    const sel = this.map.zoom_container.selection
+    const e = sel.node()
+    const d = document
+    const isFullScreen = d.fullscreenElement ||
+                         d.mozFullScreenElement ||
+                         d.webkitFullscreenElement ||
+                         d.msFullscreenElement
+    if (isFullScreen) {
+      // apply full heigh/width 100%
+      sel.classed('full-screen-on', false)
+      // exit
+      if (d.exitFullscreen) d.exitFullscreen()
+      else if (d.mozCancelFullScreen) d.mozCancelFullScreen()
+      else if (d.webkitExitFullscreen) d.webkitExitFullscreen()
+      else if (d.msExitFullscreen) d.msExitFullscreen()
+      else throw Error('Cannot exit full screen')
+
+      this.isFullScreen = false
+    } else {
+      sel.classed('full-screen-on', true)
+      // enter
+      if (e.requestFullscreen) e.requestFullscreen()
+      else if (e.mozRequestFullScreen) e.mozRequestFullScreen()
+      else if (e.webkitRequestFullscreen) e.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT)
+      else if (e.msRequestFullscreen) e.msRequestFullscreen()
+      else throw Error('Full screen does not seem to be supported on this system.')
+
+      this.isFullScreen = true
+    }
+  }
 }
+
 
 export default utils.class_with_optional_new(Builder)

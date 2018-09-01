@@ -53,8 +53,8 @@ function init (selection, map, zoom_container, settings) {
   d3_select(c.input)
   this.completely = c
   // close button
-  new_sel.append('button').attr('class', 'button input-close-button')
-    .text("×")
+  new_sel.append('button').attr('class', 'btn input-close-button')
+    .text('×')
     .on('mousedown', function () { this.hide_dropdown() }.bind(this))
 
   // map

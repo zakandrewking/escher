@@ -81,8 +81,8 @@ JavaScript API
 
        .. js:attribute:: options.full_screen_button
 
-          (Default: ``false``) Include a button in the user interface for
-          entering full screen mode.
+          DEPRECATED. Full screen button always appears, so this option is no
+          longer necessary.
 
        .. js:attribute:: options.ignore_bootstrap
 
