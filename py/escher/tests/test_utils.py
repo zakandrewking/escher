@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 import base64
 import json
 
 from escher.util import b64dump
 
+
 def b64decode(str):
     return base64.b64decode(str.encode('utf-8')).decode('utf-8')
+
 
 def test_b64dump():
     assert b64decode(b64dump(None)) == 'null'

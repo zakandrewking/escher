@@ -65,6 +65,7 @@ def test_local_index(tmpdir, request):
 
 # server
 
+
 @mark.web
 def test_server_index():
     index = server_index()
@@ -77,11 +78,13 @@ def test_server_index():
 
 # model and maps
 
+
 def test_model_json_for_name(tmpdir):
     models = tmpdir.mkdir('models')
     models.mkdir('Escherichia coli').join('iJO1366.json').write('"temp"')
     json = model_json_for_name('iJO1366', cache_dir=str(tmpdir))
     assert json == '"temp"'
+
 
 @mark.web
 def test_model_json_for_name_web(tmpdir):
@@ -89,33 +92,40 @@ def test_model_json_for_name_web(tmpdir):
     assert 'reactions' in data
     assert 'metabolites' in data
 
+
 def test_map_json_for_name(tmpdir):
     maps = tmpdir.mkdir('maps')
     maps.mkdir('Escherichia coli').join('iJO1366.Central metabolism.json').write('"temp"')
     json = map_json_for_name('iJO1366.Central metabolism', cache_dir=str(tmpdir))
     assert json == '"temp"'
 
+
 @mark.web
 def test_map_json_for_name_web(tmpdir):
     data = map_json_for_name('iJO1366.Central metabolism', cache_dir=str(tmpdir))
-    root = get_url('escher_root', protocol='https').rstrip('/')
+    root = get_url('escher_root').rstrip('/')
     assert json.loads(data)[0]['schema'] == '/'.join([root, 'escher', 'jsonschema',
                                                       __schema_version__ + '#'])
 
+
 # helper functions
+
 
 def test_load_resource_json(tmpdir):
     test_json = '{"r": "val"}'
     assert _load_resource(test_json, 'name') == test_json
+
 
 def test_load_resource_long_json(tmpdir):
     # this used to fail on Windows with Python 3
     test_json = '{"r": "' + ('val' * 100000) + '"}'
     assert _load_resource(test_json, 'name') == test_json
 
+
 def test_load_resource_directory(tmpdir):
     directory = os.path.abspath(os.path.dirname(__file__))
     assert _load_resource(join(directory, 'example.json'), 'name').strip() == '{"r": "val"}'
+
 
 def test_load_resource_invalid_file(tmpdir):
     with raises(ValueError) as err:
@@ -125,11 +135,13 @@ def test_load_resource_invalid_file(tmpdir):
         _load_resource(p, 'name')
         assert 'not a valid json file' in err.value
 
+
 @mark.web
 def test_load_resource_web(tmpdir):
-    url = '/'.join([get_url('map_download', protocol='https'),
+    url = '/'.join([get_url('map_download'),
                     'Escherichia%20coli/iJO1366.Central%20metabolism.json'])
     _ = json.loads(_load_resource(url, 'name'))
+
 
 def test_Builder(tmpdir):
     # ok with embedded_css arg
@@ -147,6 +159,7 @@ def test_Builder(tmpdir):
     b._get_html(js_source='local')
     b._get_html(menu='all')
     b._get_html(scroll_behavior='zoom')
+
 
 @mark.web
 def test_Builder_download():

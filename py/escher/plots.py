@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-
 from __future__ import print_function, unicode_literals
 
 from escher.urls import get_url, root_directory
-from escher.version import __schema_version__, __map_model_version__
-from escher.util import query_yes_no, b64dump
+from escher.util import b64dump
 from escher.widget import EscherWidget
 
 import os
@@ -33,7 +31,7 @@ env = Environment(loader=PackageLoader('escher', 'templates'))
 # server management
 
 def server_index():
-    url = get_url('server_index', source='web', protocol='https')
+    url = get_url('server_index')
     try:
         download = urlopen(url)
     except URLError:
@@ -68,7 +66,7 @@ def _json_for_name(name, kind):
     if len(match) == 0:
         raise Exception('Could not find the %s %s on the server' % (kind, name))
     org, name = match[0]
-    url = (get_url(kind + '_download', source='web', protocol='https') +
+    url = (get_url(kind + '_download') +
             '/'.join([url_escape(x, plus=False) for x in [org, name + '.json']]))
     warn('Downloading from %s' % (kind.title(), url))
     try:
@@ -78,17 +76,21 @@ def _json_for_name(name, kind):
     data = _decode_response(download)
     return data
 
+
 def model_json_for_name(model_name):
     return _json_for_name(model_name, 'model')
+
 
 def map_json_for_name(map_name):
     return _json_for_name(map_name, 'map')
 
 # helper functions
 
+
 def _get_an_id():
     return (''.join(random.choice(string.ascii_lowercase)
                     for _ in range(10)))
+
 
 def _decode_response(download):
     """Decode the urllib.response.addinfourl response."""
@@ -103,7 +105,8 @@ def _decode_response(download):
         data = data.decode('utf-8')
     return data
 
-def _load_resource(resource, name, safe=False):
+
+def _load_resource(resource, name):
     """Load a resource that could be a file, URL, or json string."""
     # if it's a url, download it
     if resource.startswith('http://') or resource.startswith('https://'):
@@ -120,8 +123,6 @@ def _load_resource(resource, name, safe=False):
         # check for error with long filepath (or URL) on Windows
         is_file = False
     if is_file:
-        if (safe):
-            raise Exception('Cannot load resource from file with safe mode enabled.')
         try:
             with open(resource, 'rb') as f:
                 loaded_resource = f.read().decode('utf-8')
@@ -134,7 +135,8 @@ def _load_resource(resource, name, safe=False):
     try:
         _ = json.loads(resource)
     except ValueError as err:
-        raise ValueError('Could not load %s. Not valid json, url, or filepath' % name)
+        raise ValueError('Could not load %s. Not valid json, url, or filepath'
+                         % name)
     else:
         return resource
     raise Exception('Could not load %s.' % name)
@@ -155,19 +157,20 @@ class Builder(object):
 
     :param map_json:
 
-        A JSON string, or a file path to a JSON file, or a URL specifying a JSON
-        file to be downloaded.
+        A JSON string, or a file path to a JSON file, or a URL specifying a
+        JSON file to be downloaded.
 
     :param model: A Cobra model.
 
     :param model_name:
 
-        A string specifying a model to be downloaded from the Escher web server.
+        A string specifying a model to be downloaded from the Escher web
+        server.
 
     :param model_json:
 
-        A JSON string, or a file path to a JSON file, or a URL specifying a JSON
-        file to be downloaded.
+        A JSON string, or a file path to a JSON file, or a URL specifying a
+        JSON file to be downloaded.
 
     :param embedded_css:
 
@@ -180,8 +183,8 @@ class Builder(object):
 
     :param metabolite_data:
 
-        A dictionary with keys that correspond to metabolite ids and values that
-        will be mapped to metabolite nodes and labels.
+        A dictionary with keys that correspond to metabolite ids and values
+        that will be mapped to metabolite nodes and labels.
 
     :param gene_data:
 
@@ -199,8 +202,7 @@ class Builder(object):
 
     :param safe:
 
-        If True, then loading files from the filesytem is not allowed. This is
-        to ensure the safety of using Builder within a web server.
+        Deprecated
 
     **Keyword Arguments**
 
@@ -248,14 +250,14 @@ class Builder(object):
     """
 
     def __init__(self, map_name=None, map_json=None, model=None,
-        model_name=None, model_json=None, embedded_css=None,
-        reaction_data=None, metabolite_data=None, gene_data=None,
-        local_host=None, id=None, safe=False, **kwargs):
+                 model_name=None, model_json=None, embedded_css=None,
+                 reaction_data=None, metabolite_data=None, gene_data=None,
+                 local_host=None, id=None, safe=None, **kwargs):
 
         if local_host is not None:
             warn('The local_host option is deprecated')
-
-        self.safe = safe
+        if safe is not None:
+            warn('The safe option is deprecated')
 
         # load the map
         self.map_name = map_name
@@ -319,6 +321,7 @@ class Builder(object):
             'cofactors',
             'enable_tooltips',
         ]
+
         def get_getter_setter(o):
             """Use a closure."""
             # create local fget and fset functions
@@ -341,7 +344,6 @@ class Builder(object):
             except AttributeError:
                 print('Unrecognized keywork argument %s' % key)
 
-
     def _load_model(self):
         """Load the model.
 
@@ -353,16 +355,14 @@ class Builder(object):
             try:
                 import cobra.io
             except ImportError:
-                raise Exception(('The COBRApy package must be available to load '
-                                 'a COBRA model object'))
+                raise Exception(('The COBRApy package must be available to '
+                                 'load a COBRA model object'))
             self.loaded_model_json = cobra.io.to_json(self.model)
         elif self.model_json is not None:
             self.loaded_model_json = _load_resource(self.model_json,
-                                                    'model_json',
-                                                    safe=self.safe)
+                                                    'model_json')
         elif self.model_name is not None:
             self.loaded_model_json = model_json_for_name(self.model_name)
-
 
     def _load_map(self):
         """Load the map from input map_json using _load_resource, or, secondarily,
@@ -371,11 +371,91 @@ class Builder(object):
         """
         if self.map_json is not None:
             self.loaded_map_json = _load_resource(self.map_json,
-                                                  'map_json',
-                                                  safe=self.safe)
+                                                  'map_json')
         elif self.map_name is not None:
             self.loaded_map_json = map_json_for_name(self.map_name)
 
+    def display_in_notebook(self, js_source=None, menu='zoom',
+                            scroll_behavior='none', minified_js=None,
+                            height=500, enable_editing=False):
+        """Embed the Map within the current IPython Notebook.
+
+        :param string js_source:
+
+            deprecated
+
+        :param string menu: Menu bar options include:
+
+            - *none* - No menu or buttons.
+            - *zoom* - Just zoom buttons.
+            - Note: The *all* menu option does not work in an IPython notebook.
+
+        :param string scroll_behavior: Scroll behavior options:
+
+            - *pan* - Pan the map.
+            - *zoom* - Zoom the map.
+            - *none* - (Default) No scroll events.
+
+        :param Boolean minified_js:
+
+            Deprectated.
+
+        :param height: Height of the HTML container.
+
+        :param Boolean enable_editing: Enable the map editing modes.
+
+        """
+        if js_source is not None:
+            warn('The js_source option is deprecated')
+        if minified_js is not None:
+            warn('The minified_js option is deprecated')
+
+        # options
+        # TODO deduplicate
+        options = {
+            'menu': menu,
+            'enable_keys': enable_keys,
+            'enable_editing': enable_editing,
+            'scroll_behavior': scroll_behavior,
+            'fill_screen': fill_screen,
+            'never_ask_before_quit': never_ask_before_quit,
+            'reaction_data': self.reaction_data,
+            'metabolite_data': self.metabolite_data,
+            'gene_data': self.gene_data,
+        }
+        # Add the specified options
+        for option in self.options:
+            val = getattr(self, option)
+            if val is None:
+                continue
+            options[option] = val
+
+        return EscherWidget(
+            menu=menu,
+            scroll_behavior=scroll_behavior,
+            height=height,
+            enable_editing=enable_editing,
+            options=this.options,
+            embedded_css=this.embedded_css,
+            loaded_map_json=this.loaded_map_json,
+            loaded_model_json=this.loaded_model_json,
+        )
+
+    def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50,
+                           js_source='web', menu='all', scroll_behavior='pan',
+                           enable_editing=True, enable_keys=True,
+                           minified_js=True, never_ask_before_quit=False):
+        """Deprecated.
+
+        We recommend using the Jupyter Widget (which now supports all Escher
+        features) or the save_html option to generate a standalone HTML file
+        that loads the map.
+
+        """
+        raise Exception(('display_in_browser is deprecated. We recommend using'
+                         'the Jupyter Widget (which now supports all Escher'
+                         'features) or the save_html option to generate a'
+                         'standalone HTML file that loads the map.'))
 
     def _get_html(self, js_source=None, menu='none', scroll_behavior='pan',
                   html_wrapper=False, enable_editing=False, enable_keys=False,
@@ -413,11 +493,9 @@ class Builder(object):
         leave the page. By default, this message is displayed if enable_editing
         is True.
 
-        static_site_index_json: deprecated
+        static_site_index_json: Deprecated
 
-        protocol: The protocol can be 'http', 'https', or None which indicates a
-        'protocol relative URL', as in //escher.github.io. Ignored if source is
-        local.
+        protocol: Deprecated
 
         ignore_bootstrap: Deprecated
 
@@ -427,6 +505,8 @@ class Builder(object):
             warn('The js_source option is deprecated')
         if static_site_index_json is not None:
             warn('The static_site_index_json option is deprecated')
+        if protocol is not None:
+            warn('The protocol option is deprecated')
         if ignore_bootstrap is not None:
             warn('The ignore_bootstrap option is deprecated')
 
@@ -434,7 +514,8 @@ class Builder(object):
             raise Exception('Bad value for menu: %s' % menu)
 
         if scroll_behavior not in ['pan', 'zoom', 'none']:
-            raise Exception('Bad value for scroll_behavior: %s' % scroll_behavior)
+            raise Exception('Bad value for scroll_behavior: %s' %
+                            scroll_behavior)
 
         content = env.get_template('content.html')
 
@@ -447,10 +528,11 @@ class Builder(object):
             height = str(height)
 
         # for static site
-        map_download_url = get_url('map_download', url_source, None, protocol)
-        model_download_url = get_url('model_download', url_source, None, protocol)
+        map_download_url = get_url('map_download')
+        model_download_url = get_url('model_download')
 
         # options
+        # TODO deduplicate
         options = {
             'menu': menu,
             'enable_keys': enable_keys,
@@ -491,63 +573,6 @@ class Builder(object):
         )
 
         return html
-
-
-    def display_in_notebook(self, js_source=None, menu='zoom', scroll_behavior='none',
-                            minified_js=None, height=500, enable_editing=False):
-        """Embed the Map within the current IPython Notebook.
-
-        :param string js_source:
-
-            deprecated
-
-        :param string menu: Menu bar options include:
-
-            - *none* - No menu or buttons.
-            - *zoom* - Just zoom buttons.
-            - Note: The *all* menu option does not work in an IPython notebook.
-
-        :param string scroll_behavior: Scroll behavior options:
-
-            - *pan* - Pan the map.
-            - *zoom* - Zoom the map.
-            - *none* - (Default) No scroll events.
-
-        :param Boolean minified_js:
-
-            Deprectated.
-
-        :param height: Height of the HTML container.
-
-        :param Boolean enable_editing: Enable the map editing modes.
-
-        """
-        if js_source is not None:
-            warn('The js_source option is deprecated')
-        if minified_js is not None:
-            warn('The minified_js option is deprecated')
-
-        return EscherWidget(
-            menu=menu,
-            scroll_behavior=scroll_behavior,
-            height=height,
-            enable_editing=enable_editing,
-        )
-
-    def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50, js_source='web',
-                           menu='all', scroll_behavior='pan', enable_editing=True, enable_keys=True,
-                           minified_js=True, never_ask_before_quit=False):
-        """Deprecated.
-
-        We recommend using the Jupyter Widget (which now supports all Escher
-        features) or the save_html option to generate a standalone HTML file
-        that loads the map.
-
-        """
-        raise Exception(('display_in_browser is deprecated. We recommend using'
-                         'the Jupyter Widget (which now supports all Escher'
-                         'features) or the save_html option to generate a'
-                         'standalone HTML file that loads the map.'))
 
     def save_html(self, filepath=None, overwrite=False, js_source=None,
                   protocol=None, menu='all', scroll_behavior='pan',
@@ -624,8 +649,8 @@ class Builder(object):
         else:
             os.makedirs(directory)
         # add dependencies to the directory
-        escher = get_url('escher_min' if minified_js else 'escher', 'local')
-        favicon = get_url('favicon', 'local')
+        escher = get_url('escher_min' if minified_js else 'escher')
+        favicon = get_url('favicon')
 
         for path in [escher, favicon]:
             if path is None:
