@@ -61,7 +61,7 @@ setup(
     install_requires=[
         'Jinja2>=2.7.3',
         'tornado>=4.0.2',
-        'pytest>=2.6.2',
+        'pytest>=4.0.1,<5',
         'cobra>=0.3.0',
         'jsonschema>=2.4.0',
         'ipywidgets>=7.0.0,<8',

@@ -8,16 +8,8 @@ Python API
 
 .. _`cache`:
 
-Cache
------
-
-.. autofunction:: get_cache_dir
-                  
-.. autofunction:: clear_cache
-                  
-.. autofunction:: list_cached_maps
-                  
-.. autofunction:: list_cached_models
+Map Server
+----------
 
 .. autofunction:: list_available_maps
 

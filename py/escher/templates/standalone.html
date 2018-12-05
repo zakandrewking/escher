@@ -1,19 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>{% block title %}{{ title }}{% endblock %}</title>
+    <title>Escher Builder</title>
 
-    {% block head %}{% endblock %}
-
-    {% if favicon_url %}
-      <link rel="shortcut icon" href="{{ favicon_url }}" />
-    {% endif %}
+    <script src="{{escher_url}}"></script>
 
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, height=device-height,
-                                   initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui"/>
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui"/>
   </head>
   <body>
-    {% block content %}{% endblock %}
+    <div style="height: 100%; width: 100%;" id="map-container"></div>
+
+    <script>
+     /* Data from python */
+     var data = get_data();
+     escher.Builder(data.map_data, data.model_data, data.builder_embed_css,
+                    escher.libs.d3_select('#map-container'), data.options);
+
+     function b64DecodeUnicode(str) {
+       return decodeURIComponent(Array.prototype.map.call(atob(str), function(c) {
+         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+       }).join(''))
+     }
+
+     // Put this at the end so Chrome doesn't cut off the code above.
+     function get_data() {
+       /** Return the data passed in by the Python module. */
+       return {
+         options: JSON.parse(b64DecodeUnicode('{{ options_json }}')),
+         map_download_url: b64DecodeUnicode('{{ map_download_url_json }}'),
+         model_download_url: b64DecodeUnicode('{{ model_download_url_json }}'),
+         builder_embed_css: JSON.parse(b64DecodeUnicode('{{ builder_embed_css_json }}')),
+         map_data: JSON.parse(b64DecodeUnicode('{{ map_data_json }}')),
+         model_data: JSON.parse(b64DecodeUnicode('{{ model_data_json }}')),
+       };
+     }
+    </script>
   </body>
 </html>

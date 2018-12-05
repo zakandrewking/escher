@@ -6,8 +6,7 @@ from escher.util import b64dump
 from escher.widget import EscherWidget
 
 import os
-from os.path import (dirname, basename, abspath, join, isfile, isdir, exists,
-                     expanduser)
+from os.path import join, isfile, expanduser
 from warnings import warn
 try:
     from urllib.request import urlopen
@@ -40,22 +39,27 @@ def server_index():
     index = json.loads(data)
     return index
 
+
 def list_available_maps():
     """Return a list of all maps available on the server"""
     return server_index()['maps']
+
 
 def list_available_models():
     """Return a list of all models available on the server"""
     return server_index()['models']
 
+
 # download maps and models
+
 
 def _json_for_name(name, kind):
     # check the name
     name = name.replace('.json', '')
 
     def match_in_index(name, index, kind):
-        return [(obj['organism'], obj[kind + '_name']) for obj in index[kind + 's']
+        return [(obj['organism'], obj[kind + '_name'])
+                for obj in index[kind + 's']
                 if obj[kind + '_name'] == name]
 
     try:
@@ -67,8 +71,8 @@ def _json_for_name(name, kind):
         raise Exception('Could not find the %s %s on the server' % (kind, name))
     org, name = match[0]
     url = (get_url(kind + '_download') +
-            '/'.join([url_escape(x, plus=False) for x in [org, name + '.json']]))
-    warn('Downloading from %s' % (kind.title(), url))
+           '/'.join([url_escape(x, plus=False) for x in [org, name + '.json']]))
+    print('Downloading %s from %s' % (kind.title(), url))
     try:
         download = urlopen(url)
     except URLError:
@@ -84,12 +88,8 @@ def model_json_for_name(model_name):
 def map_json_for_name(map_name):
     return _json_for_name(map_name, 'map')
 
+
 # helper functions
-
-
-def _get_an_id():
-    return (''.join(random.choice(string.ascii_lowercase)
-                    for _ in range(10)))
 
 
 def _decode_response(download):
@@ -193,12 +193,11 @@ class Builder(object):
 
     :param local_host:
 
-        deprecated
+        Deprecated
 
     :param id:
 
-        Specify an id to make the javascript data definitions unique. A random
-        id is chosen by default.
+        Deprecated
 
     :param safe:
 
@@ -256,8 +255,12 @@ class Builder(object):
 
         if local_host is not None:
             warn('The local_host option is deprecated')
+
         if safe is not None:
             warn('The safe option is deprecated')
+
+        if id is not None:
+            warn('The id option is deprecated')
 
         # load the map
         self.map_name = map_name
@@ -284,8 +287,6 @@ class Builder(object):
             self.embedded_css = (embedded_css.replace('\n', ''))
         except AttributeError:
             self.embedded_css = None
-        # make the unique id
-        self.the_id = _get_an_id() if id is None else id
 
         # set up the options
         self.options = [
@@ -382,7 +383,7 @@ class Builder(object):
 
         :param string js_source:
 
-            deprecated
+            Deprecated
 
         :param string menu: Menu bar options include:
 
@@ -398,7 +399,7 @@ class Builder(object):
 
         :param Boolean minified_js:
 
-            Deprectated.
+            Deprecated
 
         :param height: Height of the HTML container.
 
@@ -407,6 +408,7 @@ class Builder(object):
         """
         if js_source is not None:
             warn('The js_source option is deprecated')
+
         if minified_js is not None:
             warn('The minified_js option is deprecated')
 
@@ -457,137 +459,19 @@ class Builder(object):
                          'features) or the save_html option to generate a'
                          'standalone HTML file that loads the map.'))
 
-    def _get_html(self, js_source=None, menu='none', scroll_behavior='pan',
-                  html_wrapper=False, enable_editing=False, enable_keys=False,
-                  minified_js=True, fill_screen=False, height='800px',
-                  never_ask_before_quit=False, static_site_index_json=None,
-                  protocol=None, ignore_bootstrap=None):
-        """Generate the Escher HTML.
-
-        Arguments
-        --------
-
-        js_source: Deprecated.
-
-        menu: Menu bar options include:
-            'none' - (Default) No menu or buttons.
-            'zoom' - Just zoom buttons (does not require bootstrap).
-            'all' - Menu and button bar (requires bootstrap).
-
-        scroll_behavior: Scroll behavior options:
-            'pan' - (Default) Pan the map.
-            'zoom' - Zoom the map.
-            'none' - No scroll events.
-
-        minified_js: If True, use the minified version of JavaScript files.
-
-        html_wrapper: If True, return a standalone html file.
-
-        enable_editing: Enable the editing modes (build, rotate, etc.).
-
-        enable_keys: Enable keyboard shortcuts.
-
-        height: The height of the HTML container.
-
-        never_ask_before_quit: Never display an alert asking if you want to
-        leave the page. By default, this message is displayed if enable_editing
-        is True.
-
-        static_site_index_json: Deprecated
-
-        protocol: Deprecated
-
-        ignore_bootstrap: Deprecated
-
-        """
-
-        if js_source is not None:
-            warn('The js_source option is deprecated')
-        if static_site_index_json is not None:
-            warn('The static_site_index_json option is deprecated')
-        if protocol is not None:
-            warn('The protocol option is deprecated')
-        if ignore_bootstrap is not None:
-            warn('The ignore_bootstrap option is deprecated')
-
-        if menu not in ['none', 'zoom', 'all']:
-            raise Exception('Bad value for menu: %s' % menu)
-
-        if scroll_behavior not in ['pan', 'zoom', 'none']:
-            raise Exception('Bad value for scroll_behavior: %s' %
-                            scroll_behavior)
-
-        content = env.get_template('content.html')
-
-        # if height is not a string
-        if type(height) is int:
-            height = "%dpx" % height
-        elif type(height) is float:
-            height = "%fpx" % height
-        elif type(height) is str:
-            height = str(height)
-
-        # for static site
-        map_download_url = get_url('map_download')
-        model_download_url = get_url('model_download')
-
-        # options
-        # TODO deduplicate
-        options = {
-            'menu': menu,
-            'enable_keys': enable_keys,
-            'enable_editing': enable_editing,
-            'scroll_behavior': scroll_behavior,
-            'fill_screen': fill_screen,
-            'never_ask_before_quit': never_ask_before_quit,
-            'reaction_data': self.reaction_data,
-            'metabolite_data': self.metabolite_data,
-            'gene_data': self.gene_data,
-        }
-        # Add the specified options
-        for option in self.options:
-            val = getattr(self, option)
-            if val is None:
-                continue
-            options[option] = val
-
-        html = content.render(
-            # standalone
-            title='Escher ' + ('Builder' if enable_editing else 'Viewer'),
-            favicon_url=favicon_url,
-            # content
-            wrapper=html_wrapper,
-            height=height,
-            id=self.the_id,
-            escher_url=escher_url,
-            # dump json
-            id_json=b64dump(self.the_id),
-            options_json=b64dump(options),
-            map_download_url_json=b64dump(map_download_url),
-            model_download_url_json=b64dump(model_download_url),
-            builder_embed_css_json=b64dump(self.embedded_css),
-            # alreay json
-            map_data_json=b64dump(self.loaded_map_json),
-            model_data_json=b64dump(self.loaded_model_json),
-            static_site_index_json=b64dump(static_site_index_json),
-        )
-
-        return html
-
-    def save_html(self, filepath=None, overwrite=False, js_source=None,
+    def save_html(self, filepath=None, overwrite=None, js_source=None,
                   protocol=None, menu='all', scroll_behavior='pan',
-                  enable_editing=True, enable_keys=True, minified_js=True,
+                  enable_editing=True, enable_keys=True, minified_js=None,
                   never_ask_before_quit=False, static_site_index_json=None):
         """Save an HTML file containing the map.
 
         :param string filepath:
 
-            The HTML and JS files will be saved to a new directory in this
-            location.
+            The name of the HTML file.
 
         :param Boolean overwrite:
 
-            Overwrite existing files.
+            Deprecated
 
         :param string js_source:
 
@@ -615,7 +499,7 @@ class Builder(object):
 
         :param Boolean minified_js:
 
-            If True, use the minified version of JavaScript and CSS files.
+            Deprecated
 
         :param number height: Height of the HTML container.
 
@@ -631,49 +515,64 @@ class Builder(object):
         """
         if js_source is not None:
             warn('The js_source option is deprecated')
+
+        if overwrite is not None:
+            warn('The overwrite option is deprecated')
+
         if protocol is not None:
             warn('The protocol option is deprecated')
+
+        if minified_js is not None:
+            warn('The minified_js option is deprecated')
+
         if static_site_index_json is not None:
             warn('The static_site_index_json option is deprecated')
 
         if filepath is None:
             raise Exception('Must provide a filepath')
 
-        filepath = expanduser(filepath)
+        if not filepath.endswith('.html'):
+            raise Exception('The filepath must end in .html')
 
-        # make a directory
-        directory = re.sub(r'\.html$', '', filepath)
-        if exists(directory):
-            if not overwrite:
-                raise Exception('Directory already exists: %s' % directory)
-        else:
-            os.makedirs(directory)
-        # add dependencies to the directory
-        escher = get_url('escher_min' if minified_js else 'escher')
-        favicon = get_url('favicon')
+        if menu not in ['none', 'zoom', 'all']:
+            raise Exception('Bad value for menu: %s' % menu)
 
-        for path in [escher, favicon]:
-            if path is None:
+        if scroll_behavior not in ['pan', 'zoom', 'none']:
+            raise Exception('Bad value for scroll_behavior: %s' %
+                            scroll_behavior)
+
+        # options
+        # TODO deduplicate
+        options = {
+            'menu': menu,
+            'enable_keys': enable_keys,
+            'enable_editing': enable_editing,
+            'scroll_behavior': scroll_behavior,
+            'fill_screen': True,
+            'never_ask_before_quit': never_ask_before_quit,
+            'reaction_data': self.reaction_data,
+            'metabolite_data': self.metabolite_data,
+            'gene_data': self.gene_data,
+        }
+        # Add the specified options
+        for option in self.options:
+            val = getattr(self, option)
+            if val is None:
                 continue
-            src = join(root_directory, path)
-            dest = join(directory, path)
-            dest_dir = dirname(dest)
-            if not exists(dest_dir):
-                os.makedirs(dest_dir)
-            shutil.copy(src, dest)
-        filepath = join(directory, 'index.html')
+            options[option] = val
 
-        html = self._get_html(
-            menu=menu,
-            scroll_behavior=scroll_behavior,
-            html_wrapper=True,
-            enable_editing=enable_editing,
-            enable_keys=enable_keys,
-            minified_js=minified_js,
-            fill_screen=True,
-            height="100%",
-            never_ask_before_quit=never_ask_before_quit,
+        template = env.get_template('standalone.html')
+        html = template.render(
+            escher_url=get_url('escher_min'),
+            # dump json
+            options_json=b64dump(options),
+            map_download_url_json=b64dump(get_url('map_download')),
+            model_download_url_json=b64dump(get_url('model_download')),
+            builder_embed_css_json=b64dump(self.embedded_css),
+            # alreay json
+            map_data_json=b64dump(self.loaded_map_json),
+            model_data_json=b64dump(self.loaded_model_json),
         )
-        with open(filepath, 'wb') as f:
+
+        with open(expanduser(filepath), 'wb') as f:
             f.write(html.encode('utf-8'))
-        return filepath

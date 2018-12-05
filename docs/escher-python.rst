@@ -58,20 +58,6 @@ Here are example notebooks to get started with:
 - `JavaScript development and offline maps`_
 - `Generate JSON models in COBRApy`_
 
-.. _`local-server`:
-
-Running the local server
-========================
-
-You can run your own local server if you want to use Escher offline or explore
-your own maps with the homepage browser. To get started, install the Python
-package and run from any directory by calling::
-
-  python -m escher.server
-
-This starts a server at http://localhost:7778. You can also choose another port::
-
-  python -m escher.server --port=8005
 
 
 .. _`source files`: https://github.com/zakandrewking/escher/releases
