@@ -2,12 +2,10 @@
 
 from __future__ import print_function, unicode_literals
 
-from escher.quick_server import serve_and_open
 from escher.urls import get_url, root_directory
-from escher.appdirs import user_cache_dir
-from escher.generate_index import generate_index
 from escher.version import __schema_version__, __map_model_version__
 from escher.util import query_yes_no, b64dump
+from escher.widget import EscherWidget
 
 import os
 from os.path import (dirname, basename, abspath, join, isfile, isdir, exists,
@@ -31,70 +29,6 @@ import shutil
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
 
-# cache management
-
-def get_cache_dir(versioned=True, name=None):
-    """Get the cache dir as a string, and make the directory if it does not already
-    exist.
-
-    :param Boolean versioned: Whether to return the versioned path in the
-                              cache. Escher maps for the latest version of
-                              Escher are found in the versioned directory
-                              (versioned = True), but maps for previous versions
-                              of Escher can be found by visiting the parent
-                              directory (versioned = False).
-
-    :param string name: An optional subdirectory within the cache. If versioned
-                        is False, then name is ignored.
-
-    """
-    cache_dir = user_cache_dir('escher', appauthor='Zachary King')
-    # add version
-    if versioned:
-        cache_dir = join(cache_dir, __schema_version__, __map_model_version__)
-        # add subdirectory
-        if name is not None:
-            cache_dir = join(cache_dir, name)
-    try:
-        os.makedirs(cache_dir)
-    except OSError:
-        pass
-    return cache_dir
-
-def clear_cache(different_cache_dir=None, ask=True):
-    """Empty the contents of the cache directory, including all versions of all maps
-    and models.
-
-    :param string different_cache_dir: (Optional) The directory of another
-                                       cache. This is mainly for testing.
-
-    :param Boolean ask: Whether to ask before deleting.
-
-    """
-    if ask and not query_yes_no('Are you sure you want to delete the contents of the cache?'):
-        return
-
-    if different_cache_dir is None:
-        cache_dir = get_cache_dir(versioned=False)
-    else:
-        cache_dir = different_cache_dir
-
-    for root, dirs, files in os.walk(cache_dir):
-        for f in files:
-            os.unlink(join(root, f))
-        for d in dirs:
-            shutil.rmtree(join(root, d))
-
-def local_index(cache_dir=get_cache_dir()):
-    return generate_index(cache_dir)
-
-def list_cached_maps():
-    """Return a list of all cached maps."""
-    return local_index()['maps']
-
-def list_cached_models():
-    """Return a list of all cached models."""
-    return local_index()['models']
 
 # server management
 
@@ -118,7 +52,7 @@ def list_available_models():
 
 # download maps and models
 
-def _json_for_name(name, kind, cache_dir):
+def _json_for_name(name, kind):
     # check the name
     name = name.replace('.json', '')
 
@@ -126,52 +60,29 @@ def _json_for_name(name, kind, cache_dir):
         return [(obj['organism'], obj[kind + '_name']) for obj in index[kind + 's']
                 if obj[kind + '_name'] == name]
 
-    # first check the local index
-    match = match_in_index(name, local_index(cache_dir=cache_dir), kind)
+    try:
+        index = server_index()
+    except URLError:
+        raise Exception('Could not connect to the Escher server')
+    match = match_in_index(name, server_index(), kind)
     if len(match) == 0:
-        path = None
-    else:
-        org, name = match[0]
-        path = join(cache_dir, kind + 's', org, name + '.json')
+        raise Exception('Could not find the %s %s on the server' % (kind, name))
+    org, name = match[0]
+    url = (get_url(kind + '_download', source='web', protocol='https') +
+            '/'.join([url_escape(x, plus=False) for x in [org, name + '.json']]))
+    warn('Downloading from %s' % (kind.title(), url))
+    try:
+        download = urlopen(url)
+    except URLError:
+        raise ValueError('No %s found in at %s' % (kind, url))
+    data = _decode_response(download)
+    return data
 
-    if path:
-        # load the file
-        with open(path, 'rb') as f:
-            return f.read().decode('utf-8')
-    # if the file is not present attempt to download
-    else:
-        try:
-            index = server_index()
-        except URLError:
-            raise Exception(('Could not find the %s %s in the cache, and could '
-                             'not connect to the Escher server' % (kind, name)))
-        match = match_in_index(name, server_index(), kind)
-        if len(match) == 0:
-            raise Exception('Could not find the %s %s in the cache or on the server' % (kind, name))
-        org, name = match[0]
-        url = (get_url(kind + '_download', source='web', protocol='https') +
-               '/'.join([url_escape(x, plus=False) for x in [org, name + '.json']]))
-        warn('%s not in cache. Attempting download from %s' % (kind.title(), url))
-        try:
-            download = urlopen(url)
-        except URLError:
-            raise ValueError('No %s found in cache or at %s' % (kind, url))
-        data = _decode_response(download)
-        # save the file
-        org_path = join(cache_dir, kind + 's', org)
-        try:
-            os.makedirs(org_path)
-        except OSError:
-            pass
-        with open(join(org_path, name + '.json'), 'w') as outfile:
-            outfile.write(data)
-        return data
+def model_json_for_name(model_name):
+    return _json_for_name(model_name, 'model')
 
-def model_json_for_name(model_name, cache_dir=get_cache_dir()):
-    return _json_for_name(model_name, 'model', cache_dir)
-
-def map_json_for_name(map_name, cache_dir=get_cache_dir()):
-    return _json_for_name(map_name, 'map', cache_dir)
+def map_json_for_name(map_name):
+    return _json_for_name(map_name, 'map')
 
 # helper functions
 
@@ -232,17 +143,15 @@ def _load_resource(resource, name, safe=False):
 class Builder(object):
     """A metabolic map that can be viewed, edited, and used to visualize data.
 
-    This map will also show metabolic fluxes passed in during consruction.  It
+    This map will also show metabolic fluxes passed in during consruction. It
     can be viewed as a standalone html inside a browswer. Alternately, the
     respresentation inside an IPython notebook will also display the map.
 
-    Maps are stored in json files and are stored in a cache directory. Maps
-    which are not found will be downloaded from a map repository if found.
+    Maps are downloaded from the map repository if found by name.
 
     :param map_name:
 
-        A string specifying a map to be downloaded from the Escher web server,
-        or loaded from the cache.
+        A string specifying a map to be downloaded from the Escher web server.
 
     :param map_json:
 
@@ -253,8 +162,7 @@ class Builder(object):
 
     :param model_name:
 
-        A string specifying a model to be downloaded from the Escher web server,
-        or loaded from the cache.
+        A string specifying a model to be downloaded from the Escher web server.
 
     :param model_json:
 
@@ -282,10 +190,7 @@ class Builder(object):
 
     :param local_host:
 
-        A hostname that will be used for any local files. This is generally used
-        for using the notebook offline and for testing in the IPython Notebook
-        with modified Escher code. An example value for local_host is
-        'http://localhost:7778/'.
+        deprecated
 
     :param id:
 
@@ -347,6 +252,9 @@ class Builder(object):
         reaction_data=None, metabolite_data=None, gene_data=None,
         local_host=None, id=None, safe=False, **kwargs):
 
+        if local_host is not None:
+            warn('The local_host option is deprecated')
+
         self.safe = safe
 
         # load the map
@@ -368,7 +276,6 @@ class Builder(object):
         self.reaction_data = reaction_data
         self.metabolite_data = metabolite_data
         self.gene_data = gene_data
-        self.local_host = local_host
 
         # remove illegal characters from css
         try:
@@ -470,21 +377,17 @@ class Builder(object):
             self.loaded_map_json = map_json_for_name(self.map_name)
 
 
-    def _get_html(self, js_source='web', menu='none', scroll_behavior='pan',
+    def _get_html(self, js_source=None, menu='none', scroll_behavior='pan',
                   html_wrapper=False, enable_editing=False, enable_keys=False,
                   minified_js=True, fill_screen=False, height='800px',
                   never_ask_before_quit=False, static_site_index_json=None,
-                  protocol=None, ignore_bootstrap=False):
+                  protocol=None, ignore_bootstrap=None):
         """Generate the Escher HTML.
 
         Arguments
         --------
 
-        js_source: Can be one of the following:
-            'web' - (Default) use js files from unpkg.
-            'local' - Use compiled js files in the local escher installation. Works offline.
-            'dev' - No longer necessary with source maps. This now gives the
-                    same behavior as 'local'.
+        js_source: Deprecated.
 
         menu: Menu bar options include:
             'none' - (Default) No menu or buttons.
@@ -510,9 +413,7 @@ class Builder(object):
         leave the page. By default, this message is displayed if enable_editing
         is True.
 
-        static_site_index_json: The index, as a JSON string, for the static
-        site. Use javascript to parse the URL options. Used for
-        generating static pages (see static_site.py).
+        static_site_index_json: deprecated
 
         protocol: The protocol can be 'http', 'https', or None which indicates a
         'protocol relative URL', as in //escher.github.io. Ignored if source is
@@ -522,8 +423,12 @@ class Builder(object):
 
         """
 
-        if js_source not in ['web', 'local', 'dev']:
-            raise Exception('Bad value for js_source: %s' % js_source)
+        if js_source is not None:
+            warn('The js_source option is deprecated')
+        if static_site_index_json is not None:
+            warn('The static_site_index_json option is deprecated')
+        if ignore_bootstrap is not None:
+            warn('The ignore_bootstrap option is deprecated')
 
         if menu not in ['none', 'zoom', 'all']:
             raise Exception('Bad value for menu: %s' % menu)
@@ -541,21 +446,9 @@ class Builder(object):
         elif type(height) is str:
             height = str(height)
 
-        # set the proper urls
-        url_source = 'local' if (js_source=='local' or js_source=='dev') else 'web'
-        local_host = self.local_host
-
-        # get the urls
-        escher_url = get_url(('escher_min' if minified_js else 'escher'),
-                             url_source, local_host, protocol)
-        favicon_url = get_url('favicon', url_source, local_host, protocol)
         # for static site
-        map_download_url = get_url('map_download', url_source, local_host, protocol)
-        model_download_url = get_url('model_download', url_source, local_host, protocol)
-
-        # local host
-        lh_string = ('' if local_host is None else
-                     local_host.rstrip('/') + '/')
+        map_download_url = get_url('map_download', url_source, None, protocol)
+        model_download_url = get_url('model_download', url_source, None, protocol)
 
         # options
         options = {
@@ -600,18 +493,13 @@ class Builder(object):
         return html
 
 
-    def display_in_notebook(self, js_source='web', menu='zoom', scroll_behavior='none',
-                            minified_js=True, height=500, enable_editing=False):
+    def display_in_notebook(self, js_source=None, menu='zoom', scroll_behavior='none',
+                            minified_js=None, height=500, enable_editing=False):
         """Embed the Map within the current IPython Notebook.
 
         :param string js_source:
 
-            Can be one of the following:
-
-            - *web* (Default) - Use JavaScript files from escher.github.io.
-            - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
-            - *dev* - No longer necessary with source maps. This now gives the
-                      same behavior as 'local'.
+            deprecated
 
         :param string menu: Menu bar options include:
 
@@ -627,99 +515,50 @@ class Builder(object):
 
         :param Boolean minified_js:
 
-            If True, use the minified version of JavaScript and CSS files.
+            Deprectated.
 
         :param height: Height of the HTML container.
 
         :param Boolean enable_editing: Enable the map editing modes.
 
         """
-        if (enable_editing and menu == 'zoom'):
-            menu = 'all'
-        if enable_editing:
-            print('Some functions (e.g. saving maps) are not available in the notebook. Use '
-                  'Builder.display_in_browser() for a full-featured Escher Builder.')
-        html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
-                              html_wrapper=False, enable_editing=enable_editing, enable_keys=False,
-                              minified_js=minified_js, fill_screen=False, height=height,
-                              never_ask_before_quit=True, ignore_bootstrap=True)
-        # import here, in case users don't have requirements installed
-        try:
-            from IPython.display import HTML
-        except ImportError:
-            raise Exception('You need to be using the IPython notebook for this function to work')
-        return HTML(html)
+        if js_source is not None:
+            warn('The js_source option is deprecated')
+        if minified_js is not None:
+            warn('The minified_js option is deprecated')
 
+        return EscherWidget(
+            menu=menu,
+            scroll_behavior=scroll_behavior,
+            height=height,
+            enable_editing=enable_editing,
+        )
 
     def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50, js_source='web',
                            menu='all', scroll_behavior='pan', enable_editing=True, enable_keys=True,
                            minified_js=True, never_ask_before_quit=False):
-        """Launch a web browser to view the map.
+        """Deprecated.
 
-        :param ip: The IP address to serve the map on.
-
-        :param port:
-
-            The port to serve the map on. If specified the port is occupied,
-            then a random free port will be used.
-
-        :param int n_retries:
-
-            The number of times the server will try to find a port before
-            quitting.
-
-        :param string js_source:
-
-            Can be one of the following:
-
-            - *web* (Default) - Use JavaScript files from escher.github.io.
-            - *local* - Use compiled JavaScript files in the local Escher installation. Works offline.
-            - *dev* - No longer necessary with source maps. This now gives the
-                      same behavior as 'local'.
-
-        :param string menu: Menu bar options include:
-
-            - *none* - No menu or buttons.
-            - *zoom* - Just zoom buttons.
-            - *all* (Default) - Menu and button bar.
-
-        :param string scroll_behavior: Scroll behavior options:
-
-            - *pan* - Pan the map.
-            - *zoom* - Zoom the map.
-            - *none* (Default) - No scroll events.
-
-        :param Boolean enable_editing: Enable the map editing modes.
-
-        :param Boolean enable_keys: Enable keyboard shortcuts.
-
-        :param Boolean minified_js:
-
-            If True, use the minified version of JavaScript and CSS files.
-
-        :param Boolean never_ask_before_quit:
-
-            Never display an alert asking if you want to leave the page. By
-            default, this message is displayed if enable_editing is True.
+        We recommend using the Jupyter Widget (which now supports all Escher
+        features) or the save_html option to generate a standalone HTML file
+        that loads the map.
 
         """
-        html = self._get_html(js_source=js_source, menu=menu, scroll_behavior=scroll_behavior,
-                              html_wrapper=True, enable_editing=enable_editing, enable_keys=enable_keys,
-                              minified_js=minified_js, fill_screen=True, height="100%",
-                              never_ask_before_quit=never_ask_before_quit)
-        serve_and_open(html, ip=ip, port=port, n_retries=n_retries)
+        raise Exception(('display_in_browser is deprecated. We recommend using'
+                         'the Jupyter Widget (which now supports all Escher'
+                         'features) or the save_html option to generate a'
+                         'standalone HTML file that loads the map.'))
 
-
-    def save_html(self, filepath=None, overwrite=False, js_source='web',
-                  protocol='https', menu='all', scroll_behavior='pan',
+    def save_html(self, filepath=None, overwrite=False, js_source=None,
+                  protocol=None, menu='all', scroll_behavior='pan',
                   enable_editing=True, enable_keys=True, minified_js=True,
                   never_ask_before_quit=False, static_site_index_json=None):
         """Save an HTML file containing the map.
 
         :param string filepath:
 
-            The HTML file will be saved to this location. When js_source is
-            'local', then a new directory will be created with this name.
+            The HTML and JS files will be saved to a new directory in this
+            location.
 
         :param Boolean overwrite:
 
@@ -727,21 +566,11 @@ class Builder(object):
 
         :param string js_source:
 
-            Can be one of the following:
-
-            - *web* (Default) - Use JavaScript files from escher.github.io.
-            - *local* - Use compiled JavaScript files in the local Escher
-                        installation. Works offline. To make the dependencies
-                        available to the downloaded file, a new directory will
-                        be made with the name specified by filepath.
-            - *dev* - No longer necessary with source maps. This now gives the
-                      same behavior as 'local'.
+            Deprecated
 
         :param string protocol:
 
-            The protocol can be 'http', 'https', or None which indicates a
-            'protocol relative URL', as in //escher.github.io. Ignored if source
-            is local.
+            Deprecated
 
         :param string menu: Menu bar options include:
 
@@ -772,61 +601,54 @@ class Builder(object):
 
         :param string static_site_index_json:
 
-            The index, as a JSON string, for the static site. Use javascript
-            to parse the URL options. Used for generating static pages (see
-            static_site.py).
+            Deprecated
 
         """
+        if js_source is not None:
+            warn('The js_source option is deprecated')
+        if protocol is not None:
+            warn('The protocol option is deprecated')
+        if static_site_index_json is not None:
+            warn('The static_site_index_json option is deprecated')
+
+        if filepath is None:
+            raise Exception('Must provide a filepath')
 
         filepath = expanduser(filepath)
 
-        if js_source in ['local', 'dev']:
-            if filepath is None:
-                raise Exception('Must provide a filepath when js_source is not "web"')
-
-            # make a directory
-            directory = re.sub(r'\.html$', '', filepath)
-            if exists(directory):
-                if not overwrite:
-                    raise Exception('Directory already exists: %s' % directory)
-            else:
-                os.makedirs(directory)
-            # add dependencies to the directory
-            escher = get_url('escher_min' if minified_js else 'escher', 'local')
-            favicon = get_url('favicon', 'local')
-
-            for path in [escher, favicon]:
-                if path is None:
-                    continue
-                src = join(root_directory, path)
-                dest = join(directory, path)
-                dest_dir = dirname(dest)
-                if not exists(dest_dir):
-                    os.makedirs(dest_dir)
-                shutil.copy(src, dest)
-            filepath = join(directory, 'index.html')
+        # make a directory
+        directory = re.sub(r'\.html$', '', filepath)
+        if exists(directory):
+            if not overwrite:
+                raise Exception('Directory already exists: %s' % directory)
         else:
-            if not filepath.endswith('.html'):
-                filepath += '.html'
-            if exists(filepath) and not overwrite:
-                raise Exception('File already exists: %s' % filepath)
+            os.makedirs(directory)
+        # add dependencies to the directory
+        escher = get_url('escher_min' if minified_js else 'escher', 'local')
+        favicon = get_url('favicon', 'local')
 
-        html = self._get_html(js_source=js_source, menu=menu,
-                              scroll_behavior=scroll_behavior,
-                              html_wrapper=True, enable_editing=enable_editing,
-                              enable_keys=enable_keys, minified_js=minified_js,
-                              fill_screen=True, height="100%",
-                              never_ask_before_quit=never_ask_before_quit,
-                              static_site_index_json=static_site_index_json,
-                              protocol=protocol)
-        if filepath is not None:
-            with open(filepath, 'wb') as f:
-                f.write(html.encode('utf-8'))
-            return filepath
-        else:
-            from tempfile import mkstemp
-            from os import write, close
-            os_file, filename = mkstemp(suffix=".html", text=False) # binary
-            write(os_file, html.encode('utf-8'))
-            close(os_file)
-            return filename
+        for path in [escher, favicon]:
+            if path is None:
+                continue
+            src = join(root_directory, path)
+            dest = join(directory, path)
+            dest_dir = dirname(dest)
+            if not exists(dest_dir):
+                os.makedirs(dest_dir)
+            shutil.copy(src, dest)
+        filepath = join(directory, 'index.html')
+
+        html = self._get_html(
+            menu=menu,
+            scroll_behavior=scroll_behavior,
+            html_wrapper=True,
+            enable_editing=enable_editing,
+            enable_keys=enable_keys,
+            minified_js=minified_js,
+            fill_screen=True,
+            height="100%",
+            never_ask_before_quit=never_ask_before_quit,
+        )
+        with open(filepath, 'wb') as f:
+            f.write(html.encode('utf-8'))
+        return filepath

@@ -31,3 +31,5 @@ package-lock.json
 node_modules/
 .yarnclean
 .mypy_cache/
+/TODO.txt
+/py/escher/package.json

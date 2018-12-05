@@ -1,10 +1,3 @@
-Escher Python Package
----------------------
+For documentation on the Escher Python package, see:
 
-To install from source, run:
-
-```
-python setup.py install
-# or
-python setup.py develop
-```
+https://escher.readthedocs.io/en/stable/escher-python.html

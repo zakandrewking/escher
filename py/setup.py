@@ -20,59 +20,6 @@ full_version = __import__('version').__full_version__
 package = __import__('version').package
 port = 8789
 
-class CleanCommand(Command):
-    description = "Custom clean command that removes static site"
-    user_options = []
-    def initialize_options(self):
-        pass
-    def finalize_options(self):
-        pass
-    def run(self):
-        def remove_if(x):
-            if exists(x): rmtree(x)
-        remove_if(join(directory, 'build'))
-        remove_if(join(directory, 'dist'))
-        # remove site files
-        remove_if(join(directory, '..', 'builder'))
-        for f in glob(join(directory, '..', 'index.html')):
-            os.remove(f)
-        print('done cleaning')
-
-
-class BuildGHPagesCommand(Command):
-    description = "Custom build command that generates static site, and copies escher libs"
-    user_options = []
-    def initialize_options(self):
-        pass
-    def finalize_options(self):
-       pass
-    def run(self):
-        # generate the static site
-        try:
-            from escher import generate_index, static_site
-        except ImportError:
-            raise Exception('Escher not installed')
-        generate_index.main()
-        static_site.generate_static_site()
-        print('Done building gh-pages')
-
-
-class TestCommand(Command):
-    description = "Custom test command that runs pytest"
-    user_options = [('noweb', None, 'Skip run tests that require the Escher website')]
-    def initialize_options(self):
-        self.noweb = False
-    def finalize_options(self):
-        pass
-    def run(self):
-        import pytest
-        if self.noweb:
-            exit_code = pytest.main(['-m', 'not web'])
-        else:
-            exit_code = pytest.main([])
-        sys.exit(exit_code)
-
-
 setup(
     name='Escher',
     version=full_version,
@@ -91,6 +38,8 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Operating System :: OS Independent'
     ],
     packages=find_packages(),
@@ -117,15 +66,7 @@ setup(
         'jsonschema>=2.4.0',
         'ipywidgets>=7.0.0,<8',
     ],
-    extras_require={'docs': ['sphinx>=1.2',
-                             'sphinx-rtd-theme>=0.1.6'],
-                    'all': ['sphinx>=1.2',
-                            'sphinx-rtd-theme>=0.1.6',
-                            'ipython>=4.0.2',
-                            'jupyter>=1.0.0',
-                            'wheel>=0.24.0',
-                            'twine>=1.5.0'] },
-    cmdclass={'clean': CleanCommand,
-              'build_gh': BuildGHPagesCommand,
-              'test': TestCommand}
+    extras_require={
+        'docs': ['sphinx>=1.2', 'sphinx-rtd-theme>=0.1.6'],
+    },
 )
