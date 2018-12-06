@@ -8,10 +8,6 @@ from traitlets import Unicode, validate
 
 
 class EscherWidget(widgets.DOMWidget):
-    def __init__(**kwargs):
-        """Create a widget. Passes all kwargs to Javascript."""
-        pass
-
     _view_name = Unicode('EscherMapView').tag(sync=True)
     _model_name = Unicode('EscherMapModel').tag(sync=True)
     _view_module = Unicode('jupyter-escher').tag(sync=True)

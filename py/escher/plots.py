@@ -3,8 +3,11 @@ from __future__ import print_function, unicode_literals
 
 from escher.urls import get_url, root_directory
 from escher.util import b64dump
-from escher.widget import EscherWidget
+from escher.version import __version__
 
+from cobra import Model
+import ipywidgets as widgets
+from traitlets import Unicode
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
@@ -142,14 +145,19 @@ def _load_resource(resource, name):
     raise Exception('Could not load %s.' % name)
 
 
-class Builder(object):
-    """A metabolic map that can be viewed, edited, and used to visualize data.
+class Builder(widgets.DOMWidget):
+    """A Python wrapper for the Escher metabolic map that can be viewed, edited,
+    and used to visualize data.
 
     This map will also show metabolic fluxes passed in during consruction. It
     can be viewed as a standalone html inside a browswer. Alternately, the
-    respresentation inside an IPython notebook will also display the map.
+    respresentation inside a Jupyter Notebook will also display the map.
 
     Maps are downloaded from the map repository if found by name.
+
+    :param height:
+
+        The height of the Escher Jupyter widget.
 
     :param map_name:
 
@@ -160,7 +168,9 @@ class Builder(object):
         A JSON string, or a file path to a JSON file, or a URL specifying a
         JSON file to be downloaded.
 
-    :param model: A Cobra model.
+    :param model:
+
+        A COBRApy model.
 
     :param model_name:
 
@@ -190,18 +200,6 @@ class Builder(object):
 
         A dictionary with keys that correspond to gene ids and values that will
         be mapped to corresponding reactions.
-
-    :param local_host:
-
-        Deprecated
-
-    :param id:
-
-        Deprecated
-
-    :param safe:
-
-        Deprecated
 
     **Keyword Arguments**
 
@@ -248,331 +246,213 @@ class Builder(object):
 
     """
 
-    def __init__(self, map_name=None, map_json=None, model=None,
-                 model_name=None, model_json=None, embedded_css=None,
-                 reaction_data=None, metabolite_data=None, gene_data=None,
-                 local_host=None, id=None, safe=None, **kwargs):
-
-        if local_host is not None:
-            warn('The local_host option is deprecated')
-
-        if safe is not None:
-            warn('The safe option is deprecated')
-
-        if id is not None:
-            warn('The id option is deprecated')
-
-        # load the map
-        self.map_name = map_name
-        self.map_json = map_json
-        self.loaded_map_json = None
-        if map_name and map_json:
-            warn('map_json overrides map_name')
-        self._load_map()
-        # load the model
-        self.model = model
-        self.model_name = model_name
-        self.model_json = model_json
-        self.loaded_model_json = None
-        if sum([x is not None for x in (model, model_name, model_json)]) >= 2:
-            warn('model overrides model_json, and both override model_name')
-        self._load_model()
-        # set the args
-        self.reaction_data = reaction_data
-        self.metabolite_data = metabolite_data
-        self.gene_data = gene_data
-
-        # remove illegal characters from css
-        try:
-            self.embedded_css = (embedded_css.replace('\n', ''))
-        except AttributeError:
-            self.embedded_css = None
-
-        # set up the options
-        self.options = [
-            'use_3d_transform',
-            'enable_search',
-            'fill_screen',
-            'zoom_to_element',
-            'full_screen_button',
-            'starting_reaction',
-            'unique_map_id',
-            'primary_metabolite_radius',
-            'secondary_metabolite_radius',
-            'marker_radius',
-            'gene_font_size',
-            'hide_secondary_metabolites',
-            'show_gene_reaction_rules',
-            'hide_all_labels',
-            'canvas_size_and_loc',
-            'reaction_styles',
-            'reaction_compare_style',
-            'reaction_scale',
-            'reaction_no_data_color',
-            'reaction_no_data_size',
-            'and_method_in_gene_reaction_rule',
-            'metabolite_styles',
-            'metabolite_compare_style',
-            'metabolite_scale',
-            'metabolite_no_data_color',
-            'metabolite_no_data_size',
-            'identifiers_on_map',
-            'highlight_missing',
-            'allow_building_duplicate_reactions',
-            'cofactors',
-            'enable_tooltips',
-        ]
-
-        def get_getter_setter(o):
-            """Use a closure."""
-            # create local fget and fset functions
-            fget = lambda self: getattr(self, '_%s' % o)
-            fset = lambda self, value: setattr(self, '_%s' % o, value)
-            return fget, fset
-        for option in self.options:
-            fget, fset = get_getter_setter(option)
-            # make the setter
-            setattr(self.__class__, 'set_%s' % option, fset)
-            # add property to self
-            setattr(self.__class__, option, property(fget))
-            # add corresponding local variable
-            setattr(self, '_%s' % option, None)
-
-        # set the kwargs
-        for key, val in kwargs.items():
-            try:
-                getattr(self, 'set_%s' % key)(val)
-            except AttributeError:
-                print('Unrecognized keywork argument %s' % key)
-
-    def _load_model(self):
-        """Load the model.
-
-        Try first from self.model, second from self.model_json, and
-        third from from self.model_name.
-
-        """
-        if self.model is not None:
-            try:
-                import cobra.io
-            except ImportError:
-                raise Exception(('The COBRApy package must be available to '
-                                 'load a COBRA model object'))
-            self.loaded_model_json = cobra.io.to_json(self.model)
-        elif self.model_json is not None:
-            self.loaded_model_json = _load_resource(self.model_json,
-                                                    'model_json')
-        elif self.model_name is not None:
-            self.loaded_model_json = model_json_for_name(self.model_name)
-
-    def _load_map(self):
-        """Load the map from input map_json using _load_resource, or, secondarily,
-           from map_name.
-
-        """
-        if self.map_json is not None:
-            self.loaded_map_json = _load_resource(self.map_json,
-                                                  'map_json')
-        elif self.map_name is not None:
-            self.loaded_map_json = map_json_for_name(self.map_name)
-
-    def display_in_notebook(self, js_source=None, menu='zoom',
-                            scroll_behavior='none', minified_js=None,
-                            height=500, enable_editing=False):
-        """Embed the Map within the current IPython Notebook.
-
-        :param string js_source:
-
-            Deprecated
-
-        :param string menu: Menu bar options include:
-
-            - *none* - No menu or buttons.
-            - *zoom* - Just zoom buttons.
-            - Note: The *all* menu option does not work in an IPython notebook.
-
-        :param string scroll_behavior: Scroll behavior options:
-
-            - *pan* - Pan the map.
-            - *zoom* - Zoom the map.
-            - *none* - (Default) No scroll events.
-
-        :param Boolean minified_js:
-
-            Deprecated
-
-        :param height: Height of the HTML container.
-
-        :param Boolean enable_editing: Enable the map editing modes.
-
-        """
-        if js_source is not None:
-            warn('The js_source option is deprecated')
-
-        if minified_js is not None:
-            warn('The minified_js option is deprecated')
-
-        # options
-        # TODO deduplicate
-        options = {
-            'menu': menu,
-            'enable_keys': enable_keys,
-            'enable_editing': enable_editing,
-            'scroll_behavior': scroll_behavior,
-            'fill_screen': fill_screen,
-            'never_ask_before_quit': never_ask_before_quit,
-            'reaction_data': self.reaction_data,
-            'metabolite_data': self.metabolite_data,
-            'gene_data': self.gene_data,
-        }
-        # Add the specified options
-        for option in self.options:
-            val = getattr(self, option)
-            if val is None:
-                continue
-            options[option] = val
-
-        return EscherWidget(
-            menu=menu,
-            scroll_behavior=scroll_behavior,
-            height=height,
-            enable_editing=enable_editing,
-            options=this.options,
-            embedded_css=this.embedded_css,
-            loaded_map_json=this.loaded_map_json,
-            loaded_model_json=this.loaded_model_json,
-        )
-
-    def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50,
-                           js_source='web', menu='all', scroll_behavior='pan',
-                           enable_editing=True, enable_keys=True,
-                           minified_js=True, never_ask_before_quit=False):
-        """Deprecated.
-
-        We recommend using the Jupyter Widget (which now supports all Escher
-        features) or the save_html option to generate a standalone HTML file
-        that loads the map.
-
-        """
-        raise Exception(('display_in_browser is deprecated. We recommend using'
-                         'the Jupyter Widget (which now supports all Escher'
-                         'features) or the save_html option to generate a'
-                         'standalone HTML file that loads the map.'))
-
-    def save_html(self, filepath=None, overwrite=None, js_source=None,
-                  protocol=None, menu='all', scroll_behavior='pan',
-                  enable_editing=True, enable_keys=True, minified_js=None,
-                  never_ask_before_quit=False, static_site_index_json=None):
-        """Save an HTML file containing the map.
-
-        :param string filepath:
-
-            The name of the HTML file.
-
-        :param Boolean overwrite:
-
-            Deprecated
-
-        :param string js_source:
-
-            Deprecated
-
-        :param string protocol:
-
-            Deprecated
-
-        :param string menu: Menu bar options include:
-
-            - *none* - No menu or buttons.
-            - *zoom* - Just zoom buttons.
-            - *all* (Default) - Menu and button bar.
-
-        :param string scroll_behavior: Scroll behavior options:
-
-            - *pan* - Pan the map.
-            - *zoom* - Zoom the map.
-            - *none* (Default) - No scroll events.
-
-        :param Boolean enable_editing: Enable the map editing modes.
-
-        :param Boolean enable_keys: Enable keyboard shortcuts.
-
-        :param Boolean minified_js:
-
-            Deprecated
-
-        :param number height: Height of the HTML container.
-
-        :param Boolean never_ask_before_quit:
-
-            Never display an alert asking if you want to leave the page. By
-            default, this message is displayed if enable_editing is True.
-
-        :param string static_site_index_json:
-
-            Deprecated
-
-        """
-        if js_source is not None:
-            warn('The js_source option is deprecated')
-
-        if overwrite is not None:
-            warn('The overwrite option is deprecated')
-
-        if protocol is not None:
-            warn('The protocol option is deprecated')
-
-        if minified_js is not None:
-            warn('The minified_js option is deprecated')
-
-        if static_site_index_json is not None:
-            warn('The static_site_index_json option is deprecated')
-
-        if filepath is None:
-            raise Exception('Must provide a filepath')
-
-        if not filepath.endswith('.html'):
-            raise Exception('The filepath must end in .html')
-
-        if menu not in ['none', 'zoom', 'all']:
-            raise Exception('Bad value for menu: %s' % menu)
-
-        if scroll_behavior not in ['pan', 'zoom', 'none']:
-            raise Exception('Bad value for scroll_behavior: %s' %
-                            scroll_behavior)
-
-        # options
-        # TODO deduplicate
-        options = {
-            'menu': menu,
-            'enable_keys': enable_keys,
-            'enable_editing': enable_editing,
-            'scroll_behavior': scroll_behavior,
-            'fill_screen': True,
-            'never_ask_before_quit': never_ask_before_quit,
-            'reaction_data': self.reaction_data,
-            'metabolite_data': self.metabolite_data,
-            'gene_data': self.gene_data,
-        }
-        # Add the specified options
-        for option in self.options:
-            val = getattr(self, option)
-            if val is None:
-                continue
-            options[option] = val
-
-        template = env.get_template('standalone.html')
-        html = template.render(
-            escher_url=get_url('escher_min'),
-            # dump json
-            options_json=b64dump(options),
-            map_download_url_json=b64dump(get_url('map_download')),
-            model_download_url_json=b64dump(get_url('model_download')),
-            builder_embed_css_json=b64dump(self.embedded_css),
-            # alreay json
-            map_data_json=b64dump(self.loaded_map_json),
-            model_data_json=b64dump(self.loaded_model_json),
-        )
-
-        with open(expanduser(filepath), 'wb') as f:
-            f.write(html.encode('utf-8'))
+    # widget traitlet definitions
+    _view_name = Unicode('EscherMapView').tag(sync=True)
+    _model_name = Unicode('EscherMapModel').tag(sync=True)
+    _view_module = Unicode('jupyter-escher').tag(sync=True)
+    _model_module = Unicode('jupyter-escher').tag(sync=True)
+    _view_module_version = Unicode(__version__).tag(sync=True)
+    _model_module_version = Unicode(__version__).tag(sync=True)
+
+    # editable attributes
+    height = Unicode().tag(sync=True)
+
+    def __init__(
+            self,
+            #
+            height: str='100px',
+            #
+            # map_name: str=None,
+            # map_json: str=None,
+            # model: Model=None,
+            # model_name: str=None,
+            # model_json: str=None,
+            # embedded_css: str=None,
+            # reaction_data: dict=None,
+            # metabolite_data: dict=None,
+            # gene_data: dict=None,
+            # menu: str='zoom',
+            # scroll_behavior: str='none',
+            # enable_editing: bool=False,
+            # **kwargs,
+    ) -> None:
+        super().__init__()
+
+        # testing height sync
+        self.height = height
+
+        # # load the map
+        # self.map_name = map_name
+        # self.map_json = map_json
+        # self.loaded_map_json = None
+        # if map_name and map_json:
+        #     warn('map_json overrides map_name')
+        # self._load_map()
+        # # load the model
+        # self.model = model
+        # self.model_name = model_name
+        # self.model_json = model_json
+        # self.loaded_model_json = None
+        # if sum([x is not None for x in (model, model_name, model_json)]) >= 2:
+        #     warn('model overrides model_json, and both override model_name')
+        # self._load_model()
+        # # set the args
+        # self.reaction_data = reaction_data
+        # self.metabolite_data = metabolite_data
+        # self.gene_data = gene_data
+
+        # # remove illegal characters from css
+        # try:
+        #     self.embedded_css = (embedded_css.replace('\n', ''))
+        # except AttributeError:
+        #     self.embedded_css = None
+
+        # # set up the options
+        # self.options = [
+        #     'use_3d_transform',
+        #     'enable_search',
+        #     'fill_screen',
+        #     'zoom_to_element',
+        #     'full_screen_button',
+        #     'starting_reaction',
+        #     'unique_map_id',
+        #     'primary_metabolite_radius',
+        #     'secondary_metabolite_radius',
+        #     'marker_radius',
+        #     'gene_font_size',
+        #     'hide_secondary_metabolites',
+        #     'show_gene_reaction_rules',
+        #     'hide_all_labels',
+        #     'canvas_size_and_loc',
+        #     'reaction_styles',
+        #     'reaction_compare_style',
+        #     'reaction_scale',
+        #     'reaction_no_data_color',
+        #     'reaction_no_data_size',
+        #     'and_method_in_gene_reaction_rule',
+        #     'metabolite_styles',
+        #     'metabolite_compare_style',
+        #     'metabolite_scale',
+        #     'metabolite_no_data_color',
+        #     'metabolite_no_data_size',
+        #     'identifiers_on_map',
+        #     'highlight_missing',
+        #     'allow_building_duplicate_reactions',
+        #     'cofactors',
+        #     'enable_tooltips',
+        # ]
+
+        # def get_getter_setter(o):
+        #     """Use a closure."""
+        #     # create local fget and fset functions
+        #     fget = lambda self: getattr(self, '_%s' % o)
+        #     fset = lambda self, value: setattr(self, '_%s' % o, value)
+        #     return fget, fset
+        # for option in self.options:
+        #     fget, fset = get_getter_setter(option)
+        #     # make the setter
+        #     setattr(self.__class__, 'set_%s' % option, fset)
+        #     # add property to self
+        #     setattr(self.__class__, option, property(fget))
+        #     # add corresponding local variable
+        #     setattr(self, '_%s' % option, None)
+
+        # # set the kwargs
+        # for key, val in kwargs.items():
+        #     try:
+        #         getattr(self, 'set_%s' % key)(val)
+        #     except AttributeError:
+        #         print('Unrecognized keywork argument %s' % key)
+
+    # def _load_model(self):
+    #     """Load the model.
+
+    #     Try first from self.model, second from self.model_json, and
+    #     third from from self.model_name.
+
+    #     """
+    #     if self.model is not None:
+    #         try:
+    #             import cobra.io
+    #         except ImportError:
+    #             raise Exception(('The COBRApy package must be available to '
+    #                              'load a COBRA model object'))
+    #         self.loaded_model_json = cobra.io.to_json(self.model)
+    #     elif self.model_json is not None:
+    #         self.loaded_model_json = _load_resource(self.model_json,
+    #                                                 'model_json')
+    #     elif self.model_name is not None:
+    #         self.loaded_model_json = model_json_for_name(self.model_name)
+
+    # def _load_map(self):
+    #     """Load the map from input map_json using _load_resource, or, secondarily,
+    #        from map_name.
+
+    #     """
+    #     if self.map_json is not None:
+    #         self.loaded_map_json = _load_resource(self.map_json,
+    #                                               'map_json')
+    #     elif self.map_name is not None:
+    #         self.loaded_map_json = map_json_for_name(self.map_name)
+
+    # def display_in_notebook(self):
+    #     """Deprecated.
+
+    #     The Builder is now a Jupyter Widget, so you can return the Builder
+    #     object from a cell to display it, or you can manually call the IPython
+    #     display function:
+
+    #     from IPython.display import display
+    #     from escher import Builder
+    #     b = Builder(...)
+    #     display(b)
+
+    #     """
+    #     raise Exception(('display_in_notebook is deprecated. The Builder is '
+    #                      'now a Jupyter Widget, so you can return the '
+    #                      'Builder in a cell to see it, or use the IPython '
+    #                      'display function (see Escher docs for details)'))
+
+    # def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50,
+    #                        js_source='web', menu='all', scroll_behavior='pan',
+    #                        enable_editing=True, enable_keys=True,
+    #                        minified_js=True, never_ask_before_quit=False):
+    #     """Deprecated.
+
+    #     We recommend using the Jupyter Widget (which now supports all Escher
+    #     features) or the save_html option to generate a standalone HTML file
+    #     that loads the map.
+
+    #     """
+    #     raise Exception(('display_in_browser is deprecated. We recommend using'
+    #                      'the Jupyter Widget (which now supports all Escher'
+    #                      'features) or the save_html option to generate a'
+    #                      'standalone HTML file that loads the map.'))
+
+    # def save_html(self, filepath=None):
+    #     """Save an HTML file containing the map.
+
+    #     :param string filepath:
+
+    #         The name of the HTML file.
+
+    #     """
+
+    #     # TODO apply options from self
+    #     options = tranform(self.options)
+
+    #     template = env.get_template('standalone.html')
+    #     html = template.render(
+    #         escher_url=get_url('escher_min'),
+    #         # dump json
+    #         options_json=b64dump(options),
+    #         map_download_url_json=b64dump(get_url('map_download')),
+    #         model_download_url_json=b64dump(get_url('model_download')),
+    #         builder_embed_css_json=b64dump(self.embedded_css),
+    #         # alreay json
+    #         map_data_json=b64dump(self.loaded_map_json),
+    #         model_data_json=b64dump(self.loaded_model_json),
+    #     )
+
+    #     with open(expanduser(filepath), 'wb') as f:
+    #         f.write(html.encode('utf-8'))
