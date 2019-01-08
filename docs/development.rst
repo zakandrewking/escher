@@ -1,9 +1,15 @@
 Developing with Escher
 ----------------------
 
-If you are interested in developing Escher or just want to try out the source
-code, this is the place to start.  You might also want to check out the the
-`Gitter chat room`_ and the `Development Roadmap`_.
+If you are interested in developing software using Escher as a dependency, this
+is the place to start. If want contribute to development of Escher, then check
+out the GitHub repository (instruction for building and testing the project are
+in the README):
+
+https://github.com/zakandrewking/escher
+
+You might also want to check out the the `Gitter chat room`_ and the
+`Development Roadmap`_.
 
 Using the static JavaScript and CSS files
 =========================================
@@ -48,41 +54,6 @@ If you are using JavaScript ES6 import syntax, the default export is Builder::
   import Builder from 'escher'
   import * as escher from 'escher'
   console.log(Builder, escher.Builder, escher.libs.preact)
-
-Building and testing Escher
-===========================
-
-First, install dependencies with npm::
-
-  npm install
-
-Escher uses grunt to manage the build process. To run typical build steps, just run::
-
-  npm run compile
-
-To test the JavaScript files, run::
-
-  npm run test
-
-For Python testing, run this in the ``py`` directory::
-
-  python setup.py test
-
-Build the static website::
-
-  python setup.py build_gh
-
-Clear static website files::
-
-  python setup.py clean
-
-Build and run the docs::
-
-  cd docs
-  make html
-  cd _build/html
-  python -m SimpleHTTPServer # python 2
-  python -m http.server # python 3
 
 Generating and reading Escher and COBRA files
 =============================================

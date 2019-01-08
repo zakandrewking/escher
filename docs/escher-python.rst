@@ -16,6 +16,15 @@ directly::
 
   python setup.py install
 
+To install the Jupyter notebook extension::
+
+  jupyter nbextension enable --py --sys-prefix escher # can be skipped for notebook 5.3 and above
+
+To install the Jupyter Lab extension::
+
+  jupyter labextension install @jupyter-widgets/jupyterlab-manager
+  jupyter labextension install escher
+
 Dependencies should install automatically, but they are:
 
 - `Jinja2`_

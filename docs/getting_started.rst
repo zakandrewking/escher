@@ -7,39 +7,6 @@ Introduction
 **Escher** is here to help you visualize pathway maps. But, if you have never
 heard of a pathway map, you might appreciate a quick introduction.
 
-What are pathway maps?
-^^^^^^^^^^^^^^^^^^^^^^
-
-To understand pathway maps, it is useful to think about the general organization
-of a cell. At the smallest level, molecules in a cell are arranged in
-three-dimensional structures, and these structures determine many of the
-functions that take place in a cell. For example, the 3D structure of an enzyme
-determines the biochemical reactions that it can catalyze. These structures can
-be visualized in 3D using tools like `Jmol`_ (as in this `example structure`_).
-
-The DNA sequence is a second fundamental level of biological organization. DNA
-sequences are the blueprints for all the machinery of the cell, and they can be
-visualized as a one-dimensional series of bases (ATCG) using tools like the
-`UCSC genome browser`_.
-
-To use a football analogy, the 3D molecular structures are akin to the players
-on the field, and the information in the DNA sequence is like the playbook on
-the sidelines. But, football would not be very interesting if the players never
-took to the field and executed those plays. So, we are missing this level of
-detail: *the execution of biological plans by the molecular players*.
-
-What we are missing is the biochemical reaction network. Proteins in the cell
-catalyze the conversion of substrate molecules into product molecules, and these
-*reactions* are responsible for generating energy, constructing cellular machinery
-and structures, detecting molecules in the environment, signaling, and
-more. Biochemical reactions can be grouped into pathways when they work in
-concert to carry out a function. (If a reaction is a football play, then the
-pathway is a `drive`_). And Escher can be used to visualize these reactions and
-pathways. Together, we call these visualizations **pathway maps**.
-
-Escher to the rescue
-^^^^^^^^^^^^^^^^^^^^
-
 Many Escher maps represent *metabolic* pathways, and Escher was developed at the
 `Systems Biology Research Group`_ where we have been building genome-scale
 models of metabolism over the past fifteen years. However, Escher is not limited to
