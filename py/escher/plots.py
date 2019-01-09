@@ -260,6 +260,13 @@ class Builder(widgets.DOMWidget):
     height = Int(500).tag(sync=True)
     _loaded_map_json = Unicode(None, allow_none=True).tag(sync=True)
 
+    @observe('_loaded_map_json')
+    def _observe_loaded_map_json(self, change):
+        # if map is cleared, then clear these
+        if not change.new:
+            self.map_name = None
+            self.map_json = None
+
     # unsynced builder traits
     map_name = Unicode(None, allow_none=True)
     map_json = Unicode(None, allow_none=True)

@@ -543,7 +543,12 @@ class Builder {
           loadMap={(file) => this.load_map(file)}
           saveSvg={() => this.map.save_svg()}
           savePng={() => this.map.save_png()}
-          clearMap={() => this.map.clear_map()}
+          clearMap={
+            () => {
+              this.map.clear_map()
+              this.callback_manager.run('clear_map')
+            }
+          }
           loadModel={file => this.load_model(file, true)}
           updateRules={() => this.map.convert_map()}
           loadReactionData={file => {

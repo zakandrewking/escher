@@ -507,7 +507,11 @@ function set_status (status, time) {
     }.bind(this), time)
   }
 }
-function clear_map() {
+
+/**
+ * Clear the map.
+ */
+function clear_map () {
   this.reactions = {}
   this.beziers = {}
   this.nodes = {}
@@ -521,6 +525,7 @@ function clear_map() {
   this.apply_gene_data_to_map(null)
   this.draw_everything()
 }
+
 function has_cobra_model() {
   return (this.cobra_model !== null)
 }

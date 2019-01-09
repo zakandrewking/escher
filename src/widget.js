@@ -20,10 +20,16 @@ export default function initializeJupyterWidget () {
         first_load_callback: builder => {
           this.setHeight(sel)
           this.setLoadedMapJson(builder)
+          builder.callback_manager.set('clear_map', () => {
+            this.model.set('_loaded_map_json', null)
+            this.model.save_changes()
+          })
         }
       })
       this.model.on('change:height', () => this.setHeight(sel))
-      this.model.on('change:_loaded_map_json', () => this.setLoadedMapJson(builder))
+      this.model.on('change:_loaded_map_json', () => {
+        this.setLoadedMapJson(builder)
+      })
     }
 
     setHeight (sel) {
@@ -32,7 +38,6 @@ export default function initializeJupyterWidget () {
 
     setLoadedMapJson (builder) {
       const json = this.model.get('_loaded_map_json')
-      console.log(json)
       builder.load_map(json ? JSON.parse(json) : null)
     }
   }
