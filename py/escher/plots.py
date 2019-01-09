@@ -7,7 +7,7 @@ from escher.version import __version__
 
 from cobra import Model
 import ipywidgets as widgets
-from traitlets import Unicode
+from traitlets import Unicode, Int
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
@@ -155,9 +155,9 @@ class Builder(widgets.DOMWidget):
 
     Maps are downloaded from the map repository if found by name.
 
-    :param height:
+    :param int height:
 
-        The height of the Escher Jupyter widget.
+        The height of the Escher Jupyter widget in pixels.
 
     :param map_name:
 
@@ -255,15 +255,14 @@ class Builder(widgets.DOMWidget):
     _model_module_version = Unicode(__version__).tag(sync=True)
 
     # editable attributes
-    height = Unicode().tag(sync=True)
+    height = Int().tag(sync=True)
 
     def __init__(
             self,
             #
-            height: str='100px',
-            #
-            # map_name: str=None,
-            # map_json: str=None,
+            height: int = 500,
+            map_name: str = None,
+            map_json: str = None,
             # model: Model=None,
             # model_name: str=None,
             # model_json: str=None,
@@ -278,16 +277,17 @@ class Builder(widgets.DOMWidget):
     ) -> None:
         super().__init__()
 
-        # testing height sync
+        # check and set attributes
         self.height = height
 
-        # # load the map
-        # self.map_name = map_name
-        # self.map_json = map_json
-        # self.loaded_map_json = None
-        # if map_name and map_json:
-        #     warn('map_json overrides map_name')
-        # self._load_map()
+        # load the map
+        self.map_name = map_name
+        self.map_json = map_json
+        self.loaded_map_json = None
+        if map_name and map_json:
+            warn('map_json overrides map_name')
+        self._load_map()
+
         # # load the model
         # self.model = model
         # self.model_name = model_name
@@ -384,16 +384,17 @@ class Builder(widgets.DOMWidget):
     #     elif self.model_name is not None:
     #         self.loaded_model_json = model_json_for_name(self.model_name)
 
-    # def _load_map(self):
-    #     """Load the map from input map_json using _load_resource, or, secondarily,
-    #        from map_name.
+    def _load_map(self):
+        """Load the map.
 
-    #     """
-    #     if self.map_json is not None:
-    #         self.loaded_map_json = _load_resource(self.map_json,
-    #                                               'map_json')
-    #     elif self.map_name is not None:
-    #         self.loaded_map_json = map_json_for_name(self.map_name)
+        Load from input map_json using _load_resource, or, secondarily, from
+        map_name.
+
+        """
+        if self.map_json is not None:
+            self.loaded_map_json = _load_resource(self.map_json, 'map_json')
+        elif self.map_name is not None:
+            self.loaded_map_json = map_json_for_name(self.map_name)
 
     # def display_in_notebook(self):
     #     """Deprecated.

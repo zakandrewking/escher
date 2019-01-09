@@ -23,7 +23,7 @@ export default function initializeJupyterWidget () {
     }
 
     setHeight (sel) {
-      sel.style('height', this.model.get('height'))
+      sel.style('height', `${this.model.get('height')}px`)
     }
   }
 
@@ -36,7 +36,7 @@ export default function initializeJupyterWidget () {
         _view_module: 'jupyter-escher',
         _model_module_version: version,
         _view_module_version: version,
-        height: '500px'
+        height: 500
       })
     }
   }
