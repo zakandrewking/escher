@@ -23,7 +23,7 @@ export default function initializeJupyterWidget () {
         const builder = Builder(
           this.getMapData(),
           this.getModelData(),
-          null,
+          this.model.get('embedded_css'),
           sel,
           {
             // options
@@ -83,7 +83,8 @@ export default function initializeJupyterWidget () {
         _view_module_version: version,
         height: 500,
         _loaded_map_json: null,
-        _loaded_model_json: null
+        _loaded_model_json: null,
+        embedded_css: null
       })
     }
   }

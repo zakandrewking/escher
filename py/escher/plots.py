@@ -8,7 +8,7 @@ from escher.version import __version__
 import cobra
 from cobra import Model
 import ipywidgets as widgets
-from traitlets import Unicode, Int, Instance, observe
+from traitlets import Unicode, Int, Instance, observe, validate
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
@@ -187,7 +187,13 @@ class Builder(widgets.DOMWidget):
 
     :param embedded_css:
 
-        The CSS (as a string) to be embedded with the Escher SVG.
+        The CSS (as a string) to be embedded with the Escher SVG. In Jupyter,
+        if you change embedded_css on an existing builder instance, the Builder
+        must be restarted for this to take effect (e.g. by re-evaluating the
+        widget in a cell). You can use the default embedded css as a starting
+        point:
+
+        https://github.com/zakandrewking/escher/blob/master/src/Builder-embed.css
 
     :param reaction_data:
 
@@ -240,12 +246,12 @@ class Builder(widgets.DOMWidget):
         - cofactors
         - enable_tooltips
 
-    All keyword arguments can also be set on an existing Builder object
-    using setter functions, e.g.:
+    All arguments can also be set by assigning the property of an an existing
+    Builder object, e.g.:
 
     .. code:: python
 
-        my_builder.set_reaction_styles(new_styles)
+        my_builder.map_name = 'iJO1366.Central metabolism'
 
     """
 
@@ -260,7 +266,6 @@ class Builder(widgets.DOMWidget):
     # editable attributes
     height = Int(500).tag(sync=True)
     _loaded_map_json = Unicode(None, allow_none=True).tag(sync=True)
-    _loaded_model_json = Unicode(None, allow_none=True).tag(sync=True)
 
     @observe('_loaded_map_json')
     def _observe_loaded_map_json(self, change):
@@ -269,6 +274,8 @@ class Builder(widgets.DOMWidget):
             self.map_name = None
             self.map_json = None
 
+    _loaded_model_json = Unicode(None, allow_none=True).tag(sync=True)
+
     @observe('_loaded_model_json')
     def _observe_loaded_model_json(self, change):
         # if model is cleared, then clear these
@@ -276,6 +283,16 @@ class Builder(widgets.DOMWidget):
             self.model = None
             self.model_name = None
             self.model_json = None
+
+    embedded_css = Unicode(None, allow_none=True).tag(sync=True)
+
+    @validate('embedded_css')
+    def _validate_embedded_css(self, proposal):
+        css = proposal['value']
+        if css:
+            return css.replace('\n', '')
+        else:
+            return None
 
     # unsynced builder traits
     map_name = Unicode(None, allow_none=True)
@@ -328,7 +345,7 @@ class Builder(widgets.DOMWidget):
             model: Model = None,
             model_name: str = None,
             model_json: str = None,
-            # embedded_css: str=None,
+            embedded_css: str = None,
             # reaction_data: dict=None,
             # metabolite_data: dict=None,
             # gene_data: dict=None,
@@ -362,16 +379,12 @@ class Builder(widgets.DOMWidget):
         else:
             self.model_name = model_name
 
+        self.embedded_css = embedded_css
+
         # # set the args
         # self.reaction_data = reaction_data
         # self.metabolite_data = metabolite_data
         # self.gene_data = gene_data
-
-        # # remove illegal characters from css
-        # try:
-        #     self.embedded_css = (embedded_css.replace('\n', ''))
-        # except AttributeError:
-        #     self.embedded_css = None
 
         # # set up the options
         # self.options = [
