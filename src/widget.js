@@ -15,15 +15,25 @@ export default function initializeJupyterWidget () {
   class EscherMapView extends base.DOMWidgetView {
     render () {
       const sel = d3Select(this.el).append('div')
-      Builder(null, null, null, sel, {
-        enable_keys: false
+      const builder = Builder(null, null, null, sel, {
+        enable_keys: false,
+        first_load_callback: builder => {
+          this.setHeight(sel)
+          this.setLoadedMapJson(builder)
+        }
       })
-      this.setHeight(sel)
       this.model.on('change:height', () => this.setHeight(sel))
+      this.model.on('change:_loaded_map_json', () => this.setLoadedMapJson(builder))
     }
 
     setHeight (sel) {
       sel.style('height', `${this.model.get('height')}px`)
+    }
+
+    setLoadedMapJson (builder) {
+      const json = this.model.get('_loaded_map_json')
+      console.log(json)
+      builder.load_map(json ? JSON.parse(json) : null)
     }
   }
 
@@ -36,7 +46,8 @@ export default function initializeJupyterWidget () {
         _view_module: 'jupyter-escher',
         _model_module_version: version,
         _view_module_version: version,
-        height: 500
+        height: 500,
+        _loaded_map_json: null
       })
     }
   }

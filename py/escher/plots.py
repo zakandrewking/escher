@@ -7,7 +7,7 @@ from escher.version import __version__
 
 from cobra import Model
 import ipywidgets as widgets
-from traitlets import Unicode, Int
+from traitlets import Unicode, Int, observe
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
@@ -25,6 +25,7 @@ import random
 import string
 from tornado.escape import url_escape
 import shutil
+from typing import Optional
 
 # set up jinja2 template location
 env = Environment(loader=PackageLoader('escher', 'templates'))
@@ -56,7 +57,7 @@ def list_available_models():
 # download maps and models
 
 
-def _json_for_name(name, kind):
+def _json_for_name(name: str, kind: str):
     # check the name
     name = name.replace('.json', '')
 
@@ -146,24 +147,25 @@ def _load_resource(resource, name):
 
 
 class Builder(widgets.DOMWidget):
-    """A Python wrapper for the Escher metabolic map that can be viewed, edited,
-    and used to visualize data.
+    """A Python wrapper for the Escher metabolic map.
 
-    This map will also show metabolic fluxes passed in during consruction. It
-    can be viewed as a standalone html inside a browswer. Alternately, the
-    respresentation inside a Jupyter Notebook will also display the map.
+    This map will also show data on reactions, metabolites, or genes.
 
-    Maps are downloaded from the map repository if found by name.
+    The Builder is a Jupyter widget that can be viewed in a Jupyter notebook or
+    in Jupyter Lab. It can also be used to create a standalone HTML file for
+    the map with the save_html() function.
+
+    Maps are downloaded from the Escher website if found by name.
 
     :param int height:
 
         The height of the Escher Jupyter widget in pixels.
 
-    :param map_name:
+    :param str map_name:
 
-        A string specifying a map to be downloaded from the Escher web server.
+        A string specifying a map to be downloaded from the Escher website.
 
-    :param map_json:
+    :param str map_json:
 
         A JSON string, or a file path to a JSON file, or a URL specifying a
         JSON file to be downloaded.
@@ -255,7 +257,26 @@ class Builder(widgets.DOMWidget):
     _model_module_version = Unicode(__version__).tag(sync=True)
 
     # editable attributes
-    height = Int().tag(sync=True)
+    height = Int(500).tag(sync=True)
+    _loaded_map_json = Unicode(None, allow_none=True).tag(sync=True)
+
+    # unsynced builder traits
+    map_name = Unicode(None, allow_none=True)
+    map_json = Unicode(None, allow_none=True)
+
+    @observe('map_name')
+    def _observe_map_name(self, change):
+        if change.new:
+            self._loaded_map_json = map_json_for_name(change.new)
+        else:
+            self._loaded_map_json = None
+
+    @observe('map_json')
+    def _observe_map_json(self, change):
+        if change.new:
+            self._loaded_map_json = _load_resource(change.new, 'map_json')
+        else:
+            self._loaded_map_json = None
 
     def __init__(
             self,
@@ -277,16 +298,14 @@ class Builder(widgets.DOMWidget):
     ) -> None:
         super().__init__()
 
-        # check and set attributes
+        # set attributes
         self.height = height
-
-        # load the map
-        self.map_name = map_name
-        self.map_json = map_json
-        self.loaded_map_json = None
-        if map_name and map_json:
-            warn('map_json overrides map_name')
-        self._load_map()
+        if map_json:
+            if map_name:
+                warn('map_json overrides map_name')
+            self.map_json = map_json
+        else:
+            self.map_name = map_name
 
         # # load the model
         # self.model = model
@@ -383,18 +402,6 @@ class Builder(widgets.DOMWidget):
     #                                                 'model_json')
     #     elif self.model_name is not None:
     #         self.loaded_model_json = model_json_for_name(self.model_name)
-
-    def _load_map(self):
-        """Load the map.
-
-        Load from input map_json using _load_resource, or, secondarily, from
-        map_name.
-
-        """
-        if self.map_json is not None:
-            self.loaded_map_json = _load_resource(self.map_json, 'map_json')
-        elif self.map_name is not None:
-            self.loaded_map_json = map_json_for_name(self.map_name)
 
     # def display_in_notebook(self):
     #     """Deprecated.

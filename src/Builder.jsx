@@ -200,7 +200,9 @@ class Builder {
     // Set up this callback manager
     this.callback_manager = CallbackManager()
     if (this.options.first_load_callback !== null) {
-      this.callback_manager.set('first_load', this.options.first_load_callback)
+      this.callback_manager.set('first_load', () => {
+        this.options.first_load_callback(this)
+      })
     }
 
     // Set up the zoom container
@@ -473,7 +475,7 @@ class Builder {
       this.options.disabled_buttons.push('Clear metabolite data')
     }
 
-    // Setup selection box
+    // Set up selection box
     if (this.options.zoom_to_element) {
       const type = this.options.zoom_to_element.type
       const element_id = this.options.zoom_to_element.id

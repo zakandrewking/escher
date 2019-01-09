@@ -315,7 +315,8 @@ JavaScript API
 
        .. js:attribute:: options.first_load_callback
 
-          A function to run after loading the Builder.
+          A function to run after loading the Builder. The Builder instance is
+          passed as a single argument to the callback.
 
     ..
        **Callbacks**
