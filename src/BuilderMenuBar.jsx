@@ -64,7 +64,7 @@ class BuilderMenuBar extends Component {
           />
           <MenuButton
             name='Clear model'
-            onClick={() => this.props.loadModel(null)}
+            onClick={() => this.props.clearModel()}
             disabledButtons={this.props.disabled_buttons}
           />
         </Dropdown>

@@ -93,7 +93,7 @@ Then in the `py` directory, install the Python package:
 
 ```
 cd py
-pip install -e .
+pip install -e . # installs escher in develop mode and dependencies
 ```
 
 For Python testing, run this in the `py` directory:
@@ -131,7 +131,7 @@ jupyter labextension link
 jupyter lab --watch
 ```
 
-If you don't see changes when you edit the code, try refreshing, or restarting
+If you don't see changes when you edit the code, try refreshing or restarting
 `jupyter lab --watch`.
 
 ## Docs

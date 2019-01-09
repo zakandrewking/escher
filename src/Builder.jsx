@@ -550,6 +550,12 @@ class Builder {
             }
           }
           loadModel={file => this.load_model(file, true)}
+          clearModel={
+            () => {
+              this.load_model(null)
+              this.callback_manager.run('clear_model')
+            }
+          }
           updateRules={() => this.map.convert_map()}
           loadReactionData={file => {
             this.set_reaction_data(file)

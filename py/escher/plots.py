@@ -5,9 +5,10 @@ from escher.urls import get_url, root_directory
 from escher.util import b64dump
 from escher.version import __version__
 
+import cobra
 from cobra import Model
 import ipywidgets as widgets
-from traitlets import Unicode, Int, observe
+from traitlets import Unicode, Int, Instance, observe
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
@@ -259,6 +260,7 @@ class Builder(widgets.DOMWidget):
     # editable attributes
     height = Int(500).tag(sync=True)
     _loaded_map_json = Unicode(None, allow_none=True).tag(sync=True)
+    _loaded_model_json = Unicode(None, allow_none=True).tag(sync=True)
 
     @observe('_loaded_map_json')
     def _observe_loaded_map_json(self, change):
@@ -267,9 +269,20 @@ class Builder(widgets.DOMWidget):
             self.map_name = None
             self.map_json = None
 
+    @observe('_loaded_model_json')
+    def _observe_loaded_model_json(self, change):
+        # if model is cleared, then clear these
+        if not change.new:
+            self.model = None
+            self.model_name = None
+            self.model_json = None
+
     # unsynced builder traits
     map_name = Unicode(None, allow_none=True)
     map_json = Unicode(None, allow_none=True)
+    model = Instance(Model, allow_none=True)
+    model_name = Unicode(None, allow_none=True)
+    model_json = Unicode(None, allow_none=True)
 
     @observe('map_name')
     def _observe_map_name(self, change):
@@ -285,15 +298,36 @@ class Builder(widgets.DOMWidget):
         else:
             self._loaded_map_json = None
 
+    @observe('model')
+    def _observe_model(self, change):
+        if change.new:
+            self._loaded_model_json = cobra.io.to_json(change.new)
+        else:
+            self._loaded_model_json = None
+
+    @observe('model_name')
+    def _observe_model_name(self, change):
+        if change.new:
+            self._loaded_model_json = model_json_for_name(change.new)
+        else:
+            self._loaded_model_json = None
+
+    @observe('model_json')
+    def _observe_model_json(self, change):
+        if change.new:
+            self._loaded_model_json = _load_resource(change.new, 'model_json')
+        else:
+            self._loaded_model_json = None
+
     def __init__(
             self,
             #
             height: int = 500,
             map_name: str = None,
             map_json: str = None,
-            # model: Model=None,
-            # model_name: str=None,
-            # model_json: str=None,
+            model: Model = None,
+            model_name: str = None,
+            model_json: str = None,
             # embedded_css: str=None,
             # reaction_data: dict=None,
             # metabolite_data: dict=None,
@@ -307,6 +341,7 @@ class Builder(widgets.DOMWidget):
 
         # set attributes
         self.height = height
+
         if map_json:
             if map_name:
                 warn('map_json overrides map_name')
@@ -314,14 +349,19 @@ class Builder(widgets.DOMWidget):
         else:
             self.map_name = map_name
 
-        # # load the model
-        # self.model = model
-        # self.model_name = model_name
-        # self.model_json = model_json
-        # self.loaded_model_json = None
-        # if sum([x is not None for x in (model, model_name, model_json)]) >= 2:
-        #     warn('model overrides model_json, and both override model_name')
-        # self._load_model()
+        if model:
+            if model_name:
+                warn('model overrides model_name')
+            if model_json:
+                warn('model overrides model_json')
+            self.model = model
+        elif model_json:
+            if model_name:
+                warn('model_json overrides model_name')
+            self.model_json = model_json
+        else:
+            self.model_name = model_name
+
         # # set the args
         # self.reaction_data = reaction_data
         # self.metabolite_data = metabolite_data
@@ -389,26 +429,6 @@ class Builder(widgets.DOMWidget):
         #         getattr(self, 'set_%s' % key)(val)
         #     except AttributeError:
         #         print('Unrecognized keywork argument %s' % key)
-
-    # def _load_model(self):
-    #     """Load the model.
-
-    #     Try first from self.model, second from self.model_json, and
-    #     third from from self.model_name.
-
-    #     """
-    #     if self.model is not None:
-    #         try:
-    #             import cobra.io
-    #         except ImportError:
-    #             raise Exception(('The COBRApy package must be available to '
-    #                              'load a COBRA model object'))
-    #         self.loaded_model_json = cobra.io.to_json(self.model)
-    #     elif self.model_json is not None:
-    #         self.loaded_model_json = _load_resource(self.model_json,
-    #                                                 'model_json')
-    #     elif self.model_name is not None:
-    #         self.loaded_model_json = model_json_for_name(self.model_name)
 
     # def display_in_notebook(self):
     #     """Deprecated.

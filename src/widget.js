@@ -15,20 +15,45 @@ export default function initializeJupyterWidget () {
   class EscherMapView extends base.DOMWidgetView {
     render () {
       const sel = d3Select(this.el).append('div')
-      const builder = Builder(null, null, null, sel, {
-        enable_keys: false,
-        first_load_callback: builder => {
+
+      // set height before loading map
+      this.setHeight(sel)
+
+      _.defer(() => {
+        const builder = Builder(
+          this.getMapData(),
+          this.getModelData(),
+          null,
+          sel,
+          {
+            // options
+            enable_keys: false,
+            first_load_callback: builder => {
+              // reset map json in widget
+              builder.callback_manager.set('clear_map', () => {
+                this.model.set('_loaded_map_json', null)
+                this.model.save_changes()
+              })
+
+              // reset model json in widget
+              builder.callback_manager.set('clear_model', () => {
+                this.model.set('_loaded_model_json', null)
+                this.model.save_changes()
+              })
+            }
+          }
+        )
+
+        // update functions
+        this.model.on('change:height', () => {
           this.setHeight(sel)
-          this.setLoadedMapJson(builder)
-          builder.callback_manager.set('clear_map', () => {
-            this.model.set('_loaded_map_json', null)
-            this.model.save_changes()
-          })
-        }
-      })
-      this.model.on('change:height', () => this.setHeight(sel))
-      this.model.on('change:_loaded_map_json', () => {
-        this.setLoadedMapJson(builder)
+        })
+        this.model.on('change:_loaded_map_json', () => {
+          builder.load_map(this.getMapData())
+        })
+        this.model.on('change:_loaded_model_json', () => {
+          builder.load_model(this.getModelData())
+        })
       })
     }
 
@@ -36,9 +61,14 @@ export default function initializeJupyterWidget () {
       sel.style('height', `${this.model.get('height')}px`)
     }
 
-    setLoadedMapJson (builder) {
+    getMapData () {
       const json = this.model.get('_loaded_map_json')
-      builder.load_map(json ? JSON.parse(json) : null)
+      return json ? JSON.parse(json) : null
+    }
+
+    getModelData () {
+      const json = this.model.get('_loaded_model_json')
+      return json ? JSON.parse(json) : null
     }
   }
 
@@ -52,7 +82,8 @@ export default function initializeJupyterWidget () {
         _model_module_version: version,
         _view_module_version: version,
         height: 500,
-        _loaded_map_json: null
+        _loaded_map_json: null,
+        _loaded_model_json: null
       })
     }
   }
