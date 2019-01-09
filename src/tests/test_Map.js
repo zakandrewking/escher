@@ -1,5 +1,5 @@
 const Map = require('../Map')
-const Settings = require('../Settings')
+const Settings = require('../Settings').default
 const CobraModel = require('../CobraModel')
 
 const describe = require('mocha').describe
@@ -46,6 +46,7 @@ describe('Map', () => {
 
     map = Map.from_data(get_map(), svg, null, sel, null,
                         new Settings(set_option, get_option,
+                                     Object.keys(required_options),
                                      required_conditional_options),
                         null, true)
   })

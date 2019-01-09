@@ -1,58 +1,42 @@
-/** Settings. A class to manage settings for a Map.
-
- Arguments
- ---------
-
- setOption: A function, fn(key), that returns the option value for the
- key.
-
- getOption: A function, fn(key, value), that sets the option for the key
- and value.
-
- conditionalOptions: The options to that are conditionally accepted when
- changed. Changes can be abandoned by calling abandon_changes(), or accepted
- by calling accept_changes().
-
- */
-
-import utils from './utils'
 import bacon from 'baconjs'
 
-var Settings = utils.make_class()
-// instance methods
-Settings.prototype = {
-  init,
-  set_conditional,
-  hold_changes,
-  abandon_changes,
-  accept_changes,
-  createConditionalSetting,
-  convertToConditionalStream
+function createSetting (name, initialValue, setOption) {
+  // Set up the bus
+  const bus = new bacon.Bus()
+
+  // Make the event stream and conditionally accept changes
+  const stream = bus.toEventStream()
+
+  // Get the latest
+  stream.onValue(v => setOption(name, v))
+
+  // Push the initial value
+  bus.push(initialValue)
+
+  return { bus, stream }
 }
-module.exports = Settings
 
-function init (setOption, getOption, conditionalOptions) {
-  this.set_option = setOption
-  this.get_option = getOption
+function createConditionalSetting (name, initialValue, setOption, statusBus) {
+  // Set up the bus
+  const conditionalBus = new bacon.Bus()
+  const bus = new bacon.Bus()
 
-  // Manage accepting/abandoning changes
-  this.status_bus = new bacon.Bus()
+  // Make the event stream and conditionally accept changes
+  const stream = convertToConditionalStream(conditionalBus, statusBus)
+        .merge(bus)
 
-  // Create the options
-  this.busses = {}
-  this.streams = {}
-  for (var i = 0, l = conditionalOptions.length; i < l; i++) {
-    var name = conditionalOptions[i]
-    var out = createConditionalSetting(name, getOption(name), setOption,
-                                       this.status_bus)
-    this.busses[name] = out.bus
-    this.streams[name] = out.stream
-  }
+  // Get the latest
+  stream.onValue(v => setOption(name, v))
+
+  // Push the initial value
+  conditionalBus.push(initialValue)
+
+  return { conditionalBus, bus, stream }
 }
 
 /**
- * Hold on to event when hold_property is true, and only keep them if
- * accept_property is true (when hold_property becomes false).
+ * Hold on to event when holdProperty is true, and only keep them if
+ * acceptProperty is true (when holdProperty becomes false).
  */
 function convertToConditionalStream (valueStream, statusStream) {
   // Combine values with status to revert to last value when a reject is passed.
@@ -104,61 +88,102 @@ function convertToConditionalStream (valueStream, statusStream) {
             }
           }
         })
-        // Skip the initial null value
+  // Skip the initial null value
         .skip(1)
-        // Get the current value
+  // Get the current value
         .map(({ currentValue }) => currentValue)
-        // Skip duplicate values
+  // Skip duplicate values
         .skipDuplicates()
-        // property -> event stream
+  // property -> event stream
         .toEventStream()
 
   return held
 }
 
-function createConditionalSetting (name, initialValue, setOption, statusBus) {
-  // Set up the bus
-  var bus = new bacon.Bus()
-
-  // Make the event stream and conditionally accept changes
-  var stream = convertToConditionalStream(bus, statusBus)
-
-  // Get the latest
-  stream.onValue(v => setOption(name, v))
-
-  // Push the initial value
-  bus.push(initialValue)
-
-  return { bus, stream }
-}
-
-/** Set the value of a conditional setting, one that will only be
- accepted if this.accept_changes() is called.
-
- Arguments
- ---------
-
- name: The option name
-
- value: The new value
-
+/**
+ * Settings. A class to manage settings for a Map.
+ *
+ * Arguments
+ * ---------
+ *
+ * setOption: A function, fn(key), that returns the option value for the key.
+ *
+ * getOption: A function, fn(key, value), that sets the option for the key and
+ * value.
+ *
+ * conditionalOptions: The options to that are conditionally accepted when
+ * changed. Changes can be abandoned by calling abandonChanges(), or accepted
+ * by calling acceptChanges().
+ *
  */
-function set_conditional (name, value) {
-  if (!(name in this.busses)) {
-    console.error(`Invalid setting name ${name}`)
-  } else {
-    this.busses[name].push(value)
+export default class Settings {
+  constructor (setOption, getOption, options, conditionalOptions) {
+    this.get_option = getOption
+
+    // Manage accepting/abandoning changes
+    this.statusBus = new bacon.Bus()
+
+    // Create the options
+    this.conditionalBusses = {}
+    this.busses = {}
+    this.streams = {}
+    for (let i = 0; i < options.length; i++) {
+      const name = options[i]
+      if (conditionalOptions.indexOf(name) > -1) {
+        const {
+          conditionalBus,
+          bus,
+          stream
+        } = createConditionalSetting(name, getOption(name), setOption,
+                                     this.statusBus)
+        this.conditionalBusses[name] = conditionalBus
+        this.busses[name] = bus
+        this.streams[name] = stream
+      } else {
+        const { bus, stream } = createSetting(name, getOption(name), setOption)
+        this.busses[name] = bus
+        this.streams[name] = stream
+      }
+    }
   }
-}
 
-function hold_changes () {
-  this.status_bus.push('hold')
-}
+  /**
+   * Set the value of a conditional setting, one that will only be
+   * accepted if this.acceptChanges() is called.
+   *
+   * @param {String} name - The option name
+   * @param {} value - The new value
+  */
+  setConditional (name, value) {
+    if (!(name in this.conditionalBusses)) {
+      console.error(`Invalid setting name ${name}`)
+    } else {
+      this.conditionalBusses[name].push(value)
+    }
+  }
 
-function abandon_changes () {
-  this.status_bus.push('abandon')
-}
+  /**
+   * Set the option. This should always be used instead of setting options
+   * directly. To set options that respect the Settings menu Accept/Abandon, use
+   * setConditional().
+   */
+  set (name, value) {
+    if (!(name in this.busses)) {
+      console.error(`Invalid setting name ${name}`)
+    } else {
+      this.busses[name].push(value)
+    }
+  }
 
-function accept_changes() {
-  this.status_bus.push('accept')
+  holdChanges () {
+    this.statusBus.push('hold')
+  }
+
+  abandonChanges () {
+    this.statusBus.push('abandon')
+  }
+
+  acceptChanges () {
+    this.statusBus.push('accept')
+  }
 }

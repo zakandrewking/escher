@@ -94,7 +94,7 @@ function setup_selection_brush () {
         turn_off_crosshair(selection)
         // unhide secondary metabolites if they are hidden
         if (map.settings.get_option('hide_secondary_metabolites')) {
-          map.settings.set_conditional('hide_secondary_metabolites', false)
+          map.settings.setConditional('hide_secondary_metabolites', false)
           map.draw_everything()
           map.set_status('Showing secondary metabolites. You can hide them ' +
                          'again in Settings.', 2000)

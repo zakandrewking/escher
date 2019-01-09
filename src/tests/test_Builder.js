@@ -101,8 +101,8 @@ describe('Builder', () => {
     const b = Builder(null, null, '', make_parent_sel(d3Body), {})
 
     // copy to make sure Builder does not just mutate original
-    b.settings.set_conditional('metabolite_scale', {...metaboliteScale})
-    b.settings.set_conditional('reaction_scale', {...reactionScale})
+    b.settings.setConditional('metabolite_scale', {...metaboliteScale})
+    b.settings.setConditional('reaction_scale', {...reactionScale})
 
     assert.deepEqual(b.options.metabolite_scale, metaboliteScale)
     assert.deepEqual(b.options.reaction_scale, reactionScale)
@@ -121,10 +121,10 @@ describe('Builder', () => {
   it('set_reaction_data', done => {
     const sel = make_parent_sel(d3Body)
     Builder(get_map(), null, '', sel, {
-      first_load_callback: function () {
+      first_load_callback: builder => {
         // These just need to run right now
-        this.set_reaction_data({ GAPD: 2.0 })
-        this.set_reaction_data(null)
+        builder.set_reaction_data({ GAPD: 2.0 })
+        builder.set_reaction_data(null)
         done()
       }
     })
@@ -133,10 +133,10 @@ describe('Builder', () => {
   it('set_metabolite_data', done => {
     const sel = make_parent_sel(d3Body)
     Builder(get_map(), null, '', sel, {
-      first_load_callback: function () {
+      first_load_callback: builder => {
         // These just need to run right now
-        this.set_metabolite_data({ g3p: 2.0 })
-        this.set_metabolite_data(null)
+        builder.set_metabolite_data({ g3p: 2.0 })
+        builder.set_metabolite_data(null)
         done()
       }
     })
@@ -145,10 +145,10 @@ describe('Builder', () => {
   it('set_gene_data', done => {
     const sel = make_parent_sel(d3Body)
     Builder(get_map(), null, '', sel, {
-      first_load_callback: function () {
+      first_load_callback: builder => {
         // These just need to run right now
-        this.set_gene_data({ b1779: 2.0 })
-        this.set_gene_data(null)
+        builder.set_gene_data({ b1779: 2.0 })
+        builder.set_gene_data(null)
         done()
       }
     })

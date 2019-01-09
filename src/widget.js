@@ -28,6 +28,10 @@ export default function initializeJupyterWidget () {
           {
             // options
             enable_keys: false,
+            reaction_data: this.model.get('reaction_data'),
+            metabolite_data: this.model.get('metabolite_data'),
+            gene_data: this.model.get('gene_data'),
+            scroll_behavior: this.model.get('scroll_behavior'),
             first_load_callback: builder => {
               // reset map json in widget
               builder.callback_manager.set('clear_map', () => {
@@ -39,6 +43,16 @@ export default function initializeJupyterWidget () {
               builder.callback_manager.set('clear_model', () => {
                 this.model.set('_loaded_model_json', null)
                 this.model.save_changes()
+              })
+
+              // get changes from options
+              _.mapObject(builder.settings.streams, (stream, key) => {
+                if (key in this.model.attributes) {
+                  stream.onValue(value => {
+                    this.model.set(key, value)
+                    this.model.save_changes()
+                  })
+                }
               })
             }
           }
@@ -54,6 +68,29 @@ export default function initializeJupyterWidget () {
         this.model.on('change:_loaded_model_json', () => {
           builder.load_model(this.getModelData())
         })
+        this.model.on('change:reaction_data', () => {
+          builder.set_reaction_data(this.model.get('reaction_data'))
+        })
+        this.model.on('change:metabolite_data', () => {
+          builder.set_metabolite_data(this.model.get('metabolite_data'))
+        })
+        this.model.on('change:gene_data', () => {
+          builder.set_gene_data(this.model.get('gene_data'))
+        })
+        this.model.on('change:scroll_behavior', () => {
+          builder.settings.setConditional('scroll_behavior', this.model.get('scroll_behavior'))
+          // TODO make this automatic. see:
+          // https://github.com/zakandrewking/escher/blob/45b59cb6c959dde5cece709a6a937944d8a8a1eb/src/Builder.jsx#L286
+          const newBehavior = builder.settings.get_option('scroll_behavior')
+          builder.zoom_container.set_scroll_behavior(newBehavior)
+        })
+
+        // // for the rest of the options
+        // Object.keys(builder.options).map(key => {
+        //   if (this.model.keys.indexOf(key) > -1) {
+
+        //   }
+        // })
       })
     }
 
@@ -84,7 +121,11 @@ export default function initializeJupyterWidget () {
         height: 500,
         _loaded_map_json: null,
         _loaded_model_json: null,
-        embedded_css: null
+        embedded_css: null,
+        reaction_data: null,
+        metabolite_data: null,
+        gene_data: null,
+        scroll_behavior: 'pan'
       })
     }
   }

@@ -195,7 +195,9 @@ class Builder {
       'metabolite_no_data_color',
       'metabolite_no_data_size'
     ]
-    this.settings = new Settings(set_option, get_option, conditional)
+    this.settings = new Settings(set_option, get_option,
+                                 Object.keys(this.options),
+                                 conditional)
 
     // Set up this callback manager
     this.callback_manager = CallbackManager()
@@ -226,7 +228,7 @@ class Builder {
         if (optionObject) {
           Object.entries(optionObject.options).map(([option, value]) => {
             if (this.options[option] !== value) {
-              this.settings.set_conditional(option, value)
+              this.settings.setConditional(option, value)
               this._update_data(false, true)
             }
           })
@@ -277,10 +279,11 @@ class Builder {
 
       // Setting callbacks. TODO enable atomic updates. Right now, every time the
       // menu closes, everything is drawn.
-      this.settings.status_bus.onValue(x => {
+      this.settings.statusBus.onValue(x => {
         if (x === 'accept') {
           this._update_data(true, true, [ 'reaction', 'metabolite' ], false)
           if (this.zoom_container !== null) {
+            // TODO make this automatic
             const new_behavior = this.settings.get_option('scroll_behavior')
             this.zoom_container.set_scroll_behavior(new_behavior)
           }
@@ -462,18 +465,20 @@ class Builder {
     this.map.key_manager.toggle(this.options.enable_keys)
 
     // Disable clears
+    let newDisabledButtons = this.options.disabled_buttons || []
     if (this.options.disabled_buttons === null) {
-      this.options.disabled_buttons = [];
+      newDisabledButtons = []
     }
     if (!this.options.reaction_data && this.options.disabled_buttons) {
-      this.options.disabled_buttons.push('Clear reaction data')
+      newDisabledButtons.push('Clear reaction data')
     }
     if (!this.options.gene_data && this.options.disabled_buttons) {
-      this.options.disabled_buttons.push('Clear gene data')
+      newDisabledButtons.push('Clear gene data')
     }
     if (!this.options.metabolite_data && this.options.disabled_buttons) {
-      this.options.disabled_buttons.push('Clear metabolite data')
+      newDisabledButtons.push('Clear metabolite data')
     }
+    this.settings.set('disabled_buttons', newDisabledButtons)
 
     // Set up selection box
     if (this.options.zoom_to_element) {
@@ -534,7 +539,7 @@ class Builder {
             // Revert options changed by semanticZoom to their original values if option is active
             if (this.semanticOptions) {
               Object.entries(this.semanticOptions).map(([key, value]) => {
-                this.settings.set_conditional(key, value)
+                this.settings.setConditional(key, value)
               })
               this._update_data()
             }
@@ -716,7 +721,7 @@ class Builder {
     if (this.options.reaction_data !== null &&
         !this.has_custom_reaction_styles &&
         !_.contains(curr_style, 'abs')) {
-      this.settings.set_conditional('reaction_styles', curr_style.concat('abs'))
+      this.settings.setConditional('reaction_styles', curr_style.concat('abs'))
       return function () {
         this.map.set_status('Visualizing absolute value of reaction data. ' +
                             'Change this option in Settings.', 5000)
@@ -748,7 +753,7 @@ class Builder {
    * For documentation of this function, see docs/javascript_api.rst.
    */
   set_reaction_data (data) {
-    this.options.reaction_data = data
+    this.settings.set('reaction_data', data)
     var message_fn = this._reaction_check_add_abs()
     if (message_fn !== null) {
       this._update_data(true, true, 'reaction')
@@ -757,11 +762,13 @@ class Builder {
       this.map.set_status('')
     }
 
-    let index = this.options.disabled_buttons.indexOf('Clear reaction data')
+    const disabledButtonsArray = this.options.disabled_buttons || []
+    const index = disabledButtonsArray.indexOf('Clear reaction data')
     if (index > -1) {
-      this.options.disabled_buttons.splice(index, 1)
+      disabledButtonsArray.splice(index, 1)
+      this.settings.set('disabled_buttons', disabledButtonsArray)
     } else if (index === -1 && data === null) {
-      this.options.disabled_buttons.push('Clear reaction data')
+      this.settings.set('disabled_buttons', [...disabledButtonsArray, 'Clear reaction data'])
     }
   }
 
@@ -771,17 +778,19 @@ class Builder {
   set_gene_data (data, clear_gene_reaction_rules) {
     if (clear_gene_reaction_rules) {
       // default undefined
-      this.settings.set_conditional('show_gene_reaction_rules', false)
+      this.settings.setConditional('show_gene_reaction_rules', false)
     }
-    this.options.gene_data = data
+    this.settings.set('gene_data', data)
     this._update_data(true, true, 'reaction')
     this.map.set_status('')
 
-    let index = this.options.disabled_buttons.indexOf('Clear gene data')
+    const disabledButtonsArray = this.options.disabled_buttons || []
+    const index = disabledButtonsArray.indexOf('Clear gene data')
     if (index > -1) {
-      this.options.disabled_buttons.splice(index, 1)
+      disabledButtonsArray.splice(index, 1)
+      this.settings.set('disabled_buttons', disabledButtonsArray)
     } else if (index === -1 && data === null) {
-      this.options.disabled_buttons.push('Clear gene data')
+      this.settings.set('disabled_buttons', [...disabledButtonsArray, 'Clear gene data'])
     }
   }
 
@@ -789,15 +798,17 @@ class Builder {
     /** For documentation of this function, see docs/javascript_api.rst.
 
      */
-    this.options.metabolite_data = data
+    this.settings.set('metabolite_data', data)
     this._update_data(true, true, 'metabolite')
     this.map.set_status('')
 
-    let index = this.options.disabled_buttons.indexOf('Clear metabolite data')
+    const disabledButtonsArray = this.options.disabled_buttons || []
+    const index = disabledButtonsArray.indexOf('Clear metabolite data')
     if (index > -1) {
-      this.options.disabled_buttons.splice(index, 1)
+      disabledButtonsArray.splice(index, 1)
+      this.settings.set('disabled_buttons', disabledButtonsArray)
     } else if (index === -1 && data === null) {
-      this.options.disabled_buttons.push('Clear metabolite data')
+      this.settings.set('disabled_buttons', [...disabledButtonsArray, 'Clear metabolite data'])
     }
   }
 

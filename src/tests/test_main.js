@@ -8,7 +8,7 @@ describe('main', () => {
     const properties = [
       'version', 'Builder', 'Map', 'Behavior', 'KeyManager', 'DataMenu',
       'UndoStack', 'CobraModel', 'utils', 'SearchIndex', 'Settings',
-      'data_styles', 'escherStatic', 'ZoomContainer'
+      'data_styles', 'ZoomContainer'
     ]
     properties.map(property => {
       assert.property(escher, property)
@@ -32,11 +32,6 @@ describe('main', () => {
     assert(builder1 instanceof Builder)
     assert(builder2 instanceof Builder)
     assert(builder3 instanceof Builder)
-  })
-
-  it('old style class', () => {
-    const settings = new escher.Settings(() => {}, () => {}, [])
-    assert(settings instanceof escher.Settings)
   })
 
   it('old style collection', () => {

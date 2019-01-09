@@ -35,7 +35,7 @@ class BuilderSettingsMenu extends Component {
   }
 
   componentWillAppear () {
-    this.props.settings.hold_changes()
+    this.props.settings.holdChanges()
     this.setState({
       clearEscape: this.props.map.key_manager.add_escape_listener(
         () => this.abandonChanges(),
@@ -56,12 +56,12 @@ class BuilderSettingsMenu extends Component {
   }
 
   abandonChanges () {
-    this.props.settings.abandon_changes()
+    this.props.settings.abandonChanges()
     this.componentWillDisappear()
   }
 
   saveChanges () {
-    this.props.settings.accept_changes()
+    this.props.settings.acceptChanges()
     this.componentWillDisappear()
   }
 
@@ -72,11 +72,11 @@ class BuilderSettingsMenu extends Component {
    */
   handleStyle (value, type) {
     if (this.props[type].indexOf(value) === -1) {
-      this.props.settings.set_conditional(type,
+      this.props.settings.setConditional(type,
         update(this.props[type], {$push: [value]})
       )
     } else if (this.props[type].indexOf(value) > -1) {
-      this.props.settings.set_conditional(type,
+      this.props.settings.setConditional(type,
         update(this.props[type], {$splice: [[this.props[type].indexOf(value), 1]]})
       )
     }
@@ -117,7 +117,7 @@ class BuilderSettingsMenu extends Component {
                         type='radio'
                         name='identifiers'
                         onClick={() => {
-                          this.props.settings.set_conditional(
+                          this.props.settings.setConditional(
                             'identifiers_on_map',
                             'bigg_id'
                           )
@@ -131,7 +131,7 @@ class BuilderSettingsMenu extends Component {
                         type='radio'
                         name='identifiers'
                         onClick={() => {
-                          this.props.settings.set_conditional(
+                          this.props.settings.setConditional(
                             'identifiers_on_map',
                             'name'
                           )
@@ -147,9 +147,11 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() => {
-                    this.props.scroll_behavior === 'zoom'
-                    ? this.props.settings.set_conditional('scroll_behavior', 'pan')
-                    : this.props.settings.set_conditional('scroll_behavior', 'zoom')
+                    if (this.props.scroll_behavior === 'zoom') {
+                      this.props.settings.setConditional('scroll_behavior', 'pan')
+                    } else {
+                      this.props.settings.setConditional('scroll_behavior', 'zoom')
+                    }
                   }}
                   checked={this.props.scroll_behavior === 'zoom'}
                 />
@@ -159,7 +161,7 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional(
+                    this.props.settings.setConditional(
                       'hide_secondary_metabolites',
                       !this.props.hide_secondary_metabolites
                     )
@@ -174,7 +176,7 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional(
+                    this.props.settings.setConditional(
                       'show_gene_reaction_rules',
                       !this.props.show_gene_reaction_rules
                     )
@@ -187,7 +189,7 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional(
+                    this.props.settings.setConditional(
                       'hide_all_labels',
                       !this.props.hide_all_labels
                     )
@@ -200,7 +202,7 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional(
+                    this.props.settings.setConditional(
                       'allow_building_duplicate_reactions',
                       !this.props.allow_building_duplicate_reactions
                     )
@@ -213,7 +215,7 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() => {
-                    this.props.settings.set_conditional(
+                    this.props.settings.setConditional(
                       'highlight_missing',
                       !this.props.highlight_missing
                     )
@@ -231,7 +233,7 @@ class BuilderSettingsMenu extends Component {
                       <input
                         type='checkbox'
                         onClick={() =>
-                          this.props.settings.set_conditional(
+                          this.props.settings.setConditional(
                             'enable_tooltips',
                             this.props.enable_tooltips.indexOf('label') > -1
                               ? update(this.props.enable_tooltips, {$splice: [[this.props.enable_tooltips.indexOf('label'), 1]]})
@@ -246,7 +248,7 @@ class BuilderSettingsMenu extends Component {
                       <input
                         type='checkbox'
                         onClick={() =>
-                          this.props.settings.set_conditional(
+                          this.props.settings.setConditional(
                             'enable_tooltips',
                             this.props.enable_tooltips.indexOf('object') > -1
                               ? update(this.props.enable_tooltips, {$splice: [[this.props.enable_tooltips.indexOf('object'), 1]]})
@@ -275,7 +277,7 @@ class BuilderSettingsMenu extends Component {
                     <ScaleSelection
                       name={key}
                       scale={value}
-                      onClick={() => this.props.settings.set_conditional(
+                      onClick={() => this.props.settings.setConditional(
                         'reaction_scale', value
                       )}
                     />
@@ -291,13 +293,13 @@ class BuilderSettingsMenu extends Component {
               noDataColor={this.props.reaction_no_data_color}
               noDataSize={this.props.reaction_no_data_size}
               onChange={scale => {
-                this.props.settings.set_conditional('reaction_scale', scale)
+                this.props.settings.setConditional('reaction_scale', scale)
               }}
               onNoDataColorChange={val => {
-                this.props.settings.set_conditional('reaction_no_data_color', val)
+                this.props.settings.setConditional('reaction_no_data_color', val)
               }}
               onNoDataSizeChange={val => {
-                this.props.settings.set_conditional('reaction_no_data_size', val)
+                this.props.settings.setConditional('reaction_no_data_size', val)
               }}
               abs={this.props.reaction_styles.indexOf('abs') > -1}
             />
@@ -366,7 +368,7 @@ class BuilderSettingsMenu extends Component {
                       type='radio'
                       name='reactionCompare'
                       onClick={() => {
-                        this.props.settings.set_conditional(
+                        this.props.settings.setConditional(
                         'reaction_compare_style', 'fold'
                         )
                       }}
@@ -379,7 +381,7 @@ class BuilderSettingsMenu extends Component {
                       type='radio'
                       name='reactionCompare'
                       onClick={() => {
-                        this.props.settings.set_conditional(
+                        this.props.settings.setConditional(
                         'reaction_compare_style', 'log2_fold'
                         )
                       }}
@@ -392,7 +394,7 @@ class BuilderSettingsMenu extends Component {
                       type='radio'
                       name='reactionCompare'
                       onClick={() => {
-                        this.props.settings.set_conditional(
+                        this.props.settings.setConditional(
                         'reaction_compare_style', 'diff'
                         )
                       }}
@@ -414,7 +416,7 @@ class BuilderSettingsMenu extends Component {
                       type='radio'
                       name='andMethod'
                       onClick={() => {
-                        this.props.settings.set_conditional(
+                        this.props.settings.setConditional(
                         'and_method_in_gene_reaction_rule', 'mean'
                         )
                       }}
@@ -427,7 +429,7 @@ class BuilderSettingsMenu extends Component {
                       type='radio'
                       name='andMethod'
                       onClick={() => {
-                        this.props.settings.set_conditional(
+                        this.props.settings.setConditional(
                         'and_method_in_gene_reaction_rule', 'min'
                         )
                       }}
@@ -449,7 +451,7 @@ class BuilderSettingsMenu extends Component {
                     <ScaleSelection
                       name={key}
                       scale={value}
-                      onClick={() => this.props.settings.set_conditional(
+                      onClick={() => this.props.settings.setConditional(
                         'metabolite_scale', value
                       )}
                     />
@@ -465,13 +467,13 @@ class BuilderSettingsMenu extends Component {
               noDataColor={this.props.metabolite_no_data_color}
               noDataSize={this.props.metabolite_no_data_size}
               onChange={scale => {
-                this.props.settings.set_conditional('metabolite_scale', scale)
+                this.props.settings.setConditional('metabolite_scale', scale)
               }}
               onNoDataColorChange={val => {
-                this.props.settings.set_conditional('metabolite_no_data_color', val)
+                this.props.settings.setConditional('metabolite_no_data_color', val)
               }}
               onNoDataSizeChange={val => {
-                this.props.settings.set_conditional('metabolite_no_data_size', val)
+                this.props.settings.setConditional('metabolite_no_data_size', val)
               }}
               abs={this.props.metabolite_styles.indexOf('abs') > -1}
             />
@@ -540,7 +542,7 @@ class BuilderSettingsMenu extends Component {
                       type='radio'
                       name='metaboliteCompare'
                       onClick={() => {
-                        this.props.settings.set_conditional(
+                        this.props.settings.setConditional(
                         'metabolite_compare_style', 'fold'
                         )
                       }}
@@ -553,7 +555,7 @@ class BuilderSettingsMenu extends Component {
                       type='radio'
                       name='metaboliteCompare'
                       onClick={() => {
-                        this.props.settings.set_conditional(
+                        this.props.settings.setConditional(
                         'metabolite_compare_style', 'log2_fold'
                         )
                       }}
@@ -566,7 +568,7 @@ class BuilderSettingsMenu extends Component {
                       type='radio'
                       name='metaboliteCompare'
                       onClick={() => {
-                        this.props.settings.set_conditional(
+                        this.props.settings.setConditional(
                         'metabolite_compare_style', 'diff'
                         )
                       }}

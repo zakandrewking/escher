@@ -8,7 +8,7 @@ from escher.version import __version__
 import cobra
 from cobra import Model
 import ipywidgets as widgets
-from traitlets import Unicode, Int, Instance, observe, validate
+from traitlets import Unicode, Int, Instance, Dict, observe, validate
 import os
 from os.path import join, isfile, expanduser
 from warnings import warn
@@ -197,22 +197,23 @@ class Builder(widgets.DOMWidget):
 
     :param reaction_data:
 
-        A dictionary with keys that correspond to reaction ids and values that
+        A dictionary with keys that correspond to reaction IDs and values that
         will be mapped to reaction arrows and labels.
 
     :param metabolite_data:
 
-        A dictionary with keys that correspond to metabolite ids and values
+        A dictionary with keys that correspond to metabolite IDs and values
         that will be mapped to metabolite nodes and labels.
 
     :param gene_data:
 
-        A dictionary with keys that correspond to gene ids and values that will
+        A dictionary with keys that correspond to gene IDs and values that will
         be mapped to corresponding reactions.
 
     **Keyword Arguments**
 
-    These are defined in the Javascript API:
+    You can also pass in any of the following options as keyword arguments. The
+    details on each of these are provided in the JavaScript API documentation:
 
         - use_3d_transform
         - enable_search
@@ -255,7 +256,8 @@ class Builder(widgets.DOMWidget):
 
     """
 
-    # widget traitlet definitions
+    # widget info traitlets
+
     _view_name = Unicode('EscherMapView').tag(sync=True)
     _model_name = Unicode('EscherMapModel').tag(sync=True)
     _view_module = Unicode('jupyter-escher').tag(sync=True)
@@ -264,6 +266,7 @@ class Builder(widgets.DOMWidget):
     _model_module_version = Unicode(__version__).tag(sync=True)
 
     # editable attributes
+
     height = Int(500).tag(sync=True)
     _loaded_map_json = Unicode(None, allow_none=True).tag(sync=True)
 
@@ -294,7 +297,13 @@ class Builder(widgets.DOMWidget):
         else:
             return None
 
-    # unsynced builder traits
+    reaction_data = Dict(None, allow_none=True).tag(sync=True)
+    metabolite_data = Dict(None, allow_none=True).tag(sync=True)
+    gene_data = Dict(None, allow_none=True).tag(sync=True)
+    scroll_behavior = Unicode('pan').tag(sync=True)
+
+    # builder traitlets that are indirectly synced to the widget
+
     map_name = Unicode(None, allow_none=True)
     map_json = Unicode(None, allow_none=True)
     model = Instance(Model, allow_none=True)
@@ -346,11 +355,11 @@ class Builder(widgets.DOMWidget):
             model_name: str = None,
             model_json: str = None,
             embedded_css: str = None,
-            # reaction_data: dict=None,
-            # metabolite_data: dict=None,
-            # gene_data: dict=None,
+            reaction_data: dict = None,
+            metabolite_data: dict = None,
+            gene_data: dict = None,
+            scroll_behavior: str = 'pan',
             # menu: str='zoom',
-            # scroll_behavior: str='none',
             # enable_editing: bool=False,
             # **kwargs,
     ) -> None:
@@ -381,10 +390,10 @@ class Builder(widgets.DOMWidget):
 
         self.embedded_css = embedded_css
 
-        # # set the args
-        # self.reaction_data = reaction_data
-        # self.metabolite_data = metabolite_data
-        # self.gene_data = gene_data
+        self.reaction_data = reaction_data
+        self.metabolite_data = metabolite_data
+        self.gene_data = gene_data
+        self.scroll_behavior = scroll_behavior
 
         # # set up the options
         # self.options = [
