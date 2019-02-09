@@ -209,8 +209,8 @@ function reload (selected_node, coords, starting_from_scratch) {
   }
 
   // settings
-  var show_names = this.settings.get_option('identifiers_on_map') === 'name'
-  var allow_duplicates = this.settings.get_option('allow_building_duplicate_reactions')
+  var show_names = this.settings.get('identifiers_on_map') === 'name'
+  var allow_duplicates = this.settings.get('allow_building_duplicate_reactions')
 
   // Find selected
   var options = [],

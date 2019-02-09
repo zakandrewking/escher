@@ -1,39 +1,5 @@
 import bacon from 'baconjs'
 
-function createSetting (name, initialValue, setOption) {
-  // Set up the bus
-  const bus = new bacon.Bus()
-
-  // Make the event stream and conditionally accept changes
-  const stream = bus.toEventStream()
-
-  // Get the latest
-  stream.onValue(v => setOption(name, v))
-
-  // Push the initial value
-  bus.push(initialValue)
-
-  return { bus, stream }
-}
-
-function createConditionalSetting (name, initialValue, setOption, statusBus) {
-  // Set up the bus
-  const conditionalBus = new bacon.Bus()
-  const bus = new bacon.Bus()
-
-  // Make the event stream and conditionally accept changes
-  const stream = convertToConditionalStream(conditionalBus, statusBus)
-        .merge(bus)
-
-  // Get the latest
-  stream.onValue(v => setOption(name, v))
-
-  // Push the initial value
-  conditionalBus.push(initialValue)
-
-  return { conditionalBus, bus, stream }
-}
-
 /**
  * Hold on to event when holdProperty is true, and only keep them if
  * acceptProperty is true (when holdProperty becomes false).
@@ -114,11 +80,15 @@ function convertToConditionalStream (valueStream, statusStream) {
  * conditionalOptions: The options to that are conditionally accepted when
  * changed. Changes can be abandoned by calling abandonChanges(), or accepted
  * by calling acceptChanges().
- *
- */
+  * @param optionsWithDefaults - The current option values
+  * @param conditionalOptions - The options to that are conditionally accepted
+  *                             when changed. Changes can be abandoned by calling
+  *                             abandon_changes(), or accepted by calling
+  *                             accept_changes().
+  */
 export default class Settings {
-  constructor (setOption, getOption, options, conditionalOptions) {
-    this.get_option = getOption
+  constructor (optionsWithDefaults, conditionalOptions) {
+    this._options = optionsWithDefaults
 
     // Manage accepting/abandoning changes
     this.statusBus = new bacon.Bus()
@@ -127,8 +97,8 @@ export default class Settings {
     this.conditionalBusses = {}
     this.busses = {}
     this.streams = {}
-    for (let i = 0; i < options.length; i++) {
-      const name = options[i]
+    for (let i = 0; i < _options.length; i++) {
+      const name = _options[i]
       if (conditionalOptions.indexOf(name) > -1) {
         const {
           conditionalBus,
@@ -140,7 +110,7 @@ export default class Settings {
         this.busses[name] = bus
         this.streams[name] = stream
       } else {
-        const { bus, stream } = createSetting(name, getOption(name), setOption)
+        const { bus, stream } = createSetting(name, this._options[name])
         this.busses[name] = bus
         this.streams[name] = stream
       }
@@ -148,31 +118,65 @@ export default class Settings {
   }
 
   /**
-   * Set the value of a conditional setting, one that will only be
-   * accepted if this.acceptChanges() is called.
-   *
-   * @param {String} name - The option name
-   * @param {} value - The new value
-  */
-  setConditional (name, value) {
-    if (!(name in this.conditionalBusses)) {
-      console.error(`Invalid setting name ${name}`)
-    } else {
-      this.conditionalBusses[name].push(value)
-    }
+   * Set up a new bus and stream for a conditional setting (i.e. one that can be
+   * canceledin the settings menu.
+   */
+  createSetting (name, initialValue, isConditional) {
+    // Set up the bus
+    const bus = new bacon.Bus()
+
+    // Make the event stream and conditionally accept changes
+    const stream = isConditional
+          ? convertToConditionalStream(bus, this.statusBus)
+          : bus.toEventStream()
+
+    // Get the latest
+    stream.onValue(v => { this._options[name] = v })
+
+    // Push the initial value
+    bus.push(initialValue)
+
+    return { bus, stream }
+  }
+
+  /**
+   * Deprecated. Use `set` instead.
+   */
+  set_conditional (name, value) { // eslint-disable-line
+    console.warn('set_conditional is deprecated. Use Settings.set() instead')
+    return this.set(name, value)
   }
 
   /**
    * Set the option. This should always be used instead of setting options
    * directly. To set options that respect the Settings menu Accept/Abandon, use
    * setConditional().
+   * @param {String} name - The option name
+   * @param {} value - The new value
    */
   set (name, value) {
-    if (!(name in this.busses)) {
-      console.error(`Invalid setting name ${name}`)
+    if (name in this.conditionalBusses) {
+      this.conditionalBusses[name].push(value)
+    } else if (!(name in this.busses)) {
+      throw new Error(`Invalid setting name ${name}`)
     } else {
       this.busses[name].push(value)
     }
+  }
+
+  /**
+   * Deprecated. Use `get` intead.
+   */
+  get_option (name) { // eslint-disable-line
+    console.warn('get_option is deprecated. Use Settings.get() instead')
+    return this.get(name)
+  }
+
+  /**
+   * Get an option
+   */
+  get (name) {
+    return this._options[name]
   }
 
   holdChanges () {

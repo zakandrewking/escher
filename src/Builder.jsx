@@ -78,7 +78,7 @@ class Builder {
     this.has_custom_reaction_styles = Boolean(options.reaction_styles)
 
     // set defaults
-    this.options = utils.set_options(options, {
+    const optionsWithDefaults = utils.set_options(options, {
       // view options
       menu: 'all',
       scroll_behavior: 'pan',
@@ -163,14 +163,6 @@ class Builder {
       }
     })
 
-    // Initialize the settings
-    var set_option = function (option, new_value) {
-      this.options[option] = new_value
-    }.bind(this)
-    var get_option = function (option) {
-      return this.options[option]
-    }.bind(this)
-
     // The options that are erased when the settings menu is canceled
     var conditional = [
       'identifiers_on_map',
@@ -195,9 +187,10 @@ class Builder {
       'metabolite_no_data_color',
       'metabolite_no_data_size'
     ]
-    this.settings = new Settings(set_option, get_option,
-                                 Object.keys(this.options),
-                                 conditional)
+    // this.options and this.settings used to have different functions, but now
+    // they are aliases
+    this.options = new Settings(optionsWithDefaults, conditional)
+    this.settings = this.options
 
     // Set up this callback manager
     this.callback_manager = CallbackManager()
