@@ -34,10 +34,10 @@ import './Builder.css'
 
 // Import CSS as a string to embed. This also works from lib because css/src get
 // uploaded to NPM.
-import builder_embed from '!!raw-loader!./Builder-embed.css'
+import builderEmbed from '!!raw-loader!./Builder-embed.css'
 
 class Builder {
-  constructor (map_data, model_data, embedded_css, selection, options) {
+  constructor (map_data, model_data, embeddedCss, selection, options) {
     // Defaults
     if (!selection) {
       selection = d3Select('body').append('div')
@@ -54,13 +54,13 @@ class Builder {
     if (!options) {
       options = {}
     }
-    if (!embedded_css) {
-      embedded_css = builder_embed
+    if (!embeddedCss) {
+      embeddedCss = builderEmbed
     }
 
     this.map_data = map_data
     this.model_data = model_data
-    this.embedded_css = embedded_css
+    this.embeddedCss = embeddedCss
     this.selection = selection
     this.menu_div = null
     this.button_div = null
@@ -310,7 +310,7 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  load_model (model_data, should_update_data) {
+  load_model (model_data, should_update_data) { // eslint-disable-line camelcase
     if (_.isUndefined(should_update_data)) {
       should_update_data = true
     }
@@ -338,7 +338,7 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst
    */
-  load_map (map_data, should_update_data) {
+  load_map (map_data, should_update_data) { // eslint-disable-line camelcase
     if (_.isUndefined(should_update_data)) {
       should_update_data = true
     }
@@ -375,7 +375,7 @@ class Builder {
       // import map
       this.map = Map.from_data(map_data,
                                svg,
-                               this.embedded_css,
+                               this.embeddedCss,
                                zoomed_sel,
                                this.zoom_container,
                                this.settings,
@@ -384,7 +384,7 @@ class Builder {
     } else {
       // new map
       this.map = new Map(svg,
-                         this.embedded_css,
+                         this.embeddedCss,
                          zoomed_sel,
                          this.zoom_container,
                          this.settings,

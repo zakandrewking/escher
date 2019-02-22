@@ -134,7 +134,7 @@ export default class Settings {
   /**
    * Deprecated. Use `set` instead.
    */
-  set_conditional (name, value) { // eslint-disable-line
+  set_conditional (name, value) { // eslint-disable-line camelcase
     console.warn('set_conditional is deprecated. Use Settings.set() instead')
     return this.set(name, value)
   }
@@ -156,7 +156,7 @@ export default class Settings {
   /**
    * Deprecated. Use `get` intead.
    */
-  get_option (name) { // eslint-disable-line
+  get_option (name) { // eslint-disable-line camelcase
     console.warn('get_option is deprecated. Use Settings.get() instead')
     return this.get(name)
   }

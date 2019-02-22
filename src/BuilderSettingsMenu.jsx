@@ -83,7 +83,7 @@ class BuilderSettingsMenu extends Component {
     }
   }
 
-  is_visible () { // eslint-disable-line
+  is_visible () { // eslint-disable-line camelcase
     return this.state.display
   }
 

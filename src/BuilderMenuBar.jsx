@@ -9,63 +9,61 @@ import MenuButton from './MenuButton'
  * edit mode is chosen. This can be changed once Builder is ported to Preact.
  */
 class BuilderMenuBar extends Component {
-
   componentDidMount () {
-    this.props.sel.selectAll('#canvas').on(
-      'touchend', () => this.setState({visible: false})
-    )
-    this.props.sel.selectAll('#canvas').on(
-      'click', () => this.setState({visible: false})
-    )
+    this.props.sel.selectAll('.escher-zoom-container')
+        .on('touchend', () => this.setState({ visible: false }))
+        .on('click', () => this.setState({ visible: false }))
   }
 
   render () {
+    const enableKeys = this.props.settings.get('enable_keys')
+    const disabledButtons = this.props.settings.get('disabled_buttons')
     return (
       <ul className='menuBar'>
         <Dropdown name='Map' visible={this.state.visible}>
           <MenuButton
-            name={'Save map JSON' + (this.props.settings.get('enable_keys') ? ' (Ctrl+S)' : '')}
+            name={'Save map JSON' + (enableKeys ? ' (Ctrl+S)' : '')}
             onClick={() => this.props.saveMap()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Load map JSON' + (this.props.settings.get('enable_keys') ? ' (Ctrl+O)' : '')}
+            name={'Load map JSON' + (enableKeys ? ' (Ctrl+O)' : '')}
             onClick={file => this.props.loadMap(file)}
             type='load'
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Export as SVG' + (this.props.settings.get('enable_keys') ? ' (Ctrl+Shift+S)' : '')}
+            name={'Export as SVG' + (enableKeys ? ' (Ctrl+Shift+S)' : '')}
             onClick={() => this.props.saveSvg()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Export as PNG' + (this.props.settings.get('enable_keys') ? ' (Ctrl+Shift+P)' : '')}
+            name={'Export as PNG' + (enableKeys ? ' (Ctrl+Shift+P)' : '')}
             onClick={() => this.props.savePng()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
             name='Clear map'
             onClick={() => this.props.clearMap()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
         </Dropdown>
         <Dropdown name='Model' visible={this.state.visible}>
           <MenuButton
-            name={'Load COBRA model JSON' + (this.props.settings.get('enable_keys') ? ' (Ctrl+M)' : '')}
+            name={'Load COBRA model JSON' + (enableKeys ? ' (Ctrl+M)' : '')}
             onClick={file => this.props.loadModel(file)}
             type='load'
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
             name='Update names and gene reaction rules using model'
             onClick={() => this.props.updateRules()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
             name='Clear model'
             onClick={() => this.props.clearModel()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
         </Dropdown>
         <Dropdown name='Data' visible={this.state.visible}>
@@ -73,36 +71,36 @@ class BuilderMenuBar extends Component {
             name='Load reaction data'
             onClick={file => this.props.loadReactionData(file)}
             type='load'
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
             name='Clear reaction data'
             onClick={() => this.props.loadReactionData(null)}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <li name='divider' />
           <MenuButton
             name='Load gene data'
             onClick={file => this.props.loadGeneData(file)}
             type='load'
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
             name='Clear gene data'
             onClick={() => this.props.loadGeneData(null)}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <li name='divider' />
           <MenuButton
             name='Load metabolite data'
             onClick={file => this.props.loadMetaboliteData(file)}
             type='load'
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
             name='Clear metabolite data'
             onClick={() => this.props.loadMetaboliteData(null)}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
         </Dropdown>
         <Dropdown
@@ -112,125 +110,125 @@ class BuilderMenuBar extends Component {
           disabledEditing={!this.props.settings.get('enable_editing')}
         >
           <MenuButton
-            name={'Pan mode' + (this.props.settings.get('enable_keys') ? ' (Z)' : '')}
+            name={'Pan mode' + (enableKeys ? ' (Z)' : '')}
             modeName='zoom'
             mode={this.props.mode}
             onClick={() => this.props.setMode('zoom')}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Select mode' + (this.props.settings.get('enable_keys') ? ' (V)' : '')}
+            name={'Select mode' + (enableKeys ? ' (V)' : '')}
             modeName='brush'
             mode={this.props.mode}
             onClick={() => this.props.setMode('brush')}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Add reaction mode' + (this.props.settings.get('enable_keys') ? ' (N)' : '')}
+            name={'Add reaction mode' + (enableKeys ? ' (N)' : '')}
             modeName='build'
             mode={this.props.mode}
             onClick={() => this.props.setMode('build')}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Rotate mode' + (this.props.settings.get('enable_keys') ? ' (R)' : '')}
+            name={'Rotate mode' + (enableKeys ? ' (R)' : '')}
             modeName='rotate'
             mode={this.props.mode}
             onClick={() => this.props.setMode('rotate')}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Text mode' + (this.props.settings.get('enable_keys') ? ' (T)' : '')}
+            name={'Text mode' + (enableKeys ? ' (T)' : '')}
             modeName='text'
             mode={this.props.mode}
             onClick={() => this.props.setMode('text')}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <li name='divider' />
           <MenuButton
-            name={'Delete' + (this.props.settings.get('enable_keys') ? ' (Del)' : '')}
+            name={'Delete' + (enableKeys ? ' (Del)' : '')}
             onClick={() => this.props.deleteSelected()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Undo' + (this.props.settings.get('enable_keys') ? ' (Ctrl+Z)' : '')}
+            name={'Undo' + (enableKeys ? ' (Ctrl+Z)' : '')}
             onClick={() => this.props.undo()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Redo' + (this.props.settings.get('enable_keys') ? ' (Ctrl+Shift+Z)' : '')}
+            name={'Redo' + (enableKeys ? ' (Ctrl+Shift+Z)' : '')}
             onClick={() => this.props.redo()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Toggle primary/secondary' + (this.props.settings.get('enable_keys') ? ' (P)' : '')}
+            name={'Toggle primary/secondary' + (enableKeys ? ' (P)' : '')}
             onClick={() => this.props.togglePrimary()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Rotate reactant locations' + (this.props.settings.get('enable_keys') ? ' (C)' : '')}
+            name={'Rotate reactant locations' + (enableKeys ? ' (C)' : '')}
             onClick={() => this.props.cyclePrimary()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Select all' + (this.props.settings.get('enable_keys') ? ' (Ctrl+A)' : '')}
+            name={'Select all' + (enableKeys ? ' (Ctrl+A)' : '')}
             onClick={() => this.props.selectAll()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Select none' + (this.props.settings.get('enable_keys') ? ' (Ctrl+Shift+A)' : '')}
+            name={'Select none' + (enableKeys ? ' (Ctrl+Shift+A)' : '')}
             onClick={() => this.props.selectNone()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
             name='Invert selection'
             onClick={() => this.props.invertSelection()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
         </Dropdown>
         <Dropdown name='View' rightMenu='true' visible={this.state.visible}>
           <MenuButton
-            name={'Zoom in' + (this.props.settings.get('enable_keys') ? ' (+)' : '')}
+            name={'Zoom in' + (enableKeys ? ' (+)' : '')}
             onClick={() => this.props.zoomIn()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Zoom out' + (this.props.settings.get('enable_keys') ? ' (-)' : '')}
+            name={'Zoom out' + (enableKeys ? ' (-)' : '')}
             onClick={() => this.props.zoomOut()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Zoom to nodes' + (this.props.settings.get('enable_keys') ? ' (0)' : '')}
+            name={'Zoom to nodes' + (enableKeys ? ' (0)' : '')}
             onClick={() => this.props.zoomExtentNodes()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Zoom to canvas' + (this.props.settings.get('enable_keys') ? ' (1)' : '')}
+            name={'Zoom to canvas' + (enableKeys ? ' (1)' : '')}
             onClick={() => this.props.zoomExtentCanvas()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Find' + (this.props.settings.get('enable_keys') ? ' (F)' : '')}
+            name={'Find' + (enableKeys ? ' (F)' : '')}
             onClick={() => this.props.search()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <MenuButton
             name={!this.props.settings.get('beziers_enabled') ? ('Show control points' +
-            (this.props.settings.get('enable_keys') ? ' (B)' : '')) : ('Hide control points' +
-            (this.props.settings.get('enable_keys') ? ' (B)' : ''))}
+            (enableKeys ? ' (B)' : '')) : ('Hide control points' +
+            (enableKeys ? ' (B)' : ''))}
             onClick={
               () => {
                 this.props.toggleBeziers()
                 this.props.setMode(this.props.mode)
               }
             }
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
           />
           <li name='divider' />
           <MenuButton
-            name={'Settings' + (this.props.settings.get('enable_keys') ? ' (,)' : '')}
+            name={'Settings' + (enableKeys ? ' (,)' : '')}
             onClick={() => this.props.renderSettingsMenu()}
-            disabledButtons={this.props.settings.get('disabled_buttons')}
+            disabledButtons={disabledButtons}
             type='settings'
           />
         </Dropdown>
