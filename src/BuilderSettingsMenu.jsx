@@ -87,11 +87,8 @@ class BuilderSettingsMenu extends Component {
   }
 
   render () {
-    return (
-      <div
-        className='settingsBackground'
-        style={this.props.display ? {display: 'block'} : {display: 'none'}}
-      >
+    return (!this.props.display ? null : (
+      <div className='settingsBackground'>
         <div className='settingsBoxContainer'>
           <button className='discardChanges btn' onClick={() => this.abandonChanges()}>
             <i className='icon-cancel' aria-hidden='true' />
@@ -122,7 +119,7 @@ class BuilderSettingsMenu extends Component {
                             'bigg_id'
                           )
                         }}
-                        checked={this.props.identifiers_on_map === 'bigg_id'}
+                        checked={this.props.settings.get('identifiers_on_map') === 'bigg_id'}
                       />
                       ID&apos;s
                     </label>
@@ -136,7 +133,7 @@ class BuilderSettingsMenu extends Component {
                             'name'
                           )
                         }}
-                        checked={this.props.identifiers_on_map === 'name'}
+                        checked={this.props.settings.get('identifiers_on_map') === 'name'}
                       />
                       Descriptive names
                     </label>
@@ -147,13 +144,13 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() => {
-                    if (this.props.scroll_behavior === 'zoom') {
+                    if (this.props.settings.get('scroll_behavior') === 'zoom') {
                       this.props.settings.set('scroll_behavior', 'pan')
                     } else {
                       this.props.settings.set('scroll_behavior', 'zoom')
                     }
                   }}
-                  checked={this.props.scroll_behavior === 'zoom'}
+                  checked={this.props.settings.get('scroll_behavior') === 'zoom'}
                 />
                 Scroll to zoom (instead of scroll to pan)
               </label>
@@ -163,10 +160,10 @@ class BuilderSettingsMenu extends Component {
                   onClick={() =>
                     this.props.settings.set(
                       'hide_secondary_metabolites',
-                      !this.props.hide_secondary_metabolites
+                      !this.props.settings.get('hide_secondary_metabolites')
                     )
                   }
-                  checked={this.props.hide_secondary_metabolites}
+                  checked={this.props.settings.get('hide_secondary_metabolites')}
                 />
                 Hide secondary metabolites
               </label>
@@ -178,10 +175,10 @@ class BuilderSettingsMenu extends Component {
                   onClick={() =>
                     this.props.settings.set(
                       'show_gene_reaction_rules',
-                      !this.props.show_gene_reaction_rules
+                      !this.props.settings.get('show_gene_reaction_rules')
                     )
                   }
-                  checked={this.props.show_gene_reaction_rules}
+                  checked={this.props.settings.get('show_gene_reaction_rules')}
                   />
                   Show gene reaction rules
               </label>
@@ -191,10 +188,10 @@ class BuilderSettingsMenu extends Component {
                   onClick={() =>
                     this.props.settings.set(
                       'hide_all_labels',
-                      !this.props.hide_all_labels
+                      !this.props.settings.get('hide_all_labels')
                     )
                   }
-                  checked={this.props.hide_all_labels}
+                  checked={this.props.settings.get('hide_all_labels')}
                 />
                 Hide reaction, gene, and metabolite labels
               </label>
@@ -204,10 +201,10 @@ class BuilderSettingsMenu extends Component {
                   onClick={() =>
                     this.props.settings.set(
                       'allow_building_duplicate_reactions',
-                      !this.props.allow_building_duplicate_reactions
+                      !this.props.settings.get('allow_building_duplicate_reactions')
                     )
                   }
-                  checked={this.props.allow_building_duplicate_reactions}
+                  checked={this.props.settings.get('allow_building_duplicate_reactions')}
                 />
                 Allow duplicate reactions
               </label>
@@ -217,10 +214,10 @@ class BuilderSettingsMenu extends Component {
                   onClick={() => {
                     this.props.settings.set(
                       'highlight_missing',
-                      !this.props.highlight_missing
+                      !this.props.settings.get('highlight_missing')
                     )
                   }}
-                  checked={this.props.highlight_missing}
+                  checked={this.props.settings.get('highlight_missing')}
                 />Highlight reactions not in model
               </label>
               <table>
@@ -235,12 +232,12 @@ class BuilderSettingsMenu extends Component {
                         onClick={() =>
                           this.props.settings.set(
                             'enable_tooltips',
-                            this.props.enable_tooltips.indexOf('label') > -1
-                              ? update(this.props.enable_tooltips, {$splice: [[this.props.enable_tooltips.indexOf('label'), 1]]})
-                              : update(this.props.enable_tooltips, {$push: ['label']})
+                            this.props.settings.get('enable_tooltips').indexOf('label') > -1
+                              ? update(this.props.settings.get('enable_tooltips'), {$splice: [[this.props.settings.get('enable_tooltips').indexOf('label'), 1]]})
+                              : update(this.props.settings.get('enable_tooltips'), {$push: ['label']})
                           )
                         }
-                        checked={this.props.enable_tooltips.indexOf('label') > -1}
+                        checked={this.props.settings.get('enable_tooltips').indexOf('label') > -1}
                         />
                       Labels
                     </label>
@@ -250,12 +247,12 @@ class BuilderSettingsMenu extends Component {
                         onClick={() =>
                           this.props.settings.set(
                             'enable_tooltips',
-                            this.props.enable_tooltips.indexOf('object') > -1
-                              ? update(this.props.enable_tooltips, {$splice: [[this.props.enable_tooltips.indexOf('object'), 1]]})
-                              : update(this.props.enable_tooltips, {$push: ['object']})
+                            this.props.settings.get('enable_tooltips').indexOf('object') > -1
+                              ? update(this.props.settings.get('enable_tooltips'), {$splice: [[this.props.settings.get('enable_tooltips').indexOf('object'), 1]]})
+                              : update(this.props.settings.get('enable_tooltips'), {$push: ['object']})
                           )
                         }
-                        checked={this.props.enable_tooltips.indexOf('object') > -1}
+                        checked={this.props.settings.get('enable_tooltips').indexOf('object') > -1}
                         />
                       Objects
                     </label>
@@ -286,12 +283,12 @@ class BuilderSettingsMenu extends Component {
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.props.reaction_scale}
+              scale={this.props.settings.get('reaction_scale')}
               settings={this.props.settings}
               type='Reaction'
               stats={this.props.map.get_data_statistics().reaction}
-              noDataColor={this.props.reaction_no_data_color}
-              noDataSize={this.props.reaction_no_data_size}
+              noDataColor={this.props.settings.get('reaction_no_data_color')}
+              noDataSize={this.props.settings.get('reaction_no_data_size')}
               onChange={scale => {
                 this.props.settings.set('reaction_scale', scale)
               }}
@@ -301,7 +298,7 @@ class BuilderSettingsMenu extends Component {
               onNoDataSizeChange={val => {
                 this.props.settings.set('reaction_no_data_size', val)
               }}
-              abs={this.props.reaction_styles.indexOf('abs') > -1}
+              abs={this.props.settings.get('reaction_styles').indexOf('abs') > -1}
             />
             <div className='subheading'>
               Reaction or Gene data
@@ -323,7 +320,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('abs', 'reaction_styles')}
-                      checked={this.props.reaction_styles.indexOf('abs') > -1}
+                      checked={this.props.settings.get('reaction_styles').indexOf('abs') > -1}
                     />
                     Absolute value
                   </label>
@@ -335,7 +332,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('size', 'reaction_styles')}
-                      checked={this.props.reaction_styles.indexOf('size') > -1}
+                      checked={this.props.settings.get('reaction_styles').indexOf('size') > -1}
                     />
                     Size
                   </label>
@@ -344,7 +341,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('color', 'reaction_styles')}
-                      checked={this.props.reaction_styles.indexOf('color') > -1}
+                      checked={this.props.settings.get('reaction_styles').indexOf('color') > -1}
                     />
                     Color
                   </label>
@@ -354,7 +351,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('text', 'reaction_styles')}
-                      checked={this.props.reaction_styles.indexOf('text') > -1}
+                      checked={this.props.settings.get('reaction_styles').indexOf('text') > -1}
                     />
                     Text (Show data in label)
                   </label>
@@ -372,7 +369,7 @@ class BuilderSettingsMenu extends Component {
                         'reaction_compare_style', 'fold'
                         )
                       }}
-                      checked={this.props.reaction_compare_style === 'fold'}
+                      checked={this.props.settings.get('reaction_compare_style') === 'fold'}
                     />
                     Fold Change
                   </label>
@@ -385,7 +382,7 @@ class BuilderSettingsMenu extends Component {
                         'reaction_compare_style', 'log2_fold'
                         )
                       }}
-                      checked={this.props.reaction_compare_style === 'log2_fold'}
+                      checked={this.props.settings.get('reaction_compare_style') === 'log2_fold'}
                     />
                     Log2 (Fold Change)
                   </label>
@@ -398,7 +395,7 @@ class BuilderSettingsMenu extends Component {
                         'reaction_compare_style', 'diff'
                         )
                       }}
-                      checked={this.props.reaction_compare_style === 'diff'}
+                      checked={this.props.settings.get('reaction_compare_style') === 'diff'}
                     />
                     Difference
                   </label>
@@ -420,7 +417,7 @@ class BuilderSettingsMenu extends Component {
                         'and_method_in_gene_reaction_rule', 'mean'
                         )
                       }}
-                      checked={this.props.and_method_in_gene_reaction_rule === 'mean'}
+                      checked={this.props.settings.get('and_method_in_gene_reaction_rule') === 'mean'}
                     />
                     Mean
                   </label>
@@ -433,7 +430,7 @@ class BuilderSettingsMenu extends Component {
                         'and_method_in_gene_reaction_rule', 'min'
                         )
                       }}
-                      checked={this.props.and_method_in_gene_reaction_rule === 'min'}
+                      checked={this.props.settings.get('and_method_in_gene_reaction_rule') === 'min'}
                     />
                     Min
                   </label>
@@ -460,12 +457,12 @@ class BuilderSettingsMenu extends Component {
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.props.metabolite_scale}
+              scale={this.props.settings.get('metabolite_scale')}
               settings={this.props.settings}
               type='Metabolite'
               stats={this.props.map.get_data_statistics().metabolite}
-              noDataColor={this.props.metabolite_no_data_color}
-              noDataSize={this.props.metabolite_no_data_size}
+              noDataColor={this.props.settings.get('metabolite_no_data_color')}
+              noDataSize={this.props.settings.get('metabolite_no_data_size')}
               onChange={scale => {
                 this.props.settings.set('metabolite_scale', scale)
               }}
@@ -475,7 +472,7 @@ class BuilderSettingsMenu extends Component {
               onNoDataSizeChange={val => {
                 this.props.settings.set('metabolite_no_data_size', val)
               }}
-              abs={this.props.metabolite_styles.indexOf('abs') > -1}
+              abs={this.props.settings.get('metabolite_styles').indexOf('abs') > -1}
             />
             <div className='subheading'>
               Metabolite data
@@ -497,7 +494,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('abs', 'metabolite_styles')}
-                      checked={this.props.metabolite_styles.indexOf('abs') > -1}
+                      checked={this.props.settings.get('metabolite_styles').indexOf('abs') > -1}
                     />
                     Absolute value
                   </label>
@@ -509,7 +506,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('size', 'metabolite_styles')}
-                      checked={this.props.metabolite_styles.indexOf('size') > -1}
+                      checked={this.props.settings.get('metabolite_styles').indexOf('size') > -1}
                     />
                     Size
                   </label>
@@ -518,7 +515,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('color', 'metabolite_styles')}
-                      checked={this.props.metabolite_styles.indexOf('color') > -1}
+                      checked={this.props.settings.get('metabolite_styles').indexOf('color') > -1}
                     />
                     Color
                   </label>
@@ -528,7 +525,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('text', 'metabolite_styles')}
-                      checked={this.props.metabolite_styles.indexOf('text') > -1}
+                      checked={this.props.settings.get('metabolite_styles').indexOf('text') > -1}
                     />
                     Text (Show data in label)
                   </label>
@@ -546,7 +543,7 @@ class BuilderSettingsMenu extends Component {
                         'metabolite_compare_style', 'fold'
                         )
                       }}
-                      checked={this.props.metabolite_compare_style === 'fold'}
+                      checked={this.props.settings.get('metabolite_compare_style') === 'fold'}
                     />
                     Fold Change
                   </label>
@@ -556,10 +553,10 @@ class BuilderSettingsMenu extends Component {
                       name='metaboliteCompare'
                       onClick={() => {
                         this.props.settings.set(
-                        'metabolite_compare_style', 'log2_fold'
+                          'metabolite_compare_style', 'log2_fold'
                         )
                       }}
-                      checked={this.props.metabolite_compare_style === 'log2_fold'}
+                      checked={this.props.settings.get('metabolite_compare_style') === 'log2_fold'}
                     />
                     Log2 (Fold Change)
                   </label>
@@ -569,10 +566,10 @@ class BuilderSettingsMenu extends Component {
                       name='metaboliteCompare'
                       onClick={() => {
                         this.props.settings.set(
-                        'metabolite_compare_style', 'diff'
+                          'metabolite_compare_style', 'diff'
                         )
                       }}
-                      checked={this.props.metabolite_compare_style === 'diff'}
+                      checked={this.props.settings.get('metabolite_compare_style') === 'diff'}
                     />
                     Difference
                   </label>
@@ -582,7 +579,7 @@ class BuilderSettingsMenu extends Component {
           </div>
         </div>
       </div>
-    )
+    ))
   }
 }
 export default BuilderSettingsMenu

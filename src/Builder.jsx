@@ -478,7 +478,6 @@ class Builder {
       newDisabledButtons.push('Clear metabolite data')
     }
     this.settings.set('disabled_buttons', newDisabledButtons)
-    console.log(newDisabledButtons)
 
     // Set up selection box
     if (this.settings.get('zoom_to_element')) {
@@ -533,9 +532,7 @@ class Builder {
         <BuilderMenuBar
           sel={this.selection}
           mode={mode}
-          disabled_buttons={this.settings.get('disabled_buttons')}
-          enable_key={this.settings.get('enable_keys')}
-          beziers_enabled={this.settings.get('beziers_enabled')}
+          settings={this.settings}
           saveMap={() => {
             // Revert options changed by semanticZoom to their original values if option is active
             if (this.semanticOptions) {
@@ -593,11 +590,6 @@ class Builder {
           renderSettingsMenu={() => this.pass_settings_menu_props({
             map: this.map,
             settings: this.settings,
-            // TODO how to pass new props to make sure it updates without going crazy
-            enable_tooltips: this.settings.get('enable_tooltips'),
-            reaction_styles: this.settings.get('reaction_styles'),
-            metabolite_styles: this.settings.get('metabolite_styles'),
-            gene_styles: this.settings.get('gene_styles'),
             display: true
           })}
         />,
@@ -1134,7 +1126,6 @@ class Builder {
         key: 'ctrl+,',
         target: settings_bar,
         fn: () => this.pass_settings_menu_props({
-          ...this.options,
           map: this.map,
           settings: this.settings,
           display: true
@@ -1144,7 +1135,6 @@ class Builder {
         key: ',',
         target: this,
         fn: () => this.pass_settings_menu_props({
-          ...this.options,
           map: this.map,
           settings: this.settings,
           display: true
