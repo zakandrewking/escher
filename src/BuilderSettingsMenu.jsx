@@ -66,23 +66,24 @@ class BuilderSettingsMenu extends Component {
   }
 
   /**
-   * Function to handle changes to the reaction or metabolite styling.
+   * Function to toggle one option in the reaction or metabolite styling.
    * @param {String} value - the style option to be added or removed
    * @param {String} type - reaction_style or metabolite_style
    */
   handleStyle (value, type) {
-    if (this.props[type].indexOf(value) === -1) {
-      this.props.settings.set(type,
-        update(this.props[type], {$push: [value]})
-      )
-    } else if (this.props[type].indexOf(value) > -1) {
-      this.props.settings.set(type,
-        update(this.props[type], {$splice: [[this.props[type].indexOf(value), 1]]})
-      )
+    const currentSetting = this.props.settings.get(type)
+    const index = currentSetting.indexOf(value)
+    if (index === -1) {
+      this.props.settings.set(type, [...currentSetting, value])
+    } else {
+      this.props.settings.set(type, [
+        ...currentSetting.slice(0, index),
+        ...currentSetting.slice(index + 1)
+      ])
     }
   }
 
-  is_visible () {
+  is_visible () { // eslint-disable-line
     return this.state.display
   }
 

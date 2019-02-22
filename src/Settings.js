@@ -147,7 +147,7 @@ export default class Settings {
    * @param {} value - The new value
    */
   set (name, value) {
-    if (_.contains(this.busses, name)) {
+    if (!(name in this.busses)) {
       throw new Error(`Invalid setting name ${name}`)
     }
     this.busses[name].push(value)
