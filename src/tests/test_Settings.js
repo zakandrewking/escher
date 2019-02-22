@@ -19,19 +19,17 @@ describe('Settings', () => {
         { type: 'max', color: '#4b009f', size: 12 }
       ]
     }
-    const setOption = (key, val) => { options[key] = val }
-    const getOption = (key) => { return options[key] }
-    const settings = new Settings(setOption, getOption, Object.keys(options), Object.keys(options))
+    const settings = new Settings(options, Object.keys(options))
     const name = 'reaction_styles'
     const val = [ 'new_style' ]
     let fired = null
     // set up the callback
-    settings.streams[name].onValue((val) => { fired = val })
+    settings.streams[name].onValue(val => { fired = val })
     // push a new value
-    settings.conditionalBusses[name].push(val)
+    settings.set(name, val)
     // make sure the callback fired
     assert.deepEqual(fired, val)
-    // make sure the new value was added to the styles array
-    assert.deepEqual(options.reaction_styles, val)
+    // make sure the new value was set
+    assert.deepEqual(settings.get('reaction_styles'), val)
   })
 })

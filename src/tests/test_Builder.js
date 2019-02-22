@@ -87,7 +87,7 @@ describe('Builder', () => {
       // copy to make sure Builder does not just mutate original
       { reaction_scale: {...reactionScale}, metabolite_scale: {...metaboliteScale} }
     )
-    assert.deepEqual(b.options.reaction_scale, reactionScale)
+    assert.deepEqual(b.settings.get('reaction_scale'), reactionScale)
   })
 
   /**
@@ -104,8 +104,8 @@ describe('Builder', () => {
     b.settings.set('metabolite_scale', {...metaboliteScale})
     b.settings.set('reaction_scale', {...reactionScale})
 
-    assert.deepEqual(b.options.metabolite_scale, metaboliteScale)
-    assert.deepEqual(b.options.reaction_scale, reactionScale)
+    assert.deepEqual(b.settings.get('metabolite_scale'), metaboliteScale)
+    assert.deepEqual(b.settings.get('reaction_scale'), reactionScale)
   })
 
   it('open search bar', done => {
