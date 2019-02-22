@@ -101,8 +101,8 @@ describe('Builder', () => {
     const b = Builder(null, null, '', make_parent_sel(d3Body), {})
 
     // copy to make sure Builder does not just mutate original
-    b.settings.setConditional('metabolite_scale', {...metaboliteScale})
-    b.settings.setConditional('reaction_scale', {...reactionScale})
+    b.settings.set('metabolite_scale', {...metaboliteScale})
+    b.settings.set('reaction_scale', {...reactionScale})
 
     assert.deepEqual(b.options.metabolite_scale, metaboliteScale)
     assert.deepEqual(b.options.reaction_scale, reactionScale)

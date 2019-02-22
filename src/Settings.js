@@ -1,4 +1,5 @@
 import bacon from 'baconjs'
+import _ from 'underscore'
 
 /**
  * Hold on to event when holdProperty is true, and only keep them if
@@ -94,27 +95,18 @@ export default class Settings {
     this.statusBus = new bacon.Bus()
 
     // Create the options
-    this.conditionalBusses = {}
-    this.busses = {}
-    this.streams = {}
-    for (let i = 0; i < _options.length; i++) {
-      const name = _options[i]
-      if (conditionalOptions.indexOf(name) > -1) {
-        const {
-          conditionalBus,
-          bus,
-          stream
-        } = createConditionalSetting(name, getOption(name), setOption,
-                                     this.statusBus)
-        this.conditionalBusses[name] = conditionalBus
-        this.busses[name] = bus
-        this.streams[name] = stream
-      } else {
-        const { bus, stream } = createSetting(name, this._options[name])
-        this.busses[name] = bus
-        this.streams[name] = stream
-      }
-    }
+    ;[ this.busses, this.streams ] = _.chain(optionsWithDefaults)
+      .mapObject((value, key) => {
+        const isConditional = _.contains(conditionalOptions, key)
+        const { bus, stream } = this.createSetting(key, value, isConditional)
+        return [ bus, stream ]
+      })             // { k: [ b, s ], ... }
+      .pairs()       // [ [ k, [ b, s ] ], ... ]
+      .map(([ name, [ bus, stream ] ]) => [[ name, bus ], [ name, stream ]])
+                     // [ [ [ k, b ], [ k, s ] ], ... ]
+      .unzip()       // [ [ [ k, b ], ... ], [ [ k, s ], ... ] ]
+      .map(x => _.object(x)) // [ { k: b, ... }, { k: s, ... } ]
+      .value()
   }
 
   /**
@@ -155,13 +147,10 @@ export default class Settings {
    * @param {} value - The new value
    */
   set (name, value) {
-    if (name in this.conditionalBusses) {
-      this.conditionalBusses[name].push(value)
-    } else if (!(name in this.busses)) {
+    if (_.contains(this.busses, name)) {
       throw new Error(`Invalid setting name ${name}`)
-    } else {
-      this.busses[name].push(value)
     }
+    this.busses[name].push(value)
   }
 
   /**

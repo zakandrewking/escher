@@ -68,7 +68,7 @@ function setup_map_callbacks (map) {
   //
   map.callback_manager.set('show_tooltip.tooltip_container', function (type, d) {
     // Check if the current element is in the list of tooltips to display
-    if (map.settings.get_option('enable_tooltips').indexOf(type
+    if (map.settings.get('enable_tooltips').indexOf(type
       .replace('reaction_', '')
       .replace('node_', '')
       .replace('gene_', '')) > -1) {

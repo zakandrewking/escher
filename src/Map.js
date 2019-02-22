@@ -812,8 +812,8 @@ function toggle_beziers (on_off) {
  * @param {Array} keys - (Optional) The keys in reactions to apply data to.
  */
 function apply_reaction_data_to_map (data, keys) {
-  const styles = this.settings.get_option('reaction_styles'),
-  compare_style = this.settings.get_option('reaction_compare_style')
+  const styles = this.settings.get('reaction_styles'),
+  compare_style = this.settings.get('reaction_compare_style')
   const has_data = data_styles.apply_reaction_data_to_reactions(this.reactions,
                                                                 data, styles,
                                                                 compare_style,
@@ -829,8 +829,8 @@ function apply_reaction_data_to_map (data, keys) {
  * @param {Array} keys - (Optional) The keys in nodes to apply data to.
  */
 function apply_metabolite_data_to_map (data, keys) {
-  var styles = this.settings.get_option('metabolite_styles')
-  var compare_style = this.settings.get_option('metabolite_compare_style')
+  var styles = this.settings.get('metabolite_styles')
+  var compare_style = this.settings.get('metabolite_compare_style')
 
   var has_data = data_styles.apply_metabolite_data_to_nodes(this.nodes,
                                                             data, styles,
@@ -849,10 +849,10 @@ function apply_metabolite_data_to_map (data, keys) {
  * @param {Array} keys - (Optional) The keys in reactions to apply data to.
  */
 function apply_gene_data_to_map (gene_data_obj, keys) {
-  var styles = this.settings.get_option('reaction_styles'),
-  compare_style = this.settings.get_option('reaction_compare_style'),
-  identifiers_on_map = this.settings.get_option('identifiers_on_map'),
-  and_method_in_gene_reaction_rule = this.settings.get_option('and_method_in_gene_reaction_rule')
+  var styles = this.settings.get('reaction_styles'),
+  compare_style = this.settings.get('reaction_compare_style'),
+  identifiers_on_map = this.settings.get('identifiers_on_map'),
+  and_method_in_gene_reaction_rule = this.settings.get('and_method_in_gene_reaction_rule')
 
   var has_data = data_styles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
                                                           styles, identifiers_on_map,
@@ -1640,7 +1640,7 @@ function new_reaction_for_metabolite (reaction_bigg_id, selected_node_id,
                                selected_node_id,
                                utils.clone(selected_node),
                                this.largest_ids,
-                               this.settings.get_option('cofactors'),
+                               this.settings.get('cofactors'),
                                direction)
   var new_nodes = out.new_nodes
   var new_reactions = out.new_reactions
@@ -1831,7 +1831,7 @@ function toggle_selected_node_primary() {
   var selected_node_ids = this.get_selected_node_ids(),
   go = function(ids) {
     var nodes_to_draw = {},
-    hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
+    hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
     ids.forEach(function(id) {
       if (!(id in this.nodes)) {
         console.warn('Could not find node: ' + id)

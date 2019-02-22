@@ -78,10 +78,10 @@ export default function initializeJupyterWidget () {
           builder.set_gene_data(this.model.get('gene_data'))
         })
         this.model.on('change:scroll_behavior', () => {
-          builder.settings.setConditional('scroll_behavior', this.model.get('scroll_behavior'))
+          builder.settings.set('scroll_behavior', this.model.get('scroll_behavior'))
           // TODO make this automatic. see:
           // https://github.com/zakandrewking/escher/blob/45b59cb6c959dde5cece709a6a937944d8a8a1eb/src/Builder.jsx#L286
-          const newBehavior = builder.settings.get_option('scroll_behavior')
+          const newBehavior = builder.settings.get('scroll_behavior')
           builder.zoom_container.set_scroll_behavior(newBehavior)
         })
 

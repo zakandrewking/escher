@@ -168,11 +168,11 @@ function create_reaction_label (enter_selection, tool) {
  */
 function update_reaction_label (update_selection, has_data_on_reactions) {
   var decimal_format = d3_format('.4g')
-  var identifiers_on_map = this.settings.get_option('identifiers_on_map')
-  var reaction_data_styles = this.settings.get_option('reaction_styles')
-  var show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules')
-  var hide_all_labels = this.settings.get_option('hide_all_labels')
-  var gene_font_size = this.settings.get_option('gene_font_size')
+  var identifiers_on_map = this.settings.get('identifiers_on_map')
+  var reaction_data_styles = this.settings.get('reaction_styles')
+  var show_gene_reaction_rules = this.settings.get('show_gene_reaction_rules')
+  var hide_all_labels = this.settings.get('hide_all_labels')
+  var gene_font_size = this.settings.get('gene_font_size')
   var label_mousedown_fn = this.behavior.label_mousedown
   var label_mouseover_fn = this.behavior.label_mouseover
   var label_mouseout_fn = this.behavior.label_mouseout
@@ -318,17 +318,17 @@ function create_segment (enter_selection) {
  */
 function update_segment (update_selection, scale, cobra_model,
                          drawn_nodes, defs, has_data_on_reactions) {
-  var reaction_data_styles = this.settings.get_option('reaction_styles')
+  var reaction_data_styles = this.settings.get('reaction_styles')
   var should_size = (has_data_on_reactions && reaction_data_styles.indexOf('size') !== -1)
   var should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') !== -1)
-  var no_data_size = this.settings.get_option('reaction_no_data_size')
-  var no_data_color = this.settings.get_option('reaction_no_data_color')
+  var no_data_size = this.settings.get('reaction_no_data_size')
+  var no_data_color = this.settings.get('reaction_no_data_color')
 
   // update segment attributes
-  var highlight_missing  = this.settings.get_option('highlight_missing')
-  var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
-  var primary_r = this.settings.get_option('primary_metabolite_radius')
-  var secondary_r = this.settings.get_option('secondary_metabolite_radius')
+  var highlight_missing  = this.settings.get('highlight_missing')
+  var hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
+  var primary_r = this.settings.get('primary_metabolite_radius')
+  var secondary_r = this.settings.get('secondary_metabolite_radius')
   var object_mouseover_fn = this.behavior.object_mouseover
   var object_mouseout_fn = this.behavior.object_mouseout
   var object_touch_fn = this.behavior.object_touch
@@ -655,7 +655,7 @@ function create_bezier (enter_selection) {
  */
 function update_bezier(update_selection, show_beziers, drag_behavior,
                        mouseover, mouseout, drawn_nodes, drawn_reactions) {
-  var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
+  var hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
 
   if (!show_beziers) {
     update_selection.attr('visibility', 'hidden')
@@ -757,15 +757,15 @@ function update_node (update_selection, scale, has_data_on_nodes,
                       mousedown_fn, click_fn, mouseover_fn, mouseout_fn,
                       drag_behavior, label_drag_behavior) {
   // update circle and label location
-  var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
-  var primary_r = this.settings.get_option('primary_metabolite_radius')
-  var secondary_r = this.settings.get_option('secondary_metabolite_radius')
-  var marker_r = this.settings.get_option('marker_radius')
-  var hide_all_labels = this.settings.get_option('hide_all_labels')
-  var identifiers_on_map = this.settings.get_option('identifiers_on_map')
-  var metabolite_data_styles = this.settings.get_option('metabolite_styles')
-  var no_data_style = { color: this.settings.get_option('metabolite_no_data_color'),
-                        size: this.settings.get_option('metabolite_no_data_size') }
+  var hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
+  var primary_r = this.settings.get('primary_metabolite_radius')
+  var secondary_r = this.settings.get('secondary_metabolite_radius')
+  var marker_r = this.settings.get('marker_radius')
+  var hide_all_labels = this.settings.get('hide_all_labels')
+  var identifiers_on_map = this.settings.get('identifiers_on_map')
+  var metabolite_data_styles = this.settings.get('metabolite_styles')
+  var no_data_style = { color: this.settings.get('metabolite_no_data_color'),
+                        size: this.settings.get('metabolite_no_data_size') }
   var label_mousedown_fn = this.behavior.label_mousedown
   var label_mouseover_fn = this.behavior.label_mouseover
   var label_mouseout_fn = this.behavior.label_mouseout

@@ -156,13 +156,6 @@ class Builder {
                       'because UI elements are html-based.')
     }
 
-    // Warn if scales are too short
-    ;['reaction_scale', 'metabolite_scale'].map(scaleType => {
-      if (this.options[scaleType] && this.options[scaleType].length < 2) {
-        console.warn(`Bad value for option "${scaleType}". Scales must have at least 2 points.`)
-      }
-    })
-
     // The options that are erased when the settings menu is canceled
     var conditional = [
       'identifiers_on_map',
@@ -189,22 +182,29 @@ class Builder {
     ]
     // this.options and this.settings used to have different functions, but now
     // they are aliases
-    this.options = new Settings(optionsWithDefaults, conditional)
-    this.settings = this.options
+    this.settings = new Settings(optionsWithDefaults, conditional)
+
+    // Warn if scales are too short
+    ;['reaction_scale', 'metabolite_scale'].map(scaleType => {
+      if (this.settings.get(scaleType) && this.settings.get(scaleType).length < 2) {
+        console.warn(`Bad value for option "${scaleType}". Scales must have at least 2 points.`)
+      }
+    })
 
     // Set up this callback manager
     this.callback_manager = CallbackManager()
-    if (this.options.first_load_callback !== null) {
+    const firstLoadCallback = this.settings.get('first_load_callback')
+    if (firstLoadCallback !== null) {
       this.callback_manager.set('first_load', () => {
-        this.options.first_load_callback(this)
+        firstLoadCallback(this)
       })
     }
 
     // Set up the zoom container
     this.zoom_container = new ZoomContainer(this.selection,
-                                            this.options.scroll_behavior,
-                                            this.options.use_3d_transform,
-                                            this.options.fill_screen)
+                                            this.settings.get('scroll_behavior'),
+                                            this.settings.get('use_3d_transform'),
+                                            this.settings.get('fill_screen'))
     // Zoom container status changes
     this.zoom_container.callback_manager.set('svg_start', function () {
       if (this.map) this.map.set_status('Drawing ...')
@@ -213,15 +213,15 @@ class Builder {
       if (this.map) this.map.set_status('')
     }.bind(this))
     this.zoom_container.callback_manager.set('zoomChange', function () {
-      if (this.options.semantic_zoom) {
+      if (this.settings.get('semantic_zoom')) {
         const scale = this.zoom_container.window_scale
-        const optionObject = this.options.semantic_zoom
+        const optionObject = this.settings.get('semantic_zoom')
         .sort((a, b) => a.zoomLevel - b.zoomLevel)
         .find(a => a.zoomLevel > scale)
         if (optionObject) {
           Object.entries(optionObject.options).map(([option, value]) => {
             if (this.options[option] !== value) {
-              this.settings.setConditional(option, value)
+              this.settings.set(option, value)
               this._update_data(false, true)
             }
           })
@@ -231,7 +231,7 @@ class Builder {
 
     // Set up the tooltip container
     this.tooltip_container = new TooltipContainer(this.selection,
-                                                  this.options.tooltip_component,
+                                                  this.settings.get('tooltip_component'),
                                                   this.zoom_container)
 
     // Status in both modes
@@ -260,7 +260,6 @@ class Builder {
       _.mapObject(this.settings.streams, (stream, key) => {
         stream.onValue(value => {
           this.pass_settings_menu_props({
-            ...this.options,
             map: this.map,
             settings: this.settings
           })
@@ -277,7 +276,7 @@ class Builder {
           this._update_data(true, true, [ 'reaction', 'metabolite' ], false)
           if (this.zoom_container !== null) {
             // TODO make this automatic
-            const new_behavior = this.settings.get_option('scroll_behavior')
+            const new_behavior = this.settings.get('scroll_behavior')
             this.zoom_container.set_scroll_behavior(new_behavior)
           }
           if (this.map !== null) {
@@ -296,6 +295,16 @@ class Builder {
       // Finally run callback
       _.defer(() => this.callback_manager.run('first_load', this))
     })
+  }
+
+  // builder.options is deprecated
+  get options () {
+    throw new Error('builder.options is deprecated. Use builder.settings.get() ' +
+                    'and builder.settings.set() instead.')
+  }
+  set options (_) {
+    throw new Error('builder.options is deprecated. Use builder.settings.get() ' +
+                    'and builder.settings.set() instead.')
   }
 
   /**
@@ -318,7 +327,7 @@ class Builder {
       if (should_update_data) {
         this._update_data(true, false)
       }
-      if (this.settings.get_option('highlight_missing')) {
+      if (this.settings.get('highlight_missing')) {
         this.map.draw_all_reactions(false, false)
       }
     }
@@ -336,11 +345,11 @@ class Builder {
 
     // Store map options that might be changed by semantic_zoom function
     const tempSemanticOptions = {}
-    if (this.options.semantic_zoom) {
-      for (let level of this.options.semantic_zoom) {
+    if (this.settings.get('semantic_zoom')) {
+      for (let level of this.settings.get('semantic_zoom')) {
         Object.keys(level.options).map(option => {
           if (tempSemanticOptions[option] === undefined) {
-            tempSemanticOptions[option] = this.options[option]
+            tempSemanticOptions[option] = this.settings.get(option)
           }
         })
       }
@@ -371,7 +380,7 @@ class Builder {
                                this.zoom_container,
                                this.settings,
                                this.cobra_model,
-                               this.options.enable_search)
+                               this.settings.get('enable_search'))
     } else {
       // new map
       this.map = new Map(svg,
@@ -380,8 +389,8 @@ class Builder {
                          this.zoom_container,
                          this.settings,
                          this.cobra_model,
-                         this.options.canvas_size_and_loc,
-                         this.options.enable_search)
+                         this.settings.get('canvas_size_and_loc'),
+                         this.settings.get('enable_search'))
     }
 
     // Connect status bar
@@ -430,7 +439,7 @@ class Builder {
       : undefined
     )
 
-    if (this.options.enable_search) {
+    if (this.settings.get('enable_search')) {
       this.renderSearchBar(true)
     }
 
@@ -440,8 +449,8 @@ class Builder {
       this.zoom_container,
       this.search_bar,
       this.settings_bar,
-      this.options.enable_editing,
-      this.options.full_screen_button
+      this.settings.get('enable_editing'),
+      this.settings.get('full_screen_button')
     )
     this.map.key_manager.assigned_keys = keys
     // Tell the key manager about the reaction input and search bar
@@ -455,28 +464,26 @@ class Builder {
     // Make sure the key manager remembers all those changes
     this.map.key_manager.update()
     // Turn it on/off
-    this.map.key_manager.toggle(this.options.enable_keys)
+    this.map.key_manager.toggle(this.settings.get('enable_keys'))
 
     // Disable clears
-    let newDisabledButtons = this.options.disabled_buttons || []
-    if (this.options.disabled_buttons === null) {
-      newDisabledButtons = []
-    }
-    if (!this.options.reaction_data && this.options.disabled_buttons) {
+    const newDisabledButtons = this.settings.get('disabled_buttons') || []
+    if (!this.settings.get('reaction_data')) {
       newDisabledButtons.push('Clear reaction data')
     }
-    if (!this.options.gene_data && this.options.disabled_buttons) {
+    if (!this.settings.get('gene_data')) {
       newDisabledButtons.push('Clear gene data')
     }
-    if (!this.options.metabolite_data && this.options.disabled_buttons) {
+    if (!this.settings.get('metabolite_data')) {
       newDisabledButtons.push('Clear metabolite data')
     }
     this.settings.set('disabled_buttons', newDisabledButtons)
+    console.log(newDisabledButtons)
 
     // Set up selection box
-    if (this.options.zoom_to_element) {
-      const type = this.options.zoom_to_element.type
-      const element_id = this.options.zoom_to_element.id
+    if (this.settings.get('zoom_to_element')) {
+      const type = this.settings.get('zoom_to_element').type
+      const element_id = this.settings.get('zoom_to_element').id
       if (_.isUndefined(type) || [ 'reaction', 'node' ].indexOf(type) === -1) {
         throw new Error('zoom_to_element type must be "reaction" or "node"')
       }
@@ -491,11 +498,11 @@ class Builder {
     } else if (map_data !== null) {
       this.map.zoom_extent_canvas()
     } else {
-      if (this.options.starting_reaction !== null && this.cobra_model !== null) {
+      if (this.settings.get('starting_reaction') !== null && this.cobra_model !== null) {
         // Draw default reaction if no map is provided
         var size = this.zoom_container.get_size()
         var start_coords = { x: size.width / 2, y: size.height / 4 }
-        this.map.new_reaction_from_scratch(this.options.starting_reaction,
+        this.map.new_reaction_from_scratch(this.settings.get('starting_reaction'),
                                            start_coords, 90)
         this.map.zoom_extent_nodes()
       } else {
@@ -504,14 +511,14 @@ class Builder {
     }
 
     // Start in zoom mode for builder, view mode for viewer
-    if (this.options.enable_editing) {
+    if (this.settings.get('enable_editing')) {
       this.zoom_mode()
     } else {
       this.view_mode()
     }
 
     // confirm before leaving the page
-    if (this.options.enable_editing) {
+    if (this.settings.get('enable_editing')) {
       this._setup_confirm_before_exit()
     }
 
@@ -521,18 +528,19 @@ class Builder {
 
   renderMenu (mode) {
     const menuDivNode = this.menu_div.node()
-    if (this.options.menu === 'all') {
+    if (this.settings.get('menu') === 'all') {
       preact.render(
         <BuilderMenuBar
-          {...this.options}
-          {...this.map}
+          sel={this.selection}
           mode={mode}
-          settings={this.settings}
+          disabled_buttons={this.settings.get('disabled_buttons')}
+          enable_key={this.settings.get('enable_keys')}
+          beziers_enabled={this.settings.get('beziers_enabled')}
           saveMap={() => {
             // Revert options changed by semanticZoom to their original values if option is active
             if (this.semanticOptions) {
               Object.entries(this.semanticOptions).map(([key, value]) => {
-                this.settings.setConditional(key, value)
+                this.settings.set(key, value)
               })
               this._update_data()
             }
@@ -583,9 +591,13 @@ class Builder {
           search={() => this.renderSearchBar()}
           toggleBeziers={() => this.map.toggle_beziers()}
           renderSettingsMenu={() => this.pass_settings_menu_props({
-            ...this.options,
             map: this.map,
             settings: this.settings,
+            // TODO how to pass new props to make sure it updates without going crazy
+            enable_tooltips: this.settings.get('enable_tooltips'),
+            reaction_styles: this.settings.get('reaction_styles'),
+            metabolite_styles: this.settings.get('metabolite_styles'),
+            gene_styles: this.settings.get('gene_styles'),
             display: true
           })}
         />,
@@ -598,7 +610,7 @@ class Builder {
   }
 
   renderSearchBar (hide, searchItem) {
-    if (!this.options.enable_search) { return }
+    if (!this.settings.get('enable_search')) { return }
     const searchBarNode = this.search_bar_div.node()
     preact.render(
       <SearchBar
@@ -619,9 +631,9 @@ class Builder {
     const buttonPanelDivNode = this.button_div.node()
     preact.render(
       <ButtonPanel
-        all={this.options.menu === 'all'}
-        fullscreen={this.options.full_screen_button}
-        enableEditing={this.options.enable_editing}
+        all={this.settings.get('menu') === 'all'}
+        fullscreen={this.settings.get('full_screen_button')}
+        enableEditing={this.settings.get('enable_editing')}
         setMode={(newMode) => this._set_mode(newMode)}
         zoomContainer={this.zoom_container}
         map={this.map}
@@ -709,12 +721,12 @@ class Builder {
   }
 
   _reaction_check_add_abs () {
-    const curr_style = this.options.reaction_styles
+    const curr_style = this.settings.get('reaction_styles')
     const did_abs = false
-    if (this.options.reaction_data !== null &&
+    if (this.settings.get('reaction_data') !== null &&
         !this.has_custom_reaction_styles &&
         !_.contains(curr_style, 'abs')) {
-      this.settings.setConditional('reaction_styles', curr_style.concat('abs'))
+      this.settings.set('reaction_styles', curr_style.concat('abs'))
       return function () {
         this.map.set_status('Visualizing absolute value of reaction data. ' +
                             'Change this option in Settings.', 5000)
@@ -736,9 +748,6 @@ class Builder {
    * @param {Object} props - Props that the settings menu will use
    */
   pass_settings_menu_props (props) {
-    // if (this.settings_menu.visible) { // <- pseudocode
-      // pass the props
-    // }
     this.callback_manager.run('setState', null, props)
   }
 
@@ -755,7 +764,7 @@ class Builder {
       this.map.set_status('')
     }
 
-    const disabledButtonsArray = this.options.disabled_buttons || []
+    const disabledButtonsArray = this.settings.get('disabled_buttons') || []
     const index = disabledButtonsArray.indexOf('Clear reaction data')
     if (index > -1) {
       disabledButtonsArray.splice(index, 1)
@@ -771,13 +780,13 @@ class Builder {
   set_gene_data (data, clear_gene_reaction_rules) {
     if (clear_gene_reaction_rules) {
       // default undefined
-      this.settings.setConditional('show_gene_reaction_rules', false)
+      this.settings.set('show_gene_reaction_rules', false)
     }
     this.settings.set('gene_data', data)
     this._update_data(true, true, 'reaction')
     this.map.set_status('')
 
-    const disabledButtonsArray = this.options.disabled_buttons || []
+    const disabledButtonsArray = this.settings.get('disabled_buttons') || []
     const index = disabledButtonsArray.indexOf('Clear gene data')
     if (index > -1) {
       disabledButtonsArray.splice(index, 1)
@@ -795,7 +804,7 @@ class Builder {
     this._update_data(true, true, 'metabolite')
     this.map.set_status('')
 
-    const disabledButtonsArray = this.options.disabled_buttons || []
+    const disabledButtonsArray = this.settings.get('disabled_buttons') || []
     const index = disabledButtonsArray.indexOf('Clear metabolite data')
     if (index > -1) {
       disabledButtonsArray.splice(index, 1)
@@ -835,7 +844,7 @@ class Builder {
 
     // metabolite data
     if (update_metabolite_data && update_map && this.map !== null) {
-      met_data_object = dataStyles.import_and_check(this.options.metabolite_data,
+      met_data_object = dataStyles.import_and_check(this.settings.get('metabolite_data'),
                                                      'metabolite_data')
       this.map.apply_metabolite_data_to_map(met_data_object)
       if (should_draw) {
@@ -845,15 +854,15 @@ class Builder {
 
     // reaction data
     if (update_reaction_data) {
-      if (this.options.reaction_data !== null && update_map && this.map !== null) {
-        reaction_data_object = dataStyles.import_and_check(this.options.reaction_data,
+      if (this.settings.get('reaction_data') !== null && update_map && this.map !== null) {
+        reaction_data_object = dataStyles.import_and_check(this.settings.get('reaction_data'),
                                                             'reaction_data')
         this.map.apply_reaction_data_to_map(reaction_data_object)
         if (should_draw) {
           this.map.draw_all_reactions(false, false)
         }
-      } else if (this.options.gene_data !== null && update_map && this.map !== null) {
-        gene_data_object = make_gene_data_object(this.options.gene_data,
+      } else if (this.settings.get('gene_data') !== null && update_map && this.map !== null) {
+        gene_data_object = make_gene_data_object(this.settings.get('gene_data'),
                                                  this.cobra_model, this.map)
         this.map.apply_gene_data_to_map(gene_data_object)
         if (should_draw) {
@@ -885,40 +894,40 @@ class Builder {
       if (update_metabolite_data && update_model && this.cobra_model !== null) {
         // if we haven't already made this
         if (!met_data_object) {
-          met_data_object = dataStyles.import_and_check(this.options.metabolite_data,
+          met_data_object = dataStyles.import_and_check(this.settings.get('metabolite_data'),
                                                          'metabolite_data')
         }
         this.cobra_model.apply_metabolite_data(met_data_object,
-                                               this.options.metabolite_styles,
-                                               this.options.metabolite_compare_style)
+                                               this.settings.get('metabolite_styles'),
+                                               this.settings.get('metabolite_compare_style'))
       }
 
       // reaction data
       if (update_reaction_data) {
-        if (this.options.reaction_data !== null && update_model && this.cobra_model !== null) {
+        if (this.settings.get('reaction_data') !== null && update_model && this.cobra_model !== null) {
           // if we haven't already made this
           if (!reaction_data_object) {
-            reaction_data_object = dataStyles.import_and_check(this.options.reaction_data,
+            reaction_data_object = dataStyles.import_and_check(this.settings.get('reaction_data'),
                                                                 'reaction_data')
           }
           this.cobra_model.apply_reaction_data(reaction_data_object,
-                                               this.options.reaction_styles,
-                                               this.options.reaction_compare_style)
-        } else if (this.options.gene_data !== null && update_model && this.cobra_model !== null) {
+                                               this.settings.get('reaction_styles'),
+                                               this.settings.get('reaction_compare_style'))
+        } else if (this.settings.get('gene_data') !== null && update_model && this.cobra_model !== null) {
           if (!gene_data_object) {
-            gene_data_object = make_gene_data_object(this.options.gene_data,
+            gene_data_object = make_gene_data_object(this.settings.get('gene_data'),
                                                      this.cobra_model, this.map)
           }
           this.cobra_model.apply_gene_data(gene_data_object,
-                                           this.options.reaction_styles,
-                                           this.options.identifiers_on_map,
-                                           this.options.reaction_compare_style,
-                                           this.options.and_method_in_gene_reaction_rule)
+                                           this.settings.get('reaction_styles'),
+                                           this.settings.get('identifiers_on_map'),
+                                           this.settings.get('reaction_compare_style'),
+                                           this.settings.get('and_method_in_gene_reaction_rule'))
         } else if (update_model && this.cobra_model !== null) {
           // clear the data
           this.cobra_model.apply_reaction_data(null,
-                                               this.options.reaction_styles,
-                                               this.options.reaction_compare_style)
+                                               this.settings.get('reaction_styles'),
+                                               this.settings.get('reaction_compare_style'))
         }
       }
 
@@ -954,7 +963,7 @@ class Builder {
   _setup_quick_jump (selection) {
     // function to load a map
     var load_fn = function (new_map_name, quick_jump_path, callback) {
-      if (this.options.enable_editing && !this.options.never_ask_before_quit) {
+      if (this.settings.get('enable_editing') && !this.settings.get('never_ask_before_quit')) {
         if (!(confirm(('You will lose any unsaved changes.\n\n' +
                        'Are you sure you want to switch maps?')))) {
           if (callback) callback(false)
@@ -1286,7 +1295,7 @@ class Builder {
     window.onbeforeunload = function (e) {
       // If we haven't been passed the event get the window.event
       e = e || window.event
-      return (this.options.never_ask_before_quit
+      return (this.settings.get('never_ask_before_quit')
         ? null
         : 'You will lose any unsaved changes.'
       )
