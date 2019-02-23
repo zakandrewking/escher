@@ -50,8 +50,9 @@ function init (selection, TooltipComponent, zoom_container) {
   preact.render(
     <ReactWrapper
       callbackManager={this.callback_manager}
+      callbackName='setState'
       component={this.TooltipComponent}
-      refProp={instance => { this.tooltipRef = instance }}
+      ref={instance => { this.tooltipRef = instance }}
     />,
     this.div.node()
   )

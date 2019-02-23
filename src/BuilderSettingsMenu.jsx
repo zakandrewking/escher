@@ -50,7 +50,6 @@ class BuilderSettingsMenu extends Component {
   }
 
   componentWillDisappear () {
-    this.props.closeMenu() // Function to pass display = false to the settings menu
     this.state.clearEscape()
     this.state.clearEnter()
   }

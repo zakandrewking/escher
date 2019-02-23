@@ -69,31 +69,31 @@ class BuilderMenuBar extends Component {
         <Dropdown name='Data' visible={this.state.visible}>
           <MenuButton
             name='Load reaction data'
-            onClick={file => this.props.loadReactionData(file)}
+            onClick={d => this.props.setReactionData(d)}
             type='load'
             disabledButtons={disabledButtons}
           />
           <MenuButton
             name='Clear reaction data'
-            onClick={() => this.props.loadReactionData(null)}
+            onClick={() => this.props.setReactionData(null)}
             disabledButtons={disabledButtons}
           />
           <li name='divider' />
           <MenuButton
             name='Load gene data'
-            onClick={file => this.props.loadGeneData(file)}
+            onClick={d => this.props.setGeneData(d)}
             type='load'
             disabledButtons={disabledButtons}
           />
           <MenuButton
             name='Clear gene data'
-            onClick={() => this.props.loadGeneData(null)}
+            onClick={() => this.props.setGeneData(null)}
             disabledButtons={disabledButtons}
           />
           <li name='divider' />
           <MenuButton
             name='Load metabolite data'
-            onClick={file => this.props.loadMetaboliteData(file)}
+            onClick={d => this.props.setMetaboliteData(d)}
             type='load'
             disabledButtons={disabledButtons}
           />

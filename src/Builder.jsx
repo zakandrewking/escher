@@ -222,7 +222,7 @@ class Builder {
           Object.entries(optionObject.options).map(([option, value]) => {
             if (this.options[option] !== value) {
               this.settings.set(option, value)
-              this._update_data(false, true)
+              this._updateData(false, true)
             }
           })
         }
@@ -252,9 +252,9 @@ class Builder {
     // Need to defer map loading to let webpack CSS load properly
     _.defer(() => {
       this.load_map(this.map_data, false)
-      const message_fn = this._reaction_check_add_abs()
-      if (message_fn !== null) {
-        this._update_data(true, true)
+      const messageFn = this._reactionCheckAddAbs()
+      if (messageFn !== null) {
+        this._updateData(true, true)
       }
 
       _.mapObject(this.settings.streams, (stream, key) => {
@@ -263,8 +263,11 @@ class Builder {
             map: this.map,
             settings: this.settings
           })
+          this.pass_menu_bar_props({
+            settings: this.settings
+          })
           if (key === 'reaction_styles' || key === 'metabolite_styles') {
-            this._update_data(false, true)
+            this._updateData(false, true)
           }
         })
       })
@@ -273,7 +276,7 @@ class Builder {
       // menu closes, everything is drawn.
       this.settings.statusBus.onValue(x => {
         if (x === 'accept') {
-          this._update_data(true, true, [ 'reaction', 'metabolite' ], false)
+          this._updateData(true, true, [ 'reaction', 'metabolite' ], false)
           if (this.zoom_container !== null) {
             // TODO make this automatic
             const new_behavior = this.settings.get('scroll_behavior')
@@ -290,7 +293,7 @@ class Builder {
       // Set up quick jump
       this._setup_quick_jump(this.selection)
 
-      if (message_fn !== null) setTimeout(message_fn, 500)
+      if (messageFn !== null) setTimeout(messageFn, 500)
 
       // Finally run callback
       _.defer(() => this.callback_manager.run('first_load', this))
@@ -310,9 +313,9 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  load_model (model_data, should_update_data) { // eslint-disable-line camelcase
-    if (_.isUndefined(should_update_data)) {
-      should_update_data = true
+  load_model (model_data, should_updateData) { // eslint-disable-line camelcase
+    if (_.isUndefined(should_updateData)) {
+      should_updateData = true
     }
 
     // Check the cobra model
@@ -324,23 +327,23 @@ class Builder {
 
     if (this.map) {
       this.map.cobra_model = this.cobra_model
-      if (should_update_data) {
-        this._update_data(true, false)
+      if (should_updateData) {
+        this._updateData(true, false)
       }
       if (this.settings.get('highlight_missing')) {
         this.map.draw_all_reactions(false, false)
       }
     }
 
-    this.callback_manager.run('load_model', null, model_data, should_update_data)
+    this.callback_manager.run('load_model', null, model_data, should_updateData)
   }
 
   /**
    * For documentation of this function, see docs/javascript_api.rst
    */
-  load_map (map_data, should_update_data) { // eslint-disable-line camelcase
-    if (_.isUndefined(should_update_data)) {
-      should_update_data = true
+  load_map (map_data, should_updateData) { // eslint-disable-line camelcase
+    if (_.isUndefined(should_updateData)) {
+      should_updateData = true
     }
 
     // Store map options that might be changed by semantic_zoom function
@@ -400,8 +403,8 @@ class Builder {
     this._setup_status(this.map)
 
     // Set the data for the map
-    if (should_update_data) {
-      this._update_data(false, true)
+    if (should_updateData) {
+      this._updateData(false, true)
     }
 
     // Set up the reaction input with complete.ly
@@ -425,19 +428,10 @@ class Builder {
     this._setup_modes(this.map, this.brush, this.zoom_container)
 
     // Set up settings menu
-    preact.render(
-      <ReactWrapper
-        display={false}
-        callbackManager={this.callback_manager}
-        component={BuilderSettingsMenu}
-        refProp={instance => { this.settingsMenuRef = instance }}
-        closeMenu={() => this.pass_settings_menu_props({display: false})}
-      />,
-      this.settings_div.node(),
-      this.settings_div.node().children.length > 0
-      ? this.settings_div.node().firstChild
-      : undefined
-    )
+    this.setUpSettingsMenu()
+
+    // Set up menu bar
+    this.setUpMenuBar()
 
     if (this.settings.get('enable_search')) {
       this.renderSearchBar(true)
@@ -525,80 +519,88 @@ class Builder {
     this.map.draw_everything()
   }
 
-  renderMenu (mode) {
+  setUpSettingsMenu () {
+    const settingsDivNode = this.settings_div.node()
+    preact.render(
+      <ReactWrapper
+        callbackManager={this.callback_manager}
+        callbackName='setSettingsMenuState'
+        component={BuilderSettingsMenu}
+        ref={instance => { this.settingsMenuRef = instance }}
+      />,
+      settingsDivNode,
+      // If there is already a div, re-render it. Otherwise make a new one
+      settingsDivNode.children.length > 0 ? settingsDivNode.firstChild : undefined
+    )
+  }
+
+  setUpMenuBar () {
     const menuDivNode = this.menu_div.node()
-    if (this.settings.get('menu') === 'all') {
-      preact.render(
-        <BuilderMenuBar
-          sel={this.selection}
-          mode={mode}
-          settings={this.settings}
-          saveMap={() => {
-            // Revert options changed by semanticZoom to their original values if option is active
-            if (this.semanticOptions) {
-              Object.entries(this.semanticOptions).map(([key, value]) => {
-                this.settings.set(key, value)
-              })
-              this._update_data()
-            }
-            this.map.save()
-          }}
-          loadMap={(file) => this.load_map(file)}
-          saveSvg={() => this.map.save_svg()}
-          savePng={() => this.map.save_png()}
-          clearMap={
-            () => {
-              this.map.clear_map()
-              this.callback_manager.run('clear_map')
-            }
+    preact.render(
+      <ReactWrapper
+        callbackManager={this.callback_manager}
+        callbackName='setMenuBarState'
+        component={BuilderMenuBar}
+        ref={instance => { this.builderMenuBarRef = instance }}
+        display={this.settings.get('menu') === 'all'}
+        sel={this.selection}
+        mode={this.mode}
+        settings={this.settings}
+        saveMap={() => {
+          // Revert options changed by semanticZoom to their original values if option is active
+          if (this.semanticOptions) {
+            Object.entries(this.semanticOptions).map(([key, value]) => {
+              this.settings.set(key, value)
+            })
+            this._updateData()
           }
-          loadModel={file => this.load_model(file, true)}
-          clearModel={
-            () => {
-              this.load_model(null)
-              this.callback_manager.run('clear_model')
-            }
-          }
-          updateRules={() => this.map.convert_map()}
-          loadReactionData={file => {
-            this.set_reaction_data(file)
-            this._set_mode(mode)
-          }}
-          loadGeneData={file => {
-            this.set_gene_data(file)
-            this._set_mode(mode)
-          }}
-          loadMetaboliteData={file => {
-            this.set_metabolite_data(file)
-            this._set_mode(mode)
-          }}
-          setMode={(newMode) => this._set_mode(newMode)}
-          deleteSelected={() => this.map.delete_selected()}
-          undo={() => this.map.undo_stack.undo()}
-          redo={() => this.map.undo_stack.redo()}
-          togglePrimary={() => this.map.toggle_selected_node_primary()}
-          cyclePrimary={() => this.map.cycle_primary_node()}
-          selectAll={() => this.map.select_all()}
-          selectNone={() => this.map.select_none()}
-          invertSelection={() => this.map.invert_selection()}
-          zoomIn={() => this.zoom_container.zoom_in()}
-          zoomOut={() => this.zoom_container.zoom_out()}
-          zoomExtentNodes={() => this.map.zoom_extent_nodes()}
-          zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
-          search={() => this.renderSearchBar()}
-          toggleBeziers={() => this.map.toggle_beziers()}
-          renderSettingsMenu={() => this.pass_settings_menu_props({
-            map: this.map,
-            settings: this.settings,
-            display: true
-          })}
-        />,
-        menuDivNode,
-        menuDivNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
-          ? menuDivNode.firstChild
-          : undefined
-      )
-    }
+          this.map.save()
+        }}
+        loadMap={(file) => this.load_map(file)}
+        saveSvg={() => this.map.save_svg()}
+        savePng={() => this.map.save_png()}
+        clearMap={
+        () => {
+          this.map.clear_map()
+          this.callback_manager.run('clear_map')
+        }
+        }
+        loadModel={file => this.load_model(file, true)}
+        clearModel={
+        () => {
+          this.load_model(null)
+          this.callback_manager.run('clear_model')
+        }
+        }
+        updateRules={() => this.map.convert_map()}
+        setReactionData={d => this.set_reaction_data(d)}
+        setGeneData={d => this.set_gene_data(d)}
+        setMetaboliteData={d => this.set_metabolite_data(d)}
+        setMode={(newMode) => this._set_mode(newMode)}
+        deleteSelected={() => this.map.delete_selected()}
+        undo={() => this.map.undo_stack.undo()}
+        redo={() => this.map.undo_stack.redo()}
+        togglePrimary={() => this.map.toggle_selected_node_primary()}
+        cyclePrimary={() => this.map.cycle_primary_node()}
+        selectAll={() => this.map.select_all()}
+        selectNone={() => this.map.select_none()}
+        invertSelection={() => this.map.invert_selection()}
+        zoomIn={() => this.zoom_container.zoom_in()}
+        zoomOut={() => this.zoom_container.zoom_out()}
+        zoomExtentNodes={() => this.map.zoom_extent_nodes()}
+        zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
+        search={() => this.renderSearchBar()}
+        toggleBeziers={() => this.map.toggle_beziers()}
+        renderSettingsMenu={() => this.pass_settings_menu_props({
+          map: this.map,
+          settings: this.settings,
+          display: true
+        })}
+      />,
+      menuDivNode,
+      // If there is already a div, re-render it. Otherwise make a new one
+      menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined
+    )
   }
 
   renderSearchBar (hide, searchItem) {
@@ -640,7 +642,6 @@ class Builder {
   }
 
   _set_mode (mode) {
-    this.renderMenu(mode)
     this.renderButtonPanel(mode)
     // input
     this.build_input.toggle(mode === 'build')
@@ -712,7 +713,7 @@ class Builder {
     this._set_mode('text')
   }
 
-  _reaction_check_add_abs () {
+  _reactionCheckAddAbs () {
     const curr_style = this.settings.get('reaction_styles')
     const did_abs = false
     if (this.settings.get('reaction_data') !== null &&
@@ -728,7 +729,7 @@ class Builder {
   }
 
   /**
-   * Function to get props for the tooltip component
+   * Function to pass props for the tooltip component
    * @param {Object} props - Props that the tooltip will use
    */
   pass_tooltip_component_props (props) {
@@ -736,33 +737,44 @@ class Builder {
   }
 
   /**
-   * Function to get props for the settings menu
+   * Function to pass props for the settings menu
    * @param {Object} props - Props that the settings menu will use
    */
   pass_settings_menu_props (props) {
-    this.callback_manager.run('setState', null, props)
+    this.callback_manager.run('setSettingsMenuState', null, props)
+  }
+
+  /**
+   * Function to pass props for the settings menu
+   * @param {Object} props - Props that the settings menu will use
+   */
+  passMenuBarProps (props) {
+    this.callback_manager.run('setMenuBarState', null, props)
   }
 
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_reaction_data (data) {
+  set_reaction_data (data) { // eslint-disable-line camelcase
     this.settings.set('reaction_data', data)
-    var message_fn = this._reaction_check_add_abs()
-    if (message_fn !== null) {
-      this._update_data(true, true, 'reaction')
-      message_fn()
-    } else {
-      this.map.set_status('')
-    }
 
-    const disabledButtonsArray = this.settings.get('disabled_buttons') || []
-    const index = disabledButtonsArray.indexOf('Clear reaction data')
-    if (index > -1) {
-      disabledButtonsArray.splice(index, 1)
-      this.settings.set('disabled_buttons', disabledButtonsArray)
-    } else if (index === -1 && data === null) {
-      this.settings.set('disabled_buttons', [...disabledButtonsArray, 'Clear reaction data'])
+    var messageFn = this._reactionCheckAddAbs()
+
+    this._updateData(true, true, 'reaction')
+
+    if (messageFn) messageFn()
+    else this.map.set_status('')
+
+    const disabledButtons = this.settings.get('disabled_buttons') || []
+    const buttonName = 'Clear reaction data'
+    const index = disabledButtons.indexOf(buttonName)
+    if (data !== null && index !== -1) {
+      this.settings.set('disabled_buttons', [
+        ...disabledButtons.slice(0, index),
+        ...disabledButtons.slice(index + 1)
+      ])
+    } else if (data === null && index === -1) {
+      this.settings.set('disabled_buttons', [...disabledButtons, buttonName])
     }
   }
 
@@ -775,7 +787,7 @@ class Builder {
       this.settings.set('show_gene_reaction_rules', false)
     }
     this.settings.set('gene_data', data)
-    this._update_data(true, true, 'reaction')
+    this._updateData(true, true, 'reaction')
     this.map.set_status('')
 
     const disabledButtonsArray = this.settings.get('disabled_buttons') || []
@@ -793,7 +805,7 @@ class Builder {
 
      */
     this.settings.set('metabolite_data', data)
-    this._update_data(true, true, 'metabolite')
+    this._updateData(true, true, 'metabolite')
     this.map.set_status('')
 
     const disabledButtonsArray = this.settings.get('disabled_buttons') || []
@@ -815,20 +827,17 @@ class Builder {
    * should_draw: (Optional, Default: true) Whether to redraw the update sections
    * of the map.
    */
-  _update_data (update_model, update_map, kind, should_draw) {
-    // defaults
-    if (kind === undefined) {
-      kind = [ 'reaction', 'metabolite' ]
-    }
-    if (should_draw === undefined) {
-      should_draw = true
-    }
-
-    var update_metabolite_data = (kind.indexOf('metabolite') !== -1)
-    var update_reaction_data = (kind.indexOf('reaction') !== -1)
-    var met_data_object
-    var reaction_data_object
-    var gene_data_object
+  _updateData (
+    update_model,
+    update_map,
+    kind = ['reaction', 'metabolite '],
+    should_draw = true
+  ) {
+    const update_metabolite_data = (kind.indexOf('metabolite') !== -1)
+    const update_reaction_data = (kind.indexOf('reaction') !== -1)
+    let met_data_object
+    let reaction_data_object
+    let gene_data_object
 
     // -------------------
     // First map, and draw
