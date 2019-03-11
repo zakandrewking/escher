@@ -1,37 +1,45 @@
 /** @jsx h */
 import { h, Component, render } from 'preact'
 
-/**
- * Wrapper class for better integration of Preact components with Escher.
- * In order to use the ref pass an arrow function to whatever is going to call the ref function
- * i.e. functionThatWillUseRef( () => ref )
- */
-class ReactWrapper extends Component {
+class Wrapper extends Component {
+  constructor (props) {
+    super(props)
+    this.state = { newProps: {} }
+  }
+
   componentDidMount () {
-    this.props.connectSetStateFn(this.setState.bind(this))
+    // Use newProps within state instead of setting state directly so that the
+    // new props are fresh every time
+    this.props.connectSetStateFn(newProps => this.setState({ newProps }))
   }
 
   render () {
-    return <this.props.component {...this.props} {...this.state} />
+    // Pass the new props, and always pass the ref
+    return (
+      <this.props.component
+        ref={this.props.refPassthrough}
+        {...this.state.newProps}
+      />
+    )
   }
 }
 
 /**
- * Render the preact component
+ * Wrapper class for better integration of Preact components with Escher.
+ * @param {} component - A Preact component
  */
 function renderWrapper (
   component,
-  refFn,
+  ref,
   connectSetStateFn,
   divNode,
   props
 ) {
   render(
-    <ReactWrapper
+    <Wrapper
       component={component}
-      refFn={refFn}
       connectSetStateFn={connectSetStateFn}
-      {...props}
+      refPassthrough={ref}
     />,
     divNode,
     // If there is already a div, re-render it. Otherwise make a new one

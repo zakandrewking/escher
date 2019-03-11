@@ -3,12 +3,11 @@
  */
 
 /** @jsx h */
-import { h } from 'preact'
 import renderWrapper from './reactWrapper'
 import BuilderSettingsMenu from './BuilderSettingsMenu'
-import ButtonPanel from './ButtonPanel'
-import BuilderMenuBar from './BuilderMenuBar'
-import SearchBar from './SearchBar'
+// import ButtonPanel from './ButtonPanel'
+// import BuilderMenuBar from './BuilderMenuBar'
+// import SearchBar from './SearchBar'
 import * as utils from './utils'
 import BuildInput from './BuildInput'
 import ZoomContainer from './ZoomContainer'
@@ -258,7 +257,8 @@ class Builder {
       // redraw when settings change
       _.mapObject(this.settings.streams, (stream, key) => {
         stream.onValue(value => {
-          this.passPropsSettingsMenu({ settings: this.settings })
+          // re-render settings menu
+          this.passPropsSettingsMenu()
           // this.pass_menu_bar_props({
           //   settings: this.settings
           // })
@@ -416,13 +416,14 @@ class Builder {
     renderWrapper(
       BuilderSettingsMenu,
       instance => { this.settingsMenuRef = instance },
-      setState => this.callback_manager.set('passPropsSettingsMenu', s => setState(s)),
-      this.selection.append('div').node(),
-      {
-        settings: this.settings,
-        map: this.map
-      }
+      passProps => this.callback_manager.set('passPropsSettingsMenu', passProps),
+      this.selection.append('div').node()
     )
+    this.passPropsSettingsMenu({
+      display: false,
+      settings: this.settings,
+      map: this.map
+    })
 
     // Set up menu bar
     // this.setUpMenuBar()
@@ -707,15 +708,16 @@ class Builder {
    * Function to pass props for the tooltip component
    * @param {Object} props - Props that the tooltip will use
    */
-  passPropsTooltipContainer (props) {
+  passPropsTooltipContainer (props = {}) {
     this.callback_manager.run('passPropsTooltipContainer', null, props)
   }
 
   /**
-   * Function to pass props for the settings menu
+   * Function to pass props for the settings menu. Run without an argument to
+   * rerender the component
    * @param {Object} props - Props that the settings menu will use
    */
-  passPropsSettingsMenu (props) {
+  passPropsSettingsMenu (props = {}) {
     this.callback_manager.run('passPropsSettingsMenu', null, props)
   }
 
@@ -723,7 +725,7 @@ class Builder {
    * Function to pass props for the settings menu
    * @param {Object} props - Props that the settings menu will use
    */
-  passPropsMenuBar (props) {
+  passPropsMenuBar (props = {}) {
     this.callback_manager.run('passPropsMenuBar', null, props)
   }
 
