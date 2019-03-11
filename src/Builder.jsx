@@ -16,8 +16,8 @@ import QuickJump from './QuickJump'
 import dataStyles from './data_styles'
 import renderWrapper from './renderWrapper'
 import SettingsMenu from './SettingsMenu'
+import MenuBar from './MenuBar'
 // import ButtonPanel from './ButtonPanel'
-// import BuilderMenuBar from './BuilderMenuBar'
 // import SearchBar from './SearchBar'
 import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
@@ -383,9 +383,6 @@ class Builder {
     // Connect status bar
     this._setup_status(this.map)
 
-    // Connect status bar
-    this._setup_status(this.map)
-
     // Set the data for the map
     if (shouldUpdateData) {
       this._updateData(false, true)
@@ -412,21 +409,10 @@ class Builder {
     this._setup_modes(this.map, this.brush, this.zoom_container)
 
     // Set up settings menu
-    this.settingsMenuRef = null
-    renderWrapper(
-      SettingsMenu,
-      instance => { this.settingsMenuRef = instance },
-      passProps => this.callback_manager.set('passPropsSettingsMenu', passProps),
-      this.selection.append('div').node()
-    )
-    this.passPropsSettingsMenu({
-      display: false,
-      settings: this.settings,
-      map: this.map
-    })
+    this.setUpSettingsMenu()
 
     // Set up menu bar
-    // this.setUpMenuBar()
+    this.setUpMenuBar()
 
     // if (this.settings.get('enable_search')) {
     //   this.renderSearchBar(true)
@@ -514,89 +500,97 @@ class Builder {
     this.map.draw_everything()
   }
 
-  // setUpMenuBar () {
-  //   const menuDivNode = this.menu_div.node()
-  //   preact.render(
-  //     <ReactWrapper
-  //       callbackManager={this.callback_manager}
-  //       callbackName='setMenuBarState'
-  //       component={BuilderMenuBar}
-  //       ref={instance => { this.builderMenuBarRef = instance }}
-  //       display={this.settings.get('menu') === 'all'}
-  //       sel={this.selection}
-  //       mode={this.mode}
-  //       settings={this.settings}
-  //       saveMap={() => {
-  //         // Revert options changed by semanticZoom to their original values if option is active
-  //         if (this.semanticOptions) {
-  //           Object.entries(this.semanticOptions).map(([key, value]) => {
-  //             this.settings.set(key, value)
-  //           })
-  //           this._updateData()
-  //         }
-  //         this.map.save()
-  //       }}
-  //       loadMap={(file) => this.load_map(file)}
-  //       saveSvg={() => this.map.save_svg()}
-  //       savePng={() => this.map.save_png()}
-  //       clearMap={
-  //       () => {
-  //         this.map.clear_map()
-  //         this.callback_manager.run('clear_map')
-  //       }
-  //       }
-  //       loadModel={file => this.load_model(file, true)}
-  //       clearModel={
-  //       () => {
-  //         this.load_model(null)
-  //         this.callback_manager.run('clear_model')
-  //       }
-  //       }
-  //       updateRules={() => this.map.convert_map()}
-  //       setReactionData={d => this.set_reaction_data(d)}
-  //       setGeneData={d => this.set_gene_data(d)}
-  //       setMetaboliteData={d => this.set_metabolite_data(d)}
-  //       setMode={(newMode) => this._set_mode(newMode)}
-  //       deleteSelected={() => this.map.delete_selected()}
-  //       undo={() => this.map.undo_stack.undo()}
-  //       redo={() => this.map.undo_stack.redo()}
-  //       togglePrimary={() => this.map.toggle_selected_node_primary()}
-  //       cyclePrimary={() => this.map.cycle_primary_node()}
-  //       selectAll={() => this.map.select_all()}
-  //       selectNone={() => this.map.select_none()}
-  //       invertSelection={() => this.map.invert_selection()}
-  //       zoomIn={() => this.zoom_container.zoom_in()}
-  //       zoomOut={() => this.zoom_container.zoom_out()}
-  //       zoomExtentNodes={() => this.map.zoom_extent_nodes()}
-  //       zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
-  //       search={() => this.renderSearchBar()}
-  //       toggleBeziers={() => this.map.toggle_beziers()}
-  //       renderSettingsMenu={() => this.passPropsSettingsMenu({ display: true })}
-  //     />,
-  //     menuDivNode,
-  //     // If there is already a div, re-render it. Otherwise make a new one
-  //     menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined
-  //   )
-  // }
-  //
-  // renderSearchBar (hide, searchItem) {
-  //   if (!this.settings.get('enable_search')) { return }
-  //   const searchBarNode = this.search_bar_div.node()
-  //   preact.render(
-  //     <SearchBar
-  //       visible={!hide}
-  //       searchItem={searchItem}
-  //       searchIndex={this.map.search_index}
-  //       map={this.map}
-  //       ref={instance => { this.searchBarRef = instance }}
-  //     />,
-  //     searchBarNode,
-  //     searchBarNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
-  //       ? searchBarNode.firstChild
-  //       : undefined
-  //   )
-  // }
-  //
+  setUpSettingsMenu () {
+    this.settingsMenuRef = null
+    renderWrapper(
+      SettingsMenu,
+      instance => { this.settingsMenuRef = instance },
+      passProps => this.callback_manager.set('passPropsSettingsMenu', passProps),
+      this.selection.append('div').node()
+    )
+    this.passPropsSettingsMenu({
+      display: false,
+      settings: this.settings,
+      map: this.map
+    })
+  }
+
+  setUpMenuBar () {
+    this.menuBarRef = null
+    renderWrapper(
+      MenuBar,
+      instance => { this.menuBarRef = instance },
+      passProps => this.callback_manager.set('passPropsMenuBar', passProps),
+      this.selection.append('div').node()
+    )
+    this.passPropsMenuBar({
+      display: this.settings.get('menu') === 'all',
+      settings: this.settings,
+      sel: this.selection,
+      mode: this.mode,
+      saveMap: () => {
+        // Revert options changed by semanticZoom to their original values if option is active
+        if (this.semanticOptions) {
+          Object.entries(this.semanticOptions).map(([key, value]) => {
+            this.settings.set(key, value)
+          })
+          this._updateData()
+        }
+        this.map.save()
+      },
+      loadMap: (file) => this.load_map(file),
+      saveSvg: () => this.map.save_svg(),
+      savePng: () => this.map.save_png(),
+      clearMap: () => {
+        this.map.clear_map()
+        this.callback_manager.run('clear_map')
+      },
+      loadModel: file => this.load_model(file, true),
+      clearModel: () => {
+        this.load_model(null)
+        this.callback_manager.run('clear_model')
+      },
+      updateRules: () => this.map.convert_map(),
+      setReactionData: d => this.set_reaction_data(d),
+      setGeneData: d => this.set_gene_data(d),
+      setMetaboliteData: d => this.set_metabolite_data(d),
+      setMode: mode => this.setMode(mode),
+      deleteSelected: () => this.map.delete_selected(),
+      undo: () => this.map.undo_stack.undo(),
+      redo: () => this.map.undo_stack.redo(),
+      togglePrimary: () => this.map.toggle_selected_node_primary(),
+      cyclePrimary: () => this.map.cycle_primary_node(),
+      selectAll: () => this.map.select_all(),
+      selectNone: () => this.map.select_none(),
+      invertSelection: () => this.map.invert_selection(),
+      zoomIn: () => this.zoom_container.zoom_in(),
+      zoomOut: () => this.zoom_container.zoom_out(),
+      zoomExtentNodes: () => this.map.zoom_extent_nodes(),
+      zoomExtentCanvas: () => this.map.zoom_extent_canvas(),
+      search: () => this.renderSearchBar(),
+      toggleBeziers: () => this.map.toggle_beziers(),
+      renderSettingsMenu: () => this.passPropsSettingsMenu({ display: true })
+    })
+  }
+
+  renderSearchBar (hide, searchItem) {
+    if (!this.settings.get('enable_search')) { return }
+    const searchBarNode = this.search_bar_div.node()
+    preact.render(
+      <SearchBar
+        visible={!hide}
+        searchItem={searchItem}
+        searchIndex={this.map.search_index}
+        map={this.map}
+        ref={instance => { this.searchBarRef = instance }}
+      />,
+      searchBarNode,
+      searchBarNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
+                                    ? searchBarNode.firstChild
+                                    : undefined
+    )
+  }
+
   // renderButtonPanel (mode) {
   //   const buttonPanelDivNode = this.button_div.node()
   //   preact.render(
@@ -604,20 +598,23 @@ class Builder {
   //       all={this.settings.get('menu') === 'all'}
   //       fullscreen={this.settings.get('full_screen_button')}
   //       enableEditing={this.settings.get('enable_editing')}
-  //       setMode={(newMode) => this._set_mode(newMode)}
+  //       setMode={(newMode) => this.setMode(newMode)}
   //       zoomContainer={this.zoom_container}
   //       map={this.map}
   //       mode={mode}
   //       buildInput={this.build_input}
   //     />,
-  //   buttonPanelDivNode,
-  //   buttonPanelDivNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
-  //     ? buttonPanelDivNode.firstChild
-  //     : undefined
+  //     buttonPanelDivNode,
+  //     buttonPanelDivNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
+  //                                        ? buttonPanelDivNode.firstChild
+  //                                        : undefined
   //   )
   // }
-  //
-  _set_mode (mode) {
+
+  setMode (mode) {
+    // update UI
+    this.passPropsMenuBar({ mode })
+
     // this.renderButtonPanel(mode)
     // input
     this.build_input.toggle(mode === 'build')
@@ -656,37 +653,37 @@ class Builder {
   view_mode () {
     /** For documentation of this function, see docs/javascript_api.rst.  */
     this.callback_manager.run('view_mode')
-    this._set_mode('view')
+    this.setMode('view')
   }
 
   build_mode () {
     /** For documentation of this function, see docs/javascript_api.rst.  */
     this.callback_manager.run('build_mode')
-    this._set_mode('build')
+    this.setMode('build')
   }
 
   brush_mode () {
     /** For documentation of this function, see docs/javascript_api.rst.  */
     this.callback_manager.run('brush_mode')
-    this._set_mode('brush')
+    this.setMode('brush')
   }
 
   zoom_mode () {
     /** For documentation of this function, see docs/javascript_api.rst.  */
     this.callback_manager.run('zoom_mode')
-    this._set_mode('zoom')
+    this.setMode('zoom')
   }
 
   rotate_mode () {
     /** For documentation of this function, see docs/javascript_api.rst.  */
     this.callback_manager.run('rotate_mode')
-    this._set_mode('rotate')
+    this.setMode('rotate')
   }
 
   text_mode () {
     /** For documentation of this function, see docs/javascript_api.rst.  */
     this.callback_manager.run('text_mode')
-    this._set_mode('text')
+    this.setMode('text')
   }
 
   _reactionCheckAddAbs () {

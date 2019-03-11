@@ -4,42 +4,50 @@ import { h, Component, render } from 'preact'
 class Wrapper extends Component {
   constructor (props) {
     super(props)
-    this.state = { newProps: {} }
+    this.state = {}
   }
 
   componentDidMount () {
-    // Use newProps within state instead of setting state directly so that the
-    // new props are fresh every time
-    this.props.connectSetStateFn(newProps => this.setState({ newProps }))
+    this.props.connectSetStateFn(props => this.setState(props))
+  }
+
+  is_visible () { // eslint-disable-line camelcase
+    return this.state.display
   }
 
   render () {
+    if (!this.state.display) return null
+
     // Pass the new props, and always pass the ref
     return (
       <this.props.component
-        ref={this.props.refPassthrough}
-        {...this.state.newProps}
+        setDisplay={display => this.setState({ display })}
+        {...this.state}
       />
     )
   }
 }
 
 /**
- * Wrapper for better integration of Preact components with Escher.
+ * Wrapper for better integration of Preact components with Escher. The
+ * component can be updated using the connectSetStateFn to set up a callback for
+ * updates from other components.
  * @param {} component - A Preact component
+ *
+ * @param {} ref - A preact ref for the wrapper so that the "display" state can
+ *                 be tracked.
  */
 function renderWrapper (
   component,
   ref,
   connectSetStateFn,
-  divNode,
-  props
+  divNode
 ) {
   render(
     <Wrapper
       component={component}
       connectSetStateFn={connectSetStateFn}
-      refPassthrough={ref}
+      ref={ref}
     />,
     divNode,
     // If there is already a div, re-render it. Otherwise make a new one

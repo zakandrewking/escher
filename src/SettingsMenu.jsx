@@ -13,37 +13,14 @@ import scalePresets from './colorPresets'
  * Preact.
  */
 class SettingsMenu extends Component {
-  constructor (props) {
-    super(props)
-    // keep props as state
-    this.state = { ...props }
-    if (props.display) {
-      this.componentDidAppear()
-    }
-  }
-
-  componentWillReceiveProps (nextProps) {
-    // keep props as state
-    this.setState({ ...nextProps })
-  }
-
-  componentDidUpdate (_, prevState) {
-    if (!prevState.display && this.state.display) {
-      this.componentDidAppear()
-    }
-    if (prevState.display && !this.state.display) {
-      this.componentDidDisappear()
-    }
-  }
-
-  componentDidAppear () {
-    this.state.settings.holdChanges()
+  componentWillMount () {
+    this.props.settings.holdChanges()
     this.setState({
-      clearEscape: this.state.map.key_manager.add_escape_listener(
+      clearEscape: this.props.map.key_manager.add_escape_listener(
         () => this.abandonChanges(),
         true
       ),
-      clearEnter: this.state.map.key_manager.add_key_listener(
+      clearEnter: this.props.map.key_manager.add_key_listener(
         ['enter'],
         () => this.saveChanges(),
         true
@@ -51,19 +28,19 @@ class SettingsMenu extends Component {
     })
   }
 
-  componentDidDisappear () {
+  componentWillUnmount () {
     this.state.clearEscape()
     this.state.clearEnter()
   }
 
   abandonChanges () {
-    this.state.settings.abandonChanges()
-    this.setState({ display: false })
+    this.props.settings.abandonChanges()
+    this.props.setDisplay(false)
   }
 
   saveChanges () {
-    this.state.settings.acceptChanges()
-    this.setState({ display: false })
+    this.props.settings.acceptChanges()
+    this.props.setDisplay(false)
   }
 
   /**
@@ -72,28 +49,22 @@ class SettingsMenu extends Component {
    * @param {String} type - reaction_style or metabolite_style
    */
   handleStyle (value, type) {
-    const currentSetting = this.state.settings.get(type)
+    const currentSetting = this.props.settings.get(type)
     const index = currentSetting.indexOf(value)
     if (index === -1) {
-      this.state.settings.set(type, [...currentSetting, value])
+      this.props.settings.set(type, [...currentSetting, value])
     } else {
-      this.state.settings.set(type, [
+      this.props.settings.set(type, [
         ...currentSetting.slice(0, index),
         ...currentSetting.slice(index + 1)
       ])
     }
   }
 
-  is_visible () { // eslint-disable-line camelcase
-    return this.state.display
-  }
-
   render () {
-    if (!this.state.display) return null
-
-    const settings = this.state.settings
+    const settings = this.props.settings
     const enableTooltips = settings.get('enable_tooltips') || []
-    const dataStatistics = this.state.map.get_data_statistics()
+    const dataStatistics = this.props.map.get_data_statistics()
 
     return (
       <div className='settingsBackground'>
