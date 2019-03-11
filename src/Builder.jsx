@@ -3,11 +3,6 @@
  */
 
 /** @jsx h */
-import renderWrapper from './reactWrapper'
-import BuilderSettingsMenu from './BuilderSettingsMenu'
-// import ButtonPanel from './ButtonPanel'
-// import BuilderMenuBar from './BuilderMenuBar'
-// import SearchBar from './SearchBar'
 import * as utils from './utils'
 import BuildInput from './BuildInput'
 import ZoomContainer from './ZoomContainer'
@@ -19,6 +14,11 @@ import Settings from './Settings'
 import TextEditInput from './TextEditInput'
 import QuickJump from './QuickJump'
 import dataStyles from './data_styles'
+import renderWrapper from './renderWrapper'
+import BuilderSettingsMenu from './BuilderSettingsMenu'
+// import ButtonPanel from './ButtonPanel'
+// import BuilderMenuBar from './BuilderMenuBar'
+// import SearchBar from './SearchBar'
 import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
 import _ from 'underscore'

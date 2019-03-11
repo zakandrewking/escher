@@ -25,7 +25,7 @@ class Wrapper extends Component {
 }
 
 /**
- * Wrapper class for better integration of Preact components with Escher.
+ * Wrapper for better integration of Preact components with Escher.
  * @param {} component - A Preact component
  */
 function renderWrapper (
