@@ -34,10 +34,11 @@ import './Builder.css'
 
 // Import CSS as a string to embed. This also works from lib because css/src get
 // uploaded to NPM.
+// eslint-disable-next-line import/no-webpack-loader-syntax
 import builderEmbed from '!!raw-loader!./Builder-embed.css'
 
 class Builder {
-  constructor (map_data, model_data, embeddedCss, selection, options) {
+  constructor (mapData, modelData, embeddedCss, selection, options) {
     // Defaults
     if (!selection) {
       selection = d3Select('body').append('div')
@@ -58,8 +59,8 @@ class Builder {
       embeddedCss = builderEmbed
     }
 
-    this.map_data = map_data
-    this.model_data = model_data
+    this.map_data = mapData
+    this.model_data = modelData
     this.embeddedCss = embeddedCss
     this.selection = selection
     this.menu_div = null
@@ -279,8 +280,8 @@ class Builder {
           this._updateData(true, true, [ 'reaction', 'metabolite' ], false)
           if (this.zoom_container !== null) {
             // TODO make this automatic
-            const new_behavior = this.settings.get('scroll_behavior')
-            this.zoom_container.set_scroll_behavior(new_behavior)
+            const newBehavior = this.settings.get('scroll_behavior')
+            this.zoom_container.set_scroll_behavior(newBehavior)
           }
           if (this.map !== null) {
             this.map.draw_all_nodes(false)
@@ -313,21 +314,17 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  load_model (model_data, should_updateData) { // eslint-disable-line camelcase
-    if (_.isUndefined(should_updateData)) {
-      should_updateData = true
-    }
-
+  load_model (modelData, shouldUpdateData = true) { // eslint-disable-line camelcase
     // Check the cobra model
-    if (_.isNull(model_data)) {
+    if (_.isNull(modelData)) {
       this.cobra_model = null
     } else {
-      this.cobra_model = CobraModel.from_cobra_json(model_data)
+      this.cobra_model = CobraModel.from_cobra_json(modelData)
     }
 
     if (this.map) {
       this.map.cobra_model = this.cobra_model
-      if (should_updateData) {
+      if (shouldUpdateData) {
         this._updateData(true, false)
       }
       if (this.settings.get('highlight_missing')) {
@@ -335,17 +332,13 @@ class Builder {
       }
     }
 
-    this.callback_manager.run('load_model', null, model_data, should_updateData)
+    this.callback_manager.run('load_model', null, modelData, shouldUpdateData)
   }
 
   /**
    * For documentation of this function, see docs/javascript_api.rst
    */
-  load_map (map_data, should_updateData) { // eslint-disable-line camelcase
-    if (_.isUndefined(should_updateData)) {
-      should_updateData = true
-    }
-
+  load_map (mapData, shouldUpdateData = true) { // eslint-disable-line camelcase
     // Store map options that might be changed by semantic_zoom function
     const tempSemanticOptions = {}
     if (this.settings.get('semantic_zoom')) {
@@ -359,27 +352,23 @@ class Builder {
       this.semanticOptions = Object.assign({}, tempSemanticOptions)
     }
 
-    // Begin with some definitions
-    var selectable_mousedown_enabled = true
-    var shift_key_on = false
-
     // remove the old builder
     utils.remove_child_nodes(this.zoom_container.zoomed_sel)
 
-    var zoomed_sel = this.zoom_container.zoomed_sel
-    var svg = this.zoom_container.svg
+    const zoomedSel = this.zoom_container.zoomed_sel
+    const svg = this.zoom_container.svg
 
     // remove the old map side effects
     if (this.map) {
       this.map.key_manager.toggle(false)
     }
 
-    if (map_data !== null) {
+    if (mapData !== null) {
       // import map
-      this.map = Map.from_data(map_data,
+      this.map = Map.from_data(mapData,
                                svg,
                                this.embeddedCss,
-                               zoomed_sel,
+                               zoomedSel,
                                this.zoom_container,
                                this.settings,
                                this.cobra_model,
@@ -388,7 +377,7 @@ class Builder {
       // new map
       this.map = new Map(svg,
                          this.embeddedCss,
-                         zoomed_sel,
+                         zoomedSel,
                          this.zoom_container,
                          this.settings,
                          this.cobra_model,
@@ -403,7 +392,7 @@ class Builder {
     this._setup_status(this.map)
 
     // Set the data for the map
-    if (should_updateData) {
+    if (shouldUpdateData) {
       this._updateData(false, true)
     }
 
@@ -419,7 +408,7 @@ class Builder {
     this.tooltip_container.setup_map_callbacks(this.map)
 
     // Set up the Brush
-    this.brush = new Brush(zoomed_sel, false, this.map, '.canvas-group')
+    this.brush = new Brush(zoomedSel, false, this.map, '.canvas-group')
     this.map.canvas.callback_manager.set('resize', function () {
       this.brush.toggle(true)
     }.bind(this))
@@ -476,27 +465,27 @@ class Builder {
     // Set up selection box
     if (this.settings.get('zoom_to_element')) {
       const type = this.settings.get('zoom_to_element').type
-      const element_id = this.settings.get('zoom_to_element').id
+      const elementId = this.settings.get('zoom_to_element').id
       if (_.isUndefined(type) || [ 'reaction', 'node' ].indexOf(type) === -1) {
         throw new Error('zoom_to_element type must be "reaction" or "node"')
       }
-      if (_.isUndefined(element_id)) {
+      if (_.isUndefined(elementId)) {
         throw new Error('zoom_to_element must include id')
       }
       if (type === 'reaction') {
-        this.map.zoom_to_reaction(element_id)
+        this.map.zoom_to_reaction(elementId)
       } else if (type === 'node') {
-        this.map.zoom_to_node(element_id)
+        this.map.zoom_to_node(elementId)
       }
-    } else if (map_data !== null) {
+    } else if (mapData !== null) {
       this.map.zoom_extent_canvas()
     } else {
       if (this.settings.get('starting_reaction') !== null && this.cobra_model !== null) {
         // Draw default reaction if no map is provided
-        var size = this.zoom_container.get_size()
-        var start_coords = { x: size.width / 2, y: size.height / 4 }
+        const size = this.zoom_container.get_size()
+        const startCoords = { x: size.width / 2, y: size.height / 4 }
         this.map.new_reaction_from_scratch(this.settings.get('starting_reaction'),
-                                           start_coords, 90)
+                                           startCoords, 90)
         this.map.zoom_extent_nodes()
       } else {
         this.map.zoom_extent_canvas()
