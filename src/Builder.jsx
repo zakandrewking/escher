@@ -3,8 +3,8 @@
  */
 
 /** @jsx h */
-import preact, { h } from 'preact'
-import ReactWrapper from './ReactWrapper'
+import { h } from 'preact'
+import renderWrapper from './reactWrapper'
 import BuilderSettingsMenu from './BuilderSettingsMenu'
 import ButtonPanel from './ButtonPanel'
 import BuilderMenuBar from './BuilderMenuBar'
@@ -65,8 +65,6 @@ class Builder {
     this.selection = selection
     this.menu_div = null
     this.button_div = null
-    this.settings_div = null
-    this.settingsMenuRef = null
     this.search_bar_div = null
     this.searchBarRef = null
     this.semanticOptions = null
@@ -248,7 +246,6 @@ class Builder {
     this.menu_div = s.append('div')
     this.search_bar_div = s.append('div')
     this.button_div = this.selection.append('div')
-    this.settings_div = this.selection.append('div')
 
     // Need to defer map loading to let webpack CSS load properly
     _.defer(() => {
@@ -258,15 +255,13 @@ class Builder {
         this._updateData(true, true)
       }
 
+      // redraw when settings change
       _.mapObject(this.settings.streams, (stream, key) => {
         stream.onValue(value => {
-          this.pass_settings_menu_props({
-            map: this.map,
-            settings: this.settings
-          })
-          this.pass_menu_bar_props({
-            settings: this.settings
-          })
+          this.passPropsSettingsMenu({ settings: this.settings })
+          // this.pass_menu_bar_props({
+          //   settings: this.settings
+          // })
           if (key === 'reaction_styles' || key === 'metabolite_styles') {
             this._updateData(false, true)
           }
@@ -417,15 +412,25 @@ class Builder {
     this._setup_modes(this.map, this.brush, this.zoom_container)
 
     // Set up settings menu
-    this.setUpSettingsMenu()
+    this.settingsMenuRef = null
+    renderWrapper(
+      BuilderSettingsMenu,
+      instance => { this.settingsMenuRef = instance },
+      setState => this.callback_manager.set('passPropsSettingsMenu', s => setState(s)),
+      this.selection.append('div').node(),
+      {
+        settings: this.settings,
+        map: this.map
+      }
+    )
 
     // Set up menu bar
-    this.setUpMenuBar()
+    // this.setUpMenuBar()
 
-    if (this.settings.get('enable_search')) {
-      this.renderSearchBar(true)
-    }
-
+    // if (this.settings.get('enable_search')) {
+    //   this.renderSearchBar(true)
+    // }
+    //
     // Set up key manager
     var keys = this._get_keys(
       this.map,
@@ -508,130 +513,111 @@ class Builder {
     this.map.draw_everything()
   }
 
-  setUpSettingsMenu () {
-    const settingsDivNode = this.settings_div.node()
-    preact.render(
-      <ReactWrapper
-        callbackManager={this.callback_manager}
-        callbackName='setSettingsMenuState'
-        component={BuilderSettingsMenu}
-        ref={instance => { this.settingsMenuRef = instance }}
-      />,
-      settingsDivNode,
-      // If there is already a div, re-render it. Otherwise make a new one
-      settingsDivNode.children.length > 0 ? settingsDivNode.firstChild : undefined
-    )
-  }
-
-  setUpMenuBar () {
-    const menuDivNode = this.menu_div.node()
-    preact.render(
-      <ReactWrapper
-        callbackManager={this.callback_manager}
-        callbackName='setMenuBarState'
-        component={BuilderMenuBar}
-        ref={instance => { this.builderMenuBarRef = instance }}
-        display={this.settings.get('menu') === 'all'}
-        sel={this.selection}
-        mode={this.mode}
-        settings={this.settings}
-        saveMap={() => {
-          // Revert options changed by semanticZoom to their original values if option is active
-          if (this.semanticOptions) {
-            Object.entries(this.semanticOptions).map(([key, value]) => {
-              this.settings.set(key, value)
-            })
-            this._updateData()
-          }
-          this.map.save()
-        }}
-        loadMap={(file) => this.load_map(file)}
-        saveSvg={() => this.map.save_svg()}
-        savePng={() => this.map.save_png()}
-        clearMap={
-        () => {
-          this.map.clear_map()
-          this.callback_manager.run('clear_map')
-        }
-        }
-        loadModel={file => this.load_model(file, true)}
-        clearModel={
-        () => {
-          this.load_model(null)
-          this.callback_manager.run('clear_model')
-        }
-        }
-        updateRules={() => this.map.convert_map()}
-        setReactionData={d => this.set_reaction_data(d)}
-        setGeneData={d => this.set_gene_data(d)}
-        setMetaboliteData={d => this.set_metabolite_data(d)}
-        setMode={(newMode) => this._set_mode(newMode)}
-        deleteSelected={() => this.map.delete_selected()}
-        undo={() => this.map.undo_stack.undo()}
-        redo={() => this.map.undo_stack.redo()}
-        togglePrimary={() => this.map.toggle_selected_node_primary()}
-        cyclePrimary={() => this.map.cycle_primary_node()}
-        selectAll={() => this.map.select_all()}
-        selectNone={() => this.map.select_none()}
-        invertSelection={() => this.map.invert_selection()}
-        zoomIn={() => this.zoom_container.zoom_in()}
-        zoomOut={() => this.zoom_container.zoom_out()}
-        zoomExtentNodes={() => this.map.zoom_extent_nodes()}
-        zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
-        search={() => this.renderSearchBar()}
-        toggleBeziers={() => this.map.toggle_beziers()}
-        renderSettingsMenu={() => this.pass_settings_menu_props({
-          map: this.map,
-          settings: this.settings,
-          display: true
-        })}
-      />,
-      menuDivNode,
-      // If there is already a div, re-render it. Otherwise make a new one
-      menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined
-    )
-  }
-
-  renderSearchBar (hide, searchItem) {
-    if (!this.settings.get('enable_search')) { return }
-    const searchBarNode = this.search_bar_div.node()
-    preact.render(
-      <SearchBar
-        visible={!hide}
-        searchItem={searchItem}
-        searchIndex={this.map.search_index}
-        map={this.map}
-        ref={instance => { this.searchBarRef = instance }}
-      />,
-      searchBarNode,
-      searchBarNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
-        ? searchBarNode.firstChild
-        : undefined
-    )
-  }
-
-  renderButtonPanel (mode) {
-    const buttonPanelDivNode = this.button_div.node()
-    preact.render(
-      <ButtonPanel
-        all={this.settings.get('menu') === 'all'}
-        fullscreen={this.settings.get('full_screen_button')}
-        enableEditing={this.settings.get('enable_editing')}
-        setMode={(newMode) => this._set_mode(newMode)}
-        zoomContainer={this.zoom_container}
-        map={this.map}
-        mode={mode}
-        buildInput={this.build_input}
-      />,
-    buttonPanelDivNode,
-    buttonPanelDivNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
-      ? buttonPanelDivNode.firstChild
-      : undefined
-    )
-  }
-
+  // setUpMenuBar () {
+  //   const menuDivNode = this.menu_div.node()
+  //   preact.render(
+  //     <ReactWrapper
+  //       callbackManager={this.callback_manager}
+  //       callbackName='setMenuBarState'
+  //       component={BuilderMenuBar}
+  //       ref={instance => { this.builderMenuBarRef = instance }}
+  //       display={this.settings.get('menu') === 'all'}
+  //       sel={this.selection}
+  //       mode={this.mode}
+  //       settings={this.settings}
+  //       saveMap={() => {
+  //         // Revert options changed by semanticZoom to their original values if option is active
+  //         if (this.semanticOptions) {
+  //           Object.entries(this.semanticOptions).map(([key, value]) => {
+  //             this.settings.set(key, value)
+  //           })
+  //           this._updateData()
+  //         }
+  //         this.map.save()
+  //       }}
+  //       loadMap={(file) => this.load_map(file)}
+  //       saveSvg={() => this.map.save_svg()}
+  //       savePng={() => this.map.save_png()}
+  //       clearMap={
+  //       () => {
+  //         this.map.clear_map()
+  //         this.callback_manager.run('clear_map')
+  //       }
+  //       }
+  //       loadModel={file => this.load_model(file, true)}
+  //       clearModel={
+  //       () => {
+  //         this.load_model(null)
+  //         this.callback_manager.run('clear_model')
+  //       }
+  //       }
+  //       updateRules={() => this.map.convert_map()}
+  //       setReactionData={d => this.set_reaction_data(d)}
+  //       setGeneData={d => this.set_gene_data(d)}
+  //       setMetaboliteData={d => this.set_metabolite_data(d)}
+  //       setMode={(newMode) => this._set_mode(newMode)}
+  //       deleteSelected={() => this.map.delete_selected()}
+  //       undo={() => this.map.undo_stack.undo()}
+  //       redo={() => this.map.undo_stack.redo()}
+  //       togglePrimary={() => this.map.toggle_selected_node_primary()}
+  //       cyclePrimary={() => this.map.cycle_primary_node()}
+  //       selectAll={() => this.map.select_all()}
+  //       selectNone={() => this.map.select_none()}
+  //       invertSelection={() => this.map.invert_selection()}
+  //       zoomIn={() => this.zoom_container.zoom_in()}
+  //       zoomOut={() => this.zoom_container.zoom_out()}
+  //       zoomExtentNodes={() => this.map.zoom_extent_nodes()}
+  //       zoomExtentCanvas={() => this.map.zoom_extent_canvas()}
+  //       search={() => this.renderSearchBar()}
+  //       toggleBeziers={() => this.map.toggle_beziers()}
+  //       renderSettingsMenu={() => this.passPropsSettingsMenu({ display: true })}
+  //     />,
+  //     menuDivNode,
+  //     // If there is already a div, re-render it. Otherwise make a new one
+  //     menuDivNode.children.length > 0 ? menuDivNode.firstChild : undefined
+  //   )
+  // }
+  //
+  // renderSearchBar (hide, searchItem) {
+  //   if (!this.settings.get('enable_search')) { return }
+  //   const searchBarNode = this.search_bar_div.node()
+  //   preact.render(
+  //     <SearchBar
+  //       visible={!hide}
+  //       searchItem={searchItem}
+  //       searchIndex={this.map.search_index}
+  //       map={this.map}
+  //       ref={instance => { this.searchBarRef = instance }}
+  //     />,
+  //     searchBarNode,
+  //     searchBarNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
+  //       ? searchBarNode.firstChild
+  //       : undefined
+  //   )
+  // }
+  //
+  // renderButtonPanel (mode) {
+  //   const buttonPanelDivNode = this.button_div.node()
+  //   preact.render(
+  //     <ButtonPanel
+  //       all={this.settings.get('menu') === 'all'}
+  //       fullscreen={this.settings.get('full_screen_button')}
+  //       enableEditing={this.settings.get('enable_editing')}
+  //       setMode={(newMode) => this._set_mode(newMode)}
+  //       zoomContainer={this.zoom_container}
+  //       map={this.map}
+  //       mode={mode}
+  //       buildInput={this.build_input}
+  //     />,
+  //   buttonPanelDivNode,
+  //   buttonPanelDivNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
+  //     ? buttonPanelDivNode.firstChild
+  //     : undefined
+  //   )
+  // }
+  //
   _set_mode (mode) {
-    this.renderButtonPanel(mode)
+    // this.renderButtonPanel(mode)
     // input
     this.build_input.toggle(mode === 'build')
     this.build_input.direction_arrow.toggle(mode === 'build')
@@ -721,24 +707,24 @@ class Builder {
    * Function to pass props for the tooltip component
    * @param {Object} props - Props that the tooltip will use
    */
-  pass_tooltip_component_props (props) {
-    this.tooltip_container.callback_manager.run('setState', null, props)
+  passPropsTooltipContainer (props) {
+    this.callback_manager.run('passPropsTooltipContainer', null, props)
   }
 
   /**
    * Function to pass props for the settings menu
    * @param {Object} props - Props that the settings menu will use
    */
-  pass_settings_menu_props (props) {
-    this.callback_manager.run('setSettingsMenuState', null, props)
+  passPropsSettingsMenu (props) {
+    this.callback_manager.run('passPropsSettingsMenu', null, props)
   }
 
   /**
    * Function to pass props for the settings menu
    * @param {Object} props - Props that the settings menu will use
    */
-  passMenuBarProps (props) {
-    this.callback_manager.run('setMenuBarState', null, props)
+  passPropsMenuBar (props) {
+    this.callback_manager.run('passPropsMenuBar', null, props)
   }
 
   /**
@@ -1123,20 +1109,12 @@ class Builder {
       show_settings_ctrl: {
         key: 'ctrl+,',
         target: settings_bar,
-        fn: () => this.pass_settings_menu_props({
-          map: this.map,
-          settings: this.settings,
-          display: true
-        })
+        fn: () => this.passPropsSettingsMenu({ display: true })
       },
       show_settings: {
         key: ',',
         target: this,
-        fn: () => this.pass_settings_menu_props({
-          map: this.map,
-          settings: this.settings,
-          display: true
-        }),
+        fn: () => this.passPropsSettingsMenu({ display: true }),
         ignore_with_input: true
       }
     }

@@ -25,7 +25,7 @@ class BuilderSettingsMenu extends Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    this.setState({display: nextProps.display})
+    this.setState({ display: nextProps.display })
     if (nextProps.display && !this.props.display) {
       this.componentWillAppear()
     }
@@ -87,7 +87,10 @@ class BuilderSettingsMenu extends Component {
   }
 
   render () {
-    return (!this.props.display ? null : (
+    if (!this.props.display) return null
+
+    const enableTooltips = this.props.settings.get('enable_tooltips') || []
+    return (
       <div className='settingsBackground'>
         <div className='settingsBoxContainer'>
           <button className='discardChanges btn' onClick={() => this.abandonChanges()}>
@@ -229,31 +232,29 @@ class BuilderSettingsMenu extends Component {
                     <label className='tooltipOption' title='If checked, tooltips will display over the gene, reaction, and metabolite labels'>
                       <input
                         type='checkbox'
-                        onClick={() =>
-                          this.props.settings.set(
-                            'enable_tooltips',
-                            this.props.settings.get('enable_tooltips').indexOf('label') > -1
-                              ? update(this.props.settings.get('enable_tooltips'), {$splice: [[this.props.settings.get('enable_tooltips').indexOf('label'), 1]]})
-                              : update(this.props.settings.get('enable_tooltips'), {$push: ['label']})
-                          )
-                        }
-                        checked={this.props.settings.get('enable_tooltips').indexOf('label') > -1}
-                        />
+                        onClick={() => {
+                          const type = 'label'
+                          const newEnableTooltips = _.contains(enableTooltips, type)
+                                                  ? _.filter(enableTooltips, x => x !== type)
+                                                  : [...enableTooltips, type]
+                          this.props.settings.set('enable_tooltips', newEnableTooltips)
+                        }}
+                        checked={_.contains(enableTooltips, 'label')}
+                      />
                       Labels
                     </label>
                     <label className='tooltipOption' title='If checked, tooltips will display over the reaction line segments and metabolite circles'>
                       <input
                         type='checkbox'
-                        onClick={() =>
-                          this.props.settings.set(
-                            'enable_tooltips',
-                            this.props.settings.get('enable_tooltips').indexOf('object') > -1
-                              ? update(this.props.settings.get('enable_tooltips'), {$splice: [[this.props.settings.get('enable_tooltips').indexOf('object'), 1]]})
-                              : update(this.props.settings.get('enable_tooltips'), {$push: ['object']})
-                          )
-                        }
-                        checked={this.props.settings.get('enable_tooltips').indexOf('object') > -1}
-                        />
+                        onClick={() => {
+                          const type = 'object'
+                          const newEnableTooltips = _.contains(enableTooltips, type)
+                                                  ? _.filter(enableTooltips, x => x !== type)
+                                                  : [...enableTooltips, type]
+                          this.props.settings.set('enable_tooltips', newEnableTooltips)
+                        }}
+                        checked={_.contains(enableTooltips, 'object')}
+                      />
                       Objects
                     </label>
                   </td>
@@ -579,7 +580,7 @@ class BuilderSettingsMenu extends Component {
           </div>
         </div>
       </div>
-    ))
+    )
   }
 }
 export default BuilderSettingsMenu

@@ -1,7 +1,7 @@
 /** @jsx h */
 import preact, { h } from 'preact'
 import CallbackManager from './CallbackManager'
-import ReactWrapper from './ReactWrapper'
+// import renderWrapper from './reactWrapper'
 import _ from 'underscore'
 import * as utils from './utils'
 const PlacedDiv = require('./PlacedDiv')
@@ -47,15 +47,15 @@ function init (selection, TooltipComponent, zoom_container) {
   this.currentTooltip = null
 
   // keep a reference to preact tooltip
-  preact.render(
-    <ReactWrapper
-      callbackManager={this.callback_manager}
-      callbackName='setState'
-      component={this.TooltipComponent}
-      ref={instance => { this.tooltipRef = instance }}
-    />,
-    this.div.node()
-  )
+  // preact.render(
+  //   <ReactWrapper
+  //     callbackManager={this.callback_manager}
+  //     callbackName='setState'
+  //     component={this.TooltipComponent}
+  //     ref={instance => { this.tooltipRef = instance }}
+  //   />,
+  //   this.div.node()
+  // )
 }
 
 /**

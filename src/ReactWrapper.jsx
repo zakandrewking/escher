@@ -1,5 +1,5 @@
 /** @jsx h */
-import { h, Component } from 'preact'
+import { h, Component, render } from 'preact'
 
 /**
  * Wrapper class for better integration of Preact components with Escher.
@@ -8,7 +8,7 @@ import { h, Component } from 'preact'
  */
 class ReactWrapper extends Component {
   componentDidMount () {
-    this.props.callbackManager.set(this.props.callbackName, s => this.setState(s))
+    this.props.connectSetStateFn(this.setState.bind(this))
   }
 
   render () {
@@ -16,4 +16,27 @@ class ReactWrapper extends Component {
   }
 }
 
-export default ReactWrapper
+/**
+ * Render the preact component
+ */
+function renderWrapper (
+  component,
+  refFn,
+  connectSetStateFn,
+  divNode,
+  props
+) {
+  render(
+    <ReactWrapper
+      component={component}
+      refFn={refFn}
+      connectSetStateFn={connectSetStateFn}
+      {...props}
+    />,
+    divNode,
+    // If there is already a div, re-render it. Otherwise make a new one
+    divNode.children.length > 0 ? divNode.firstChild : undefined
+  )
+}
+
+export default renderWrapper
