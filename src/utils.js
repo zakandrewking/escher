@@ -63,8 +63,8 @@ module.exports = {
   parse_url_components: parse_url_components,
   get_document: get_document,
   get_window: get_window,
-  d3_transform_catch: d3_transform_catch,
-  check_browser: check_browser
+  d3_transform_catch: d3_transform_catch
+  // check_browser: check_browser
 }
 
 /**
@@ -1110,32 +1110,32 @@ function d3_transform_catch (transform_attr) {
 /**
  * Look for name in the user agent string.
  */
-function check_browser (name) {
-  var browser = function() {
-    // Thanks to
-    // http://stackoverflow.com/questions/2400935/browser-detection-in-javascript
-    var ua = navigator.userAgent
-    var M = ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || []
-    var tem
-    if (/trident/i.test(M[1])) {
-      tem = /\brv[ :]+(\d+)/g.exec(ua) || []
-      return 'IE '+ (tem[1] || '')
-    }
-    if (M[1] === 'Chrome') {
-      tem = ua.match(/\b(OPR|Edge)\/(\d+)/)
-      if (tem != null) return tem.slice(1).join(' ').replace('OPR', 'Opera')
-    }
-    M = M[2] ? [ M[1], M[2] ]: [ navigator.appName, navigator.appVersion, '-?' ]
-    if ((tem = ua.match(/version\/(\d+)/i)) !== null) {
-      M.splice(1, 1, tem[1])
-    }
-    return M.join(' ')
-  }
+// function check_browser (name) {
+//   var browser = function() {
+//     // Thanks to
+//     // http://stackoverflow.com/questions/2400935/browser-detection-in-javascript
+//     var ua = navigator.userAgent
+//     var M = ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || []
+//     var tem
+//     if (/trident/i.test(M[1])) {
+//       tem = /\brv[ :]+(\d+)/g.exec(ua) || []
+//       return 'IE '+ (tem[1] || '')
+//     }
+//     if (M[1] === 'Chrome') {
+//       tem = ua.match(/\b(OPR|Edge)\/(\d+)/)
+//       if (tem != null) return tem.slice(1).join(' ').replace('OPR', 'Opera')
+//     }
+//     M = M[2] ? [ M[1], M[2] ]: [ navigator.appName, navigator.appVersion, '-?' ]
+//     if ((tem = ua.match(/version\/(\d+)/i)) !== null) {
+//       M.splice(1, 1, tem[1])
+//     }
+//     return M.join(' ')
+//   }
 
-  try {
-    // navigator.userAgent is deprecated, so don't count on it
-    return browser().toLowerCase().indexOf(name) > -1
-  } catch (e) {
-    return false
-  }
-}
+//   try {
+//     // navigator.userAgent is deprecated, so don't count on it
+//     return browser().toLowerCase().indexOf(name) > -1
+//   } catch (e) {
+//     return false
+//   }
+// }

@@ -80,7 +80,7 @@ class Builder {
       // view options
       menu: 'all',
       scroll_behavior: 'pan',
-      use_3d_transform: !utils.check_browser('safari'),
+      use_3d_transform: false,
       enable_editing: true,
       enable_keys: true,
       enable_search: true,
