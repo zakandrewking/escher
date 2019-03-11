@@ -15,7 +15,7 @@ import TextEditInput from './TextEditInput'
 import QuickJump from './QuickJump'
 import dataStyles from './data_styles'
 import renderWrapper from './renderWrapper'
-import BuilderSettingsMenu from './BuilderSettingsMenu'
+import SettingsMenu from './SettingsMenu'
 // import ButtonPanel from './ButtonPanel'
 // import BuilderMenuBar from './BuilderMenuBar'
 // import SearchBar from './SearchBar'
@@ -414,7 +414,7 @@ class Builder {
     // Set up settings menu
     this.settingsMenuRef = null
     renderWrapper(
-      BuilderSettingsMenu,
+      SettingsMenu,
       instance => { this.settingsMenuRef = instance },
       passProps => this.callback_manager.set('passPropsSettingsMenu', passProps),
       this.selection.append('div').node()

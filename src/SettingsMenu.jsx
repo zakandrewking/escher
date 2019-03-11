@@ -4,7 +4,7 @@ import ScaleSelector from './ScaleSelector'
 import ScaleSlider from './ScaleSlider'
 import ScaleSelection from './ScaleSelection'
 import _ from 'underscore'
-import './BuilderSettingsMenu.css'
+import './SettingsMenu.css'
 import scalePresets from './colorPresets'
 
 /**
@@ -12,7 +12,7 @@ import scalePresets from './colorPresets'
  * settings. Implements Settings.js but otherwise only uses
  * Preact.
  */
-class BuilderSettingsMenu extends Component {
+class SettingsMenu extends Component {
   constructor (props) {
     super(props)
     // keep props as state
@@ -544,4 +544,4 @@ class BuilderSettingsMenu extends Component {
     )
   }
 }
-export default BuilderSettingsMenu
+export default SettingsMenu
