@@ -91,7 +91,10 @@ class BuilderSettingsMenu extends Component {
   render () {
     if (!this.state.display) return null
 
-    const enableTooltips = this.state.settings.get('enable_tooltips') || []
+    const settings = this.state.settings
+    const enableTooltips = settings.get('enable_tooltips') || []
+    const dataStatistics = this.state.map.get_data_statistics()
+
     return (
       <div className='settingsBackground'>
         <div className='settingsBoxContainer'>
@@ -118,13 +121,8 @@ class BuilderSettingsMenu extends Component {
                       <input
                         type='radio'
                         name='identifiers'
-                        onClick={() => {
-                          this.state.settings.set(
-                            'identifiers_on_map',
-                            'bigg_id'
-                          )
-                        }}
-                        checked={this.state.settings.get('identifiers_on_map') === 'bigg_id'}
+                        onClick={() => { settings.set('identifiers_on_map', 'bigg_id') }}
+                        checked={settings.get('identifiers_on_map') === 'bigg_id'}
                       />
                       ID&apos;s
                     </label>
@@ -132,13 +130,8 @@ class BuilderSettingsMenu extends Component {
                       <input
                         type='radio'
                         name='identifiers'
-                        onClick={() => {
-                          this.state.settings.set(
-                            'identifiers_on_map',
-                            'name'
-                          )
-                        }}
-                        checked={this.state.settings.get('identifiers_on_map') === 'name'}
+                        onClick={() => { settings.set('identifiers_on_map', 'name') }}
+                        checked={settings.get('identifiers_on_map') === 'name'}
                       />
                       Descriptive names
                     </label>
@@ -149,13 +142,13 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() => {
-                    if (this.state.settings.get('scroll_behavior') === 'zoom') {
-                      this.state.settings.set('scroll_behavior', 'pan')
+                    if (settings.get('scroll_behavior') === 'zoom') {
+                      settings.set('scroll_behavior', 'pan')
                     } else {
-                      this.state.settings.set('scroll_behavior', 'zoom')
+                      settings.set('scroll_behavior', 'zoom')
                     }
                   }}
-                  checked={this.state.settings.get('scroll_behavior') === 'zoom'}
+                  checked={settings.get('scroll_behavior') === 'zoom'}
                 />
                 Scroll to zoom (instead of scroll to pan)
               </label>
@@ -163,12 +156,12 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.state.settings.set(
+                    settings.set(
                       'hide_secondary_metabolites',
-                      !this.state.settings.get('hide_secondary_metabolites')
+                      !settings.get('hide_secondary_metabolites')
                     )
                   }
-                  checked={this.state.settings.get('hide_secondary_metabolites')}
+                  checked={settings.get('hide_secondary_metabolites')}
                 />
                 Hide secondary metabolites
               </label>
@@ -178,12 +171,12 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.state.settings.set(
+                    settings.set(
                       'show_gene_reaction_rules',
-                      !this.state.settings.get('show_gene_reaction_rules')
+                      !settings.get('show_gene_reaction_rules')
                     )
                   }
-                  checked={this.state.settings.get('show_gene_reaction_rules')}
+                  checked={settings.get('show_gene_reaction_rules')}
                   />
                   Show gene reaction rules
               </label>
@@ -191,12 +184,12 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.state.settings.set(
+                    settings.set(
                       'hide_all_labels',
-                      !this.state.settings.get('hide_all_labels')
+                      !settings.get('hide_all_labels')
                     )
                   }
-                  checked={this.state.settings.get('hide_all_labels')}
+                  checked={settings.get('hide_all_labels')}
                 />
                 Hide reaction, gene, and metabolite labels
               </label>
@@ -204,12 +197,12 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.state.settings.set(
+                    settings.set(
                       'allow_building_duplicate_reactions',
-                      !this.state.settings.get('allow_building_duplicate_reactions')
+                      !settings.get('allow_building_duplicate_reactions')
                     )
                   }
-                  checked={this.state.settings.get('allow_building_duplicate_reactions')}
+                  checked={settings.get('allow_building_duplicate_reactions')}
                 />
                 Allow duplicate reactions
               </label>
@@ -217,12 +210,12 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() => {
-                    this.state.settings.set(
+                    settings.set(
                       'highlight_missing',
-                      !this.state.settings.get('highlight_missing')
+                      !settings.get('highlight_missing')
                     )
                   }}
-                  checked={this.state.settings.get('highlight_missing')}
+                  checked={settings.get('highlight_missing')}
                 />Highlight reactions not in model
               </label>
               <table>
@@ -239,7 +232,7 @@ class BuilderSettingsMenu extends Component {
                           const newEnableTooltips = _.contains(enableTooltips, type)
                                                   ? _.filter(enableTooltips, x => x !== type)
                                                   : [...enableTooltips, type]
-                          this.state.settings.set('enable_tooltips', newEnableTooltips)
+                          settings.set('enable_tooltips', newEnableTooltips)
                         }}
                         checked={_.contains(enableTooltips, 'label')}
                       />
@@ -253,7 +246,7 @@ class BuilderSettingsMenu extends Component {
                           const newEnableTooltips = _.contains(enableTooltips, type)
                                                   ? _.filter(enableTooltips, x => x !== type)
                                                   : [...enableTooltips, type]
-                          this.state.settings.set('enable_tooltips', newEnableTooltips)
+                          settings.set('enable_tooltips', newEnableTooltips)
                         }}
                         checked={_.contains(enableTooltips, 'object')}
                       />
@@ -271,37 +264,37 @@ class BuilderSettingsMenu extends Component {
               <div className='title'>
                 Reactions
               </div>
-              <ScaleSelector disabled={this.state.map.get_data_statistics().reaction === null}>
+              <ScaleSelector disabled={dataStatistics.reaction === null}>
                 {Object.values(_.mapObject(scalePresets, (value, key) => {
                   return (
                     <ScaleSelection
                       name={key}
                       scale={value}
-                      onClick={() => this.state.settings.set(
-                        'reaction_scale', value
-                      )}
+                      onClick={() => {
+                        settings.set('reaction_scale', value)
+                      }}
                     />
                   )
                 }))}
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.state.settings.get('reaction_scale')}
-              settings={this.state.settings}
+              scale={settings.get('reaction_scale')}
+              settings={settings}
               type='Reaction'
-              stats={this.state.map.get_data_statistics().reaction}
-              noDataColor={this.state.settings.get('reaction_no_data_color')}
-              noDataSize={this.state.settings.get('reaction_no_data_size')}
+              stats={dataStatistics.reaction}
+              noDataColor={settings.get('reaction_no_data_color')}
+              noDataSize={settings.get('reaction_no_data_size')}
               onChange={scale => {
-                this.state.settings.set('reaction_scale', scale)
+                settings.set('reaction_scale', scale)
               }}
               onNoDataColorChange={val => {
-                this.state.settings.set('reaction_no_data_color', val)
+                settings.set('reaction_no_data_color', val)
               }}
               onNoDataSizeChange={val => {
-                this.state.settings.set('reaction_no_data_size', val)
+                settings.set('reaction_no_data_size', val)
               }}
-              abs={this.state.settings.get('reaction_styles').indexOf('abs') > -1}
+              abs={settings.get('reaction_styles').indexOf('abs') > -1}
             />
             <div className='subheading'>
               Reaction or Gene data
@@ -323,7 +316,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('abs', 'reaction_styles')}
-                      checked={this.state.settings.get('reaction_styles').indexOf('abs') > -1}
+                      checked={_.contains(settings.get('reaction_styles'), 'abs')}
                     />
                     Absolute value
                   </label>
@@ -335,7 +328,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('size', 'reaction_styles')}
-                      checked={this.state.settings.get('reaction_styles').indexOf('size') > -1}
+                      checked={_.contains(settings.get('reaction_styles'), 'size')}
                     />
                     Size
                   </label>
@@ -344,7 +337,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('color', 'reaction_styles')}
-                      checked={this.state.settings.get('reaction_styles').indexOf('color') > -1}
+
                     />
                     Color
                   </label>
@@ -354,7 +347,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('text', 'reaction_styles')}
-                      checked={this.state.settings.get('reaction_styles').indexOf('text') > -1}
+                      checked={_.contains(settings.get('reaction_styles'), 'text')}
                     />
                     Text (Show data in label)
                   </label>
@@ -367,12 +360,8 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='reactionCompare'
-                      onClick={() => {
-                        this.state.settings.set(
-                        'reaction_compare_style', 'fold'
-                        )
-                      }}
-                      checked={this.state.settings.get('reaction_compare_style') === 'fold'}
+                      onClick={() => settings.set('reaction_compare_style', 'fold')}
+                      checked={settings.get('reaction_compare_style') === 'fold'}
                     />
                     Fold Change
                   </label>
@@ -380,12 +369,8 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='reactionCompare'
-                      onClick={() => {
-                        this.state.settings.set(
-                        'reaction_compare_style', 'log2_fold'
-                        )
-                      }}
-                      checked={this.state.settings.get('reaction_compare_style') === 'log2_fold'}
+                      onClick={() => settings.set('reaction_compare_style', 'log2_fold')}
+                      checked={settings.get('reaction_compare_style') === 'log2_fold'}
                     />
                     Log2 (Fold Change)
                   </label>
@@ -393,12 +378,8 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='reactionCompare'
-                      onClick={() => {
-                        this.state.settings.set(
-                        'reaction_compare_style', 'diff'
-                        )
-                      }}
-                      checked={this.state.settings.get('reaction_compare_style') === 'diff'}
+                      onClick={() => settings.set('reaction_compare_style', 'diff')}
+                      checked={settings.get('reaction_compare_style') === 'diff'}
                     />
                     Difference
                   </label>
@@ -415,12 +396,8 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='andMethod'
-                      onClick={() => {
-                        this.state.settings.set(
-                        'and_method_in_gene_reaction_rule', 'mean'
-                        )
-                      }}
-                      checked={this.state.settings.get('and_method_in_gene_reaction_rule') === 'mean'}
+                      onClick={() => settings.set('and_method_in_gene_reaction_rule', 'mean')}
+                      checked={settings.get('and_method_in_gene_reaction_rule') === 'mean'}
                     />
                     Mean
                   </label>
@@ -428,12 +405,8 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='andMethod'
-                      onClick={() => {
-                        this.state.settings.set(
-                        'and_method_in_gene_reaction_rule', 'min'
-                        )
-                      }}
-                      checked={this.state.settings.get('and_method_in_gene_reaction_rule') === 'min'}
+                      onClick={() => settings.set('and_method_in_gene_reaction_rule', 'min')}
+                      checked={settings.get('and_method_in_gene_reaction_rule') === 'min'}
                     />
                     Min
                   </label>
@@ -445,37 +418,35 @@ class BuilderSettingsMenu extends Component {
               <div className='title'>
                 Metabolites
               </div>
-              <ScaleSelector disabled={this.state.map.get_data_statistics().metabolite === null}>
+              <ScaleSelector disabled={dataStatistics.metabolite === null}>
                 {Object.values(_.mapObject(scalePresets, (value, key) => {
                   return (
                     <ScaleSelection
                       name={key}
                       scale={value}
-                      onClick={() => this.state.settings.set(
-                        'metabolite_scale', value
-                      )}
+                      onClick={() => settings.set('metabolite_scale', value)}
                     />
                   )
                 }))}
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.state.settings.get('metabolite_scale')}
-              settings={this.state.settings}
+              scale={settings.get('metabolite_scale')}
+              settings={settings}
               type='Metabolite'
-              stats={this.state.map.get_data_statistics().metabolite}
-              noDataColor={this.state.settings.get('metabolite_no_data_color')}
-              noDataSize={this.state.settings.get('metabolite_no_data_size')}
+              stats={dataStatistics.metabolite}
+              noDataColor={settings.get('metabolite_no_data_color')}
+              noDataSize={settings.get('metabolite_no_data_size')}
               onChange={scale => {
-                this.state.settings.set('metabolite_scale', scale)
+                settings.set('metabolite_scale', scale)
               }}
               onNoDataColorChange={val => {
-                this.state.settings.set('metabolite_no_data_color', val)
+                settings.set('metabolite_no_data_color', val)
               }}
               onNoDataSizeChange={val => {
-                this.state.settings.set('metabolite_no_data_size', val)
+                settings.set('metabolite_no_data_size', val)
               }}
-              abs={this.state.settings.get('metabolite_styles').indexOf('abs') > -1}
+              abs={_.contains(settings.get('metabolite_styles'), 'abs')}
             />
             <div className='subheading'>
               Metabolite data
@@ -497,7 +468,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('abs', 'metabolite_styles')}
-                      checked={this.state.settings.get('metabolite_styles').indexOf('abs') > -1}
+                      checked={_.contains(settings.get('metabolite_styles'), 'abs')}
                     />
                     Absolute value
                   </label>
@@ -509,7 +480,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('size', 'metabolite_styles')}
-                      checked={this.state.settings.get('metabolite_styles').indexOf('size') > -1}
+                      checked={_.contains(settings.get('metabolite_styles'), 'size')}
                     />
                     Size
                   </label>
@@ -518,7 +489,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('color', 'metabolite_styles')}
-                      checked={this.state.settings.get('metabolite_styles').indexOf('color') > -1}
+                      checked={_.contains(settings.get('metabolite_styles'), 'color')}
                     />
                     Color
                   </label>
@@ -528,7 +499,7 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('text', 'metabolite_styles')}
-                      checked={this.state.settings.get('metabolite_styles').indexOf('text') > -1}
+                      checked={_.contains(settings.get('metabolite_styles'), 'text')}
                     />
                     Text (Show data in label)
                   </label>
@@ -541,12 +512,8 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='metaboliteCompare'
-                      onClick={() => {
-                        this.state.settings.set(
-                        'metabolite_compare_style', 'fold'
-                        )
-                      }}
-                      checked={this.state.settings.get('metabolite_compare_style') === 'fold'}
+                      onClick={() => settings.set('metabolite_compare_style', 'fold')}
+                      checked={settings.get('metabolite_compare_style') === 'fold'}
                     />
                     Fold Change
                   </label>
@@ -554,12 +521,8 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='metaboliteCompare'
-                      onClick={() => {
-                        this.state.settings.set(
-                          'metabolite_compare_style', 'log2_fold'
-                        )
-                      }}
-                      checked={this.state.settings.get('metabolite_compare_style') === 'log2_fold'}
+                      onClick={() => settings.set('metabolite_compare_style', 'log2_fold')}
+                      checked={settings.get('metabolite_compare_style') === 'log2_fold'}
                     />
                     Log2 (Fold Change)
                   </label>
@@ -567,12 +530,8 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='metaboliteCompare'
-                      onClick={() => {
-                        this.state.settings.set(
-                          'metabolite_compare_style', 'diff'
-                        )
-                      }}
-                      checked={this.state.settings.get('metabolite_compare_style') === 'diff'}
+                      onClick={() => settings.set('metabolite_compare_style', 'diff')}
+                      checked={settings.get('metabolite_compare_style') === 'diff'}
                     />
                     Difference
                   </label>
