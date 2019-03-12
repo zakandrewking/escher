@@ -176,7 +176,7 @@ function _update_scroll () {
   // exception in node, so catch that during testing. This may be a bug with
   // d3 related to d3 using the global this.document. TODO look into this.
   this._zoom_behavior = d3_zoom()
-    .on('start', function () {
+    .on('start', () => {
       if (d3_selection.event.sourceEvent &&
           d3_selection.event.sourceEvent.type === 'mousedown') {
         this.zoomed_sel
@@ -188,21 +188,21 @@ function _update_scroll () {
         d3_selection.event.sourceEvent.stopPropagation()
         d3_selection.event.sourceEvent.preventDefault()
       }
-    }.bind(this))
-    .on('zoom', function () {
+    })
+    .on('zoom', () => {
       this._go_to_callback(d3_selection.event.transform.k, {
         x: d3_selection.event.transform.x,
-        y: d3_selection.event.transform.y,
+        y: d3_selection.event.transform.y
       })
-    }.bind(this))
-    .on('end', function () {
+    })
+    .on('end', () => {
       if (d3_selection.event.sourceEvent &&
           d3_selection.event.sourceEvent.type === 'mouseup') {
         this.zoomed_sel
           .classed('cursor-grab', true)
           .classed('cursor-grabbing', false)
       }
-    }.bind(this))
+    })
 
   // Set it up
   this.zoom_container.call(this._zoom_behavior)
@@ -223,35 +223,50 @@ function _update_scroll () {
     this.zoom_container
       .on('mousewheel.zoom', null) // zoom scroll behaviors
       .on('DOMMouseScroll.zoom', null) // disables older versions of Firefox
-      .on('wheel.zoom', null); // disables newer versions of Firefox
+      .on('wheel.zoom', null) // disables newer versions of Firefox
   }
 
   // add listeners for scrolling to pan
   if (this._scroll_behavior === 'pan') {
     // Add the wheel listener
-    var wheel_fn = function () {
-      var ev = d3_selection.event
-      var sensitivity = 0.5
-      // stop scroll in parent elements
-      ev.stopPropagation()
-      ev.preventDefault()
-      ev.returnValue = false
-      // change the location
-      var get_directional_disp = function (wheel_delta, delta) {
-        var the_delt = _.isUndefined(wheel_delta) ? delta : -wheel_delta / 1.5
-        return the_delt * sensitivity
+    const wheelFn = () => {
+      const ev = d3_selection.event
+
+      // wheel.zoom with ctrlKey is the same as pinching on a trackpad
+      if (ev.ctrlKey) {
+        const sensitivity = 0.005
+        const newScale = this.window_scale - ev.deltaY * sensitivity
+        const size = this.get_size()
+        const shift = {
+          x: size.width / 2 - ((size.width / 2 - this.window_translate.x) * newScale +
+                               this.window_translate.x),
+          y: size.height / 2 - ((size.height / 2 - this.window_translate.y) * newScale +
+                                this.window_translate.y)
+        }
+        this.go_to(newScale, utils.c_plus_c(this.window_translate, shift))
+      } else {
+        const sensitivity = 0.5
+        // stop scroll in parent elements
+        ev.stopPropagation()
+        ev.preventDefault()
+        ev.returnValue = false
+        // change the location
+        const getDirectionalDisp = (wheelDelta, delta) => {
+          const theDelt = _.isUndefined(wheelDelta) ? delta : -wheelDelta / 1.5
+          return theDelt * sensitivity
+        }
+        const newTranslate = {
+          x: this.window_translate.x - getDirectionalDisp(ev.wheelDeltaX, ev.deltaX),
+          y: this.window_translate.y - getDirectionalDisp(ev.wheelDeltaY, ev.deltaY)
+        }
+        this.go_to(this.window_scale, newTranslate)
       }
-      var new_translate = {
-        x: this.window_translate.x - get_directional_disp(ev.wheelDeltaX, ev.deltaX),
-        y: this.window_translate.y - get_directional_disp(ev.wheelDeltaY, ev.deltaY),
-      }
-      this.go_to(this.window_scale, new_translate)
-    }.bind(this)
+    }
 
     // apply it
-    this.zoom_container.on('mousewheel.escher', wheel_fn)
-    this.zoom_container.on('DOMMouseScroll.escher', wheel_fn)
-    this.zoom_container.on('wheel.escher', wheel_fn)
+    this.zoom_container.on('mousewheel.escher', wheelFn)
+    this.zoom_container.on('DOMMouseScroll.escher', wheelFn)
+    this.zoom_container.on('wheel.escher', wheelFn)
   }
 
   // Set current location
