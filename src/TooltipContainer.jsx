@@ -59,7 +59,7 @@ export default class TooltipContainer {
   setUpMapCallbacks (map) {
     this.placedDiv = PlacedDiv(this.div, map, undefined, false)
 
-    // connect callbacks to show
+    // connect callbacks to show tooltip
     map.callback_manager.set('show_tooltip.tooltip_container', (type, d) => {
       // Check if the current element is in the list of tooltips to display
       if (map.settings.get('enable_tooltips').indexOf(type
@@ -70,26 +70,12 @@ export default class TooltipContainer {
       }
     })
 
-    //
+    // callback to hide / delay hide tooltip
     map.callback_manager.set('hide_tooltip.tooltip_container', () => this.hide())
+    map.callback_manager.set('delay_hide_tooltip.tooltip_container', () => this.delayHide())
+
     // Hides the tooltip when the canvas is touched
     map.sel.selectAll('.canvas-group').on('touchend', () => this.hide())
-    map.callback_manager.set('delay_hide_tooltip.tooltip_container', () => this.delayHide())
-    map.callback_manager.set('update_tooltip.tooltip_container', (type, sel) => {
-      if (this.currentTooltip !== null) {
-        let d = null
-        sel.each(data => {
-          if (data[type.replace('_label', '_id')] === this.currentTooltip.id) {
-            d = data
-          }
-        })
-        if (d === null) {
-          console.warn(`Could not find tooltip data for ${this.currentTooltip}`)
-        } else {
-          this.show(type, d)
-        }
-      }
-    })
   }
 
   setUpZoomCallbacks (zoomContainer) {

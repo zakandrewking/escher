@@ -208,9 +208,6 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
       .on('touchend', function (d) {
         label_touch_fn('reaction_label', d)
       })
-      .call(sel => {
-        this.map.callback_manager.run('update_tooltip', null, 'reaction_label', sel)
-      })
   }
 
   var add_gene_height = function (y, i) {
@@ -440,9 +437,6 @@ function update_segment (update_selection, scale, cobra_model,
       ))
     })
     .on('mouseout', object_mouseout_fn)
-    .call(sel => {
-      this.map.callback_manager.run('update_tooltip', null, 'reaction_label', sel)
-    })
 
   // new arrowheads
   var arrowheads = update_selection.select('.arrowheads')
@@ -833,9 +827,6 @@ function update_node (update_selection, scale, has_data_on_nodes,
         ))
       }
     })
-    .call(sel => {
-      this.map.callback_manager.run('update_tooltip', null, 'node_label', sel)
-    })
 
   // update node label visibility
   var node_label = update_selection
@@ -862,9 +853,6 @@ function update_node (update_selection, scale, has_data_on_nodes,
         label_mouseover_fn('node_label', d)
       })
       .on('mouseout', label_mouseout_fn)
-      .call(sel => {
-        this.map.callback_manager.run('update_tooltip', null, 'node_label', sel)
-      })
   }
 
   this.callback_manager.run('update_node', this, update_selection)
