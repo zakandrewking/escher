@@ -18,35 +18,31 @@ class SearchBar extends Component {
   componentWillMount () {
     this.setState({
       clearEscape: this.props.map.key_manager.add_escape_listener(
-        () => this.close(), true
+        () => this.close(),
+        true
       ),
       clearNext: this.props.map.key_manager.add_key_listener(
-        ['enter', 'ctrl+g'], () => this.next(), false),
+        ['enter', 'ctrl+g'],
+        () => this.next(),
+        false
+      ),
       clearPrevious: this.props.map.key_manager.add_key_listener(
-        ['shift+enter', 'shift+ctrl+g'], () => this.previous(), false)
+        ['shift+enter', 'shift+ctrl+g'],
+        () => this.previous(),
+        false
+      )
     })
+  }
+
+  componentDidMount () {
+    this.inputRef.focus()
   }
 
   componentWillUnmount () {
     this.state.clearEscape()
     this.state.clearNext()
     this.state.clearPrevious()
-  }
-
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.searchItem !== null) {
-      this.setState({
-        current: 0,
-        results: null,
-        searchItem: nextProps.searchItem,
-        counter: ''
-      })
-      this.handleInput(nextProps.searchItem)
-    }
-  }
-
-  componentDidUpdate () {
-    this.inputRef.focus()
+    this.props.map.highlight(null)
   }
 
   /**
@@ -54,7 +50,6 @@ class SearchBar extends Component {
    * @param {string} value - Search term
    */
   handleInput (value) {
-    if (!this.state.visible) { return }
     const results = this.dropDuplicates(this.props.map.search_index.find(value))
     let counter = ''
     if (results === null || !value) {

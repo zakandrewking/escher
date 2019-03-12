@@ -1236,12 +1236,14 @@ class Builder {
         select_all: {
           key: 'ctrl+a',
           target: map,
-          fn: map.select_all
+          fn: map.select_all,
+          ignore_with_input: true
         },
         select_none: {
           key: 'ctrl+shift+a',
           target: map,
-          fn: map.select_none
+          fn: map.select_none,
+          ignore_with_input: true
         },
         invert_selection: {
           target: map,
