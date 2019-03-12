@@ -126,25 +126,7 @@ resizes. */
     width: 410px;
   }
 }
-.escher-container .search-container {
-  display: block;
-  background: rgba(255, 255, 255, 0.95);
-  padding: 3px;
-  border: 1px solid #DDD;
-  margin: 2px 0 0 0;
-}
-.escher-container .search-bar {
-  display: inline-block;
-  border: 1px solid #DDD;
-  margin-right: 4px;
-  width: 114px;
-  height: 29px;
-  border-radius: 3px;
-}
-.escher-container .search-counter {
-  display: inline-block;
-  padding: 0 8px;
-}
+
 /* Settings */
 .escher-container .settings-box-background {
   display: block;

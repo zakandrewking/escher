@@ -17,8 +17,8 @@ import dataStyles from './data_styles'
 import renderWrapper from './renderWrapper'
 import SettingsMenu from './SettingsMenu'
 import MenuBar from './MenuBar'
+import SearchBar from './SearchBar'
 // import ButtonPanel from './ButtonPanel'
-// import SearchBar from './SearchBar'
 import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
 import _ from 'underscore'
@@ -394,25 +394,17 @@ class Builder {
     // Set up the modes
     this._setup_modes(this.map, this.brush, this.zoom_container)
 
-    // Set up settings menu
+    // Set up menus
     this.setUpSettingsMenu()
+    // share a parent container for menu bar and search bar
+    const sel = this.selection
+                    .append('div').attr('class', 'search-menu-container')
+                    .append('div').attr('class', 'search-menu-container-inline')
+    this.setUpMenuBar(sel)
+    this.setUpSearchBar(sel)
 
-    // Set up menu bar
-    this.setUpMenuBar()
-
-    // if (this.settings.get('enable_search')) {
-    //   this.renderSearchBar(true)
-    // }
-    //
     // Set up key manager
-    var keys = this._get_keys(
-      this.map,
-      this.zoom_container,
-      this.search_bar,
-      this.settings_bar,
-      this.settings.get('enable_editing'),
-      this.settings.get('full_screen_button')
-    )
+    const keys = this.getKeys()
     this.map.key_manager.assigned_keys = keys
     // Tell the key manager about the reaction input and search bar
     this.map.key_manager.input_list = [
@@ -437,6 +429,9 @@ class Builder {
     }
     if (!this.settings.get('metabolite_data')) {
       newDisabledButtons.push('Clear metabolite data')
+    }
+    if (!this.settings.get('enable_search')) {
+      newDisabledButtons.push('Find')
     }
     this.settings.set('disabled_buttons', newDisabledButtons)
 
@@ -508,13 +503,13 @@ class Builder {
     })
   }
 
-  setUpMenuBar () {
+  setUpMenuBar (sel) {
     this.menuBarRef = null
     renderWrapper(
       MenuBar,
       instance => { this.menuBarRef = instance },
       passProps => this.callback_manager.set('passPropsMenuBar', passProps),
-      this.selection.append('div').node()
+      sel.append('div').node()
     )
     this.passPropsMenuBar({
       display: this.settings.get('menu') === 'all',
@@ -561,7 +556,7 @@ class Builder {
       zoomOut: () => this.zoom_container.zoom_out(),
       zoomExtentNodes: () => this.map.zoom_extent_nodes(),
       zoomExtentCanvas: () => this.map.zoom_extent_canvas(),
-      search: () => this.renderSearchBar(),
+      search: () => this.passPropsSearchBar({ display: true }),
       toggleBeziers: () => this.map.toggle_beziers(),
       renderSettingsMenu: () => this.passPropsSettingsMenu({ display: true })
     })
@@ -582,22 +577,19 @@ class Builder {
     })
   }
 
-  renderSearchBar (hide, searchItem) {
-    if (!this.settings.get('enable_search')) { return }
-    const searchBarNode = this.search_bar_div.node()
-    preact.render(
-      <SearchBar
-        visible={!hide}
-        searchItem={searchItem}
-        searchIndex={this.map.search_index}
-        map={this.map}
-        ref={instance => { this.searchBarRef = instance }}
-      />,
-      searchBarNode,
-      searchBarNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
-                                    ? searchBarNode.firstChild
-                                    : undefined
+  setUpSearchBar (sel) {
+    this.searchBarRef = null
+    renderWrapper(
+      SearchBar,
+      instance => { this.searchBarRef = instance },
+      passProps => this.callback_manager.set('passPropsSearchBar', passProps),
+      sel.append('div').node()
     )
+    this.passPropsSearchBar({
+      display: false,
+      searchIndex: this.map.search_index,
+      map: this.map
+    })
   }
 
   // renderButtonPanel (mode) {
@@ -733,6 +725,14 @@ class Builder {
    */
   passPropsMenuBar (props = {}) {
     this.callback_manager.run('passPropsMenuBar', null, props)
+  }
+
+  /**
+   * Function to pass props for the search bar
+   * @param {Object} props - Props that the search bar will use
+   */
+  passPropsSearchBar (props = {}) {
+    this.callback_manager.run('passPropsSearchBar', null, props)
   }
 
   /**
@@ -1004,9 +1004,10 @@ class Builder {
   /**
    * Define keyboard shortcuts
    */
-  _get_keys (map, zoom_container, search_bar, settings_bar,
-                      enable_editing, full_screen_button) {
-    var keys = {
+  getKeys () {
+    const map = this.map
+    const zoomContainer = this.zoom_container
+    let keys = {
       save: {
         key: 'ctrl+s',
         target: map,
@@ -1058,24 +1059,24 @@ class Builder {
       },
       zoom_in_ctrl: {
         key: 'ctrl+=',
-        target: zoom_container,
-        fn: zoom_container.zoom_in
+        target: zoomContainer,
+        fn: zoomContainer.zoom_in
       },
       zoom_in: {
         key: '=',
-        target: zoom_container,
-        fn: zoom_container.zoom_in,
+        target: zoomContainer,
+        fn: zoomContainer.zoom_in,
         ignore_with_input: true
       },
       zoom_out_ctrl: {
         key: 'ctrl+-',
-        target: zoom_container,
-        fn: zoom_container.zoom_out
+        target: zoomContainer,
+        fn: zoomContainer.zoom_out
       },
       zoom_out: {
         key: '-',
-        target: zoom_container,
-        fn: zoom_container.zoom_out,
+        target: zoomContainer,
+        fn: zoomContainer.zoom_out,
         ignore_with_input: true
       },
       extent_nodes_ctrl: {
@@ -1100,15 +1101,6 @@ class Builder {
         fn: map.zoom_extent_canvas,
         ignore_with_input: true
       },
-      search_ctrl: {
-        key: 'ctrl+f',
-        fn: () => this.renderSearchBar()
-      },
-      search: {
-        key: 'f',
-        fn: () => this.renderSearchBar(),
-        ignore_with_input: true
-      },
       view_mode: {
         target: this,
         fn: this.view_mode,
@@ -1116,17 +1108,15 @@ class Builder {
       },
       show_settings_ctrl: {
         key: 'ctrl+,',
-        target: settings_bar,
         fn: () => this.passPropsSettingsMenu({ display: true })
       },
       show_settings: {
         key: ',',
-        target: this,
         fn: () => this.passPropsSettingsMenu({ display: true }),
         ignore_with_input: true
       }
     }
-    if (full_screen_button) {
+    if (this.settings.get('full_screen_button')) {
       utils.extend(keys, {
         full_screen_ctrl: {
           key: 'ctrl+2',
@@ -1141,7 +1131,7 @@ class Builder {
         }
       })
     }
-    if (enable_editing) {
+    if (this.settings.get('enable_editing')) {
       utils.extend(keys, {
         build_mode: {
           key: 'n',
@@ -1256,6 +1246,19 @@ class Builder {
         invert_selection: {
           target: map,
           fn: map.invert_selection
+        }
+      })
+    }
+    if (this.settings.get('enable_search')) {
+      utils.extend(keys, {
+        search_ctrl: {
+          key: 'ctrl+f',
+          fn: () => this.passPropsSearchBar({ display: true })
+        },
+        search: {
+          key: 'f',
+          fn: () => this.passPropsSearchBar({ display: true }),
+          ignore_with_input: true
         }
       })
     }

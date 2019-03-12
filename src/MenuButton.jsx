@@ -25,7 +25,7 @@ class MenuButton extends Component {
   }
 
   render () {
-    const disabled = _.contains(this.props.disabledButtons, this.props.name)
+    const disabled = _.contains(this.props.disabledButtons, this.props.name.replace(/ \(.*\)$/, ''))
     if (this.props.type === 'load') {
       return (
         <label
