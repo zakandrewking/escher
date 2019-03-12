@@ -134,7 +134,7 @@ class Builder {
       ],
       // Extensions
       tooltip_component: DefaultTooltip,
-      enable_tooltips: ['label', 'object'],
+      enable_tooltips: ['label'],
       enable_keys_with_tooltip: true,
       reaction_scale_preset: null,
       metabolite_scale_preset: null,
@@ -383,7 +383,7 @@ class Builder {
     }.bind(this))
 
     // Set up the modes
-    this._setup_modes(this.map, this.brush, this.zoom_container)
+    this._setUpModes(this.map, this.brush, this.zoom_container)
 
     // Set up menus
     this.setUpSettingsMenu()
@@ -583,7 +583,7 @@ class Builder {
       setReactionData: d => this.set_reaction_data(d),
       setGeneData: d => this.set_gene_data(d),
       setMetaboliteData: d => this.set_metabolite_data(d),
-      setMode: mode => this.setMode(mode),
+      setMode: mode => this._setMode(mode),
       deleteSelected: () => this.map.delete_selected(),
       undo: () => this.map.undo_stack.undo(),
       redo: () => this.map.undo_stack.redo(),
@@ -666,7 +666,7 @@ class Builder {
       display: _.contains(['all', 'zoom'], this.settings.get('menu')),
       mode: this.mode,
       settings: this.settings,
-      setMode: mode => this.setMode(mode),
+      setMode: mode => this._setMode(mode),
       zoomContainer: this.zoom_container,
       map: this.map,
       buildInput: this.build_input
@@ -677,7 +677,10 @@ class Builder {
     })
   }
 
-  setMode (mode) {
+  /**
+   * Set the mode
+   */
+  _setMode (mode) {
     // input
     this.build_input.toggle(mode === 'build')
     this.build_input.direction_arrow.toggle(mode === 'build')
@@ -686,22 +689,24 @@ class Builder {
     // zoom
     this.zoom_container.toggle_pan_drag(mode === 'zoom' || mode === 'view')
     // resize canvas
-    this.map.canvas.toggle_resize(mode === 'zoom' || mode === 'brush')
+    this.map.canvas.toggle_resize(mode !== 'view')
+
     // Behavior. Be careful of the order becuase rotation and
-    // toggle_selectable_drag both use Behavior.selectable_drag.
+    // toggle_selectable_drag both use Behavior.selectableDrag.
     if (mode === 'rotate') {
-      this.map.behavior.toggle_selectable_drag(false) // before toggle_rotation_mode
-      this.map.behavior.toggle_rotation_mode(true)
+      this.map.behavior.toggleSelectableDrag(false) // before toggle_rotation_mode
+      this.map.behavior.toggleRotationMode(true) // XX
     } else {
-      this.map.behavior.toggle_rotation_mode(mode === 'rotate') // before toggle_selectable_drag
-      this.map.behavior.toggle_selectable_drag(mode === 'brush')
+      this.map.behavior.toggleRotationMode(mode === 'rotate') // before toggleSelectableDrag
+      this.map.behavior.toggleSelectableDrag(mode === 'brush') // XX
     }
-    this.map.behavior.toggle_selectable_click(mode === 'build' || mode === 'brush')
-    this.map.behavior.toggle_label_drag(mode === 'brush')
-    this.map.behavior.toggle_label_mouseover(true)
-    this.map.behavior.toggle_label_touch(true)
-    this.map.behavior.toggle_text_label_edit(mode === 'text')
-    this.map.behavior.toggle_bezier_drag(mode === 'brush')
+    this.map.behavior.toggleSelectableClick(mode === 'build' || mode === 'brush') // XX
+    this.map.behavior.toggleLabelDrag(mode === 'brush') // XX
+    // this.map.behavior.toggleLabelMouseover(true)
+    // this.map.behavior.toggleLabelTouch(true)
+    this.map.behavior.toggleTextLabelEdit(mode === 'text') // XX
+    this.map.behavior.toggleBezierDrag(mode === 'brush') // XX
+
     // edit selections
     if (mode === 'view' || mode === 'text') {
       this.map.select_none()
@@ -709,46 +714,48 @@ class Builder {
     if (mode === 'rotate') {
       this.map.deselect_text_labels()
     }
+
     this.map.draw_everything()
+    // what's not allowing me to delete this? XX above
 
     // callback
     this.callback_manager.run('set_mode', null, mode)
   }
 
-  view_mode () {
-    /** For documentation of this function, see docs/javascript_api.rst.  */
+  /** For documentation of this function, see docs/javascript_api.rst. */
+  view_mode () { // eslint-disable-line camelcase
     this.callback_manager.run('view_mode')
-    this.setMode('view')
+    this._setMode('view')
   }
 
-  build_mode () {
-    /** For documentation of this function, see docs/javascript_api.rst.  */
+  /** For documentation of this function, see docs/javascript_api.rst. */
+  build_mode () { // eslint-disable-line camelcase
     this.callback_manager.run('build_mode')
-    this.setMode('build')
+    this._setMode('build')
   }
 
-  brush_mode () {
-    /** For documentation of this function, see docs/javascript_api.rst.  */
+  /** For documentation of this function, see docs/javascript_api.rst. */
+  brush_mode () { // eslint-disable-line camelcase
     this.callback_manager.run('brush_mode')
-    this.setMode('brush')
+    this._setMode('brush')
   }
 
-  zoom_mode () {
-    /** For documentation of this function, see docs/javascript_api.rst.  */
+  /** For documentation of this function, see docs/javascript_api.rst. */
+  zoom_mode () { // eslint-disable-line camelcase
     this.callback_manager.run('zoom_mode')
-    this.setMode('zoom')
+    this._setMode('zoom')
   }
 
-  rotate_mode () {
-    /** For documentation of this function, see docs/javascript_api.rst.  */
+  /** For documentation of this function, see docs/javascript_api.rst. */
+  rotate_mode () { // eslint-disable-line camelcase
     this.callback_manager.run('rotate_mode')
-    this.setMode('rotate')
+    this._setMode('rotate')
   }
 
-  text_mode () {
-    /** For documentation of this function, see docs/javascript_api.rst.  */
+  /** For documentation of this function, see docs/javascript_api.rst. */
+  text_mode () { // eslint-disable-line camelcase
     this.callback_manager.run('text_mode')
-    this.setMode('text')
+    this._setMode('text')
   }
 
   _reactionCheckAddAbs () {
@@ -1007,28 +1014,28 @@ class Builder {
     this.quick_jump = QuickJump(selection, load_fn)
   }
 
-  _setup_modes (map, brush, zoom_container) {
+  _setUpModes (map, brush, zoomContainer) {
     // set up zoom+pan and brush modes
-    var was_enabled = {}
+    var wasEnabled = {}
     map.callback_manager.set('start_rotation', function () {
-      was_enabled.brush = brush.enabled
+      wasEnabled.brush = brush.enabled
       brush.toggle(false)
-      was_enabled.zoom = zoom_container.zoom_on
-      zoom_container.toggle_pan_drag(false)
-      was_enabled.selectable_mousedown = map.behavior.selectable_mousedown !== null
-      map.behavior.toggle_selectable_click(false)
-      was_enabled.label_mouseover = map.behavior.label_mouseover !== null
-      was_enabled.label_touch = map.behavior.label_touch !== null
-      map.behavior.toggle_label_mouseover(false)
-      map.behavior.toggle_label_touch(false)
+      wasEnabled.zoom = zoomContainer.zoom_on
+      zoomContainer.toggle_pan_drag(false)
+      wasEnabled.selectableMousedown = map.behavior.selectableMousedown !== null
+      map.behavior.toggleSelectableClick(false)
+      wasEnabled.labelMouseover = map.behavior.labelMouseover !== null
+      wasEnabled.labelTouch = map.behavior.labelTouch !== null
+      map.behavior.toggleLabelMouseover(false)
+      map.behavior.toggleLabelTouch(false)
     })
     map.callback_manager.set('end_rotation', function () {
-      brush.toggle(was_enabled.brush)
-      zoom_container.toggle_pan_drag(was_enabled.zoom)
-      map.behavior.toggle_selectable_click(was_enabled.selectable_mousedown)
-      map.behavior.toggle_label_mouseover(was_enabled.label_mouseover)
-      map.behavior.toggle_label_touch(was_enabled.label_touch)
-      was_enabled = {}
+      brush.toggle(wasEnabled.brush)
+      zoomContainer.toggle_pan_drag(wasEnabled.zoom)
+      map.behavior.toggleSelectableClick(wasEnabled.selectableMousedown)
+      map.behavior.toggleLabelMouseover(wasEnabled.labelMouseover)
+      map.behavior.toggleLabelTouch(wasEnabled.labelTouch)
+      wasEnabled = {}
     })
   }
 

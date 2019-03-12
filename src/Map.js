@@ -51,7 +51,7 @@
 
 var utils = require('./utils')
 var Draw = require('./Draw')
-var Behavior = require('./Behavior')
+var Behavior = require('./Behavior').default
 var Scale = require('./Scale').default
 var build = require('./build')
 var UndoStack = require('./UndoStack')
@@ -107,7 +107,7 @@ Map.prototype = {
   delete_text_label_data: delete_text_label_data,
   // find
   get_selected_node_ids: get_selected_node_ids,
-  get_selected_nodes: get_selected_nodes,
+  getSelectedNodes: getSelectedNodes,
   get_selected_text_label_ids: get_selected_text_label_ids,
   get_selected_text_labels: get_selected_text_labels,
   segments_and_reactions_for_nodes: segments_and_reactions_for_nodes,
@@ -679,12 +679,12 @@ function draw_these_nodes(node_ids) {
     return this.draw.update_node(sel,
                                  this.scale,
                                  this.has_data_on_nodes,
-                                 this.behavior.selectable_mousedown,
-                                 this.behavior.selectable_click,
-                                 this.behavior.node_mouseover,
-                                 this.behavior.node_mouseout,
-                                 this.behavior.selectable_drag,
-                                 this.behavior.node_label_drag)
+                                 this.behavior.selectableMousedown,
+                                 this.behavior.selectableClick,
+                                 this.behavior.nodeMouseover,
+                                 this.behavior.nodeMouseout,
+                                 this.behavior.selectableDrag,
+                                 this.behavior.nodeLabelDrag)
   }.bind(this)
 
   // draw the nodes
@@ -769,9 +769,9 @@ function draw_these_beziers(bezier_ids) {
   var update_fn = function(sel) {
     return this.draw.update_bezier(sel,
                                    this.beziers_enabled,
-                                   this.behavior.bezier_drag,
-                                   this.behavior.bezier_mouseover,
-                                   this.behavior.bezier_mouseout,
+                                   this.behavior.bezierDrag,
+                                   this.behavior.bezierMouseover,
+                                   this.behavior.bezierMouseout,
                                    this.nodes,
                                    this.reactions)
   }.bind(this)
@@ -997,7 +997,7 @@ function get_selected_node_ids () {
   return selected_node_ids
 }
 
-function get_selected_nodes () {
+function getSelectedNodes () {
   var selected_nodes = {}
   this.sel.select('#nodes')
     .selectAll('.selected')
@@ -1165,7 +1165,7 @@ function deselect_text_labels () {
  * labels. Undoable.
  */
 function delete_selected () {
-  var selected_nodes = this.get_selected_nodes(),
+  var selected_nodes = this.getSelectedNodes(),
   selected_text_labels = this.get_selected_text_labels()
   if (Object.keys(selected_nodes).length >= 1 ||
       Object.keys(selected_text_labels).length >= 1)
@@ -1705,7 +1705,7 @@ function new_reaction_for_metabolite (reaction_bigg_id, selected_node_id,
 }
 
 function cycle_primary_node () {
-  var selected_nodes = this.get_selected_nodes()
+  var selected_nodes = this.getSelectedNodes()
   if (_.isEmpty(selected_nodes)) { return }
   // Get the first node
   var node_id = Object.keys(selected_nodes)[0]

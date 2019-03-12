@@ -30,7 +30,7 @@ module.exports = {
   array_to_object: array_to_object,
   clone: clone,
   extend: extend,
-  unique_concat: unique_concat,
+  uniqueConcat: uniqueConcat,
   unique_strings_array: unique_strings_array,
   debounce: debounce,
   object_slice_for_ids: object_slice_for_ids,
@@ -476,16 +476,16 @@ function extend(obj1, obj2, overwrite) {
   }
 }
 
-function unique_concat (arrays) {
-  var new_array = []
-  arrays.forEach(function (a) {
-    a.forEach(function (x) {
-      if (new_array.indexOf(x) < 0) {
-        new_array.push(x)
+function uniqueConcat (arrays) {
+  const newArray = []
+  arrays.forEach(a => {
+    a.forEach(x => {
+      if (newArray.indexOf(x) < 0) {
+        newArray.push(x)
       }
     })
   })
-  return new_array
+  return newArray
 }
 
 /**

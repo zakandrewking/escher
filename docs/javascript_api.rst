@@ -300,7 +300,7 @@ JavaScript API
 
        .. js:attribute:: options.enable_tooltips
 
-          (Default: ``['label', 'object']``) Determines the mouseover or touch
+          (Default: ``['label']``) Determines the mouseover or touch
           event required to show the related tooltip.['label'] will show
           tooltips upon mouseover or touch of the reaction or metabolite labels
           whereas ['object'] will show the the tooltips over the reaction line

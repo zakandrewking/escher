@@ -167,24 +167,24 @@ function create_reaction_label (enter_selection, tool) {
  * @param {Boolean} has_data_on_reactions - Whether data needs to be drawn.
  */
 function update_reaction_label (update_selection, has_data_on_reactions) {
-  var decimal_format = d3_format('.4g')
-  var identifiers_on_map = this.settings.get('identifiers_on_map')
-  var reaction_data_styles = this.settings.get('reaction_styles')
-  var show_gene_reaction_rules = this.settings.get('show_gene_reaction_rules')
-  var hide_all_labels = this.settings.get('hide_all_labels')
-  var gene_font_size = this.settings.get('gene_font_size')
-  var label_mousedown_fn = this.behavior.label_mousedown
-  var label_mouseover_fn = this.behavior.label_mouseover
-  var label_mouseout_fn = this.behavior.label_mouseout
-  var label_touch_fn = this.behavior.label_touch
+  const decimal_format = d3_format('.4g')
+  const identifiers_on_map = this.settings.get('identifiers_on_map')
+  const reaction_data_styles = this.settings.get('reaction_styles')
+  const show_gene_reaction_rules = this.settings.get('show_gene_reaction_rules')
+  const hide_all_labels = this.settings.get('hide_all_labels')
+  const gene_font_size = this.settings.get('gene_font_size')
+  const label_mousedown_fn = this.behavior.labelMousedown
+  const label_mouseover_fn = this.behavior.labelMouseover
+  const label_mouseout_fn = this.behavior.labelMouseout
+  const label_touch_fn = this.behavior.labelTouch
 
   // label location
   update_selection
     .attr('transform', function(d) {
       return 'translate(' + d.label_x + ',' + d.label_y + ')'
     })
-    .call(this.behavior.turn_off_drag)
-    .call(this.behavior.reaction_label_drag)
+    .call(this.behavior.turnOffDrag)
+    .call(this.behavior.reactionLabelDrag)
 
   // update label visibility
   var label = update_selection.select('.reaction-label')
@@ -326,9 +326,9 @@ function update_segment (update_selection, scale, cobra_model,
   var hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
   var primary_r = this.settings.get('primary_metabolite_radius')
   var secondary_r = this.settings.get('secondary_metabolite_radius')
-  var object_mouseover_fn = this.behavior.object_mouseover
-  var object_mouseout_fn = this.behavior.object_mouseout
-  var object_touch_fn = this.behavior.object_touch
+  var object_mouseover_fn = this.behavior.objectMouseover
+  var object_mouseout_fn = this.behavior.objectMouseout
+  var object_touch_fn = this.behavior.objectTouch
   var get_arrow_size = function (data, should_size) {
     var width = 20
     var height = 13
@@ -673,7 +673,7 @@ function update_bezier(update_selection, show_beziers, drag_behavior,
 
   // draw bezier points
   update_selection.select('.bezier-circle')
-    .call(this.behavior.turn_off_drag)
+    .call(this.behavior.turnOffDrag)
     .call(drag_behavior)
     .on('mouseover', mouseover)
     .on('mouseout', mouseout)
@@ -760,13 +760,13 @@ function update_node (update_selection, scale, has_data_on_nodes,
   var metabolite_data_styles = this.settings.get('metabolite_styles')
   var no_data_style = { color: this.settings.get('metabolite_no_data_color'),
                         size: this.settings.get('metabolite_no_data_size') }
-  var label_mousedown_fn = this.behavior.label_mousedown
-  var label_mouseover_fn = this.behavior.label_mouseover
-  var label_mouseout_fn = this.behavior.label_mouseout
-  var label_touch_fn = this.behavior.label_touch
-  var object_mouseover_fn = this.behavior.object_mouseover
-  var object_mouseout_fn = this.behavior.object_mouseout
-  var object_touch_fn = this.behavior.object_touch
+  var label_mousedown_fn = this.behavior.labelMousedown
+  var label_mouseover_fn = this.behavior.labelMouseover
+  var label_mouseout_fn = this.behavior.labelMouseout
+  var label_touch_fn = this.behavior.labelTouch
+  var object_mouseover_fn = this.behavior.objectMouseover
+  var object_mouseout_fn = this.behavior.objectMouseout
+  var object_touch_fn = this.behavior.objectTouch
 
   var mg = update_selection
       .select('.node-circle')
@@ -804,7 +804,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
       // midmarkers and multimarkers
       return null
     })
-    .call(this.behavior.turn_off_drag)
+    .call(this.behavior.turnOffDrag)
     .call(drag_behavior)
     .on('mousedown', mousedown_fn)
     .on('click', click_fn)
@@ -846,7 +846,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
           t += ' ' + d.data_string
         return t
       })
-      .call(this.behavior.turn_off_drag)
+      .call(this.behavior.turnOffDrag)
       .call(label_drag_behavior)
       .on('mousedown', label_mousedown_fn)
       .on('mouseover', function (d) {
@@ -882,10 +882,10 @@ function create_text_label (enter_selection) {
 }
 
 function update_text_label (update_selection) {
-  var mousedown_fn = this.behavior.text_label_mousedown
-  var click_fn = this.behavior.text_label_click
-  var drag_behavior = this.behavior.selectable_drag
-  var turn_off_drag = this.behavior.turn_off_drag
+  var mousedown_fn = this.behavior.textLabelMousedown
+  var click_fn = this.behavior.textLabelClick
+  var drag_behavior = this.behavior.selectableDrag
+  var turn_off_drag = this.behavior.turnOffDrag
 
   update_selection
     .select('.label')
