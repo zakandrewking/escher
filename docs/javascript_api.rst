@@ -42,11 +42,10 @@ JavaScript API
 
        .. js:attribute:: options.use_3d_transform
 
-          (Default: Chooses a good option by testing the browser) If true, then
-          use CSS3 3D transforms to speed up panning and zooming. This feature
-          will only work on browsers that `support the 3D transforms`_. It works
-          best in the latest versions of Chrome, Firefox and Internet
-          Explorer. Safari works better with this turned off.
+          (Default: false) If true, then use CSS3 3D transforms to speed up
+          panning and zooming. This feature will only work on browsers that
+          `support the 3D transforms`_. In general, this is no longer necessary
+          for modern browsers and hardware.
 
        .. js:attribute:: options.enable_editing
 

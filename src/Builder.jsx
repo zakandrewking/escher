@@ -18,7 +18,7 @@ import renderWrapper from './renderWrapper'
 import SettingsMenu from './SettingsMenu'
 import MenuBar from './MenuBar'
 import SearchBar from './SearchBar'
-// import ButtonPanel from './ButtonPanel'
+import ButtonPanel from './ButtonPanel'
 import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
 import _ from 'underscore'
@@ -402,6 +402,7 @@ class Builder {
                     .append('div').attr('class', 'search-menu-container-inline')
     this.setUpMenuBar(sel)
     this.setUpSearchBar(sel)
+    this.setUpButtonPanel()
 
     // Set up key manager
     const keys = this.getKeys()
@@ -432,6 +433,9 @@ class Builder {
     }
     if (!this.settings.get('enable_search')) {
       newDisabledButtons.push('Find')
+    }
+    if (!this.settings.get('enable_editing')) {
+      newDisabledButtons.push('Show control points')
     }
     this.settings.set('disabled_buttons', newDisabledButtons)
 
@@ -481,6 +485,18 @@ class Builder {
     this.map.draw_everything()
   }
 
+  /**
+   * Function to pass props for the settings menu. Run without an argument to
+   * rerender the component
+   * @param {Object} props - Props that the settings menu will use
+   */
+  passPropsSettingsMenu (props = {}) {
+    this.callback_manager.run('passPropsSettingsMenu', null, props)
+  }
+
+  /**
+   * Initialize the settings menu
+   */
   setUpSettingsMenu () {
     this.settingsMenuRef = null
     renderWrapper(
@@ -503,6 +519,18 @@ class Builder {
     })
   }
 
+  /**
+   * Function to pass props for the menu bar
+   * @param {Object} props - Props that the menu bar will use
+   */
+  passPropsMenuBar (props = {}) {
+    this.callback_manager.run('passPropsMenuBar', null, props)
+  }
+
+  /**
+   * Initialize the menu bar
+   * @param {D3 Selection} sel - The d3 selection to render in.
+   */
   setUpMenuBar (sel) {
     this.menuBarRef = null
     renderWrapper(
@@ -577,6 +605,18 @@ class Builder {
     })
   }
 
+  /**
+   * Function to pass props for the search bar
+   * @param {Object} props - Props that the search bar will use
+   */
+  passPropsSearchBar (props = {}) {
+    this.callback_manager.run('passPropsSearchBar', null, props)
+  }
+
+  /**
+   * Initialize the search bar
+   * @param {D3 Selection} sel - The d3 selection to render in.
+   */
   setUpSearchBar (sel) {
     this.searchBarRef = null
     renderWrapper(
@@ -592,28 +632,48 @@ class Builder {
     })
   }
 
-  // renderButtonPanel (mode) {
-  //   const buttonPanelDivNode = this.button_div.node()
-  //   preact.render(
-  //     <ButtonPanel
-  //       all={this.settings.get('menu') === 'all'}
-  //       fullscreen={this.settings.get('full_screen_button')}
-  //       enableEditing={this.settings.get('enable_editing')}
-  //       setMode={(newMode) => this.setMode(newMode)}
-  //       zoomContainer={this.zoom_container}
-  //       map={this.map}
-  //       mode={mode}
-  //       buildInput={this.build_input}
-  //     />,
-  //     buttonPanelDivNode,
-  //     buttonPanelDivNode.children.length > 0 // If there is already a div, re-render it. Otherwise make a new one
-  //                                        ? buttonPanelDivNode.firstChild
-  //                                        : undefined
-  //   )
-  // }
+  /**
+   * Function to pass props for the button panel
+   * @param {Object} props - Props that the tooltip will use
+   */
+  passPropsButtonPanel (props = {}) {
+    this.callback_manager.run('passPropsButtonPanel', null, props)
+  }
+
+  /**
+   * Initialize the button panel
+   */
+  setUpButtonPanel () {
+    renderWrapper(
+      ButtonPanel,
+      null,
+      passProps => this.callback_manager.set('passPropsButtonPanel', passProps),
+      this.selection.append('div').node()
+    )
+    this.passPropsButtonPanel({
+      display: _.contains(['all', 'zoom'], this.settings.get('menu')),
+      mode: this.mode,
+      settings: this.settings,
+      setMode: mode => this.setMode(mode),
+      zoomContainer: this.zoom_container,
+      map: this.map,
+      buildInput: this.build_input
+    })
+    // redraw when mode changes
+    this.callback_manager.set('set_mode', mode => {
+      this.passPropsButtonPanel({ mode })
+    })
+  }
+
+  /**
+   * Function to pass props for the tooltip component
+   * @param {Object} props - Props that the tooltip will use
+   */
+  passPropsTooltipContainer (props = {}) {
+    this.callback_manager.run('passPropsTooltipContainer', null, props)
+  }
 
   setMode (mode) {
-    // this.renderButtonPanel(mode)
     // input
     this.build_input.toggle(mode === 'build')
     this.build_input.direction_arrow.toggle(mode === 'build')
@@ -700,39 +760,6 @@ class Builder {
       }.bind(this)
     }
     return null
-  }
-
-  /**
-   * Function to pass props for the tooltip component
-   * @param {Object} props - Props that the tooltip will use
-   */
-  passPropsTooltipContainer (props = {}) {
-    this.callback_manager.run('passPropsTooltipContainer', null, props)
-  }
-
-  /**
-   * Function to pass props for the settings menu. Run without an argument to
-   * rerender the component
-   * @param {Object} props - Props that the settings menu will use
-   */
-  passPropsSettingsMenu (props = {}) {
-    this.callback_manager.run('passPropsSettingsMenu', null, props)
-  }
-
-  /**
-   * Function to pass props for the settings menu
-   * @param {Object} props - Props that the settings menu will use
-   */
-  passPropsMenuBar (props = {}) {
-    this.callback_manager.run('passPropsMenuBar', null, props)
-  }
-
-  /**
-   * Function to pass props for the search bar
-   * @param {Object} props - Props that the search bar will use
-   */
-  passPropsSearchBar (props = {}) {
-    this.callback_manager.run('passPropsSearchBar', null, props)
   }
 
   /**

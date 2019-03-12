@@ -196,27 +196,32 @@ class MenuBar extends Component {
         </Dropdown>
         <Dropdown name='View' rightMenu='true' dropdownVisible={this.props.dropdownVisible}>
           <MenuButton
-            name={'Zoom in' + (enableKeys ? ' (+)' : '')}
+            name={`Zoom in${enableKeys ? ' (+)' : ''}`}
             onClick={() => this.props.zoomIn()}
             disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Zoom out' + (enableKeys ? ' (-)' : '')}
+            name={`Zoom out${enableKeys ? ' (-)' : ''}`}
             onClick={() => this.props.zoomOut()}
             disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Zoom to nodes' + (enableKeys ? ' (0)' : '')}
+            name={`Zoom to nodes${enableKeys ? ' (0)' : ''}`}
             onClick={() => this.props.zoomExtentNodes()}
             disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Zoom to canvas' + (enableKeys ? ' (1)' : '')}
+            name={`Zoom to canvas${enableKeys ? ' (1)' : ''}`}
             onClick={() => this.props.zoomExtentCanvas()}
             disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Find' + (enableKeys ? ' (F)' : '')}
+            name={`Toggle full screen${enableKeys ? ' (2)' : ''}`}
+            onClick={() => this.props.map.full_screen()}
+            disabledButtons={disabledButtons}
+          />
+          <MenuButton
+            name={`Find${enableKeys ? ' (F)' : ''}`}
             onClick={() => this.props.search()}
             disabledButtons={disabledButtons}
           />
@@ -227,7 +232,7 @@ class MenuBar extends Component {
           />
           <li name='divider' />
           <MenuButton
-            name={'Settings' + (enableKeys ? ' (,)' : '')}
+            name={`Settings${enableKeys ? ' (,)' : ''}`}
             onClick={() => this.props.renderSettingsMenu()}
             disabledButtons={disabledButtons}
             type='settings'
