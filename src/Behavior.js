@@ -13,7 +13,7 @@
  * my_behavior.bezier_drag,
  * my_behavior.bezier_mouseover, my_behavior.bezier_mouseout,
  * my_behavior.reaction_label_drag, my_behavior.node_label_drag,
- * my_behavior.object_mouseover, my_behavior.object_touch, 
+ * my_behavior.object_mouseover, my_behavior.object_touch,
  * my_behavior.object_mouseout
  *
  */
@@ -399,15 +399,15 @@ function toggle_label_mouseover (on_off) {
     // Show/hide tooltip.
     // @param {String} type - 'reaction_label' or 'node_label'
     // @param {Object} d - D3 data for DOM element
-    this.label_mouseover = function (type, d) {
+    this.label_mouseover = (type, d) => {
       if (!this.dragging) {
         this.map.callback_manager.run('show_tooltip', null, type, d)
       }
-    }.bind(this)
+    }
 
-    this.label_mouseout = function () {
+    this.label_mouseout = () => {
       this.map.callback_manager.run('delay_hide_tooltip')
-    }.bind(this)
+    }
 
   } else {
     this.label_mouseover = null

@@ -55,7 +55,6 @@ resizes. */
 
 /* SVG text should not be selectable */
 .escher-container svg text {
-  pointer-events: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;

@@ -22,6 +22,7 @@ class Wrapper extends Component {
     return (
       <this.props.component
         setDisplay={display => this.setState({ display })}
+        ref={this.props.refPassthrough}
         {...this.state}
       />
     )
@@ -41,13 +42,15 @@ function renderWrapper (
   component,
   ref,
   connectSetStateFn,
-  divNode
+  divNode,
+  refPassthrough = null
 ) {
   render(
     <Wrapper
       component={component}
       connectSetStateFn={connectSetStateFn}
       ref={ref}
+      refPassthrough={refPassthrough}
     />,
     divNode,
     // If there is already a div, re-render it. Otherwise make a new one

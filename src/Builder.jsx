@@ -227,11 +227,6 @@ class Builder {
       }
     }.bind(this))
 
-    // Set up the tooltip container
-    this.tooltip_container = new TooltipContainer(this.selection,
-                                                  this.settings.get('tooltip_component'),
-                                                  this.zoom_container)
-
     // Status in both modes
     this._create_status(this.selection)
 
@@ -380,9 +375,6 @@ class Builder {
     this.text_edit_input = new TextEditInput(this.selection, this.map,
                                             this.zoom_container)
 
-    // Connect the tooltip
-    this.tooltip_container.setup_map_callbacks(this.map)
-
     // Set up the Brush
     this.brush = new Brush(zoomedSel, false, this.map, '.canvas-group')
     this.map.canvas.callback_manager.set('resize', function () {
@@ -401,6 +393,14 @@ class Builder {
     this.setUpMenuBar(sel)
     this.setUpSearchBar(sel)
     this.setUpButtonPanel()
+
+    // Set up the tooltip container
+    this.tooltip_container = new TooltipContainer(
+      this.selection,
+      this.settings.get('tooltip_component'),
+      this.zoom_container,
+      this.map
+    )
 
     // Set up key manager
     const keys = this.getKeys()
@@ -671,14 +671,6 @@ class Builder {
     this.callback_manager.set('set_mode', mode => {
       this.passPropsButtonPanel({ mode })
     })
-  }
-
-  /**
-   * Function to pass props for the tooltip component
-   * @param {Object} props - Props that the tooltip will use
-   */
-  passPropsTooltipContainer (props = {}) {
-    this.callback_manager.run('passPropsTooltipContainer', null, props)
   }
 
   setMode (mode) {
