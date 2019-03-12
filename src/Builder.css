@@ -45,10 +45,21 @@ resizes. */
 }
 
 /* The zoom container classes. */
-.escher-zoom-container, .escher-3d-transform-container, svg.escher-svg {
+.escher-container .escher-zoom-container,
+.escher-container .escher-3d-transform-container,
+.escher-container svg.escher-svg {
   width: 100% !important;
   height: 100% !important;
   overflow: hidden;
+}
+
+/* SVG text should not be selectable */
+.escher-container svg text {
+  pointer-events: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 /* Status */
