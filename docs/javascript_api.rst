@@ -291,24 +291,28 @@ JavaScript API
 
        .. js:attribute:: options.tooltip_component
 
-          (Default: ``escher.Tooltip.DefaultTooltip``) A function or `tinier`_
-          component to show when hoving over reactions, metabolites, and
-          genes. If a function is passed, the function will be called with a
-          single object as an argument with two attributes: state - containing
-          the data associated with that reaction, metabolite or gene; and el - a
-          HTML node that you can render content in. If you need to manage state
-          for your tooltip, you can alternatively pass a tinier component.  See
+          (Default: ``escher.Tooltip.DefaultTooltip``) A `Preact`_ Component to
+          show when hoving over reactions, metabolites, and genes. See
           ``escher.Tooltip.DefaultTooltip`` in the source code for an example of
-          a tinier component that defines the default tooltips.
+          a Preact component that defines the default tooltips. And see the
+          :doc:`Tooltip Tutorial <development-tutorial>` for more tips on
+          getting started with custom tooltips.
 
        .. js:attribute:: options.enable_tooltips
 
-          (Default: `[`label`]`) Determines the mouseover or touch event required
-          to show the related tooltip.['label'] will show tooltips upon mouseover
-          or touch of the reaction or metabolite labels whereas ['object'] will
-          show the the tooltips over the reaction line segments and metabolite
-          circles. Can be set as an empty array to disable tooltips or can have
-          both options passed in to enable tooltips over both labels and objects.
+          (Default: ``['label', 'object']``) Determines the mouseover or touch
+          event required to show the related tooltip.['label'] will show
+          tooltips upon mouseover or touch of the reaction or metabolite labels
+          whereas ['object'] will show the the tooltips over the reaction line
+          segments and metabolite circles. Can be set as an empty array to
+          disable tooltips or can have both options passed in to enable tooltips
+          over both labels and objects.
+
+       .. js:attribute:: options.enable_keys_with_tooltip
+
+          (Default: ``true``) Set this to ``false`` to disallow non-prefixed
+          (i.e. not starting with ctrl or cmd) keyboard shortcuts when the
+          tooltip is visible. This is useful if your tooltip has text inputs.
 
        **Callbacks**
 
@@ -397,4 +401,4 @@ JavaScript API
                                               turn of the gene_reaction_rules.
 
 .. _`support the 3D transforms`: http://caniuse.com/#feat=transforms3d
-.. _`tinier`: https://github.com/zakandrewking/tinier
+.. _`Preact`: https://preactjs.com/

@@ -135,6 +135,7 @@ class Builder {
       // Extensions
       tooltip_component: DefaultTooltip,
       enable_tooltips: ['label', 'object'],
+      enable_keys_with_tooltip: true,
       reaction_scale_preset: null,
       metabolite_scale_preset: null,
       // Callbacks
@@ -410,9 +411,12 @@ class Builder {
       this.build_input,
       this.searchBarRef,
       () => this.settingsMenuRef,
-      this.text_edit_input,
-      this.tooltip_container
+      this.text_edit_input
     ]
+    if (!this.settings.get('enable_keys_with_tooltip')) {
+      this.map.key_manager.input_list.push(this.tooltip_container)
+    }
+
     // Make sure the key manager remembers all those changes
     this.map.key_manager.update()
     // Turn it on/off
