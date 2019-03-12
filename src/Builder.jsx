@@ -250,9 +250,7 @@ class Builder {
     _.defer(() => {
       this.load_map(this.map_data, false)
       const messageFn = this._reactionCheckAddAbs()
-      if (messageFn !== null) {
-        this._updateData(true, true)
-      }
+      this._updateData(true, true)
 
       // Setting callbacks. TODO enable atomic updates. Right now, every time the
       // menu closes, everything is drawn.
@@ -758,16 +756,17 @@ class Builder {
   }
 
   _reactionCheckAddAbs () {
-    const curr_style = this.settings.get('reaction_styles')
-    const did_abs = false
-    if (this.settings.get('reaction_data') !== null &&
-        !this.has_custom_reaction_styles &&
-        !_.contains(curr_style, 'abs')) {
-      this.settings.set('reaction_styles', curr_style.concat('abs'))
-      return function () {
+    const currStyle = this.settings.get('reaction_styles')
+    if (
+      this.settings.get('reaction_data') !== null &&
+      !this.has_custom_reaction_styles &&
+      !_.contains(currStyle, 'abs')
+    ) {
+      this.settings.set('reaction_styles', currStyle.concat('abs'))
+      return () => {
         this.map.set_status('Visualizing absolute value of reaction data. ' +
                             'Change this option in Settings.', 5000)
-      }.bind(this)
+      }
     }
     return null
   }
@@ -838,6 +837,20 @@ class Builder {
     }
   }
 
+  _makeGeneDataObject (geneData, cobraModel, map) {
+    const allReactions = {}
+    if (cobraModel !== null) {
+      utils.extend(allReactions, cobraModel.reactions)
+    }
+    // extend, overwrite
+    if (map !== null) {
+      utils.extend(allReactions, map.reactions, true)
+    }
+
+    // this object has reaction keys and values containing associated genes
+    return dataStyles.import_and_check(geneData, 'gene_data', allReactions)
+  }
+
   /**
    * Set data and settings for the model.
    * update_model: (Boolean) Update data for the model.
@@ -848,51 +861,51 @@ class Builder {
    * of the map.
    */
   _updateData (
-    update_model = false,
-    update_map = false,
-    kind = ['reaction', 'metabolite '],
-    should_draw = true
+    updateModel = false,
+    updateMap = false,
+    kind = ['reaction', 'metabolite'],
+    shouldDraw = true
   ) {
-    const update_metabolite_data = (kind.indexOf('metabolite') !== -1)
-    const update_reaction_data = (kind.indexOf('reaction') !== -1)
-    let met_data_object
-    let reaction_data_object
-    let gene_data_object
+    const updateReactionData = _.contains(kind, 'reaction')
+    const updateMetaboliteData = _.contains(kind, 'metabolite')
+    let metaboliteDataObject
+    let reactionDataObject
+    let geneDataObject
 
     // -------------------
     // First map, and draw
     // -------------------
 
     // metabolite data
-    if (update_metabolite_data && update_map && this.map !== null) {
-      met_data_object = dataStyles.import_and_check(this.settings.get('metabolite_data'),
-                                                     'metabolite_data')
-      this.map.apply_metabolite_data_to_map(met_data_object)
-      if (should_draw) {
+    if (updateMetaboliteData && updateMap && this.map !== null) {
+      metaboliteDataObject = dataStyles.import_and_check(this.settings.get('metabolite_data'),
+                                                         'metabolite_data')
+      this.map.apply_metabolite_data_to_map(metaboliteDataObject)
+      if (shouldDraw) {
         this.map.draw_all_nodes(false)
       }
     }
 
     // reaction data
-    if (update_reaction_data) {
-      if (this.settings.get('reaction_data') !== null && update_map && this.map !== null) {
-        reaction_data_object = dataStyles.import_and_check(this.settings.get('reaction_data'),
-                                                            'reaction_data')
-        this.map.apply_reaction_data_to_map(reaction_data_object)
-        if (should_draw) {
+    if (updateReactionData) {
+      if (this.settings.get('reaction_data') !== null && updateMap && this.map !== null) {
+        reactionDataObject = dataStyles.import_and_check(this.settings.get('reaction_data'),
+                                                         'reaction_data')
+        this.map.apply_reaction_data_to_map(reactionDataObject)
+        if (shouldDraw) {
           this.map.draw_all_reactions(false, false)
         }
-      } else if (this.settings.get('gene_data') !== null && update_map && this.map !== null) {
-        gene_data_object = make_gene_data_object(this.settings.get('gene_data'),
-                                                 this.cobra_model, this.map)
-        this.map.apply_gene_data_to_map(gene_data_object)
-        if (should_draw) {
+      } else if (this.settings.get('gene_data') !== null && updateMap && this.map !== null) {
+        geneDataObject = this._makeGeneDataObject(this.settings.get('gene_data'),
+                                                  this.cobra_model, this.map)
+        this.map.apply_gene_data_to_map(geneDataObject)
+        if (shouldDraw) {
           this.map.draw_all_reactions(false, false)
         }
-      } else if (update_map && this.map !== null) {
+      } else if (updateMap && this.map !== null) {
         // clear the data
         this.map.apply_reaction_data_to_map(null)
-        if (should_draw) {
+        if (shouldDraw) {
           this.map.draw_all_reactions(false, false)
         }
       }
@@ -909,42 +922,42 @@ class Builder {
     }
 
     var delay = 5
-    this.update_model_timer = setTimeout(function () {
+    this.update_model_timer = setTimeout(() => {
 
       // metabolite_data
-      if (update_metabolite_data && update_model && this.cobra_model !== null) {
+      if (updateMetaboliteData && updateModel && this.cobra_model !== null) {
         // if we haven't already made this
-        if (!met_data_object) {
-          met_data_object = dataStyles.import_and_check(this.settings.get('metabolite_data'),
-                                                         'metabolite_data')
+        if (!metaboliteDataObject) {
+          metaboliteDataObject = dataStyles.import_and_check(this.settings.get('metabolite_data'),
+                                                             'metabolite_data')
         }
-        this.cobra_model.apply_metabolite_data(met_data_object,
+        this.cobra_model.apply_metabolite_data(metaboliteDataObject,
                                                this.settings.get('metabolite_styles'),
                                                this.settings.get('metabolite_compare_style'))
       }
 
       // reaction data
-      if (update_reaction_data) {
-        if (this.settings.get('reaction_data') !== null && update_model && this.cobra_model !== null) {
+      if (updateReactionData) {
+        if (this.settings.get('reaction_data') !== null && updateModel && this.cobra_model !== null) {
           // if we haven't already made this
-          if (!reaction_data_object) {
-            reaction_data_object = dataStyles.import_and_check(this.settings.get('reaction_data'),
-                                                                'reaction_data')
+          if (!reactionDataObject) {
+            reactionDataObject = dataStyles.import_and_check(this.settings.get('reaction_data'),
+                                                             'reaction_data')
           }
-          this.cobra_model.apply_reaction_data(reaction_data_object,
+          this.cobra_model.apply_reaction_data(reactionDataObject,
                                                this.settings.get('reaction_styles'),
                                                this.settings.get('reaction_compare_style'))
-        } else if (this.settings.get('gene_data') !== null && update_model && this.cobra_model !== null) {
-          if (!gene_data_object) {
-            gene_data_object = make_gene_data_object(this.settings.get('gene_data'),
-                                                     this.cobra_model, this.map)
+        } else if (this.settings.get('gene_data') !== null && updateModel && this.cobra_model !== null) {
+          if (!geneDataObject) {
+            geneDataObject = make_gene_data_object(this.settings.get('gene_data'),
+                                                   this.cobra_model, this.map)
           }
-          this.cobra_model.apply_gene_data(gene_data_object,
+          this.cobra_model.apply_gene_data(geneDataObject,
                                            this.settings.get('reaction_styles'),
                                            this.settings.get('identifiers_on_map'),
                                            this.settings.get('reaction_compare_style'),
                                            this.settings.get('and_method_in_gene_reaction_rule'))
-        } else if (update_model && this.cobra_model !== null) {
+        } else if (updateModel && this.cobra_model !== null) {
           // clear the data
           this.cobra_model.apply_reaction_data(null,
                                                this.settings.get('reaction_styles'),
@@ -953,24 +966,9 @@ class Builder {
       }
 
       // callback
-      this.callback_manager.run('update_data', null, update_model, update_map,
-                                kind, should_draw)
-    }.bind(this), delay)
-
-    // definitions
-    function make_gene_data_object (gene_data, cobra_model, map) {
-      var all_reactions = {}
-      if (cobra_model !== null) {
-        utils.extend(all_reactions, cobra_model.reactions)
-      }
-      // extend, overwrite
-      if (map !== null) {
-        utils.extend(all_reactions, map.reactions, true)
-      }
-
-      // this object has reaction keys and values containing associated genes
-      return dataStyles.import_and_check(gene_data, 'gene_data', all_reactions)
-    }
+      this.callback_manager.run('update_data', null, updateModel, updateMap,
+                                kind, shouldDraw)
+    }, delay)
   }
 
   _create_status (selection) {
