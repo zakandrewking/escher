@@ -517,6 +517,16 @@ class Builder {
         this.passPropsSettingsMenu()
       })
     })
+
+    // recalculate data when switching to/from absolute value
+    this.settings.streams.reaction_styles
+        .map(x => _.contains(x, 'abs'))
+        .skipDuplicates()
+        .onValue(() => this._updateData(false, true))
+    this.settings.streams.metabolite_styles
+        .map(x => _.contains(x, 'abs'))
+        .skipDuplicates()
+        .onValue(() => this._updateData(false, true))
   }
 
   /**
@@ -838,8 +848,8 @@ class Builder {
    * of the map.
    */
   _updateData (
-    update_model,
-    update_map,
+    update_model = false,
+    update_map = false,
     kind = ['reaction', 'metabolite '],
     should_draw = true
   ) {

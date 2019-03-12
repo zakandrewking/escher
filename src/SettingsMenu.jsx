@@ -288,6 +288,7 @@ class SettingsMenu extends Component {
                       name='reactionStyle'
                       onClick={() => this.handleStyle('abs', 'reaction_styles')}
                       checked={_.contains(settings.get('reaction_styles'), 'abs')}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Absolute value
                   </label>
@@ -300,6 +301,7 @@ class SettingsMenu extends Component {
                       name='reactionStyle'
                       onClick={() => this.handleStyle('size', 'reaction_styles')}
                       checked={_.contains(settings.get('reaction_styles'), 'size')}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Size
                   </label>
@@ -308,7 +310,8 @@ class SettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('color', 'reaction_styles')}
-
+                      checked={_.contains(settings.get('reaction_styles'), 'color')}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Color
                   </label>
@@ -319,6 +322,7 @@ class SettingsMenu extends Component {
                       name='reactionStyle'
                       onClick={() => this.handleStyle('text', 'reaction_styles')}
                       checked={_.contains(settings.get('reaction_styles'), 'text')}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Text (Show data in label)
                   </label>
@@ -333,6 +337,7 @@ class SettingsMenu extends Component {
                       name='reactionCompare'
                       onClick={() => settings.set('reaction_compare_style', 'fold')}
                       checked={settings.get('reaction_compare_style') === 'fold'}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Fold Change
                   </label>
@@ -342,6 +347,7 @@ class SettingsMenu extends Component {
                       name='reactionCompare'
                       onClick={() => settings.set('reaction_compare_style', 'log2_fold')}
                       checked={settings.get('reaction_compare_style') === 'log2_fold'}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Log2 (Fold Change)
                   </label>
@@ -351,6 +357,7 @@ class SettingsMenu extends Component {
                       name='reactionCompare'
                       onClick={() => settings.set('reaction_compare_style', 'diff')}
                       checked={settings.get('reaction_compare_style') === 'diff'}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Difference
                   </label>
@@ -369,6 +376,7 @@ class SettingsMenu extends Component {
                       name='andMethod'
                       onClick={() => settings.set('and_method_in_gene_reaction_rule', 'mean')}
                       checked={settings.get('and_method_in_gene_reaction_rule') === 'mean'}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Mean
                   </label>
@@ -378,6 +386,7 @@ class SettingsMenu extends Component {
                       name='andMethod'
                       onClick={() => settings.set('and_method_in_gene_reaction_rule', 'min')}
                       checked={settings.get('and_method_in_gene_reaction_rule') === 'min'}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Min
                   </label>
@@ -440,6 +449,7 @@ class SettingsMenu extends Component {
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('abs', 'metabolite_styles')}
                       checked={_.contains(settings.get('metabolite_styles'), 'abs')}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Absolute value
                   </label>
@@ -452,6 +462,7 @@ class SettingsMenu extends Component {
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('size', 'metabolite_styles')}
                       checked={_.contains(settings.get('metabolite_styles'), 'size')}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Size
                   </label>
@@ -461,6 +472,7 @@ class SettingsMenu extends Component {
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('color', 'metabolite_styles')}
                       checked={_.contains(settings.get('metabolite_styles'), 'color')}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Color
                   </label>
@@ -471,6 +483,7 @@ class SettingsMenu extends Component {
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('text', 'metabolite_styles')}
                       checked={_.contains(settings.get('metabolite_styles'), 'text')}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Text (Show data in label)
                   </label>
@@ -485,6 +498,7 @@ class SettingsMenu extends Component {
                       name='metaboliteCompare'
                       onClick={() => settings.set('metabolite_compare_style', 'fold')}
                       checked={settings.get('metabolite_compare_style') === 'fold'}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Fold Change
                   </label>
@@ -494,6 +508,7 @@ class SettingsMenu extends Component {
                       name='metaboliteCompare'
                       onClick={() => settings.set('metabolite_compare_style', 'log2_fold')}
                       checked={settings.get('metabolite_compare_style') === 'log2_fold'}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Log2 (Fold Change)
                   </label>
@@ -503,6 +518,7 @@ class SettingsMenu extends Component {
                       name='metaboliteCompare'
                       onClick={() => settings.set('metabolite_compare_style', 'diff')}
                       checked={settings.get('metabolite_compare_style') === 'diff'}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Difference
                   </label>
