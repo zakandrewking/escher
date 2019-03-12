@@ -24,6 +24,8 @@ class MenuBar extends Component {
   render () {
     const enableKeys = this.props.settings.get('enable_keys')
     const disabledButtons = this.props.settings.get('disabled_buttons')
+    const beziersEnabled = this.props.map.beziers_enabled
+
     return (
       <div class='search-menu-container'>
         <div class='search-menu-container-inline'>
@@ -221,15 +223,8 @@ class MenuBar extends Component {
                 disabledButtons={disabledButtons}
               />
               <MenuButton
-                name={!this.props.settings.get('beziers_enabled') ? ('Show control points' +
-                (enableKeys ? ' (B)' : '')) : ('Hide control points' +
-                (enableKeys ? ' (B)' : ''))}
-                onClick={
-                  () => {
-                    this.props.toggleBeziers()
-                    this.props.setMode(this.props.mode)
-                  }
-                }
+                name={`${beziersEnabled ? 'Hide' : 'Show'} control points${enableKeys ? ' (B)' : ''}`}
+                onClick={() => this.props.toggleBeziers()}
                 disabledButtons={disabledButtons}
               />
               <li name='divider' />

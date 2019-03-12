@@ -254,20 +254,6 @@ class Builder {
         this._updateData(true, true)
       }
 
-      // redraw when settings change
-      _.mapObject(this.settings.streams, (stream, key) => {
-        stream.onValue(value => {
-          // re-render settings menu
-          this.passPropsSettingsMenu()
-          // this.pass_menu_bar_props({
-          //   settings: this.settings
-          // })
-          if (key === 'reaction_styles' || key === 'metabolite_styles') {
-            this._updateData(false, true)
-          }
-        })
-      })
-
       // Setting callbacks. TODO enable atomic updates. Right now, every time the
       // menu closes, everything is drawn.
       this.settings.statusBus.onValue(x => {
@@ -513,6 +499,13 @@ class Builder {
       settings: this.settings,
       map: this.map
     })
+
+    // redraw menu when settings change
+    _.mapObject(this.settings.streams, (stream, key) => {
+      stream.onValue(value => {
+        this.passPropsSettingsMenu()
+      })
+    })
   }
 
   setUpMenuBar () {
@@ -528,6 +521,7 @@ class Builder {
       settings: this.settings,
       sel: this.selection,
       mode: this.mode,
+      map: this.map,
       saveMap: () => {
         // Revert options changed by semanticZoom to their original values if option is active
         if (this.semanticOptions) {
@@ -571,6 +565,21 @@ class Builder {
       toggleBeziers: () => this.map.toggle_beziers(),
       renderSettingsMenu: () => this.passPropsSettingsMenu({ display: true })
     })
+
+    // redraw when beziers change
+    this.map.callback_manager.set('toggle_beziers', () => {
+      this.passPropsMenuBar()
+    })
+
+    // redraw when disabledButtons change
+    this.settings.streams.disabled_buttons.onValue(value => {
+      this.passPropsMenuBar()
+    })
+
+    // redraw when mode changes
+    this.callback_manager.set('set_mode', mode => {
+      this.passPropsMenuBar({ mode })
+    })
   }
 
   renderSearchBar (hide, searchItem) {
@@ -612,9 +621,6 @@ class Builder {
   // }
 
   setMode (mode) {
-    // update UI
-    this.passPropsMenuBar({ mode })
-
     // this.renderButtonPanel(mode)
     // input
     this.build_input.toggle(mode === 'build')
@@ -648,6 +654,9 @@ class Builder {
       this.map.deselect_text_labels()
     }
     this.map.draw_everything()
+
+    // callback
+    this.callback_manager.run('set_mode', null, mode)
   }
 
   view_mode () {
