@@ -685,6 +685,34 @@ class Builder {
   }
 
   /**
+   * Set up callbacks for the rotation mode
+   */
+  _setUpModes (map, brush, zoomContainer) {
+    // set up zoom+pan and brush modes
+    var wasEnabled = {}
+    map.callback_manager.set('start_rotation', function () {
+      wasEnabled.brush = brush.enabled
+      brush.toggle(false)
+      wasEnabled.zoom = zoomContainer.zoom_on
+      zoomContainer.toggle_pan_drag(false)
+      wasEnabled.selectableMousedown = map.behavior.selectableMousedown !== null
+      map.behavior.toggleSelectableClick(false)
+      wasEnabled.labelMouseover = map.behavior.labelMouseover !== null
+      wasEnabled.labelTouch = map.behavior.labelTouch !== null
+      map.behavior.toggleLabelMouseover(false)
+      map.behavior.toggleLabelTouch(false)
+    })
+    map.callback_manager.set('end_rotation', function () {
+      brush.toggle(wasEnabled.brush)
+      zoomContainer.toggle_pan_drag(wasEnabled.zoom)
+      map.behavior.toggleSelectableClick(wasEnabled.selectableMousedown)
+      map.behavior.toggleLabelMouseover(wasEnabled.labelMouseover)
+      map.behavior.toggleLabelTouch(wasEnabled.labelTouch)
+      wasEnabled = {}
+    })
+  }
+
+  /**
    * Set the mode
    */
   _setMode (mode) {
@@ -1021,31 +1049,6 @@ class Builder {
 
     // make the quick jump object
     this.quick_jump = QuickJump(selection, load_fn)
-  }
-
-  _setUpModes (map, brush, zoomContainer) {
-    // set up zoom+pan and brush modes
-    var wasEnabled = {}
-    map.callback_manager.set('start_rotation', function () {
-      wasEnabled.brush = brush.enabled
-      brush.toggle(false)
-      wasEnabled.zoom = zoomContainer.zoom_on
-      zoomContainer.toggle_pan_drag(false)
-      wasEnabled.selectableMousedown = map.behavior.selectableMousedown !== null
-      map.behavior.toggleSelectableClick(false)
-      wasEnabled.labelMouseover = map.behavior.labelMouseover !== null
-      wasEnabled.labelTouch = map.behavior.labelTouch !== null
-      map.behavior.toggleLabelMouseover(false)
-      map.behavior.toggleLabelTouch(false)
-    })
-    map.callback_manager.set('end_rotation', function () {
-      brush.toggle(wasEnabled.brush)
-      zoomContainer.toggle_pan_drag(wasEnabled.zoom)
-      map.behavior.toggleSelectableClick(wasEnabled.selectableMousedown)
-      map.behavior.toggleLabelMouseover(wasEnabled.labelMouseover)
-      map.behavior.toggleLabelTouch(wasEnabled.labelTouch)
-      wasEnabled = {}
-    })
   }
 
   /**
