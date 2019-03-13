@@ -98,14 +98,24 @@ resizes. */
 .escher-container #rxn-input {
   z-index: 10;
 }
+.escher-container .input-close-button {
+  position: absolute;
+  right: 0px;
+  width: 18px;
+  bottom: 0px;
+  padding: 0px;
+  border-width: 0px;
+  margin: 0px;
+  background: none;
+  font-size: 20px;
+  font-weight: normal;
+  top: -8px;
+}
 .escher-container .input-close-button:hover {
   color: #ff3333;
   font-weight: bold;
 }
-.escher-container .light {
-  color: #8b8b8b;
-  font-weight: normal;
-}
+
 /* text edit input */
 .escher-container #text-edit-input input {
   width: 500px;
