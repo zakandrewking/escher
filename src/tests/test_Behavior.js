@@ -42,14 +42,14 @@ function assertLabelMouseoverAttrsOn (behavior) {
 }
 
 function assertLabelMouseoverAttrsOff (behavior) {
-  assert.isNull(behavior.labelMouseover)
+  assert.strictEqual(behavior.labelMouseover, behavior.emptyBehavior)
 }
 
 describe('Behavior', () => {
   const map = { sel: d3Body }
   let behavior
 
-  beforeEach(() => { behavior = Behavior(map, null) })
+  beforeEach(() => { behavior = new Behavior(map, null) })
 
   it('loads the map', () => {
     assert.strictEqual(behavior.map, map)

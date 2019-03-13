@@ -108,16 +108,6 @@ describe('Builder', () => {
     assert.deepEqual(b.settings.get('reaction_scale'), reactionScale)
   })
 
-  it('open search bar', done => {
-    const sel = make_parent_sel(d3Body)
-    const b = Builder(null, null, '', sel, {
-      first_load_callback: () => {
-        b.renderSearchBar()
-        done()
-      }
-    })
-  })
-
   it('set_reaction_data', done => {
     const sel = make_parent_sel(d3Body)
     Builder(get_map(), null, '', sel, {
