@@ -185,7 +185,6 @@ export default class BuildInput {
     if (this.map.cobra_model === null) {
       this.completely.setText('Cannot add: No model.')
       // this.completely.repaint()
-      console.log(document.getElementById('txtInput').value)
       return false
     }
 
@@ -194,7 +193,7 @@ export default class BuildInput {
     const allowDuplicates = this.settings.get('allow_building_duplicate_reactions')
 
     // Find selected
-    var options = []
+    const options = []
     const cobraReactions = this.map.cobra_model.reactions
     const cobraMetabolites = this.map.cobra_model.metabolites
     const reactions = this.map.reactions
@@ -255,10 +254,13 @@ export default class BuildInput {
                                                                     reaction.reversibility,
                                                                     reaction.lower_bound,
                                                                     reaction.upper_bound)
+            // make the matches list and filter out any missing entries (e.g.
+            // missing gene names from model
+            const matches = [ showReactionName ].concat(showMetNames).concat(showGeneNames).filter(x => x)
             options.push({
               html: ('<b>' + showReactionName + '</b>' + '\t' +
                      boldMetsInStr(reactionString, [selectedMetName])),
-              matches: [ showReactionName ].concat(showMetNames).concat(showGeneNames),
+              matches,
               id: biggId
             })
             reactionSuggestions[biggId] = true
@@ -271,15 +273,14 @@ export default class BuildInput {
     const sortFn = hasDataOnReactions
           ? (x, y) => Math.abs(y.reactionData) - Math.abs(x.reactionData)
           : (x, y) => x.html.toLowerCase() < y.html.toLowerCase() ? -1 : 1
-    options = options.sort(sortFn)
+
     // set up the box with data
-    var complete = this.completely
-    complete.options = options
+    this.completely.options = options.sort(sortFn)
 
     // TODO test this behavior
-    // if (strings_to_display.length==1) complete.setText(strings_to_display[0])
-    // else complete.setText("")
-    complete.setText('')
+    // if (strings_to_display.length==1) this.completely.setText(strings_to_display[0])
+    // else this.completely.setText("")
+    this.completely.setText('')
 
     const checkAndBuild = id => {
       if (id !== null) {
@@ -300,7 +301,7 @@ export default class BuildInput {
         }
       }
     }
-    complete.onEnter = function (id) {
+    this.completely.onEnter = function (id) {
       this.setText('')
       this.onChange('')
       checkAndBuild(id)
