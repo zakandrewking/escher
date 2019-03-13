@@ -215,15 +215,17 @@ class Builder {
       if (this.settings.get('semantic_zoom')) {
         const scale = this.zoom_container.window_scale
         const optionObject = this.settings.get('semantic_zoom')
-        .sort((a, b) => a.zoomLevel - b.zoomLevel)
-        .find(a => a.zoomLevel > scale)
+                                 .sort((a, b) => a.zoomLevel - b.zoomLevel)
+                                 .find(a => a.zoomLevel > scale)
         if (optionObject) {
-          Object.entries(optionObject.options).map(([option, value]) => {
-            if (this.options[option] !== value) {
-              this.settings.set(option, value)
-              this._updateData(false, true)
+          let didChange = false
+          _.mapObject(optionObject.options, (value, key) => {
+            if (this.settings.get(key) !== value) {
+              this.settings.set(key, value)
+              didChange = true
             }
           })
+          if (didChange) this._updateData(false, true)
         }
       }
     }.bind(this))
@@ -236,8 +238,8 @@ class Builder {
 
     // Append the bars and menu divs to the document
     var s = this.selection
-    .append('div').attr('class', 'search-menu-container')
-    .append('div').attr('class', 'search-menu-container-inline')
+                .append('div').attr('class', 'search-menu-container')
+                .append('div').attr('class', 'search-menu-container-inline')
     this.menu_div = s.append('div')
     this.search_bar_div = s.append('div')
     this.button_div = this.selection.append('div')
