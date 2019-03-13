@@ -78,13 +78,13 @@ export default class Behavior {
     const ys = []
     for (const nodeId in nodes) {
       const node = nodes[nodeId]
-      if (node.x !== undefined)
-        xs.push(node.x)
-      if (node.y !== undefined)
-        ys.push(node.y)
+      if (node.x !== undefined) xs.push(node.x)
+      if (node.y !== undefined) ys.push(node.y)
     }
-    return { x: utils.mean(xs),
-             y: utils.mean(ys) }
+    return {
+      x: utils.mean(xs),
+      y: utils.mean(ys)
+    }
   }
 
   showCenter () {
@@ -351,7 +351,6 @@ export default class Behavior {
     }
 
     if (onOff) {
-
       // Show/hide tooltip.
       // @param {String} type - 'reactionLabel' or 'nodeLabel'
       // @param {Object} d - D3 data for DOM element
@@ -364,7 +363,6 @@ export default class Behavior {
       this.labelMouseout = () => {
         this.map.callback_manager.run('delay_hide_tooltip')
       }
-
     } else {
       this.labelMouseover = this.emptyBehavior
     }
@@ -751,98 +749,95 @@ export default class Behavior {
   }
 
   getBezierDrag (map) {
-    const moveBezier = function (reactionId, segmentId, bez, bezierId,
-                                displacement) {
+    const moveBezier = (reactionId, segmentId, bez, bezierId, displacement) => {
       const segment = map.reactions[reactionId].segments[segmentId]
       segment[bez] = utils.c_plus_c(segment[bez], displacement)
       map.beziers[bezierId].x = segment[bez].x
       map.beziers[bezierId].y = segment[bez].y
     }
-    const startFn = function (d) {
+    const startFn = d => {
       d.dragging = true
     }
-    const dragFn = function (d, displacement, totalDisplacement) {
+    const dragFn = (d, displacement, totalDisplacement) => {
       // draw
       moveBezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
                   displacement)
       map.draw_these_reactions([d.reaction_id], false)
       map.draw_these_beziers([d.bezier_id])
     }
-    const endFn = function (d) {
+    const endFn = d => {
       d.dragging = false
     }
-    const undoFn = function (d, displacement) {
+    const undoFn = (d, displacement) => {
       moveBezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
-                  utils.c_times_scalar(displacement, -1))
+                 utils.c_times_scalar(displacement, -1))
       map.draw_these_reactions([d.reaction_id], false)
       map.draw_these_beziers([d.bezier_id])
     }
-    const redoFn = function (d, displacement) {
+    const redoFn = (d, displacement) => {
       moveBezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
                   displacement)
       map.draw_these_reactions([d.reaction_id], false)
       map.draw_these_beziers([d.bezier_id])
     }
     return this.getGenericDrag(startFn, dragFn, endFn, undoFn, redoFn,
-                                  this.map.sel)
+                               this.map.sel)
   }
 
   getReactionLabelDrag (map) {
-    const moveLabel = function (reactionId, displacement) {
+    const moveLabel = (reactionId, displacement) => {
       const reaction = map.reactions[reactionId]
       reaction.label_x = reaction.label_x + displacement.x
       reaction.label_y = reaction.label_y + displacement.y
     }
-    const startFn = function (d) {
+    const startFn = d => {
       // hide tooltips when drag starts
       map.callback_manager.run('hide_tooltip')
     }
-    const dragFn = function (d, displacement, totalDisplacement) {
+    const dragFn = (d, displacement, totalDisplacement) => {
       // draw
       moveLabel(d.reaction_id, displacement)
       map.draw_these_reactions([ d.reaction_id ])
     }
-    const endFn = function (d) {
-    }
-    const undoFn = function (d, displacement) {
+    const endFn = () => {}
+    const undoFn = (d, displacement) => {
       moveLabel(d.reaction_id, utils.c_times_scalar(displacement, -1))
       map.draw_these_reactions([ d.reaction_id ])
     }
-    const redoFn = function (d, displacement) {
+    const redoFn = (d, displacement) => {
       moveLabel(d.reaction_id, displacement)
       map.draw_these_reactions([ d.reaction_id ])
     }
     return this.getGenericDrag(startFn, dragFn, endFn, undoFn, redoFn,
-                                  this.map.sel)
+                               this.map.sel)
   }
 
   getNodeLabelDrag (map) {
-    const moveLabel = function (nodeId, displacement) {
+    const moveLabel = (nodeId, displacement) => {
       const node = map.nodes[nodeId]
-      node.labelX = node.labelX + displacement.x
-      node.labelY = node.labelY + displacement.y
+      node.label_x = node.label_x + displacement.x
+      node.label_y = node.label_y + displacement.y
     }
-    const startFn = function (d) {
+    const startFn = d => {
       // hide tooltips when drag starts
       map.callback_manager.run('hide_tooltip')
     }
-    const dragFn = function (d, displacement, totalDisplacement) {
+    const dragFn = (d, displacement, totalDisplacement) => {
       // draw
       moveLabel(d.node_id, displacement)
       map.draw_these_nodes([ d.node_id ])
     }
-    const endFn = function (d) {
-    }
-    const undoFn = function (d, displacement) {
+    const endFn = () => {}
+    const undoFn = (d, displacement) => {
       moveLabel(d.node_id, utils.c_times_scalar(displacement, -1))
       map.draw_these_nodes([ d.node_id ])
     }
-    const redoFn = function (d, displacement) {
+    const redoFn = (d, displacement) => {
       moveLabel(d.node_id, displacement)
       map.draw_these_nodes([ d.node_id ])
     }
     return this.getGenericDrag(startFn, dragFn, endFn, undoFn, redoFn,
-                                  this.map.sel)
+                               this.map.sel)
   }
 
   /**
