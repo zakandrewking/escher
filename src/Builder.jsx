@@ -206,12 +206,12 @@ class Builder {
                                             this.settings.get('use_3d_transform'),
                                             this.settings.get('fill_screen'))
     // Zoom container status changes
-    this.zoom_container.callback_manager.set('svg_start', () => {
-      if (this.map) this.map.set_status('Drawing ...')
-    })
-    this.zoom_container.callback_manager.set('svg_finish', () => {
-      if (this.map) this.map.set_status('')
-    })
+    // this.zoom_container.callback_manager.set('svg_start', () => {
+    //   if (this.map) this.map.set_status('Drawing ...')
+    // })
+    // this.zoom_container.callback_manager.set('svg_finish', () => {
+    //   if (this.map) this.map.set_status('')
+    // })
     this.zoom_container.callback_manager.set('zoom_change', () => {
       if (this.settings.get('semantic_zoom')) {
         const scale = this.zoom_container.window_scale
@@ -235,7 +235,7 @@ class Builder {
     })
 
     // Status in both modes
-    this._create_status(this.selection)
+    this._createStatus(this.selection)
 
     // Load the model, map, and update data in both
     this.load_model(this.model_data, false)
@@ -840,8 +840,8 @@ class Builder {
   /**
    * For documentation of this function, see docs/javascript_api.rst.
    */
-  set_gene_data (data, clear_gene_reaction_rules) {
-    if (clear_gene_reaction_rules) {
+  set_gene_data (data, clearGeneReactionRules) { // eslint-disable-line camelcase
+    if (clearGeneReactionRules) {
       // default undefined
       this.settings.set('show_gene_reaction_rules', false)
     }
@@ -859,10 +859,10 @@ class Builder {
     }
   }
 
-  set_metabolite_data (data) {
-    /** For documentation of this function, see docs/javascript_api.rst.
-
-     */
+  /**
+   * For documentation of this function, see docs/javascript_api.rst.
+   */
+  set_metabolite_data (data) { // eslint-disable-line camelcase
     this.settings.set('metabolite_data', data)
     this._updateData(true, true, 'metabolite')
     this.map.set_status('')
@@ -963,7 +963,6 @@ class Builder {
 
     var delay = 5
     this.update_model_timer = setTimeout(() => {
-
       // metabolite_data
       if (updateMetaboliteData && updateModel && this.cobra_model !== null) {
         // if we haven't already made this
@@ -989,8 +988,8 @@ class Builder {
                                                this.settings.get('reaction_compare_style'))
         } else if (this.settings.get('gene_data') !== null && updateModel && this.cobra_model !== null) {
           if (!geneDataObject) {
-            geneDataObject = make_gene_data_object(this.settings.get('gene_data'),
-                                                   this.cobra_model, this.map)
+            geneDataObject = this._makeGeneDataObject(this.settings.get('gene_data'),
+                                                      this.cobra_model, this.map)
           }
           this.cobra_model.apply_gene_data(geneDataObject,
                                            this.settings.get('reaction_styles'),
@@ -1011,7 +1010,7 @@ class Builder {
     }, delay)
   }
 
-  _create_status (selection) {
+  _createStatus (selection) {
     this.status_bar = selection.append('div').attr('id', 'status')
   }
 
