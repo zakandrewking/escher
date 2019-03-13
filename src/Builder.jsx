@@ -206,13 +206,13 @@ class Builder {
                                             this.settings.get('use_3d_transform'),
                                             this.settings.get('fill_screen'))
     // Zoom container status changes
-    this.zoom_container.callback_manager.set('svg_start', function () {
+    this.zoom_container.callback_manager.set('svg_start', () => {
       if (this.map) this.map.set_status('Drawing ...')
-    }.bind(this))
-    this.zoom_container.callback_manager.set('svg_finish', function () {
+    })
+    this.zoom_container.callback_manager.set('svg_finish', () => {
       if (this.map) this.map.set_status('')
-    }.bind(this))
-    this.zoom_container.callback_manager.set('zoomChange', function () {
+    })
+    this.zoom_container.callback_manager.set('zoomChange', () => {
       if (this.settings.get('semantic_zoom')) {
         const scale = this.zoom_container.window_scale
         const optionObject = this.settings.get('semantic_zoom')
@@ -229,7 +229,10 @@ class Builder {
           if (didChange) this._updateData(false, true)
         }
       }
-    }.bind(this))
+    })
+    this.settings.streams.use_3d_transform.onValue(val => {
+      this.zoom_container.set_use_3d_transform(val)
+    })
 
     // Status in both modes
     this._create_status(this.selection)

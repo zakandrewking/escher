@@ -45,7 +45,7 @@ JavaScript API
           (Default: false) If true, then use CSS3 3D transforms to speed up
           panning and zooming. This feature will only work on browsers that
           `support the 3D transforms`_. In general, this is no longer necessary
-          for modern browsers and hardware.
+          for modern browsers and hardware with small to medium sized maps.
 
        .. js:attribute:: options.enable_editing
 

@@ -187,7 +187,21 @@ class SettingsMenu extends Component {
                     )
                   }}
                   checked={settings.get('highlight_missing')}
-                />Highlight reactions not in model
+                />
+                Highlight reactions not in model
+              </label>
+              <label title='If true, then use CSS3 3D transforms to speed up panning and zooming.'>
+                <input
+                  type='checkbox'
+                  onClick={() => {
+                    settings.set(
+                      'use_3d_transform',
+                      !settings.get('use_3d_transform')
+                    )
+                  }}
+                  checked={settings.get('use_3d_transform')}
+                />
+                Use 3D transform for responsive panning and zooming
               </label>
               <table>
                 <tr title='Determines over which elements tooltips will display for reactions, metabolites, and genes'>
