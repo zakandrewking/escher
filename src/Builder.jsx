@@ -67,6 +67,7 @@ class Builder {
     this.search_bar_div = null
     this.searchBarRef = null
     this.semanticOptions = null
+    this.mode = 'zoom'
 
     // apply this object as data for the selection
     this.selection.datum(this)
@@ -380,9 +381,10 @@ class Builder {
 
     // Set up the Brush
     this.brush = new Brush(zoomedSel, false, this.map, '.canvas-group')
-    this.map.canvas.callback_manager.set('resize', function () {
-      this.brush.toggle(true)
-    }.bind(this))
+    // reset brush when canvas resizes in brush mode
+    this.map.canvas.callback_manager.set('resize', () => {
+      if (this.mode === 'brush') this.brush.toggle(true)
+    })
 
     // Set up the modes
     this._setUpModes(this.map, this.brush, this.zoom_container)
@@ -683,6 +685,8 @@ class Builder {
    * Set the mode
    */
   _setMode (mode) {
+    this.mode = mode
+
     // input
     this.build_input.toggle(mode === 'build')
     this.build_input.direction_arrow.toggle(mode === 'build')

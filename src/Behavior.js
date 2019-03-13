@@ -936,7 +936,6 @@ export default class Behavior {
    */
   getGenericAngularDrag (startFn, dragFn, endFn, undoFn, redoFn,
                          getCenter, relativeToSelection) {
-
     // define some variables
     const behavior = d3Drag()
     const undoStack = this.undoStack

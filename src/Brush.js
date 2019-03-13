@@ -53,11 +53,11 @@ function brush_is_enabled () {
  * Turn the brush on or off
  * @param {Boolean} on_off
  */
-function toggle (on_off) {
-  if (on_off === undefined) {
-    on_off = !this.enabled
+function toggle (onOff) {
+  if (onOff === undefined) {
+    onOff = !this.enabled
   }
-  if (on_off) {
+  if (onOff) {
     this.setup_selection_brush()
   } else {
     this.brush_sel.selectAll('*').remove()
