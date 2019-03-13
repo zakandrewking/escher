@@ -4,10 +4,7 @@ import completely from './completely'
 import DirectionArrow from './DirectionArrow'
 import CobraModel from './CobraModel'
 import _ from 'underscore'
-import {
-  select as d3Select,
-  mouse as d3Mouse
-} from 'd3-selection'
+import { mouse as d3Mouse } from 'd3-selection'
 
 /**
  * BuildInput
@@ -24,14 +21,12 @@ export default class BuildInput {
     this.placed_div.hide()
 
     // set up complete.ly
-    const c = completely(newSel.node(), { backgroundColor: '#eee' })
+    this.completely = completely(newSel.node(), { backgroundColor: '#eee' })
 
-    d3Select(c.input)
-    this.completely = c
     // close button
     newSel.append('button').attr('class', 'button input-close-button')
       .text('×')
-      .on('mousedown', () => this.hide_dropdown())
+      .on('mousedown', () => this.hideDropdown())
 
     // map
     this.map = map
@@ -39,11 +34,11 @@ export default class BuildInput {
     const defaultAngle = 90 // degrees
     this.direction_arrow = new DirectionArrow(map.sel)
     this.direction_arrow.set_rotation(defaultAngle)
-    this.setup_map_callbacks(map)
+    this.setUpMapCallbacks(map)
 
     // zoom container
     this.zoom_container = zoomContainer
-    this.setup_zoom_callbacks(zoomContainer)
+    this.setUpZoomCallbacks(zoomContainer)
 
     // settings
     this.settings = settings
@@ -53,74 +48,78 @@ export default class BuildInput {
     this.target_coords = null
   }
 
-  setup_map_callbacks (map) {
+  setUpMapCallbacks (map) {
     // input
-    map.callback_manager.set('select_metabolite_with_id.input', (selected_node, coords) => {
+    map.callback_manager.set('select_metabolite_with_id.input', (selectedNode, coords) => {
       if (this.is_active) {
-        this.reload(selected_node, coords, false)
-        this.show_dropdown(coords)
+        const hasModel = this.reload(selectedNode, coords, false)
+        if (hasModel) this.showDropdown(coords)
       }
-      this.hide_target()
+      this.hideTarget()
     })
-    map.callback_manager.set('select_selectable.input', (count, selected_node, coords) => {
-      this.hide_target()
+    map.callback_manager.set('select_selectable.input', (count, selectedNode, coords) => {
+      this.hideTarget()
       if (count === 1 && this.is_active && coords) {
-        this.reload(selected_node, coords, false)
-        this.show_dropdown(coords)
+        const hasModel = this.reload(selectedNode, coords, false)
+        if (hasModel) this.showDropdown(coords)
       } else {
         this.toggle(false)
       }
     })
     map.callback_manager.set('deselect_nodes', () => {
       this.direction_arrow.hide()
-      this.hide_dropdown()
+      this.hideDropdown()
     })
 
     // svg export
     map.callback_manager.set('before_svg_export', () => {
       this.direction_arrow.hide()
-      this.hide_target()
+      this.hideTarget()
     })
   }
 
-  setup_zoom_callbacks (zoom_container) {
-    zoom_container.callback_manager.set('zoom.input', () => {
-      if (this.is_active) {
-        this.place_at_selected()
-      }
-    })
+  setUpZoomCallbacks (zoomContainer) {
+    // TODO this is broken.
+    // Should place either for selected or for location on zoom or pan.
+    // zoomContainer.callback_manager.set('zoom_change.input', () => {
+    //   if (this.is_active) {
+    //     this.place_at_selected()
+    //   }
+    // })
   }
 
-  is_visible() {
+  is_visible () { // eslint-disable-line camelcase
     return this.placed_div.is_visible()
   }
 
-  toggle (on_off) {
-    if (on_off === undefined) this.is_active = !this.is_active
-    else this.is_active = on_off
+  toggle (onOff) {
+    if (onOff === undefined) this.is_active = !this.is_active
+    else this.is_active = onOff
     if (this.is_active) {
-      this.toggle_start_reaction_listener(true)
-      if (_.isNull(this.target_coords))
-        this.reload_at_selected()
-      else
+      this.toggleStartReactionListener(true)
+      let hasModelAndSelection = true
+      if (_.isNull(this.target_coords)) {
+        hasModelAndSelection = this.reloadAtSelected()
+      } else {
         this.placed_div.place(this.target_coords)
-      this.show_dropdown()
-      this.map.set_status('Click on the canvas or an existing metabolite')
+      }
+      if (hasModelAndSelection) {
+        this.showDropdown()
+        this.map.set_status('Click on the canvas or an existing metabolite')
+      }
       this.direction_arrow.show()
     } else {
-      this.toggle_start_reaction_listener(false)
-      this.hide_dropdown()
+      this.toggleStartReactionListener(false)
+      this.hideDropdown()
       this.map.set_status(null)
       this.direction_arrow.hide()
     }
   }
 
-  show_dropdown (coords) {
+  showDropdown (coords) {
     // escape key
     this.clear_escape = this.map.key_manager
-      .add_escape_listener(function() {
-        this.hide_dropdown()
-      }.bind(this), true)
+      .add_escape_listener(() => this.hideDropdown(), true)
     // dropdown
     this.completely.input.blur()
     this.completely.repaint()
@@ -128,7 +127,7 @@ export default class BuildInput {
     this.completely.input.focus()
   }
 
-  hide_dropdown () {
+  hideDropdown () {
     // escape key
     if (this.clear_escape) this.clear_escape()
     this.clear_escape = null
@@ -138,150 +137,141 @@ export default class BuildInput {
     this.completely.hideDropDown()
   }
 
-  /** Place autocomplete box at the first selected node. */
-  place_at_selected() {
-    // get the selected node
-    this.map.deselect_text_labels()
-    var selectedNode = this.map.select_single_node()
-    if (selectedNode === null) return
-    var coords = { x: selectedNode.x, y: selectedNode.y }
-    this.place(coords)
-  }
-
   place (coords) {
     this.placed_div.place(coords)
     this.direction_arrow.set_location(coords)
     this.direction_arrow.show()
   }
 
-  reload_at_selected () {
-    /** Reload data for autocomplete box and redraw box at the first selected
-        node. */
+  /**
+   * Reload data for autocomplete box and redraw box at the first selected node.
+   * @return {Boolean} Returns true if a model is present and a node is selected.
+   */
+  reloadAtSelected () {
     // get the selected node
     this.map.deselect_text_labels()
     var selectedNode = this.map.select_single_node()
     if (selectedNode === null) return false
     var coords = { x: selectedNode.x, y: selectedNode.y }
     // reload the reaction input
-    this.reload(selectedNode, coords, false)
-    return true
+    return this.reload(selectedNode, coords, false)
+  }
+
+  alreadyDrawn (biggId, reactions) {
+    for (let drawnId in reactions) {
+      if (reactions[drawnId].bigg_id === biggId) {
+        return true
+      }
+    }
+    return false
   }
 
   /**
    * Reload data for autocomplete box and redraw box at the new coordinates.
+   * @param {} selectedNode -
+   * @param {} coords -
+   * @param {Boolean} startingFromScratch -
+   * @return {Boolean} Returns true if a model is present.
    */
-  reload (selected_node, coords, starting_from_scratch) {
+  reload (selectedNode, coords, startingFromScratch) {
     // Try finding the selected node
-    if (!starting_from_scratch && !selected_node) {
+    if (!startingFromScratch && !selectedNode) {
       console.error('No selected node, and not starting from scratch')
       return
     }
 
     this.place(coords)
 
-    if (this.map.cobra_model===null) {
+    if (this.map.cobra_model === null) {
       this.completely.setText('Cannot add: No model.')
-      return
+      // this.completely.repaint()
+      console.log(document.getElementById('txtInput').value)
+      return false
     }
 
     // settings
-    const show_names = this.settings.get('identifiers_on_map') === 'name'
-    const allow_duplicates = this.settings.get('allow_building_duplicate_reactions')
+    const showNames = this.settings.get('identifiers_on_map') === 'name'
+    const allowDuplicates = this.settings.get('allow_building_duplicate_reactions')
 
     // Find selected
     var options = []
-    const cobra_reactions = this.map.cobra_model.reactions
-    const cobra_metabolites = this.map.cobra_model.metabolites
+    const cobraReactions = this.map.cobra_model.reactions
+    const cobraMetabolites = this.map.cobra_model.metabolites
     const reactions = this.map.reactions
-    const has_data_on_reactions = this.map.has_data_on_reactions
-    const reaction_data = this.map.reaction_data
-    const reaction_data_styles = this.map.reaction_data_styles
-    const selected_m_name = (selected_node ? (show_names ? selected_node.name : selected_node.bigg_id) : '')
-    const bold_mets_in_str = function(str, mets) {
-      return str.replace(new RegExp('(^| )(' + mets.join('|') + ')($| )', 'g'),
-                         '$1<b>$2</b>$3')
-    }
+    const hasDataOnReactions = this.map.hasDataOnReactions
+    const selectedMetName = (selectedNode ? (showNames ? selectedNode.name : selectedNode.bigg_id) : '')
+    const boldMetsInStr = (str, mets) =>
+          str.replace(new RegExp('(^| )(' + mets.join('|') + ')($| )', 'g'), '$1<b>$2</b>$3')
 
     // for reactions
-    const reaction_suggestions = {}
-    for (var bigg_id in cobra_reactions) {
-      const reaction = cobra_reactions[bigg_id]
-      const reaction_name = reaction.name
-      const show_r_name = (show_names ? reaction_name : bigg_id)
+    const reactionSuggestions = {}
+    for (let biggId in cobraReactions) {
+      const reaction = cobraReactions[biggId]
+      const reactionName = reaction.name
+      const showReactionName = (showNames ? reactionName : biggId)
 
       // ignore drawn reactions
-      if ((!allow_duplicates) && already_drawn(bigg_id, reactions)) {
+      if ((!allowDuplicates) && this.alreadyDrawn(biggId, reactions)) {
         continue
       }
 
       // check segments for match to selected metabolite
-      for (let met_bigg_id in reaction.metabolites) {
-
+      for (let metBiggId in reaction.metabolites) {
         // if starting with a selected metabolite, check for that id
-        if (starting_from_scratch || met_bigg_id == selected_node.bigg_id) {
-
+        if (startingFromScratch || metBiggId === selectedNode.biggId) {
           // don't add suggestions twice
-          if (bigg_id in reaction_suggestions) continue
+          if (biggId in reactionSuggestions) continue
 
-          var met_name = cobra_metabolites[met_bigg_id].name
-
-          if (has_data_on_reactions) {
-            options.push({ reaction_data: reaction.data,
-                           html: ('<b>' + show_r_name + '</b>' +
-                                  ': ' +
-                                  reaction.data_string),
-                           matches: [show_r_name],
-                           id: bigg_id })
-            reaction_suggestions[bigg_id] = true
+          if (hasDataOnReactions) {
+            options.push({
+              reaction_data: reaction.data,
+              html: '<b>' + showReactionName + '</b>' + ': ' + reaction.data_string,
+              matches: [showReactionName],
+              id: biggId
+            })
+            reactionSuggestions[biggId] = true
           } else {
             // get the metabolite names or IDs
             let mets = {}
-            const show_met_names = []
-            let met_id
-            if (show_names) {
-              for (met_id in reaction.metabolites) {
-                var name = cobra_metabolites[met_id].name
-                mets[name] = reaction.metabolites[met_id]
-                show_met_names.push(name)
+            const showMetNames = []
+            let metId
+            if (showNames) {
+              for (metId in reaction.metabolites) {
+                var name = cobraMetabolites[metId].name
+                mets[name] = reaction.metabolites[metId]
+                showMetNames.push(name)
               }
             } else {
               mets = utils.clone(reaction.metabolites)
-              for (met_id in reaction.metabolites) {
-                show_met_names.push(met_id)
+              for (metId in reaction.metabolites) {
+                showMetNames.push(metId)
               }
             }
-            var show_gene_names = _.flatten(
-              reaction.genes.map(g_obj => [ g_obj.name, g_obj.bigg_id ])
+            const showGeneNames = _.flatten(
+              reaction.genes.map(g => [ g.name, g.biggId ])
             )
             // get the reaction string
-            var reaction_string = CobraModel.build_reaction_string(mets,
-                                                                   reaction.reversibility,
-                                                                   reaction.lower_bound,
-                                                                   reaction.upper_bound)
+            const reactionString = CobraModel.build_reaction_string(mets,
+                                                                    reaction.reversibility,
+                                                                    reaction.lower_bound,
+                                                                    reaction.upper_bound)
             options.push({
-              html: ('<b>' + show_r_name + '</b>' + '\t' +
-                     bold_mets_in_str(reaction_string, [selected_m_name])),
-              matches: [ show_r_name ].concat(show_met_names).concat(show_gene_names),
-              id: bigg_id
+              html: ('<b>' + showReactionName + '</b>' + '\t' +
+                     boldMetsInStr(reactionString, [selectedMetName])),
+              matches: [ showReactionName ].concat(showMetNames).concat(showGeneNames),
+              id: biggId
             })
-            reaction_suggestions[bigg_id] = true
+            reactionSuggestions[biggId] = true
           }
         }
       }
     }
 
     // Generate the array of reactions to suggest and sort it
-    var sort_fn
-    if (has_data_on_reactions) {
-      sort_fn = function(x, y) {
-        return Math.abs(y.reaction_data) - Math.abs(x.reaction_data)
-      }
-    } else {
-      sort_fn = function(x, y) {
-        return (x.html.toLowerCase() < y.html.toLowerCase() ? -1 : 1)
-      }
-    }
-    options = options.sort(sort_fn)
+    const sortFn = hasDataOnReactions
+          ? (x, y) => Math.abs(y.reactionData) - Math.abs(x.reactionData)
+          : (x, y) => x.html.toLowerCase() < y.html.toLowerCase() ? -1 : 1
+    options = options.sort(sortFn)
     // set up the box with data
     var complete = this.completely
     complete.options = options
@@ -291,87 +281,84 @@ export default class BuildInput {
     // else complete.setText("")
     complete.setText('')
 
-    const direction_arrow = this.direction_arrow
-    const check_and_build = id => {
+    const checkAndBuild = id => {
       if (id !== null) {
         // make sure the selected node exists, in case changes were made in the meantime
-        if (starting_from_scratch) {
+        if (startingFromScratch) {
           this.map.new_reaction_from_scratch(id,
                                              coords,
-                                             direction_arrow.get_rotation())
+                                             this.direction_arrow.get_rotation())
         } else {
-          if (!(selected_node.node_id in this.map.nodes)) {
+          if (!(selectedNode.node_id in this.map.nodes)) {
             console.error('Selected node no longer exists')
-            this.hide_dropdown()
+            this.hideDropdown()
             return
           }
           this.map.new_reaction_for_metabolite(id,
-                                               selected_node.node_id,
-                                               direction_arrow.get_rotation())
+                                               selectedNode.node_id,
+                                               this.direction_arrow.get_rotation())
         }
       }
     }
     complete.onEnter = function (id) {
       this.setText('')
       this.onChange('')
-      check_and_build(id)
+      checkAndBuild(id)
     }
 
-    // definitions
-    function already_drawn (bigg_id, reactions) {
-      for (var drawn_id in reactions) {
-        if (reactions[drawn_id].bigg_id === bigg_id)
-          return true
-      }
-      return false
-    }
+    return true
   }
 
   /**
    * Toggle listening for a click to place a new reaction on the canvas.
    */
-  toggle_start_reaction_listener (on_off) {
-    if (on_off === undefined) {
+  toggleStartReactionListener (onOff) {
+    if (onOff === undefined) {
       this.start_reaction_listener = !this.start_reaction_listener
-    } else if (this.start_reaction_listener === on_off) {
+    } else if (this.start_reaction_listener === onOff) {
       return
     } else {
-      this.start_reaction_listener = on_off
+      this.start_reaction_listener = onOff
     }
 
     if (this.start_reaction_listener) {
-      this.map.sel.on('click.start_reaction', function(node) {
+      const node = this.map.sel.node()
+      this.map.sel.on('click.start_reaction', () => {
         // TODO fix this hack
         if (this.direction_arrow.dragging) return
         // reload the reaction input
-        var coords = { x: d3Mouse(node)[0],
-                       y: d3Mouse(node)[1] }
+        var coords = {
+          x: d3Mouse(node)[0],
+          y: d3Mouse(node)[1]
+        }
         // unselect metabolites
         this.map.deselect_nodes()
         this.map.deselect_text_labels()
         // reload the reaction input
-        this.reload(null, coords, true)
+        const hasModel = this.reload(null, coords, true)
+        if (hasModel) {
+          // show the dropdown
+          this.showDropdown(coords)
+        }
         // generate the target symbol
-        this.show_target(this.map, coords)
-        // show the dropdown
-        this.show_dropdown(coords)
-      }.bind(this, this.map.sel.node()))
+        this.showTarget(this.map, coords)
+      })
       this.map.sel.classed('start-reaction-cursor', true)
     } else {
       this.map.sel.on('click.start_reaction', null)
       this.map.sel.classed('start-reaction-cursor', false)
-      this.hide_target()
+      this.hideTarget()
     }
   }
 
-  hide_target () {
+  hideTarget () {
     if (this.target_coords) {
       this.map.sel.selectAll('.start-reaction-target').remove()
     }
     this.target_coords = null
   }
 
-  show_target (map, coords) {
+  showTarget (map, coords) {
     var s = map.sel.selectAll('.start-reaction-target').data([12, 5])
     s.enter()
       .append('circle')

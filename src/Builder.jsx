@@ -212,7 +212,7 @@ class Builder {
     this.zoom_container.callback_manager.set('svg_finish', () => {
       if (this.map) this.map.set_status('')
     })
-    this.zoom_container.callback_manager.set('zoomChange', () => {
+    this.zoom_container.callback_manager.set('zoom_change', () => {
       if (this.settings.get('semantic_zoom')) {
         const scale = this.zoom_container.window_scale
         const optionObject = this.settings.get('semantic_zoom')

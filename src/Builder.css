@@ -97,6 +97,7 @@ resizes. */
 /* Reaction input */
 .escher-container #rxn-input {
   z-index: 10;
+  width: 200px;
 }
 .escher-container .input-close-button {
   position: absolute;
