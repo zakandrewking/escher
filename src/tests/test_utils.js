@@ -368,19 +368,19 @@ describe('utils.d3_transform_catch', () => {
   })
 })
 
-describe('utils.check_browser', () => {
-  it('looks for browser name', () => {
-    global.navigator = { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) ' +
-                         'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
-                         appName: 'Netscape',
-                         appVersion: '5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 ' +
-                         '(KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36' }
-    assert.isTrue(utils.check_browser('chrome'))
-    assert.isFalse(utils.check_browser('safari'))
-  })
+// describe('utils.check_browser', () => {
+//   it('looks for browser name', () => {
+//     global.navigator = { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) ' +
+//                          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36',
+//                          appName: 'Netscape',
+//                          appVersion: '5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/537.36 ' +
+//                          '(KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36' }
+//     assert.isTrue(utils.check_browser('chrome'))
+//     assert.isFalse(utils.check_browser('safari'))
+//   })
 
-  it('returns false if no navigator.userAgent', () => {
-    global.navigator = null
-    assert.isFalse(utils.check_browser('safari'))
-  })
-})
+//   it('returns false if no navigator.userAgent', () => {
+//     global.navigator = null
+//     assert.isFalse(utils.check_browser('safari'))
+//   })
+// })

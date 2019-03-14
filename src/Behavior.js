@@ -1,1040 +1,990 @@
+import utils from './utils'
+import build from './build'
+import { drag as d3Drag } from 'd3-drag'
+import * as d3Selection from 'd3-selection'
+
+const d3Select = d3Selection.select
+const d3Mouse = d3Selection.mouse
+
 /**
  * Behavior. Defines the set of click and drag behaviors for the map, and keeps
  * track of which behaviors are activated.
- *
- * A Behavior instance has the following attributes:
- *
- * my_behavior.rotation_drag, my_behavior.text_label_mousedown,
- * my_behavior.text_label_click, my_behavior.selectable_mousedown,
- * my_behavior.selectable_click, my_behavior.selectable_drag,
- * my_behavior.node_mouseover, my_behavior.node_mouseout,
- * my_behavior.label_mousedown, my_behavior.label_mouseover,
- * my_behavior.label_mouseout, my_behavior.label_touch,
- * my_behavior.bezier_drag,
- * my_behavior.bezier_mouseover, my_behavior.bezier_mouseout,
- * my_behavior.reaction_label_drag, my_behavior.node_label_drag,
- * my_behavior.object_mouseover, my_behavior.object_touch, 
- * my_behavior.object_mouseout
- *
+ * @param map {Map} -
+ * @param undoStack {UndoStack} -
  */
+export default class Behavior {
+  constructor (map, undoStack) {
+    this.map = map
+    this.undoStack = undoStack
 
-var utils = require('./utils')
-var build = require('./build')
-var d3_drag = require('d3-drag').drag
-var d3_select = require('d3-selection').select
-var d3_mouse = require('d3-selection').mouse
-var d3_selection = require('d3-selection')
+    // make an empty function that can be called as a behavior and does nothing
+    this.emptyBehavior = () => {}
 
-var Behavior = utils.make_class()
-// methods
-Behavior.prototype = {
-  init: init,
-  toggle_rotation_mode: toggle_rotation_mode,
-  turn_everything_on: turn_everything_on,
-  turn_everything_off: turn_everything_off,
-  // toggle
-  toggle_selectable_click: toggle_selectable_click,
-  toggle_text_label_edit: toggle_text_label_edit,
-  toggle_selectable_drag: toggle_selectable_drag,
-  toggle_label_drag: toggle_label_drag,
-  toggle_label_mouseover: toggle_label_mouseover,
-  toggle_label_touch: toggle_label_touch,
-  toggle_object_mouseover: toggle_object_mouseover,
-  toggle_object_touch: toggle_object_touch,
-  toggle_bezier_drag: toggle_bezier_drag,
-  // util
-  turn_off_drag: turn_off_drag,
-  // get drag behaviors
-  _get_selectable_drag: _get_selectable_drag,
-  _get_bezier_drag: _get_bezier_drag,
-  _get_reaction_label_drag: _get_reaction_label_drag,
-  _get_node_label_drag: _get_node_label_drag,
-  _get_generic_drag: _get_generic_drag,
-  _get_generic_angular_drag: _get_generic_angular_drag
-}
-module.exports = Behavior
+    // rotation mode operates separately from the rest
+    this.rotationModeEnabled = false
+    this.rotationDrag = d3Drag()
 
-
-// definitions
-function init (map, undo_stack) {
-  this.map = map
-  this.undo_stack = undo_stack
-
-  // make an empty function that can be called as a behavior and does nothing
-  this.empty_behavior = function () {}
-
-  // rotation mode operates separately from the rest
-  this.rotation_mode_enabled = false
-  this.rotation_drag = d3_drag()
-
-  // behaviors to be applied
-  this.selectable_mousedown = null
-  this.text_label_mousedown = null
-  this.text_label_click = null
-  this.selectable_drag = this.empty_behavior
-  this.node_mouseover = null
-  this.node_mouseout = null
-  this.label_mousedown = null
-  this.label_mouseover = null
-  this.label_mouseout = null
-  this.label_touch = null
-  this.object_mouseover = null
-  this.object_touch = null
-  this.object_mouseout = null
-  this.bezier_drag = this.empty_behavior
-  this.bezier_mouseover = null
-  this.bezier_mouseout = null
-  this.reaction_label_drag = this.empty_behavior
-  this.node_label_drag = this.empty_behavior
-  this.dragging = false
-  this.turn_everything_on()
-}
-
-/**
- * Toggle everything except rotation mode and text mode.
- */
-function turn_everything_on () {
-  this.toggle_selectable_click(true)
-  this.toggle_selectable_drag(true)
-  this.toggle_label_drag(true)
-  this.toggle_label_mouseover(true)
-  this.toggle_label_touch(true)
-  this.toggle_object_mouseover(true)
-  this.toggle_object_touch(true)
-}
-
-/**
- * Toggle everything except rotation mode and text mode.
- */
-function turn_everything_off () {
-  this.toggle_selectable_click(false)
-  this.toggle_selectable_drag(false)
-  this.toggle_label_drag(false)
-  this.toggle_label_mouseover(false)
-  this.toggle_label_touch(false)
-  this.toggle_object_mouseover(false)
-  this.toggle_object_touch(false)
-}
-
-/**
- * Listen for rotation, and rotate selected nodes.
- */
-function toggle_rotation_mode (on_off) {
-  if (on_off === undefined) {
-    this.rotation_mode_enabled = !this.rotation_mode_enabled
-  } else {
-    this.rotation_mode_enabled = on_off
+    // behaviors to be applied
+    this.selectableMousedown = null
+    this.textLabelMousedown = null
+    this.textLabelClick = null
+    this.selectableDrag = this.emptyBehavior
+    this.nodeMouseover = null
+    this.nodeMouseout = null
+    this.labelMousedown = null
+    this.labelMouseover = this.emptyBehavior
+    this.labelMouseout = null
+    this.labelTouch = null
+    this.objectMouseover = this.emptyBehavior
+    this.objectTouch = null
+    this.objectMouseout = null
+    this.bezierDrag = this.emptyBehavior
+    this.bezierMouseover = null
+    this.bezierMouseout = null
+    this.reactionLabelDrag = this.emptyBehavior
+    this.nodeLabelDrag = this.emptyBehavior
+    this.dragging = false
+    this.turnEverythingOn()
   }
 
-  var selection_node = this.map.sel.selectAll('.node-circle')
-  var selection_background = this.map.sel.selectAll('#canvas')
-
-  if (this.rotation_mode_enabled) {
-    this.map.callback_manager.run('start_rotation')
-
-    var selected_nodes = this.map.get_selected_nodes()
-    if (Object.keys(selected_nodes).length === 0) {
-      console.warn('No selected nodes')
-      return
-    }
-
-    // show center
-    this.center = average_location(selected_nodes)
-    show_center.call(this)
-
-    // this.set_status('Drag to rotate.')
-    var map = this.map
-    var selected_node_ids = Object.keys(selected_nodes)
-    var reactions = this.map.reactions
-    var nodes = this.map.nodes
-    var beziers = this.map.beziers
-
-    var start_fn = function (d) {
-      // silence other listeners
-      d3_selection.event.sourceEvent.stopPropagation()
-    }
-    var drag_fn = function (d, angle, total_angle, center) {
-      var updated = build.rotate_nodes(selected_nodes, reactions,
-                                       beziers, angle, center)
-      map.draw_these_nodes(updated.node_ids)
-      map.draw_these_reactions(updated.reaction_ids)
-    }
-    var end_fn = function (d) {}
-    var undo_fn = function (d, total_angle, center) {
-      // undo
-      var these_nodes = {}
-      selected_node_ids.forEach(function (id) {
-        these_nodes[id] = nodes[id]
-      })
-      var updated = build.rotate_nodes(these_nodes, reactions,
-                                       beziers, -total_angle,
-                                       center)
-      map.draw_these_nodes(updated.node_ids)
-      map.draw_these_reactions(updated.reaction_ids)
-    }
-    var redo_fn = function (d, total_angle, center) {
-      // redo
-      var these_nodes = {}
-      selected_node_ids.forEach(function (id) {
-        these_nodes[id] = nodes[id]
-      })
-      var updated = build.rotate_nodes(these_nodes, reactions,
-                                       beziers, total_angle,
-                                       center)
-      map.draw_these_nodes(updated.node_ids)
-      map.draw_these_reactions(updated.reaction_ids) }
-    var center_fn = function () {
-      return this.center
-    }.bind(this)
-    this.rotation_drag = this._get_generic_angular_drag(start_fn, drag_fn,
-                                                        end_fn, undo_fn,
-                                                        redo_fn, center_fn,
-                                                        this.map.sel)
-    selection_background.call(this.rotation_drag)
-    this.selectable_drag = this.rotation_drag
-  } else {
-    // turn off all listeners
-    hide_center.call(this)
-    selection_node.on('mousedown.center', null)
-    selection_background.on('mousedown.center', null)
-    selection_background.on('mousedown.drag', null)
-    selection_background.on('touchstart.drag', null)
-    this.rotation_drag = null
-    this.selectable_drag = null
+  /**
+   * Toggle everything except rotation mode and text mode.
+   */
+  turnEverythingOn () {
+    this.toggleSelectableClick(true)
+    this.toggleSelectableDrag(true)
+    this.toggleLabelDrag(true)
+    this.toggleLabelMouseover(true)
+    this.toggleLabelTouch(true)
+    this.toggleObjectMouseover(true)
+    this.toggleObjectTouch(true)
   }
 
-  // definitions
-  function show_center () {
-    var sel = this.map.sel.selectAll('#rotation-center').data([ 0 ])
-    var enter_sel = sel.enter().append('g').attr('id', 'rotation-center')
+  /**
+   * Toggle everything except rotation mode and text mode.
+   */
+  turnEverythingOff () {
+    this.toggleSelectableClick(false)
+    this.toggleSelectableDrag(false)
+    this.toggleLabelDrag(false)
+    this.toggleLabelMouseover(false)
+    this.toggleLabelTouch(false)
+    this.toggleObjectMouseover(false)
+    this.toggleObjectTouch(false)
+  }
 
-    enter_sel.append('path').attr('d', 'M-32 0 L32 0')
+  averageLocation (nodes) {
+    const xs = []
+    const ys = []
+    for (const nodeId in nodes) {
+      const node = nodes[nodeId]
+      if (node.x !== undefined) xs.push(node.x)
+      if (node.y !== undefined) ys.push(node.y)
+    }
+    return {
+      x: utils.mean(xs),
+      y: utils.mean(ys)
+    }
+  }
+
+  showCenter () {
+    const sel = this.map.sel.selectAll('#rotation-center').data([ 0 ])
+    const enterSel = sel.enter().append('g').attr('id', 'rotation-center')
+
+    enterSel.append('path').attr('d', 'M-32 0 L32 0')
       .attr('class', 'rotation-center-line')
-    enter_sel.append('path').attr('d', 'M0 -32 L0 32')
+    enterSel.append('path').attr('d', 'M0 -32 L0 32')
       .attr('class', 'rotation-center-line')
 
-    var update_sel = enter_sel.merge(sel)
+    const updateSel = enterSel.merge(sel)
 
-    update_sel.attr('transform',
-                    'translate(' + this.center.x + ',' + this.center.y + ')')
+    updateSel.attr('transform',
+                   'translate(' + this.center.x + ',' + this.center.y + ')')
       .attr('visibility', 'visible')
       .on('mouseover', function () {
-        var current = parseFloat(update_sel.selectAll('path').style('stroke-width'))
-        update_sel.selectAll('path').style('stroke-width', current * 2 + 'px')
+        const current = parseFloat(updateSel.selectAll('path').style('stroke-width'))
+        updateSel.selectAll('path').style('stroke-width', current * 2 + 'px')
       })
       .on('mouseout', function () {
-        update_sel.selectAll('path').style('stroke-width', null)
+        updateSel.selectAll('path').style('stroke-width', null)
       })
-      .call(d3_drag().on('drag', function () {
-        var cur = utils.d3_transform_catch(update_sel.attr('transform'))
-        var new_loc = [
-          d3_selection.event.dx + cur.translate[0],
-          d3_selection.event.dy + cur.translate[1]
+      .call(d3Drag().on('drag', () => {
+        const cur = utils.d3_transform_catch(updateSel.attr('transform'))
+        const newLoc = [
+          d3Selection.event.dx + cur.translate[0],
+          d3Selection.event.dy + cur.translate[1]
         ]
-        update_sel.attr('transform', 'translate(' + new_loc + ')')
-        this.center = { x: new_loc[0], y: new_loc[1] }
-      }.bind(this)))
+        updateSel.attr('transform', 'translate(' + newLoc + ')')
+        this.center = { x: newLoc[0], y: newLoc[1] }
+      }))
   }
-  function hide_center(sel) {
+
+  hideCenter () {
     this.map.sel.select('#rotation-center')
       .attr('visibility', 'hidden')
   }
-  function average_location(nodes) {
-    var xs = []
-    var ys = []
-    for (var node_id in nodes) {
-      var node = nodes[node_id]
-      if (node.x !== undefined)
-        xs.push(node.x)
-      if (node.y !== undefined)
-        ys.push(node.y)
-    }
-    return { x: utils.mean(xs),
-             y: utils.mean(ys) }
-  }
-}
 
-/**
- * With no argument, toggle the node click on or off. Pass in a boolean argument
- * to set the on/off state.
- */
-function toggle_selectable_click (on_off) {
-  if (on_off === undefined) {
-    on_off = this.selectable_mousedown === null
-  }
-  if (on_off) {
-    var map = this.map
-    this.selectable_mousedown = function (d) {
-      // stop propogation for the buildinput to work right
-      d3_selection.event.stopPropagation()
-      // this.parentNode.__data__.was_selected = d3_select(this.parentNode).classed('selected')
-      // d3_select(this.parentNode).classed('selected', true)
-    }
-    this.selectable_click = function (d) {
-      // stop propogation for the buildinput to work right
-      d3_selection.event.stopPropagation()
-      // click suppressed. This DOES have en effect.
-      if (d3_selection.event.defaultPrevented) return
-      // turn off the temporary selection so select_selectable
-      // works. This is a bit of a hack.
-      // if (!this.parentNode.__data__.was_selected)
-      //     d3_select(this.parentNode).classed('selected', false)
-      map.select_selectable(this, d, d3_selection.event.shiftKey)
-      // this.parentNode.__data__.was_selected = false
-    }
-    this.node_mouseover = function (d) {
-      d3_select(this).style('stroke-width', null)
-      var current = parseFloat(d3_select(this).style('stroke-width'))
-      if (!d3_select(this.parentNode).classed('selected'))
-        d3_select(this).style('stroke-width', current * 3 + 'px')
-    }
-    this.node_mouseout = function (d) {
-      d3_select(this).style('stroke-width', null)
-    }
-  } else {
-    this.selectable_mousedown = null
-    this.selectable_click = null
-    this.node_mouseover = null
-    this.node_mouseout = null
-    this.map.sel.select('#nodes')
-      .selectAll('.node-circle').style('stroke-width', null)
-  }
-}
-
-/**
- * With no argument, toggle the text edit on mousedown on/off. Pass in a boolean
- * argument to set the on/off state. The backup state is equal to
- * selectable_mousedown.
- */
-function toggle_text_label_edit (on_off) {
-  if (on_off === undefined) {
-    on_off = this.text_edit_mousedown == null
-  }
-  if (on_off) {
-    var map = this.map
-    var selection = this.selection
-    this.text_label_mousedown = function () {
-      if (d3_selection.event.defaultPrevented) {
-        return // mousedown suppressed
-      }
-      // run the callback
-      var coords_a = utils.d3_transform_catch(d3_select(this).attr('transform'))
-          .translate
-      var coords = { x: coords_a[0], y: coords_a[1] }
-      map.callback_manager.run('edit_text_label', null, d3_select(this), coords)
-      d3_selection.event.stopPropagation()
-    }
-    this.text_label_click = null
-    this.map.sel.select('#text-labels')
-      .selectAll('.label')
-      .classed('edit-text-cursor', true)
-    // add the new-label listener
-    this.map.sel.on('mousedown.new_text_label', function (node) {
-      // silence other listeners
-      d3_selection.event.preventDefault()
-      var coords = {
-        x: d3_mouse(node)[0],
-        y: d3_mouse(node)[1],
-      }
-      this.map.callback_manager.run('new_text_label', null, coords)
-    }.bind(this, this.map.sel.node()))
-  } else {
-    this.text_label_mousedown = this.selectable_mousedown
-    this.text_label_click = this.selectable_click
-    this.map.sel.select('#text-labels')
-      .selectAll('.label')
-      .classed('edit-text-cursor', false)
-    // remove the new-label listener
-    this.map.sel.on('mousedown.new_text_label', null)
-    this.map.callback_manager.run('hide_text_label_editor')
-  }
-}
-
-/**
- * With no argument, toggle the node drag & bezier drag on or off. Pass in a
- * boolean argument to set the on/off state.
- */
-function toggle_selectable_drag (on_off) {
-  if (on_off === undefined) {
-    on_off = this.selectable_drag === this.empty_behavior
-  }
-  if (on_off) {
-    this.selectable_drag = this._get_selectable_drag(this.map, this.undo_stack)
-    this.bezier_drag = this._get_bezier_drag(this.map, this.undo_stack)
-  } else {
-    this.selectable_drag = this.empty_behavior
-    this.bezier_drag = this.empty_behavior
-  }
-}
-
-/**
- * With no argument, toggle the label drag on or off. Pass in a boolean argument
- * to set the on/off state.
- * @param {Boolean} on_off - The new on/off state.
- */
-function toggle_label_drag (on_off) {
-  if (on_off === undefined) {
-    on_off = this.label_drag === this.empty_behavior
-  }
-  if (on_off) {
-    this.reaction_label_drag = this._get_reaction_label_drag(this.map)
-    this.node_label_drag = this._get_node_label_drag(this.map)
-  } else {
-    this.reaction_label_drag = this.empty_behavior
-    this.node_label_drag = this.empty_behavior
-  }
-}
-
-/**
- * With no argument, toggle the tooltips on mouseover labels.
- * @param {Boolean} on_off - The new on/off state.
- */
-function toggle_label_mouseover (on_off) {
-  if (on_off === undefined) {
-    on_off = this.label_mouseover === null
-  }
-
-  if (on_off) {
-
-    // Show/hide tooltip.
-    // @param {String} type - 'reaction_label' or 'node_label'
-    // @param {Object} d - D3 data for DOM element
-    this.label_mouseover = function (type, d) {
-      if (!this.dragging) {
-        this.map.callback_manager.run('show_tooltip', null, type, d)
-      }
-    }.bind(this)
-
-    this.label_mouseout = function () {
-      this.map.callback_manager.run('delay_hide_tooltip')
-    }.bind(this)
-
-  } else {
-    this.label_mouseover = null
-  }
-}
-
-/**
- * With no argument, toggle the tooltips upon touching of labels.
- * @param {Boolean} on_off - The new on/off state. If this argument is not provided, then toggle the state.
- */
-function toggle_label_touch (on_off) {
-  if (on_off === undefined) {
-    on_off = this.label_touch === null
-  }
-
-  if (on_off) {
-    // Show/hide tooltip.
-    // @param {String} type - 'reaction_label' or 'node_label'
-    // @param {Object} d - D3 data for DOM element
-    this.label_touch = (type, d) => {
-      if (!this.dragging) {
-        this.map.callback_manager.run('show_tooltip', null, type, d)
-      }
-    }
-  } else {
-    this.label_touch = null
-  }
-}
-
-/**
- * With no argument, toggle the tooltips on mouseover of nodes or arrows.
- * @param {Boolean} on_off - The new on/off state.
- */
-function toggle_object_mouseover (on_off) {
-  if (on_off === undefined) {
-    on_off = this.label_mouseover === null
-  }
-
-  if (on_off) {
-
-    // Show/hide tooltip.
-    // @param {String} type - 'reaction_object' or 'node_object'
-    // @param {Object} d - D3 data for DOM element
-    this.object_mouseover = function (type, d) {
-      if (!this.dragging) {
-        this.map.callback_manager.run('show_tooltip', null, type, d)
-      }
-    }.bind(this)
-
-    this.object_mouseout = function () {
-      this.map.callback_manager.run('delay_hide_tooltip')
-    }.bind(this)
-
-  } else {
-    this.object_mouseover = null
-  }
-}
-
-/**
- * With no argument, toggle the tooltips upon touching of nodes or arrows.
- * @param {Boolean} on_off - The new on/off state. If this argument is not provided, then toggle the state.
- */
-function toggle_object_touch (on_off) {
-  if (on_off === undefined) {
-    on_off = this.label_touch === null
-  }
-
-  if (on_off) {
-    this.object_touch = (type, d) => {
-      if (!this.dragging) {
-        this.map.callback_manager.run('show_tooltip', null, type, d)
-      }
-    }
-  } else {
-    this.object_touch = null
-  }
-}
-
-/**
- * With no argument, toggle the bezier drag on or off. Pass in a boolean
- * argument to set the on/off state.
- */
-function toggle_bezier_drag (on_off) {
-  if (on_off === undefined) {
-    on_off = this.bezier_drag === this.empty_behavior
-  }
-  if (on_off) {
-    this.bezier_drag = this._get_bezier_drag(this.map)
-    this.bezier_mouseover = function (d) {
-      d3_select(this).style('stroke-width', String(3)+'px')
-    }
-    this.bezier_mouseout = function (d) {
-      d3_select(this).style('stroke-width', String(1)+'px')
-    }
-  } else {
-    this.bezier_drag = this.empty_behavior
-    this.bezier_mouseover = null
-    this.bezier_mouseout = null
-  }
-}
-
-function turn_off_drag (sel) {
-  sel.on('mousedown.drag', null)
-  sel.on('touchstart.drag', null)
-}
-
-/**
- * Drag the selected nodes and text labels.
- * @param {} map -
- * @param {} undo_stack -
- */
-function _get_selectable_drag (map, undo_stack) {
-  // define some variables
-  var behavior = d3_drag()
-  var the_timeout = null
-  var total_displacement = null
-  // for nodes
-  var node_ids_to_drag = null
-  var reaction_ids = null
-  // for text labels
-  var text_label_ids_to_drag = null
-  var move_label = function (text_label_id, displacement) {
-    var text_label = map.text_labels[text_label_id]
-    text_label.x = text_label.x + displacement.x
-    text_label.y = text_label.y + displacement.y
-  }
-  var set_dragging = function (on_off) {
-    this.dragging = on_off
-  }.bind(this)
-
-  behavior.on('start', function (d) {
-    set_dragging(true)
-
-    // silence other listeners (e.g. nodes BELOW this one)
-    d3_selection.event.sourceEvent.stopPropagation()
-    // remember the total displacement for later
-    total_displacement = { x: 0, y: 0 }
-
-    // If a text label is selected, the rest is not necessary
-    if (d3_select(this).attr('class').indexOf('label') === -1) {
-      // Note that drag start is called even for a click event
-      var data = this.parentNode.__data__,
-      bigg_id = data.bigg_id,
-      node_group = this.parentNode
-      // Move element to back (for the next step to work). Wait 200ms
-      // before making the move, becuase otherwise the element will be
-      // deleted before the click event gets called, and selection
-      // will stop working.
-      the_timeout = setTimeout(function () {
-        node_group.parentNode.insertBefore(node_group,
-                                           node_group.parentNode.firstChild)
-      }, 200)
-      // prepare to combine metabolites
-      map.sel.selectAll('.metabolite-circle')
-        .on('mouseover.combine', function (d) {
-          if (d.bigg_id === bigg_id && d.node_id !== data.node_id) {
-            d3_select(this).style('stroke-width', String(12) + 'px')
-              .classed('node-to-combine', true)
-          }
-        })
-        .on('mouseout.combine', function (d) {
-          if (d.bigg_id === bigg_id) {
-            map.sel.selectAll('.node-to-combine')
-              .style('stroke-width', String(2) + 'px')
-              .classed('node-to-combine', false)
-          }
-        })
-    }
-  })
-
-  behavior.on('drag', function (d) {
-    // if this node is not already selected, then select this one and
-    // deselect all other nodes. Otherwise, leave the selection alone.
-    if (!d3_select(this.parentNode).classed('selected')) {
-      map.select_selectable(this, d)
-    }
-
-    // get the grabbed id
-    var grabbed = {}
-    if (d3_select(this).attr('class').indexOf('label') === -1) {
-      // if it is a node
-      grabbed['type'] = 'node'
-      grabbed['id'] = this.parentNode.__data__.node_id
+  /**
+   * Listen for rotation, and rotate selected nodes.
+   */
+  toggleRotationMode (onOff) {
+    if (onOff === undefined) {
+      this.rotationModeEnabled = !this.rotationModeEnabled
     } else {
-      // if it is a text label
-      grabbed['type'] = 'label'
-      grabbed['id'] = this.__data__.text_label_id
+      this.rotationModeEnabled = onOff
     }
 
-    var selected_node_ids = map.get_selected_node_ids()
-    var selected_text_label_ids = map.get_selected_text_label_ids()
-    node_ids_to_drag = []; text_label_ids_to_drag = []
-    // choose the nodes and text labels to drag
-    if (grabbed['type']=='node' &&
-        selected_node_ids.indexOf(grabbed['id']) === -1) {
-      node_ids_to_drag.push(grabbed['id'])
-    } else if (grabbed['type'] === 'label' &&
-               selected_text_label_ids.indexOf(grabbed['id']) === -1) {
-      text_label_ids_to_drag.push(grabbed['id'])
-    } else {
-      node_ids_to_drag = selected_node_ids
-      text_label_ids_to_drag = selected_text_label_ids
-    }
-    reaction_ids = []
-    var displacement = {
-      x: d3_selection.event.dx,
-      y: d3_selection.event.dy,
-    }
-    total_displacement = utils.c_plus_c(total_displacement, displacement)
-    node_ids_to_drag.forEach(function (node_id) {
-      // update data
-      var node = map.nodes[node_id],
-      updated = build.move_node_and_dependents(node, node_id,
-                                               map.reactions,
-                                               map.beziers,
-                                               displacement)
-      reaction_ids = utils.unique_concat([ reaction_ids, updated.reaction_ids ])
-      // remember the displacements
-      // if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 }
-      // total_displacement[node_id] = utils.c_plus_c(total_displacement[node_id], displacement)
-    })
-    text_label_ids_to_drag.forEach(function (text_label_id) {
-      move_label(text_label_id, displacement)
-      // remember the displacements
-      // if (!(node_id in total_displacement))  total_displacement[node_id] = { x: 0, y: 0 }
-      // total_displacement[node_id] = utils.c_plus_c(total_displacement[node_id], displacement)
-    })
-    // draw
-    map.draw_these_nodes(node_ids_to_drag)
-    map.draw_these_reactions(reaction_ids)
-    map.draw_these_text_labels(text_label_ids_to_drag)
-  })
+    const selectionNode = this.map.sel.selectAll('.node-circle')
+    const selectionBackground = this.map.sel.selectAll('#canvas')
 
-  behavior.on('end', function () {
-    set_dragging(false)
+    if (this.rotationModeEnabled) {
+      this.map.callback_manager.run('start_rotation')
 
-    if (node_ids_to_drag === null) {
-      // Drag end can be called when drag has not been called. In this, case, do
-      // nothing.
-      total_displacement = null
-      node_ids_to_drag = null
-      text_label_ids_to_drag = null
-      reaction_ids = null
-      the_timeout = null
-      return
-    }
-    // look for mets to combine
-    var node_to_combine_array = []
-    map.sel.selectAll('.node-to-combine').each(function (d) {
-      node_to_combine_array.push(d.node_id)
-    })
-    if (node_to_combine_array.length === 1) {
-      // If a node is ready for it, combine nodes
-      var fixed_node_id = node_to_combine_array[0],
-      dragged_node_id = this.parentNode.__data__.node_id,
-      saved_dragged_node = utils.clone(map.nodes[dragged_node_id]),
-      segment_objs_moved_to_combine = combine_nodes_and_draw(fixed_node_id,
-                                                             dragged_node_id)
-      undo_stack.push(function () {
-        // undo
-        // put the old node back
-        map.nodes[dragged_node_id] = saved_dragged_node
-        var fixed_node = map.nodes[fixed_node_id],
-            updated_reactions = []
-        segment_objs_moved_to_combine.forEach(function (segment_obj) {
-          var segment = map.reactions[segment_obj.reaction_id].segments[segment_obj.segment_id]
-          if (segment.from_node_id==fixed_node_id) {
-            segment.from_node_id = dragged_node_id
-          } else if (segment.to_node_id==fixed_node_id) {
-            segment.to_node_id = dragged_node_id
-          } else {
-            console.error('Segment does not connect to fixed node')
-          }
-          // removed this segment_obj from the fixed node
-          fixed_node.connected_segments = fixed_node.connected_segments.filter(function (x) {
-            return !(x.reaction_id==segment_obj.reaction_id && x.segment_id==segment_obj.segment_id)
-          })
-          if (updated_reactions.indexOf(segment_obj.reaction_id)==-1)
-            updated_reactions.push(segment_obj.reaction_id)
-        })
-        map.draw_these_nodes([dragged_node_id])
-        map.draw_these_reactions(updated_reactions)
-      }, function () {
-        // redo
-        combine_nodes_and_draw(fixed_node_id, dragged_node_id)
-      })
-
-    } else {
-      // otherwise, drag node
-
-      // add to undo/redo stack
-      // remember the displacement, dragged nodes, and reactions
-      var saved_displacement = utils.clone(total_displacement),
-      // BUG TODO this variable disappears!
-      // Happens sometimes when you drag a node, then delete it, then undo twice
-      saved_node_ids = utils.clone(node_ids_to_drag),
-      saved_text_label_ids = utils.clone(text_label_ids_to_drag),
-      saved_reaction_ids = utils.clone(reaction_ids)
-      undo_stack.push(function () {
-        // undo
-        saved_node_ids.forEach(function (node_id) {
-          var node = map.nodes[node_id]
-          build.move_node_and_dependents(node, node_id, map.reactions,
-                                         map.beziers,
-                                         utils.c_times_scalar(saved_displacement, -1))
-        })
-        saved_text_label_ids.forEach(function (text_label_id) {
-          move_label(text_label_id,
-                     utils.c_times_scalar(saved_displacement, -1))
-        })
-        map.draw_these_nodes(saved_node_ids)
-        map.draw_these_reactions(saved_reaction_ids)
-        map.draw_these_text_labels(saved_text_label_ids)
-      }, function () {
-        // redo
-        saved_node_ids.forEach(function (node_id) {
-          var node = map.nodes[node_id]
-          build.move_node_and_dependents(node, node_id, map.reactions,
-                                         map.beziers,
-                                         saved_displacement)
-        })
-        saved_text_label_ids.forEach(function (text_label_id) {
-          move_label(text_label_id, saved_displacement)
-        })
-        map.draw_these_nodes(saved_node_ids)
-        map.draw_these_reactions(saved_reaction_ids)
-        map.draw_these_text_labels(saved_text_label_ids)
-      })
-    }
-
-    // stop combining metabolites
-    map.sel.selectAll('.metabolite-circle')
-      .on('mouseover.combine', null)
-      .on('mouseout.combine', null)
-
-    // clear the timeout
-    clearTimeout(the_timeout)
-
-    // clear the shared variables
-    total_displacement = null
-    node_ids_to_drag = null
-    text_label_ids_to_drag = null
-    reaction_ids = null
-    the_timeout = null
-  })
-
-  return behavior
-
-  // definitions
-  function combine_nodes_and_draw (fixed_node_id, dragged_node_id) {
-    var dragged_node = map.nodes[dragged_node_id]
-    var fixed_node = map.nodes[fixed_node_id]
-    var updated_segment_objs = []
-    dragged_node.connected_segments.forEach(function (segment_obj) {
-      // change the segments to reflect
-      var segment
-      try {
-        segment = map.reactions[segment_obj.reaction_id].segments[segment_obj.segment_id]
-        if (segment === undefined) throw new Error('undefined segment')
-      } catch (e) {
-        console.warn('Could not find connected segment ' + segment_obj.segment_id)
+      const selectedNodes = this.map.getSelectedNodes()
+      if (Object.keys(selectedNodes).length === 0) {
+        console.warn('No selected nodes')
         return
       }
-      if (segment.from_node_id==dragged_node_id) segment.from_node_id = fixed_node_id
-      else if (segment.to_node_id==dragged_node_id) segment.to_node_id = fixed_node_id
+
+      // show center
+      this.center = this.averageLocation(selectedNodes)
+      this.showCenter()
+
+      // this.setStatus('Drag to rotate.')
+      const map = this.map
+      const selectedNodeIds = Object.keys(selectedNodes)
+      const reactions = this.map.reactions
+      const nodes = this.map.nodes
+      const beziers = this.map.beziers
+
+      const startFn = d => {
+        // silence other listeners
+        d3Selection.event.sourceEvent.stopPropagation()
+      }
+      const dragFn = (d, angle, totalAngle, center) => {
+        const updated = build.rotate_nodes(selectedNodes, reactions,
+                                          beziers, angle, center)
+        map.draw_these_nodes(updated.node_ids)
+        map.draw_these_reactions(updated.reaction_ids)
+      }
+      const endFn = d => {}
+      const undoFn = (d, totalAngle, center) => {
+        // undo
+        const theseNodes = {}
+        selectedNodeIds.forEach(function (id) {
+          theseNodes[id] = nodes[id]
+        })
+        const updated = build.rotate_nodes(theseNodes, reactions,
+                                        beziers, -totalAngle,
+                                        center)
+        map.draw_these_nodes(updated.node_ids)
+        map.draw_these_reactions(updated.reaction_ids)
+      }
+      const redoFn = (d, totalAngle, center) => {
+        // redo
+        const theseNodes = {}
+        selectedNodeIds.forEach(id => {
+          theseNodes[id] = nodes[id]
+        })
+        const updated = build.rotate_nodes(theseNodes, reactions,
+                                          beziers, totalAngle,
+                                          center)
+        map.draw_these_nodes(updated.node_ids)
+        map.draw_these_reactions(updated.reaction_ids)
+      }
+      const centerFn = () => this.center
+      this.rotationDrag = this.getGenericAngularDrag(startFn, dragFn,
+                                                     endFn, undoFn,
+                                                     redoFn, centerFn,
+                                                     this.map.sel)
+      selectionBackground.call(this.rotationDrag)
+      this.selectableDrag = this.rotationDrag
+    } else {
+      // turn off all listeners
+      this.hideCenter()
+      selectionNode.on('mousedown.center', null)
+      selectionBackground.on('mousedown.center', null)
+      selectionBackground.on('mousedown.drag', null)
+      selectionBackground.on('touchstart.drag', null)
+      this.rotationDrag = null
+      this.selectableDrag = null
+    }
+  }
+
+  /**
+   * With no argument, toggle the node click on or off. Pass in a boolean argument
+   * to set the on/off state.
+   */
+  toggleSelectableClick (onOff) {
+    if (onOff === undefined) {
+      onOff = this.selectableMousedown === null
+    }
+    if (onOff) {
+      const map = this.map
+      this.selectableMousedown = d => {
+        // stop propogation for the buildinput to work right
+        d3Selection.event.stopPropagation()
+        // this.parentNode.__data__.wasSelected = d3Select(this.parentNode).classed('selected')
+        // d3Select(this.parentNode).classed('selected', true)
+      }
+      this.selectableClick = function (d) {
+        // stop propogation for the buildinput to work right
+        d3Selection.event.stopPropagation()
+        // click suppressed. This DOES have en effect.
+        if (d3Selection.event.defaultPrevented) return
+        // turn off the temporary selection so select_selectable
+        // works. This is a bit of a hack.
+        // if (!this.parentNode.__data__.wasSelected)
+        //     d3Select(this.parentNode).classed('selected', false)
+        map.select_selectable(this, d, d3Selection.event.shiftKey)
+        // this.parentNode.__data__.wasSelected = false
+      }
+      this.nodeMouseover = function (d) {
+        d3Select(this).style('stroke-width', null)
+        const current = parseFloat(d3Select(this).style('stroke-width'))
+        if (!d3Select(this.parentNode).classed('selected')) {
+          d3Select(this).style('stroke-width', current * 3 + 'px')
+        }
+      }
+      this.nodeMouseout = function (d) {
+        d3Select(this).style('stroke-width', null)
+      }
+    } else {
+      this.selectableMousedown = null
+      this.selectableClick = null
+      this.nodeMouseover = null
+      this.nodeMouseout = null
+      this.map.sel.select('#nodes')
+        .selectAll('.node-circle').style('stroke-width', null)
+    }
+  }
+
+  /**
+   * With no argument, toggle the text edit on mousedown on/off. Pass in a boolean
+   * argument to set the on/off state. The backup state is equal to
+   * selectableMousedown.
+   */
+  toggleTextLabelEdit (onOff) {
+    if (onOff === undefined) {
+      onOff = this.textEditMousedown == null
+    }
+    if (onOff) {
+      const map = this.map
+      this.textLabelMousedown = function () {
+        if (d3Selection.event.defaultPrevented) {
+          return // mousedown suppressed
+        }
+        // run the callback
+        const coordsA = utils.d3_transform_catch(d3Select(this).attr('transform')).translate
+        const coords = { x: coordsA[0], y: coordsA[1] }
+        map.callback_manager.run('edit_text_label', null, d3Select(this), coords)
+        d3Selection.event.stopPropagation()
+      }
+      this.textLabelClick = null
+      this.map.sel.select('#text-labels')
+        .selectAll('.label')
+        .classed('edit-text-cursor', true)
+      // add the new-label listener
+      this.map.sel.on('mousedown.new_text_label', function (node) {
+        // silence other listeners
+        d3Selection.event.preventDefault()
+        const coords = {
+          x: d3Mouse(node)[0],
+          y: d3Mouse(node)[1]
+        }
+        this.map.callback_manager.run('new_text_label', null, coords)
+      }.bind(this, this.map.sel.node()))
+    } else {
+      this.textLabelMousedown = this.selectableMousedown
+      this.textLabelClick = this.selectableClick
+      this.map.sel.select('#text-labels')
+        .selectAll('.label')
+        .classed('edit-text-cursor', false)
+      // remove the new-label listener
+      this.map.sel.on('mousedown.new_text_label', null)
+      this.map.callback_manager.run('hide_text_label_editor')
+    }
+  }
+
+  /**
+   * With no argument, toggle the node drag & bezier drag on or off. Pass in a
+   * boolean argument to set the on/off state.
+   */
+  toggleSelectableDrag (onOff) {
+    if (onOff === undefined) {
+      onOff = this.selectableDrag === this.emptyBehavior
+    }
+    if (onOff) {
+      this.selectableDrag = this.getSelectableDrag(this.map, this.undoStack)
+      this.bezierDrag = this.getBezierDrag(this.map, this.undoStack)
+    } else {
+      this.selectableDrag = this.emptyBehavior
+      this.bezierDrag = this.emptyBehavior
+    }
+  }
+
+  /**
+   * With no argument, toggle the label drag on or off. Pass in a boolean argument
+   * to set the on/off state.
+   * @param {Boolean} onOff - The new on/off state.
+   */
+  toggleLabelDrag (onOff) {
+    if (onOff === undefined) {
+      onOff = this.labelDrag === this.emptyBehavior
+    }
+    if (onOff) {
+      this.reactionLabelDrag = this.getReactionLabelDrag(this.map)
+      this.nodeLabelDrag = this.getNodeLabelDrag(this.map)
+    } else {
+      this.reactionLabelDrag = this.emptyBehavior
+      this.nodeLabelDrag = this.emptyBehavior
+    }
+  }
+
+  /**
+   * With no argument, toggle the tooltips on mouseover labels.
+   * @param {Boolean} onOff - The new on/off state.
+   */
+  toggleLabelMouseover (onOff) {
+    if (onOff === undefined) {
+      onOff = this.labelMouseover === this.emptyBehavior
+    }
+
+    if (onOff) {
+      // Show/hide tooltip.
+      // @param {String} type - 'reactionLabel' or 'nodeLabel'
+      // @param {Object} d - D3 data for DOM element
+      this.labelMouseover = (type, d) => {
+        if (!this.dragging) {
+          this.map.callback_manager.run('show_tooltip', null, type, d)
+        }
+      }
+
+      this.labelMouseout = () => {
+        this.map.callback_manager.run('delay_hide_tooltip')
+      }
+    } else {
+      this.labelMouseover = this.emptyBehavior
+    }
+  }
+
+  /**
+   * With no argument, toggle the tooltips upon touching of labels.
+   * @param {Boolean} onOff - The new on/off state. If this argument is not
+   *                          provided, then toggle the state.
+   */
+  toggleLabelTouch (onOff) {
+    if (onOff === undefined) {
+      onOff = this.labelTouch === null
+    }
+
+    if (onOff) {
+      // Show/hide tooltip.
+      // @param {String} type - 'reactionLabel' or 'nodeLabel'
+      // @param {Object} d - D3 data for DOM element
+      this.labelTouch = (type, d) => {
+        if (!this.dragging) {
+          this.map.callback_manager.run('show_tooltip', null, type, d)
+        }
+      }
+    } else {
+      this.labelTouch = null
+    }
+  }
+
+  /**
+   * With no argument, toggle the tooltips on mouseover of nodes or arrows.
+   * @param {Boolean} onOff - The new on/off state.
+   */
+  toggleObjectMouseover (onOff) {
+    if (onOff === undefined) {
+      onOff = this.objectMouseover === this.emptyBehavior
+    }
+
+    if (onOff) {
+      // Show/hide tooltip.
+      // @param {String} type - 'reaction_object' or 'node_object'
+      // @param {Object} d - D3 data for DOM element
+      this.objectMouseover = (type, d) => {
+        if (!this.dragging) {
+          this.map.callback_manager.run('show_tooltip', null, type, d)
+        }
+      }
+
+      this.objectMouseout = () => {
+        this.map.callback_manager.run('delay_hide_tooltip')
+      }
+    } else {
+      this.objectMouseover = this.emptyBehavior
+    }
+  }
+
+  /**
+   * With no argument, toggle the tooltips upon touching of nodes or arrows.
+   * @param {Boolean} onOff - The new on/off state. If this argument is not provided, then toggle the state.
+   */
+  toggleObjectTouch (onOff){
+    if (onOff === undefined) {
+      onOff = this.labelTouch === null
+    }
+
+    if (onOff) {
+      this.objectTouch = (type, d) => {
+        if (!this.dragging) {
+          this.map.callback_manager.run('show_tooltip', null, type, d)
+        }
+      }
+    } else {
+      this.objectTouch = null
+    }
+  }
+
+  /**
+   * With no argument, toggle the bezier drag on or off. Pass in a boolean
+   * argument to set the on/off state.
+   */
+  toggleBezierDrag (onOff) {
+    if (onOff === undefined) {
+      onOff = this.bezierDrag === this.emptyBehavior
+    }
+    if (onOff) {
+      this.bezierDrag = this.getBezierDrag(this.map)
+      this.bezierMouseover = function (d) {
+        d3Select(this).style('stroke-width', String(3)+'px')
+      }
+      this.bezierMouseout = function (d) {
+        d3Select(this).style('stroke-width', String(1)+'px')
+      }
+    } else {
+      this.bezierDrag = this.emptyBehavior
+      this.bezierMouseover = null
+      this.bezierMouseout = null
+    }
+  }
+
+  turnOffDrag (sel) {
+    sel.on('mousedown.drag', null)
+    sel.on('touchstart.drag', null)
+  }
+
+  combineNodesAndDraw (fixedNodeId, draggedNodeId) {
+    const map = this.map
+    const draggedNode = map.nodes[draggedNodeId]
+    const fixedNode = map.nodes[fixedNodeId]
+    const updatedSegmentObjs = []
+    draggedNode.connectedSegments.forEach(segmentObj => {
+      // change the segments to reflect
+      let segment = null
+      try {
+        segment = map.reactions[segmentObj.reactionId].segments[segmentObj.segmentId]
+        if (segment === undefined) throw new Error('undefined segment')
+      } catch (e) {
+        console.warn('Could not find connected segment ' + segmentObj.segmentId)
+        return
+      }
+      if (segment.fromNodeId==draggedNodeId) segment.fromNodeId = fixedNodeId
+      else if (segment.toNodeId==draggedNodeId) segment.toNodeId = fixedNodeId
       else {
         console.error('Segment does not connect to dragged node')
         return
       }
-      // moved segment_obj to fixed_node
-      fixed_node.connected_segments.push(segment_obj)
-      updated_segment_objs.push(utils.clone(segment_obj))
+      // moved segmentObj to fixedNode
+      fixedNode.connectedSegments.push(segmentObj)
+      updatedSegmentObjs.push(utils.clone(segmentObj))
       return
     })
     // delete the old node
-    map.delete_node_data([dragged_node_id])
+    map.delete_node_data([draggedNodeId])
     // turn off the class
     map.sel.selectAll('.node-to-combine').classed('node-to-combine', false)
     // draw
-    map.draw_everything()
+    map.drawEverything()
     // return for undo
-    return updated_segment_objs
+    return updatedSegmentObjs
   }
-}
 
-function _get_bezier_drag (map) {
-  var move_bezier = function (reaction_id, segment_id, bez, bezier_id,
-                              displacement) {
-    var segment = map.reactions[reaction_id].segments[segment_id]
-    segment[bez] = utils.c_plus_c(segment[bez], displacement)
-    map.beziers[bezier_id].x = segment[bez].x
-    map.beziers[bezier_id].y = segment[bez].y
-  }
-  var start_fn = function (d) {
-    d.dragging = true
-  }
-  var drag_fn = function (d, displacement, total_displacement) {
-    // draw
-    move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
-                displacement)
-    map.draw_these_reactions([d.reaction_id], false)
-    map.draw_these_beziers([d.bezier_id])
-  }
-  var end_fn = function (d) {
-    d.dragging = false
-  }
-  var undo_fn = function (d, displacement) {
-    move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
-                utils.c_times_scalar(displacement, -1))
-    map.draw_these_reactions([d.reaction_id], false)
-    map.draw_these_beziers([d.bezier_id])
-  }
-  var redo_fn = function (d, displacement) {
-    move_bezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
-                displacement)
-    map.draw_these_reactions([d.reaction_id], false)
-    map.draw_these_beziers([d.bezier_id])
-  }
-  return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn,
-                                this.map.sel)
-}
-
-function _get_reaction_label_drag (map) {
-  var move_label = function (reaction_id, displacement) {
-    var reaction = map.reactions[reaction_id]
-    reaction.label_x = reaction.label_x + displacement.x
-    reaction.label_y = reaction.label_y + displacement.y
-  }
-  var start_fn = function (d) {
-    // hide tooltips when drag starts
-    map.callback_manager.run('hide_tooltip')
-  }
-  var drag_fn = function (d, displacement, total_displacement) {
-    // draw
-    move_label(d.reaction_id, displacement)
-    map.draw_these_reactions([ d.reaction_id ])
-  }
-  var end_fn = function (d) {
-  }
-  var undo_fn = function (d, displacement) {
-    move_label(d.reaction_id, utils.c_times_scalar(displacement, -1))
-    map.draw_these_reactions([ d.reaction_id ])
-  }
-  var redo_fn = function (d, displacement) {
-    move_label(d.reaction_id, displacement)
-    map.draw_these_reactions([ d.reaction_id ])
-  }
-  return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn,
-                                this.map.sel)
-}
-
-function _get_node_label_drag (map) {
-  var move_label = function (node_id, displacement) {
-    var node = map.nodes[node_id]
-    node.label_x = node.label_x + displacement.x
-    node.label_y = node.label_y + displacement.y
-  }
-  var start_fn = function (d) {
-    // hide tooltips when drag starts
-    map.callback_manager.run('hide_tooltip')
-  }
-  var drag_fn = function (d, displacement, total_displacement) {
-    // draw
-    move_label(d.node_id, displacement)
-    map.draw_these_nodes([ d.node_id ])
-  }
-  var end_fn = function (d) {
-  }
-  var undo_fn = function (d, displacement) {
-    move_label(d.node_id, utils.c_times_scalar(displacement, -1))
-    map.draw_these_nodes ([ d.node_id ])
-  }
-  var redo_fn = function (d, displacement) {
-    move_label(d.node_id, displacement)
-    map.draw_these_nodes([ d.node_id ])
-  }
-  return this._get_generic_drag(start_fn, drag_fn, end_fn, undo_fn, redo_fn,
-                                this.map.sel)
-}
-
-/**
- * Make a generic drag behavior, with undo/redo.
- *
- * start_fn: function (d) Called at drag start.
- *
- * drag_fn: function (d, displacement, total_displacement) Called during drag.
- *
- * end_fn
- *
- * undo_fn
- *
- * redo_fn
- *
- * relative_to_selection: a d3 selection that the locations are calculated
- * against.
- *
- */
-function _get_generic_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
-                            relative_to_selection) {
-  // define some variables
-  var behavior = d3_drag()
-  var total_displacement
-  var undo_stack = this.undo_stack
-  var rel = relative_to_selection.node()
-
-  behavior.on('start', function (d) {
-    this.dragging = true
-
-    // silence other listeners
-    d3_selection.event.sourceEvent.stopPropagation()
-    total_displacement = { x: 0, y: 0 }
-    start_fn(d)
-  }.bind(this))
-
-  behavior.on('drag', function (d) {
-    // update data
-    var displacement = {
-      x: d3_selection.event.dx,
-      y: d3_selection.event.dy,
+  /**
+   * Drag the selected nodes and text labels.
+   * @param {} map -
+   * @param {} undo_stack -
+   */
+  getSelectableDrag (map, undoStack) {
+    // define some variables
+    const behavior = d3Drag()
+    let theTimeout = null
+    let totalDisplacement = null
+    // for nodes
+    let nodeIdsToDrag = null
+    let reactionIds = null
+    // for text labels
+    let textLabelIdsToDrag = null
+    const moveLabel = (textLabelId, displacement) => {
+      const textLabel = map.text_labels[textLabelId]
+      textLabel.x = textLabel.x + displacement.x
+      textLabel.y = textLabel.y + displacement.y
     }
-    var location = {
-      x: d3_mouse(rel)[0],
-      y: d3_mouse(rel)[1],
+    const setDragging = onOff => {
+      this.dragging = onOff
     }
 
-    // remember the displacement
-    total_displacement = utils.c_plus_c(total_displacement, displacement)
-    drag_fn(d, displacement, total_displacement, location)
-  }.bind(this))
+    behavior.on('start', function (d) {
+      setDragging(true)
 
-  behavior.on('end', function (d) {
-    this.dragging = false
+      // silence other listeners (e.g. nodes BELOW this one)
+      d3Selection.event.sourceEvent.stopPropagation()
+      // remember the total displacement for later
+      totalDisplacement = { x: 0, y: 0 }
 
-    // add to undo/redo stack
-    // remember the displacement, dragged nodes, and reactions
-    var saved_d = utils.clone(d)
-    var saved_displacement = utils.clone(total_displacement) // BUG TODO this variable disappears!
-    var saved_location = {
-      x: d3_mouse(rel)[0],
-      y: d3_mouse(rel)[1],
-    }
-
-    undo_stack.push(function () {
-      // undo
-      undo_fn(saved_d, saved_displacement, saved_location)
-    }, function () {
-      // redo
-      redo_fn(saved_d, saved_displacement, saved_location)
+      // If a text label is selected, the rest is not necessary
+      if (d3Select(this).attr('class').indexOf('label') === -1) {
+        // Note that drag start is called even for a click event
+        const data = this.parentNode.__data__
+        const biggId = data.biggId
+        const nodeGroup = this.parentNode
+        // Move element to back (for the next step to work). Wait 200ms
+        // before making the move, becuase otherwise the element will be
+        // deleted before the click event gets called, and selection
+        // will stop working.
+        theTimeout = setTimeout(() => {
+          nodeGroup.parentNode.insertBefore(nodeGroup, nodeGroup.parentNode.firstChild)
+        }, 200)
+        // prepare to combine metabolites
+        map.sel.selectAll('.metabolite-circle')
+          .on('mouseover.combine', function (d) {
+            if (d.bigg_id === biggId && d.node_id !== data.nodeId) {
+              d3Select(this).style('stroke-width', String(12) + 'px')
+                .classed('node-to-combine', true)
+            }
+          })
+          .on('mouseout.combine', d => {
+            if (d.bigg_id === biggId) {
+              map.sel.selectAll('.node-to-combine')
+                .style('stroke-width', String(2) + 'px')
+                .classed('node-to-combine', false)
+            }
+          })
+      }
     })
-    end_fn(d)
-  }.bind(this))
 
-  return behavior
-}
+    behavior.on('drag', function (d) {
+      // if this node is not already selected, then select this one and
+      // deselect all other nodes. Otherwise, leave the selection alone.
+      if (!d3Select(this.parentNode).classed('selected')) {
+        map.select_selectable(this, d)
+      }
 
-/** Make a generic drag behavior, with undo/redo. Supplies angles in place of
- * displacements.
- *
- * start_fn: function (d) Called at drag start.
- *
- * drag_fn: function (d, displacement, total_displacement) Called during drag.
- *
- * end_fn:
- *
- * undo_fn:
- *
- * redo_fn:
- *
- * get_center:
- *
- * relative_to_selection: a d3 selection that the locations are calculated
- * against.
- *
- */
-function _get_generic_angular_drag (start_fn, drag_fn, end_fn, undo_fn, redo_fn,
-                                   get_center, relative_to_selection) {
+      // get the grabbed id
+      const grabbed = {}
+      if (d3Select(this).attr('class').indexOf('label') === -1) {
+        // if it is a node
+        grabbed['type'] = 'node'
+        grabbed['id'] = this.parentNode.__data__.node_id
+      } else {
+        // if it is a text label
+        grabbed['type'] = 'label'
+        grabbed['id'] = this.__data__.text_label_id
+      }
 
-  // define some variables
-  var behavior = d3_drag()
-  var total_angle
-  var undo_stack = this.undo_stack
-  var rel = relative_to_selection.node()
-
-  behavior.on('start', function (d) {
-    this.dragging = true
-
-    // silence other listeners
-    d3_selection.event.sourceEvent.stopPropagation()
-    total_angle = 0
-    start_fn(d)
-  }.bind(this))
-
-  behavior.on('drag', function (d) {
-    // update data
-    var displacement = {
-      x: d3_selection.event.dx,
-      y: d3_selection.event.dy,
-    }
-    var location = {
-      x: d3_mouse(rel)[0],
-      y: d3_mouse(rel)[1],
-    }
-    var center = get_center()
-    var angle = utils.angle_for_event(displacement, location, center)
-    // remember the displacement
-    total_angle = total_angle + angle
-    drag_fn(d, angle, total_angle, center)
-  }.bind(this))
-
-  behavior.on('end', function (d) {
-    this.dragging = false
-
-    // add to undo/redo stack
-    // remember the displacement, dragged nodes, and reactions
-    var saved_d = utils.clone(d)
-    var saved_angle = total_angle
-    var saved_center = utils.clone(get_center())
-
-    undo_stack.push(function () {
-      // undo
-      undo_fn(saved_d, saved_angle, saved_center)
-    }, function () {
-      // redo
-      redo_fn(saved_d, saved_angle, saved_center)
+      const selectedNodeIds = map.get_selected_node_ids()
+      const selectedTextLabelIds = map.get_selected_text_label_ids()
+      nodeIdsToDrag = []
+      textLabelIdsToDrag = []
+      // choose the nodes and text labels to drag
+      if (grabbed['type'] === 'node' &&
+          selectedNodeIds.indexOf(grabbed['id']) === -1) {
+        nodeIdsToDrag.push(grabbed['id'])
+      } else if (grabbed['type'] === 'label' &&
+                 selectedTextLabelIds.indexOf(grabbed['id']) === -1) {
+        textLabelIdsToDrag.push(grabbed['id'])
+      } else {
+        nodeIdsToDrag = selectedNodeIds
+        textLabelIdsToDrag = selectedTextLabelIds
+      }
+      reactionIds = []
+      const displacement = {
+        x: d3Selection.event.dx,
+        y: d3Selection.event.dy
+      }
+      totalDisplacement = utils.c_plus_c(totalDisplacement, displacement)
+      nodeIdsToDrag.forEach(nodeId => {
+        // update data
+        const node = map.nodes[nodeId]
+        const updated = build.move_node_and_dependents(node, nodeId,
+                                                       map.reactions,
+                                                       map.beziers,
+                                                       displacement)
+        reactionIds = utils.uniqueConcat([ reactionIds, updated.reaction_ids ])
+        // remember the displacements
+        // if (!(nodeId in totalDisplacement))  totalDisplacement[nodeId] = { x: 0, y: 0 }
+        // totalDisplacement[nodeId] = utils.c_plus_c(totalDisplacement[nodeId], displacement)
+      })
+      textLabelIdsToDrag.forEach(textLabelId => {
+        moveLabel(textLabelId, displacement)
+        // remember the displacements
+        // if (!(nodeId in totalDisplacement))  totalDisplacement[nodeId] = { x: 0, y: 0 }
+        // totalDisplacement[nodeId] = utils.c_plus_c(totalDisplacement[nodeId], displacement)
+      })
+      // draw
+      map.draw_these_nodes(nodeIdsToDrag)
+      map.draw_these_reactions(reactionIds)
+      map.draw_these_text_labels(textLabelIdsToDrag)
     })
-    end_fn(d)
-  }.bind(this))
 
-  return behavior
+    behavior.on('end', () => {
+      setDragging(false)
+
+      if (nodeIdsToDrag === null) {
+        // Drag end can be called when drag has not been called. In this, case, do
+        // nothing.
+        totalDisplacement = null
+        nodeIdsToDrag = null
+        textLabelIdsToDrag = null
+        reactionIds = null
+        theTimeout = null
+        return
+      }
+
+      // look for mets to combine
+      const nodeToCombineArray = []
+      map.sel.selectAll('.node-to-combine').each(d => {
+        nodeToCombineArray.push(d.node_id)
+      })
+
+      if (nodeToCombineArray.length === 1) {
+        // If a node is ready for it, combine nodes
+        const fixedNodeId = nodeToCombineArray[0]
+        const draggedNodeId = this.parentNode.__data__.node_id
+        const savedDraggedNode = utils.clone(map.nodes[draggedNodeId])
+        const segmentObjsMovedToCombine = this.combineNodesAndDraw(fixedNodeId,
+                                                                   draggedNodeId)
+        undoStack.push(() => {
+          // undo
+          // put the old node back
+          map.nodes[draggedNodeId] = savedDraggedNode
+          const fixedNode = map.nodes[fixedNodeId]
+          const updatedReactions = []
+          segmentObjsMovedToCombine.forEach(segmentObj => {
+            const segment = map.reactions[segmentObj.reactionId].segments[segmentObj.segmentId]
+            if (segment.fromNodeId === fixedNodeId) {
+              segment.fromNodeId = draggedNodeId
+            } else if (segment.toNodeId === fixedNodeId) {
+              segment.toNodeId = draggedNodeId
+            } else {
+              console.error('Segment does not connect to fixed node')
+            }
+            // removed this segmentObj from the fixed node
+            fixedNode.connectedSegments = fixedNode.connectedSegments.filter(x => {
+              return !(x.reactionId === segmentObj.reactionId && x.segmentId === segmentObj.segmentId)
+            })
+            if (updatedReactions.indexOf(segmentObj.reactionId) === -1) {
+              updatedReactions.push(segmentObj.reactionId)
+            }
+          })
+          map.draw_these_nodes([draggedNodeId])
+          map.draw_these_reactions(updatedReactions)
+        }, () => {
+          // redo
+          this.combineNodesAndDraw(fixedNodeId, draggedNodeId)
+        })
+      } else {
+        // otherwise, drag node
+
+        // add to undo/redo stack
+        // remember the displacement, dragged nodes, and reactions
+        const savedDisplacement = utils.clone(totalDisplacement)
+            // BUG TODO this variable disappears!
+            // Happens sometimes when you drag a node, then delete it, then undo twice
+        const savedNodeIds = utils.clone(nodeIdsToDrag)
+        const savedTextLabelIds = utils.clone(textLabelIdsToDrag)
+        const savedReactionIds = utils.clone(reactionIds)
+        undoStack.push(() => {
+          // undo
+          savedNodeIds.forEach(nodeId => {
+            const node = map.nodes[nodeId]
+            build.move_node_and_dependents(node, nodeId, map.reactions,
+                                           map.beziers,
+                                           utils.c_times_scalar(savedDisplacement, -1))
+          })
+          savedTextLabelIds.forEach(textLabelId => {
+            moveLabel(textLabelId,
+                       utils.c_times_scalar(savedDisplacement, -1))
+          })
+          map.draw_these_nodes(savedNodeIds)
+          map.draw_these_reactions(savedReactionIds)
+          map.draw_these_text_labels(savedTextLabelIds)
+        }, () => {
+          // redo
+          savedNodeIds.forEach(nodeId => {
+            const node = map.nodes[nodeId]
+            build.move_node_and_dependents(node, nodeId, map.reactions,
+                                           map.beziers,
+                                           savedDisplacement)
+          })
+          savedTextLabelIds.forEach(textLabelId => {
+            moveLabel(textLabelId, savedDisplacement)
+          })
+          map.draw_these_nodes(savedNodeIds)
+          map.draw_these_reactions(savedReactionIds)
+          map.draw_these_text_labels(savedTextLabelIds)
+        })
+      }
+
+      // stop combining metabolites
+      map.sel.selectAll('.metabolite-circle')
+        .on('mouseover.combine', null)
+        .on('mouseout.combine', null)
+
+      // clear the timeout
+      clearTimeout(theTimeout)
+
+      // clear the shared variables
+      totalDisplacement = null
+      nodeIdsToDrag = null
+      textLabelIdsToDrag = null
+      reactionIds = null
+      theTimeout = null
+    })
+
+    return behavior
+  }
+
+  getBezierDrag (map) {
+    const moveBezier = (reactionId, segmentId, bez, bezierId, displacement) => {
+      const segment = map.reactions[reactionId].segments[segmentId]
+      segment[bez] = utils.c_plus_c(segment[bez], displacement)
+      map.beziers[bezierId].x = segment[bez].x
+      map.beziers[bezierId].y = segment[bez].y
+    }
+    const startFn = d => {
+      d.dragging = true
+    }
+    const dragFn = (d, displacement, totalDisplacement) => {
+      // draw
+      moveBezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
+                  displacement)
+      map.draw_these_reactions([d.reaction_id], false)
+      map.draw_these_beziers([d.bezier_id])
+    }
+    const endFn = d => {
+      d.dragging = false
+    }
+    const undoFn = (d, displacement) => {
+      moveBezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
+                 utils.c_times_scalar(displacement, -1))
+      map.draw_these_reactions([d.reaction_id], false)
+      map.draw_these_beziers([d.bezier_id])
+    }
+    const redoFn = (d, displacement) => {
+      moveBezier(d.reaction_id, d.segment_id, d.bezier, d.bezier_id,
+                  displacement)
+      map.draw_these_reactions([d.reaction_id], false)
+      map.draw_these_beziers([d.bezier_id])
+    }
+    return this.getGenericDrag(startFn, dragFn, endFn, undoFn, redoFn,
+                               this.map.sel)
+  }
+
+  getReactionLabelDrag (map) {
+    const moveLabel = (reactionId, displacement) => {
+      const reaction = map.reactions[reactionId]
+      reaction.label_x = reaction.label_x + displacement.x
+      reaction.label_y = reaction.label_y + displacement.y
+    }
+    const startFn = d => {
+      // hide tooltips when drag starts
+      map.callback_manager.run('hide_tooltip')
+    }
+    const dragFn = (d, displacement, totalDisplacement) => {
+      // draw
+      moveLabel(d.reaction_id, displacement)
+      map.draw_these_reactions([ d.reaction_id ])
+    }
+    const endFn = () => {}
+    const undoFn = (d, displacement) => {
+      moveLabel(d.reaction_id, utils.c_times_scalar(displacement, -1))
+      map.draw_these_reactions([ d.reaction_id ])
+    }
+    const redoFn = (d, displacement) => {
+      moveLabel(d.reaction_id, displacement)
+      map.draw_these_reactions([ d.reaction_id ])
+    }
+    return this.getGenericDrag(startFn, dragFn, endFn, undoFn, redoFn,
+                               this.map.sel)
+  }
+
+  getNodeLabelDrag (map) {
+    const moveLabel = (nodeId, displacement) => {
+      const node = map.nodes[nodeId]
+      node.label_x = node.label_x + displacement.x
+      node.label_y = node.label_y + displacement.y
+    }
+    const startFn = d => {
+      // hide tooltips when drag starts
+      map.callback_manager.run('hide_tooltip')
+    }
+    const dragFn = (d, displacement, totalDisplacement) => {
+      // draw
+      moveLabel(d.node_id, displacement)
+      map.draw_these_nodes([ d.node_id ])
+    }
+    const endFn = () => {}
+    const undoFn = (d, displacement) => {
+      moveLabel(d.node_id, utils.c_times_scalar(displacement, -1))
+      map.draw_these_nodes([ d.node_id ])
+    }
+    const redoFn = (d, displacement) => {
+      moveLabel(d.node_id, displacement)
+      map.draw_these_nodes([ d.node_id ])
+    }
+    return this.getGenericDrag(startFn, dragFn, endFn, undoFn, redoFn,
+                               this.map.sel)
+  }
+
+  /**
+   * Make a generic drag behavior, with undo/redo.
+   *
+   * startFn: function (d) Called at drag start.
+   *
+   * dragFn: function (d, displacement, totalDisplacement) Called during drag.
+   *
+   * endFn
+   *
+   * undoFn
+   *
+   * redoFn
+   *
+   * relativeToSelection: a d3 selection that the locations are calculated
+   * against.
+   *
+   */
+  getGenericDrag (startFn, dragFn, endFn, undoFn, redoFn,
+                              relativeToSelection) {
+    // define some variables
+    const behavior = d3Drag()
+    const undoStack = this.undoStack
+    const rel = relativeToSelection.node()
+    let totalDisplacement
+
+    behavior.on('start', d => {
+      this.dragging = true
+
+      // silence other listeners
+      d3Selection.event.sourceEvent.stopPropagation()
+      totalDisplacement = { x: 0, y: 0 }
+      startFn(d)
+    })
+
+    behavior.on('drag', d => {
+      // update data
+      const displacement = {
+        x: d3Selection.event.dx,
+        y: d3Selection.event.dy
+      }
+      const location = {
+        x: d3Mouse(rel)[0],
+        y: d3Mouse(rel)[1]
+      }
+
+      // remember the displacement
+      totalDisplacement = utils.c_plus_c(totalDisplacement, displacement)
+      dragFn(d, displacement, totalDisplacement, location)
+    })
+
+    behavior.on('end', d => {
+      this.dragging = false
+
+      // add to undo/redo stack
+      // remember the displacement, dragged nodes, and reactions
+      const savedD = utils.clone(d)
+      const savedDisplacement = utils.clone(totalDisplacement) // BUG TODO this variable disappears!
+      const savedLocation = {
+        x: d3Mouse(rel)[0],
+        y: d3Mouse(rel)[1],
+      }
+
+      undoStack.push(function () {
+        // undo
+        undoFn(savedD, savedDisplacement, savedLocation)
+      }, function () {
+        // redo
+        redoFn(savedD, savedDisplacement, savedLocation)
+      })
+      endFn(d)
+    })
+
+    return behavior
+  }
+
+  /** Make a generic drag behavior, with undo/redo. Supplies angles in place of
+   * displacements.
+   *
+   * startFn: function (d) Called at drag start.
+   *
+   * dragFn: function (d, displacement, totalDisplacement) Called during drag.
+   *
+   * endFn:
+   *
+   * undoFn:
+   *
+   * redoFn:
+   *
+   * getCenter:
+   *
+   * relativeToSelection: a d3 selection that the locations are calculated
+   * against.
+   *
+   */
+  getGenericAngularDrag (startFn, dragFn, endFn, undoFn, redoFn,
+                         getCenter, relativeToSelection) {
+    // define some variables
+    const behavior = d3Drag()
+    const undoStack = this.undoStack
+    const rel = relativeToSelection.node()
+    let totalAngle
+
+    behavior.on('start', d => {
+      this.dragging = true
+
+      // silence other listeners
+      d3Selection.event.sourceEvent.stopPropagation()
+      totalAngle = 0
+      startFn(d)
+    })
+
+    behavior.on('drag', d => {
+      // update data
+      const displacement = {
+        x: d3Selection.event.dx,
+        y: d3Selection.event.dy
+      }
+      const location = {
+        x: d3Mouse(rel)[0],
+        y: d3Mouse(rel)[1]
+      }
+      const center = getCenter()
+      const angle = utils.angle_for_event(displacement, location, center)
+      // remember the displacement
+      totalAngle = totalAngle + angle
+      dragFn(d, angle, totalAngle, center)
+    })
+
+    behavior.on('end', d => {
+      this.dragging = false
+
+      // add to undo/redo stack
+      // remember the displacement, dragged nodes, and reactions
+      const savedD = utils.clone(d)
+      const savedAngle = totalAngle
+      const savedCenter = utils.clone(getCenter())
+
+      undoStack.push(
+        () => undoFn(savedD, savedAngle, savedCenter),
+        () => redoFn(savedD, savedAngle, savedCenter)
+      )
+
+      endFn(d)
+    })
+
+    return behavior
+  }
 }

@@ -1,58 +1,9 @@
-/** Settings. A class to manage settings for a Map.
-
- Arguments
- ---------
-
- setOption: A function, fn(key), that returns the option value for the
- key.
-
- getOption: A function, fn(key, value), that sets the option for the key
- and value.
-
- conditionalOptions: The options to that are conditionally accepted when
- changed. Changes can be abandoned by calling abandon_changes(), or accepted
- by calling accept_changes().
-
- */
-
-import utils from './utils'
 import bacon from 'baconjs'
-
-var Settings = utils.make_class()
-// instance methods
-Settings.prototype = {
-  init,
-  set_conditional,
-  hold_changes,
-  abandon_changes,
-  accept_changes,
-  createConditionalSetting,
-  convertToConditionalStream
-}
-module.exports = Settings
-
-function init (setOption, getOption, conditionalOptions) {
-  this.set_option = setOption
-  this.get_option = getOption
-
-  // Manage accepting/abandoning changes
-  this.status_bus = new bacon.Bus()
-
-  // Create the options
-  this.busses = {}
-  this.streams = {}
-  for (var i = 0, l = conditionalOptions.length; i < l; i++) {
-    var name = conditionalOptions[i]
-    var out = createConditionalSetting(name, getOption(name), setOption,
-                                       this.status_bus)
-    this.busses[name] = out.bus
-    this.streams[name] = out.stream
-  }
-}
+import _ from 'underscore'
 
 /**
- * Hold on to event when hold_property is true, and only keep them if
- * accept_property is true (when hold_property becomes false).
+ * Hold on to event when holdProperty is true, and only keep them if
+ * acceptProperty is true (when holdProperty becomes false).
  */
 function convertToConditionalStream (valueStream, statusStream) {
   // Combine values with status to revert to last value when a reject is passed.
@@ -104,61 +55,128 @@ function convertToConditionalStream (valueStream, statusStream) {
             }
           }
         })
-        // Skip the initial null value
+  // Skip the initial null value
         .skip(1)
-        // Get the current value
+  // Get the current value
         .map(({ currentValue }) => currentValue)
-        // Skip duplicate values
+  // Skip duplicate values
         .skipDuplicates()
-        // property -> event stream
+  // property -> event stream
         .toEventStream()
 
   return held
 }
 
-function createConditionalSetting (name, initialValue, setOption, statusBus) {
-  // Set up the bus
-  var bus = new bacon.Bus()
+/**
+ * Settings. A class to manage settings for a Map.
+ *
+ * Arguments
+ * ---------
+ *
+ * setOption: A function, fn(key), that returns the option value for the key.
+ *
+ * getOption: A function, fn(key, value), that sets the option for the key and
+ * value.
+ *
+ * conditionalOptions: The options to that are conditionally accepted when
+ * changed. Changes can be abandoned by calling abandonChanges(), or accepted
+ * by calling acceptChanges().
+  * @param optionsWithDefaults - The current option values
+  * @param conditionalOptions - The options to that are conditionally accepted
+  *                             when changed. Changes can be abandoned by calling
+  *                             abandon_changes(), or accepted by calling
+  *                             accept_changes().
+  */
+export default class Settings {
+  constructor (optionsWithDefaults, conditionalOptions) {
+    this._options = optionsWithDefaults
 
-  // Make the event stream and conditionally accept changes
-  var stream = convertToConditionalStream(bus, statusBus)
+    // Manage accepting/abandoning changes
+    this.statusBus = new bacon.Bus()
 
-  // Get the latest
-  stream.onValue(v => setOption(name, v))
+    // Create the options
+    ;[ this.busses, this.streams ] = _.chain(optionsWithDefaults)
+      .mapObject((value, key) => {
+        const isConditional = _.contains(conditionalOptions, key)
+        const { bus, stream } = this.createSetting(key, value, isConditional)
+        return [ bus, stream ]
+      })             // { k: [ b, s ], ... }
+      .pairs()       // [ [ k, [ b, s ] ], ... ]
+      .map(([ name, [ bus, stream ] ]) => [[ name, bus ], [ name, stream ]])
+                     // [ [ [ k, b ], [ k, s ] ], ... ]
+      .unzip()       // [ [ [ k, b ], ... ], [ [ k, s ], ... ] ]
+      .map(x => _.object(x)) // [ { k: b, ... }, { k: s, ... } ]
+      .value()
+  }
 
-  // Push the initial value
-  bus.push(initialValue)
+  /**
+   * Set up a new bus and stream for a conditional setting (i.e. one that can be
+   * canceledin the settings menu.
+   */
+  createSetting (name, initialValue, isConditional) {
+    // Set up the bus
+    const bus = new bacon.Bus()
 
-  return { bus, stream }
-}
+    // Make the event stream and conditionally accept changes
+    const stream = isConditional
+          ? convertToConditionalStream(bus, this.statusBus)
+          : bus.toEventStream()
 
-/** Set the value of a conditional setting, one that will only be
- accepted if this.accept_changes() is called.
+    // Get the latest
+    stream.onValue(v => { this._options[name] = v })
 
- Arguments
- ---------
+    // Push the initial value
+    bus.push(initialValue)
 
- name: The option name
+    return { bus, stream }
+  }
 
- value: The new value
+  /**
+   * Deprecated. Use `set` instead.
+   */
+  set_conditional (name, value) { // eslint-disable-line camelcase
+    console.warn('set_conditional is deprecated. Use Settings.set() instead')
+    return this.set(name, value)
+  }
 
- */
-function set_conditional (name, value) {
-  if (!(name in this.busses)) {
-    console.error(`Invalid setting name ${name}`)
-  } else {
+  /**
+   * Set the option. This should always be used instead of setting options
+   * directly. To set options that respect the Settings menu Accept/Abandon, use
+   * setConditional().
+   * @param {String} name - The option name
+   * @param {} value - The new value
+   */
+  set (name, value) {
+    if (!(name in this.busses)) {
+      throw new Error(`Invalid setting name ${name}`)
+    }
     this.busses[name].push(value)
   }
-}
 
-function hold_changes () {
-  this.status_bus.push('hold')
-}
+  /**
+   * Deprecated. Use `get` intead.
+   */
+  get_option (name) { // eslint-disable-line camelcase
+    console.warn('get_option is deprecated. Use Settings.get() instead')
+    return this.get(name)
+  }
 
-function abandon_changes () {
-  this.status_bus.push('abandon')
-}
+  /**
+   * Get an option
+   */
+  get (name) {
+    return this._options[name]
+  }
 
-function accept_changes() {
-  this.status_bus.push('accept')
+  holdChanges () {
+    this.statusBus.push('hold')
+  }
+
+  abandonChanges () {
+    this.statusBus.push('abandon')
+  }
+
+  acceptChanges () {
+    this.statusBus.push('accept')
+  }
 }

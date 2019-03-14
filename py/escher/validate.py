@@ -3,7 +3,7 @@
 from __future__ import print_function, unicode_literals
 
 from escher import __schema_version__
-from escher.urls import root_directory
+from escher.urls import get_filepath
 from os.path import join
 import re
 import json
@@ -20,6 +20,7 @@ python -m escher.validate my_map.json
 
 """
 
+
 def main():
     if len(sys.argv) < 2:
         print(usage_string)
@@ -29,6 +30,7 @@ def main():
         map_data = json.load(f)
     validate_map(map_data)
     print('Your map passed inspection and is free of infection.')
+
 
 def validate_map(map_data):
     """Validate a map using the jsonschema, and some extra checks for consistency."""
@@ -56,10 +58,12 @@ def validate_map(map_data):
     if error != '':
         raise Exception(error)
 
+
 def validate_schema():
     import jsonschema
     schema = get_jsonschema()
     jsonschema.Draft4Validator.check_schema(schema)
+
 
 def check_map(map_data):
     """Check reactions and metabolites.
@@ -98,12 +102,14 @@ def check_map(map_data):
                 missing_gene_names.append(found_gene)
     return bad_segments, missing_multimarkers, missing_stoich, missing_gene_names
 
+
 def get_jsonschema():
     """Get the local jsonschema.
 
     """
-    with open(join(root_directory, 'escher', 'static', 'jsonschema', __schema_version__), 'r') as f:
+    with open(get_filepath('map_jsonschema'), 'r') as f:
         return json.load(f)
+
 
 def genes_for_gene_reaction_rule(rule):
     """ Find genes in gene_reaction_rule string.

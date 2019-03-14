@@ -1,109 +1,103 @@
-var Behavior = require('../Behavior');
+import Behavior from '../Behavior'
+import { describe, it, beforeEach } from 'mocha'
+import { assert } from 'chai'
+import d3Body from './helpers/d3Body'
 
-var describe = require('mocha').describe;
-var it = require('mocha').it;
-var beforeEach = require('mocha').beforeEach;
-var assert = require('chai').assert;
-
-var d3Body = require('./helpers/d3Body');
-
-function assert_selectable_click_attrs_on(behavior) {
-    assert.isFunction(behavior.selectable_mousedown);
-    assert.isFunction(behavior.selectable_click);
-    assert.isFunction(behavior.node_mouseover);
-    assert.isFunction(behavior.node_mouseout);
+function assertSelectableClickAttrsOn (behavior) {
+  assert.isFunction(behavior.selectableMousedown)
+  assert.isFunction(behavior.selectableClick)
+  assert.isFunction(behavior.nodeMouseover)
+  assert.isFunction(behavior.nodeMouseout)
 }
 
-function assert_selectable_click_attrs_off(behavior) {
-    assert.strictEqual(behavior.selectable_mousedown, null);
-    assert.strictEqual(behavior.selectable_click, null);
-    assert.strictEqual(behavior.node_mouseover, null);
-    assert.strictEqual(behavior.node_mouseout, null);
+function assertSelectableClickAttrsOff (behavior) {
+  assert.strictEqual(behavior.selectableMousedown, null)
+  assert.strictEqual(behavior.selectableClick, null)
+  assert.strictEqual(behavior.nodeMouseover, null)
+  assert.strictEqual(behavior.nodeMouseout, null)
 }
 
-function assert_selectable_drag_attrs_on(behavior) {
-    assert.notStrictEqual(behavior.selectable_drag, behavior.empty_behavior);
-    assert.notStrictEqual(behavior.bezier_drag, behavior.empty_behavior);
+function assertSelectableDragAttrsOn (behavior) {
+  assert.notStrictEqual(behavior.selectableDrag, behavior.emptyBehavior)
+  assert.notStrictEqual(behavior.bezierDrag, behavior.emptyBehavior)
 }
 
-function assert_selectable_drag_attrs_off(behavior) {
-    assert.strictEqual(behavior.selectable_drag, behavior.empty_behavior);
-    assert.strictEqual(behavior.bezier_drag, behavior.empty_behavior);
+function assertSelectableDragAttrsOff (behavior) {
+  assert.strictEqual(behavior.selectableDrag, behavior.emptyBehavior)
+  assert.strictEqual(behavior.bezierDrag, behavior.emptyBehavior)
 }
 
-
-function assert_label_drag_attrs_on(behavior) {
-    assert.notStrictEqual(behavior.reaction_label_drag, behavior.empty_behavior);
-    assert.notStrictEqual(behavior.node_label_drag, behavior.empty_behavior);
+function assertLabelDragAttrsOn (behavior) {
+  assert.notStrictEqual(behavior.reactionLabelDrag, behavior.emptyBehavior)
+  assert.notStrictEqual(behavior.nodeLabelDrag, behavior.emptyBehavior)
 }
 
-function assert_label_drag_attrs_off(behavior) {
-    assert.strictEqual(behavior.reaction_label_drag, behavior.empty_behavior);
-    assert.strictEqual(behavior.node_label_drag, behavior.empty_behavior);
+function assertLabelDragAttrsOff (behavior) {
+  assert.strictEqual(behavior.reactionLabelDrag, behavior.emptyBehavior)
+  assert.strictEqual(behavior.nodeLabelDrag, behavior.emptyBehavior)
 }
 
-function assert_label_mouseover_attrs_on (behavior) {
-  assert.isFunction(behavior.label_mouseover)
+function assertLabelMouseoverAttrsOn (behavior) {
+  assert.isFunction(behavior.labelMouseover)
 }
 
-function assert_label_mouseover_attrs_off (behavior) {
-  assert.isNull(behavior.label_mouseover)
+function assertLabelMouseoverAttrsOff (behavior) {
+  assert.strictEqual(behavior.labelMouseover, behavior.emptyBehavior)
 }
-
 
 describe('Behavior', () => {
   const map = { sel: d3Body }
   let behavior
 
-  beforeEach(() => { behavior = Behavior(map, null) })
+  beforeEach(() => { behavior = new Behavior(map, null) })
 
   it('loads the map', () => {
     assert.strictEqual(behavior.map, map)
   })
 
-  it('turn_everything_on', () => {
-    behavior.turn_everything_off()
-    behavior.turn_everything_on()
-    assert_selectable_click_attrs_on(behavior)
-    assert_selectable_drag_attrs_on(behavior)
-    assert_label_drag_attrs_on(behavior)
-    assert_label_mouseover_attrs_on(behavior)
+  it('turnEverythingOn', () => {
+    behavior.turnEverythingOff()
+    behavior.turnEverythingOn()
+    assertSelectableClickAttrsOn(behavior)
+    assertSelectableDragAttrsOn(behavior)
+    assertLabelDragAttrsOn(behavior)
+    assertLabelMouseoverAttrsOn(behavior)
   })
 
-  it('turn_everything_off', () => {
-    behavior.turn_everything_on()
-    behavior.turn_everything_off()
-    assert_selectable_click_attrs_off(behavior)
-    assert_selectable_drag_attrs_off(behavior)
-    assert_label_drag_attrs_off(behavior)
-    assert_label_mouseover_attrs_off(behavior)
+  it('turnEverythingOff', () => {
+    behavior.turnEverythingOn()
+    behavior.turnEverythingOff()
+    assertSelectableClickAttrsOff(behavior)
+    assertSelectableDragAttrsOff(behavior)
+    assertLabelDragAttrsOff(behavior)
+    assertLabelMouseoverAttrsOff(behavior)
   })
 
-  it('toggle_selectable_click', () => {
-    behavior.toggle_selectable_click(true)
-    assert_selectable_click_attrs_on(behavior)
-    behavior.toggle_selectable_click(false)
-    assert_selectable_click_attrs_off(behavior)
+  it('toggleSelectableClick', () => {
+    behavior.toggleSelectableClick(true)
+    assertSelectableClickAttrsOn(behavior)
+    behavior.toggleSelectableClick(false)
+    assertSelectableClickAttrsOff(behavior)
   })
 
-  it('toggle_selectable_drag', () => {
-    behavior.toggle_selectable_drag(true)
-    assert_selectable_drag_attrs_on(behavior)
-    behavior.toggle_selectable_drag(false)
-    assert_selectable_drag_attrs_off(behavior)
+  it('toggleSelectableDrag', () => {
+    behavior.toggleSelectableDrag(true)
+    assertSelectableDragAttrsOn(behavior)
+    behavior.toggleSelectableDrag(false)
+    assertSelectableDragAttrsOff(behavior)
   })
 
-  it('toggle_label_drag', () => {
-    behavior.toggle_label_drag(true)
-    assert_label_drag_attrs_on(behavior)
-    behavior.toggle_label_drag(false)
-    assert_label_drag_attrs_off(behavior)
+  it('toggleLabelDrag', () => {
+    behavior.toggleLabelDrag(true)
+    assertLabelDragAttrsOn(behavior)
+    behavior.toggleLabelDrag(false)
+    assertLabelDragAttrsOff(behavior)
   })
 
-  it('toggle_label_mouseover', () => {
-    behavior.toggle_label_mouseover(true)
-    assert_label_mouseover_attrs_on(behavior)
-    behavior.toggle_label_mouseover(false)
-    assert_label_mouseover_attrs_off(behavior)
+  it('toggleLabelMouseover', () => {
+    behavior.toggleLabelMouseover(true)
+    assertLabelMouseoverAttrsOn(behavior)
+    behavior.toggleLabelMouseover(false)
+    assertLabelMouseoverAttrsOff(behavior)
   })
 })

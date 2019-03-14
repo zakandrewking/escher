@@ -9,13 +9,17 @@ import './ButtonPanel.css'
  */
 class ButtonPanel extends Component {
   render () {
+    const menuSetting = this.props.settings.get('menu')
+    const enableKeys = this.props.settings.get('enable_keys')
+    const enableEditing = this.props.settings.get('enable_editing')
+
     return (
-      <ul className='buttonPanel'>
+      <ul className='button-panel'>
         <li>
           <button
             className='button btn'
             onClick={() => this.props.zoomContainer.zoom_in()}
-            title='Zoom in (+)'
+            title={`Zoom in${enableKeys ? ' (+)' : ''}`}
           >
             <i className='icon-zoom-in' />
           </button>
@@ -24,46 +28,36 @@ class ButtonPanel extends Component {
           <button
             className='button btn'
             onClick={() => this.props.zoomContainer.zoom_out()}
-            title='Zoom out (-)'
+            title={`Zoom out${enableKeys ? ' (-)' : ''}`}
           >
             <i className='icon-zoom-out' />
           </button>
         </li>
-        <li
-          style={this.props.all
-          ? {display: 'block'}
-          : {display: 'none'}}
-        >
+        <li>
           <button
             className='button btn'
             onClick={() => this.props.map.zoom_extent_canvas()}
-            title='Zoom to canvas (1)'
+            title={`Zoom to canvas${enableKeys ? ' (1)' : ''}`}
           >
             <i className='icon-resize-full' />
           </button>
         </li>
-        <li
-          style={this.props.fullscreen
-          ? {display: 'block'}
-          : {display: 'none'}}
-        >
+        <li style={{display: this.props.settings.get('full_screen_button') ? 'block' : 'none'}}>
           <button
             className='button btn'
             onClick={() => this.props.map.full_screen()}
-            title='Toggle full screen view (2)'
+            title={`Toggle full screen${enableKeys ? ' (2)' : ''}`}
           >
             <i className='icon-resize-full-alt' />
           </button>
         </li>
         <li
           className='grouping'
-          style={this.props.all && this.props.enableEditing
-          ? {display: 'block'}
-          : {display: 'none'}}
+          style={{display: menuSetting === 'all' && enableEditing ? 'block' : 'none'}}
         >
           <button
             className='buttonGroup btn'
-            title='Pan mode (Z)'
+            title={`Pan mode${enableKeys ? ' (Z)' : ''}`}
             for='zoom'
             id={this.props.mode === 'zoom' ? 'currentMode' : null}
             onClick={() => this.props.setMode('zoom')}
@@ -72,7 +66,7 @@ class ButtonPanel extends Component {
           </button>
           <button
             className='buttonGroup btn'
-            title='Select mode (V)'
+            title={`Select mode${enableKeys ? ' (V)' : ''}`}
             for='brush'
             id={this.props.mode === 'brush' ? 'currentMode' : null}
             onClick={() => this.props.setMode('brush')}
@@ -81,7 +75,7 @@ class ButtonPanel extends Component {
           </button>
           <button
             className='buttonGroup btn'
-            title='Add reaction mode (N)'
+            title={`Add reaction mode${enableKeys ? ' (N)' : ''}`}
             for='build'
             onClick={() => this.props.setMode('build')}
             id={this.props.mode === 'build' ? 'currentMode' : null}>
@@ -89,7 +83,7 @@ class ButtonPanel extends Component {
           </button>
           <button
             className='buttonGroup btn'
-            title='Rotate mode (R)'
+            title={`Rotate mode${enableKeys ? ' (R)' : ''}`}
             for='rotate'
             id={this.props.mode === 'rotate' ? 'currentMode' : null}
             onClick={() => this.props.setMode('rotate')}
@@ -98,7 +92,7 @@ class ButtonPanel extends Component {
           </button>
           <button
             className='buttonGroup btn'
-            title='Text mode (T)'
+            title={`Text mode${enableKeys ? ' (T)' : ''}`}
             for='text'
             id={this.props.mode === 'text' ? 'currentMode' : null}
             onClick={() => this.props.setMode('text')}
@@ -108,35 +102,32 @@ class ButtonPanel extends Component {
         </li>
         <li
           className='grouping'
-          style={
-            this.props.mode === 'build' && this.props.all && this.props.enableEditing
-              ? {display: 'block'}
-              : {display: 'none'}}
+          style={{display: this.props.mode === 'build' && menuSetting === 'all' && enableEditing ? 'block' : 'none'}}
         >
           <button
             className='buttonGroup btn'
-            title='Direction arrow (←)'
+            title={`Direction arrow${enableKeys ? ' (←)' : ''}`}
             onClick={() => this.props.buildInput.direction_arrow.left()}
           >
             <i className='icon-left-big' />
           </button>
           <button
             className='buttonGroup btn'
-            title='Direction arrow (→)'
+            title={`Direction arrow${enableKeys ? ' (→)' : ''}`}
             onClick={() => this.props.buildInput.direction_arrow.right()}
           >
             <i className='icon-right-big' />
           </button>
           <button
             className='buttonGroup btn'
-            title='Direction arrow (↑)'
+            title={`Direction arrow${enableKeys ? ' (↑)' : ''}`}
             onClick={() => this.props.buildInput.direction_arrow.up()}
           >
             <i className='icon-up-big' />
           </button>
           <button
             className='buttonGroup btn'
-            title='Direction arrow (↓)'
+            title={`Direction arrow${enableKeys ? ' (↓)' : ''}`}
             onClick={() => this.props.buildInput.direction_arrow.down()}
           >
             <i className='icon-down-big' />

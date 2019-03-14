@@ -19,7 +19,8 @@
   "repository": "https://github.com/zakandrewking/escher",
   "bugs": "https://github.com/zakandrewking/escher/issues",
   "files": [
-    "dist/*"
+    "dist/*",
+    "jupyter/*"
   ],
   "main": "/dist/escher.js",
   "engines": {
@@ -53,6 +54,7 @@
     "webpack-node-externals": "^1.6.0"
   },
   "dependencies": {
+    "@jupyter-widgets/base": "^1.1.10",
     "baconjs": "^0.7.71",
     "d3-brush": "https://github.com/zakandrewking/d3-brush.git",
     "d3-drag": "^1.0.2",
@@ -72,9 +74,9 @@
     "build": "./node_modules/.bin/webpack --config webpack.prod.js",
     "watch": "./node_modules/.bin/webpack --config webpack.prod.js --watch",
     "start": "./node_modules/.bin/webpack-dev-server --config webpack.dev.js",
-    "clean": "rm -r dist/*",
+    "clean": "rm -r dist/* && rm py/escher/static/*",
     "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.test.js \"src/tests/*.js\"",
-    "copy": "cp package.json py/escher/ && cp dist/* py/escher/static/escher/ && cp jsonschema/* py/escher/static/jsonschema/",
+    "copy": "cp package.json py/escher/static/ && cp jupyter/notebook-extension.js py/escher/static/extension.js && cp dist/escher.min.* py/escher/static/ && cp jsonschema/* py/escher/static/",
     "coverage": "./node_modules/.bin/cross-env NODE_ENV=coverage ./node_modules/.bin/nyc --reporter=text-lcov npm run test | ./node_modules/.bin/coveralls"
   },
   "nyc": {
@@ -83,5 +85,8 @@
     ],
     "instrument": false,
     "sourceMap": false
+  },
+  "jupyterlab": {
+    "extension": "jupyter/lab-extension"
   }
 }

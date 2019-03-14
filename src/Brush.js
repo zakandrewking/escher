@@ -53,11 +53,11 @@ function brush_is_enabled () {
  * Turn the brush on or off
  * @param {Boolean} on_off
  */
-function toggle (on_off) {
-  if (on_off === undefined) {
-    on_off = !this.enabled
+function toggle (onOff) {
+  if (onOff === undefined) {
+    onOff = !this.enabled
   }
-  if (on_off) {
+  if (onOff) {
     this.setup_selection_brush()
   } else {
     this.brush_sel.selectAll('*').remove()
@@ -93,8 +93,8 @@ function setup_selection_brush () {
       .on('start', function () {
         turn_off_crosshair(selection)
         // unhide secondary metabolites if they are hidden
-        if (map.settings.get_option('hide_secondary_metabolites')) {
-          map.settings.set_conditional('hide_secondary_metabolites', false)
+        if (map.settings.get('hide_secondary_metabolites')) {
+          map.settings.set('hide_secondary_metabolites', false)
           map.draw_everything()
           map.set_status('Showing secondary metabolites. You can hide them ' +
                          'again in Settings.', 2000)

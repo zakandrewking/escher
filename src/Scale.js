@@ -25,13 +25,13 @@ export default class Scale {
     // stats changes
     map.callback_manager.set('calc_data_stats__reaction', changed => {
       if (changed) {
-        this.setReactionScale(settings.get_option('reaction_scale'),
+        this.setReactionScale(settings.get('reaction_scale'),
                               getDataStatistics)
       }
     })
     map.callback_manager.set('calc_data_stats__metabolite', changed => {
       if (changed) {
-        this.setMetaboliteScale(settings.get_option('metabolite_scale'),
+        this.setMetaboliteScale(settings.get('metabolite_scale'),
                                 getDataStatistics)
       }
     })

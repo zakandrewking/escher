@@ -3,9 +3,8 @@ import { h, Component } from 'preact'
 import ScaleSelector from './ScaleSelector'
 import ScaleSlider from './ScaleSlider'
 import ScaleSelection from './ScaleSelection'
-import update from 'immutability-helper'
 import _ from 'underscore'
-import './BuilderSettingsMenu.css'
+import './SettingsMenu.css'
 import scalePresets from './colorPresets'
 
 /**
@@ -13,29 +12,9 @@ import scalePresets from './colorPresets'
  * settings. Implements Settings.js but otherwise only uses
  * Preact.
  */
-class BuilderSettingsMenu extends Component {
-  constructor (props) {
-    super(props)
-    this.state = {
-      display: props.display
-    }
-    if (props.display) {
-      this.componentWillAppear()
-    }
-  }
-
-  componentWillReceiveProps (nextProps) {
-    this.setState({display: nextProps.display})
-    if (nextProps.display && !this.props.display) {
-      this.componentWillAppear()
-    }
-    if (!nextProps.display && this.props.display) {
-      this.componentWillDisappear()
-    }
-  }
-
-  componentWillAppear () {
-    this.props.settings.hold_changes()
+class SettingsMenu extends Component {
+  componentWillMount () {
+    this.props.settings.holdChanges()
     this.setState({
       clearEscape: this.props.map.key_manager.add_escape_listener(
         () => this.abandonChanges(),
@@ -49,49 +28,46 @@ class BuilderSettingsMenu extends Component {
     })
   }
 
-  componentWillDisappear () {
-    this.props.closeMenu() // Function to pass display = false to the settings menu
+  componentWillUnmount () {
     this.state.clearEscape()
     this.state.clearEnter()
   }
 
   abandonChanges () {
-    this.props.settings.abandon_changes()
-    this.componentWillDisappear()
+    this.props.settings.abandonChanges()
+    this.props.setDisplay(false)
   }
 
   saveChanges () {
-    this.props.settings.accept_changes()
-    this.componentWillDisappear()
+    this.props.settings.acceptChanges()
+    this.props.setDisplay(false)
   }
 
   /**
-   * Function to handle changes to the reaction or metabolite styling.
+   * Function to toggle one option in the reaction or metabolite styling.
    * @param {String} value - the style option to be added or removed
    * @param {String} type - reaction_style or metabolite_style
    */
   handleStyle (value, type) {
-    if (this.props[type].indexOf(value) === -1) {
-      this.props.settings.set_conditional(type,
-        update(this.props[type], {$push: [value]})
-      )
-    } else if (this.props[type].indexOf(value) > -1) {
-      this.props.settings.set_conditional(type,
-        update(this.props[type], {$splice: [[this.props[type].indexOf(value), 1]]})
-      )
+    const currentSetting = this.props.settings.get(type)
+    const index = currentSetting.indexOf(value)
+    if (index === -1) {
+      this.props.settings.set(type, [...currentSetting, value])
+    } else {
+      this.props.settings.set(type, [
+        ...currentSetting.slice(0, index),
+        ...currentSetting.slice(index + 1)
+      ])
     }
   }
 
-  is_visible () {
-    return this.state.display
-  }
-
   render () {
+    const settings = this.props.settings
+    const enableTooltips = settings.get('enable_tooltips') || []
+    const dataStatistics = this.props.map.get_data_statistics()
+
     return (
-      <div
-        className='settingsBackground'
-        style={this.props.display ? {display: 'block'} : {display: 'none'}}
-      >
+      <div className='settingsBackground'>
         <div className='settingsBoxContainer'>
           <button className='discardChanges btn' onClick={() => this.abandonChanges()}>
             <i className='icon-cancel' aria-hidden='true' />
@@ -116,13 +92,8 @@ class BuilderSettingsMenu extends Component {
                       <input
                         type='radio'
                         name='identifiers'
-                        onClick={() => {
-                          this.props.settings.set_conditional(
-                            'identifiers_on_map',
-                            'bigg_id'
-                          )
-                        }}
-                        checked={this.props.identifiers_on_map === 'bigg_id'}
+                        onClick={() => { settings.set('identifiers_on_map', 'bigg_id') }}
+                        checked={settings.get('identifiers_on_map') === 'bigg_id'}
                       />
                       ID&apos;s
                     </label>
@@ -130,13 +101,8 @@ class BuilderSettingsMenu extends Component {
                       <input
                         type='radio'
                         name='identifiers'
-                        onClick={() => {
-                          this.props.settings.set_conditional(
-                            'identifiers_on_map',
-                            'name'
-                          )
-                        }}
-                        checked={this.props.identifiers_on_map === 'name'}
+                        onClick={() => { settings.set('identifiers_on_map', 'name') }}
+                        checked={settings.get('identifiers_on_map') === 'name'}
                       />
                       Descriptive names
                     </label>
@@ -147,11 +113,13 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() => {
-                    this.props.scroll_behavior === 'zoom'
-                    ? this.props.settings.set_conditional('scroll_behavior', 'pan')
-                    : this.props.settings.set_conditional('scroll_behavior', 'zoom')
+                    if (settings.get('scroll_behavior') === 'zoom') {
+                      settings.set('scroll_behavior', 'pan')
+                    } else {
+                      settings.set('scroll_behavior', 'zoom')
+                    }
                   }}
-                  checked={this.props.scroll_behavior === 'zoom'}
+                  checked={settings.get('scroll_behavior') === 'zoom'}
                 />
                 Scroll to zoom (instead of scroll to pan)
               </label>
@@ -159,12 +127,12 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional(
+                    settings.set(
                       'hide_secondary_metabolites',
-                      !this.props.hide_secondary_metabolites
+                      !settings.get('hide_secondary_metabolites')
                     )
                   }
-                  checked={this.props.hide_secondary_metabolites}
+                  checked={settings.get('hide_secondary_metabolites')}
                 />
                 Hide secondary metabolites
               </label>
@@ -174,12 +142,12 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional(
+                    settings.set(
                       'show_gene_reaction_rules',
-                      !this.props.show_gene_reaction_rules
+                      !settings.get('show_gene_reaction_rules')
                     )
                   }
-                  checked={this.props.show_gene_reaction_rules}
+                  checked={settings.get('show_gene_reaction_rules')}
                   />
                   Show gene reaction rules
               </label>
@@ -187,12 +155,12 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional(
+                    settings.set(
                       'hide_all_labels',
-                      !this.props.hide_all_labels
+                      !settings.get('hide_all_labels')
                     )
                   }
-                  checked={this.props.hide_all_labels}
+                  checked={settings.get('hide_all_labels')}
                 />
                 Hide reaction, gene, and metabolite labels
               </label>
@@ -200,12 +168,12 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() =>
-                    this.props.settings.set_conditional(
+                    settings.set(
                       'allow_building_duplicate_reactions',
-                      !this.props.allow_building_duplicate_reactions
+                      !settings.get('allow_building_duplicate_reactions')
                     )
                   }
-                  checked={this.props.allow_building_duplicate_reactions}
+                  checked={settings.get('allow_building_duplicate_reactions')}
                 />
                 Allow duplicate reactions
               </label>
@@ -213,13 +181,27 @@ class BuilderSettingsMenu extends Component {
                 <input
                   type='checkbox'
                   onClick={() => {
-                    this.props.settings.set_conditional(
+                    settings.set(
                       'highlight_missing',
-                      !this.props.highlight_missing
+                      !settings.get('highlight_missing')
                     )
                   }}
-                  checked={this.props.highlight_missing}
-                />Highlight reactions not in model
+                  checked={settings.get('highlight_missing')}
+                />
+                Highlight reactions not in model
+              </label>
+              <label title='If true, then use CSS3 3D transforms to speed up panning and zooming.'>
+                <input
+                  type='checkbox'
+                  onClick={() => {
+                    settings.set(
+                      'use_3d_transform',
+                      !settings.get('use_3d_transform')
+                    )
+                  }}
+                  checked={settings.get('use_3d_transform')}
+                />
+                Use 3D transform for responsive panning and zooming
               </label>
               <table>
                 <tr title='Determines over which elements tooltips will display for reactions, metabolites, and genes'>
@@ -230,31 +212,29 @@ class BuilderSettingsMenu extends Component {
                     <label className='tooltipOption' title='If checked, tooltips will display over the gene, reaction, and metabolite labels'>
                       <input
                         type='checkbox'
-                        onClick={() =>
-                          this.props.settings.set_conditional(
-                            'enable_tooltips',
-                            this.props.enable_tooltips.indexOf('label') > -1
-                              ? update(this.props.enable_tooltips, {$splice: [[this.props.enable_tooltips.indexOf('label'), 1]]})
-                              : update(this.props.enable_tooltips, {$push: ['label']})
-                          )
-                        }
-                        checked={this.props.enable_tooltips.indexOf('label') > -1}
-                        />
+                        onClick={() => {
+                          const type = 'label'
+                          const newEnableTooltips = _.contains(enableTooltips, type)
+                                                  ? _.filter(enableTooltips, x => x !== type)
+                                                  : [...enableTooltips, type]
+                          settings.set('enable_tooltips', newEnableTooltips)
+                        }}
+                        checked={_.contains(enableTooltips, 'label')}
+                      />
                       Labels
                     </label>
                     <label className='tooltipOption' title='If checked, tooltips will display over the reaction line segments and metabolite circles'>
                       <input
                         type='checkbox'
-                        onClick={() =>
-                          this.props.settings.set_conditional(
-                            'enable_tooltips',
-                            this.props.enable_tooltips.indexOf('object') > -1
-                              ? update(this.props.enable_tooltips, {$splice: [[this.props.enable_tooltips.indexOf('object'), 1]]})
-                              : update(this.props.enable_tooltips, {$push: ['object']})
-                          )
-                        }
-                        checked={this.props.enable_tooltips.indexOf('object') > -1}
-                        />
+                        onClick={() => {
+                          const type = 'object'
+                          const newEnableTooltips = _.contains(enableTooltips, type)
+                                                  ? _.filter(enableTooltips, x => x !== type)
+                                                  : [...enableTooltips, type]
+                          settings.set('enable_tooltips', newEnableTooltips)
+                        }}
+                        checked={_.contains(enableTooltips, 'object')}
+                      />
                       Objects
                     </label>
                   </td>
@@ -269,37 +249,37 @@ class BuilderSettingsMenu extends Component {
               <div className='title'>
                 Reactions
               </div>
-              <ScaleSelector disabled={this.props.map.get_data_statistics().reaction === null}>
+              <ScaleSelector disabled={dataStatistics.reaction === null}>
                 {Object.values(_.mapObject(scalePresets, (value, key) => {
                   return (
                     <ScaleSelection
                       name={key}
                       scale={value}
-                      onClick={() => this.props.settings.set_conditional(
-                        'reaction_scale', value
-                      )}
+                      onClick={() => {
+                        settings.set('reaction_scale', value)
+                      }}
                     />
                   )
                 }))}
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.props.reaction_scale}
-              settings={this.props.settings}
+              scale={settings.get('reaction_scale')}
+              settings={settings}
               type='Reaction'
-              stats={this.props.map.get_data_statistics().reaction}
-              noDataColor={this.props.reaction_no_data_color}
-              noDataSize={this.props.reaction_no_data_size}
+              stats={dataStatistics.reaction}
+              noDataColor={settings.get('reaction_no_data_color')}
+              noDataSize={settings.get('reaction_no_data_size')}
               onChange={scale => {
-                this.props.settings.set_conditional('reaction_scale', scale)
+                settings.set('reaction_scale', scale)
               }}
               onNoDataColorChange={val => {
-                this.props.settings.set_conditional('reaction_no_data_color', val)
+                settings.set('reaction_no_data_color', val)
               }}
               onNoDataSizeChange={val => {
-                this.props.settings.set_conditional('reaction_no_data_size', val)
+                settings.set('reaction_no_data_size', val)
               }}
-              abs={this.props.reaction_styles.indexOf('abs') > -1}
+              abs={settings.get('reaction_styles').indexOf('abs') > -1}
             />
             <div className='subheading'>
               Reaction or Gene data
@@ -321,7 +301,8 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('abs', 'reaction_styles')}
-                      checked={this.props.reaction_styles.indexOf('abs') > -1}
+                      checked={_.contains(settings.get('reaction_styles'), 'abs')}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Absolute value
                   </label>
@@ -333,7 +314,8 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('size', 'reaction_styles')}
-                      checked={this.props.reaction_styles.indexOf('size') > -1}
+                      checked={_.contains(settings.get('reaction_styles'), 'size')}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Size
                   </label>
@@ -342,7 +324,8 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('color', 'reaction_styles')}
-                      checked={this.props.reaction_styles.indexOf('color') > -1}
+                      checked={_.contains(settings.get('reaction_styles'), 'color')}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Color
                   </label>
@@ -352,7 +335,8 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='reactionStyle'
                       onClick={() => this.handleStyle('text', 'reaction_styles')}
-                      checked={this.props.reaction_styles.indexOf('text') > -1}
+                      checked={_.contains(settings.get('reaction_styles'), 'text')}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Text (Show data in label)
                   </label>
@@ -365,12 +349,9 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='reactionCompare'
-                      onClick={() => {
-                        this.props.settings.set_conditional(
-                        'reaction_compare_style', 'fold'
-                        )
-                      }}
-                      checked={this.props.reaction_compare_style === 'fold'}
+                      onClick={() => settings.set('reaction_compare_style', 'fold')}
+                      checked={settings.get('reaction_compare_style') === 'fold'}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Fold Change
                   </label>
@@ -378,12 +359,9 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='reactionCompare'
-                      onClick={() => {
-                        this.props.settings.set_conditional(
-                        'reaction_compare_style', 'log2_fold'
-                        )
-                      }}
-                      checked={this.props.reaction_compare_style === 'log2_fold'}
+                      onClick={() => settings.set('reaction_compare_style', 'log2_fold')}
+                      checked={settings.get('reaction_compare_style') === 'log2_fold'}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Log2 (Fold Change)
                   </label>
@@ -391,12 +369,9 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='reactionCompare'
-                      onClick={() => {
-                        this.props.settings.set_conditional(
-                        'reaction_compare_style', 'diff'
-                        )
-                      }}
-                      checked={this.props.reaction_compare_style === 'diff'}
+                      onClick={() => settings.set('reaction_compare_style', 'diff')}
+                      checked={settings.get('reaction_compare_style') === 'diff'}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Difference
                   </label>
@@ -413,12 +388,9 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='andMethod'
-                      onClick={() => {
-                        this.props.settings.set_conditional(
-                        'and_method_in_gene_reaction_rule', 'mean'
-                        )
-                      }}
-                      checked={this.props.and_method_in_gene_reaction_rule === 'mean'}
+                      onClick={() => settings.set('and_method_in_gene_reaction_rule', 'mean')}
+                      checked={settings.get('and_method_in_gene_reaction_rule') === 'mean'}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Mean
                   </label>
@@ -426,12 +398,9 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='andMethod'
-                      onClick={() => {
-                        this.props.settings.set_conditional(
-                        'and_method_in_gene_reaction_rule', 'min'
-                        )
-                      }}
-                      checked={this.props.and_method_in_gene_reaction_rule === 'min'}
+                      onClick={() => settings.set('and_method_in_gene_reaction_rule', 'min')}
+                      checked={settings.get('and_method_in_gene_reaction_rule') === 'min'}
+                      disabled={dataStatistics.reaction === null}
                     />
                     Min
                   </label>
@@ -443,37 +412,35 @@ class BuilderSettingsMenu extends Component {
               <div className='title'>
                 Metabolites
               </div>
-              <ScaleSelector disabled={this.props.map.get_data_statistics().metabolite === null}>
+              <ScaleSelector disabled={dataStatistics.metabolite === null}>
                 {Object.values(_.mapObject(scalePresets, (value, key) => {
                   return (
                     <ScaleSelection
                       name={key}
                       scale={value}
-                      onClick={() => this.props.settings.set_conditional(
-                        'metabolite_scale', value
-                      )}
+                      onClick={() => settings.set('metabolite_scale', value)}
                     />
                   )
                 }))}
               </ScaleSelector>
             </div>
             <ScaleSlider
-              scale={this.props.metabolite_scale}
-              settings={this.props.settings}
+              scale={settings.get('metabolite_scale')}
+              settings={settings}
               type='Metabolite'
-              stats={this.props.map.get_data_statistics().metabolite}
-              noDataColor={this.props.metabolite_no_data_color}
-              noDataSize={this.props.metabolite_no_data_size}
+              stats={dataStatistics.metabolite}
+              noDataColor={settings.get('metabolite_no_data_color')}
+              noDataSize={settings.get('metabolite_no_data_size')}
               onChange={scale => {
-                this.props.settings.set_conditional('metabolite_scale', scale)
+                settings.set('metabolite_scale', scale)
               }}
               onNoDataColorChange={val => {
-                this.props.settings.set_conditional('metabolite_no_data_color', val)
+                settings.set('metabolite_no_data_color', val)
               }}
               onNoDataSizeChange={val => {
-                this.props.settings.set_conditional('metabolite_no_data_size', val)
+                settings.set('metabolite_no_data_size', val)
               }}
-              abs={this.props.metabolite_styles.indexOf('abs') > -1}
+              abs={_.contains(settings.get('metabolite_styles'), 'abs')}
             />
             <div className='subheading'>
               Metabolite data
@@ -495,7 +462,8 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('abs', 'metabolite_styles')}
-                      checked={this.props.metabolite_styles.indexOf('abs') > -1}
+                      checked={_.contains(settings.get('metabolite_styles'), 'abs')}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Absolute value
                   </label>
@@ -507,7 +475,8 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('size', 'metabolite_styles')}
-                      checked={this.props.metabolite_styles.indexOf('size') > -1}
+                      checked={_.contains(settings.get('metabolite_styles'), 'size')}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Size
                   </label>
@@ -516,7 +485,8 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('color', 'metabolite_styles')}
-                      checked={this.props.metabolite_styles.indexOf('color') > -1}
+                      checked={_.contains(settings.get('metabolite_styles'), 'color')}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Color
                   </label>
@@ -526,7 +496,8 @@ class BuilderSettingsMenu extends Component {
                       type='checkbox'
                       name='metaboliteStyle'
                       onClick={() => this.handleStyle('text', 'metabolite_styles')}
-                      checked={this.props.metabolite_styles.indexOf('text') > -1}
+                      checked={_.contains(settings.get('metabolite_styles'), 'text')}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Text (Show data in label)
                   </label>
@@ -539,12 +510,9 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='metaboliteCompare'
-                      onClick={() => {
-                        this.props.settings.set_conditional(
-                        'metabolite_compare_style', 'fold'
-                        )
-                      }}
-                      checked={this.props.metabolite_compare_style === 'fold'}
+                      onClick={() => settings.set('metabolite_compare_style', 'fold')}
+                      checked={settings.get('metabolite_compare_style') === 'fold'}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Fold Change
                   </label>
@@ -552,12 +520,9 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='metaboliteCompare'
-                      onClick={() => {
-                        this.props.settings.set_conditional(
-                        'metabolite_compare_style', 'log2_fold'
-                        )
-                      }}
-                      checked={this.props.metabolite_compare_style === 'log2_fold'}
+                      onClick={() => settings.set('metabolite_compare_style', 'log2_fold')}
+                      checked={settings.get('metabolite_compare_style') === 'log2_fold'}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Log2 (Fold Change)
                   </label>
@@ -565,12 +530,9 @@ class BuilderSettingsMenu extends Component {
                     <input
                       type='radio'
                       name='metaboliteCompare'
-                      onClick={() => {
-                        this.props.settings.set_conditional(
-                        'metabolite_compare_style', 'diff'
-                        )
-                      }}
-                      checked={this.props.metabolite_compare_style === 'diff'}
+                      onClick={() => settings.set('metabolite_compare_style', 'diff')}
+                      checked={settings.get('metabolite_compare_style') === 'diff'}
+                      disabled={dataStatistics.metabolite === null}
                     />
                     Difference
                   </label>
@@ -583,4 +545,4 @@ class BuilderSettingsMenu extends Component {
     )
   }
 }
-export default BuilderSettingsMenu
+export default SettingsMenu

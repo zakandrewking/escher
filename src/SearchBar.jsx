@@ -1,51 +1,48 @@
 /** SearchBar */
 
 /** @jsx h */
-import {h, Component} from 'preact'
+import { h, Component } from 'preact'
 import './SearchBar.css'
-
 import _ from 'underscore'
 
 class SearchBar extends Component {
   constructor (props) {
     super(props)
     this.state = {
-      visible: props.visible,
       current: 0,
       searchItem: props.searchItem,
-      counter: '',
-      clearEscape: this.props.map.key_manager.add_escape_listener(
-        () => this.close(), true
-      ),
-      clearNext: this.props.map.key_manager.add_key_listener(
-        ['enter', 'ctrl+g'], () => this.next(), false),
-      clearPrevious: this.props.map.key_manager.add_key_listener(
-        ['shift+enter', 'shift+ctrl+g'], () => this.previous(), false)
+      counter: ''
     }
   }
 
-  componentWillReceiveProps (nextProps) {
+  componentWillMount () {
     this.setState({
-      ...nextProps,
-      current: 0,
-      results: null,
-      searchItem: nextProps.searchItem,
-      counter: '',
       clearEscape: this.props.map.key_manager.add_escape_listener(
-        () => this.close(), true
+        () => this.close(),
+        true
       ),
       clearNext: this.props.map.key_manager.add_key_listener(
-        ['enter', 'ctrl+g'], () => this.next(), false),
+        ['enter', 'ctrl+g'],
+        () => this.next(),
+        false
+      ),
       clearPrevious: this.props.map.key_manager.add_key_listener(
-        ['shift+enter', 'shift+ctrl+g'], () => this.previous(), false)
+        ['shift+enter', 'shift+ctrl+g'],
+        () => this.previous(),
+        false
+      )
     })
-    if (nextProps.searchItem !== null) {
-      this.handleInput(nextProps.searchItem)
-    }
   }
 
-  componentDidUpdate () {
+  componentDidMount () {
     this.inputRef.focus()
+  }
+
+  componentWillUnmount () {
+    this.state.clearEscape()
+    this.state.clearNext()
+    this.state.clearPrevious()
+    this.props.map.highlight(null)
   }
 
   /**
@@ -53,7 +50,6 @@ class SearchBar extends Component {
    * @param {string} value - Search term
    */
   handleInput (value) {
-    if (!this.state.visible) { return }
     const results = this.dropDuplicates(this.props.map.search_index.find(value))
     let counter = ''
     if (results === null || !value) {
@@ -114,13 +110,14 @@ class SearchBar extends Component {
   }
 
   next () {
-    if (!(this.state.results && this.state.results.length > 0)) { return }
+    if (!(this.state.results && this.state.results.length > 0)) return
     this.update((this.state.current + 1) % this.state.results.length)
   }
 
   previous () {
-    if (!(this.state.results && this.state.results.length > 0)) { return }
-    this.update((this.state.current + this.state.results.length - 1) %
+    if (!(this.state.results && this.state.results.length > 0)) return
+    this.update(
+      (this.state.current + this.state.results.length - 1) %
       this.state.results.length
     )
   }
@@ -150,44 +147,29 @@ class SearchBar extends Component {
   }
 
   close () {
-    this.props.map.highlight(null)
-    this.setState({visible: false})
-    this.state.clearNext()
-    this.state.clearPrevious()
-    this.state.clearEscape()
-  }
-
-  is_visible () {
-    return this.state.visible
+    this.props.setDisplay(false)
   }
 
   render () {
     return (
-      <div
-        className='searchContainer'
-        style={this.state.visible ? {display: 'inline-flex'} : {display: 'none'}}>
-        <div className='searchPanel'>
-          <input
-            className='searchField'
-            value={this.state.searchItem}
-            onInput={event => this.handleInput(event.target.value)}
-            ref={input => { this.inputRef = input }}
-          />
-          <button className='searchBarButton left btn' onClick={() => this.previous()}>
-            <i className='icon-left-open' />
-          </button>
-          <button className='searchBarButton right btn' onClick={() => this.next()}>
-            <i className='icon-right-open' />
-          </button>
-          <div className='searchCounter'>
-            {this.state.counter}
-          </div>
+      <div className='search-container'>
+        <input
+          className='search-field'
+          value={this.state.searchItem}
+          onInput={event => this.handleInput(event.target.value)}
+          ref={input => { this.inputRef = input }}
+        />
+        <button className='search-bar-button left btn' onClick={() => this.previous()}>
+          <i className='icon-left-open' />
+        </button>
+        <button className='search-bar-button right btn' onClick={() => this.next()}>
+          <i className='icon-right-open' />
+        </button>
+        <div className='search-counter'>
+          {this.state.counter}
         </div>
-        <button
-          className='searchBarButton btn'
-          onClick={() => this.close()}
-        >
-          <i className='icon-cancel' style={{marginTop: '-2px', verticalAlign: 'middle'}} />
+        <button className='search-bar-button btn' onClick={() => this.close()}>
+          <i className='icon-cancel' />
         </button>
       </div>
     )

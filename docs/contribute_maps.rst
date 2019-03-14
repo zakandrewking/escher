@@ -34,28 +34,6 @@ Once you have a COBRA model, you can follow these steps:
 
     iMM904.Amino acid biosynthesis.json
 
-5. (Optional) Once you have a set of subsystem maps, you can set up a local
-   Escher server so that subsystem maps appear in the "quick jump" menu in the
-   bottom right corner of the screen (as seen here_ for iJO1366). To set this
-   up, you will need to start a local server as describe in
-   :ref:`local-server`. Next, find your local cache directory by running this
-   command in a terminal::
-
-    python -c "import escher; print(escher.get_cache_dir(name='maps'))"
-
-   This will print the location of the local maps cache. Add your new subsystem
-   maps to cache folder. Now, when you run the server (described in
-   :ref:`local-server`), you should see that quick jump menu appear.
-
-   NOTE: The cache directory is organized into folders for organisms. You can
-   use these folder for filtering by organism on the local launch page, or you
-   can place the maps in the top directory.
-
-   NOTE 2: A similar approach can be used to access your models from the local
-   launch page. Place maps in the folder indicated by::
-
-    python -c "import escher; print(escher.get_cache_dir(name='models'))"
-
 
 Building from an existing map for a similar organism
 ----------------------------------------------------

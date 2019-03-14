@@ -14,13 +14,6 @@ import utils from './utils'
 import dataStyles from './data_styles'
 
 class MenuButton extends Component {
-  constructor (props) {
-    super(props)
-    this.state = {
-      disabled: _.contains(props.disabledButtons, props.name)
-    }
-  }
-
   handleFileInput (file) {
     const reader = new window.FileReader()
     reader.onload = () => {
@@ -32,17 +25,18 @@ class MenuButton extends Component {
   }
 
   render () {
+    const disabled = _.contains(this.props.disabledButtons, this.props.name.replace(/ \(.*\)$/, ''))
     if (this.props.type === 'load') {
       return (
         <label
           className='menuButton'
-          tabindex={this.state.disabled ? '-1' : '0'}
-          id={this.state.disabled ? 'disabled' : ''}
+          tabindex={disabled ? '-1' : '0'}
+          id={disabled ? 'disabled' : ''}
         >
           <input
             type='file'
             onChange={event => this.handleFileInput(event.target.files[0])}
-            disabled={this.state.disabled}
+            disabled={disabled}
           />
           {this.props.name}
         </label>
@@ -51,9 +45,9 @@ class MenuButton extends Component {
       return (
         <li
           className='menuButton'
-          tabindex={this.state.disabled ? '-1' : '0'}
+          tabindex={disabled ? '-1' : '0'}
           onClick={this.props.onClick}
-          id={this.state.disabled ? 'disabled' : ''}
+          id={disabled ? 'disabled' : ''}
         >
           <i className='icon-ok' aria-hidden='true'>&nbsp;</i>
           {this.props.name}
@@ -63,9 +57,9 @@ class MenuButton extends Component {
       return (
         <li
           className='menuButton'
-          tabindex={this.state.disabled ? '-1' : '0'}
-          onClick={this.state.disabled ? null : this.props.onClick}
-          id={this.state.disabled ? 'disabled' : ''}
+          tabindex={disabled ? '-1' : '0'}
+          onClick={disabled ? null : this.props.onClick}
+          id={disabled ? 'disabled' : ''}
         >
           {this.props.name}
         </li>

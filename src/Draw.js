@@ -167,24 +167,24 @@ function create_reaction_label (enter_selection, tool) {
  * @param {Boolean} has_data_on_reactions - Whether data needs to be drawn.
  */
 function update_reaction_label (update_selection, has_data_on_reactions) {
-  var decimal_format = d3_format('.4g')
-  var identifiers_on_map = this.settings.get_option('identifiers_on_map')
-  var reaction_data_styles = this.settings.get_option('reaction_styles')
-  var show_gene_reaction_rules = this.settings.get_option('show_gene_reaction_rules')
-  var hide_all_labels = this.settings.get_option('hide_all_labels')
-  var gene_font_size = this.settings.get_option('gene_font_size')
-  var label_mousedown_fn = this.behavior.label_mousedown
-  var label_mouseover_fn = this.behavior.label_mouseover
-  var label_mouseout_fn = this.behavior.label_mouseout
-  var label_touch_fn = this.behavior.label_touch
+  const decimal_format = d3_format('.4g')
+  const identifiers_on_map = this.settings.get('identifiers_on_map')
+  const reaction_data_styles = this.settings.get('reaction_styles')
+  const show_gene_reaction_rules = this.settings.get('show_gene_reaction_rules')
+  const hide_all_labels = this.settings.get('hide_all_labels')
+  const gene_font_size = this.settings.get('gene_font_size')
+  const label_mousedown_fn = this.behavior.labelMousedown
+  const label_mouseover_fn = this.behavior.labelMouseover
+  const label_mouseout_fn = this.behavior.labelMouseout
+  const label_touch_fn = this.behavior.labelTouch
 
   // label location
   update_selection
     .attr('transform', function(d) {
       return 'translate(' + d.label_x + ',' + d.label_y + ')'
     })
-    .call(this.behavior.turn_off_drag)
-    .call(this.behavior.reaction_label_drag)
+    .call(this.behavior.turnOffDrag)
+    .call(this.behavior.reactionLabelDrag)
 
   // update label visibility
   var label = update_selection.select('.reaction-label')
@@ -207,9 +207,6 @@ function update_reaction_label (update_selection, has_data_on_reactions) {
       .on('mouseout', label_mouseout_fn)
       .on('touchend', function (d) {
         label_touch_fn('reaction_label', d)
-      })
-      .call(sel => {
-        this.map.callback_manager.run('update_tooltip', null, 'reaction_label', sel)
       })
   }
 
@@ -318,20 +315,20 @@ function create_segment (enter_selection) {
  */
 function update_segment (update_selection, scale, cobra_model,
                          drawn_nodes, defs, has_data_on_reactions) {
-  var reaction_data_styles = this.settings.get_option('reaction_styles')
+  var reaction_data_styles = this.settings.get('reaction_styles')
   var should_size = (has_data_on_reactions && reaction_data_styles.indexOf('size') !== -1)
   var should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') !== -1)
-  var no_data_size = this.settings.get_option('reaction_no_data_size')
-  var no_data_color = this.settings.get_option('reaction_no_data_color')
+  var no_data_size = this.settings.get('reaction_no_data_size')
+  var no_data_color = this.settings.get('reaction_no_data_color')
 
   // update segment attributes
-  var highlight_missing  = this.settings.get_option('highlight_missing')
-  var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
-  var primary_r = this.settings.get_option('primary_metabolite_radius')
-  var secondary_r = this.settings.get_option('secondary_metabolite_radius')
-  var object_mouseover_fn = this.behavior.object_mouseover
-  var object_mouseout_fn = this.behavior.object_mouseout
-  var object_touch_fn = this.behavior.object_touch
+  var highlight_missing  = this.settings.get('highlight_missing')
+  var hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
+  var primary_r = this.settings.get('primary_metabolite_radius')
+  var secondary_r = this.settings.get('secondary_metabolite_radius')
+  var object_mouseover_fn = this.behavior.objectMouseover
+  var object_mouseout_fn = this.behavior.objectMouseout
+  var object_touch_fn = this.behavior.objectTouch
   var get_arrow_size = function (data, should_size) {
     var width = 20
     var height = 13
@@ -440,9 +437,6 @@ function update_segment (update_selection, scale, cobra_model,
       ))
     })
     .on('mouseout', object_mouseout_fn)
-    .call(sel => {
-      this.map.callback_manager.run('update_tooltip', null, 'reaction_label', sel)
-    })
 
   // new arrowheads
   var arrowheads = update_selection.select('.arrowheads')
@@ -655,7 +649,7 @@ function create_bezier (enter_selection) {
  */
 function update_bezier(update_selection, show_beziers, drag_behavior,
                        mouseover, mouseout, drawn_nodes, drawn_reactions) {
-  var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
+  var hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
 
   if (!show_beziers) {
     update_selection.attr('visibility', 'hidden')
@@ -679,7 +673,7 @@ function update_bezier(update_selection, show_beziers, drag_behavior,
 
   // draw bezier points
   update_selection.select('.bezier-circle')
-    .call(this.behavior.turn_off_drag)
+    .call(this.behavior.turnOffDrag)
     .call(drag_behavior)
     .on('mouseover', mouseover)
     .on('mouseout', mouseout)
@@ -757,22 +751,22 @@ function update_node (update_selection, scale, has_data_on_nodes,
                       mousedown_fn, click_fn, mouseover_fn, mouseout_fn,
                       drag_behavior, label_drag_behavior) {
   // update circle and label location
-  var hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
-  var primary_r = this.settings.get_option('primary_metabolite_radius')
-  var secondary_r = this.settings.get_option('secondary_metabolite_radius')
-  var marker_r = this.settings.get_option('marker_radius')
-  var hide_all_labels = this.settings.get_option('hide_all_labels')
-  var identifiers_on_map = this.settings.get_option('identifiers_on_map')
-  var metabolite_data_styles = this.settings.get_option('metabolite_styles')
-  var no_data_style = { color: this.settings.get_option('metabolite_no_data_color'),
-                        size: this.settings.get_option('metabolite_no_data_size') }
-  var label_mousedown_fn = this.behavior.label_mousedown
-  var label_mouseover_fn = this.behavior.label_mouseover
-  var label_mouseout_fn = this.behavior.label_mouseout
-  var label_touch_fn = this.behavior.label_touch
-  var object_mouseover_fn = this.behavior.object_mouseover
-  var object_mouseout_fn = this.behavior.object_mouseout
-  var object_touch_fn = this.behavior.object_touch
+  var hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
+  var primary_r = this.settings.get('primary_metabolite_radius')
+  var secondary_r = this.settings.get('secondary_metabolite_radius')
+  var marker_r = this.settings.get('marker_radius')
+  var hide_all_labels = this.settings.get('hide_all_labels')
+  var identifiers_on_map = this.settings.get('identifiers_on_map')
+  var metabolite_data_styles = this.settings.get('metabolite_styles')
+  var no_data_style = { color: this.settings.get('metabolite_no_data_color'),
+                        size: this.settings.get('metabolite_no_data_size') }
+  var label_mousedown_fn = this.behavior.labelMousedown
+  var label_mouseover_fn = this.behavior.labelMouseover
+  var label_mouseout_fn = this.behavior.labelMouseout
+  var label_touch_fn = this.behavior.labelTouch
+  var object_mouseover_fn = this.behavior.objectMouseover
+  var object_mouseout_fn = this.behavior.objectMouseout
+  var object_touch_fn = this.behavior.objectTouch
 
   var mg = update_selection
       .select('.node-circle')
@@ -810,7 +804,7 @@ function update_node (update_selection, scale, has_data_on_nodes,
       // midmarkers and multimarkers
       return null
     })
-    .call(this.behavior.turn_off_drag)
+    .call(this.behavior.turnOffDrag)
     .call(drag_behavior)
     .on('mousedown', mousedown_fn)
     .on('click', click_fn)
@@ -833,9 +827,6 @@ function update_node (update_selection, scale, has_data_on_nodes,
         ))
       }
     })
-    .call(sel => {
-      this.map.callback_manager.run('update_tooltip', null, 'node_label', sel)
-    })
 
   // update node label visibility
   var node_label = update_selection
@@ -855,16 +846,13 @@ function update_node (update_selection, scale, has_data_on_nodes,
           t += ' ' + d.data_string
         return t
       })
-      .call(this.behavior.turn_off_drag)
+      .call(this.behavior.turnOffDrag)
       .call(label_drag_behavior)
       .on('mousedown', label_mousedown_fn)
       .on('mouseover', function (d) {
         label_mouseover_fn('node_label', d)
       })
       .on('mouseout', label_mouseout_fn)
-      .call(sel => {
-        this.map.callback_manager.run('update_tooltip', null, 'node_label', sel)
-      })
   }
 
   this.callback_manager.run('update_node', this, update_selection)
@@ -894,10 +882,10 @@ function create_text_label (enter_selection) {
 }
 
 function update_text_label (update_selection) {
-  var mousedown_fn = this.behavior.text_label_mousedown
-  var click_fn = this.behavior.text_label_click
-  var drag_behavior = this.behavior.selectable_drag
-  var turn_off_drag = this.behavior.turn_off_drag
+  var mousedown_fn = this.behavior.textLabelMousedown
+  var click_fn = this.behavior.textLabelClick
+  var drag_behavior = this.behavior.selectableDrag
+  var turn_off_drag = this.behavior.turnOffDrag
 
   update_selection
     .select('.label')

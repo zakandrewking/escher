@@ -16,7 +16,7 @@ if on_rtd:
     # to get autodoc going
     package = defaultdict(str)
 else:
-    with open(join(dirname(__file__), 'package.json'), 'r') as f:
+    with open(join(dirname(__file__), 'static', 'package.json'), 'r') as f:
         package = json.load(f)
 
 # software version

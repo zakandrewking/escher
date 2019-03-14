@@ -404,8 +404,8 @@ function rotate_nodes (selected_nodes, reactions, beziers, angle, center) {
       }
     })
 
-    updated_reaction_ids = utils.unique_concat([updated_reaction_ids,
-                                                updated.reaction_ids])
+    updated_reaction_ids = utils.uniqueConcat([updated_reaction_ids,
+                                               updated.reaction_ids])
     updated_node_ids.push(node_id)
   }
 

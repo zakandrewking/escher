@@ -1,18 +1,13 @@
-.escher-container .buttonPanel * {
-  box-sizing: border-box;
-}
-
-.escher-container .buttonPanel {
+.escher-container .button-panel {
   position: absolute;
   left: 4px;
   top: 20%;
   margin-top: -32px;
   padding-left: 0;
-  -ms-touch-action: none;
   touch-action: none;
 }
 
-.escher-container .buttonPanel>li {
+.escher-container .button-panel>li {
   margin-top: 5px;
 }
 
@@ -37,7 +32,7 @@
   border-bottom-right-radius: 4px;
 }
 
-.escher-container .buttonPanel>.grouping:last-child {
+.escher-container .button-panel>.grouping:last-child {
   margin-top: 4px;
 }
 
@@ -68,15 +63,15 @@
   height: 40px;
 }
 
-.escher-container .buttonPanel .button:active, .escher-container .buttonGroup label:active, .escher-container .buttonPanel .buttonGroup:active {
+.escher-container .button-panel .button:active, .escher-container .buttonGroup label:active, .escher-container .button-panel .buttonGroup:active {
   background-image: linear-gradient(#3F4141, #474949 6%, #4F5151);
 }
 
-.escher-container .buttonPanel .fa {
+.escher-container .button-panel .fa {
   font-size: 24px;
 }
 
 /* Icons */
-.escher-container .buttonPanel [class^='icon-'] {
+.escher-container .button-panel [class^='icon-'] {
   font-size: 23px;
 }

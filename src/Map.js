@@ -51,7 +51,7 @@
 
 var utils = require('./utils')
 var Draw = require('./Draw')
-var Behavior = require('./Behavior')
+var Behavior = require('./Behavior').default
 var Scale = require('./Scale').default
 var build = require('./build')
 var UndoStack = require('./UndoStack')
@@ -107,7 +107,7 @@ Map.prototype = {
   delete_text_label_data: delete_text_label_data,
   // find
   get_selected_node_ids: get_selected_node_ids,
-  get_selected_nodes: get_selected_nodes,
+  getSelectedNodes: getSelectedNodes,
   get_selected_text_label_ids: get_selected_text_label_ids,
   get_selected_text_labels: get_selected_text_labels,
   segments_and_reactions_for_nodes: segments_and_reactions_for_nodes,
@@ -507,7 +507,11 @@ function set_status (status, time) {
     }.bind(this), time)
   }
 }
-function clear_map() {
+
+/**
+ * Clear the map.
+ */
+function clear_map () {
   this.reactions = {}
   this.beziers = {}
   this.nodes = {}
@@ -521,6 +525,7 @@ function clear_map() {
   this.apply_gene_data_to_map(null)
   this.draw_everything()
 }
+
 function has_cobra_model() {
   return (this.cobra_model !== null)
 }
@@ -674,12 +679,12 @@ function draw_these_nodes(node_ids) {
     return this.draw.update_node(sel,
                                  this.scale,
                                  this.has_data_on_nodes,
-                                 this.behavior.selectable_mousedown,
-                                 this.behavior.selectable_click,
-                                 this.behavior.node_mouseover,
-                                 this.behavior.node_mouseout,
-                                 this.behavior.selectable_drag,
-                                 this.behavior.node_label_drag)
+                                 this.behavior.selectableMousedown,
+                                 this.behavior.selectableClick,
+                                 this.behavior.nodeMouseover,
+                                 this.behavior.nodeMouseout,
+                                 this.behavior.selectableDrag,
+                                 this.behavior.nodeLabelDrag)
   }.bind(this)
 
   // draw the nodes
@@ -764,9 +769,9 @@ function draw_these_beziers(bezier_ids) {
   var update_fn = function(sel) {
     return this.draw.update_bezier(sel,
                                    this.beziers_enabled,
-                                   this.behavior.bezier_drag,
-                                   this.behavior.bezier_mouseover,
-                                   this.behavior.bezier_mouseout,
+                                   this.behavior.bezierDrag,
+                                   this.behavior.bezierMouseover,
+                                   this.behavior.bezierMouseout,
                                    this.nodes,
                                    this.reactions)
   }.bind(this)
@@ -807,8 +812,8 @@ function toggle_beziers (on_off) {
  * @param {Array} keys - (Optional) The keys in reactions to apply data to.
  */
 function apply_reaction_data_to_map (data, keys) {
-  const styles = this.settings.get_option('reaction_styles'),
-  compare_style = this.settings.get_option('reaction_compare_style')
+  const styles = this.settings.get('reaction_styles'),
+  compare_style = this.settings.get('reaction_compare_style')
   const has_data = data_styles.apply_reaction_data_to_reactions(this.reactions,
                                                                 data, styles,
                                                                 compare_style,
@@ -824,8 +829,8 @@ function apply_reaction_data_to_map (data, keys) {
  * @param {Array} keys - (Optional) The keys in nodes to apply data to.
  */
 function apply_metabolite_data_to_map (data, keys) {
-  var styles = this.settings.get_option('metabolite_styles')
-  var compare_style = this.settings.get_option('metabolite_compare_style')
+  var styles = this.settings.get('metabolite_styles')
+  var compare_style = this.settings.get('metabolite_compare_style')
 
   var has_data = data_styles.apply_metabolite_data_to_nodes(this.nodes,
                                                             data, styles,
@@ -844,10 +849,10 @@ function apply_metabolite_data_to_map (data, keys) {
  * @param {Array} keys - (Optional) The keys in reactions to apply data to.
  */
 function apply_gene_data_to_map (gene_data_obj, keys) {
-  var styles = this.settings.get_option('reaction_styles'),
-  compare_style = this.settings.get_option('reaction_compare_style'),
-  identifiers_on_map = this.settings.get_option('identifiers_on_map'),
-  and_method_in_gene_reaction_rule = this.settings.get_option('and_method_in_gene_reaction_rule')
+  var styles = this.settings.get('reaction_styles'),
+  compare_style = this.settings.get('reaction_compare_style'),
+  identifiers_on_map = this.settings.get('identifiers_on_map'),
+  and_method_in_gene_reaction_rule = this.settings.get('and_method_in_gene_reaction_rule')
 
   var has_data = data_styles.apply_gene_data_to_reactions(this.reactions, gene_data_obj,
                                                           styles, identifiers_on_map,
@@ -992,7 +997,7 @@ function get_selected_node_ids () {
   return selected_node_ids
 }
 
-function get_selected_nodes () {
+function getSelectedNodes () {
   var selected_nodes = {}
   this.sel.select('#nodes')
     .selectAll('.selected')
@@ -1160,7 +1165,7 @@ function deselect_text_labels () {
  * labels. Undoable.
  */
 function delete_selected () {
-  var selected_nodes = this.get_selected_nodes(),
+  var selected_nodes = this.getSelectedNodes(),
   selected_text_labels = this.get_selected_text_labels()
   if (Object.keys(selected_nodes).length >= 1 ||
       Object.keys(selected_text_labels).length >= 1)
@@ -1635,7 +1640,7 @@ function new_reaction_for_metabolite (reaction_bigg_id, selected_node_id,
                                selected_node_id,
                                utils.clone(selected_node),
                                this.largest_ids,
-                               this.settings.get_option('cofactors'),
+                               this.settings.get('cofactors'),
                                direction)
   var new_nodes = out.new_nodes
   var new_reactions = out.new_reactions
@@ -1700,7 +1705,7 @@ function new_reaction_for_metabolite (reaction_bigg_id, selected_node_id,
 }
 
 function cycle_primary_node () {
-  var selected_nodes = this.get_selected_nodes()
+  var selected_nodes = this.getSelectedNodes()
   if (_.isEmpty(selected_nodes)) { return }
   // Get the first node
   var node_id = Object.keys(selected_nodes)[0]
@@ -1826,7 +1831,7 @@ function toggle_selected_node_primary() {
   var selected_node_ids = this.get_selected_node_ids(),
   go = function(ids) {
     var nodes_to_draw = {},
-    hide_secondary_metabolites = this.settings.get_option('hide_secondary_metabolites')
+    hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
     ids.forEach(function(id) {
       if (!(id in this.nodes)) {
         console.warn('Could not find node: ' + id)
