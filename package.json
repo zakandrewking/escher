@@ -22,7 +22,7 @@
     "dist/*",
     "jupyter/*"
   ],
-  "main": "/dist/escher.js",
+  "main": "dist/escher.js",
   "engines": {
     "node": ">=5.0"
   },
