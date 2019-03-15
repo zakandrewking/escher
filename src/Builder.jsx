@@ -258,7 +258,7 @@ class Builder {
       // menu closes, everything is drawn.
       this.settings.statusBus.onValue(x => {
         if (x === 'accept') {
-          this._updateData(true, true, [ 'reaction', 'metabolite' ], false)
+          this._updateData(true, true, ['reaction', 'metabolite'], false)
           if (this.zoom_container !== null) {
             // TODO make this automatic
             const newBehavior = this.settings.get('scroll_behavior')
@@ -815,11 +815,12 @@ class Builder {
    * For documentation of this function, see docs/javascript_api.rst.
    */
   set_reaction_data (data) { // eslint-disable-line camelcase
+    console.log('set_reaction_data', data)
     this.settings.set('reaction_data', data)
 
     var messageFn = this._reactionCheckAddAbs()
 
-    this._updateData(true, true, 'reaction')
+    this._updateData(true, true, ['reaction'])
 
     if (messageFn) messageFn()
     else this.map.set_status('')
@@ -846,7 +847,7 @@ class Builder {
       this.settings.set('show_gene_reaction_rules', false)
     }
     this.settings.set('gene_data', data)
-    this._updateData(true, true, 'reaction')
+    this._updateData(true, true, ['reaction'])
     this.map.set_status('')
 
     const disabledButtonsArray = this.settings.get('disabled_buttons') || []
@@ -864,7 +865,7 @@ class Builder {
    */
   set_metabolite_data (data) { // eslint-disable-line camelcase
     this.settings.set('metabolite_data', data)
-    this._updateData(true, true, 'metabolite')
+    this._updateData(true, true, ['metabolite'])
     this.map.set_status('')
 
     const disabledButtonsArray = this.settings.get('disabled_buttons') || []
@@ -927,10 +928,12 @@ class Builder {
     }
 
     // reaction data
+    console.log(updateReactionData)
     if (updateReactionData) {
       if (this.settings.get('reaction_data') !== null && updateMap && this.map !== null) {
         reactionDataObject = dataStyles.import_and_check(this.settings.get('reaction_data'),
                                                          'reaction_data')
+        console.log('updateData', reactionDataObject)
         this.map.apply_reaction_data_to_map(reactionDataObject)
         if (shouldDraw) {
           this.map.draw_all_reactions(false, false)
