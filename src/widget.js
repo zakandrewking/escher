@@ -3,14 +3,23 @@
 import { default as Builder } from './Builder'
 import { select as d3Select } from 'd3-selection'
 import _ from 'underscore'
+// @jupyter-widgets/base is optional, so only initialize if it's called
+let base
+try {
+  base = require('@jupyter-widgets/base')
+} catch (e) {
+}
 
 const version = ESCHER_VERSION
 
 /**
- * @jupyter-widgets/base is optional, so only initialize if it's called
+ *
  */
 export default function initializeJupyterWidget () {
-  const base = require('@jupyter-widgets/base')
+  if (!base) {
+    throw Error('@jupyter-widgets/base not installed. You must install it to ' +
+                'use the jupyter widget')
+  }
 
   class EscherMapView extends base.DOMWidgetView {
     render () {
