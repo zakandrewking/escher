@@ -1,7 +1,7 @@
 {
   "name": "escher",
   "author": "Zachary King",
-  "version": "1.7.0-beta.5",
+  "version": "1.7.0-beta.6",
   "schema_version": "1-0-0",
   "map_model_version": "5",
   "description": "Escher: A Web Application for Building, Sharing, and Embedding Data-Rich Visualizations of Metabolic Pathways",
@@ -27,6 +27,7 @@
     "node": ">=5.0"
   },
   "devDependencies": {
+    "@jupyter-widgets/base": "^1.1.10",
     "babel-core": "^6.25.0",
     "babel-loader": "^7.1.1",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
@@ -54,7 +55,6 @@
     "webpack-node-externals": "^1.6.0"
   },
   "dependencies": {
-    "@jupyter-widgets/base": "^1.1.10",
     "baconjs": "^0.7.71",
     "d3-brush": "https://github.com/zakandrewking/d3-brush.git",
     "d3-drag": "^1.0.2",
