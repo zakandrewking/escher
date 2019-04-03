@@ -815,7 +815,6 @@ class Builder {
    * For documentation of this function, see docs/javascript_api.rst.
    */
   set_reaction_data (data) { // eslint-disable-line camelcase
-    console.log('set_reaction_data', data)
     this.settings.set('reaction_data', data)
 
     var messageFn = this._reactionCheckAddAbs()
@@ -928,12 +927,10 @@ class Builder {
     }
 
     // reaction data
-    console.log(updateReactionData)
     if (updateReactionData) {
       if (this.settings.get('reaction_data') !== null && updateMap && this.map !== null) {
         reactionDataObject = dataStyles.import_and_check(this.settings.get('reaction_data'),
                                                          'reaction_data')
-        console.log('updateData', reactionDataObject)
         this.map.apply_reaction_data_to_map(reactionDataObject)
         if (shouldDraw) {
           this.map.draw_all_reactions(false, false)
