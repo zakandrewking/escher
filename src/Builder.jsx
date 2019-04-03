@@ -492,6 +492,8 @@ class Builder {
 
     // draw
     this.map.draw_everything()
+
+    this.callback_manager.run('load_map', null, mapData, shouldUpdateData)
   }
 
   /**
@@ -500,7 +502,7 @@ class Builder {
    * @param {Object} props - Props that the settings menu will use
    */
   passPropsSettingsMenu (props = {}) {
-    this.callback_manager.run('passPropsSettingsMenu', null, props)
+    this.callback_manager.run('pass_props_settings_menu', null, props)
   }
 
   /**
@@ -511,7 +513,7 @@ class Builder {
     renderWrapper(
       SettingsMenu,
       instance => { this.settingsMenuRef = instance },
-      passProps => this.callback_manager.set('passPropsSettingsMenu', passProps),
+      passProps => this.callback_manager.set('pass_props_settings_menu', passProps),
       this.selection.append('div').node()
     )
     this.passPropsSettingsMenu({
@@ -543,7 +545,7 @@ class Builder {
    * @param {Object} props - Props that the menu bar will use
    */
   passPropsMenuBar (props = {}) {
-    this.callback_manager.run('passPropsMenuBar', null, props)
+    this.callback_manager.run('pass_props_menu_bar', null, props)
   }
 
   /**
@@ -555,7 +557,7 @@ class Builder {
     renderWrapper(
       MenuBar,
       instance => { this.menuBarRef = instance },
-      passProps => this.callback_manager.set('passPropsMenuBar', passProps),
+      passProps => this.callback_manager.set('pass_props_menu_bar', passProps),
       sel.append('div').node()
     )
     this.passPropsMenuBar({
@@ -629,7 +631,7 @@ class Builder {
    * @param {Object} props - Props that the search bar will use
    */
   passPropsSearchBar (props = {}) {
-    this.callback_manager.run('passPropsSearchBar', null, props)
+    this.callback_manager.run('pass_props_search_bar', null, props)
   }
 
   /**
@@ -641,7 +643,7 @@ class Builder {
     renderWrapper(
       SearchBar,
       instance => { this.searchBarRef = instance },
-      passProps => this.callback_manager.set('passPropsSearchBar', passProps),
+      passProps => this.callback_manager.set('pass_props_search_bar', passProps),
       sel.append('div').node()
     )
     this.passPropsSearchBar({
@@ -656,7 +658,7 @@ class Builder {
    * @param {Object} props - Props that the tooltip will use
    */
   passPropsButtonPanel (props = {}) {
-    this.callback_manager.run('passPropsButtonPanel', null, props)
+    this.callback_manager.run('pass_props_button_panel', null, props)
   }
 
   /**
@@ -666,7 +668,7 @@ class Builder {
     renderWrapper(
       ButtonPanel,
       null,
-      passProps => this.callback_manager.set('passPropsButtonPanel', passProps),
+      passProps => this.callback_manager.set('pass_props_button_panel', passProps),
       this.selection.append('div').node()
     )
     this.passPropsButtonPanel({
