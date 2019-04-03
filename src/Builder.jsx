@@ -234,6 +234,11 @@ class Builder {
       this.zoom_container.set_use_3d_transform(val)
     })
 
+    // Make a container for other map-related tools that will be reset on map load
+    // TODO only create these once in the Builder constructor
+    this.mapToolsContainer = this.selection.append('div')
+                                 .attr('class', 'map-tools-container')
+
     // Status in both modes
     this._createStatus(this.selection)
 
@@ -333,8 +338,9 @@ class Builder {
       this.semanticOptions = Object.assign({}, tempSemanticOptions)
     }
 
-    // remove the old builder
+    // remove the old map and related divs
     utils.remove_child_nodes(this.zoom_container.zoomed_sel)
+    utils.remove_child_nodes(this.mapToolsContainer)
 
     const zoomedSel = this.zoom_container.zoomed_sel
     const svg = this.zoom_container.svg
@@ -375,11 +381,11 @@ class Builder {
     }
 
     // Set up the reaction input with complete.ly
-    this.build_input = new BuildInput(this.selection, this.map,
+    this.build_input = new BuildInput(this.mapToolsContainer, this.map,
                                       this.zoom_container, this.settings)
 
     // Set up the text edit input
-    this.text_edit_input = new TextEditInput(this.selection, this.map,
+    this.text_edit_input = new TextEditInput(this.mapToolsContainer, this.map,
                                             this.zoom_container)
 
     // Set up the Brush
@@ -393,18 +399,19 @@ class Builder {
     this._setUpModes(this.map, this.brush, this.zoom_container)
 
     // Set up menus
-    this.setUpSettingsMenu()
+    this.setUpSettingsMenu(this.mapToolsContainer)
+    this.setUpButtonPanel(this.mapToolsContainer)
+
     // share a parent container for menu bar and search bar
-    const sel = this.selection
+    const sel = this.mapToolsContainer
                     .append('div').attr('class', 'search-menu-container')
                     .append('div').attr('class', 'search-menu-container-inline')
     this.setUpMenuBar(sel)
     this.setUpSearchBar(sel)
-    this.setUpButtonPanel()
 
     // Set up the tooltip container
     this.tooltip_container = new TooltipContainer(
-      this.selection,
+      this.mapToolsContainer,
       this.settings.get('tooltip_component'),
       this.zoom_container,
       this.map
@@ -508,13 +515,13 @@ class Builder {
   /**
    * Initialize the settings menu
    */
-  setUpSettingsMenu () {
+  setUpSettingsMenu (sel) {
     this.settingsMenuRef = null
     renderWrapper(
       SettingsMenu,
       instance => { this.settingsMenuRef = instance },
       passProps => this.callback_manager.set('pass_props_settings_menu', passProps),
-      this.selection.append('div').node()
+      sel.append('div').node()
     )
     this.passPropsSettingsMenu({
       display: false,
@@ -664,12 +671,12 @@ class Builder {
   /**
    * Initialize the button panel
    */
-  setUpButtonPanel () {
+  setUpButtonPanel (sel) {
     renderWrapper(
       ButtonPanel,
       null,
       passProps => this.callback_manager.set('pass_props_button_panel', passProps),
-      this.selection.append('div').node()
+      sel.append('div').node()
     )
     this.passPropsButtonPanel({
       display: _.contains(['all', 'zoom'], this.settings.get('menu')),
