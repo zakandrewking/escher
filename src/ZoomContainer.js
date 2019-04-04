@@ -177,32 +177,33 @@ function _update_scroll () {
   // d3 related to d3 using the global this.document. TODO look into this.
   this._zoom_behavior = d3_zoom()
     .on('start', function () {
-      if (d3_selection.event.sourceEvent &&
-          d3_selection.event.sourceEvent.type === 'mousedown') {
-        this.zoomed_sel
-          .classed('cursor-grab', false)
-          .classed('cursor-grabbing', true)
-      }
+      // This is suprisingly expensive, so don't bother:
+      // if (d3_selection.event.sourceEvent &&
+      //     d3_selection.event.sourceEvent.type === 'mousedown') {
+      //   this.zoomed_sel
+      //     .classed('cursor-grab', false)
+      //     .classed('cursor-grabbing', true)
+      // }
+
       // Prevent default zoom behavior, specifically for mobile pinch zoom
       if (d3_selection.event.sourceEvent !== null) {
         d3_selection.event.sourceEvent.stopPropagation()
         d3_selection.event.sourceEvent.preventDefault()
       }
-    }.bind(this))
-    .on('zoom', function () {
+    })
+    .on('zoom', () => {
       this._go_to_callback(d3_selection.event.transform.k, {
         x: d3_selection.event.transform.x,
-        y: d3_selection.event.transform.y,
+        y: d3_selection.event.transform.y
       })
-    }.bind(this))
-    .on('end', function () {
-      if (d3_selection.event.sourceEvent &&
-          d3_selection.event.sourceEvent.type === 'mouseup') {
-        this.zoomed_sel
-          .classed('cursor-grab', true)
-          .classed('cursor-grabbing', false)
-      }
-    }.bind(this))
+    })
+  // This is suprisingly expensive, so don't bother:
+  // .on('end', () => {
+  //   if (d3_selection.event.sourceEvent &&
+  //       d3_selection.event.sourceEvent.type === 'mouseup') {
+  //     document.body.style.cursor = ''
+  //   }
+  // })
 
   // Set it up
   this.zoom_container.call(this._zoom_behavior)
@@ -223,13 +224,13 @@ function _update_scroll () {
     this.zoom_container
       .on('mousewheel.zoom', null) // zoom scroll behaviors
       .on('DOMMouseScroll.zoom', null) // disables older versions of Firefox
-      .on('wheel.zoom', null); // disables newer versions of Firefox
+      .on('wheel.zoom', null) // disables newer versions of Firefox
   }
 
   // add listeners for scrolling to pan
   if (this._scroll_behavior === 'pan') {
     // Add the wheel listener
-    var wheel_fn = function () {
+    const wheel_fn = () => {
       var ev = d3_selection.event
       var sensitivity = 0.5
       // stop scroll in parent elements
@@ -246,7 +247,7 @@ function _update_scroll () {
         y: this.window_translate.y - get_directional_disp(ev.wheelDeltaY, ev.deltaY),
       }
       this.go_to(this.window_scale, new_translate)
-    }.bind(this)
+    }
 
     // apply it
     this.zoom_container.on('mousewheel.escher', wheel_fn)
