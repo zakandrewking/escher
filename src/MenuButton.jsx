@@ -14,7 +14,8 @@ import utils from './utils'
 import dataStyles from './data_styles'
 
 class MenuButton extends Component {
-  handleFileInput (file) {
+  handleFileInput (target) {
+    const file = target.files[0]
     const reader = new window.FileReader()
     reader.onload = () => {
       utils.load_json_or_csv(file, dataStyles.csv_converter, (e, d) => this.props.onClick(d))
@@ -22,6 +23,8 @@ class MenuButton extends Component {
     if (file !== undefined) {
       reader.readAsText(file)
     }
+    // reset input
+    target.value = null
   }
 
   render () {
@@ -35,7 +38,7 @@ class MenuButton extends Component {
         >
           <input
             type='file'
-            onChange={event => this.handleFileInput(event.target.files[0])}
+            onChange={event => this.handleFileInput(event.target)}
             disabled={disabled}
           />
           {this.props.name}
