@@ -176,7 +176,7 @@ export default class BuildInput {
   reload (selectedNode, coords, startingFromScratch) {
     // Try finding the selected node
     if (!startingFromScratch && !selectedNode) {
-      console.error('No selected node, and not starting from scratch')
+      console.error('No selected node and not starting from scratch')
       return
     }
 
@@ -217,7 +217,7 @@ export default class BuildInput {
       // check segments for match to selected metabolite
       for (let metBiggId in reaction.metabolites) {
         // if starting with a selected metabolite, check for that id
-        if (startingFromScratch || metBiggId === selectedNode.biggId) {
+        if (startingFromScratch || metBiggId === selectedNode.bigg_id) {
           // don't add suggestions twice
           if (biggId in reactionSuggestions) continue
 

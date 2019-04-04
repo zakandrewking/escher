@@ -423,7 +423,7 @@ export default class Behavior {
    * With no argument, toggle the tooltips upon touching of nodes or arrows.
    * @param {Boolean} onOff - The new on/off state. If this argument is not provided, then toggle the state.
    */
-  toggleObjectTouch (onOff){
+  toggleObjectTouch (onOff) {
     if (onOff === undefined) {
       onOff = this.labelTouch === null
     }
@@ -450,10 +450,10 @@ export default class Behavior {
     if (onOff) {
       this.bezierDrag = this.getBezierDrag(this.map)
       this.bezierMouseover = function (d) {
-        d3Select(this).style('stroke-width', String(3)+'px')
+        d3Select(this).style('stroke-width', '3px')
       }
       this.bezierMouseout = function (d) {
-        d3Select(this).style('stroke-width', String(1)+'px')
+        d3Select(this).style('stroke-width', '1px')
       }
     } else {
       this.bezierDrag = this.emptyBehavior
@@ -482,8 +482,8 @@ export default class Behavior {
         console.warn('Could not find connected segment ' + segmentObj.segmentId)
         return
       }
-      if (segment.fromNodeId==draggedNodeId) segment.fromNodeId = fixedNodeId
-      else if (segment.toNodeId==draggedNodeId) segment.toNodeId = fixedNodeId
+      if (segment.fromNodeId === draggedNodeId) segment.fromNodeId = fixedNodeId
+      else if (segment.toNodeId === draggedNodeId) segment.toNodeId = fixedNodeId
       else {
         console.error('Segment does not connect to dragged node')
         return
@@ -491,7 +491,6 @@ export default class Behavior {
       // moved segmentObj to fixedNode
       fixedNode.connectedSegments.push(segmentObj)
       updatedSegmentObjs.push(utils.clone(segmentObj))
-      return
     })
     // delete the old node
     map.delete_node_data([draggedNodeId])
