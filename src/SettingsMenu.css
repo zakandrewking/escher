@@ -146,6 +146,9 @@
 
 .escher-container .selector {
   position: relative;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
   padding-top: 2px;
 }

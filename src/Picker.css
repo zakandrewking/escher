@@ -2,6 +2,9 @@
   top: 35px;
   margin-left: -7px;
   position: absolute;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
 }
 
