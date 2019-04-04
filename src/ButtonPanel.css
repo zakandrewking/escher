@@ -9,6 +9,7 @@
 
 .escher-container .button-panel>li {
   margin-top: 5px;
+  display: block;
 }
 
 .escher-container .grouping {
