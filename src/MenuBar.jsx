@@ -107,7 +107,7 @@ class MenuBar extends Component {
           />
           <MenuButton
             name='Clear metabolite data'
-            onClick={() => this.props.loadMetaboliteData(null)}
+            onClick={() => this.props.setMetaboliteData(null)}
             disabledButtons={disabledButtons}
           />
         </Dropdown>
