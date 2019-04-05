@@ -374,133 +374,137 @@ class Builder {
 
     // Connect status bar
     this._setup_status(this.map)
-
-    // Set the data for the map
-    if (shouldUpdateData) {
-      this._updateData(false, true)
-    }
-
-    // Set up the reaction input with complete.ly
-    this.build_input = new BuildInput(this.mapToolsContainer, this.map,
-                                      this.zoom_container, this.settings)
-
-    // Set up the text edit input
-    this.text_edit_input = new TextEditInput(this.mapToolsContainer, this.map,
-                                            this.zoom_container)
-
-    // Set up the Brush
-    this.brush = new Brush(zoomedSel, false, this.map, '.canvas-group')
-    // reset brush when canvas resizes in brush mode
-    this.map.canvas.callback_manager.set('resize', () => {
-      if (this.mode === 'brush') this.brush.toggle(true)
-    })
-
-    // Set up the modes
-    this._setUpModes(this.map, this.brush, this.zoom_container)
-
-    // Set up menus
-    this.setUpSettingsMenu(this.mapToolsContainer)
-    this.setUpButtonPanel(this.mapToolsContainer)
-
-    // share a parent container for menu bar and search bar
-    const sel = this.mapToolsContainer
-                    .append('div').attr('class', 'search-menu-container')
-                    .append('div').attr('class', 'search-menu-container-inline')
-    this.setUpMenuBar(sel)
-    this.setUpSearchBar(sel)
-
-    // Set up the tooltip container
-    this.tooltip_container = new TooltipContainer(
-      this.mapToolsContainer,
-      this.settings.get('tooltip_component'),
-      this.zoom_container,
-      this.map
-    )
-
-    // Set up key manager
-    const keys = this.getKeys()
-    this.map.key_manager.assigned_keys = keys
-    // Tell the key manager about the reaction input and search bar
-    this.map.key_manager.input_list = [
-      this.build_input,
-      this.searchBarRef,
-      () => this.settingsMenuRef,
-      this.text_edit_input
-    ]
-    if (!this.settings.get('enable_keys_with_tooltip')) {
-      this.map.key_manager.input_list.push(this.tooltip_container)
-    }
-
-    // Make sure the key manager remembers all those changes
-    this.map.key_manager.update()
-    // Turn it on/off
-    this.map.key_manager.toggle(this.settings.get('enable_keys'))
-
-    // Disable clears
-    const newDisabledButtons = this.settings.get('disabled_buttons') || []
-    if (!this.settings.get('reaction_data')) {
-      newDisabledButtons.push('Clear reaction data')
-    }
-    if (!this.settings.get('gene_data')) {
-      newDisabledButtons.push('Clear gene data')
-    }
-    if (!this.settings.get('metabolite_data')) {
-      newDisabledButtons.push('Clear metabolite data')
-    }
-    if (!this.settings.get('enable_search')) {
-      newDisabledButtons.push('Find')
-    }
-    if (!this.settings.get('enable_editing')) {
-      newDisabledButtons.push('Show control points')
-    }
-    this.settings.set('disabled_buttons', newDisabledButtons)
-
-    // Set up selection box
-    if (this.settings.get('zoom_to_element')) {
-      const type = this.settings.get('zoom_to_element').type
-      const elementId = this.settings.get('zoom_to_element').id
-      if (_.isUndefined(type) || [ 'reaction', 'node' ].indexOf(type) === -1) {
-        throw new Error('zoom_to_element type must be "reaction" or "node"')
+    this.map.set_status('Loading map ...')
+    _.defer(() => {
+      // Set the data for the map
+      if (shouldUpdateData) {
+        this._updateData(false, true)
       }
-      if (_.isUndefined(elementId)) {
-        throw new Error('zoom_to_element must include id')
+
+      // Set up the reaction input with complete.ly
+      this.build_input = new BuildInput(this.mapToolsContainer, this.map,
+                                        this.zoom_container, this.settings)
+
+      // Set up the text edit input
+      this.text_edit_input = new TextEditInput(this.mapToolsContainer, this.map,
+                                               this.zoom_container)
+
+      // Set up the Brush
+      this.brush = new Brush(zoomedSel, false, this.map, '.canvas-group')
+      // reset brush when canvas resizes in brush mode
+      this.map.canvas.callback_manager.set('resize', () => {
+        if (this.mode === 'brush') this.brush.toggle(true)
+      })
+
+      // Set up the modes
+      this._setUpModes(this.map, this.brush, this.zoom_container)
+
+      // Set up menus
+      this.setUpSettingsMenu(this.mapToolsContainer)
+      this.setUpButtonPanel(this.mapToolsContainer)
+
+      // share a parent container for menu bar and search bar
+      const sel = this.mapToolsContainer
+                      .append('div').attr('class', 'search-menu-container')
+                      .append('div').attr('class', 'search-menu-container-inline')
+      this.setUpMenuBar(sel)
+      this.setUpSearchBar(sel)
+
+      // Set up the tooltip container
+      this.tooltip_container = new TooltipContainer(
+        this.mapToolsContainer,
+        this.settings.get('tooltip_component'),
+        this.zoom_container,
+        this.map
+      )
+
+      // Set up key manager
+      const keys = this.getKeys()
+      this.map.key_manager.assigned_keys = keys
+      // Tell the key manager about the reaction input and search bar
+      this.map.key_manager.input_list = [
+        this.build_input,
+        this.searchBarRef,
+        () => this.settingsMenuRef,
+        this.text_edit_input
+      ]
+      if (!this.settings.get('enable_keys_with_tooltip')) {
+        this.map.key_manager.input_list.push(this.tooltip_container)
       }
-      if (type === 'reaction') {
-        this.map.zoom_to_reaction(elementId)
-      } else if (type === 'node') {
-        this.map.zoom_to_node(elementId)
+
+      // Make sure the key manager remembers all those changes
+      this.map.key_manager.update()
+      // Turn it on/off
+      this.map.key_manager.toggle(this.settings.get('enable_keys'))
+
+      // Disable clears
+      const newDisabledButtons = this.settings.get('disabled_buttons') || []
+      if (!this.settings.get('reaction_data')) {
+        newDisabledButtons.push('Clear reaction data')
       }
-    } else if (mapData !== null) {
-      this.map.zoom_extent_canvas()
-    } else {
-      if (this.settings.get('starting_reaction') !== null && this.cobra_model !== null) {
-        // Draw default reaction if no map is provided
-        const size = this.zoom_container.get_size()
-        const startCoords = { x: size.width / 2, y: size.height / 4 }
-        this.map.new_reaction_from_scratch(this.settings.get('starting_reaction'),
-                                           startCoords, 90)
-        this.map.zoom_extent_nodes()
-      } else {
+      if (!this.settings.get('gene_data')) {
+        newDisabledButtons.push('Clear gene data')
+      }
+      if (!this.settings.get('metabolite_data')) {
+        newDisabledButtons.push('Clear metabolite data')
+      }
+      if (!this.settings.get('enable_search')) {
+        newDisabledButtons.push('Find')
+      }
+      if (!this.settings.get('enable_editing')) {
+        newDisabledButtons.push('Show control points')
+      }
+      this.settings.set('disabled_buttons', newDisabledButtons)
+
+      // Set up selection box
+      if (this.settings.get('zoom_to_element')) {
+        const type = this.settings.get('zoom_to_element').type
+        const elementId = this.settings.get('zoom_to_element').id
+        if (_.isUndefined(type) || [ 'reaction', 'node' ].indexOf(type) === -1) {
+          throw new Error('zoom_to_element type must be "reaction" or "node"')
+        }
+        if (_.isUndefined(elementId)) {
+          throw new Error('zoom_to_element must include id')
+        }
+        if (type === 'reaction') {
+          this.map.zoom_to_reaction(elementId)
+        } else if (type === 'node') {
+          this.map.zoom_to_node(elementId)
+        }
+      } else if (mapData !== null) {
         this.map.zoom_extent_canvas()
+      } else {
+        if (this.settings.get('starting_reaction') !== null && this.cobra_model !== null) {
+          // Draw default reaction if no map is provided
+          const size = this.zoom_container.get_size()
+          const startCoords = { x: size.width / 2, y: size.height / 4 }
+          this.map.new_reaction_from_scratch(this.settings.get('starting_reaction'),
+                                             startCoords, 90)
+          this.map.zoom_extent_nodes()
+        } else {
+          this.map.zoom_extent_canvas()
+        }
       }
-    }
 
-    // Start in zoom mode for builder, view mode for viewer
-    if (this.settings.get('enable_editing')) {
-      this.zoom_mode()
-    } else {
-      this.view_mode()
-    }
+      // Start in zoom mode for builder, view mode for viewer
+      if (this.settings.get('enable_editing')) {
+        this.zoom_mode()
+      } else {
+        this.view_mode()
+      }
 
-    // confirm before leaving the page
-    if (this.settings.get('enable_editing')) {
-      this._setup_confirm_before_exit()
-    }
+      // confirm before leaving the page
+      if (this.settings.get('enable_editing')) {
+        this._setup_confirm_before_exit()
+      }
 
-    // draw
-    this.map.draw_everything()
+      // draw
+      this.map.draw_everything()
 
-    this.callback_manager.run('load_map', null, mapData, shouldUpdateData)
+      this.map.set_status('')
+
+      this.callback_manager.run('load_map', null, mapData, shouldUpdateData)
+    })
   }
 
   /**
