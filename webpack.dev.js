@@ -3,7 +3,9 @@ const common = require('./webpack.common.js')
 
 module.exports = merge.smart(common, {
   entry: './dev-server/index.js',
-  output: 'bundle.js',
+  output: {
+    filename: 'bundle.js'
+  },
   devServer: {
     contentBase: './dev-server',
     open: true,
