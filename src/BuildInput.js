@@ -344,10 +344,10 @@ export default class BuildInput {
         // generate the target symbol
         this.showTarget(this.map, coords)
       })
-      this.map.sel.classed('start-reaction-cursor', true)
+      this.map.sel.style('cursor', 'pointer')
     } else {
       this.map.sel.on('click.start_reaction', null)
-      this.map.sel.classed('start-reaction-cursor', false)
+      this.map.sel.style('cursor', null)
       this.hideTarget()
     }
   }

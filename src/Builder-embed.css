@@ -110,9 +110,6 @@ svg.escher-svg .direction-arrow {
   fill: white;
   opacity: 0.3;
 }
-svg.escher-svg .start-reaction-cursor {
-  cursor: pointer;
-}
 svg.escher-svg .start-reaction-target {
   stroke: rgb(100,100,100);
   fill: none;
@@ -125,15 +122,4 @@ svg.escher-svg .rotation-center-line {
 svg.escher-svg .highlight {
   fill: #D97000;
   text-decoration: underline;
-}
-svg.escher-svg .cursor-grab {
-  cursor: grab;
-  cursor: -webkit-grab;
-}
-svg.escher-svg .cursor-grabbing {
-  cursor: grabbing;
-  cursor: -webkit-grabbing;
-}
-svg.escher-svg .edit-text-cursor {
-  cursor: text;
 }

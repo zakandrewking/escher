@@ -283,7 +283,7 @@ export default class Behavior {
       this.textLabelClick = null
       this.map.sel.select('#text-labels')
         .selectAll('.label')
-        .classed('edit-text-cursor', true)
+        .style('cursor', 'text')
       // add the new-label listener
       this.map.sel.on('mousedown.new_text_label', function (node) {
         // silence other listeners
@@ -299,7 +299,7 @@ export default class Behavior {
       this.textLabelClick = this.selectableClick
       this.map.sel.select('#text-labels')
         .selectAll('.label')
-        .classed('edit-text-cursor', false)
+        .style('cursor', null)
       // remove the new-label listener
       this.map.sel.on('mousedown.new_text_label', null)
       this.map.callback_manager.run('hide_text_label_editor')

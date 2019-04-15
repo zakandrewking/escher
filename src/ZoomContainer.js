@@ -135,14 +135,12 @@ function toggle_pan_drag (on_off) {
 
   if (this._pan_drag_on) {
     // turn on the hand
-    this.zoomed_sel
-      .classed('cursor-grab', true)
-      .classed('cursor-grabbing', false)
+    this.zoomed_sel.style('cursor', 'grab')
   } else {
     // turn off the hand
-    this.zoomed_sel.style('cursor', null)
-      .classed('cursor-grab', false)
-      .classed('cursor-grabbing', false)
+    if (_.contains(['grab', 'grabbing'], this.zoomed_sel.style('cursor'))) {
+      this.zoomed_sel.style('cursor', null)
+    }
   }
 
   // update the behaviors
@@ -176,14 +174,12 @@ function _update_scroll () {
   // exception in node, so catch that during testing. This may be a bug with
   // d3 related to d3 using the global this.document. TODO look into this.
   this._zoom_behavior = d3_zoom()
-    .on('start', function () {
-      // This is suprisingly expensive, so don't bother:
-      // if (d3_selection.event.sourceEvent &&
-      //     d3_selection.event.sourceEvent.type === 'mousedown') {
-      //   this.zoomed_sel
-      //     .classed('cursor-grab', false)
-      //     .classed('cursor-grabbing', true)
-      // }
+    .on('start', () => {
+      // Be sure to use an inline style instead of a class to avoid layout
+      if (d3_selection.event.sourceEvent &&
+          d3_selection.event.sourceEvent.type === 'mousedown') {
+        this.zoomed_sel.style('cursor', 'grabbing')
+      }
 
       // Prevent default zoom behavior, specifically for mobile pinch zoom
       if (d3_selection.event.sourceEvent !== null) {
@@ -197,13 +193,12 @@ function _update_scroll () {
         y: d3_selection.event.transform.y
       })
     })
-  // This is suprisingly expensive, so don't bother:
-  // .on('end', () => {
-  //   if (d3_selection.event.sourceEvent &&
-  //       d3_selection.event.sourceEvent.type === 'mouseup') {
-  //     document.body.style.cursor = ''
-  //   }
-  // })
+    .on('end', () => {
+      if (d3_selection.event.sourceEvent &&
+          d3_selection.event.sourceEvent.type === 'mouseup') {
+        this.zoomed_sel.style('cursor', 'grab')
+      }
+    })
 
   // Set it up
   this.zoom_container.call(this._zoom_behavior)
