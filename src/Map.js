@@ -2327,27 +2327,79 @@ function convert_map () {
   var model = this.cobra_model
 
   // IDs for reactions and metabolites not found in the model
-  var reactions_not_found = {}
-  var reaction_attrs = [ 'name', 'gene_reaction_rule', 'genes' ]
-  var met_nodes_not_found = {}
-  var metabolite_attrs = [ 'name' ]
-  var found
+  const reactions_not_found = {}
+  const reaction_attrs = [ 'name', 'gene_reaction_rule', 'genes' ]
+  const met_nodes_not_found = {}
+  const metabolite_attrs = [ 'name' ]
+  let found = false
   // convert reactions
   for (var reaction_id in this.reactions) {
     var reaction = this.reactions[reaction_id]
     found = false
     // find in cobra model
     for (var model_reaction_id in model.reactions) {
-      var model_reaction = model.reactions[model_reaction_id]
-      if (model_reaction.bigg_id == reaction.bigg_id) {
-        reaction_attrs.forEach(function(attr) {
-          reaction[attr] = model_reaction[attr]
+      const modelReaction = model.reactions[model_reaction_id]
+      if (modelReaction.bigg_id == reaction.bigg_id) {
+        reaction_attrs.forEach(attr => {
+          reaction[attr] = modelReaction[attr]
         })
+        // check matching metabolites & warn if not matching. if matching, check
+        // & reverse
+        let matches = true
+        let looksReversed = null
+        for (let metId in modelReaction.metabolites) {
+          const modelCoeff = modelReaction.metabolites[metId]
+          const mapMet = _.find(reaction.metabolites, x => x.bigg_id === metId)
+          if (mapMet === undefined) {
+            matches = false
+            break
+          }
+          const mapCoeff = mapMet.coefficient
+          // keep track of whether any of these are reversed
+          if (looksReversed === null) {
+            looksReversed = (modelCoeff > 0) !== (mapCoeff > 0)
+          }
+          // make sure there are no mismatches in reversibility direction
+          if ((looksReversed === true && ((modelCoeff > 0) === (mapCoeff > 0))) ||
+              (looksReversed === false && ((modelCoeff > 0) !== (mapCoeff > 0)))) {
+            matches = false
+            break
+          }
+        }
+        if (looksReversed && matches) {
+          // looks reversed with not mismatches, then reverse the direction
+          reaction.metabolites.forEach(met => {
+            met.coefficient = -met.coefficient
+          })
+          // propagate changes into segments
+          for (var segmentId in reaction.segments) {
+            const segment = reaction.segments[segmentId]
+
+            // propagate reversibility
+            segment.reversibility = reaction.reversibility
+
+            const from_node = this.nodes[segment.from_node_id]
+            const to_node = this.nodes[segment.to_node_id]
+
+            // propagate coefficients
+            reaction.metabolites.forEach(met => {
+              if (met.bigg_id === from_node.bigg_id) {
+                segment.from_node_coefficient = met.coefficient
+              } else if (met.bigg_id === to_node.bigg_id) {
+                segment.to_node_coefficient = met.coefficient
+              }
+            })
+          }
+        }
+        if (!matches) {
+          console.warn(`Metabolites for ${modelReaction.bigg_id} are different in model and map. Could
+ not check and fix direction.`)
+          break
+        }
         found = true
       }
     }
-    if (!found)
-      reactions_not_found[reaction_id] = true
+    if (!found) reactions_not_found[reaction_id] = true
   }
   // convert metabolites
   for (var node_id in this.nodes) {
@@ -2372,22 +2424,22 @@ function convert_map () {
   // status
   var n_reactions_not_found = Object.keys(reactions_not_found).length
   var n_met_nodes_not_found = Object.keys(met_nodes_not_found).length
-  var status_delay = 3000
+  var status_delay = 10000
   if (n_reactions_not_found === 0 && n_met_nodes_not_found === 0) {
     this.set_status('Successfully converted attributes.', status_delay)
   } else if (n_met_nodes_not_found === 0) {
     this.set_status('Converted attributes, but count not find ' + n_reactions_not_found +
                     ' reactions in the model.', status_delay)
-    this.settings.set_conditional('highlight_missing', true)
+    this.settings.set('highlight_missing', true)
   } else if (n_reactions_not_found === 0) {
     this.set_status('Converted attributes, but count not find ' + n_met_nodes_not_found +
                     ' metabolites in the model.', status_delay)
-    this.settings.set_conditional('highlight_missing', true)
+    this.settings.set('highlight_missing', true)
   } else {
     this.set_status('Converted attributes, but count not find ' + n_reactions_not_found +
                     ' reactions and ' + n_met_nodes_not_found + ' metabolites in the model.',
                     status_delay)
-    this.settings.set_conditional('highlight_missing', true)
+    this.settings.set('highlight_missing', true)
   }
 
   // redraw
