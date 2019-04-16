@@ -371,14 +371,14 @@ function from_data (map_data, svg, css, selection, zoom_container, settings,
         continue
       }
 
-      var from_node = map.nodes[segment.from_node_id],
-          to_node = map.nodes[segment.to_node_id]
+      const from_node = map.nodes[segment.from_node_id]
+      const to_node = map.nodes[segment.to_node_id]
 
       // propagate coefficients
       reaction.metabolites.forEach(function(met) {
-        if (met.bigg_id==from_node.bigg_id) {
+        if (met.bigg_id === from_node.bigg_id) {
           segment.from_node_coefficient = met.coefficient
-        } else if (met.bigg_id==to_node.bigg_id) {
+        } else if (met.bigg_id === to_node.bigg_id) {
           segment.to_node_coefficient = met.coefficient
         }
       })

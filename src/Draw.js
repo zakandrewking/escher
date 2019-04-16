@@ -315,23 +315,23 @@ function create_segment (enter_selection) {
  */
 function update_segment (update_selection, scale, cobra_model,
                          drawn_nodes, defs, has_data_on_reactions) {
-  var reaction_data_styles = this.settings.get('reaction_styles')
-  var should_size = (has_data_on_reactions && reaction_data_styles.indexOf('size') !== -1)
-  var should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') !== -1)
-  var no_data_size = this.settings.get('reaction_no_data_size')
-  var no_data_color = this.settings.get('reaction_no_data_color')
+  const reaction_data_styles = this.settings.get('reaction_styles')
+  const should_size = (has_data_on_reactions && reaction_data_styles.indexOf('size') !== -1)
+  const should_color = (has_data_on_reactions && reaction_data_styles.indexOf('color') !== -1)
+  const no_data_size = this.settings.get('reaction_no_data_size')
+  const no_data_color = this.settings.get('reaction_no_data_color')
 
   // update segment attributes
-  var highlight_missing  = this.settings.get('highlight_missing')
-  var hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
-  var primary_r = this.settings.get('primary_metabolite_radius')
-  var secondary_r = this.settings.get('secondary_metabolite_radius')
-  var object_mouseover_fn = this.behavior.objectMouseover
-  var object_mouseout_fn = this.behavior.objectMouseout
-  var object_touch_fn = this.behavior.objectTouch
-  var get_arrow_size = function (data, should_size) {
-    var width = 20
-    var height = 13
+  const highlight_missing  = this.settings.get('highlight_missing')
+  const hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
+  const primary_r = this.settings.get('primary_metabolite_radius')
+  const secondary_r = this.settings.get('secondary_metabolite_radius')
+  const object_mouseover_fn = this.behavior.objectMouseover
+  const object_mouseout_fn = this.behavior.objectMouseout
+  const object_touch_fn = this.behavior.objectTouch
+  const get_arrow_size = function (data, should_size) {
+    let width = 20
+    let height = 13
     if (should_size) {
       height = (data === null ? no_data_size : scale.reaction_size(data))
       // check for nan
@@ -341,8 +341,8 @@ function update_segment (update_selection, scale, cobra_model,
       width = height * 2
     }
     return { width: width, height: height }
-  },
-  get_disp = function (arrow_size, reversibility, coefficient, node_is_primary) {
+  }
+  const get_disp = function (arrow_size, reversibility, coefficient, node_is_primary) {
     var arrow_height = ((reversibility || coefficient > 0) ?
                         arrow_size.height : 0)
     var r = node_is_primary ? primary_r : secondary_r
