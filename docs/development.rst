@@ -53,7 +53,6 @@ If you are using JavaScript ES6 import syntax, the default export is Builder::
 
   import Builder from 'escher'
   import * as escher from 'escher'
-  console.log(Builder, escher.Builder, escher.libs.preact)
 
 Generating and reading Escher and COBRA files
 =============================================

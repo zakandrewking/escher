@@ -165,7 +165,6 @@ to the function and reloading:
 .. code-block:: javascript
 
   var tooltips_1 = function (args) {
-    console.log(args) // NEW
     // Check if there is already text in the tooltip
     if (args.el.childNodes.length === 0) {
 
