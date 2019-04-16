@@ -88,4 +88,3 @@ In this example, a correct Pull Request would include the following files::
 
 .. _escher.github.io: https://www.github.com/escher/escher.github.io/
 .. _`BiGG Database`: http://bigg.ucsd.edu
-.. _here: http://escher.github.io/builder.html?map_name=iJO1366.Central%20metabolism&js_source=local&quick_jump[]=iJO1366.Central%20metabolism&quick_jump[]=iJO1366.Fatty%20acid%20beta-oxidation&quick_jump[]=iJO1366.Fatty%20acid%20biosynthesis%20(saturated)&quick_jump_path=1-0-0/maps/Escherichia%20coli

@@ -60,7 +60,6 @@ module.exports = {
   generate_map_id: generate_map_id,
   check_for_parent_tag: check_for_parent_tag,
   name_to_url: name_to_url,
-  parse_url_components: parse_url_components,
   get_document: get_document,
   get_window: get_window,
   d3_transform_catch: d3_transform_catch
@@ -986,37 +985,6 @@ function name_to_url (name, download_url) {
   }
   // strip final path
   return name.replace(/^\/|\/$/g, '') + '.json'
-}
-
-/**
- * Parse the URL and return options based on the URL arguments.
- *
- * Adapted from http://stackoverflow.com/questions/979975/how-to-get-the-value-from-url-parameter
- *
- * @param {} the_window - A reference to the global window.
- * @param {Object} options (optional) - an existing options object to which new
- * options will be added. Overwrites existing arguments in options.
- */
-function parse_url_components (the_window, options) {
-  if (_.isUndefined(options)) options = {}
-
-  var query = the_window.location.search.substring(1)
-  var vars = query.split('&')
-  for (var i = 0, l = vars.length; i < l; i++) {
-    var pair = vars[i].split('=')
-    var val = decodeURIComponent(pair[1])
-    // deal with array options
-    if (pair[0].indexOf('[]') === pair[0].length - 2) {
-      var o = pair[0].replace('[]', '')
-      if (!(o in options)) {
-        options[o] = []
-      }
-      options[o].push(val)
-    } else {
-      options[pair[0]] = val
-    }
-  }
-  return options
 }
 
 /**
