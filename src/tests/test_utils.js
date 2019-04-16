@@ -325,35 +325,6 @@ describe('utils.test_name_to_url', () => {
   })
 })
 
-describe('utils.parse_url_components', () => {
-  const url = '?map_name=iJO1366.Central%20metabolism&model_name=iJO1366%40%23%25'
-  const the_window = { location: { search: url } }
-
-  it('extracts attributes from url', () => {
-    // standard name
-    const options = utils.parse_url_components(the_window, {})
-    assert.deepEqual(options, { map_name: 'iJO1366.Central metabolism',
-                                model_name: 'iJO1366@#%' })
-  })
-
-  it('adds to existing options', () => {
-    // no host, and options
-    const options = utils.parse_url_components(the_window,
-                                         { a: 'b', model_name: 'old_model_name' })
-    assert.deepEqual(options, { map_name: 'iJO1366.Central metabolism',
-                                model_name: 'iJO1366@#%',
-                                a: 'b' })
-  })
-
-  it('recognizes array attributes', () => {
-    the_window.location.search = '?quick_jump[]=iJO1366.Central%20metabolism&quick_jump[]=iJO1366.Fatty%20acid%20metabolism'
-    const options = utils.parse_url_components(the_window, { a: 'b' })
-    assert.deepEqual(options, { a: 'b',
-                                quick_jump: ['iJO1366.Central metabolism',
-                                             'iJO1366.Fatty acid metabolism'] })
-  })
-})
-
 describe('utils.d3_transform_catch', () => {
   it('gets translate', () => {
     assert.deepEqual(utils.d3_transform_catch('translate  ( 20, 30  )'),

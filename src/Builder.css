@@ -123,18 +123,6 @@ resizes. */
   border: 1px solid #cccccc;
   font-size: 22px;
 }
-/* quick jump menu */
-.escher-container #quick-jump-menu {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  width: 300px;
-}
-@media (max-width: 550px) {
-  .escher-container #quick-jump-menu {
-	  display: none;
-  }
-}
 
 .escher-container #tooltip-container {
   -ms-touch-action: none;

@@ -12,7 +12,6 @@ import Brush from './Brush'
 import CallbackManager from './CallbackManager'
 import Settings from './Settings'
 import TextEditInput from './TextEditInput'
-import QuickJump from './QuickJump'
 import dataStyles from './data_styles'
 import renderWrapper from './renderWrapper'
 import SettingsMenu from './SettingsMenu'
@@ -23,7 +22,6 @@ import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
 import _ from 'underscore'
 import { select as d3Select, selection as d3Selection } from 'd3-selection'
-import { json as d3Json } from 'd3-request'
 
 // Include custom font set for icons
 import '../icons/css/fontello.css'
@@ -277,9 +275,6 @@ class Builder {
         }
       })
 
-      // Set up quick jump
-      this._setup_quick_jump(this.selection)
-
       if (messageFn !== null) setTimeout(messageFn, 500)
 
       // Finally run callback
@@ -513,7 +508,7 @@ class Builder {
    * @param {Object} props - Props that the settings menu will use
    */
   passPropsSettingsMenu (props = {}) {
-    this.callback_manager.run('pass_props_settings_menu', null, props)
+    this.map.callback_manager.run('pass_props_settings_menu', null, props)
   }
 
   /**
@@ -524,7 +519,7 @@ class Builder {
     renderWrapper(
       SettingsMenu,
       instance => { this.settingsMenuRef = instance },
-      passProps => this.callback_manager.set('pass_props_settings_menu', passProps),
+      passProps => this.map.callback_manager.set('pass_props_settings_menu', passProps),
       sel.append('div').node()
     )
     this.passPropsSettingsMenu({
@@ -556,7 +551,7 @@ class Builder {
    * @param {Object} props - Props that the menu bar will use
    */
   passPropsMenuBar (props = {}) {
-    this.callback_manager.run('pass_props_menu_bar', null, props)
+    this.map.callback_manager.run('pass_props_menu_bar', null, props)
   }
 
   /**
@@ -568,7 +563,7 @@ class Builder {
     renderWrapper(
       MenuBar,
       instance => { this.menuBarRef = instance },
-      passProps => this.callback_manager.set('pass_props_menu_bar', passProps),
+      passProps => this.map.callback_manager.set('pass_props_menu_bar', passProps),
       sel.append('div').node()
     )
     this.passPropsMenuBar({
@@ -642,7 +637,7 @@ class Builder {
    * @param {Object} props - Props that the search bar will use
    */
   passPropsSearchBar (props = {}) {
-    this.callback_manager.run('pass_props_search_bar', null, props)
+    this.map.callback_manager.run('pass_props_search_bar', null, props)
   }
 
   /**
@@ -654,7 +649,7 @@ class Builder {
     renderWrapper(
       SearchBar,
       instance => { this.searchBarRef = instance },
-      passProps => this.callback_manager.set('pass_props_search_bar', passProps),
+      passProps => this.map.callback_manager.set('pass_props_search_bar', passProps),
       sel.append('div').node()
     )
     this.passPropsSearchBar({
@@ -669,7 +664,7 @@ class Builder {
    * @param {Object} props - Props that the tooltip will use
    */
   passPropsButtonPanel (props = {}) {
-    this.callback_manager.run('pass_props_button_panel', null, props)
+    this.map.callback_manager.run('pass_props_button_panel', null, props)
   }
 
   /**
@@ -679,7 +674,7 @@ class Builder {
     renderWrapper(
       ButtonPanel,
       null,
-      passProps => this.callback_manager.set('pass_props_button_panel', passProps),
+      passProps => this.map.callback_manager.set('pass_props_button_panel', passProps),
       sel.append('div').node()
     )
     this.passPropsButtonPanel({
@@ -1029,38 +1024,6 @@ class Builder {
 
   _setup_status (map) {
     map.callback_manager.set('set_status', status => this.status_bar.html(status))
-  }
-
-  _setup_quick_jump (selection) {
-    // function to load a map
-    var load_fn = function (new_map_name, quick_jump_path, callback) {
-      if (this.settings.get('enable_editing') && !this.settings.get('never_ask_before_quit')) {
-        if (!(confirm(('You will lose any unsaved changes.\n\n' +
-                       'Are you sure you want to switch maps?')))) {
-          if (callback) callback(false)
-          return
-        }
-      }
-      this.map.set_status('Loading map ' + new_map_name + ' ...')
-      var url = utils.name_to_url(new_map_name, quick_jump_path)
-      d3Json(url, function (error, data) {
-        if (error) {
-          console.warn('Could not load data: ' + error)
-          this.map.set_status('Could not load map', 2000)
-          if (callback) callback(false)
-          return
-        }
-        // run callback before load_map so the new map has the correct
-        // quick_jump menu
-        if (callback) callback(true)
-        // now reload
-        this.load_map(data)
-        this.map.set_status('')
-      }.bind(this))
-    }.bind(this)
-
-    // make the quick jump object
-    this.quick_jump = QuickJump(selection, load_fn)
   }
 
   /**
