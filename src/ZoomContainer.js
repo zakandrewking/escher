@@ -3,7 +3,7 @@
  */
 
 var utils = require('./utils')
-var CallbackManager = require('./CallbackManager')
+var CallbackManager = require('./CallbackManager').default
 var _ = require('underscore')
 var d3_zoom = require('d3-zoom').zoom
 var d3_zoomTransform = require('d3-zoom').zoomTransform

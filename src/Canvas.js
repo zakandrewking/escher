@@ -5,7 +5,7 @@
  */
 
 var utils = require('./utils')
-var CallbackManager = require('./CallbackManager')
+var CallbackManager = require('./CallbackManager').default
 var d3_drag = require('d3-drag').drag
 var d3_selection = require('d3-selection')
 var _ = require('underscore')
