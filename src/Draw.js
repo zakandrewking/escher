@@ -30,7 +30,7 @@
 
 var utils = require('./utils')
 var data_styles = require('./data_styles')
-var CallbackManager = require('./CallbackManager')
+var CallbackManager = require('./CallbackManager').default
 var d3_format = require('d3-format').format
 var d3_select = require('d3-selection').select
 var d3_mouse = require('d3-selection').mouse

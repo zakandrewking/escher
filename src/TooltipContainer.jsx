@@ -20,7 +20,7 @@ export default class TooltipContainer {
     this.setUpZoomCallbacks(zoomContainer)
 
     // Create callback manager
-    this.callback_manager = CallbackManager()
+    this.callback_manager = new CallbackManager()
 
     this.div.on('mouseover', this.cancelHideTooltip.bind(this))
     this.div.on('mouseleave', this.hide.bind(this))

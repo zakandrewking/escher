@@ -190,7 +190,7 @@ class Builder {
     })
 
     // Set up this callback manager
-    this.callback_manager = CallbackManager()
+    this.callback_manager = new CallbackManager()
     const firstLoadCallback = this.settings.get('first_load_callback')
     if (firstLoadCallback !== null) {
       this.callback_manager.set('first_load', () => {
