@@ -2259,7 +2259,7 @@ function save_map (obj, callback_before, callback_after, map_type) {
   // Run the before callback
   obj.callback_manager.run(callback_before)
 
-  // Turn ofo zoom and translate so that illustrator likes the map
+  // Turn off zoom and translate so that illustrator likes the map
   var window_scale = obj.zoom_container.window_scale
   var window_translate = obj.zoom_container.window_translate
   var canvas_size_and_loc = obj.canvas.size_and_location()
@@ -2277,7 +2277,7 @@ function save_map (obj, callback_before, callback_after, map_type) {
     obj.canvas.mouse_node.attr('transform', null)
 
     // hide the segment control points
-    var hidden_sel = obj.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas')
+    var hidden_sel = obj.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas,.bezier,#rotation-center,.direction-arrow,.start-reaction-target')
       .style('visibility', 'hidden')
 
     // do the export
