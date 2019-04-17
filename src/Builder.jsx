@@ -1312,8 +1312,21 @@ class Builder {
    * Toggle full screen mode.
    */
   fullScreen () {
-    console.log(this)
-    throw new Error('Not implemented')
+    if (this.settings.get('fill_screen')) return
+
+    if (this.fullScreenOn) {
+      d3Select('html').classed('fill-screen', false)
+      d3Select('body').classed('fill-screen', false)
+      this.selection.classed('fill-screen-div', false)
+      this.map.zoom_extent_canvas()
+      this.fullScreenOn = false
+    } else {
+      d3Select('html').classed('fill-screen', false)
+      d3Select('body').classed('fill-screen', false)
+      this.selection.classed('fill-screen-div', true)
+      this.map.zoom_extent_canvas()
+      this.fullScreenOn = true
+    }
   }
 }
 
