@@ -1143,15 +1143,15 @@ class Builder {
     }
     if (this.settings.get('full_screen_button')) {
       utils.extend(keys, {
-        full_screen_ctrl: {
+        fullScreenCtrl: {
           key: 'ctrl+2',
           target: map,
-          fn: map.full_screen
+          fn: map.fullScreen
         },
-        full_screen: {
+        fullScreen: {
           key: '2',
           target: map,
-          fn: map.full_screen,
+          fn: map.fullScreen,
           ignore_with_input: true
         }
       })

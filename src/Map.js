@@ -49,21 +49,21 @@
 
 */
 
-var utils = require('./utils')
-var Draw = require('./Draw')
-var Behavior = require('./Behavior').default
-var Scale = require('./Scale').default
-var build = require('./build')
-var UndoStack = require('./UndoStack')
-var CallbackManager = require('./CallbackManager').default
-var KeyManager = require('./KeyManager')
-var Canvas = require('./Canvas')
-var data_styles = require('./data_styles')
-var SearchIndex = require('./SearchIndex')
+import * as utils from './utils'
+import Draw from './Draw'
+import Behavior from './Behavior'
+import Scale from './Scale'
+import * as build from './build'
+import UndoStack from './UndoStack'
+import CallbackManager from './CallbackManager'
+import KeyManager from './KeyManager'
+import Canvas from './Canvas'
+import * as data_styles from './data_styles'
+import SearchIndex from './SearchIndex'
 
-var bacon = require('baconjs')
-var _ = require('underscore')
-var d3_select = require('d3-selection').select
+import bacon from 'baconjs'
+import _ from 'underscore'
+import { select as d3Select } from 'd3-selection'
 
 var Map = utils.make_class()
 // class methods
@@ -153,9 +153,7 @@ Map.prototype = {
   highlight_text_label: highlight_text_label,
   highlight: highlight,
   // full screen
-  listen_for_full_screen: listen_for_full_screen,
-  unlisten_for_full_screen: unlisten_for_full_screen,
-  full_screen: full_screen,
+  fullScreen: fullScreen,
   // io
   save: save,
   map_for_export: map_for_export,
@@ -280,13 +278,6 @@ function init (svg, css, selection, zoom_container, settings, cobra_model,
 
   // rotation mode off
   this.rotation_on = false
-
-  // set up full screen listener
-  this.listen_for_full_screen(function () {
-    setTimeout(function() {
-      this.zoom_extent_canvas()
-    }.bind(this), 50)
-  }.bind(this))
 }
 
 // -------------------------------------------------------------------------
@@ -1049,7 +1040,7 @@ function invert_selection() {
   var selection = this.sel.selectAll('#nodes,#text-labels')
     .selectAll('.node,.text-label')
   selection.classed('selected', function() {
-    return !d3_select(this).classed('selected')
+    return !d3Select(this).classed('selected')
   })
 }
 
@@ -1082,7 +1073,7 @@ function select_selectable(node, d, shift_key_on) {
   var classable_selection = this.sel.selectAll('#nodes,#text-labels')
     .selectAll('.node,.text-label'),
   classable_node
-  if (d3_select(node).attr('class').indexOf('text-label') == -1) {
+  if (d3Select(node).attr('class').indexOf('text-label') == -1) {
     // node
     classable_node = node.parentNode
   } else {
@@ -1092,12 +1083,12 @@ function select_selectable(node, d, shift_key_on) {
   // toggle selection
   if (shift_key_on) {
     // toggle this node
-    d3_select(classable_node)
-      .classed('selected', !d3_select(classable_node).classed('selected'))
+    d3Select(classable_node)
+      .classed('selected', !d3Select(classable_node).classed('selected'))
   } else {
     // unselect all other nodes, and select this one
     classable_selection.classed('selected', false)
-    d3_select(classable_node).classed('selected', true)
+    d3Select(classable_node).classed('selected', true)
   }
   // run the select_metabolite callback
   var selected_nodes = this.sel.select('#nodes').selectAll('.selected'),
@@ -2120,42 +2111,13 @@ function highlight (sel) {
 // Full screen
 // -------------------------------------------------------------------------
 
-function full_screen_event () {
-  if      (document.fullscreenEnabled)       return 'fullscreenchange'
-  else if (document.mozFullScreenEnabled)    return 'mozfullscreenchange'
-  else if (document.webkitFullscreenEnabled) return 'webkitfullscreenchange'
-  else if (document.msFullscreenEnabled)     return 'MSFullscreenChange'
-  else                                       return null
-}
-
-/**
- * Call the function when full screen is enabled.
- *
- * To unregister the event listener for the full screen event,
- * unlisten_for_full_screen.
- */
-function listen_for_full_screen (fn) {
-  document.addEventListener(full_screen_event(), fn)
-  this.full_screen_listener = fn
-}
-
-/**
- * Remove the listener created by listen_for_full_screen.
- */
-function unlisten_for_full_screen () {
-  document.removeEventListener(full_screen_event(), this.full_screen_listener)
-}
-
-/**
- * Enter full screen if supported by the browser.
- */
-function full_screen () {
-  var sel = this.zoom_container.selection
-  var e = sel.node()
-  var d = document
-  var full_screen_on = (d.fullscreenElement || d.mozFullScreenElement ||
+function fullScreen () {
+  const sel = this.zoom_container.selection
+  const e = sel.node()
+  const d = document
+  const fullScreenOn = (d.fullscreenElement || d.mozFullScreenElement ||
                         d.webkitFullscreenElement || d.msFullscreenElement)
-  if (full_screen_on) {
+  if (fullScreenOn) {
     // apply full heigh/width 100%
     sel.classed('full-screen-on', false)
     // exit
@@ -2177,6 +2139,7 @@ function full_screen () {
 
 // -------------------------------------------------------------------------
 // IO
+// -------------------------------------------------------------------------
 
 function save () {
   utils.download_json(this.map_for_export(), this.map_name)

@@ -217,7 +217,7 @@ class MenuBar extends Component {
           />
           <MenuButton
             name={`Toggle full screen${enableKeys ? ' (2)' : ''}`}
-            onClick={() => this.props.map.full_screen()}
+            onClick={() => this.props.map.fullScreen()}
             disabledButtons={disabledButtons}
           />
           <MenuButton
