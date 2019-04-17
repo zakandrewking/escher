@@ -472,24 +472,24 @@ export default class Behavior {
     const draggedNode = map.nodes[draggedNodeId]
     const fixedNode = map.nodes[fixedNodeId]
     const updatedSegmentObjs = []
-    draggedNode.connectedSegments.forEach(segmentObj => {
+    draggedNode.connected_segments.forEach(segmentObj => {
       // change the segments to reflect
       let segment = null
       try {
-        segment = map.reactions[segmentObj.reactionId].segments[segmentObj.segmentId]
+        segment = map.reactions[segmentObj.reaction_id].segments[segmentObj.segment_id]
         if (segment === undefined) throw new Error('undefined segment')
       } catch (e) {
-        console.warn('Could not find connected segment ' + segmentObj.segmentId)
+        console.warn('Could not find connected segment ' + segmentObj.segment_id)
         return
       }
-      if (segment.fromNodeId === draggedNodeId) segment.fromNodeId = fixedNodeId
-      else if (segment.toNodeId === draggedNodeId) segment.toNodeId = fixedNodeId
+      if (segment.from_node_id === draggedNodeId) segment.from_node_id = fixedNodeId
+      else if (segment.to_node_id === draggedNodeId) segment.to_node_id = fixedNodeId
       else {
         console.error('Segment does not connect to dragged node')
         return
       }
       // moved segmentObj to fixedNode
-      fixedNode.connectedSegments.push(segmentObj)
+      fixedNode.connected_segments.push(segmentObj)
       updatedSegmentObjs.push(utils.clone(segmentObj))
     })
     // delete the old node
@@ -497,7 +497,7 @@ export default class Behavior {
     // turn off the class
     map.sel.selectAll('.node-to-combine').classed('node-to-combine', false)
     // draw
-    map.drawEverything()
+    map.draw_everything()
     // return for undo
     return updatedSegmentObjs
   }
@@ -538,7 +538,7 @@ export default class Behavior {
       if (d3Select(this).attr('class').indexOf('label') === -1) {
         // Note that drag start is called even for a click event
         const data = this.parentNode.__data__
-        const biggId = data.biggId
+        const biggId = data.bigg_id
         const nodeGroup = this.parentNode
         // Move element to back (for the next step to work). Wait 200ms
         // before making the move, becuase otherwise the element will be
@@ -550,16 +550,13 @@ export default class Behavior {
         // prepare to combine metabolites
         map.sel.selectAll('.metabolite-circle')
           .on('mouseover.combine', function (d) {
-            if (d.bigg_id === biggId && d.node_id !== data.nodeId) {
-              d3Select(this).style('stroke-width', String(12) + 'px')
-                .classed('node-to-combine', true)
+            if (d.bigg_id === biggId && d.node_id !== data.node_id) {
+              d3Select(this).classed('node-to-combine', true)
             }
           })
           .on('mouseout.combine', d => {
             if (d.bigg_id === biggId) {
-              map.sel.selectAll('.node-to-combine')
-                .style('stroke-width', String(2) + 'px')
-                .classed('node-to-combine', false)
+              map.sel.selectAll('.node-to-combine').classed('node-to-combine', false)
             }
           })
       }
@@ -629,7 +626,8 @@ export default class Behavior {
       map.draw_these_text_labels(textLabelIdsToDrag)
     })
 
-    behavior.on('end', () => {
+    const combineNodesAndDraw = this.combineNodesAndDraw.bind(this)
+    behavior.on('end', function () {
       setDragging(false)
 
       if (nodeIdsToDrag === null) {
@@ -654,8 +652,9 @@ export default class Behavior {
         const fixedNodeId = nodeToCombineArray[0]
         const draggedNodeId = this.parentNode.__data__.node_id
         const savedDraggedNode = utils.clone(map.nodes[draggedNodeId])
-        const segmentObjsMovedToCombine = this.combineNodesAndDraw(fixedNodeId,
-                                                                   draggedNodeId)
+        const segmentObjsMovedToCombine = combineNodesAndDraw(fixedNodeId,
+                                                              draggedNodeId)
+        const savedDisplacement = utils.clone(totalDisplacement)
         undoStack.push(() => {
           // undo
           // put the old node back
@@ -663,27 +662,43 @@ export default class Behavior {
           const fixedNode = map.nodes[fixedNodeId]
           const updatedReactions = []
           segmentObjsMovedToCombine.forEach(segmentObj => {
-            const segment = map.reactions[segmentObj.reactionId].segments[segmentObj.segmentId]
-            if (segment.fromNodeId === fixedNodeId) {
-              segment.fromNodeId = draggedNodeId
-            } else if (segment.toNodeId === fixedNodeId) {
-              segment.toNodeId = draggedNodeId
+            const segment = map.reactions[segmentObj.reaction_id].segments[segmentObj.segment_id]
+            if (segment.from_node_id === fixedNodeId) {
+              segment.from_node_id = draggedNodeId
+            } else if (segment.to_node_id === fixedNodeId) {
+              segment.to_node_id = draggedNodeId
             } else {
               console.error('Segment does not connect to fixed node')
             }
             // removed this segmentObj from the fixed node
-            fixedNode.connectedSegments = fixedNode.connectedSegments.filter(x => {
-              return !(x.reactionId === segmentObj.reactionId && x.segmentId === segmentObj.segmentId)
+            fixedNode.connected_segments = fixedNode.connected_segments.filter(x => {
+              return !(x.reaction_id === segmentObj.reaction_id && x.segment_id === segmentObj.segment_id)
             })
-            if (updatedReactions.indexOf(segmentObj.reactionId) === -1) {
-              updatedReactions.push(segmentObj.reactionId)
+            if (updatedReactions.indexOf(segmentObj.reaction_id) === -1) {
+              updatedReactions.push(segmentObj.reaction_id)
             }
           })
+          // move the node back
+          build.move_node_and_dependents(
+            savedDraggedNode,
+            draggedNodeId,
+            map.reactions,
+            map.beziers,
+            utils.c_times_scalar(savedDisplacement, -1)
+          )
           map.draw_these_nodes([draggedNodeId])
           map.draw_these_reactions(updatedReactions)
         }, () => {
           // redo
-          this.combineNodesAndDraw(fixedNodeId, draggedNodeId)
+          // move node before combining for reliable undo/redo looping
+          build.move_node_and_dependents(
+            savedDraggedNode,
+            draggedNodeId,
+            map.reactions,
+            map.beziers,
+            utils.c_times_scalar(savedDisplacement, 1)
+          )
+          combineNodesAndDraw(fixedNodeId, draggedNodeId)
         })
       } else {
         // otherwise, drag node

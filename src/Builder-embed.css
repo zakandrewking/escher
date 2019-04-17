@@ -123,3 +123,6 @@ svg.escher-svg .highlight {
   fill: #D97000;
   text-decoration: underline;
 }
+svg.escher-svg .node-to-combine {
+  stroke-width: 12px !important;
+}
