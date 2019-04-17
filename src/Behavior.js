@@ -551,15 +551,12 @@ export default class Behavior {
         map.sel.selectAll('.metabolite-circle')
           .on('mouseover.combine', function (d) {
             if (d.bigg_id === biggId && d.node_id !== data.node_id) {
-              d3Select(this).style('stroke-width', String(12) + 'px')
-                .classed('node-to-combine', true)
+              d3Select(this).classed('node-to-combine', true)
             }
           })
           .on('mouseout.combine', d => {
             if (d.bigg_id === biggId) {
-              map.sel.selectAll('.node-to-combine')
-                .style('stroke-width', String(2) + 'px')
-                .classed('node-to-combine', false)
+              map.sel.selectAll('.node-to-combine').classed('node-to-combine', false)
             }
           })
       }
