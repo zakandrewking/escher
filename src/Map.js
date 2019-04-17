@@ -1987,36 +1987,6 @@ export default class Map {
   }
 
   // -------------------------------------------------------------------------
-  // Full screen
-  // -------------------------------------------------------------------------
-
-  fullScreen () {
-    const sel = this.zoom_container.selection
-    const e = sel.node()
-    const d = document
-    const fullScreenOn = (d.fullscreenElement || d.mozFullScreenElement ||
-                          d.webkitFullscreenElement || d.msFullscreenElement)
-    if (fullScreenOn) {
-      // apply full heigh/width 100%
-      sel.classed('full-screen-on', false)
-      // exit
-      if      (d.exitFullscreen)       d.exitFullscreen()
-      else if (d.mozCancelFullScreen)  d.mozCancelFullScreen()
-      else if (d.webkitExitFullscreen) d.webkitExitFullscreen()
-      else if (d.msExitFullscreen)     d.msExitFullscreen()
-      else throw Error('Cannot exit full screen')
-    } else {
-      sel.classed('full-screen-on', true)
-      // enter
-      if      (e.requestFullscreen)       e.requestFullscreen()
-      else if (e.mozRequestFullScreen)    e.mozRequestFullScreen()
-      else if (e.webkitRequestFullscreen) e.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT)
-      else if (e.msRequestFullscreen)     e.msRequestFullscreen()
-      else throw Error('Full screen does not seem to be supported on this system.')
-    }
-  }
-
-  // -------------------------------------------------------------------------
   // IO
   // -------------------------------------------------------------------------
 

@@ -611,6 +611,7 @@ class Builder {
       zoomOut: () => this.zoom_container.zoom_out(),
       zoomExtentNodes: () => this.map.zoom_extent_nodes(),
       zoomExtentCanvas: () => this.map.zoom_extent_canvas(),
+      fullScreen: () => this.fullScreen(),
       search: () => this.passPropsSearchBar({ display: true }),
       toggleBeziers: () => this.map.toggle_beziers(),
       renderSettingsMenu: () => this.passPropsSettingsMenu({ display: true })
@@ -684,7 +685,8 @@ class Builder {
       setMode: mode => this._setMode(mode),
       zoomContainer: this.zoom_container,
       map: this.map,
-      buildInput: this.build_input
+      buildInput: this.build_input,
+      fullScreen: () => this.fullScreen()
     })
     // redraw when mode changes
     this.callback_manager.set('set_mode', mode => {
@@ -1145,13 +1147,13 @@ class Builder {
       utils.extend(keys, {
         fullScreenCtrl: {
           key: 'ctrl+2',
-          target: map,
-          fn: map.fullScreen
+          target: this,
+          fn: this.fullScreen
         },
         fullScreen: {
           key: '2',
-          target: map,
-          fn: map.fullScreen,
+          target: this,
+          fn: this.fullScreen,
           ignore_with_input: true
         }
       })
@@ -1304,6 +1306,14 @@ class Builder {
         : 'You will lose any unsaved changes.'
       )
     }.bind(this)
+  }
+
+  /**
+   * Toggle full screen mode.
+   */
+  fullScreen () {
+    console.log(this)
+    throw new Error('Not implemented')
   }
 }
 

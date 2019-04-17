@@ -45,7 +45,7 @@ class ButtonPanel extends Component {
         <li style={{display: this.props.settings.get('full_screen_button') !== false ? 'block' : 'none'}}>
           <button
             className='button btn'
-            onClick={() => this.props.map.fullScreen()}
+            onClick={() => this.props.fullScreen()}
             title={`Toggle full screen${enableKeys ? ' (2)' : ''}`}
           >
             <i className='icon-resize-full-alt' />
