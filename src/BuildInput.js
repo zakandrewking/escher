@@ -197,7 +197,7 @@ export default class BuildInput {
     const cobraReactions = this.map.cobra_model.reactions
     const cobraMetabolites = this.map.cobra_model.metabolites
     const reactions = this.map.reactions
-    const hasDataOnReactions = this.map.hasDataOnReactions
+    const hasDataOnReactions = this.map.has_data_on_reactions
     const selectedMetName = (selectedNode ? (showNames ? selectedNode.name : selectedNode.bigg_id) : '')
     const boldMetsInStr = (str, mets) =>
           str.replace(new RegExp('(^| )(' + mets.join('|') + ')($| )', 'g'), '$1<b>$2</b>$3')
@@ -221,57 +221,57 @@ export default class BuildInput {
           // don't add suggestions twice
           if (biggId in reactionSuggestions) continue
 
+          // get the metabolite names or IDs
+          let mets = {}
+          const showMetNames = []
+          let metId
+          if (showNames) {
+            for (metId in reaction.metabolites) {
+              var name = cobraMetabolites[metId].name
+              mets[name] = reaction.metabolites[metId]
+              showMetNames.push(name)
+            }
+          } else {
+            mets = utils.clone(reaction.metabolites)
+            for (metId in reaction.metabolites) {
+              showMetNames.push(metId)
+            }
+          }
+          const showGeneNames = _.flatten(
+            reaction.genes.map(g => [ g.name, g.biggId ])
+          )
+          // get the reaction string
+          const reactionString = CobraModel.build_reaction_string(mets,
+                                                                  reaction.reversibility,
+                                                                  reaction.lower_bound,
+                                                                  reaction.upper_bound)
+          // make the matches list and filter out any missing entries (e.g.
+          // missing gene names from model
+          const matches = [ showReactionName ].concat(showMetNames).concat(showGeneNames).filter(x => x)
+
           if (hasDataOnReactions) {
             options.push({
               reaction_data: reaction.data,
               html: '<b>' + showReactionName + '</b>' + ': ' + reaction.data_string,
-              matches: [showReactionName],
+              matches,
               id: biggId
             })
-            reactionSuggestions[biggId] = true
           } else {
-            // get the metabolite names or IDs
-            let mets = {}
-            const showMetNames = []
-            let metId
-            if (showNames) {
-              for (metId in reaction.metabolites) {
-                var name = cobraMetabolites[metId].name
-                mets[name] = reaction.metabolites[metId]
-                showMetNames.push(name)
-              }
-            } else {
-              mets = utils.clone(reaction.metabolites)
-              for (metId in reaction.metabolites) {
-                showMetNames.push(metId)
-              }
-            }
-            const showGeneNames = _.flatten(
-              reaction.genes.map(g => [ g.name, g.biggId ])
-            )
-            // get the reaction string
-            const reactionString = CobraModel.build_reaction_string(mets,
-                                                                    reaction.reversibility,
-                                                                    reaction.lower_bound,
-                                                                    reaction.upper_bound)
-            // make the matches list and filter out any missing entries (e.g.
-            // missing gene names from model
-            const matches = [ showReactionName ].concat(showMetNames).concat(showGeneNames).filter(x => x)
             options.push({
               html: ('<b>' + showReactionName + '</b>' + '\t' +
                      boldMetsInStr(reactionString, [selectedMetName])),
               matches,
               id: biggId
             })
-            reactionSuggestions[biggId] = true
           }
+          reactionSuggestions[biggId] = true
         }
       }
     }
 
     // Generate the array of reactions to suggest and sort it
     const sortFn = hasDataOnReactions
-          ? (x, y) => Math.abs(y.reactionData) - Math.abs(x.reactionData)
+          ? (x, y) => Math.abs(x.reaction_data) > Math.abs(y.reaction_data) ? -1 : 1
           : (x, y) => x.html.toLowerCase() < y.html.toLowerCase() ? -1 : 1
 
     // set up the box with data
