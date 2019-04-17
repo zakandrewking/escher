@@ -197,7 +197,7 @@ export default class BuildInput {
     const cobraReactions = this.map.cobra_model.reactions
     const cobraMetabolites = this.map.cobra_model.metabolites
     const reactions = this.map.reactions
-    const hasDataOnReactions = this.map.hasDataOnReactions
+    const hasDataOnReactions = this.map.has_data_on_reactions
     const selectedMetName = (selectedNode ? (showNames ? selectedNode.name : selectedNode.bigg_id) : '')
     const boldMetsInStr = (str, mets) =>
           str.replace(new RegExp('(^| )(' + mets.join('|') + ')($| )', 'g'), '$1<b>$2</b>$3')
