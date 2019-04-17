@@ -1,0 +1,92 @@
+{
+  "name": "escher",
+  "author": "Zachary King",
+  "version": "1.7.0-beta.9",
+  "schema_version": "1-0-0",
+  "map_model_version": "5",
+  "description": "Escher: A Web Application for Building, Sharing, and Embedding Data-Rich Visualizations of Metabolic Pathways",
+  "keywords": [
+    "visualization",
+    "pathway map",
+    "metabolism",
+    "genome-scale-model",
+    "web application",
+    "D3.js",
+    "biojs"
+  ],
+  "license": "MIT",
+  "homepage": "https://escher.github.io",
+  "repository": "https://github.com/zakandrewking/escher",
+  "bugs": "https://github.com/zakandrewking/escher/issues",
+  "files": [
+    "dist/*",
+    "jupyter/*"
+  ],
+  "main": "dist/escher.js",
+  "engines": {
+    "node": ">=5.0"
+  },
+  "devDependencies": {
+    "@jupyter-widgets/base": "^1.1.10",
+    "babel-core": "^6.25.0",
+    "babel-loader": "^7.1.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-plugin-transform-react-jsx": "^6.24.1",
+    "babel-preset-env": "^1.6.1",
+    "bootswatch": "^3.3.6",
+    "chai": "^3.3.0",
+    "coveralls": "^3.0.0",
+    "cross-env": "^5.1.0",
+    "css-loader": "^0.28.4",
+    "file-loader": "^1.1.5",
+    "istanbul-instrumenter-loader": "^3.0.0",
+    "jsdom": "^11.5.1",
+    "mocha": "^2.3.4",
+    "mocha-webpack": "^1.0.1",
+    "null-loader": "^0.1.1",
+    "nyc": "^11.2.1",
+    "raw-loader": "^0.5.1",
+    "standard": "^10.0.3",
+    "style-loader": "^0.18.2",
+    "url-loader": "^0.6.2",
+    "webpack": "^3.8.1",
+    "webpack-dev-server": "^2.7.1",
+    "webpack-merge": "^4.1.0",
+    "webpack-node-externals": "^1.6.0"
+  },
+  "dependencies": {
+    "baconjs": "^0.7.71",
+    "d3-brush": "https://github.com/zakandrewking/d3-brush.git",
+    "d3-drag": "^1.0.2",
+    "d3-dsv": "^1.0.3",
+    "d3-request": "^1.0.3",
+    "d3-scale": "^1.0.4",
+    "d3-selection": "^1.0.3",
+    "d3-zoom": "^1.1.1",
+    "file-saver": "^1.3.3",
+    "immutability-helper": "^2.4.0",
+    "mousetrap": "^1.5.3",
+    "preact": "^8.2.1",
+    "underscore": "^1.8.3",
+    "vkbeautify": "^0.99.1"
+  },
+  "scripts": {
+    "build": "./node_modules/.bin/webpack --config webpack.prod.js",
+    "watch": "./node_modules/.bin/webpack --config webpack.prod.js --watch",
+    "start": "./node_modules/.bin/webpack-dev-server --config webpack.dev.js",
+    "clean": "rm -r dist/* && rm py/escher/static/*",
+    "test": "./node_modules/.bin/mocha-webpack --webpack-config webpack.test.js \"src/tests/*.js\"",
+    "copy": "cp package.json py/escher/static/ && cp jupyter/notebook-extension.js py/escher/static/extension.js && cp dist/escher.min.* py/escher/static/ && cp jsonschema/* py/escher/static/",
+    "coverage": "./node_modules/.bin/cross-env NODE_ENV=coverage ./node_modules/.bin/nyc --reporter=text-lcov npm run test | ./node_modules/.bin/coveralls"
+  },
+  "nyc": {
+    "include": [
+      "src/*.js"
+    ],
+    "instrument": false,
+    "sourceMap": false
+  },
+  "jupyterlab": {
+    "extension": "jupyter/lab-extension"
+  }
+}
