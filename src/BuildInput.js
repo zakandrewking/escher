@@ -271,7 +271,7 @@ export default class BuildInput {
 
     // Generate the array of reactions to suggest and sort it
     const sortFn = hasDataOnReactions
-          ? (x, y) => Math.abs(y.reactionData) - Math.abs(x.reactionData)
+          ? (x, y) => Math.abs(x.reaction_data) > Math.abs(y.reaction_data) ? -1 : 1
           : (x, y) => x.html.toLowerCase() < y.html.toLowerCase() ? -1 : 1
 
     // set up the box with data
