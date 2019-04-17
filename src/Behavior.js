@@ -550,7 +550,6 @@ export default class Behavior {
         // prepare to combine metabolites
         map.sel.selectAll('.metabolite-circle')
           .on('mouseover.combine', function (d) {
-            console.log(d.bigg_id, biggId, d.node_id, data.node_id)
             if (d.bigg_id === biggId && d.node_id !== data.node_id) {
               d3Select(this).style('stroke-width', String(12) + 'px')
                 .classed('node-to-combine', true)
@@ -658,6 +657,7 @@ export default class Behavior {
         const savedDraggedNode = utils.clone(map.nodes[draggedNodeId])
         const segmentObjsMovedToCombine = combineNodesAndDraw(fixedNodeId,
                                                               draggedNodeId)
+        const savedDisplacement = utils.clone(totalDisplacement)
         undoStack.push(() => {
           // undo
           // put the old node back
@@ -681,11 +681,27 @@ export default class Behavior {
               updatedReactions.push(segmentObj.reaction_id)
             }
           })
+          // move the node back
+          build.move_node_and_dependents(
+            savedDraggedNode,
+            draggedNodeId,
+            map.reactions,
+            map.beziers,
+            utils.c_times_scalar(savedDisplacement, -1)
+          )
           map.draw_these_nodes([draggedNodeId])
           map.draw_these_reactions(updatedReactions)
         }, () => {
           // redo
-          this.combineNodesAndDraw(fixedNodeId, draggedNodeId)
+          // move node before combining for reliable undo/redo looping
+          build.move_node_and_dependents(
+            savedDraggedNode,
+            draggedNodeId,
+            map.reactions,
+            map.beziers,
+            utils.c_times_scalar(savedDisplacement, 1)
+          )
+          combineNodesAndDraw(fixedNodeId, draggedNodeId)
         })
       } else {
         // otherwise, drag node
