@@ -1,209 +1,205 @@
-const d3Body = require('./helpers/d3Body')
-const trigger_key_event = require('./helpers/trigger_key_event')
+import d3Body from './helpers/d3Body'
+import triggerKeyEvent from './helpers/triggerKeyEvent'
+import KeyManager from '../KeyManager'
 
-const KeyManager = require('../KeyManager')
-
-const describe = require('mocha').describe
-const it = require('mocha').it
-const beforeEach = require('mocha').beforeEach
-const afterEach = require('mocha').afterEach
-const assert = require('chai').assert
-
-const Mousetrap = require('mousetrap')
+import { describe, it, afterEach } from 'mocha'
+import { assert } from 'chai'
+import Mousetrap from 'mousetrap'
 
 describe('KeyManager', () => {
-  let key_manager
+  let keyManager
 
   afterEach(() => {
     // clear the key manager
-    if (key_manager)
-      key_manager.toggle(false)
-    key_manager = null
+    if (keyManager) keyManager.toggle(false)
+    keyManager = null
   })
 
   it('initializes', () => {
-    key_manager = KeyManager({})
-    assert.deepEqual(key_manager.assignedKeys, {})
+    keyManager = new KeyManager()
+    assert.deepEqual(keyManager.assignedKeys, {})
   })
 
   it('initializes with selection', () => {
-    key_manager = KeyManager({}, null, d3Body.node())
-    assert.strictEqual(key_manager.mousetrap.target, d3Body.node())
+    keyManager = new KeyManager({}, null, d3Body.node())
+    assert.strictEqual(keyManager.mousetrap.target, d3Body.node())
   })
 
   it('mousetrap', () => {
     let pressed = false
     const mousetrap = Mousetrap()
-    mousetrap.bind('enter', () => {
-      pressed = true
-    })
-    trigger_key_event('enter')
+    mousetrap.bind('enter', () => { pressed = true })
+    triggerKeyEvent('enter')
     assert.isTrue(pressed)
     mousetrap.reset()
   })
 
   it('listens and toggles', () => {
-    let pressed_q = false
-    let pressed_p = false
+    let pressedQ = false
+    let pressedP = false
     let target = null
-    key_manager = KeyManager({
-      q: { key: 'ctrl+q',
-           fn: function() { pressed_q = true; target = this },
-           target: { my: 'target' } },
-      p: { key: 'p',
-           fn: () => pressed_p = true }
+    keyManager = new KeyManager({
+      q: {
+        key: 'ctrl+q',
+        fn: function () { pressedQ = true; target = this },
+        target: { my: 'target' }
+      },
+      p: {
+        key: 'p',
+        fn: () => { pressedP = true }
+      }
     })
     // toggle off
-    key_manager.toggle(false)
-    trigger_key_event('q', ['ctrl'])
-    assert.isFalse(pressed_q)
-    assert.isFalse(pressed_p)
+    keyManager.toggle(false)
+    triggerKeyEvent('q', ['ctrl'])
+    assert.isFalse(pressedQ)
+    assert.isFalse(pressedP)
     // toggle on
-    key_manager.toggle(true)
+    keyManager.toggle(true)
     // meta no ctrl
-    trigger_key_event('q', ['ctrl', 'meta'])
-    assert.isFalse(pressed_q)
-    assert.isFalse(pressed_p)
+    triggerKeyEvent('q', ['ctrl', 'meta'])
+    assert.isFalse(pressedQ)
+    assert.isFalse(pressedP)
     // ctrl
-    trigger_key_event('q', ['ctrl'])
-    assert.isTrue(pressed_q)
+    triggerKeyEvent('q', ['ctrl'])
+    assert.isTrue(pressedQ)
     assert.deepEqual(target, { my: 'target' })
-    assert.isFalse(pressed_p)
+    assert.isFalse(pressedP)
     // p
-    trigger_key_event('p')
-    assert.isTrue(pressed_p)
+    triggerKeyEvent('p')
+    assert.isTrue(pressedP)
   })
 
   it('missing key or function', () => {
     // ok to have key descriptions without 'key' attributes
-    key_manager = KeyManager({ k: { fn: () => ({}) }})
+    keyManager = new KeyManager({ k: { fn: () => ({}) } })
     // will get a warning for a key with no function
-    key_manager.assignedKeys['v'] = { key: 'v' }
-    key_manager.update()
-    trigger_key_event('v')
+    keyManager.assignedKeys['v'] = { key: 'v' }
+    keyManager.update()
+    triggerKeyEvent('v')
   })
 
-  it('ctrl_equals_cmd', () => {
+  it('ctrlEqualsCmd', () => {
     let pressed = false
-    key_manager = KeyManager({ k: {
+    keyManager = new KeyManager({ k: {
       key: 'ctrl+q',
-      fn: () => pressed = true
+      fn: () => { pressed = true }
     }}, null, null, true)
-    trigger_key_event('q', ['meta'])
+    triggerKeyEvent('q', ['meta'])
     assert.isTrue(pressed)
   })
 
   it('respects capitalization with shift', () => {
     let pressed = false
-    const key_manager = KeyManager({ k: {
+    keyManager = new KeyManager({ k: {
       key: 'ctrl+shift+q', // 'ctrl-Q' would not wor
-      fn: () => pressed = true
+      fn: () => { pressed = true }
     }})
-    trigger_key_event('q', ['ctrl'])
+    triggerKeyEvent('q', ['ctrl'])
     assert.isFalse(pressed)
-    trigger_key_event('q', ['ctrl', 'shift'])
+    triggerKeyEvent('q', ['ctrl', 'shift'])
     assert.isTrue(pressed)
   })
 
   it('check inputs', () => {
     let pressed = 0
     let iv = false
-    const my_input = { is_visible: () => iv }
-    key_manager = KeyManager({ k: {
+    const myInput = { is_visible: () => iv }
+    keyManager = new KeyManager({ k: {
       key: 'q',
       fn: () => pressed++,
-      ignore_with_input: true
-    }}, [my_input])
-    trigger_key_event('q')
+      ignoreWithInput: true
+    }}, [myInput])
+    triggerKeyEvent('q')
     assert.strictEqual(pressed, 1)
     iv = true
-    trigger_key_event('q')
+    triggerKeyEvent('q')
     assert.strictEqual(pressed, 1)
     iv = false
-    trigger_key_event('q')
+    triggerKeyEvent('q')
     assert.strictEqual(pressed, 2)
   })
 
   it('update', () => {
     let pressed = 0
     let iv = true
-    const my_input = { is_visible: () => iv }
-    key_manager = KeyManager()
-    key_manager.assignedKeys = { k: {
+    const myInput = { is_visible: () => iv }
+    keyManager = new KeyManager()
+    keyManager.assignedKeys = { k: {
       key: 'q',
       fn: () => pressed++,
-      ignore_with_input: true
+      ignoreWithInput: true
     }}
     // not updated
-    trigger_key_event('q')
+    triggerKeyEvent('q')
     assert.strictEqual(pressed, 0)
     // updated
-    key_manager.update()
-    trigger_key_event('q')
+    keyManager.update()
+    triggerKeyEvent('q')
     assert.strictEqual(pressed, 1)
 
     // input
-    key_manager.input_list = [my_input]
-    trigger_key_event('q')
+    keyManager.inputList = [myInput]
+    triggerKeyEvent('q')
     assert.strictEqual(pressed, 2)
-    key_manager.update()
+    keyManager.update()
     // will not listen after update because of the new input
-    trigger_key_event('q')
+    triggerKeyEvent('q')
     assert.strictEqual(pressed, 2)
   })
 
   it('key listener once', () => {
-    key_manager = KeyManager()
+    keyManager = new KeyManager()
     let called = 0
-    key_manager.add_key_listener('x', () => called++, true)
-    trigger_key_event('x')
+    keyManager.addKeyListener('x', () => called++, true)
+    triggerKeyEvent('x')
     assert.strictEqual(called, 1)
     // only works once
-    trigger_key_event('x')
+    triggerKeyEvent('x')
     assert.strictEqual(called, 1)
   })
 
   it('key listener multiple keys', () => {
-    key_manager = KeyManager()
-    key_manager.ctrl_equals_cmd = true
+    keyManager = new KeyManager()
+    keyManager.ctrlEqualsCmd = true
     let called = 0
-    key_manager.add_key_listener(['x', 'ctrl+y'], () => called++)
-    trigger_key_event('x')
+    keyManager.addKeyListener(['x', 'ctrl+y'], () => called++)
+    triggerKeyEvent('x')
     assert.strictEqual(called, 1)
-    trigger_key_event('y', ['meta'])
+    triggerKeyEvent('y', ['meta'])
     assert.strictEqual(called, 2)
   })
 
   it('key listener unbind', () => {
-    key_manager = KeyManager()
-    let called_enter = false
-    let called_escape = false
-    const unbind_enter = key_manager.add_key_listener('enter', () => {
-      called_enter = true
+    keyManager = new KeyManager()
+    let calledEnter = false
+    let calledEscape = false
+    const unbindEnter = keyManager.addKeyListener('enter', () => {
+      calledEnter = true
     })
-    const unbind_escape = key_manager.add_key_listener('escape', () => {
-      called_escape = true
+    keyManager.addKeyListener('escape', () => {
+      calledEscape = true
     })
-    unbind_enter()
-    trigger_key_event('enter')
-    trigger_key_event('escape')
-    assert.strictEqual(called_enter, false)
-    assert.strictEqual(called_escape, true)
+    unbindEnter()
+    triggerKeyEvent('enter')
+    triggerKeyEvent('escape')
+    assert.strictEqual(calledEnter, false)
+    assert.strictEqual(calledEscape, true)
   })
 
   it('escape listener', () => {
-    key_manager = KeyManager()
-    let called_escape = false
-    key_manager.add_escape_listener(() => called_escape = true)
-    trigger_key_event('escape')
-    assert.isTrue(called_escape)
+    keyManager = new KeyManager()
+    let calledEscape = false
+    keyManager.addEscapeListener(() => { calledEscape = true })
+    triggerKeyEvent('escape')
+    assert.isTrue(calledEscape)
   })
 
   it('enter listener', () => {
-    key_manager = KeyManager()
-    let called_enter = false
-    key_manager.add_enter_listener(() => called_enter = true)
-    trigger_key_event('enter')
-    assert.isTrue(called_enter)
+    keyManager = new KeyManager()
+    let calledEnter = false
+    keyManager.addEnterListener(() => { calledEnter = true })
+    triggerKeyEvent('enter')
+    assert.isTrue(calledEnter)
   })
 })

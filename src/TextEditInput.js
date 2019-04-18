@@ -97,13 +97,13 @@ function show (target, coords) {
 
   // escape key
   this.clear_escape = this.map.key_manager
-    .add_escape_listener(function () {
+    .addEscapeListener(function () {
       this._accept_changes(target)
       this.hide()
     }.bind(this), true)
   // enter key
   this.clear_enter = this.map.key_manager
-    .add_enter_listener(function (target) {
+    .addEnterListener(function (target) {
       this._accept_changes(target)
       this.hide()
     }.bind(this, target), true)

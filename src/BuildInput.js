@@ -119,7 +119,7 @@ export default class BuildInput {
   showDropdown (coords) {
     // escape key
     this.clear_escape = this.map.key_manager
-      .add_escape_listener(() => this.hideDropdown(), true)
+      .addEscapeListener(() => this.hideDropdown(), true)
     // dropdown
     this.completely.input.blur()
     this.completely.repaint()

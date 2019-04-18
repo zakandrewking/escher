@@ -427,14 +427,14 @@ class Builder {
       const keys = this.getKeys()
       this.map.key_manager.assignedKeys = keys
       // Tell the key manager about the reaction input and search bar
-      this.map.key_manager.input_list = [
+      this.map.key_manager.inputList = [
         this.build_input,
         this.searchBarRef,
         () => this.settingsMenuRef,
         this.text_edit_input
       ]
       if (!this.settings.get('enable_keys_with_tooltip')) {
-        this.map.key_manager.input_list.push(this.tooltip_container)
+        this.map.key_manager.inputList.push(this.tooltip_container)
       }
 
       // Make sure the key manager remembers all those changes
@@ -1106,7 +1106,7 @@ class Builder {
         key: '=',
         target: zoomContainer,
         fn: zoomContainer.zoom_in,
-        ignore_with_input: true
+        ignoreWithInput: true
       },
       zoom_out_ctrl: {
         key: 'ctrl+-',
@@ -1117,7 +1117,7 @@ class Builder {
         key: '-',
         target: zoomContainer,
         fn: zoomContainer.zoom_out,
-        ignore_with_input: true
+        ignoreWithInput: true
       },
       extent_nodes_ctrl: {
         key: 'ctrl+0',
@@ -1128,7 +1128,7 @@ class Builder {
         key: '0',
         target: map,
         fn: map.zoom_extent_nodes,
-        ignore_with_input: true
+        ignoreWithInput: true
       },
       extent_canvas_ctrl: {
         key: 'ctrl+1',
@@ -1139,12 +1139,12 @@ class Builder {
         key: '1',
         target: map,
         fn: map.zoom_extent_canvas,
-        ignore_with_input: true
+        ignoreWithInput: true
       },
       view_mode: {
         target: this,
         fn: this.view_mode,
-        ignore_with_input: true
+        ignoreWithInput: true
       },
       show_settings_ctrl: {
         key: 'ctrl+,',
@@ -1153,7 +1153,7 @@ class Builder {
       show_settings: {
         key: ',',
         fn: () => this.passPropsSettingsMenu({ display: true }),
-        ignore_with_input: true
+        ignoreWithInput: true
       }
     }
     if (this.settings.get('enable_editing')) {
@@ -1162,91 +1162,91 @@ class Builder {
           key: 'n',
           target: this,
           fn: this.build_mode,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         zoom_mode: {
           key: 'z',
           target: this,
           fn: this.zoom_mode,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         brush_mode: {
           key: 'v',
           target: this,
           fn: this.brush_mode,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         rotate_mode: {
           key: 'r',
           target: this,
           fn: this.rotate_mode,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         text_mode: {
           key: 't',
           target: this,
           fn: this.text_mode,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         toggle_beziers: {
           key: 'b',
           target: map,
           fn: map.toggle_beziers,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         delete_ctrl: {
           key: 'ctrl+backspace',
           target: map,
           fn: map.delete_selected,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         delete: {
           key: 'backspace',
           target: map,
           fn: map.delete_selected,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         delete_del: {
           key: 'del',
           target: map,
           fn: map.delete_selected,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         toggle_primary: {
           key: 'p',
           target: map,
           fn: map.toggle_selected_node_primary,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         cycle_primary: {
           key: 'c',
           target: map,
           fn: map.cycle_primary_node,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         direction_arrow_right: {
           key: 'right',
           target: this.build_input.direction_arrow,
           fn: this.build_input.direction_arrow.right,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         direction_arrow_down: {
           key: 'down',
           target: this.build_input.direction_arrow,
           fn: this.build_input.direction_arrow.down,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         direction_arrow_left: {
           key: 'left',
           target: this.build_input.direction_arrow,
           fn: this.build_input.direction_arrow.left,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         direction_arrow_up: {
           key: 'up',
           target: this.build_input.direction_arrow,
           fn: this.build_input.direction_arrow.up,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         undo: {
           key: 'ctrl+z',
@@ -1262,13 +1262,13 @@ class Builder {
           key: 'ctrl+a',
           target: map,
           fn: map.select_all,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         select_none: {
           key: 'ctrl+shift+a',
           target: map,
           fn: map.select_none,
-          ignore_with_input: true
+          ignoreWithInput: true
         },
         invert_selection: {
           target: map,
@@ -1285,7 +1285,7 @@ class Builder {
         search: {
           key: 'f',
           fn: () => this.passPropsSearchBar({ display: true }),
-          ignore_with_input: true
+          ignoreWithInput: true
         }
       })
     }
@@ -1323,7 +1323,7 @@ class Builder {
       d3Select('body').classed('fill-screen', true)
       this.selection.classed('fill-screen-div', true)
       this.isFullScreen = true
-      this.clearFullScreenEscape = this.map.key_manager.add_escape_listener(
+      this.clearFullScreenEscape = this.map.key_manager.addEscapeListener(
         () => this.fullScreen()
       )
     }

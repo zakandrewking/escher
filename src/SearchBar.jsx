@@ -17,16 +17,16 @@ class SearchBar extends Component {
 
   componentWillMount () {
     this.setState({
-      clearEscape: this.props.map.key_manager.add_escape_listener(
+      clearEscape: this.props.map.key_manager.addEscapeListener(
         () => this.close(),
         true
       ),
-      clearNext: this.props.map.key_manager.add_key_listener(
+      clearNext: this.props.map.key_manager.addKeyListener(
         ['enter', 'ctrl+g'],
         () => this.next(),
         false
       ),
-      clearPrevious: this.props.map.key_manager.add_key_listener(
+      clearPrevious: this.props.map.key_manager.addKeyListener(
         ['shift+enter', 'shift+ctrl+g'],
         () => this.previous(),
         false

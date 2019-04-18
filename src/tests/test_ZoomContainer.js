@@ -33,11 +33,10 @@ describe('ZoomContainer', () => {
 
   it('initializes', () => {
     // make a zoom container
-    const zc = ZoomContainer(sel, 'none', true, true)
+    const zc = ZoomContainer(sel, 'none', true)
     // check basic attributes
     assert.strictEqual(sel.select('.escher-zoom-container').node(),
                        zc.zoom_container.node())
-    assert.isTrue(sel.classed('fill-screen-div'))
     assert.strictEqual(sel.select('.escher-3d-transform-container').node(),
                        zc.css3_transform_container.node())
     assert.strictEqual(sel.select('svg').node(),
@@ -48,7 +47,7 @@ describe('ZoomContainer', () => {
 
   it('go_to -- no d3 transform', (done) => {
     // no d3 transform
-    const zc = ZoomContainer(sel, 'none', false, true)
+    const zc = ZoomContainer(sel, 'none', false)
     zc.go_to(2.0, { x: 10.0, y: -20.5 })
     // check node zoomTransform (__zoom attribute)
     const zoom_transform = d3_zoomTransform(zc.zoom_container.node())
@@ -71,7 +70,7 @@ describe('ZoomContainer', () => {
   // https://github.com/NV/CSSOM/issues/78
   // it('go_to -- with 3D transform', (done) => {
   //   // with 3D transform
-  //   var zc = ZoomContainer(sel, 'none', true, true)
+  //   var zc = ZoomContainer(sel, 'none', true)
 
   //   // zoom
   //   zc.go_to(0.5, { x: 10, y: -10 })
