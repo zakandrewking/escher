@@ -1324,9 +1324,8 @@ class Builder {
       this.isFullScreen = true
     }
     if (zoom) this.map.zoom_extent_canvas()
-    this.passPropsButtonPanel({
-      isFullScreen: this.isFullScreen
-    })
+    this.passPropsButtonPanel({ isFullScreen: this.isFullScreen })
+    this.passPropsMenuBar({ isFullScreen: this.isFullScreen })
   }
 }
 

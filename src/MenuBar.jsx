@@ -119,36 +119,31 @@ class MenuBar extends Component {
         >
           <MenuButton
             name={'Pan mode' + (enableKeys ? ' (Z)' : '')}
-            modeName='zoom'
-            mode={this.props.mode}
+            checkMark={this.props.mode === 'zoom'}
             onClick={() => this.props.setMode('zoom')}
             disabledButtons={disabledButtons}
           />
           <MenuButton
             name={'Select mode' + (enableKeys ? ' (V)' : '')}
-            modeName='brush'
-            mode={this.props.mode}
+            checkMark={this.props.mode === 'brush'}
             onClick={() => this.props.setMode('brush')}
             disabledButtons={disabledButtons}
           />
           <MenuButton
             name={'Add reaction mode' + (enableKeys ? ' (N)' : '')}
-            modeName='build'
-            mode={this.props.mode}
+            checkMark={this.props.mode === 'build'}
             onClick={() => this.props.setMode('build')}
             disabledButtons={disabledButtons}
           />
           <MenuButton
             name={'Rotate mode' + (enableKeys ? ' (R)' : '')}
-            modeName='rotate'
-            mode={this.props.mode}
+            checkMark={this.props.mode === 'rotate'}
             onClick={() => this.props.setMode('rotate')}
             disabledButtons={disabledButtons}
           />
           <MenuButton
             name={'Text mode' + (enableKeys ? ' (T)' : '')}
-            modeName='text'
-            mode={this.props.mode}
+            checkMark={this.props.mode === 'text'}
             onClick={() => this.props.setMode('text')}
             disabledButtons={disabledButtons}
           />
@@ -216,11 +211,6 @@ class MenuBar extends Component {
             disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Toggle full screen'}
-            onClick={() => this.props.fullScreen()}
-            disabledButtons={disabledButtons}
-          />
-          <MenuButton
             name={`Find${enableKeys ? ' (F)' : ''}`}
             onClick={() => this.props.search()}
             disabledButtons={disabledButtons}
@@ -228,6 +218,13 @@ class MenuBar extends Component {
           <MenuButton
             name={`${beziersEnabled ? 'Hide' : 'Show'} control points${enableKeys ? ' (B)' : ''}`}
             onClick={() => this.props.toggleBeziers()}
+            disabledButtons={disabledButtons}
+          />
+          <li name='divider' />
+          <MenuButton
+            name={'Full screen'}
+            onClick={() => this.props.fullScreen()}
+            checkMark={this.props.isFullScreen}
             disabledButtons={disabledButtons}
           />
           <li name='divider' />

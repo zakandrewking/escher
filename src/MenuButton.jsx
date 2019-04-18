@@ -2,9 +2,7 @@
  * MenuButton. Handles the individual menu items within the Dropdown menus.
  * Takes in a name and a function and binds the function to a button. If the
  * type prop is defined as 'load' will instead render a label with an attached
- * hidden input[file] element. If the modeName prop is given and the mode prop
- * matches modeName (both strings) it will render a checkmark to the left of the
- * text to signify the current mode.
+ * hidden input[file] element.
  */
 
 /** @jsx h */
@@ -44,7 +42,7 @@ class MenuButton extends Component {
           {this.props.name}
         </label>
       )
-    } else if (this.props.modeName !== undefined && this.props.mode === this.props.modeName) {
+    } else if (this.props.checkMark) {
       return (
         <li
           className='menuButton'
