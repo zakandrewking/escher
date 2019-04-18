@@ -18,7 +18,7 @@ class ButtonPanel extends Component {
         <li>
           <button
             className='button btn'
-            onClick={() => this.props.zoomContainer.zoom_in()}
+            onClick={() => this.props.zoomContainer.zoomIn()}
             title={`Zoom in${enableKeys ? ' (+)' : ''}`}
           >
             <i className='icon-zoom-in' />
@@ -27,7 +27,7 @@ class ButtonPanel extends Component {
         <li>
           <button
             className='button btn'
-            onClick={() => this.props.zoomContainer.zoom_out()}
+            onClick={() => this.props.zoomContainer.zoomOut()}
             title={`Zoom out${enableKeys ? ' (-)' : ''}`}
           >
             <i className='icon-zoom-out' />
@@ -42,11 +42,11 @@ class ButtonPanel extends Component {
             <i className='icon-resize-full' />
           </button>
         </li>
-        <li style={{display: this.props.settings.get('full_screen_button') ? 'block' : 'none'}}>
+        <li style={{display: this.props.settings.get('full_screen_button') !== false ? 'block' : 'none'}}>
           <button
-            className='button btn'
-            onClick={() => this.props.map.full_screen()}
-            title={`Toggle full screen${enableKeys ? ' (2)' : ''}`}
+            className={`button btn ${this.props.isFullScreen ? 'active-button' : ''}`}
+            onClick={() => this.props.fullScreen()}
+            title={'Toggle full screen'}
           >
             <i className='icon-resize-full-alt' />
           </button>

@@ -1,169 +1,188 @@
-/** KeyManager
+import Mousetrap from 'mousetrap'
+import _ from 'underscore'
 
- Manage key listeners and events.
-
- Arguments
- ---------
-
- assigned_keys (default: {}): An object defining keys to bind.
-
- input_list (default: []): A list of inputs that will override keyboard
- shortcuts when in focus.
-
- selection (default: global): A node to bind the events to.
-
- ctrl_equals_cmd (default: false): If true, then control and command have the
- same effect.
-
+/**
+ * If ctrlEqualsCmd is true and key has ctrl+ in it, return an array with ctrl+
+ * and meta+ variations.
  */
+function addCmd (key, ctrlEqualsCmd) {
+  if (!ctrlEqualsCmd) return key
+  const keyAr = _.isArray(key) ? key : [key]
+  const newAr = keyAr.reduce((c, k) => {
+    var n = k.replace('ctrl+', 'meta+')
+    if (n !== k) c.push(n)
+    return c
+  }, keyAr.slice())
+  return newAr.length === keyAr.length ? key : newAr
+}
 
-
-var utils = require('./utils');
-var Mousetrap = require('mousetrap');
-var _ = require('underscore');
-
-
-var KeyManager = utils.make_class();
-// instance methods
-KeyManager.prototype = {
-    init: init,
-    update: update,
-    toggle: toggle,
-    add_escape_listener: add_escape_listener,
-    add_enter_listener: add_enter_listener,
-    add_key_listener: add_key_listener
-};
-module.exports = KeyManager;
-
-
-// instance methods
-function init(assigned_keys, input_list, selection, ctrl_equals_cmd) {
+/**
+ * KeyManager - Manage key listeners and events.
+ * @param assignedKeys (default: {}): An object defining keys to bind.
+ * @param inputList (default: []): A list of inputs that will override keyboard shortcuts when in focus.
+ * @param selection (default: global): A node to bind the events to.
+ * @param ctrlEqualsCmd (default: false): If true, then control and command have the same effect.
+ */
+export default class KeyManager {
+  constructor (
+    assignedKeys = {},
+    inputList = [],
+    selection = null,
+    ctrlEqualsCmd = false,
+    settings = null
+  ) {
     // default Arguments
-    this.assigned_keys = assigned_keys || {};
-    this.input_list = input_list || [];
-    this.mousetrap = selection ? new Mousetrap(selection) : new Mousetrap;
-    this.ctrl_equals_cmd = (!_.isBoolean(ctrl_equals_cmd)) ? false : ctrl_equals_cmd;
+    this.assignedKeys = assignedKeys
+    this.inputList = inputList
+    this.mousetrap = selection ? new Mousetrap(selection) : new Mousetrap()
+    this.ctrlEqualsCmd = ctrlEqualsCmd
 
     // Fix mousetrap behavior; by default, it ignore shortcuts when inputs are
     // in focus.
     // TODO NOT WORKING https://craig.is/killing/mice
     // consider swithching to https://github.com/PolicyStat/combokeys
-    this.mousetrap.stopCallback = function() { return false; };
+    this.mousetrap.stopCallback = () => false
 
-    this.enabled = true;
-    this.update();
-}
+    this.escapeQueue = []
+    this.removeEscapeListener = null
 
+    // to check settings when running a key
+    this.settings = settings
 
-function _add_cmd(key, ctrl_equals_cmd) {
-    /** If ctrl_equals_cmd is true and key has ctrl+ in it, return an array with
-     ctrl+ and meta+ variations.
+    this.enabled = true
+    this.update()
+  }
 
-     */
-    if (!ctrl_equals_cmd) return key;
-    var key_ar = _.isArray(key) ? key : [key];
-    var new_ar = key_ar.reduce(function(c, k) {
-        var n = k.replace('ctrl+', 'meta+');
-        if (n !== k) c.push(n);
-        return c;
-    }, key_ar.slice());
-    return new_ar.length === key_ar.length ? key : new_ar;
-}
-
-/**
- * Updated key bindings if attributes have changed.
- */
-function update() {
-    this.mousetrap.reset();
-    if (!this.enabled) return;
+  /**
+   * Updated key bindings if attributes have changed.
+   */
+  update () {
+    this.mousetrap.reset()
+    if (!this.enabled) return
 
     // loop through keys
-    for (var key_id in this.assigned_keys) {
-        var assigned_key = this.assigned_keys[key_id];
+    for (let keyId in this.assignedKeys) {
+      const assignedKey = this.assignedKeys[keyId]
 
-        // OK if this is missing
-        if (!assigned_key.key) continue;
+      // OK if this is missing
+      if (!assignedKey.key) continue
 
-        var key_to_bind = _add_cmd(assigned_key.key, this.ctrl_equals_cmd);
-        // remember the input_list
-        assigned_key.input_list = this.input_list;
-        this.mousetrap.bind(key_to_bind, function(e) {
-            // check inputs
-            let input_blocking = false
-            if (this.ignore_with_input) {
-                for (var i = 0, l = this.input_list.length; i < l; i++) {
-                    const thisInputVal = this.input_list[i]
-                    const thisInput = _.isFunction(thisInputVal)
-                      ? thisInputVal()
-                      : thisInputVal
-                    if (thisInput !== null && thisInput.is_visible()) {
-                        input_blocking = true
-                        break
-                    }
-                }
+      const keyToBind = addCmd(assignedKey.key, this.ctrlEqualsCmd)
+      // remember the inputList
+      assignedKey.inputList = this.inputList
+      this.mousetrap.bind(keyToBind, e => {
+        // check requires
+        if (assignedKey.requires && !this.settings.get(assignedKey.requires)) {
+          return
+        }
+
+        // check inputs
+        let inputBlocking = false
+        if (assignedKey.ignoreWithInput) {
+          for (var i = 0, l = assignedKey.inputList.length; i < l; i++) {
+            const thisInputVal = assignedKey.inputList[i]
+            const thisInput = _.isFunction(thisInputVal)
+                  ? thisInputVal()
+                  : thisInputVal
+            if (thisInput !== null && thisInput.is_visible()) {
+              inputBlocking = true
+              break
             }
+          }
+        }
 
-            if (!input_blocking) {
-                if (this.fn) this.fn.call(this.target);
-                else console.warn('No function for key: ' + this.key);
-                e.preventDefault();
-            }
-        }.bind(assigned_key), 'keydown');
+        if (!inputBlocking) {
+          if (assignedKey.fn) assignedKey.fn.call(assignedKey.target)
+          else console.warn('No function for key: ' + assignedKey.key)
+          e.preventDefault()
+        }
+      }, 'keydown')
     }
-}
+  }
 
+  /**
+   * Turn the key manager on or off.
+   */
+  toggle (onOff) {
+    if (_.isUndefined(onOff)) onOff = !this.enabled
+    this.enabled = onOff
+    this.update()
+  }
 
-function toggle(on_off) {
-    /** Turn the key manager on or off.
+  /**
+   * Call the callback when the enter key is pressed, then unregisters the
+   * listener.
+   */
+  addEnterListener (callback, oneTime) {
+    return this.addKeyListener('enter', callback, oneTime)
+  }
 
-     */
-    if (_.isUndefined(on_off)) on_off = !this.enabled;
-    this.enabled = on_off;
-    this.update();
-}
+  /**
+   * If the list is empty, drop the listener. could get called after the
+   * listener is already removed
+   */
+  _tryDropEscapeListener () {
+    if (this.escapeQueue.length === 0 && this.removeEscapeListener) {
+      this.removeEscapeListener()
+      this.removeEscapeListener = null
+    }
+  }
+  /**
+   * Call the callback when the escape key is pressed, then unregisters the
+   * listener.
+   *
+   * Unlike the other listeners, addEscapeListener keeps a queue of listeners
+   * that are called in order then popped off the list.
+   *
+   * Escape listeners also only work one time.
+   */
+  addEscapeListener (callback) {
+    // if the listener is not set, then add it
+    if (this.removeEscapeListener === null) {
+      this.removeEscapeListener = this.addKeyListener('escape', () => {
+        // pop and run the top callback
+        if (this.escapeQueue.length > 0) {
+          const top = this.escapeQueue.pop()
+          top()
+        }
+        this._tryDropEscapeListener()
+      })
+    }
 
+    // push the new callback onto the queue
+    this.escapeQueue.push(callback)
 
-function add_enter_listener(callback, one_time) {
-    /** Call the callback when the enter key is pressed, then
-     unregisters the listener.
+    // return a function to pop the callback out of the list
+    return () => {
+      // find it if it's in the queue
+      const index = this.escapeQueue.indexOf(callback)
+      // if it's the last one, then pop and activate next
+      if (index > -1) {
+        // remove it
+        this.escapeQueue.splice(index, 1)
+      }
+      this._tryDropEscapeListener()
+    }
+  }
 
-     */
-    return this.add_key_listener('enter', callback, one_time);
-}
-
-
-function add_escape_listener(callback, one_time) {
-    /** Call the callback when the escape key is pressed, then
-     unregisters the listener.
-
-     */
-    return this.add_key_listener('escape', callback, one_time);
-}
-
-
-function add_key_listener(key_name, callback, one_time) {
-    /** Call the callback when the key is pressed, then unregisters the
-     listener. Returns a function that will unbind the event.
-
-     callback: The callback function with no arguments.
-
-     key_name: A key name, or list of key names, as defined by the mousetrap
-     library: https://craig.is/killing/mice
-
-     one_time: If True, then cancel the listener after the first execution.
-
-     */
-
-    if (_.isUndefined(one_time)) one_time = false;
-
+  /**
+   * Call the callback when the key is pressed, then unregisters the listener.
+   * Returns a function that will unbind the event.
+   * @param callback: The callback function with no arguments.
+   * @param key_name: A key name, or list of key names, as defined by the
+   *                  mousetrap library: https://craig.is/killing/mice
+   * @param one_time: If True, then cancel the listener after the first execution.
+   */
+  addKeyListener (keyName, callback, oneTime = false) {
     // unbind function ready to go
-    var unbind = this.mousetrap.unbind.bind(this.mousetrap, key_name);
+    const unbind = this.mousetrap.unbind.bind(this.mousetrap, keyName)
 
-    this.mousetrap.bind(_add_cmd(key_name, this.ctrl_equals_cmd), function(e) {
-        e.preventDefault();
-        callback();
-        if (one_time) unbind();
-    });
+    this.mousetrap.bind(addCmd(keyName, this.ctrlEqualsCmd), e => {
+      e.preventDefault()
+      callback()
+      if (oneTime) unbind()
+    })
 
-    return unbind;
+    return unbind
+  }
 }

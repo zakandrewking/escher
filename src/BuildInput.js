@@ -10,7 +10,7 @@ import { mouse as d3Mouse } from 'd3-selection'
  * BuildInput
  * @param selection - A d3 selection for the BuildInput.
  * @param map - A Map instance.
- * @param zoom_container - A ZoomContainer instance.
+ * @param zoomContainer - A ZoomContainer instance.
  * @param settings - A Settings instance.
  */
 export default class BuildInput {
@@ -37,7 +37,7 @@ export default class BuildInput {
     this.setUpMapCallbacks(map)
 
     // zoom container
-    this.zoom_container = zoomContainer
+    this.zoomContainer = zoomContainer
     this.setUpZoomCallbacks(zoomContainer)
 
     // settings
@@ -81,7 +81,7 @@ export default class BuildInput {
   setUpZoomCallbacks (zoomContainer) {
     // TODO this is broken.
     // Should place either for selected or for location on zoom or pan.
-    // zoomContainer.callback_manager.set('zoom_change.input', () => {
+    // zoomContainer.callbackManager.set('zoom_change.input', () => {
     //   if (this.is_active) {
     //     this.place_at_selected()
     //   }
@@ -119,7 +119,7 @@ export default class BuildInput {
   showDropdown (coords) {
     // escape key
     this.clear_escape = this.map.key_manager
-      .add_escape_listener(() => this.hideDropdown(), true)
+      .addEscapeListener(() => this.hideDropdown(), true)
     // dropdown
     this.completely.input.blur()
     this.completely.repaint()

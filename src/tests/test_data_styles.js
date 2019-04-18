@@ -388,7 +388,7 @@ describe('dataStyles.replace_gene_in_rule', () => {
       dataStyles.replace_gene_in_rule('(G3)00 G3', 'G3', 'new')
     }
     const time = new Date().getTime() - start
-    console.log('replace_gene_in_rule execution time per ' + n + ': ' + time + 'ms')
+    console.warn('replace_gene_in_rule execution time per ' + n + ': ' + time + 'ms')
   })
 })
 

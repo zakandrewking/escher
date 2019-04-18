@@ -189,6 +189,19 @@ class Builder {
       }
     })
 
+    // Warn if full/fill screen options conflict
+    if (this.settings.get('fill_screen') && this.settings.get('full_screen_button')) {
+      this.settings.set('full_screen_button', false)
+      console.warn('The option full_screen_button has no effect when fill_screen is true')
+    }
+
+    // force full screen for fill_screen option
+    if (this.settings.get('fill_screen')) {
+      this.fullScreen(true, false)
+    }
+    this.savedFullScreenSettings = null
+    this.clearFullScreenEscape = null
+
     // Set up this callback manager
     this.callback_manager = new CallbackManager()
     const firstLoadCallback = this.settings.get('first_load_callback')
@@ -199,20 +212,19 @@ class Builder {
     }
 
     // Set up the zoom container
-    this.zoom_container = new ZoomContainer(this.selection,
+    this.zoomContainer = new ZoomContainer(this.selection,
                                             this.settings.get('scroll_behavior'),
-                                            this.settings.get('use_3d_transform'),
-                                            this.settings.get('fill_screen'))
+                                            this.settings.get('use_3d_transform'))
     // Zoom container status changes
-    // this.zoom_container.callback_manager.set('svg_start', () => {
+    // this.zoomContainer.callbackManager.set('svg_start', () => {
     //   if (this.map) this.map.set_status('Drawing ...')
     // })
-    // this.zoom_container.callback_manager.set('svg_finish', () => {
+    // this.zoomContainer.callbackManager.set('svg_finish', () => {
     //   if (this.map) this.map.set_status('')
     // })
-    this.zoom_container.callback_manager.set('zoom_change', () => {
+    this.zoomContainer.callbackManager.set('zoom_change', () => {
       if (this.settings.get('semantic_zoom')) {
-        const scale = this.zoom_container.window_scale
+        const scale = this.zoomContainer.windowScale
         const optionObject = this.settings.get('semantic_zoom')
                                  .sort((a, b) => a.zoomLevel - b.zoomLevel)
                                  .find(a => a.zoomLevel > scale)
@@ -229,7 +241,10 @@ class Builder {
       }
     })
     this.settings.streams.use_3d_transform.onValue(val => {
-      this.zoom_container.set_use_3d_transform(val)
+      this.zoomContainer.setUse3dTransform(val)
+    })
+    this.settings.streams.scroll_behavior.onValue(val => {
+      this.zoomContainer.setScrollBehavior(val)
     })
 
     // Make a container for other map-related tools that will be reset on map load
@@ -262,10 +277,10 @@ class Builder {
       this.settings.statusBus.onValue(x => {
         if (x === 'accept') {
           this._updateData(true, true, ['reaction', 'metabolite'], false)
-          if (this.zoom_container !== null) {
+          if (this.zoomContainer !== null) {
             // TODO make this automatic
             const newBehavior = this.settings.get('scroll_behavior')
-            this.zoom_container.set_scroll_behavior(newBehavior)
+            this.zoomContainer.setScrollBehavior(newBehavior)
           }
           if (this.map !== null) {
             this.map.draw_all_nodes(false)
@@ -334,11 +349,11 @@ class Builder {
     }
 
     // remove the old map and related divs
-    utils.remove_child_nodes(this.zoom_container.zoomed_sel)
+    utils.remove_child_nodes(this.zoomContainer.zoomedSel)
     utils.remove_child_nodes(this.mapToolsContainer)
 
-    const zoomedSel = this.zoom_container.zoomed_sel
-    const svg = this.zoom_container.svg
+    const zoomedSel = this.zoomContainer.zoomedSel
+    const svg = this.zoomContainer.svg
 
     // remove the old map side effects
     if (this.map) {
@@ -351,7 +366,7 @@ class Builder {
                                svg,
                                this.embeddedCss,
                                zoomedSel,
-                               this.zoom_container,
+                               this.zoomContainer,
                                this.settings,
                                this.cobra_model,
                                this.settings.get('enable_search'))
@@ -360,7 +375,7 @@ class Builder {
       this.map = new Map(svg,
                          this.embeddedCss,
                          zoomedSel,
-                         this.zoom_container,
+                         this.zoomContainer,
                          this.settings,
                          this.cobra_model,
                          this.settings.get('canvas_size_and_loc'),
@@ -378,11 +393,11 @@ class Builder {
 
       // Set up the reaction input with complete.ly
       this.build_input = new BuildInput(this.mapToolsContainer, this.map,
-                                        this.zoom_container, this.settings)
+                                        this.zoomContainer, this.settings)
 
       // Set up the text edit input
       this.text_edit_input = new TextEditInput(this.mapToolsContainer, this.map,
-                                               this.zoom_container)
+                                               this.zoomContainer)
 
       // Set up the Brush
       this.brush = new Brush(zoomedSel, false, this.map, '.canvas-group')
@@ -392,7 +407,7 @@ class Builder {
       })
 
       // Set up the modes
-      this._setUpModes(this.map, this.brush, this.zoom_container)
+      this._setUpModes(this.map, this.brush, this.zoomContainer)
 
       // Set up menus
       this.setUpSettingsMenu(this.mapToolsContainer)
@@ -409,28 +424,30 @@ class Builder {
       this.tooltip_container = new TooltipContainer(
         this.mapToolsContainer,
         this.settings.get('tooltip_component'),
-        this.zoom_container,
+        this.zoomContainer,
         this.map
       )
 
       // Set up key manager
-      const keys = this.getKeys()
-      this.map.key_manager.assigned_keys = keys
+      this.map.key_manager.assignedKeys = this.getKeys()
       // Tell the key manager about the reaction input and search bar
-      this.map.key_manager.input_list = [
+      this.map.key_manager.inputList = [
         this.build_input,
         this.searchBarRef,
         () => this.settingsMenuRef,
         this.text_edit_input
       ]
       if (!this.settings.get('enable_keys_with_tooltip')) {
-        this.map.key_manager.input_list.push(this.tooltip_container)
+        this.map.key_manager.inputList.push(this.tooltip_container)
       }
-
       // Make sure the key manager remembers all those changes
       this.map.key_manager.update()
       // Turn it on/off
       this.map.key_manager.toggle(this.settings.get('enable_keys'))
+      this.settings.streams.enable_keys.onValue(val => {
+        // get keys given latest settings
+        this.map.key_manager.toggle(val)
+      })
 
       // Disable clears
       const newDisabledButtons = this.settings.get('disabled_buttons') || []
@@ -448,6 +465,9 @@ class Builder {
       }
       if (!this.settings.get('enable_editing')) {
         newDisabledButtons.push('Show control points')
+      }
+      if (this.settings.get('full_screen_button') === false) {
+        newDisabledButtons.push('Toggle full screen')
       }
       this.settings.set('disabled_buttons', newDisabledButtons)
 
@@ -471,7 +491,7 @@ class Builder {
       } else {
         if (this.settings.get('starting_reaction') !== null && this.cobra_model !== null) {
           // Draw default reaction if no map is provided
-          const size = this.zoom_container.get_size()
+          const size = this.zoomContainer.getSize()
           const startCoords = { x: size.width / 2, y: size.height / 4 }
           this.map.new_reaction_from_scratch(this.settings.get('starting_reaction'),
                                              startCoords, 90)
@@ -487,6 +507,11 @@ class Builder {
       } else {
         this.view_mode()
       }
+      // when enabled_editing changes, go to view mode
+      this.settings.streams.enable_editing.onValue(val => {
+        if (val) this.zoom_mode()
+        else this.view_mode()
+      })
 
       // confirm before leaving the page
       if (this.settings.get('enable_editing')) {
@@ -607,10 +632,11 @@ class Builder {
       selectAll: () => this.map.select_all(),
       selectNone: () => this.map.select_none(),
       invertSelection: () => this.map.invert_selection(),
-      zoomIn: () => this.zoom_container.zoom_in(),
-      zoomOut: () => this.zoom_container.zoom_out(),
+      zoomIn: () => this.zoomContainer.zoomIn(),
+      zoomOut: () => this.zoomContainer.zoomOut(),
       zoomExtentNodes: () => this.map.zoom_extent_nodes(),
       zoomExtentCanvas: () => this.map.zoom_extent_canvas(),
+      fullScreen: () => this.fullScreen(),
       search: () => this.passPropsSearchBar({ display: true }),
       toggleBeziers: () => this.map.toggle_beziers(),
       renderSettingsMenu: () => this.passPropsSettingsMenu({ display: true })
@@ -629,6 +655,11 @@ class Builder {
     // redraw when mode changes
     this.callback_manager.set('set_mode', mode => {
       this.passPropsMenuBar({ mode })
+    })
+
+    // redraw when menu option changes
+    this.settings.streams.menu.onValue(menu => {
+      this.passPropsMenuBar({ display: menu === 'all' })
     })
   }
 
@@ -682,9 +713,10 @@ class Builder {
       mode: this.mode,
       settings: this.settings,
       setMode: mode => this._setMode(mode),
-      zoomContainer: this.zoom_container,
+      zoomContainer: this.zoomContainer,
       map: this.map,
-      buildInput: this.build_input
+      buildInput: this.build_input,
+      fullScreen: () => this.fullScreen()
     })
     // redraw when mode changes
     this.callback_manager.set('set_mode', mode => {
@@ -701,8 +733,8 @@ class Builder {
     map.callback_manager.set('start_rotation', function () {
       wasEnabled.brush = brush.enabled
       brush.toggle(false)
-      wasEnabled.zoom = zoomContainer.zoom_on
-      zoomContainer.toggle_pan_drag(false)
+      wasEnabled.zoom = zoomContainer.zoomOn
+      zoomContainer.togglePanDrag(false)
       wasEnabled.selectableMousedown = map.behavior.selectableMousedown !== null
       map.behavior.toggleSelectableClick(false)
       wasEnabled.labelMouseover = map.behavior.labelMouseover !== null
@@ -712,7 +744,7 @@ class Builder {
     })
     map.callback_manager.set('end_rotation', function () {
       brush.toggle(wasEnabled.brush)
-      zoomContainer.toggle_pan_drag(wasEnabled.zoom)
+      zoomContainer.togglePanDrag(wasEnabled.zoom)
       map.behavior.toggleSelectableClick(wasEnabled.selectableMousedown)
       map.behavior.toggleLabelMouseover(wasEnabled.labelMouseover)
       map.behavior.toggleLabelTouch(wasEnabled.labelTouch)
@@ -732,7 +764,7 @@ class Builder {
     // brush
     this.brush.toggle(mode === 'brush')
     // zoom
-    this.zoom_container.toggle_pan_drag(mode === 'zoom' || mode === 'view')
+    this.zoomContainer.togglePanDrag(mode === 'zoom' || mode === 'view')
     // resize canvas
     this.map.canvas.toggle_resize(mode !== 'view')
 
@@ -1031,8 +1063,8 @@ class Builder {
    */
   getKeys () {
     const map = this.map
-    const zoomContainer = this.zoom_container
-    let keys = {
+    const zoomContainer = this.zoomContainer
+    return {
       save: {
         key: 'ctrl+s',
         target: map,
@@ -1085,24 +1117,24 @@ class Builder {
       zoom_in_ctrl: {
         key: 'ctrl+=',
         target: zoomContainer,
-        fn: zoomContainer.zoom_in
+        fn: zoomContainer.zoomIn
       },
       zoom_in: {
         key: '=',
         target: zoomContainer,
-        fn: zoomContainer.zoom_in,
-        ignore_with_input: true
+        fn: zoomContainer.zoomIn,
+        ignoreWithInput: true
       },
       zoom_out_ctrl: {
         key: 'ctrl+-',
         target: zoomContainer,
-        fn: zoomContainer.zoom_out
+        fn: zoomContainer.zoomOut
       },
       zoom_out: {
         key: '-',
         target: zoomContainer,
-        fn: zoomContainer.zoom_out,
-        ignore_with_input: true
+        fn: zoomContainer.zoomOut,
+        ignoreWithInput: true
       },
       extent_nodes_ctrl: {
         key: 'ctrl+0',
@@ -1113,7 +1145,7 @@ class Builder {
         key: '0',
         target: map,
         fn: map.zoom_extent_nodes,
-        ignore_with_input: true
+        ignoreWithInput: true
       },
       extent_canvas_ctrl: {
         key: 'ctrl+1',
@@ -1124,12 +1156,12 @@ class Builder {
         key: '1',
         target: map,
         fn: map.zoom_extent_canvas,
-        ignore_with_input: true
+        ignoreWithInput: true
       },
       view_mode: {
         target: this,
         fn: this.view_mode,
-        ignore_with_input: true
+        ignoreWithInput: true
       },
       show_settings_ctrl: {
         key: 'ctrl+,',
@@ -1138,158 +1170,156 @@ class Builder {
       show_settings: {
         key: ',',
         fn: () => this.passPropsSettingsMenu({ display: true }),
-        ignore_with_input: true
+        ignoreWithInput: true
+      },
+      build_mode: {
+        key: 'n',
+        target: this,
+        fn: this.build_mode,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      zoom_mode: {
+        key: 'z',
+        target: this,
+        fn: this.zoom_mode,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      brush_mode: {
+        key: 'v',
+        target: this,
+        fn: this.brush_mode,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      rotate_mode: {
+        key: 'r',
+        target: this,
+        fn: this.rotate_mode,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      text_mode: {
+        key: 't',
+        target: this,
+        fn: this.text_mode,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      toggle_beziers: {
+        key: 'b',
+        target: map,
+        fn: map.toggle_beziers,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      delete_ctrl: {
+        key: 'ctrl+backspace',
+        target: map,
+        fn: map.delete_selected,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      delete: {
+        key: 'backspace',
+        target: map,
+        fn: map.delete_selected,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      delete_del: {
+        key: 'del',
+        target: map,
+        fn: map.delete_selected,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      toggle_primary: {
+        key: 'p',
+        target: map,
+        fn: map.toggle_selected_node_primary,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      cycle_primary: {
+        key: 'c',
+        target: map,
+        fn: map.cycle_primary_node,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      direction_arrow_right: {
+        key: 'right',
+        target: this.build_input.direction_arrow,
+        fn: this.build_input.direction_arrow.right,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      direction_arrow_down: {
+        key: 'down',
+        target: this.build_input.direction_arrow,
+        fn: this.build_input.direction_arrow.down,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      direction_arrow_left: {
+        key: 'left',
+        target: this.build_input.direction_arrow,
+        fn: this.build_input.direction_arrow.left,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      direction_arrow_up: {
+        key: 'up',
+        target: this.build_input.direction_arrow,
+        fn: this.build_input.direction_arrow.up,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      undo: {
+        key: 'ctrl+z',
+        target: map.undo_stack,
+        fn: map.undo_stack.undo,
+        requires: 'enable_editing'
+      },
+      redo: {
+        key: 'ctrl+shift+z',
+        target: map.undo_stack,
+        fn: map.undo_stack.redo,
+        requires: 'enable_editing'
+      },
+      select_all: {
+        key: 'ctrl+a',
+        target: map,
+        fn: map.select_all,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      select_none: {
+        key: 'ctrl+shift+a',
+        target: map,
+        fn: map.select_none,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      invert_selection: {
+        target: map,
+        fn: map.invert_selection,
+        requires: 'enable_editing'
+      },
+      search_ctrl: {
+        key: 'ctrl+f',
+        fn: () => this.passPropsSearchBar({ display: true }),
+        requires: 'enable_search'
+      },
+      search: {
+        key: 'f',
+        fn: () => this.passPropsSearchBar({ display: true }),
+        ignoreWithInput: true,
+        requires: 'enable_search'
       }
     }
-    if (this.settings.get('full_screen_button')) {
-      utils.extend(keys, {
-        full_screen_ctrl: {
-          key: 'ctrl+2',
-          target: map,
-          fn: map.full_screen
-        },
-        full_screen: {
-          key: '2',
-          target: map,
-          fn: map.full_screen,
-          ignore_with_input: true
-        }
-      })
-    }
-    if (this.settings.get('enable_editing')) {
-      utils.extend(keys, {
-        build_mode: {
-          key: 'n',
-          target: this,
-          fn: this.build_mode,
-          ignore_with_input: true
-        },
-        zoom_mode: {
-          key: 'z',
-          target: this,
-          fn: this.zoom_mode,
-          ignore_with_input: true
-        },
-        brush_mode: {
-          key: 'v',
-          target: this,
-          fn: this.brush_mode,
-          ignore_with_input: true
-        },
-        rotate_mode: {
-          key: 'r',
-          target: this,
-          fn: this.rotate_mode,
-          ignore_with_input: true
-        },
-        text_mode: {
-          key: 't',
-          target: this,
-          fn: this.text_mode,
-          ignore_with_input: true
-        },
-        toggle_beziers: {
-          key: 'b',
-          target: map,
-          fn: map.toggle_beziers,
-          ignore_with_input: true
-        },
-        delete_ctrl: {
-          key: 'ctrl+backspace',
-          target: map,
-          fn: map.delete_selected,
-          ignore_with_input: true
-        },
-        delete: {
-          key: 'backspace',
-          target: map,
-          fn: map.delete_selected,
-          ignore_with_input: true
-        },
-        delete_del: {
-          key: 'del',
-          target: map,
-          fn: map.delete_selected,
-          ignore_with_input: true
-        },
-        toggle_primary: {
-          key: 'p',
-          target: map,
-          fn: map.toggle_selected_node_primary,
-          ignore_with_input: true
-        },
-        cycle_primary: {
-          key: 'c',
-          target: map,
-          fn: map.cycle_primary_node,
-          ignore_with_input: true
-        },
-        direction_arrow_right: {
-          key: 'right',
-          target: this.build_input.direction_arrow,
-          fn: this.build_input.direction_arrow.right,
-          ignore_with_input: true
-        },
-        direction_arrow_down: {
-          key: 'down',
-          target: this.build_input.direction_arrow,
-          fn: this.build_input.direction_arrow.down,
-          ignore_with_input: true
-        },
-        direction_arrow_left: {
-          key: 'left',
-          target: this.build_input.direction_arrow,
-          fn: this.build_input.direction_arrow.left,
-          ignore_with_input: true
-        },
-        direction_arrow_up: {
-          key: 'up',
-          target: this.build_input.direction_arrow,
-          fn: this.build_input.direction_arrow.up,
-          ignore_with_input: true
-        },
-        undo: {
-          key: 'ctrl+z',
-          target: map.undo_stack,
-          fn: map.undo_stack.undo
-        },
-        redo: {
-          key: 'ctrl+shift+z',
-          target: map.undo_stack,
-          fn: map.undo_stack.redo
-        },
-        select_all: {
-          key: 'ctrl+a',
-          target: map,
-          fn: map.select_all,
-          ignore_with_input: true
-        },
-        select_none: {
-          key: 'ctrl+shift+a',
-          target: map,
-          fn: map.select_none,
-          ignore_with_input: true
-        },
-        invert_selection: {
-          target: map,
-          fn: map.invert_selection
-        }
-      })
-    }
-    if (this.settings.get('enable_search')) {
-      utils.extend(keys, {
-        search_ctrl: {
-          key: 'ctrl+f',
-          fn: () => this.passPropsSearchBar({ display: true })
-        },
-        search: {
-          key: 'f',
-          fn: () => this.passPropsSearchBar({ display: true }),
-          ignore_with_input: true
-        }
-      })
-    }
-    return keys
   }
 
   /**
@@ -1304,6 +1334,78 @@ class Builder {
         : 'You will lose any unsaved changes.'
       )
     }.bind(this)
+  }
+
+  /**
+   * Toggle full screen mode.
+   */
+  fullScreen (force = false, zoom = true) {
+    if (this.settings.get('fill_screen') && !force) return
+
+    // these settings can update in full screen if provided
+    const fullScreenSettings = [
+      'menu',
+      'scroll_behavior',
+      'enable_editing',
+      'enable_keys',
+      'enable_tooltips'
+    ]
+
+    if (this.isFullScreen) {
+      d3Select('html').classed('fill-screen', false)
+      d3Select('body').classed('fill-screen', false)
+      this.selection.classed('fill-screen-div', false)
+      this.isFullScreen = false
+
+      // clear escape listener
+      if (this.clearFullScreenEscape) {
+        this.clearFullScreenEscape()
+        this.clearFullScreenEscape = null
+      }
+
+      // apply the saved settings
+      if (this.savedFullScreenSettings !== null) {
+        _.mapObject(this.savedFullScreenSettings, (v, k) => {
+          this.settings.set(k, v)
+        })
+      }
+      this.savedFullScreenSettings = null
+    } else {
+      // save current settings
+      const fullScreenButton = this.settings.get('full_screen_button')
+      if (_.isObject(fullScreenButton)) {
+        this.savedFullScreenSettings = (
+          _.chain(fullScreenButton)
+           .pairs()
+           .map(([k, v]) => {
+             if (_.contains(fullScreenSettings, k)) {
+               const currentSetting = this.settings.get(k)
+               this.settings.set(k, v)
+               return [k, currentSetting]
+             } else {
+               console.warn(`${k} not recognized as an option for full_screen_button`)
+               return [null, null]
+             }
+           })
+           .filter(([k, v]) => k)
+           .object()
+           .value()
+        )
+      }
+
+      d3Select('html').classed('fill-screen', true)
+      d3Select('body').classed('fill-screen', true)
+      this.selection.classed('fill-screen-div', true)
+      this.isFullScreen = true
+
+      // set escape listener
+      this.clearFullScreenEscape = this.map.key_manager.addEscapeListener(
+        () => this.fullScreen()
+      )
+    }
+    if (zoom) this.map.zoom_extent_canvas()
+    this.passPropsButtonPanel({ isFullScreen: this.isFullScreen })
+    this.passPropsMenuBar({ isFullScreen: this.isFullScreen })
   }
 }
 

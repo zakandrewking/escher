@@ -1,4 +1,4 @@
-const Map = require('../Map')
+const Map = require('../Map').default
 const Settings = require('../Settings').default
 const CobraModel = require('../CobraModel')
 

@@ -1,7 +1,7 @@
 const d3Body = require('./helpers/d3Body')
 const get_map = require('./helpers/get_map')
 const Brush = require('../Brush')
-const Map = require('../Map')
+const Map = require('../Map').default
 const Settings = require('../Settings')
 
 const describe = require('mocha').describe

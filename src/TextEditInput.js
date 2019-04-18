@@ -19,7 +19,7 @@ TextEditInput.prototype = {
 }
 module.exports = TextEditInput
 
-function init (selection, map, zoom_container) {
+function init (selection, map, zoomContainer) {
   var div = selection.append('div')
     .attr('id', 'text-edit-input')
   this.placed_div = PlacedDiv(div, map)
@@ -28,8 +28,8 @@ function init (selection, map, zoom_container) {
 
   this.map = map
   this.setup_map_callbacks(map)
-  this.zoom_container = zoom_container
-  this.setup_zoom_callbacks(zoom_container)
+  this.zoomContainer = zoomContainer
+  this.setup_zoom_callbacks(zoomContainer)
 
   this.is_new = false
 }
@@ -54,8 +54,8 @@ function setup_map_callbacks (map) {
   }.bind(this))
 }
 
-function setup_zoom_callbacks (zoom_container) {
-  zoom_container.callback_manager.set('zoom.text_edit_input', function () {
+function setup_zoom_callbacks (zoomContainer) {
+  zoomContainer.callbackManager.set('zoom.text_edit_input', function () {
     if (this.active_target) {
       this._accept_changes(this.active_target.target)
     }
@@ -63,7 +63,7 @@ function setup_zoom_callbacks (zoom_container) {
       this.hide()
     }
   }.bind(this))
-  zoom_container.callback_manager.set('go_to.text_edit_input', function () {
+  zoomContainer.callbackManager.set('go_to.text_edit_input', function () {
     if (this.active_target) {
       this._accept_changes(this.active_target.target)
     }
@@ -97,13 +97,13 @@ function show (target, coords) {
 
   // escape key
   this.clear_escape = this.map.key_manager
-    .add_escape_listener(function () {
+    .addEscapeListener(function () {
       this._accept_changes(target)
       this.hide()
     }.bind(this), true)
   // enter key
   this.clear_enter = this.map.key_manager
-    .add_enter_listener(function (target) {
+    .addEnterListener(function (target) {
       this._accept_changes(target)
       this.hide()
     }.bind(this, target), true)

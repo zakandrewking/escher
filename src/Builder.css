@@ -35,13 +35,9 @@ resizes. */
   bottom: 0px;
   left: 0px;
   right: 0px;
-}
-
-/* Temporarily applied when entering full screen. */
-.full-screen-on {
-  height: 100% !important;
   width: 100% !important;
-  overflow: hidden;
+  height: 100% !important;
+  z-index: 1000;
 }
 
 /* The zoom container classes. */

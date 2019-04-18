@@ -16,11 +16,11 @@ class SettingsMenu extends Component {
   componentWillMount () {
     this.props.settings.holdChanges()
     this.setState({
-      clearEscape: this.props.map.key_manager.add_escape_listener(
+      clearEscape: this.props.map.key_manager.addEscapeListener(
         () => this.abandonChanges(),
         true
       ),
-      clearEnter: this.props.map.key_manager.add_key_listener(
+      clearEnter: this.props.map.key_manager.addKeyListener(
         ['enter'],
         () => this.saveChanges(),
         true

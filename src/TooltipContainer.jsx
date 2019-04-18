@@ -79,12 +79,12 @@ export default class TooltipContainer {
   }
 
   setUpZoomCallbacks (zoomContainer) {
-    zoomContainer.callback_manager.set('zoom.tooltip_container', function () {
+    zoomContainer.callbackManager.set('zoom.tooltip_container', function () {
       if (this.is_visible()) {
         this.hide()
       }
     }.bind(this))
-    zoomContainer.callback_manager.set('go_to.tooltip_container', function () {
+    zoomContainer.callbackManager.set('go_to.tooltip_container', function () {
       if (this.is_visible()) {
         this.hide()
       }
@@ -114,8 +114,8 @@ export default class TooltipContainer {
                         ? this.tooltipRef.getSize()
                         : { width: 270, height: 100 }
       this.currentTooltip = { type, id: d[type.replace('_label', '_id').replace('_object', '_id')] }
-      const windowTranslate = this.zoomContainer.window_translate
-      const windowScale = this.zoomContainer.window_scale
+      const windowTranslate = this.zoomContainer.windowTranslate
+      const windowScale = this.zoomContainer.windowScale
       const mapSize = this.map !== null ? this.map.get_size() : { width: 1000, height: 1000 }
       const offset = {x: 0, y: 0}
       const startPosX = (type.replace('reaction_', '').replace('node_', '').replace('gene_', '') === 'object')

@@ -80,14 +80,24 @@ JavaScript API
 
        .. js:attribute:: options.full_screen_button
 
-          (Default: ``false``) Include a button in the user interface for
-          entering full screen mode.
+          (Default: ``false``) If the value is ``true``, include a button in the
+          user interface for entering full screen mode. Full-screen mode will
+          fill the current browser window.
+
+          If the value is an object, it can have the following options to
+          activate additional features in full-screen model:
+
+          ``menu``, ``scroll_behavior``, ``enable_editing``, ``enable_keys``,
+          ``enable_tooltips``
+
+          For each of those options, the new option will take effect when the
+          user enters full-screen mode. When they exit full-screen mode, the
+          options will revert to the value they had when the button they entered
+          full-screen mode.
 
        .. js:attribute:: options.ignore_bootstrap
 
-          (Default: ``false``) Do not use Bootstrap for buttons, even if it
-          available. This is used to embed Escher in a Jupyter notebook where it
-          conflicts with the Jupyter Boostrap installation.
+          (Default: ``false``) Deprecated. Bootstrap is not longer used in Escher.
 
        **Map, model, and styles**
 
@@ -105,8 +115,7 @@ JavaScript API
 
        .. js:attribute:: options.unique_map_id
 
-          (Default: ``null``) A unique ID that will be used to UI elements don't
-          interfere when multiple maps are in the same HTML document.
+          (Default: ``null``) Deprecated. Unique map IDs are no longer needed.
 
        .. js:attribute:: options.primary_metabolite_radius
 

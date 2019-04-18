@@ -1,2 +1,3 @@
 # ignore these file when searching with ag
 py/escher/static/
+*.ipynb
