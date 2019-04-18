@@ -426,8 +426,7 @@ class Builder {
       )
 
       // Set up key manager
-      const keys = this.getKeys()
-      this.map.key_manager.assignedKeys = keys
+      this.map.key_manager.assignedKeys = this.getKeys()
       // Tell the key manager about the reaction input and search bar
       this.map.key_manager.inputList = [
         this.build_input,
@@ -438,11 +437,14 @@ class Builder {
       if (!this.settings.get('enable_keys_with_tooltip')) {
         this.map.key_manager.inputList.push(this.tooltip_container)
       }
-
       // Make sure the key manager remembers all those changes
       this.map.key_manager.update()
       // Turn it on/off
       this.map.key_manager.toggle(this.settings.get('enable_keys'))
+      this.settings.streams.enable_keys.onValue(val => {
+        // get keys given latest settings
+        this.map.key_manager.toggle(val)
+      })
 
       // Disable clears
       const newDisabledButtons = this.settings.get('disabled_buttons') || []
@@ -502,6 +504,11 @@ class Builder {
       } else {
         this.view_mode()
       }
+      // when enabled_editing changes, go to view mode
+      this.settings.streams.enable_editing.onValue(val => {
+        if (val) this.zoom_mode()
+        else this.view_mode()
+      })
 
       // confirm before leaving the page
       if (this.settings.get('enable_editing')) {
@@ -1049,7 +1056,7 @@ class Builder {
   getKeys () {
     const map = this.map
     const zoomContainer = this.zoom_container
-    let keys = {
+    return {
       save: {
         key: 'ctrl+s',
         target: map,
@@ -1156,142 +1163,155 @@ class Builder {
         key: ',',
         fn: () => this.passPropsSettingsMenu({ display: true }),
         ignoreWithInput: true
+      },
+      build_mode: {
+        key: 'n',
+        target: this,
+        fn: this.build_mode,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      zoom_mode: {
+        key: 'z',
+        target: this,
+        fn: this.zoom_mode,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      brush_mode: {
+        key: 'v',
+        target: this,
+        fn: this.brush_mode,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      rotate_mode: {
+        key: 'r',
+        target: this,
+        fn: this.rotate_mode,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      text_mode: {
+        key: 't',
+        target: this,
+        fn: this.text_mode,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      toggle_beziers: {
+        key: 'b',
+        target: map,
+        fn: map.toggle_beziers,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      delete_ctrl: {
+        key: 'ctrl+backspace',
+        target: map,
+        fn: map.delete_selected,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      delete: {
+        key: 'backspace',
+        target: map,
+        fn: map.delete_selected,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      delete_del: {
+        key: 'del',
+        target: map,
+        fn: map.delete_selected,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      toggle_primary: {
+        key: 'p',
+        target: map,
+        fn: map.toggle_selected_node_primary,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      cycle_primary: {
+        key: 'c',
+        target: map,
+        fn: map.cycle_primary_node,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      direction_arrow_right: {
+        key: 'right',
+        target: this.build_input.direction_arrow,
+        fn: this.build_input.direction_arrow.right,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      direction_arrow_down: {
+        key: 'down',
+        target: this.build_input.direction_arrow,
+        fn: this.build_input.direction_arrow.down,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      direction_arrow_left: {
+        key: 'left',
+        target: this.build_input.direction_arrow,
+        fn: this.build_input.direction_arrow.left,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      direction_arrow_up: {
+        key: 'up',
+        target: this.build_input.direction_arrow,
+        fn: this.build_input.direction_arrow.up,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      undo: {
+        key: 'ctrl+z',
+        target: map.undo_stack,
+        fn: map.undo_stack.undo,
+        requires: 'enable_editing'
+      },
+      redo: {
+        key: 'ctrl+shift+z',
+        target: map.undo_stack,
+        fn: map.undo_stack.redo,
+        requires: 'enable_editing'
+      },
+      select_all: {
+        key: 'ctrl+a',
+        target: map,
+        fn: map.select_all,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      select_none: {
+        key: 'ctrl+shift+a',
+        target: map,
+        fn: map.select_none,
+        ignoreWithInput: true,
+        requires: 'enable_editing'
+      },
+      invert_selection: {
+        target: map,
+        fn: map.invert_selection,
+        requires: 'enable_editing'
+      },
+      search_ctrl: {
+        key: 'ctrl+f',
+        fn: () => this.passPropsSearchBar({ display: true }),
+        requires: 'enable_search'
+      },
+      search: {
+        key: 'f',
+        fn: () => this.passPropsSearchBar({ display: true }),
+        ignoreWithInput: true,
+        requires: 'enable_search'
       }
     }
-    if (this.settings.get('enable_editing')) {
-      utils.extend(keys, {
-        build_mode: {
-          key: 'n',
-          target: this,
-          fn: this.build_mode,
-          ignoreWithInput: true
-        },
-        zoom_mode: {
-          key: 'z',
-          target: this,
-          fn: this.zoom_mode,
-          ignoreWithInput: true
-        },
-        brush_mode: {
-          key: 'v',
-          target: this,
-          fn: this.brush_mode,
-          ignoreWithInput: true
-        },
-        rotate_mode: {
-          key: 'r',
-          target: this,
-          fn: this.rotate_mode,
-          ignoreWithInput: true
-        },
-        text_mode: {
-          key: 't',
-          target: this,
-          fn: this.text_mode,
-          ignoreWithInput: true
-        },
-        toggle_beziers: {
-          key: 'b',
-          target: map,
-          fn: map.toggle_beziers,
-          ignoreWithInput: true
-        },
-        delete_ctrl: {
-          key: 'ctrl+backspace',
-          target: map,
-          fn: map.delete_selected,
-          ignoreWithInput: true
-        },
-        delete: {
-          key: 'backspace',
-          target: map,
-          fn: map.delete_selected,
-          ignoreWithInput: true
-        },
-        delete_del: {
-          key: 'del',
-          target: map,
-          fn: map.delete_selected,
-          ignoreWithInput: true
-        },
-        toggle_primary: {
-          key: 'p',
-          target: map,
-          fn: map.toggle_selected_node_primary,
-          ignoreWithInput: true
-        },
-        cycle_primary: {
-          key: 'c',
-          target: map,
-          fn: map.cycle_primary_node,
-          ignoreWithInput: true
-        },
-        direction_arrow_right: {
-          key: 'right',
-          target: this.build_input.direction_arrow,
-          fn: this.build_input.direction_arrow.right,
-          ignoreWithInput: true
-        },
-        direction_arrow_down: {
-          key: 'down',
-          target: this.build_input.direction_arrow,
-          fn: this.build_input.direction_arrow.down,
-          ignoreWithInput: true
-        },
-        direction_arrow_left: {
-          key: 'left',
-          target: this.build_input.direction_arrow,
-          fn: this.build_input.direction_arrow.left,
-          ignoreWithInput: true
-        },
-        direction_arrow_up: {
-          key: 'up',
-          target: this.build_input.direction_arrow,
-          fn: this.build_input.direction_arrow.up,
-          ignoreWithInput: true
-        },
-        undo: {
-          key: 'ctrl+z',
-          target: map.undo_stack,
-          fn: map.undo_stack.undo
-        },
-        redo: {
-          key: 'ctrl+shift+z',
-          target: map.undo_stack,
-          fn: map.undo_stack.redo
-        },
-        select_all: {
-          key: 'ctrl+a',
-          target: map,
-          fn: map.select_all,
-          ignoreWithInput: true
-        },
-        select_none: {
-          key: 'ctrl+shift+a',
-          target: map,
-          fn: map.select_none,
-          ignoreWithInput: true
-        },
-        invert_selection: {
-          target: map,
-          fn: map.invert_selection
-        }
-      })
-    }
-    if (this.settings.get('enable_search')) {
-      utils.extend(keys, {
-        search_ctrl: {
-          key: 'ctrl+f',
-          fn: () => this.passPropsSearchBar({ display: true })
-        },
-        search: {
-          key: 'f',
-          fn: () => this.passPropsSearchBar({ display: true }),
-          ignoreWithInput: true
-        }
-      })
-    }
-    return keys
   }
 
   /**

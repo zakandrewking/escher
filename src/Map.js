@@ -121,6 +121,7 @@ export default class Map {
 
     // make a key manager
     this.key_manager = new KeyManager()
+    this.key_manager.settings = settings
     this.key_manager.ctrlEqualsCmd = true
 
     // make the search index

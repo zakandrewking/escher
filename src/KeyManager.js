@@ -28,7 +28,8 @@ export default class KeyManager {
     assignedKeys = {},
     inputList = [],
     selection = null,
-    ctrlEqualsCmd = false
+    ctrlEqualsCmd = false,
+    settings = null
   ) {
     // default Arguments
     this.assignedKeys = assignedKeys
@@ -44,6 +45,9 @@ export default class KeyManager {
 
     this.escapeQueue = []
     this.removeEscapeListener = null
+
+    // to check settings when running a key
+    this.settings = settings
 
     this.enabled = true
     this.update()
@@ -66,12 +70,17 @@ export default class KeyManager {
       const keyToBind = addCmd(assignedKey.key, this.ctrlEqualsCmd)
       // remember the inputList
       assignedKey.inputList = this.inputList
-      this.mousetrap.bind(keyToBind, function (e) {
+      this.mousetrap.bind(keyToBind, e => {
+        // check requires
+        if (assignedKey.requires && !this.settings.get(assignedKey.requires)) {
+          return
+        }
+
         // check inputs
         let inputBlocking = false
-        if (this.ignoreWithInput) {
-          for (var i = 0, l = this.inputList.length; i < l; i++) {
-            const thisInputVal = this.inputList[i]
+        if (assignedKey.ignoreWithInput) {
+          for (var i = 0, l = assignedKey.inputList.length; i < l; i++) {
+            const thisInputVal = assignedKey.inputList[i]
             const thisInput = _.isFunction(thisInputVal)
                   ? thisInputVal()
                   : thisInputVal
@@ -83,11 +92,11 @@ export default class KeyManager {
         }
 
         if (!inputBlocking) {
-          if (this.fn) this.fn.call(this.target)
-          else console.warn('No function for key: ' + this.key)
+          if (assignedKey.fn) assignedKey.fn.call(assignedKey.target)
+          else console.warn('No function for key: ' + assignedKey.key)
           e.preventDefault()
         }
-      }.bind(assignedKey), 'keydown')
+      }, 'keydown')
     }
   }
 
