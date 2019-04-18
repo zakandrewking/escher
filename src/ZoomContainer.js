@@ -42,12 +42,8 @@ module.exports = ZoomContainer
  *
  * @param {Boolean} use_3d_transform - If true, then use CSS3 3D transform to
  * speed up pan and zoom.
- *
- * @param {Boolean} fill_screen - If true, then apply styles to body and
- * selection that fill the screen. The styled classes are 'fill-screen-body' and
- * 'fill-screen-div'.
  */
-function init (selection, scroll_behavior, use_3d_transform, fill_screen) {
+function init (selection, scroll_behavior, use_3d_transform) {
   // set the selection class
   selection.classed('escher-container', true)
 
@@ -58,13 +54,6 @@ function init (selection, scroll_behavior, use_3d_transform, fill_screen) {
     selection.on('touchstart touchmove', function () {
       d3_selection.event.stopPropagation()
     })
-  }
-
-  // fill screen classes
-  if (fill_screen) {
-    d3_select('html').classed('fill-screen', true)
-    d3_select('body').classed('fill-screen', true)
-    selection.classed('fill-screen-div', true)
   }
 
   // make the svg

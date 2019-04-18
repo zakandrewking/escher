@@ -189,6 +189,17 @@ class Builder {
       }
     })
 
+    // Warn if full/fill screen options conflict
+    if (this.settings.get('fill_screen') && this.settings.get('full_screen_button')) {
+      this.settings.set('full_screen_button', false)
+      console.warn('The option full_screen_button has no effect when fill_screen is true')
+    }
+
+    // force full screen for fill_screen option
+    if (this.settings.get('fill_screen')) {
+      this.fullScreen(true, false)
+    }
+
     // Set up this callback manager
     this.callback_manager = new CallbackManager()
     const firstLoadCallback = this.settings.get('first_load_callback')
@@ -201,8 +212,7 @@ class Builder {
     // Set up the zoom container
     this.zoom_container = new ZoomContainer(this.selection,
                                             this.settings.get('scroll_behavior'),
-                                            this.settings.get('use_3d_transform'),
-                                            this.settings.get('fill_screen'))
+                                            this.settings.get('use_3d_transform'))
     // Zoom container status changes
     // this.zoom_container.callback_manager.set('svg_start', () => {
     //   if (this.map) this.map.set_status('Drawing ...')
@@ -448,6 +458,9 @@ class Builder {
       }
       if (!this.settings.get('enable_editing')) {
         newDisabledButtons.push('Show control points')
+      }
+      if (this.settings.get('full_screen_button') === false) {
+        newDisabledButtons.push('Toggle full screen')
       }
       this.settings.set('disabled_buttons', newDisabledButtons)
 
@@ -1143,15 +1156,6 @@ class Builder {
         ignore_with_input: true
       }
     }
-    if (this.settings.get('full_screen_button')) {
-      utils.extend(keys, {
-        fullScreenCtrl: {
-          key: 'ctrl+2',
-          target: this,
-          fn: this.fullScreen
-        }
-      })
-    }
     if (this.settings.get('enable_editing')) {
       utils.extend(keys, {
         build_mode: {
@@ -1305,20 +1309,21 @@ class Builder {
   /**
    * Toggle full screen mode.
    */
-  fullScreen () {
-    if (this.settings.get('fill_screen')) return
+  fullScreen (force = false, zoom = true) {
+    if (this.settings.get('fill_screen') && !force) return
 
     if (this.fullScreenOn) {
       d3Select('html').classed('fill-screen', false)
       d3Select('body').classed('fill-screen', false)
       this.selection.classed('fill-screen-div', false)
-      this.map.zoom_extent_canvas()
+      if (zoom) this.map.zoom_extent_canvas()
       this.fullScreenOn = false
     } else {
-      d3Select('html').classed('fill-screen', false)
-      d3Select('body').classed('fill-screen', false)
+      // fill screen classes
+      d3Select('html').classed('fill-screen', true)
+      d3Select('body').classed('fill-screen', true)
       this.selection.classed('fill-screen-div', true)
-      this.map.zoom_extent_canvas()
+      if (zoom) this.map.zoom_extent_canvas()
       this.fullScreenOn = true
     }
   }
