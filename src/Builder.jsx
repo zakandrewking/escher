@@ -653,6 +653,11 @@ class Builder {
     this.callback_manager.set('set_mode', mode => {
       this.passPropsMenuBar({ mode })
     })
+
+    // redraw when menu option changes
+    this.settings.streams.menu.onValue(menu => {
+      this.passPropsMenuBar({ display: menu === 'all' })
+    })
   }
 
   /**
