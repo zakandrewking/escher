@@ -10,7 +10,7 @@ import { mouse as d3Mouse } from 'd3-selection'
  * BuildInput
  * @param selection - A d3 selection for the BuildInput.
  * @param map - A Map instance.
- * @param zoom_container - A ZoomContainer instance.
+ * @param zoomContainer - A ZoomContainer instance.
  * @param settings - A Settings instance.
  */
 export default class BuildInput {
@@ -37,7 +37,7 @@ export default class BuildInput {
     this.setUpMapCallbacks(map)
 
     // zoom container
-    this.zoom_container = zoomContainer
+    this.zoomContainer = zoomContainer
     this.setUpZoomCallbacks(zoomContainer)
 
     // settings

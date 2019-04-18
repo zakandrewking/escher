@@ -212,19 +212,19 @@ class Builder {
     }
 
     // Set up the zoom container
-    this.zoom_container = new ZoomContainer(this.selection,
+    this.zoomContainer = new ZoomContainer(this.selection,
                                             this.settings.get('scroll_behavior'),
                                             this.settings.get('use_3d_transform'))
     // Zoom container status changes
-    // this.zoom_container.callbackManager.set('svg_start', () => {
+    // this.zoomContainer.callbackManager.set('svg_start', () => {
     //   if (this.map) this.map.set_status('Drawing ...')
     // })
-    // this.zoom_container.callbackManager.set('svg_finish', () => {
+    // this.zoomContainer.callbackManager.set('svg_finish', () => {
     //   if (this.map) this.map.set_status('')
     // })
-    this.zoom_container.callbackManager.set('zoom_change', () => {
+    this.zoomContainer.callbackManager.set('zoom_change', () => {
       if (this.settings.get('semantic_zoom')) {
-        const scale = this.zoom_container.windowScale
+        const scale = this.zoomContainer.windowScale
         const optionObject = this.settings.get('semantic_zoom')
                                  .sort((a, b) => a.zoomLevel - b.zoomLevel)
                                  .find(a => a.zoomLevel > scale)
@@ -241,7 +241,10 @@ class Builder {
       }
     })
     this.settings.streams.use_3d_transform.onValue(val => {
-      this.zoom_container.setUse3dTransform(val)
+      this.zoomContainer.setUse3dTransform(val)
+    })
+    this.settings.streams.scroll_behavior.onValue(val => {
+      this.zoomContainer.setScrollBehavior(val)
     })
 
     // Make a container for other map-related tools that will be reset on map load
@@ -274,10 +277,10 @@ class Builder {
       this.settings.statusBus.onValue(x => {
         if (x === 'accept') {
           this._updateData(true, true, ['reaction', 'metabolite'], false)
-          if (this.zoom_container !== null) {
+          if (this.zoomContainer !== null) {
             // TODO make this automatic
             const newBehavior = this.settings.get('scroll_behavior')
-            this.zoom_container.setScrollBehavior(newBehavior)
+            this.zoomContainer.setScrollBehavior(newBehavior)
           }
           if (this.map !== null) {
             this.map.draw_all_nodes(false)
@@ -346,11 +349,11 @@ class Builder {
     }
 
     // remove the old map and related divs
-    utils.remove_child_nodes(this.zoom_container.zoomedSel)
+    utils.remove_child_nodes(this.zoomContainer.zoomedSel)
     utils.remove_child_nodes(this.mapToolsContainer)
 
-    const zoomedSel = this.zoom_container.zoomedSel
-    const svg = this.zoom_container.svg
+    const zoomedSel = this.zoomContainer.zoomedSel
+    const svg = this.zoomContainer.svg
 
     // remove the old map side effects
     if (this.map) {
@@ -363,7 +366,7 @@ class Builder {
                                svg,
                                this.embeddedCss,
                                zoomedSel,
-                               this.zoom_container,
+                               this.zoomContainer,
                                this.settings,
                                this.cobra_model,
                                this.settings.get('enable_search'))
@@ -372,7 +375,7 @@ class Builder {
       this.map = new Map(svg,
                          this.embeddedCss,
                          zoomedSel,
-                         this.zoom_container,
+                         this.zoomContainer,
                          this.settings,
                          this.cobra_model,
                          this.settings.get('canvas_size_and_loc'),
@@ -390,11 +393,11 @@ class Builder {
 
       // Set up the reaction input with complete.ly
       this.build_input = new BuildInput(this.mapToolsContainer, this.map,
-                                        this.zoom_container, this.settings)
+                                        this.zoomContainer, this.settings)
 
       // Set up the text edit input
       this.text_edit_input = new TextEditInput(this.mapToolsContainer, this.map,
-                                               this.zoom_container)
+                                               this.zoomContainer)
 
       // Set up the Brush
       this.brush = new Brush(zoomedSel, false, this.map, '.canvas-group')
@@ -404,7 +407,7 @@ class Builder {
       })
 
       // Set up the modes
-      this._setUpModes(this.map, this.brush, this.zoom_container)
+      this._setUpModes(this.map, this.brush, this.zoomContainer)
 
       // Set up menus
       this.setUpSettingsMenu(this.mapToolsContainer)
@@ -421,7 +424,7 @@ class Builder {
       this.tooltip_container = new TooltipContainer(
         this.mapToolsContainer,
         this.settings.get('tooltip_component'),
-        this.zoom_container,
+        this.zoomContainer,
         this.map
       )
 
@@ -488,7 +491,7 @@ class Builder {
       } else {
         if (this.settings.get('starting_reaction') !== null && this.cobra_model !== null) {
           // Draw default reaction if no map is provided
-          const size = this.zoom_container.getSize()
+          const size = this.zoomContainer.getSize()
           const startCoords = { x: size.width / 2, y: size.height / 4 }
           this.map.new_reaction_from_scratch(this.settings.get('starting_reaction'),
                                              startCoords, 90)
@@ -629,8 +632,8 @@ class Builder {
       selectAll: () => this.map.select_all(),
       selectNone: () => this.map.select_none(),
       invertSelection: () => this.map.invert_selection(),
-      zoomIn: () => this.zoom_container.zoomIn(),
-      zoomOut: () => this.zoom_container.zoomOut(),
+      zoomIn: () => this.zoomContainer.zoomIn(),
+      zoomOut: () => this.zoomContainer.zoomOut(),
       zoomExtentNodes: () => this.map.zoom_extent_nodes(),
       zoomExtentCanvas: () => this.map.zoom_extent_canvas(),
       fullScreen: () => this.fullScreen(),
@@ -710,7 +713,7 @@ class Builder {
       mode: this.mode,
       settings: this.settings,
       setMode: mode => this._setMode(mode),
-      zoomContainer: this.zoom_container,
+      zoomContainer: this.zoomContainer,
       map: this.map,
       buildInput: this.build_input,
       fullScreen: () => this.fullScreen()
@@ -761,7 +764,7 @@ class Builder {
     // brush
     this.brush.toggle(mode === 'brush')
     // zoom
-    this.zoom_container.togglePanDrag(mode === 'zoom' || mode === 'view')
+    this.zoomContainer.togglePanDrag(mode === 'zoom' || mode === 'view')
     // resize canvas
     this.map.canvas.toggle_resize(mode !== 'view')
 
@@ -1060,7 +1063,7 @@ class Builder {
    */
   getKeys () {
     const map = this.map
-    const zoomContainer = this.zoom_container
+    const zoomContainer = this.zoomContainer
     return {
       save: {
         key: 'ctrl+s',

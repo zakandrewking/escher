@@ -91,7 +91,7 @@ export default function initializeJupyterWidget () {
           // TODO make this automatic. see:
           // https://github.com/zakandrewking/escher/blob/45b59cb6c959dde5cece709a6a937944d8a8a1eb/src/Builder.jsx#L286
           const newBehavior = builder.settings.get('scroll_behavior')
-          builder.zoom_container.setScrollBehavior(newBehavior)
+          builder.zoomContainer.setScrollBehavior(newBehavior)
         })
 
         // // for the rest of the options
