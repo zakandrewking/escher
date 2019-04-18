@@ -1,62 +1,58 @@
-const ZoomContainer = require('../ZoomContainer')
-const d3_transform_catch = require('../utils').d3_transform_catch
-
-const describe = require('mocha').describe
-const beforeEach = require('mocha').beforeEach
-const afterEach = require('mocha').afterEach
-const it = require('mocha').it
-const assert = require('chai').assert
-const d3Body = require('./helpers/d3Body')
-const d3_zoomTransform = require('d3-zoom').zoomTransform
-const _ = require('underscore')
+import ZoomContainer from '../ZoomContainer'
+import { d3_transform_catch } from '../utils'
+import { describe, it, beforeEach, afterEach } from 'mocha'
+import { assert } from 'chai'
+import d3Body from './helpers/d3Body'
+import _ from 'underscore'
+import { zoomTransform as d3ZoomTransform } from 'd3-zoom'
 
 /**
  * Look at both the transform and the -webkit-transform styles, and run the
  * appropriate callback.
  */
-function check_webkit_transform (sel, with_fn, without_fn) {
-  var no_webkit = sel.select('.escher-3d-transform-container')
-      .style('transform')
-  var webkit = sel.select('.escher-3d-transform-container')
-      .style('-webkit-transform')
-  if (webkit) {
-    with_fn(webkit)
-  } else {
-    without_fn(no_webkit)
-  }
-}
+// function checkWebkitTransform (sel, withFn, withoutFn) {
+//   const noWebkit = sel.select('.escher-3d-transform-container')
+//         .style('transform')
+//   const webkit = sel.select('.escher-3d-transform-container')
+//         .style('-webkit-transform')
+//   if (webkit) {
+//     withFn(webkit)
+//   } else {
+//     withoutFn(noWebkit)
+//   }
+// }
 
 describe('ZoomContainer', () => {
   let sel
-  beforeEach(() => sel = d3Body.append('div'))
+  beforeEach(() => { sel = d3Body.append('div') })
   afterEach(() => sel.remove())
 
   it('initializes', () => {
     // make a zoom container
-    const zc = ZoomContainer(sel, 'none', true)
+    const zc = new ZoomContainer(sel, 'none', true)
     // check basic attributes
     assert.strictEqual(sel.select('.escher-zoom-container').node(),
-                       zc.zoom_container.node())
+                       zc.container.node())
     assert.strictEqual(sel.select('.escher-3d-transform-container').node(),
-                       zc.css3_transform_container.node())
+                       zc.css3TransformContainer.node())
     assert.strictEqual(sel.select('svg').node(),
                        zc.svg.node())
     assert.strictEqual(sel.select('.zoom-g').node(),
-                       zc.zoomed_sel.node())
+                       zc.zoomedSel.node())
   })
 
   it('go_to -- no d3 transform', (done) => {
     // no d3 transform
-    const zc = ZoomContainer(sel, 'none', false)
-    zc.go_to(2.0, { x: 10.0, y: -20.5 })
+    const zc = new ZoomContainer(sel, 'none', false)
+    zc.goTo(2.0, { x: 10.0, y: -20.5 })
     // check node zoomTransform (__zoom attribute)
-    const zoom_transform = d3_zoomTransform(zc.zoom_container.node())
-    assert.strictEqual(zoom_transform.k, 2.0)
-    assert.strictEqual(zoom_transform.x, 10.0)
-    assert.strictEqual(zoom_transform.y, -20.5)
+    const zoomTransform = d3ZoomTransform(zc.container.node())
+    assert.strictEqual(zoomTransform.k, 2.0)
+    assert.strictEqual(zoomTransform.x, 10.0)
+    assert.strictEqual(zoomTransform.y, -20.5)
     _.defer(() => {
       // check node transform attribute
-      const transform = d3_transform_catch(zc.zoomed_sel.attr('transform'))
+      const transform = d3_transform_catch(zc.zoomedSel.attr('transform'))
       assert.strictEqual(transform.scale, 2.0)
       assert.strictEqual(transform.translate[0], 10.0)
       assert.strictEqual(transform.translate[1], -20.5)
@@ -70,10 +66,10 @@ describe('ZoomContainer', () => {
   // https://github.com/NV/CSSOM/issues/78
   // it('go_to -- with 3D transform', (done) => {
   //   // with 3D transform
-  //   var zc = ZoomContainer(sel, 'none', true)
+  //   var zc = new ZoomContainer(sel, 'none', true)
 
   //   // zoom
-  //   zc.go_to(0.5, { x: 10, y: -10 })
+  //   zc.goTo(0.5, { x: 10, y: -10 })
 
   //   // I'm not sure why browsers do this transformation, but other people
   //   // have noted it https://github.com/mbostock/d3/issues/1323

@@ -57,7 +57,7 @@ export default class Map {
                canvas_size_and_loc, enable_search, map_name, map_id,
                map_description) {
     if (canvas_size_and_loc === null) {
-      var size = zoom_container.get_size()
+      var size = zoom_container.getSize()
       canvas_size_and_loc = {
         x: -size.width,
         y: -size.height,
@@ -1479,7 +1479,7 @@ export default class Map {
         this.select_metabolite_with_id(node_id)
         var new_coords = { x: node.x, y: node.y }
         if (this.zoom_container) {
-          this.zoom_container.translate_off_screen(new_coords)
+          this.zoom_container.translateOffScreen(new_coords)
         }
       }
     }
@@ -1928,12 +1928,12 @@ export default class Map {
     } else {
       return console.error('Did not recognize mode')
     }
-    this.zoom_container.go_to(new_zoom, new_pos)
+    this.zoom_container.goTo(new_zoom, new_pos)
     return null
   }
 
   get_size () {
-    return this.zoom_container.get_size()
+    return this.zoom_container.getSize()
   }
 
   zoom_to_reaction(reaction_id) {
@@ -1942,7 +1942,7 @@ export default class Map {
         size = this.get_size(),
         new_pos = { x: - reaction.label_x * new_zoom + size.width/2,
                     y: - reaction.label_y * new_zoom + size.height/2 }
-    this.zoom_container.go_to(new_zoom, new_pos)
+    this.zoom_container.goTo(new_zoom, new_pos)
   }
 
   zoom_to_node (node_id) {
@@ -1953,7 +1953,7 @@ export default class Map {
       x: - node.label_x * new_zoom + size.width/2,
       y: - node.label_y * new_zoom + size.height/2,
     }
-    this.zoom_container.go_to(new_zoom, new_pos)
+    this.zoom_container.goTo(new_zoom, new_pos)
   }
 
   zoom_to_text_label (text_label_id) {
@@ -1964,7 +1964,7 @@ export default class Map {
       x: - text_label.x * new_zoom + size.width/2,
       y: - text_label.y * new_zoom + size.height/2,
     }
-    this.zoom_container.go_to(new_zoom, new_pos)
+    this.zoom_container.goTo(new_zoom, new_pos)
   }
 
   highlight_reaction (reaction_id) {
@@ -2073,8 +2073,8 @@ export default class Map {
     obj.callback_manager.run(callback_before)
 
     // Turn off zoom and translate so that illustrator likes the map
-    var window_scale = obj.zoom_container.window_scale
-    var window_translate = obj.zoom_container.window_translate
+    var window_scale = obj.zoom_container.windowScale
+    var window_translate = obj.zoom_container.windowTranslate
     var canvas_size_and_loc = obj.canvas.size_and_location()
     var mouse_node_size_and_trans = {
       w: obj.canvas.mouse_node.attr('width'),
@@ -2082,7 +2082,7 @@ export default class Map {
       transform: obj.canvas.mouse_node.attr('transform')
     }
 
-    obj.zoom_container._go_to_svg(1.0, { x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y }, function() {
+    obj.zoom_container._goToSvg(1.0, { x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y }, function() {
       obj.svg.attr('width', canvas_size_and_loc.width)
       obj.svg.attr('height', canvas_size_and_loc.height)
       obj.canvas.mouse_node.attr('width', '0px')
@@ -2101,7 +2101,7 @@ export default class Map {
       }
 
       // revert everything
-      obj.zoom_container._go_to_svg(window_scale, window_translate, function() {
+      obj.zoom_container._goToSvg(window_scale, window_translate, function() {
         obj.svg.attr('width', null)
         obj.svg.attr('height', null)
         obj.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w)

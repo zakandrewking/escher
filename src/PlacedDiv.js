@@ -37,8 +37,8 @@ function place (coords) {
   this.div.style('display', null)
 
   // move the new input
-  var window_translate = this.map.zoom_container.window_translate
-  var window_scale = this.map.zoom_container.window_scale
+  var window_translate = this.map.zoom_container.windowTranslate
+  var window_scale = this.map.zoom_container.windowScale
   var map_size = this.map.get_size()
 
   /**

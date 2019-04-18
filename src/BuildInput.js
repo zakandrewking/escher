@@ -81,7 +81,7 @@ export default class BuildInput {
   setUpZoomCallbacks (zoomContainer) {
     // TODO this is broken.
     // Should place either for selected or for location on zoom or pan.
-    // zoomContainer.callback_manager.set('zoom_change.input', () => {
+    // zoomContainer.callbackManager.set('zoom_change.input', () => {
     //   if (this.is_active) {
     //     this.place_at_selected()
     //   }

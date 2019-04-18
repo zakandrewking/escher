@@ -216,15 +216,15 @@ class Builder {
                                             this.settings.get('scroll_behavior'),
                                             this.settings.get('use_3d_transform'))
     // Zoom container status changes
-    // this.zoom_container.callback_manager.set('svg_start', () => {
+    // this.zoom_container.callbackManager.set('svg_start', () => {
     //   if (this.map) this.map.set_status('Drawing ...')
     // })
-    // this.zoom_container.callback_manager.set('svg_finish', () => {
+    // this.zoom_container.callbackManager.set('svg_finish', () => {
     //   if (this.map) this.map.set_status('')
     // })
-    this.zoom_container.callback_manager.set('zoom_change', () => {
+    this.zoom_container.callbackManager.set('zoom_change', () => {
       if (this.settings.get('semantic_zoom')) {
-        const scale = this.zoom_container.window_scale
+        const scale = this.zoom_container.windowScale
         const optionObject = this.settings.get('semantic_zoom')
                                  .sort((a, b) => a.zoomLevel - b.zoomLevel)
                                  .find(a => a.zoomLevel > scale)
@@ -241,7 +241,7 @@ class Builder {
       }
     })
     this.settings.streams.use_3d_transform.onValue(val => {
-      this.zoom_container.set_use_3d_transform(val)
+      this.zoom_container.setUse3dTransform(val)
     })
 
     // Make a container for other map-related tools that will be reset on map load
@@ -277,7 +277,7 @@ class Builder {
           if (this.zoom_container !== null) {
             // TODO make this automatic
             const newBehavior = this.settings.get('scroll_behavior')
-            this.zoom_container.set_scroll_behavior(newBehavior)
+            this.zoom_container.setScrollBehavior(newBehavior)
           }
           if (this.map !== null) {
             this.map.draw_all_nodes(false)
@@ -346,10 +346,10 @@ class Builder {
     }
 
     // remove the old map and related divs
-    utils.remove_child_nodes(this.zoom_container.zoomed_sel)
+    utils.remove_child_nodes(this.zoom_container.zoomedSel)
     utils.remove_child_nodes(this.mapToolsContainer)
 
-    const zoomedSel = this.zoom_container.zoomed_sel
+    const zoomedSel = this.zoom_container.zoomedSel
     const svg = this.zoom_container.svg
 
     // remove the old map side effects
@@ -488,7 +488,7 @@ class Builder {
       } else {
         if (this.settings.get('starting_reaction') !== null && this.cobra_model !== null) {
           // Draw default reaction if no map is provided
-          const size = this.zoom_container.get_size()
+          const size = this.zoom_container.getSize()
           const startCoords = { x: size.width / 2, y: size.height / 4 }
           this.map.new_reaction_from_scratch(this.settings.get('starting_reaction'),
                                              startCoords, 90)
@@ -629,8 +629,8 @@ class Builder {
       selectAll: () => this.map.select_all(),
       selectNone: () => this.map.select_none(),
       invertSelection: () => this.map.invert_selection(),
-      zoomIn: () => this.zoom_container.zoom_in(),
-      zoomOut: () => this.zoom_container.zoom_out(),
+      zoomIn: () => this.zoom_container.zoomIn(),
+      zoomOut: () => this.zoom_container.zoomOut(),
       zoomExtentNodes: () => this.map.zoom_extent_nodes(),
       zoomExtentCanvas: () => this.map.zoom_extent_canvas(),
       fullScreen: () => this.fullScreen(),
@@ -730,8 +730,8 @@ class Builder {
     map.callback_manager.set('start_rotation', function () {
       wasEnabled.brush = brush.enabled
       brush.toggle(false)
-      wasEnabled.zoom = zoomContainer.zoom_on
-      zoomContainer.toggle_pan_drag(false)
+      wasEnabled.zoom = zoomContainer.zoomOn
+      zoomContainer.togglePanDrag(false)
       wasEnabled.selectableMousedown = map.behavior.selectableMousedown !== null
       map.behavior.toggleSelectableClick(false)
       wasEnabled.labelMouseover = map.behavior.labelMouseover !== null
@@ -741,7 +741,7 @@ class Builder {
     })
     map.callback_manager.set('end_rotation', function () {
       brush.toggle(wasEnabled.brush)
-      zoomContainer.toggle_pan_drag(wasEnabled.zoom)
+      zoomContainer.togglePanDrag(wasEnabled.zoom)
       map.behavior.toggleSelectableClick(wasEnabled.selectableMousedown)
       map.behavior.toggleLabelMouseover(wasEnabled.labelMouseover)
       map.behavior.toggleLabelTouch(wasEnabled.labelTouch)
@@ -761,7 +761,7 @@ class Builder {
     // brush
     this.brush.toggle(mode === 'brush')
     // zoom
-    this.zoom_container.toggle_pan_drag(mode === 'zoom' || mode === 'view')
+    this.zoom_container.togglePanDrag(mode === 'zoom' || mode === 'view')
     // resize canvas
     this.map.canvas.toggle_resize(mode !== 'view')
 
@@ -1114,23 +1114,23 @@ class Builder {
       zoom_in_ctrl: {
         key: 'ctrl+=',
         target: zoomContainer,
-        fn: zoomContainer.zoom_in
+        fn: zoomContainer.zoomIn
       },
       zoom_in: {
         key: '=',
         target: zoomContainer,
-        fn: zoomContainer.zoom_in,
+        fn: zoomContainer.zoomIn,
         ignoreWithInput: true
       },
       zoom_out_ctrl: {
         key: 'ctrl+-',
         target: zoomContainer,
-        fn: zoomContainer.zoom_out
+        fn: zoomContainer.zoomOut
       },
       zoom_out: {
         key: '-',
         target: zoomContainer,
-        fn: zoomContainer.zoom_out,
+        fn: zoomContainer.zoomOut,
         ignoreWithInput: true
       },
       extent_nodes_ctrl: {

@@ -55,7 +55,7 @@ function setup_map_callbacks (map) {
 }
 
 function setup_zoom_callbacks (zoom_container) {
-  zoom_container.callback_manager.set('zoom.text_edit_input', function () {
+  zoom_container.callbackManager.set('zoom.text_edit_input', function () {
     if (this.active_target) {
       this._accept_changes(this.active_target.target)
     }
@@ -63,7 +63,7 @@ function setup_zoom_callbacks (zoom_container) {
       this.hide()
     }
   }.bind(this))
-  zoom_container.callback_manager.set('go_to.text_edit_input', function () {
+  zoom_container.callbackManager.set('go_to.text_edit_input', function () {
     if (this.active_target) {
       this._accept_changes(this.active_target.target)
     }

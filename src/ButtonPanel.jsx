@@ -18,7 +18,7 @@ class ButtonPanel extends Component {
         <li>
           <button
             className='button btn'
-            onClick={() => this.props.zoomContainer.zoom_in()}
+            onClick={() => this.props.zoomContainer.zoomIn()}
             title={`Zoom in${enableKeys ? ' (+)' : ''}`}
           >
             <i className='icon-zoom-in' />
@@ -27,7 +27,7 @@ class ButtonPanel extends Component {
         <li>
           <button
             className='button btn'
-            onClick={() => this.props.zoomContainer.zoom_out()}
+            onClick={() => this.props.zoomContainer.zoomOut()}
             title={`Zoom out${enableKeys ? ' (-)' : ''}`}
           >
             <i className='icon-zoom-out' />

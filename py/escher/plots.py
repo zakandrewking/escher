@@ -496,7 +496,7 @@ class Builder(widgets.DOMWidget):
     #     """
 
     #     # TODO apply options from self
-    #     options = tranform(self.options)
+    #     options = transform(self.options)
 
     #     template = env.get_template('standalone.html')
     #     html = template.render(
