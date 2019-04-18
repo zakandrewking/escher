@@ -1,3 +1,9 @@
+import {
+  brush as d3Brush,
+  brushSelection as d3BrushSelection
+} from 'd3-brush'
+import { selection as d3Selection } from 'd3-selection'
+
 /**
  * Define a brush to select elements in a map.
  * @param {D3 Selection} selection - A d3 selection to place the brush in.
@@ -7,141 +13,119 @@
  *                                that the brush will be inserted after. Often a
  *                                canvas element (e.g. '.canvas-group').
  */
-
-var utils = require('./utils')
-var d3_brush = require('d3-brush').brush
-var d3_brushSelection = require('d3-brush').brushSelection
-var d3_scaleIdentity = require('d3-scale').scaleIdentity
-var d3_selection = require('d3-selection')
-var d3_select = require('d3-selection').select
-
-var Brush = utils.make_class()
-Brush.prototype = {
-  init: init,
-  toggle: toggle,
-  setup_selection_brush: setup_selection_brush,
-}
-module.exports = Brush
-
-/**
- * Initialize the brush.
- * @param {D3 Selection} selection - The selection for the brush.
- * @param {Boolean} is_enabled - Whether to enable right away.
- * @param {escher.Map} map - The Escher Map object.
- * @param {Node} insert_after - A node within selection to insert after.
- */
-function init (selection, is_enabled, map, insert_after) {
-  this.brush_sel = selection.append('g').attr('id', 'brush-container')
-  var node = this.brush_sel.node()
-  var insert_before_node = selection.select(insert_after).node().nextSibling
-  if (node !== insert_before_node) {
-    node.parentNode.insertBefore(node, insert_before_node)
+export default class Brush {
+  constructor (selection, isEnabled, map, insertAfter) {
+    this.brushSel = selection.append('g').attr('id', 'brush-container')
+    const node = this.brushSel.node()
+    const insertBeforeNode = selection.select(insertAfter).node().nextSibling
+    if (node !== insertBeforeNode) {
+      node.parentNode.insertBefore(node, insertBeforeNode)
+    }
+    this.enabled = isEnabled
+    this.map = map
   }
-  this.enabled = is_enabled
-  this.map = map
-}
 
-/**
- * Returns a boolean for the on/off status of the brush
- * @return {Boolean}
- */
-function brush_is_enabled () {
-  return this.map.sel.select('.brush').empty()
-}
-
-/**
- * Turn the brush on or off
- * @param {Boolean} on_off
- */
-function toggle (onOff) {
-  if (onOff === undefined) {
-    onOff = !this.enabled
+  /**
+   * Returns a boolean for the on/off status of the brush
+   * @return {Boolean}
+   */
+  brushIsEnabled () {
+    return this.map.sel.select('.brush').empty()
   }
-  if (onOff) {
-    this.setup_selection_brush()
-  } else {
-    this.brush_sel.selectAll('*').remove()
+
+  /**
+   * Turn the brush on or off
+   * @param {Boolean} on_off
+   */
+  toggle (onOff) {
+    if (onOff === undefined) {
+      onOff = !this.enabled
+    }
+    if (onOff) {
+      this.setupSelectionBrush()
+    } else {
+      this.brushSel.selectAll('*').remove()
+    }
   }
-}
 
-/**
- * Turn off the mouse crosshair
- */
-function turn_off_crosshair (sel) {
-  sel.selectAll('rect').attr('cursor', null)
-}
+  /**
+   * Turn off the mouse crosshair
+   */
+  turnOffCrosshair (sel) {
+    sel.selectAll('rect').attr('cursor', null)
+  }
 
-function setup_selection_brush () {
-  var map = this.map
-  var selection = this.brush_sel
-  var selectable_selection = map.sel.selectAll('#nodes,#text-labels')
-  var size_and_location = map.canvas.size_and_location()
-  var width = size_and_location.width
-  var height = size_and_location.height
-  var x = size_and_location.x
-  var y = size_and_location.y
+  setupSelectionBrush () {
+    const map = this.map
+    const selection = this.brushSel
+    const selectableSelection = map.sel.selectAll('#nodes,#text-labels')
+    const sizeAndLocation = map.canvas.sizeAndLocation()
+    const width = sizeAndLocation.width
+    const height = sizeAndLocation.height
+    const x = sizeAndLocation.x
+    const y = sizeAndLocation.y
+    const turnOffCrosshair = this.turnOffCrosshair.bind(this)
 
-  // Clear existing brush
-  selection.selectAll('*').remove()
+    // Clear existing brush
+    selection.selectAll('*').remove()
 
-  // Set a flag so we know that the brush is being cleared at the end of a
-  // successful brush
-  var clearing_flag = false
+    // Set a flag so we know that the brush is being cleared at the end of a
+    // successful brush
+    let clearingFlag = false
 
-  var brush = d3_brush()
-      .extent([ [ x, y ], [ x + width, y + height ] ])
-      .on('start', function () {
-        turn_off_crosshair(selection)
-        // unhide secondary metabolites if they are hidden
-        if (map.settings.get('hide_secondary_metabolites')) {
-          map.settings.set('hide_secondary_metabolites', false)
-          map.draw_everything()
-          map.set_status('Showing secondary metabolites. You can hide them ' +
-                         'again in Settings.', 2000)
-        }
-      })
-      .on('brush', function () {
-        var shift_key_on = d3_selection.event.sourceEvent.shiftKey
-        var rect = d3_brushSelection(this)
-        // Check for no selection (e.g. after clearing brush)
-        if (rect !== null) {
-          // When shift is pressed, ignore the currently selected nodes.
-          // Otherwise, brush all nodes.
-          var selection = (
-            shift_key_on ?
-              selectable_selection.selectAll('.node:not(.selected),.text-label:not(.selected)') :
-              selectable_selection.selectAll('.node,.text-label')
-          )
-          selection.classed('selected', (d) => {
-            var sx = d.x
-            var sy = d.y
-            return (rect[0][0] <= sx && sx < rect[1][0] &&
-                    rect[0][1] <= sy && sy < rect[1][1])
-          })
-        }
-      })
-      .on('end', function () {
-        turn_off_crosshair(selection)
-        // Clear brush
-        var rect = d3_brushSelection(this)
-        if (rect === null) {
-          if (clearing_flag) {
-            clearing_flag = false
-          } else {
-            // Empty selection, deselect all
-            map.select_none()
+    var brush = d3Brush()
+        .extent([ [ x, y ], [ x + width, y + height ] ])
+        .on('start', () => {
+          this.turnOffCrosshair(selection)
+          // unhide secondary metabolites if they are hidden
+          if (map.settings.get('hide_secondary_metabolites')) {
+            map.settings.set('hide_secondary_metabolites', false)
+            map.draw_everything()
+            map.set_status('Showing secondary metabolites. You can hide them ' +
+                           'again in Settings.', 2000)
           }
-        } else {
-          // Not empty, then clear the box
-          clearing_flag = true
-          selection.call(brush.move, null)
-        }
-      })
+        })
+        .on('brush', function () {
+          const shiftKeyOn = d3Selection.event.sourceEvent.shiftKey
+          const rect = d3BrushSelection(this)
+          // Check for no selection (e.g. after clearing brush)
+          if (rect !== null) {
+            // When shift is pressed, ignore the currently selected nodes.
+            // Otherwise, brush all nodes.
+            var selection = shiftKeyOn
+                ? selectableSelection.selectAll('.node:not(.selected),.text-label:not(.selected)')
+                : selectableSelection.selectAll('.node,.text-label')
+            selection.classed('selected', d => {
+              const sx = d.x
+              const sy = d.y
+              return (rect[0][0] <= sx && sx < rect[1][0] &&
+                      rect[0][1] <= sy && sy < rect[1][1])
+            })
+          }
+        })
+        .on('end', function () {
+          turnOffCrosshair(selection)
+          // Clear brush
+          var rect = d3BrushSelection(this)
+          if (rect === null) {
+            if (clearingFlag) {
+              clearingFlag = false
+            } else {
+              // Empty selection, deselect all
+              map.select_none()
+            }
+          } else {
+            // Not empty, then clear the box
+            clearingFlag = true
+            selection.call(brush.move, null)
+          }
+        })
 
-  selection
+    selection
     // Initialize brush
-    .call(brush)
+      .call(brush)
 
-  // Turn off the pan grab icons
-  turn_off_crosshair(selection)
+    // Turn off the pan grab icons
+    turnOffCrosshair(selection)
+  }
 }
