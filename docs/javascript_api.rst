@@ -90,10 +90,9 @@ JavaScript API
           ``menu``, ``scroll_behavior``, ``enable_editing``, ``enable_keys``,
           ``enable_tooltips``
 
-          For each of those options, the new option will take effect when the
-          user enters full-screen mode. When they exit full-screen mode, the
-          options will revert to the value they had when the button they entered
-          full-screen mode.
+          These new options will take effect when the user enters full-screen
+          mode. When the user exits full-screen mode, the options will revert to
+          the values they had when the user entered full-screen mode.
 
        .. js:attribute:: options.ignore_bootstrap
 
