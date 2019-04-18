@@ -199,6 +199,8 @@ class Builder {
     if (this.settings.get('fill_screen')) {
       this.fullScreen(true, false)
     }
+    this.savedFullScreenSettings = null
+    this.clearFullScreenEscape = null
 
     // Set up this callback manager
     this.callback_manager = new CallbackManager()
@@ -1312,17 +1314,63 @@ class Builder {
   fullScreen (force = false, zoom = true) {
     if (this.settings.get('fill_screen') && !force) return
 
+    // these settings can update in full screen if provided
+    const fullScreenSettings = [
+      'menu',
+      'scroll_behavior',
+      'enable_editing',
+      'enable_keys',
+      'enable_tooltips'
+    ]
+
     if (this.isFullScreen) {
       d3Select('html').classed('fill-screen', false)
       d3Select('body').classed('fill-screen', false)
       this.selection.classed('fill-screen-div', false)
       this.isFullScreen = false
-      this.clearFullScreenEscape()
+
+      // clear escape listener
+      if (this.clearFullScreenEscape) {
+        this.clearFullScreenEscape()
+        this.clearFullScreenEscape = null
+      }
+
+      // apply the saved settings
+      if (this.savedFullScreenSettings !== null) {
+        _.mapObject(this.savedFullScreenSettings, (v, k) => {
+          this.settings.set(k, v)
+        })
+      }
+      this.savedFullScreenSettings = null
     } else {
+      // save current settings
+      const fullScreenButton = this.settings.get('full_screen_button')
+      if (_.isObject(fullScreenButton)) {
+        this.savedFullScreenSettings = (
+          _.chain(fullScreenButton)
+           .pairs()
+           .map(([k, v]) => {
+             if (_.contains(fullScreenSettings, k)) {
+               const currentSetting = this.settings.get(k)
+               this.settings.set(k, v)
+               return [k, currentSetting]
+             } else {
+               console.warn(`${k} not recognized as an option for full_screen_button`)
+               return [null, null]
+             }
+           })
+           .filter(([k, v]) => k)
+           .object()
+           .value()
+        )
+      }
+
       d3Select('html').classed('fill-screen', true)
       d3Select('body').classed('fill-screen', true)
       this.selection.classed('fill-screen-div', true)
       this.isFullScreen = true
+
+      // set escape listener
       this.clearFullScreenEscape = this.map.key_manager.addEscapeListener(
         () => this.fullScreen()
       )

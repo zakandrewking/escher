@@ -108,33 +108,16 @@ export default class KeyManager {
     return this.addKeyListener('enter', callback, oneTime)
   }
 
-  _activateNextEscapeListener () {
-    if (this.escapeQueue.length > 0) {
-      // remove listener for last one
-      const top = this.escapeQueue[this.escapeQueue.length - 1]
-      top.unbind = this._makeEscapeListener(top.callback)
+  /**
+   * If the list is empty, drop the listener. could get called after the
+   * listener is already removed
+   */
+  _tryDropEscapeListener () {
+    if (this.escapeQueue.length === 0 && this.removeEscapeListener) {
+      this.removeEscapeListener()
+      this.removeEscapeListener = null
     }
   }
-
-  _makeEscapeListener (callback) {
-    // prepare unbind function
-    const unbind = this.mousetrap.unbind.bind(this.mousetrap, 'escape')
-
-    // bind the new escape listener
-    this.mousetrap.bind(addCmd('escape', this.ctrlEqualsCmd), e => {
-      e.preventDefault()
-      callback()
-      // unbind key listener
-      unbind()
-      // pop off stack
-      this.escapeQueue.pop()
-      // active next one on the list
-      this._activateNextEscapeListener()
-    })
-
-    return unbind
-  }
-
   /**
    * Call the callback when the escape key is pressed, then unregisters the
    * listener.
@@ -153,11 +136,7 @@ export default class KeyManager {
           const top = this.escapeQueue.pop()
           top()
         }
-        // if the escape queue is empty, remove this listener
-        if (this.escapeQueue.length === 0) {
-          this.removeEscapeListener()
-          this.removeEscapeListener = null
-        }
+        this._tryDropEscapeListener()
       })
     }
 
@@ -173,11 +152,7 @@ export default class KeyManager {
         // remove it
         this.escapeQueue.splice(index, 1)
       }
-      // if the list is empty, drop the listener
-      if (this.escapeQueue.length === 0) {
-        this.removeEscapeListener()
-        this.removeEscapeListener = null
-      }
+      this._tryDropEscapeListener()
     }
   }
 

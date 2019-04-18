@@ -87,7 +87,7 @@ JavaScript API
           If the value is an object, it can have the following options to
           activate additional features in full-screen model:
 
-          ``menu``, ``scroll_behavior``, ``enable_editing``, ``enabled_keys``,
+          ``menu``, ``scroll_behavior``, ``enable_editing``, ``enable_keys``,
           ``enable_tooltips``
 
           For each of those options, the new option will take effect when the
