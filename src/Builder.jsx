@@ -1312,20 +1312,21 @@ class Builder {
   fullScreen (force = false, zoom = true) {
     if (this.settings.get('fill_screen') && !force) return
 
-    if (this.fullScreenOn) {
+    if (this.isFullScreen) {
       d3Select('html').classed('fill-screen', false)
       d3Select('body').classed('fill-screen', false)
       this.selection.classed('fill-screen-div', false)
-      if (zoom) this.map.zoom_extent_canvas()
-      this.fullScreenOn = false
+      this.isFullScreen = false
     } else {
-      // fill screen classes
       d3Select('html').classed('fill-screen', true)
       d3Select('body').classed('fill-screen', true)
       this.selection.classed('fill-screen-div', true)
-      if (zoom) this.map.zoom_extent_canvas()
-      this.fullScreenOn = true
+      this.isFullScreen = true
     }
+    if (zoom) this.map.zoom_extent_canvas()
+    this.passPropsButtonPanel({
+      isFullScreen: this.isFullScreen
+    })
   }
 }
 

@@ -37,8 +37,9 @@
   margin-top: 4px;
 }
 
-.escher-container #currentMode {
-  background-image: linear-gradient(#8F4F3F,#834c3c 6%,#8d3a2d);
+.escher-container #currentMode,
+.escher-container .active-button {
+  background-image: linear-gradient(#8F4F3F,#834c3c 6%,#8d3a2d) !important;
 }
 
 .escher-container .buttonGroup.btn {
