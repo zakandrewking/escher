@@ -200,8 +200,12 @@ class Builder {
     }
 
     // force full screen for fill_screen option
+    this.isFullScreen = false
     if (this.settings.get('fill_screen')) {
-      this.fullScreen(true, false)
+      d3Select('html').classed('fill-screen', true)
+      d3Select('body').classed('fill-screen', true)
+      this.selection.classed('fill-screen-div', true)
+      this.isFullScreen = true
     }
     this.savedFullScreenSettings = null
     this.clearFullScreenEscape = null
@@ -1343,9 +1347,7 @@ class Builder {
   /**
    * Toggle full screen mode.
    */
-  fullScreen (force = false, zoom = true) {
-    if (this.settings.get('fill_screen') && !force) return
-
+  fullScreen () {
     // these settings can update in full screen if provided
     const fullScreenSettings = [
       'menu',
@@ -1413,7 +1415,7 @@ class Builder {
         () => this.fullScreen()
       )
     }
-    if (zoom) this.map.zoom_extent_canvas()
+    this.map.zoom_extent_canvas()
     this.passPropsButtonPanel({ isFullScreen: this.isFullScreen })
     this.passPropsMenuBar({ isFullScreen: this.isFullScreen })
   }
