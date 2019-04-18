@@ -46,7 +46,7 @@ class ButtonPanel extends Component {
           <button
             className='button btn'
             onClick={() => this.props.fullScreen()}
-            title={`Toggle full screen${enableKeys ? ' (2)' : ''}`}
+            title={`Toggle full screen${enableKeys ? ' (Ctrl+2)' : ''}`}
           >
             <i className='icon-resize-full-alt' />
           </button>

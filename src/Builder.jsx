@@ -1149,12 +1149,6 @@ class Builder {
           key: 'ctrl+2',
           target: this,
           fn: this.fullScreen
-        },
-        fullScreen: {
-          key: '2',
-          target: this,
-          fn: this.fullScreen,
-          ignore_with_input: true
         }
       })
     }
