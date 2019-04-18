@@ -23,7 +23,7 @@ describe('KeyManager', () => {
 
   it('initializes', () => {
     key_manager = KeyManager({})
-    assert.deepEqual(key_manager.assigned_keys, {})
+    assert.deepEqual(key_manager.assignedKeys, {})
   })
 
   it('initializes with selection', () => {
@@ -78,7 +78,7 @@ describe('KeyManager', () => {
     // ok to have key descriptions without 'key' attributes
     key_manager = KeyManager({ k: { fn: () => ({}) }})
     // will get a warning for a key with no function
-    key_manager.assigned_keys['v'] = { key: 'v' }
+    key_manager.assignedKeys['v'] = { key: 'v' }
     key_manager.update()
     trigger_key_event('v')
   })
@@ -129,7 +129,7 @@ describe('KeyManager', () => {
     let iv = true
     const my_input = { is_visible: () => iv }
     key_manager = KeyManager()
-    key_manager.assigned_keys = { k: {
+    key_manager.assignedKeys = { k: {
       key: 'q',
       fn: () => pressed++,
       ignore_with_input: true

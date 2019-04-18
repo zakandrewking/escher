@@ -425,7 +425,7 @@ class Builder {
 
       // Set up key manager
       const keys = this.getKeys()
-      this.map.key_manager.assigned_keys = keys
+      this.map.key_manager.assignedKeys = keys
       // Tell the key manager about the reaction input and search bar
       this.map.key_manager.input_list = [
         this.build_input,
@@ -1317,11 +1317,15 @@ class Builder {
       d3Select('body').classed('fill-screen', false)
       this.selection.classed('fill-screen-div', false)
       this.isFullScreen = false
+      this.clearFullScreenEscape()
     } else {
       d3Select('html').classed('fill-screen', true)
       d3Select('body').classed('fill-screen', true)
       this.selection.classed('fill-screen-div', true)
       this.isFullScreen = true
+      this.clearFullScreenEscape = this.map.key_manager.add_escape_listener(
+        () => this.fullScreen()
+      )
     }
     if (zoom) this.map.zoom_extent_canvas()
     this.passPropsButtonPanel({ isFullScreen: this.isFullScreen })
