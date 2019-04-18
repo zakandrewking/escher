@@ -42,6 +42,9 @@ export default class KeyManager {
     // consider swithching to https://github.com/PolicyStat/combokeys
     this.mousetrap.stopCallback = () => false
 
+    this.escapeQueue = []
+    this.removeEscapeListener = null
+
     this.enabled = true
     this.update()
   }
@@ -105,12 +108,77 @@ export default class KeyManager {
     return this.addKeyListener('enter', callback, oneTime)
   }
 
+  _activateNextEscapeListener () {
+    if (this.escapeQueue.length > 0) {
+      // remove listener for last one
+      const top = this.escapeQueue[this.escapeQueue.length - 1]
+      top.unbind = this._makeEscapeListener(top.callback)
+    }
+  }
+
+  _makeEscapeListener (callback) {
+    // prepare unbind function
+    const unbind = this.mousetrap.unbind.bind(this.mousetrap, 'escape')
+
+    // bind the new escape listener
+    this.mousetrap.bind(addCmd('escape', this.ctrlEqualsCmd), e => {
+      e.preventDefault()
+      callback()
+      // unbind key listener
+      unbind()
+      // pop off stack
+      this.escapeQueue.pop()
+      // active next one on the list
+      this._activateNextEscapeListener()
+    })
+
+    return unbind
+  }
+
   /**
    * Call the callback when the escape key is pressed, then unregisters the
    * listener.
+   *
+   * Unlike the other listeners, addEscapeListener keeps a queue of listeners
+   * that are called in order then popped off the list.
+   *
+   * Escape listeners also only work one time.
    */
-  addEscapeListener (callback, oneTime) {
-    return this.addKeyListener('escape', callback, oneTime)
+  addEscapeListener (callback) {
+    // if the listener is not set, then add it
+    if (this.removeEscapeListener === null) {
+      this.removeEscapeListener = this.addKeyListener('escape', () => {
+        // pop and run the top callback
+        if (this.escapeQueue.length > 0) {
+          const top = this.escapeQueue.pop()
+          top()
+        }
+        // if the escape queue is empty, remove this listener
+        if (this.escapeQueue.length === 0) {
+          this.removeEscapeListener()
+          this.removeEscapeListener = null
+        }
+      })
+    }
+
+    // push the new callback onto the queue
+    this.escapeQueue.push(callback)
+
+    // return a function to pop the callback out of the list
+    return () => {
+      // find it if it's in the queue
+      const index = this.escapeQueue.indexOf(callback)
+      // if it's the last one, then pop and activate next
+      if (index > -1) {
+        // remove it
+        this.escapeQueue.splice(index, 1)
+      }
+      // if the list is empty, drop the listener
+      if (this.escapeQueue.length === 0) {
+        this.removeEscapeListener()
+        this.removeEscapeListener = null
+      }
+    }
   }
 
   /**
@@ -121,9 +189,7 @@ export default class KeyManager {
    *                  mousetrap library: https://craig.is/killing/mice
    * @param one_time: If True, then cancel the listener after the first execution.
    */
-  addKeyListener (keyName, callback, oneTime) {
-    if (_.isUndefined(oneTime)) oneTime = false
-
+  addKeyListener (keyName, callback, oneTime = false) {
     // unbind function ready to go
     const unbind = this.mousetrap.unbind.bind(this.mousetrap, keyName)
 

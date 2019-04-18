@@ -195,6 +195,47 @@ describe('KeyManager', () => {
     assert.isTrue(calledEscape)
   })
 
+  it('escape listener manages list', () => {
+    keyManager = new KeyManager()
+    let calledEscape1 = false
+    let calledEscape2 = false
+    keyManager.addEscapeListener(() => { calledEscape1 = true })
+    keyManager.addEscapeListener(() => { calledEscape2 = true })
+    triggerKeyEvent('escape')
+    assert.isFalse(calledEscape1)
+    assert.isTrue(calledEscape2)
+    triggerKeyEvent('escape')
+    assert.isTrue(calledEscape1)
+    assert.isTrue(calledEscape2)
+    triggerKeyEvent('escape')
+  })
+
+  it('escape listener manages list with removal', () => {
+    keyManager = new KeyManager()
+    let calledEscape1 = false
+    let calledEscape2 = false
+    let calledEscape3 = false
+    let calledEscape4 = false
+    let calledEscape5 = false
+    keyManager.addEscapeListener(() => { calledEscape1 = true })
+    const remove2 = keyManager.addEscapeListener(() => { calledEscape2 = true })
+    keyManager.addEscapeListener(() => { calledEscape3 = true })
+    const remove4 = keyManager.addEscapeListener(() => { calledEscape4 = true })
+    remove2()
+    remove4()
+    keyManager.addEscapeListener(() => { calledEscape5 = true })
+    triggerKeyEvent('escape')
+    triggerKeyEvent('escape')
+    triggerKeyEvent('escape')
+    triggerKeyEvent('escape')
+    triggerKeyEvent('escape')
+    assert.isTrue(calledEscape1)
+    assert.isFalse(calledEscape2)
+    assert.isTrue(calledEscape3)
+    assert.isFalse(calledEscape4)
+    assert.isTrue(calledEscape5)
+  })
+
   it('enter listener', () => {
     keyManager = new KeyManager()
     let calledEnter = false
