@@ -41,6 +41,13 @@ export default function initializeJupyterWidget () {
             metabolite_data: this.model.get('metabolite_data'),
             gene_data: this.model.get('gene_data'),
             scroll_behavior: this.model.get('scroll_behavior'),
+            full_screen_button: {
+              enable_keys: true,
+              scroll_behavior: 'pan', // TODO respect parent
+              enable_editing: true, // TODO respect parent
+              menu: 'all', // TODO respect parent
+              enable_tooltips: ['label'] // TODO respect parent
+            },
             first_load_callback: builder => {
               // reset map json in widget
               builder.callback_manager.set('clear_map', () => {

@@ -358,7 +358,7 @@ class Builder(widgets.DOMWidget):
             reaction_data: dict = None,
             metabolite_data: dict = None,
             gene_data: dict = None,
-            scroll_behavior: str = 'pan',
+            scroll_behavior: str = 'none',
             # menu: str='zoom',
             # enable_editing: bool=False,
             # **kwargs,

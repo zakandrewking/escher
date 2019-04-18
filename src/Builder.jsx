@@ -21,7 +21,11 @@ import ButtonPanel from './ButtonPanel'
 import TooltipContainer from './TooltipContainer'
 import DefaultTooltip from './DefaultTooltip'
 import _ from 'underscore'
-import { select as d3Select, selection as d3Selection } from 'd3-selection'
+import {
+  select as d3Select,
+  selectAll as d3SelectAll,
+  selection as d3Selection
+} from 'd3-selection'
 
 // Include custom font set for icons
 import '../icons/css/fontello.css'
@@ -1363,6 +1367,9 @@ class Builder {
         this.clearFullScreenEscape = null
       }
 
+      // hack for full screen in jupyterlab
+      d3SelectAll('.p-DockPanel-widget').style('z-index', 'inherit')
+
       // apply the saved settings
       if (this.savedFullScreenSettings !== null) {
         _.mapObject(this.savedFullScreenSettings, (v, k) => {
@@ -1397,6 +1404,9 @@ class Builder {
       d3Select('body').classed('fill-screen', true)
       this.selection.classed('fill-screen-div', true)
       this.isFullScreen = true
+
+      // hack for full screen in jupyterlab
+      d3SelectAll('.p-DockPanel-widget').style('z-index', 'auto')
 
       // set escape listener
       this.clearFullScreenEscape = this.map.key_manager.addEscapeListener(
