@@ -1175,16 +1175,17 @@ export default class Map {
   /**
    * Delete nodes, and remove from search index.
    */
-  delete_node_data (node_ids) {
-    node_ids.forEach(function(node_id) {
-      if (this.enable_search && this.nodes[node_id].node_type=='metabolite') {
-        var found = (this.search_index.remove('n' + node_id)
-                     && this.search_index.remove('n_name' + node_id))
-        if (!found)
+  delete_node_data (nodeIds) {
+    nodeIds.forEach(nodeId => {
+      if (this.enable_search && this.nodes[nodeId].node_type === 'metabolite') {
+        const found = (this.search_index.remove('n' + nodeId)
+                     && this.search_index.remove('n_name' + nodeId))
+        if (!found) {
           console.warn('Could not find deleted metabolite in search index')
+        }
       }
-      delete this.nodes[node_id]
-    }.bind(this))
+      delete this.nodes[nodeId]
+    })
   }
 
   /**
@@ -1274,7 +1275,7 @@ export default class Map {
 
   _extend_and_draw_metabolite (new_nodes, selected_node_id) {
     this.extend_nodes(new_nodes)
-    var keys = [ selected_node_id ]
+    const keys = [ selected_node_id ]
     if (this.has_data_on_nodes) {
       if (this.imported_metabolite_data === null) {
         throw new Error('imported_metabolite_data should not be null')
@@ -1339,7 +1340,7 @@ export default class Map {
     new_nodes[selected_node_id] = selected_node
 
     // draw
-    this._extend_and_draw_metabolite.apply(this, [ new_nodes, selected_node_id ])
+    this._extend_and_draw_metabolite(new_nodes, selected_node_id)
 
     // clone the nodes and reactions, to redo this action later
     var saved_nodes = utils.clone(new_nodes)
@@ -1352,7 +1353,7 @@ export default class Map {
     var reaction_undo = out.undo
 
     // add to undo/redo stack
-    this.undo_stack.push(function () {
+    this.undo_stack.push(() => {
       // Undo. First undo the reaction.
       reaction_undo()
       // Get the nodes to delete
@@ -1363,12 +1364,12 @@ export default class Map {
       this.clear_deleted_nodes()
       // Deselect
       this.deselect_nodes()
-    }.bind(this), function () {
+    }, () => {
       // Redo. Clone the nodes and reactions, to redo this action later.
-      _extend_and_draw_metabolite.apply(this, [ new_nodes, selected_node_id ])
+      this._extend_and_draw_metabolite(new_nodes, selected_node_id)
       // Now redo the reaction
       reaction_redo()
-    }.bind(this))
+    })
 
     return
   }
@@ -1520,8 +1521,8 @@ export default class Map {
     var new_beziers = out.new_beziers
 
     // Draw
-    this._extend_and_draw_reaction.apply(this, [ new_nodes, new_reactions,
-                                                 new_beziers, selected_node_id ])
+    this._extend_and_draw_reaction(new_nodes, new_reactions,
+                                   new_beziers, selected_node_id)
 
     // Clone the nodes and reactions, to redo this action later
     var saved_nodes = utils.clone(new_nodes)
@@ -1529,12 +1530,12 @@ export default class Map {
     var saved_beziers = utils.clone(new_beziers)
 
     // Add to undo/redo stack
-    var undo_fn = function () {
+    var undo_fn = () => {
       // Undo. Get the nodes to delete.
       delete new_nodes[selected_node_id]
       this.delete_node_data(Object.keys(new_nodes))
       this.delete_reaction_data(Object.keys(new_reactions)) // also deletes beziers
-      select_metabolite_with_id.apply(this, [ selected_node_id ])
+      this.select_metabolite_with_id(selected_node_id)
       // Save the nodes and reactions again, for redo
       new_nodes = utils.clone(saved_nodes)
       new_reactions = utils.clone(saved_reactions)
@@ -1553,8 +1554,8 @@ export default class Map {
         this.clear_deleted_reactions(true)
       }
       if (this.has_data_on_nodes) {
-        var scale_changed = this.calc_data_stats('metabolite')
-        if (scale_changed) {
+        const scaleChanged = this.calc_data_stats('metabolite')
+        if (scaleChanged) {
           this.draw_all_nodes(true)
         } else {
           this.clear_deleted_nodes()
@@ -1562,13 +1563,13 @@ export default class Map {
       } else {
         this.clear_deleted_nodes()
       }
-    }.bind(this)
-    var redo_fn = function () {
+    }
+    const redo_fn = () => {
       // redo
       // clone the nodes and reactions, to redo this action later
-      this._extend_and_draw_reaction.apply(this, [ new_nodes, new_reactions,
-                                                   new_beziers, selected_node_id ])
-    }.bind(this)
+      this._extend_and_draw_reaction(new_nodes, new_reactions,
+                                     new_beziers, selected_node_id)
+    }
 
     if (apply_undo_redo) {
       this.undo_stack.push(undo_fn, redo_fn)
