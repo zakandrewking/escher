@@ -410,7 +410,7 @@ class Builder {
       // Set up the Brush
       this.brush = new Brush(zoomedSel, false, this.map, '.canvas-group')
       // reset brush when canvas resizes in brush mode
-      this.map.canvas.callback_manager.set('resize', () => {
+      this.map.canvas.callbackManager.set('resize', () => {
         if (this.mode === 'brush') this.brush.toggle(true)
       })
 
@@ -774,7 +774,7 @@ class Builder {
     // zoom
     this.zoomContainer.togglePanDrag(mode === 'zoom' || mode === 'view')
     // resize canvas
-    this.map.canvas.toggle_resize(mode !== 'view')
+    this.map.canvas.toggleResize(mode !== 'view')
 
     // Behavior. Be careful of the order becuase rotation and
     // toggle_selectable_drag both use Behavior.selectableDrag.
