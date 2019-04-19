@@ -2005,7 +2005,7 @@ export default class Map {
                { reactions: utils.clone(this.reactions),
                  nodes: utils.clone(this.nodes),
                  text_labels: utils.clone(this.text_labels),
-                 canvas: this.canvas.size_and_location() }
+                 canvas: this.canvas.sizeAndLocation() }
               ]
 
     // remove extra data
@@ -2075,19 +2075,19 @@ export default class Map {
     // Turn off zoom and translate so that illustrator likes the map
     var window_scale = obj.zoomContainer.windowScale
     var window_translate = obj.zoomContainer.windowTranslate
-    var canvas_size_and_loc = obj.canvas.size_and_location()
+    var canvas_size_and_loc = obj.canvas.sizeAndLocation()
     var mouse_node_size_and_trans = {
-      w: obj.canvas.mouse_node.attr('width'),
-      h: obj.canvas.mouse_node.attr('height'),
-      transform: obj.canvas.mouse_node.attr('transform')
+      w: obj.canvas.mouseNode.attr('width'),
+      h: obj.canvas.mouseNode.attr('height'),
+      transform: obj.canvas.mouseNode.attr('transform')
     }
 
     obj.zoomContainer._goToSvg(1.0, { x: -canvas_size_and_loc.x, y: -canvas_size_and_loc.y }, function() {
       obj.svg.attr('width', canvas_size_and_loc.width)
       obj.svg.attr('height', canvas_size_and_loc.height)
-      obj.canvas.mouse_node.attr('width', '0px')
-      obj.canvas.mouse_node.attr('height', '0px')
-      obj.canvas.mouse_node.attr('transform', null)
+      obj.canvas.mouseNode.attr('width', '0px')
+      obj.canvas.mouseNode.attr('height', '0px')
+      obj.canvas.mouseNode.attr('transform', null)
 
       // hide the segment control points
       var hidden_sel = obj.sel.selectAll('.multimarker-circle,.midmarker-circle,#canvas,.bezier,#rotation-center,.direction-arrow,.start-reaction-target')
@@ -2104,9 +2104,9 @@ export default class Map {
       obj.zoomContainer._goToSvg(window_scale, window_translate, function() {
         obj.svg.attr('width', null)
         obj.svg.attr('height', null)
-        obj.canvas.mouse_node.attr('width', mouse_node_size_and_trans.w)
-        obj.canvas.mouse_node.attr('height', mouse_node_size_and_trans.h)
-        obj.canvas.mouse_node.attr('transform', mouse_node_size_and_trans.transform)
+        obj.canvas.mouseNode.attr('width', mouse_node_size_and_trans.w)
+        obj.canvas.mouseNode.attr('height', mouse_node_size_and_trans.h)
+        obj.canvas.mouseNode.attr('transform', mouse_node_size_and_trans.transform)
         // unhide the segment control points
         hidden_sel.style('visibility', null)
 

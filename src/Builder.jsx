@@ -200,8 +200,12 @@ class Builder {
     }
 
     // force full screen for fill_screen option
+    this.isFullScreen = false
     if (this.settings.get('fill_screen')) {
-      this.fullScreen(true, false)
+      d3Select('html').classed('fill-screen', true)
+      d3Select('body').classed('fill-screen', true)
+      this.selection.classed('fill-screen-div', true)
+      this.isFullScreen = true
     }
     this.savedFullScreenSettings = null
     this.clearFullScreenEscape = null
@@ -406,7 +410,7 @@ class Builder {
       // Set up the Brush
       this.brush = new Brush(zoomedSel, false, this.map, '.canvas-group')
       // reset brush when canvas resizes in brush mode
-      this.map.canvas.callback_manager.set('resize', () => {
+      this.map.canvas.callbackManager.set('resize', () => {
         if (this.mode === 'brush') this.brush.toggle(true)
       })
 
@@ -770,7 +774,7 @@ class Builder {
     // zoom
     this.zoomContainer.togglePanDrag(mode === 'zoom' || mode === 'view')
     // resize canvas
-    this.map.canvas.toggle_resize(mode !== 'view')
+    this.map.canvas.toggleResize(mode !== 'view')
 
     // Behavior. Be careful of the order becuase rotation and
     // toggle_selectable_drag both use Behavior.selectableDrag.
@@ -1343,9 +1347,7 @@ class Builder {
   /**
    * Toggle full screen mode.
    */
-  fullScreen (force = false, zoom = true) {
-    if (this.settings.get('fill_screen') && !force) return
-
+  fullScreen () {
     // these settings can update in full screen if provided
     const fullScreenSettings = [
       'menu',
@@ -1413,7 +1415,7 @@ class Builder {
         () => this.fullScreen()
       )
     }
-    if (zoom) this.map.zoom_extent_canvas()
+    this.map.zoom_extent_canvas()
     this.passPropsButtonPanel({ isFullScreen: this.isFullScreen })
     this.passPropsMenuBar({ isFullScreen: this.isFullScreen })
   }
