@@ -2,7 +2,7 @@ import {
   brush as d3Brush,
   brushSelection as d3BrushSelection
 } from 'd3-brush'
-import { selection as d3Selection } from 'd3-selection'
+import { event } from 'd3-selection'
 
 /**
  * Define a brush to select elements in a map.
@@ -86,7 +86,7 @@ export default class Brush {
           }
         })
         .on('brush', function () {
-          const shiftKeyOn = d3Selection.event.sourceEvent.shiftKey
+          const shiftKeyOn = event.sourceEvent.shiftKey
           const rect = d3BrushSelection(this)
           // Check for no selection (e.g. after clearing brush)
           if (rect !== null) {
