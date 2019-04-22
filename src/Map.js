@@ -1045,14 +1045,6 @@ export default class Map {
   /**
    * Generic function for aligning nodes.
    * @param {Boolean} isHorizontal - If true, align horizontal; else vertical.
-   *
-   * TODO horizontal align
-   * TODO line up beziers
-   * TODO secondary that is not selected should not move
-   * TODO test edge cases:
-   * - connected secondary metabolites
-   * - secondary that is connected to 2 primary/selected mets
-   * - secondary whose primary is not selected should align
    */
   _align (isHorizontal) {
     const selected = this.getSelectedNodes()
@@ -1081,6 +1073,7 @@ export default class Map {
       displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
     }))
     const bezierDisplacements = []
+    const movedSecondaryNodes = {}
 
     // Align unconnected secondary metabolites
     if (alignByPrimary) {
@@ -1094,8 +1087,7 @@ export default class Map {
           const bez = isToNode ? 'b2' : 'b1'
 
           // align this side bezier if the other node is selected (and that node
-          // will handle its bezier, unless it's secondary, in which case see
-          // below)
+          // will handle its bezier)
           if (otherNode.node_id in selected && segment[bez]) {
             const bezierId = build.bezier_id_for_segment_id(segmentLink.segment_id, bez)
             bezierDisplacements.push({
@@ -1106,66 +1098,33 @@ export default class Map {
                              { x: 0, y: node.y - segment[bez].y } :
                              { x: node.x - segment[bez].x, y: 0 })
             })
+
+            // If the node is secondary and unconnected, then move it along with
+            // the current node.
+            if (otherNode.node_type === 'metabolite' &&
+                !otherNode.node_is_primary &&
+                !(otherNodeId in movedSecondaryNodes)) {
+              // If all the connected segments are connected to selected nodes, then move it
+              const connected = otherNode.connected_segments.filter(segmentLink => {
+                const segment = this.reactions[segmentLink.reaction_id].segments[segmentLink.segment_id]
+                const isToNode = segment.to_node_id === otherNode.node_id
+                return isToNode ? segment.from_node_id in selected : segment.to_node_id in selected
+              })
+              if (otherNode.connected_segments.length <= connected.length) {
+                // then move it with the same displacement as the parent
+                displacements.push({
+                  nodeId: otherNodeId,
+                  node: otherNode,
+                  displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
+                })
+                // remember not to move this again
+                movedSecondaryNodes[otherNodeId] = true
+              }
+            }
           }
         })
       })
     }
-
-
-    //       // cases: (`node` is always primary)
-    //       if (otherNode.node_type !== 'metabolite') {
-    //         if (otherNode.id in selected) {
-    //           // - `otherNode` is marker & selected
-    //           //   then align this bezier (the other one will happen on the other side)
-    //         } else {
-    //           // - `otherNode` is marker & unselected
-    //           //   do nothing
-    //         }
-    //       } else if (otherNode.node_is_primary) {
-    //         if (otherNode.id in selected) {
-    //           // - `otherNode` is primary & selected
-    //           //   then align this bezier (the other one will happen on the other side)
-    //         } else {
-    //           // - `otherNode` is primary & unselected
-    //           //   do nothing
-    //         }
-    //       } else {
-    //         if (otherNode.id in selected)
-
-    //       // - `otherNode` is primary & unselected
-    //       // - `otherNode` is secondary & selected & connected to a selected node
-    //       //   then align both, because otherNode won't be in this loop
-    //       // - `otherNode` is secondary & selected & connected to an unselected node
-    //       // - `otherNode` is secondary & unselected & connected to an unselected node
-    //       // - `otherNode` is secondary & unselected & unconnected
-
-    //       // if the node is secondary and unconnected
-    //       if (otherNode.node_type === 'metabolite' &&
-    //           !otherNode.node_is_primary &&
-    //           otherNode.connected_segments.length === 1) { // TODO filter out /other/ connected segments
-    //         // then move it with the same displacement as the parent
-    //         displacements.push({
-    //           nodeId: otherNodeId,
-    //           node: otherNode,
-    //           displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
-    //         })
-    //       }
-    //     })
-    //   })
-    // } else {
-    //   // TODO just align beziers
-    // }
-
-
-      // // Align connected bezier(s)
-      // var bez = isToNode ? 'b2' : 'b1'
-      // // TODO LEFT OFF
-      // if (seg[bez] !== null) {
-      //   seg[bez].x -= xDiff
-      //   const bezierId = build.bezier_id_for_segment_id(segment.segment_id, bez)
-      //   this.beziers[bezierId].x = seg[bez].x
-      // }
-
 
     // reusable movement function for aligning and undo/redo
     const _moveNodes = (disps, bezDisps) => {

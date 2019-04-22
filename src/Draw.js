@@ -381,7 +381,7 @@ function update_segment (update_selection, scale, cobra_model,
                             d.from_node_coefficient,
                             start.node_is_primary)
         var direction = (b1 === null) ? end : b1
-        start = displaced_coords(disp, start, direction, 'start')
+        start = displacedCoords(disp, start, direction, 'start')
       }
       if (end['node_type'] == 'metabolite') {
         var arrow_size = get_arrow_size(d.data, should_size)
@@ -389,7 +389,7 @@ function update_segment (update_selection, scale, cobra_model,
                             d.to_node_coefficient,
                             end.node_is_primary)
         var direction = (b2 === null) ? start : b2
-        end = displaced_coords(disp, direction, end, 'end')
+        end = displacedCoords(disp, direction, end, 'end')
       }
       var curve = ('M' + start.x + ',' + start.y + ' ')
       if (b1 !== null && b2 !== null) {
@@ -462,7 +462,7 @@ function update_segment (update_selection, scale, cobra_model,
                         start.node_is_primary)
         var direction = (b1 === null) ? end : b1
         var rotation = utils.to_degrees(utils.get_angle([ start, direction ])) + 90
-        var loc = displaced_coords(disp, start, direction, 'start')
+        var loc = displacedCoords(disp, start, direction, 'start')
         arrowheads.push({
           data: d.data,
           x: loc.x,
@@ -481,7 +481,7 @@ function update_segment (update_selection, scale, cobra_model,
                         end.node_is_primary)
         var direction = (b2 === null) ? start : b2
         var rotation = utils.to_degrees(utils.get_angle([ end, direction ])) + 90
-        var loc = displaced_coords(disp, direction, end, 'end')
+        var loc = displacedCoords(disp, direction, end, 'end')
         arrowheads.push({
           data: d.data,
           x: loc.x,
@@ -566,7 +566,7 @@ function update_segment (update_selection, scale, cobra_model,
         var disp = disp_factor * get_disp(arrow_size, false, 0, end.node_is_primary)
         var direction = (b1 === null) ? end : b1
         direction = utils.c_plus_c(direction, utils.rotate_coords(direction, 0.5, start))
-        var loc = displaced_coords(disp, start, direction, 'start')
+        var loc = displacedCoords(disp, start, direction, 'start')
         loc = utils.c_plus_c(loc, { x: 0, y: 7 })
         labels.push({
           coefficient: Math.abs(d.from_node_coefficient),
@@ -582,7 +582,7 @@ function update_segment (update_selection, scale, cobra_model,
         var direction = (b2 === null) ? start : b2
         direction = utils.c_plus_c(direction,
                                    utils.rotate_coords(direction, 0.5, end))
-        var loc = displaced_coords(disp, direction, end, 'end')
+        var loc = displacedCoords(disp, direction, end, 'end')
         loc = utils.c_plus_c(loc, { x: 0, y: 7 })
         labels.push({
           coefficient: Math.abs(d.to_node_coefficient),
@@ -902,25 +902,24 @@ function update_text_label (update_selection) {
   this.callback_manager.run('update_text_label', this, update_selection)
 }
 
-function displaced_coords (reaction_arrow_displacement, start, end, displace) {
-  utils.check_undefined(arguments, [ 'reaction_arrow_displacement', 'start',
-                                     'end', 'displace' ])
-
-  var length = reaction_arrow_displacement
-  var hyp = utils.distance(start, end)
-  var new_x
-  var new_y
+function displacedCoords (reactionArrowDisplacement, start, end, displace) {
+  const length = reactionArrowDisplacement
+  const hyp = utils.distance(start, end)
   if (!length || !hyp) {
-    console.error('Bad value')
+    console.warn('No space for displacement')
+    return { x: start.x, y: start.y }
   }
   if (displace === 'start') {
-    new_x = start.x + length * (end.x - start.x) / hyp
-    new_y = start.y + length * (end.y - start.y) / hyp
+    return {
+      x: start.x + length * (end.x - start.x) / hyp,
+      y: start.y + length * (end.y - start.y) / hyp
+    }
   } else if (displace === 'end') {
-    new_x = end.x - length * (end.x - start.x) / hyp
-    new_y = end.y - length * (end.y - start.y) / hyp
+    return {
+      x: end.x - length * (end.x - start.x) / hyp,
+      y: end.y - length * (end.y - start.y) / hyp
+    }
   } else {
     console.error('bad displace value: ' + displace)
   }
-  return { x: new_x, y: new_y }
 }
