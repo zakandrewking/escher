@@ -385,9 +385,9 @@ export default class Map {
   }
 
   /**
-   * Clear the map.
+   * Clear the map data
    */
-  clear_map () {
+  clearMapData () {
     this.reactions = {}
     this.beziers = {}
     this.nodes = {}
@@ -395,11 +395,6 @@ export default class Map {
     this.map_name = 'new_map'
     this.map_id = utils.generate_map_id()
     this.map_description = ''
-    // reaction_data onto existing map reactions
-    this.apply_reaction_data_to_map(null)
-    this.apply_metabolite_data_to_map(null)
-    this.apply_gene_data_to_map(null)
-    this.draw_everything()
   }
 
   has_cobra_model () {
@@ -689,14 +684,17 @@ export default class Map {
    * @param {Array} keys - (Optional) The keys in reactions to apply data to.
    */
   apply_reaction_data_to_map (data, keys) {
-    const styles = this.settings.get('reaction_styles'),
-          compare_style = this.settings.get('reaction_compare_style')
-    const has_data = data_styles.apply_reaction_data_to_reactions(this.reactions,
-                                                                  data, styles,
-                                                                  compare_style,
-                                                                  keys)
-    this.has_data_on_reactions = has_data
-    this.imported_reaction_data = has_data ? data : null
+    const styles = this.settings.get('reaction_styles')
+    const compareStyle = this.settings.get('reaction_compare_style')
+    const hasData = data_styles.apply_reaction_data_to_reactions(
+      this.reactions,
+      data,
+      styles,
+      compareStyle,
+      keys
+    )
+    this.has_data_on_reactions = hasData
+    this.imported_reaction_data = hasData ? data : null
 
     return this.calc_data_stats('reaction')
   }
