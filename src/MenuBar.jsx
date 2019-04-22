@@ -163,6 +163,17 @@ class MenuBar extends Component {
             onClick={() => this.props.redo()}
             disabledButtons={disabledButtons}
           />
+          <li name='divider' />
+          <MenuButton
+            name={'Align vertical'}
+            onClick={this.props.alignVertical}
+            disabledButtons={disabledButtons}
+          />
+          <MenuButton
+            name={'Align horizontal'}
+            onClick={this.props.alignHorizontal}
+            disabledButtons={disabledButtons}
+          />
           <MenuButton
             name={'Toggle primary/secondary' + (enableKeys ? ' (P)' : '')}
             onClick={() => this.props.togglePrimary()}
@@ -173,6 +184,7 @@ class MenuBar extends Component {
             onClick={() => this.props.cyclePrimary()}
             disabledButtons={disabledButtons}
           />
+          <li name='divider' />
           <MenuButton
             name={'Select all' + (enableKeys ? ' (Ctrl+A)' : '')}
             onClick={() => this.props.selectAll()}

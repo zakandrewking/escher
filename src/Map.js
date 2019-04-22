@@ -1027,72 +1027,108 @@ export default class Map {
     text_label_selection.classed('selected', false)
   }
 
+
   /**
    * Align selected nodes and/or reactions vertically. Undoable.
    *
-   * TODO make undoable
+   * TODO move unconnected secondary nodes
+   * TODO line up beziers
    * TODO test edge cases:
    * - connected secondary metabolites
-   * -
    */
   alignVertical () {
-    var selected = this.get_selected_nodes()
-    // Get markers
-    var markers = {}
-    for (var id in selected) {
-      var node = selected[id]
-      if (node.node_type !== 'metabolite' || node.node_is_primary) {
-        markers[id] = node
-      }
-    }
-    // Align all nodes if just metabolites are selected
-    var align_by_reaction = Object.keys(markers).length > 0
-    var to_align = align_by_reaction ? markers : selected
-    var keys_to_align = Object.keys(to_align)
+    const selected = this.getSelectedNodes()
+    // Get markers and primary nodes
+    const markersAndPrimary = _.pick(
+      selected,
+      node => node.node_type !== 'metabolite' || node.node_is_primary
+    )
+
+    // 1. generally operates on markers and primary nodes, bringing along
+    // unconnected secondary nodes and beziers
+    // 2. if only selected secondary nodes, then align those
+    const alignByPrimary = Object.keys(markersAndPrimary).length > 0
+    const toAlign = alignByPrimary ? markersAndPrimary : selected
+    const keysToAlign = Object.keys(toAlign)
+
     // Get new x location
-    var mean_x = keys_to_align.reduce(function (accum, val) {
-      return accum + to_align[val].x
-    }, 0) / keys_to_align.length
-    // Align
-    for (var id in to_align) {
-      var marker = to_align[id]
-      var x_diff = marker.x - mean_x
+    const meanX = keysToAlign.reduce((accum, val) => accum + toAlign[val].x, 0)
+          / keysToAlign.length
 
-      // Align markers
-      marker.x = mean_x
-      marker.label_x -= x_diff
+    // Align. Remember displacements for undo/redo.
+    const displacements = _.pairs(toAlign).map(([ nodeId, node ]) => ({
+      nodeId,
+      node,
+      displacement: { x: meanX - node.x, y: 0 }
+    }))
 
-      // Align unconnected secondary metabolites
-      if (align_by_reaction) {
-        marker.connected_segments.map(function (segment) {
-          var seg = this.reactions[segment.reaction_id].segments[segment.segment_id]
-          var is_to_node = seg.to_node_id === marker.node_id
-          var other_node_id = is_to_node ? seg.from_node_id : seg.to_node_id
-
-          if (other_node_id in selected) {
-            var other_node = this.nodes[other_node_id]
-            if (other_node.node_type === 'metabolite' &&
-                !other_node.node_is_primary) {
-              other_node.x -= x_diff
-              other_node.label_x -= x_diff
-            }
-          }
-
-          // Align connected bezier(s)
-          var bez = is_to_node ? 'b2' : 'b1'
-          // TODO LEFT OFF
-          if (seg[bez] !== null) {
-            seg[bez].x -= x_diff
-            var bezier_id = build.bezier_id_for_segment_id(segment.segment_id, bez)
-            this.beziers[bezier_id].x = seg[bez].x
-          }
-        }.bind(this))
-      }
-
-      this.set_status(align_by_reaction ? 'Aligned reactions' : 'Aligned nodes',
-                      2000)
+    /** for aligning and undo/redo */
+    const _moveNodes = disps => {
+      let reactionIds = []
+      disps.map(disp => {
+        const updated = build.move_node_and_dependents(
+          disp.node,
+          disp.nodeId,
+          this.reactions,
+          this.beziers,
+          disp.displacement
+        )
+        reactionIds = utils.uniqueConcat([ reactionIds, updated.reaction_ids ])
+      })
+      this.draw_these_nodes(disps.map(d => d.nodeId))
+      this.draw_these_reactions(reactionIds)
     }
-    this.draw_everything()
+    _moveNodes(displacements)
+
+      // // Align markers
+      // marker.x = meanX
+      // marker.label_x -= xDiff
+
+      // // Align unconnected secondary metabolites
+      // if (alignByPrimary) {
+      //   marker.connected_segments.map(segment => {
+      //     const seg = this.reactions[segment.reaction_id].segments[segment.segment_id]
+      //     const isToNode = seg.to_node_id === marker.node_id
+      //     const otherNodeId = isToNode ? seg.from_node_id : seg.to_node_id
+
+      //     if (otherNodeId in selected) {
+      //       const other_node = this.nodes[otherNodeId]
+      //       if (other_node.node_type === 'metabolite' &&
+      //           !other_node.node_is_primary) {
+      //         other_node.x -= xDiff
+      //         other_node.label_x -= xDiff
+      //       }
+      //     }
+
+      //     // Align connected bezier(s)
+      //     var bez = isToNode ? 'b2' : 'b1'
+      //     // TODO LEFT OFF
+      //     if (seg[bez] !== null) {
+      //       seg[bez].x -= xDiff
+      //       const bezierId = build.bezier_id_for_segment_id(segment.segment_id, bez)
+      //       this.beziers[bezierId].x = seg[bez].x
+      //     }
+      //   })
+      // }
+
+    // }
+    this.undo_stack.push(
+      // undo
+      () => {
+        const reversedDisplacements = displacements.map(d => (
+          {
+            ...d,
+            displacement: { x: -d.displacement.x, y: -d.displacement.y }
+          }
+        ))
+        _moveNodes(reversedDisplacements)
+      },
+      // redo
+      () => {
+        _moveNodes(displacements)
+      }
+    )
+    this.set_status(alignByPrimary ? 'Aligned reactions' : 'Aligned nodes', 3000)
   }
 
   /**
@@ -1775,34 +1811,34 @@ export default class Map {
    * Toggle the primary/secondary status of each selected node. Undoable.
    */
   toggle_selected_node_primary () {
-    var selected_node_ids = this.get_selected_node_ids(),
-        go = function(ids) {
-          var nodes_to_draw = {},
-              hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
-          ids.forEach(function(id) {
-            if (!(id in this.nodes)) {
-              console.warn('Could not find node: ' + id)
-              return
-            }
-            var node = this.nodes[id]
-            if (node.node_type == 'metabolite') {
-              node.node_is_primary = !node.node_is_primary
-              nodes_to_draw[id] = node
-            }
-          }.bind(this))
-          // draw the nodes
-          this.draw_these_nodes(Object.keys(nodes_to_draw))
-          // draw associated reactions
-          if (hide_secondary_metabolites) {
-            var out = this.segments_and_reactions_for_nodes(nodes_to_draw),
-                reaction_ids_to_draw_o = {}
-            for (var id in out.segment_objs_w_segments) {
-              var r_id = out.segment_objs_w_segments[id].reaction_id
-              reaction_ids_to_draw_o[r_id] = true
-            }
-            this.draw_these_reactions(Object.keys(reaction_ids_to_draw_o))
-          }
-        }.bind(this)
+    const selected_node_ids = this.get_selected_node_ids()
+    const go = function(ids) {
+      const nodes_to_draw = {}
+      const hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
+      ids.forEach(function(id) {
+        if (!(id in this.nodes)) {
+          console.warn('Could not find node: ' + id)
+          return
+        }
+        const node = this.nodes[id]
+        if (node.node_type == 'metabolite') {
+          node.node_is_primary = !node.node_is_primary
+          nodes_to_draw[id] = node
+        }
+      }.bind(this))
+      // draw the nodes
+      this.draw_these_nodes(Object.keys(nodes_to_draw))
+      // draw associated reactions
+      if (hide_secondary_metabolites) {
+        var out = this.segments_and_reactions_for_nodes(nodes_to_draw),
+            reaction_ids_to_draw_o = {}
+        for (var id in out.segment_objs_w_segments) {
+          var r_id = out.segment_objs_w_segments[id].reaction_id
+          reaction_ids_to_draw_o[r_id] = true
+        }
+        this.draw_these_reactions(Object.keys(reaction_ids_to_draw_o))
+      }
+    }.bind(this)
 
     // go
     go(selected_node_ids)

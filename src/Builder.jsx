@@ -629,6 +629,8 @@ class Builder {
       deleteSelected: () => this.map.delete_selected(),
       undo: () => this.map.undo_stack.undo(),
       redo: () => this.map.undo_stack.redo(),
+      alignVertical: () => this.map.alignVertical(),
+      alignHorizontal: () => this.map.alignHorizontal(),
       togglePrimary: () => this.map.toggle_selected_node_primary(),
       cyclePrimary: () => this.map.cycle_primary_node(),
       selectAll: () => this.map.select_all(),
