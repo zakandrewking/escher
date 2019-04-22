@@ -1035,6 +1035,7 @@ export default class Map {
    * TODO line up beziers
    * TODO test edge cases:
    * - connected secondary metabolites
+   * - secondary that is connected to 2 primary/selected mets
    */
   alignVertical () {
     const selected = this.getSelectedNodes()
@@ -1062,7 +1063,44 @@ export default class Map {
       displacement: { x: meanX - node.x, y: 0 }
     }))
 
-    /** for aligning and undo/redo */
+    // Align unconnected secondary metabolites
+    if (alignByPrimary) {
+      _.mapObject(toAlign, (node, nodeId) => {
+        node.connected_segments.map(segment => {
+          // get each connected node
+          const seg = this.reactions[segment.reaction_id].segments[segment.segment_id]
+          const isToNode = seg.to_node_id === node.node_id
+          const otherNodeId = isToNode ? seg.from_node_id : seg.to_node_id
+          const otherNode = this.nodes[otherNodeId]
+
+          // if the node is secondary and unconnected
+          if (otherNode.node_type === 'metabolite' &&
+              !otherNode.node_is_primary &&
+              otherNode.connected_segments.length === 1) { // TODO filter out /other/ connected segments
+            // then move it with the same displacement as the parent
+            displacements.push({
+              nodeId: otherNodeId,
+              node: otherNode,
+              displacement: { x: meanX - node.x, y: 0 }
+            })
+          }
+        })
+      })
+    }
+
+      //     // Align connected bezier(s)
+      //     var bez = isToNode ? 'b2' : 'b1'
+      //     // TODO LEFT OFF
+      //     if (seg[bez] !== null) {
+      //       seg[bez].x -= xDiff
+      //       const bezierId = build.bezier_id_for_segment_id(segment.segment_id, bez)
+      //       this.beziers[bezierId].x = seg[bez].x
+      //     }
+      //   })
+      // }
+
+
+    // reusable movement function for aligning and undo/redo
     const _moveNodes = disps => {
       let reactionIds = []
       disps.map(disp => {
@@ -1080,38 +1118,7 @@ export default class Map {
     }
     _moveNodes(displacements)
 
-      // // Align markers
-      // marker.x = meanX
-      // marker.label_x -= xDiff
-
-      // // Align unconnected secondary metabolites
-      // if (alignByPrimary) {
-      //   marker.connected_segments.map(segment => {
-      //     const seg = this.reactions[segment.reaction_id].segments[segment.segment_id]
-      //     const isToNode = seg.to_node_id === marker.node_id
-      //     const otherNodeId = isToNode ? seg.from_node_id : seg.to_node_id
-
-      //     if (otherNodeId in selected) {
-      //       const other_node = this.nodes[otherNodeId]
-      //       if (other_node.node_type === 'metabolite' &&
-      //           !other_node.node_is_primary) {
-      //         other_node.x -= xDiff
-      //         other_node.label_x -= xDiff
-      //       }
-      //     }
-
-      //     // Align connected bezier(s)
-      //     var bez = isToNode ? 'b2' : 'b1'
-      //     // TODO LEFT OFF
-      //     if (seg[bez] !== null) {
-      //       seg[bez].x -= xDiff
-      //       const bezierId = build.bezier_id_for_segment_id(segment.segment_id, bez)
-      //       this.beziers[bezierId].x = seg[bez].x
-      //     }
-      //   })
-      // }
-
-    // }
+    // undo /redo
     this.undo_stack.push(
       // undo
       () => {
@@ -1128,6 +1135,8 @@ export default class Map {
         _moveNodes(displacements)
       }
     )
+
+    // finish
     this.set_status(alignByPrimary ? 'Aligned reactions' : 'Aligned nodes', 3000)
   }
 
