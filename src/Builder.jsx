@@ -414,9 +414,6 @@ class Builder {
         if (this.mode === 'brush') this.brush.toggle(true)
       })
 
-      // Set up the modes
-      this._setUpModes(this.map, this.brush, this.zoomContainer)
-
       // Set up menus
       this.setUpSettingsMenu(this.mapToolsContainer)
       this.setUpButtonPanel(this.mapToolsContainer)
@@ -729,34 +726,6 @@ class Builder {
     // redraw when mode changes
     this.callback_manager.set('set_mode', mode => {
       this.passPropsButtonPanel({ mode })
-    })
-  }
-
-  /**
-   * Set up callbacks for the rotation mode
-   */
-  _setUpModes (map, brush, zoomContainer) {
-    // set up zoom+pan and brush modes
-    var wasEnabled = {}
-    map.callback_manager.set('start_rotation', function () {
-      wasEnabled.brush = brush.enabled
-      brush.toggle(false)
-      wasEnabled.zoom = zoomContainer.zoomOn
-      zoomContainer.togglePanDrag(false)
-      wasEnabled.selectableMousedown = map.behavior.selectableMousedown !== null
-      map.behavior.toggleSelectableClick(false)
-      wasEnabled.labelMouseover = map.behavior.labelMouseover !== null
-      wasEnabled.labelTouch = map.behavior.labelTouch !== null
-      map.behavior.toggleLabelMouseover(false)
-      map.behavior.toggleLabelTouch(false)
-    })
-    map.callback_manager.set('end_rotation', function () {
-      brush.toggle(wasEnabled.brush)
-      zoomContainer.togglePanDrag(wasEnabled.zoom)
-      map.behavior.toggleSelectableClick(wasEnabled.selectableMousedown)
-      map.behavior.toggleLabelMouseover(wasEnabled.labelMouseover)
-      map.behavior.toggleLabelTouch(wasEnabled.labelTouch)
-      wasEnabled = {}
     })
   }
 

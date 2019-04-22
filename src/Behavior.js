@@ -138,8 +138,6 @@ export default class Behavior {
     const selectionBackground = this.map.sel.selectAll('#canvas')
 
     if (this.rotationModeEnabled) {
-      this.map.callback_manager.run('start_rotation')
-
       const selectedNodes = this.map.getSelectedNodes()
       if (Object.keys(selectedNodes).length === 0) {
         console.warn('No selected nodes')
