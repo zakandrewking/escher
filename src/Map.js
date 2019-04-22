@@ -1027,6 +1027,151 @@ export default class Map {
     text_label_selection.classed('selected', false)
   }
 
+
+  /**
+   * Align selected nodes and/or reactions vertically. Undoable.
+   */
+  alignVertical () {
+    return this._align(false)
+  }
+
+  /**
+   * Align selected nodes and/or reactions horizontally. Undoable
+   */
+  alignHorizontal () {
+    return this._align(true)
+  }
+
+  /**
+   * Generic function for aligning nodes.
+   * @param {Boolean} isHorizontal - If true, align horizontal; else vertical.
+   */
+  _align (isHorizontal) {
+    const selected = this.getSelectedNodes()
+    // Get markers and primary nodes
+    const markersAndPrimary = _.pick(
+      selected,
+      node => node.node_type !== 'metabolite' || node.node_is_primary
+    )
+
+    // 1. generally operates on markers and primary nodes, bringing along
+    // unconnected secondary nodes and beziers
+    // 2. if only selected secondary nodes, then align those
+    const alignByPrimary = Object.keys(markersAndPrimary).length > 0
+    const toAlign = alignByPrimary ? markersAndPrimary : selected
+    const keysToAlign = Object.keys(toAlign)
+
+    // Get new x location
+    const mean = keysToAlign.reduce((accum, val) => {
+      return accum + (isHorizontal ? toAlign[val].y : toAlign[val].x)
+    }, 0) / keysToAlign.length
+
+    // Align. Remember displacements for undo/redo.
+    const displacements = _.pairs(toAlign).map(([ nodeId, node ]) => ({
+      nodeId,
+      node,
+      displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
+    }))
+    const bezierDisplacements = []
+    const movedSecondaryNodes = {}
+
+    // Align unconnected secondary metabolites
+    if (alignByPrimary) {
+      _.mapObject(toAlign, (node, nodeId) => {
+        node.connected_segments.map(segmentLink => {
+          // get each connected node
+          const segment = this.reactions[segmentLink.reaction_id].segments[segmentLink.segment_id]
+          const isToNode = segment.to_node_id === node.node_id
+          const otherNodeId = isToNode ? segment.from_node_id : segment.to_node_id
+          const otherNode = this.nodes[otherNodeId]
+          const bez = isToNode ? 'b2' : 'b1'
+
+          // align this side bezier if the other node is selected (and that node
+          // will handle its bezier)
+          if (otherNode.node_id in selected && segment[bez]) {
+            const bezierId = build.bezier_id_for_segment_id(segmentLink.segment_id, bez)
+            bezierDisplacements.push({
+              segment,
+              bez,
+              bezierId,
+              displacement: (isHorizontal ?
+                             { x: 0, y: node.y - segment[bez].y } :
+                             { x: node.x - segment[bez].x, y: 0 })
+            })
+
+            // If the node is secondary and unconnected, then move it along with
+            // the current node.
+            if (otherNode.node_type === 'metabolite' &&
+                !otherNode.node_is_primary &&
+                !(otherNodeId in movedSecondaryNodes)) {
+              // If all the connected segments are connected to selected nodes, then move it
+              const connected = otherNode.connected_segments.filter(segmentLink => {
+                const segment = this.reactions[segmentLink.reaction_id].segments[segmentLink.segment_id]
+                const isToNode = segment.to_node_id === otherNode.node_id
+                return isToNode ? segment.from_node_id in selected : segment.to_node_id in selected
+              })
+              if (otherNode.connected_segments.length <= connected.length) {
+                // then move it with the same displacement as the parent
+                displacements.push({
+                  nodeId: otherNodeId,
+                  node: otherNode,
+                  displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
+                })
+                // remember not to move this again
+                movedSecondaryNodes[otherNodeId] = true
+              }
+            }
+          }
+        })
+      })
+    }
+
+    // reusable movement function for aligning and undo/redo
+    const _moveNodes = (disps, bezDisps) => {
+      let reactionIds = []
+      disps.map(d => {
+        const updated = build.move_node_and_dependents(
+          d.node,
+          d.nodeId,
+          this.reactions,
+          this.beziers,
+          d.displacement
+        )
+        reactionIds = utils.uniqueConcat([ reactionIds, updated.reaction_ids ])
+      })
+      // move beziers
+      bezDisps.map(d => {
+        d.segment[d.bez] = utils.c_plus_c(d.segment[d.bez], d.displacement)
+        this.beziers[d.bezierId].x = d.segment[d.bez].x
+        this.beziers[d.bezierId].y = d.segment[d.bez].y
+      })
+
+      this.draw_these_nodes(disps.map(d => d.nodeId))
+      this.draw_these_reactions(reactionIds, true) // and beziers
+    }
+    _moveNodes(displacements, bezierDisplacements)
+
+    // undo /redo
+    this.undo_stack.push(
+      // undo
+      () => {
+        const reverse = disps => disps.map(d => ({
+          ...d,
+          displacement: { x: -d.displacement.x, y: -d.displacement.y }
+        }))
+        _moveNodes(reverse(displacements), reverse(bezierDisplacements))
+      },
+      // redo
+      () => {
+        _moveNodes(displacements, bezierDisplacements)
+      }
+    )
+
+    // finish
+    this.set_status(alignByPrimary ? 'Aligned reactions' : 'Aligned nodes', 3000)
+  }
+
+
   // ---------------------------------------------------------------------
   // Delete
   // ---------------------------------------------------------------------
@@ -1698,34 +1843,34 @@ export default class Map {
    * Toggle the primary/secondary status of each selected node. Undoable.
    */
   toggle_selected_node_primary () {
-    var selected_node_ids = this.get_selected_node_ids(),
-        go = function(ids) {
-          var nodes_to_draw = {},
-              hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
-          ids.forEach(function(id) {
-            if (!(id in this.nodes)) {
-              console.warn('Could not find node: ' + id)
-              return
-            }
-            var node = this.nodes[id]
-            if (node.node_type == 'metabolite') {
-              node.node_is_primary = !node.node_is_primary
-              nodes_to_draw[id] = node
-            }
-          }.bind(this))
-          // draw the nodes
-          this.draw_these_nodes(Object.keys(nodes_to_draw))
-          // draw associated reactions
-          if (hide_secondary_metabolites) {
-            var out = this.segments_and_reactions_for_nodes(nodes_to_draw),
-                reaction_ids_to_draw_o = {}
-            for (var id in out.segment_objs_w_segments) {
-              var r_id = out.segment_objs_w_segments[id].reaction_id
-              reaction_ids_to_draw_o[r_id] = true
-            }
-            this.draw_these_reactions(Object.keys(reaction_ids_to_draw_o))
-          }
-        }.bind(this)
+    const selected_node_ids = this.get_selected_node_ids()
+    const go = function(ids) {
+      const nodes_to_draw = {}
+      const hide_secondary_metabolites = this.settings.get('hide_secondary_metabolites')
+      ids.forEach(function(id) {
+        if (!(id in this.nodes)) {
+          console.warn('Could not find node: ' + id)
+          return
+        }
+        const node = this.nodes[id]
+        if (node.node_type == 'metabolite') {
+          node.node_is_primary = !node.node_is_primary
+          nodes_to_draw[id] = node
+        }
+      }.bind(this))
+      // draw the nodes
+      this.draw_these_nodes(Object.keys(nodes_to_draw))
+      // draw associated reactions
+      if (hide_secondary_metabolites) {
+        var out = this.segments_and_reactions_for_nodes(nodes_to_draw),
+            reaction_ids_to_draw_o = {}
+        for (var id in out.segment_objs_w_segments) {
+          var r_id = out.segment_objs_w_segments[id].reaction_id
+          reaction_ids_to_draw_o[r_id] = true
+        }
+        this.draw_these_reactions(Object.keys(reaction_ids_to_draw_o))
+      }
+    }.bind(this)
 
     // go
     go(selected_node_ids)
