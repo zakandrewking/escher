@@ -1080,77 +1080,131 @@ export default class Map {
       node,
       displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
     }))
+    const bezierDisplacements = []
 
     // Align unconnected secondary metabolites
     if (alignByPrimary) {
       _.mapObject(toAlign, (node, nodeId) => {
-        node.connected_segments.map(segment => {
+        node.connected_segments.map(segmentLink => {
           // get each connected node
-          const seg = this.reactions[segment.reaction_id].segments[segment.segment_id]
-          const isToNode = seg.to_node_id === node.node_id
-          const otherNodeId = isToNode ? seg.from_node_id : seg.to_node_id
+          const segment = this.reactions[segmentLink.reaction_id].segments[segmentLink.segment_id]
+          const isToNode = segment.to_node_id === node.node_id
+          const otherNodeId = isToNode ? segment.from_node_id : segment.to_node_id
           const otherNode = this.nodes[otherNodeId]
+          const bez = isToNode ? 'b2' : 'b1'
 
-          // if the node is secondary and unconnected
-          if (otherNode.node_type === 'metabolite' &&
-              !otherNode.node_is_primary &&
-              otherNode.connected_segments.length === 1) { // TODO filter out /other/ connected segments
-            // then move it with the same displacement as the parent
-            displacements.push({
-              nodeId: otherNodeId,
-              node: otherNode,
-              displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
+          // align this side bezier if the other node is selected (and that node
+          // will handle its bezier, unless it's secondary, in which case see
+          // below)
+          if (otherNode.node_id in selected && segment[bez]) {
+            const bezierId = build.bezier_id_for_segment_id(segmentLink.segment_id, bez)
+            bezierDisplacements.push({
+              segment,
+              bez,
+              bezierId,
+              displacement: (isHorizontal ?
+                             { x: 0, y: node.y - segment[bez].y } :
+                             { x: node.x - segment[bez].x, y: 0 })
             })
           }
         })
       })
     }
 
-      //     // Align connected bezier(s)
-      //     var bez = isToNode ? 'b2' : 'b1'
-      //     // TODO LEFT OFF
-      //     if (seg[bez] !== null) {
-      //       seg[bez].x -= xDiff
-      //       const bezierId = build.bezier_id_for_segment_id(segment.segment_id, bez)
-      //       this.beziers[bezierId].x = seg[bez].x
-      //     }
-      //   })
+
+    //       // cases: (`node` is always primary)
+    //       if (otherNode.node_type !== 'metabolite') {
+    //         if (otherNode.id in selected) {
+    //           // - `otherNode` is marker & selected
+    //           //   then align this bezier (the other one will happen on the other side)
+    //         } else {
+    //           // - `otherNode` is marker & unselected
+    //           //   do nothing
+    //         }
+    //       } else if (otherNode.node_is_primary) {
+    //         if (otherNode.id in selected) {
+    //           // - `otherNode` is primary & selected
+    //           //   then align this bezier (the other one will happen on the other side)
+    //         } else {
+    //           // - `otherNode` is primary & unselected
+    //           //   do nothing
+    //         }
+    //       } else {
+    //         if (otherNode.id in selected)
+
+    //       // - `otherNode` is primary & unselected
+    //       // - `otherNode` is secondary & selected & connected to a selected node
+    //       //   then align both, because otherNode won't be in this loop
+    //       // - `otherNode` is secondary & selected & connected to an unselected node
+    //       // - `otherNode` is secondary & unselected & connected to an unselected node
+    //       // - `otherNode` is secondary & unselected & unconnected
+
+    //       // if the node is secondary and unconnected
+    //       if (otherNode.node_type === 'metabolite' &&
+    //           !otherNode.node_is_primary &&
+    //           otherNode.connected_segments.length === 1) { // TODO filter out /other/ connected segments
+    //         // then move it with the same displacement as the parent
+    //         displacements.push({
+    //           nodeId: otherNodeId,
+    //           node: otherNode,
+    //           displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
+    //         })
+    //       }
+    //     })
+    //   })
+    // } else {
+    //   // TODO just align beziers
+    // }
+
+
+      // // Align connected bezier(s)
+      // var bez = isToNode ? 'b2' : 'b1'
+      // // TODO LEFT OFF
+      // if (seg[bez] !== null) {
+      //   seg[bez].x -= xDiff
+      //   const bezierId = build.bezier_id_for_segment_id(segment.segment_id, bez)
+      //   this.beziers[bezierId].x = seg[bez].x
       // }
 
 
     // reusable movement function for aligning and undo/redo
-    const _moveNodes = disps => {
+    const _moveNodes = (disps, bezDisps) => {
       let reactionIds = []
-      disps.map(disp => {
+      disps.map(d => {
         const updated = build.move_node_and_dependents(
-          disp.node,
-          disp.nodeId,
+          d.node,
+          d.nodeId,
           this.reactions,
           this.beziers,
-          disp.displacement
+          d.displacement
         )
         reactionIds = utils.uniqueConcat([ reactionIds, updated.reaction_ids ])
       })
+      // move beziers
+      bezDisps.map(d => {
+        d.segment[d.bez] = utils.c_plus_c(d.segment[d.bez], d.displacement)
+        this.beziers[d.bezierId].x = d.segment[d.bez].x
+        this.beziers[d.bezierId].y = d.segment[d.bez].y
+      })
+
       this.draw_these_nodes(disps.map(d => d.nodeId))
-      this.draw_these_reactions(reactionIds)
+      this.draw_these_reactions(reactionIds, true) // and beziers
     }
-    _moveNodes(displacements)
+    _moveNodes(displacements, bezierDisplacements)
 
     // undo /redo
     this.undo_stack.push(
       // undo
       () => {
-        const reversedDisplacements = displacements.map(d => (
-          {
-            ...d,
-            displacement: { x: -d.displacement.x, y: -d.displacement.y }
-          }
-        ))
-        _moveNodes(reversedDisplacements)
+        const reverse = disps => disps.map(d => ({
+          ...d,
+          displacement: { x: -d.displacement.x, y: -d.displacement.y }
+        }))
+        _moveNodes(reverse(displacements), reverse(bezierDisplacements))
       },
       // redo
       () => {
-        _moveNodes(displacements)
+        _moveNodes(displacements, bezierDisplacements)
       }
     )
 
