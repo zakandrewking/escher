@@ -615,10 +615,7 @@ class Builder {
       loadMap: (file) => this.load_map(file),
       saveSvg: () => this.map.save_svg(),
       savePng: () => this.map.save_png(),
-      clearMap: () => {
-        this.map.clear_map()
-        this.callback_manager.run('clear_map')
-      },
+      clearMap: () => { this.clearMap() },
       loadModel: file => this.load_model(file, true),
       clearModel: () => {
         this.load_model(null)
@@ -909,6 +906,16 @@ class Builder {
   }
 
   /**
+   * Clear the map
+   */
+  clearMap () {
+    this.callback_manager.run('clear_map')
+    this.map.clearMapData()
+    this._updateData(true, true, ['reaction', 'metabolite'], false)
+    this.map.draw_everything()
+  }
+
+  /**
    * Set data and settings for the model.
    * update_model: (Boolean) Update data for the model.
    * update_map: (Boolean) Update data for the map.
@@ -1064,10 +1071,6 @@ class Builder {
       convert_map: {
         target: map,
         fn: map.convert_map
-      },
-      clear_map: {
-        target: map,
-        fn: map.clear_map
       },
       load_model: {
         key: 'ctrl+m',
