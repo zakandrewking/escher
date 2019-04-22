@@ -8,7 +8,7 @@ var utils = require('./utils')
 var _ = require('underscore')
 
 module.exports = {
-  get_met_label_loc: get_met_label_loc,
+  getMetLabelLoc: getMetLabelLoc,
   new_reaction: new_reaction,
   rotate_nodes: rotate_nodes,
   move_node_and_dependents: move_node_and_dependents,
@@ -41,22 +41,32 @@ function _get_label_loc (angle) {
   }
 }
 
-function get_met_label_loc (angle, index, count, is_primary, bigg_id,
-                            primary_index) {
-  var width = bigg_id.length * 18
-  var left_right = (index - (index > primary_index) - (count / 2)) >= -1
-  if (Math.abs(angle) < Math.PI/7) {
+/**
+ * Get the location for a new metaoblite label.
+ * @param angleRaw - angle in radians
+ * @param index
+ * @param count
+ * @param isPrimary
+ * @param biggId
+ * @param primaryIndex
+ */
+function getMetLabelLoc (angleRaw, index, count, isPrimary, biggId,
+                         primaryIndex) {
+  const angle = utils.angleNorm(angleRaw)
+  const width = biggId.length * 18
+  const leftRight = (index - (index > primaryIndex) - (count / 2)) >= -1
+  if (Math.abs(angle) < Math.PI / 7) {
     // Close to 0
-    if (is_primary || left_right) {
+    if (isPrimary || leftRight) {
       // Primary or bottom
       return { x: -width * 0.3, y: 40 }
     } else {
       // Top
       return { x: -width * 0.3, y: -20 }
     }
-  } else if (Math.abs(angle - Math.PI) < Math.PI/7) {
+  } else if (Math.abs(angle - Math.PI) < Math.PI / 7) {
     // Close to PI
-    if (is_primary || !left_right) {
+    if (isPrimary || !leftRight) {
       // Primary or bottom
       return { x: -width * 0.3, y: 40 }
     } else {
@@ -64,13 +74,13 @@ function get_met_label_loc (angle, index, count, is_primary, bigg_id,
       return { x: -width * 0.3, y: -20 }
     }
   } else {
-    if (is_primary) {
+    if (isPrimary) {
       // Primary
       return {
-        x: 25 - 38 * Math.abs(Math.abs(angle) - Math.PI/2),
-        y: (Math.abs(angle) - Math.PI/2) * ((angle > 0) * 2 - 1) * 50
+        x: 25 - 38 * Math.abs(Math.abs(angle) - Math.PI / 2),
+        y: (Math.abs(angle) - Math.PI / 2) * ((angle > 0) * 2 - 1) * 50
       }
-    } else if ((angle < 0 && left_right) || (angle > 0 && !left_right)) {
+    } else if ((angle < 0 && leftRight) || (angle > 0 && !leftRight)) {
       // Right
       return { x: 15, y: 0 }
     } else {
@@ -82,13 +92,14 @@ function get_met_label_loc (angle, index, count, is_primary, bigg_id,
 
 /**
  * New reaction.
- * @param {Number} angle - clockwise from 'right', in degrees
+ *
+ * @param {Number} direction - clockwise from 'right', in degrees
  */
 function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
                        selected_node_id, selected_node,
-                       largest_ids, cofactors, angle) {
+                       largest_ids, cofactors, direction) {
   // Convert to radians, and force to domain - PI/2 to PI/2
-  angle = utils.to_radians_norm(angle)
+  const angle = utils.to_radians_norm(direction)
 
   // Generate a new integer id
   var new_reaction_id = String(++largest_ids.reactions)
@@ -304,11 +315,14 @@ function new_reaction (bigg_id, cobra_reaction, cobra_metabolites,
         reversibility: new_reaction.reversibility,
       }
       // save new node
-      var met_label_d = get_met_label_loc(angle, metabolite.index,
-                                          metabolite.count,
-                                          metabolite.is_primary,
-                                          metabolite.bigg_id,
-                                          primary_index)
+      var met_label_d = getMetLabelLoc(
+        angle,
+        metabolite.index,
+        metabolite.count,
+        metabolite.is_primary,
+        metabolite.bigg_id,
+        primary_index
+      )
       new_nodes[new_node_id] = {
         connected_segments: [ { segment_id: new_segment_id,
                                 reaction_id: new_reaction_id } ],

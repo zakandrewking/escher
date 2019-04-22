@@ -1313,18 +1313,18 @@ export default class Map {
     }
 
     // create the first node
-    var reactant_ids = _.map(cobra_reaction.metabolites,
-                             function (coeff, met_id) { return [ coeff, met_id ] })
-        .filter(function (x) { return x[0] < 0 }) // coeff < 0
-        .map(function (x) { return x[1] }) // metabolite id
+    const reactant_ids = _.map(cobra_reaction.metabolites,
+                               (coeff, met_id) => [ coeff, met_id ])
+          .filter(x => x[0] < 0) // coeff < 0
+          .map(x => x[1]) // metabolite id
     // get the first reactant or else the first product
-    var metabolite_id = reactant_ids.length > 0
-        ? reactant_ids[0]
-        : Object.keys(cobra_reaction.metabolites)[0]
-    var metabolite = this.cobra_model.metabolites[metabolite_id]
-    var selected_node_id = String(++this.largest_ids.nodes)
-    var label_d = build.get_met_label_loc(Math.PI / 180 * direction, 0, 1, true,
-                                          metabolite_id)
+    const metaboliteId = reactant_ids.length > 0
+          ? reactant_ids[0]
+          : Object.keys(cobra_reaction.metabolites)[0]
+    const metabolite = this.cobra_model.metabolites[metaboliteId]
+    const selected_node_id = String(++this.largest_ids.nodes)
+    const label_d = build.getMetLabelLoc(utils.to_radians(direction), 0, 1,
+                                         true, metaboliteId, true)
     var selected_node = {
       connected_segments: [],
       x: coords.x,
@@ -1333,7 +1333,7 @@ export default class Map {
       label_x: coords.x + label_d.x,
       label_y: coords.y + label_d.y,
       name: metabolite.name,
-      bigg_id: metabolite_id,
+      bigg_id: metaboliteId,
       node_type: 'metabolite'
     }
     var new_nodes = {}
