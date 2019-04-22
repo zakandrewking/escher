@@ -1030,14 +1030,31 @@ export default class Map {
 
   /**
    * Align selected nodes and/or reactions vertically. Undoable.
+   */
+  alignVertical () {
+    return this._align(false)
+  }
+
+  /**
+   * Align selected nodes and/or reactions horizontally. Undoable
+   */
+  alignHorizontal () {
+    return this._align(true)
+  }
+
+  /**
+   * Generic function for aligning nodes.
+   * @param {Boolean} isHorizontal - If true, align horizontal; else vertical.
    *
-   * TODO move unconnected secondary nodes
+   * TODO horizontal align
    * TODO line up beziers
+   * TODO secondary that is not selected should not move
    * TODO test edge cases:
    * - connected secondary metabolites
    * - secondary that is connected to 2 primary/selected mets
+   * - secondary whose primary is not selected should align
    */
-  alignVertical () {
+  _align (isHorizontal) {
     const selected = this.getSelectedNodes()
     // Get markers and primary nodes
     const markersAndPrimary = _.pick(
@@ -1053,14 +1070,15 @@ export default class Map {
     const keysToAlign = Object.keys(toAlign)
 
     // Get new x location
-    const meanX = keysToAlign.reduce((accum, val) => accum + toAlign[val].x, 0)
-          / keysToAlign.length
+    const mean = keysToAlign.reduce((accum, val) => {
+      return accum + (isHorizontal ? toAlign[val].y : toAlign[val].x)
+    }, 0) / keysToAlign.length
 
     // Align. Remember displacements for undo/redo.
     const displacements = _.pairs(toAlign).map(([ nodeId, node ]) => ({
       nodeId,
       node,
-      displacement: { x: meanX - node.x, y: 0 }
+      displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
     }))
 
     // Align unconnected secondary metabolites
@@ -1081,7 +1099,7 @@ export default class Map {
             displacements.push({
               nodeId: otherNodeId,
               node: otherNode,
-              displacement: { x: meanX - node.x, y: 0 }
+              displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
             })
           }
         })
@@ -1138,14 +1156,6 @@ export default class Map {
 
     // finish
     this.set_status(alignByPrimary ? 'Aligned reactions' : 'Aligned nodes', 3000)
-  }
-
-  /**
-   * Align selected nodes and/or reactions horizontally.
-   */
-  alignHorizontal () {
-    var selected = this.get_selected_nodes()
-    throw new Error('Not Implemented')
   }
 
 
