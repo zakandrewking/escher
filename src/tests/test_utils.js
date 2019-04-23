@@ -249,9 +249,20 @@ describe('utils.load_json_or_csv', () => {
   })
 })
 
+describe('utils.angleNorm', () => {
+  const vals = [ 6.5, 6, 3.3, 0.2, -3.3, -6.0, -6.5 ]
+  vals.forEach(val => {
+    it(`forces domain to -pi to pi: ${val}`, () => {
+      const res = utils.angleNorm(val)
+      assert.isTrue(res < Math.PI)
+      assert.isTrue(res > -Math.PI)
+    })
+  })
+})
+
 describe('utils.to_degrees', () => {
   it('returns degrees', () => {
-    assert.strictEqual(utils.to_degrees(Math.PI/2), 90)
+    assert.strictEqual(utils.to_degrees(Math.PI / 2), 90)
     assert.strictEqual(utils.to_degrees(Math.PI), 180)
     assert.strictEqual(utils.to_degrees(-Math.PI), -180)
   })
@@ -259,10 +270,10 @@ describe('utils.to_degrees', () => {
 
 describe('utils.to_radians_norm', () => {
   it('returns radians between -PI and PI', () => {
-    assert.strictEqual(utils.to_radians_norm(90), Math.PI/2)
-    assert.strictEqual(utils.to_radians_norm(-90), -Math.PI/2)
-    assert.strictEqual(utils.to_radians_norm(-270), Math.PI/2)
-    assert.strictEqual(utils.to_radians_norm(270), -Math.PI/2)
+    assert.strictEqual(utils.to_radians_norm(90), Math.PI / 2)
+    assert.strictEqual(utils.to_radians_norm(-90), -Math.PI / 2)
+    assert.strictEqual(utils.to_radians_norm(-270), Math.PI / 2)
+    assert.strictEqual(utils.to_radians_norm(270), -Math.PI / 2)
   })
 })
 

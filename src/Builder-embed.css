@@ -105,6 +105,7 @@ svg.escher-svg .connect-line{
   stroke: rgb(200,200,200);
 }
 svg.escher-svg .direction-arrow {
+  cursor: default;
   stroke: black;
   stroke-width: 1px;
   fill: white;

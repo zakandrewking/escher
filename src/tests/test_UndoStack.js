@@ -1,35 +1,36 @@
-var UndoStack = require('../UndoStack');
+import UndoStack from '../UndoStack'
 
-var describe = require('mocha').describe;
-var it = require('mocha').it;
-var beforeEach = require('mocha').beforeEach;
-var assert = require('chai').assert;
+import { describe, it } from 'mocha'
+import { assert } from 'chai'
 
+describe('UndoStack', () => {
+  it('returns a do function', () => {
+    const undoStack = new UndoStack()
+    let didCall = false
+    undoStack.push(() => {}, () => { didCall = true }).do()
+    assert.isTrue(didCall)
+  })
 
-describe('UndoStack', function() {
-    it('tracks push and pop', function() {
-        var undo_stack = new UndoStack(),
-            tracker = 0,
-            i;
-        undo_stack.push(function() { tracker++; });
-        undo_stack.undo();
-        assert.strictEqual(tracker, 1);
-        undo_stack.undo();
-        tracker = 0;
-        for (i = 0; i < 43; i++) {
-            undo_stack.push(function() { tracker++; },
-                       function() { tracker--; });
-        }
-        for (i = 1; i <= 40; i++) {
-            undo_stack.undo();
-            assert.strictEqual(tracker, i);
-            console.assert(tracker == i);
-        }
-        undo_stack.undo();
-        for (i = 39; i >= 0; i--) {
-            undo_stack.redo();
-            assert.strictEqual(tracker, i);
-        }
-        undo_stack.redo();
-    });
-});
+  it('tracks push and pop', () => {
+    const undoStack = new UndoStack()
+    let tracker = 0
+    undoStack.push(() => { tracker++ })
+    undoStack.undo()
+    assert.strictEqual(tracker, 1)
+    undoStack.undo()
+    tracker = 0
+    for (let i = 0; i < 43; i++) {
+      undoStack.push(() => { tracker++ }, () => { tracker-- })
+    }
+    for (let i = 1; i <= 40; i++) {
+      undoStack.undo()
+      assert.strictEqual(tracker, i)
+    }
+    undoStack.undo()
+    for (let i = 39; i >= 0; i--) {
+      undoStack.redo()
+      assert.strictEqual(tracker, i)
+    }
+    undoStack.redo()
+  })
+})

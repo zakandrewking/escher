@@ -1069,7 +1069,6 @@ export default class Map {
     // Align. Remember displacements for undo/redo.
     const displacements = _.pairs(toAlign).map(([ nodeId, node ]) => ({
       nodeId,
-      node,
       displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
     }))
     const bezierDisplacements = []
@@ -1080,7 +1079,9 @@ export default class Map {
       _.mapObject(toAlign, (node, nodeId) => {
         node.connected_segments.map(segmentLink => {
           // get each connected node
-          const segment = this.reactions[segmentLink.reaction_id].segments[segmentLink.segment_id]
+          const segmentId = segmentLink.segment_id
+          const reactionId = segmentLink.reaction_id
+          const segment = this.reactions[reactionId].segments[segmentId]
           const isToNode = segment.to_node_id === node.node_id
           const otherNodeId = isToNode ? segment.from_node_id : segment.to_node_id
           const otherNode = this.nodes[otherNodeId]
@@ -1089,9 +1090,10 @@ export default class Map {
           // align this side bezier if the other node is selected (and that node
           // will handle its bezier)
           if (otherNode.node_id in selected && segment[bez]) {
-            const bezierId = build.bezier_id_for_segment_id(segmentLink.segment_id, bez)
+            const bezierId = build.bezier_id_for_segment_id(segmentId, bez)
             bezierDisplacements.push({
-              segment,
+              reactionId,
+              segmentId,
               bez,
               bezierId,
               displacement: (isHorizontal ?
@@ -1106,7 +1108,7 @@ export default class Map {
                 !(otherNodeId in movedSecondaryNodes)) {
               // If all the connected segments are connected to selected nodes, then move it
               const connected = otherNode.connected_segments.filter(segmentLink => {
-                const segment = this.reactions[segmentLink.reaction_id].segments[segmentLink.segment_id]
+                const segment = this.reactions[reactionId].segments[segmentId]
                 const isToNode = segment.to_node_id === otherNode.node_id
                 return isToNode ? segment.from_node_id in selected : segment.to_node_id in selected
               })
@@ -1114,7 +1116,6 @@ export default class Map {
                 // then move it with the same displacement as the parent
                 displacements.push({
                   nodeId: otherNodeId,
-                  node: otherNode,
                   displacement: isHorizontal ? { x: 0, y: mean - node.y } : { x: mean - node.x, y: 0 }
                 })
                 // remember not to move this again
@@ -1130,8 +1131,11 @@ export default class Map {
     const _moveNodes = (disps, bezDisps) => {
       let reactionIds = []
       disps.map(d => {
+        // TODO abstract this approach in a function because the alternative
+        // (saving the node itself) causes bugs)
+        const node = this.nodes[d.nodeId]
         const updated = build.move_node_and_dependents(
-          d.node,
+          node,
           d.nodeId,
           this.reactions,
           this.beziers,
@@ -1141,15 +1145,15 @@ export default class Map {
       })
       // move beziers
       bezDisps.map(d => {
-        d.segment[d.bez] = utils.c_plus_c(d.segment[d.bez], d.displacement)
-        this.beziers[d.bezierId].x = d.segment[d.bez].x
-        this.beziers[d.bezierId].y = d.segment[d.bez].y
+        const segment = this.reactions[d.reactionId].segments[d.segmentId]
+        segment[d.bez] = utils.c_plus_c(segment[d.bez], d.displacement)
+        this.beziers[d.bezierId].x = segment[d.bez].x
+        this.beziers[d.bezierId].y = segment[d.bez].y
       })
 
       this.draw_these_nodes(disps.map(d => d.nodeId))
       this.draw_these_reactions(reactionIds, true) // and beziers
     }
-    _moveNodes(displacements, bezierDisplacements)
 
     // undo /redo
     this.undo_stack.push(
@@ -1165,7 +1169,7 @@ export default class Map {
       () => {
         _moveNodes(displacements, bezierDisplacements)
       }
-    )
+    ).do() // do the first time
 
     // finish
     this.set_status(alignByPrimary ? 'Aligned reactions' : 'Aligned nodes', 3000)

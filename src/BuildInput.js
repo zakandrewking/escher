@@ -33,7 +33,7 @@ export default class BuildInput {
     // set up the reaction direction arrow
     const defaultAngle = 90 // degrees
     this.direction_arrow = new DirectionArrow(map.sel)
-    this.direction_arrow.set_rotation(defaultAngle)
+    this.direction_arrow.setRotation(defaultAngle)
     this.setUpMapCallbacks(map)
 
     // zoom container
@@ -139,7 +139,7 @@ export default class BuildInput {
 
   place (coords) {
     this.placed_div.place(coords)
-    this.direction_arrow.set_location(coords)
+    this.direction_arrow.setLocation(coords)
     this.direction_arrow.show()
   }
 
@@ -288,7 +288,7 @@ export default class BuildInput {
         if (startingFromScratch) {
           this.map.new_reaction_from_scratch(id,
                                              coords,
-                                             this.direction_arrow.get_rotation())
+                                             this.direction_arrow.getRotation())
         } else {
           if (!(selectedNode.node_id in this.map.nodes)) {
             console.error('Selected node no longer exists')
@@ -297,7 +297,7 @@ export default class BuildInput {
           }
           this.map.new_reaction_for_metabolite(id,
                                                selectedNode.node_id,
-                                               this.direction_arrow.get_rotation())
+                                               this.direction_arrow.getRotation())
         }
       }
     }

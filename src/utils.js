@@ -840,11 +840,12 @@ function to_degrees (radians) {
  */
 function angleNorm (radians) {
   if (radians < -Math.PI) {
-    radians = radians + Math.ceil(radians / (-2*Math.PI)) * 2*Math.PI
+    return radians + Math.floor((radians - Math.PI) / (-2 * Math.PI)) * 2 * Math.PI
   } else if (radians > Math.PI) {
-    radians = radians - Math.ceil(radians / (2*Math.PI)) * 2*Math.PI
+    return radians - Math.floor((radians + Math.PI) / (2 * Math.PI)) * 2 * Math.PI
+  } else {
+    return radians
   }
-  return radians
 }
 
 function to_radians (degrees) {
