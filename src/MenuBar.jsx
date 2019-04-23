@@ -165,12 +165,12 @@ class MenuBar extends Component {
           />
           <li name='divider' />
           <MenuButton
-            name={'Align vertical'}
+            name={`Align vertical${enableKeys ? ' (Alt+L)' : ''}`}
             onClick={this.props.alignVertical}
             disabledButtons={disabledButtons}
           />
           <MenuButton
-            name={'Align horizontal'}
+            name={`Align horizontal${enableKeys ? ' (Shift+Alt+L)' : ''}`}
             onClick={this.props.alignHorizontal}
             disabledButtons={disabledButtons}
           />
