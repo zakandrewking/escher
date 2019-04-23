@@ -1,128 +1,127 @@
-/** DirectionArrow. A constructor for an arrow that can be rotated and dragged,
- and supplies its direction. */
+import * as utils from './utils'
+import { drag as d3Drag } from 'd3-drag'
+import {
+  mouse as d3Mouse,
+  event
+} from 'd3-selection'
 
-var utils = require('./utils');
-var d3_drag = require('d3-drag').drag
-var d3_mouse = require('d3-selection').mouse
-var d3_selection = require('d3-selection')
+/**
+ * DirectionArrow. A constructor for an arrow that can be rotated and dragged,
+ * and supplies its direction.
+ * @param {D3 Selection} sel - The sel to render the arrow in.
+ */
+export default class DirectionArrow {
+  constructor (sel) {
+    this.arrowContainer = sel.append('g')
+      .attr('id', 'direction-arrow-container')
+      .attr('transform', 'translate(0,0)rotate(0)')
 
-var DirectionArrow = utils.make_class();
-DirectionArrow.prototype = {
-    init: init,
-    set_location: set_location,
-    set_rotation: set_rotation,
-    displace_rotation: displace_rotation,
-    get_rotation: get_rotation,
-    toggle: toggle,
-    show: show,
-    hide: hide,
-    right: right,
-    left: left,
-    up: up,
-    down: down,
-    _setup_drag: _setup_drag
-};
-module.exports = DirectionArrow;
+    this.arrow = this.arrowContainer.append('path')
+      .classed('direction-arrow', true)
+      .attr('d', 'M0 -5 L0 5 L20 5 L20 10 L30 0 L20 -10 L20 -5 Z')
+      .style('visibility', 'hidden')
+      .attr('transform', 'translate(30,0)scale(2.5)')
 
+    this.sel = sel
+    this.center = { x: 0, y: 0 }
 
-// definitions
-function init(sel) {
-    this.arrow_container = sel.append('g')
-        .attr('id', 'direction-arrow-container')
-        .attr('transform', 'translate(0,0)rotate(0)');
-    this.arrow = this.arrow_container.append('path')
-        .classed('direction-arrow', true)
-        .attr('d', path_for_arrow())
-        .style('visibility', 'hidden')
-        .attr('transform', 'translate(30,0)scale(2.5)');
+    this._setupDrag()
+    this.dragging = false
 
-    this.sel = sel;
-    this.center = { x: 0, y: 0 };
+    this.isVisible = false
+    this.show()
+  }
 
-    this._setup_drag();
-    this.dragging = false;
+  /**
+   * Move the arrow to coords.
+   */
+  setLocation (coords) {
+    this.center = coords
+    var transform = utils.d3_transform_catch(this.arrowContainer.attr('transform'))
+    this.arrowContainer.attr('transform',
+                             'translate(' + coords.x + ',' + coords.y +
+                             ')rotate(' + transform.rotate + ')')
+  }
 
-    this.is_visible = false;
-    this.show();
+  /**
+   * Rotate the arrow to rotation.
+   */
+  setRotation (rotation) {
+    var transform = utils.d3_transform_catch(this.arrowContainer.attr('transform'))
+    this.arrowContainer.attr('transform',
+                              'translate(' + transform.translate + ')rotate(' + rotation + ')')
+  }
 
-    // definitions
-    function path_for_arrow() {
-        return "M0 -5 L0 5 L20 5 L20 10 L30 0 L20 -10 L20 -5 Z";
-    }
-}
-function set_location(coords) {
-    /** Move the arrow to coords.
-     */
-    this.center = coords;
-    var transform = utils.d3_transform_catch(this.arrow_container.attr('transform'));
-    this.arrow_container.attr('transform',
-                              'translate('+coords.x+','+coords.y+')rotate('+transform.rotate+')');
-}
-function set_rotation(rotation) {
-    /** Rotate the arrow to rotation.
-     */
-    var transform = utils.d3_transform_catch(this.arrow_container.attr('transform'));
-    this.arrow_container.attr('transform',
-                              'translate('+transform.translate+')rotate('+rotation+')');
-}
-function displace_rotation(d_rotation) {
-    /** Displace the arrow rotation by a set amount.
-     */
-    var transform = utils.d3_transform_catch(this.arrow_container.attr('transform'));
-    this.arrow_container.attr('transform',
-                              'translate('+transform.translate+')'+
-                              'rotate('+(transform.rotate+d_rotation)+')');
-}
-function get_rotation() {
-    /** Returns the arrow rotation.
-     */
-    return utils.d3_transform_catch(this.arrow_container.attr('transform')).rotate;
-}
-function toggle(on_off) {
-    if (on_off===undefined) this.is_visible = !this.is_visible;
-    else this.is_visible = on_off;
-    this.arrow.style('visibility', this.is_visible ? 'visible' : 'hidden');
-}
-function show() {
-    this.toggle(true);
-}
-function hide() {
-    this.toggle(false);
-}
-function right() {
-    this.set_rotation(0);
-}
-function down() {
-    this.set_rotation(90);
-}
-function left() {
-    this.set_rotation(180);
-}
-function up() {
-    this.set_rotation(270);
-}
+  /**
+   * Displace the arrow rotation by a set amount.
+   */
+  displaceRotation (dRotation) {
+    var transform = utils.d3_transform_catch(this.arrowContainer.attr('transform'))
+    this.arrowContainer.attr('transform',
+                              'translate(' + transform.translate + ')' +
+                              'rotate(' + (transform.rotate + dRotation) + ')')
+  }
 
-function _setup_drag() {
-    var b = d3_drag()
-            .on("start", function(d) {
-                // silence other listeners
-                d3_selection.event.sourceEvent.stopPropagation();
-                this.dragging = true;
-            }.bind(this))
-            .on("drag.direction_arrow", function(d) {
-                var displacement = { x: d3_selection.event.dx,
-                                     y: d3_selection.event.dy },
-                    location = { x: d3_mouse(this.sel.node())[0],
-                                 y: d3_mouse(this.sel.node())[1] },
-                    d_angle = utils.angle_for_event(displacement,
-                                                    location,
-                                                    this.center);
-                this.displace_rotation(utils.to_degrees(d_angle));
-            }.bind(this))
-            .on("end", function(d) {
-                setTimeout(function() {
-                    this.dragging = false;
-                }.bind(this), 200);
-            }.bind(this));
-    this.arrow_container.call(b);
+  /**
+   * Returns the arrow rotation.
+   */
+  getRotation () {
+    return utils.d3_transform_catch(this.arrowContainer.attr('transform')).rotate
+  }
+
+  toggle (onOff) {
+    if (onOff === undefined) this.isVisible = !this.isVisible
+    else this.isVisible = onOff
+    this.arrow.style('visibility', this.isVisible ? 'visible' : 'hidden')
+  }
+
+  show () {
+    this.toggle(true)
+  }
+
+  hide () {
+    this.toggle(false)
+  }
+
+  right () {
+    this.setRotation(0)
+  }
+
+  down () {
+    this.setRotation(90)
+  }
+
+  left () {
+    this.setRotation(180)
+  }
+
+  up () {
+    this.setRotation(270)
+  }
+
+  _setupDrag () {
+    var drag = d3Drag()
+        .on('start', d => {
+          // silence other listeners
+          event.sourceEvent.stopPropagation()
+          this.dragging = true
+        })
+        .on('drag', d => {
+          const displacement = {
+            x: event.dx,
+            y: event.dy
+          }
+          const location = {
+            x: d3Mouse(this.sel.node())[0],
+            y: d3Mouse(this.sel.node())[1]
+          }
+          const dAngle = utils.angle_for_event(displacement, location,
+                                               this.center)
+          this.displaceRotation(utils.to_degrees(dAngle))
+        })
+        .on('end', d => {
+          setTimeout(() => { this.dragging = false }, 200)
+        })
+    this.arrowContainer.call(drag)
+  }
 }
