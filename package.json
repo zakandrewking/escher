@@ -1,7 +1,7 @@
 {
   "name": "escher",
   "author": "Zachary King",
-  "version": "1.7.0-beta.11",
+  "version": "1.7.0-beta.12",
   "schema_version": "1-0-0",
   "map_model_version": "5",
   "description": "Escher: A Web Application for Building, Sharing, and Embedding Data-Rich Visualizations of Metabolic Pathways",
