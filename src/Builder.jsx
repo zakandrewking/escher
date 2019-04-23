@@ -1217,6 +1217,16 @@ class Builder {
         ignoreWithInput: true,
         requires: 'enable_editing'
       },
+      alignVertical: {
+        key: 'alt+l',
+        target: map,
+        fn: map.alignVertical
+      },
+      alignHorizontal: {
+        key: 'shift+alt+l',
+        target: map,
+        fn: map.alignHorizontal
+      },
       toggle_primary: {
         key: 'p',
         target: map,
