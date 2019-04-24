@@ -18,13 +18,8 @@ envset/
 
 # built files
 dist/
-js/src/inline.js
 coverage/
 .nyc_output/
-
-# site files
-1-0-0
-link-site
 
 # npm and yarn
 package-lock.json
