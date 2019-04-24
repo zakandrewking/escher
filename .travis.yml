@@ -23,7 +23,7 @@ script:
   - yarn test
   - if [[ $TRAVIS_PYTHON_VERSION = '3.6' ]]; then yarn coverage; fi
   - cd py
-  - python setup.py test
+  - python -m pytest
   - cd ..
 # No emails
 notifications:
