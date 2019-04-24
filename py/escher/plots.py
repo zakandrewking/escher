@@ -452,64 +452,61 @@ class Builder(widgets.DOMWidget):
         #     except AttributeError:
         #         print('Unrecognized keywork argument %s' % key)
 
-    # def display_in_notebook(self):
-    #     """Deprecated.
+    def display_in_notebook(self):
+        """Deprecated.
 
-    #     The Builder is now a Jupyter Widget, so you can return the Builder
-    #     object from a cell to display it, or you can manually call the IPython
-    #     display function:
+        The Builder is now a Jupyter Widget, so you can return the Builder
+        object from a cell to display it, or you can manually call the IPython
+        display function:
 
-    #     from IPython.display import display
-    #     from escher import Builder
-    #     b = Builder(...)
-    #     display(b)
+        from IPython.display import display
+        from escher import Builder
+        b = Builder(...)
+        display(b)
 
-    #     """
-    #     raise Exception(('display_in_notebook is deprecated. The Builder is '
-    #                      'now a Jupyter Widget, so you can return the '
-    #                      'Builder in a cell to see it, or use the IPython '
-    #                      'display function (see Escher docs for details)'))
+        """
+        raise Exception(('display_in_notebook is deprecated. The Builder is '
+                         'now a Jupyter Widget, so you can return the '
+                         'Builder in a cell to see it, or use the IPython '
+                         'display function (see Escher docs for details)'))
 
-    # def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50,
-    #                        js_source='web', menu='all', scroll_behavior='pan',
-    #                        enable_editing=True, enable_keys=True,
-    #                        minified_js=True, never_ask_before_quit=False):
-    #     """Deprecated.
+    def display_in_browser(self, ip='127.0.0.1', port=7655, n_retries=50,
+                           js_source='web', menu='all', scroll_behavior='pan',
+                           enable_editing=True, enable_keys=True,
+                           minified_js=True, never_ask_before_quit=False):
+        """Deprecated.
 
-    #     We recommend using the Jupyter Widget (which now supports all Escher
-    #     features) or the save_html option to generate a standalone HTML file
-    #     that loads the map.
+        We recommend using the Jupyter Widget (which now supports all Escher
+        features) or the save_html option to generate a standalone HTML file
+        that loads the map.
 
-    #     """
-    #     raise Exception(('display_in_browser is deprecated. We recommend using'
-    #                      'the Jupyter Widget (which now supports all Escher'
-    #                      'features) or the save_html option to generate a'
-    #                      'standalone HTML file that loads the map.'))
+        """
+        raise Exception(('display_in_browser is deprecated. We recommend using'
+                         'the Jupyter Widget (which now supports all Escher'
+                         'features) or the save_html option to generate a'
+                         'standalone HTML file that loads the map.'))
 
-    # def save_html(self, filepath=None):
-    #     """Save an HTML file containing the map.
+    def save_html(self, filepath):
+        """Save an HTML file containing the map.
 
-    #     :param string filepath:
+        :param string filepath:
 
-    #         The name of the HTML file.
+            The name of the HTML file.
 
-    #     """
+        """
 
     #     # TODO apply options from self
     #     options = transform(self.options)
 
-    #     template = env.get_template('standalone.html')
-    #     html = template.render(
-    #         escher_url=get_url('escher_min'),
-    #         # dump json
-    #         options_json=b64dump(options),
-    #         map_download_url_json=b64dump(get_url('map_download')),
-    #         model_download_url_json=b64dump(get_url('model_download')),
-    #         builder_embed_css_json=b64dump(self.embedded_css),
-    #         # alreay json
-    #         map_data_json=b64dump(self.loaded_map_json),
-    #         model_data_json=b64dump(self.loaded_model_json),
-    #     )
+        template = env.get_template('standalone.html')
+        embedded_css_b64 = (b64dump(self.embedded_css)
+                            if self.embedded_css is not None else None)
+        html = template.render(
+            escher_url=get_url('escher_min'),
+            embedded_css_b64=embedded_css_b64,
+            map_data_json_b64=b64dump(self._loaded_map_json),
+            model_data_json_b64=b64dump(self._loaded_model_json),
+        )
 
-    #     with open(expanduser(filepath), 'wb') as f:
-    #         f.write(html.encode('utf-8'))
+        with open(expanduser(filepath), 'wb') as f:
+            f.write(html.encode('utf-8'))

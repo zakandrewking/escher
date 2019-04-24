@@ -75,38 +75,49 @@ def test_load_resource_web(tmpdir):
     _ = json.loads(_load_resource(url, 'name'))
 
 
+def look_for_string(st, substring):
+    """Look for the string in the substring. This solves a bug in py.test
+    for these cases"""
+    try:
+        found = st.find(substring)
+        assert found > -1
+    except AssertionError:
+        raise AssertionError(f'Could not find\n\n{substring}\n\nin\n\n{st}')
+
+
 def test_save_html(tmpdir):
-    # ok with embedded_css arg
-    b = Builder(map_json='"useless_map"', model_json='"useless_model"',
-                embedded_css='')
+    b = Builder(map_json='"useless_map"', model_json='"useless_model"')
     filepath = join(str(tmpdir), 'builder.html')
     b.save_html(filepath)
-
-    def look_for_string(st, substring):
-        """Look for the string in the substring. This solves a bug in py.test
-        for these cases"""
-        try:
-            found = st.find(substring)
-            assert found > -1
-        except AssertionError:
-            raise AssertionError('Could not find\n\n%s\n\nin\n\n%s' %
-                                 (substring, st))
-
-    # no static parse, local
     with open(filepath, 'r') as f:
         html = f.read()
 
     look_for_string(
         html,
-        'map_data: JSON.parse(b64DecodeUnicode(\'InVzZWxlc3NfbWFwIg==\')),',
-    )
-    look_for_string(
-        html,
-        'model_data: JSON.parse(b64DecodeUnicode(\'InVzZWxlc3NfbW9kZWwi\')),',
-    )
-    look_for_string(
-        html,
         'escher.Builder(data.map_data, data.model_data, ',
+    )
+    look_for_string(
+        html,
+        "map_data = JSON.parse(b64DecodeUnicode('InVzZWxlc3NfbWFwIg=='))",
+    )
+    look_for_string(
+        html,
+        "model_data = JSON.parse(b64DecodeUnicode('InVzZWxlc3NfbW9kZWwi'))",
+    )
+    assert 'embedded_css =' not in html
+
+
+def test_save_html_embedded_css(tmpdir):
+    # ok with embedded_css arg
+    b = Builder(embedded_css='useless_css')
+    filepath = join(str(tmpdir), 'builder.html')
+    b.save_html(filepath)
+    with open(filepath, 'r') as f:
+        html = f.read()
+
+    look_for_string(
+        html,
+        "embedded_css = b64DecodeUnicode('dXNlbGVzc19jc3M=')",
     )
 
 

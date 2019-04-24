@@ -15,7 +15,7 @@
     <script>
      /* Data from python */
      var data = get_data();
-     escher.Builder(data.map_data, data.model_data, data.builder_embed_css,
+     escher.Builder(data.map_data, data.model_data, data.embedded_css,
                     escher.libs.d3_select('#map-container'), data.options);
 
      function b64DecodeUnicode(str) {
@@ -27,14 +27,25 @@
      // Put this at the end so Chrome doesn't cut off the code above.
      function get_data() {
        /** Return the data passed in by the Python module. */
-       return {
-         options: JSON.parse(b64DecodeUnicode('{{ options_json }}')),
-         map_download_url: b64DecodeUnicode('{{ map_download_url_json }}'),
-         model_download_url: b64DecodeUnicode('{{ model_download_url_json }}'),
-         builder_embed_css: JSON.parse(b64DecodeUnicode('{{ builder_embed_css_json }}')),
-         map_data: JSON.parse(b64DecodeUnicode('{{ map_data_json }}')),
-         model_data: JSON.parse(b64DecodeUnicode('{{ model_data_json }}')),
+       const data = {
+         // defaults
+         map_data: null,
+         model_data: null,
+         embedded_css: null,
+         options: {
+           fill_screen: true,
+         }
        };
+       {% if map_data_json_b64 != None %}
+       data.map_data = JSON.parse(b64DecodeUnicode('{{ map_data_json_b64 }}'));
+       {% endif %}
+       {% if model_data_json_b64 != None %}
+       data.model_data = JSON.parse(b64DecodeUnicode('{{ model_data_json_b64 }}'));
+       {% endif %}
+       {% if embedded_css_b64 != None %}
+       data.embedded_css = b64DecodeUnicode('{{ embedded_css_b64 }}');
+       {% endif %}
+       return data;
      }
     </script>
   </body>
